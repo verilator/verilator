@@ -139,15 +139,15 @@ class TriggerKit final {
     const uint32_t m_nWords;  // Number of word in trigger vector
 
     // Data type of a single trigger word
-    AstNodeDType* m_wordDTypep;
+    AstNodeDType* m_wordDTypep = nullptr;
     // Data type of a trigger vector
-    AstNodeDType* m_trigDTypep;
+    AstNodeDType* m_trigDTypep = nullptr;
     // The AstVarScope representing the trigger vector
-    AstVarScope* m_vscp;
+    AstVarScope* m_vscp = nullptr;
     // The AstCFunc that computes the current active triggers
-    AstCFunc* m_compp;
+    AstCFunc* m_compp = nullptr;
     // The AstCFunc that dumps the current active triggers
-    AstCFunc* m_dumpp;
+    AstCFunc* m_dumpp = nullptr;
     // The AstCFunc testing if a trigger vector has any bits set - create lazily
     mutable AstCFunc* m_anySetp = nullptr;
     // The AstCFunc setting a tigger vector to (_ & ~_) of 2 other trigger vectors - create lazily
@@ -214,6 +214,8 @@ public:
     // Helpers for code generation
     AstNodeStmt* newCompCall() const;
     AstNodeStmt* newDumpCall(AstVarScope* vscp, const std::string& tag, bool debugOnly) const;
+    // Create a new trigger vector - might return nullptr if there are no triggers
+    AstVarScope* newTrigVec(const std::string& name) const;
 
     // Create an AstSenTree that is sensitive to the given trigger indices
     AstSenTree* newTriggerSenTree(AstVarScope* vscp, const std::vector<uint32_t>& indices) const;

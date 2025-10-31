@@ -216,6 +216,8 @@ AstCFunc* TriggerKit::createOrIntoFunc() const {
 AstNodeStmt* TriggerKit::newAndNotCall(AstVarScope* const oVscp,  //
                                        AstVarScope* const aVscp,  //
                                        AstVarScope* const bVscp) const {
+    if (!m_nWords) return nullptr;
+
     if (!m_andNotp) m_andNotp = createAndNotFunc();
     FileLine* const flp = v3Global.rootp()->topScopep()->fileline();
     AstCCall* const callp = new AstCCall{flp, m_andNotp};
@@ -226,14 +228,17 @@ AstNodeStmt* TriggerKit::newAndNotCall(AstVarScope* const oVscp,  //
     return callp->makeStmt();
 }
 AstNodeExpr* TriggerKit::newAnySetCall(AstVarScope* const vscp) const {
-    if (!m_anySetp) m_anySetp = createAnySetFunc();
     FileLine* const flp = v3Global.rootp()->topScopep()->fileline();
+    if (!m_nWords) return new AstConst{flp, AstConst::BitFalse{}};
+
+    if (!m_anySetp) m_anySetp = createAnySetFunc();
     AstCCall* const callp = new AstCCall{flp, m_anySetp};
     callp->addArgsp(new AstVarRef{flp, vscp, VAccess::WRITE});
     callp->dtypeSetBit();
     return callp;
 }
 AstNodeStmt* TriggerKit::newClearCall(AstVarScope* const vscp) const {
+    if (!m_nWords) return nullptr;
     if (!m_clearp) m_clearp = createClearFunc();
     FileLine* const flp = v3Global.rootp()->topScopep()->fileline();
     AstCCall* const callp = new AstCCall{flp, m_clearp};
@@ -242,6 +247,7 @@ AstNodeStmt* TriggerKit::newClearCall(AstVarScope* const vscp) const {
     return callp->makeStmt();
 }
 AstNodeStmt* TriggerKit::newOrIntoCall(AstVarScope* const oVscp, AstVarScope* const iVscp) const {
+    if (!m_nWords) return nullptr;
     if (!m_orIntop) m_orIntop = createOrIntoFunc();
     FileLine* const flp = v3Global.rootp()->topScopep()->fileline();
     AstCCall* const callp = new AstCCall{flp, m_orIntop};
@@ -251,11 +257,16 @@ AstNodeStmt* TriggerKit::newOrIntoCall(AstVarScope* const oVscp, AstVarScope* co
     return callp->makeStmt();
 }
 
-AstNodeStmt* TriggerKit::newCompCall() const { return util::callVoidFunc(m_compp); }
+AstNodeStmt* TriggerKit::newCompCall() const {
+    if (!m_nWords) return nullptr;
+    return util::callVoidFunc(m_compp);
+}
 
 AstNodeStmt* TriggerKit::newDumpCall(AstVarScope* const vscp, const std::string& tag,
                                      bool debugOnly) const {
     FileLine* const flp = v3Global.rootp()->topScopep()->fileline();
+    if (!m_nWords) return new AstComment{flp, "No triggers - dump"};
+
     AstCCall* const callp = new AstCCall{flp, m_dumpp};
     callp->addArgsp(new AstVarRef{flp, vscp, VAccess::READ});
     callp->addArgsp(new AstConst{flp, AstConst::String{}, tag});
@@ -271,6 +282,12 @@ AstNodeStmt* TriggerKit::newDumpCall(AstVarScope* const vscp, const std::string&
     }
     cstmtp->add("#endif");
     return cstmtp;
+}
+
+AstVarScope* TriggerKit::newTrigVec(const std::string& name) const {
+    if (!m_trigDTypep) return nullptr;
+    AstScope* const scopep = v3Global.rootp()->topScopep()->scopep();
+    return scopep->createTemp("__V" + name + "Triggered", m_trigDTypep);
 }
 
 AstSenTree* TriggerKit::newTriggerSenTree(AstVarScope* const vscp,
@@ -320,6 +337,9 @@ TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nWords)
     : m_name{name}
     , m_slow{slow}
     , m_nWords{nWords} {
+    // If no triggers, we don't need to generate anything
+    if (!nWords) return;
+    // Othewise construc the parts of the kit
     AstNetlist* const netlistp = v3Global.rootp();
     AstScope* const scopep = netlistp->topScopep()->scopep();
     FileLine* const flp = scopep->fileline();
@@ -373,13 +393,17 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
 
     // Number of sense triggers, rounded up to a full word
     const uint32_t nSenseTriggers = vlstd::roundUpToMultipleOf<WORD_SIZE>(senItemps.size());
-    const uint32_t nSenseWords = nSenseTriggers / WORD_SIZE;
+    // Total number of trigger words
+    const uint32_t nWords = (nSenseTriggers / WORD_SIZE) + nExtraWords;
 
     // Pad 'senItemps' to nSenseTriggers with nullptr
     senItemps.resize(nSenseTriggers);
 
     // We can now construct the trigger kit - this construct all items that will be kept
-    TriggerKit kit{name, slow, nSenseWords + nExtraWords};
+    TriggerKit kit{name, slow, nWords};
+
+    // If there are no triggers we are done
+    if (!nWords) return kit;
 
     // Construct the comp and dump functions
 

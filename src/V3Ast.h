@@ -804,13 +804,14 @@ public:
     void dumpGdbHeader() const;
 
     // METHODS - Tree modifications
-    // Returns nodep, adds newp to end of nodep's list
+    // Returns nodep. If newp is not nullptr, then add it to end of nodep's list.
     template <typename T_NodeResult, typename T_NodeNext>
     static T_NodeResult* addNext(T_NodeResult* nodep, T_NodeNext* newp) {
         static_assert(std::is_base_of<AstNode, T_NodeResult>::value,
                       "'T_NodeResult' must be a subtype of AstNode");
         static_assert(std::is_base_of<T_NodeResult, T_NodeNext>::value,
                       "'T_NodeNext' must be a subtype of 'T_NodeResult'");
+        if (!newp) return nodep;
         return static_cast<T_NodeResult*>(addNext<AstNode, AstNode>(nodep, newp));
     }
     inline AstNode* addNext(AstNode* newp);

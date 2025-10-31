@@ -71,6 +71,7 @@ AstNodeStmt* incrementVar(AstVarScope* vscp) {
 }
 
 AstNodeStmt* callVoidFunc(AstCFunc* funcp) {
+    if (!funcp) return nullptr;
     AstCCall* const callp = new AstCCall{funcp->fileline(), funcp};
     callp->dtypeSetVoid();
     return callp->makeStmt();
@@ -169,6 +170,7 @@ void splitCheckFinishSubFunc(AstCFunc* ofuncp, AstCFunc* subFuncp,
 
 // Split large function according to --output-split-cfuncs
 void splitCheck(AstCFunc* const ofuncp) {
+    if (!ofuncp) return;
     UASSERT_OBJ(!ofuncp->varsp(), ofuncp, "Can't split function with local variables");
     if (!v3Global.opt.outputSplitCFuncs() || !ofuncp->stmtsp()) return;
     if (ofuncp->nodeCount() < v3Global.opt.outputSplitCFuncs()) return;

@@ -29,7 +29,6 @@
 #include "V3List.h"
 #include "V3OrderCFuncEmitter.h"
 #include "V3OrderInternal.h"
-#include "V3OrderMoveGraph.h"
 #include "V3Os.h"
 #include "V3PairingHeap.h"
 #include "V3Scoreboard.h"
@@ -2395,36 +2394,30 @@ struct MTaskVxIdLessThan final {
     }
 };
 
-AstNodeStmt* V3Order::createParallel(OrderGraph& orderGraph, const std::string& tag,
-                                     const TrigToSenMap& trigToSen, bool slow) {
+AstNodeStmt* V3Order::createParallel(OrderGraph& orderGraph, OrderMoveGraph& moveGraph,
+                                     const std::string& tag, bool slow) {
     UINFO(2, "  Constructing parallel code for '" + tag + "'");
 
     // For nondeterminism debug:
     hashGraphDebug(orderGraph, "V3OrderParallel's input OrderGraph");
 
-    // Build the move graph
-    OrderMoveDomScope::clear();
-    const std::unique_ptr<OrderMoveGraph> moveGraphp
-        = OrderMoveGraph::build(orderGraph, trigToSen);
-    if (dumpGraphLevel() >= 9) moveGraphp->dumpDotFilePrefixed(tag + "_ordermv");
-
-    // Partition moveGraphp into LogicMTask's. The partitioner will set userp() on each logic
-    // vertex in the moveGraphp to the MTask it belongs to.
-    const std::unique_ptr<V3Graph> mTaskGraphp = Partitioner::apply(orderGraph, *moveGraphp);
-    if (dumpGraphLevel() >= 9) moveGraphp->dumpDotFilePrefixed(tag + "_ordermv_mtasks");
+    // Partition moveGraph into LogicMTask's. The partitioner will set userp() on each logic
+    // vertex in the moveGraph to the MTask it belongs to.
+    const std::unique_ptr<V3Graph> mTaskGraphp = Partitioner::apply(orderGraph, moveGraph);
+    if (dumpGraphLevel() >= 9) moveGraph.dumpDotFilePrefixed(tag + "_ordermv_mtasks");
 
     // Some variable OrderMoveVertices are not assigned to an MTask. Reroute and delete these.
-    for (V3GraphVertex* const vtxp : moveGraphp->vertices().unlinkable()) {
+    for (V3GraphVertex* const vtxp : moveGraph.vertices().unlinkable()) {
         OrderMoveVertex* const mVtxp = vtxp->as<OrderMoveVertex>();
         if (!mVtxp->userp()) {
             UASSERT_OBJ(!mVtxp->logicp(), mVtxp, "Logic OrderMoveVertex not assigned to mtask");
-            mVtxp->rerouteEdges(moveGraphp.get());
-            VL_DO_DANGLING(mVtxp->unlinkDelete(moveGraphp.get()), mVtxp);
+            mVtxp->rerouteEdges(&moveGraph);
+            VL_DO_DANGLING(mVtxp->unlinkDelete(&moveGraph), mVtxp);
         }
     }
 
     // Remove all edges from the move graph that cross between MTasks. Add logic to MTask lists.
-    for (V3GraphVertex& vtx : moveGraphp->vertices()) {
+    for (V3GraphVertex& vtx : moveGraph.vertices()) {
         OrderMoveVertex* const mVtxp = vtx.as<OrderMoveVertex>();
         LogicMTask* const mtaskp = static_cast<LogicMTask*>(mVtxp->userp());
         // Add to list in MTask, in MoveGraph order. This should not be necessary, but see #4993.
@@ -2435,7 +2428,7 @@ AstNodeStmt* V3Order::createParallel(OrderGraph& orderGraph, const std::string& 
             if (mtaskp != toMVtxp->userp()) VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
         }
     }
-    if (dumpGraphLevel() >= 9) moveGraphp->dumpDotFilePrefixed(tag + "_ordermv_pruned");
+    if (dumpGraphLevel() >= 9) moveGraph.dumpDotFilePrefixed(tag + "_ordermv_pruned");
 
     // Create the AstExecGraph node which represents the execution of the MTask graph.
     FileLine* const rootFlp = v3Global.rootp()->fileline();
@@ -2445,7 +2438,7 @@ AstNodeStmt* V3Order::createParallel(OrderGraph& orderGraph, const std::string& 
     // Translate the LogicMTask graph into the corresponding ExecMTask graph,
     // which will outlive ordering.
     std::unordered_map<const LogicMTask*, ExecMTask*> logicMTaskToExecMTask;
-    OrderMoveGraphSerializer serializer{*moveGraphp};
+    OrderMoveGraphSerializer serializer{moveGraph};
     V3OrderCFuncEmitter emitter{tag, slow};
     GraphStream<MTaskVxIdLessThan> mtaskStream{mTaskGraphp.get()};
     while (const V3GraphVertex* const vtxp = mtaskStream.nextp()) {
@@ -2472,7 +2465,7 @@ AstNodeStmt* V3Order::createParallel(OrderGraph& orderGraph, const std::string& 
                 emitter.emitLogic(logicp);
             }
             // Can delete the vertex now
-            VL_DO_DANGLING(mVtxp->unlinkDelete(moveGraphp.get()), mVtxp);
+            VL_DO_DANGLING(mVtxp->unlinkDelete(&moveGraph), mVtxp);
         }
 
         // We have 2 objects, because AstMTaskBody is an AstNode, and ExecMTask is a GraphVertex.
@@ -2502,14 +2495,11 @@ AstNodeStmt* V3Order::createParallel(OrderGraph& orderGraph, const std::string& 
     }
 
     // Delete the remaining variable vertices
-    for (V3GraphVertex* const vtxp : moveGraphp->vertices().unlinkable()) {
+    for (V3GraphVertex* const vtxp : moveGraph.vertices().unlinkable()) {
         if (!vtxp->as<OrderMoveVertex>()->logicp()) {
-            VL_DO_DANGLING(vtxp->unlinkDelete(moveGraphp.get()), vtxp);
+            VL_DO_DANGLING(vtxp->unlinkDelete(&moveGraph), vtxp);
         }
     }
-
-    UASSERT(moveGraphp->empty(), "Waiting vertices remain, but none are ready");
-    OrderMoveDomScope::clear();
 
     return execGraphp;
 }

@@ -117,8 +117,8 @@ EvalLoop createEvalLoop(
     const std::string& tag,  // Tag for current phase
     const string& name,  // Name of current phase
     bool slow,  // Should create slow functions
-    const TriggerKit& triggerKit,  // The trigger kit
-    AstVarScope* trigp,  // The trigger vector
+    const TriggerKit& trigKit,  // The trigger kit
+    AstVarScope* trigp,  // The trigger vector - may be nullptr if no triggers
     AstNodeStmt* innerp,  // The inner loop, if any
     AstNodeStmt* phasePrepp,  // Prep statements run before checking triggers
     AstNodeStmt* phaseWorkp,  // The work to do if anything triggered
@@ -127,6 +127,10 @@ EvalLoop createEvalLoop(
     // and must be unmodified otherwise.
     std::function<AstNodeStmt*(AstVarScope*)> phaseExtra = [](AstVarScope*) { return nullptr; }  //
 ) {
+    // All work is under a trigger, so if there are no triggers, there is
+    // nothing to do besides executing the inner loop.
+    if (!trigp) return {nullptr, innerp};
+
     const std::string varPrefix = "__V" + tag;
     AstScope* const scopeTopp = netlistp->topScopep()->scopep();
     FileLine* const flp = netlistp->fileline();
@@ -134,30 +138,37 @@ EvalLoop createEvalLoop(
     // We wrap the prep/cond/work in a function for readability
     AstCFunc* const phaseFuncp = util::makeTopFunction(netlistp, "_eval_phase__" + tag, slow);
     {
+        // Add the preparatory statements
+        phaseFuncp->addStmtsp(phasePrepp);
+
         // The execute flag
         AstVarScope* const executeFlagp = scopeTopp->createTemp(varPrefix + "Execute", 1);
         executeFlagp->varp()->noReset(true);
 
-        // Add the preparatory statements
-        phaseFuncp->addStmtsp(phasePrepp);
+        // If there is work in this phase, execute it if any triggers fired
+        if (phaseWorkp) {
+            // Check if any triggers are fired, save the result
+            AstNodeExpr* const lhsp = new AstVarRef{flp, executeFlagp, VAccess::WRITE};
+            AstNodeExpr* const rhsp = trigKit.newAnySetCall(trigp);
+            phaseFuncp->addStmtsp(new AstAssign{flp, lhsp, rhsp});
 
-        // Check if any triggers are fired, save the result
-        AstNodeExpr* const lhsp = new AstVarRef{flp, executeFlagp, VAccess::WRITE};
-        AstNodeExpr* const rhsp = triggerKit.newAnySetCall(trigp);
-        phaseFuncp->addStmtsp(new AstAssign{flp, lhsp, rhsp});
-
-        // Add the work
-        AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, executeFlagp, VAccess::READ}};
-        ifp->addThensp(phaseWorkp);
-        phaseFuncp->addStmtsp(ifp);
+            // Add the work
+            AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, executeFlagp, VAccess::READ}};
+            ifp->addThensp(phaseWorkp);
+            phaseFuncp->addStmtsp(ifp);
+        }
 
         // Construct the extra statements
-        if (AstNodeStmt* const extrap = phaseExtra(executeFlagp)) phaseFuncp->addStmtsp(extrap);
+        AstNodeStmt* const extraWorkp = phaseExtra(executeFlagp);
+        if (extraWorkp) phaseFuncp->addStmtsp(extraWorkp);
 
-        // The function returns ture iff it did run the work
+        // The function returns ture iff it did run work
         phaseFuncp->rtnType("bool");
-        phaseFuncp->addStmtsp(
-            new AstCReturn{flp, new AstVarRef{flp, executeFlagp, VAccess::READ}});
+        AstNodeExpr* const retp
+            = phaseWorkp || extraWorkp
+                  ? static_cast<AstNodeExpr*>(new AstVarRef{flp, executeFlagp, VAccess::READ})
+                  : static_cast<AstNodeExpr*>(new AstConst{flp, AstConst::BitFalse{}});
+        phaseFuncp->addStmtsp(new AstCReturn{flp, retp});
     }
 
     // The result statements
@@ -185,7 +196,7 @@ EvalLoop createEvalLoop(
         stmtps->addNext(loopp);
 
         // Check the iteration limit (aborts if exceeded)
-        AstNodeStmt* const dumpCallp = triggerKit.newDumpCall(trigp, tag, false);
+        AstNodeStmt* const dumpCallp = trigKit.newDumpCall(trigp, tag, false);
         loopp->addStmtsp(util::checkIterationLimit(netlistp, name, counterp, dumpCallp));
         // Increment the iteration counter
         loopp->addStmtsp(util::incrementVar(counterp));
@@ -541,7 +552,7 @@ struct EvalKit final {
 
 void createEval(AstNetlist* netlistp,  //
                 AstNode* icoLoop,  //
-                const TriggerKit& triggerKit,  //
+                const TriggerKit& trigKit,  //
                 const EvalKit& actKit,  //
                 AstVarScope* preTrigsp,  //
                 const EvalKit& nbaKit,  //
@@ -558,36 +569,37 @@ void createEval(AstNetlist* netlistp,  //
 
     // Create the active eval loop
     EvalLoop topLoop = createEvalLoop(  //
-        netlistp, "act", "Active", /* slow: */ false, triggerKit, actKit.m_vscp,
+        netlistp, "act", "Active", /* slow: */ false, trigKit, actKit.m_vscp,
         // Inner loop statements
         nullptr,
         // Prep statements
         [&]() {
             // Compute the current 'act' triggers
-            AstNodeStmt* const stmtsp = triggerKit.newCompCall();
+            AstNodeStmt* stmtsp = trigKit.newCompCall();
             // Commit trigger awaits from the previous iteration
-            if (timingCommitp) stmtsp->addNext(timingCommitp->makeStmt());
+            if (timingCommitp) stmtsp = AstNode::addNext(stmtsp, timingCommitp->makeStmt());
+            // Compute the 'pre' triggers
+            stmtsp = AstNode::addNext(
+                stmtsp, trigKit.newAndNotCall(preTrigsp, actKit.m_vscp, nbaKit.m_vscp));
+            // Latch the 'act' triggers under the 'nba' triggers
+            stmtsp = AstNode::addNext(stmtsp, trigKit.newOrIntoCall(nbaKit.m_vscp, actKit.m_vscp));
             //
             return stmtsp;
         }(),
         // Work statements
         [&]() {
-            // Compute the 'pre' triggers
-            AstNodeStmt* const workp
-                = triggerKit.newAndNotCall(preTrigsp, actKit.m_vscp, nbaKit.m_vscp);
-            // Latch the 'act' triggers under the 'nba' triggers
-            workp->addNext(triggerKit.newOrIntoCall(nbaKit.m_vscp, actKit.m_vscp));
+            AstNodeStmt* workp = nullptr;
             // Resume triggered timing schedulers
-            if (timingResumep) workp->addNext(timingResumep->makeStmt());
+            if (timingResumep) workp = timingResumep->makeStmt();
             // Invoke the 'act' function
-            workp->addNext(util::callVoidFunc(actKit.m_funcp));
+            workp = AstNode::addNext(workp, util::callVoidFunc(actKit.m_funcp));
             //
             return workp;
         }());
 
     // Create the NBA eval loop, which is the default top level loop.
     topLoop = createEvalLoop(  //
-        netlistp, "nba", "NBA", /* slow: */ false, triggerKit, nbaKit.m_vscp,
+        netlistp, "nba", "NBA", /* slow: */ false, trigKit, nbaKit.m_vscp,
         // Inner loop statements
         topLoop.stmtsp,
         // Prep statements
@@ -597,14 +609,14 @@ void createEval(AstNetlist* netlistp,  //
             AstNodeStmt* workp = nullptr;
             // Latch the 'nba' trigger flags under the following region's trigger flags
             if (!obsKit.empty()) {
-                workp = triggerKit.newOrIntoCall(obsKit.m_vscp, nbaKit.m_vscp);
+                workp = trigKit.newOrIntoCall(obsKit.m_vscp, nbaKit.m_vscp);
             } else if (!reactKit.empty()) {
-                workp = triggerKit.newOrIntoCall(reactKit.m_vscp, nbaKit.m_vscp);
+                workp = trigKit.newOrIntoCall(reactKit.m_vscp, nbaKit.m_vscp);
             }
             // Invoke the 'nba' function
             workp = AstNode::addNext(workp, util::callVoidFunc(nbaKit.m_funcp));
             // Clear the 'nba' triggers
-            workp->addNext(triggerKit.newClearCall(nbaKit.m_vscp));
+            workp = AstNode::addNext(workp, trigKit.newClearCall(nbaKit.m_vscp));
             //
             return workp;
         }(),
@@ -632,7 +644,7 @@ void createEval(AstNetlist* netlistp,  //
     if (!obsKit.empty()) {
         // Create the Observed eval loop, which becomes the top level loop.
         topLoop = createEvalLoop(  //
-            netlistp, "obs", "Observed", /* slow: */ false, triggerKit, obsKit.m_vscp,
+            netlistp, "obs", "Observed", /* slow: */ false, trigKit, obsKit.m_vscp,
             // Inner loop statements
             topLoop.stmtsp,
             // Prep statements
@@ -642,12 +654,12 @@ void createEval(AstNetlist* netlistp,  //
                 AstNodeStmt* workp = nullptr;
                 // Latch the Observed trigger flags under the Reactive trigger flags
                 if (!reactKit.empty()) {
-                    workp = triggerKit.newOrIntoCall(reactKit.m_vscp, obsKit.m_vscp);
+                    workp = trigKit.newOrIntoCall(reactKit.m_vscp, obsKit.m_vscp);
                 }
                 // Invoke the 'obs' function
                 workp = AstNode::addNext(workp, util::callVoidFunc(obsKit.m_funcp));
                 // Clear the 'obs' triggers
-                workp->addNext(triggerKit.newClearCall(obsKit.m_vscp));
+                workp = AstNode::addNext(workp, trigKit.newClearCall(obsKit.m_vscp));
                 //
                 return workp;
             }());
@@ -656,7 +668,7 @@ void createEval(AstNetlist* netlistp,  //
     if (!reactKit.empty()) {
         // Create the Reactive eval loop, which becomes the top level loop.
         topLoop = createEvalLoop(  //
-            netlistp, "react", "Reactive", /* slow: */ false, triggerKit, reactKit.m_vscp,
+            netlistp, "react", "Reactive", /* slow: */ false, trigKit, reactKit.m_vscp,
             // Inner loop statements
             topLoop.stmtsp,
             // Prep statements
@@ -664,9 +676,9 @@ void createEval(AstNetlist* netlistp,  //
             // Work statements
             [&]() {
                 // Invoke the 'react' function
-                AstNodeStmt* const workp = util::callVoidFunc(reactKit.m_funcp);
+                AstNodeStmt* workp = util::callVoidFunc(reactKit.m_funcp);
                 // Clear the 'react' triggers
-                workp->addNext(triggerKit.newClearCall(reactKit.m_vscp));
+                workp = AstNode::addNext(workp, trigKit.newClearCall(reactKit.m_vscp));
                 return workp;
             }());
     }
@@ -843,7 +855,7 @@ void schedule(AstNetlist* netlistp) {
                                    firstVifMemberTriggerIndex, trigKit);
 
     AstVarScope* const actTrigVscp = trigKit.vscp();
-    AstVarScope* const preTrigVscp = scopeTopp->createTempLike("__VpreTriggered", actTrigVscp);
+    AstVarScope* const preTrigVscp = trigKit.newTrigVec("pre");
 
     const auto cloneMapWithNewTriggerReferences
         = [=](const std::unordered_map<const AstSenTree*, AstSenTree*>& map, AstVarScope* vscp) {
@@ -917,8 +929,7 @@ void schedule(AstNetlist* netlistp) {
     const auto order = [&](const std::string& name,
                            const std::vector<V3Sched::LogicByScope*>& logic) -> EvalKit {
         UINFO(2, "Scheduling " << name << " #logic = " << logic.size());
-        AstVarScope* const trigVscp
-            = scopeTopp->createTempLike("__V" + name + "Triggered", actTrigVscp);
+        AstVarScope* const trigVscp = trigKit.newTrigVec(name);
         const auto trigMap = cloneMapWithNewTriggerReferences(actTrigMap, trigVscp);
         // Remap sensitivities of the input logic to the triggers
         for (LogicByScope* lbs : logic) remapSensitivities(*lbs, trigMap);
