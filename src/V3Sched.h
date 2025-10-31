@@ -203,7 +203,6 @@ public:
     // ACCESSORS
     AstVarScope* vscp() const { return m_vscp; }
     AstCFunc* compp() const { return m_compp; }
-    AstCFunc* dumpp() const { return m_dumpp; }
     const std::unordered_map<const AstSenTree*, AstSenTree*>& map() const { return m_map; }
 
     // Helpers for code generation - lazy construct relevant functions
