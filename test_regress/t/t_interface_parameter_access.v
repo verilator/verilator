@@ -70,12 +70,15 @@ endmodule
 
 
 module testmod
+  #(parameter SOME_PARAM = 789)
   (
    input clk,
    test_if.mp intf,
    test_if intf_no_mp,
    test_if.mp intf_array [1:0]
    );
+
+   test_if #(.FOO (intf.FOO)) some_other_intf ();
 
    // verilator lint_off HIERPARAM
    localparam THE_FOO = intf.FOO;
@@ -89,6 +92,10 @@ module testmod
    always @(posedge clk) begin
       if (THE_FOO != 5) begin
          $display("%%Error: THE_FOO = %0d", THE_FOO);
+         $stop;
+      end
+      if (some_other_intf.FOO != 5) begin
+         $display("%%Error: some_other_intf.FOO = %0d", some_other_intf.FOO);
          $stop;
       end
       if (THE_OTHER_FOO != 5) begin
