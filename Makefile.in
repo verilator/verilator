@@ -570,17 +570,6 @@ lint-py-mypy:
 		echo "$(MYPY) $(MYPY_FLAGS) $$filename" ; \
 		$(MYPY) $(MYPY_FLAGS) $$filename ; \
 	done
-	@echo "Not mypy checked: " `fgrep -L '# mypy' $(PY_PROGRAMS)`
-
-lint-py-mypy-none:
-	@echo "mypy not checking: " `fgrep -L '# mypy' $(PY_PROGRAMS)`
-
-lint-py-mypy:
-	for filename in `fgrep -l '# mypy' $(PY_PROGRAMS)`; do \
-		echo "$(MYPY) $(MYPY_FLAGS) $$filename" ; \
-		$(MYPY) $(MYPY_FLAGS) $$filename ; \
-	done
-	@echo "Not mypy checked: " `fgrep -L '# mypy' $(PY_PROGRAMS)`
 
 lint-py-mypy-none:
 	@echo "mypy not checking: " `fgrep -L '# mypy' $(PY_PROGRAMS)`
