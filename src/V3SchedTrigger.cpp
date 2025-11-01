@@ -496,7 +496,7 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
         }
     }
     const uint32_t nSenItems = senItemps.size() - nPreTriggers;
-    V3Stats::addStat("Scheduling, '" + name + "' sense triggers",  nSenItems + nPreSenItems);
+    V3Stats::addStat("Scheduling, '" + name + "' sense triggers", nSenItems + nPreSenItems);
     // Number of sense triggers, rounded up to a full word
     const uint32_t nSenseTriggers = vlstd::roundUpToMultipleOf<WORD_SIZE>(senItemps.size());
     // Pad 'senItemps' to nSenseTriggers with nullptr
