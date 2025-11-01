@@ -134,6 +134,7 @@ public:
     bool cleanRhs() const override { return false; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    bool isSystemFunc() const override { return true; }
     int instrCount() const override { return INSTR_COUNT_DBL_TRIG; }
     void numberOperate(V3Number&, const V3Number&, const V3Number&) override { V3ERROR_NA; }
 };
@@ -172,6 +173,7 @@ public:
     bool cleanRhs() const override { return false; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    bool isSystemFunc() const override { return true; }
     int instrCount() const override { return INSTR_COUNT_DBL_TRIG; }
     bool doubleFlavor() const override { return true; }
 };
@@ -403,6 +405,7 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     bool sizeMattersThs() const override { return false; }
+    bool isSystemFunc() const override { return true; }
     int instrCount() const override { return INSTR_COUNT_DBL_TRIG; }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
                        const V3Number& ths) override {
@@ -449,6 +452,7 @@ public:
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return false; }
     bool sizeMattersLhs() const override { return false; }
+    bool isSystemFunc() const override { return true; }
     int instrCount() const override { return INSTR_COUNT_DBL_TRIG; }
     bool doubleFlavor() const override { return true; }
 };
@@ -1350,6 +1354,7 @@ public:
     int instrCount() const override { return widthInstrs() * 64; }
     bool isPredictOptimizable() const override { return false; }
     bool isPure() override { return false; }  // SPECIAL: $display has 'visual' ordering
+    bool isSystemFunc() const override { return true; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstFOpen final : public AstNodeExpr {
@@ -1923,6 +1928,7 @@ public:
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
     bool isPure() override { return !seedp(); }
+    bool isSystemFunc() const override { return true; }
     int instrCount() const override { return INSTR_COUNT_PLI; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool combinable(const AstRand* samep) const {
@@ -1947,6 +1953,7 @@ public:
     bool cleanOut() const override { return false; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
+    bool isSystemFunc() const override { return true; }
     int instrCount() const override { return INSTR_COUNT_PLI; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
@@ -2346,6 +2353,7 @@ public:
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
     // but isPure() true
+    bool isSystemFunc() const override { return true; }
     bool cleanOut() const override { return true; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
@@ -2380,6 +2388,7 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
+    bool isSystemFunc() const override { return true; }
     int instrCount() const override { return widthInstrs(); }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
@@ -2396,6 +2405,7 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
+    bool isSystemFunc() const override { return true; }
     int instrCount() const override { return widthInstrs(); }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     VTimescale timeunit() const { return m_timeunit; }
@@ -2450,6 +2460,7 @@ public:
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
     bool isPure() override { return !outp(); }
+    bool isSystemFunc() const override { return true; }
     bool cleanOut() const override { return true; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
@@ -2553,6 +2564,7 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    bool isSystemFunc() const override { return true; }
     int instrCount() const override { return widthInstrs() * 20; }
     bool isPure() override { return false; }
 };
@@ -2731,6 +2743,7 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    bool isSystemFunc() const override { return true; }
     int instrCount() const override { return widthInstrs() * 64; }
     AstNode* strgp() const { return lhsp(); }
     AstNode* filep() const { return rhsp(); }
@@ -2751,6 +2764,7 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    bool isSystemFunc() const override { return true; }
     int instrCount() const override { return widthInstrs() * 64; }
     bool isPredictOptimizable() const override { return false; }
     bool isPure() override { return false; }  // SPECIAL: $display has 'visual' ordering
@@ -3667,6 +3681,7 @@ public:
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
     bool isPure() override { return false; }
+    bool isSystemFunc() const override { return true; }
     int instrCount() const override { return INSTR_COUNT_PLI; }
 };
 
@@ -4452,6 +4467,7 @@ public:
     bool sizeMattersRhs() const override { return false; }
     bool sizeMattersThs() const override { return false; }
     bool sizeMattersFhs() const override { return false; }
+    bool isSystemFunc() const override { return true; }
     int instrCount() const override { return widthInstrs() * 16; }
 };
 
@@ -4466,6 +4482,7 @@ public:
     string emitVerilog() override { return "%f$inferred_disable"; }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
+    bool isSystemFunc() const override { return true; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstTime final : public AstNodeTermop {
@@ -4482,6 +4499,7 @@ public:
     bool cleanOut() const override { return true; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
+    bool isSystemFunc() const override { return true; }
     int instrCount() const override { return INSTR_COUNT_TIME; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     void dump(std::ostream& str = std::cout) const override;
@@ -4503,6 +4521,7 @@ public:
     bool cleanOut() const override { return true; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
+    bool isSystemFunc() const override { return true; }
     int instrCount() const override { return INSTR_COUNT_TIME; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     void dump(std::ostream& str = std::cout) const override;
@@ -4977,6 +4996,7 @@ public:
     int instrCount() const override { return widthInstrs() * 16; }
     bool isPredictOptimizable() const override { return false; }
     bool isPure() override { return false; }  // SPECIAL: $display has 'visual' ordering
+    bool isSystemFunc() const override { return true; }
     AstNode* filep() const { return lhsp(); }
 };
 class AstFGetC final : public AstNodeUniop {
