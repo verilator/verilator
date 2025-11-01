@@ -608,17 +608,17 @@
         <creset loc="a,0,0,0,0">
           <varref loc="a,0,0,0,0" name="in" dtype_id="5"/>
         </creset>
-        <var loc="a,0,0,0,0" name="n" dtype_id="4" vartype="bit" origName="n"/>
-        <assign loc="a,0,0,0,0" dtype_id="4">
+        <var loc="a,0,0,0,0" name="n" dtype_id="18" vartype="IData" origName="n"/>
+        <assign loc="a,0,0,0,0" dtype_id="18">
           <const loc="a,0,0,0,0" name="32&apos;h0" dtype_id="13"/>
-          <varref loc="a,0,0,0,0" name="n" dtype_id="4"/>
+          <varref loc="a,0,0,0,0" name="n" dtype_id="18"/>
         </assign>
         <loop loc="d,11,8,11,9">
           <begin>
             <if loc="d,11,8,11,9">
               <arraysel loc="d,11,8,11,9" dtype_id="16">
                 <varref loc="d,11,8,11,9" name="in" dtype_id="5"/>
-                <varref loc="d,11,8,11,9" name="n" dtype_id="4"/>
+                <varref loc="d,11,8,11,9" name="n" dtype_id="18"/>
               </arraysel>
               <begin>
                 <creturn loc="d,11,8,11,9">
@@ -626,19 +626,19 @@
                 </creturn>
               </begin>
             </if>
-            <assign loc="a,0,0,0,0" dtype_id="4">
-              <add loc="a,0,0,0,0" dtype_id="4">
+            <assign loc="a,0,0,0,0" dtype_id="18">
+              <add loc="a,0,0,0,0" dtype_id="18">
                 <ccast loc="a,0,0,0,0" dtype_id="13">
                   <const loc="a,0,0,0,0" name="32&apos;h1" dtype_id="13"/>
                 </ccast>
-                <varref loc="a,0,0,0,0" name="n" dtype_id="4"/>
+                <varref loc="a,0,0,0,0" name="n" dtype_id="18"/>
               </add>
-              <varref loc="a,0,0,0,0" name="n" dtype_id="4"/>
+              <varref loc="a,0,0,0,0" name="n" dtype_id="18"/>
             </assign>
             <looptest loc="d,11,8,11,9">
               <gt loc="d,11,8,11,9" dtype_id="7">
                 <const loc="d,11,8,11,9" name="32&apos;h1" dtype_id="13"/>
-                <varref loc="d,11,8,11,9" name="n" dtype_id="4"/>
+                <varref loc="d,11,8,11,9" name="n" dtype_id="18"/>
               </gt>
             </looptest>
           </begin>
@@ -1483,62 +1483,6 @@
           </begin>
         </if>
       </cfunc>
-      <cfunc loc="a,0,0,0,0" name="_trigger_andNot__act">
-        <var loc="a,0,0,0,0" name="out" dtype_id="5" dir="output" vartype="unknown" origName="out"/>
-        <creset loc="a,0,0,0,0">
-          <varref loc="a,0,0,0,0" name="out" dtype_id="5"/>
-        </creset>
-        <var loc="a,0,0,0,0" name="inA" dtype_id="5" dir="const ref" vartype="unknown" origName="inA"/>
-        <creset loc="a,0,0,0,0">
-          <varref loc="a,0,0,0,0" name="inA" dtype_id="5"/>
-        </creset>
-        <var loc="a,0,0,0,0" name="inB" dtype_id="5" dir="const ref" vartype="unknown" origName="inB"/>
-        <creset loc="a,0,0,0,0">
-          <varref loc="a,0,0,0,0" name="inB" dtype_id="5"/>
-        </creset>
-        <var loc="a,0,0,0,0" name="n" dtype_id="4" vartype="bit" origName="n"/>
-        <assign loc="a,0,0,0,0" dtype_id="4">
-          <const loc="a,0,0,0,0" name="32&apos;h0" dtype_id="13"/>
-          <varref loc="a,0,0,0,0" name="n" dtype_id="4"/>
-        </assign>
-        <loop loc="d,11,8,11,9">
-          <begin>
-            <assign loc="d,11,8,11,9" dtype_id="16">
-              <and loc="d,11,8,11,9" dtype_id="16">
-                <arraysel loc="d,11,8,11,9" dtype_id="16">
-                  <varref loc="d,11,8,11,9" name="inA" dtype_id="5"/>
-                  <varref loc="d,11,8,11,9" name="n" dtype_id="4"/>
-                </arraysel>
-                <not loc="d,11,8,11,9" dtype_id="16">
-                  <arraysel loc="d,11,8,11,9" dtype_id="16">
-                    <varref loc="d,11,8,11,9" name="inB" dtype_id="5"/>
-                    <varref loc="d,11,8,11,9" name="n" dtype_id="4"/>
-                  </arraysel>
-                </not>
-              </and>
-              <arraysel loc="d,11,8,11,9" dtype_id="16">
-                <varref loc="d,11,8,11,9" name="out" dtype_id="5"/>
-                <varref loc="d,11,8,11,9" name="n" dtype_id="4"/>
-              </arraysel>
-            </assign>
-            <assign loc="a,0,0,0,0" dtype_id="4">
-              <add loc="a,0,0,0,0" dtype_id="4">
-                <ccast loc="a,0,0,0,0" dtype_id="13">
-                  <const loc="a,0,0,0,0" name="32&apos;h1" dtype_id="13"/>
-                </ccast>
-                <varref loc="a,0,0,0,0" name="n" dtype_id="4"/>
-              </add>
-              <varref loc="a,0,0,0,0" name="n" dtype_id="4"/>
-            </assign>
-            <looptest loc="d,11,8,11,9">
-              <gt loc="d,11,8,11,9" dtype_id="7">
-                <const loc="d,11,8,11,9" name="32&apos;h1" dtype_id="13"/>
-                <varref loc="d,11,8,11,9" name="n" dtype_id="4"/>
-              </gt>
-            </looptest>
-          </begin>
-        </loop>
-      </cfunc>
       <cfunc loc="a,0,0,0,0" name="_trigger_orInto__act">
         <var loc="a,0,0,0,0" name="out" dtype_id="5" dir="inout" vartype="unknown" origName="out"/>
         <creset loc="a,0,0,0,0">
@@ -1548,10 +1492,10 @@
         <creset loc="a,0,0,0,0">
           <varref loc="a,0,0,0,0" name="in" dtype_id="5"/>
         </creset>
-        <var loc="a,0,0,0,0" name="n" dtype_id="4" vartype="bit" origName="n"/>
-        <assign loc="a,0,0,0,0" dtype_id="4">
+        <var loc="a,0,0,0,0" name="n" dtype_id="18" vartype="IData" origName="n"/>
+        <assign loc="a,0,0,0,0" dtype_id="18">
           <const loc="a,0,0,0,0" name="32&apos;h0" dtype_id="13"/>
-          <varref loc="a,0,0,0,0" name="n" dtype_id="4"/>
+          <varref loc="a,0,0,0,0" name="n" dtype_id="18"/>
         </assign>
         <loop loc="d,11,8,11,9">
           <begin>
@@ -1559,50 +1503,39 @@
               <or loc="d,11,8,11,9" dtype_id="16">
                 <arraysel loc="d,11,8,11,9" dtype_id="16">
                   <varref loc="d,11,8,11,9" name="out" dtype_id="5"/>
-                  <varref loc="d,11,8,11,9" name="n" dtype_id="4"/>
+                  <varref loc="d,11,8,11,9" name="n" dtype_id="18"/>
                 </arraysel>
                 <arraysel loc="d,11,8,11,9" dtype_id="16">
                   <varref loc="d,11,8,11,9" name="in" dtype_id="5"/>
-                  <varref loc="d,11,8,11,9" name="n" dtype_id="4"/>
+                  <varref loc="d,11,8,11,9" name="n" dtype_id="18"/>
                 </arraysel>
               </or>
               <arraysel loc="d,11,8,11,9" dtype_id="16">
                 <varref loc="d,11,8,11,9" name="out" dtype_id="5"/>
-                <varref loc="d,11,8,11,9" name="n" dtype_id="4"/>
+                <varref loc="d,11,8,11,9" name="n" dtype_id="18"/>
               </arraysel>
             </assign>
-            <assign loc="a,0,0,0,0" dtype_id="4">
-              <add loc="a,0,0,0,0" dtype_id="4">
+            <assign loc="a,0,0,0,0" dtype_id="18">
+              <add loc="a,0,0,0,0" dtype_id="18">
                 <ccast loc="a,0,0,0,0" dtype_id="13">
                   <const loc="a,0,0,0,0" name="32&apos;h1" dtype_id="13"/>
                 </ccast>
-                <varref loc="a,0,0,0,0" name="n" dtype_id="4"/>
+                <varref loc="a,0,0,0,0" name="n" dtype_id="18"/>
               </add>
-              <varref loc="a,0,0,0,0" name="n" dtype_id="4"/>
+              <varref loc="a,0,0,0,0" name="n" dtype_id="18"/>
             </assign>
             <looptest loc="d,11,8,11,9">
               <gt loc="d,11,8,11,9" dtype_id="7">
                 <const loc="d,11,8,11,9" name="32&apos;h1" dtype_id="13"/>
-                <varref loc="d,11,8,11,9" name="n" dtype_id="4"/>
+                <varref loc="d,11,8,11,9" name="n" dtype_id="18"/>
               </gt>
             </looptest>
           </begin>
         </loop>
       </cfunc>
       <cfunc loc="a,0,0,0,0" name="_eval_phase__act">
-        <var loc="d,11,8,11,9" name="__VpreTriggered" dtype_id="5" vartype="" origName="__VpreTriggered"/>
-        <creset loc="d,11,8,11,9">
-          <varref loc="d,11,8,11,9" name="__VpreTriggered" dtype_id="5"/>
-        </creset>
-        <stmtexpr loc="a,0,0,0,0">
-          <ccall loc="a,0,0,0,0" dtype_id="6" func="_eval_triggers__act"/>
-        </stmtexpr>
         <stmtexpr loc="d,11,8,11,9">
-          <ccall loc="d,11,8,11,9" dtype_id="6" func="_trigger_andNot__act">
-            <varref loc="d,11,8,11,9" name="__VpreTriggered" dtype_id="5"/>
-            <varref loc="d,11,8,11,9" name="__VactTriggered" dtype_id="5"/>
-            <varref loc="d,11,8,11,9" name="__VnbaTriggered" dtype_id="5"/>
-          </ccall>
+          <ccall loc="d,11,8,11,9" dtype_id="6" func="_eval_triggers__act"/>
         </stmtexpr>
         <stmtexpr loc="d,11,8,11,9">
           <ccall loc="d,11,8,11,9" dtype_id="6" func="_trigger_orInto__act">
@@ -1619,10 +1552,10 @@
         <creset loc="a,0,0,0,0">
           <varref loc="a,0,0,0,0" name="out" dtype_id="5"/>
         </creset>
-        <var loc="a,0,0,0,0" name="n" dtype_id="4" vartype="bit" origName="n"/>
-        <assign loc="a,0,0,0,0" dtype_id="4">
+        <var loc="a,0,0,0,0" name="n" dtype_id="18" vartype="IData" origName="n"/>
+        <assign loc="a,0,0,0,0" dtype_id="18">
           <const loc="a,0,0,0,0" name="32&apos;h0" dtype_id="13"/>
-          <varref loc="a,0,0,0,0" name="n" dtype_id="4"/>
+          <varref loc="a,0,0,0,0" name="n" dtype_id="18"/>
         </assign>
         <loop loc="d,11,8,11,9">
           <begin>
@@ -1630,29 +1563,29 @@
               <const loc="d,11,8,11,9" name="64&apos;h0" dtype_id="17"/>
               <arraysel loc="d,11,8,11,9" dtype_id="16">
                 <varref loc="d,11,8,11,9" name="out" dtype_id="5"/>
-                <varref loc="d,11,8,11,9" name="n" dtype_id="4"/>
+                <varref loc="d,11,8,11,9" name="n" dtype_id="18"/>
               </arraysel>
             </assign>
-            <assign loc="a,0,0,0,0" dtype_id="4">
-              <add loc="a,0,0,0,0" dtype_id="4">
+            <assign loc="a,0,0,0,0" dtype_id="18">
+              <add loc="a,0,0,0,0" dtype_id="18">
                 <ccast loc="a,0,0,0,0" dtype_id="13">
                   <const loc="a,0,0,0,0" name="32&apos;h1" dtype_id="13"/>
                 </ccast>
-                <varref loc="a,0,0,0,0" name="n" dtype_id="4"/>
+                <varref loc="a,0,0,0,0" name="n" dtype_id="18"/>
               </add>
-              <varref loc="a,0,0,0,0" name="n" dtype_id="4"/>
+              <varref loc="a,0,0,0,0" name="n" dtype_id="18"/>
             </assign>
             <looptest loc="d,11,8,11,9">
               <gt loc="d,11,8,11,9" dtype_id="7">
                 <const loc="d,11,8,11,9" name="32&apos;h1" dtype_id="13"/>
-                <varref loc="d,11,8,11,9" name="n" dtype_id="4"/>
+                <varref loc="d,11,8,11,9" name="n" dtype_id="18"/>
               </gt>
             </looptest>
           </begin>
         </loop>
       </cfunc>
       <cfunc loc="a,0,0,0,0" name="_eval_phase__nba">
-        <var loc="d,11,8,11,9" name="__VnbaExecute" dtype_id="18" vartype="bit" origName="__VnbaExecute"/>
+        <var loc="d,11,8,11,9" name="__VnbaExecute" dtype_id="19" vartype="bit" origName="__VnbaExecute"/>
         <assign loc="a,0,0,0,0" dtype_id="7">
           <ccall loc="d,11,8,11,9" dtype_id="7" func="_trigger_anySet__act">
             <varref loc="d,11,8,11,9" name="__VnbaTriggered" dtype_id="5"/>
@@ -1765,7 +1698,7 @@
         <if loc="d,15,10,15,13">
           <and loc="d,15,10,15,13" dtype_id="1">
             <varref loc="d,15,10,15,13" name="clk" dtype_id="1"/>
-            <const loc="d,15,10,15,13" name="8&apos;hfe" dtype_id="19"/>
+            <const loc="d,15,10,15,13" name="8&apos;hfe" dtype_id="20"/>
           </and>
           <begin>
             <cstmt loc="d,15,10,15,13">
@@ -1864,7 +1797,7 @@
       <basicdtype loc="d,33,24,33,27" id="1" name="logic"/>
       <basicdtype loc="d,53,16,53,17" id="13" name="logic" left="31" right="0"/>
       <basicdtype loc="d,17,17,17,18" id="2" name="logic" left="3" right="0"/>
-      <enumdtype loc="d,17,12,17,16" id="20" name="t.my_t" sub_dtype_id="2">
+      <enumdtype loc="d,17,12,17,16" id="21" name="t.my_t" sub_dtype_id="2">
         <enumitem loc="d,18,24,18,27" name="E01" dtype_id="10">
           <const loc="d,18,30,18,31" name="4&apos;h1" dtype_id="10"/>
         </enumitem>
@@ -1876,7 +1809,7 @@
         </enumitem>
       </enumdtype>
       <basicdtype loc="d,23,4,23,11" id="3" name="integer" left="31" right="0" signed="true"/>
-      <refdtype loc="d,24,4,24,8" id="21" name="my_t" sub_dtype_id="2"/>
+      <refdtype loc="d,24,4,24,8" id="22" name="my_t" sub_dtype_id="2"/>
       <basicdtype loc="d,28,4,28,10" id="9" name="string"/>
       <unpackarraydtype loc="d,17,12,17,16" id="11" sub_dtype_id="2">
         <range loc="d,17,12,17,16">
@@ -1905,13 +1838,14 @@
           <const loc="d,11,8,11,9" name="32&apos;h0" dtype_id="13"/>
         </range>
       </unpackarraydtype>
-      <basicdtype loc="a,0,0,0,0" id="4" name="bit" left="31" right="0"/>
+      <basicdtype loc="a,0,0,0,0" id="18" name="IData" left="31" right="0"/>
       <basicdtype loc="d,63,14,63,21" id="17" name="logic" left="63" right="0"/>
-      <basicdtype loc="d,11,8,11,9" id="18" name="bit"/>
+      <basicdtype loc="d,11,8,11,9" id="19" name="bit"/>
+      <basicdtype loc="d,11,8,11,9" id="4" name="bit" left="31" right="0"/>
       <basicdtype loc="d,63,22,63,25" id="7" name="logic" left="31" right="0"/>
       <basicdtype loc="d,32,11,32,14" id="10" name="logic" left="31" right="0"/>
       <basicdtype loc="d,38,15,38,16" id="12" name="logic" left="31" right="0"/>
-      <basicdtype loc="d,15,10,15,13" id="19" name="logic" left="7" right="0"/>
+      <basicdtype loc="d,15,10,15,13" id="20" name="logic" left="7" right="0"/>
     </typetable>
     <constpool>
       <module loc="a,0,0,0,0" name="@CONST-POOL@" origName="@CONST-POOL@">
