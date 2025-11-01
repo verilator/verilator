@@ -670,6 +670,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                || varp->isFuncLocal()  // Randomization too slow
                || (basicp && basicp->isZeroInit())
                || (v3Global.opt.underlineZero() && !varp->name().empty() && varp->name()[0] == '_')
+               || (varp->varType().isTemp() && !varp->isXTemp())
                || (varp->isXTemp()
                        ? (v3Global.opt.xAssign() != "unique")
                        : (v3Global.opt.xInitial() == "fast" || v3Global.opt.xInitial() == "0")));
