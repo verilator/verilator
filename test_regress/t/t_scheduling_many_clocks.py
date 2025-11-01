@@ -13,7 +13,12 @@ test.sim_time = 100000
 
 test.scenarios('simulator')
 
-test.compile()
+test.compile(verilator_flags2=["--stats"])
+
+if test.vlt or test.vltmt:
+    test.file_grep(test.stats, r"Scheduling, 'act' extra triggers\s+(\d+)", 1)
+    test.file_grep(test.stats, r"Scheduling, 'act' pre triggers\s+(\d+)", 1)
+    test.file_grep(test.stats, r"Scheduling, 'act' sense triggers\s+(\d+)", 228)
 
 test.execute()
 

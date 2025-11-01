@@ -476,7 +476,8 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
             if (pair.second) senItemps.push_back(itemp);
         }
     }
-    V3Stats::addStat("Scheduling, '" + name + "' pre triggers", senItemps.size());
+    const uint32_t nPreSenItems = senItemps.size();
+    V3Stats::addStat("Scheduling, '" + name + "' pre triggers", nPreSenItems);
     // Number of pre triggers, rounded up to a full word.
     const uint32_t nPreTriggers = vlstd::roundUpToMultipleOf<WORD_SIZE>(senItemps.size());
     // Pad 'senItemps' to nSenseTriggers with nullptr
@@ -494,7 +495,8 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
             if (pair.second) senItemps.push_back(itemp);
         }
     }
-    V3Stats::addStat("Scheduling, '" + name + "' sense triggers", senItemps.size() - nPreTriggers);
+    const uint32_t nSenItems = senItemps.size() - nPreTriggers;
+    V3Stats::addStat("Scheduling, '" + name + "' sense triggers",  nSenItems + nPreSenItems);
     // Number of sense triggers, rounded up to a full word
     const uint32_t nSenseTriggers = vlstd::roundUpToMultipleOf<WORD_SIZE>(senItemps.size());
     // Pad 'senItemps' to nSenseTriggers with nullptr

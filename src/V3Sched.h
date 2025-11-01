@@ -180,7 +180,7 @@ struct LogicReplicas final {
 // The combination of 'pre' + 'vec' is the "extended trigger vector" referred
 // to as 'ext' in various places.
 //
-// In realistic designs therr are often no "Pre" triggers, and only a few
+// In realistic designs there are often no "Pre" triggers, and only a few
 // "Extra" triggers, with "Sense" triggers taking up the bulk of the bits.
 //
 class TriggerKit final {
