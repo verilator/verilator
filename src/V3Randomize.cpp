@@ -236,14 +236,27 @@ class RandomizeMarkVisitor final : public VNVisitor {
     // Process a single constraint during nested constraint cloning
     void processNestedConstraint(AstConstraint* const constrp, AstVarRef* rootVarRefp,
                                  const std::vector<AstVar*>& newPath) {
-        AstConstraint* const cloneConstrp = constrp->cloneTree(false);
-
         std::string pathPrefix = rootVarRefp->name();
         for (AstVar* pathMemberVarp : newPath) {
             pathPrefix += GLOBAL_CONSTRAINT_SEPARATOR + pathMemberVarp->name();
         }
 
-        cloneConstrp->name(pathPrefix + GLOBAL_CONSTRAINT_SEPARATOR + cloneConstrp->name());
+        const std::string newName = pathPrefix + GLOBAL_CONSTRAINT_SEPARATOR + constrp->name();
+
+        for (const AstConstraint* existingConstrp : m_clonedConstraints) {
+            if (existingConstrp->name() == newName) {
+                // Multiple paths lead to same constraint - unsupported pattern
+                std::string fullPath = rootVarRefp->name();
+                for (AstVar* pathVar : newPath) { fullPath += "." + pathVar->name(); }
+                constrp->v3warn(E_UNSUPPORTED, "Unsupported: One variable '"
+                                                   << fullPath
+                                                   << "' cannot have multiple global constraints");
+                return;
+            }
+        }
+
+        AstConstraint* const cloneConstrp = constrp->cloneTree(false);
+        cloneConstrp->name(newName);
         cloneConstrp->foreach([&](AstVarRef* varRefp) {
             AstNodeExpr* const chainp = buildMemberSelChain(rootVarRefp, newPath);
             AstMemberSel* const finalSelp
