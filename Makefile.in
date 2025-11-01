@@ -563,7 +563,17 @@ RUFF_FLAGS = check --ignore=E402,E501,E701
 
 # "make -k" so can see all tool result errors
 lint-py:
-	$(MAKE) -k lint-py-pylint lint-py-pylint-tests lint-py-ruff
+	$(MAKE) -k lint-py-mypy lint-py-mypy-none lint-py-pylint lint-py-pylint-tests lint-py-ruff
+
+lint-py-mypy:
+	for filename in `fgrep -l '# mypy' $(PY_PROGRAMS)`; do \
+		echo "$(MYPY) $(MYPY_FLAGS) $$filename" ; \
+		$(MYPY) $(MYPY_FLAGS) $$filename ; \
+	done
+	@echo "Not mypy checked: " `fgrep -L '# mypy' $(PY_PROGRAMS)`
+
+lint-py-mypy-none:
+	@echo "mypy not checking: " `fgrep -L '# mypy' $(PY_PROGRAMS)`
 
 lint-py-mypy:
 	for filename in `fgrep -l '# mypy' $(PY_PROGRAMS)`; do \
