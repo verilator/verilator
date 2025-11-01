@@ -11,10 +11,10 @@ import sys
 
 ######################################################################
 
-Bison_Version = None
+Bison_Version = 0.0
 
 
-def process():
+def process() -> None:
     unlink_outputs()
 
     supports_report = Bison_Version >= 2.3
@@ -56,43 +56,43 @@ def process():
     unlink_tmp()
 
 
-def tmp_prefix():
+def tmp_prefix() -> str:
     return output_prefix() + "_pretmp"
 
 
-def output_prefix():
+def output_prefix() -> str:
     if Args.output:
         o = re.sub(r'\.[^.]*$', '', Args.output)
         return o
-    return Args.file_prefix + ".tab"
+    return str(Args.file_prefix) + ".tab"
 
 
-def unlink_ok(filename):
+def unlink_ok(filename: str) -> None:
     try:
         os.unlink(filename)
     except OSError:
         pass
 
 
-def unlink_tmp():
+def unlink_tmp() -> None:
     unlink_ok(tmp_prefix() + ".c")
     unlink_ok(tmp_prefix() + ".h")
     unlink_ok(tmp_prefix() + ".output")
 
 
-def unlink_outputs():
+def unlink_outputs() -> None:
     unlink_tmp()
     unlink_ok(output_prefix() + ".c")
     unlink_ok(output_prefix() + ".h")
     # We don't remove .output file, as it's useful for debugging errors
 
 
-def bison_version_check():
+def bison_version_check() -> float:
     with subprocess.Popen([Args.yacc, "--version"], stdout=subprocess.PIPE) as sp:
         out = str(sp.stdout.read())
-    match = re.search(r'([0-9]+\.[0-9]+)', out)
-    if match:
-        v = float(match.group(1))
+    m = re.search(r'([0-9]+\.[0-9]+)', out)
+    if m:
+        v = float(m.group(1))
         if v < 1.875:
             sys.exit("bisonpre: %Error: '" + Args.yacc + "' is version " + v +
                      "; version 1.875 or newer is required\n")
@@ -101,14 +101,14 @@ def bison_version_check():
     sys.exit("bisonpre: %Error: '" + Args.yacc + "' is not installed, or not working\n")
 
 
-def clean_output(filename, outname, is_output, is_c):
+def clean_output(filename: str, outname: str, is_output: bool, is_c: bool) -> None:
     print("  edit " + filename + " " + outname)
 
     with open(filename, "r", encoding="utf-8") as fh:
         lines = fh.readlines()
 
     if is_output:
-        state_line = {}
+        state_line: dict[str, int] = {}
         lineno = 0
         for line in lines:
             lineno += 1
@@ -122,14 +122,14 @@ def clean_output(filename, outname, is_output, is_c):
             if match:
                 line = line.rstrip()
                 if match.group(1) in state_line:
-                    line += " // line " + state_line[match.group(1)]
+                    line += " // line " + str(state_line[match.group(1)])
                 line += "\n"
             out.append(line)
         lines = out
         out = []
 
     if is_c:
-        token_values = {}
+        token_values: dict[str, str] = {}
         for line in lines:
             if re.search(r'enum\s+yytokentype', line) and not re.search(r';', line):
                 match = re.search(r'\b(\S+) = (\d+)', line)
@@ -165,7 +165,7 @@ def clean_output(filename, outname, is_output, is_c):
             fh.write(line)
 
 
-def warning_check(filename):
+def warning_check(filename: str) -> None:
     with open(filename, "r", encoding="utf-8") as fh:
         linenum = 0
         for line in fh:
@@ -177,11 +177,8 @@ def warning_check(filename):
 ######################################################################
 
 
-def clean_input(filename, outname):
+def clean_input(filename: str, outname: str) -> None:
     print("  edit " + filename + " " + outname)
-
-    global Filename  # pylint: disable=global-variable-undefined
-    Filename = filename
 
     with open(filename, "r", encoding="utf-8") as fh:
         lines = fh.readlines()
@@ -191,7 +188,7 @@ def clean_input(filename, outname):
     global Rules  # pylint: disable=global-variable-undefined
     Rules = {}
 
-    types = {}
+    types: dict[str, dict[str, int]] = {}
     tokens = {}
     last_rule = None
     section = 1
@@ -344,7 +341,7 @@ def clean_input(filename, outname):
         for line in linesin:
             lineno += 1
             if _enaline(line) and re.search(r'BISONPRE_COPY', line):
-                line = _bisonpre_copy(line, lineno, 0)
+                line = _bisonpre_copy(line, filename, lineno, 0)
             lines.append(line)
 
     # Replace ~[x]~  - must be after BISONPRE_COPY expansion
@@ -391,7 +388,7 @@ def clean_input(filename, outname):
             fh.write(line)
 
 
-def _bisonpre_copy(text, lineno, depth):
+def _bisonpre_copy(text: str, filename: str, lineno: int, depth: int) -> str:
     while re.search(r'BISONPRE_COPY', text):
         match = re.match(
             # 1                2         3             4            5
@@ -399,14 +396,14 @@ def _bisonpre_copy(text, lineno, depth):
             text,
             flags=re.DOTALL)
         if not match:
-            sys.exit("%Error: " + Filename + ":" + str(lineno) + ": Bad form of BISONPRE_NOT: " +
+            sys.exit("%Error: " + filename + ":" + str(lineno) + ": Bad form of BISONPRE_NOT: " +
                      text)
         text = match.group(1) + '{HERE}' + match.group(5)
         once = match.group(2)
         rule = match.group(3)
         code = match.group(4)
         if rule not in Rules:
-            sys.exit("%Error: " + Filename + ":" + str(lineno) +
+            sys.exit("%Error: " + filename + ":" + str(lineno) +
                      ": Can't find definition for rule: " + rule)
         if depth > 0 and once:
             # _ONCE means don't inherit
@@ -422,7 +419,7 @@ def _bisonpre_copy(text, lineno, depth):
                     continue
                 match = re.match(r'^\s*s/(.*?)/(.*?)/g\s*$', op)
                 if not match:
-                    sys.exit("%Error: " + Filename + ":" + str(lineno) +
+                    sys.exit("%Error: " + filename + ":" + str(lineno) +
                              ": Didn't understand replacement: " + op)
                 left = match.group(1)
                 right = match.group(2)
@@ -435,7 +432,7 @@ def _bisonpre_copy(text, lineno, depth):
     return text
 
 
-def _enaline(line):
+def _enaline(line: str) -> bool:
     return not re.search(r'//UN', line)
 
 

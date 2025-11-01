@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# mypy: disallow-untyped-defs
 # pylint: disable=C0112,C0114,C0115,C0116,C0209,C0301,R0903
 # -*- Python -*- See copyright, etc below
 ######################################################################
@@ -11,9 +12,8 @@ import re
 
 class VlSphinxExtract:
     debug = 0
-    SkipBasenames = {}
 
-    def process(self, filename):
+    def process(self, filename: str) -> None:
         with open(filename, "r", encoding="utf8") as fhr:
             fhw = None
             for line in fhr:

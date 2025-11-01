@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# mypy: disallow-untyped-defs
 # pylint: disable=C0103,C0114,C0115,C0116,C0209,R0801,R0915
 ######################################################################
 
@@ -12,7 +13,7 @@ import sys
 ######################################################################
 
 
-def test():
+def test() -> None:
     if not os.path.exists("nodist/install_test"):
         sys.exit("%Error: Run from the top of the verilator kit")
 
@@ -80,30 +81,30 @@ def test():
         print("*-* All Finished *-*")
 
 
-def write_verilog(odir):
+def write_verilog(odir: str) -> None:
     shutil.copy2("examples/make_hello_c/top.v", odir + "/top.v")
     shutil.copy2("examples/make_hello_c/sim_main.cpp", odir + "/sim_main.cpp")
 
 
-def cleanenv():
+def cleanenv() -> None:
     for var in os.environ:
         if var in ('VERILATOR_ROOT', 'VERILATOR_INCLUDE', 'VERILATOR_NO_OPT_BUILD'):
             print("unset %s # Was '%s'" % (var, os.environ[var]))
             del os.environ[var]
 
 
-def get_cpu_count():
+def get_cpu_count() -> int:
     try:
         return len(os.sched_getaffinity(0))
     except AttributeError:
         return multiprocessing.cpu_count()
 
 
-def calc_jobs():
+def calc_jobs() -> int:
     return get_cpu_count() + 1
 
 
-def run(command):
+def run(command: str) -> None:
     # run a system command, check errors
     print("\t%s" % command)
     os.system(command)

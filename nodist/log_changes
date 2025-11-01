@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# mypy: disallow-untyped-defs
 # pylint: disable=C0114,C0116,C0209,R0911,R0912,R0915
 ######################################################################
 
@@ -10,7 +11,7 @@ import re
 #######################################################################
 
 
-def message_section(msg):
+def message_section(msg: str) -> int:
     """Return sorting-section number for given commit message"""
     if re.match(r'^Support', msg):
         return 10
@@ -27,7 +28,7 @@ def message_section(msg):
     return 0
 
 
-def process():
+def process() -> None:
     cmd = "git log"
 
     msgs = {}

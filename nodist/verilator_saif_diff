@@ -19,12 +19,12 @@ SIGNAL_TYPE = "SIGNAL"
 EOF_ERROR = "Unexpected EOF"
 
 
-def saif_assert(expression, message):
+def saif_assert(expression : bool, message : str) -> None:
     if not expression:
         raise Exception(message)
 
 
-def saif_error(message):
+def saif_error(message : str) -> None:
     raise Exception(message)
 
 
@@ -34,7 +34,7 @@ class SAIFSignalBit:
     low_time: int
     transitions: int
 
-    def __init__(self, name):
+    def __init__(self, name : str):
         self.name = name
         self.high_time = 0
         self.low_time = 0
@@ -43,7 +43,7 @@ class SAIFSignalBit:
 
 class SAIFInstance:
 
-    def __init__(self, scope_name):
+    def __init__(self, scope_name : str):
         self.scope_name = scope_name
         self.parent_instance = None
         self.nets = {}
@@ -52,7 +52,7 @@ class SAIFInstance:
 
 class SAIFToken:
 
-    def __init__(self, token):
+    def __init__(self, token : str):
         self.token = token
         self.type = ''
         self.value = ''
@@ -69,11 +69,11 @@ class SAIFParser:
         self.direction = ''
         self.saif_version = ''
         self.top_instances = {}
-        self.duration = 0
+        self.duration = ''
         self.divider = ''
         self.timescale = ''
 
-    def parse(self, saif_filename):
+    def parse(self, saif_filename : str) -> None:
         file_contents = ''
         with open(saif_filename, 'r', encoding="utf8") as saif_file:
             content = saif_file.readlines()
@@ -180,7 +180,7 @@ class SAIFParser:
         saif_assert(len(self.token_stack) == 1, "Incorrect nesting of scopes")
 
 
-def compare_saif_instances(first: SAIFInstance, second: SAIFInstance):
+def compare_saif_instances(first: SAIFInstance, second: SAIFInstance) -> None:
     if len(first.nets) != len(second.nets):
         saif_error(f"Number of nets doesn't match in {first.scope_name}: "
                    f"{len(first.nets)} != {len(second.nets)}")
@@ -202,7 +202,7 @@ def compare_saif_instances(first: SAIFInstance, second: SAIFInstance):
         compare_saif_instances(instance, second.child_instances[instance_name])
 
 
-def compare_saif_contents(first_file: str, second_file: str):
+def compare_saif_contents(first_file: str, second_file: str) -> int:
     """Test if second SAIF file has the same values as the first"""
     first_saif = SAIFParser()
     first_saif.parse(first_file)

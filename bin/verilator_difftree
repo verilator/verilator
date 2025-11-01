@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# mypy: disallow-untyped-defs
 # pylint: disable=C0103,C0114,C0116,C0209,W0603
 ######################################################################
 
@@ -12,7 +13,7 @@ import sys
 exit_code = 0
 
 
-def diff(a, b):
+def diff(a: str, b: str) -> None:
     if not os.path.exists(a):
         sys.stderr.write("%Error: No old diff filename found: " + a + "\n")
         sys.exit(2)
@@ -29,9 +30,9 @@ def diff(a, b):
         sys.exit(2)
 
 
-def diff_dir(a, b):
+def diff_dir(a: str, b: str) -> None:
     # Diff all files under two directories
-    files = collections.defaultdict(lambda: {})
+    files: dict[str, dict[str, str]] = collections.defaultdict(lambda: {})
 
     for fn in glob.glob(a + "/*.tree"):
         base = re.sub(r'.*/', '', fn)
@@ -54,7 +55,7 @@ def diff_dir(a, b):
         sys.stderr.write("%Warning: No .tree files found that have similar base names\n")
 
 
-def diff_file(a, b):
+def diff_file(a: str, b: str) -> None:
     global exit_code
 
     # Compare the two tree files
@@ -82,20 +83,7 @@ def diff_file(a, b):
         exit_code = 2
 
 
-def version_from(filename):
-    # Return dump format
-    with open(filename, "r", encoding="utf8") as fh:
-        lineno = 0
-        for line in fh:
-            if lineno > 10:
-                break
-            match = re.search(r'format (0x[0-9.]+)', line)
-            if match:
-                return hex(match.group(1))
-    return 1.0
-
-
-def filterf(fn1, fn2):
+def filterf(fn1: str, fn2: str) -> None:
     # Remove hex numbers before diffing
     with open(fn1, "r", encoding="utf8") as fh1:
         with open(fn2, "w", encoding="utf8") as fh2:

@@ -551,6 +551,9 @@ format-make:
 
 format-yaml: yamlfix
 
+MYPY = mypy
+MYPY_FLAGS = --strict --no-error-summary
+
 PYLINT = pylint
 PYLINT_FLAGS = --recursive=n --score=n --disable=R0801
 PYLINT_TEST_FLAGS = $(PYLINT_FLAGS) --disable=C0103,C0114,C0116,C0209,C0411,C0413,C0301,R0801,R0912,R0915,R0916,R1702,W0511,W0621
@@ -561,6 +564,16 @@ RUFF_FLAGS = check --ignore=E402,E501,E701
 # "make -k" so can see all tool result errors
 lint-py:
 	$(MAKE) -k lint-py-pylint lint-py-pylint-tests lint-py-ruff
+
+lint-py-mypy:
+	for filename in `fgrep -l '# mypy' $(PY_PROGRAMS)`; do \
+		echo "$(MYPY) $(MYPY_FLAGS) $$filename" ; \
+		$(MYPY) $(MYPY_FLAGS) $$filename ; \
+	done
+	@echo "Not mypy checked: " `fgrep -L '# mypy' $(PY_PROGRAMS)`
+
+lint-py-mypy-none:
+	@echo "mypy not checking: " `fgrep -L '# mypy' $(PY_PROGRAMS)`
 
 lint-py-pylint:
 	$(PYLINT) $(PYLINT_FLAGS) $(PY_PROGRAMS)

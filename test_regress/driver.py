@@ -25,6 +25,7 @@ import time
 
 from functools import lru_cache  # Eventually use python 3.9's cache
 from pprint import pformat, pprint
+from typing import Optional
 
 import distro
 
@@ -50,7 +51,7 @@ All_Scenarios = {
 
 # Globals
 test = None
-Arg_Tests = []
+Arg_Tests: list[str] = []
 Quitting = False
 Vltmt_Threads = 3
 forker = None
@@ -155,7 +156,7 @@ class Capabilities:
             if match:
                 Capabilities._cached_cmake_version = match.group(1) + "." + match.group(2)
             else:
-                Capabilities._cached_cmake_version = 0
+                Capabilities._cached_cmake_version = "none"
         return Capabilities._cached_cmake_version
 
     @staticproperty
@@ -227,7 +228,7 @@ class Capabilities:
             if match:
                 Capabilities._cached_make_version = match.group(1)
             else:
-                Capabilities._cached_make_version = -1
+                Capabilities._cached_make_version = "none"
         return Capabilities._cached_make_version
 
     # Fetch
@@ -243,7 +244,7 @@ class Capabilities:
     # Internals
 
     @staticmethod
-    def _verilator_get_supported(feature) -> str:
+    def _verilator_get_supported(feature) -> bool:
         # Returns if given feature is supported
         cmd = "perl " + os.environ['VERILATOR_ROOT'] + "/bin/verilator -get-supported " + feature
         out = VtOs.run_capture(cmd, check=False).strip()
@@ -561,7 +562,7 @@ class Runner:
 
     @staticmethod
     def _py_filename_adjust(py_filename: str,
-                            tdir_def: str) -> list:  # Return (py_filename, t_dir)
+                            tdir_def: str) -> tuple[str, str]:  # Return (py_filename, t_dir)
         for tdir in Args.test_dirs:  # pylint: disable=redefined-outer-name
             # t_dir used both absolutely and under obj_dir
             try_py_filename = tdir + "/" + os.path.basename(py_filename)
@@ -596,7 +597,7 @@ class Runner:
         out += "  Time %d:%02d" % (int(delta / 60), delta % 60)
         return out
 
-    def _manual_args(self) -> str:
+    def _manual_args(self) -> list[str]:
         # Return command line with scenarios stripped
         out = []
         for oarg in Args.orig_argv_sw:
@@ -1752,7 +1753,7 @@ class VlTest:
             fails=False,  # True: normal 1 exit code, 'any': any exit code
             logfile=None,  # Filename to write putput to
             tee=True,
-            verilator_run=False) -> str:  # Move gcov data to parallel area
+            verilator_run=False) -> bool:  # Move gcov data to parallel area
 
         try:
             command = ' '.join(cmd)
@@ -2343,7 +2344,7 @@ class VlTest:
         return again
 
     def _files_identical_reader(self, f1, f2, fn1: str, fn2: str, is_logfile: bool,
-                                strip_hex: bool, moretry: bool) -> None:
+                                strip_hex: bool, moretry: bool) -> bool:
         # If moretry, then return true to try again
         l1s = f1.readlines()
         l2s = f2.readlines() if f2 else []
@@ -2496,7 +2497,7 @@ class VlTest:
             self.copy_if_golden(fn1, fn2)
             self.error("SAIF files don't match!")
 
-    def _vcd_read(self, filename: str) -> str:
+    def _vcd_read(self, filename: str) -> dict:
         data = {}
         with open(filename, 'r', encoding='latin-1') as fh:
             hier_stack = ["TOP"]
@@ -2608,7 +2609,7 @@ class VlTest:
         if re.search(regexp, contents, re.MULTILINE):
             self.error("File_grep_not: " + filename + ": Regexp found: '" + regexp + "'")
 
-    def file_grep(self, filename: str, regexp, expvalue=None) -> list:
+    def file_grep(self, filename: str, regexp, expvalue=None) -> Optional[list]:
         contents = self.file_contents(filename)
         if contents == "_Already_Errored_":
             return None
@@ -2762,7 +2763,7 @@ def calc_threads(default_threads) -> int:
     return ok_threads if (ok_threads < default_threads) else default_threads
 
 
-def _calc_hashset() -> list:
+def _calc_hashset() -> None:
     match = re.match(r'^(\d+)/(\d+)$', Args.hashset)
     if not match:
         sys.exit("%Error: Need number/number format for --hashset: " + Args.hashset)
