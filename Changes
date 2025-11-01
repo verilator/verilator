@@ -13,7 +13,7 @@ Verilator 5.041 devel
 
 **Other:**
 
-* Add HIERPARAM error on parameter values from hierarchical paths (#1626) (#6456) (#6484). [Todd Strader] [Luca Rufer]
+* Add HIERPARAM error on hierarchical parameter values (#1626) (#6456) (#6484) (#6587) (#6609) (#6621) (#6623). [Todd Strader] [Luca Rufer] [Paul Swirhun]
 * Add error on zero/negative unpacked dimensions (#1642). [Stefan Wallentowitz]
 * Add verilator_gantt profiling of DPI imports (#3084). [Geza Lore]
 * Add ASSIGNEQEXPR when use `=` inside expressions (#5567). [Ethan Sifferman]
