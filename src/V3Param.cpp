@@ -1366,20 +1366,22 @@ class ParamVisitor final : public VNVisitor {
         m_iterateModule = false;
     }
 
+    // Extract the base reference name from a dotted VarXRef (e.g., "iface.FOO" -> "iface")
+    string getRefBaseName(const AstVarXRef* refp) {
+        const string dotted = refp->dotted();
+        if (dotted.empty()) return "";
+        return dotted.substr(0, dotted.find('.'));
+    }
+
     void checkParamNotHier(AstNode* valuep) {
         if (!valuep) return;
         valuep->foreachAndNext([&](const AstNodeExpr* exprp) {
             if (const AstVarXRef* const refp = VN_CAST(exprp, VarXRef)) {
                 // Allow hierarchical ref to interface params through interface/modport ports
-                // (always), and also allow to locally declared interfaces if the user has
-                // waived HIERPARAM.
                 bool isIfacePortRef = false;
                 if (refp->varp() && refp->varp()->isIfaceParam()) {
-                    const string dotted = refp->dotted();
-                    if (!dotted.empty()) {
-                        const string refname = dotted.substr(0, dotted.find('.'));
-                        isIfacePortRef = m_ifacePortNames.count(refname);
-                    }
+                    const string refname = getRefBaseName(refp);
+                    isIfacePortRef = !refname.empty() && m_ifacePortNames.count(refname);
                 }
 
                 if (!isIfacePortRef) {
@@ -1395,6 +1397,23 @@ class ParamVisitor final : public VNVisitor {
         });
     }
 
+    // Check if cell parameters reference interface ports
+    bool cellParamsReferenceIfacePorts(AstCell* cellp) {
+        if (!cellp->paramsp()) return false;
+
+        for (AstNode* nodep = cellp->paramsp(); nodep; nodep = nodep->nextp()) {
+            if (AstPin* const pinp = VN_CAST(nodep, Pin)) {
+                if (AstNode* const exprp = pinp->exprp()) {
+                    if (const AstVarXRef* const refp = VN_CAST(exprp, VarXRef)) {
+                        const string refname = getRefBaseName(refp);
+                        if (!refname.empty() && m_ifacePortNames.count(refname)) return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     // A generic visitor for cells and class refs
     void visitCellOrClassRef(AstNode* nodep, bool isIface) {
         // Must do ifaces first, so push to list and do in proper order
@@ -1402,10 +1421,13 @@ class ParamVisitor final : public VNVisitor {
         nodep->user2p(&m_strings.back());
 
         // For interface cells with parameters, specialize first before processing children
+        // Only do early specialization if parameters don't reference interface ports
         if (isIface && VN_CAST(nodep, Cell) && VN_CAST(nodep, Cell)->paramsp()) {
             AstCell* const cellp = VN_CAST(nodep, Cell);
-            AstNodeModule* const srcModp = cellp->modp();
-            m_processor.nodeDeparam(cellp, srcModp, m_modp, m_modp->someInstanceName());
+            if (!cellParamsReferenceIfacePorts(cellp)) {
+                AstNodeModule* const srcModp = cellp->modp();
+                m_processor.nodeDeparam(cellp, srcModp, m_modp, m_modp->someInstanceName());
+            }
         }
 
         // Visit parameters in the instantiation.

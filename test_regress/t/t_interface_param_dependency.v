@@ -33,8 +33,7 @@ module submod_modport (
   assign result = mp.FOO + mp.BAR;
 endmodule
 
-// Test module that asserts interface parameter values - catches dependency bugs
-module submod_assert #(
+module submod_assert2 #(
     parameter int EXPECTED_FOO = 0,
     parameter int EXPECTED_BAR = 0
 ) (
@@ -47,6 +46,128 @@ module submod_assert #(
     end
     if (iface.BAR != EXPECTED_BAR) begin
       $error("BAR dependency failed in module: expected %0d, got %0d", EXPECTED_BAR, iface.BAR);
+    end
+  end
+endmodule
+
+// Test module that asserts interface parameter values - catches dependency bugs
+module submod_assert #(
+    parameter int EXPECTED_FOO = 0,
+    parameter int EXPECTED_BAR = 0
+) (
+    TEST_IF iface
+);
+  // Make a new interface with inherited parameters and pass it to a submodule
+  // with inherited expectations.
+  TEST_IF #(
+      .FOO(iface.FOO),
+      .BAR(iface.BAR)
+  ) iface2 ();
+
+  // Test mixed parameters: constant + interface port reference
+  TEST_IF #(
+      .FOO(7),         // Constant parameter
+      .BAR(iface.FOO)  // References interface port
+  ) iface_mixed ();
+
+  // Test specifying only FOO parameter (BAR should use default calculation)
+  TEST_IF #(
+      .FOO(iface.FOO)  // Only FOO specified, BAR = FOO * 10
+  ) iface_foo_only ();
+
+  // Test specifying only BAR parameter (FOO should use default)
+  TEST_IF #(
+      .BAR(iface.BAR)  // Only BAR specified, FOO = default (1)
+  ) iface_bar_only ();
+
+  // Test no parameters specified (both should use defaults)
+  TEST_IF iface_defaults ();
+
+  submod_assert2 #(
+      .EXPECTED_FOO(EXPECTED_FOO),
+      .EXPECTED_BAR(EXPECTED_BAR)
+  ) u_submod_assert2 (
+      .iface(iface2)
+  );
+
+  // Test the mixed parameter interface
+  submod_assert2 #(
+      .EXPECTED_FOO(7),
+      .EXPECTED_BAR(EXPECTED_FOO)  // BAR should get iface.FOO value
+  ) u_mixed_assert (
+      .iface(iface_mixed)
+  );
+
+  // Test FOO-only interface
+  submod_assert2 #(
+      .EXPECTED_FOO(EXPECTED_FOO),
+      .EXPECTED_BAR(EXPECTED_FOO * 10)  // BAR = FOO * 10
+  ) u_foo_only_assert (
+      .iface(iface_foo_only)
+  );
+
+  // Test BAR-only interface
+  submod_assert2 #(
+      .EXPECTED_FOO(1),            // FOO = default
+      .EXPECTED_BAR(EXPECTED_BAR)  // BAR = specified value
+  ) u_bar_only_assert (
+      .iface(iface_bar_only)
+  );
+
+  // Test defaults interface
+  submod_assert2 #(
+      .EXPECTED_FOO(1),  // FOO = default
+      .EXPECTED_BAR(10)  // BAR = FOO * 10 = 1 * 10
+  ) u_defaults_assert (
+      .iface(iface_defaults)
+  );
+
+  initial begin
+    // Verify the dependent parameter BAR is correctly computed in the module
+    if (iface.FOO != EXPECTED_FOO) begin
+      $error("FOO mismatch in module: expected %0d, got %0d", EXPECTED_FOO, iface.FOO);
+    end
+    if (iface.BAR != EXPECTED_BAR) begin
+      $error("BAR dependency failed in module: expected %0d, got %0d", EXPECTED_BAR, iface.BAR);
+    end
+
+    // Verify all interface instances have correct parameter values
+    if (iface2.FOO != EXPECTED_FOO) begin
+      $error("iface2.FOO mismatch: expected %0d, got %0d", EXPECTED_FOO, iface2.FOO);
+    end
+    if (iface2.BAR != EXPECTED_BAR) begin
+      $error("iface2.BAR mismatch: expected %0d, got %0d", EXPECTED_BAR, iface2.BAR);
+    end
+
+    if (iface_mixed.FOO != 7) begin
+      $error("iface_mixed.FOO mismatch: expected 7, got %0d", iface_mixed.FOO);
+    end
+    if (iface_mixed.BAR != EXPECTED_FOO) begin
+      $error("iface_mixed.BAR mismatch: expected %0d, got %0d", EXPECTED_FOO, iface_mixed.BAR);
+    end
+
+    if (iface_foo_only.FOO != EXPECTED_FOO) begin
+      $error("iface_foo_only.FOO mismatch: expected %0d, got %0d", EXPECTED_FOO,
+             iface_foo_only.FOO);
+    end
+    if (iface_foo_only.BAR != EXPECTED_FOO * 10) begin
+      $error("iface_foo_only.BAR mismatch: expected %0d, got %0d", EXPECTED_FOO * 10,
+             iface_foo_only.BAR);
+    end
+
+    if (iface_bar_only.FOO != 1) begin
+      $error("iface_bar_only.FOO mismatch: expected 1, got %0d", iface_bar_only.FOO);
+    end
+    if (iface_bar_only.BAR != EXPECTED_BAR) begin
+      $error("iface_bar_only.BAR mismatch: expected %0d, got %0d", EXPECTED_BAR,
+             iface_bar_only.BAR);
+    end
+
+    if (iface_defaults.FOO != 1) begin
+      $error("iface_defaults.FOO mismatch: expected 1, got %0d", iface_defaults.FOO);
+    end
+    if (iface_defaults.BAR != 10) begin
+      $error("iface_defaults.BAR mismatch: expected 10, got %0d", iface_defaults.BAR);
     end
   end
 endmodule
