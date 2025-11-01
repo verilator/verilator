@@ -35,6 +35,8 @@
 
 // Whole-package file waivers
 lint_off -rule DECLFILENAME `VLT_UVM_FILES
+lint_off -rule UNDRIVEN `VLT_UVM_FILES
+lint_off -rule UNUSED `VLT_UVM_FILES
 lint_off -rule VARHIDDEN `VLT_UVM_FILES
 lint_off -rule WIDTHEXPAND `VLT_UVM_FILES
 lint_off -rule WIDTHTRUNC `VLT_UVM_FILES
@@ -50,6 +52,8 @@ lint_off -rule CASTCONST `VLT_UVM_FILES -match "*class{}uvm_sequence_item*"
 lint_off -rule IGNOREDRETURN `VLT_UVM_FILES -match "* uvm_core_state_callback::add*"
 lint_off -rule MISINDENT `VLT_UVM_FILES -match "* foreach (abstractions[i])*"
 lint_off -rule MISINDENT `VLT_UVM_FILES -match "* foreach (lock_list[i])*"
+lint_off -rule MISINDENT `VLT_UVM_FILES -match "* foreach (m_fields[i])*"  // 2017-1.1
+lint_off -rule MISINDENT `VLT_UVM_FILES -match "* if (rw.get_status()*"  // 2017-1.1
 lint_off -rule MISINDENT `VLT_UVM_FILES -match "* rw_access.data=*"
 lint_off -rule MISINDENT `VLT_UVM_FILES -match "* uvm_cmdline_proc =*"
 lint_off -rule REALCVT `VLT_UVM_FILES -match "* m_time *"
