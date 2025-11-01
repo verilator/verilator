@@ -1,4 +1,4 @@
-%Error-UNSUPPORTED: t/t_constraint_global_nested_unsup.v:9:14: Unsupported: Variable 'm_mid.m_inner' cannot have multiple global constraints
+%Error-UNSUPPORTED: t/t_constraint_global_nested_unsup.v:9:14: Unsupported: One variable 'm_mid.m_inner' cannot have multiple global constraints
                                                              : ... note: In instance 't'
     9 |   constraint c_inner { m_val inside {[1:10]}; }
       |              ^~~~~~~
