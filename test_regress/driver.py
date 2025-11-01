@@ -2764,9 +2764,16 @@ def _calc_hashset() -> list:
 # Verilator utilities
 
 
+def get_cpu_count():
+    try:
+        return len(os.sched_getaffinity(0))
+    except AttributeError:
+        return multiprocessing.cpu_count()
+
+
 @lru_cache(maxsize=1)
 def max_procs() -> int:
-    procs = len(os.sched_getaffinity(0))
+    procs = get_cpu_count()
     if procs < 2:
         print("driver.py: Python didn't find at least two CPUs")
     return procs

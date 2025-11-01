@@ -3,6 +3,7 @@
 ######################################################################
 
 import argparse
+import multiprocessing
 import os
 import shutil
 import subprocess
@@ -91,8 +92,15 @@ def cleanenv():
             del os.environ[var]
 
 
+def get_cpu_count():
+    try:
+        return len(os.sched_getaffinity(0))
+    except AttributeError:
+        return multiprocessing.cpu_count()
+
+
 def calc_jobs():
-    return len(os.sched_getaffinity(0)) + 1
+    return get_cpu_count() + 1
 
 
 def run(command):

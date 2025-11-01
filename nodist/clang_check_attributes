@@ -1073,6 +1073,13 @@ class TopDownSummaryPrinter():
         print(f"Number of functions reported unsafe: {len(self._unsafe_in_safe)}")
 
 
+def get_cpu_count():
+    try:
+        return len(os.sched_getaffinity(0))
+    except AttributeError:
+        return multiprocessing.cpu_count()
+
+
 def main():
     default_verilator_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -1115,7 +1122,7 @@ def main():
     cmdline = parser.parse_args()
 
     if cmdline.jobs == 0:
-        cmdline.jobs = max(1, len(os.sched_getaffinity(0)))
+        cmdline.jobs = max(1, get_cpu_count())
 
     if not cmdline.compilation_root:
         cmdline.compilation_root = cmdline.verilator_root
