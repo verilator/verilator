@@ -75,7 +75,7 @@ random:
 
 random_forever:
 	while ( VERILATOR_NO_DEBUG=1 CPPFLAGS_ADD=-Wno-error $(MAKE) random ) ; do \
-	  echo ; \
+		echo ; \
 	done
 
 #######################################################################
