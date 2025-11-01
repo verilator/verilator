@@ -91,6 +91,19 @@ class VtOs:
             return os.environ[var]
         return default
 
+    @staticproperty
+    @lru_cache(maxsize=1)
+    def max_procs() -> int:  # pylint: disable=no-method-argument
+        """Return maximum processor count can use (system CPUs or numactl setting)"""
+        try:
+            procs = len(os.sched_getaffinity(0))
+        except AttributeError:
+            procs = multiprocessing.cpu_count()
+        if procs < 2:
+            print("driver.py: Python didn't find at least two CPUs")
+            procs = 2
+        return procs
+
     @staticmethod
     def mkdir_ok(path: str) -> None:
         """Make directory, no error if exists"""
@@ -1699,6 +1712,11 @@ class VlTest:
         """Return environment variable, returning default if does not exist"""
         return VtOs.getenv_def(var, default)
 
+    @staticproperty
+    def max_procs() -> int:  # pylint: disable=no-method-argument
+        """Return maximum processor count can use (system CPUs or numactl setting)"""
+        return VtOs.max_procs
+
     def mkdir_ok(self, filename) -> None:
         """Make directory, no error if exists"""
         if test.verbose:
@@ -2734,13 +2752,13 @@ class VlTest:
 
 
 def calc_jobs() -> int:
-    ok_threads = max_procs()
+    ok_threads = VtOs.max_procs
     print("driver.py: Found %d cores, using -j %d" % (ok_threads, ok_threads))
     return ok_threads
 
 
 def calc_threads(default_threads) -> int:
-    ok_threads = max_procs()
+    ok_threads = int(VtOs.max_procs)  # int() to appease pylint
     return ok_threads if (ok_threads < default_threads) else default_threads
 
 
@@ -2762,21 +2780,6 @@ def _calc_hashset() -> list:
 #######################################################################
 #######################################################################
 # Verilator utilities
-
-
-def get_cpu_count():
-    try:
-        return len(os.sched_getaffinity(0))
-    except AttributeError:
-        return multiprocessing.cpu_count()
-
-
-@lru_cache(maxsize=1)
-def max_procs() -> int:
-    procs = get_cpu_count()
-    if procs < 2:
-        print("driver.py: Python didn't find at least two CPUs")
-    return procs
 
 
 def _parameter(param: str) -> None:
