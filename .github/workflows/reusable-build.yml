@@ -65,7 +65,7 @@ jobs:
         with:
           path: repo
           ref: ${{ inputs.sha }}
-          fetch-depth: ${{ inputs.dev-gcov && '0' || '1' }} # Coverage flow needs full history
+          fetch-depth: ${{ inputs.dev-gcov && '0' || '1' }}  # Coverage flow needs full history
 
       - name: Cache $CCACHE_DIR
         uses: actions/cache@v4

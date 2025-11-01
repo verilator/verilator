@@ -15,6 +15,6 @@ coverage:
   range: 75...100
   round: down
   status:
-    project: off
-    patch: off
+    project: false
+    patch: false
 comment: false

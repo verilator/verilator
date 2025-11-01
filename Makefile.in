@@ -473,7 +473,7 @@ format-c clang-format:
 	|| echo "*** You are not using clang-format-18, indents may differ from master's ***"
 	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CLANGFORMAT_FILES)
 
-YAMLFIX = YAMLFIX_WHITELINES=1 YAMLFIX_LINE_LENGTH=130 YAMLFIX_preserve_quotes=true yamlfix
+YAMLFIX = YAMLFIX_WHITELINES=1 YAMLFIX_LINE_LENGTH=200 YAMLFIX_preserve_quotes=true yamlfix
 
 yamlfix:
 	$(YAMLFIX) .

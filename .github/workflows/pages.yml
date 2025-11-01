@@ -68,9 +68,7 @@ jobs:
 
   notify:
     name: Notify
-    needs:
-      - build
-      - deploy
+    needs: [build, deploy]
     runs-on: ubuntu-24.04
     if: ${{ github.repository == 'verilator/verilator' }}
     steps:

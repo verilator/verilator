@@ -185,7 +185,7 @@ jobs:
   # This should always be the last job (we want an issue if anything breaks)
   create-issue:
     name: Create issue on failure
-    needs: [publish-codecov,prepare-report]
+    needs: [publish-codecov, prepare-report]
     if: ${{ github.event_name == 'schedule' && github.repository == 'verilator/verilator' && github.run_attempt == 1 && failure() && !cancelled() }}
     runs-on: ubuntu-24.04
     steps:
