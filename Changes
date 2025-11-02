@@ -34,6 +34,7 @@ Verilator 5.041 devel
 * Change developer coverage flow and add configure `--enable-dev-gcov` (#6526). [Geza Lore]
 * Change `verilator_difftree` to return exit code 1 on mismatch, 2 on error.
 * Change default thread pool sizes to respect processor affinity (#6604). [Geza Lore]
+* Change `--preproc-comments` to be new name of `--pp-comments` option.
 * Support modports referencing clocking blocks (#4555) (#6436). [Ryszard Rozak, Antmicro Ltd.]
 * Support class package reference on pattern keys (#5653). [Todd Strader]
 * Support digits in `$sscanf` field width formats (#6083). [Iztok Jeras]

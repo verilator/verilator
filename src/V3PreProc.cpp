@@ -444,7 +444,7 @@ bool V3PreProcImp::commentTokenMatch(string& cmdr, const char* strg) {
 void V3PreProcImp::comment(const string& text) {
     // Comment detected.  Only keep relevant data.
     bool printed = false;
-    if (v3Global.opt.preprocOnly() && v3Global.opt.ppComments()) {
+    if (v3Global.opt.preprocOnly() && v3Global.opt.preprocComments()) {
         insertUnreadback(text);
         printed = true;
     }

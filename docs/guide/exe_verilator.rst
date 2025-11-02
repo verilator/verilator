@@ -539,8 +539,8 @@ Summary:
    out.  Beware of enabling debugging messages, as they will also go to
    standard out. See :vlopt:`--no-std`, which is implied by this.
 
-   See also :vlopt:`--dump-defines`, :vlopt:`-P`, :vlopt:`--pp-comments`
-   and :vlopt:`--preproc-resolve` options.
+   See also :vlopt:`--dump-defines`, :vlopt:`-P`,
+   :vlopt:`--preproc-comments` and :vlopt:`--preproc-resolve` options.
 
 .. option:: --emit-accessors
 
@@ -1267,13 +1267,18 @@ Summary:
 
 .. option:: --pp-comments
 
-   With :vlopt:`-E`, show comments in preprocessor output.
+   Deprecated. In versions before 5.042, the name for
+   :vlopt:`--preproc-comments`.
 
 .. option:: --prefix <topname>
 
    Specifies the name of the top-level class and makefile.  Defaults to V
    prepended to the name of the :vlopt:`--top` option, or V prepended to
    the first Verilog filename passed on the command line.
+
+.. option:: --preproc-comments
+
+   With :vlopt:`-E`, show comments in preprocessor output.
 
 .. option:: --preproc-resolve
 

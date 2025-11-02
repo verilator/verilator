@@ -1612,11 +1612,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
     DECL_OPTION("-pins-uint8", OnOff, &m_pinsUint8);
     DECL_OPTION("-pipe-filter", Set, &m_pipeFilter);
-    DECL_OPTION("-pp-comments", OnOff, &m_ppComments);
+    DECL_OPTION("-pp-comments", OnOff, &m_preprocComments).undocumented();  // Renamed
     DECL_OPTION("-prefix", CbVal, [this, fl](const char* valp) {
         validateIdentifier(fl, valp, "--prefix");
         m_prefix = valp;
     });
+    DECL_OPTION("-preproc-comments", OnOff, &m_preprocComments);
     DECL_OPTION("-preproc-resolve", OnOff, &m_preprocResolve);
     DECL_OPTION("-preproc-token-limit", CbVal, [this, fl](const char* valp) {
         m_preprocTokenLimit = std::atoi(valp);

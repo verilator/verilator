@@ -18,6 +18,7 @@ Doc_Waivers = [
     '-clk',  # Deprecated
     '-lineno',  # Deprecated
     '-order-clock-delay',  # Deprecated
+    '-pp-comments',  # Deprecated
     '-prof-threads',  # Deprecated
 ]
 

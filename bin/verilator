@@ -453,8 +453,8 @@ detailed descriptions of these arguments.
     --pins-uint8                Specify types for top-level ports
     --no-pins64                 Don't use uint64_t's for 33-64 bit sigs
     --pipe-filter <command>     Filter all input through a script
-    --pp-comments               Show preprocessor comments with -E
     --prefix <topname>          Name of top-level class
+    --preproc-comments          Include preprocessor comments in the output with -E
     --preproc-resolve           Include all found modules in the output with -E
     --preproc-token-limit       Maximum tokens on a line allowed by preprocessor
     --private                   Debugging; see docs
