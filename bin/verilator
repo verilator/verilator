@@ -370,6 +370,7 @@ detailed descriptions of these arguments.
     --dump-defines              Show preprocessor defines with -E
     --dump-dfg                  Enable dumping DfgGraphs to .dot files
     --dump-graph                Enable dumping V3Graphs to .dot files
+    --dump-inputs               Enable dumping preprocessed input files
     --dump-tree                 Enable dumping Ast .tree files
     --dump-tree-addrids         Use short identifiers instead of addresses
     --dump-tree-dot             Enable dumping Ast .tree.dot debug files

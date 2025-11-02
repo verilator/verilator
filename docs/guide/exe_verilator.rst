@@ -470,6 +470,11 @@ Summary:
    level 3. Before Verilator 4.228, :vlopt:`--dump-tree` used
    to include this option.
 
+.. option:: --dump-inputs
+
+   Rarely needed.  Enable dumping a *{prefix}*\ __inputs\ .vpp file which
+   has all of the individual input files combined and pre-processed
+
 .. option:: --dump-tree
 
    Rarely needed.  Enable dumping Ast .tree debug files with dumping level 3,

@@ -342,7 +342,8 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
     }
 
     V3Stats::addStatSum(V3Stats::STAT_SOURCE_CHARS, m_ppBytes);
-    if (debug() && modfilename != V3Options::getStdPackagePath()
+    if ((debug() || v3Global.opt.dumpLevel("inputs"))
+        && modfilename != V3Options::getStdPackagePath()
         && modfilename != V3Options::getStdWaiverPath())
         dumpInputsFile();
 
