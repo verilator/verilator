@@ -24,7 +24,7 @@ package Pkg;
 
 endpackage
 
-module t(/*AUTOARG*/);
+module t;
 
    initial begin
       //if (sum !== `EXPECTED_SUM) $stop;

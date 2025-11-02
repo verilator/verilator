@@ -92,9 +92,9 @@ class V3FileDependImp final {
         time_t mstime() const { return m_stat.st_mtime; }  // Seconds
         time_t mnstime() const { return VL_STAT_MTIME_NSEC(m_stat); }  // Nanoseconds
         string hashDigestSymbol() {
-            static VHashSha256 emptyHash;
-            return m_hash.digestSymbol() != emptyHash.digestSymbol() ? m_hash.digestSymbol()
-                                                                     : "unhashed";
+            static VHashSha256 s_emptyHash;
+            return m_hash.digestSymbol() != s_emptyHash.digestSymbol() ? m_hash.digestSymbol()
+                                                                       : "unhashed";
         }
         void loadStats() {
             if (!m_stat.st_mtime) {
@@ -345,9 +345,9 @@ void V3File::createMakeDirFor(const string& filename) {
     }
 }
 void V3File::createMakeDir() {
-    static bool created = false;
-    if (!created) {
-        created = true;
+    static bool s_created = false;
+    if (!s_created) {
+        s_created = true;
         V3Os::createDir(v3Global.opt.makeDir());
         if (v3Global.opt.hierTop()) V3Os::createDir(v3Global.opt.hierTopDataDir());
     }
@@ -522,9 +522,8 @@ private:
         constexpr int P_RD = 0;
         constexpr int P_WR = 1;
 
-        if (pipe(fd_stdin) != 0 || pipe(fd_stdout) != 0) {
-            v3fatal("--pipe-filter: Can't pipe: " << std::strerror(errno));
-        }
+        if (VL_UNCOVERABLE(pipe(fd_stdin) != 0 || pipe(fd_stdout) != 0))
+            v3fatal("--pipe-filter: Can't pipe: " << std::strerror(errno));  // LCOV_EXCL_LINE
         if (fd_stdin[P_RD] <= 2 || fd_stdin[P_WR] <= 2 || fd_stdout[P_RD] <= 2
             || fd_stdout[P_WR] <= 2) {
             // We'd have to rearrange all of the FD usages in this case.
@@ -535,7 +534,8 @@ private:
         UINFO(1, "--pipe-filter: /bin/sh -c " << command);
 
         const pid_t pid = fork();
-        if (pid < 0) v3fatal("--pipe-filter: fork failed: " << std::strerror(errno));
+        if (VL_UNCOVERABLE(pid < 0))
+            v3fatal("--pipe-filter: fork failed: " << std::strerror(errno));  // LCOV_EXCL_LINE
         if (pid == 0) {  // Child
             UINFO(6, "In child");
             close(fd_stdin[P_WR]);
@@ -651,10 +651,18 @@ V3OutFormatter::V3OutFormatter(V3OutFormatter::Language lang)
 
 //----------------------------------------------------------------------
 
-string V3OutFormatter::indentSpaces(int num) {
+static constexpr int MAXSPACE = 80;  // After this indent, stop indenting more
+
+// Table of spaces, so we don't have to alloc/free them all the time
+static const std::array<std::string, MAXSPACE + 1> s_indentSpaces = []() {
+    std::array<std::string, MAXSPACE + 1> table;
+    for (int i = 0; i <= MAXSPACE; ++i) table[i] = std::string(static_cast<size_t>(i), ' ');
+    return table;
+}();
+
+const std::string& V3OutFormatter::indentSpaces(int num) {
     // Indent the specified number of spaces.
-    if (num <= 0) return std::string{};
-    return std::string(std::min<size_t>(num, MAXSPACE), ' ');
+    return s_indentSpaces[std::max(0, std::min(num, MAXSPACE))];
 }
 
 bool V3OutFormatter::tokenMatch(const char* cp, const char* cmp) {
@@ -694,7 +702,7 @@ int V3OutFormatter::endLevels(const char* strg) {
         case '\n':  // Newlines.. No need for whitespace before it
             return 0;
         case '#':  // Preproc directive
-            return 0;
+            if (m_lang == LA_C) return 0;
         }
         {
             // label/public/private:  Deindent by 2 spaces
@@ -730,20 +738,25 @@ void V3OutFormatter::putns(const AstNode* nodep, const char* strg) {
         return;
     }
 
-    if (m_prependIndent && strg[0] != '\n') {
+    const bool putNodeDecoration =  //
+        nodep  //
+        && v3Global.opt.decorationNodes()  //
+        && !v3Global.opt.protectIds()  //
+        && (m_sourceLastFilenameno != nodep->fileline()->filenameno()  //
+            || m_sourceLastLineno != nodep->fileline()->firstLineno())  //
+        && FileLine::builtInFilename() != nodep->fileline()->filename();
+
+    if (m_prependIndent && ((strg[0] && strg[0] != '\n') || putNodeDecoration)) {
         putsNoTracking(indentSpaces(endLevels(strg)));
         m_prependIndent = false;
     }
 
-    if (nodep && v3Global.opt.decorationNodes() && !v3Global.opt.protectIds()
-        && (m_sourceLastFilenameno != nodep->fileline()->filenameno()
-            || m_sourceLastLineno != nodep->fileline()->firstLineno())
-        && FileLine::builtInFilename() != nodep->fileline()->filename()) {
-        m_sourceLastLineno = nodep->fileline()->firstLineno();
-        m_sourceLastFilenameno = nodep->fileline()->filenameno();
-        putsNoTracking("/*" + nodep->fileline()->filename() + ":"
-                       + cvtToStr(nodep->fileline()->lineno()) + " " + cvtToStr((void*)nodep)
-                       + "*/");
+    if (putNodeDecoration) {
+        FileLine* const flp = nodep->fileline();
+        m_sourceLastLineno = flp->firstLineno();
+        m_sourceLastFilenameno = flp->filenameno();
+        const std::string lineno = std::to_string(flp->lineno());
+        putsNoTracking("/*" + flp->filename() + ":" + lineno + " " + cvtToHex(nodep) + "*/");
     }
 
     bool notstart = false;
@@ -786,29 +799,37 @@ void V3OutFormatter::putns(const AstNode* nodep, const char* strg) {
             }
             break;
         case '{':
-            if (m_lang == LA_C && (equalsForBracket || m_bracketLevel)) {
-                // Break up large code inside "= { ..."
-                m_parenVec.push(m_indentLevel
-                                * m_blockIndent);  // Line up continuation with block+1
-                ++m_bracketLevel;
+            if (!m_inStringLiteral) {
+                if (m_lang == LA_C && (equalsForBracket || m_bracketLevel)) {
+                    // Break up large code inside "= { ..."
+                    m_parenVec.push(m_indentLevel
+                                    * m_blockIndent);  // Line up continuation with block+1
+                    ++m_bracketLevel;
+                }
+                indentInc();
             }
-            indentInc();
             break;
         case '}':
-            if (m_bracketLevel > 0) {
-                m_parenVec.pop();
-                --m_bracketLevel;
+            if (!m_inStringLiteral) {
+                if (m_bracketLevel > 0) {
+                    m_parenVec.pop();
+                    --m_bracketLevel;
+                }
+                indentDec();
             }
-            indentDec();
             break;
         case '(':
-            indentInc();
-            // Line up continuation with open paren, plus one indent
-            m_parenVec.push(m_column);
+            if (!m_inStringLiteral) {
+                indentInc();
+                // Line up continuation with open paren, plus one indent
+                m_parenVec.push(m_column);
+            }
             break;
         case ')':
-            if (!m_parenVec.empty()) m_parenVec.pop();
-            indentDec();
+            if (!m_inStringLiteral) {
+                if (!m_parenVec.empty()) m_parenVec.pop();
+                indentDec();
+            }
             break;
         case '<':
             if (m_lang == LA_XML) {
@@ -978,7 +999,7 @@ V3OutFile::~V3OutFile() {
 }
 
 void V3OutFile::putsForceIncs() {
-    const V3StringList& forceIncs = v3Global.opt.forceIncs();
+    const VStringList& forceIncs = v3Global.opt.forceIncs();
     for (const string& i : forceIncs) puts("#include \"" + i + "\"\n");
 }
 

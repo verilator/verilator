@@ -118,9 +118,7 @@ public:
 class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
     VMemberMap m_memberMap;
     AstVarRef* m_wideTempRefp = nullptr;  // Variable that _WW macros should be setting
-    std::unordered_map<AstJumpBlock*, size_t> m_labelNumbers;  // Label numbers for JumpBlocks
-    bool m_inUC = false;  // Inside an AstUCStmt or AstUCExpr
-    bool m_emitConstInit = false;  // Emitting constant initializer
+    std::unordered_map<AstJumpBlock*, size_t> m_labelNumbers;  // Label numbers for AstJumpBlocks
     bool m_createdScopeHash = false;  // Already created a scope hash
 
     // State associated with processing $display style string formatting
@@ -221,7 +219,7 @@ public:
     void emitDereference(AstNode* nodep, const string& pointer);
     void emitCvtPackStr(AstNode* nodep);
     void emitCvtWideArray(AstNode* nodep, AstNode* fromp);
-    void emitConstant(AstConst* nodep, AstVarRef* assigntop, const string& assignString);
+    void emitConstant(AstConst* nodep);
     void emitConstantString(const AstConst* nodep);
     void emitSetVarConstant(const string& assignString, AstConst* constp);
     void emitVarReset(AstVar* varp, bool constructing);
@@ -230,13 +228,7 @@ public:
                                const string& suffix);
     void emitVarResetScopeHash();
     void emitChangeDet();
-    void emitConstInit(AstNode* initp) {
-        // We should refactor emit to produce output into a provided buffer, not go through members
-        // variables. That way we could just invoke the appropriate emitter as needed.
-        VL_RESTORER(m_emitConstInit);
-        m_emitConstInit = true;
-        iterateConst(initp);
-    }
+    void emitConstInit(AstNode* initp) { iterateConst(initp); }
     void putCommaIterateNext(AstNode* nodep, bool comma = false) {
         for (AstNode* subnodep = nodep; subnodep; subnodep = subnodep->nextp()) {
             if (comma) puts(", ");
@@ -263,6 +255,88 @@ public:
         if (const AstCNew* const cnewp = getSuperNewCallRecursep(nodep->nextp())) return cnewp;
         return nullptr;
     }
+
+    void emitConstantW(AstConst* nodep, AstVarRef* assigntop) {
+        // For tradition and compilation speed, assign each word directly into
+        // output variable instead of using '='
+        putns(nodep, "");
+        if (nodep->num().isFourState()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: 4-state numbers in this context");
+            return;
+        }
+
+        int upWidth = nodep->num().widthToFit();
+        int chunks = 0;
+        if (upWidth > EMITC_NUM_CONSTW * VL_EDATASIZE) {
+            // Output e.g. 8 words in groups of e.g. 8
+            chunks = (upWidth - 1) / (EMITC_NUM_CONSTW * VL_EDATASIZE);
+            upWidth %= (EMITC_NUM_CONSTW * VL_EDATASIZE);
+            if (upWidth == 0) upWidth = (EMITC_NUM_CONSTW * VL_EDATASIZE);
+        }
+        {  // Upper e.g. 8 words
+            if (chunks) {
+                putnbs(nodep, "VL_CONSTHI_W_");
+                puts(cvtToStr(VL_WORDS_I(upWidth)));
+                puts("X(");
+                puts(cvtToStr(nodep->widthMin()));
+                puts(",");
+                puts(cvtToStr(chunks * EMITC_NUM_CONSTW * VL_EDATASIZE));
+            } else {
+                putnbs(nodep, "VL_CONST_W_");
+                puts(cvtToStr(VL_WORDS_I(upWidth)));
+                puts("X(");
+                puts(cvtToStr(nodep->widthMin()));
+            }
+            puts(",");
+            if (!assigntop->selfPointer().isEmpty()) {
+                emitDereference(assigntop, assigntop->selfPointerProtect(m_useSelfForThis));
+            }
+            puts(assigntop->varp()->nameProtect());
+            for (int word = VL_WORDS_I(upWidth) - 1; word >= 0; word--) {
+                // Only 32 bits - llx + long long here just to appease CPP format warning
+                ofp()->printf(",0x%08" PRIx64, static_cast<uint64_t>(nodep->num().edataWord(
+                                                   word + chunks * EMITC_NUM_CONSTW)));
+            }
+            puts(")");
+        }
+        for (chunks--; chunks >= 0; chunks--) {
+            puts(";\n");
+            putbs("VL_CONSTLO_W_");
+            puts(cvtToStr(EMITC_NUM_CONSTW));
+            puts("X(");
+            puts(cvtToStr(chunks * EMITC_NUM_CONSTW * VL_EDATASIZE));
+            puts(",");
+            if (!assigntop->selfPointer().isEmpty()) {
+                emitDereference(assigntop, assigntop->selfPointerProtect(m_useSelfForThis));
+            }
+            puts(assigntop->varp()->nameProtect());
+            for (int word = EMITC_NUM_CONSTW - 1; word >= 0; word--) {
+                // Only 32 bits - llx + long long here just to appease CPP format warning
+                ofp()->printf(",0x%08" PRIx64, static_cast<uint64_t>(nodep->num().edataWord(
+                                                   word + chunks * EMITC_NUM_CONSTW)));
+            }
+            puts(")");
+        }
+    }
+
+    void emitNodesWithText(AstNode* nodesp, bool useSelfForThis, bool tracking,
+                           const std::string& separator) {
+        for (AstNode* nodep = nodesp; nodep; nodep = nodep->nextp()) {
+            if (const AstText* const textp = VN_CAST(nodep, Text)) {
+                const std::string text
+                    = VSelfPointerText::replaceThis(useSelfForThis, textp->text());
+                if (tracking) {
+                    puts(text);
+                } else {
+                    ofp()->putsNoTracking(text);
+                }
+            } else {
+                iterateConst(nodep);
+            }
+            if (nodep->nextp()) puts(separator);
+        }
+    }
+
     void putConstructorSubinit(const AstClass* classp, AstCFunc* cfuncp) {
         // Virtual bases in depth-first left-to-right order
         std::vector<AstClass*> virtualBases;
@@ -272,7 +346,7 @@ public:
             if (doneClasses.count(vbase)) continue;
             puts(doneClasses.empty() ? "" : "\n    , ");
             doneClasses.emplace(vbase);
-            puts(EmitCUtil::EmitCUtil::prefixNameProtect(vbase));
+            puts(EmitCUtil::prefixNameProtect(vbase));
             if (constructorNeedsProcess(vbase)) {
                 puts("(vlProcess, vlSymsp)");
             } else {
@@ -287,7 +361,7 @@ public:
             if (doneClasses.count(extp->classp())) continue;
             puts(doneClasses.empty() ? "" : "\n    , ");
             doneClasses.emplace(extp->classp());
-            puts(EmitCUtil::EmitCUtil::prefixNameProtect(extp->classp()));
+            puts(EmitCUtil::prefixNameProtect(extp->classp()));
             if (constructorNeedsProcess(extp->classp())) {
                 puts("(vlProcess, vlSymsp");
             } else {
@@ -334,7 +408,6 @@ public:
         puts("\n");
         m_lazyDecls.emit(nodep);
         if (nodep->ifdef() != "") putns(nodep, "#ifdef " + nodep->ifdef() + "\n");
-        if (nodep->isInline()) putns(nodep, "VL_INLINE_OPT ");
         emitCFuncHeader(nodep, m_modp, /* withScope: */ true);
 
         if (nodep->isConstructor()) {
@@ -377,8 +450,8 @@ public:
             return true;
         });
         if (m_instantiatesOwnProcess) {
-            AstNode* const vlprocp = new AstCStmt{
-                nodep->fileline(), "VlProcessRef vlProcess = std::make_shared<VlProcess>();\n"};
+            AstCStmt* const vlprocp = new AstCStmt{nodep->fileline()};
+            vlprocp->add("VlProcessRef vlProcess = std::make_shared<VlProcess>();");
             nodep->stmtsp()->addHereThisAsNext(vlprocp);
         }
 
@@ -400,19 +473,14 @@ public:
             puts("auto& vlSelfRef = std::ref(*vlSelf).get();\n");
         }
 
-        if (nodep->initsp()) {
-            putsDecoration(nodep, "// Init\n");
-            iterateAndNextConstNull(nodep->initsp());
+        if (nodep->varsp()) {
+            putsDecoration(nodep, "// Locals\n");
+            iterateAndNextConstNull(nodep->varsp());
         }
 
         if (nodep->stmtsp()) {
             putsDecoration(nodep, "// Body\n");
             iterateAndNextConstNull(nodep->stmtsp());
-        }
-
-        if (nodep->finalsp()) {
-            putsDecoration(nodep, "// Final\n");
-            iterateAndNextConstNull(nodep->finalsp());
         }
 
         m_usevlSelfRef = false;
@@ -550,6 +618,9 @@ public:
         } else if (nodep->isWide() && VN_IS(nodep->lhsp(), VarRef)  //
                    && !VN_IS(nodep->rhsp(), CExpr)  //
                    && !VN_IS(nodep->rhsp(), CMethodHard)  //
+                   // Although not here currently, note putting !VN_IS(Const) works,
+                   // and means using '=' and bypasses using emitConstantW.
+                   // Whuch we don't want to do as slows compiler down.
                    && !VN_IS(nodep->rhsp(), VarRef)  //
                    && !VN_IS(nodep->rhsp(), AssocSel)  //
                    && !VN_IS(nodep->rhsp(), MemberSel)  //
@@ -559,7 +630,8 @@ public:
             // Wide functions assign into the array directly, don't need separate assign statement
             m_wideTempRefp = VN_AS(nodep->lhsp(), VarRef);
             paren = false;
-        } else if (nodep->isWide() && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
+        } else if (nodep->isWide() && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)
+                   && !VN_IS(nodep->rhsp(), Const)) {
             putnbs(nodep, "VL_ASSIGN_W(");
             puts(cvtToStr(nodep->widthMin()) + ", ");
             iterateAndNextConstNull(nodep->lhsp());
@@ -578,7 +650,6 @@ public:
         if (decind) ofp()->blockDec();
         puts(";\n");
     }
-    void visit(AstAlwaysPublic*) override {}
     void visit(AstAssocSel* nodep) override {
         iterateAndNextConstNull(nodep->fromp());
         putnbs(nodep, ".at(");
@@ -649,7 +720,7 @@ public:
     }
     void visit(AstCMethodHard* nodep) override {
         iterateConst(nodep->fromp());
-        putns(nodep, ".");
+        putns(nodep, nodep->usePtr() ? "->" : ".");
         putns(nodep, nodep->name());
         puts("(");
         bool comma = false;
@@ -676,12 +747,14 @@ public:
         if (auto* const argrefp = nodep->valueArgRefp()) {
             putnbs(argrefp, argrefp->dtypep()->cType(argrefp->nameProtect(), false, false));
         }
-        puts(") {\n");
+        puts(") -> ");
+        putnbs(nodep, nodep->dtypep()->cType("", false, false));
+        puts(" {\n");
         VL_RESTORER(m_createdScopeHash);
         iterateAndNextConstNull(nodep->exprp());
         puts("}\n");
     }
-    void visit(AstNodeCase* nodep) override {  // LCOV_EXCL_LINE
+    void visit(AstCase* nodep) override {  // LCOV_EXCL_LINE
         // In V3Case...
         nodep->v3fatalSrc("Case statements should have been reduced out");
     }
@@ -805,7 +878,7 @@ public:
         switch (nodep->ctlType()) {
         case VDumpCtlType::FILE:
             putns(nodep, "vlSymsp->_vm_contextp__->dumpfile(");
-            emitCvtPackStr(nodep->exprp());
+            iterateConst(nodep->exprp());
             puts(");\n");
             break;
         case VDumpCtlType::VARS:
@@ -868,7 +941,7 @@ public:
         puts("(");
         puts(cvtToStr(nodep->outp()->widthMin()));
         puts(", ");
-        emitCvtPackStr(nodep->searchp());
+        iterateConst(nodep->searchp());
         puts(", ");
         putbs("");
         iterateAndNextConstNull(nodep->outp());
@@ -876,7 +949,7 @@ public:
     }
     void visit(AstTestPlusArgs* nodep) override {
         putns(nodep, "VL_TESTPLUSARGS_I(");
-        emitCvtPackStr(nodep->searchp());
+        iterateConst(nodep->searchp());
         puts(")");
     }
     void visit(AstFError* nodep) override {
@@ -906,16 +979,14 @@ public:
     }
     void visit(AstFOpen* nodep) override {
         putns(nodep, "VL_FOPEN_NN(");
-        emitCvtPackStr(nodep->filenamep());
+        iterateConst(nodep->filenamep());
         putbs(", ");
-        if (nodep->modep()->width() > 4 * 8)
-            nodep->modep()->v3error("$fopen mode should be <= 4 characters");
-        emitCvtPackStr(nodep->modep());
+        iterateConst(nodep->modep());
         puts(");\n");
     }
     void visit(AstFOpenMcd* nodep) override {
         putns(nodep, "VL_FOPEN_MCD_N(");
-        emitCvtPackStr(nodep->filenamep());
+        iterateConst(nodep->filenamep());
         puts(");\n");
     }
     void visit(AstNodeReadWriteMem* nodep) override {
@@ -945,7 +1016,7 @@ public:
             }
         }
         putbs(", ");
-        emitCvtPackStr(nodep->filenamep());
+        iterateConst(nodep->filenamep());
         putbs(", ");
         {
             const bool need_ptr = !VN_IS(nodep->memp()->dtypep(), AssocArrayDType);
@@ -1096,19 +1167,45 @@ public:
         // Emit
         putns(nodep, "goto __Vlabel" + std::to_string(n) + ";\n");
     }
+    void visit(AstLoop* nodep) override {
+        UASSERT_OBJ(!nodep->contsp(), nodep, "'contsp' only used before LinkJump");
+        VL_RESTORER(m_createdScopeHash);
+        // Special case when the AstLoopTest is first for output readability
+        if (AstLoopTest* const testp = VN_CAST(nodep->stmtsp(), LoopTest)) {
+            putns(nodep, "while (");
+            iterateConst(testp->condp());
+            puts(") {\n");
+            iterateAndNextConstNull(testp->nextp());
+            puts("}\n");
+            return;
+        }
+        // Special case when the AstLoopTest is last for output readability
+        if (AstNode* lastp = nodep->stmtsp()) {
+            while (AstNode* const nextp = lastp->nextp()) lastp = nextp;
+            if (AstLoopTest* const testp = VN_CAST(lastp, LoopTest)) {
+                putns(nodep, "do {\n");
+                for (AstNode* p = nodep->stmtsp(); p != lastp; p = p->nextp()) iterateConst(p);
+                puts("} while (");
+                iterateConst(testp->condp());
+                puts(");\n");
+                return;
+            }
+        }
+        // Emit generic case directly
+        putns(nodep, "while (true) {\n");
+        iterateAndNextConstNull(nodep->stmtsp());
+        puts("}\n");
+    }
+    void visit(AstLoopTest* nodep) override {
+        VL_RESTORER(m_createdScopeHash);
+        putns(nodep, "if (!(");
+        iterateAndNextConstNull(nodep->condp());
+        puts(")) break;\n");
+    }
     void visit(AstCLocalScope* nodep) override {
         putns(nodep, "{\n");
         VL_RESTORER(m_createdScopeHash);
         iterateAndNextConstNull(nodep->stmtsp());
-        puts("}\n");
-    }
-    void visit(AstWhile* nodep) override {
-        VL_RESTORER(m_createdScopeHash);
-        putns(nodep, "while (");
-        iterateAndNextConstNull(nodep->condp());
-        puts(") {\n");
-        iterateAndNextConstNull(nodep->stmtsp());
-        iterateAndNextConstNull(nodep->incsp());
         puts("}\n");
     }
     void visit(AstNodeIf* nodep) override {
@@ -1144,6 +1241,11 @@ public:
         // GCC allows compound statements in expressions, but this is not standard.
         // So we use an immediate-evaluation lambda and comma operator
         putnbs(nodep, "([&]() {\n");
+        if (!nodep->hasResult()) {
+            iterateAndNextConstNull(nodep->stmtsp());
+            puts("}())");
+            return;
+        }
         iterateAndNextConstNull(nodep->stmtsp());
         puts("}(), ");
         iterateAndNextConstNull(nodep->resultp());
@@ -1165,6 +1267,18 @@ public:
         puts(cvtToStr(nodep->fileline()->lineno()));
         puts(", \"\");\n");
     }
+    void visit(AstFinishFork* nodep) override {
+        putns(nodep, "VL_FINISH_MT(");
+        putsQuoted(protect(nodep->fileline()->filename()));
+        puts(", ");
+        puts(cvtToStr(nodep->fileline()->lineno()));
+        puts(", \"\");\n");
+        if (m_cfuncp->isCoroutine()) {
+            putns(nodep, "co_return;\n");
+        } else {
+            putns(nodep, "return;\n");
+        }
+    }
     void visit(AstPrintTimeScale* nodep) override {
         putns(nodep, "VL_PRINTTIMESCALE(");
         putsQuoted(protect(nodep->prettyName()));
@@ -1181,8 +1295,10 @@ public:
     void visit(AstTime* nodep) override {
         putns(nodep, "VL_TIME_UNITED_Q(");
         UASSERT_OBJ(!nodep->timeunit().isNone(), nodep, "$time has no units");
-        puts(cvtToStr(nodep->timeunit().multiplier()
-                      / v3Global.rootp()->timeprecision().multiplier()));
+        const double time
+            = nodep->timeunit().multiplier() / v3Global.rootp()->timeprecision().multiplier();
+        UASSERT_OBJ(time >= 1, nodep, "TimeQ is less than 1, will result in division by zero");
+        puts(cvtToStr(time));
         puts(")");
     }
     void visit(AstTimeD* nodep) override {
@@ -1210,7 +1326,7 @@ public:
         puts(", ");
         if (nodep->suffixp()) {
             puts("true, ");
-            emitCvtPackStr(nodep->suffixp());
+            iterateAndNextConstNull(nodep->suffixp());
         } else {
             puts("false, \"\"");
         }
@@ -1226,47 +1342,45 @@ public:
     void visit(AstTimePrecision* nodep) override {
         putns(nodep, "vlSymsp->_vm_contextp__->timeprecision()");
     }
-    void visit(AstNodeSimpleText* nodep) override {
-        const string text
-            = VSelfPointerText::replaceThis(m_inUC && m_useSelfForThis, nodep->text());
-        if (nodep->tracking() || m_trackText) {
-            puts(text);
-        } else {
-            ofp()->putsNoTracking(text);
-        }
+
+    // Nodes involing AstText
+    void visit(AstText* nodep) override {
+        // All Text should be under TextBlock/CStmt/CStmtUser/CExpr/CExprUser
+        nodep->v3fatalSrc("Text node in unexpected position");
     }
     void visit(AstTextBlock* nodep) override {
-        visit(static_cast<AstNodeSimpleText*>(nodep));
-        for (AstNode* childp = nodep->nodesp(); childp; childp = childp->nextp()) {
-            iterateConst(childp);
-            if (nodep->commas() && childp->nextp()) puts(", ");
-        }
+        putnbs(nodep, "");
+        puts(nodep->prefix());
+        emitNodesWithText(nodep->nodesp(), false, true, nodep->separator());
+        puts(nodep->suffix());
     }
     void visit(AstCStmt* nodep) override {
         putnbs(nodep, "");
-        iterateAndNextConstNull(nodep->exprsp());
+        emitNodesWithText(nodep->nodesp(), false, true, "");
+        ensureNewLine();
     }
     void visit(AstCExpr* nodep) override {
         putnbs(nodep, "");
-        iterateAndNextConstNull(nodep->exprsp());
+        emitNodesWithText(nodep->nodesp(), false, true, "");
     }
-    void visit(AstUCStmt* nodep) override {
-        VL_RESTORER(m_inUC);
-        m_inUC = true;
+    void visit(AstCStmtUser* nodep) override {
         putnbs(nodep, "");
-        putsDecoration(nodep, VIdProtect::ifNoProtect("// $c statement at "
-                                                      + nodep->fileline()->ascii() + "\n"));
-        iterateAndNextConstNull(nodep->exprsp());
+        ofp()->putsNoTracking("\n");
+        if (nodep->fromDollarC() && v3Global.opt.decoration() && !v3Global.opt.protectIds()) {
+            ofp()->putsNoTracking("// $c statement at " + nodep->fileline()->ascii() + "\n");
+        }
+        emitNodesWithText(nodep->nodesp(), m_useSelfForThis, false, "");
         puts("\n");
     }
-    void visit(AstUCFunc* nodep) override {
-        VL_RESTORER(m_inUC);
-        m_inUC = true;
-        puts("\n");
+    void visit(AstCExprUser* nodep) override {
         putnbs(nodep, "");
-        putsDecoration(nodep, VIdProtect::ifNoProtect("// $c function at "
-                                                      + nodep->fileline()->ascii() + "\n"));
-        iterateAndNextConstNull(nodep->exprsp());
+        ofp()->putsNoTracking("\n");
+        if (/* is always from $c */ v3Global.opt.decoration() && !v3Global.opt.protectIds()) {
+            ofp()->putsNoTracking(
+                (nodep->isPure() ? "// $cpure expression at " : "// $c expression at ")
+                + nodep->fileline()->ascii() + "\n");
+        }
+        emitNodesWithText(nodep->nodesp(), m_useSelfForThis, false, "");
         puts("\n");
     }
 
@@ -1492,15 +1606,13 @@ public:
         putns(nodep, "&");
         puts(funcNameProtect(funcp));
     }
-    void visit(AstConst* nodep) override {
-        if (m_emitConstInit) {
-            EmitCConstInit::visit(nodep);
-        } else if (nodep->isWide()) {
+    void visit(AstConst* nodep) override {  //
+        if (m_wideTempRefp && nodep->isWide()) {
             UASSERT_OBJ(m_wideTempRefp, nodep, "Wide Constant w/ no temp");
-            emitConstant(nodep, m_wideTempRefp, "");
+            emitConstantW(nodep, m_wideTempRefp);
             m_wideTempRefp = nullptr;  // We used it, fail if set it a second time
         } else {
-            emitConstant(nodep, nullptr, "");
+            emitConstant(nodep);
         }
     }
     void visit(AstThisRef* nodep) override {
@@ -1626,10 +1738,9 @@ public:
 
     EmitCFunc()
         : m_lazyDecls{*this} {}
-    EmitCFunc(AstNode* nodep, V3OutCFile* ofp, AstCFile* cfilep, bool trackText = false)
+    EmitCFunc(AstNode* nodep, V3OutCFile* ofp, AstCFile* cfilep)
         : EmitCFunc{} {
         setOutputFile(ofp, cfilep);
-        m_trackText = trackText;
         iterateConst(nodep);
     }
     ~EmitCFunc() override = default;

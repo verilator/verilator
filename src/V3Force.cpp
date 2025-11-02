@@ -116,8 +116,7 @@ public:
                                                new AstVarRef{flp, m_enVscp, VAccess::READ}});
                 AstVarRef* const origp = new AstVarRef{flp, vscp, VAccess::READ};
                 ForceState::markNonReplaceable(origp);
-                itemsp->addNext(
-                    new AstSenItem{flp, VEdgeType::ET_CHANGED, origp->cloneTree(false)});
+                itemsp->addNext(new AstSenItem{flp, VEdgeType::ET_CHANGED, origp});
                 AstActive* const activep
                     = new AstActive{flp, "force-update", new AstSenTree{flp, itemsp}};
                 activep->senTreeStorep(activep->sentreep());
@@ -148,7 +147,7 @@ private:
     //  AstVar::user1p        -> ForceComponentsVar* instance (via m_forceComponentsVar)
     //  AstVarScope::user1p   -> ForceComponentsVarScope* instance (via m_forceComponentsVarScope)
     //  AstVarRef::user2      -> Flag indicating not to replace reference
-    //  AstVarScope::user3p   -> AstNodeExpr*, the RHS expression
+    //  AstVarScope::user3p   -> AstAssign*, the assignment <lhs>__VforceVal = <rhs>
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
     const VNUser3InUse m_user3InUse;
@@ -198,11 +197,9 @@ public:
     ForceComponentsVarScope* tryGetForceComponents(AstVarRef* nodep) const {
         return m_forceComponentsVarScope.tryGet(nodep->varScopep());
     }
-    void setValVscpRhsExpr(AstVarScope* valVscp, AstNodeExpr* rhsExpr) {
-        valVscp->user3p(rhsExpr);
-    }
-    AstNodeExpr* getValVscpRhsExpr(AstVarScope* valVscp) const {
-        return VN_CAST(valVscp->user3p(), NodeExpr);
+    void setValVscpAssign(AstVarScope* valVscp, AstAssign* rhsExpr) { valVscp->user3p(rhsExpr); }
+    AstAssign* getValVscpAssign(AstVarScope* valVscp) const {
+        return VN_CAST(valVscp->user3p(), Assign);
     }
 };
 
@@ -250,9 +247,9 @@ class ForceConvertVisitor final : public VNVisitor {
         // Set corresponding value signals to the forced value
         AstAssign* const setValp
             = new AstAssign{flp, lhsp->cloneTreePure(false), rhsp->cloneTreePure(false)};
-        transformWritenVarScopes(setValp->lhsp(), [this, rhsp](AstVarScope* vscp) {
+        transformWritenVarScopes(setValp->lhsp(), [this, rhsp, setValp](AstVarScope* vscp) {
             AstVarScope* const valVscp = m_state.getForceComponents(vscp).m_valVscp;
-            m_state.setValVscpRhsExpr(valVscp, rhsp->cloneTreePure(false));
+            m_state.setValVscpAssign(valVscp, setValp);
             rhsp->foreach([valVscp, this](AstVarRef* refp) { m_state.addValVscp(refp, valVscp); });
             return valVscp;
         });
@@ -363,10 +360,18 @@ class ForceReplaceVisitor final : public VNVisitor {
         m_stmtp = nodep;
         iterateChildren(nodep);
     }
-    void visit(AstAlwaysPublic* nodep) override { iterateLogic(nodep); }
     void visit(AstCFunc* nodep) override { iterateLogic(nodep); }
     void visit(AstCoverToggle* nodep) override { iterateLogic(nodep); }
     void visit(AstNodeProcedure* nodep) override { iterateLogic(nodep); }
+    void visit(AstAlways* nodep) override {
+        // TODO: this is the old behavioud prior to moving AssignW under Always.
+        // Review if this is appropriate or if we are missing something...
+        if (nodep->keyword() == VAlwaysKwd::CONT_ASSIGN) {
+            iterateChildren(nodep);
+            return;
+        }
+        iterateLogic(nodep);
+    }
     void visit(AstSenItem* nodep) override { iterateLogic(nodep); }
     void visit(AstVarRef* nodep) override {
         if (ForceState::isNotReplaceable(nodep)) return;
@@ -395,22 +400,23 @@ class ForceReplaceVisitor final : public VNVisitor {
             if (!m_state.getValVscps(nodep)) break;
             for (AstVarScope* const valVscp : *m_state.getValVscps(nodep)) {
                 FileLine* const flp = nodep->fileline();
-                AstVarRef* const valp = new AstVarRef{flp, valVscp, VAccess::WRITE};
-                AstNodeExpr* rhsp = m_state.getValVscpRhsExpr(valVscp);
-                UASSERT_OBJ(rhsp, flp, "RHS of force/release must be an AstNodeExpr");
-                rhsp = rhsp->cloneTreePure(false);
+                AstAssign* assignp = m_state.getValVscpAssign(valVscp);
+                UASSERT_OBJ(assignp, flp, "Missing stored assignment for forced valVscp");
 
-                ForceState::markNonReplaceable(valp);
-                rhsp->foreach([](AstVarRef* refp) { ForceState::markNonReplaceable(refp); });
+                assignp = assignp->cloneTreePure(false);
 
-                m_stmtp->addNextHere(new AstAssign{flp, valp, rhsp});
+                assignp->rhsp()->foreach(
+                    [](AstVarRef* refp) { ForceState::markNonReplaceable(refp); });
+
+                m_stmtp->addNextHere(assignp);
             }
             break;
         }
         default:
             if (!m_inLogic) return;
             if (m_state.tryGetForceComponents(nodep) || m_state.getValVscps(nodep)) {
-                nodep->v3error(
+                nodep->v3warn(
+                    E_UNSUPPORTED,
                     "Unsupported: Signals used via read-write reference cannot be forced");
             }
             break;

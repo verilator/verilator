@@ -7,7 +7,7 @@
 class Cls #(type PARAMB);
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    Cls c;  // Missing type param
 

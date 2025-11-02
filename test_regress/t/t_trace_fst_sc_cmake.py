@@ -16,7 +16,7 @@ if not test.have_sc:
 
 test.compile(verilator_flags2=["--trace-fst --sc"],
              verilator_make_gmake=False,
-             verilator_make_cmake=1)
+             verilator_make_cmake=True)
 
 test.execute()
 

@@ -286,7 +286,6 @@ class SliceVisitor final : public VNVisitor {
     void visit(AstNodeAssign* nodep) override {
         // Called recursively on newly created assignments
         if (nodep->user1SetOnce()) return;  // Process once
-        if (VN_IS(nodep, AssignAlias)) return;
         UINFOTREE(9, nodep, "", "Deslice-In");
         VL_RESTORER(m_assignError);
         VL_RESTORER(m_assignp);
@@ -317,7 +316,9 @@ class SliceVisitor final : public VNVisitor {
                     "Array initialization should have been removed earlier");
     }
 
-    void expandBiOp(AstNodeBiop* nodep) {
+    template <typename T_NodeBiop>
+    void expandBiOp(T_NodeBiop* biopp) {
+        AstNodeBiop* nodep = biopp;
         if (nodep->user1SetOnce()) return;  // Process once
         UINFO(9, "  Bi-Eq/Neq expansion " << nodep);
 
@@ -331,10 +332,9 @@ class SliceVisitor final : public VNVisitor {
                 // EQ(a,b) -> LOGAND(EQ(ARRAYSEL(a,0), ARRAYSEL(b,0)), ...[1])
                 // Original node is replaced, so it is safe to copy it one time even if it is
                 // impure.
-                AstNodeBiop* const clonep = VN_AS(
-                    nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, elemIdx, elemIdx != 0),
-                                     cloneAndSel(nodep->rhsp(), elements, elemIdx, elemIdx != 0)),
-                    NodeBiop);
+                T_NodeBiop* const clonep = new T_NodeBiop{
+                    nodep->fileline(), cloneAndSel(nodep->lhsp(), elements, elemIdx, elemIdx != 0),
+                    cloneAndSel(nodep->rhsp(), elements, elemIdx, elemIdx != 0)};
                 if (elemIdx == 0) {
                     nodep->foreach([this](AstExprStmt* const exprp) {
                         // Result expression is always evaluated to the same value, so the
@@ -350,12 +350,12 @@ class SliceVisitor final : public VNVisitor {
                     logp = clonep;
                 } else {
                     switch (nodep->type()) {
-                    case VNType::atEq:  // FALLTHRU
-                    case VNType::atEqCase:
+                    case VNType::Eq:  // FALLTHRU
+                    case VNType::EqCase:
                         logp = new AstLogAnd{nodep->fileline(), logp, clonep};
                         break;
-                    case VNType::atNeq:  // FALLTHRU
-                    case VNType::atNeqCase:
+                    case VNType::Neq:  // FALLTHRU
+                    case VNType::NeqCase:
                         logp = new AstLogOr{nodep->fileline(), logp, clonep};
                         break;
                     default: nodep->v3fatalSrc("Unknown node type processing array slice"); break;

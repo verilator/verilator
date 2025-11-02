@@ -6,7 +6,7 @@
     7 | module sub;
       |        ^~~
                                             : ... Top module 't'
-   10 | module t( );
+   10 | module t;
       |        ^
 %Error: t/t_inst_paren_bad.v:11:4: Can't find typedef/interface: 'sub'
    11 |    sub sub_inst;   

@@ -269,6 +269,17 @@ class LinkResolveVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
+    void visit(AstStmtPragma* nodep) override {
+        if (nodep->pragp()->pragType() == VPragmaType::COVERAGE_BLOCK_OFF) {
+            // Strip pragma if not needed, may optimize better without
+            if (!v3Global.opt.coverageLine()) {
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                return;
+            }
+        }
+        iterateChildren(nodep);
+    }
+
     void visit(AstPragma* nodep) override {
         if (nodep->pragType() == VPragmaType::HIER_BLOCK) {
             UASSERT_OBJ(m_modp, nodep, "HIER_BLOCK not under a module");
@@ -291,12 +302,6 @@ class LinkResolveVisitor final : public VNVisitor {
             m_modp->modPublic(true);  // Need to get to the task...
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else if (nodep->pragType() == VPragmaType::COVERAGE_BLOCK_OFF) {
-            if (!v3Global.opt.coverageLine()) {  // No need for block statements; may optimize
-                                                 // better without
-                nodep->unlinkFrBack();
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
-            }
         } else {
             iterateChildren(nodep);
         }
@@ -308,106 +313,75 @@ class LinkResolveVisitor final : public VNVisitor {
         bool inPct = false;
         bool inIgnore = false;
         string fmt;
-        for (const char ch : format) {
-            if (!inPct && ch == '%') {
-                inPct = true;
-                inIgnore = false;
-                fmt = ch;
-            } else if (inPct && (std::isdigit(ch) || ch == '.' || ch == '-')) {
-                fmt += ch;
-            } else if (inPct) {
-                inPct = false;
-                fmt += ch;
-                switch (std::tolower(ch)) {
-                case '%':  // %% - just output a %
-                    break;
-                case '*':
+        string parseFormat = format;
+        while (!parseFormat.empty() || argp) {
+            for (const char ch : parseFormat) {
+                if (!inPct && ch == '%') {
                     inPct = true;
-                    inIgnore = true;
-                    break;
-                case 'm':  // %m - auto insert "name"
-                    if (isScan) {
-                        nodep->v3warn(E_UNSUPPORTED, "Unsupported: %m in $fscanf");
-                        fmt = "";
-                    }
-                    break;
-                case 'l':  // %l - auto insert "library"
-                    if (isScan) {
-                        nodep->v3warn(E_UNSUPPORTED, "Unsupported: %l in $fscanf");
-                        fmt = "";
-                    }
-                    if (m_modp)
-                        fmt = AstNode::prettyName(m_modp->libname()) + "." + m_modp->prettyName();
-                    break;
-                default:  // Most operators, just move to next argument
-                    if (!V3Number::displayedFmtLegal(ch, isScan)) {
-                        nodep->v3error("Unknown $display-like format code: '%" << ch << "'");
-                    } else if (!inIgnore) {
-                        if (!argp) {
-                            nodep->v3error("Missing arguments for $display-like format");
-                        } else {
-                            argp = argp->nextp();
+                    inIgnore = false;
+                    fmt = ch;
+                } else if (inPct && (std::isdigit(ch) || ch == '.' || ch == '-')) {
+                    fmt += ch;
+                } else if (inPct) {
+                    inPct = false;
+                    fmt += ch;
+                    switch (std::tolower(ch)) {
+                    case '%':  // %% - just output a %
+                        break;
+                    case '*':
+                        inPct = true;
+                        inIgnore = true;
+                        break;
+                    case 'm':  // %m - auto insert "name"
+                        if (isScan) {
+                            nodep->v3warn(E_UNSUPPORTED, "Unsupported: %m in $fscanf");
+                            fmt = "";
                         }
-                    }
-                    break;
-                }  // switch
-                newFormat += fmt;
-            } else {
-                newFormat += ch;
-            }
-        }
-
-        if (argp && !isScan) {
-            int skipCount = 0;  // number of args consume by any additional format strings
-            while (argp) {
-                if (skipCount) {
-                    argp = argp->nextp();
-                    --skipCount;
-                    continue;
-                }
-                const AstConst* const constp = VN_CAST(argp, Const);
-                const bool isFromString = (constp) ? constp->num().isFromString() : false;
-                if (isFromString) {
-                    const int numchars = argp->dtypep()->width() / 8;
-                    if (!constp->num().toString().empty()) {
-                        string str(numchars, ' ');
-                        // now scan for % operators
-                        bool inpercent = false;
-                        for (int i = 0; i < numchars; i++) {
-                            const int ii = numchars - i - 1;
-                            const char c = constp->num().dataByte(ii);
-                            str[i] = c;
-                            if (!inpercent && c == '%') {
-                                inpercent = true;
-                            } else if (inpercent) {
-                                inpercent = false;
-                                switch (c) {
-                                case '0':  // FALLTHRU
-                                case '1':  // FALLTHRU
-                                case '2':  // FALLTHRU
-                                case '3':  // FALLTHRU
-                                case '4':  // FALLTHRU
-                                case '5':  // FALLTHRU
-                                case '6':  // FALLTHRU
-                                case '7':  // FALLTHRU
-                                case '8':  // FALLTHRU
-                                case '9':  // FALLTHRU
-                                case '.': inpercent = true; break;
-                                case '%': break;
-                                default:
-                                    if (V3Number::displayedFmtLegal(c, isScan)) ++skipCount;
-                                }
+                        break;
+                    case 'l':  // %l - auto insert "library"
+                        if (isScan) {
+                            nodep->v3warn(E_UNSUPPORTED, "Unsupported: %l in $fscanf");
+                            fmt = "";
+                        }
+                        if (m_modp)
+                            fmt = AstNode::prettyName(m_modp->libname()) + "."
+                                  + m_modp->prettyName();
+                        break;
+                    default:  // Most operators, just move to next argument
+                        if (!V3Number::displayedFmtLegal(ch, isScan)) {
+                            nodep->v3error("Unknown $display-like format code: '%" << ch << "'");
+                        } else if (!inIgnore) {
+                            if (!argp) {
+                                nodep->v3error("Missing arguments for $display-like format");
+                            } else {
+                                argp = argp->nextp();
                             }
                         }
-                        newFormat.append(str);
-                    }
+                        break;
+                    }  // switch
+                    newFormat += fmt;
+                } else {
+                    newFormat += ch;
+                }
+            }
+
+            // Find additional arguments (without format) or additional format strings
+            parseFormat = "";
+
+            if (isScan) break;
+            while (argp) {
+                const AstConst* const constp = VN_CAST(argp, Const);
+                const bool isFromString = (constp) ? constp->num().isFromString() : false;
+                if (!isFromString) {
+                    newFormat.append("%?");  // V3Width to figure it out
+                    argp = argp->nextp();
+                } else {  // New format string
+                    parseFormat += constp->num().toString();
                     AstNode* const nextp = argp->nextp();
                     argp->unlinkFrBack();
                     VL_DO_DANGLING(pushDeletep(argp), argp);
                     argp = nextp;
-                } else {
-                    newFormat.append("%?");  // V3Width to figure it out
-                    argp = argp->nextp();
+                    break;  // And continue at top of parsing the new parseFormat
                 }
             }
         }
@@ -485,10 +459,11 @@ class LinkResolveVisitor final : public VNVisitor {
                         }
                         varoutp = varp;
                         // Tie off
-                        m_modp->addStmtsp(
-                            new AstAssignW{varp->fileline(),
-                                           new AstVarRef{varp->fileline(), varp, VAccess::WRITE},
-                                           new AstConst{varp->fileline(), AstConst::BitFalse{}}});
+                        AstAssignW* const ap
+                            = new AstAssignW{varp->fileline(),
+                                             new AstVarRef{varp->fileline(), varp, VAccess::WRITE},
+                                             new AstConst{varp->fileline(), AstConst::BitFalse{}}};
+                        m_modp->addStmtsp(new AstAlways{ap});
                     } else {
                         varp->v3error("Only inputs and outputs are allowed in udp modules");
                     }
@@ -499,20 +474,15 @@ class LinkResolveVisitor final : public VNVisitor {
         }
     }
 
-    void visit(AstScCtor* nodep) override {
-        // Constructor info means the module must remain public
-        m_modp->modPublic(true);
-        iterateChildren(nodep);
-    }
-    void visit(AstScDtor* nodep) override {
-        // Destructor info means the module must remain public
-        m_modp->modPublic(true);
-        iterateChildren(nodep);
-    }
-    void visit(AstScInt* nodep) override {
-        // Special class info means the module must remain public
-        m_modp->modPublic(true);
-        iterateChildren(nodep);
+    void visit(AstSystemCSection* nodep) override {
+        switch (nodep->sectionType()) {
+        // Constructor, desctructor or special class info means the module must remain public
+        case VSystemCSectionType::CTOR:
+        case VSystemCSectionType::DTOR:
+        case VSystemCSectionType::INT: m_modp->modPublic(true); break;
+        default: break;
+        }
+        // Has no children
     }
 
     void visit(AstIfaceRefDType* nodep) override {

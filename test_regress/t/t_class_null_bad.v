@@ -8,7 +8,7 @@ class Cls;
    int imembera;
 endclass : Cls
 
-module t (/*AUTOARG*/);
+module t;
    Cls c;
    initial begin
       c = null;  // Not really required as null is default

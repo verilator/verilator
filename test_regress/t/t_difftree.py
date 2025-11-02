@@ -18,7 +18,7 @@ test.run(cmd=[
     "cd " + test.obj_dir + " && " + os.environ["VERILATOR_ROOT"] + "/bin/verilator_difftree",
     test.t_dir + "/t_difftree.a.tree", test.t_dir + "/t_difftree.b.tree > diff.log"
 ],
-         check_finished=False)
+         fails=1)  # Testing mismatch, so exit code 1
 
 test.files_identical(test.obj_dir + "/diff.log", test.golden_filename, 'logfile')
 

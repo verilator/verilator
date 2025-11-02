@@ -130,8 +130,9 @@ same time slot.
 Rising/falling/turn-off delays are currently unsupported and cause the
 :option:`RISEFALLDLY` warning.
 
-Minimum/typical/maximum delays are currently unsupported. The typical delay is
-always the one chosen. Such expressions cause the :option:`MINTYPMAX` warning.
+Minimum/typical/maximum delays are currently unsupported. The typical delay
+is always the one chosen. Such expressions cause the :option:`MINTYPMAXDLY`
+warning.
 
 Another consequence of using :vlopt:`--timing` is that the :vlopt:`--main`
 option generates a main file with a proper timing eval loop, eliminating the

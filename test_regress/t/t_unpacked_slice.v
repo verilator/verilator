@@ -7,7 +7,7 @@
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
 
-module t (/*AUTOARG*/);
+module t;
 
    parameter int sliceddn[4:-3] = '{'h100, 'h101, 'h102, 'h103, 'h104, 'h105, 'h106, 'h107};
    parameter int slicedup[-3:4] = '{'h100, 'h101, 'h102, 'h103, 'h104, 'h105, 'h106, 'h107};

@@ -21,7 +21,7 @@ class Cls #(parameter type enum E_t,
             parameter type interface class IC_t);
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    sub #(.E_t(int_t), .S_t(int_t), .U_t(int_t), .C_t(int_t), .IC_t(int_t)) sub();
    Cls #(.E_t(int_t), .S_t(int_t), .U_t(int_t), .C_t(int_t), .IC_t(int_t)) c;
    initial begin

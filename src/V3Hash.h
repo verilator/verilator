@@ -46,8 +46,8 @@ public:
         : V3Hash{static_cast<uint32_t>(val)} {}
     explicit V3Hash(int64_t val)
         : V3Hash{static_cast<uint64_t>(val)} {}
-    explicit V3Hash(void* val)
-        : V3Hash{reinterpret_cast<uintptr_t>(val)} {}
+    explicit V3Hash(const void* val)
+        : V3Hash{static_cast<uint64_t>(reinterpret_cast<uintptr_t>(val))} {}
 
     // METHODS
     uint32_t value() const VL_MT_SAFE { return m_value; }
@@ -64,12 +64,16 @@ public:
     V3Hash operator+(T that) const {
         return V3Hash{combine(m_value, V3Hash{that}.m_value)};
     }
+    V3Hash operator+(const std::string& that) const {
+        return V3Hash{combine(m_value, V3Hash{that}.m_value)};
+    }
 
     // '+=' combines in place
     template <typename T>
     V3Hash& operator+=(T that) {
         return *this = *this + that;
     }
+    V3Hash& operator+=(const std::string& that) { return *this = *this + that; }
 };
 
 std::ostream& operator<<(std::ostream& os, const V3Hash& rhs) VL_MT_SAFE;

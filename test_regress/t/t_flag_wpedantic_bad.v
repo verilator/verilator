@@ -4,6 +4,6 @@
 // any use, without warranty, 2019 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
    reg global;
 endmodule

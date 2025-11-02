@@ -14,7 +14,7 @@ function integer cdiv(input integer x);
    end
 endfunction
 
-module t (/*AUTOARG*/);
+module t;
 
    genvar j;
    generate

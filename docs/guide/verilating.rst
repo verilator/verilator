@@ -18,9 +18,8 @@ Verilator may be used in five major ways:
 * With the :vlopt:`--lint-only` option, Verilator will lint the design to
   check for warnings but will not typically create any output files.
 
-* With the :vlopt:`--xml-only` option, Verilator will create XML output
-  that may be used to feed into other user-designed tools.  See
-  :file:`docs/xml.rst` in the distribution.
+* With the :vlopt:`--json-only` option, Verilator will create JSON output
+  that may be used to feed into other user-designed tools.
 
 * With the :vlopt:`-E` option, Verilator will preprocess the code according
   to IEEE preprocessing rules and write the output to standard out. This
@@ -60,7 +59,7 @@ When using these options:
    makefiles to generate an archive (.a) containing the objects.
 
 #. If :vlopt:`--binary` or :vlopt:`--build` is used, it calls :ref:`GNU
-   Make` or :ref:`CMake` to build the model.
+   Make` to build the model.
 
 Once a model is built, the next step is typically for the user to run it,
 see :ref:`Simulating`.
@@ -144,8 +143,11 @@ Limitations
 
 Hierarchy blocks have some limitations, including:
 
-* The hierarchy block cannot be accessed using dot (.) from the upper
-  module(s) or other hierarchy blocks.
+* Internals of the hierarchy block cannot be accessed using dot (.) from
+  the upper module(s) or other hierarchy blocks, except that ports of a
+  hierarchy block instance can be accessed from the directly enclosing
+  nested hierarchy block, or from the top level non-hierarchical portions
+  of the design if not a nested hierarchy block.
 
 * Modport cannot be used at the hierarchical block boundary.
 

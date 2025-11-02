@@ -14,7 +14,7 @@ function automatic logic foo
    return x;
 endfunction
 
-module t (/*AUTOARG*/);
+module t;
    logic foo_val;
 
    initial begin

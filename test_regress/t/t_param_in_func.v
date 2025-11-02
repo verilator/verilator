@@ -4,7 +4,7 @@
 // without warranty, 2019 by Driss Hafdi.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       if (getUnpacked($c("0")) != "0") $stop;
       if (getUnpacked($c("1")) != "1") $stop;

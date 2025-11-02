@@ -1,0 +1,7 @@
+%Warning-NORETURN: t/t_lint_noreturn.v:11:16: Non-void function 'no_rtn' has no return value
+                                            : ... note: In instance 't'
+   11 |   function int no_rtn();   
+      |                ^~~~~~
+                   ... For warning description see https://verilator.org/warn/NORETURN?v=latest
+                   ... Use "/* verilator lint_off NORETURN */" and lint_on around source to disable this message.
+%Error: Exiting due to

@@ -195,6 +195,8 @@ public:
     // For getline()
     string m_lineChars;  ///< Characters left for next line
 
+    string m_tokenBuf;  // Token buffer, to avoid repeated alloc/free
+
     void v3errorEnd(std::ostringstream& str) VL_RELEASE(V3Error::s().m_mutex) {
         fileline()->v3errorEnd(str);
     }
@@ -295,7 +297,7 @@ public:
 // Creation
 
 V3PreProc* V3PreProc::createPreProc(FileLine* fl) {
-    V3PreProcImp* preprocp = new V3PreProcImp;
+    V3PreProcImp* const preprocp = new V3PreProcImp;
     preprocp->configure(fl);
     return preprocp;
 }
@@ -305,8 +307,14 @@ void V3PreProc::selfTest() VL_MT_DISABLED { V3PreExpr::selfTest(); }
 //*************************************************************************
 // Defines
 
-void V3PreProcImp::undef(const string& name) { m_defines.erase(name); }
+void V3PreProcImp::undef(const string& name) {
+    if (v3Global.opt.preprocOnly() && v3Global.opt.preprocDefines())
+        insertUnreadback("`undef " + name + "\n");
+    m_defines.erase(name);
+}
 void V3PreProcImp::undefineall() {
+    if (v3Global.opt.preprocOnly() && v3Global.opt.preprocDefines())
+        insertUnreadback("`undefineall\n");
     for (DefinesMap::iterator nextit, it = m_defines.begin(); it != m_defines.end(); it = nextit) {
         nextit = it;
         ++nextit;
@@ -346,6 +354,18 @@ FileLine* V3PreProcImp::defFileline(const string& name) {
 void V3PreProcImp::define(FileLine* fl, const string& name, const string& value,
                           const string& params, bool cmdline) {
     UINFO(4, "DEFINE '" << name << "' as '" << value << "' params '" << params << "'");
+    if (v3Global.opt.preprocOnly() && v3Global.opt.preprocDefines()) {
+        // Any newlines in the string must have backslash escape so can re-parse properly
+        // If there was a comment with backslash, it got stripped because IEEE says
+        // the backslash is not part of the value
+        string out;
+        out.reserve(value.size());
+        for (string::size_type pos = 0; pos < value.size(); ++pos) {
+            if (value[pos] == '\n' && (pos == 0 || value[pos - 1] != '\\')) out += '\\';
+            out += value[pos];
+        }
+        insertUnreadback("`define " + name + params + (out.empty() ? "" : " ") + out + "\n");
+    }
     if (!V3LanguageWords::isKeyword("`"s + name).empty()) {
         fl->v3error("Attempting to define built-in directive: '`" << name
                                                                   << "' (IEEE 1800-2023 22.5.1)");
@@ -442,7 +462,7 @@ bool V3PreProcImp::commentTokenMatch(string& cmdr, const char* strg) {
 void V3PreProcImp::comment(const string& text) {
     // Comment detected.  Only keep relevant data.
     bool printed = false;
-    if (v3Global.opt.preprocOnly() && v3Global.opt.ppComments()) {
+    if (v3Global.opt.preprocOnly() && v3Global.opt.preprocComments()) {
         insertUnreadback(text);
         printed = true;
     }
@@ -959,13 +979,13 @@ int V3PreProcImp::getRawToken() {
         }
         if (m_lineCmt != "") {
             // We have some `line directive or other processed data to return to the user.
-            static string rtncmt;  // Keep the c string till next call
-            rtncmt = m_lineCmt;
+            static string s_rtncmt;  // Keep the c string till next call
+            s_rtncmt = m_lineCmt;
             if (m_lineCmtNl) {
-                if (!m_rawAtBol) rtncmt.insert(0, "\n");
+                if (!m_rawAtBol) s_rtncmt.insert(0, "\n");
                 m_lineCmtNl = false;
             }
-            yyourtext(rtncmt.c_str(), rtncmt.length());
+            yyourtext(s_rtncmt.c_str(), s_rtncmt.length());
             m_lineCmt = "";
             if (yyourleng()) m_rawAtBol = (yyourtext()[yyourleng() - 1] == '\n');
             if (state() == ps_DEFVALUE) {
@@ -1154,7 +1174,7 @@ int V3PreProcImp::getStateToken() {
                     m_lexp->pushStateDefForm();
                     goto next_tok;
                 } else {  // LCOV_EXCL_LINE
-                    v3fatalSrc("Bad case\n");
+                    v3fatalSrc("Bad case");
                 }
                 goto next_tok;
             } else if (tok == VP_TEXT) {
@@ -1296,8 +1316,8 @@ int V3PreProcImp::getStateToken() {
             }
         }
         case ps_DEFVALUE: {
-            static string newlines;
-            newlines = "\n";  // Always start with trailing return
+            static string s_newlines;
+            s_newlines = "\n";  // Always start with trailing return
             if (tok == VP_DEFVALUE) {
                 if (debug() >= 5) {  // LCOV_EXCL_START
                     cout << "DefValue='" << V3PreLex::cleanDbgStrg(m_lexp->m_defValue)
@@ -1313,10 +1333,10 @@ int V3PreProcImp::getStateToken() {
                 //    This is very difficult in the presence of `", so we
                 //    keep the \ before the newline.
                 for (size_t i = 0; i < formals.length(); i++) {
-                    if (formals[i] == '\n') newlines += "\n";
+                    if (formals[i] == '\n') s_newlines += "\n";
                 }
                 for (size_t i = 0; i < value.length(); i++) {
-                    if (value[i] == '\n') newlines += "\n";
+                    if (value[i] == '\n') s_newlines += "\n";
                 }
                 if (!m_off) {
                     // Remove leading and trailing whitespace
@@ -1327,14 +1347,13 @@ int V3PreProcImp::getStateToken() {
                     define(fileline(), m_lastSym, value, formals, false);
                 }
             } else {
-                const string msg = "Bad define text, unexpected "s + tokenName(tok) + "\n";
-                v3fatalSrc(msg);
+                v3fatalSrc("Bad define text, unexpected "s + tokenName(tok) + "\n");
             }
             statePop();
             // DEFVALUE is terminated by a return, but lex can't return both tokens.
             // Thus, we emit a return here.
-            yyourtext(newlines.c_str(), newlines.length());
-            return (VP_WHITE);
+            yyourtext(s_newlines.c_str(), s_newlines.length());
+            return VP_WHITE;
         }
         case ps_DEFPAREN: {
             if (tok == VP_TEXT && yyourleng() == 1 && yyourtext()[0] == '(') {
@@ -1447,6 +1466,8 @@ int V3PreProcImp::getStateToken() {
                 fileline()->v3error("Expecting include filename. Found: "s + tokenName(tok));
                 goto next_tok;
             }
+            // GCC 13.3.0 with -O0 throws a false 'this statement may fall through' without this:
+            VL_UNREACHABLE;
         }
         case ps_ERRORNAME: {
             if (tok == VP_STRING) {
@@ -1519,7 +1540,7 @@ int V3PreProcImp::getStateToken() {
                 goto next_tok;
             }
         }
-        default: v3fatalSrc("Bad case\n");
+        default: v3fatalSrc("Bad case");
         }
         // Default is to do top level expansion of some tokens
         switch (tok) {
@@ -1635,7 +1656,7 @@ int V3PreProcImp::getStateToken() {
                     goto next_tok;
                 }
             }
-            v3fatalSrc("Bad case\n");  // FALLTHRU
+            v3fatalSrc("Bad case");  // FALLTHRU
             goto next_tok;  // above fatal means unreachable, but fixes static analysis warning
         }
         case VP_ERROR: {
@@ -1685,7 +1706,7 @@ int V3PreProcImp::getFinalToken(string& buf) {
     if (!m_finAhead) {
         m_finAhead = true;
         m_finToken = getStateToken();
-        m_finBuf = string{yyourtext(), yyourleng()};
+        m_finBuf.assign(yyourtext(), yyourleng());
     }
     const int tok = m_finToken;
     buf = m_finBuf;
@@ -1746,10 +1767,10 @@ string V3PreProcImp::getline() {
     const char* rtnp;
     bool gotEof = false;
     while (nullptr == (rtnp = std::strchr(m_lineChars.c_str(), '\n')) && !gotEof) {
-        string buf;
-        const int tok = getFinalToken(buf /*ref*/);
+        m_tokenBuf.clear();
+        const int tok = getFinalToken(m_tokenBuf /*ref*/);
         if (debug() >= 5) {
-            const string bufcln = V3PreLex::cleanDbgStrg(buf);
+            const string bufcln = V3PreLex::cleanDbgStrg(m_tokenBuf);
             const string flcol = m_lexp->m_tokFilelinep->asciiLineCol();
             UINFO(0, flcol << ": GETFETC:  " << tokenName(tok) << ": " << bufcln);
         }
@@ -1760,7 +1781,7 @@ string V3PreProcImp::getline() {
             }
             gotEof = true;
         } else {
-            m_lineChars.append(buf);
+            m_lineChars.append(m_tokenBuf);
         }
     }
 

@@ -10,7 +10,7 @@ class Other;
 endclass
 enum { ZERO } e;
 
-module t (/*AUTOARG*/);
+module t;
 
    int i;
    int v;

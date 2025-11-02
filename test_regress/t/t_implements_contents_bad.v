@@ -10,5 +10,5 @@ interface class Icls;
    endtask
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 endmodule

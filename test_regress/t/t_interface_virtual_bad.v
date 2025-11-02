@@ -17,7 +17,7 @@ endinterface
 
 typedef virtual PBus vpbus_t;
 
-module t (/*AUTOARG*/);
+module t;
 
    PBus p8();
    QBus q8();

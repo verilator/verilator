@@ -218,6 +218,7 @@ Katzman
 Kelin
 Keren
 Keyi
+Keßler
 Kimmitt
 Kindgren
 Kirkham
@@ -361,6 +362,7 @@ Rolfe
 Rontionov
 Roodselaar
 Roshit
+Rufer
 Runtime
 Ruud
 Rystsov
@@ -428,6 +430,7 @@ Terpstra
 Thiede
 Thierry
 Thyer
+Tianchen
 Tianrui
 Tichelaar
 Timi
@@ -527,6 +530,8 @@ ar
 architected
 args
 arrarys
+asan
+aslr
 assertOn
 assertcontrol
 astgen
@@ -610,6 +615,7 @@ covergroup
 cpp
 cppstyle
 cpu
+cpure
 ctor
 ctrace
 cutable
@@ -644,6 +650,7 @@ detections
 dev
 devcontainer
 devel
+difftree
 dir
 disambiguates
 displayb
@@ -745,7 +752,9 @@ fwrite
 gantt
 gcc
 gcda
+gcov
 gdb
+gdbinit
 genblk
 genvar
 genvars
@@ -763,8 +772,8 @@ hdr
 hdzhangdoc
 hh
 hier
-hierCMakeArgs
 hierMkArgs
+hierMkJsonArgs
 hierParameters
 hierVer
 html
@@ -844,6 +853,7 @@ miree
 mis
 misconnected
 misconversion
+misdetecting
 misoptimized
 missized
 mk
@@ -1098,6 +1108,7 @@ unbased
 uncomment
 undef
 undefineall
+undefs
 undriven
 ungetc
 unhandled

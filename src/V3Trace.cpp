@@ -225,6 +225,8 @@ class TraceVisitor final : public VNVisitor {
                 }
             }
         }
+        if (dumpLevel() || debug() >= 9)
+            dupFinder.dumpFile(v3Global.debugFilename("trace") + ".hash", false);
     }
 
     void graphSimplify(bool initial) {
@@ -510,35 +512,35 @@ class TraceVisitor final : public VNVisitor {
         funcp->isStatic(isTopFunc);
         // Add it to top scope
         m_topScopep->addBlocksp(funcp);
-        const auto addInitStr = [funcp, flp](const string& str) -> void {
-            funcp->addInitsp(new AstCStmt{flp, str});
-        };
         const std::string bufArg
             = v3Global.opt.traceClassBase()
               + "::" + (v3Global.opt.useTraceOffload() ? "OffloadBuffer" : "Buffer") + "* bufp";
         if (isTopFunc) {
             // Top functions
             funcp->argTypes("void* voidSelf, " + bufArg);
-            addInitStr(EmitCUtil::voidSelfAssign(m_topModp));
-            addInitStr(EmitCUtil::symClassAssign());
+            funcp->addStmtsp(new AstCStmt{flp, EmitCUtil::voidSelfAssign(m_topModp)});
+            funcp->addStmtsp(new AstCStmt{flp, EmitCUtil::symClassAssign()});
             // Add global activity check to change dump functions
             if (traceType == VTraceType::CHANGE) {  //
-                addInitStr("if (VL_UNLIKELY(!vlSymsp->__Vm_activity)) return;\n");
+                funcp->addStmtsp(
+                    new AstCStmt{flp, "if (VL_UNLIKELY(!vlSymsp->__Vm_activity)) return;"});
             }
             // Register function
-            std::string str;
+            AstCStmt* const cstmtp = new AstCStmt{flp};
+            m_regFuncp->addStmtsp(cstmtp);
             if (traceType == VTraceType::CONSTANT) {
-                str = "tracep->addConstCb(";
+                cstmtp->add("tracep->addConstCb(");
+                cstmtp->add(new AstAddrOfCFunc{flp, funcp});
+                cstmtp->add(", " + std::to_string(funcNum) + ", vlSelf);");
             } else if (traceType == VTraceType::FULL) {
-                str = "tracep->addFullCb(";
+                cstmtp->add("tracep->addFullCb(");
+                cstmtp->add(new AstAddrOfCFunc{flp, funcp});
+                cstmtp->add(", " + std::to_string(funcNum) + ", vlSelf);");
             } else {
-                str = "tracep->addChgCb(";
+                cstmtp->add("tracep->addChgCb(");
+                cstmtp->add(new AstAddrOfCFunc{flp, funcp});
+                cstmtp->add(", " + std::to_string(funcNum) + ", vlSelf);");
             }
-            m_regFuncp->addStmtsp(new AstText{flp, str, true});
-            m_regFuncp->addStmtsp(new AstAddrOfCFunc{flp, funcp});
-            m_regFuncp->addStmtsp(new AstText{flp, ", ", true});
-            m_regFuncp->addStmtsp(new AstConst{flp, funcNum});
-            m_regFuncp->addStmtsp(new AstText{flp, ", vlSelf);\n", true});
         } else {
             // Sub functions
             funcp->argTypes(bufArg);
@@ -546,19 +548,23 @@ class TraceVisitor final : public VNVisitor {
             // sub function, hence the VL_ATTR_UNUSED attributes.
             if (traceType != VTraceType::CHANGE) {
                 // Full dump sub function
-                addInitStr("uint32_t* const oldp VL_ATTR_UNUSED = "
-                           "bufp->oldp(vlSymsp->__Vm_baseCode);\n");
+                funcp->addStmtsp(new AstCStmt{flp,  //
+                                              "uint32_t* const oldp VL_ATTR_UNUSED = "
+                                              "bufp->oldp(vlSymsp->__Vm_baseCode);\n"});
             } else {
                 // Change dump sub function
                 if (v3Global.opt.useTraceOffload()) {
-                    addInitStr("const uint32_t base VL_ATTR_UNUSED = "
-                               "vlSymsp->__Vm_baseCode + "
-                               + cvtToStr(baseCode) + ";\n");
-                    addInitStr("(void)bufp;  // Prevent unused variable warning\n");
+                    funcp->addStmtsp(new AstCStmt{flp,  //
+                                                  "const uint32_t base VL_ATTR_UNUSED = "
+                                                  "vlSymsp->__Vm_baseCode + "
+                                                      + cvtToStr(baseCode) + ";\n"});
+                    funcp->addStmtsp(
+                        new AstCStmt{flp, "(void)bufp;  // Prevent unused variable warning\n"});
                 } else {
-                    addInitStr("uint32_t* const oldp VL_ATTR_UNUSED = "
-                               "bufp->oldp(vlSymsp->__Vm_baseCode + "
-                               + cvtToStr(baseCode) + ");\n");
+                    funcp->addStmtsp(new AstCStmt{flp,  //
+                                                  "uint32_t* const oldp VL_ATTR_UNUSED = "
+                                                  "bufp->oldp(vlSymsp->__Vm_baseCode + "
+                                                      + cvtToStr(baseCode) + ");\n"});
                 }
             }
             // Add call to top function
@@ -732,17 +738,21 @@ class TraceVisitor final : public VNVisitor {
         cleanupFuncp->isStatic(true);
         cleanupFuncp->isLoose(true);
         m_topScopep->addBlocksp(cleanupFuncp);
-        cleanupFuncp->addInitsp(new AstCStmt{fl, EmitCUtil::voidSelfAssign(m_topModp)});
-        cleanupFuncp->addInitsp(new AstCStmt{fl, EmitCUtil::symClassAssign()});
+        cleanupFuncp->addStmtsp(new AstCStmt{fl, EmitCUtil::voidSelfAssign(m_topModp)});
+        cleanupFuncp->addStmtsp(new AstCStmt{fl, EmitCUtil::symClassAssign()});
 
         // Register it
-        m_regFuncp->addStmtsp(new AstText{fl, "tracep->addCleanupCb(", true});
-        m_regFuncp->addStmtsp(new AstAddrOfCFunc{fl, cleanupFuncp});
-        m_regFuncp->addStmtsp(new AstText{fl, ", vlSelf);\n", true});
+        {
+            AstCStmt* const cstmtp = new AstCStmt{fl};
+            m_regFuncp->addStmtsp(cstmtp);
+            cstmtp->add("tracep->addCleanupCb(");
+            cstmtp->add(new AstAddrOfCFunc{fl, cleanupFuncp});
+            cstmtp->add(", vlSelf);");
+        }
 
         // Clear global activity flag
         cleanupFuncp->addStmtsp(
-            new AstCStmt{m_topScopep->fileline(), "vlSymsp->__Vm_activity = false;\n"s});
+            new AstCStmt{m_topScopep->fileline(), "vlSymsp->__Vm_activity = false;"s});
 
         // Clear fine grained activity flags
         for (uint32_t i = 0; i < m_activityNumber; ++i) {

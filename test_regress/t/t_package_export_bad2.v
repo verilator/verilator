@@ -12,5 +12,5 @@ package Pkg10;
    export Pkg1b::*;  // BAD - typo in package name
 endpackage
 
-module t (/*AUTOARG*/);
+module t;
 endmodule

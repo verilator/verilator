@@ -1,0 +1,6 @@
+%Error: t/t_langext_2.v:49:21: syntax error, unexpected case
+   49 |             unique0 case (i)
+      |                     ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Cannot continue
+        ... This fatal error may be caused by the earlier error(s); resolve those first.

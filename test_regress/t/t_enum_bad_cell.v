@@ -4,11 +4,11 @@
 // any use, without warranty, 2023 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
    sub s1();
 endmodule
 
-module sub (/*AUTOARG*/);
+module sub;
    enum {s0, s1} state;
    initial begin
       $write("*-* All Finished *-*\n");

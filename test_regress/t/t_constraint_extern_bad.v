@@ -10,5 +10,5 @@ endclass
 
 constraint Packet::missing_extern { }
 
-module t (/*AUTOARG*/);
+module t;
 endmodule

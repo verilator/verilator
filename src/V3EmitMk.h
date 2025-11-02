@@ -20,7 +20,7 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-class V3HierBlockPlan;
+class V3HierGraph;
 
 //============================================================================
 
@@ -30,7 +30,7 @@ public:
     static const size_t PARALLEL_FILE_CNT_THRESHOLD = 128;
 
     static void emitmk() VL_MT_DISABLED;
-    static void emitHierVerilation(const V3HierBlockPlan* planp) VL_MT_DISABLED;
+    static void emitHierVerilation(const V3HierGraph* planp) VL_MT_DISABLED;
 };
 
 #endif  // Guard

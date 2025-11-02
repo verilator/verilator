@@ -91,6 +91,7 @@ datarootdir = @datarootdir@
 # Compile options
 CFG_WITH_CCWARN = @CFG_WITH_CCWARN@
 CFG_WITH_DEFENV = @CFG_WITH_DEFENV@
+CFG_WITH_DEV_GCOV = @CFG_WITH_DEV_GCOV@
 CFG_WITH_LONGTESTS = @CFG_WITH_LONGTESTS@
 CFG_WITH_SOLVER = @CFG_WITH_SOLVER@
 PACKAGE_VERSION = @PACKAGE_VERSION@
@@ -185,7 +186,7 @@ test-snap test-diff:
 
 examples: all_nomsg
 	for p in $(EXAMPLES) ; do \
-	  $(MAKE) -C $$p VERILATOR_ROOT=`pwd` || exit 10; \
+		$(MAKE) -C $$p VERILATOR_ROOT=`pwd` || exit 10; \
 	done
 
 ######################################################################
@@ -275,7 +276,7 @@ mkbindirs:
 installbin: | mkbindirs
 	cd $(srcdir)/bin; \
 	for p in $(VL_INST_PUBLIC_SCRIPT_FILES) ; do \
-	  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/$$p; \
+		$(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/$$p; \
 	done
 	perl -p -i -e 'use File::Spec;' \
 	           -e' $$path = File::Spec->abs2rel("$(realpath $(DESTDIR)$(pkgdatadir))", "$(realpath $(DESTDIR)$(bindir))");' \
@@ -283,11 +284,11 @@ installbin: | mkbindirs
 	           -- "$(DESTDIR)/$(bindir)/verilator"
 	cd bin; \
 	for p in $(VL_INST_PUBLIC_BIN_FILES) ; do \
-	  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/$$p; \
+		$(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/$$p; \
 	done
 	cd $(srcdir)/bin; \
 	for p in $(VL_INST_PRIVATE_SCRIPT_FILES) ; do \
-	  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(pkgdatadir)/bin/$$p; \
+		$(INSTALL_PROGRAM) $$p $(DESTDIR)$(pkgdatadir)/bin/$$p; \
 	done
 
 installredirect: installbin | mkbindirs
@@ -297,7 +298,7 @@ installredirect: installbin | mkbindirs
 	           -e 's/RELPATH.*/"$$path";/g' -- "${srcdir}/bin/redirect.tmp"
 	cd $(srcdir)/bin; \
 	for p in $(VL_INST_PUBLIC_SCRIPT_FILES) $(VL_INST_PUBLIC_BIN_FILES) ; do \
-	  $(INSTALL_PROGRAM) redirect.tmp $(DESTDIR)$(pkgdatadir)/bin/$$p; \
+		$(INSTALL_PROGRAM) redirect.tmp $(DESTDIR)$(pkgdatadir)/bin/$$p; \
 	done
 	rm ${srcdir}/bin/redirect.tmp
 
@@ -306,14 +307,14 @@ installredirect: installbin | mkbindirs
 installman: $(VL_INST_MAN_FILES)
 	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man1
 	for p in $^ ; do \
-	  $(INSTALL_DATA) $$p $(DESTDIR)$(mandir)/man1/$$p; \
+		$(INSTALL_DATA) $$p $(DESTDIR)$(mandir)/man1/$$p; \
 	done
 
 installdata:
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/include/gtkwave
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/include/vltstd
 	for p in $(VL_INST_INC_BLDDIR_FILES) ; do \
-	  $(INSTALL_DATA) $$p $(DESTDIR)$(pkgdatadir)/$$p; \
+		$(INSTALL_DATA) $$p $(DESTDIR)$(pkgdatadir)/$$p; \
 	done
 	cd $(srcdir) \
 	; for p in $(VL_INST_INC_SRCDIR_FILES) ; do \
@@ -472,7 +473,7 @@ format-c clang-format:
 	|| echo "*** You are not using clang-format-18, indents may differ from master's ***"
 	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CLANGFORMAT_FILES)
 
-YAMLFIX = YAMLFIX_WHITELINES=1 YAMLFIX_LINE_LENGTH=130 YAMLFIX_preserve_quotes=true yamlfix
+YAMLFIX = YAMLFIX_WHITELINES=1 YAMLFIX_LINE_LENGTH=200 YAMLFIX_preserve_quotes=true yamlfix
 
 yamlfix:
 	$(YAMLFIX) .
@@ -515,7 +516,6 @@ PY_PROGRAMS = \
   test_regress/*.py \
   test_regress/t/*.pf \
   nodist/clang_check_attributes \
-  nodist/code_coverage \
   nodist/dot_importer \
   nodist/fuzzer/actual_fail \
   nodist/fuzzer/generate_dictionary \
@@ -525,7 +525,6 @@ PY_PROGRAMS = \
 # Python files, subject to format but not lint
 PY_FILES = \
   $(PY_PROGRAMS) \
-  nodist/code_coverage.dat \
   test_regress/t/*.py \
 
 # Python files, test_regress tests
@@ -552,6 +551,9 @@ format-make:
 
 format-yaml: yamlfix
 
+MYPY = mypy
+MYPY_FLAGS = --strict --no-error-summary
+
 PYLINT = pylint
 PYLINT_FLAGS = --recursive=n --score=n --disable=R0801
 PYLINT_TEST_FLAGS = $(PYLINT_FLAGS) --disable=C0103,C0114,C0116,C0209,C0411,C0413,C0301,R0801,R0912,R0915,R0916,R1702,W0511,W0621
@@ -561,7 +563,16 @@ RUFF_FLAGS = check --ignore=E402,E501,E701
 
 # "make -k" so can see all tool result errors
 lint-py:
-	$(MAKE) -k lint-py-pylint lint-py-pylint-tests lint-py-ruff
+	$(MAKE) -k lint-py-mypy lint-py-mypy-none lint-py-pylint lint-py-pylint-tests lint-py-ruff
+
+lint-py-mypy:
+	for filename in `fgrep -l '# mypy' $(PY_PROGRAMS)`; do \
+		echo "$(MYPY) $(MYPY_FLAGS) $$filename" ; \
+		$(MYPY) $(MYPY_FLAGS) $$filename ; \
+	done
+
+lint-py-mypy-none:
+	@echo "mypy not checking: " `fgrep -L '# mypy' $(PY_PROGRAMS)`
 
 lint-py-pylint:
 	$(PYLINT) $(PYLINT_FLAGS) $(PY_PROGRAMS)
@@ -598,6 +609,149 @@ else
 endif
 
 ######################################################################
+# Coverage collection and reporting
+
+COVERAGE_DIR := obj_coverage
+
+ifeq ($(CFG_WITH_DEV_GCOV),yes)
+
+# Figure out base and head refs for coverage report
+COVERAGE_REF_BASE := $(if $(COVERAGE_BASE),$(shell git rev-parse --short $(COVERAGE_BASE)))
+COVERAGE_REF_HEAD := $(shell git rev-parse --short HEAD)
+override undefine COVERAGE_BASE # Use the above variabels instead
+
+# 'fastcov' setup
+FASTCOV := nodist/fastcov.py
+FASTCOV_OPT := -j $(shell nproc)
+FASTCOV_OPT += --lcov
+FASTCOV_OPT += --process-gcno
+FASTCOV_OPT += --branch-coverage
+FASTCOV_OPT += --dump-statistic
+# Files matching the following glob patterns will be excluded from coverage
+FASTCOV_OPT += --exclude-glob
+FASTCOV_OPT += '/usr/*'
+FASTCOV_OPT += '*examples/*'
+FASTCOV_OPT += '*include/gtkwave/*'
+FASTCOV_OPT += '*src/obj_dbg/*'
+FASTCOV_OPT += '*src/obj_opt/*.yy.cpp'
+FASTCOV_OPT += '*src/obj_opt/V3Ast*'
+FASTCOV_OPT += '*src/obj_opt/V3Dfg*'
+FASTCOV_OPT += '*src/obj_opt/V3ParseBison.c'
+FASTCOV_OPT += '*test_regress/*'
+# Lines *containing* these substrings will be excluded from *all* coverage
+FASTCOV_OPT += --custom-exclusion-marker
+FASTCOV_OPT += ASTGEN_MEMBERS
+FASTCOV_OPT += ERROR_RSVD_WORD
+FASTCOV_OPT += LCOV_EXCL_LINE
+FASTCOV_OPT += V3ERROR_NA
+FASTCOV_OPT += VL_DEFINE_DEBUG_FUNCTIONS
+FASTCOV_OPT += VL_FATAL
+FASTCOV_OPT += VL_RTTI_IMPL
+FASTCOV_OPT += VL_UNREACHABLE
+FASTCOV_OPT += v3fatalSrc
+# Lines *starting* with these substrings will be ecluded from *branch* coverage
+FASTCOV_OPT += --exclude-br-lines-starting-with
+FASTCOV_OPT += BROKEN_BASE_RTN
+FASTCOV_OPT += BROKEN_RTN
+FASTCOV_OPT += NUM_ASSERT
+FASTCOV_OPT += SELF_CHECK
+FASTCOV_OPT += UASSERT
+FASTCOV_OPT += UINFO
+FASTCOV_OPT += assert
+FASTCOV_OPT += 'if (VL_UNCOVERABLE'
+FASTCOV_OPT += '} else if (VL_UNCOVERABLE'
+
+# 'genhtml' setup
+GENHTML := genhtml
+GENHTML_OPT := -j $(shell nproc)
+GENHTML_OPT += --branch-coverage
+GENHTML_OPT += --demangle-cpp
+GENHTML_OPT += --missed
+GENHTML_OPT += --rc branch_coverage=1
+GENHTML_OPT += --rc genhtml_hi_limit=100
+GENHTML_OPT += --ignore-errors negative
+ifeq ($(COVERAGE_REF_BASE),)
+GENHTML_OPT += --header-title "Code coverage for Verilator $(shell git describe --dirty)"
+else
+GENHTML_OPT += --header-title "Patch coverage for Verilator $(COVERAGE_REF_BASE)..$(COVERAGE_REF_HEAD)$(if $(shell git status --porcelain),-dirty)"
+endif
+GENHTML_OPT += --flat
+GENHTML_OPT += --precision 2
+GENHTML_OPT += --legend
+GENHTML_OPT += --show-proportion
+GENHTML_OPT += --filter brace,blank,range
+
+# There are loads (~20k combined), but using this seems fine on modern hardware
+GCNO_FILES = $(shell find . -name '*.gcno')
+GCDA_FILES = $(shell find . -name '*.gcda')
+
+# Combine all .gcda coverage date files into lcov .info file
+$(COVERAGE_DIR)/verilator.info: $(GCNO_FILES) $(GCDA_FILES)
+	@echo "####################################################################"
+	@echo "# fastcov: combining all .gcda files into lcov .info"
+	@echo "####################################################################"
+	@mkdir -p $(COVERAGE_DIR)
+	/usr/bin/time -f "That took %E" \
+	$(FASTCOV) $(FASTCOV_OPT) --output $@
+
+# Filter combined .info file for patch coverage
+$(COVERAGE_DIR)/verilator-patch.info: $(COVERAGE_DIR)/verilator.info
+	@echo "####################################################################"
+	@echo "# fastcov: Filtering for patch coverage"
+	@echo "####################################################################"
+	rm -f $(COVERAGE_DIR)/empty-patch
+	git diff $(COVERAGE_REF_BASE) -- include src > $(COVERAGE_DIR)/filter.patch
+	[ -s $(COVERAGE_DIR)/filter.patch ]] || touch $(COVERAGE_DIR)/empty-patch
+	$(FASTCOV) -C $^ --lcov -o $@ --diff-filter $(COVERAGE_DIR)/filter.patch
+
+# Build coverage report
+$(COVERAGE_DIR)/report/index.html: $(COVERAGE_DIR)/verilator$(if $(COVERAGE_REF_BASE),-patch).info
+	@echo "####################################################################"
+	@echo "# genhtml: Generating coverage report"
+	@echo "####################################################################"
+	@rm -rf $(COVERAGE_DIR)/report
+	[ -f $(COVERAGE_DIR)/empty-patch ]] || /usr/bin/time -f "That took %E" \
+	$(GENHTML) $(GENHTML_OPT) --output-directory $(COVERAGE_DIR)/report $^ || true
+	@# Uncommitted changes not tracked, force rebuild on next run if patch coverage
+	@$(if $(COVERAGE_REF_BASE),mv $(COVERAGE_DIR)/verilator-patch.info $(COVERAGE_DIR)/verilator-patch-last.info)
+
+# Convenience targets
+.PHONY: coverage-combine
+coverage-combine: $(COVERAGE_DIR)/verilator.info
+
+# Via recursive make, so the message is always printed
+.PHONY: coverage-report
+coverage-report:
+	@$(MAKE) --no-print-directory $(COVERAGE_DIR)/report/index.html || true
+	@if [ -f $(COVERAGE_DIR)/report/index.html ]; then \
+		echo "####################################################################"; \
+		echo "# Coverage report is at: $(COVERAGE_DIR)/report/index.html"; \
+		echo "# Use 'make coverage-view' to open it in your default browser"; \
+		echo "####################################################################"; \
+	elif [ -f $(COVERAGE_DIR)/empty-patch ]; then \
+		echo "####################################################################"; \
+		echo "# Patch is empty"; \
+		echo "####################################################################"; \
+	else \
+		echo "####################################################################"; \
+		echo "# Failed to create coverage report. Maybe no data, or error?"; \
+		echo "####################################################################"; \
+		false; \
+	fi
+
+# Open covarage report in default web browser
+.PHONY: coverage-view
+coverage-view: coverage-report
+	@test -f $(COVERAGE_DIR)/report/index.html && open $(COVERAGE_DIR)/report/index.html || true
+
+# Deletes all coverage data files (.gcda)
+.PHONY: coverage-zero
+coverage-zero: # 'rm $(GCDA_FILES)' might fail with too many args
+	$(FASTCOV) --zerocounters
+
+endif
+
+######################################################################
 # Clean
 
 maintainer-clean::
@@ -607,8 +761,8 @@ maintainer-clean::
 
 clean mostlyclean distclean maintainer-clean maintainer-copy::
 	for dir in $(SUBDIRS); do \
-	  echo making $@ in $$dir ; \
-	  $(MAKE) -C $$dir $@ ; \
+		echo making $@ in $$dir ; \
+		$(MAKE) -C $$dir $@ ; \
 	done
 
 clean mostlyclean distclean maintainer-clean::
@@ -622,7 +776,7 @@ clean mostlyclean distclean maintainer-clean::
 	rm -rf src/*.tidy include/*.tidy examples/*/*.tidy
 	rm -rf .ruff_cache
 	rm -rf nodist/fuzzer/dictionary
-	rm -rf nodist/obj_dir
+	rm -rf $(COVERAGE_DIR)
 	rm -rf verilator.txt
 
 distclean maintainer-clean::

@@ -57,7 +57,7 @@ class Cls2Arg;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       ClsNoArg c1;
       ClsArg   c2;

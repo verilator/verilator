@@ -16,7 +16,7 @@ if 'VERILATOR_TEST_NO_GDB' in os.environ:
 if not test.have_gdb:
     test.skip("No gdb installed")
 
-test.lint(verilator_flags2=["--debug-fatalsrc"], fails=test.vlt_all)
+test.lint(verilator_flags2=["--debug-fatalsrc"], fails='any')
 
 test.file_grep(test.compile_log_filename, r'%Error: Internal Error: .*: --debug-fatal-src')
 test.file_grep(test.compile_log_filename, r'See the manual')

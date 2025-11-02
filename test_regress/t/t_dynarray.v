@@ -81,10 +81,8 @@ module t (/*AUTOARG*/
          `checkh(a[0], 5);
          `checkh(a[1], 6);
          a = new[2];
-`ifdef verilator  // bug2618
          a[0] = 0;
          a[1] = 0;
-`endif
          `checkh(a[0], 0);
          `checkh(a[1], 0);
 
@@ -97,10 +95,8 @@ module t (/*AUTOARG*/
          `checkh(b.size, 4);
          `checkh(b[0], 5);
          `checkh(b[1], 6);
-`ifdef verilator  // bug2618
          b[2] = 0;
          b[3] = 0;
-`endif
          `checkh(b[2], 0);
          `checkh(b[3], 0);
 
@@ -115,12 +111,10 @@ module t (/*AUTOARG*/
          `checkh(a.size, 0);
          b = new [4](a);
          `checkh(b.size, 4);
-`ifdef verilator  // bug2618
          b[0] = 0;
          b[1] = 0;
          b[2] = 0;
          b[3] = 0;
-`endif
          `checkh(b[0], 0);
          `checkh(b[1], 0);
          `checkh(b[2], 0);

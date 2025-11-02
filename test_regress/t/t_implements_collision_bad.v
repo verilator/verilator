@@ -37,6 +37,6 @@ interface class Ic3 extends Ic1, Ic2;
 endclass
 
 
-module t (/*AUTOARG*/);
+module t;
    Cls c;
 endmodule

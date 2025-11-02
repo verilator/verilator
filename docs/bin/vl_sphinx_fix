@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# mypy: disallow-untyped-defs
 # pylint: disable=C0112,C0114,C0115,C0116,C0209,C0301,R0903
 # -*- Python -*- See copyright, etc below
 ######################################################################
@@ -12,19 +13,17 @@ import re
 
 class VlSphinxFix:
     debug = 0
-    SkipBasenames = {}
 
-    def process(self, path):
+    def process(self, path: str) -> None:
         if os.path.isdir(path):
             for basefile in os.listdir(path):
                 file = os.path.join(path, basefile)
-                if ((basefile != ".") and (basefile != "..") and basefile not in self.SkipBasenames
-                        and not os.path.islink(file)):
+                if ((basefile != ".") and (basefile != "..") and not os.path.islink(file)):
                     self.process(file)
         elif re.search(r'\.(html|tex)$', path):
             self._edit(path)
 
-    def _edit(self, filename):
+    def _edit(self, filename: str) -> None:
         is_html = re.search(r'\.(html)$', filename)
         with open(filename, "r", encoding="utf8") as fhr:
             origfile = fhr.read()

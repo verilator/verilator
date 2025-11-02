@@ -4,7 +4,7 @@
 // any use, without warranty, 2009 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
    // IEEE: integer_atom_type
    byte         d_byte;

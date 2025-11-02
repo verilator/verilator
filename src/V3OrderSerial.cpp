@@ -22,7 +22,6 @@
 
 #include "V3OrderCFuncEmitter.h"
 #include "V3OrderInternal.h"
-#include "V3OrderMoveGraph.h"
 
 #include <memory>
 
@@ -31,21 +30,15 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 // OrderSerial class
 
-std::vector<AstActive*> V3Order::createSerial(OrderGraph& graph, const std::string& tag,
-                                              const TrigToSenMap& trigToSen, bool slow) {
+AstNodeStmt* V3Order::createSerial(OrderMoveGraph& moveGraph, const std::string& tag, bool slow) {
 
     UINFO(2, "  Constructing serial code for '" + tag + "'");
 
-    // Build the move graph
-    OrderMoveDomScope::clear();
-    const std::unique_ptr<OrderMoveGraph> moveGraphp = OrderMoveGraph::build(graph, trigToSen);
-    if (dumpGraphLevel() >= 9) moveGraphp->dumpDotFilePrefixed(tag + "_ordermv");
-
     // Serializer
-    OrderMoveGraphSerializer serializer{*moveGraphp};
+    OrderMoveGraphSerializer serializer{moveGraph};
 
     // Add initially ready vertices (those with no dependencies) to the serializer as seeds
-    for (V3GraphVertex& vtx : moveGraphp->vertices()) {
+    for (V3GraphVertex& vtx : moveGraph.vertices()) {
         if (vtx.inEmpty()) serializer.addSeed(vtx.as<OrderMoveVertex>());
     }
 
@@ -63,18 +56,15 @@ std::vector<AstActive*> V3Order::createSerial(OrderGraph& graph, const std::stri
             emitter.emitLogic(logicp);
         }
         // Can delete the vertex now
-        VL_DO_DANGLING(mVtxp->unlinkDelete(moveGraphp.get()), mVtxp);
+        VL_DO_DANGLING(mVtxp->unlinkDelete(&moveGraph), mVtxp);
     }
 
     // Delete the remaining variable vertices
-    for (V3GraphVertex* const vtxp : moveGraphp->vertices().unlinkable()) {
+    for (V3GraphVertex* const vtxp : moveGraph.vertices().unlinkable()) {
         if (!vtxp->as<OrderMoveVertex>()->logicp()) {
-            VL_DO_DANGLING(vtxp->unlinkDelete(moveGraphp.get()), vtxp);
+            VL_DO_DANGLING(vtxp->unlinkDelete(&moveGraph), vtxp);
         }
     }
 
-    UASSERT(moveGraphp->empty(), "Waiting vertices remain, but none are ready");
-    OrderMoveDomScope::clear();
-
-    return emitter.getAndClearActiveps();
+    return emitter.getStmts();
 }

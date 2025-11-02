@@ -2,8 +2,9 @@
    17 |    ifc.counter_mp c_data
       |                   ^~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: t/t_interface_top_bad.v:17:4: Parent instance's interface is not found: 'ifc'
-                                    : ... Perhaps intended an interface instantiation but are missing parenthesis (IEEE 1800-2023 25.3)?
+%Error: t/t_interface_top_bad.v:17:4: Interface 'ifc' not connected as parent's interface not connected
+                                    : ... Perhaps caused by another error on the parent interface that needs resolving
+                                    : ... Or, perhaps intended an interface instantiation but are missing parenthesis (IEEE 1800-2023 25.3)?
    17 |    ifc.counter_mp c_data
       |    ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

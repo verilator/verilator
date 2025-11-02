@@ -9,7 +9,7 @@
 
 // See also t_class_param.v
 
-module t (/*AUTOARG*/);
+module t;
 
 class Cls #(parameter PBASE = 12);
    bit [PBASE-1:0] member;

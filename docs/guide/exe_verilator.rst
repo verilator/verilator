@@ -88,12 +88,23 @@ Summary:
       grammar and other semantic extensions which might not be legal when
       set to an older standard.
 
+.. option:: --aslr
+
+.. option:: --no-aslr
+
+   Rarely needed - for developer use. With `--aslr`, do not change the
+   system default as to using Linux address space layout randomization
+   (ASLR).  With `--no-aslr` attempt to disable ASLR. If not specified,
+   ASLR will be disabled only when using :vlopt:`--debug` (or similar
+   debug-related options), so that pointers have more deterministic values,
+   aiding repeatability.
+
 .. option:: --no-assert
 
    Disable all assertions. Implies :vlopt:`--no-assert-case`.
 
-   In versions before 5.038, these were disabled by default, and `--assert`
-   was required to enable assertions.
+   In versions before 5.038, assertions were disabled by default, and
+   `--assert` was required to enable assertions.
 
 .. option:: --no-assert-case
 
@@ -157,10 +168,11 @@ Summary:
 
 .. option:: --build-jobs <value>
 
-   Specify the level of parallelism for :vlopt:`--build`. If zero, uses the
-   number of threads in the current hardware. Otherwise, the <value> must
-   be a positive integer specifying the maximum number of parallel build
-   jobs.
+   Specify the level of parallelism for :vlopt:`--build`.  If zero, uses the
+   number of threads available to the process, which is the number of threads
+   assigned by processor affinity (e.g. using `numactl`), or the number of
+   threads in the host hardware if unspecified.  Otherwise, the <value> must be
+   a positive integer specifying the maximum number of parallel build jobs.
 
    If not provided, and :vlopt:`-j` is provided, the :vlopt:`-j` value is
    used.
@@ -188,6 +200,10 @@ Summary:
 
 .. option:: --clk <signal-name>
 
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.042:
+
    With :vlopt:`--clk`, the specified signal is marked as a clock signal.
 
    The provided signal name is specified using a RTL hierarchy path. For
@@ -207,6 +223,10 @@ Summary:
    code. This may greatly improve performance.
 
 .. option:: --no-clk <signal-name>
+
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.042:
 
    Prevent the specified signal from being marked as a clock. See
    :vlopt:`--clk`.
@@ -450,6 +470,11 @@ Summary:
    level 3. Before Verilator 4.228, :vlopt:`--dump-tree` used
    to include this option.
 
+.. option:: --dump-inputs
+
+   Rarely needed.  Enable dumping a *{prefix}*\ __inputs\ .vpp file which
+   has all of the individual input files combined and pre-processed
+
 .. option:: --dump-tree
 
    Rarely needed.  Enable dumping Ast .tree debug files with dumping level 3,
@@ -514,8 +539,8 @@ Summary:
    out.  Beware of enabling debugging messages, as they will also go to
    standard out. See :vlopt:`--no-std`, which is implied by this.
 
-   See also :vlopt:`--dump-defines`, :vlopt:`-P`, :vlopt:`--pp-comments`
-   and :vlopt:`--preproc-resolve` options.
+   See also :vlopt:`--dump-defines`, :vlopt:`-P`,
+   :vlopt:`--preproc-comments` and :vlopt:`--preproc-resolve` options.
 
 .. option:: --emit-accessors
 
@@ -603,6 +628,10 @@ Summary:
 .. option:: -fno-const-bit-op-tree
 
 .. option:: -fno-const-eager
+
+.. option:: -fno-dead-assigns
+
+.. option:: -fno-dead-cells
 
 .. option:: -fno-dedup
 
@@ -772,7 +801,8 @@ Summary:
    be useful in makefiles. See also :vlopt:`-V`, and the various
    :file:`*.mk` files.
 
-   Feature may be one of the following: COROUTINES, SYSTEMC.
+   Feature may be one of the following: COROUTINES, DEV_ASAN, DEV_GCOV,
+   SYSTEMC.
 
 .. option:: --getenv <variable>
 
@@ -791,6 +821,14 @@ Summary:
    Enable hierarchical Verilation; otherwise, the
    :option:`/*verilator&32;hier_block*/` metacomment is ignored.  See
    :ref:`Hierarchical Verilation`.
+
+.. option:: --hierarchical-block <block>
+
+   Internal use only, for :vlopt:`--hierarchical`.
+
+.. option:: --hierarchical-child <block>
+
+   Internal use only, for :vlopt:`--hierarchical`.
 
 .. option:: --hierarchical-params-file <filename>
 
@@ -849,9 +887,10 @@ Summary:
    of Verilator if :vlopt:`--verilate-jobs` isn't provided. Also sets
    :vlopt:`--output-groups` if isn't provided.
 
-   If zero, uses the number of threads in the current hardware. Otherwise,
-   must be a positive integer specifying the maximum number of parallel
-   build jobs.
+   If zero, uses the number of threads available to the process, which is the
+   number of threads assigned by processor affinity (e.g. using `numactl`), or
+   the number of threads in the host hardware if unspecified.  Otherwise, must
+   be a positive integer specifying the maximum number of parallel build jobs.
 
 .. option:: --no-json-edit-nums
 
@@ -943,6 +982,10 @@ Summary:
    example, module "my" is referenced, look in :file:`my.<ext>`.  Note
    "+libext+" is relatively standard across Verilog tools.  Defaults to
    ".v+.sv".
+
+.. option:: +librescan
+
+   Ignored for compatibility with other simulators.
 
 .. option:: --lint-only
 
@@ -1051,6 +1094,15 @@ Summary:
 .. option:: -O0
 
    Disables optimization of the model.
+
+.. option:: -O1
+
+   Enables default optimization of the model.  This is the default
+   optimization level.
+
+.. option:: -O2
+
+   Enables stronger than default optimization of the model.
 
 .. option:: -O3
 
@@ -1215,13 +1267,22 @@ Summary:
 
 .. option:: --pp-comments
 
-   With :vlopt:`-E`, show comments in preprocessor output.
+   Deprecated. In versions before 5.042, the name for
+   :vlopt:`--preproc-comments`.
 
 .. option:: --prefix <topname>
 
    Specifies the name of the top-level class and makefile.  Defaults to V
    prepended to the name of the :vlopt:`--top` option, or V prepended to
    the first Verilog filename passed on the command line.
+
+.. option:: --preproc-comments
+
+   With :vlopt:`-E`, show comments in preprocessor output.
+
+.. option:: --preproc-defines
+
+   With :vlopt:`-E`, show defines and undefs in preprocessor output.
 
 .. option:: --preproc-resolve
 
@@ -1348,13 +1409,12 @@ Summary:
 .. option:: --public-flat-rw
 
    Declares all variables, ports, and wires public as if they had
-   :code:`/*verilator public_flat_rw @ (<variable's_source_process_edge>)*/`
-   metacomments.  This will make them VPI accessible by their flat name,
-   but not turn off module inlining.  This is particularly useful in
-   combination with :vlopt:`--vpi`. This may also in some rare cases result
-   in mis-simulation of generated clocks.  Instead of this global option,
-   marking only those signals that need public_flat_rw is typically
-   significantly better performing.
+   :code:`/*verilator public_flat_rw*/` metacomments.  This will make them VPI
+   accessible by their flat name, but not turn off module inlining.  This is
+   particularly useful in combination with :vlopt:`--vpi`. This may also in
+   some rare cases result in mis-simulation of generated clocks.  Instead of
+   this global option, marking only those signals that need public_flat_rw is
+   typically significantly better performing.
 
 .. option:: --public-ignore
 
@@ -1660,14 +1720,15 @@ Summary:
 .. option:: --trace-max-array <depth>
 
    Rarely needed.  Specify the maximum array depth of a signal that may be
-   traced.  Defaults to 32, as tracing large arrays may greatly slow traced
-   simulations.
+   traced.  Zero allows any width. Defaults to 32, as tracing large arrays
+   may greatly slow traced simulations.
 
 .. option:: --trace-max-width <width>
 
-   Rarely needed.  Specify the maximum bit width of a signal that may be
-   traced.  Defaults to 256, as tracing large vectors may greatly slow
-   traced simulations.
+   Rarely needed.  Specify the maximum total bit width of a signal, across
+   all elements if an array, that may be traced.  Zero allows any width.
+   Defaults to 4096, as tracing large vectors may greatly slow traced
+   simulations.
 
 .. option:: --no-trace-params
 
@@ -1786,7 +1847,9 @@ Summary:
 .. option:: --verilate-jobs <value>
 
    Specify the level of parallelism for the internal compilation steps of
-   Verilator. If zero, uses the number of threads in the current hardware.
+   Verilator.  If zero, uses the number of threads available to the process,
+   which is the number of threads assigned by processor affinity (e.g. using
+   `numactl`), or the number of threads in the host hardware if unspecified.
    Otherwise, must be a positive integer specifying the maximum number of
    parallel build jobs.
 
@@ -1878,7 +1941,7 @@ Summary:
 .. option:: -Wno-lint
 
    Disable all lint-related warning messages, and all style warnings.  This
-   is equivalent to ``-Wno-ALWCOMBORDER`` ``-Wno-ASCRANGE``
+   is equivalent to ``-Wno-ALWCOMBORDER`` ``-Wno-ASCRANGE`` ``-Wno-ASSIGNEQEXPR``
    ``-Wno-BSSPACE`` ``-Wno-CASEINCOMPLETE`` ``-Wno-CASEOVERLAP``
    ``-Wno-CASEX`` ``-Wno-CASTCONST`` ``-Wno-CASEWITHX`` ``-Wno-CMPCONST``
    ``-Wno-COLONPLUS`` ``-Wno-IMPLICIT`` ``-Wno-IMPLICITSTATIC``
@@ -1932,14 +1995,14 @@ Summary:
 
    Enable all lint-related warning messages (note that by default, they are
    already enabled), but do not affect style messages.  This is equivalent
-   to ``-Wwarn-ALWCOMBORDER`` ``-Wwarn-ASCRANGE`` ``-Wwarn-BSSPACE``
-   ``-Wwarn-CASEINCOMPLETE`` ``-Wwarn-CASEOVERLAP`` ``-Wwarn-CASEWITHX``
-   ``-Wwarn-CASEX`` ``-Wwarn-CASTCONST`` ``-Wwarn-CMPCONST``
-   ``-Wwarn-COLONPLUS`` ``-Wwarn-IMPLICIT`` ``-Wwarn-IMPLICITSTATIC``
-   ``-Wwarn-LATCH`` ``-Wwarn-MISINDENT`` ``-Wwarn-NEWERSTD``
-   ``-Wwarn-PREPROCZERO`` ``-Wwarn-PINMISSING`` ``-Wwarn-REALCVT``
-   ``-Wwarn-STATICVAR`` ``-Wwarn-UNSIGNED`` ``-Wwarn-WIDTHTRUNC``
-   ``-Wwarn-WIDTHEXPAND`` ``-Wwarn-WIDTHXZEXPAND``.
+   to ``-Wwarn-ALWCOMBORDER`` ``-Wwarn-ASCRANGE`` ``-Wno-ASSIGNEQEXPR``
+   ``-Wwarn-BSSPACE`` ``-Wwarn-CASEINCOMPLETE`` ``-Wwarn-CASEOVERLAP``
+   ``-Wwarn-CASEWITHX`` ``-Wwarn-CASEX`` ``-Wwarn-CASTCONST``
+   ``-Wwarn-CMPCONST`` ``-Wwarn-COLONPLUS`` ``-Wwarn-IMPLICIT``
+   ``-Wwarn-IMPLICITSTATIC`` ``-Wwarn-LATCH`` ``-Wwarn-MISINDENT``
+   ``-Wwarn-NEWERSTD`` ``-Wwarn-PREPROCZERO`` ``-Wwarn-PINMISSING``
+   ``-Wwarn-REALCVT`` ``-Wwarn-STATICVAR`` ``-Wwarn-UNSIGNED``
+   ``-Wwarn-WIDTHTRUNC`` ``-Wwarn-WIDTHEXPAND`` ``-Wwarn-WIDTHXZEXPAND``.
 
 .. option:: -Wwarn-style
 
@@ -2031,12 +2094,12 @@ Summary:
 
    .. code-block:: sv
 
-        reg  res_n = 1'b0;
+        logic res_n = 1'b0;
 
         always @(negedge rst_n) begin
-           if (rst_n == 1'b0) begin
-              res_n <= 1'b1;
-           end
+          if (rst_n == 1'b0) begin
+            res_n <= 1'b1;
+          end
         end
 
    In Verilator, by default, uninitialized clocks are given a value of
@@ -2053,6 +2116,26 @@ Summary:
       use :vlopt:`--converge-limit` to increase the number of convergence
       iterations. This may be another indication of problems with the
       modeled design that should be addressed.
+
+   Instead of using this option, one technique is to explicitly create the
+   appropriate edge by creating a value at construction, and a value in an
+   initial block at time zero:
+
+   .. code-block:: sv
+
+        logic rst_n = 1;  // value at construction
+
+        initial begin
+          rst_n = 0;  // value at time zero
+          // ... rest
+        end
+
+        always @(negedge rst_n) begin
+          if (rst_n == 1'b0) begin
+            res_n <= 1'b1;
+          end
+        end
+
 
 .. option:: --xml-only
 
@@ -2150,6 +2233,10 @@ The grammar of control commands is as follows:
 .. option:: no_clocker -module "<modulename>" [-function "<funcname>"] -var "<signame>"
 
 .. option:: no_clocker -module "<modulename>" [-task "<taskname>"] -var "<signame>"
+
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.042:
 
    Indicates whether the signal is used as clock or not. Verilator uses
    this information to mark the signal and any derived signals as clocker.
@@ -2318,7 +2405,7 @@ The grammar of control commands is as follows:
 
 .. option:: public_flat_rd [-module "<modulename>"] [-task/-function "<taskname>"] [-var "<signame>"]
 
-.. option:: public_flat_rw [-module "<modulename>"] [-task/-function "<taskname>"] [-var "<signame>" "@(edge)"]
+.. option:: public_flat_rw [-module "<modulename>"] [-task/-function "<taskname>"] [-var "<signame>"] ["@(edge)"]
 
    Sets the variable to be public.  Same as
    :option:`/*verilator&32;public*/` or

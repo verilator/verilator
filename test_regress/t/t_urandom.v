@@ -9,7 +9,7 @@
 //     function int unsigned $urandom_range( int unsigned maxval,
 //                                           int unsigned minval = 0 );
 
-module t(/*AUTOARG*/);
+module t;
 `ifndef VERILATOR
  `define PROC
 `endif

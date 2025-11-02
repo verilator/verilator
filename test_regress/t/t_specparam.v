@@ -11,6 +11,7 @@ module t;
     // verilator lint_off MINTYPMAXDLY
     specparam Tmintypmax = 1.0:1.1:1.2;
     specparam PATHPULSE$a$b = (3.0:3.1:3.2, 4.0:4.1:4.2);
+    specparam PATHPULSE$a$c = (3.0:3.1:3.2);
     specparam randomize = 1;  // Special parser corner-case
   endspecify
 
@@ -33,6 +34,7 @@ module t;
 `ifdef VERILATOR
     if (Tmintypmax != 1.1) $stop;
     if (PATHPULSE$a$b != 3.1) $stop;
+    if (PATHPULSE$a$c != 3.1) $stop;
 `endif
     if (Tranged != 4'b1011) $stop;
     if (Tmod34 != 3.4) $stop;

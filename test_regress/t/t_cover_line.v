@@ -216,7 +216,7 @@ module tsk (/*AUTOARG*/
       center_task(1'b0);
    end
 
-   task center_task;
+   task automatic center_task;
       input external;
       begin
          if (toggle) begin  // CHECK_COVER(0,"top.t.t1",1)
@@ -227,7 +227,8 @@ module tsk (/*AUTOARG*/
          end
       end
       begin
-         Cls c = new(1'b1);
+         Cls c;
+         c = new(1'b1);
          c.fauto();
          Cls::fstatic(1'b1);
       end

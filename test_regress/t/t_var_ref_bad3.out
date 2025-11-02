@@ -1,5 +1,5 @@
 %Error-UNSUPPORTED: t/t_var_ref_bad3.v:10:18: Unsupported: ref/const ref as primary input/output: 'bad_primary_ref'
-   10 | module t(ref int bad_primary_ref
+   10 | module t(ref int bad_primary_ref);
       |                  ^~~~~~~~~~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

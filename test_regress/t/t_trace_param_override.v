@@ -9,7 +9,7 @@
 module t #(
            parameter int POVERRODE = 16,
            parameter int PORIG = 16
-           ) (/*AUTOARG*/);
+           );
 
    initial begin
       $dumpfile(`STRINGIFY(`TEST_DUMPFILE));

@@ -14,7 +14,7 @@ test.top_filename = "t/t_preproc.v"
 
 stdout_filename = os.path.join(test.obj_dir, test.name + "__test.vpp")
 
-test.compile(verilator_flags2=['-DDEF_A0 -DPREDEF_COMMAND_LINE -E --dump-defines'],
+test.compile(verilator_flags2=['-DDEF_A0 -DPREDEF_COMMAND_LINE -E --preproc-defines'],
              verilator_make_gmake=False,
              make_top_shell=False,
              make_main=False,

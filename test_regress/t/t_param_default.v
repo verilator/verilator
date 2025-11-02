@@ -7,7 +7,7 @@
 module m #(parameter int Foo);
 endmodule
 
-module t (/*AUTOARG*/);
+module t;
 
    m #(10) foo();
 

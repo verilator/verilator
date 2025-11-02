@@ -40,16 +40,27 @@
           $stop; \
             end
 
-`define CHECK_0D(val) `CHECK_VAL((val), 42)
-`define CHECK_1D(val) `CHECK_VAL(val[0], 43); \
-`CHECK_VAL(val[1], 44)
-`define CHECK_2D(val) `CHECK_VAL(val[0][1], 45); \
-`CHECK_VAL(val[1][1], 46); \
-`CHECK_VAL(val[2][1], 47)
-`define CHECK_3D(val) `CHECK_VAL(val[0][0][0], 48); \
-`CHECK_VAL(val[1][0][0], 49); \
-`CHECK_VAL(val[2][0][0], 50); \
-`CHECK_VAL(val[3][0][0], 51)
+`define CHECK_0D(val) \
+  `CHECK_VAL((val), 42)
+`define CHECK_1D(val) \
+  `CHECK_VAL(val[0], 43); \
+  `CHECK_VAL(val[1], 44)
+`define CHECK_2D(val) \
+  `CHECK_VAL(val[0][1], 45); \
+  `CHECK_VAL(val[1][1], 46); \
+  `CHECK_VAL(val[2][1], 47)
+`define CHECK_3D(val) \
+  `CHECK_VAL(val[0][0][0], 48); \
+  `CHECK_VAL(val[1][0][0], 49); \
+  `CHECK_VAL(val[2][0][0], 50); \
+  `CHECK_VAL(val[3][0][0], 51)
+
+`define CHECK_1D1(val) \
+  `CHECK_VAL(val[0], 52)
+`define CHECK_2D1(val) \
+  `CHECK_VAL(val[0][0], 53)
+`define CHECK_3D1(val) \
+  `CHECK_VAL(val[0][0][0], 54)
 
 `define CHECK_CHANDLE_VAL(act, exp) if ((act) == (exp)) begin \
    if (ENABLE_VERBOSE_MESSAGE)$display(`"act`", ":non-null as expected"); \
@@ -83,42 +94,64 @@ module t;
    // Type definitions
    //======================================================================
 
-   typedef byte byte_array_t[4][3][2];
-   typedef byte unsigned byte_unsigned_array_t[4][3][2];
-   typedef shortint      shortint_array_t[4][3][2];
+   typedef byte              byte_array_t[4][3][2];
+   typedef byte              byte_array1_t[1][1][1];
+   typedef byte unsigned     byte_unsigned_array_t[4][3][2];
+   typedef byte unsigned     byte_unsigned_array1_t[1][1][1];
+   typedef shortint          shortint_array_t[4][3][2];
+   typedef shortint          shortint_array1_t[1][1][1];
    typedef shortint unsigned shortint_unsigned_array_t[4][3][2];
+   typedef shortint unsigned shortint_unsigned_array1_t[1][1][1];
    typedef int               int_array_t[4][3][2];
+   typedef int               int_array1_t[1][1][1];
    typedef int unsigned      int_unsigned_array_t[4][3][2];
+   typedef int unsigned      int_unsigned_array1_t[1][1][1];
    typedef longint           longint_array_t[4][3][2];
+   typedef longint           longint_array1_t[1][1][1];
    typedef longint unsigned  longint_unsigned_array_t[4][3][2];
+   typedef longint unsigned  longint_unsigned_array1_t[1][1][1];
 `ifndef NO_TIME
    typedef time              time_array_t[4][3][2];
+   typedef time              time_array1_t[1][1][1];
 `endif
 `ifndef NO_INTEGER
    typedef integer           integer_array_t[4][3][2];
+   typedef integer           integer_array1_t[1][1][1];
 `endif
    typedef real              real_array_t[4][3][2];
+   typedef real              real_array1_t[1][1][1];
 `ifndef NO_SHORTREAL
    typedef shortreal         shortreal_array_t[4][3][2];
+   typedef shortreal         shortreal_array1_t[1][1][1];
 `endif
    typedef chandle           chandle_array_t[4][3][2];
+   typedef chandle           chandle_array1_t[1][1][1];
    typedef string            string_array_t[4][3][2];
+   typedef string            string_array1_t[1][1][1];
    typedef bit               bit1_array_t[4][3][2];
+   typedef bit               bit1_array1_t[1][1][1];
    typedef bit [6:0]         bit7_array_t[4][3][2];
+   typedef bit [6:0]         bit7_array1_t[1][1][1];
    typedef bit [120:0]       bit121_array_t[4][3][2];
+   typedef bit [120:0]       bit121_array1_t[1][1][1];
    typedef logic             logic1_array_t[4][3][2];
+   typedef logic             logic1_array1_t[1][1][1];
    typedef logic [6:0]       logic7_array_t[4][3][2];
+   typedef logic [6:0]       logic7_array1_t[1][1][1];
    typedef logic [120:0]     logic121_array_t[4][3][2];
+   typedef logic [120:0]     logic121_array1_t[1][1][1];
 
    typedef struct            packed {
       logic [6:0]            val;
    } pack_struct_t;
    typedef pack_struct_t pack_struct_array_t[4][3][2];
+   typedef pack_struct_t pack_struct_array1_t[1][1][1];
 `ifndef NO_UNPACK_STRUCT
    typedef struct            {
       logic [120:0]          val;
    } unpack_struct_t;
    typedef unpack_struct_t unpack_struct_array_t[4][3][2];
+   typedef unpack_struct_t unpack_struct_array1_t[1][1][1];
 `endif
 
    //======================================================================
@@ -132,47 +165,74 @@ module t;
    import "DPI-C" function void i_byte_1d(output byte val[2]);
    import "DPI-C" function void i_byte_2d(output byte val[3][2]);
    import "DPI-C" function void i_byte_3d(output byte_array_t val);
+   import "DPI-C" function void i_byte_1d1(output byte val[1]);
+   import "DPI-C" function void i_byte_2d1(output byte val[1][1]);
+   import "DPI-C" function void i_byte_3d1(output byte_array1_t val);
 
    import "DPI-C" function void i_byte_unsigned_0d(output byte unsigned val);
    import "DPI-C" function void i_byte_unsigned_1d(output byte unsigned val[2]);
    import "DPI-C" function void i_byte_unsigned_2d(output byte unsigned val[3][2]);
    import "DPI-C" function void i_byte_unsigned_3d(output byte_unsigned_array_t val);
+   import "DPI-C" function void i_byte_unsigned_1d1(output byte unsigned val[1]);
+   import "DPI-C" function void i_byte_unsigned_2d1(output byte unsigned val[1][1]);
+   import "DPI-C" function void i_byte_unsigned_3d1(output byte_unsigned_array1_t val);
 
    import "DPI-C" function void i_shortint_0d(output shortint val);
    import "DPI-C" function void i_shortint_1d(output shortint val[2]);
    import "DPI-C" function void i_shortint_2d(output shortint val[3][2]);
    import "DPI-C" function void i_shortint_3d(output shortint_array_t val);
+   import "DPI-C" function void i_shortint_1d1(output shortint val[1]);
+   import "DPI-C" function void i_shortint_2d1(output shortint val[1][1]);
+   import "DPI-C" function void i_shortint_3d1(output shortint_array1_t val);
 
    import "DPI-C" function void i_shortint_unsigned_0d(output shortint unsigned val);
    import "DPI-C" function void i_shortint_unsigned_1d(output shortint unsigned val[2]);
    import "DPI-C" function void i_shortint_unsigned_2d(output shortint unsigned val[3][2]);
    import "DPI-C" function void i_shortint_unsigned_3d(output shortint_unsigned_array_t val);
+   import "DPI-C" function void i_shortint_unsigned_1d1(output shortint unsigned val[1]);
+   import "DPI-C" function void i_shortint_unsigned_2d1(output shortint unsigned val[1][1]);
+   import "DPI-C" function void i_shortint_unsigned_3d1(output shortint_unsigned_array1_t val);
 
    import "DPI-C" function void i_int_0d(output int val);
    import "DPI-C" function void i_int_1d(output int val[2]);
    import "DPI-C" function void i_int_2d(output int val[3][2]);
    import "DPI-C" function void i_int_3d(output int_array_t val);
+   import "DPI-C" function void i_int_1d1(output int val[1]);
+   import "DPI-C" function void i_int_2d1(output int val[1][1]);
+   import "DPI-C" function void i_int_3d1(output int_array1_t val);
 
    import "DPI-C" function void i_int_unsigned_0d(output int unsigned val);
    import "DPI-C" function void i_int_unsigned_1d(output int unsigned val[2]);
    import "DPI-C" function void i_int_unsigned_2d(output int unsigned val[3][2]);
    import "DPI-C" function void i_int_unsigned_3d(output int_unsigned_array_t val);
+   import "DPI-C" function void i_int_unsigned_1d1(output int unsigned val[1]);
+   import "DPI-C" function void i_int_unsigned_2d1(output int unsigned val[1][1]);
+   import "DPI-C" function void i_int_unsigned_3d1(output int_unsigned_array1_t val);
 
    import "DPI-C" function void i_longint_0d(output longint val);
    import "DPI-C" function void i_longint_1d(output longint val[2]);
    import "DPI-C" function void i_longint_2d(output longint val[3][2]);
    import "DPI-C" function void i_longint_3d(output longint_array_t val);
+   import "DPI-C" function void i_longint_1d1(output longint val[1]);
+   import "DPI-C" function void i_longint_2d1(output longint val[1][1]);
+   import "DPI-C" function void i_longint_3d1(output longint_array1_t val);
 
    import "DPI-C" function void i_longint_unsigned_0d(output longint unsigned val);
    import "DPI-C" function void i_longint_unsigned_1d(output longint unsigned val[2]);
    import "DPI-C" function void i_longint_unsigned_2d(output longint unsigned val[3][2]);
    import "DPI-C" function void i_longint_unsigned_3d(output longint_unsigned_array_t val);
+   import "DPI-C" function void i_longint_unsigned_1d1(output longint unsigned val[1]);
+   import "DPI-C" function void i_longint_unsigned_2d1(output longint unsigned val[1][1]);
+   import "DPI-C" function void i_longint_unsigned_3d1(output longint_unsigned_array1_t val);
 
 `ifndef NO_TIME
    import "DPI-C" function void i_time_0d(output time val);
    import "DPI-C" function void i_time_1d(output time val[2]);
    import "DPI-C" function void i_time_2d(output time val[3][2]);
    import "DPI-C" function void i_time_3d(output time_array_t val);
+   import "DPI-C" function void i_time_1d1(output time val[1]);
+   import "DPI-C" function void i_time_2d1(output time val[1][1]);
+   import "DPI-C" function void i_time_3d1(output time_array1_t val);
 `endif
 
 `ifndef NO_INTEGER
@@ -180,70 +240,109 @@ module t;
    import "DPI-C" function void i_integer_1d(output integer val[2]);
    import "DPI-C" function void i_integer_2d(output integer val[3][2]);
    import "DPI-C" function void i_integer_3d(output integer_array_t val);
+   import "DPI-C" function void i_integer_1d1(output integer val[1]);
+   import "DPI-C" function void i_integer_2d1(output integer val[1][1]);
+   import "DPI-C" function void i_integer_3d1(output integer_array1_t val);
 `endif
 
    import "DPI-C" function void i_real_0d(output real val);
    import "DPI-C" function void i_real_1d(output real val[2]);
    import "DPI-C" function void i_real_2d(output real val[3][2]);
    import "DPI-C" function void i_real_3d(output real_array_t val);
+   import "DPI-C" function void i_real_1d1(output real val[1]);
+   import "DPI-C" function void i_real_2d1(output real val[1][1]);
+   import "DPI-C" function void i_real_3d1(output real_array1_t val);
 
 `ifndef NO_SHORTREAL
    import "DPI-C" function void i_shortreal_0d(output shortreal val);
    import "DPI-C" function void i_shortreal_1d(output shortreal val[2]);
    import "DPI-C" function void i_shortreal_2d(output shortreal val[3][2]);
    import "DPI-C" function void i_shortreal_3d(output shortreal_array_t val);
+   import "DPI-C" function void i_shortreal_1d1(output shortreal val[1]);
+   import "DPI-C" function void i_shortreal_2d1(output shortreal val[1][1]);
+   import "DPI-C" function void i_shortreal_3d1(output shortreal_array1_t val);
 `endif
 
    import "DPI-C" function void i_chandle_0d(output chandle val);
    import "DPI-C" function void i_chandle_1d(output chandle val[2]);
    import "DPI-C" function void i_chandle_2d(output chandle val[3][2]);
    import "DPI-C" function void i_chandle_3d(output chandle_array_t val);
+   import "DPI-C" function void i_chandle_1d1(output chandle val[1]);
+   import "DPI-C" function void i_chandle_2d1(output chandle val[1][1]);
+   import "DPI-C" function void i_chandle_3d1(output chandle_array1_t val);
 
    import "DPI-C" function void i_string_0d(output string val);
    import "DPI-C" function void i_string_1d(output string val[2]);
    import "DPI-C" function void i_string_2d(output string val[3][2]);
    import "DPI-C" function void i_string_3d(output string_array_t val);
+   import "DPI-C" function void i_string_1d1(output string val[1]);
+   import "DPI-C" function void i_string_2d1(output string val[1][1]);
+   import "DPI-C" function void i_string_3d1(output string_array1_t val);
 
    import "DPI-C" function void i_bit1_0d(output bit val);
    import "DPI-C" function void i_bit1_1d(output bit val[2]);
    import "DPI-C" function void i_bit1_2d(output bit val[3][2]);
    import "DPI-C" function void i_bit1_3d(output bit1_array_t val);
+   import "DPI-C" function void i_bit1_1d1(output bit val[1]);
+   import "DPI-C" function void i_bit1_2d1(output bit val[1][1]);
+   import "DPI-C" function void i_bit1_3d1(output bit1_array1_t val);
 
    import "DPI-C" function void i_bit7_0d(output bit[6:0] val);
    import "DPI-C" function void i_bit7_1d(output bit[6:0] val[2]);
    import "DPI-C" function void i_bit7_2d(output bit[6:0] val[3][2]);
    import "DPI-C" function void i_bit7_3d(output bit7_array_t val);
+   import "DPI-C" function void i_bit7_1d1(output bit[6:0] val[1]);
+   import "DPI-C" function void i_bit7_2d1(output bit[6:0] val[1][1]);
+   import "DPI-C" function void i_bit7_3d1(output bit7_array1_t val);
 
    import "DPI-C" function void i_bit121_0d(output bit[120:0] val);
    import "DPI-C" function void i_bit121_1d(output bit[120:0] val[2]);
    import "DPI-C" function void i_bit121_2d(output bit[120:0] val[3][2]);
    import "DPI-C" function void i_bit121_3d(output bit121_array_t val);
+   import "DPI-C" function void i_bit121_1d1(output bit[120:0] val[1]);
+   import "DPI-C" function void i_bit121_2d1(output bit[120:0] val[1][1]);
+   import "DPI-C" function void i_bit121_3d1(output bit121_array1_t val);
 
    import "DPI-C" function void i_logic1_0d(output logic val);
    import "DPI-C" function void i_logic1_1d(output logic val[2]);
    import "DPI-C" function void i_logic1_2d(output logic val[3][2]);
    import "DPI-C" function void i_logic1_3d(output logic1_array_t val);
+   import "DPI-C" function void i_logic1_1d1(output logic val[1]);
+   import "DPI-C" function void i_logic1_2d1(output logic val[1][1]);
+   import "DPI-C" function void i_logic1_3d1(output logic1_array1_t val);
 
    import "DPI-C" function void i_logic7_0d(output logic[6:0] val);
    import "DPI-C" function void i_logic7_1d(output logic[6:0] val[2]);
    import "DPI-C" function void i_logic7_2d(output logic[6:0] val[3][2]);
    import "DPI-C" function void i_logic7_3d(output logic7_array_t val);
+   import "DPI-C" function void i_logic7_1d1(output logic[6:0] val[1]);
+   import "DPI-C" function void i_logic7_2d1(output logic[6:0] val[1][1]);
+   import "DPI-C" function void i_logic7_3d1(output logic7_array1_t val);
 
    import "DPI-C" function void i_logic121_0d(output logic[120:0] val);
    import "DPI-C" function void i_logic121_1d(output logic[120:0] val[2]);
    import "DPI-C" function void i_logic121_2d(output logic[120:0] val[3][2]);
    import "DPI-C" function void i_logic121_3d(output logic121_array_t val);
+   import "DPI-C" function void i_logic121_1d1(output logic[120:0] val[1]);
+   import "DPI-C" function void i_logic121_2d1(output logic[120:0] val[1][1]);
+   import "DPI-C" function void i_logic121_3d1(output logic121_array1_t val);
 
    import "DPI-C" function void i_pack_struct_0d(output pack_struct_t val);
    import "DPI-C" function void i_pack_struct_1d(output pack_struct_t val[2]);
    import "DPI-C" function void i_pack_struct_2d(output pack_struct_t val[3][2]);
    import "DPI-C" function void i_pack_struct_3d(output pack_struct_array_t val);
+   import "DPI-C" function void i_pack_struct_1d1(output pack_struct_t val[1]);
+   import "DPI-C" function void i_pack_struct_2d1(output pack_struct_t val[1][1]);
+   import "DPI-C" function void i_pack_struct_3d1(output pack_struct_array1_t val);
 
 `ifndef NO_UNPACK_STRUCT
    import "DPI-C" function void i_unpack_struct_0d(output unpack_struct_t val);
    import "DPI-C" function void i_unpack_struct_1d(output unpack_struct_t val[2]);
    import "DPI-C" function void i_unpack_struct_2d(output unpack_struct_t val[3][2]);
    import "DPI-C" function void i_unpack_struct_3d(output unpack_struct_array_t val);
+   import "DPI-C" function void i_unpack_struct_1d1(output unpack_struct_t val[1]);
+   import "DPI-C" function void i_unpack_struct_2d1(output unpack_struct_t val[1][1]);
+   import "DPI-C" function void i_unpack_struct_3d1(output unpack_struct_array1_t val);
 `endif
 
    //======================================================================
@@ -253,47 +352,74 @@ module t;
    export "DPI-C" function e_byte_1d;
    export "DPI-C" function e_byte_2d;
    export "DPI-C" function e_byte_3d;
+   export "DPI-C" function e_byte_1d1;
+   export "DPI-C" function e_byte_2d1;
+   export "DPI-C" function e_byte_3d1;
 
    export "DPI-C" function e_byte_unsigned_0d;
    export "DPI-C" function e_byte_unsigned_1d;
    export "DPI-C" function e_byte_unsigned_2d;
    export "DPI-C" function e_byte_unsigned_3d;
+   export "DPI-C" function e_byte_unsigned_1d1;
+   export "DPI-C" function e_byte_unsigned_2d1;
+   export "DPI-C" function e_byte_unsigned_3d1;
 
    export "DPI-C" function e_shortint_0d;
    export "DPI-C" function e_shortint_1d;
    export "DPI-C" function e_shortint_2d;
    export "DPI-C" function e_shortint_3d;
+   export "DPI-C" function e_shortint_1d1;
+   export "DPI-C" function e_shortint_2d1;
+   export "DPI-C" function e_shortint_3d1;
 
    export "DPI-C" function e_shortint_unsigned_0d;
    export "DPI-C" function e_shortint_unsigned_1d;
    export "DPI-C" function e_shortint_unsigned_2d;
    export "DPI-C" function e_shortint_unsigned_3d;
+   export "DPI-C" function e_shortint_unsigned_1d1;
+   export "DPI-C" function e_shortint_unsigned_2d1;
+   export "DPI-C" function e_shortint_unsigned_3d1;
 
    export "DPI-C" function e_int_0d;
    export "DPI-C" function e_int_1d;
    export "DPI-C" function e_int_2d;
    export "DPI-C" function e_int_3d;
+   export "DPI-C" function e_int_1d1;
+   export "DPI-C" function e_int_2d1;
+   export "DPI-C" function e_int_3d1;
 
    export "DPI-C" function e_int_unsigned_0d;
    export "DPI-C" function e_int_unsigned_1d;
    export "DPI-C" function e_int_unsigned_2d;
    export "DPI-C" function e_int_unsigned_3d;
+   export "DPI-C" function e_int_unsigned_1d1;
+   export "DPI-C" function e_int_unsigned_2d1;
+   export "DPI-C" function e_int_unsigned_3d1;
 
    export "DPI-C" function e_longint_0d;
    export "DPI-C" function e_longint_1d;
    export "DPI-C" function e_longint_2d;
    export "DPI-C" function e_longint_3d;
+   export "DPI-C" function e_longint_1d1;
+   export "DPI-C" function e_longint_2d1;
+   export "DPI-C" function e_longint_3d1;
 
    export "DPI-C" function e_longint_unsigned_0d;
    export "DPI-C" function e_longint_unsigned_1d;
    export "DPI-C" function e_longint_unsigned_2d;
    export "DPI-C" function e_longint_unsigned_3d;
+   export "DPI-C" function e_longint_unsigned_1d1;
+   export "DPI-C" function e_longint_unsigned_2d1;
+   export "DPI-C" function e_longint_unsigned_3d1;
 
 `ifndef NO_TIME
    export "DPI-C" function e_time_0d;
    export "DPI-C" function e_time_1d;
    export "DPI-C" function e_time_2d;
    export "DPI-C" function e_time_3d;
+   export "DPI-C" function e_time_1d1;
+   export "DPI-C" function e_time_2d1;
+   export "DPI-C" function e_time_3d1;
 `endif
 
 `ifndef NO_INTEGER
@@ -301,70 +427,109 @@ module t;
    export "DPI-C" function e_integer_1d;
    export "DPI-C" function e_integer_2d;
    export "DPI-C" function e_integer_3d;
+   export "DPI-C" function e_integer_1d1;
+   export "DPI-C" function e_integer_2d1;
+   export "DPI-C" function e_integer_3d1;
 `endif
 
    export "DPI-C" function e_real_0d;
    export "DPI-C" function e_real_1d;
    export "DPI-C" function e_real_2d;
    export "DPI-C" function e_real_3d;
+   export "DPI-C" function e_real_1d1;
+   export "DPI-C" function e_real_2d1;
+   export "DPI-C" function e_real_3d1;
 
 `ifndef NO_SHORTREAL
    export "DPI-C" function e_shortreal_0d;
    export "DPI-C" function e_shortreal_1d;
    export "DPI-C" function e_shortreal_2d;
    export "DPI-C" function e_shortreal_3d;
+   export "DPI-C" function e_shortreal_1d1;
+   export "DPI-C" function e_shortreal_2d1;
+   export "DPI-C" function e_shortreal_3d1;
 `endif
 
    export "DPI-C" function e_chandle_0d;
    export "DPI-C" function e_chandle_1d;
    export "DPI-C" function e_chandle_2d;
    export "DPI-C" function e_chandle_3d;
+   export "DPI-C" function e_chandle_1d1;
+   export "DPI-C" function e_chandle_2d1;
+   export "DPI-C" function e_chandle_3d1;
 
    export "DPI-C" function e_string_0d;
    export "DPI-C" function e_string_1d;
    export "DPI-C" function e_string_2d;
    export "DPI-C" function e_string_3d;
+   export "DPI-C" function e_string_1d1;
+   export "DPI-C" function e_string_2d1;
+   export "DPI-C" function e_string_3d1;
 
    export "DPI-C" function e_bit1_0d;
    export "DPI-C" function e_bit1_1d;
    export "DPI-C" function e_bit1_2d;
    export "DPI-C" function e_bit1_3d;
+   export "DPI-C" function e_bit1_1d1;
+   export "DPI-C" function e_bit1_2d1;
+   export "DPI-C" function e_bit1_3d1;
 
    export "DPI-C" function e_bit7_0d;
    export "DPI-C" function e_bit7_1d;
    export "DPI-C" function e_bit7_2d;
    export "DPI-C" function e_bit7_3d;
+   export "DPI-C" function e_bit7_1d1;
+   export "DPI-C" function e_bit7_2d1;
+   export "DPI-C" function e_bit7_3d1;
 
    export "DPI-C" function e_bit121_0d;
    export "DPI-C" function e_bit121_1d;
    export "DPI-C" function e_bit121_2d;
    export "DPI-C" function e_bit121_3d;
+   export "DPI-C" function e_bit121_1d1;
+   export "DPI-C" function e_bit121_2d1;
+   export "DPI-C" function e_bit121_3d1;
 
    export "DPI-C" function e_logic1_0d;
    export "DPI-C" function e_logic1_1d;
    export "DPI-C" function e_logic1_2d;
    export "DPI-C" function e_logic1_3d;
+   export "DPI-C" function e_logic1_1d1;
+   export "DPI-C" function e_logic1_2d1;
+   export "DPI-C" function e_logic1_3d1;
 
    export "DPI-C" function e_logic7_0d;
    export "DPI-C" function e_logic7_1d;
    export "DPI-C" function e_logic7_2d;
    export "DPI-C" function e_logic7_3d;
+   export "DPI-C" function e_logic7_1d1;
+   export "DPI-C" function e_logic7_2d1;
+   export "DPI-C" function e_logic7_3d1;
 
    export "DPI-C" function e_logic121_0d;
    export "DPI-C" function e_logic121_1d;
    export "DPI-C" function e_logic121_2d;
    export "DPI-C" function e_logic121_3d;
+   export "DPI-C" function e_logic121_1d1;
+   export "DPI-C" function e_logic121_2d1;
+   export "DPI-C" function e_logic121_3d1;
 
    export "DPI-C" function e_pack_struct_0d;
    export "DPI-C" function e_pack_struct_1d;
    export "DPI-C" function e_pack_struct_2d;
    export "DPI-C" function e_pack_struct_3d;
+   export "DPI-C" function e_pack_struct_1d1;
+   export "DPI-C" function e_pack_struct_2d1;
+   export "DPI-C" function e_pack_struct_3d1;
 
 `ifndef NO_UNPACK_STRUCT
    export "DPI-C" function e_unpack_struct_0d;
    export "DPI-C" function e_unpack_struct_1d;
    export "DPI-C" function e_unpack_struct_2d;
    export "DPI-C" function e_unpack_struct_3d;
+   export "DPI-C" function e_unpack_struct_1d1;
+   export "DPI-C" function e_unpack_struct_2d1;
+   export "DPI-C" function e_unpack_struct_3d1;
 `endif
    //======================================================================
    // Definitions of exported functions
@@ -386,51 +551,91 @@ module t;
    val[0][0][0] = 48; val[1][0][0] = 49; val[2][0][0] = 50; val[3][0][0] = 51 \
    /* verilator lint_on WIDTH */
 
+`define SET_1D1(val) \
+   /* verilator lint_off WIDTH */ \
+   val[0] = 52; \
+   /* verilator lint_on WIDTH */
+`define SET_2D1(val) \
+   /* verilator lint_off WIDTH */ \
+   val[0][0] = 53; \
+   /* verilator lint_on WIDTH */
+`define SET_3D1(val) \
+   /* verilator lint_off WIDTH */ \
+   val[0][0][0] = 54; \
+   /* verilator lint_on WIDTH */
+
    function void e_byte_0d(output byte val); `SET_0D(val); endfunction
    function void e_byte_1d(output byte val[2]); `SET_1D(val); endfunction
    function void e_byte_2d(output byte val[3][2]); `SET_2D(val); endfunction
    function void e_byte_3d(output byte_array_t val); `SET_3D(val); endfunction
+   function void e_byte_1d1(output byte val[1]); `SET_1D1(val); endfunction
+   function void e_byte_2d1(output byte val[1][1]); `SET_2D1(val); endfunction
+   function void e_byte_3d1(output byte_array1_t val); `SET_3D1(val); endfunction
 
    function void e_byte_unsigned_0d(output byte unsigned val); `SET_0D(val); endfunction
    function void e_byte_unsigned_1d(output byte unsigned val[2]); `SET_1D(val); endfunction
    function void e_byte_unsigned_2d(output byte unsigned val[3][2]); `SET_2D(val); endfunction
    function void e_byte_unsigned_3d(output byte_unsigned_array_t val); `SET_3D(val); endfunction
+   function void e_byte_unsigned_1d1(output byte unsigned val[1]); `SET_1D1(val); endfunction
+   function void e_byte_unsigned_2d1(output byte unsigned val[1][1]); `SET_2D1(val); endfunction
+   function void e_byte_unsigned_3d1(output byte_unsigned_array1_t val); `SET_3D1(val); endfunction
 
    function void e_shortint_0d(output shortint val); `SET_0D(val); endfunction
    function void e_shortint_1d(output shortint val[2]); `SET_1D(val); endfunction
    function void e_shortint_2d(output shortint val[3][2]); `SET_2D(val); endfunction
    function void e_shortint_3d(output shortint_array_t val); `SET_3D(val); endfunction
+   function void e_shortint_1d1(output shortint val[1]); `SET_1D1(val); endfunction
+   function void e_shortint_2d1(output shortint val[1][1]); `SET_2D1(val); endfunction
+   function void e_shortint_3d1(output shortint_array1_t val); `SET_3D1(val); endfunction
 
    function void e_shortint_unsigned_0d(output shortint unsigned val); `SET_0D(val); endfunction
    function void e_shortint_unsigned_1d(output shortint unsigned val[2]); `SET_1D(val); endfunction
    function void e_shortint_unsigned_2d(output shortint unsigned val[3][2]); `SET_2D(val); endfunction
    function void e_shortint_unsigned_3d(output shortint_unsigned_array_t val); `SET_3D(val); endfunction
+   function void e_shortint_unsigned_1d1(output shortint unsigned val[1]); `SET_1D1(val); endfunction
+   function void e_shortint_unsigned_2d1(output shortint unsigned val[1][1]); `SET_2D1(val); endfunction
+   function void e_shortint_unsigned_3d1(output shortint_unsigned_array1_t val); `SET_3D1(val); endfunction
 
    function void e_int_0d(output int val); `SET_0D(val); endfunction
    function void e_int_1d(output int val[2]); `SET_1D(val); endfunction
    function void e_int_2d(output int val[3][2]); `SET_2D(val); endfunction
    function void e_int_3d(output int_array_t val); `SET_3D(val); endfunction
+   function void e_int_1d1(output int val[1]); `SET_1D1(val); endfunction
+   function void e_int_2d1(output int val[1][1]); `SET_2D1(val); endfunction
+   function void e_int_3d1(output int_array1_t val); `SET_3D1(val); endfunction
 
    function void e_int_unsigned_0d(output int unsigned val); `SET_0D(val); endfunction
    function void e_int_unsigned_1d(output int unsigned val[2]); `SET_1D(val); endfunction
    function void e_int_unsigned_2d(output int unsigned val[3][2]); `SET_2D(val); endfunction
    function void e_int_unsigned_3d(output int_unsigned_array_t val); `SET_3D(val); endfunction
+   function void e_int_unsigned_1d1(output int unsigned val[1]); `SET_1D1(val); endfunction
+   function void e_int_unsigned_2d1(output int unsigned val[1][1]); `SET_2D1(val); endfunction
+   function void e_int_unsigned_3d1(output int_unsigned_array1_t val); `SET_3D1(val); endfunction
 
    function void e_longint_0d(output longint val); `SET_0D(val); endfunction
    function void e_longint_1d(output longint val[2]); `SET_1D(val); endfunction
    function void e_longint_2d(output longint val[3][2]); `SET_2D(val); endfunction
    function void e_longint_3d(output longint_array_t val); `SET_3D(val); endfunction
+   function void e_longint_1d1(output longint val[1]); `SET_1D1(val); endfunction
+   function void e_longint_2d1(output longint val[1][1]); `SET_2D1(val); endfunction
+   function void e_longint_3d1(output longint_array1_t val); `SET_3D1(val); endfunction
 
    function void e_longint_unsigned_0d(output longint unsigned val); `SET_0D(val); endfunction
    function void e_longint_unsigned_1d(output longint unsigned val[2]); `SET_1D(val); endfunction
    function void e_longint_unsigned_2d(output longint unsigned val[3][2]); `SET_2D(val); endfunction
    function void e_longint_unsigned_3d(output longint_unsigned_array_t val); `SET_3D(val); endfunction
+   function void e_longint_unsigned_1d1(output longint unsigned val[1]); `SET_1D1(val); endfunction
+   function void e_longint_unsigned_2d1(output longint unsigned val[1][1]); `SET_2D1(val); endfunction
+   function void e_longint_unsigned_3d1(output longint_unsigned_array1_t val); `SET_3D1(val); endfunction
 
 `ifndef NO_TIME
    function void e_time_0d(output time val); `SET_0D(val); endfunction
    function void e_time_1d(output time val[2]); `SET_1D(val); endfunction
    function void e_time_2d(output time val[3][2]); `SET_2D(val); endfunction
    function void e_time_3d(output time_array_t val); `SET_3D(val); endfunction
+   function void e_time_1d1(output time val[1]); `SET_1D1(val); endfunction
+   function void e_time_2d1(output time val[1][1]); `SET_2D1(val); endfunction
+   function void e_time_3d1(output time_array1_t val); `SET_3D1(val); endfunction
 `endif
 
 `ifndef NO_INTEGER
@@ -438,18 +643,27 @@ module t;
    function void e_integer_1d(output integer val[2]); `SET_1D(val); endfunction
    function void e_integer_2d(output integer val[3][2]); `SET_2D(val); endfunction
    function void e_integer_3d(output integer_array_t val); `SET_3D(val); endfunction
+   function void e_integer_1d1(output integer val[1]); `SET_1D1(val); endfunction
+   function void e_integer_2d1(output integer val[1][1]); `SET_2D1(val); endfunction
+   function void e_integer_3d1(output integer_array1_t val); `SET_3D1(val); endfunction
 `endif
 
    function void e_real_0d(output real val); `SET_0D(val); endfunction
    function void e_real_1d(output real val[2]); `SET_1D(val); endfunction
    function void e_real_2d(output real val[3][2]); `SET_2D(val); endfunction
    function void e_real_3d(output real_array_t val); `SET_3D(val); endfunction
+   function void e_real_1d1(output real val[1]); `SET_1D1(val); endfunction
+   function void e_real_2d1(output real val[1][1]); `SET_2D1(val); endfunction
+   function void e_real_3d1(output real_array1_t val); `SET_3D1(val); endfunction
 
 `ifndef NO_SHORTREAL
    function void e_shortreal_0d(output shortreal val); `SET_0D(val); endfunction
    function void e_shortreal_1d(output shortreal val[2]); `SET_1D(val); endfunction
    function void e_shortreal_2d(output shortreal val[3][2]); `SET_2D(val); endfunction
    function void e_shortreal_3d(output shortreal_array_t val); `SET_3D(val); endfunction
+   function void e_shortreal_1d1(output shortreal val[1]); `SET_1D1(val); endfunction
+   function void e_shortreal_2d1(output shortreal val[1][1]); `SET_2D1(val); endfunction
+   function void e_shortreal_3d1(output shortreal_array1_t val); `SET_3D1(val); endfunction
 `endif
 
    function void e_chandle_0d(output chandle val);
@@ -470,6 +684,15 @@ module t;
       val[2][0][0] = get_non_null();
       val[3][0][0] = get_non_null();
    endfunction
+   function void e_chandle_1d1(output chandle val[1]);
+      val[0] = get_non_null();
+   endfunction
+   function void e_chandle_2d1(output chandle val[1][1]);
+      val[0][0] = get_non_null();
+   endfunction
+   function void e_chandle_3d1(output chandle_array1_t val);
+      val[0][0][0] = get_non_null();
+   endfunction
 
    function void e_string_0d(output string val);
       val = "42";
@@ -489,41 +712,71 @@ module t;
       val[2][0][0] = "50";
       val[3][0][0] = "51";
    endfunction
+   function void e_string_1d1(output string val[1]);
+      val[0] = "52";
+   endfunction
+   function void e_string_2d1(output string val[1][1]);
+      val[0][0] = "53";
+   endfunction
+   function void e_string_3d1(output string_array1_t val);
+      val[0][0][0] = "54";
+   endfunction
 
    function void e_bit1_0d(output bit val); `SET_0D(val); endfunction
    function void e_bit1_1d(output bit val[2]); `SET_1D(val); endfunction
    function void e_bit1_2d(output bit val[3][2]); `SET_2D(val); endfunction
-   function void e_bit1_3d(output bit7_array_t val); `SET_3D(val); endfunction
+   function void e_bit1_3d(output bit1_array_t val); `SET_3D(val); endfunction
+   function void e_bit1_1d1(output bit val[1]); `SET_1D1(val); endfunction
+   function void e_bit1_2d1(output bit val[1][1]); `SET_2D1(val); endfunction
+   function void e_bit1_3d1(output bit1_array1_t val); `SET_3D1(val); endfunction
 
    function void e_bit7_0d(output bit[6:0] val); `SET_0D(val); endfunction
    function void e_bit7_1d(output bit[6:0] val[2]); `SET_1D(val); endfunction
    function void e_bit7_2d(output bit[6:0] val[3][2]); `SET_2D(val); endfunction
    function void e_bit7_3d(output bit7_array_t val); `SET_3D(val); endfunction
+   function void e_bit7_1d1(output bit[6:0] val[1]); `SET_1D1(val); endfunction
+   function void e_bit7_2d1(output bit[6:0] val[1][1]); `SET_2D1(val); endfunction
+   function void e_bit7_3d1(output bit7_array1_t val); `SET_3D1(val); endfunction
 
    function void e_bit121_0d(output bit[120:0] val); `SET_0D(val); endfunction
    function void e_bit121_1d(output bit[120:0] val[2]); `SET_1D(val); endfunction
    function void e_bit121_2d(output bit[120:0] val[3][2]); `SET_2D(val); endfunction
    function void e_bit121_3d(output bit121_array_t val); `SET_3D(val); endfunction
+   function void e_bit121_1d1(output bit[120:0] val[1]); `SET_1D1(val); endfunction
+   function void e_bit121_2d1(output bit[120:0] val[1][1]); `SET_2D1(val); endfunction
+   function void e_bit121_3d1(output bit121_array1_t val); `SET_3D1(val); endfunction
 
    function void e_logic1_0d(output logic val); `SET_0D(val); endfunction
    function void e_logic1_1d(output logic val[2]); `SET_1D(val); endfunction
    function void e_logic1_2d(output logic val[3][2]); `SET_2D(val); endfunction
-   function void e_logic1_3d(output logic7_array_t val); `SET_3D(val); endfunction
+   function void e_logic1_3d(output logic1_array_t val); `SET_3D(val); endfunction
+   function void e_logic1_1d1(output logic val[1]); `SET_1D1(val); endfunction
+   function void e_logic1_2d1(output logic val[1][1]); `SET_2D1(val); endfunction
+   function void e_logic1_3d1(output logic1_array1_t val); `SET_3D1(val); endfunction
 
    function void e_logic7_0d(output logic[6:0] val); `SET_0D(val); endfunction
    function void e_logic7_1d(output logic[6:0] val[2]); `SET_1D(val); endfunction
    function void e_logic7_2d(output logic[6:0] val[3][2]); `SET_2D(val); endfunction
    function void e_logic7_3d(output logic7_array_t val); `SET_3D(val); endfunction
+   function void e_logic7_1d1(output logic[6:0] val[1]); `SET_1D1(val); endfunction
+   function void e_logic7_2d1(output logic[6:0] val[1][1]); `SET_2D1(val); endfunction
+   function void e_logic7_3d1(output logic7_array1_t val); `SET_3D1(val); endfunction
 
    function void e_logic121_0d(output logic[120:0] val); `SET_0D(val); endfunction
    function void e_logic121_1d(output logic[120:0] val[2]); `SET_1D(val); endfunction
    function void e_logic121_2d(output logic[120:0] val[3][2]); `SET_2D(val); endfunction
    function void e_logic121_3d(output logic121_array_t val); `SET_3D(val); endfunction
+   function void e_logic121_1d1(output logic[120:0] val[1]); `SET_1D1(val); endfunction
+   function void e_logic121_2d1(output logic[120:0] val[1][1]); `SET_2D1(val); endfunction
+   function void e_logic121_3d1(output logic121_array1_t val); `SET_3D1(val); endfunction
 
    function void e_pack_struct_0d(output pack_struct_t val); `SET_0D(val); endfunction
    function void e_pack_struct_1d(output pack_struct_t val[2]); `SET_1D(val); endfunction
    function void e_pack_struct_2d(output pack_struct_t val[3][2]); `SET_2D(val); endfunction
    function void e_pack_struct_3d(output pack_struct_array_t val); `SET_3D(val); endfunction
+   function void e_pack_struct_1d1(output pack_struct_t val[1]); `SET_1D1(val); endfunction
+   function void e_pack_struct_2d1(output pack_struct_t val[1][1]); `SET_2D1(val); endfunction
+   function void e_pack_struct_3d1(output pack_struct_array1_t val); `SET_3D1(val); endfunction
 
 `ifndef NO_UNPACK_STRUCT
    function void e_unpack_struct_0d(output unpack_struct_t val);
@@ -544,6 +797,15 @@ module t;
       val[2][0][0].val = 50;
       val[3][0][0].val = 51;
    endfunction
+   function void e_unpack_struct_1d1(output unpack_struct_t val[1]);
+      val[0].val = 52;
+   endfunction
+   function void e_unpack_struct_2d1(output unpack_struct_t val[1][1]);
+      val[0][0].val = 53;
+   endfunction
+   function void e_unpack_struct_3d1(output unpack_struct_array1_t val);
+      val[0][0][0].val = 54;
+   endfunction
 `endif
 
    //======================================================================
@@ -554,34 +816,56 @@ module t;
 
    initial begin
       byte_array_t byte_array;
+      byte_array1_t byte_array1;
       byte_unsigned_array_t byte_unsigned_array;
+      byte_unsigned_array1_t byte_unsigned_array1;
       shortint_array_t shortint_array;
+      shortint_array1_t shortint_array1;
       shortint_unsigned_array_t shortint_unsigned_array;
+      shortint_unsigned_array1_t shortint_unsigned_array1;
       int_array_t int_array;
+      int_array1_t int_array1;
       int_unsigned_array_t int_unsigned_array;
+      int_unsigned_array1_t int_unsigned_array1;
       longint_array_t longint_array;
+      longint_array1_t longint_array1;
       longint_unsigned_array_t longint_unsigned_array;
+      longint_unsigned_array1_t longint_unsigned_array1;
 `ifndef NO_TIME
       time_array_t time_array;
+      time_array1_t time_array1;
 `endif
 `ifndef NO_INTEGER
       integer_array_t integer_array;
+      integer_array1_t integer_array1;
 `endif
       real_array_t real_array;
+      real_array1_t real_array1;
 `ifndef NO_SHORTREAL
       shortreal_array_t shortreal_array;
+      shortreal_array1_t shortreal_array1;
 `endif
       chandle_array_t chandle_array;
+      chandle_array1_t chandle_array1;
       string_array_t string_array;
+      string_array1_t string_array1;
       bit1_array_t bit1_array;
+      bit1_array1_t bit1_array1;
       bit7_array_t bit7_array;
+      bit7_array1_t bit7_array1;
       bit121_array_t bit121_array;
+      bit121_array1_t bit121_array1;
       logic1_array_t logic1_array;
+      logic1_array1_t logic1_array1;
       logic7_array_t logic7_array;
+      logic7_array1_t logic7_array1;
       logic121_array_t logic121_array;
+      logic121_array1_t logic121_array1;
       pack_struct_array_t pack_struct_array;
+      pack_struct_array1_t pack_struct_array1;
 `ifndef NO_UNPACK_STRUCT
       unpack_struct_array_t unpack_struct_array;
+      unpack_struct_array1_t unpack_struct_array1;
 `endif
 
       i_byte_0d(byte_array[3][2][1]);
@@ -593,6 +877,13 @@ module t;
       i_byte_3d(byte_array);
       `CHECK_3D(byte_array);
 
+      i_byte_1d1(byte_array1[0][0]);
+      `CHECK_1D1(byte_array1[0][0]);
+      i_byte_2d1(byte_array1[0]);
+      `CHECK_2D1(byte_array1[0]);
+      i_byte_3d1(byte_array1);
+      `CHECK_3D1(byte_array1);
+
       i_byte_unsigned_0d(byte_unsigned_array[3][2][1]);
       `CHECK_0D(byte_unsigned_array[3][2][1]);
       i_byte_unsigned_1d(byte_unsigned_array[2][1]);
@@ -601,6 +892,13 @@ module t;
       `CHECK_2D(byte_unsigned_array[1]);
       i_byte_unsigned_3d(byte_unsigned_array);
       `CHECK_3D(byte_unsigned_array);
+
+      i_byte_unsigned_1d1(byte_unsigned_array1[0][0]);
+      `CHECK_1D1(byte_unsigned_array1[0][0]);
+      i_byte_unsigned_2d1(byte_unsigned_array1[0]);
+      `CHECK_2D1(byte_unsigned_array1[0]);
+      i_byte_unsigned_3d1(byte_unsigned_array1);
+      `CHECK_3D1(byte_unsigned_array1);
 
       i_shortint_0d(shortint_array[3][2][1]);
       `CHECK_0D(shortint_array[3][2][1]);
@@ -611,6 +909,13 @@ module t;
       i_shortint_3d(shortint_array);
       `CHECK_3D(shortint_array);
 
+      i_shortint_1d1(shortint_array1[0][0]);
+      `CHECK_1D1(shortint_array1[0][0]);
+      i_shortint_2d1(shortint_array1[0]);
+      `CHECK_2D1(shortint_array1[0]);
+      i_shortint_3d1(shortint_array1);
+      `CHECK_3D1(shortint_array1);
+
       i_shortint_unsigned_0d(shortint_unsigned_array[3][2][1]);
       `CHECK_0D(shortint_unsigned_array[3][2][1]);
       i_shortint_unsigned_1d(shortint_unsigned_array[2][1]);
@@ -619,6 +924,13 @@ module t;
       `CHECK_2D(shortint_unsigned_array[1]);
       i_shortint_unsigned_3d(shortint_unsigned_array);
       `CHECK_3D(shortint_unsigned_array);
+
+      i_shortint_unsigned_1d1(shortint_unsigned_array1[0][0]);
+      `CHECK_1D1(shortint_unsigned_array1[0][0]);
+      i_shortint_unsigned_2d1(shortint_unsigned_array1[0]);
+      `CHECK_2D1(shortint_unsigned_array1[0]);
+      i_shortint_unsigned_3d1(shortint_unsigned_array1);
+      `CHECK_3D1(shortint_unsigned_array1);
 
       i_int_0d(int_array[3][2][1]);
       `CHECK_0D(int_array[3][2][1]);
@@ -629,6 +941,13 @@ module t;
       i_int_3d(int_array);
       `CHECK_3D(int_array);
 
+      i_int_1d1(int_array1[0][0]);
+      `CHECK_1D1(int_array1[0][0]);
+      i_int_2d1(int_array1[0]);
+      `CHECK_2D1(int_array1[0]);
+      i_int_3d1(int_array1);
+      `CHECK_3D1(int_array1);
+
       i_int_unsigned_0d(int_unsigned_array[3][2][1]);
       `CHECK_0D(int_unsigned_array[3][2][1]);
       i_int_unsigned_1d(int_unsigned_array[2][1]);
@@ -637,6 +956,13 @@ module t;
       `CHECK_2D(int_unsigned_array[1]);
       i_int_unsigned_3d(int_unsigned_array);
       `CHECK_3D(int_unsigned_array);
+
+      i_int_unsigned_1d1(int_unsigned_array1[0][0]);
+      `CHECK_1D1(int_unsigned_array1[0][0]);
+      i_int_unsigned_2d1(int_unsigned_array1[0]);
+      `CHECK_2D1(int_unsigned_array1[0]);
+      i_int_unsigned_3d1(int_unsigned_array1);
+      `CHECK_3D1(int_unsigned_array1);
 
       i_longint_0d(longint_array[3][2][1]);
       `CHECK_0D(longint_array[3][2][1]);
@@ -647,6 +973,13 @@ module t;
       i_longint_3d(longint_array);
       `CHECK_3D(longint_array);
 
+      i_longint_1d1(longint_array1[0][0]);
+      `CHECK_1D1(longint_array1[0][0]);
+      i_longint_2d1(longint_array1[0]);
+      `CHECK_2D1(longint_array1[0]);
+      i_longint_3d1(longint_array1);
+      `CHECK_3D1(longint_array1);
+
       i_longint_unsigned_0d(longint_unsigned_array[3][2][1]);
       `CHECK_0D(longint_unsigned_array[3][2][1]);
       i_longint_unsigned_1d(longint_unsigned_array[2][1]);
@@ -655,6 +988,13 @@ module t;
       `CHECK_2D(longint_unsigned_array[1]);
       i_longint_unsigned_3d(longint_unsigned_array);
       `CHECK_3D(longint_unsigned_array);
+
+      i_longint_unsigned_1d1(longint_unsigned_array1[0][0]);
+      `CHECK_1D1(longint_unsigned_array1[0][0]);
+      i_longint_unsigned_2d1(longint_unsigned_array1[0]);
+      `CHECK_2D1(longint_unsigned_array1[0]);
+      i_longint_unsigned_3d1(longint_unsigned_array1);
+      `CHECK_3D1(longint_unsigned_array1);
 
 `ifndef NO_TIME
       i_time_0d(time_array[3][2][1]);
@@ -665,6 +1005,13 @@ module t;
       `CHECK_2D(time_array[1]);
       i_time_3d(time_array);
       `CHECK_3D(time_array);
+
+      i_time_1d1(time_array1[0][0]);
+      `CHECK_1D1(time_array1[0][0]);
+      i_time_2d1(time_array1[0]);
+      `CHECK_2D1(time_array1[0]);
+      i_time_3d1(time_array1);
+      `CHECK_3D1(time_array1);
 `endif
 
 `ifndef NO_INTEGER
@@ -676,6 +1023,13 @@ module t;
       `CHECK_2D(integer_array[1]);
       i_integer_3d(integer_array);
       `CHECK_3D(integer_array);
+
+      i_integer_1d1(integer_array1[0][0]);
+      `CHECK_1D1(integer_array1[0][0]);
+      i_integer_2d1(integer_array1[0]);
+      `CHECK_2D1(integer_array1[0]);
+      i_integer_3d1(integer_array1);
+      `CHECK_3D1(integer_array1);
 `endif
 
       i_real_0d(real_array[3][2][1]);
@@ -687,6 +1041,13 @@ module t;
       i_real_3d(real_array);
       `CHECK_3D(real_array);
 
+      i_real_1d1(real_array1[0][0]);
+      `CHECK_1D1(real_array1[0][0]);
+      i_real_2d1(real_array1[0]);
+      `CHECK_2D1(real_array1[0]);
+      i_real_3d1(real_array1);
+      `CHECK_3D1(real_array1);
+
 `ifndef NO_SHORTREAL
       i_shortreal_0d(shortreal_array[3][2][1]);
       `CHECK_0D(shortreal_array[3][2][1]);
@@ -696,6 +1057,13 @@ module t;
       `CHECK_2D(shortreal_array[1]);
       i_shortreal_3d(shortreal_array);
       `CHECK_3D(shortreal_array);
+
+      i_shortreal_1d1(shortreal_array1[0][0]);
+      `CHECK_1D1(shortreal_array1[0][0]);
+      i_shortreal_2d1(shortreal_array1[0]);
+      `CHECK_2D1(shortreal_array1[0]);
+      i_shortreal_3d1(shortreal_array1);
+      `CHECK_3D1(shortreal_array1);
 `endif
 
       for (int i = 0; i < 4; ++i)
@@ -717,6 +1085,13 @@ module t;
       `CHECK_CHANDLE_VAL(chandle_array[2][0][0], get_non_null());
       `CHECK_CHANDLE_VAL(chandle_array[3][0][0], get_non_null());
 
+      i_chandle_1d1(chandle_array1[0][0]);
+      `CHECK_CHANDLE_VAL(chandle_array1[0][0][0], get_non_null());
+      i_chandle_2d1(chandle_array1[0]);
+      `CHECK_CHANDLE_VAL(chandle_array1[0][0][0], get_non_null());
+      i_chandle_3d1(chandle_array1);
+      `CHECK_CHANDLE_VAL(chandle_array1[0][0][0], get_non_null());
+
       i_string_0d(string_array[3][2][1]);
       `CHECK_STRING_VAL(string_array[3][2][1], "42");
       i_string_1d(string_array[2][1]);
@@ -732,6 +1107,13 @@ module t;
       `CHECK_STRING_VAL(string_array[2][0][0], "50");
       `CHECK_STRING_VAL(string_array[3][0][0], "51");
 
+      i_string_1d1(string_array1[0][0]);
+      `CHECK_STRING_VAL(string_array1[0][0][0], "52");
+      i_string_2d1(string_array1[0]);
+      `CHECK_STRING_VAL(string_array1[0][0][0], "53");
+      i_string_3d1(string_array1);
+      `CHECK_STRING_VAL(string_array1[0][0][0], "54");
+
       i_bit1_0d(bit1_array[3][2][1]);
       `CHECK_0D(bit1_array[3][2][1]);
       i_bit1_1d(bit1_array[2][1]);
@@ -740,6 +1122,13 @@ module t;
       `CHECK_2D(bit1_array[1]);
       i_bit1_3d(bit1_array);
       `CHECK_3D(bit1_array);
+
+      i_bit1_1d1(bit1_array1[0][0]);
+      `CHECK_1D1(bit1_array1[0][0]);
+      i_bit1_2d1(bit1_array1[0]);
+      `CHECK_2D1(bit1_array1[0]);
+      i_bit1_3d1(bit1_array1);
+      `CHECK_3D1(bit1_array1);
 
       i_bit7_0d(bit7_array[3][2][1]);
       `CHECK_0D(bit7_array[3][2][1]);
@@ -750,6 +1139,13 @@ module t;
       i_bit7_3d(bit7_array);
       `CHECK_3D(bit7_array);
 
+      i_bit7_1d1(bit7_array1[0][0]);
+      `CHECK_1D1(bit7_array1[0][0]);
+      i_bit7_2d1(bit7_array1[0]);
+      `CHECK_2D1(bit7_array1[0]);
+      i_bit7_3d1(bit7_array1);
+      `CHECK_3D1(bit7_array1);
+
       i_bit121_0d(bit121_array[3][2][1]);
       `CHECK_0D(bit121_array[3][2][1]);
       i_bit121_1d(bit121_array[2][1]);
@@ -758,6 +1154,13 @@ module t;
       `CHECK_2D(bit121_array[1]);
       i_bit121_3d(bit121_array);
       `CHECK_3D(bit121_array);
+
+      i_bit121_1d1(bit121_array1[0][0]);
+      `CHECK_1D1(bit121_array1[0][0]);
+      i_bit121_2d1(bit121_array1[0]);
+      `CHECK_2D1(bit121_array1[0]);
+      i_bit121_3d1(bit121_array1);
+      `CHECK_3D1(bit121_array1);
 
       i_logic1_0d(logic1_array[3][2][1]);
       `CHECK_0D(logic1_array[3][2][1]);
@@ -768,6 +1171,13 @@ module t;
       i_logic1_3d(logic1_array);
       `CHECK_3D(logic1_array);
 
+      i_logic1_1d1(logic1_array1[0][0]);
+      `CHECK_1D1(logic1_array1[0][0]);
+      i_logic1_2d1(logic1_array1[0]);
+      `CHECK_2D1(logic1_array1[0]);
+      i_logic1_3d1(logic1_array1);
+      `CHECK_3D1(logic1_array1);
+
       i_logic7_0d(logic7_array[3][2][1]);
       `CHECK_0D(logic7_array[3][2][1]);
       i_logic7_1d(logic7_array[2][1]);
@@ -776,6 +1186,13 @@ module t;
       `CHECK_2D(logic7_array[1]);
       i_logic7_3d(logic7_array);
       `CHECK_3D(logic7_array);
+
+      i_logic7_1d1(logic7_array1[0][0]);
+      `CHECK_1D1(logic7_array1[0][0]);
+      i_logic7_2d1(logic7_array1[0]);
+      `CHECK_2D1(logic7_array1[0]);
+      i_logic7_3d1(logic7_array1);
+      `CHECK_3D1(logic7_array1);
 
       i_logic121_0d(logic121_array[3][2][1]);
       `CHECK_0D(logic121_array[3][2][1]);
@@ -786,6 +1203,13 @@ module t;
       i_logic121_3d(logic121_array);
       `CHECK_3D(logic121_array);
 
+      i_logic121_1d1(logic121_array1[0][0]);
+      `CHECK_1D1(logic121_array1[0][0]);
+      i_logic121_2d1(logic121_array1[0]);
+      `CHECK_2D1(logic121_array1[0]);
+      i_logic121_3d1(logic121_array1);
+      `CHECK_3D1(logic121_array1);
+
       i_pack_struct_0d(pack_struct_array[3][2][1]);
       `CHECK_0D(pack_struct_array[3][2][1]);
       i_pack_struct_1d(pack_struct_array[2][1]);
@@ -794,6 +1218,13 @@ module t;
       `CHECK_2D(pack_struct_array[1]);
       i_pack_struct_3d(pack_struct_array);
       `CHECK_3D(pack_struct_array);
+
+      i_pack_struct_1d1(pack_struct_array1[0][0]);
+      `CHECK_1D1(pack_struct_array1[0][0]);
+      i_pack_struct_2d1(pack_struct_array1[0]);
+      `CHECK_2D1(pack_struct_array1[0]);
+      i_pack_struct_3d1(pack_struct_array1);
+      `CHECK_3D1(pack_struct_array1);
 
       `SET_VALUES(pack_struct_array);
       i_pack_struct_0d(pack_struct_array[3][2][1]);
@@ -819,6 +1250,13 @@ module t;
       `CHECK_VAL(unpack_struct_array[1][0][0].val, 49);
       `CHECK_VAL(unpack_struct_array[2][0][0].val, 50);
       `CHECK_VAL(unpack_struct_array[3][0][0].val, 51);
+
+      i_unpack_struct_1d1(unpack_struct_array1[0][0]);
+      `CHECK_VAL(unpack_struct_array1[0][0][0].val, 52);
+      i_unpack_struct_2d1(unpack_struct_array1[0]);
+      `CHECK_VAL(unpack_struct_array1[0][0][0].val, 53);
+      i_unpack_struct_3d1(unpack_struct_array1);
+      `CHECK_VAL(unpack_struct_array1[0][0][0].val, 54);
 `endif
 
       check_exports();

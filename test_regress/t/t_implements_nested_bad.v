@@ -11,6 +11,6 @@ class Cls;
    endclass
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    Cls c;
 endmodule

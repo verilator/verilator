@@ -26,6 +26,8 @@ module t (/*AUTOARG*/
 
    reg   toggle; initial toggle='0;
 
+   logic _under_toggle = toggle;  // For --coverage-underscore
+
    str_t stoggle; initial stoggle='0;
 
    str_logic strl; initial strl='0;

@@ -120,6 +120,11 @@
 // Allowed on: function, method. (-fthread-safety)
 #define VL_ASSERT_CAPABILITY(x) \
         VL_CLANG_ATTR(assert_capability(x))
+// Disable thread safety analysis for the annotted function
+// Use this only when absolutely sure code is correct, but too
+// complicated for the compiler to prove.
+#define VL_NO_THREAD_SAFETY_ANALYSIS \
+        VL_CLANG_ATTR(no_thread_safety_analysis)
 
 // Require mutex locks only in code units which work with enabled multi-threading.
 #if !defined(VL_MT_DISABLED_CODE_UNIT)
@@ -307,8 +312,10 @@
 //=========================================================================
 // Optimization
 
-#ifndef VL_INLINE_OPT
-# define VL_INLINE_OPT  ///< "inline" if compiling all objects in single compiler run
+#ifndef VL_NO_LEGACY
+# ifndef VL_INLINE_OPT
+#   define VL_INLINE_OPT  // Historical, has no effect on Verilated models.
+# endif
 #endif
 
 //=========================================================================
@@ -636,6 +643,16 @@ extern std::string getenvStr(const std::string& envvar,
 /// Return currently executing processor number; may do an OS call underneath so slow
 extern uint16_t getcpu() VL_MT_SAFE;
 
+/// Return number of processors available to the current process. This might be
+/// less than the number of logical processors in the machine, if a processor
+/// affinity mask was used, e.g. via 'numactl -C 0-3'. Returns 0 if cannot
+/// be determiend.
+extern unsigned getProcessAvailableParallelism() VL_MT_SAFE;
+
+/// Return getProcessAvailableParallelism if non-zero, otherwise the number of
+/// hardware threads in the host machine.
+extern unsigned getProcessDefaultParallelism() VL_MT_SAFE;
+
 /// Return memory usage in bytes, or 0 if unknown
 extern void memUsageBytes(uint64_t& peakr, uint64_t& currentr) VL_MT_SAFE;
 
@@ -710,6 +727,13 @@ reverse_wrapper<T> reverse_view(const T& v) {
 template <typename T>
 T const& as_const(T& v) VL_MT_SAFE {
     return v;
+}
+
+// Utility function
+template <size_t N>
+inline constexpr size_t roundUpToMultipleOf(size_t value) {
+    static_assert((N & (N - 1)) == 0, "'N' must be a power of 2");
+    return (value + N - 1) & ~(N - 1);
 }
 
 };  // namespace vlstd

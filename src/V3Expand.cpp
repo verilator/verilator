@@ -95,8 +95,8 @@ class ExpandVisitor final : public VNVisitor {
 
     bool doExpandWide(AstNode* nodep) {
         if (isImpure(nodep)) return false;
-        ++m_statWides;
         if (nodep->widthWords() <= v3Global.opt.expandLimit()) {
+            ++m_statWides;
             m_statWideWords += nodep->widthWords();
             return true;
         } else {
@@ -159,7 +159,7 @@ class ExpandVisitor final : public VNVisitor {
         tmpp->isInternal(true);
         tmpp->noReset(true);
         tmpp->substConstOnly(true);
-        m_funcp->addInitsp(tmpp);
+        m_funcp->addVarsp(tmpp);
         insertBefore(placep, new AstAssign{flp, new AstVarRef{flp, tmpp, VAccess::WRITE}, valuep});
         return tmpp;
     }
@@ -277,7 +277,10 @@ class ExpandVisitor final : public VNVisitor {
     // Return word of fromp that contains bit lsbp + the given word offset.
     static AstNodeExpr* newWordSelBit(FileLine* flp, AstNodeExpr* fromp, AstNodeExpr* lsbp,
                                       uint32_t wordOffset = 0) {
-        return newWordSelWord(flp, fromp, newWordIndex(lsbp, wordOffset));
+        AstNodeExpr* const indexp = newWordIndex(lsbp, wordOffset);
+        AstNodeExpr* const wordSelp = newWordSelWord(flp, fromp, indexp);
+        if (!indexp->backp()) VL_DO_DANGLING(indexp->deleteTree(), indexp);
+        return wordSelp;
     }
 
     static AstNodeExpr* newSelBitBit(AstNodeExpr* lsbp) {
@@ -390,10 +393,11 @@ class ExpandVisitor final : public VNVisitor {
         VL_RESTORER(m_nTmps);
         m_funcp = nodep;
         m_nTmps = 0;
+        const VDouble0 statWidesBefore = m_statWides;
         iterateChildren(nodep);
 
-        // Constant fold here, as Ast size can likely be reduced
-        if (v3Global.opt.fConstEager()) {
+        // Constant fold here if anything was expanded, as Ast size can likely be reduced
+        if (v3Global.opt.fConstEager() && m_statWides != statWidesBefore) {
             AstNode* const editedp = V3Const::constifyEditCpp(nodep);
             UASSERT_OBJ(editedp == nodep, editedp, "Should not have replaced CFunc");
         }
@@ -560,7 +564,9 @@ class ExpandVisitor final : public VNVisitor {
         ++m_nTmps;
 
         // Compute word index of LSB, store to temporary if not constant
-        AstNodeExpr* wordIdxp = newWordIndex(rhsp->lsbp()->cloneTreePure(false));
+        AstNodeExpr* const wordLsbp = rhsp->lsbp()->cloneTreePure(false);
+        AstNodeExpr* wordIdxp = newWordIndex(wordLsbp);
+        if (!wordLsbp->backp()) VL_DO_DANGLING(wordLsbp->deleteTree(), wordLsbp);
         wordIdxp = V3Const::constifyEditCpp(wordIdxp);
         if (!VN_IS(wordIdxp, Const)) {
             AstVar* const tmpp = addLocalTmp(nodep, "ExpandSel_WordIdx", wordIdxp);

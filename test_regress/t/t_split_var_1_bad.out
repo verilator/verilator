@@ -72,10 +72,10 @@
                                               : ... note: In instance 't.i_sub1'
    62 |    genvar cannot_split_genvar /*verilator split_var*/ ;
       |           ^~~~~~~~~~~~~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:65:65: 'cannot_split' has split_var metacomment but will not be split because its bit range cannot be determined statically.
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:65:72: 'cannot_split' has split_var metacomment but will not be split because its bit range cannot be determined statically.
                                               : ... note: In instance 't.i_sub1'
-   65 |       logic [8:0] rd_tmp /*verilator split_var*/  = cannot_split[addr];
-      |                                                                 ^
+   65 |       static logic [8:0] rd_tmp /*verilator split_var*/  = cannot_split[addr];
+      |                                                                        ^
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:66:23: 'rd_tmp' has split_var metacomment but will not be split because its bit range cannot be determined statically.
                                               : ... note: In instance 't.i_sub1'
    66 |       rd_data = rd_tmp[{3'b0, addr[0]}+:8];

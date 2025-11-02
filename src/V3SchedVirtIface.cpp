@@ -19,9 +19,6 @@
 // Each interface type written to via virtual interface, or written to normally but read via
 // virtual interface:
 //     Create a trigger var for it
-// Each AssignW:
-//     If it writes to a virtual interface, or to a variable read via virtual interface:
-//         Convert to an always
 // Each statement:
 //     If it writes to a virtual interface, or to a variable read via virtual interface:
 //         Set the corresponding trigger to 1
@@ -111,7 +108,7 @@ private:
         if (!nodep) return;
         foreachWrittenVirtIface(nodep, [locationp](AstVarRef* const selp, AstIface*) {
             selp->v3warn(E_UNSUPPORTED,
-                         "Unsupported: write to virtual interface in " << locationp);
+                         "Unsupported: Write to virtual interface in " << locationp);
         });
     }
     // Create trigger var for the given interface if it doesn't exist; return a write ref to it
@@ -120,7 +117,7 @@ private:
             AstScope* const scopeTopp = m_netlistp->topScopep()->scopep();
             AstVarScope* const vscp = scopeTopp->createTemp(m_vifTriggerNames.get(ifacep), 1);
             ifacep->user1p(vscp);
-            m_triggers.emplace_back(std::make_pair(ifacep, vscp));
+            m_triggers.addIfaceTrigger(ifacep, vscp);
         }
         return new AstVarRef{flp, VN_AS(ifacep->user1p(), VarScope), VAccess::WRITE};
     }
@@ -166,12 +163,6 @@ private:
         m_trigAssignMemberVarp = nullptr;
         iterateChildren(nodep);
     }
-    void visit(AstAssignW* nodep) override {
-        if (writesToVirtIface(nodep)) {
-            // Convert to always, as we have to assign the trigger var
-            nodep->convertToAlways();
-        }
-    }
     void visit(AstNodeIf* nodep) override {
         unsupportedWriteToVirtIface(nodep->condp(), "if condition");
         {
@@ -194,9 +185,8 @@ private:
             m_trigAssignMemberVarp = nullptr;
         }
     }
-    void visit(AstWhile* nodep) override {
-        unsupportedWriteToVirtIface(nodep->condp(), "loop condition");
-        unsupportedWriteToVirtIface(nodep->incsp(), "loop increment statement");
+    void visit(AstLoop* nodep) override {
+        UASSERT_OBJ(!nodep->contsp(), nodep, "'contsp' only used before LinkJump");
         {
             VL_RESTORER(m_trigAssignp);
             VL_RESTORER(m_trigAssignIfacep);
@@ -209,6 +199,9 @@ private:
             m_trigAssignIfacep = nullptr;
             m_trigAssignMemberVarp = nullptr;
         }
+    }
+    void visit(AstLoopTest* nodep) override {
+        unsupportedWriteToVirtIface(nodep->condp(), "loop condition");
     }
     void visit(AstJumpBlock* nodep) override {
         {
@@ -284,12 +277,13 @@ public:
 
 VirtIfaceTriggers makeVirtIfaceTriggers(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
+    VirtIfaceTriggers triggers{};
     if (v3Global.hasVirtIfaces()) {
-        VirtIfaceVisitor visitor{nodep};
+        triggers = VirtIfaceVisitor{nodep}.take_triggers();
+        // Dump afer destructor so VNDeleter runs
         V3Global::dumpCheckGlobalTree("sched_vif", 0, dumpTreeEitherLevel() >= 6);
-        return visitor.take_triggers();
     }
-    return {};
+    return triggers;
 }
 
 }  //namespace V3Sched

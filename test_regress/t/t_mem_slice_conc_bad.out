@@ -1,0 +1,14 @@
+%Error-PROCASSWIRE: t/t_mem_slice_conc_bad.v:46:10: Procedural assignment to wire, perhaps intended var (IEEE 1800-2023 6.5): 'rst'
+                                                  : ... note: In instance 't'
+   46 |          rst <= 1'b0;
+      |          ^~~
+                    ... For error description see https://verilator.org/warn/PROCASSWIRE?v=latest
+%Error-PROCASSWIRE: t/t_mem_slice_conc_bad.v:50:10: Procedural assignment to wire, perhaps intended var (IEEE 1800-2023 6.5): 'rst'
+                                                  : ... note: In instance 't'
+   50 |          rst <= 1'b1;
+      |          ^~~
+%Error-PROCASSWIRE: t/t_mem_slice_conc_bad.v:53:10: Procedural assignment to wire, perhaps intended var (IEEE 1800-2023 6.5): 'rst'
+                                                  : ... note: In instance 't'
+   53 |          rst <= 1'b0;
+      |          ^~~
+%Error: Exiting due to

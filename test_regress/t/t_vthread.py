@@ -11,7 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 test.top_filename = test.obj_dir + "/t_vthread.v"
-test.sanitize = False  # GCC takes too long otherwise
 
 
 def gen(filename, n):

@@ -21,7 +21,9 @@ module t (/*AUTOARG*/
          x <= 1;
       end
       else if (cyc == 1) begin
+         // verilator lint_off ASSIGNEQEXPR
          y <= (x = 2);
+         // verilator lint_on ASSIGNEQEXPR
       end else begin
          if (x != 2) $stop;
          if (y != 2) $stop;

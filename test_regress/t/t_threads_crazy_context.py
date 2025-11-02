@@ -19,7 +19,7 @@ test.execute()
 if test.vltmt:
     test.file_grep(
         test.run_log_filename,
-        r'System has \d+ hardware threads but simulation thread count set to 1024\. This will likely cause significant slowdown\.'
+        r'Process has \d+ hardware threads available, but simulation thread count set to 1024\. This will likely cause significant slowdown\.'
     )
 
 test.passes()

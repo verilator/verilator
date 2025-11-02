@@ -6,7 +6,7 @@
 
 //bug505
 
-module t (/*AUTOARG*/);
+module t;
 
    parameter  WIDTH = 33;
    localparam MAX_WIDTH = 11;

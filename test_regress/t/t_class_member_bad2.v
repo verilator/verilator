@@ -19,5 +19,5 @@ class ClsDup;
 
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 endmodule

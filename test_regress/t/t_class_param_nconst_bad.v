@@ -7,7 +7,7 @@
 class Cls #(parameter PARAM = 12);
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    Cls #(.PARAM($random)) c;  // Bad param name
 

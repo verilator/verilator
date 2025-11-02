@@ -15,7 +15,7 @@ class acls;
 endclass
 endprogram
 
-program t(/*AUTOARG*/);
+program t;
 
    int i;
 

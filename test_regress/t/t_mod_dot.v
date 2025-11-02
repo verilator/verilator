@@ -4,9 +4,9 @@
 // any use, without warranty, 2020 by engr248.
 // SPDX-License-Identifier: CC0-1.0
 
-module \foo.bar (/*AUTOARG*/);
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+module \foo.bar ;
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

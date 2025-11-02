@@ -10,8 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')  # no vltmt, as AstMemberSel is unhandled in V3InstrCount
-test.top_filename = "t_event_control_expr.v"
 
-test.lint(verilator_flags2=['-DUNSUP'], fails=True, expect_filename=test.golden_filename)
+test.lint(fails=True, expect_filename=test.golden_filename)
 
 test.passes()

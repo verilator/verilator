@@ -4,7 +4,7 @@
 // without warranty, 2025 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
    bit [99:0] wide = $c100("0");
 

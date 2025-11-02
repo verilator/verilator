@@ -7,10 +7,13 @@
 module t;
    // Test all warnings, including those that are historically removed still parse
    // verilator lint_off ALWCOMBORDER
+   // verilator lint_off ALWNEVER
    // verilator lint_off ASCRANGE
    // verilator lint_off ASSIGNDLY
+   // verilator lint_off ASSIGNEQEXPR
    // verilator lint_off ASSIGNIN
    // verilator lint_off BADSTDPRAGMA
+   // verilator lint_off BADVLTPRAGMA
    // verilator lint_off BLKANDNBLK
    // verilator lint_off BLKLOOPINIT
    // verilator lint_off BLKSEQ
@@ -27,15 +30,21 @@ module t;
    // verilator lint_off COMBDLY
    // verilator lint_off CONSTRAINTIGN
    // verilator lint_off CONTASSREG
+   // verilator lint_off COVERIGN
    // verilator lint_off DECLFILENAME
+   // verilator lint_off DEFOVERRIDE
    // verilator lint_off DEFPARAM
    // verilator lint_off DEPRECATED
    // verilator lint_off ENCAPSULATED
    // verilator lint_off ENDLABEL
+   // verilator lint_off ENUMITEMWIDTH
    // verilator lint_off ENUMVALUE
    // verilator lint_off EOFNEWLINE
+   // verilator lint_off FUNCTIMECTL
    // verilator lint_off GENCLK
+   // verilator lint_off GENUNNAMED
    // verilator lint_off HIERBLOCK
+   // verilator lint_off HIERPARAM
    // verilator lint_off IFDEPTH
    // verilator lint_off IGNOREDRETURN
    // verilator lint_off IMPERFECTSCH
@@ -50,26 +59,37 @@ module t;
    // verilator lint_off LATCH
    // verilator lint_off LITENDIAN
    // verilator lint_off MINTYPMAXDLY
+   // verilator lint_off MISINDENT
    // verilator lint_off MODDUP
+   // verilator lint_off MODMISSING
    // verilator lint_off MULTIDRIVEN
    // verilator lint_off MULTITOP
    // verilator lint_off NEWERSTD
+   // verilator lint_off NOEFFECT
    // verilator lint_off NOLATCH
+   // verilator lint_off NONSTD
+   // verilator lint_off NORETURN
    // verilator lint_off NULLPORT
+   // verilator lint_off PARAMNODEFAULT
    // verilator lint_off PINCONNECTEMPTY
    // verilator lint_off PINMISSING
    // verilator lint_off PINNOCONNECT
    // verilator lint_off PINNOTFOUND
    // verilator lint_off PKGNODECL
+   // verilator lint_off PREPROCZERO
+   // verilator lint_off PROCASSINIT
    // verilator lint_off PROCASSWIRE
    // verilator lint_off PROFOUTOFDATE
    // verilator lint_off PROTECTED
+   // verilator lint_off PROTOTYPEMIS
    // verilator lint_off RANDC
    // verilator lint_off REALCVT
    // verilator lint_off REDEFMACRO
    // verilator lint_off RISEFALLDLY
    // verilator lint_off SELRANGE
    // verilator lint_off SHORTREAL
+   // verilator lint_off SIDEEFFECT
+   // verilator lint_off SPECIFYIGN
    // verilator lint_off SPLITVAR
    // verilator lint_off STATICVAR
    // verilator lint_off STMTDLY
@@ -84,6 +104,7 @@ module t;
    // verilator lint_off UNPACKED
    // verilator lint_off UNSIGNED
    // verilator lint_off UNUSEDGENVAR
+   // verilator lint_off UNUSEDLOOP
    // verilator lint_off UNUSEDPARAM
    // verilator lint_off UNUSEDSIGNAL
    // verilator lint_off USERERROR
@@ -98,5 +119,6 @@ module t;
    // verilator lint_off WIDTHTRUNC
    // verilator lint_off WIDTHXZEXPAND
    // verilator lint_off ZERODLY
+   // verilator lint_off ZEROREPL
 
 endmodule

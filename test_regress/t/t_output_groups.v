@@ -32,7 +32,7 @@ module t (/*AUTOARG*/
          end
    endgenerate
    always @(posedge clk) begin
-      int sum = 0;
+      static int sum = 0;
       foreach (q[i])
          sum += q[i].get_param();
       if (sum != MAX * (MAX - 1) / 2) $stop;

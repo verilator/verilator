@@ -1,0 +1,6 @@
+%Error: t/t_struct_circ_bad.v:11:11: Struct's type is circular: t.t2_t
+                                   : ... note: In instance 't'
+   11 |   typedef struct packed {
+      |           ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

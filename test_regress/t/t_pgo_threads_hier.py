@@ -11,11 +11,12 @@ import vltest_bootstrap
 
 test.scenarios('vltmt')
 test.top_filename = "t/t_hier_block_perf.v"
-cycles = 100000
+cycles = 100
 test.sim_time = cycles * 10 + 1000
 
 threads = 2
-flags = ["--hierarchical", "-Wno-UNOPTFLAT", "-DSIM_CYCLES=" + str(cycles)]
+config_file = test.t_dir + "/" + test.name + ".vlt"
+flags = [config_file, "--hierarchical", "-Wno-UNOPTFLAT", "-DSIM_CYCLES=" + str(cycles)]
 
 test.compile(benchmarksim=1, v_flags2=["--prof-pgo"] + flags, threads=threads)
 
@@ -24,7 +25,13 @@ test.execute(all_run_flags=[
     " +verilator+prof+exec+file+/dev/null",
     " +verilator+prof+vlt+file+" + test.obj_dir + "/profile.vlt"])  # yapf:disable
 
+test.file_grep(test.obj_dir + "/profile.vlt", r'profile_data -model "VTest"')
+test.file_grep(test.obj_dir + "/profile.vlt", r'profile_data -model "VCheck"')
+test.file_grep(test.obj_dir + "/profile.vlt", r'profile_data -model "VCoreHier"')
 test.file_grep(test.obj_dir + "/profile.vlt", r'profile_data -model "V' + test.name + '"')
+
+# Check for cost rollovers
+test.file_grep_not(test.obj_dir + "/profile.vlt", r'.*cost 64\'d\d{18}.*')
 
 # Differentiate benchmarksim results
 test.name = test.name + "_optimized"
@@ -32,7 +39,7 @@ test.compile(
     benchmarksim=1,
     # Intentionally no --prof-pgo here to make sure profile data can be read in
     # without it (that is: --prof-pgo has no effect on profile_data hash names)
-    v_flags2=flags,
+    v_flags2=[test.obj_dir + "/profile.vlt"] + flags,
     threads=threads)
 
 test.execute()

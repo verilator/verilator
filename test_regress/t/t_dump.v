@@ -92,4 +92,53 @@ module Test(/*AUTOARG*/
          disable blk;
       end
    end
+   initial begin
+      assert_simple_immediate_else: assert(0) else $display("fail");
+      assert_simple_immediate_stmt: assert(0) $display("pass");
+      assert_simple_immediate_stmt_else: assert(0) $display("pass"); else $display("fail");
+
+      assume_simple_immediate: assume(0);
+      assume_simple_immediate_else: assume(0) else $display("fail");
+      assume_simple_immediate_stmt: assume(0) $display("pass");
+      assume_simple_immediate_stmt_else: assume(0) $display("pass"); else $display("fail");
+   end
+
+   assert_observed_deferred_immediate: assert #0 (0);
+   assert_observed_deferred_immediate_else: assert #0 (0) else $display("fail");
+   assert_observed_deferred_immediate_stmt: assert #0 (0) $display("pass");
+   assert_observed_deferred_immediate_stmt_else: assert #0 (0) $display("pass"); else $display("fail");
+
+   assume_observed_deferred_immediate: assume #0 (0);
+   assume_observed_deferred_immediate_else: assume #0 (0) else $display("fail");
+   assume_observed_deferred_immediate_stmt: assume #0 (0) $display("pass");
+   assume_observed_deferred_immediate_stmt_else: assume #0 (0) $display("pass"); else $display("fail");
+
+   assert_final_deferred_immediate: assert final (0);
+   assert_final_deferred_immediate_else: assert final (0) else $display("fail");
+   assert_final_deferred_immediate_stmt: assert final (0) $display("pass");
+   assert_final_deferred_immediate_stmt_else: assert final (0) $display("pass"); else $display("fail");
+
+   assume_final_deferred_immediate: assume final (0);
+   assume_final_deferred_immediate_else: assume final (0) else $display("fail");
+   assume_final_deferred_immediate_stmt: assume final (0) $display("pass");
+   assume_final_deferred_immediate_stmt_else: assume final (0) $display("pass"); else $display("fail");
+
+   property prop();
+      @(posedge clk) 0
+   endproperty
+
+   assert_concurrent: assert property (prop);
+   assert_concurrent_else: assert property(prop) else $display("fail");
+   assert_concurrent_stmt: assert property(prop) $display("pass");
+   assert_concurrent_stmt_else: assert property(prop) $display("pass"); else $display("fail");
+
+   assume_concurrent: assume property(prop);
+   assume_concurrent_else: assume property(prop) else $display("fail");
+   assume_concurrent_stmt: assume property(prop) $display("pass");
+   assume_concurrent_stmt_else: assume property(prop) $display("pass"); else $display("fail");
+
+   cover_concurrent: cover property(prop);
+   cover_concurrent_stmt: cover property(prop) $display("pass");
+
+   restrict property (prop);
 endmodule

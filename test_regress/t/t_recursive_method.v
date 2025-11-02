@@ -43,7 +43,7 @@ class Getter3 #(int T=5);
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    initial begin
       Fib fib = new;

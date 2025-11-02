@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# mypy: disallow-untyped-defs
 # pylint: disable=C0103,C0114
 ######################################################################
 #

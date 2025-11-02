@@ -20,7 +20,7 @@ class Cls extends Base;
 
 endclass
 
-module t(/*AUTOARG*/);
+module t;
 
    initial begin
       Base b = Cls::generate_txn();

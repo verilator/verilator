@@ -20,7 +20,7 @@ class Cls;
    endfunction
 endclass : Cls
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       Cls c = new;
       my_struct s = c.get_struct;

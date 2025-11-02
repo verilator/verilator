@@ -4,10 +4,10 @@
 // any use, without warranty, 2012 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
-   initial begin
-      #100 $finish;  //<--- Warning
-   end
+  initial begin
+    #100 $finish;  //<--- Warning
+  end
 
 endmodule

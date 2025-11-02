@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 //bug991
-module t (/*AUTOARG*/);
+module t;
 
    logic [31:0] array_assign [3:0];
    logic [31:0] array_other [3:0];

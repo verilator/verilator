@@ -7,7 +7,6 @@
 module t(input logic clk);
    unsupported_ctl_type unsupported_ctl_type(clk ? 1 : 2);
    unsupported_ctl_type_expr unsupported_ctl_type_expr();
-   bad_assertcontrol_ctl_type bad_assertcontrol_ctl_type();
    assert_class assert_class();
    assert_iface assert_iface();
    assert_iface_class assert_iface_class();
@@ -15,14 +14,47 @@ endmodule
 
 module unsupported_ctl_type(input int a);
    initial begin
-      $assertcontrol(1, a);
-      $assertcontrol(2);
-      $assertcontrol(6);
-      $assertcontrol(7);
-      $assertcontrol(8);
-      $assertcontrol(9);
-      $assertcontrol(10);
-      $assertcontrol(11);
+      let Lock = 1;
+      let Unlock = 2;
+      let PassOn = 6;
+      let PassOff = 7;
+      let FailOn = 8;
+      let FailOff = 9;
+      let NonvacuousOn = 10;
+      let VacuousOff = 11;
+      $assertcontrol(Lock, a);
+
+      $assertcontrol(Unlock);
+
+      $assertcontrol(PassOn);
+      $assertpasson;
+      $assertpasson(a);
+      $assertpasson(a, t);
+
+      $assertcontrol(PassOff);
+      $assertpassoff;
+      $assertpassoff(a);
+      $assertpassoff(a, t);
+
+      $assertcontrol(FailOn);
+      $assertfailon;
+      $assertfailon(a);
+      $assertfailon(a, t);
+
+      $assertcontrol(FailOff);
+      $assertfailoff;
+      $assertfailoff(a);
+      $assertfailoff(a, t);
+
+      $assertcontrol(NonvacuousOn);
+      $assertnonvacuouson;
+      $assertnonvacuouson(a);
+      $assertnonvacuouson(a, t);
+
+      $assertcontrol(VacuousOff);
+      $assertvacuousoff;
+      $assertvacuousoff(a);
+      $assertvacuousoff(a, t);
    end
 endmodule
 
@@ -30,13 +62,6 @@ module unsupported_ctl_type_expr;
    int ctl_type = 1;
    initial begin
       $assertcontrol(ctl_type);
-   end
-endmodule
-
-module bad_assertcontrol_ctl_type;
-   initial begin
-      $assertcontrol(0);
-      $assertcontrol(100);
    end
 endmodule
 

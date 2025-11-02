@@ -15,14 +15,14 @@ endclass
 
 typedef Cls2 cls2_t;
 
-module t (/*AUTOARG*/);
+module t;
    Cls c;
    Cls2 c2;
    cls2_t ct2;
    ClsExt c_ext;
 
    task t(Cls c); endtask
-   function f(ClsExt c); endfunction
+   function void f(ClsExt c); endfunction
 
    initial begin
       c = 0;

@@ -19,7 +19,8 @@
 
 #include "verilatedos.h"
 
-#include "V3Options.h"
+#include "V3Ast.h"
+#include "V3Graph.h"
 
 #include <map>
 #include <set>
@@ -36,73 +37,55 @@ class AstVar;
 
 //######################################################################
 
-class V3HierBlockParams final {
+class V3HierGraph final : public V3Graph {
 public:
-    using GParams = std::vector<AstVar*>;
-    using GTypeParams = std::vector<AstParamTypeDType*>;
+    V3HierGraph() = default;
+    ~V3HierGraph() = default;
+    VL_UNCOPYABLE(V3HierGraph);
+    VL_UNMOVABLE(V3HierGraph);
 
-private:
-    GParams m_params;
-    GTypeParams m_typeParams;
-
-public:
-    void add(AstVar* param) { m_params.push_back(param); }
-    void add(AstParamTypeDType* param) { m_typeParams.push_back(param); }
-
-    const GParams& gparams() const { return m_params; };
-    const GTypeParams& gTypeParams() const { return m_typeParams; };
-    GParams& gparams() { return m_params; };
-    GTypeParams& gTypeParams() { return m_typeParams; };
-
-    void swap(V3HierBlockParams& other) {
-        m_params.swap(other.m_params);
-        m_typeParams.swap(other.m_typeParams);
-    }
+    // Write command line arguments to .f files for child Verilation run
+    void writeCommandArgsFiles(bool forMkJson) const VL_MT_DISABLED;
+    void writeParametersFiles() const VL_MT_DISABLED;
+    static string topCommandArgsFilename(bool forMkJson) VL_MT_DISABLED;
 };
 
-class V3HierBlock final {
-public:
-    using HierBlockSet = std::unordered_set<V3HierBlock*>;
+class V3HierBlock final : public V3GraphVertex {
+    VL_RTTI_IMPL(V3HierBlock, V3GraphVertex)
 
-private:
     // TYPES
     // Parameter name, stringified value
     using StrGParam = std::pair<string, string>;
     using StrGParams = std::vector<StrGParam>;
 
     // MEMBERS
-    const AstNodeModule* const m_modp;  // Hierarchical block module
-    // Hierarchical blocks that directly or indirectly instantiate this block
-    HierBlockSet m_parents;
-    // Hierarchical blocks that this block directly or indirectly instantiates
-    HierBlockSet m_children;
-    // Parameters that are overridden by #(.param(value)) syntax.
-    const V3HierBlockParams m_params;
+    const AstModule* const m_modp;  // Hierarchical block module
+    // Value parameters that are overridden by #(.param(value)) syntax.
+    const std::vector<AstVar*> m_params;
+    // Types parameters that are overridden by #(.param(value)) syntax.
+    const std::vector<AstParamTypeDType*> m_typeParams;
 
     // METHODS
-    VL_UNCOPYABLE(V3HierBlock);
-    static StrGParams stringifyParams(const V3HierBlockParams::GParams& params,
+    static StrGParams stringifyParams(const std::vector<AstVar*>& params,
                                       bool forGOption) VL_MT_DISABLED;
 
 public:
-    V3HierBlock(const AstNodeModule* modp, const V3HierBlockParams& params)
-        : m_modp{modp}
-        , m_params{params} {}
+    // CONSTRUCTORs
+    V3HierBlock(V3HierGraph* graphp, const AstModule* modp, const std::vector<AstVar*>& params,
+                const std::vector<AstParamTypeDType*>& typeParams)
+        : V3GraphVertex{graphp}
+        , m_modp{modp}
+        , m_params{params}
+        , m_typeParams{typeParams} {}
+    ~V3HierBlock() VL_MT_DISABLED = default;
+    VL_UNCOPYABLE(V3HierBlock);
+    VL_UNMOVABLE(V3HierBlock);
 
-    ~V3HierBlock() VL_MT_DISABLED;
+    const AstModule* modp() const { return m_modp; }
 
-    void addParent(V3HierBlock* parentp) { m_parents.insert(parentp); }
-    bool hasParent() const { return !m_parents.empty(); }
-    void addChild(V3HierBlock* childp) { m_children.insert(childp); }
-    bool hasChild() const { return !m_children.empty(); }
-    const HierBlockSet& parents() const { return m_parents; }
-    const HierBlockSet& children() const { return m_children; }
-    const V3HierBlockParams& params() const { return m_params; }
-    const AstNodeModule* modp() const { return m_modp; }
-
-    // For emitting Makefile and CMakeLists.txt
-    V3StringList commandArgs(bool forCMake) const VL_MT_DISABLED;
-    V3StringList hierBlockArgs() const VL_MT_DISABLED;
+    // For emitting Makefile and build definition JSON
+    VStringList commandArgs(bool forMkJson) const VL_MT_DISABLED;
+    VStringList hierBlockArgs() const VL_MT_DISABLED;
     string hierPrefix() const VL_MT_DISABLED;
     string hierSomeFilename(bool withDir, const char* prefix,
                             const char* suffix) const VL_MT_DISABLED;
@@ -113,44 +96,22 @@ public:
     // Returns the original HDL file if it is not included in v3Global.opt.vFiles().
     string vFileIfNecessary() const VL_MT_DISABLED;
     // Write command line arguments to .f file for this hierarchical block
-    void writeCommandArgsFile(bool forCMake) const VL_MT_DISABLED;
+    void writeCommandArgsFile(bool forMkJson) const VL_MT_DISABLED;
     void writeParametersFile() const VL_MT_DISABLED;
-    string commandArgsFilename(bool forCMake) const VL_MT_DISABLED;
+    string commandArgsFilename(bool forMkJson) const VL_MT_DISABLED;
     string typeParametersFilename() const VL_MT_DISABLED;
+
+    // For Graphviz dumps only
+    std::string name() const override { return m_modp->prettyNameQ(); }
+    std::string dotShape() const override { return "box"; }
 };
 
 //######################################################################
+// Pass to create hierarcical block graph
 
-// Holds relationship between AstNodeModule and V3HierBlock
-class V3HierBlockPlan final {
-    using HierMap = std::unordered_map<const AstNodeModule*, V3HierBlock*>;
-    HierMap m_blocks;
-
-    V3HierBlockPlan() = default;
-    VL_UNCOPYABLE(V3HierBlockPlan);
-
+class V3Hierarchical final {
 public:
-    using iterator = HierMap::iterator;
-    using const_iterator = HierMap::const_iterator;
-    using HierVector = std::vector<const V3HierBlock*>;
-
-    void add(const AstNodeModule* modp, const V3HierBlockParams& params) VL_MT_DISABLED;
-    void registerUsage(const AstNodeModule* parentp, const AstNodeModule* childp) VL_MT_DISABLED;
-
-    const_iterator begin() const { return m_blocks.begin(); }
-    const_iterator end() const { return m_blocks.end(); }
-    bool empty() const { return m_blocks.empty(); }
-
-    // Returns all hierarchical blocks that sorted in leaf-first order.
-    // Latter block refers only already appeared hierarchical blocks.
-    HierVector hierBlocksSorted() const VL_MT_DISABLED;
-
-    // Write command line arguments to .f files for child Verilation run
-    void writeCommandArgsFiles(bool forCMake) const VL_MT_DISABLED;
-    void writeParametersFiles() const VL_MT_DISABLED;
-    static string topCommandArgsFilename(bool forCMake) VL_MT_DISABLED;
-
-    static void createPlan(AstNetlist* nodep) VL_MT_DISABLED;
+    static void createGraph(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 #endif  // guard

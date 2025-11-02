@@ -50,7 +50,7 @@ package pkg31;
    import pkg30::*;
 endpackage
 
-module t (/*AUTOARG*/);
+module t;
 
    reg [pkg11::PARAM1 : 0] bus11;
    reg [pkg11::PARAM2 : 0] bus12;

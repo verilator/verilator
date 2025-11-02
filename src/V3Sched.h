@@ -27,6 +27,8 @@
 #include <utility>
 #include <vector>
 
+class SenExprBuilder;
+
 //============================================================================
 
 namespace V3Sched {
@@ -58,7 +60,12 @@ struct LogicByScope final : public std::vector<std::pair<AstScope*, AstActive*>>
     void deleteActives() {
         for (const auto& pair : *this) {
             AstActive* const activep = pair.second;
-            UASSERT_OBJ(!activep->stmtsp(), activep, "Leftover logic");
+            if (v3Global.opt.debugCheck()) {
+                for (AstNode* nodep = activep->stmtsp(); nodep; nodep = nodep->nextp()) {
+                    AstNodeProcedure* const procp = VN_CAST(nodep, NodeProcedure);
+                    UASSERT_OBJ(procp && !procp->stmtsp(), activep, "Leftover logic");
+                }
+            }
             if (activep->backp()) activep->unlinkFrBack();
             activep->deleteTree();
         }
@@ -121,6 +128,171 @@ struct LogicReplicas final {
     LogicReplicas& operator=(LogicReplicas&&) = default;
 };
 
+// A TriggerKit holds all the components related to a scheduling region triggers
+//
+// Each piece of code is executed when some trigger bits are set. There is no
+// code after scheduling which is not conditional on at least one trigger bit.
+//
+// There are 3 different kinds of triggers
+// 1. "Sense" triggers, which correspond to a unique SenItem in the design
+// 2. "Extra" triggers, which represent non SenItem based conditions
+// 3. "Pre" triggers, which are only used in the 'act' region. These are a copy
+//    of some of the "Sense" triggers but only ever fire during one evaluation
+//    of the 'act' loop. They are used for executing AlwaysPre block that
+//    reside in the 'act' region. (AlwaysPre in 'nba' use the "Sense" triggers.)
+//
+// All trigger bits are stored in an unpacked array of fixed sized words, which
+// is informally referred to in various places as the "trigger vector".
+// There is only one trigger vector for each eval loop (~scheduling region).
+//
+// The organization of the trigger vector (array) is shown here, LSB on the
+// right, MSB on the left. There are 4 main sections:
+//
+// | <- bit N-1                                                                         bit 0 -> |
+// +--------------------+----------------+----------------------------------+--------------------+
+// | Pre triggers       | Extra triggers | Sense triggers                   | Pre Sense triggers |
+// +--------------------+----------------+----------------------------------+--------------------+
+// |        'pre'       |                                 'vec'                                  |
+//
+// The section labelled "Pre Sense triggers" contains regular "Sense" triggers
+// that are also duplicated in the "Pre triggers" section the first time they
+// fire.
+//
+// The "Sense triggers" section contains the rest of the "Sense" triggers that
+// do not need a copy in "Pre triggers".
+//
+// The "Sense triggers" and "Pre Sense triggers" together contain all "Sense"
+// triggers described in point 1 above. "Extra triggers" contains the
+// non-SenItem based additional conditions described in point 2, and the
+// "Per triggers" section contains the "Pre" triggers described in point 3.
+//
+// All 4 sections in the trigger vector are padded to contain a whole word
+// worth of bits (padding bits are always zero). Any one of the 4 sections
+// can be empty, but "Pre triggers" and "Pre Sense triggers" are always the
+// same size.
+//
+// The portion holding the Sense triggers and Extra triggers is referred to
+// in various places as the 'vec' part, and is also informally referred to as
+// the trigger vector.
+//
+// The portion holding the Pre trigger is named 'pre'
+//
+// The combination of 'pre' + 'vec' is the "extended trigger vector" referred
+// to as 'ext' in various places.
+//
+// In realistic designs there are often no "Pre" triggers, and only a few
+// "Extra" triggers, with "Sense" triggers taking up the bulk of the bits.
+//
+class TriggerKit final {
+    // Triggers are storead as an UnpackedArray with a fixed word size
+    static constexpr uint32_t WORD_SIZE_LOG2 = 6;  // 64-bits / VL_QUADSIZE
+    static constexpr uint32_t WORD_SIZE = 1 << WORD_SIZE_LOG2;
+
+    const std::string m_name;  // TriggerKit name
+    const bool m_slow;  // TriggerKit is for schedulign 'slow' code
+    const uint32_t m_nSenseWords;  // Number of words for Sense triggers
+    const uint32_t m_nExtraWords;  // Number of words for Extra triggers
+    const uint32_t m_nPreWords;  // Number of words for 'pre' part
+    const uint32_t m_nVecWords = m_nSenseWords + m_nExtraWords;  // Number of words in 'vec' part
+
+    // Data type of a single trigger word
+    AstNodeDType* m_wordDTypep = nullptr;
+    // Data type of a trigger vector holding one copy of all triggers
+    AstUnpackArrayDType* m_trigVecDTypep = nullptr;
+    // Data type of an extended trigger vector holding one copy of all triggers
+    // + additional copy of 'pre' triggers
+    AstUnpackArrayDType* m_trigExtDTypep = nullptr;
+    // The AstVarScope representing the extended trigger vector
+    AstVarScope* m_vscp = nullptr;
+    // The AstCFunc that computes the current active triggers
+    AstCFunc* m_compp = nullptr;
+    // The AstCFunc that dumps a trigger vector
+    AstCFunc* m_dumpp = nullptr;
+    // The AstCFunc that dumps an exended trigger vector - create lazily
+    mutable AstCFunc* m_dumpExtp = nullptr;
+    // The AstCFunc testing if a trigger vector has any bits set - create lazily
+    mutable AstCFunc* m_anySetVecp = nullptr;
+    mutable AstCFunc* m_anySetExtp = nullptr;
+    // The AstCFunc setting bits in a trigger vector that are set in another - create lazily
+    mutable AstCFunc* m_orIntoVecp = nullptr;
+    mutable AstCFunc* m_orIntoExtp = nullptr;
+    // The AstCFunc setting a trigger vector to all zeroes - create lazily
+    mutable AstCFunc* m_clearp = nullptr;
+
+    // The map from 'pre' input SenTree to trigger SenTree
+    std::unordered_map<const AstSenTree*, AstSenTree*> m_mapPre;
+    // The map from other input SenTree to trigger SenTree
+    std::unordered_map<const AstSenTree*, AstSenTree*> m_mapVec;
+
+    // Methods to lazy construct functions processing trigger vectors
+    AstCFunc* createDumpExtFunc() const;
+    AstCFunc* createAnySetFunc(AstUnpackArrayDType* const dtypep) const;
+    AstCFunc* createClearFunc() const;
+    AstCFunc* createOrIntoFunc(AstUnpackArrayDType* const iDtypep) const;
+
+    // Create an AstSenTree that is sensitive to the given trigger indices
+    AstSenTree* newTriggerSenTree(AstVarScope* vscp, const std::vector<uint32_t>& indices) const;
+
+    TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords, uint32_t nExtraWords,
+               uint32_t nPreWords);
+    VL_UNCOPYABLE(TriggerKit);
+    TriggerKit& operator=(TriggerKit&&) = delete;
+
+public:
+    // Move constructible
+    TriggerKit(TriggerKit&&) = default;
+    ~TriggerKit() = default;
+
+    // Utility for extra trigger allocation
+    class ExtraTriggers final {
+        friend class TriggerKit;
+        std::vector<string> m_descriptions;  // Human readable description of extra triggers
+
+    public:
+        ExtraTriggers() = default;
+        ~ExtraTriggers() = default;
+
+        uint32_t allocate(const string& description) {
+            m_descriptions.push_back(description);
+            return m_descriptions.size() - 1;
+        }
+        uint32_t size() const { return m_descriptions.size(); }
+    };
+
+    // Create a TriggerKit for the given AstSenTree vector
+    static TriggerKit create(AstNetlist* netlistp,  //
+                             AstCFunc* const initFuncp,  //
+                             SenExprBuilder& senExprBuilder,  //
+                             const std::vector<const AstSenTree*>& preTreeps,  //
+                             const std::vector<const AstSenTree*>& senTreeps,  //
+                             const string& name,  //
+                             const ExtraTriggers& extraTriggers,  //
+                             bool slow);
+
+    // ACCESSORS
+    AstVarScope* vscp() const { return m_vscp; }
+    AstCFunc* compp() const { return m_compp; }
+    const std::unordered_map<const AstSenTree*, AstSenTree*>& mapPre() const { return m_mapPre; }
+    const std::unordered_map<const AstSenTree*, AstSenTree*>& mapVec() const { return m_mapVec; }
+
+    // Helpers for code generation - lazy construct relevant functions
+    AstNodeStmt* newAndNotCall(AstVarScope* op, AstVarScope* ap, AstVarScope* bp) const;
+    AstNodeExpr* newAnySetCall(AstVarScope* vscp) const;
+    AstNodeStmt* newClearCall(AstVarScope* vscp) const;
+    AstNodeStmt* newOrIntoCall(AstVarScope* op, AstVarScope* ip) const;
+    // Helpers for code generation
+    AstNodeStmt* newCompCall(AstVarScope* vscp = nullptr) const;
+    AstNodeStmt* newDumpCall(AstVarScope* vscp, const std::string& tag, bool debugOnly) const;
+    // Create a new (non-extended) trigger vector - might return nullptr if there are no triggers
+    AstVarScope* newTrigVec(const std::string& name) const;
+
+    // Create an AstSenTree that is sensitive to the given Extra trigger
+    AstSenTree* newExtraTriggerSenTree(AstVarScope* vscp, uint32_t index) const;
+
+    // Set then extra trigger bit at 'index' to the value of 'vscp', then set 'vscp' to 0
+    void addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index) const;
+};
+
 // Everything needed for combining timing with static scheduling.
 class TimingKit final {
     AstCFunc* m_resumeFuncp = nullptr;  // Global timing resume function
@@ -156,50 +328,41 @@ class VirtIfaceTriggers final {
     // Represents a specific member in a virtual interface
     struct IfaceMember final {
         const AstIface* m_ifacep;  // Interface type
-        const AstVar* m_memberVarp;  // pointer to member field
+        const AstVar* m_memberp;  // Member variable
 
-        IfaceMember(const AstIface* ifacep, const AstVar* memberVarp)
-            : m_ifacep{ifacep}
-            , m_memberVarp{memberVarp} {}
-
+        // TODO: sorting by pointer is non-deterministic
         bool operator<(const IfaceMember& other) const {
             if (m_ifacep != other.m_ifacep) return m_ifacep < other.m_ifacep;
-            return m_memberVarp < other.m_memberVarp;
+            return m_memberp < other.m_memberp;
         }
     };
 
 public:
-    using IfaceMemberTrigger = std::pair<IfaceMember, AstVarScope*>;
-    using IfaceMemberTriggerVec = std::vector<IfaceMemberTrigger>;
+    using IfaceSensMap = std::map<const AstIface*, AstSenTree*>;
     using IfaceMemberSensMap = std::map<IfaceMember, AstSenTree*>;
 
-    using IfaceTrigger = std::pair<const AstIface*, AstVarScope*>;
-    using IfaceTriggerVec = std::vector<IfaceTrigger>;
-    using IfaceSensMap = std::map<const AstIface*, AstSenTree*>;
+    std::vector<std::pair<const AstIface*, AstVarScope*>> m_ifaceTriggers;
+    std::vector<std::pair<IfaceMember, AstVarScope*>> m_memberTriggers;
 
-    IfaceMemberTriggerVec m_memberTriggers;
-    IfaceTriggerVec m_ifaceTriggers;
-
-    void addMemberTrigger(const AstIface* ifacep, const AstVar* memberVarp,
-                          AstVarScope* triggerVscp) {
-        m_memberTriggers.emplace_back(IfaceMember(ifacep, memberVarp), triggerVscp);
+    void addIfaceTrigger(const AstIface* ifacep, AstVarScope* vscp) {
+        m_ifaceTriggers.emplace_back(ifacep, vscp);
+    }
+    void addMemberTrigger(const AstIface* ifacep, const AstVar* memberp, AstVarScope* vscp) {
+        m_memberTriggers.emplace_back(IfaceMember{ifacep, memberp}, vscp);
     }
 
-    AstVarScope* findMemberTrigger(const AstIface* ifacep, const AstVar* memberVarp) const {
-        IfaceMember target{ifacep, memberVarp};
+    AstVarScope* findMemberTrigger(const AstIface* ifacep, const AstVar* memberp) const {
         for (const auto& pair : m_memberTriggers) {
-            if (!(pair.first < target) && !(target < pair.first)) return pair.second;
+            const IfaceMember& item = pair.first;
+            if (item.m_ifacep == ifacep && item.m_memberp == memberp) return pair.second;
         }
         return nullptr;
     }
 
-    IfaceMemberSensMap makeMemberToSensMap(AstNetlist* netlistp, size_t vifTriggerIndex,
+    IfaceMemberSensMap makeMemberToSensMap(const TriggerKit& trigKit, uint32_t vifTriggerIndex,
                                            AstVarScope* trigVscp) const;
 
-    void emplace_back(IfaceTrigger&& p) { m_ifaceTriggers.emplace_back(std::move(p)); }
-    IfaceTriggerVec::const_iterator begin() const { return m_ifaceTriggers.begin(); }
-    IfaceTriggerVec::const_iterator end() const { return m_ifaceTriggers.end(); }
-    IfaceSensMap makeIfaceToSensMap(AstNetlist* netlistp, size_t vifTriggerIndex,
+    IfaceSensMap makeIfaceToSensMap(const TriggerKit& trigKit, uint32_t vifTriggerIndex,
                                     AstVarScope* trigVscp) const;
 
     VL_UNCOPYABLE(VirtIfaceTriggers);
@@ -226,6 +389,31 @@ LogicByScope breakCycles(AstNetlist* netlistp,
 LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLogic,
                        LogicByScope& hybridLogic) VL_MT_DISABLED;
 LogicReplicas replicateLogic(LogicRegions&) VL_MT_DISABLED;
+
+// Utility functions used by various steps in scheduling
+namespace util {
+// Create a new top level entry point
+AstCFunc* makeTopFunction(AstNetlist* netlistp, const string& name, bool slow);
+// Create a new sub function (not an entry point)
+AstCFunc* makeSubFunction(AstNetlist* netlistp, const string& name, bool slow);
+// Create statement that sets the given 'vscp' to 'val'
+AstNodeStmt* setVar(AstVarScope* vscp, uint32_t val);
+// Create statement that increments the given 'vscp' by one
+AstNodeStmt* incrementVar(AstVarScope* vscp);
+// Create statement that calls the given 'void' returning function
+AstNodeStmt* callVoidFunc(AstCFunc* funcp);
+// Create statement that checks counterp' to see if the eval loop iteration limit is reached
+AstNodeStmt* checkIterationLimit(AstNetlist* netlistp, const string& name, AstVarScope* counterp,
+                                 AstNodeStmt* dumpCallp);
+// Create statement that pushed a --prof-exec section
+AstNodeStmt* profExecSectionPush(FileLine* flp, const string& section);
+// Create statement that pops a --prof-exec section
+AstNodeStmt* profExecSectionPop(FileLine* flp);
+// Split large function according to --output-split-cfuncs
+void splitCheck(AstCFunc* ofuncp);
+// Build an AstIf conditional on the given SenTree being triggered
+AstIf* createIfFromSenTree(AstSenTree* senTreep);
+}  // namespace util
 
 }  // namespace V3Sched
 

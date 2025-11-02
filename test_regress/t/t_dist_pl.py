@@ -11,9 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('dist')
 
-root = ".."
-
-for pl in sorted(glob.glob(root + "/test_regress/t/*.pl")):
+for pl in sorted(glob.glob(test.root + "/test_regress/t/*.pl")):
     if 'bootstrap.pl' in pl:
         continue
     py = re.sub(r'\.pl', '.py', pl)

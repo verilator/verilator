@@ -13,7 +13,7 @@ typedef enum bit [5:0] {
    B = 6,b111111
 } enum_t;
 
-module t (/*AUTOARG*/);
+module t;
    task test1;
       bit arr[];
       bit [1:0] arr2[$];

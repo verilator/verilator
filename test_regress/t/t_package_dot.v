@@ -16,7 +16,7 @@ package csr_pkg;
    localparam reg_t REG_RST = 8'h34;
 endpackage
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       if (csr_pkg::REG_RST.msk != 4'h3) $stop;
       $write("*-* All Finished *-*\n");

@@ -4,7 +4,7 @@
 // without warranty, 2023 by Yutetsu TAKATSUKASA.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
    logic [7:0] s0;
    logic [7:0] s1[1:2];

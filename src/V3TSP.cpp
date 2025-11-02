@@ -41,7 +41,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Support classes
 
 namespace V3TSP {
-static uint32_t edgeIdNext = 0;
+static uint32_t s_edgeIdNext = 0;
 
 static void selfTestStates();
 static void selfTestString();
@@ -105,7 +105,7 @@ public:
         // The only time we may create duplicate edges is when
         // combining the MST with the perfect-matched pairs,
         // and in that case, we want to permit duplicate edges.
-        const uint32_t edgeId = ++V3TSP::edgeIdNext;
+        const uint32_t edgeId = ++V3TSP::s_edgeIdNext;
 
         // We want to be able to compare edges quickly for a total
         // ordering, so pre-compute a sorting key and store it in

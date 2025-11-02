@@ -1,0 +1,36 @@
+%Warning-DECLFILENAME: t/t_lint_style_bad.v:7:8: Filename 't_lint_style_bad' does not match MODULE name: 't'
+    7 | module t;
+      |        ^
+                       ... For warning description see https://verilator.org/warn/DECLFILENAME?v=latest
+                       ... Use "/* verilator lint_off DECLFILENAME */" and lint_on around source to disable this message.
+%Warning-VARHIDDEN: t/t_lint_style_bad.v:12:14: Declaration of signal hides declaration in upper scope: 'top'
+   12 |       output top;
+      |              ^~~
+                    t/t_lint_style_bad.v:9:12: ... Location of original declaration
+    9 |    integer top;
+      |            ^~~
+                    ... For warning description see https://verilator.org/warn/VARHIDDEN?v=latest
+                    ... Use "/* verilator lint_off VARHIDDEN */" and lint_on around source to disable this message.
+%Warning-VARHIDDEN: t/t_lint_style_bad.v:18:18: Declaration of signal hides declaration in upper scope: 'top'
+   18 |          integer top;
+      |                  ^~~
+                    t/t_lint_style_bad.v:9:12: ... Location of original declaration
+    9 |    integer top;
+      |            ^~~
+%Warning-UNUSEDSIGNAL: t/t_lint_style_bad.v:9:12: Signal is not driven, nor used: 'top'
+                                                : ... note: In instance 't'
+    9 |    integer top;
+      |            ^~~
+                       ... For warning description see https://verilator.org/warn/UNUSEDSIGNAL?v=latest
+                       ... Use "/* verilator lint_off UNUSEDSIGNAL */" and lint_on around source to disable this message.
+%Warning-UNDRIVEN: t/t_lint_style_bad.v:12:14: Signal is not driven: 'top'
+                                             : ... note: In instance 't'
+   12 |       output top;
+      |              ^~~
+                   ... For warning description see https://verilator.org/warn/UNDRIVEN?v=latest
+                   ... Use "/* verilator lint_off UNDRIVEN */" and lint_on around source to disable this message.
+%Warning-UNUSEDSIGNAL: t/t_lint_style_bad.v:18:18: Signal is not driven, nor used: 'top'
+                                                 : ... note: In instance 't'
+   18 |          integer top;
+      |                  ^~~
+%Error: Exiting due to

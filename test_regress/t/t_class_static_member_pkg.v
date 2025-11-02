@@ -27,7 +27,7 @@ class Cls;
 endclass
 endpackage
 
-module t (/*AUTOARG*/);
+module t;
 
    Pkg::Cls a = new;
    Pkg::Cls b = new;

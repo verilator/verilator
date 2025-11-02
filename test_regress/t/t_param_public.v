@@ -6,7 +6,7 @@
 
 //bug505
 
-module t (/*AUTOARG*/);
+module t;
 
    parameter TOP_PARAM /*verilator public*/ = 20;
 

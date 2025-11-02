@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# mypy: disallow-untyped-defs
 # pylint: disable=C0103,C0114,C0115,C0116,C0321,R0911
 ######################################################################
 # DESCRIPTION: Fuzzer result checker
@@ -18,25 +19,25 @@ from subprocess import getstatusoutput
 from argparse import ArgumentParser
 
 
-def interesting(s):
+def interesting(s: str) -> bool:
     if 'assert' in s:
-        return 1
+        return True
     if 'Assert' in s:
-        return 1
+        return True
     if 'Aborted' in s:
-        return 1
+        return True
     if 'terminate' in s:
         if 'unterminated' in s:
-            return 0
-        return 1
+            return False
+        return True
     if 'Segmentation' in s:
-        return 1
+        return True
     if 'internal error' in s:
-        return 1
-    return 0
+        return True
+    return False
 
 
-def main():
+def main() -> None:
     p = ArgumentParser()
     p.add_argument('--dir', default='out1/queue')
     args = p.parse_args()

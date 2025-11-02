@@ -11,11 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('dist')
 
-root = ".."
 
-
-def get_source_files(root):
-    git_files = test.run_capture("cd " + root + " && git ls-files")
+def get_source_files():
+    git_files = test.run_capture("cd " + test.root + " && git ls-files")
     if test.verbose:
         print("MF " + git_files)
     files = {}
@@ -48,13 +46,13 @@ def check_pattern(filename, contents, pattern, not_pattern, message):
         buffer = "\n"
 
 
-if not os.path.exists(root + "/.git"):
+if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
-files = get_source_files(root)
+files = get_source_files()
 
 for filename in sorted(files.keys()):
-    filename = os.path.join(root, filename)
+    filename = os.path.join(test.root, filename)
     if not os.path.exists(filename):  # git file might be deleted but not yet staged
         continue
     if not re.search(r'\.(h|c|cpp)(\.in)?$', filename):

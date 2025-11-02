@@ -3,13 +3,13 @@
    :linenos:
    :emphasize-lines: 5
 
-      logic flop2_out;
+     logic flop2_out;
 
-      always @(posedge clk, negedge reset_l) begin
-         if (!reset_l) begin
-            flop2_out <= '1;  // <--- Added reset init
-         end
-         else if (enable) begin
-            flop2_out <= ~in;
-         end
-      end
+     always @(posedge clk, negedge reset_l) begin
+       if (!reset_l) begin
+         flop2_out <= '1;  // <--- Added reset init
+       end
+       else if (enable) begin
+         flop2_out <= ~in;
+       end
+     end

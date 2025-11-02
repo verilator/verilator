@@ -15,7 +15,7 @@ class Baz;
    int x = 1;
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       Bar#(Baz) bar_baz = new;
       if (bar_baz.t.x != 1) $stop;

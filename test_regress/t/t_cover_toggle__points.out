@@ -31,6 +31,8 @@
 -000001  point: comment=toggle:0->1 hier=top.t
 -000001  point: comment=toggle:1->0 hier=top.t
         
+           logic _under_toggle = toggle;  // For --coverage-underscore
+        
 %000001    str_t stoggle; initial stoggle='0;
 -000001  point: comment=stoggle.b:0->1 hier=top.t
 -000001  point: comment=stoggle.b:1->0 hier=top.t

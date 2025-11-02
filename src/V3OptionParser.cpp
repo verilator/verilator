@@ -233,6 +233,12 @@ void V3OptionParser::finalize() {
     m_pimpl->m_isFinalized = true;
 }
 
+void V3OptionParser::dumpOptions() {
+    for (const auto& opt : m_pimpl->m_spellCheck.candidates()) {
+        std::cout << "OPTION: \"" + opt + "\"\n";
+    }
+}
+
 V3OptionParser::V3OptionParser()
     : m_pimpl{new Impl{}} {}
 

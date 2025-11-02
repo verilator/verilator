@@ -4,7 +4,7 @@
 // any use, without warranty, 2022 by Antmicro Ltd.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
    typedef struct packed { int x, y; } point;
    initial begin
       point points_q[$];

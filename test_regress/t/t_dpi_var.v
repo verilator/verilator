@@ -87,12 +87,12 @@ module sub (/*AUTOARG*/
 `verilog
 
    /* verilator lint_off ASSIGNIN */
-`ifdef ATTRIBUTES
+`ifdef ATTRIBUTES // Sensitivity list accepted for backward compatibility but ignored
    input int in   /*verilator public_flat_rd*/;
    input int in_a /*verilator public_flat_rw @(posedge t.monclk)*/;
-   input int in_b /*verilator public_flat_rw @(posedge t.monclk)*/;
+   input int in_b /*verilator public_flat_rw*/;
    output int fr_a /*verilator public_flat_rw @(posedge t.monclk)*/;
-   output int fr_b /*verilator public_flat_rw @(posedge t.monclk)*/;
+   output int fr_b /*verilator public_flat_rw*/;
 `else
    input int in;
    input int in_a;

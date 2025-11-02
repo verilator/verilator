@@ -11,19 +11,14 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-root = ".."
-
-if not os.path.exists(root + "/.git"):
-    test.skip("Not in a git repository")
-
 test.lint(verilator_flags2=["--no-timing"], fails=True, expect_filename=test.golden_filename)
 
 test.extract(in_filename=test.top_filename,
-             out_filename=root + "/docs/gen/ex_STMTDLY_faulty.rst",
+             out_filename=test.root + "/docs/gen/ex_STMTDLY_faulty.rst",
              lines="10")
 
 test.extract(in_filename=test.golden_filename,
-             out_filename=root + "/docs/gen/ex_STMTDLY_msg.rst",
+             out_filename=test.root + "/docs/gen/ex_STMTDLY_msg.rst",
              lines="1")
 
 test.passes()

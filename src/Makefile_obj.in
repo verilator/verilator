@@ -35,7 +35,7 @@ incdir = $(srcdir)/../include
 bldsrc = ..
 
 # Programs
-CC = @CC@
+CC = false # Everything is built as C++ via CXX
 CXX = @CXX@
 LINK = @CXX@
 LEX = @LEX@
@@ -56,6 +56,7 @@ pkgdatadir = @pkgdatadir@
 # Compile options
 CFG_WITH_CCWARN = @CFG_WITH_CCWARN@
 CFG_WITH_DEFENV = @CFG_WITH_DEFENV@
+CFG_WITH_DEV_GCOV = @CFG_WITH_DEV_GCOV@
 CFG_WITH_SOLVER = @CFG_WITH_SOLVER@
 CPPFLAGS += @CPPFLAGS@
 CFLAGS += @CFLAGS@
@@ -84,11 +85,11 @@ ifeq ($(VL_NOOPT),1)
   CPPFLAGS += -O0
 else ifeq ($(VL_DEBUG),)
   # Optimize
-  CPPFLAGS += -O3
+  CPPFLAGS += @CFG_CXXFLAGS_OPT@
 else
   # Debug
-  CPPFLAGS += @CFG_CXXFLAGS_DEBUG@ -DVL_DEBUG -D_GLIBCXX_DEBUG
-  LDFLAGS += @CFG_LDFLAGS_DEBUG@
+  CPPFLAGS += @CFG_CXXFLAGS_DBG@ -DVL_DEBUG -D_GLIBCXX_DEBUG
+  LDFLAGS += @CFG_LDFLAGS_DBG@
 endif
 #################
 
@@ -133,6 +134,17 @@ ifeq ($(CFG_WITH_DEFENV),yes)
       CPPFLAGS += -DDEFENV_VERILATOR_SOLVER='"$(VERILATOR_SOLVER)"'
     endif
   endif
+endif
+
+# Object file specific options
+CXXFLAGSOBJ =
+ifeq ($(CFG_WITH_DEV_GCOV),yes)
+# Adding '-fkeep-inline-functions' to all files slows down coverage collection
+# during 'make test' by ~3x. This option is only useful to make sure that
+# 'inline' functions defined in headers are actually emitted so they show up as
+# uncovered if they are never called, so instead of adding it everywhere, use
+# only on a few files that together pull in most of the headers.
+Verilator.o V3Dfg.o: CXXFLAGSOBJ += -fkeep-inline-functions
 endif
 
 HEADERS = $(wildcard V*.h v*.h)
@@ -246,6 +258,8 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3DfgBreakCycles.o \
   V3DfgCache.o \
   V3DfgColorSCCs.o \
+  V3DfgCse.o \
+  V3DfgDataType.o \
   V3DfgDecomposition.o \
   V3DfgDfgToAst.o \
   V3DfgOptimizer.o \
@@ -302,6 +316,8 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3SchedPartition.o \
   V3SchedReplicate.o \
   V3SchedTiming.o \
+  V3SchedTrigger.o \
+  V3SchedUtil.o \
   V3SchedVirtIface.o \
   V3Scope.o \
   V3Scoreboard.o \
@@ -322,6 +338,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Undriven.o \
   V3Unknown.o \
   V3Unroll.o \
+  V3UnrollGen.o \
   V3Width.o \
   V3WidthCommit.o \
   V3WidthSel.o \
@@ -331,6 +348,7 @@ VLCOV_OBJS = \
   VlcMain.o \
 
 NON_STANDALONE_HEADERS = \
+  V3AstAttr.h \
   V3AstInlines.h \
   V3AstNodeDType.h \
   V3AstNodeExpr.h \
@@ -377,27 +395,25 @@ $(TGT): $(PREDEP_H) $(OBJS)
 .SECONDARY:
 
 %.gch: %
-	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSWALL} ${CFG_CXXFLAGS_PCH} -c $< -o $@
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CXXFLAGSOBJ} ${CPPFLAGSWALL} ${CFG_CXXFLAGS_PCH} -c $< -o $@
 %.o: %.cpp
-	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSWALL} -c $< -o $@
-%.o: %.c
-	$(OBJCACHE) ${CC}  ${CFLAGS} ${CPPFLAGSWALL} -c $< -o $@
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CXXFLAGSOBJ} ${CPPFLAGSWALL} -c $< -o $@
 
 V3ParseLex.o: V3ParseLex.cpp V3Lexer.yy.cpp V3ParseBison.c
-	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $< -o $@
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CXXFLAGSOBJ} ${CPPFLAGSPARSER} -c $< -o $@
 
 V3ParseGrammar.o: V3ParseGrammar.cpp V3ParseBison.c
-	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $< -o $@
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CXXFLAGSOBJ} ${CPPFLAGSPARSER} -c $< -o $@
 
 V3ParseImp.o: V3ParseImp.cpp V3ParseBison.c
-	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $< -o $@
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CXXFLAGSOBJ} ${CPPFLAGSPARSER} -c $< -o $@
 
 V3PreProc.o: V3PreProc.cpp V3PreLex.yy.cpp
-	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $< -o $@
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CXXFLAGSOBJ} ${CPPFLAGSPARSER} -c $< -o $@
 
 define CXX_ASTMT_template
 $(1): $(basename $(1)).cpp V3PchAstMT.h.gch
-	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSWALL} ${CFG_CXXFLAGS_PCH_I} V3PchAstMT.h${CFG_GCH_IF_CLANG} -c $(srcdir)/$(basename $(1)).cpp -o $(1)
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CXXFLAGSOBJ} ${CPPFLAGSWALL} ${CFG_CXXFLAGS_PCH_I} V3PchAstMT.h${CFG_GCH_IF_CLANG} -c $(srcdir)/$(basename $(1)).cpp -o $(1)
 
 endef
 
@@ -405,7 +421,7 @@ $(foreach obj,$(RAW_OBJS_PCH_ASTMT),$(eval $(call CXX_ASTMT_template,$(obj))))
 
 define CXX_ASTNOMT_template
 $(1): $(basename $(1)).cpp V3PchAstNoMT.h.gch
-	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSWALL} ${CFG_CXXFLAGS_PCH_I} V3PchAstNoMT.h${CFG_GCH_IF_CLANG} -c $(srcdir)/$(basename $(1)).cpp -o $(1)
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CXXFLAGSOBJ} ${CPPFLAGSWALL} ${CFG_CXXFLAGS_PCH_I} V3PchAstNoMT.h${CFG_GCH_IF_CLANG} -c $(srcdir)/$(basename $(1)).cpp -o $(1)
 
 endef
 

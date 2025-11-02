@@ -1,2 +1,2 @@
-%Error: Adding model when time is non-zero. ... Suggest check time(), or for restarting model use a new VerilatedContext
+%Error: Adding model 'TOP' when time is non-zero. ... Suggest check time(), or for restarting model use a new VerilatedContext
 Aborting...

@@ -4,7 +4,7 @@
 // any use, without warranty, 2024 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module automatic t(/*AUTOARG*/);
+module automatic t;
 
    task static accum_s(input integer value, output integer result);
       static int acc = 1;

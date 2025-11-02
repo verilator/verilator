@@ -203,15 +203,15 @@ void V3Stats::addStat(const V3Statistic& stat) { StatsReport::addStat(stat); }
 double V3Stats::getStatSum(const string& name) { return StatsReport::getStatSum(name); }
 
 void V3Stats::statsStage(const string& name) {
-    static double lastWallTime = -1;
-    static int fileNumber = 0;
+    static double s_lastWallTime = -1;
+    static int s_fileNumber = 0;
 
-    const string digitName = V3Global::digitsFilename(++fileNumber) + "_" + name;
+    const string digitName = V3Global::digitsFilename(++s_fileNumber) + "_" + name;
 
     const double wallTime = V3Os::timeUsecs() / 1.0e6;
-    if (lastWallTime < 0) lastWallTime = wallTime;
-    const double wallTimeDelta = wallTime - lastWallTime;
-    lastWallTime = wallTime;
+    if (s_lastWallTime < 0) s_lastWallTime = wallTime;
+    const double wallTimeDelta = wallTime - s_lastWallTime;
+    s_lastWallTime = wallTime;
     V3Stats::addStatPerf("Stage, Elapsed time (sec), " + digitName, wallTimeDelta);
     V3Stats::addStatPerf("Stage, Elapsed time (sec), TOTAL", wallTimeDelta);
 

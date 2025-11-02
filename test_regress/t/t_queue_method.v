@@ -16,7 +16,7 @@ class Cls;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    typedef struct packed { int x, y; } point;
    typedef struct packed { point p; int z; } point_3d;
    initial begin

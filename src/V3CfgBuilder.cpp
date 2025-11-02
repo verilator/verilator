@@ -39,6 +39,8 @@ class CfgBuilder final : public VNVisitorConst {
     CfgBlock* m_currBBp = nullptr;
     // Continuation block for given JumpBlock
     std::unordered_map<AstJumpBlock*, CfgBlock*> m_jumpBlockContp;
+    // Continuation block for given Loop
+    std::unordered_map<AstLoop*, CfgBlock*> m_loopContp;
 
     // METHODS
 
@@ -84,9 +86,11 @@ class CfgBuilder final : public VNVisitorConst {
 
     // Representable non control-flow statements
     void visit(AstAssign* nodep) override { simpleStatement(nodep, !nodep->timingControlp()); }
+    void visit(AstAssignW* nodep) override { simpleStatement(nodep, !nodep->timingControlp()); }
     void visit(AstComment*) override {}  // ignore entirely
     void visit(AstDisplay* nodep) override { simpleStatement(nodep); }
     void visit(AstFinish* nodep) override { simpleStatement(nodep); }
+    void visit(AstFinishFork* nodep) override { simpleStatement(nodep); }
     void visit(AstStmtExpr* nodep) override { simpleStatement(nodep); }
     void visit(AstStop* nodep) override { simpleStatement(nodep); }
 
@@ -119,29 +123,40 @@ class CfgBuilder final : public VNVisitorConst {
         // Set continuation
         m_currBBp = contBBp;
     }
-    void visit(AstWhile* nodep) override {
+    void visit(AstLoop* nodep) override {
+        UASSERT_OBJ(!nodep->contsp(), nodep, "'contsp' only used before LinkJump");
         if (!m_cfgp) return;
 
-        // Create the header block
-        CfgBlock* const headBBp = m_cfgp->addBlock();
-        m_cfgp->addTakenEdge(m_currBBp, headBBp);
+        // Don't acutally need to add this 'nodep' to any block
 
-        // The While goes in the header block - semantically the condition check only ...
-        m_currBBp = headBBp;
-        addStmt(nodep);
-
-        // Create the body/continuation blocks
-        CfgBlock* const bodyBBp = m_cfgp->addBlock();
+        // Create continuation block
         CfgBlock* const contBBp = m_cfgp->addBlock();
-        m_cfgp->addTakenEdge(headBBp, bodyBBp);
-        m_cfgp->addUntknEdge(headBBp, contBBp);
+        const bool newEntry = m_loopContp.emplace(nodep, contBBp).second;
+        UASSERT_OBJ(newEntry, nodep, "AstLoop visited twice");
+
+        // Create the body block
+        CfgBlock* const bodyBBp = m_cfgp->addBlock();
+        m_cfgp->addTakenEdge(m_currBBp, bodyBBp);
 
         // Build the body
         m_currBBp = bodyBBp;
         iterateAndNextConstNull(nodep->stmtsp());
-        iterateAndNextConstNull(nodep->incsp());
         if (!m_cfgp) return;
-        if (m_currBBp) m_cfgp->addTakenEdge(m_currBBp, headBBp);
+        if (m_currBBp) m_cfgp->addTakenEdge(m_currBBp, bodyBBp);
+
+        // Set continuation
+        m_currBBp = contBBp;
+    }
+    void visit(AstLoopTest* nodep) override {
+        if (!m_cfgp) return;
+
+        // Add terminator statement to current block - semantically the condition check only ...
+        addStmt(nodep);
+
+        // Create continuation blocks
+        CfgBlock* const contBBp = m_cfgp->addBlock();
+        m_cfgp->addTakenEdge(m_currBBp, contBBp);
+        m_cfgp->addUntknEdge(m_currBBp, m_loopContp.at(nodep->loopp()));
 
         // Set continuation
         m_currBBp = contBBp;
@@ -205,7 +220,7 @@ class CfgBuilder final : public VNVisitorConst {
             while (!unreachableps.empty()) {
                 V3GraphVertex* const vtxp = unreachableps.back();
                 unreachableps.pop_back();
-                for (V3GraphEdge& edge : vtxp->outEdges()) {
+                for (const V3GraphEdge& edge : vtxp->outEdges()) {
                     --m_cfgp->m_nEdges;
                     if (edge.top()->inSize1()) unreachableps.emplace_back(edge.top());
                 }

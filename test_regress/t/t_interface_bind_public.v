@@ -33,7 +33,7 @@ module t
    clk
    );
 
-   input clk /*verilator clocker*/;
+   input clk;
    bit reset;
 
    wire      success;

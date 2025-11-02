@@ -100,7 +100,7 @@ class GetStaticXVal #(type T = int);
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    initial begin
       automatic ParclsDefaultType#(Cls) pdt1 = new;

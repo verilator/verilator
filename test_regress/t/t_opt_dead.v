@@ -15,7 +15,7 @@ endmodule
 
 //TODO dead check with class extends
 
-module t (/*AUTOARG*/);
+module t;
 
    generate
       if (0) begin

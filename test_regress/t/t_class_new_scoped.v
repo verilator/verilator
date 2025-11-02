@@ -32,7 +32,7 @@ class ClsParam #(int ADD = 100) extends Base;
   endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
   initial begin
     Base b;
     ClsNoArg c1;

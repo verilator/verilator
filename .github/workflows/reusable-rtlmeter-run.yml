@@ -55,11 +55,14 @@ jobs:
     steps:
       - name: Install dependencies
         run: |
+          echo "path-exclude /usr/share/doc/*"  | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
+          echo "path-exclude /usr/share/man/*"  | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
+          echo "path-exclude /usr/share/info/*" | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
           sudo apt update
           sudo apt install ccache mold libfl-dev libgoogle-perftools-dev libsystemc-dev
 
       - name: Download Verilator installation archive
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: verilator-rtlmeter-${{ inputs.runs-on }}-${{ inputs.cc }}
 
@@ -77,7 +80,7 @@ jobs:
           restore-keys: rtlmeter-run-ccache-${{ inputs.runs-on }}-${{ inputs.cc }}-${{ inputs.cases }}-${{ inputs.compileArgs }}
 
       - name: Checkout RTLMeter
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: "verilator/rtlmeter"
           path: rtlmeter
@@ -89,15 +92,13 @@ jobs:
       - name: Compile cases
         working-directory: rtlmeter
         run: |
-          ./rtlmeter run --verbose --cases='${{ inputs.cases }}' --compileArgs='${{ inputs.compileArgs }}' --executeArgs='${{ inputs.executeArgs }}' --nExecute=0
-          # My YAML highlighter sucks, so I put this comment here wiht a phony closing quote mark to make it work: '
+          ./rtlmeter run --timeout 60 --verbose --cases='${{inputs.cases}}' --compileArgs='${{inputs.compileArgs}}' --executeArgs='${{inputs.executeArgs}}' --nExecute=0
 
       - name: Execute cases
         working-directory: rtlmeter
-        continue-on-error: true  # Do not fail on error, so we can at leat save the successful results
+        continue-on-error: true  # Do not fail on error, so we can at least save the successful results
         run: |
-          ./rtlmeter run --verbose --cases='${{ inputs.cases }}' --compileArgs='${{ inputs.compileArgs }}' --executeArgs='${{ inputs.executeArgs }}'
-          # My YAML highlighter sucks, so I put this comment here wiht a phony closing quote mark to make it work: '
+          ./rtlmeter run --timeout 60 --verbose --cases='${{inputs.cases}}' --compileArgs='${{inputs.compileArgs}}' --executeArgs='${{inputs.executeArgs}}'
 
       - name: Collate results
         id: results
@@ -114,15 +115,14 @@ jobs:
           ./rtlmeter report --steps '*' --metrics '*' ../results-${{ steps.results.outputs.hash }}.json
 
       - name: Upload results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           path: results-${{ steps.results.outputs.hash }}.json
-          name: rtlmeter-results-${{ inputs.tag }}-${{ steps.results.outputs.hash }}
+          name: rtlmeter-${{ inputs.tag }}-results-${{ steps.results.outputs.hash }}
           overwrite: true
           retention-days: 2
 
       - name: Report status
         working-directory: rtlmeter
         run: | # This will fail the job if any of the runs failed
-          ./rtlmeter run --verbose --cases='${{ inputs.cases }}' --compileArgs='${{ inputs.compileArgs }}' --executeArgs='${{ inputs.executeArgs }}'
-          # My YAML highlighter sucks, so I put this comment here wiht a phony closing quote mark to make it work: '
+          ./rtlmeter run --verbose --cases='${{inputs.cases}}' --compileArgs='${{inputs.compileArgs}}' --executeArgs='${{inputs.executeArgs}}'

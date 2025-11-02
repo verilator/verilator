@@ -322,12 +322,12 @@ FileLine* FileLine::copyOrSameFileLine() {
     // Return this, or a copy of this
     // There are often more than one token per line, thus we use the
     // same pointer as long as we're on the same line, file & warn state.
-    static FileLine* lastNewp = nullptr;
-    if (lastNewp && *lastNewp == *this) {  // Compares lineno, filename, etc
-        return lastNewp;
+    static FileLine* s_lastNewp = nullptr;
+    if (s_lastNewp && *s_lastNewp == *this) {  // Compares lineno, filename, etc
+        return s_lastNewp;
     }
     FileLine* const newp = new FileLine{this};
-    lastNewp = newp;
+    s_lastNewp = newp;
     return newp;
 }
 
@@ -368,23 +368,29 @@ std::ostream& operator<<(std::ostream& os, FileLine* fileline) {
     return (os);
 }
 
-bool FileLine::warnOff(const string& msg, bool flag) {
-    const char* cmsg = msg.c_str();
-    // Backward compatibility with msg="UNUSED"
-    if (V3ErrorCode::unusedMsg(cmsg)) {
-        warnOff(V3ErrorCode::UNUSEDGENVAR, flag);
-        warnOff(V3ErrorCode::UNUSEDLOOP, flag);
-        warnOff(V3ErrorCode::UNUSEDPARAM, flag);
-        warnOff(V3ErrorCode::UNUSEDSIGNAL, flag);
-        return true;
+string FileLine::warnOffParse(const string& msgs, bool flag) {
+    string result;
+    for (const string& msg : VString::split(msgs, ',')) {
+        const char* cmsg = msg.c_str();
+        // Backward compatibility with msg="UNUSED"
+        if (V3ErrorCode::unusedMsg(cmsg)) {
+            warnOff(V3ErrorCode::UNUSEDGENVAR, flag);
+            warnOff(V3ErrorCode::UNUSEDLOOP, flag);
+            warnOff(V3ErrorCode::UNUSEDPARAM, flag);
+            warnOff(V3ErrorCode::UNUSEDSIGNAL, flag);
+            continue;
+        }
+
+        const V3ErrorCode code{cmsg};
+        if (!code.hardError()) {
+            warnOff(code, flag);
+            continue;
+        }
+
+        // Error if not suppressed
+        if (!v3Global.opt.isFuture(msg)) result = VString::dot(result, ",", cmsg);
     }
-    const V3ErrorCode code{cmsg};
-    if (code.hardError()) {
-        return false;
-    } else {
-        warnOff(code, flag);
-        return true;
-    }
+    return result;
 }
 
 void FileLine::warnLintOff(bool flag) {

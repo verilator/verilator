@@ -11,10 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 test.sim_time = 2000000
+test.top_filename = "t/t_dfg_peephole.v"
 
-root = ".."
-
-if not os.path.exists(root + "/.git"):
+if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
 # Read optimizations
@@ -74,6 +73,16 @@ test.compile(verilator_flags2=[
 ])  # yapf:disable
 
 # Compile optimized - also builds executable
+
+extraArgs = []
+if test.name == "t_dfg_peephole_off_all":
+    extraArgs.append("-fno-dfg-peephole")
+if test.name == "t_dfg_peephole_off_each":
+    for opt in optimizations:
+        opt = opt.lower()
+        opt = re.sub(r"_", "-", opt)
+        extraArgs.append("-fno-dfg-peephole-" + opt)
+
 test.compile(verilator_flags2=[
     "--stats",
     "--build",
@@ -86,20 +95,23 @@ test.compile(verilator_flags2=[
     "--dump-dfg",  # To fill code coverage
     "-CFLAGS \"-I .. -I ../obj_ref\"",
     "../obj_ref/Vref__ALL.a",
-    "../../t/" + test.name + ".cpp"
-])  # yapf:disable
+    "../../t/t_dfg_peephole.cpp"
+] + extraArgs)  # yapf:disable
 
 
-def check(name):
+def check(name, enabled):
     name = name.lower()
     name = re.sub(r'_', ' ', name)
-    test.file_grep(test.obj_dir + "/obj_opt/Vopt__stats.txt",
-                   r'DFG\s+(pre inline|post inline|scoped) Peephole, ' + name + r'\s+([1-9]\d*)')
+    pattern = r'DFG\s+(pre inline|post inline|scoped) Peephole, ' + name + r'\s+([1-9]\d*)\s*$'
+    if enabled:
+        test.file_grep(test.obj_dir + "/obj_opt/Vopt__stats.txt", pattern)
+    else:
+        test.file_grep_not(test.obj_dir + "/obj_opt/Vopt__stats.txt", pattern)
 
 
 # Check all optimizations defined in
 for opt in optimizations:
-    check(opt)
+    check(opt, test.name == "t_dfg_peephole")
 
 test.file_grep_not(test.obj_dir + "/obj_opt/Vopt__stats.txt",
                    r'DFG.*non-representable.*\s[1-9]\d*$')

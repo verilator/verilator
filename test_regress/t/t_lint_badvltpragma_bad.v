@@ -4,6 +4,6 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   // verilator lintt_off WIDTH  //<--- Warning (lint_off misspelled)
-   bit one = 2;
+  // verilator lintt_off WIDTH  //<--- Warning (lint_off misspelled)
+  bit one = 2;
 endmodule

@@ -1,58 +1,123 @@
-%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:18:7: Unsupported: non-constant assert assertion-type expression
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:25:7: Unsupported: non-constant assert assertion-type expression
                                                : ... note: In instance 't.unsupported_ctl_type'
-   18 |       $assertcontrol(1, a);
+   25 |       $assertcontrol(Lock, a);
       |       ^~~~~~~~~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:19:7: Unsupported assertcontrol control_type
-   19 |       $assertcontrol(2);
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:27:7: Unsupported: $assertcontrol control_type '2'
+   27 |       $assertcontrol(Unlock);
       |       ^~~~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:20:7: Unsupported assertcontrol control_type
-   20 |       $assertcontrol(6);
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:29:7: Unsupported: $assertcontrol control_type '6'
+   29 |       $assertcontrol(PassOn);
       |       ^~~~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:21:7: Unsupported assertcontrol control_type
-   21 |       $assertcontrol(7);
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:30:7: Unsupported: assert control assertion_type
+                                               : ... note: In instance 't.unsupported_ctl_type'
+   30 |       $assertpasson;
+      |       ^~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:31:7: Unsupported: assert control assertion_type
+                                               : ... note: In instance 't.unsupported_ctl_type'
+   31 |       $assertpasson(a);
+      |       ^~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:32:7: Unsupported: assert control assertion_type
+                                               : ... note: In instance 't.unsupported_ctl_type'
+   32 |       $assertpasson(a, t);
+      |       ^~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:34:7: Unsupported: $assertcontrol control_type '7'
+   34 |       $assertcontrol(PassOff);
       |       ^~~~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:22:7: Unsupported assertcontrol control_type
-   22 |       $assertcontrol(8);
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:35:7: Unsupported: assert control assertion_type
+                                               : ... note: In instance 't.unsupported_ctl_type'
+   35 |       $assertpassoff;
       |       ^~~~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:23:7: Unsupported assertcontrol control_type
-   23 |       $assertcontrol(9);
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:36:7: Unsupported: assert control assertion_type
+                                               : ... note: In instance 't.unsupported_ctl_type'
+   36 |       $assertpassoff(a);
       |       ^~~~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:24:7: Unsupported assertcontrol control_type
-   24 |       $assertcontrol(10);
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:37:7: Unsupported: assert control assertion_type
+                                               : ... note: In instance 't.unsupported_ctl_type'
+   37 |       $assertpassoff(a, t);
       |       ^~~~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:25:7: Unsupported assertcontrol control_type
-   25 |       $assertcontrol(11);
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:39:7: Unsupported: $assertcontrol control_type '8'
+   39 |       $assertcontrol(FailOn);
       |       ^~~~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:32:7: Unsupported: non-const assert control type expression
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:40:7: Unsupported: assert control assertion_type
+                                               : ... note: In instance 't.unsupported_ctl_type'
+   40 |       $assertfailon;
+      |       ^~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:41:7: Unsupported: assert control assertion_type
+                                               : ... note: In instance 't.unsupported_ctl_type'
+   41 |       $assertfailon(a);
+      |       ^~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:42:7: Unsupported: assert control assertion_type
+                                               : ... note: In instance 't.unsupported_ctl_type'
+   42 |       $assertfailon(a, t);
+      |       ^~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:44:7: Unsupported: $assertcontrol control_type '9'
+   44 |       $assertcontrol(FailOff);
+      |       ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:45:7: Unsupported: assert control assertion_type
+                                               : ... note: In instance 't.unsupported_ctl_type'
+   45 |       $assertfailoff;
+      |       ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:46:7: Unsupported: assert control assertion_type
+                                               : ... note: In instance 't.unsupported_ctl_type'
+   46 |       $assertfailoff(a);
+      |       ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:47:7: Unsupported: assert control assertion_type
+                                               : ... note: In instance 't.unsupported_ctl_type'
+   47 |       $assertfailoff(a, t);
+      |       ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:49:7: Unsupported: $assertcontrol control_type '10'
+   49 |       $assertcontrol(NonvacuousOn);
+      |       ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:50:7: Unsupported: assert control assertion_type
+                                               : ... note: In instance 't.unsupported_ctl_type'
+   50 |       $assertnonvacuouson;
+      |       ^~~~~~~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:51:7: Unsupported: assert control assertion_type
+                                               : ... note: In instance 't.unsupported_ctl_type'
+   51 |       $assertnonvacuouson(a);
+      |       ^~~~~~~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:52:7: Unsupported: assert control assertion_type
+                                               : ... note: In instance 't.unsupported_ctl_type'
+   52 |       $assertnonvacuouson(a, t);
+      |       ^~~~~~~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:54:7: Unsupported: $assertcontrol control_type '11'
+   54 |       $assertcontrol(VacuousOff);
+      |       ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:55:7: Unsupported: assert control assertion_type
+                                               : ... note: In instance 't.unsupported_ctl_type'
+   55 |       $assertvacuousoff;
+      |       ^~~~~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:56:7: Unsupported: assert control assertion_type
+                                               : ... note: In instance 't.unsupported_ctl_type'
+   56 |       $assertvacuousoff(a);
+      |       ^~~~~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:57:7: Unsupported: assert control assertion_type
+                                               : ... note: In instance 't.unsupported_ctl_type'
+   57 |       $assertvacuousoff(a, t);
+      |       ^~~~~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:64:7: Unsupported: non-const assert control type expression
                                                : ... note: In instance 't.unsupported_ctl_type_expr'
-   32 |       $assertcontrol(ctl_type);
+   64 |       $assertcontrol(ctl_type);
       |       ^~~~~~~~~~~~~~
-%Error: t/t_assert_ctl_unsup.v:38:7: Bad assertcontrol control_type (IEEE 1800-2023 Table 20-5)
-   38 |       $assertcontrol(0);
-      |       ^~~~~~~~~~~~~~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_assert_ctl_unsup.v:39:7: Bad assertcontrol control_type (IEEE 1800-2023 Table 20-5)
-   39 |       $assertcontrol(100);
-      |       ^~~~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:68:10: Unsupported: assertcontrols in classes or interfaces
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:93:10: Unsupported: assertcontrols in classes or interfaces
                                                 : ... note: In instance 't.assert_class'
-   68 |          $asserton;
+   93 |          $asserton;
       |          ^~~~~~~~~
-%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:74:10: Unsupported: assertcontrols in classes or interfaces
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:99:10: Unsupported: assertcontrols in classes or interfaces
                                                 : ... note: In instance 't.assert_class'
-   74 |          $assertoff;
+   99 |          $assertoff;
       |          ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:147:7: Unsupported: assertcontrols in classes or interfaces
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:172:7: Unsupported: assertcontrols in classes or interfaces
                                                 : ... note: In instance 't.assert_iface'
-  147 |       $assertoff;
+  172 |       $assertoff;
       |       ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:113:7: Unsupported: assertcontrols in classes or interfaces
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:138:7: Unsupported: assertcontrols in classes or interfaces
                                                 : ... note: In instance 't.assert_iface_class'
-  113 |       $assertoff;
+  138 |       $assertoff;
       |       ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:120:7: Unsupported: assertcontrols in classes or interfaces
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:145:7: Unsupported: assertcontrols in classes or interfaces
                                                 : ... note: In instance 't.assert_iface_class'
-  120 |       $asserton;
+  145 |       $asserton;
       |       ^~~~~~~~~
 %Error: Exiting due to

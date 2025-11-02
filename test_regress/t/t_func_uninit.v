@@ -4,6 +4,7 @@
 // any use, without warranty, 2021 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+// verilator lint_off NORETURN
 function int zeroed;
 endfunction
 
@@ -17,7 +18,7 @@ function automatic integer what_bit;
    end
 endfunction
 
-module t(/*AUTOARG*/);
+module t;
 
    parameter ZERO = zeroed();
 

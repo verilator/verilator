@@ -136,7 +136,7 @@ class OrderGraphBuilder final : public VNVisitor {
         VL_RESTORER(m_hybridp);
         VL_RESTORER(m_inClocked);
 
-        // This is the original sensitivity of the block (i.e.: not the ref into the TRIGGERVEC)
+        // This is the original sensitivity of the block (i.e.: not the ref into the trigger vec)
 
         const AstSenTree* const senTreep = nodep->sentreep()->hasCombo()
                                                ? nodep->sentreep()
@@ -327,27 +327,18 @@ class OrderGraphBuilder final : public VNVisitor {
         nodep->v3fatalSrc("AstFinal should not need ordering");
     }  // LCOV_EXCL_STOP
 
-    //--- Logic akin go SystemVerilog continuous assignments
-    void visit(AstAssignAlias* nodep) override {  //
-        iterateLogic(nodep);
-    }
-    void visit(AstAssignW* nodep) override { iterateLogic(nodep); }
-
     //--- Verilator concoctions
-    void visit(AstAlwaysPublic* nodep) override {  //
-        iterateLogic(nodep);
-    }
     void visit(AstCoverToggle* nodep) override {  //
         iterateLogic(nodep);
     }
 
     //--- Ignored nodes
     void visit(AstVar*) override {}
-    void visit(AstVarScope* nodep) override {}
-    void visit(AstCell*) override {}  // Only interested in the respective AstScope
-    void visit(AstTypeTable*) override {}
-    void visit(AstConstPool*) override {}
-    void visit(AstClass*) override {}
+    void visit(AstVarScope* nodep) override { nodep->v3fatalSrc("Should not reach V3Order"); }
+    void visit(AstCell* nodep) override { nodep->v3fatalSrc("Should not reach V3Order"); }
+    void visit(AstTypeTable* nodep) override { nodep->v3fatalSrc("Should not reach V3Order"); }
+    void visit(AstConstPool* nodep) override { nodep->v3fatalSrc("Should not reach V3Order"); }
+    void visit(AstClass* nodep) override { nodep->v3fatalSrc("Should not reach V3Order"); }
     void visit(AstCFunc*) override {
         // Calls to DPI exports handled with AstCCall. /* verilator public */ functions are
         // ignored for now (and hence potentially mis-ordered), but could use the same or

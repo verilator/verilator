@@ -22,7 +22,7 @@ constraint Packet::ctwo { two > 1 && two < 3; }
 function void Packet::f();
 endfunction
 
-module t (/*AUTOARG*/);
+module t;
 
    Packet p;
 

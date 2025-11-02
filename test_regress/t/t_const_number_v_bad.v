@@ -4,7 +4,7 @@
 // any use, without warranty, 2023 by Ethan Sifferman.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
     // "unbased_unsized_literal" is SystemVerilog only
     // Should fail with "NEWERSTD"

@@ -11,7 +11,7 @@ class Cls;
    bit x = 1;
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    Cls obj1;
    Cls obj2;
 

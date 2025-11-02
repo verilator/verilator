@@ -155,7 +155,7 @@ class ClsContainUsedOnlyHere;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    DerivedCls1 derived1;
    DerivedCls2 derived2;

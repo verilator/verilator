@@ -41,14 +41,15 @@ std::map<string, string> VName::s_dehashMap;
 // Wildcard
 
 // Double procedures, inlined, unrolls loop much better
-bool VString::wildmatchi(const char* s, const char* p) VL_PURE {
+template <bool Even = true>
+static bool wildMatchImpl(const char* s, const char* p) VL_PURE {
     for (; *p; s++, p++) {
         if (*p != '*') {
             if (((*s) != (*p)) && *p != '?') return false;
         } else {
             // Trailing star matches everything.
             if (!*++p) return true;
-            while (!wildmatch(s, p)) {
+            while (!wildMatchImpl<!Even>(s, p)) {
                 if (*++s == '\0') return false;
             }
             return true;
@@ -58,19 +59,11 @@ bool VString::wildmatchi(const char* s, const char* p) VL_PURE {
 }
 
 bool VString::wildmatch(const char* s, const char* p) VL_PURE {
-    for (; *p; s++, p++) {
-        if (*p != '*') {
-            if (((*s) != (*p)) && *p != '?') return false;
-        } else {
-            // Trailing star matches everything.
-            if (!*++p) return true;
-            while (!wildmatchi(s, p)) {
-                if (*++s == '\0') return false;
-            }
-            return true;
-        }
+    if (*s == '\0') {
+        while (*p == '*') ++p;
+        return *p == '\0';
     }
-    return (*s == '\0');
+    return wildMatchImpl(s, p);
 }
 
 bool VString::wildmatch(const string& s, const string& p) VL_PURE {
@@ -334,8 +327,12 @@ string VString::replaceWord(const string& str, const string& from, const string&
     return result;
 }
 
-bool VString::startsWith(const string& str, const string& prefix) {
-    return str.rfind(prefix, 0) == 0;  // Faster than .find(_) == 0
+std::deque<string> VString::split(const string& str, char delimiter) {
+    std::deque<std::string> results;
+    std::istringstream is{str};
+    std::string token;
+    while (std::getline(is, token, delimiter)) results.push_back(token);
+    return results;
 }
 
 bool VString::endsWith(const string& str, const string& suffix) {

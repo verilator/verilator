@@ -4,7 +4,7 @@
 // any use, without warranty, 2019 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
    parameter integer FOO2 = 32'd-6;  // Minus doesn't go here
    parameter integer FOO3 = 32'd;

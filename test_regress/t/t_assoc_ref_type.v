@@ -50,15 +50,26 @@ class Wrapper#(type VAL_T=int);
    VAL_T value;
 endclass
 
-module t (/*AUTOARG*/);
+class Bum;
+   typedef int map_t[string];
+   map_t m_value;
+   function new(map_t value);
+      m_value = value;
+   endfunction
+endclass
+
+module t;
 
    typedef WBase wrap_map_t[string];
    typedef WBase wrap_queue_t[$];
+
+   localparam string str_key = "the_key";
 
    initial begin
       Bar bar_i = new;
       Baz baz_1_i = new;
       Baz #(Foo2) baz_2_i = new;
+      Bum bum_i;
 
       Wrapper#(wrap_map_t) wrap_map = new();
       Wrapper#(wrap_queue_t) wrap_queue = new();
@@ -70,6 +81,9 @@ module t (/*AUTOARG*/);
       if (bar_i.get(1).get_x() != 1) $stop;
       if (baz_1_i.get(2).get_x() != 1) $stop;
       if (baz_2_i.get(3).get_x() != 2) $stop;
+
+      bum_i = new('{str_key: 42});
+      if (bum_i.m_value["the_key"] != 42) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

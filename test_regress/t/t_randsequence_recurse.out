@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_randsequence_recurse.v:21:7: Unsupported: randsequence
+   21 |       randsequence(main)
+      |       ^~~~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

@@ -15,7 +15,7 @@ class Cls1 extends Base1(default);
    // Gets new(int def)
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       Cls1 c1;
       Cls1 c5;

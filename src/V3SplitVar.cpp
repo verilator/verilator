@@ -128,15 +128,6 @@ struct SplitVarImpl VL_NOT_FINAL {
     //  AstNodeModule::user1()  -> Block number counter for generating unique names
     const VNUser1InUse m_user1InUse;  // Only used in SplitUnpackedVarVisitor
 
-    static AstNodeAssign* newAssign(FileLine* fileline, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
-                                    const AstVar* varp) {
-        if (varp->isFuncLocal() || varp->isFuncReturn()) {
-            return new AstAssign{fileline, lhsp, rhsp};
-        } else {
-            return new AstAssignW{fileline, lhsp, rhsp};
-        }
-    }
-
     // These check functions return valid pointer to the reason text if a variable cannot be split.
 
     // Check if a var type can be split
@@ -194,7 +185,7 @@ struct SplitVarImpl VL_NOT_FINAL {
             stmtp->unlinkFrBack();
             // Insert begin-end because temp value may be inserted to this block later.
             const std::string name = "__VsplitVarBlk" + cvtToStr(modp->user1Inc(1));
-            ap->addStmtsp(new AstBegin{ap->fileline(), name, stmtp});
+            ap->addStmtsp(new AstBegin{ap->fileline(), name, stmtp, false});
         }
     }
 
@@ -204,7 +195,7 @@ struct SplitVarImpl VL_NOT_FINAL {
             // Insert begin-end because temp value may be inserted to this block later.
             FileLine* const fl = initp->fileline();
             const std::string name = "__VsplitVarBlk" + cvtToStr(modp->user1Inc(1));
-            initp->replaceWith(new AstInitial{fl, new AstBegin{fl, name, stmtp}});
+            initp->replaceWith(new AstInitial{fl, new AstBegin{fl, name, stmtp, false}});
             VL_DO_DANGLING(initp->deleteTree(), initp);
         }
     }
@@ -212,8 +203,6 @@ struct SplitVarImpl VL_NOT_FINAL {
     void insertBeginIfNecessary(AstNodeStmt* stmtp, AstNodeModule* modp) {
         AstNode* const backp = stmtp->backp();
         if (AstAlways* const ap = VN_CAST(backp, Always)) {
-            insertBeginCore(ap, stmtp, modp);
-        } else if (AstAlwaysPublic* const ap = VN_CAST(backp, AlwaysPublic)) {
             insertBeginCore(ap, stmtp, modp);
         } else if (AstInitial* const ap = VN_CAST(backp, Initial)) {
             insertBeginCore(ap, stmtp, modp);
@@ -455,12 +444,17 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
         m_forPackedSplit.m_refs[m_modp].add(refp);
         return refp;
     }
+    void handleVarXRef(AstVarXRef* const nodep) {
+        UINFO(4, nodep->varp() << " Has hierarchical reference");
+        m_forPackedSplit.m_hasXref.emplace(nodep->varp());
+    }
 
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
     void visit(AstNodeModule* nodep) override {
         UINFO(4, "Start checking " << nodep->prettyNameQ());
         if (!VN_IS(nodep, Module)) {
             UINFO(4, "Skip " << nodep->prettyNameQ());
+            nodep->foreach([this](AstVarXRef* const nodep) { handleVarXRef(nodep); });
             return;
         }
         UASSERT_OBJ(!m_modp, m_modp, "Nested module declaration");
@@ -474,14 +468,6 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
     void visit(AstNodeStmt* nodep) override { setContextAndIterateChildren(nodep); }
     void visit(AstCell* nodep) override { setContextAndIterateChildren(nodep); }
     void visit(AstAlways* nodep) override {
-        if (nodep->sentreep()) {  // When visiting sensitivity list, always is the context
-            setContextAndIterate(nodep, nodep->sentreep());
-        }
-        for (AstNode* bodysp = nodep->stmtsp(); bodysp; bodysp = bodysp->nextp()) {
-            iterate(bodysp);
-        }
-    };
-    void visit(AstAlwaysPublic* nodep) override {
         if (nodep->sentreep()) {  // When visiting sensitivity list, always is the context
             setContextAndIterate(nodep, nodep->sentreep());
         }
@@ -557,10 +543,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             m_foundTargetVar.insert(nodep->varp());
         }
     }
-    void visit(AstVarXRef* nodep) override {
-        UINFO(4, nodep->varp() << " Has hierarchical reference");
-        m_forPackedSplit.m_hasXref.emplace(nodep->varp());
-    }
+    void visit(AstVarXRef* nodep) override { handleVarXRef(nodep); }
     void visit(AstSel* nodep) override {
         if (VN_IS(nodep->fromp(), VarRef)) m_forPackedSplit.m_refs[m_modp].add(nodep);
         iterateChildren(nodep);
@@ -630,25 +613,25 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             AstNode* const refp = lhsp;
             UINFO(9, "Creating assign idx:" << i << " + " << start_idx);
             if (!lvalue) std::swap(lhsp, rhsp);
-            AstNode* newassignp;
             if (use_simple_assign) {
-                AstNode* const insertp = context;
-                newassignp = new AstAssign{fl, lhsp, rhsp};
+                AstAssign* const ap = new AstAssign{fl, lhsp, rhsp};
                 if (lvalue) {
                     // If varp is LHS, this assignment must appear after the original
                     // assignment(context).
-                    insertp->addNextHere(newassignp);
+                    context->addNextHere(ap);
                 } else {
                     // If varp is RHS, this assignment comes just before the original assignment
-                    insertp->addHereThisAsNext(newassignp);
+                    context->addHereThisAsNext(ap);
                 }
+                UASSERT_OBJ(!m_contextp, m_contextp, "must be null");
+                setContextAndIterate(ap, refp);
             } else {
-                newassignp = new AstAssignW{fl, lhsp, rhsp};
+                AstAssignW* const ap = new AstAssignW{fl, lhsp, rhsp};
                 // Continuous assignment must be in module context.
-                varp->addNextHere(newassignp);
+                varp->addNextHere(new AstAlways{ap});
+                UASSERT_OBJ(!m_contextp, m_contextp, "must be null");
+                setContextAndIterate(ap, refp);
             }
-            UASSERT_OBJ(!m_contextp, m_contextp, "must be null");
-            setContextAndIterate(newassignp, refp);
         }
         return newVarRef(fl, varp, lvalue ? VAccess::WRITE : VAccess::READ);
     }
@@ -663,18 +646,19 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
                 newVarRef(fl, vars.at(i), !lvalue ? VAccess::WRITE : VAccess::READ)};
             AstNodeExpr* const lhsp = nodes[lvalue ? 0 : 1];
             AstNodeExpr* const rhsp = nodes[lvalue ? 1 : 0];
-            AstNodeAssign* const assignp = newAssign(fl, lhsp, rhsp, varp);
             if (insertp) {
+                AstAssign* const ap = new AstAssign{fl, lhsp, rhsp};
                 if (lvalue) {  // Just after writing to the temporary variable
-                    insertp->addNextHere(assignp);
+                    insertp->addNextHere(ap);
                 } else {  // Just before reading the temporary variable
-                    insertp->addHereThisAsNext(assignp);
+                    insertp->addHereThisAsNext(ap);
                 }
+                setContextAndIterate(ap, nodes[1]);
             } else {
-                UASSERT_OBJ(VN_IS(assignp, AssignW), varp, "must be AssginW");
-                vars.at(i)->addNextHere(assignp);
+                AstAssignW* const ap = new AstAssignW{fl, lhsp, rhsp};
+                vars.at(i)->addNextHere(new AstAlways{ap});
+                setContextAndIterate(ap, nodes[1]);
             }
-            setContextAndIterate(assignp, nodes[1]);
         }
     }
     // cppcheck-has-bug-suppress constParameter
@@ -1059,15 +1043,16 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
                              var.lsb() - portLsb, var.bitwidth()};
             AstNodeExpr* lhsp = new AstVarRef{fl, var.varp(), in ? VAccess::WRITE : VAccess::READ};
             if (!in) std::swap(lhsp, rhsp);
-            AstNodeAssign* const assignp = newAssign(fl, lhsp, rhsp, portp);
             if (insertp) {
+                AstAssign* const ap = new AstAssign{fl, lhsp, rhsp};
                 if (in) {
-                    insertp->addHereThisAsNext(assignp);
+                    insertp->addHereThisAsNext(ap);
                 } else {
-                    insertp->addNextHere(assignp);
+                    insertp->addNextHere(ap);
                 }
             } else {
-                var.varp()->addNextHere(assignp);
+                AstAssignW* const ap = new AstAssignW{fl, lhsp, rhsp};
+                var.varp()->addNextHere(new AstAlways{ap});
             }
         }
     }
@@ -1192,8 +1177,15 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
                     rhsp = new AstConcat{fl, new AstVarRef{fl, vars[i].varp(), VAccess::READ},
                                          rhsp};
                 }
-                varp->addNextHere(
-                    newAssign(fl, new AstVarRef{fl, varp, VAccess::WRITE}, rhsp, varp));
+                if (varp->isFuncLocal() || varp->isFuncReturn()) {
+                    AstAssign* const ap
+                        = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, rhsp};
+                    varp->addNextHere(ap);
+                } else {
+                    AstAssignW* const ap
+                        = new AstAssignW{fl, new AstVarRef{fl, varp, VAccess::WRITE}, rhsp};
+                    varp->addNextHere(new AstAlways{ap});
+                }
             } else {  // the original variable is not used anymore.
                 VL_DO_DANGLING(varp->unlinkFrBack()->deleteTree(), varp);
             }

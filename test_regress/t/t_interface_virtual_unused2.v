@@ -11,12 +11,12 @@ endinterface
 class cls;
     virtual QBus vif1;
 
-    function foo(virtual QBus vif2);
+    function void foo(virtual QBus vif2);
         vif2.data = 1;
     endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    cls bar;
 

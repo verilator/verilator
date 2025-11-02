@@ -2,4 +2,4 @@
 .. code-block:: sv
    :emphasize-lines: 1
 
-         #100 $finish;  //<--- Warning
+       #100 $finish;  //<--- Warning

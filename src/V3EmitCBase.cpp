@@ -127,7 +127,7 @@ string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep) {
     for (const AstNode* stmtp = nodep->argsp(); stmtp; stmtp = stmtp->nextp()) {
         if (const AstVar* const portp = VN_CAST(stmtp, Var)) {
             if (portp->isIO() && !portp->isFuncReturn()) {
-                if (args != "") args += ", ";
+                if (!args.empty()) args += ", ";
                 if (nodep->dpiImportPrototype() || nodep->dpiExportDispatcher()) {
                     args += portp->dpiArgType(true, false);
                 } else if (nodep->funcPublic()) {
@@ -193,21 +193,17 @@ void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
 
     if (nodep->isIO() && nodep->isSc()) {
         UASSERT_OBJ(basicp, nodep, "Unimplemented: Outputting this data type");
-        if (nodep->attrScClocked() && nodep->isReadOnly()) {
-            putns(nodep, "sc_core::sc_in_clk ");
+        if (nodep->isInout()) {
+            putns(nodep, "sc_core::sc_inout<");
+        } else if (nodep->isWritable()) {
+            putns(nodep, "sc_core::sc_out<");
+        } else if (nodep->isNonOutput()) {
+            putns(nodep, "sc_core::sc_in<");
         } else {
-            if (nodep->isInout()) {
-                putns(nodep, "sc_core::sc_inout<");
-            } else if (nodep->isWritable()) {
-                putns(nodep, "sc_core::sc_out<");
-            } else if (nodep->isNonOutput()) {
-                putns(nodep, "sc_core::sc_in<");
-            } else {
-                nodep->v3fatalSrc("Unknown type");
-            }
-            puts(nodep->scType());
-            puts("> ");
+            nodep->v3fatalSrc("Unknown type");
         }
+        puts(nodep->scType());
+        puts("> ");
         if (asRef) {
             if (refNeedParens) putns(nodep, "(");
             putns(nodep, "&");
@@ -285,26 +281,28 @@ void EmitCBaseVisitorConst::emitModCUse(const AstNodeModule* modp, VUseType useT
     if (nl) puts("\n");
 }
 
-std::pair<string, FileLine*> EmitCBaseVisitorConst::textSection(const AstNodeModule* modp,
-                                                                VNType type) {
-    if (!v3Global.hasSCTextSections()) return std::make_pair("", nullptr);
+std::pair<string, FileLine*> EmitCBaseVisitorConst::scSection(const AstNodeModule* modp,
+                                                              VSystemCSectionType type) {
+    if (!v3Global.hasSystemCSections()) return std::make_pair("", nullptr);
     string text;
     FileLine* fl = nullptr;
     int last_line = -999;
     for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-        if (nodep->type() != type) continue;
-        if (const AstNodeText* const textp = VN_CAST(nodep, NodeText)) {
-            if (text.empty()) {
-                fl = textp->fileline();
-                text += "\n";
-                if (v3Global.opt.decoration())
-                    text += "\n//*** Below code from `systemc in Verilog file\n";
+        AstSystemCSection* const ssp = VN_CAST(nodep, SystemCSection);
+        if (!ssp) continue;
+        if (ssp->sectionType() != type) continue;
+        if (text.empty()) {
+            fl = ssp->fileline();
+            text += "\n";
+            if (v3Global.opt.decoration()) {
+                text += "\n//*** Below code from `systemc in Verilog file\n";
             }
-            if (last_line + 1 != nodep->fileline()->lineno() && v3Global.opt.decoration())
-                text += "// From `systemc at " + nodep->fileline()->ascii() + "\n";
-            last_line = textp->fileline()->lineno();
-            text += textp->text();
         }
+        if (last_line + 1 != nodep->fileline()->lineno() && v3Global.opt.decoration()) {
+            text += "// From `systemc at " + nodep->fileline()->ascii() + "\n";
+        }
+        last_line = ssp->fileline()->lineno();
+        text += ssp->text();
     }
     if (!text.empty()) {
         if (v3Global.opt.decoration()) text += "//*** Above code from `systemc in Verilog file\n";
@@ -319,9 +317,10 @@ std::pair<string, FileLine*> EmitCBaseVisitorConst::textSection(const AstNodeMod
     return std::make_pair(text, fl);
 }
 
-void EmitCBaseVisitorConst::emitTextSection(const AstNodeModule* modp, VNType type) {
+void EmitCBaseVisitorConst::emitSystemCSection(const AstNodeModule* modp,
+                                               VSystemCSectionType type) {
     // Short circuit if nothing to do. This can save a lot of time on large designs as this
     // function needs to traverse the entire module linearly.
-    auto textAndFileline = textSection(modp, type);
+    auto textAndFileline = scSection(modp, type);
     if (!textAndFileline.first.empty()) ofp()->putsNoTracking(textAndFileline.first);
 }

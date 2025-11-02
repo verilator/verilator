@@ -1,0 +1,20 @@
+%Error-UNSUPPORTED: t/t_sequence_first_match_unsup.v:47:40: Unsupported: or (in sequence expression)
+   47 |   initial p0: assert property ((##1 1) or (##2 1) |-> x==1);
+      |                                        ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_sequence_first_match_unsup.v:50:52: Unsupported: or (in sequence expression)
+   50 |   initial p1: assert property (first_match((##1 1) or (##2 1)) |-> x==1);
+      |                                                    ^~
+%Error-UNSUPPORTED: t/t_sequence_first_match_unsup.v:50:32: Unsupported: first_match (in sequence expression)
+   50 |   initial p1: assert property (first_match((##1 1) or (##2 1)) |-> x==1);
+      |                                ^~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_sequence_first_match_unsup.v:53:34: Unsupported: or (in sequence expression)
+   53 |   initial p2: assert property (1 or ##1 1 |-> x==0);
+      |                                  ^~
+%Error-UNSUPPORTED: t/t_sequence_first_match_unsup.v:56:46: Unsupported: or (in sequence expression)
+   56 |   initial p3: assert property (first_match(1 or ##1 1) |-> x==0);
+      |                                              ^~
+%Error-UNSUPPORTED: t/t_sequence_first_match_unsup.v:56:32: Unsupported: first_match (in sequence expression)
+   56 |   initial p3: assert property (first_match(1 or ##1 1) |-> x==0);
+      |                                ^~~~~~~~~~~
+%Error: Exiting due to

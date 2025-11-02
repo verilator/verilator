@@ -4,7 +4,7 @@
 // any use, without warranty, 2020 Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-program t(/*AUTOARG*/);
+program t;
    initial begin
       $write("*-* All Finished *-*\n");
       $exit;  // Must be in program block

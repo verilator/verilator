@@ -27,6 +27,8 @@
         
 %000001    reg   toggle; initial toggle='0;
         
+           logic _under_toggle = toggle;  // For --coverage-underscore
+        
 %000001    str_t stoggle; initial stoggle='0;
         
 ~000010    str_logic strl; initial strl='0;

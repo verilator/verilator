@@ -11,8 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('dist')
 
-root = ".."
-
 Contributors = {'github action': True}
 Authors = {}
 
@@ -27,7 +25,7 @@ def read_contributors(filename):
 
 
 def read_user():
-    cmd = "cd " + root + " && git diff-index --quiet HEAD --"
+    cmd = "cd " + test.root + " && git diff-index --quiet HEAD --"
     changes = test.run_capture(cmd, check=False)
     changes = changes.rstrip()
     if changes == "":
@@ -51,24 +49,36 @@ def read_authors():
 
 
 def check():
-    read_contributors(root + "/docs/CONTRIBUTORS")
+    read_contributors(test.root + "/docs/CONTRIBUTORS")
     read_user()
     read_authors()
     for author in sorted(Authors.keys()):
         if test.verbose:
             print("Check: " + author)
-        if author not in Contributors:
-            test.error("Certify your contribution by sorted-inserting '" + author +
-                       "' into docs/CONTRIBUTORS.\n"
-                       "   If '" + author +
-                       "' is not your real name, please fix 'name=' in ~/.gitconfig\n"
-                       "   Also check your https://github.com account's Settings->Profile->Name\n"
-                       "   matches your ~/.gitconfig 'name='.\n")
+        if re.search(r'\[bot\]', author):
+            continue
+        if author in Contributors:
+            continue
+        # Slower subset-of-string test
+        ok = False
+        for contrib2 in sorted(Contributors.keys()):
+            if author in contrib2:
+                ok = True
+                break
+        if ok:
+            continue
+
+        test.error("Certify your contribution by sorted-inserting '" + author +
+                   "' into docs/CONTRIBUTORS.\n"
+                   "   If '" + author +
+                   "' is not your real name, please fix 'name=' in ~/.gitconfig\n"
+                   "   Also check your https://github.com account's Settings->Profile->Name\n"
+                   "   matches your ~/.gitconfig 'name='.\n")
 
 
 if 'VERILATOR_TEST_NO_CONTRIBUTORS' in os.environ:
     test.skip("Skipping due to VERILATOR_TEST_NO_CONTRIBUTORS")
-if not os.path.exists(root + "/.git"):
+if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
 check()

@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["--assert"], sanitize=False)  # GCC 11.4.0 hang bug
+test.compile(verilator_flags2=["--assert"])
 
 test.execute()
 

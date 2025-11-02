@@ -22,7 +22,7 @@ class Cls;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    Cls cls;
    int array[10];

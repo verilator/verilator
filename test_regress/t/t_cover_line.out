@@ -148,12 +148,12 @@
 -000000  point: comment=block hier=top.t
 ~000010          do begin
 -000000  point: comment=block hier=top.t
-+000010  point: comment=if hier=top.t
-~000010             $write("");
++000010  point: comment=block hier=top.t
+ 000010             $write("");
++000010  point: comment=block hier=top.t
+~000010          end while (0);
 -000000  point: comment=block hier=top.t
-+000010  point: comment=if hier=top.t
-%000000          end while (0);
--000000  point: comment=block hier=top.t
++000010  point: comment=block hier=top.t
                  //===
                  // Task and complicated
 %000001          if (cyc==3) begin
@@ -258,15 +258,15 @@
         
         class Cls;
            bit m_toggle;
-%000001    function new(bit toggle);
--000001  point: comment=block hier=top.$unit::Cls__Vclpkg
-%000001       m_toggle = toggle;
--000001  point: comment=block hier=top.$unit::Cls__Vclpkg
-%000001       if (m_toggle) begin  // CHECK_COVER(0,"top.$unit::Cls",1)
--000001  point: comment=if hier=top.$unit::Cls__Vclpkg
+ 000011    function new(bit toggle);
++000011  point: comment=block hier=top.$unit::Cls__Vclpkg
+ 000011       m_toggle = toggle;
++000011  point: comment=block hier=top.$unit::Cls__Vclpkg
+~000011       if (m_toggle) begin  // CHECK_COVER(0,"top.$unit::Cls",1)
++000011  point: comment=if hier=top.$unit::Cls__Vclpkg
 -000000  point: comment=else hier=top.$unit::Cls__Vclpkg
-%000001          $write("");
--000001  point: comment=if hier=top.$unit::Cls__Vclpkg
+ 000011          $write("");
++000011  point: comment=if hier=top.$unit::Cls__Vclpkg
               end
            endfunction
  000011    static function void fstatic(bit toggle);
@@ -304,7 +304,7 @@
 +000010  point: comment=block hier=top.t.t1
            end
         
- 000011    task center_task;
+ 000011    task automatic center_task;
 +000011  point: comment=block hier=top.t.t1
               input external;
  000011       begin
@@ -324,8 +324,9 @@
               end
  000011       begin
 +000011  point: comment=block hier=top.t.t1
-%000001          Cls c = new(1'b1);
--000001  point: comment=block hier=top.t.t1
+                 Cls c;
+ 000011          c = new(1'b1);
++000011  point: comment=block hier=top.t.t1
  000011          c.fauto();
 +000011  point: comment=block hier=top.t.t1
  000011          Cls::fstatic(1'b1);
@@ -521,6 +522,8 @@
               end
  000044       for (int i = 0; i < 7; i = (i > 4) ? i + 1 : i + 2) begin
 +000011  point: comment=block hier=top.t.cond1
++000011  point: comment=cond_then hier=top.t.cond1
++000033  point: comment=cond_else hier=top.t.cond1
 +000044  point: comment=block hier=top.t.cond1
  000044          k = 1'(i);
 +000044  point: comment=block hier=top.t.cond1

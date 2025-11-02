@@ -16,6 +16,6 @@ class Cls implements Icls1;
    // Bad missing icf2
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    Cls c;
 endmodule

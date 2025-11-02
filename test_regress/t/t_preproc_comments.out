@@ -1084,3 +1084,17 @@ string boo = "testx,ytest x x,y";
 string boo = "testtest x,y xquux(test)";
 
 `line 757 "t/t_preproc.v" 0
+//====================================================================== 
+// Define with --preproc-defines needs to keep backslashes 
+
+`line 760 "t/t_preproc.v" 0
+ 
+ 
+
+
+
+
+
+
+
+`line 769 "t/t_preproc.v" 0

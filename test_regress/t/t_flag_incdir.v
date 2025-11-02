@@ -10,5 +10,5 @@
 `error "No GOT_DEF5"
 `endif
 
-module t (/*AUTOARG*/);
+module t;
 endmodule

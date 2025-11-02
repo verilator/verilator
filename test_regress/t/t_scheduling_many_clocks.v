@@ -26,6 +26,7 @@ module t(/*AUTOARG*/
   endfunction
 
   int cyc = 0;
+  bit par = 0;
   always @(posedge clk) begin
      if (~|gclk) begin
        gclk[0] = 1'b1;
@@ -33,9 +34,12 @@ module t(/*AUTOARG*/
        gclk = {gclk[N-2:0], gclk[N-1]};
      end
 
+     // This make the always block requires a 'pre' trigger (and makes it non splitable)
+     par <= ^gclk;
+
      cyc <= cyc + 32'd1;
      if (cyc == ITERATIONS*N - 1) begin
-         $display("cyc");
+         $display("final cycle: %0d, par: %0d", cyc, par);
          $write("*-* All Finished *-*\n");
          $finish;
      end

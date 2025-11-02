@@ -11,7 +11,7 @@ endclass
 class ExbaseB extends Base;
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    int i;
 
    Base b;

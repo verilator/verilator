@@ -14,9 +14,7 @@ test.top_filename = "t/t_flag_main.v"
 
 test.compile(verilator_flags2=['--binary --runtime-debug'])
 
-test.execute(
-    # Some GCC versions hit an address-sanitizer bug otherwise
-    aslr_off=True)
+test.execute()
 
 test.file_grep(test.obj_dir + "/" + test.vm_prefix + ".mk", r'VL_DEBUG=1')
 

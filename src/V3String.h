@@ -22,13 +22,18 @@
 
 // No V3 headers here - this is a base class for Vlc etc
 
+#include <deque>
 #include <iomanip>
 #include <map>
+#include <set>
 #include <sstream>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
+
+using VStringList = std::vector<std::string>;
+using VStringSet = std::set<std::string>;
 
 //######################################################################
 // Global string-related functions
@@ -51,22 +56,6 @@ typename std::enable_if<std::is_integral<T>::value, std::string>::type cvtToHex(
     std::ostringstream os;
     os << std::hex << std::setw(sizeof(T) * 8 / 4) << std::setfill('0') << t;
     return os.str();
-}
-
-inline uint32_t cvtToHash(const void* vp) {
-    // We can shove a 64 bit pointer into a 32 bit bucket
-    // On 32-bit systems, lower is always 0, but who cares?
-    union {
-        const void* up;
-        struct {
-            uint32_t upper;
-            uint32_t lower;
-        } l;
-    } u;
-    u.l.upper = 0;
-    u.l.lower = 0;
-    u.up = vp;
-    return u.l.upper ^ u.l.lower;
 }
 
 inline string ucfirst(const string& text) {
@@ -134,8 +123,15 @@ public:
     // to be a consecutive sequence of the characters [a-zA-Z0-9_]. Sub-words are not replaced.
     // e.g.: replaceWords("one apple bad_apple", "apple", "banana") -> "one banana bad_apple"
     static string replaceWord(const string& str, const string& from, const string& to);
+    // Return deque of strings split by the given delimiter
+    static std::deque<string> split(const string& str, char delimiter = ',');
     // Predicate to check if 'str' starts with 'prefix'
-    static bool startsWith(const string& str, const string& prefix);
+    static bool startsWith(const string& str, const char* prefixp) {
+        return !str.rfind(prefixp, 0);  // Faster than .find(_) == 0
+    }
+    static bool startsWith(const string& str, const string& prefix) {
+        return !str.rfind(prefix, 0);  // Faster than .find(_) == 0
+    }
     // Predicate to check if 'str' ends with 'suffix'
     static bool endsWith(const string& str, const string& suffix);
     // Return proper article (a/an) for a word. May be inaccurate for some special words
@@ -227,7 +223,6 @@ public:
     // CONFIG STATIC METHODS
     // Length at which to start hashing, 0=disable
     static void maxLength(size_t flag) { s_maxLength = flag; }
-    static size_t maxLength() { return s_maxLength; }
     static string dehash(const string& in);
 };
 
@@ -267,6 +262,7 @@ public:
         }
     }
     static void selfTest();
+    const std::vector<std::string> candidates() const { return m_candidates; }
 
 private:
     static EditDistance editDistance(const string& s, const string& t);

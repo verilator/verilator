@@ -38,6 +38,7 @@ class AssertPreVisitor final : public VNVisitor {
     // We're not parsing the tree, or anything more complicated.
 private:
     // NODE STATE
+    // AstClockingItem::user1p()         // AstVar*.      varp() of ClockingItem after unlink
     const VNUser1InUse m_inuser1;
     // STATE
     // Current context:
@@ -55,10 +56,15 @@ private:
     AstNodeExpr* m_disablep = nullptr;  // Last disable
     // Other:
     V3UniqueNames m_cycleDlyNames{"__VcycleDly"};  // Cycle delay counter name generator
+    V3UniqueNames m_propPrecondNames{"__VpropPrecond"};  // Cycle delay temporaries name generator
     bool m_inAssign = false;  // True if in an AssignNode
     bool m_inAssignDlyLhs = false;  // True if in AssignDly's LHS
     bool m_inSynchDrive = false;  // True if in synchronous drive
     std::vector<AstVarXRef*> m_xrefsp;  // list of xrefs that need name fixup
+    AstNodeExpr* m_hasUnsupp = nullptr;  // True if assert has unsupported construct inside
+    AstPExpr* m_pExpr = nullptr;  // Current AstPExpr
+    bool m_hasSExpr = false;  // True if assert has AstSExpr inside
+    bool m_inSExpr = false;  // True if in AstSExpr
 
     // METHODS
 
@@ -89,17 +95,6 @@ private:
         while (VN_IS(propExprp, Var)) propExprp = propExprp->nextp();
         return VN_CAST(propExprp, PropSpec);
     }
-    void replaceVarRefsWithExprRecurse(AstNode* const nodep, const AstVar* varp,
-                                       AstNode* const exprp) {
-        if (!nodep) return;
-        if (const AstVarRef* varrefp = VN_CAST(nodep, VarRef)) {
-            if (varp == varrefp->varp()) nodep->replaceWith(exprp->cloneTree(false));
-        }
-        if (AstNode* const refp = nodep->op1p()) replaceVarRefsWithExprRecurse(refp, varp, exprp);
-        if (AstNode* const refp = nodep->op2p()) replaceVarRefsWithExprRecurse(refp, varp, exprp);
-        if (AstNode* const refp = nodep->op3p()) replaceVarRefsWithExprRecurse(refp, varp, exprp);
-        if (AstNode* const refp = nodep->op4p()) replaceVarRefsWithExprRecurse(refp, varp, exprp);
-    }
     AstPropSpec* substitutePropertyCall(AstPropSpec* nodep) {
         if (AstFuncRef* const funcrefp = VN_CAST(nodep->propp(), FuncRef)) {
             if (const AstProperty* const propp = VN_CAST(funcrefp->taskp(), Property)) {
@@ -116,9 +111,13 @@ private:
                     const AstVar* const portp = tconnect.first;
                     // cppcheck-suppress constVariablePointer // 'exprp' unlinked below
                     AstArg* const argp = tconnect.second;
-                    AstNode* const pinp = argp->exprp()->unlinkFrBack();
-                    replaceVarRefsWithExprRecurse(propExprp, portp, pinp);
-                    VL_DO_DANGLING(pushDeletep(pinp), pinp);
+                    propExprp->foreach([&](AstVarRef* refp) {
+                        if (refp->varp() == portp) {
+                            refp->replaceWith(argp->exprp()->cloneTree(false));
+                            VL_DO_DANGLING(pushDeletep(refp), refp);
+                        }
+                    });
+                    pushDeletep(argp->exprp()->unlinkFrBack());
                 }
                 // Handle case with 2 disable iff statement (IEEE 1800-2023 16.12.1)
                 if (nodep->disablep() && propExprp->disablep()) {
@@ -146,6 +145,7 @@ private:
 
                 // Now substitute property reference with property body
                 nodep->replaceWith(propExprp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return propExprp;
             }
         }
@@ -162,19 +162,32 @@ private:
         if (nodep->eventp()) nodep->addNextHere(nodep->eventp()->unlinkFrBack());
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
+    void visit(AstModportClockingRef* const nodep) override {
+        // It has to be converted to a list of ModportClockingVarRefs,
+        // because clocking blocks are removed in this pass
+        for (AstClockingItem* itemp = nodep->clockingp()->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), ClockingItem)) {
+            AstVar* const varp = itemp->varp() ? itemp->varp() : VN_AS(itemp->user1p(), Var);
+            if (varp) {
+                AstModportVarRef* const modVarp
+                    = new AstModportVarRef{nodep->fileline(), varp->name(), itemp->direction()};
+                modVarp->varp(varp);
+                nodep->addNextHere(modVarp);
+            }
+        }
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+    }
     void visit(AstClockingItem* const nodep) override {
         // Get a ref to the sampled/driven variable
         AstVar* const varp = nodep->varp();
         if (!varp) {
             // Unused item
-            pushDeletep(nodep->unlinkFrBack());
             return;
         }
         FileLine* const flp = nodep->fileline();
         V3Const::constifyEdit(nodep->skewp());
         if (!VN_IS(nodep->skewp(), Const)) {
             nodep->skewp()->v3error("Skew must be constant (IEEE 1800-2023 14.4)");
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
         AstConst* const skewp = VN_AS(nodep->skewp(), Const);
@@ -182,6 +195,7 @@ private:
         AstNodeExpr* const exprp = nodep->exprp();
         varp->name(m_clockingp->name() + "__DOT__" + varp->name());
         m_clockingp->addNextHere(varp->unlinkFrBack());
+        nodep->user1p(varp);
         varp->user1p(nodep);
         if (nodep->direction() == VDirection::OUTPUT) {
             exprp->foreach([](const AstNodeVarRef* varrefp) {
@@ -199,7 +213,7 @@ private:
             // A var to keep the previous value of the clockvar
             AstVar* const prevVarp = new AstVar{
                 flp, VVarType::MODULETEMP, "__Vclocking_prev__" + varp->name(), exprp->dtypep()};
-            prevVarp->lifetime(VLifetime::STATIC);
+            prevVarp->lifetime(VLifetime::STATIC_EXPLICIT);
             AstInitialStatic* const initPrevClockvarp = new AstInitialStatic{
                 flp, new AstAssign{flp, new AstVarRef{flp, prevVarp, VAccess::WRITE},
                                    skewedReadRefp->cloneTreePure(false)}};
@@ -224,7 +238,8 @@ private:
                     new AstSenItem{flp, VEdgeType::ET_CHANGED, skewedReadRefp->cloneTree(false)});
                 AstCMethodHard* const trigp = new AstCMethodHard{
                     nodep->fileline(),
-                    new AstVarRef{flp, m_clockingp->ensureEventp(), VAccess::READ}, "isTriggered"};
+                    new AstVarRef{flp, m_clockingp->ensureEventp(), VAccess::READ},
+                    VCMethod::EVENT_IS_TRIGGERED};
                 trigp->dtypeSetBit();
                 ifp->condp(new AstLogAnd{flp, ifp->condp()->unlinkFrBack(), trigp});
                 m_clockingp->addNextHere(new AstAlwaysReactive{flp, senTreep, ifp});
@@ -232,8 +247,8 @@ private:
                 // Create a fork so that this AlwaysObserved can be retriggered before the
                 // assignment happens. Also then it can be combo, avoiding the need for creating
                 // new triggers.
-                AstFork* const forkp = new AstFork{flp, "", ifp};
-                forkp->joinType(VJoinType::JOIN_NONE);
+                AstFork* const forkp = new AstFork{flp, VJoinType::JOIN_NONE};
+                forkp->addForksp(new AstBegin{flp, "", ifp, true});
                 // Use Observed for this to make sure we do not miss the event
                 m_clockingp->addNextHere(new AstAlwaysObserved{
                     flp, new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)}, forkp});
@@ -258,7 +273,8 @@ private:
                 // Assign the sampled expression to the clockvar (IEEE 1800-2023 14.13)
                 AstSampled* const sampledp = new AstSampled{flp, exprp->cloneTreePure(false)};
                 sampledp->dtypeFrom(exprp);
-                m_clockingp->addNextHere(new AstAssignW{flp, refp, sampledp});
+                AstAssignW* const ap = new AstAssignW{flp, refp, sampledp};
+                m_clockingp->addNextHere(new AstAlways{ap});
             } else if (skewp->isZero()) {
                 // #0 means the var has to be sampled in Observed (IEEE 1800-2023 14.13)
                 AstAssign* const assignp = new AstAssign{flp, refp, exprp->cloneTreePure(false)};
@@ -271,12 +287,12 @@ private:
                 m_netlistp->typeTablep()->addTypesp(queueDtp);
                 AstVar* const queueVarp
                     = new AstVar{flp, VVarType::MODULETEMP, "__Vqueue__" + varp->name(), queueDtp};
-                queueVarp->lifetime(VLifetime::STATIC);
+                queueVarp->lifetime(VLifetime::STATIC_EXPLICIT);
                 m_clockingp->addNextHere(queueVarp);
                 // Create a process like this:
                 //     always queue.push(<sampled var>);
                 AstCMethodHard* const pushp = new AstCMethodHard{
-                    flp, new AstVarRef{flp, queueVarp, VAccess::WRITE}, "push",
+                    flp, new AstVarRef{flp, queueVarp, VAccess::WRITE}, VCMethod::DYN_PUSH,
                     new AstTime{nodep->fileline(), m_modp->timeunit()}};
                 pushp->addPinsp(exprp->cloneTreePure(false));
                 pushp->dtypeSetVoid();
@@ -285,7 +301,7 @@ private:
                 // Create a process like this:
                 //     always @<clocking event> queue.pop(<skew>, /*out*/<skewed var>);
                 AstCMethodHard* const popp = new AstCMethodHard{
-                    flp, new AstVarRef{flp, queueVarp, VAccess::READWRITE}, "pop",
+                    flp, new AstVarRef{flp, queueVarp, VAccess::READWRITE}, VCMethod::DYN_POP,
                     new AstTime{nodep->fileline(), m_modp->timeunit()}};
                 popp->addPinsp(skewp->unlinkFrBack());
                 popp->addPinsp(refp);
@@ -298,7 +314,6 @@ private:
         } else {
             nodep->v3fatalSrc("Invalid direction");
         }
-        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstDelay* nodep) override {
         // Only cycle delays are relevant in this stage; also only process once
@@ -326,30 +341,40 @@ private:
             VL_DO_DANGLING(valuep->deleteTree(), valuep);
             return;
         }
+        AstSenItem* sensesp = nullptr;
         if (!m_defaultClockingp) {
-            nodep->v3error("Usage of cycle delays requires default clocking"
-                           " (IEEE 1800-2023 14.11)");
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-            VL_DO_DANGLING(valuep->deleteTree(), valuep);
-            return;
+            if (!m_pExpr && !m_inSExpr) {
+                nodep->v3error("Usage of cycle delays requires default clocking"
+                               " (IEEE 1800-2023 14.11)");
+                VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                VL_DO_DANGLING(valuep->deleteTree(), valuep);
+                return;
+            }
+            sensesp = m_senip;
+        } else {
+            sensesp = m_defaultClockingp->sensesp();
         }
         AstEventControl* const controlp = new AstEventControl{
-            nodep->fileline(),
-            new AstSenTree{flp, m_defaultClockingp->sensesp()->cloneTree(false)}, nullptr};
+            nodep->fileline(), new AstSenTree{flp, sensesp->cloneTree(false)}, nullptr};
         const std::string delayName = m_cycleDlyNames.get(nodep);
         AstVar* const cntVarp = new AstVar{flp, VVarType::BLOCKTEMP, delayName + "__counter",
                                            nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
-        cntVarp->lifetime(VLifetime::AUTOMATIC);
-        cntVarp->funcLocal(true);
-        AstBegin* const beginp = new AstBegin{flp, delayName + "__block", cntVarp, false, true};
+        cntVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+        AstBegin* const beginp = new AstBegin{flp, delayName + "__block", cntVarp, true};
         beginp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE}, valuep});
-        beginp->addStmtsp(new AstWhile{
-            nodep->fileline(),
-            new AstGt{flp, new AstVarRef{flp, cntVarp, VAccess::READ}, new AstConst{flp, 0}},
-            controlp,
-            new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE},
-                          new AstSub{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
-                                     new AstConst{flp, 1}}}});
+
+        {
+            AstLoop* const loopp = new AstLoop{flp};
+            loopp->addStmtsp(new AstLoopTest{
+                flp, loopp,
+                new AstGt{flp, new AstVarRef{flp, cntVarp, VAccess::READ}, new AstConst{flp, 0}}});
+            loopp->addStmtsp(controlp);
+            loopp->addStmtsp(
+                new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE},
+                              new AstSub{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
+                                         new AstConst{flp, 1}}});
+            beginp->addStmtsp(loopp);
+        }
         nodep->replaceWith(beginp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
@@ -394,6 +419,33 @@ private:
                 }
             }
             nodep->user1(true);
+        } else if (m_inSExpr && !nodep->user1()) {
+            AstVar* const preVarp
+                = new AstVar{nodep->varp()->fileline(), VVarType::BLOCKTEMP,
+                             m_propPrecondNames.get(nodep->varp()) + "__" + nodep->varp()->name(),
+                             nodep->varp()->dtypep()};
+            preVarp->lifetime(VLifetime::STATIC_EXPLICIT);
+            m_modp->addStmtsp(preVarp);
+            AstVarRef* const origp
+                = new AstVarRef{nodep->fileline(), nodep->varp(), VAccess::READ};
+            origp->user1(true);
+            AstVarRef* const precondp
+                = new AstVarRef{preVarp->fileline(), preVarp, VAccess::WRITE};
+            precondp->user1(true);
+
+            // Pack assignments in sampled as in concurrent assertions they are needed.
+            // Then, in assert's propp, sample only non-precondition variables.
+            AstSampled* const sampledp = new AstSampled{origp->fileline(), origp};
+            sampledp->dtypeFrom(origp);
+            UASSERT(m_pExpr, "Should be under assertion");
+            AstAssign* const assignp = new AstAssign{m_pExpr->fileline(), precondp, sampledp};
+            m_pExpr->addPrecondp(assignp);
+
+            AstVarRef* const precondReadp
+                = new AstVarRef{preVarp->fileline(), preVarp, VAccess::READ};
+            precondReadp->user1(true);
+            nodep->replaceWith(precondReadp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
     void visit(AstMemberSel* nodep) override {
@@ -447,10 +499,33 @@ private:
 
     void visit(AstNodeCoverOrAssert* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
+
+        VL_RESTORER(m_hasSExpr);
+        VL_RESTORER(m_hasUnsupp);
+
         clearAssertInfo();
+        m_pExpr = new AstPExpr{nodep->propp()->fileline()};
+        m_pExpr->dtypeFrom(nodep->propp());
+
         // Find Clocking's buried under nodep->exprsp
         iterateChildren(nodep);
         if (!nodep->immediate()) nodep->sentreep(newSenTree(nodep));
+        if (m_hasSExpr && m_hasUnsupp) {
+            if (VN_IS(m_hasUnsupp, Implication)) {
+                m_hasUnsupp->v3warn(E_UNSUPPORTED,
+                                    "Unsupported: Implication with sequence expression");
+            } else {
+                m_hasUnsupp->v3warn(E_UNSUPPORTED,
+                                    "Unsupported: Disable iff with sequence expression");
+            }
+            if (m_pExpr) VL_DO_DANGLING(pushDeletep(m_pExpr), m_pExpr);
+        } else if (m_pExpr && m_pExpr->precondp()) {
+            m_pExpr->condp(VN_AS(nodep->propp()->unlinkFrBackWithNext(), NodeExpr));
+            nodep->propp(m_pExpr);
+            iterateAndNextNull(m_pExpr->precondp());
+        } else if (m_pExpr) {
+            VL_DO_DANGLING(pushDeletep(m_pExpr), m_pExpr);
+        }
         clearAssertInfo();
     }
     void visit(AstFalling* nodep) override {
@@ -474,20 +549,24 @@ private:
         if (exprp->width() > 1) exprp = new AstSel{fl, exprp, 0, 1};
         AstSenTree* sentreep = nodep->sentreep();
         if (sentreep) sentreep->unlinkFrBack();
-        AstNodeExpr* const pastp = new AstPast{fl, exprp};
+        AstPast* const pastp = new AstPast{fl, exprp};
         pastp->dtypeFrom(exprp);
+        pastp->sentreep(newSenTree(nodep, sentreep));
         exprp = new AstAnd{fl, pastp, new AstNot{fl, exprp->cloneTreePure(false)}};
         exprp->dtypeSetBit();
         nodep->replaceWith(exprp);
-        nodep->sentreep(newSenTree(nodep, sentreep));
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstFuture* nodep) override {
         if (nodep->user1SetOnce()) return;
         iterateChildren(nodep);
         AstSenTree* const sentreep = nodep->sentreep();
-        if (sentreep) sentreep->unlinkFrBack();
+        if (sentreep) VL_DO_DANGLING(pushDeletep(sentreep->unlinkFrBack()), sentreep);
         nodep->sentreep(newSenTree(nodep));
+    }
+    void visit(AstLogNot* nodep) override {
+        if (m_inSExpr) nodep->v3error("Syntax error: unexpected 'not' in sequence expression");
+        iterateChildren(nodep);
     }
     void visit(AstPast* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
@@ -515,12 +594,12 @@ private:
         if (exprp->width() > 1) exprp = new AstSel{fl, exprp, 0, 1};
         AstSenTree* sentreep = nodep->sentreep();
         if (sentreep) sentreep->unlinkFrBack();
-        AstNodeExpr* const pastp = new AstPast{fl, exprp};
+        AstPast* const pastp = new AstPast{fl, exprp};
         pastp->dtypeFrom(exprp);
+        pastp->sentreep(newSenTree(nodep, sentreep));
         exprp = new AstAnd{fl, new AstNot{fl, pastp}, exprp->cloneTreePure(false)};
         exprp->dtypeSetBit();
         nodep->replaceWith(exprp);
-        nodep->sentreep(newSenTree(nodep, sentreep));
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstStable* nodep) override {
@@ -530,12 +609,12 @@ private:
         AstNodeExpr* exprp = nodep->exprp()->unlinkFrBack();
         AstSenTree* sentreep = nodep->sentreep();
         if (sentreep) sentreep->unlinkFrBack();
-        AstNodeExpr* const pastp = new AstPast{fl, exprp};
+        AstPast* const pastp = new AstPast{fl, exprp};
         pastp->dtypeFrom(exprp);
+        pastp->sentreep(newSenTree(nodep, sentreep));
         exprp = new AstEq{fl, pastp, exprp->cloneTreePure(false)};
         exprp->dtypeSetBit();
         nodep->replaceWith(exprp);
-        nodep->sentreep(newSenTree(nodep, sentreep));
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstSteady* nodep) override {
@@ -554,19 +633,27 @@ private:
 
     void visit(AstImplication* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
+        m_hasUnsupp = nodep;
 
-        FileLine* const fl = nodep->fileline();
+        iterateChildren(nodep);
+
+        FileLine* const flp = nodep->fileline();
         AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
         AstNodeExpr* lhsp = nodep->lhsp()->unlinkFrBack();
+        if (nodep->isOverlapped()) {
+            nodep->replaceWith(new AstLogOr{flp, new AstLogNot{flp, lhsp}, rhsp});
+        } else {
+            if (m_disablep) {
+                lhsp = new AstAnd{flp, new AstNot{flp, m_disablep->cloneTreePure(false)}, lhsp};
+            }
 
-        if (m_disablep) lhsp = new AstAnd{fl, new AstNot{fl, m_disablep}, lhsp};
-
-        AstNodeExpr* const pastp = new AstPast{fl, lhsp};
-        pastp->dtypeFrom(lhsp);
-        AstNodeExpr* const exprp = new AstOr{fl, new AstNot{fl, pastp}, rhsp};
-        exprp->dtypeSetBit();
-        nodep->replaceWith(exprp);
-        nodep->sentreep(newSenTree(nodep));
+            AstPast* const pastp = new AstPast{flp, lhsp};
+            pastp->dtypeFrom(lhsp);
+            pastp->sentreep(newSenTree(nodep));
+            AstNodeExpr* const exprp = new AstOr{flp, new AstNot{flp, pastp}, rhsp};
+            exprp->dtypeSetBit();
+            nodep->replaceWith(exprp);
+        }
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
@@ -597,7 +684,8 @@ private:
             nodep->disablep(m_defaultDisablep->condp()->cloneTreePure(true));
         }
         if (AstNodeExpr* const disablep = nodep->disablep()) {
-            m_disablep = disablep->cloneTreePure(false);
+            m_disablep = disablep;
+            m_hasUnsupp = disablep;
             if (VN_IS(nodep->backp(), Cover)) {
                 blockp = new AstAnd{disablep->fileline(),
                                     new AstNot{disablep->fileline(), disablep->unlinkFrBack()},
@@ -609,6 +697,18 @@ private:
         // Unlink and just keep a pointer to it, convert to sentree as needed
         m_senip = nodep->sensesp();
         nodep->replaceWith(blockp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    void visit(AstSExpr* nodep) override {
+        VL_RESTORER(m_inSExpr);
+        m_inSExpr = true;
+        m_hasSExpr = true;
+
+        UASSERT_OBJ(m_pExpr, nodep, "Should be under assertion");
+        m_pExpr->addPrecondp(nodep->delayp()->unlinkFrBack());
+
+        iterateChildren(nodep);
+        nodep->replaceWith(nodep->exprp()->unlinkFrBack());
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstNodeModule* nodep) override {

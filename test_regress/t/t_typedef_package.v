@@ -15,7 +15,7 @@ package pkg2;
    } opts;
 endpackage
 
-module t (/*AUTOARG*/);
+module t;
   initial begin
      $display("%d", pkg2::a);
      $write("*-* All Finished *-*\n");

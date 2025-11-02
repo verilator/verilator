@@ -230,6 +230,9 @@ void VerilatedFst::declare(uint32_t code, const char* name, int dtypenum,
     else if (kind == VerilatedTraceSigKind::TRI) varType = FST_VT_VCD_TRI;
     else if (kind == VerilatedTraceSigKind::TRI0) varType = FST_VT_VCD_TRI0;
     else if (kind == VerilatedTraceSigKind::TRI1) varType = FST_VT_VCD_TRI1;
+    else if (kind == VerilatedTraceSigKind::TRIAND) varType = FST_VT_VCD_TRIAND;
+    else if (kind == VerilatedTraceSigKind::TRIOR) varType = FST_VT_VCD_TRIOR;
+    else if (kind == VerilatedTraceSigKind::TRIREG) varType = FST_VT_VCD_TRIREG;
     else if (kind == VerilatedTraceSigKind::WIRE) varType = FST_VT_VCD_WIRE;
     //
     else if (type == VerilatedTraceSigType::INTEGER) varType = FST_VT_VCD_INTEGER;

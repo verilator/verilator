@@ -5,6 +5,6 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // verilator lint_off DECLFILENAME
-module t(/*AUTOARG*/);
+module t;
    import std::*;
 endmodule

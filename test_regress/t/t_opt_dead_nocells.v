@@ -7,7 +7,7 @@
 module Mod_Dead;
 endmodule
 
-module t (/*AUTOARG*/);
+module t;
 
    Mod_Dead cell_keptdead();
 

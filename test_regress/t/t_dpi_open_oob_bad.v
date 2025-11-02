@@ -6,7 +6,7 @@
 // Version 2.0.
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-module t (/*AUTOARG*/);
+module t;
 
    import "DPI-C" function void dpii_nullptr();
 

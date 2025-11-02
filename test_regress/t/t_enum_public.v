@@ -24,7 +24,7 @@ package pw;
           WIDE = 100'h123} ewide_t /*verilator public*/;
 endpackage
 
-module t (/*AUTOARG*/);
+module t;
 
    enum integer {
                  EI_A,

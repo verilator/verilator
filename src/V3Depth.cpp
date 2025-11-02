@@ -52,7 +52,7 @@ class DepthVisitor final : public VNVisitor {
         AstVar* const varp = new AstVar{nodep->fileline(), VVarType::STMTTEMP,
                                         m_tempNames.get(nodep), nodep->dtypep()};
         if (m_cfuncp) {
-            m_cfuncp->addInitsp(varp);
+            m_cfuncp->addVarsp(varp);
         } else if (m_mtaskbodyp) {
             m_mtaskbodyp->addStmtsFirstp(varp);
         } else {
@@ -131,11 +131,11 @@ class DepthVisitor final : public VNVisitor {
             m_cfuncp->isStatic(false);
         }
     }
-    void visit(AstUCFunc* nodep) override {
+    void visit(AstCExprUser* nodep) override {
         needNonStaticFunc(nodep);
         iterateChildren(nodep);
     }
-    void visit(AstUCStmt* nodep) override {
+    void visit(AstCStmtUser* nodep) override {
         needNonStaticFunc(nodep);
         visitStmt(nodep);
     }
@@ -150,6 +150,8 @@ public:
     explicit DepthVisitor(AstNetlist* nodep)
         : m_tempNames{"__Vdeeptemp"} {
         iterate(nodep);
+        // Extracting expressions can effect purity
+        VIsCached::clearCacheTree();
     }
     ~DepthVisitor() override = default;
 };

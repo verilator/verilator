@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_array_pattern_scalar_bad.v:9:13: Unsupported: Assignment pattern applies against non struct/union data type: 'bit'
+                                                       : ... note: In instance 't'
+    9 |   bit bad = '{1'b1};   
+      |             ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

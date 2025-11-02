@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t
-    (/*AUTOARG*/);
+;
 
     union packed {
         bit [7 : 0] val1;

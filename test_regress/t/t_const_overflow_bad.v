@@ -4,7 +4,7 @@
 // any use, without warranty, 2005-2007 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
    parameter [200:0] TOO_SMALL = 94'd123456789012345678901234567890;  // One to many digits
 

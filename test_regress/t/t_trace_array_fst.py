@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t/t_trace_array.v"
 
-test.compile(verilator_flags2=['--cc --trace-fst --trace-structs'])
+test.compile(verilator_flags2=['--cc --trace-fst --trace-structs --trace-max-width 0'])
 
 test.execute()
 

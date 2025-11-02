@@ -16,7 +16,7 @@
  `define NO_SHORTREAL
 `endif
 
-module t (/*AUTOARG*/);
+module t;
 
    // Note these are NOT pure.
    import "DPI-C" function void dpii_clear();

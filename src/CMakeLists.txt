@@ -44,6 +44,7 @@ set(HEADERS
     V3Assert.h
     V3AssertPre.h
     V3Ast.h
+    V3AstAttr.h
     V3AstInlines.h
     V3AstNodeDType.h
     V3AstNodeExpr.h
@@ -75,6 +76,7 @@ set(HEADERS
     V3Dfg.h
     V3DfgCache.h
     V3DfgContext.h
+    V3DfgDataType.h
     V3DfgOptimizer.h
     V3DfgPasses.h
     V3DfgPatternStats.h
@@ -236,6 +238,8 @@ set(COMMON_SOURCES
     V3DfgBreakCycles.cpp
     V3DfgCache.cpp
     V3DfgColorSCCs.cpp
+    V3DfgCse.cpp
+    V3DfgDataType.cpp
     V3DfgDecomposition.cpp
     V3DfgDfgToAst.cpp
     V3DfgOptimizer.cpp
@@ -321,6 +325,8 @@ set(COMMON_SOURCES
     V3SchedPartition.cpp
     V3SchedReplicate.cpp
     V3SchedTiming.cpp
+    V3SchedTrigger.cpp
+    V3SchedUtil.cpp
     V3SchedVirtIface.cpp
     V3Scope.cpp
     V3Scoreboard.cpp
@@ -345,6 +351,7 @@ set(COMMON_SOURCES
     V3Undriven.cpp
     V3Unknown.cpp
     V3Unroll.cpp
+    V3UnrollGen.cpp
     V3VariableOrder.cpp
     V3Waiver.cpp
     V3Width.cpp

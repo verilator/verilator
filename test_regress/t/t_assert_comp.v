@@ -4,7 +4,7 @@
 // any use, without warranty, 2007 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
    localparam TEN = 10;
    localparam string PCTPCT = "%%";

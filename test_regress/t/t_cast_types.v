@@ -41,7 +41,7 @@ typedef struct packed { int a; int b; } stpack_t;
 typedef bit signed [7:0] simple_a_t;
 typedef bit signed [7:0] simple_a1_t;
 
-module t (/*AUTOARG*/);
+module t;
 
    real    v_real;      // IEEE 6.12.2 - by rounding
    string  v_string;

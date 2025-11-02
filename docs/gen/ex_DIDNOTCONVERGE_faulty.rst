@@ -2,5 +2,5 @@
 .. code-block:: sv
    :linenos:
 
-      always_comb b = ~a;
-      always_comb a = b;
+     always_comb b = ~a;
+     always_comb a = b;

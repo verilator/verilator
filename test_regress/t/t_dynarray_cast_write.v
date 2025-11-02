@@ -14,7 +14,7 @@ class Bar extends Foo;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       int sel_bit = 3;
       Bar bar = new;

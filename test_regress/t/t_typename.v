@@ -27,7 +27,7 @@ import A::*;
 //    AB_t AB[10]; // "struct{bit A;bit B;}top.AB_t$[0:9]"
 // endmodule
 
-module t(/*AUTOARG*/);
+module t;
 
    real r;
    logic l;

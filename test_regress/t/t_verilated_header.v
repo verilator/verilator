@@ -6,7 +6,7 @@
 
 `include "verilated.v"
 
-module t (/*AUTOARG*/);
+module t;
 
    initial begin
       `verilator_file_descriptor i;

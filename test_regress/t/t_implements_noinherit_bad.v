@@ -15,6 +15,6 @@ class Cls implements Icls;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    Cls c;
 endmodule

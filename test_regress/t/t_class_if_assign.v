@@ -23,7 +23,7 @@ class AnotherExtendCls extends Cls;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       Cls cls = new;
       ExtendCls ext_cls = new;

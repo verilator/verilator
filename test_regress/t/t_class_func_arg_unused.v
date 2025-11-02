@@ -16,7 +16,7 @@ endclass
 
 endpackage
 
-module t(/*AUTOARG*/);
+module t;
 
    initial begin
       uvm_pkg::uvm_reg_field c = new;

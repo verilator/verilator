@@ -17,7 +17,7 @@ out_filename = test.obj_dir + "/V" + test.name + ".tree.json"
 test.compile(verilator_flags2=["--no-json-edit-nums", "+define+ISOLATE", "--stats", "-fno-dfg"])
 
 if test.vlt_all:
-    test.file_grep(test.stats, r'Optimizations, isolate_assignments blocks\s+3')
+    test.file_grep(test.stats, r'Optimizations, isolate_assignments blocks\s+4')
     test.file_grep(
         out_filename,
         r'{"type":"VAR","name":"t.b",.*"loc":"\w,23:[^"]*",.*"origName":"b",.*"attrIsolateAssign":true,.*"dtypeName":"logic"'

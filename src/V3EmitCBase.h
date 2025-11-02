@@ -90,7 +90,6 @@ public:
     V3OutCFile* m_ofp = nullptr;
     AstCFile* m_outFileNodep = nullptr;
     int m_splitSize = 0;  // # of cfunc nodes placed into output file
-    bool m_trackText = false;  // Always track AstText nodes
     // METHODS
 
     // Returns pointer to current output file object.
@@ -158,8 +157,9 @@ public:
         }
     }
     void emitModCUse(const AstNodeModule* modp, VUseType useType);
-    void emitTextSection(const AstNodeModule* modp, VNType type);
-    static std::pair<string, FileLine*> textSection(const AstNodeModule* modp, VNType type);
+    void emitSystemCSection(const AstNodeModule* modp, VSystemCSectionType type);
+    static std::pair<string, FileLine*> scSection(const AstNodeModule* modp,
+                                                  VSystemCSectionType type);
 
     // CONSTRUCTORS
     EmitCBaseVisitorConst() = default;

@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 // verilator lint_off DECLFILENAME
 
-module t(/*AUTOARG*/);
+module t;
    mailbox #(int) m;
    int     msg = 0;
    int     out = 0;

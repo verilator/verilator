@@ -4,14 +4,14 @@
 // any use, without warranty, 2011 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
-   initial begin
-      if (task_as_func(1'b0)) $stop;
-   end
+  initial begin
+    if (a_task(1'b0)) $stop;  // <--- Bad: Calling task _as_ function
+  end
 
-   task task_as_func;
-      input ign;
-   endtask
+  task a_task;
+    input ign;
+  endtask
 
 endmodule

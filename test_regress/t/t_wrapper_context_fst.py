@@ -17,7 +17,7 @@ test.compile(
     make_top_shell=False,
     make_main=False,
     # link threads library, add custom .cpp code, add tracing & coverage support
-    verilator_flags2=["--exe", test.pli_filename, "--trace-fst --coverage -cc"],
+    verilator_flags2=["--exe", test.pli_filename, "--trace-fst --coverage -cc +define+TRACE_FST"],
     threads=1,
     make_flags=['CPPFLAGS_ADD=-DVL_NO_LEGACY'])
 

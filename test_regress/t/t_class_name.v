@@ -76,7 +76,7 @@ endclass
    endfunction
 endmodule
 
-module t (/*AUTOARG*/);
+module t;
    string s;
 
    M m();

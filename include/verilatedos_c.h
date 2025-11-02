@@ -104,6 +104,34 @@ uint16_t getcpu() VL_MT_SAFE {
 #endif
 }
 
+//=============================================================================
+// Vlos::getProcessAvailableParallelism implementation
+
+unsigned getProcessAvailableParallelism() VL_MT_SAFE {
+#if defined(__linux) || defined(CPU_ZERO)  // Linux-like; assume we have pthreads etc
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    const int rc = pthread_getaffinity_np(pthread_self(), sizeof(cpuset), &cpuset);
+    if (rc == 0) {
+        unsigned nCpus = 0;
+        for (int i = 0; i < CPU_SETSIZE; ++i) {
+            if (CPU_ISSET(i, &cpuset)) ++nCpus;
+        }
+        return nCpus;
+    }
+#endif
+    // Cannot determine
+    return 0;
+}
+
+//=============================================================================
+// Vlos::getProcessDefaultParallelism implementation
+
+unsigned getProcessDefaultParallelism() VL_MT_SAFE {
+    const unsigned n = getProcessAvailableParallelism();
+    return n ? n : std::thread::hardware_concurrency();
+}
+
 //=========================================================================
 // VlOs::memPeakUsageBytes implementation
 

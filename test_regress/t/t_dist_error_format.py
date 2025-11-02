@@ -11,14 +11,12 @@ import vltest_bootstrap
 
 test.scenarios('dist')
 
-root = ".."
-
 # Check all error messages match our standard format
 # This assumes .out files cover all important errors
 
 
 def formats():
-    files = root + "/test_regress/t/*.out"
+    files = test.root + "/test_regress/t/*.out"
     warns = {}
     lnmatch = 0
     for filename in test.glob_some(files):
@@ -67,7 +65,7 @@ def formats():
             test.error_keep_going(warns[filename])
 
 
-if not os.path.exists(root + "/.git"):
+if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
 formats()

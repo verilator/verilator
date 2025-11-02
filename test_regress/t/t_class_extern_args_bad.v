@@ -17,13 +17,16 @@ class Cls;
 endclass
 
 function bit Cls::func_bad();
+  return 1'b0;
 endfunction
 
 function bit Cls::f1_bad();
+  return 1'b0;
 endfunction
 function void Cls::f2_bad();
 endfunction
 function bit Cls::f3_bad();
+  return 1'b0;
 endfunction
 
 function void Cls::f1bit_bad(bit a);

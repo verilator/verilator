@@ -6,7 +6,7 @@
 
 // bug1071
 
-module t (/*AUTOARG*/);
+module t;
 
    reg [3:0] array_1 [2:0];
    reg [3:0] array_2 [2:0];

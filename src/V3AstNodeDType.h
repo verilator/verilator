@@ -430,7 +430,7 @@ public:
     void dumpJson(std::ostream& str) const override;
     // width/widthMin/numeric compared elsewhere
     bool sameNode(const AstNode* samep) const override;
-    bool similarDTypeNode(const AstNodeDType* samep) const override { return sameNode(samep); }
+    bool similarDTypeNode(const AstNodeDType* samep) const override;
     string name() const override VL_MT_STABLE { return m.m_keyword.ascii(); }
     string prettyDTypeName(bool full) const override;
     const char* broken() const override {
@@ -460,7 +460,6 @@ public:
     bool isBitLogic() const { return keyword().isBitLogic(); }
     bool isDouble() const VL_MT_STABLE { return keyword().isDouble(); }
     bool isEvent() const VL_MT_STABLE { return keyword() == VBasicDTypeKwd::EVENT; }
-    bool isTriggerVec() const VL_MT_SAFE { return keyword() == VBasicDTypeKwd::TRIGGERVEC; }
     bool isForkSync() const VL_MT_SAFE { return keyword() == VBasicDTypeKwd::FORK_SYNC; }
     bool isProcessRef() const VL_MT_SAFE { return keyword() == VBasicDTypeKwd::PROCESS_REFERENCE; }
     bool isDelayScheduler() const VL_MT_SAFE {
@@ -1214,6 +1213,7 @@ public:
         return subDTypep() ? subDTypep()->basicp() : nullptr;
     }
     AstNodeDType* subDTypep() const override VL_MT_STABLE;
+    AstNodeDType* getChildDTypep() const override { return VN_CAST(typeofp(), NodeDType); }
     int widthAlignBytes() const override { return dtypeSkipRefp()->widthAlignBytes(); }
     int widthTotalBytes() const override { return dtypeSkipRefp()->widthTotalBytes(); }
     void name(const string& flag) override { m_name = flag; }

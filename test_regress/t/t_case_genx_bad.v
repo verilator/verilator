@@ -4,7 +4,7 @@
 // any use, without warranty, 2005-2007 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
    parameter P = 32'b1000;
 
@@ -12,7 +12,7 @@ module t (/*AUTOARG*/);
       case (P)
         32'b0:    initial begin end
         32'b1xxx: initial begin end
-        default:  initial begin end
+        default   initial begin end  // No ':' to cover parser
       endcase
    endgenerate
 

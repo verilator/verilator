@@ -11,34 +11,24 @@ import vltest_bootstrap
 
 test.scenarios('dist')
 
-root = ".."
-
 Messages = {}
 Outputs = {}
 Suppressed = {}
 
 for s in [
+        # Cannot hit, and comment as to why
+        # Instead of adding here, consider adding a LCOV_EXCL_LINE/START/STOP to the sources on the message
         ' exited with ',  # Is hit; driver.py filters out
         ' loading non-variable',  # Instead 'storing to parameter' or syntax error
-        '--pipe-filter: Can\'t pipe: ',  # Can't test
-        '--pipe-filter: fork failed: ',  # Can't test
         'Assigned pin is neither input nor output',  # Instead earlier error
         'Define missing argument \'',  # Instead get Define passed too many arguments
         'Define or directive not defined: `',  # Instead V3ParseImp will warn
-        'EOF in unterminated string',  # Instead get normal unterminated
-        'Enum ranges must be integral, per spec',  # Hard to hit
         'Expecting define formal arguments. Found: ',  # Instead define syntax error
-        'Import package not found: ',  # Errors earlier, until future parser released
-        'Member selection of non-struct/union object \'',  # Instead dotted expression error or V3Link other
-        'Return with return value isn\'t underneath a function',  # Hard to hit, get other bad return messages
-        'Syntax error parsing real: \'',  # Instead can't lex the number
         'Syntax error: Range \':\', \'+:\' etc are not allowed in the instance ',  # Instead get syntax error
-        'Unsupported: Ranges ignored in port-lists',  # Hard to hit
         'dynamic new() not expected in this context (expected under an assign)',  # Instead get syntax error
         # Not yet analyzed
         '--pipe-filter protocol error, unexpected: ',
         '--pipe-filter returned bad status',
-        'Argument needed for string.',
         'Array initialization has too few elements, need element ',
         'Assignment pattern with no members',
         'Can\'t find varpin scope of ',
@@ -53,18 +43,15 @@ for s in [
         'Illegal +: or -: select; type already selected, or bad dimension: ',
         'Illegal bit or array select; type already selected, or bad dimension: ',
         'Illegal range select; type already selected, or bad dimension: ',
-        'Interface port ',
         'Interface port declaration ',
         'Modport item is not a function/task: ',
         'Modport item is not a variable: ',
-        'Modport item not found: ',
         'Modport not referenced as <interface>.',
         'Modport not referenced from underneath an interface: ',
         'Non-interface used as an interface: ',
         'Parameter type pin value isn\'t a type: Param ',
         'Parameter type variable isn\'t a type: Param ',
         'Pattern replication value of 0 is not legal.',
-        'Reference to \'',
         'Signals inside functions/tasks cannot be marked forceable',
         'Slice size cannot be zero.',
         'Slices of arrays in assignments have different unpacked dimensions, ',
@@ -75,16 +62,12 @@ for s in [
         'Unsupported RHS tristate construct: ',
         'Unsupported or syntax error: Unsized range in instance or other declaration',
         'Unsupported pullup/down (weak driver) construct.',
-        'Unsupported tristate construct (not in propagation graph): ',
         'Unsupported tristate port expression: ',
         'Unsupported: $bits for queue',
         'Unsupported: &&& expression',
-        'Unsupported: +%- range',
-        'Unsupported: +/- range',
         'Unsupported: 4-state numbers in this context',
         'Unsupported: Bind with instance list',
         'Unsupported: Concatenation to form ',
-        'Unsupported: Modport clocking',
         'Unsupported: Modport dotted port name',
         'Unsupported: Modport export with prototype',
         'Unsupported: Modport import with prototype',
@@ -92,7 +75,6 @@ for s in [
         'Unsupported: Per-bit array instantiations ',
         'Unsupported: Public functions with >64 bit outputs; ',
         'Unsupported: Replication to form ',
-        'Unsupported: Shifting of by over 32-bit number isn\'t supported.',
         'Unsupported: Size-changing cast on non-basic data type',
         'Unsupported: Slice of non-constant bounds',
         'Unsupported: Unclocked assertion',
@@ -103,7 +85,6 @@ for s in [
         'Unsupported: \'{} .* patterns',
         'Unsupported: assertion items in clocking blocks',
         'Unsupported: don\'t know how to deal with ',
-        'Unsupported: eventually[] (in property expression)',
         'Unsupported: extern forkjoin',
         'Unsupported: extern task',
         'Unsupported: modport export',
@@ -112,19 +93,22 @@ for s in [
         'Unsupported: repeat event control',
         'Unsupported: static cast to ',
         'Unsupported: super',
-        'Unsupported: this.super',
         'Unsupported: with[] stream expression',
 ]:
     Suppressed[s] = True
 
 
 def read_messages():
-    for filename in test.glob_some(root + "/src/*"):
+    for filename in test.glob_some(test.root + "/src/*"):
         if not os.path.isfile(filename):
+            continue
+        if '#' in filename:
             continue
         with open(filename, 'r', encoding="utf8") as fh:
             lineno = 0
             read_next = None
+            excl = False
+            excl_next = False
 
             for origline in fh:
                 line = origline
@@ -133,6 +117,12 @@ def read_messages():
                     continue
                 if re.match(r'^\s*/\*', line):
                     continue
+                excl = excl_next
+                if 'LCOV_EXCL_START' in line:
+                    excl = True
+                    excl_next = True
+                if 'LCOV_EXCL_STOP' in line:
+                    excl_next = False  # Reenables coverage on next line, not this one
                 if re.search(r'\b(v3error|v3warn|v3fatal|BBUNSUP)\b\($', line):
                     if 'LCOV_EXCL_LINE' not in line:
                         read_next = True
@@ -145,6 +135,8 @@ def read_messages():
                 if read_next:
                     read_next = False
                     if 'LCOV_EXCL_LINE' in line:
+                        continue
+                    if excl:
                         continue
                     if "\\" in line:  # \" messes up next part
                         continue
@@ -161,9 +153,9 @@ def read_messages():
 
 
 def read_outputs():
-    for filename in (test.glob_some(root + "/test_regress/t/*.py") +
-                     test.glob_some(root + "/test_regress/t/*.out") +
-                     test.glob_some(root + "/docs/gen/*.rst")):
+    for filename in (test.glob_some(test.root + "/test_regress/t/*.py") +
+                     test.glob_some(test.root + "/test_regress/t/*.out") +
+                     test.glob_some(test.root + "/docs/gen/*.rst")):
         if "t_dist_warn_coverage" in filename:  # Avoid our own suppressions
             continue
         with open(filename, 'r', encoding="latin-1") as fh:
@@ -229,7 +221,7 @@ def check():
     print()
 
 
-if not os.path.exists(root + "/.git"):
+if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
 check()

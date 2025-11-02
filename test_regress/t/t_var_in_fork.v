@@ -14,7 +14,7 @@ module t();
 
 
   class Foo;
-    function void do_something(int captured_var);
+    task do_something(int captured_var);
       fork
         begin
           int my_var;
@@ -23,7 +23,7 @@ module t();
           my_other_var = captured_var; /* Capture the same value "twice" */
           my_var++;
           static_var++; /* Write to a value with static lifetime (valid) */
-          $display("Vars in forked process: %d %d", my_var, my_other_var);
+          $display("Vars in forked process: %0d %0d", my_var, my_other_var);
           if (my_var != 2)
             $stop;
           if (my_other_var != 1)
@@ -32,7 +32,7 @@ module t();
         end
       join_none
       $display("Leaving fork's parent");
-    endfunction
+    endtask
   endclass
 
   initial begin
@@ -44,14 +44,14 @@ module t();
   end
 
   always @(evt) begin
-    $display("Static variable: %d", static_var);
+    $display("Static variable: %0d", static_var);
     if (static_var != 1)
       $stop;
     fork
       begin
           automatic int my_auto_var = 0;
           my_auto_var++;
-          $display("Automatic variable in fork: %d", my_auto_var);
+          $display("Automatic variable in fork: %0d", my_auto_var);
           if (my_auto_var != 1) $stop;
       end
     join_none

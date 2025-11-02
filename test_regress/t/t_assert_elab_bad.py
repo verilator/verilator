@@ -9,7 +9,7 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('simulator_st')
 test.top_filename = "t/t_assert_elab.v"
 
 test.unlink_ok(test.obj_dir + "/t_assert_elab_bad.log")
@@ -18,8 +18,6 @@ test.compile(v_flags2=[
     '+define+FAILING_ASSERTIONS', ('--assert' if test.vlt_all else ('+assert' if test.nc else ''))
 ],
              fails=True)
-
-test.execute(fails=test.vlt_all)
 
 test.file_grep(test.compile_log_filename,
                r'%Warning-USERFATAL: "Parameter   5 is invalid...string and constant both work"')

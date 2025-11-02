@@ -49,7 +49,7 @@ package Pkg;
 
 endpackage
 
-module t (/*AUTOARG*/);
+module t;
 
    Pkg::Cls c12;
    Pkg::Cls #(.PBASE(4)) c4;

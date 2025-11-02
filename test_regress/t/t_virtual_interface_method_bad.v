@@ -22,7 +22,7 @@ interface example_if();
   logic[7:0] x;
 endinterface: example_if
 
-module t(/*AUTOARG*/);
+module t;
 
   example_if example_if_inst();
 

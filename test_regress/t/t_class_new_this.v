@@ -27,7 +27,7 @@ class Testcase implements ICls;
    endfunction
 endclass
 
-module t(/*AUTOARG*/);
+module t;
 
    initial begin
       Testcase test;

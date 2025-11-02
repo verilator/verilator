@@ -9,6 +9,7 @@ class Cls;
    extern function int ext_f_np;
    extern function int ext_f_p();
    extern function int ext_f_i(int in);
+   extern function ext_f_imp(in);
    extern static function int get_1();
    extern task ext_t_np;
    extern task ext_t_p();
@@ -35,6 +36,10 @@ endfunction
 
 function int Cls::ext_f_i(int in);
    return in+1;
+endfunction
+
+function Cls::ext_f_imp(in);
+   return ~in;
 endfunction
 
 function int Cls::get_1();
@@ -80,7 +85,7 @@ task Cls::SubCls::ext_t_i(int in);
 endtask
 
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       Cls c = new;
       Cls::SubCls subc = new;
@@ -88,6 +93,7 @@ module t (/*AUTOARG*/);
       if (c.ext_f_np() != 1) $stop;
       if (c.ext_f_p() != 2) $stop;
       if (c.ext_f_i(10) != 11) $stop;
+      if (c.ext_f_imp(1'b1) != 1'b0) $stop;
       if (Cls::get_1() != 1) $stop;
       subc.ext_t_i(20);
       if (subc.ext_f_np() != 10) $stop;

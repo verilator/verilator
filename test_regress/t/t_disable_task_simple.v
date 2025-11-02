@@ -31,7 +31,7 @@ class Cls;
   endtask
 endclass
 
-module t (  /*AUTOARG*/);
+module t;
   initial begin
     Cls c = new;
     c.disable_outside_fork();

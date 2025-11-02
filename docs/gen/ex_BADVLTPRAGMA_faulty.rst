@@ -2,4 +2,4 @@
 .. code-block:: sv
    :emphasize-lines: 1
 
-      // verilator lintt_off WIDTH  //<--- Warning (lint_off misspelled)
+     // verilator lintt_off WIDTH  //<--- Warning (lint_off misspelled)
