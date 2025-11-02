@@ -10,12 +10,17 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.top_filename = 't/t_uvm_hello.v'
 
 if test.have_dev_gcov:
     test.skip("Test suite intended for full dev coverage without needing this test")
 
-test.compile(v_flags2=["--timing", "+incdir+t/uvm", "t/t_uvm_todo.vlt", "-j 0"],
-             make_flags=['-k'],
-             verilator_make_gmake=False)
+test.compile(v_flags2=[
+    "--binary",
+    "-j 0",
+    "-Wall",
+    "+incdir+t/uvm",  #
+    "t/uvm/uvm_pkg_all_v2017_1_0_nodpi.svh",
+])
 
 test.passes()
