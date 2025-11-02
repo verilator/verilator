@@ -598,7 +598,10 @@ public:
     bool recursive() const { return m_recursive; }
     void cost(int cost) { m_cost = cost; }
     // Special methods
-    bool emptyBody() const { return !keepIfEmpty() && !argsp() && !varsp() && !stmtsp(); }
+    bool emptyBody() const {
+        return !keepIfEmpty() && !argsp() && !varsp() && !stmtsp() && !isVirtual()
+               && !dpiImportPrototype();
+    }
 };
 class AstCLocalScope final : public AstNode {
     // Pack statements into an unnamed scope when generating C++
