@@ -3669,10 +3669,25 @@ class ConstVisitor final : public VNVisitor {
 
     void visit(AstStmtExpr* nodep) override {
         iterateChildren(nodep);
-        if (!nodep->exprp() || VN_IS(nodep->exprp(), Const)) {
+        // Malformed due to child being deleted, remove here
+        if (!nodep->exprp()) {
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
+        // Remove if expression is trivially pure
+        if (VN_IS(nodep->exprp(), Const) || VN_IS(nodep->exprp(), VarRef)) {
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
+        // Remove calls to empty functions
+        if (AstCCall* const callp = VN_CAST(nodep->exprp(), CCall)) {
+            AstCFunc* const funcp = callp->funcp();
+            if (!callp->argsp() && funcp->emptyBody()) {
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                return;
+            }
+        }
+
         // TODO if there's an ExprStmt underneath just keep lower statements
         // (No current test case needs this)
         // TODO if non-pure, can remove. First need to clean up that many expressions used
