@@ -340,6 +340,16 @@ AstExecGraph::AstExecGraph(FileLine* fileline, const string& name) VL_MT_DISABLE
 
 AstExecGraph::~AstExecGraph() { VL_DO_DANGLING(delete m_depGraphp, m_depGraphp); }
 
+const char* AstExecGraph::broken() const {
+    BROKEN_RTN(!m_depGraphp);
+    for (const V3GraphVertex& vtx : m_depGraphp->vertices()) {
+        const ExecMTask* const mtaskp = vtx.as<ExecMTask>();
+        AstCFunc* const funcp = mtaskp->funcp();
+        BROKEN_RTN(!funcp || !funcp->brokeExists());
+    }
+    return nullptr;
+}
+
 AstNodeExpr* AstInsideRange::newAndFromInside(AstNodeExpr* exprp, AstNodeExpr* lhsp,
                                               AstNodeExpr* rhsp) {
     AstNodeExpr* const ap = new AstGte{fileline(), exprp, lhsp};
@@ -2536,17 +2546,6 @@ void AstSystemCSection::dump(std::ostream& str) const {
 }
 void AstSystemCSection::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "sectionType", sectionType().ascii());
-    dumpJsonGen(str);
-}
-void AstMTaskBody::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
-    str << " ";
-    m_execMTaskp->dump(str);
-}
-void AstMTaskBody::dumpJson(std::ostream& str) const {
-    str << ',' << '"' << "execMTask" << '"' << ':' << '"';
-    m_execMTaskp->dump(str);  // TODO: Consider dumping it as json object
-    str << '"';
     dumpJsonGen(str);
 }
 void AstTypeTable::dump(std::ostream& str) const {

@@ -33,15 +33,23 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-ExecMTask::ExecMTask(V3Graph* graphp, AstMTaskBody* bodyp) VL_MT_DISABLED  //
-    : V3GraphVertex{graphp},
-      m_bodyp{bodyp},
-      m_id{s_nextId++},
-      m_hashName{V3Hasher::uncachedHash(bodyp).toString()} {
-    UASSERT_OBJ(bodyp->stmtsp(), bodyp, "AstMTaskBody should already be populated for hashing");
-    UASSERT_OBJ(!bodyp->execMTaskp(), bodyp, "AstMTaskBody already linked to an ExecMTask");
-    bodyp->execMTaskp(this);
+AstCFunc* ExecMTask::createCFunc(AstExecGraph* execGraphp, AstScope* scopep, AstNodeStmt* stmtsp,
+                                 uint32_t id) {
+    const std::string name = execGraphp->name() + "_mtask" + std::to_string(id);
+    AstCFunc* const funcp = new AstCFunc{execGraphp->fileline(), name, scopep};
+    funcp->isLoose(true);
+    funcp->dontCombine(true);
+    funcp->addStmtsp(stmtsp);
+    if (scopep) scopep->addBlocksp(funcp);
+    return funcp;
 }
+
+ExecMTask::ExecMTask(AstExecGraph* execGraphp, AstScope* scopep,
+                     AstNodeStmt* stmtsp) VL_MT_DISABLED  //
+    : V3GraphVertex{execGraphp->depGraphp()},
+      m_id{s_nextId++},
+      m_funcp{createCFunc(execGraphp, scopep, stmtsp, m_id)},
+      m_hashName{V3Hasher::uncachedHash(m_funcp).toString()} {}
 
 void ExecMTask::dump(std::ostream& str) const {
     str << name() << "." << cvtToHex(this);
@@ -538,37 +546,32 @@ public:
         selfTestNormalFirst();
     }
     static void selfTestNormalFirst() {
-        V3Graph graph;
         FileLine* const flp = v3Global.rootp()->fileline();
-        std::vector<AstMTaskBody*> mTaskBodyps;
-        const auto makeBody = [&]() {
-            AstMTaskBody* const bodyp = new AstMTaskBody{flp};
-            mTaskBodyps.push_back(bodyp);
-            bodyp->addStmtsp(new AstComment{flp, ""});
-            return bodyp;
-        };
-        ExecMTask* const t0 = new ExecMTask{&graph, makeBody()};
+        AstExecGraph* const execGraphp = new AstExecGraph{flp, "test"};
+        V3Graph& graph = *execGraphp->depGraphp();
+        const auto makeBody = [&]() -> AstNodeStmt* { return new AstComment{flp, ""}; };
+        ExecMTask* const t0 = new ExecMTask{execGraphp, nullptr, makeBody()};
         t0->cost(1000);
         t0->priority(1100);
-        ExecMTask* const t1 = new ExecMTask{&graph, makeBody()};
+        ExecMTask* const t1 = new ExecMTask{execGraphp, nullptr, makeBody()};
         t1->cost(100);
         t1->priority(100);
-        ExecMTask* const t2 = new ExecMTask{&graph, makeBody()};
+        ExecMTask* const t2 = new ExecMTask{execGraphp, nullptr, makeBody()};
         t2->cost(100);
         t2->priority(100);
         t2->threads(2);
-        ExecMTask* const t3 = new ExecMTask{&graph, makeBody()};
+        ExecMTask* const t3 = new ExecMTask{execGraphp, nullptr, makeBody()};
         t3->cost(100);
         t3->priority(100);
         t3->threads(3);
-        ExecMTask* const t4 = new ExecMTask{&graph, makeBody()};
+        ExecMTask* const t4 = new ExecMTask{execGraphp, nullptr, makeBody()};
         t4->cost(100);
         t4->priority(100);
         t4->threads(3);
-        ExecMTask* const t5 = new ExecMTask{&graph, makeBody()};
+        ExecMTask* const t5 = new ExecMTask{execGraphp, nullptr, makeBody()};
         t5->cost(100);
         t5->priority(100);
-        ExecMTask* const t6 = new ExecMTask{&graph, makeBody()};
+        ExecMTask* const t6 = new ExecMTask{execGraphp, nullptr, makeBody()};
         t6->cost(100);
         t6->priority(100);
 
@@ -666,24 +669,20 @@ public:
         UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t4, 4), 1360);
         UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t4, 5), 1360);
 
-        for (AstNode* const nodep : mTaskBodyps) nodep->deleteTree();
+        for (V3GraphVertex& vtx : graph.vertices()) vtx.as<ExecMTask>()->funcp()->deleteTree();
+        VL_DO_DANGLING(execGraphp->deleteTree(), execGraphp);
         ThreadSchedule::s_mtaskState.clear();
     }
     static void selfTestHierFirst() {
-        V3Graph graph;
         FileLine* const flp = v3Global.rootp()->fileline();
-        std::vector<AstMTaskBody*> mTaskBodyps;
-        const auto makeBody = [&]() {
-            AstMTaskBody* const bodyp = new AstMTaskBody{flp};
-            mTaskBodyps.push_back(bodyp);
-            bodyp->addStmtsp(new AstComment{flp, ""});
-            return bodyp;
-        };
-        ExecMTask* const t0 = new ExecMTask{&graph, makeBody()};
+        AstExecGraph* const execGraphp = new AstExecGraph{flp, "test"};
+        V3Graph& graph = *execGraphp->depGraphp();
+        const auto makeBody = [&]() -> AstNodeStmt* { return new AstComment{flp, ""}; };
+        ExecMTask* const t0 = new ExecMTask{execGraphp, nullptr, makeBody()};
         t0->cost(1000);
         t0->priority(1100);
         t0->threads(2);
-        ExecMTask* const t1 = new ExecMTask{&graph, makeBody()};
+        ExecMTask* const t1 = new ExecMTask{execGraphp, nullptr, makeBody()};
         t1->cost(100);
         t1->priority(100);
 
@@ -725,7 +724,8 @@ public:
         UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t1, 0), 1100);
         UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t1, 1), 1130);
 
-        for (AstNode* const nodep : mTaskBodyps) nodep->deleteTree();
+        for (V3GraphVertex& vtx : graph.vertices()) vtx.as<ExecMTask>()->funcp()->deleteTree();
+        VL_DO_DANGLING(execGraphp->deleteTree(), execGraphp);
         ThreadSchedule::s_mtaskState.clear();
     }
 
@@ -790,6 +790,24 @@ void normalizeCosts(Costs& costs) {
     }
 }
 
+void removeEmptyMTasks(V3Graph* execMTaskGraphp) {
+    for (V3GraphVertex* const vtxp : execMTaskGraphp->vertices().unlinkable()) {
+        ExecMTask* const mtaskp = vtxp->as<ExecMTask>();
+        AstCFunc* const funcp = mtaskp->funcp();
+        if (funcp->stmtsp()) continue;
+
+        UINFO(6, "Removing empty MTask " << mtaskp->name());
+        // Redirect edges
+        mtaskp->rerouteEdges(execMTaskGraphp);
+        // Delete the MTask function
+        VL_DO_DANGLING(funcp->unlinkFrBack()->deleteTree(), funcp);
+        // Delete the MTask vertex
+        VL_DO_DANGLING(mtaskp->unlinkDelete(execMTaskGraphp), mtaskp);
+    }
+    // Remove redundant dependencies
+    execMTaskGraphp->removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
+}
+
 void fillinCosts(V3Graph* execMTaskGraphp) {
     // Pass 1: See what profiling data applies
     Costs costs;  // For each mtask, costs
@@ -797,7 +815,7 @@ void fillinCosts(V3Graph* execMTaskGraphp) {
     for (V3GraphVertex& vtx : execMTaskGraphp->vertices()) {
         ExecMTask* const mtp = vtx.as<ExecMTask>();
         // This estimate is 64 bits, but the final mtask graph algorithm needs 32 bits
-        const uint64_t costEstimate = V3InstrCount::count(mtp->bodyp(), false);
+        const uint64_t costEstimate = V3InstrCount::count(mtp->funcp(), false);
         const uint64_t costProfiled
             = V3Control::getProfileData(v3Global.opt.prefix(), mtp->hashName());
         if (costProfiled) {
@@ -857,30 +875,6 @@ void finalizeCosts(V3Graph* execMTaskGraphp) {
         }
     }
 
-    // Some MTasks may now have zero cost, eliminate those.
-    // (It's common for tasks to shrink to nothing when V3LifePost
-    // removes dly assignments.)
-    for (V3GraphVertex* const vtxp : execMTaskGraphp->vertices().unlinkable()) {
-        ExecMTask* const mtp = vtxp->as<ExecMTask>();
-
-        // Don't rely on checking mtp->cost() == 0 to detect an empty task.
-        // Our cost-estimating logic is just an estimate. Instead, check
-        // the MTaskBody to see if it's empty. That's the source of truth.
-        AstMTaskBody* const bodyp = mtp->bodyp();
-        if (!bodyp->stmtsp()) {  // Kill this empty mtask
-            UINFO(6, "Removing zero-cost " << mtp->name());
-            for (V3GraphEdge& in : mtp->inEdges()) {
-                for (V3GraphEdge& out : mtp->outEdges()) {
-                    new V3GraphEdge{execMTaskGraphp, in.fromp(), out.top(), 1};
-                }
-            }
-            VL_DO_DANGLING(mtp->unlinkDelete(execMTaskGraphp), mtp);
-            // Also remove and delete the AstMTaskBody, otherwise it would
-            // keep a dangling pointer to the ExecMTask.
-            VL_DO_DANGLING(bodyp->unlinkFrBack()->deleteTree(), bodyp);
-        }
-    }
-
     // Removing tasks may cause edges that were formerly non-transitive to
     // become transitive. Also we just created new edges around the removed
     // tasks, which could be transitive. Prune out all transitive edges.
@@ -907,6 +901,7 @@ void finalizeCosts(V3Graph* execMTaskGraphp) {
 
 void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t threadId, AstCFunc* funcp,
                         const ExecMTask* mtaskp) {
+    AstScope* const scopep = v3Global.rootp()->topScopep()->scopep();
     AstNodeModule* const modp = v3Global.rootp()->topModulep();
     FileLine* const fl = modp->fileline();
 
@@ -940,8 +935,11 @@ void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t threadId,
         addCStmt("vlSymsp->_vm_pgoProfiler.startCounter(" + std::to_string(mtaskp->id()) + ");");
     }
 
-    // Move the actual body into this function
-    funcp->addStmtsp(mtaskp->bodyp()->unlinkFrBack());
+    // Call the MTask function
+    AstCCall* const callp = new AstCCall{fl, mtaskp->funcp()};
+    callp->selfPointer(VSelfPointerText{VSelfPointerText::VlSyms{}, scopep->nameDotless()});
+    callp->dtypeSetVoid();
+    funcp->addStmtsp(callp->makeStmt());
 
     if (v3Global.opt.profPgo()) {
         // No lock around stopCounter, as counter numbers are unique per thread
@@ -1093,56 +1091,38 @@ void addThreadStartToExecGraph(AstExecGraph* const execGraphp,
     }
 }
 
-void wrapMTaskBodies(AstExecGraph* const execGraphp) {
-    FileLine* const flp = execGraphp->fileline();
-    const string& tag = execGraphp->name();
-    AstNodeModule* const modp = v3Global.rootp()->topModulep();
-
-    for (AstMTaskBody* mtaskBodyp = execGraphp->mTaskBodiesp(); mtaskBodyp;
-         mtaskBodyp = VN_AS(mtaskBodyp->nextp(), MTaskBody)) {
-        ExecMTask* const mtaskp = mtaskBodyp->execMTaskp();
-        const std::string name = tag + "_mtask" + std::to_string(mtaskp->id());
-        AstCFunc* const funcp = new AstCFunc{flp, name, nullptr};
-        funcp->isLoose(true);
-        modp->addStmtsp(funcp);
+void processMTaskBodies(AstExecGraph* const execGraphp) {
+    for (V3GraphVertex* const vtxp : execGraphp->depGraphp()->vertices().unlinkable()) {
+        ExecMTask* const mtaskp = vtxp->as<ExecMTask>();
+        AstCFunc* const funcp = mtaskp->funcp();
+        // Temporarily unlink function body so we can add more statemetns
+        AstNode* stmtsp = funcp->stmtsp()->unlinkFrBackWithNext();
 
         // Helper function to make the code a bit more legible
         const auto addCStmt = [=](const string& stmt) -> void {  //
-            funcp->addStmtsp(new AstCStmt{flp, stmt});
+            funcp->addStmtsp(new AstCStmt{execGraphp->fileline(), stmt});
         };
 
-        addCStmt("static constexpr unsigned taskId = " + cvtToStr(mtaskp->id()) + ";");
-
+        // Profiling mtaskStart
         if (v3Global.opt.profExec()) {
-            const string& predictStart = std::to_string(mtaskp->predictStart());
-            if (v3Global.opt.hierChild()) {
-                addCStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).mtaskBegin(taskId, " + predictStart
-                         + ", \"" + v3Global.opt.topModule() + "\");");
-            } else {
-                addCStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).mtaskBegin(taskId, " + predictStart
-                         + ");");
-            }
+            std::string args = std::to_string(mtaskp->id());
+            args += ", " + std::to_string(mtaskp->predictStart());
+            args += ", \"";
+            if (v3Global.opt.hierChild()) args += v3Global.opt.topModule();
+            args += "\"";
+            addCStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).mtaskBegin(" + args + ");");
         }
-
         // Set mtask ID in the run-time system
-        addCStmt("Verilated::mtaskId(taskId);");
-
-        // Run body
-        funcp->addStmtsp(mtaskBodyp->stmtsp()->unlinkFrBackWithNext());
-
+        addCStmt("Verilated::mtaskId(" + std::to_string(mtaskp->id()) + ");");
+        // Add back the body
+        funcp->addStmtsp(stmtsp);
         // Flush message queue
         addCStmt("Verilated::endOfThreadMTask(vlSymsp->__Vm_evalMsgQp);");
-
+        // Profiling mtaskEnd
         if (v3Global.opt.profExec()) {
-            const string& predictCost = std::to_string(mtaskp->cost());
-            addCStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).mtaskEnd(" + predictCost + ");");
+            const std::string& args = std::to_string(mtaskp->cost());
+            addCStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).mtaskEnd(" + args + ");");
         }
-
-        // AstMTask will simply contain a call
-        AstCCall* const callp = new AstCCall{flp, funcp};
-        callp->selfPointer(VSelfPointerText{VSelfPointerText::This{}});
-        callp->dtypeSetVoid();
-        mtaskBodyp->addStmtsp(callp->makeStmt());
     }
 }
 
@@ -1150,8 +1130,7 @@ void implementExecGraph(AstExecGraph* const execGraphp, const ThreadSchedule& sc
     // Nothing to be done if there are no MTasks in the graph at all.
     if (execGraphp->depGraphp()->empty()) return;
 
-    // Create a function to be run by each thread. Note this moves all AstMTaskBody nodes form the
-    // AstExecGraph into the AstCFunc created
+    // Create a function to be run by each thread.
     const std::vector<AstCFunc*>& funcps = createThreadFunctions(schedule, execGraphp->name());
     UASSERT(!funcps.empty(), "Non-empty ExecGraph yields no threads?");
 
@@ -1159,9 +1138,30 @@ void implementExecGraph(AstExecGraph* const execGraphp, const ThreadSchedule& sc
     addThreadStartToExecGraph(execGraphp, funcps, schedule.id());
 }
 
+// Called by Verilator top stage
 void implement(AstNetlist* netlistp) {
-    // Called by Verilator top stage
-    netlistp->topModulep()->foreach([&](AstExecGraph* execGraphp) {
+    // Gather all ExecGraphs
+    std::vector<AstExecGraph*> execGraphps;
+    netlistp->topModulep()->foreach([&](AstExecGraph* egp) { execGraphps.emplace_back(egp); });
+
+    // Process each
+    for (AstExecGraph* const execGraphp : execGraphps) {
+        // We can delete the placeholder calls to the MTask functions that
+        // were used for code analysis until now. We will replace them with
+        // statements that dispatch execution to the thread pool.
+        if (execGraphp->stmtsp()) execGraphp->stmtsp()->unlinkFrBackWithNext()->deleteTree();
+
+        // Some MTasks may have become empty after scheduling due to
+        // optimizations after scheduling. Remove those.
+        removeEmptyMTasks(execGraphp->depGraphp());
+
+        // In some very small test cases, we might end up with a completely
+        // empty ExecGraph, if so just delete it.
+        if (execGraphp->depGraphp()->empty()) {
+            VL_DO_DANGLING(execGraphp->unlinkFrBack()->deleteTree(), execGraphp);
+            return;
+        }
+
         // Back in V3Order, we partitioned mtasks using provisional cost
         // estimates. However, V3Order precedes some optimizations (notably
         // V3LifePost) that can change the cost of logic within each mtask.
@@ -1180,8 +1180,8 @@ void implement(AstNetlist* netlistp) {
         V3Stats::addStatSum("Optimizations, Thread schedule count",
                             static_cast<double>(packed.size()));
 
-        // Wrap each MTask body into a CFunc for better profiling/debugging
-        wrapMTaskBodies(execGraphp);
+        // Process MTask function bodies to add additional code
+        processMTaskBodies(execGraphp);
 
         for (const ThreadSchedule& schedule : packed) {
             // Replace the graph body with its multi-threaded implementation.
@@ -1189,7 +1189,7 @@ void implement(AstNetlist* netlistp) {
         }
 
         addThreadEndWrapper(execGraphp);
-    });
+    }
 }
 
 void selfTest() {

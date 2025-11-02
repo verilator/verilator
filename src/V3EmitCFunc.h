@@ -1623,11 +1623,6 @@ public:
     }
 
     //
-    void visit(AstMTaskBody* nodep) override {
-        VL_RESTORER(m_useSelfForThis);
-        m_useSelfForThis = true;
-        iterateChildrenConst(nodep);
-    }
     void visit(AstConsAssoc* nodep) override {
         putnbs(nodep, nodep->dtypep()->cType("", false, false));
         puts("()");
@@ -1723,7 +1718,6 @@ public:
     void visit(AstExecGraph* nodep) override {
         // The location of the AstExecGraph within the containing AstCFunc is where we want to
         // invoke the graph and wait for it to complete. Emitting the children does just that.
-        UASSERT_OBJ(!nodep->mTaskBodiesp(), nodep, "These should have been lowered");
         iterateChildrenConst(nodep);
     }
 
