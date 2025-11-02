@@ -1280,6 +1280,10 @@ Summary:
 
    With :vlopt:`-E`, show comments in preprocessor output.
 
+.. option:: --preproc-defines
+
+   With :vlopt:`-E`, show defines and undefs in preprocessor output.
+
 .. option:: --preproc-resolve
 
    With :vlopt:`-E`, resolve referenced instance modules, to include

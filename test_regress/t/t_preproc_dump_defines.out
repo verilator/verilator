@@ -27,5 +27,13 @@
 `define foo test
 `define quux(x) `qux(`"x`")
 `define qux(x) string boo = x;
+`define uvm_a(x) foo x bar
+`define uvm_imp_decl(SFX) \
+class uvm_master_imp``SFX  \
+  `uvm_a(SFX, RSP, t) 
+  \
+  `uvm_a(SFX, REQ, t) 
+  \
+endclass
 `define verilator 1
 `define verilator3 1

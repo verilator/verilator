@@ -1618,6 +1618,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_prefix = valp;
     });
     DECL_OPTION("-preproc-comments", OnOff, &m_preprocComments);
+    DECL_OPTION("-preproc-defines", OnOff, &m_preprocDefines);
     DECL_OPTION("-preproc-resolve", OnOff, &m_preprocResolve);
     DECL_OPTION("-preproc-token-limit", CbVal, [this, fl](const char* valp) {
         m_preprocTokenLimit = std::atoi(valp);

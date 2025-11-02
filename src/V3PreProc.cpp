@@ -307,8 +307,14 @@ void V3PreProc::selfTest() VL_MT_DISABLED { V3PreExpr::selfTest(); }
 //*************************************************************************
 // Defines
 
-void V3PreProcImp::undef(const string& name) { m_defines.erase(name); }
+void V3PreProcImp::undef(const string& name) {
+    if (v3Global.opt.preprocOnly() && v3Global.opt.preprocDefines())
+        insertUnreadback("`undef " + name + "\n");
+    m_defines.erase(name);
+}
 void V3PreProcImp::undefineall() {
+    if (v3Global.opt.preprocOnly() && v3Global.opt.preprocDefines())
+        insertUnreadback("`undefineall\n");
     for (DefinesMap::iterator nextit, it = m_defines.begin(); it != m_defines.end(); it = nextit) {
         nextit = it;
         ++nextit;
@@ -348,6 +354,18 @@ FileLine* V3PreProcImp::defFileline(const string& name) {
 void V3PreProcImp::define(FileLine* fl, const string& name, const string& value,
                           const string& params, bool cmdline) {
     UINFO(4, "DEFINE '" << name << "' as '" << value << "' params '" << params << "'");
+    if (v3Global.opt.preprocOnly() && v3Global.opt.preprocDefines()) {
+        // Any newlines in the string must have backslash escape so can re-parse properly
+        // If there was a comment with backslash, it got stripped because IEEE says
+        // the backslash is not part of the value
+        string out;
+        out.reserve(value.size());
+        for (string::size_type pos = 0; pos < value.size(); ++pos) {
+            if (value[pos] == '\n' && (pos == 0 || value[pos - 1] != '\\')) out += '\\';
+            out += value[pos];
+        }
+        insertUnreadback("`define " + name + params + (out.empty() ? "" : " ") + out + "\n");
+    }
     if (!V3LanguageWords::isKeyword("`"s + name).empty()) {
         fl->v3error("Attempting to define built-in directive: '`" << name
                                                                   << "' (IEEE 1800-2023 22.5.1)");
@@ -1335,7 +1353,7 @@ int V3PreProcImp::getStateToken() {
             // DEFVALUE is terminated by a return, but lex can't return both tokens.
             // Thus, we emit a return here.
             yyourtext(s_newlines.c_str(), s_newlines.length());
-            return (VP_WHITE);
+            return VP_WHITE;
         }
         case ps_DEFPAREN: {
             if (tok == VP_TEXT && yyourleng() == 1 && yyourtext()[0] == '(') {

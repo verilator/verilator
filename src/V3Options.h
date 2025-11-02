@@ -268,6 +268,7 @@ private:
     bool m_pinsScBigUint = false;   // main switch: --pins-sc-biguint
     bool m_pinsUint8 = false;       // main switch: --pins-uint8
     bool m_preprocComments = false;  // main switch: --preproc-comments
+    bool m_preprocDefines = false;  // main switch: --preproc-defines
     bool m_profC = false;           // main switch: --prof-c
     bool m_profCFuncs = false;      // main switch: --prof-cfuncs
     bool m_profExec = false;        // main switch: --prof-exec
@@ -555,6 +556,7 @@ public:
     bool pinsScBigUint() const VL_MT_SAFE { return m_pinsScBigUint; }
     bool pinsUint8() const { return m_pinsUint8; }
     bool preprocComments() const { return m_preprocComments; }
+    bool preprocDefines() const { return m_preprocDefines; }
     bool profC() const { return m_profC; }
     bool profCFuncs() const { return m_profCFuncs; }
     bool profExec() const { return m_profExec; }

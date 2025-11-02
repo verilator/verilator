@@ -753,3 +753,15 @@ predef `SV_COV_PARTIAL 2
 `quux(`bar(`a,`a))
 `quux(`baz(`a,`bar(x,`a)))
 `quux(`baz(`bar(`a,x), quux(`foo)))
+
+//======================================================================
+// Define with --preproc-defines needs to keep backslashes
+
+`define uvm_a(x) foo x bar
+`define uvm_imp_decl(SFX) \
+class uvm_master_imp``SFX  \
+  `uvm_a(SFX, RSP, t) // rsp \
+  \
+  `uvm_a(SFX, REQ, t) // req \
+  \
+endclass

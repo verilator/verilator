@@ -455,6 +455,7 @@ detailed descriptions of these arguments.
     --pipe-filter <command>     Filter all input through a script
     --prefix <topname>          Name of top-level class
     --preproc-comments          Include preprocessor comments in the output with -E
+    --preproc-defines           Include preprocessor defines in the output with -E
     --preproc-resolve           Include all found modules in the output with -E
     --preproc-token-limit       Maximum tokens on a line allowed by preprocessor
     --private                   Debugging; see docs
