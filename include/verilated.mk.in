@@ -330,12 +330,11 @@ ifneq ($(findstring ccache-report,$(MAKECMDGOALS)),)
   $(VK_CCACHE_REPORT): $(VK_OBJS)
 	$(VERILATOR_CCACHE_REPORT) -o $@ $(VK_CCACHE_LOGDIR)
 
+  # ccache-report runs last
   .PHONY: ccache-report
-  ccache-report: $(VK_CCACHE_REPORT)
+  ccache-report: $(VK_CCACHE_REPORT) $(VK_OTHER_GOALS)
 	@cat $<
 
-# ccache-report runs last
-  ccache-report: $(VK_OTHER_GOALS)
 endif
 
 ######################################################################
