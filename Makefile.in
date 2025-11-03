@@ -781,7 +781,7 @@ clean mostlyclean distclean maintainer-clean::
 
 distclean maintainer-clean::
 	rm -f *.info* *.1 $(INFOS) $(INFOS_OLD) $(VL_INST_MAN_FILES)
-	rm -f Makefile config.status config.cache config.log TAGS
+	rm -f Makefile config.status config.cache config.log configure~ TAGS
 	rm -f verilator_bin* verilator_coverage_bin*
 	rm -f bin/verilator_bin* bin/verilator_coverage_bin*
 	rm -f include/verilated.mk include/verilated_config.h
