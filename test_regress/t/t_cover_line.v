@@ -315,6 +315,11 @@ module cond(input logic clk, input int cyc);
    Getter1 getter1 = new;
    string s;
 
+   struct packed {
+       logic unsigned [15:0] a;
+       logic unsigned [15:0] b;
+   } pstruct;
+
    function logic func_side_effect;
       $display("SIDE EFFECT");
       return 1;
@@ -360,5 +365,12 @@ module cond(input logic clk, input int cyc);
 
       if (k ? 1 : 0) k = 1;
       else k = 0;
+   end
+
+   assign pstruct.a = cyc == 1 ? 16'd2 : 16'd3;
+   assign pstruct.b = 16'd0;
+
+   always @(posedge clk) begin
+     if (cyc == 2) $display("%08x", pstruct);
    end
 endmodule
