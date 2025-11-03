@@ -2957,6 +2957,29 @@ inline std::string VL_CVT_PACK_STR_NI(IData lhs) VL_PURE {
     VL_SET_WI(lw, lhs);
     return VL_CVT_PACK_STR_NW(1, lw);
 }
+inline std::string VL_CVT_PACK_STR_NI(const VlQueue<CData>& q) VL_PURE {
+    std::string result;
+    for (const auto& byte : q) result.push_back(static_cast<char>(byte));
+    return result;
+}
+template <size_t N_Depth>
+inline std::string VL_CVT_PACK_STR_NI(const VlUnpacked<CData, N_Depth>& q) VL_PURE {
+    std::string result;
+    for (size_t i = 0; i < N_Depth; ++i) result.push_back(static_cast<char>(q[i]));
+    return result;
+}
+static inline void VL_UNPACK_RI_N(int lbits, int rbits, VlQueue<CData>& q,
+                                  const std::string& from) {
+    q.clear();
+    q.resize(from.size());
+    for (size_t i = 0; i < from.size(); ++i) q.atWrite(i) = static_cast<CData>(from[i]);
+}
+template <size_t N_Depth>
+static inline void VL_UNPACK_UI_N(int lbits, int rbits, VlUnpacked<CData, N_Depth>& q,
+                                  const std::string& from) {
+    q.atDefault() = 0;
+    for (size_t i = 0; i < from.size() && i < N_Depth; ++i) q[i] = static_cast<CData>(from[i]);
+}
 inline std::string VL_CONCATN_NNN(const std::string& lhs, const std::string& rhs) VL_PURE {
     return lhs + rhs;
 }

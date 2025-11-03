@@ -1,0 +1,58 @@
+%Error-UNSUPPORTED: t/t_queue_cast_incompatible.v:52:28: Unsupported: static cast to 'logic[7:0]$[]' from 'logic[15:0]$[$]'
+                                                       : ... note: In instance 't'
+   52 |     byte_arr = byte_array_t'(word_que);
+      |                            ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_queue_cast_incompatible.v:53:28: Unsupported: static cast to 'logic[15:0]$[$]' from 'logic[7:0]$[]'
+                                                       : ... note: In instance 't'
+   53 |     word_que = word_queue_t'(byte_arr);
+      |                            ^
+%Error-UNSUPPORTED: t/t_queue_cast_incompatible.v:56:28: Unsupported: static cast to 'logic[7:0]$[]' from 'struct{}t.struct8_t$[$]'
+                                                       : ... note: In instance 't'
+   56 |     byte_arr = byte_array_t'(struct_que);
+      |                            ^
+%Error-UNSUPPORTED: t/t_queue_cast_incompatible.v:57:32: Unsupported: static cast to 'struct{}t.struct8_t$[]' from 'logic[7:0]$[$]'
+                                                       : ... note: In instance 't'
+   57 |     struct_arr = struct_array_t'(byte_que);
+      |                                ^
+%Error-UNSUPPORTED: t/t_queue_cast_incompatible.v:74:26: Unsupported: String casting only supported to byte arrays/queues
+                                                       : ... note: In instance 't'
+   74 |     int_arr = int_array_t'(str);
+      |                          ^
+%Error-UNSUPPORTED: t/t_queue_cast_incompatible.v:75:26: Unsupported: String casting only supported to byte arrays/queues
+                                                       : ... note: In instance 't'
+   75 |     int_que = int_queue_t'(str);
+      |                          ^
+%Error-UNSUPPORTED: t/t_queue_cast_incompatible.v:76:28: Unsupported: String casting only supported to byte arrays/queues
+                                                       : ... note: In instance 't'
+   76 |     word_arr = word_array_t'(str);
+      |                            ^
+%Error-UNSUPPORTED: t/t_queue_cast_incompatible.v:77:28: Unsupported: String casting only supported to byte arrays/queues
+                                                       : ... note: In instance 't'
+   77 |     word_que = word_queue_t'(str);
+      |                            ^
+%Error-UNSUPPORTED: t/t_queue_cast_incompatible.v:80:28: Unsupported: String casting only supported to byte arrays/queues
+                                                       : ... note: In instance 't'
+   80 |     bit1_arr = bit1_array_t'(str);
+      |                            ^
+%Error-UNSUPPORTED: t/t_queue_cast_incompatible.v:81:28: Unsupported: String casting only supported to byte arrays/queues
+                                                       : ... note: In instance 't'
+   81 |     bit1_que = bit1_queue_t'(str);
+      |                            ^
+%Error-UNSUPPORTED: t/t_queue_cast_incompatible.v:82:28: Unsupported: String casting only supported to byte arrays/queues
+                                                       : ... note: In instance 't'
+   82 |     bit3_arr = bit3_array_t'(str);
+      |                            ^
+%Error-UNSUPPORTED: t/t_queue_cast_incompatible.v:83:28: Unsupported: String casting only supported to byte arrays/queues
+                                                       : ... note: In instance 't'
+   83 |     bit3_que = bit3_queue_t'(str);
+      |                            ^
+%Error-UNSUPPORTED: t/t_queue_cast_incompatible.v:84:28: Unsupported: String casting only supported to byte arrays/queues
+                                                       : ... note: In instance 't'
+   84 |     bit7_arr = bit7_array_t'(str);
+      |                            ^
+%Error-UNSUPPORTED: t/t_queue_cast_incompatible.v:85:28: Unsupported: String casting only supported to byte arrays/queues
+                                                       : ... note: In instance 't'
+   85 |     bit7_que = bit7_queue_t'(str);
+      |                            ^
+%Error: Exiting due to

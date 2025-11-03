@@ -2326,6 +2326,11 @@ class WidthVisitor final : public VNVisitor {
             } else if (AstBasicDType* const basicp = toDtp->basicp()) {
                 if (!basicp->isString() && fromDtp->isString()) {
                     newp = new AstNToI{nodep->fileline(), nodep->fromp()->unlinkFrBack(), toDtp};
+                } else if (basicp->isString()
+                           && (VN_IS(fromDtp, QueueDType) || VN_IS(fromDtp, DynArrayDType))) {
+                    // checked above near call to computeCastable()
+                    newp = new AstCvtArrayToPacked{nodep->fileline(),
+                                                   nodep->fromp()->unlinkFrBack(), toDtp};
                 } else if (!basicp->isDouble() && !fromDtp->isDouble()) {
                     AstNodeDType* const origDTypep = nodep->dtypep();
                     if (!VN_IS(fromDtp, StreamDType)) {
@@ -2356,19 +2361,37 @@ class WidthVisitor final : public VNVisitor {
                     // Can just remove cast, but need extend placeholder
                     // so we can avoid warning message
                 }
-            } else if (VN_IS(toDtp, QueueDType)) {
+            } else if (VN_IS(toDtp, QueueDType) || VN_IS(toDtp, DynArrayDType)) {
                 if (VN_IS(fromDtp, BasicDType)) {
+                    // For string sources, check element type is byte-compatible
+                    if (fromDtp->isString()) {
+                        const AstNodeDType* const elemDtp = toDtp->subDTypep();
+                        // Element must be 8-bit and basic type (logic[7:0], byte, etc.)
+                        if (!elemDtp || elemDtp->width() != 8 || !elemDtp->basicp()) {
+                            nodep->v3warn(E_UNSUPPORTED,
+                                          "Unsupported: String casting only supported to "
+                                          "byte arrays/queues");
+                            return;
+                        }
+                    }
                     newp = new AstCvtPackedToArray{nodep->fileline(),
                                                    nodep->fromp()->unlinkFrBack(), toDtp};
-                } else if (VN_IS(fromDtp, QueueDType) || VN_IS(fromDtp, StreamDType)) {
+                } else if (VN_IS(fromDtp, QueueDType) || VN_IS(fromDtp, StreamDType)
+                           || VN_IS(fromDtp, DynArrayDType)) {
                     int srcElementBits = 1;
                     int dstElementBits = 1;
                     if (AstNodeDType* const elemDtp = fromDtp->subDTypep()) {
                         srcElementBits = elemDtp->width();
                     }
-                    const AstQueueDType* const dstQueueDtp = VN_AS(toDtp, QueueDType);
-                    if (AstNodeDType* const elemDtp = dstQueueDtp->subDTypep()) {
-                        dstElementBits = elemDtp->width();
+                    if (const AstQueueDType* const dstQueueDtp = VN_CAST(toDtp, QueueDType)) {
+                        if (AstNodeDType* const elemDtp = dstQueueDtp->subDTypep()) {
+                            dstElementBits = elemDtp->width();
+                        }
+                    } else if (const AstDynArrayDType* const dstArrayDtp
+                               = VN_CAST(toDtp, DynArrayDType)) {
+                        if (AstNodeDType* const elemDtp = dstArrayDtp->subDTypep()) {
+                            dstElementBits = elemDtp->width();
+                        }
                     }
                     newp = new AstCvtArrayToArray{nodep->fileline(),
                                                   nodep->fromp()->unlinkFrBack(),

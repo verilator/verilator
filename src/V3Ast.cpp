@@ -1628,9 +1628,18 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
         if (VN_IS(fromBaseDtp, EnumDType) && toDtp->sameTree(fromDtp))
             return VCastable::ENUM_IMPLICIT;
         if (fromNumericable) return VCastable::ENUM_EXPLICIT;
-    } else if (VN_IS(toDtp, QueueDType)
+    } else if ((VN_IS(toDtp, QueueDType) || VN_IS(toDtp, DynArrayDType))
                && (VN_IS(fromDtp, BasicDType) || VN_IS(fromDtp, StreamDType))) {
         return VCastable::COMPATIBLE;
+    } else if (VN_IS(toDtp, BasicDType) && toDtp->isString()
+               && (VN_IS(fromDtp, QueueDType) || VN_IS(fromDtp, DynArrayDType))) {
+        return VCastable::COMPATIBLE;
+    } else if ((VN_IS(toDtp, QueueDType) && VN_IS(fromDtp, DynArrayDType))
+               || (VN_IS(toDtp, DynArrayDType) && VN_IS(fromDtp, QueueDType))) {
+        if (fromDtp->subDTypep() && toDtp->subDTypep()
+            && fromDtp->subDTypep()->sameTree(toDtp->subDTypep())) {
+            return VCastable::COMPATIBLE;
+        }
     } else if (VN_IS(toDtp, ClassRefDType) && VN_IS(fromConstp, Const)) {
         if (fromConstp->isNull()) return VCastable::COMPATIBLE;
     } else if (VN_IS(toDtp, ClassRefDType) && VN_IS(fromDtp, ClassRefDType)) {
