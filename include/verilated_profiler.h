@@ -120,7 +120,7 @@ public:
         m_type = Type::SECTION_PUSH;
     }
     void sectionPop() { m_type = Type::SECTION_POP; }
-    void mtaskBegin(uint32_t id, uint32_t predictStart, const char* hierBlock = "") {
+    void mtaskBegin(uint32_t id, uint32_t predictStart, const char* hierBlock) {
         m_payload.mtaskBegin.m_id = id;
         m_payload.mtaskBegin.m_predictStart = predictStart;
         m_payload.mtaskBegin.m_cpu = VlOs::getcpu();

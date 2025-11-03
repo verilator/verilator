@@ -1100,32 +1100,6 @@ public:
     string name() const override VL_MT_STABLE { return m_name; }
     ASTGEN_MEMBERS_AstIntfRef;
 };
-class AstMTaskBody final : public AstNode {
-    // Hold statements for each MTask
-    // @astgen op1 := stmtsp : List[AstNode]
-    ExecMTask* m_execMTaskp = nullptr;
-
-public:
-    explicit AstMTaskBody(FileLine* fl)
-        : ASTGEN_SUPER_MTaskBody(fl) {}
-    ASTGEN_MEMBERS_AstMTaskBody;
-    void cloneRelink() override { UASSERT(!clonep(), "Not cloneable"); }
-    const char* broken() const override {
-        BROKEN_RTN(!m_execMTaskp);
-        return nullptr;
-    }
-    void addStmtsFirstp(AstNode* nodep) {
-        if (stmtsp()) {
-            stmtsp()->addHereThisAsNext(nodep);
-        } else {
-            addStmtsp(nodep);
-        }
-    }
-    ExecMTask* execMTaskp() const { return m_execMTaskp; }
-    void execMTaskp(ExecMTask* execMTaskp) { m_execMTaskp = execMTaskp; }
-    void dump(std::ostream& str = std::cout) const override;
-    void dumpJson(std::ostream& str = std::cout) const override;
-};
 class AstModport final : public AstNode {
     // A modport in an interface
     // @astgen op1 := varsp : List[AstNode]

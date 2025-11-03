@@ -513,9 +513,6 @@ class HasherVisitor final : public VNVisitorConst {
             iterateConstNull(nodep->ftaskp());
         });
     }
-    void visit(AstMTaskBody* nodep) override {
-        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, []() {});
-    }
     void visit(AstNodeProcedure* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, []() {});
     }

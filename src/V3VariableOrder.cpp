@@ -53,7 +53,7 @@ class GatherMTaskAffinity final : VNVisitorConst {
     GatherMTaskAffinity(const ExecMTask* mTaskp, MTaskAffinityMap& results)
         : m_results{results}
         , m_id{mTaskp->id()} {
-        iterateChildrenConst(mTaskp->bodyp());
+        iterateConst(mTaskp->funcp());
     }
     ~GatherMTaskAffinity() = default;
     VL_UNMOVABLE(GatherMTaskAffinity);

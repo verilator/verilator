@@ -290,7 +290,7 @@ class LifePostDlyVisitor final : public VNVisitorConst {
             const ExecMTask* const mtaskp = mtaskVtx.as<ExecMTask>();
             VL_RESTORER(m_execMTaskp);
             m_execMTaskp = mtaskp;
-            iterateConst(mtaskp->bodyp());
+            trace(mtaskp->funcp());
         }
     }
     void visit(AstCFunc* nodep) override {
