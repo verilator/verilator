@@ -13,7 +13,9 @@ Verilator 5.043 devel
 
 **Other:**
 
-* TBD
+* Optimize away calls to empty functions (#6626). [Geza Lore]
+* Fix `--timing` with `--x-initial-edge` (#6603) (#6631). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix merging of impure assignments in gate optimization (#6629) (#6630). [Geza Lore]
 
 
 Verilator 5.042 2025-11-02
