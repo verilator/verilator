@@ -714,7 +714,7 @@ class VlTest:
             self.v_flags += ["-f input.vc"]
         if not re.search(r'/test_regress', self.t_dir):  # Don't include standard dir, only site's
             self.v_flags += ["+incdir+" + self.t_dir + " -y " + self.t_dir]
-        self.v_flags += [define_opt + "TEST_OBJ_DIR=" + self.obj_dir]
+        self.v_flags += [define_opt + "TEST_OBJ_DIR=" + os.path.abspath(self.obj_dir)]
         if Args.verbose:
             self.v_flags += [define_opt + "TEST_VERBOSE=1"]
         if Args.benchmark:
@@ -1162,7 +1162,7 @@ class VlTest:
         self.compile_vlt_cmd(**param)
 
         if not re.search(r'TEST_DUMPFILE', ' '.join(self.v_flags)):
-            self.v_flags += [self._define_opt_calc() + "TEST_DUMPFILE=" + self.trace_filename]
+            self.v_flags += [self._define_opt_calc() + "TEST_DUMPFILE=" + os.path.abspath(self.trace_filename)]
 
         if not param['make_top_shell']:
             self.top_shell_filename = ""
@@ -1363,7 +1363,7 @@ class VlTest:
                         "-f " + os.path.abspath(os.path.dirname(__file__)) + "/Makefile_obj",
                         ("" if self.verbose else "--no-print-directory"),
                         "VM_PREFIX=" + self.vm_prefix,
-                        "TEST_OBJ_DIR=" + self.obj_dir,
+                        "TEST_OBJ_DIR=" + os.path.abspath(self.obj_dir),
                         "CPPFLAGS_DRIVER=-D" + self.name.upper(),
                         ("CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1" if self.verbose else ""),
                         ("" if param['benchmark'] else "OPT_FAST=-O0"),
