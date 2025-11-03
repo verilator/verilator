@@ -80,6 +80,11 @@ void VlDelayScheduler::resume() {
     }
 
     if (!resumed) {
+        if (m_context.time() == 0) {
+            // Nothing was scheduled at time 0, but resume() got called due to --x-initial-edge
+            return;
+        }
+
         VL_FATAL_MT(__FILE__, __LINE__, "",
                     "%Error: Encountered process that should've been resumed at an "
                     "earlier simulation time. Missed a time slot?\n");
