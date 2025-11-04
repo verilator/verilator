@@ -2949,6 +2949,7 @@ delay_value<nodeExprp>:         // ==IEEE:delay_value
         |       yaINTNUM                                { $$ = new AstConst{$<fl>1, *$1}; }
         |       yaFLOATNUM                              { $$ = new AstConst{$<fl>1, AstConst::RealDouble{}, $1}; }
         |       timeNumAdjusted                         { $$ = $1; }
+        |       y1STEP                                  { $$ = new AstConst{$<fl>1, AstConst::OneStep{}}; }
         ;
 
 delayExpr<nodeExprp>:
@@ -6165,7 +6166,6 @@ clocking_skewE<nodeExprp>:          // IEEE: [clocking_skew]
 
 clocking_skew<nodeExprp>:           // IEEE: clocking_skew
                 delay_control                           { $$ = $1->lhsp()->unlinkFrBack(); $1->deleteTree(); }
-        |      '#' y1STEP                               { $$ = new AstConst{$<fl>1, AstConst::OneStep{}}; }
         |      yPOSEDGE delay_controlE                  { $$ = nullptr;
                                                           BBUNSUP($1, "Unsupported: clocking event edge override"); DEL($2); }
         |      yNEGEDGE delay_controlE                  { $$ = nullptr;
