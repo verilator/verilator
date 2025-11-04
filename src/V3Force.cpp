@@ -293,29 +293,26 @@ class ForceConvertVisitor final : public VNVisitor {
         AstAssign* const resetRdp
             = new AstAssign{flp, lhsp->cloneTreePure(false), lhsp->unlinkFrBack()};
         // Replace write refs on the LHS
-        resetRdp->lhsp()->foreach([this](AstNodeVarRef* refp) {
-            if (refp->access() != VAccess::WRITE) return;
-            AstVarScope* const vscp = refp->varScopep();
-            AstVarScope* const newVscp = vscp->varp()->isContinuously()
-                                             ? m_state.getForceComponents(vscp).m_rdVscp
-                                             : vscp;
-            AstVarRef* const newpRefp = new AstVarRef{refp->fileline(), newVscp, VAccess::WRITE};
-            refp->replaceWith(newpRefp);
-            VL_DO_DANGLING(refp->deleteTree(), refp);
-        });
-        // Replace write refs on RHS
-        resetRdp->rhsp()->foreach([this](AstNodeVarRef* refp) {
+        resetRdp->lhsp()->foreach([this](AstVarRef* refp) {
             if (refp->access() != VAccess::WRITE) return;
             AstVarScope* const vscp = refp->varScopep();
             if (vscp->varp()->isContinuously()) {
-                AstVarRef* const newpRefp = new AstVarRef{refp->fileline(), vscp, VAccess::READ};
-                ForceState::markNonReplaceable(newpRefp);
+                AstVarRef* const newpRefp = new AstVarRef{
+                    refp->fileline(), m_state.getForceComponents(vscp).m_rdVscp, VAccess::WRITE};
                 refp->replaceWith(newpRefp);
+                VL_DO_DANGLING(refp->deleteTree(), refp);
+            }
+        });
+        // Replace write refs on RHS
+        resetRdp->rhsp()->foreach([this](AstVarRef* refp) {
+            if (refp->access() != VAccess::WRITE) return;
+            AstVarScope* const vscp = refp->varScopep();
+            if (vscp->varp()->isContinuously()) {
+                ForceState::markNonReplaceable(refp);
             } else {
                 refp->replaceWith(m_state.getForceComponents(vscp).forcedUpdate(vscp));
+                VL_DO_DANGLING(refp->deleteTree(), refp);
             }
-
-            VL_DO_DANGLING(refp->deleteTree(), refp);
         });
 
         resetRdp->addNext(resetEnp);
