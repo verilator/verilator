@@ -117,10 +117,10 @@ module t (/*AUTOARG*/
       { bins ba[] = {a}; }
       { bins ba[2] = {a}; }
 
-      { bins ba = {a} with { b }; }
+      { bins ba = {a} with ( b ); }
 
       { wildcard bins bwa = {a}; }
-      { wildcard bins bwaw = {a} with { b }; }
+      { wildcard bins bwaw = {a} with ( b ); }
 
       { bins def = default; }
       { bins defs = default sequence; }
@@ -155,6 +155,9 @@ module t (/*AUTOARG*/
          bins bin_par = (binsof(a));
          bins bin_and = binsof(a) && binsof(b);
          bins bin_or = binsof(a) || binsof(b);
+         bins bin_with = binsof(a) with (a);
+         bins bin_or_with = binsof(a) || binsof(a) with (a);
+         bins bin_and_with = binsof(a) && binsof(a) with (a);
       }
    endgroup
 
