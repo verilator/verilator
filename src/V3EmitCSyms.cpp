@@ -105,7 +105,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     size_t m_funcNum = 0;  // CFunc split function number
     V3OutCFile* m_ofpBase = nullptr;  // Base (not split) C file
     AstCFile* m_ofpBaseFile = nullptr;  // Base (not split) AstCFile
-    std::unordered_map<int, bool> m_usesVfinal;  // Split method uses __Vfinal
+    std::vector<std::pair<size_t, bool>> m_usesVfinal;  // Split file index + uses __Vfinal
     VDouble0 m_statVarScopeBytes;  // Statistic tracking
     const std::string m_symsFileBase = v3Global.opt.makeDir() + "/" + symClassName();
 
@@ -620,7 +620,7 @@ void EmitCSyms::checkSplit(bool usesVfinal) {
     puts(");\n");
 
     // Create new split file
-    m_usesVfinal[funcNum] = usesVfinal;
+    m_usesVfinal.emplace_back(funcNum, usesVfinal);
     const std::string filename = m_symsFileBase + "__" + std::to_string(funcNum) + ".cpp";
     AstCFile* const cfilep = newCFile(filename, true /*slow*/, true /*source*/);
     cfilep->support(true);
