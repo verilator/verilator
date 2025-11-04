@@ -156,6 +156,8 @@ module t (/*AUTOARG*/
          bins bin_and = binsof(a) && binsof(b);
          bins bin_or = binsof(a) || binsof(b);
          bins bin_with = binsof(a) with (a);
+         bins bin_or_with = binsof(a) || binsof(a) with (a);
+         bins bin_and_with = binsof(a) && binsof(a) with (a);
       }
    endgroup
 

@@ -895,7 +895,6 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %left           yOR
 %left           yAND
 %nonassoc       yNOT yNEXTTIME yS_NEXTTIME
-%left           yWITH__PAREN
 %left           yINTERSECT
 %left           yWITHIN
 %right          yTHROUGHOUT
@@ -6981,6 +6980,16 @@ cross_body_item<nodep>:  // ==IEEE: cross_body_item
         ;
 
 select_expression<nodep>:  // ==IEEE: select_expression
+                select_expression_r
+                        { $$ = $1; }
+        |       select_expression yP_ANDAND select_expression
+                        { $$ = nullptr; BBCOVERIGN($2, "Ignoring unsupported: coverage select expression '&&'"); DEL($1, $3); }
+        |       select_expression yP_OROR   select_expression
+                        { $$ = nullptr; BBCOVERIGN($2, "Ignoring unsupported: coverage select expression '||'"); DEL($1, $3); }
+        ;
+
+// This non-terminal exists to disambiguate select_expression and make "with" bind tighter
+select_expression_r<nodep>:
         //                      // IEEE: select_condition expanded here
                 yBINSOF '(' bins_expression ')'
                         { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: coverage select expression 'binsof'"); DEL($3); }
@@ -6994,18 +7003,14 @@ select_expression<nodep>:  // ==IEEE: select_expression
                         { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: coverage select expression with"); DEL($3); }
         |       '!' yWITH__PAREN '(' cgexpr ')'
                         { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: coverage select expression with"); DEL($4); }
+        |       select_expression_r yWITH__PAREN '(' cgexpr ')'
+                        { $$ = nullptr; BBCOVERIGN($2, "Ignoring unsupported: coverage select expression with"); DEL($1, $4); }
         //                      // IEEE-2012: Need clarification as to precedence
         //UNSUP yWITH__PAREN '(' cgexpr ')' yMATCHES cgexpr    { }
         //                      // IEEE-2012: Need clarification as to precedence
         //UNSUP '!' yWITH__PAREN '(' cgexpr ')' yMATCHES cgexpr { }
         //
         |       '(' select_expression ')'                       { $$ = $2; }
-        |       select_expression yP_ANDAND select_expression
-                        { $$ = nullptr; BBCOVERIGN($2, "Ignoring unsupported: coverage select expression '&&'"); DEL($1, $3); }
-        |       select_expression yP_OROR   select_expression
-                        { $$ = nullptr; BBCOVERIGN($2, "Ignoring unsupported: coverage select expression '||'"); DEL($1, $3); }
-        |       select_expression yWITH__PAREN '(' cgexpr ')'
-                        { $$ = nullptr; BBCOVERIGN($2, "Ignoring unsupported: coverage select expression with"); DEL($1, $4); }
         //                      // IEEE-2012: cross_identifier
         //                      // Part of covergroup_expression - generic identifier
         //                      // IEEE-2012: Need clarification as to precedence
