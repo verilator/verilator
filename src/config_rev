@@ -27,18 +27,23 @@ def get_rev() -> str:
 
     data = os.popen('git describe --always').read()
 
-    result = "vUNKNOWN"
+    if 'SOURCE_DATE_EPOCH' in os.environ:
+        # e.g. Package builds that don't set VERILATOR_SRC_VERSION
+        stamp = datetime.fromtimestamp(int(os.getenv("SOURCE_DATE_EPOCH", "0")), tz=timezone.utc)
+    else:
+        stamp = datetime.now(timezone.utc)
+    result = "vUNKNOWN-built" + stamp.strftime("%Y%m%d")
 
     m = re.search(r'^(v[0-9].*)', data)
     if m:
-        # e.g. in a complate verilator checkout with tags
+        # e.g. in a complate verilator checkout with tags; ignore build time
         result = m.group(1)
         result = re.sub('_', '.', result)
     else:
-        # e.g. in a sparse submodule checkout without tags
+        # e.g. in a sparse submodule checkout without tags; append hash
         m = re.search(r'^([a-f0-9]+)$', data)
         if m:
-            result = "vUNKNOWN-" + datetime.now(timezone.utc).strftime("%Y%m%d") + "-" + m.group(1)
+            result += "-" + m.group(1)
 
     data = os.popen('git status').read()
     if (re.search('Changed but not updated', data, flags=re.IGNORECASE)
