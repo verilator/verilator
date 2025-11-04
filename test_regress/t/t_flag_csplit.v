@@ -39,6 +39,7 @@ module t (/*AUTOARG*/
          $write("[%0t] cyc==%0d  sum=%x\n", $time, cyc, w[CNT]);
 `endif
          if (w[CNT] !== `EXPECTED_SUM) $stop;
+         $display("cyc: %0d $past(cyc): %0d", cyc, $past(cyc));
          $write("*-* All Finished *-*\n");
          $finish;
       end
@@ -55,7 +56,7 @@ module sub (input clk, input [31:0] i, output [31:0] z);
    assign z = z_tmp;
 
    always @(posedge z_tmp == 32'b11) begin
-     $display("%m z_tmp[0]: %0d", z_tmp);
+     $display("%m z_tmp: %0d, $past(z_tmp): $0d", z_tmp, $past(z_tmp));
    end
 
 endmodule
