@@ -914,7 +914,22 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (nodep->user1()) {
             nodep->v3warn(CONSTRAINTIGN, "Global constraints ignored (unsupported)");
         }
-        editFormat(nodep);
+        // Handle MemberSel references created by captureRefByThis()
+        if (VN_IS(nodep->fromp(), VarRef)
+            && nodep->fromp()->user1()  // Depending on a randomized variable
+            && nodep->user2p()  // Pointer to containing module
+            && VN_AS(nodep->user2p(), NodeModule) == nodep->varp()->user2p()) {
+            // Convert to VarRef
+            AstVarRef* const varRefp
+                = new AstVarRef{nodep->fileline(), nodep->varp(), VAccess::READ};
+            varRefp->user1(nodep->varp()->rand().isRandomizable());
+            varRefp->classOrPackagep(VN_AS(nodep->user2p(), NodeModule));
+            nodep->replaceWith(varRefp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            visit(varRefp);
+        } else {
+            editFormat(nodep);
+        }
     }
     void visit(AstSFormatF* nodep) override {}
     void visit(AstStmtExpr* nodep) override {}
