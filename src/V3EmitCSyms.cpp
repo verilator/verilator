@@ -177,12 +177,11 @@ class EmitCSyms final : EmitCBaseVisitorConst {
 
         while (!scp.empty()) {
             const auto scpit = m_vpiScopeCandidates.find(scopeSymString(scp));
-            if (scpit != m_vpiScopeCandidates.end()) {
-                if (m_scopeNames.find(scp) == m_scopeNames.end()) {
-                    // If not in m_scopeNames, add it, otherwise just update m_type
-                    const auto pair = m_scopeNames.emplace(scpit->second.m_symName, scpit->second);
-                    if (!pair.second) pair.first->second.m_type = scpit->second.m_type;
-                }
+            if ((scpit != m_vpiScopeCandidates.end())
+                && (m_scopeNames.find(scp) == m_scopeNames.end())) {
+                // If not in m_scopeNames, add it, otherwise just update m_type
+                const auto pair = m_scopeNames.emplace(scpit->second.m_symName, scpit->second);
+                if (!pair.second) pair.first->second.m_type = scpit->second.m_type;
             }
 
             // resize and advance pointers
@@ -247,8 +246,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     }
 
     void buildVpiHierarchy() {
-        for (const auto& pair : m_scopeNames) {
-            const std::string symName = pair.second.m_symName;
+        for (const auto& itpair : m_scopeNames) {
+            const std::string symName = itpair.second.m_symName;
             std::string above = symName;
             if (VString::startsWith(above, "TOP.")) above.replace(0, 4, "");
 
@@ -371,10 +370,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     void visit(AstVar* nodep) override {
         nameCheck(nodep);
         iterateChildrenConst(nodep);
-        // Ignore locals
-        if (m_cfuncp) return;
-        // Record if public
-        if (nodep->isSigUserRdPublic() || nodep->isSigUserRWPublic()) {
+        // Record if public, ignoring locals
+        if ((nodep->isSigUserRdPublic() || nodep->isSigUserRWPublic()) && !m_cfuncp) {
             m_modVars.emplace_back(m_modp, nodep);
         }
     }
@@ -412,7 +409,8 @@ void EmitCSyms::emitSymHdr() {
     setOutputFile(ofilep, cfilep);
 
     ofp()->putsHeader();
-    puts("// DESCRIPTION: Verilator output: Symbol table internal header\n");
+    puts("// DESCR"
+         "IPTION: Verilator output: Symbol table internal header\n");
     puts("//\n");
     puts("// Internal details; most calling programs do not need this header,\n");
     puts("// unless using verilator public meta comments.\n");
@@ -441,8 +439,8 @@ void EmitCSyms::emitSymHdr() {
     if (v3Global.dpi()) {
         puts("\n// DPI TYPES for DPI Export callbacks (Internal use)\n");
         std::set<std::string> types;  // Remove duplicates and sort
-        for (const auto& pair : m_scopeFuncs) {
-            const AstCFunc* const funcp = pair.second.m_cfuncp;
+        for (const auto& itpair : m_scopeFuncs) {
+            const AstCFunc* const funcp = itpair.second.m_cfuncp;
             if (!funcp->dpiExportImpl()) continue;
             const std::string cbtype
                 = protect(v3Global.opt.prefix() + "__Vcb_" + funcp->cname() + "_t");
@@ -504,9 +502,9 @@ void EmitCSyms::emitSymHdr() {
     }
 
     puts("\n// MODULE INSTANCE STATE\n");
-    for (const ScopeModPair& pair : m_scopes) {
-        const AstScope* const scopep = pair.first;
-        const AstNodeModule* const modp = pair.second;
+    for (const ScopeModPair& itpair : m_scopes) {
+        const AstScope* const scopep = itpair.first;
+        const AstNodeModule* const modp = itpair.second;
         if (VN_IS(modp, Class)) continue;
         const std::string name = EmitCUtil::prefixNameProtect(modp);
         ofp()->printf("%-30s ", name.c_str());
@@ -523,8 +521,8 @@ void EmitCSyms::emitSymHdr() {
 
     if (!m_scopeNames.empty()) {  // Scope names
         puts("\n// SCOPE NAMES\n");
-        for (const auto& pair : m_scopeNames) {
-            const ScopeData& sd = pair.second;
+        for (const auto& itpair : m_scopeNames) {
+            const ScopeData& sd = itpair.second;
             putns(sd.m_nodep, "VerilatedScope " + protect("__Vscope_" + sd.m_symName) + ";\n");
         }
     }
@@ -639,7 +637,8 @@ void EmitCSyms::checkSplit(bool usesVfinal) {
 
 void EmitCSyms::emitSymImpPreamble() {
     ofp()->putsHeader();
-    puts("// DESCRIPTION: Verilator output: Symbol table implementation internals\n");
+    puts("// DESCR"
+         "IPTION: Verilator output: Symbol table implementation internals\n");
     puts("\n");
 
     // Includes
@@ -653,10 +652,10 @@ void EmitCSyms::emitSymImpPreamble() {
     puts("\n");
     // Declarations for DPI Export implementation functions
     bool needsNewLine = false;
-    for (const auto& pair : m_scopeFuncs) {
-        const AstCFunc* const funcp = pair.second.m_cfuncp;
+    for (const auto& itpair : m_scopeFuncs) {
+        const AstCFunc* const funcp = itpair.second.m_cfuncp;
         if (!funcp->dpiExportImpl()) continue;
-        emitCFuncDecl(funcp, pair.second.m_modp);
+        emitCFuncDecl(funcp, itpair.second.m_modp);
         needsNewLine = true;
     }
     if (needsNewLine) puts("\n");
@@ -668,9 +667,9 @@ void EmitCSyms::emitScopeHier(bool destroy) {
     const std::string verb = destroy ? "Tear down" : "Set up";
     const std::string method = destroy ? "remove" : "add";
     puts("\n// " + verb + " scope hierarchy\n");
-    for (const auto& pair : m_scopeNames) {
-        if (pair.first == "TOP") continue;
-        const ScopeData& sd = pair.second;
+    for (const auto& itpair : m_scopeNames) {
+        if (itpair.first == "TOP") continue;
+        const ScopeData& sd = itpair.second;
         const std::string& name = sd.m_prettyName;
         const std::string& scopeType = sd.m_type;
         if (name.find('.') != string::npos) continue;
@@ -679,10 +678,10 @@ void EmitCSyms::emitScopeHier(bool destroy) {
               "__Vhier." + method + "(0, &" + protect("__Vscope_" + sd.m_symName) + ");\n");
     }
 
-    for (const auto& pair : m_vpiScopeHierarchy) {
-        const std::string fromname = scopeSymString(pair.first);
+    for (const auto& itpair : m_vpiScopeHierarchy) {
+        const std::string fromname = scopeSymString(itpair.first);
         const ScopeData& from = m_scopeNames.at(fromname);
-        for (const std::string& name : pair.second) {
+        for (const std::string& name : itpair.second) {
             const std::string toname = scopeSymString(name);
             const ScopeData& to = m_scopeNames.at(toname);
             puts("__Vhier." + method + "(");
@@ -714,8 +713,8 @@ void EmitCSyms::emitSymImp() {
             if (v3Global.opt.trace()) puts("os" + op + "__Vm_activity;\n");
             puts("os " + op + " __Vm_didInit;\n");
             puts("// Module instance state\n");
-            for (const ScopeModPair& pair : m_scopes) {
-                const AstScope* const scopep = pair.first;
+            for (const ScopeModPair& itpair : m_scopes) {
+                const AstScope* const scopep = itpair.first;
                 puts(VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + "."
                      + funcname + "(os);\n");
             }
@@ -790,9 +789,9 @@ void EmitCSyms::emitSymImp() {
     }
 
     puts("    // Setup module instances\n");
-    for (const ScopeModPair& pair : m_scopes) {
-        const AstScope* const scopep = pair.first;
-        const AstNodeModule* const modp = pair.second;
+    for (const ScopeModPair& itpair : m_scopes) {
+        const AstScope* const scopep = itpair.first;
+        const AstNodeModule* const modp = itpair.second;
         puts("    , ");
         putns(scopep, protect(scopep->nameDotless()));
         puts("{this");
@@ -885,9 +884,9 @@ void EmitCSyms::emitSymImp() {
 
     if (!m_scopeNames.empty()) {  // Setup scope names
         puts("// Setup scopes\n");
-        for (const auto& pair : m_scopeNames) {
+        for (const auto& itpair : m_scopeNames) {
             checkSplit(false);
-            const ScopeData& sd = pair.second;
+            const ScopeData& sd = itpair.second;
             putns(sd.m_nodep, protect("__Vscope_" + sd.m_symName) + ".configure(this, name(), ");
             putsQuoted(VIdProtect::protectWordsIf(sd.m_prettyName, true));
             puts(", ");
@@ -910,8 +909,8 @@ void EmitCSyms::emitSymImp() {
 
         puts("// Setup export functions\n");
         puts("for (int __Vfinal = 0; __Vfinal < 2; ++__Vfinal) {\n");
-        for (const auto& pair : m_scopeFuncs) {
-            const ScopeFuncData& sfd = pair.second;
+        for (const auto& itpair : m_scopeFuncs) {
+            const ScopeFuncData& sfd = itpair.second;
             const AstScopeName* const scopep = sfd.m_scopep;
             const AstCFunc* const funcp = sfd.m_cfuncp;
             const AstNodeModule* const modp = sfd.m_modp;
@@ -931,9 +930,9 @@ void EmitCSyms::emitSymImp() {
         }
         // It would be less code if each module inserted its own variables.
         // Someday.  For now public isn't common.
-        for (const auto& pair : m_scopeVars) {
+        for (const auto& itpair : m_scopeVars) {
             checkSplit(true);
-            const ScopeVarData& svd = pair.second;
+            const ScopeVarData& svd = itpair.second;
 
             const AstScope* const scopep = svd.m_scopep;
             const AstVar* const varp = svd.m_varp;
