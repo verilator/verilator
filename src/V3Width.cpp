@@ -7015,7 +7015,7 @@ class WidthVisitor final : public VNVisitor {
             iterateCheckBool(nodep, "LHS", nodep->op1p(), BOTH);
             nodep->dtypeSetBit();
             if (m_underSExpr) {
-                nodep->v3error("Unexpected not in sequence expression context");
+                nodep->v3error("Unexpected 'not' in sequence expression context");
                 AstConst* const newp = new AstConst{nodep->fileline(), 0};
                 newp->dtypeFrom(nodep);
                 nodep->replaceWith(newp);

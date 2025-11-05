@@ -108,9 +108,8 @@ class AssertPropertiesParser final : public VNVisitorConst {
     // STATE
     std::unique_ptr<V3Graph> m_graphp = std::make_unique<V3Graph>();  // Property tree
     DfaVertex* m_lastp = nullptr;  // Last encountered vertex
-    bool m_underSExpr
-        = false;  // Whether it is under sequence expression for creating a start node
-    size_t m_underLogNots = 0;  // Number of not operators before sequence
+    bool m_underSExpr = false;  // Is under sequence expression, for creating a start node
+    size_t m_underLogNots = 0;  // Number of 'not' operators before sequence
 
     // VISITORS
     void visit(AstNodeCoverOrAssert* nodep) override { iterateChildrenConst(nodep); }
