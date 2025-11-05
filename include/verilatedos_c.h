@@ -41,6 +41,10 @@
 #if defined(__APPLE__) && !defined(__arm64__) && !defined(__POWERPC__)
 # include <cpuid.h>  // For __cpuid_count()
 #endif
+
+#if defined(__APPLE__) && defined(__MACH__)
+# include <mach/mach.h>  // For task_info()
+#endif
 // clang-format on
 
 namespace VlOs {
@@ -145,6 +149,15 @@ void memUsageBytes(uint64_t& peakr, uint64_t& currentr) VL_MT_SAFE {
         // The best we can do using simple Windows APIs is to get the size of the working set.
         peakr = pmc.PeakWorkingSetSize;
         currentr = pmc.WorkingSetSize;
+    }
+#elif defined(__APPLE__) && defined(__MACH__)
+    mach_task_basic_info_data_t info;
+    mach_msg_type_number_t count = MACH_TASK_BASIC_INFO_COUNT;
+    const kern_return_t ret
+        = task_info(mach_task_self(), MACH_TASK_BASIC_INFO, (task_info_t)&info, &count);
+    if (ret == KERN_SUCCESS && count == MACH_TASK_BASIC_INFO_COUNT) {
+        peakr = info.resident_size_max;
+        currentr = info.resident_size;
     }
 #else
     // Highly unportable. Sorry
