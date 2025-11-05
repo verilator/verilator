@@ -941,6 +941,7 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }  // * = Scope name
+    void name(const string& name) override { m_name = name; }  // * = Scope name
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
@@ -1871,7 +1872,7 @@ class AstVar final : public AstNode {
     bool m_ignorePostWrite : 1;  // Ignore writes in 'Post' blocks during ordering
     bool m_ignoreSchedWrite : 1;  // Ignore writes in scheduling (for special optimizations)
     bool m_dfgMultidriven : 1;  // Singal is multidriven, used by DFG to avoid repeat processing
-
+    bool m_globalConstrained : 1;  // Global constraint per IEEE 1800-2023 18.5.8
     void init() {
         m_ansi = false;
         m_declTyped = false;
@@ -1921,6 +1922,7 @@ class AstVar final : public AstNode {
         m_ignorePostWrite = false;
         m_ignoreSchedWrite = false;
         m_dfgMultidriven = false;
+        m_globalConstrained = false;
     }
 
 public:
@@ -2085,7 +2087,8 @@ public:
     void setIgnoreSchedWrite() { m_ignoreSchedWrite = true; }
     bool dfgMultidriven() const { return m_dfgMultidriven; }
     void setDfgMultidriven() { m_dfgMultidriven = true; }
-
+    void globalConstrained(bool flag) { m_globalConstrained = flag; }
+    bool globalConstrained() const { return m_globalConstrained; }
     // METHODS
     void name(const string& name) override { m_name = name; }
     void tag(const string& text) override { m_tag = text; }
