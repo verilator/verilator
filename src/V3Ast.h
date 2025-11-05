@@ -427,7 +427,7 @@ class AstNode VL_NOT_FINAL {
 #endif
 
     AstNodeDType* m_dtypep = nullptr;  // Data type of output or assignment (etc)
-    AstNode* m_headtailp;  // When at begin/end of list, the opposite end of the list
+    AstNode* m_headtailp;  // When at begin/end of list, the opposite end of the list, else nullptr
     FileLine* m_fileline;  // Where it was declared
 #ifdef VL_DEBUG
     // Only keep track of the edit count in the node in the debug build.
