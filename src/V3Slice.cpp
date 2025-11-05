@@ -391,7 +391,8 @@ public:
     explicit SliceVisitor(AstNetlist* nodep) { iterate(nodep); }
     ~SliceVisitor() override {
         V3Stats::addStat("Optimizations, Slice array assignments", m_statAssigns);
-        V3Stats::addStat("Optimizations, Slice array skips due to size limit", m_statSliceElementSkips);
+        V3Stats::addStat("Optimizations, Slice array skips due to size limit",
+                         m_statSliceElementSkips);
     }
 };
 

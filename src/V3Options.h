@@ -727,7 +727,7 @@ public:
     bool fReloop() const { return m_fReloop; }
     bool fReorder() const { return m_fReorder; }
     bool fSlice() const { return m_fSlice; }
-    int  fSliceElementLimit() const { return m_fSliceElementLimit; }
+    int fSliceElementLimit() const { return m_fSliceElementLimit; }
     bool fSplit() const { return m_fSplit; }
     bool fSubst() const { return m_fSubst; }
     bool fSubstConst() const { return m_fSubstConst; }
