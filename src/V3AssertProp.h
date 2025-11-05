@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Transform sequences into properties
+// DESCRIPTION: Verilator: Implementation of assertion properties
 //
 // Code available from: https://verilator.org
 //
@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef VERILATOR_V3ASSERTPROPERTIES_H_
-#define VERILATOR_V3ASSERTPROPERTIES_H_
+#ifndef VERILATOR_V3ASSERTPROP_H_
+#define VERILATOR_V3ASSERTPROP_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -24,9 +24,9 @@ class AstNetlist;
 
 //============================================================================
 
-class V3AssertProperties final {
+class V3AssertProp final {
 public:
-    static void assertPropertiesAll(AstNetlist* nodep) VL_MT_DISABLED;
+    static void assertPropAll(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard

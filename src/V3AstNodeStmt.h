@@ -822,14 +822,15 @@ public:
     bool off() const { return m_off; }
 };
 class AstPExprClause final : public AstNodeStmt {
-    const bool m_passs;
+    const bool m_pass;  // True if will be replaced by passing assertion clause, false for
+                        // assertion failure clause
 
 public:
     ASTGEN_MEMBERS_AstPExprClause;
-    explicit AstPExprClause(FileLine* fl, bool passs = true)
+    explicit AstPExprClause(FileLine* fl, bool pass = true)
         : ASTGEN_SUPER_PExprClause(fl)
-        , m_passs{passs} {}
-    bool passs() const { return m_passs; }
+        , m_pass{pass} {}
+    bool pass() const { return m_pass; }
 };
 class AstPrintTimeScale final : public AstNodeStmt {
     // Parents: stmtlist
