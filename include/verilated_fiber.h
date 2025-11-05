@@ -84,10 +84,10 @@ private:
 
     std::jmp_buf m_callerCtx{};   // Register state of caller context
     std::jmp_buf m_fiberCtx{};    // Register state of fiber context
-    void* m_mappingp = nullptr;  // Mapping returned by mmap
-    std::size_t m_mappingSize = 0;  // Size of mapping including guards
-    uint8_t* m_stackBasep = nullptr;  // Base address of usable stack segment
-    std::size_t m_stackSize = 0;  // Size of usable stack segment
+    void* m_mappingp = nullptr;  // Base of mmap allocation (includes guards)
+    std::size_t m_mappingSize = 0;  // Total size of allocation (stack + 2*guard)
+    uint8_t* m_stackBasep = nullptr;  // Start of usable stack (after low guard)
+    std::size_t m_stackSize = 0;  // Size of usable stack (excludes guards)
     Fn m_fn;  // Function executed by the fiber
     bool m_started = false;  // Indicates whether start() already ran
     bool m_done = false;  // Set once m_fn returns

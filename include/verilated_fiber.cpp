@@ -32,6 +32,8 @@ thread_local VlFiber* VlFiber::s_currentFiberp = nullptr;
 
 namespace {
 
+// Align pointer down to 16-byte boundary (required by x86_64 ABI)
+// The x86_64 calling convention requires stack pointer to be 16-byte aligned
 inline std::uint8_t* alignDown16(std::uint8_t* ptr) {
     return reinterpret_cast<std::uint8_t*>(reinterpret_cast<std::uintptr_t>(ptr)
                                            & ~std::uintptr_t(0xF));
@@ -48,32 +50,39 @@ std::unique_ptr<VlFiber> VlFiber::create(Fn fn, std::size_t stackSize) {
 
 VlFiber::VlFiber(Fn fn, std::size_t stackSize)
     : m_fn{std::move(fn)} {
+    // Get system page size for guard page alignment
     const long page = ::sysconf(_SC_PAGESIZE);
     if (VL_UNLIKELY(page <= 0)) {
         VL_FATAL_MT(__FILE__, __LINE__, "", "sysconf(_SC_PAGESIZE) failed");
     }
+    const std::size_t guardSize = static_cast<std::size_t>(page);
 
-    const std::size_t guard = static_cast<std::size_t>(page);
-    m_mappingSize = stackSize + 2 * guard;
+    // Calculate total allocation size: stack + two guard pages
+    m_stackSize = stackSize;
+    m_mappingSize = stackSize + 2 * guardSize;
 
+    // Allocate memory with mmap (anonymous, private mapping)
     void* const mappingp = ::mmap(nullptr, m_mappingSize, PROT_READ | PROT_WRITE,
                                    MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (VL_UNLIKELY(mappingp == MAP_FAILED)) {
         VL_FATAL_MT(__FILE__, __LINE__, "",
                     (std::string{"mmap failed: "} + std::strerror(errno)).c_str());
     }
-    if (VL_UNLIKELY(::mprotect(mappingp, guard, PROT_NONE) != 0)) {
-        VL_FATAL_MT(__FILE__, __LINE__, "", "mprotect failed for guard page (low)");
-    }
-    if (VL_UNLIKELY(::mprotect(static_cast<std::uint8_t*>(mappingp) + guard + stackSize, guard,
-                               PROT_NONE)
-                    != 0)) {
-        VL_FATAL_MT(__FILE__, __LINE__, "", "mprotect failed for guard page (high)");
-    }
 
+    // Initialize memory layout pointers early
     m_mappingp = mappingp;
-    m_stackBasep = static_cast<std::uint8_t*>(mappingp) + guard;
-    m_stackSize = stackSize;
+    m_stackBasep = static_cast<std::uint8_t*>(mappingp) + guardSize;
+
+    // Protect guard pages (no read/write access) to catch stack overflow/underflow
+    uint8_t* const lowGuard = static_cast<uint8_t*>(mappingp);
+    uint8_t* const highGuard = m_stackBasep + stackSize;
+    
+    if (VL_UNLIKELY(::mprotect(lowGuard, guardSize, PROT_NONE) != 0)) {
+        VL_FATAL_MT(__FILE__, __LINE__, "", "mprotect failed for low guard page");
+    }
+    if (VL_UNLIKELY(::mprotect(highGuard, guardSize, PROT_NONE) != 0)) {
+        VL_FATAL_MT(__FILE__, __LINE__, "", "mprotect failed for high guard page");
+    }
 }
 
 VlFiber::~VlFiber() {
@@ -146,15 +155,23 @@ void VlFiber::addWaiter(std::coroutine_handle<> waiter) {
 // Bootstrap helpers
 
 void VlFiber::start(VlFiber* fiberp) {
-    std::uint8_t* const top
+    // Calculate stack top: align down to 16-byte boundary (x86_64 ABI requirement)
+    // Stack grows downward, so we start from the end of usable stack space
+    // Subtract 8 bytes for alignment, then add back to ensure proper alignment
+    std::uint8_t* const stackTop
         = alignDown16(fiberp->m_stackBasep + fiberp->m_stackSize - 8u) + 8u;
+    
 #if defined(__x86_64__)
+    // Switch to fiber stack and call entry point
+    // - Set %rsp to stack top (new stack pointer)
+    // - Clear %rbp (mark as base of call stack for debuggers)
+    // - Call entryPoint with fiberp in %rdi (first arg in x86_64 calling convention)
     asm volatile(
         "mov %[stack], %%rsp\n\t"
         "xor %%rbp, %%rbp\n\t"
         "call *%[entry]\n\t"
         :
-        : [stack] "r"(top), [entry] "r"(&VlFiber::entryPoint), "D"(fiberp)
+        : [stack] "r"(stackTop), [entry] "r"(&VlFiber::entryPoint), "D"(fiberp)
         : "memory");
 #else
 # error "VlFiber currently supports only x86_64"
