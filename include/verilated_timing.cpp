@@ -343,28 +343,33 @@ void VlForkSyncState::done(const char* filename, int lineno) {
 VlCoroutine::VlPromise::~VlPromise() {
     // Indicate to the return object that the coroutine has finished or been destroyed
     if (m_corop) m_corop->m_promisep = nullptr;
-    // If there is a continuation, destroy it
-    if (m_continuation) m_continuation.destroy();
+    // If there is a coroutine continuation, destroy it
+    if (auto* coro = std::get_if<std::coroutine_handle<>>(&m_continuation)) {
+        if (*coro) coro->destroy();
+    }
 }
 
 std::suspend_never VlCoroutine::VlPromise::final_suspend() noexcept {
     // Indicate to the return object that the coroutine has finished
     if (m_corop) {
         m_corop->m_promisep = nullptr;
-        // Forget the return value, we won't need it and it won't be able to let us know if
-        // it's destroyed
         m_corop = nullptr;
     }
-    // If there is a continuation, resume it
-    if (m_continuation) {
-        m_continuation();
-        m_continuation = nullptr;
+    // Resume continuation - handles both coroutines and fibers with single unified logic
+    if (auto* coro = std::get_if<std::coroutine_handle<>>(&m_continuation)) {
+        if (*coro) (*coro)();
+    } else if (auto* fiber = std::get_if<VlFiber*>(&m_continuation)) {
+        if (*fiber) (*fiber)->resume();
     }
-    // If there is a fiber waiting, resume it (for DPI export timing support)
-    if (m_fiberp) {
-        VlFiber* const fiberp = m_fiberp;
-        m_fiberp = nullptr;
-        fiberp->resume();
-    }
+    m_continuation = std::monostate{};  // Clear continuation
     return {};
+}
+
+void VlCoroutine::setFiberContinuation(VlFiber* fiberp) {
+    if (VL_UNLIKELY(!m_promisep)) {
+        // Coroutine already completed, resume fiber immediately
+        if (fiberp) fiberp->resume();
+        return;
+    }
+    m_promisep->m_continuation = fiberp;
 }

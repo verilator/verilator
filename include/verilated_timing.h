@@ -30,6 +30,7 @@
 #include "verilated_fiber.h"
 
 #include <limits>
+#include <variant>
 #include <vector>
 
 // clang-format off
@@ -449,9 +450,10 @@ class VlCoroutine final {
 private:
     // TYPES
     struct VlPromise final {
-        std::coroutine_handle<> m_continuation;  // Coroutine to resume after this one finishes
+        // Continuation to resume when this coroutine finishes (mutually exclusive)
+        // Can be: nothing (monostate), coroutine handle, or fiber pointer
+        std::variant<std::monostate, std::coroutine_handle<>, VlFiber*> m_continuation;
         VlCoroutine* m_corop = nullptr;  // Pointer to the coroutine return object
-        VlFiber* m_fiberp = nullptr;  // Fiber to resume after completion (if any)
 
         ~VlPromise();
 
@@ -497,17 +499,13 @@ public:
     // Suspend the awaiter if the coroutine is suspended (the promise exists)
     bool await_ready() const noexcept { return !m_promisep; }
     // Set the awaiting coroutine as the continuation of the current coroutine
-    void await_suspend(std::coroutine_handle<> coro) { m_promisep->m_continuation = coro; }
+    void await_suspend(std::coroutine_handle<> coro) { 
+        if (m_promisep) m_promisep->m_continuation = coro; 
+    }
     void await_resume() const noexcept {}
 
     // Set fiber to be resumed when this coroutine completes (for DPI export timing support)
-    void setFiberContinuation(VlFiber* fiberp) {
-        if (VL_UNLIKELY(!m_promisep)) {
-            if (fiberp) fiberp->resume();
-            return;
-        }
-        m_promisep->m_fiberp = fiberp;
-    }
+    void setFiberContinuation(VlFiber* fiberp);
 };
 
 #endif  // Guard
