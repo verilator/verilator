@@ -42,5 +42,33 @@ module t;
     $finish;
   end
 
+
+  localparam cycle = 1000.0 / 100.0;
+  localparam halfcycle = 0.5 * cycle;
+
+  logic clk = '0;
+
+  import "DPI-C" context task tb_c_wait();
+
+  export "DPI-C" task tb_sv_wait;
+  task automatic tb_sv_wait(input int n);
+    `WRITE_VERBOSE("tb_sv_wait start...\n");
+    repeat (n) @(negedge clk);
+    `WRITE_VERBOSE("tb_sv_wait done!\n");
+  endtask
+
+  always #halfcycle clk = ~clk;
+
+  initial begin
+    `WRITE_VERBOSE("test start\n");
+    repeat (10) @(posedge clk);
+    `WRITE_VERBOSE("calling tb_c_wait...\n");
+    tb_c_wait();
+    `WRITE_VERBOSE("tb_c_wait finish\n");
+    repeat (10) @(posedge clk);
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
+
   initial #(cycle * 30) $stop;  // timeout
 endmodule
