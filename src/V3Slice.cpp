@@ -58,7 +58,7 @@ class SliceVisitor final : public VNVisitor {
 
     // STATE - across all visitors
     VDouble0 m_statAssigns;  // Statistic tracking
-    VDouble0 m_statSliceLimitSkips;  // Statistic tracking
+    VDouble0 m_statSliceElementSkips;  // Statistic tracking
 
     // STATE - for current visit position (use VL_RESTORER)
     AstNode* m_assignp = nullptr;  // Assignment we are under
@@ -251,8 +251,9 @@ class SliceVisitor final : public VNVisitor {
 
         // Skip optimization if array is too large
         const int elements = arrayp->rangep()->elementsConst();
-        if (elements > v3Global.opt.fSliceOptLimit()) {
-            ++m_statSliceLimitSkips;
+        const int elementLimit = v3Global.opt.fSliceElementLimit();
+        if (elements > elementLimit && elementLimit > 0) {
+            ++m_statSliceElementSkips;
             return false;
         }
 
@@ -390,7 +391,7 @@ public:
     explicit SliceVisitor(AstNetlist* nodep) { iterate(nodep); }
     ~SliceVisitor() override {
         V3Stats::addStat("Optimizations, Slice array assignments", m_statAssigns);
-        V3Stats::addStat("Optimizations, Slice array skips due to size limit", m_statSliceLimitSkips);
+        V3Stats::addStat("Optimizations, Slice array skips due to size limit", m_statSliceElementSkips);
     }
 };
 
