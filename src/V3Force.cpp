@@ -308,6 +308,7 @@ class ForceConvertVisitor final : public VNVisitor {
             if (refp->access() != VAccess::WRITE) return;
             AstVarScope* const vscp = refp->varScopep();
             if (vscp->varp()->isContinuously()) {
+                refp->access(VAccess::READ);
                 ForceState::markNonReplaceable(refp);
             } else {
                 refp->replaceWith(m_state.getForceComponents(vscp).forcedUpdate(vscp));
