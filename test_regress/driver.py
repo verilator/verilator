@@ -1476,12 +1476,14 @@ class VlTest:
                      tee=param['tee'])
         elif param['iv']:
             cmd = [
-                run_env + self.obj_dir + "/simiv", ' '.join(param['iv_run_flags']),
-                ' '.join(param['all_run_flags'])
+                run_env + 'vvp', ' '.join(param['iv_run_flags']), ' '.join(param['all_run_flags'])
             ]
             if param['use_libvpi']:
-                # Don't enter command line on $stop, include vpi
-                cmd += ["vvp -n -m " + self.obj_dir + "/libvpi.so"]
+                # Don't enter command line on $stop
+                cmd += ["-n"]
+                # include vpi
+                cmd += ["-m", self.obj_dir + "/libvpi.so"]
+            cmd += [self.obj_dir + "/simiv"]
             self.run(cmd=cmd,
                      check_finished=param['check_finished'],
                      entering=param['entering'],
