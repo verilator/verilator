@@ -9,11 +9,13 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('linter')
 
 test.top_filename = "t/t_opt_slice_element_limit.v"
+test.golden_filename = "t/t_opt_slice_element_limit_bad.out"
 
 test.lint(fails=True,
-          verilator_flags2=['--stats', '--fslice-element-limit', '-100'])
+          verilator_flags2=['--stats', '--fslice-element-limit', '-100'],
+          except_filename=test.golden_filename)
 
 test.passes()
