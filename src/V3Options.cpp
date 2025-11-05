@@ -1464,6 +1464,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-ftable", FOnOff, &m_fTable);
     DECL_OPTION("-ftaskify-all-forked", FOnOff, &m_fTaskifyAll).undocumented();  // Debug
     DECL_OPTION("-fvar-split", FOnOff, &m_fVarSplit);
+    DECL_OPTION("-fslice-opt-limit", CbVal, [this, fl](const char* valp) {
+        m_fSliceOptLimit = std::atoi(valp);
+        if (m_fSliceOptLimit < 1) fl->v3fatal("--fslice-opt-limit must be >= 1: " << valp);
+    });
 
     DECL_OPTION("-G", CbPartialMatch, [this](const char* optp) { addParameter(optp, false); });
     DECL_OPTION("-gate-stmts", Set, &m_gateStmts);

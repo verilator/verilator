@@ -719,6 +719,10 @@ Summary:
    automatically. Variables explicitly annotated with
    :option:`/*verilator&32;split_var*/` are still split.
 
+.. option:: --fslice-opt-limit
+   Rarely needed.  Set the maximum array size (number of elements) 
+   for slice optimization to avoid excessive memory usage.
+
 .. option:: -future0 <option>
 
    Rarely needed.  Suppress an unknown Verilator option for an option that

@@ -419,6 +419,7 @@ private:
     bool m_fTable;       // main switch: -fno-table: lookup table creation
     bool m_fTaskifyAll = false;  // main switch: --ftaskify-all-forked
     bool m_fVarSplit;    // main switch: -fno-var-split: automatic variable splitting
+    int m_fSliceOptLimit = 256;  // main switch: --fslice-opt-limit
     // clang-format on
 
     bool m_available = false;  // Set to true at the end of option parsing
@@ -732,6 +733,7 @@ public:
     bool fTable() const { return m_fTable; }
     bool fTaskifyAll() const { return m_fTaskifyAll; }
     bool fVarSplit() const { return m_fVarSplit; }
+    int fSliceOptLimit() const { return m_fSliceOptLimit; }
 
     std::string traceClassBase() const VL_MT_SAFE;  // Deprecated
     std::string traceClassLang() const VL_MT_SAFE;  // Deprecated
