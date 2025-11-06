@@ -48,7 +48,6 @@ public:
     explicit DfaVertex(V3Graph* graphp, AstNode* nodep) VL_MT_DISABLED : V3GraphVertex{graphp},
                                                                          m_nodep{nodep} {}
     AstNode* nodep() const { return m_nodep; }
-    // LCOV_EXCL_START // Debug code
     string name() const override VL_MT_STABLE {
         return cvtToHex(m_nodep) + "\\n " + cvtToStr(m_nodep->typeName()) + "\\n"s
                + m_nodep->fileline()->ascii();
@@ -58,7 +57,6 @@ public:
         if (outEmpty()) return "doubleoctagon";
         return "oval";
     }
-    // LCOV_EXCL_STOP
     bool isStart() const { return inEmpty(); }
 };
 
