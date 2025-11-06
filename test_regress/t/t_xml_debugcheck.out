@@ -1782,7 +1782,7 @@
         </creset>
       </cfunc>
     </package>
-    <cfile loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck__Syms.cpp"/>
+    <cfile loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck__Syms__Slow.cpp"/>
     <cfile loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck__Syms.h"/>
     <cfile loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck.h"/>
     <cfile loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck.cpp"/>

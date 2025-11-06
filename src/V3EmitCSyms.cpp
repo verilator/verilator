@@ -101,23 +101,29 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     std::map<const std::string, std::vector<std::string>> m_vpiScopeHierarchy;
     int m_coverBins = 0;  // Coverage bin number
     const bool m_dpiHdrOnly;  // Only emit the DPI header
-    int m_numStmts = 0;  // Number of statements output
-    size_t m_funcNum = 0;  // CFunc split function number
-    V3OutCFile* m_ofpBase = nullptr;  // Base (not split) C file
-    AstCFile* m_ofpBaseFile = nullptr;  // Base (not split) AstCFile
-    std::vector<std::pair<size_t, bool>> m_usesVfinal;  // Split file index + uses __Vfinal
+    std::vector<std::string> m_splitFuncNames;  // Split file names
     VDouble0 m_statVarScopeBytes;  // Statistic tracking
     const std::string m_symsFileBase = v3Global.opt.makeDir() + "/" + symClassName();
 
     // METHODS
+    void openOutputFile(const std::string fileName) {
+        V3OutCFile* const fp = optSystemC() ? new V3OutScFile{fileName} : new V3OutCFile{fileName};
+        AstCFile* const cfilep = newCFile(fileName, true /*slow*/, true /*source*/);
+        cfilep->support(true);
+        setOutputFile(fp, cfilep);
+    }
+
     void emitSymHdr();
-    void checkSplit(bool usesVfinal);
-    void closeSplit();
     void emitSymImpPreamble();
-    void emitScopeHier(bool destroy);
-    void emitSymImp();
+    void emitScopeHier(std::vector<std::string>& stmts, bool destroy);
+    void emitSymImp(AstNetlist* netlistp);
     void emitDpiHdr();
     void emitDpiImp();
+
+    void emitSplit(std::vector<std::string>& stmts, const std::string name, size_t max_stmts);
+
+    std::vector<std::string> getSymCtorStmts();
+    std::vector<std::string> getSymDtorStmts();
 
     static void nameCheck(AstNode* nodep) {
         // Prevent GCC compile time error; name check all things that reach C++ code
@@ -293,7 +299,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         // Output
         if (!m_dpiHdrOnly) {
             // Must emit implementation first to determine number of splits
-            emitSymImp();
+            emitSymImp(nodep);
             emitSymHdr();
         }
         if (v3Global.dpi()) {
@@ -537,11 +543,7 @@ void EmitCSyms::emitSymHdr() {
          + "* modelp);\n");
     puts("~" + symClassName() + "();\n");
 
-    for (const auto& i : m_usesVfinal) {
-        puts("void " + symClassName() + "_" + std::to_string(i.first) + "(");
-        if (i.second) puts("int __Vfinal");
-        puts(");\n");
-    }
+    for (const std::string& funcName : m_splitFuncNames) { puts("void " + funcName + "();\n"); }
 
     puts("\n// METHODS\n");
     puts("const char* name() { return TOP.vlNamep; }\n");
@@ -587,54 +589,6 @@ void EmitCSyms::emitSymHdr() {
     closeOutputFile();
 }
 
-void EmitCSyms::closeSplit() {
-    UASSERT(ofp(), "There should be an output file");
-    // If we are in the base file, nothign to do
-    if (ofp() == m_ofpBase) return;
-
-    // Close sub-function definition in split file and close the file
-    puts("}\n");
-    closeOutputFile();
-
-    // Resume output to the base file
-    setOutputFile(m_ofpBase, m_ofpBaseFile);
-}
-
-void EmitCSyms::checkSplit(bool usesVfinal) {
-    UASSERT(ofp(), "There should be an output file");
-    if (!v3Global.opt.outputSplitCFuncs()) return;
-    if (m_numStmts < v3Global.opt.outputSplitCFuncs()) return;
-
-    // Splitting file, so using parallel build.
-    v3Global.useParallelBuild(true);
-
-    // If alredy in a split file, close it
-    if (ofp() != m_ofpBase) closeSplit();
-
-    // New function umber
-    const size_t funcNum = ++m_funcNum;
-
-    // Call the sub-function in the base file
-    puts(symClassName() + "_" + std::to_string(funcNum) + "(");
-    if (usesVfinal) puts("__Vfinal");
-    puts(");\n");
-
-    // Create new split file
-    m_usesVfinal.emplace_back(funcNum, usesVfinal);
-    const std::string filename = m_symsFileBase + "__" + std::to_string(funcNum) + ".cpp";
-    AstCFile* const cfilep = newCFile(filename, true /*slow*/, true /*source*/);
-    cfilep->support(true);
-    V3OutCFile* const ofilep = optSystemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
-    setOutputFile(ofilep, cfilep);
-    m_numStmts = 0;
-
-    // Emit header and open sub function definition in the split file
-    emitSymImpPreamble();
-    puts("void " + symClassName() + "::" + symClassName() + "_" + std::to_string(funcNum) + "(");
-    if (usesVfinal) puts("int __Vfinal");
-    puts(") {\n");
-}
-
 void EmitCSyms::emitSymImpPreamble() {
     ofp()->putsHeader();
     puts("// DESCR"
@@ -661,12 +615,16 @@ void EmitCSyms::emitSymImpPreamble() {
     if (needsNewLine) puts("\n");
 }
 
-void EmitCSyms::emitScopeHier(bool destroy) {
+void EmitCSyms::emitScopeHier(std::vector<std::string>& stmts, bool destroy) {
     if (!v3Global.opt.vpi()) return;
 
-    const std::string verb = destroy ? "Tear down" : "Set up";
+    if (destroy) {
+        stmts.emplace_back("// Tear down scope hierarchy");
+    } else {
+        stmts.emplace_back("// Set up scope hierarchy");
+    }
+
     const std::string method = destroy ? "remove" : "add";
-    puts("\n// " + verb + " scope hierarchy\n");
     for (const auto& itpair : m_scopeNames) {
         if (itpair.first == "TOP") continue;
         const ScopeData& sd = itpair.second;
@@ -674,280 +632,152 @@ void EmitCSyms::emitScopeHier(bool destroy) {
         const std::string& scopeType = sd.m_type;
         if (name.find('.') != string::npos) continue;
         if (scopeType != "SCOPE_MODULE" && scopeType != "SCOPE_PACKAGE") continue;
-        putns(sd.m_nodep,
-              "__Vhier." + method + "(0, &" + protect("__Vscope_" + sd.m_symName) + ");\n");
+        const std::string id = protect("__Vscope_" + sd.m_symName);
+        stmts.emplace_back("__Vhier." + method + "(0, &" + id + ");");
     }
-
     for (const auto& itpair : m_vpiScopeHierarchy) {
-        const std::string fromname = scopeSymString(itpair.first);
-        const ScopeData& from = m_scopeNames.at(fromname);
+        const std::string fromName = scopeSymString(itpair.first);
+        const std::string fromId = protect("__Vscope_" + m_scopeNames.at(fromName).m_symName);
         for (const std::string& name : itpair.second) {
-            const std::string toname = scopeSymString(name);
-            const ScopeData& to = m_scopeNames.at(toname);
-            puts("__Vhier." + method + "(");
-            puts("&" + protect("__Vscope_" + from.m_symName) + ", ");
-            puts("&" + protect("__Vscope_" + to.m_symName) + ");\n");
+            const std::string toName = scopeSymString(name);
+            const std::string toId = protect("__Vscope_" + m_scopeNames.at(toName).m_symName);
+            stmts.emplace_back("__Vhier." + method + "(&" + fromId + ", &" + toId + ");");
         }
     }
-    puts("\n");
 }
 
-void EmitCSyms::emitSymImp() {
-    UINFO(6, __FUNCTION__ << ": ");
-    const std::string filename = m_symsFileBase + ".cpp";
-    m_ofpBaseFile = newCFile(filename, true /*slow*/, true /*source*/);
-    m_ofpBaseFile->support(true);
-    m_ofpBase = optSystemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
-    setOutputFile(m_ofpBase, m_ofpBaseFile);
+std::vector<std::string> EmitCSyms::getSymCtorStmts() {
+    std::vector<std::string> stmts;
 
-    emitSymImpPreamble();
-
-    if (v3Global.opt.savable()) {
-        for (const bool& de : {false, true}) {
-            const std::string classname = de ? "VerilatedDeserialize" : "VerilatedSerialize";
-            const std::string funcname = protect(de ? "__Vdeserialize" : "__Vserialize");
-            const std::string op = de ? ">>" : "<<";
-            // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
-            puts("void " + symClassName() + "::" + funcname + "(" + classname + "& os) {\n");
-            puts("// Internal state\n");
-            if (v3Global.opt.trace()) puts("os" + op + "__Vm_activity;\n");
-            puts("os " + op + " __Vm_didInit;\n");
-            puts("// Module instance state\n");
-            for (const ScopeModPair& itpair : m_scopes) {
-                const AstScope* const scopep = itpair.first;
-                puts(VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + "."
-                     + funcname + "(os);\n");
-            }
-            puts("}\n");
-        }
-        puts("\n");
-    }
-
-    puts("// FUNCTIONS\n");
-
-    // Destructor
-    puts(symClassName() + "::~" + symClassName() + "()\n");
-    puts("{\n");
-    emitScopeHier(true);
-    if (v3Global.needTraceDumper()) {
-        puts("#ifdef VM_TRACE\n");
-        puts("if (__Vm_dumping) _traceDumpClose();\n");
-        puts("#endif  // VM_TRACE\n");
-    }
-    if (v3Global.opt.profPgo()) {
-        puts("_vm_pgoProfiler.write(\"" + topClassName()
-             + "\", _vm_contextp__->profVltFilename());\n");
-    }
-    puts("// Tear down sub module instances\n");
-    for (const ScopeModPair& itpair : vlstd::reverse_view(m_scopes)) {
-        const AstScope* const scopep = itpair.first;
-        const AstNodeModule* const modp = itpair.second;
-        if (modp->isTop()) continue;
-        putns(scopep, protect(scopep->nameDotless()));
-        puts(".dtor();\n");
-        ++m_numStmts;
-    }
-    puts("}\n");
-
-    if (v3Global.needTraceDumper()) {
-        if (!optSystemC()) {
-            puts("\nvoid " + symClassName() + "::_traceDump() {\n");
-            // Caller checked for __Vm_dumperp non-nullptr
-            puts("const VerilatedLockGuard lock{__Vm_dumperMutex};\n");
-            puts("__Vm_dumperp->dump(VL_TIME_Q());\n");
-            puts("}\n");
-        }
-
-        puts("\nvoid " + symClassName() + "::_traceDumpOpen() {\n");
-        puts("const VerilatedLockGuard lock{__Vm_dumperMutex};\n");
-        puts("if (VL_UNLIKELY(!__Vm_dumperp)) {\n");
-        puts("__Vm_dumperp = new " + v3Global.opt.traceClassLang() + "();\n");
-        puts("__Vm_modelp->trace(__Vm_dumperp, 0, 0);\n");
-        puts("const std::string dumpfile = _vm_contextp__->dumpfileCheck();\n");
-        puts("__Vm_dumperp->open(dumpfile.c_str());\n");
-        puts("__Vm_dumping = true;\n");
-        puts("}\n");
-        puts("}\n");
-
-        puts("\nvoid " + symClassName() + "::_traceDumpClose() {\n");
-        puts("const VerilatedLockGuard lock{__Vm_dumperMutex};\n");
-        puts("__Vm_dumping = false;\n");
-        puts("VL_DO_CLEAR(delete __Vm_dumperp, __Vm_dumperp = nullptr);\n");
-        puts("}\n");
-    }
-    puts("\n");
-
-    // Constructor
-    puts(symClassName() + "::" + symClassName()
-         + "(VerilatedContext* contextp, const char* namep, " + topClassName() + "* modelp)\n");
-    puts("    : VerilatedSyms{contextp}\n");
-    puts("    // Setup internal state of the Syms class\n");
-    puts("    , __Vm_modelp{modelp}\n");
-
-    if (v3Global.opt.mtasks()) {
-        puts("    , __Vm_threadPoolp{static_cast<VlThreadPool*>(contextp->threadPoolp())}\n");
-    }
-
-    if (v3Global.opt.profExec()) {
-        puts("    , "
-             "__Vm_executionProfilerp{static_cast<VlExecutionProfiler*>(contextp->"
-             "enableExecutionProfiler(&VlExecutionProfiler::construct))}\n");
-    }
-    if (v3Global.opt.profPgo() && !v3Global.opt.libCreate().empty()) {
-        puts("    , _vm_pgoProfiler{" + std::to_string(v3Global.currentHierBlockCost()) + "}\n");
-    }
-
-    puts("    // Setup top module instance\n");
-    for (const ScopeModPair& itpair : m_scopes) {
-        const AstScope* const scopep = itpair.first;
-        const AstNodeModule* const modp = itpair.second;
-        if (!modp->isTop()) continue;
-        puts("    , ");
-        putns(scopep, protect(scopep->nameDotless()));
-        puts("{this, namep}\n");
-        ++m_numStmts;
-        break;
-    }
-    puts("{\n");
+    const auto add = [&stmts](const std::string& stmt) { stmts.emplace_back(stmt); };
 
     {
-        puts("// Check resources\n");
         uint64_t stackSize = V3StackCount::count(v3Global.rootp());
         if (v3Global.opt.debugStackCheck()) stackSize += 1024 * 1024 * 1024;
         V3Stats::addStat("Size prediction, Stack (bytes)", stackSize);
-        puts("Verilated::stackCheck(" + std::to_string(stackSize) + ");\n");
         // TODO: 'm_statVarScopeBytes' is always 0, AstVarScope doesn't reach here (V3Descope)
         V3Stats::addStat("Size prediction, Heap, from Var Scopes (bytes)", m_statVarScopeBytes);
         V3Stats::addStat(V3Stats::STAT_MODEL_SIZE, stackSize + m_statVarScopeBytes);
+
+        add("// Check resources");
+        add("Verilated::stackCheck(" + std::to_string(stackSize) + ");");
     }
 
-    puts("// Setup sub module instances\n");
+    add("// Setup sub module instances");
     for (const ScopeModPair& itpair : m_scopes) {
         const AstScope* const scopep = itpair.first;
         const AstNodeModule* const modp = itpair.second;
         if (modp->isTop()) continue;
-        putns(scopep, protect(scopep->nameDotless()));
-        puts(".ctor(this, ");
-        putsQuoted(VIdProtect::protectWordsIf(scopep->prettyName(), scopep->protect()));
-        puts(");\n");
-        ++m_numStmts;
+        const std::string name = V3OutFormatter::quoteNameControls(
+            VIdProtect::protectWordsIf(scopep->prettyName(), scopep->protect()));
+        add(protect(scopep->nameDotless()) + ".ctor(this, \"" + name + "\");");
     }
 
     if (v3Global.opt.profPgo()) {
-        puts("// Configure profiling for PGO\n");
+        add("// Configure profiling for PGO\n");
         if (!v3Global.opt.hierChild()) {
-            puts("_vm_pgoProfiler.writeHeader(_vm_contextp__->profVltFilename());\n");
+            add("_vm_pgoProfiler.writeHeader(_vm_contextp__->profVltFilename());");
         }
         if (v3Global.opt.mtasks()) {
             v3Global.rootp()->topModulep()->foreach([&](const AstExecGraph* execGraphp) {
                 for (const V3GraphVertex& vtx : execGraphp->depGraphp()->vertices()) {
                     const ExecMTask& mt = static_cast<const ExecMTask&>(vtx);
-                    puts("_vm_pgoProfiler.addCounter(" + std::to_string(mt.id()) + ", \""
-                         + mt.hashName() + "\");\n");
+                    add("_vm_pgoProfiler.addCounter(" + std::to_string(mt.id()) + ", \""
+                        + mt.hashName() + "\");");
                 }
             });
         }
     }
 
-    puts("// Configure time unit / time precision\n");
+    add("// Configure time unit / time precision");
     if (!v3Global.rootp()->timeunit().isNone()) {
-        puts("_vm_contextp__->timeunit(");
-        puts(std::to_string(v3Global.rootp()->timeunit().powerOfTen()));
-        puts(");\n");
+        const std::string unit = std::to_string(v3Global.rootp()->timeunit().powerOfTen());
+        add("_vm_contextp__->timeunit(" + unit + ");");
     }
     if (!v3Global.rootp()->timeprecision().isNone()) {
-        puts("_vm_contextp__->timeprecision(");
-        puts(std::to_string(v3Global.rootp()->timeprecision().powerOfTen()));
-        puts(");\n");
+        const std::string prec = std::to_string(v3Global.rootp()->timeprecision().powerOfTen());
+        add("_vm_contextp__->timeprecision(" + prec + ");");
     }
 
-    puts("// Setup each module's pointers to their submodules\n");
+    add("// Setup each module's pointers to their submodules");
     for (const auto& i : m_scopes) {
         const AstScope* const scopep = i.first;
         const AstNodeModule* const modp = i.second;
         const AstScope* const abovep = scopep->aboveScopep();
         if (!abovep) continue;
 
-        checkSplit(false);
         const std::string protName = VIdProtect::protectWordsIf(scopep->name(), scopep->protect());
+        std::string stmt;
         if (VN_IS(modp, ClassPackage)) {
             // ClassPackage modules seem to be a bit out of place, so hard code...
-            putns(scopep, "TOP");
+            stmt += "TOP";
         } else {
-            putns(scopep, VIdProtect::protectIf(abovep->nameDotless(), abovep->protect()));
+            stmt += VIdProtect::protectIf(abovep->nameDotless(), abovep->protect());
         }
-        puts(".");
-        puts(protName.substr(protName.rfind('.') + 1));
-        puts(" = &");
-        puts(VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + ";\n");
-        ++m_numStmts;
+        stmt += ".";
+        stmt += protName.substr(protName.rfind('.') + 1);
+        stmt += " = &";
+        stmt += VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + ";";
+        add(stmt);
     }
 
-    puts("// Setup each module's pointer back to symbol table (for public functions)\n");
+    add("// Setup each module's pointer back to symbol table (for public functions)");
     for (const ScopeModPair& i : m_scopes) {
         const AstScope* const scopep = i.first;
         AstNodeModule* const modp = i.second;
-        checkSplit(false);
         // first is used by AstCoverDecl's call to __vlCoverInsert
         const bool first = !modp->user1();
         modp->user1(true);
-        putns(scopep, VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + "."
-                          + protect("__Vconfigure") + "(" + (first ? "true" : "false") + ");\n");
-        ++m_numStmts;
+        add(VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + "."
+            + protect("__Vconfigure") + "(" + (first ? "true" : "false") + ");");
     }
 
-    if (!m_scopeNames.empty()) {  // Setup scope names
-        puts("// Setup scopes\n");
-        for (const auto& itpair : m_scopeNames) {
-            checkSplit(false);
-            const ScopeData& sd = itpair.second;
-            putns(sd.m_nodep, protect("__Vscope_" + sd.m_symName) + ".configure(this, name(), ");
-            putsQuoted(VIdProtect::protectWordsIf(sd.m_prettyName, true));
-            puts(", ");
-            putsQuoted(protect(scopeDecodeIdentifier(sd.m_prettyName)));
-            puts(", ");
-            putsQuoted(sd.m_defName);
-            puts(", ");
-            puts(std::to_string(sd.m_timeunit));
-            puts(", VerilatedScope::" + sd.m_type + ");\n");
-            ++m_numStmts;
-        }
+    add("// Setup scopes");
+    for (const auto& itpair : m_scopeNames) {
+        const ScopeData& sd = itpair.second;
+        std::string stmt;
+        stmt += protect("__Vscope_" + sd.m_symName) + ".configure(this, name(), \"";
+        stmt += V3OutFormatter::quoteNameControls(
+            VIdProtect::protectWordsIf(sd.m_prettyName, true));
+        stmt += "\", \"";
+        stmt += V3OutFormatter::quoteNameControls(protect(scopeDecodeIdentifier(sd.m_prettyName)));
+        stmt += "\", \"";
+        stmt += V3OutFormatter::quoteNameControls(sd.m_defName);
+        stmt += "\", ";
+        stmt += std::to_string(sd.m_timeunit);
+        stmt += ", VerilatedScope::" + sd.m_type + ");";
+        add(stmt);
     }
 
-    emitScopeHier(false);
+    emitScopeHier(stmts, false);
 
-    // Everything past here is in the __Vfinal loop, so start a new split file if needed
-    closeSplit();
+    if (!v3Global.dpi()) return stmts;
 
-    if (v3Global.dpi()) {
-
-        puts("// Setup export functions\n");
-        puts("for (int __Vfinal = 0; __Vfinal < 2; ++__Vfinal) {\n");
+    for (const std::string vfinal : {"0", "1"}) {
+        add("// Setup export functions - final: " + vfinal);
         for (const auto& itpair : m_scopeFuncs) {
             const ScopeFuncData& sfd = itpair.second;
             const AstScopeName* const scopep = sfd.m_scopep;
             const AstCFunc* const funcp = sfd.m_cfuncp;
             const AstNodeModule* const modp = sfd.m_modp;
-
             if (!funcp->dpiExportImpl()) continue;
 
-            checkSplit(true);
-            putns(scopep,
-                  protect("__Vscope_" + scopep->scopeSymName()) + ".exportInsert(__Vfinal, ");
-            putsQuoted(funcp->cname());  // Not protected - user asked for import/export
-            puts(", (void*)(&");
-            puts(EmitCUtil::prefixNameProtect(modp));
-            puts("__");
-            puts(funcp->nameProtect());
-            puts("));\n");
-            ++m_numStmts;
+            std::string stmt;
+            stmt += protect("__Vscope_" + scopep->scopeSymName()) + ".exportInsert(";
+            stmt += vfinal + ", \"";
+            // Not protected - user asked for import/export
+            stmt += V3OutFormatter::quoteNameControls(funcp->cname());
+            stmt += "\", (void*)(&";
+            stmt += EmitCUtil::prefixNameProtect(modp);
+            stmt += "__";
+            stmt += funcp->nameProtect();
+            stmt += "));";
+            add(stmt);
         }
         // It would be less code if each module inserted its own variables.
         // Someday.  For now public isn't common.
         for (const auto& itpair : m_scopeVars) {
-            checkSplit(true);
             const ScopeVarData& svd = itpair.second;
-
             const AstScope* const scopep = svd.m_scopep;
             const AstVar* const varp = svd.m_varp;
             int pdim = 0;
@@ -981,52 +811,216 @@ void EmitCSyms::emitSymImp() {
                 }
             }
 
-            putns(scopep, protect("__Vscope_" + svd.m_scopeName));
-            putns(varp, ".varInsert(__Vfinal,");
-            putsQuoted(protect(svd.m_varBasePretty));
+            std::string stmt;
+            stmt += protect("__Vscope_" + svd.m_scopeName) + ".varInsert(";
+            stmt += vfinal + ", \"";
+            stmt += V3OutFormatter::quoteNameControls(protect(svd.m_varBasePretty)) + '"';
 
             const std::string varName
                 = VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + "."
                   + protect(varp->name());
 
-            if (varp->isParam()) {
-                if (varp->vlEnumType() == "VLVT_STRING"
-                    && !VN_IS(varp->subDTypep(), UnpackArrayDType)) {
-                    puts(", const_cast<void*>(static_cast<const void*>(");
-                    puts(varName);
-                    puts(".c_str())), ");
-                } else {
-                    puts(", const_cast<void*>(static_cast<const void*>(&(");
-                    puts(varName);
-                    puts("))), ");
-                }
+            if (!varp->isParam()) {
+                stmt += ", &(";
+                stmt += varName;
+                stmt += "), false, ";
+            } else if (varp->vlEnumType() == "VLVT_STRING"
+                       && !VN_IS(varp->subDTypep(), UnpackArrayDType)) {
+                stmt += ", const_cast<void*>(static_cast<const void*>(";
+                stmt += varName;
+                stmt += ".c_str())), true, ";
             } else {
-                puts(", &(");
-                puts(varName);
-                puts("), ");
+                stmt += ", const_cast<void*>(static_cast<const void*>(&(";
+                stmt += varName;
+                stmt += "))), true, ";
             }
 
-            puts(varp->isParam() ? "true" : "false");
-            puts(", ");
-            puts(varp->vlEnumType());  // VLVT_UINT32 etc
-            puts(",");
-            puts(varp->vlEnumDir());  // VLVD_IN etc
-            puts(",");
-            puts(std::to_string(udim));
-            puts(",");
-            puts(std::to_string(pdim));
-            puts(bounds);
-            puts(");\n");
-            ++m_numStmts;
+            stmt += varp->vlEnumType();  // VLVT_UINT32 etc
+            stmt += ", ";
+            stmt += varp->vlEnumDir();  // VLVD_IN etc
+            stmt += ", ";
+            stmt += std::to_string(udim);
+            stmt += ", ";
+            stmt += std::to_string(pdim);
+            stmt += bounds;
+            stmt += ");";
+            add(stmt);
+        }
+    }
+
+    return stmts;
+}
+
+std::vector<std::string> EmitCSyms::getSymDtorStmts() {
+    std::vector<std::string> stmts;
+
+    const auto add = [&stmts](const std::string& stmt) { stmts.emplace_back(stmt); };
+
+    emitScopeHier(stmts, true);
+    if (v3Global.needTraceDumper()) add("if (__Vm_dumping) _traceDumpClose();");
+    if (v3Global.opt.profPgo()) {
+        add("_vm_pgoProfiler.write(\"" + topClassName()
+            + "\", _vm_contextp__->profVltFilename());");
+    }
+    add("// Tear down sub module instances");
+    for (const ScopeModPair& itpair : vlstd::reverse_view(m_scopes)) {
+        const AstScope* const scopep = itpair.first;
+        const AstNodeModule* const modp = itpair.second;
+        if (modp->isTop()) continue;
+        add(protect(scopep->nameDotless()) + ".dtor();");
+    }
+    return stmts;
+}
+
+void EmitCSyms::emitSplit(std::vector<std::string>& stmts, const std::string name,
+                          size_t maxStmts) {
+    const std::string baseName = m_symsFileBase + "__" + name;
+    size_t nSplits = 0;
+    while (stmts.size() > 1) {
+        size_t nSubFunctions = 0;
+        for (size_t i = 0; i < stmts.size(); i += maxStmts) {
+            const std::string nStr = std::to_string(nSplits++);
+            // Name of sub-function we are emitting now
+            const std::string funcName = symClassName() + "__" + name + "__" + nStr;
+            m_splitFuncNames.emplace_back(funcName);
+
+            // Open split file
+            openOutputFile(baseName + "__" + nStr + "__Slow.cpp");
+            // Emit header
+            emitSymImpPreamble();
+            // Open sub-function definition in the split file
+            puts("void " + symClassName() + "::" + funcName + "() {\n");
+            // Emit statements
+            for (size_t j = 0; j < maxStmts; ++j) {
+                if (i + j >= stmts.size()) break;
+                m_ofp->putsNoTracking("    ");
+                m_ofp->putsNoTracking(stmts.at(i + j));
+                m_ofp->putsNoTracking("\n");
+            }
+            // Close sub-function
+            puts("}\n");
+            // Close split file
+            closeOutputFile();
+
+            // Replace statements with a call to the sub-function
+            stmts[nSubFunctions++] = funcName + "();";
+        }
+        stmts.resize(nSubFunctions);
+    }
+}
+
+void EmitCSyms::emitSymImp(AstNetlist* netlistp) {
+    UINFO(6, __FUNCTION__ << ": ");
+
+    const size_t optSplit = static_cast<size_t>(v3Global.opt.outputSplitCFuncs());
+    // Allow at least 2 statements per function, to ensure tree reduction
+    // actually makes forward progress. Also assume each statement is worth 5
+    // units as each of these are somewhat complicated, not just simple ops.
+    const size_t maxStmts = optSplit ? std::max<size_t>(optSplit / 5, 2)  //
+                                     : std::numeric_limits<size_t>::max();
+
+    std::vector<std::string> ctorStmts = getSymCtorStmts();
+    std::vector<std::string> dtorStmts = getSymDtorStmts();
+
+    // Split them if needed - fudge factor for all other contents in main file
+    if (ctorStmts.size() + dtorStmts.size() + 200 >= maxStmts) {
+        // Splitting files, so using parallel build.
+        v3Global.useParallelBuild(true);
+        emitSplit(ctorStmts, "ctor", maxStmts);
+        emitSplit(dtorStmts, "dtor", maxStmts);
+    }
+
+    openOutputFile(m_symsFileBase + "__Slow.cpp");
+    emitSymImpPreamble();
+
+    // Constructor
+    const std::string ctorArgs
+        = "VerilatedContext* contextp, const char* namep, " + topClassName() + "* modelp";
+    puts(symClassName() + "::" + symClassName() + "(" + ctorArgs + ")\n");
+    puts("    : VerilatedSyms{contextp}\n");
+    puts("    // Setup internal state of the Syms class\n");
+    puts("    , __Vm_modelp{modelp}\n");
+    if (v3Global.opt.mtasks()) {
+        puts("    , __Vm_threadPoolp{static_cast<VlThreadPool*>(contextp->threadPoolp())}\n");
+    }
+    if (v3Global.opt.profExec()) {
+        puts("    , __Vm_executionProfilerp{static_cast<VlExecutionProfiler*>(contextp->"
+             "enableExecutionProfiler(&VlExecutionProfiler::construct))}\n");
+    }
+    if (v3Global.opt.profPgo() && !v3Global.opt.libCreate().empty()) {
+        puts("    , _vm_pgoProfiler{" + std::to_string(v3Global.currentHierBlockCost()) + "}\n");
+    }
+    {
+        const AstScope* const scopep = netlistp->topScopep()->scopep();
+        puts("    // Setup top module instance\n");
+        puts("    , " + protect(scopep->nameDotless()) + "{this, namep}\n");
+    }
+    puts("{\n");
+    for (const std::string& stmt : ctorStmts) {
+        m_ofp->putsNoTracking("    ");
+        m_ofp->putsNoTracking(stmt);
+        m_ofp->putsNoTracking("\n");
+    }
+    puts("}\n");
+
+    // Destructor
+    puts("\n" + symClassName() + "::~" + symClassName() + "() {\n");
+    for (const std::string& stmt : dtorStmts) {
+        m_ofp->putsNoTracking("    ");
+        m_ofp->putsNoTracking(stmt);
+        m_ofp->putsNoTracking("\n");
+    }
+    puts("}\n");
+
+    // Methods
+    if (v3Global.needTraceDumper()) {
+        if (!optSystemC()) {
+            puts("\nvoid " + symClassName() + "::_traceDump() {\n");
+            puts("const VerilatedLockGuard lock{__Vm_dumperMutex};\n");
+            // Caller checked for __Vm_dumperp non-nullptr
+            puts("__Vm_dumperp->dump(VL_TIME_Q());\n");
+            puts("}\n");
         }
 
-        closeSplit();
+        puts("\nvoid " + symClassName() + "::_traceDumpOpen() {\n");
+        puts("const VerilatedLockGuard lock{__Vm_dumperMutex};\n");
+        puts("if (VL_UNLIKELY(!__Vm_dumperp)) {\n");
+        puts("__Vm_dumperp = new " + v3Global.opt.traceClassLang() + "();\n");
+        puts("__Vm_modelp->trace(__Vm_dumperp, 0, 0);\n");
+        puts("const std::string dumpfile = _vm_contextp__->dumpfileCheck();\n");
+        puts("__Vm_dumperp->open(dumpfile.c_str());\n");
+        puts("__Vm_dumping = true;\n");
+        puts("}\n");
+        puts("}\n");
+
+        puts("\nvoid " + symClassName() + "::_traceDumpClose() {\n");
+        puts("const VerilatedLockGuard lock{__Vm_dumperMutex};\n");
+        puts("__Vm_dumping = false;\n");
+        puts("VL_DO_CLEAR(delete __Vm_dumperp, __Vm_dumperp = nullptr);\n");
         puts("}\n");
     }
 
-    puts("}\n");
+    if (v3Global.opt.savable()) {
+        for (const bool& de : {false, true}) {
+            const std::string classname = de ? "VerilatedDeserialize" : "VerilatedSerialize";
+            const std::string funcname = protect(de ? "__Vdeserialize" : "__Vserialize");
+            const std::string op = de ? ">>" : "<<";
+            puts("\nvoid " + symClassName() + "::" + funcname + "(" + classname + "& os) {\n");
+            puts("// Internal state\n");
+            if (v3Global.opt.trace()) puts("os" + op + "__Vm_activity;\n");
+            puts("os " + op + " __Vm_didInit;\n");
+            puts("// Module instance state\n");
+            for (const ScopeModPair& itpair : m_scopes) {
+                const AstScope* const scopep = itpair.first;
+                const std::string scopeName
+                    = VIdProtect::protectIf(scopep->nameDotless(), scopep->protect());
+                puts(scopeName + "." + funcname + "(os);\n");
+            }
+            puts("}\n");
+        }
+    }
 
-    VL_DO_CLEAR(delete m_ofpBase, m_ofpBase = nullptr);
+    closeOutputFile();
 }
 
 //######################################################################
