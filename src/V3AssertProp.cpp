@@ -220,21 +220,16 @@ class AssertPropTransformer final {
             AstBegin* const bodyp = new AstBegin{
                 nodep->fileline(), m_assertCycleDelayNames.get(nodep) + "__block", nullptr, true};
             m_pexprp = new AstPExpr{nodep->fileline(), bodyp, nodep->dtypep()};
-            UASSERT_OBJ(vtxp->outSize1() && vtxp->outEdges().frontp()->is<DfaConditionEdge>(),
-                        nodep, "Incorrect property graph");
+            UASSERT_OBJ(vtxp->outSize1(), nodep, "Starting node must have one out edge");
             m_current = m_pexprp->bodyp();
             return processEdge(vtxp->outEdges().frontp());
         }
-        UASSERT_OBJ(vtxp->outEdges().size() > 0 && vtxp->outEdges().size() <= 2, nodep,
-                    "Incorrect edges");
+        UASSERT_OBJ(vtxp->outEdges().size() == 2, nodep, "Each expression must have two branches");
         AstBegin* const passsp = new AstBegin{
             nodep->fileline(), m_assertCycleDelayNames.get(nodep) + "__block_pass", nullptr, true};
-        AstNode* const failsp = [vtxp]() -> AstNode* {
-            if (!vtxp->outSize1()) {
-                V3GraphVertex* const failVtxp = vtxp->outEdges().backp()->top();
-                return failVtxp->as<DfaStmtVertex>()->nodep();
-            }
-            return nullptr;
+        AstNode* const failsp = [vtxp]() {
+            V3GraphVertex* const failVtxp = vtxp->outEdges().backp()->top();
+            return failVtxp->as<DfaStmtVertex>()->nodep();
         }();
 
         AstSampled* const sampledp
