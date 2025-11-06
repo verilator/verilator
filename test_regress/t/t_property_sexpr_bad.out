@@ -1,5 +1,6 @@
-%Error-UNSUPPORTED: t/t_property_sexpr_bad.v:20:39: Unexpected not in sequence expression context
+%Error: t/t_property_sexpr_bad.v:20:39: Unexpected 'not' in sequence expression context
+                                      : ... note: In instance 't'
    20 |   assert property (@(posedge clk) ##1 not val);
       |                                       ^~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to
