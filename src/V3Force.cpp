@@ -434,7 +434,7 @@ class ForceReplaceVisitor final : public VNVisitor {
     const ForceState& m_state;
     AstNodeStmt* m_stmtp = nullptr;
     bool m_inLogic = false;
-    bool m_release = false;  // Inside assignment created for release statement
+    bool m_releaseRhs = false;  // Inside RHS of assignment created for release statement
     std::vector<AstNodeExpr*> m_selIndices;  // Indices of select expressions above
 
     // METHODS
@@ -447,10 +447,16 @@ class ForceReplaceVisitor final : public VNVisitor {
     // VISITORS
     void visit(AstNodeStmt* nodep) override {
         VL_RESTORER(m_stmtp);
-        VL_RESTORER(m_release);
         m_stmtp = nodep;
-        m_release = VN_IS(nodep, Assign) && nodep->user2();
         iterateChildren(nodep);
+    }
+    void visit(AstAssign* nodep) override {
+        VL_RESTORER(m_stmtp);
+        VL_RESTORER(m_releaseRhs);
+        m_stmtp = nodep;
+        iterate(nodep->lhsp());
+        m_releaseRhs = nodep->user2();
+        iterate(nodep->rhsp());
     }
     void visit(AstCFunc* nodep) override { iterateLogic(nodep); }
     void visit(AstCoverToggle* nodep) override { iterateLogic(nodep); }
