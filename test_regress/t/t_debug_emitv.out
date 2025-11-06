@@ -277,6 +277,7 @@ module Vt_debug_emitv_t;
             str = $sformatf("cyc=%~", cyc);
             ;
             $display("str = %@", str);
+            $display("struct = %@", ps);
             $display("%% [%t] [%^] to=%o td=%d", $time, 
                      $realtime, $time, $time);
             $sscanf(40'h666f6f3d35, "foo=%d", i);
@@ -364,9 +365,6 @@ module Vt_debug_emitv_t;
     endproperty
     property p1;
     @( clk) sum[0]
-    endproperty
-    property p2;
-    @(posedge clk) disable iff (cyc == 'sh1) ##1 sum[0]
     endproperty
     assert property (@( clk) (! ##1 in)
     ) begin

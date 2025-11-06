@@ -44,6 +44,9 @@ module t (  /*AUTOARG*/
   cover property (@(e1) ##1 val[0])
     $display("[%0t] cover property, fileline:%0d", $time, `__LINE__);
 
+  cover property (@(e1) ##1 val[0])
+    $display("[%0t] cover property, fileline:%0d", $time, `__LINE__);
+
   cover property (@(e2) not ##1 val[1])
     $display("[%0t] not cover property, fileline:%0d", $time, `__LINE__);
 

@@ -143,6 +143,9 @@ class AssertVisitor final : public VNVisitor {
     VDouble0 m_statPastVars;  // Statistic tracking
     bool m_inSampled = false;  // True inside a sampled expression
     bool m_inRestrict = false;  // True inside restrict assertion
+    AstNode* m_passsp = nullptr;  // Current pass statement
+    AstNode* m_failsp = nullptr;  // Current fail statement
+    bool m_underAssert = false;  // Visited from assert
 
     // METHODS
     static AstNodeExpr* assertOnCond(FileLine* fl, VAssertType type,
@@ -288,25 +291,18 @@ class AssertVisitor final : public VNVisitor {
         return ifp;
     }
 
-    static AstNode* assertBody(AstNodeCoverOrAssert* nodep, AstNodeExpr* propp, AstNode* passsp,
-                               AstNode* failsp) {
-        if (AstPExpr* const pExpr = VN_CAST(propp, PExpr)) {
-            AstNodeExpr* const condp = pExpr->condp();
-            UASSERT_OBJ(condp, pExpr, "Should have condition");
-            AstIf* const ifp = assertCond(nodep, condp->unlinkFrBack(), passsp, failsp);
-
-            AstNode* const precondps = pExpr->precondp();
-            UASSERT_OBJ(precondps, pExpr, "Should have precondition");
-            precondps->unlinkFrBackWithNext()->addNext(ifp);
-            AstNodeStmt* const aonp = newIfAssertOn(precondps, nodep->directive(), nodep->type());
-            FileLine* const flp = precondps->fileline();
-            AstFork* const forkp = new AstFork{flp, VJoinType::JOIN_NONE};
-            forkp->addForksp(new AstBegin{flp, "", aonp, true});
-            return forkp;
+    AstNode* assertBody(AstNodeCoverOrAssert* nodep, AstNode* propp, AstNode* passsp,
+                        AstNode* failsp) {
+        AstNode* bodyp = nullptr;
+        if (AstPExpr* const pexprp = VN_CAST(propp, PExpr)) {
+            AstFork* const forkp = new AstFork{nodep->fileline(), VJoinType::JOIN_NONE};
+            forkp->addForksp(pexprp->bodyp()->unlinkFrBack());
+            VL_DO_DANGLING(pushDeletep(pexprp), pexprp);
+            bodyp = forkp;
+        } else {
+            bodyp = assertCond(nodep, VN_AS(propp, NodeExpr), passsp, failsp);
         }
-
-        AstIf* const ifp = assertCond(nodep, propp, passsp, failsp);
-        return newIfAssertOn(ifp, nodep->directive(), nodep->type());
+        return newIfAssertOn(bodyp, nodep->directive(), nodep->type());
     }
 
     AstNodeStmt* newFireAssertUnchecked(const AstNodeStmt* nodep, const string& message,
@@ -336,7 +332,6 @@ class AssertVisitor final : public VNVisitor {
         { AssertDeFuture{nodep->propp(), m_modp, m_modPastNum++}; }
         iterateChildren(nodep);
 
-        AstNodeExpr* const propp = VN_AS(nodep->propp()->unlinkFrBackWithNext(), NodeExpr);
         AstSenTree* const sentreep = nodep->sentreep();
         const string& message = nodep->name();
         AstNode* passsp = nodep->passsp();
@@ -384,7 +379,15 @@ class AssertVisitor final : public VNVisitor {
             nodep->v3fatalSrc("Unknown node type");
         }
 
-        AstNode* bodysp = assertBody(nodep, propp, passsp, failsp);
+        VL_RESTORER(m_passsp);
+        VL_RESTORER(m_failsp);
+        VL_RESTORER(m_underAssert);
+        m_passsp = passsp;
+        m_failsp = failsp;
+        m_underAssert = true;
+        iterate(nodep->propp());
+
+        AstNode* bodysp = assertBody(nodep, nodep->propp()->unlinkFrBack(), passsp, failsp);
         if (sentreep) {
             bodysp = new AstAlways{nodep->fileline(), VAlwaysKwd::ALWAYS, sentreep, bodysp};
         }
@@ -631,7 +634,7 @@ class AssertVisitor final : public VNVisitor {
     }
     void visit(AstVarRef* nodep) override {
         iterateChildren(nodep);
-        if (m_inSampled && !VString::startsWith(nodep->name(), "__VpropPrecond")) {
+        if (m_inSampled && !VString::startsWith(nodep->name(), "__VcycleDly")) {
             if (!nodep->access().isReadOnly()) {
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: Write to variable in sampled expression");
@@ -651,16 +654,27 @@ class AssertVisitor final : public VNVisitor {
         m_inSampled = false;
         iterateChildren(nodep);
     }
+    void visit(AstPExprClause* nodep) override {
+        if (m_underAssert) {
+            if (nodep->pass() && m_passsp) {
+                // Cover adds COVERINC by AstNode::addNext, thus need to clone next too.
+                nodep->replaceWith(m_passsp->cloneTree(true));
+            } else if (!nodep->pass() && m_failsp) {
+                // Asserts with multiple statements are wrapped in implicit begin/end blocks so no
+                // need to clone next.
+                nodep->replaceWith(m_failsp->cloneTree(false));
+            } else {
+                nodep->unlinkFrBack();
+            }
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        }
+    }
     void visit(AstPExpr* nodep) override {
-        {
+        if (m_underAssert) {
             VL_RESTORER(m_inSampled);
             m_inSampled = false;
-            iterateAndNextNull(nodep->precondp());
-        }
-        iterate(nodep->condp());
-        if (!m_inRestrict) {
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else {
+            iterateChildren(nodep);
+        } else if (m_inRestrict) {
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
         }
     }

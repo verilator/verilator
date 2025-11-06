@@ -215,6 +215,9 @@ class WidthVisitor final : public VNVisitor {
     V3TaskConnectState m_taskConnectState;  // State to cache V3Task::taskConnects
     WidthVP* m_vup = nullptr;  // Current node state
     bool m_underFork = false;  // Visiting under a fork
+    bool m_underSExpr = false;  // Visiting under a sequence expression
+    AstNode* m_seqUnsupp = nullptr;  // Property has unsupported node
+    bool m_hasSExpr = false;  // Property has a sequence expression
     const AstCell* m_cellp = nullptr;  // Current cell for arrayed instantiations
     const AstEnumItem* m_enumItemp = nullptr;  // Current enum item
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
@@ -1539,6 +1542,7 @@ class WidthVisitor final : public VNVisitor {
     }
 
     void visit(AstImplication* nodep) override {
+        m_seqUnsupp = nodep;
         if (m_vup->prelim()) {
             iterateCheckBool(nodep, "LHS", nodep->lhsp(), BOTH);
             iterateCheckBool(nodep, "RHS", nodep->rhsp(), BOTH);
@@ -1557,9 +1561,15 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void visit(AstSExpr* nodep) override {
+        VL_RESTORER(m_underSExpr);
+        m_underSExpr = true;
+        m_hasSExpr = true;
         if (m_vup->prelim()) {
-            iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
+            if (nodep->preExprp()) {
+                iterateCheckBool(nodep, "preExprp", nodep->preExprp(), BOTH);
+            }
             iterate(nodep->delayp());
+            iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
             nodep->dtypeSetBit();
         }
     }
@@ -5338,6 +5348,8 @@ class WidthVisitor final : public VNVisitor {
     }
 
     void visit(AstPropSpec* nodep) override {
+        VL_RESTORER(m_seqUnsupp);
+        VL_RESTORER(m_hasSExpr);
         if (m_vup->prelim()) {  // First stage evaluation
             iterateCheckBool(nodep, "Property", nodep->propp(), BOTH);
             userIterateAndNext(nodep->sensesp(), nullptr);
@@ -5346,6 +5358,20 @@ class WidthVisitor final : public VNVisitor {
                                  BOTH);  // it's like an if() condition.
             }
             nodep->dtypeSetBit();
+            if (m_hasSExpr) {
+                if (VN_IS(m_seqUnsupp, Implication)) {
+                    m_seqUnsupp->v3warn(E_UNSUPPORTED,
+                                        "Unsupported: Implication with sequence expression");
+                    AstConst* const newp = new AstConst{nodep->fileline(), 0};
+                    newp->dtypeFrom(nodep);
+                    nodep->replaceWith(newp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                } else if (nodep->disablep()) {
+                    nodep->disablep()->v3warn(E_UNSUPPORTED,
+                                              "Unsupported: Disable iff with sequence expression");
+                    VL_DO_DANGLING(pushDeletep(nodep->disablep()->unlinkFrBack()), nodep);
+                }
+            }
         }
     }
 
@@ -7008,6 +7034,13 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             iterateCheckBool(nodep, "LHS", nodep->op1p(), BOTH);
             nodep->dtypeSetBit();
+            if (m_underSExpr) {
+                nodep->v3error("Unexpected 'not' in sequence expression context");
+                AstConst* const newp = new AstConst{nodep->fileline(), 0};
+                newp->dtypeFrom(nodep);
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            }
         }
     }
     void visit_log_and_or(AstNodeBiop* nodep) {
