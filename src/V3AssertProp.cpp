@@ -74,9 +74,7 @@ public:
     // CONSTRUCTORS
     explicit DfaStmtVertex(V3Graph* graphp, AstNodeStmt* stmtp) VL_MT_DISABLED
         : DfaVertex{graphp, stmtp} {}
-    // LCOV_EXCL_START // Debug code
     string dotColor() const override { return "green"; }
-    // LCOV_EXCL_STOP
 };
 
 class DfaExprVertex final : public DfaVertex {
@@ -85,9 +83,7 @@ public:
     // CONSTRUCTORS
     explicit DfaExprVertex(V3Graph* graphp, AstNodeExpr* exprp) VL_MT_DISABLED
         : DfaVertex{graphp, exprp} {}
-    // LCOV_EXCL_START // Debug code
     string dotColor() const override { return "blue"; }
-    // LCOV_EXCL_STOP
 };
 
 class DfaConditionEdge final : public V3GraphEdge {
@@ -103,9 +99,7 @@ public:
     ~DfaConditionEdge() override = default;
 
     bool ifBranch() const { return m_ifBranch; }
-    // LCOV_EXCL_START // Debug code
     string dotColor() const override { return m_ifBranch ? "green" : "red"; }
-    // LCOV_EXCL_STOP
 };
 
 // Parse properties and ensemble a property tree graph
