@@ -13,15 +13,23 @@
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
+//  Each sequence is translated into a decision tree in form of deterministic
+//  finite automaton (DFA) with bipartite structure. Each cycle delay is connected
+//  with an expression that depending on an evaluation result, proceeds to the next
+//  evaluation state. The structure is rooted with original sequence expression for
+//  simplifying further transformation back to AST.
+//
+//  The graph consists of the following nodes:
+//
+//  DfaStmtVertex:  Statements to be executed to traverse from one state to another
+//  DfaExprVertex:   Property expression that is checked and based on that a branch
+//                  is taken.
+//  DfaConditionEdge:   Branch edge that connects statements and expressions.
+//
 //  Properties steps:
 //      Ensemble a property decision tree from sequence expressions.
-//          Property decision tree is a tree rooted with source sequence
-//          expression. It has a bipartite structure
-//          (Expr -> Stmt -> Expr ...). Sequence states are represented
-//          as a deterministic finite automaton (DFA).
-//      Transform property decision tree into AST, remove source sequence
-//      expression
-//          Each property is wrapped with AstPExpr that is transformed
+//      Transform property decision tree into AST, remove source sequence expression
+//          Property blocks are wrapped with AstPExpr that are transformed
 //          further by V3AssertPre and V3Assert.
 //
 //*************************************************************************
