@@ -130,7 +130,7 @@ class EmitCHeader final : public EmitCConstInit {
             }
         } else {  // not class
             putsDecoration(nullptr, "\n// INTERNAL VARIABLES\n");
-            puts(EmitCUtil::symClassName() + "* const vlSymsp;\n");
+            puts(EmitCUtil::symClassName() + "* vlSymsp;\n");
         }
     }
     void emitParamDecls(const AstNodeModule* modp) {
@@ -155,14 +155,25 @@ class EmitCHeader final : public EmitCConstInit {
         }
     }
     void emitCtorDtorDecls(const AstNodeModule* modp) {
-        if (!VN_IS(modp, Class)) {  // Classes use CFuncs with isConstructor/isDestructor
-            const string& name = EmitCUtil::prefixNameProtect(modp);
-            putsDecoration(nullptr, "\n// CONSTRUCTORS\n");
-            putns(modp,
-                  name + "(" + EmitCUtil::symClassName() + "* symsp, const char* v__name);\n");
+        // Classes use CFuncs with isConstructor/isDestructor
+        if (VN_IS(modp, Class)) return;
+
+        // The root module needs a proper constuctor/destructor, everything
+        // else uses a 'ctor'/'dtor' function in order to be able to split up
+        // construction/destruction code
+        const std::string name = EmitCUtil::prefixNameProtect(modp);
+        putsDecoration(nullptr, "\n// CONSTRUCTORS\n");
+        const std::string ctorArgs = EmitCUtil::symClassName() + "* symsp, const char* namep";
+        if (modp->isTop()) {
+            putns(modp, name + "(" + ctorArgs + ");\n");
             putns(modp, "~" + name + "();\n");
-            putns(modp, "VL_UNCOPYABLE(" + name + ");\n");
+        } else {
+            putns(modp, name + "() = default;\n");
+            putns(modp, "~" + name + "() = default;\n");
+            putns(modp, "void ctor(" + ctorArgs + ");\n");
+            putns(modp, "void dtor();\n");
         }
+        putns(modp, "VL_UNCOPYABLE(" + name + ");\n");
     }
     void emitInternalMethodDecls(const AstNodeModule* modp) {
         bool first = true;

@@ -113,46 +113,61 @@ class EmitCImp final : EmitCFunc {
         if (!first) puts("\n");
     }
     void emitCtorImp(const AstNodeModule* modp) {
-        const string modName = EmitCUtil::prefixNameProtect(modp);
+        const std::string modName = EmitCUtil::prefixNameProtect(modp);
 
         puts("\n");
         m_lazyDecls.emit("void " + modName + "__", protect("_ctor_var_reset"),
                          "(" + modName + "* vlSelf);");
         puts("\n");
 
-        putns(modp, modName + "::" + modName + "(" + EmitCUtil::symClassName()
-                        + "* symsp, const char* v__name)\n");
-        puts("    : VerilatedModule{v__name}\n");
+        const std::string ctorArgs = EmitCUtil::symClassName() + "* symsp, const char* namep";
 
-        ofp()->indentInc();
-        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (const AstVar* const varp = VN_CAST(nodep, Var)) {
-                if (const AstBasicDType* const dtypep
-                    = VN_CAST(varp->dtypeSkipRefp(), BasicDType)) {
-                    if (dtypep->keyword().isMTaskState()) {
-                        puts(", ");
-                        putns(varp, varp->nameProtect());
-                        puts("(");
-                        iterateConst(varp->valuep());
-                        puts(")\n");
-                    } else if (varp->isIO() && varp->isSc()) {
-                        puts(", ");
-                        putns(varp, varp->nameProtect());
-                        puts("(");
-                        putsQuoted(varp->nameProtect());
-                        puts(")\n");
-                    } else if (dtypep->isDelayScheduler()) {
-                        puts(", ");
-                        putns(varp, varp->nameProtect());
-                        puts("{*symsp->_vm_contextp__}\n");
+        // The root module needs a proper constuctor, everything else uses a
+        // 'ctor' function in order to be able to split up constructors
+        if (modp->isTop()) {
+            putns(modp, modName + "::" + modName + "(" + ctorArgs + ")\n");
+
+            ofp()->indentInc();
+            const char* sepp = "  : ";
+            for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+                if (const AstVar* const varp = VN_CAST(nodep, Var)) {
+                    if (const AstBasicDType* const dtypep
+                        = VN_CAST(varp->dtypeSkipRefp(), BasicDType)) {
+                        if (dtypep->keyword().isMTaskState()) {
+                            puts(sepp);
+                            putns(varp, varp->nameProtect());
+                            puts("(");
+                            iterateConst(varp->valuep());
+                            puts(")\n");
+                        } else if (varp->isIO() && varp->isSc()) {
+                            puts(sepp);
+                            putns(varp, varp->nameProtect());
+                            puts("(");
+                            putsQuoted(varp->nameProtect());
+                            puts(")\n");
+                        } else if (dtypep->isDelayScheduler()) {
+                            puts(sepp);
+                            putns(varp, varp->nameProtect());
+                            puts("{*symsp->_vm_contextp__}\n");
+                        } else {
+                            continue;
+                        }
+                        sepp = ", ";
                     }
                 }
             }
+            ofp()->indentDec();
+            puts(" {\n");
+        } else {
+            putns(modp, "void " + modName + "::ctor(" + ctorArgs + ") {\n");
         }
-        puts(", vlSymsp{symsp}\n");
-        ofp()->indentDec();
 
-        puts(" {\n");
+        puts("vlSymsp = symsp;\n");
+        if (modp->isTop()) {
+            puts("__m_namep = strdup(namep);\n");
+        } else {
+            puts("__m_namep = strdup(Verilated::catName(vlSymsp->name(), namep));\n");
+        }
 
         putsDecoration(modp, "// Reset structure values\n");
         puts(modName + "__" + protect("_ctor_var_reset") + "(this);\n");
@@ -257,9 +272,14 @@ class EmitCImp final : EmitCFunc {
         }
     }
     void emitDestructorImp(const AstNodeModule* modp) {
+        const std::string modName = EmitCUtil::prefixNameProtect(modp);
         puts("\n");
-        putns(modp, EmitCUtil::prefixNameProtect(modp) + "::~" + EmitCUtil::prefixNameProtect(modp)
-                        + "() {\n");
+        if (modp->isTop()) {
+            putns(modp, modName + "::~" + modName + "() {\n");
+        } else {
+            putns(modp, "void " + modName + "::dtor() {\n");
+        }
+        putns(modp, "VL_DO_DANGLING(free(const_cast<char*>(__m_namep)), __m_namep);\n");
         emitSystemCSection(modp, VSystemCSectionType::DTOR);
         puts("}\n");
     }

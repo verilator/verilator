@@ -58,6 +58,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <type_traits>
 #include <set>
 #include <string>
 #include <unordered_set>
@@ -314,13 +315,23 @@ private:
 class VerilatedModule VL_NOT_FINAL {
     VL_UNCOPYABLE(VerilatedModule);
 
-private:
-    const char* m_namep;  // Module name
+protected:
+    // Module name, set in emitted constructor, __ prefix to avoid clashing with signal
+    const char* /*const*/ __m_namep;
+
 public:
-    explicit VerilatedModule(const char* namep);  // Create module with given hierarchy name
-    ~VerilatedModule();
-    const char* name() const VL_MT_SAFE_POSTINIT { return m_namep; }  ///< Return name of module
+    VerilatedModule() = default;
+    ~VerilatedModule() = default;
+    const char* name() const VL_MT_SAFE_POSTINIT { return __m_namep; }  ///< Return name of module
 };
+// To avoid many automatically generated constructor and destructor calls
+// in the generated model when there are a large number of modules, the
+// emitted modules should be trivially constructible/destructible. Make sure
+// at least the base class is such.
+static_assert(std::is_trivially_constructible<VerilatedModule>::value,
+              "VerilatedModule should be trivially constructible");
+static_assert(std::is_trivially_destructible<VerilatedModule>::value,
+              "VerilatedModule should be trivially destructible");
 
 //=========================================================================
 // Functions overridable by user defines

@@ -3415,18 +3415,6 @@ VerilatedModel::VerilatedModel(VerilatedContext& context)
 
 std::unique_ptr<VerilatedTraceConfig> VerilatedModel::traceConfig() const { return nullptr; }
 
-//===========================================================================
-// VerilatedModule:: Methods
-
-VerilatedModule::VerilatedModule(const char* namep)
-    : m_namep{strdup(namep)} {}
-
-VerilatedModule::~VerilatedModule() {
-    // Memory cleanup - not called during normal operation
-    // cppcheck-suppress cstyleCast  // NOLINTNEXTLINE(google-readability-casting)
-    if (m_namep) VL_DO_CLEAR(free((void*)(m_namep)), m_namep = nullptr);
-}
-
 //======================================================================
 // VerilatedVar:: Methods
 
