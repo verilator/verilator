@@ -277,9 +277,6 @@ module t (/*AUTOARG*/
    property p1;
       @(clk) sum[0]
    endproperty
-   property p2;
-      @(posedge clk) disable iff (cyc == 1) ##1 sum[0]
-   endproperty
 
    assert property (@(clk) not ##1 in);
 
