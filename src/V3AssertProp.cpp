@@ -221,10 +221,7 @@ class AssertPropTransformer final {
         UASSERT_OBJ(vtxp->outEdges().size() == 2, nodep, "Each expression must have two branches");
         AstBegin* const passsp = new AstBegin{
             nodep->fileline(), m_assertCycleDelayNames.get(nodep) + "__block_pass", nullptr, true};
-        AstNode* const failsp = [vtxp]() {
-            V3GraphVertex* const failVtxp = vtxp->outEdges().backp()->top();
-            return failVtxp->as<DfaStmtVertex>()->nodep();
-        }();
+        AstNode* const failsp = vtxp->outEdges().backp()->top()->as<DfaStmtVertex>()->nodep();
 
         AstSampled* const sampledp
             = new AstSampled{nodep->fileline(), VN_AS(vtxp->nodep(), NodeExpr)};
