@@ -659,15 +659,14 @@ class AssertVisitor final : public VNVisitor {
             if (nodep->pass() && m_passsp) {
                 // Cover adds COVERINC by AstNode::addNext, thus need to clone next too.
                 nodep->replaceWith(m_passsp->cloneTree(true));
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else if (!nodep->pass() && m_failsp) {
                 // Asserts with multiple statements are wrapped in implicit begin/end blocks so no
                 // need to clone next.
                 nodep->replaceWith(m_failsp->cloneTree(false));
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else {
-                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                nodep->unlinkFrBack();
             }
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
     void visit(AstPExpr* nodep) override {
