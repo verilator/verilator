@@ -106,9 +106,15 @@ public:
 class AssertPropBuildVisitor final : public VNVisitorConst {
     // STATE
     std::unique_ptr<V3Graph> m_graphp = std::make_unique<V3Graph>();  // Property tree
-    DfaVertex* m_lastp = nullptr;  // Last encountered vertex
+    DfaVertex* m_lastVtxp = nullptr;  // Last encountered vertex
     bool m_underSExpr = false;  // Is under sequence expression, for creating a start node
     size_t m_underLogNots = 0;  // Number of 'not' operators before sequence
+
+    DfaStmtVertex* makeClause(AstSExpr* nodep, bool pass) {
+        return new DfaStmtVertex{
+            m_graphp.get(),
+            new AstPExprClause{nodep->fileline(), m_underLogNots % 2 == 0 ? pass : !pass}};
+    }
 
     // VISITORS
     void visit(AstNodeCoverOrAssert* nodep) override { iterateChildrenConst(nodep); }
@@ -118,11 +124,6 @@ class AssertPropBuildVisitor final : public VNVisitorConst {
         iterateChildrenConst(nodep);
     }
     void visit(AstSExpr* nodep) override {
-        const auto makeClause = [this, nodep](bool pass) {
-            return new DfaStmtVertex{
-                m_graphp.get(),
-                new AstPExprClause{nodep->fileline(), m_underLogNots % 2 == 0 ? pass : !pass}};
-        };
 
         if (VN_IS(nodep->exprp(), SExpr)) {
             VL_RESTORER(m_underSExpr);
@@ -131,12 +132,12 @@ class AssertPropBuildVisitor final : public VNVisitorConst {
         } else {
             DfaExprVertex* const exprVtxp
                 = new DfaExprVertex{m_graphp.get(), nodep->exprp()->unlinkFrBack()};
-            new DfaConditionEdge{m_graphp.get(), exprVtxp, makeClause(true), true};
-            new DfaConditionEdge{m_graphp.get(), exprVtxp, makeClause(false), false};
-            m_lastp = exprVtxp;
+            new DfaConditionEdge{m_graphp.get(), exprVtxp, makeClause(nodep, true), true};
+            new DfaConditionEdge{m_graphp.get(), exprVtxp, makeClause(nodep, false), false};
+            m_lastVtxp = exprVtxp;
         }
 
-        DfaExprVertex* const startp
+        DfaExprVertex* const startVtxp
             = m_underSExpr ? nullptr : new DfaExprVertex{m_graphp.get(), nodep};
 
         DfaStmtVertex* const dlyVtxp
@@ -150,26 +151,26 @@ class AssertPropBuildVisitor final : public VNVisitorConst {
             DfaExprVertex* const exprVtxp
                 = new DfaExprVertex{m_graphp.get(), sexprp->exprp()->unlinkFrBack()};
 
-            if (startp) new DfaConditionEdge{m_graphp.get(), startp, sdlyVtxp, true};
+            if (startVtxp) new DfaConditionEdge{m_graphp.get(), startVtxp, sdlyVtxp, true};
             new DfaConditionEdge{m_graphp.get(), sdlyVtxp, exprVtxp, true};
             new DfaConditionEdge{m_graphp.get(), exprVtxp, dlyVtxp, true};
-            new DfaConditionEdge{m_graphp.get(), dlyVtxp, m_lastp, true};
-            new DfaConditionEdge{m_graphp.get(), exprVtxp, makeClause(false), false};
+            new DfaConditionEdge{m_graphp.get(), dlyVtxp, m_lastVtxp, true};
+            new DfaConditionEdge{m_graphp.get(), exprVtxp, makeClause(nodep, false), false};
 
             // This case only occurs when multi-delay sequence starts with an expression,
             // don't set last as this is never a last expression.
         } else if (nodep->preExprp()) {
             DfaExprVertex* const preVtxp
                 = new DfaExprVertex{m_graphp.get(), nodep->preExprp()->unlinkFrBack()};
-            if (startp) new DfaConditionEdge{m_graphp.get(), startp, preVtxp, true};
+            if (startVtxp) new DfaConditionEdge{m_graphp.get(), startVtxp, preVtxp, true};
             new DfaConditionEdge{m_graphp.get(), preVtxp, dlyVtxp, true};
-            new DfaConditionEdge{m_graphp.get(), dlyVtxp, m_lastp, true};
-            new DfaConditionEdge{m_graphp.get(), preVtxp, makeClause(false), false};
-            m_lastp = preVtxp;
+            new DfaConditionEdge{m_graphp.get(), dlyVtxp, m_lastVtxp, true};
+            new DfaConditionEdge{m_graphp.get(), preVtxp, makeClause(nodep, false), false};
+            m_lastVtxp = preVtxp;
         } else {
-            if (startp) new DfaConditionEdge{m_graphp.get(), startp, dlyVtxp, true};
-            new DfaConditionEdge{m_graphp.get(), dlyVtxp, m_lastp, true};
-            m_lastp = dlyVtxp;
+            if (startVtxp) new DfaConditionEdge{m_graphp.get(), startVtxp, dlyVtxp, true};
+            new DfaConditionEdge{m_graphp.get(), dlyVtxp, m_lastVtxp, true};
+            m_lastVtxp = dlyVtxp;
         }
     }
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
