@@ -217,6 +217,7 @@ private:
     //  AstVar::user1p        -> ForceComponentsVar* instance (via m_forceComponentsVar)
     //  AstVarScope::user1p   -> ForceComponentsVarScope* instance (via m_forceComponentsVarScope)
     //  AstVarRef::user2      -> Flag indicating not to replace reference
+    //  AstAssign::user2     -> Flag indicating that the assignment
     //  AstVarScope::user3p   -> AstAssign*, the assignment <lhs>__VforceVal = <rhs>
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
@@ -380,6 +381,7 @@ class ForceConvertVisitor final : public VNVisitor {
         // the continuous assignment's scheduling region.
         AstAssign* const resetRdp
             = new AstAssign{flp, lhsp->cloneTreePure(false), lhsp->unlinkFrBack()};
+        resetRdp->user2(true);
         // Replace write refs on the LHS
         resetRdp->lhsp()->foreach([this](AstVarRef* refp) {
             if (refp->access() != VAccess::WRITE) return;
@@ -432,6 +434,7 @@ class ForceReplaceVisitor final : public VNVisitor {
     const ForceState& m_state;
     AstNodeStmt* m_stmtp = nullptr;
     bool m_inLogic = false;
+    bool m_release = false;  // Inside assignment created for release statement
     std::vector<AstNodeExpr*> m_selIndices;  // Indices of select expressions above
 
     // METHODS
@@ -444,7 +447,9 @@ class ForceReplaceVisitor final : public VNVisitor {
     // VISITORS
     void visit(AstNodeStmt* nodep) override {
         VL_RESTORER(m_stmtp);
+        VL_RESTORER(m_release);
         m_stmtp = nodep;
+        m_release = VN_IS(nodep, Assign) && nodep->user2();
         iterateChildren(nodep);
     }
     void visit(AstCFunc* nodep) override { iterateLogic(nodep); }
