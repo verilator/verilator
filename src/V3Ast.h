@@ -902,6 +902,8 @@ public:
     // isUnlikely handles $stop or similar statement which means an above IF
     // statement is unlikely to be taken
     virtual bool isUnlikely() const { return false; }
+    // Is an IEEE system function (versus internally-generated)
+    virtual bool isSystemFunc() const { return false; }
     virtual int instrCount() const { return 0; }
     // Iff node is identical to another node
     virtual bool isSame(const AstNode* samep) const {

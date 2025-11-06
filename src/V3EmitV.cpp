@@ -699,6 +699,10 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         emitVerilogFormat(nodep, nodep->emitVerilog(), nodep->lhsp(), nodep->rhsp(),
                           nodep->thsp());
     }
+    void visit(AstNodeQuadop* nodep) override {
+        emitVerilogFormat(nodep, nodep->emitVerilog(), nodep->lhsp(), nodep->rhsp(), nodep->thsp(),
+                          nodep->fhsp());
+    }
     void visit(AstMemberSel* nodep) override {
         iterateConst(nodep->fromp());
         puts(".");
