@@ -197,11 +197,8 @@ class AssertPropTransformer final {
         if (DfaStmtVertex* const stmtp = vtxp->cast<DfaStmtVertex>()) return processVtx(stmtp);
         if (DfaExprVertex* const exprp = vtxp->cast<DfaExprVertex>()) return processVtx(exprp);
         // TODO use C++17 std::variant and std::visit
-        // LCOV_EXCL_START
-        assert(0);
-        VL_UNREACHABLE;
+        v3fatalSrc("Unexpected vertex type");
         return nullptr;
-        // LCOV_EXCL_STOP
     }
     V3GraphVertex* processVtx(DfaStmtVertex* vtxp) {
         UASSERT_OBJ(!vtxp->isStart(), vtxp->nodep(),
