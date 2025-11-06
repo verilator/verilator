@@ -39,7 +39,6 @@
 #include "V3AssertProp.h"
 
 #include "V3Graph.h"
-#include "V3UniqueNames.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -189,7 +188,6 @@ public:
 // Transform property graph into AST
 class AssertPropTransformer final {
     // STATE
-    V3UniqueNames m_assertCycleDelayNames{"__Vassert"};  // Names for assertion properties
     V3Graph& m_graph;  // Property tree
     AstPExpr* m_pexprp = nullptr;  // Currently built property sequence
     AstBegin* m_current = nullptr;  // Currently built block
@@ -211,16 +209,14 @@ class AssertPropTransformer final {
     V3GraphVertex* processVtx(DfaExprVertex* vtxp) {
         AstNode* const nodep = vtxp->nodep();
         if (vtxp->isStart()) {
-            AstBegin* const bodyp = new AstBegin{
-                nodep->fileline(), m_assertCycleDelayNames.get(nodep) + "__block", nullptr, true};
+            AstBegin* const bodyp = new AstBegin{nodep->fileline(), "", nullptr, true};
             m_pexprp = new AstPExpr{nodep->fileline(), bodyp, nodep->dtypep()};
             UASSERT_OBJ(vtxp->outSize1(), nodep, "Starting node must have one out edge");
             m_current = m_pexprp->bodyp();
             return processEdge(vtxp->outEdges().frontp());
         }
         UASSERT_OBJ(vtxp->outEdges().size() == 2, nodep, "Each expression must have two branches");
-        AstBegin* const passsp = new AstBegin{
-            nodep->fileline(), m_assertCycleDelayNames.get(nodep) + "__block_pass", nullptr, true};
+        AstBegin* const passsp = new AstBegin{nodep->fileline(), "", nullptr, true};
         AstNode* const failsp = vtxp->outEdges().backp()->top()->as<DfaStmtVertex>()->nodep();
 
         AstSampled* const sampledp
