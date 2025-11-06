@@ -103,14 +103,14 @@ public:
 // Parse properties and ensemble a property tree graph
 class AssertPropBuildVisitor final : public VNVisitorConst {
     // STATE
-    std::unique_ptr<V3Graph> m_graphp = std::make_unique<V3Graph>();  // Property tree
+    V3Graph& m_graph;  // Property tree
     DfaVertex* m_lastVtxp = nullptr;  // Last encountered vertex
     bool m_underSExpr = false;  // Is under sequence expression, for creating a start node
     size_t m_underLogNots = 0;  // Number of 'not' operators before sequence
 
     DfaStmtVertex* makeClause(AstSExpr* nodep, bool pass) {
         return new DfaStmtVertex{
-            m_graphp.get(),
+            &m_graph,
             new AstPExprClause{nodep->fileline(), m_underLogNots % 2 == 0 ? pass : !pass}};
     }
 
@@ -129,45 +129,45 @@ class AssertPropBuildVisitor final : public VNVisitorConst {
             iterateConst(nodep->exprp());
         } else {
             DfaExprVertex* const exprVtxp
-                = new DfaExprVertex{m_graphp.get(), nodep->exprp()->unlinkFrBack()};
-            new DfaConditionEdge{m_graphp.get(), exprVtxp, makeClause(nodep, true), true};
-            new DfaConditionEdge{m_graphp.get(), exprVtxp, makeClause(nodep, false), false};
+                = new DfaExprVertex{&m_graph, nodep->exprp()->unlinkFrBack()};
+            new DfaConditionEdge{&m_graph, exprVtxp, makeClause(nodep, true), true};
+            new DfaConditionEdge{&m_graph, exprVtxp, makeClause(nodep, false), false};
             m_lastVtxp = exprVtxp;
         }
 
         DfaExprVertex* const startVtxp
-            = m_underSExpr ? nullptr : new DfaExprVertex{m_graphp.get(), nodep};
+            = m_underSExpr ? nullptr : new DfaExprVertex{&m_graph, nodep};
 
         DfaStmtVertex* const dlyVtxp
-            = new DfaStmtVertex{m_graphp.get(), nodep->delayp()->unlinkFrBack()};
+            = new DfaStmtVertex{&m_graph, nodep->delayp()->unlinkFrBack()};
 
         if (AstSExpr* const sexprp = VN_CAST(nodep->preExprp(), SExpr)) {
             UASSERT_OBJ(!sexprp->preExprp() && !VN_IS(sexprp->exprp(), SExpr), sexprp,
                         "Incorrect sexpr tree");
             DfaStmtVertex* const sdlyVtxp
-                = new DfaStmtVertex{m_graphp.get(), sexprp->delayp()->unlinkFrBack()};
+                = new DfaStmtVertex{&m_graph, sexprp->delayp()->unlinkFrBack()};
             DfaExprVertex* const exprVtxp
-                = new DfaExprVertex{m_graphp.get(), sexprp->exprp()->unlinkFrBack()};
+                = new DfaExprVertex{&m_graph, sexprp->exprp()->unlinkFrBack()};
 
-            if (startVtxp) new DfaConditionEdge{m_graphp.get(), startVtxp, sdlyVtxp, true};
-            new DfaConditionEdge{m_graphp.get(), sdlyVtxp, exprVtxp, true};
-            new DfaConditionEdge{m_graphp.get(), exprVtxp, dlyVtxp, true};
-            new DfaConditionEdge{m_graphp.get(), dlyVtxp, m_lastVtxp, true};
-            new DfaConditionEdge{m_graphp.get(), exprVtxp, makeClause(nodep, false), false};
+            if (startVtxp) new DfaConditionEdge{&m_graph, startVtxp, sdlyVtxp, true};
+            new DfaConditionEdge{&m_graph, sdlyVtxp, exprVtxp, true};
+            new DfaConditionEdge{&m_graph, exprVtxp, dlyVtxp, true};
+            new DfaConditionEdge{&m_graph, dlyVtxp, m_lastVtxp, true};
+            new DfaConditionEdge{&m_graph, exprVtxp, makeClause(nodep, false), false};
 
             // This case only occurs when multi-delay sequence starts with an expression,
             // don't set last as this is never a last expression.
         } else if (nodep->preExprp()) {
             DfaExprVertex* const preVtxp
-                = new DfaExprVertex{m_graphp.get(), nodep->preExprp()->unlinkFrBack()};
-            if (startVtxp) new DfaConditionEdge{m_graphp.get(), startVtxp, preVtxp, true};
-            new DfaConditionEdge{m_graphp.get(), preVtxp, dlyVtxp, true};
-            new DfaConditionEdge{m_graphp.get(), dlyVtxp, m_lastVtxp, true};
-            new DfaConditionEdge{m_graphp.get(), preVtxp, makeClause(nodep, false), false};
+                = new DfaExprVertex{&m_graph, nodep->preExprp()->unlinkFrBack()};
+            if (startVtxp) new DfaConditionEdge{&m_graph, startVtxp, preVtxp, true};
+            new DfaConditionEdge{&m_graph, preVtxp, dlyVtxp, true};
+            new DfaConditionEdge{&m_graph, dlyVtxp, m_lastVtxp, true};
+            new DfaConditionEdge{&m_graph, preVtxp, makeClause(nodep, false), false};
             m_lastVtxp = preVtxp;
         } else {
-            if (startVtxp) new DfaConditionEdge{m_graphp.get(), startVtxp, dlyVtxp, true};
-            new DfaConditionEdge{m_graphp.get(), dlyVtxp, m_lastVtxp, true};
+            if (startVtxp) new DfaConditionEdge{&m_graph, startVtxp, dlyVtxp, true};
+            new DfaConditionEdge{&m_graph, dlyVtxp, m_lastVtxp, true};
             m_lastVtxp = dlyVtxp;
         }
     }
@@ -176,11 +176,11 @@ class AssertPropBuildVisitor final : public VNVisitorConst {
 
 public:
     // CONSTRUCTORS
-    explicit AssertPropBuildVisitor(AstNetlist* nodep) {
+    explicit AssertPropBuildVisitor(AstNetlist* nodep, V3Graph& graph)
+        : m_graph{graph} {
         iterateConst(nodep);
-        if (dumpGraphLevel() >= 6) m_graphp->dumpDotFilePrefixedAlways("properties", true);
+        if (dumpGraphLevel() >= 6) m_graph.dumpDotFilePrefixedAlways("properties", true);
     }
-    std::unique_ptr<V3Graph> graphp() { return std::move(m_graphp); }
     ~AssertPropBuildVisitor() override = default;
 };
 
@@ -188,7 +188,7 @@ public:
 class AssertPropTransformer final {
     // STATE
     V3UniqueNames m_assertCycleDelayNames{"__Vassert"};  // Names for assertion properties
-    const std::unique_ptr<V3Graph> m_graph;  // Property tree
+    V3Graph& m_graph;  // Property tree
     AstPExpr* m_pexprp = nullptr;  // Currently built property sequence
     AstBegin* m_current = nullptr;  // Currently built block
 
@@ -244,9 +244,9 @@ class AssertPropTransformer final {
 
 public:
     // CONSTRUCTORS
-    explicit AssertPropTransformer(std::unique_ptr<V3Graph> graph)
-        : m_graph{std::move(graph)} {
-        for (V3GraphVertex& vtx : m_graph->vertices()) {
+    explicit AssertPropTransformer(V3Graph& graph)
+        : m_graph{graph} {
+        for (V3GraphVertex& vtx : m_graph.vertices()) {
             if (DfaVertex* const dVtxp = vtx.cast<DfaExprVertex>()) {
                 if (dVtxp->isStart()) {
                     VL_RESTORER(m_pexprp);
@@ -266,8 +266,9 @@ public:
 void V3AssertProp::assertPropAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     {
-        std::unique_ptr<V3Graph> graphp = AssertPropBuildVisitor{nodep}.graphp();
-        AssertPropTransformer{std::move(graphp)};
+        V3Graph graph;
+        { AssertPropBuildVisitor{nodep, graph}; }
+        AssertPropTransformer{graph};
     }
     V3Global::dumpCheckGlobalTree("assertproperties", 0, dumpTreeEitherLevel() >= 3);
 }
