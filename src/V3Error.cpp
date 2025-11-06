@@ -74,7 +74,7 @@ string V3ErrorGuarded::msgPrefix() VL_REQUIRES(m_mutex) {
     const V3ErrorCode code = m_message.code();
     const bool supp = m_errorSuppressed;
     if (supp) {
-        return "-arning-suppressed: ";
+        return "-arning-suppressed-" + std::string{code.ascii()} + ": ";
     } else if (code.severityInfo()) {
         return "-Info: ";
     } else if (code == V3ErrorCode::EC_FATAL) {
@@ -97,19 +97,19 @@ void V3ErrorGuarded::vlAbortOrExit() VL_REQUIRES(m_mutex) {
         std::cerr << msgPrefix() << "Aborting since under --debug" << endl;
         V3Error::vlAbort();
     }
-#ifndef V3ERROR_NO_GLOBAL_
-    else if (v3Global.opt.verilateJobs() > 1
-             && v3Global.mainThreadId() != std::this_thread::get_id()) {
-        VL_GCOV_DUMP();  // No static destructors are called, thus must be called manually.
 
-        // Exit without triggering any global destructors.
-        // Used to prevent detached V3ThreadPool jobs accessing destroyed static objects.
-        ::_exit(1);
+#ifndef V3ERROR_NO_GLOBAL_
+    if (v3Global.opt.verilateJobs() > 1 && v3Global.mainThreadId() != std::this_thread::get_id()) {
+        // No static destructors are called, thus must be called manually.
+        VL_GCOV_DUMP();
+        // Exit without triggering any global destructors. Used to prevent
+        // detached V3ThreadPool jobs accessing destroyed static objects.
+        ::_exit(1);  // LCOV_EXCL_LINE
     }
+    v3Global.vlExit(1);
+#else
+    std::exit(1);
 #endif
-    else {
-        std::exit(1);
-    }
 }
 
 string V3ErrorGuarded::warnMoreSpaces() VL_REQUIRES(m_mutex) {
@@ -132,8 +132,8 @@ void V3ErrorGuarded::v3errorPrep(V3ErrorCode code) VL_REQUIRES(m_mutex) {
     m_errorSuppressed = false;
 }
 
-void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra, FileLine* fileline)
-    VL_REQUIRES(m_mutex) {
+void V3ErrorGuarded::v3errorEnd(const std::ostringstream& sstr, const string& extra,
+                                FileLine* fileline) VL_REQUIRES(m_mutex) {
     static bool s_firedTooMany = false;
     v3errorEndGuts(sstr, extra, fileline);
     m_message.clear();
@@ -151,7 +151,7 @@ void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra, F
 }
 
 // cppcheck-has-bug-suppress constParameter
-void V3ErrorGuarded::v3errorEndGuts(std::ostringstream& sstr, const string& extra,
+void V3ErrorGuarded::v3errorEndGuts(const std::ostringstream& sstr, const string& extra,
                                     FileLine* fileline) VL_REQUIRES(m_mutex) {
     // 'extra' is appended to the message, and is is excluded in check for
     // duplicate messages. Currently used for reporting instance name.
@@ -163,10 +163,13 @@ void V3ErrorGuarded::v3errorEndGuts(std::ostringstream& sstr, const string& extr
     m_message.fileline(fileline);
 
     // Skip suppressed messages
-    if (m_errorSuppressed
+    if (m_errorSuppressed) {
         // On debug, show only non default-off warning to prevent pages of warnings
-        && (!debug() || debug() < 3 || m_message.code().defaultsOff()))
-        return;
+        if (m_message.code().defaultsOff()) return;
+        if (!debug() || debug() < 3 || (debug() < 9 && m_showedSuppressed[m_message.code()]))
+            return;
+        m_showedSuppressed[m_message.code()] = true;
+    }
     string msg
         = V3Error::warnContextBegin() + msgPrefix() + V3Error::warnContextEnd() + sstr.str();
 
@@ -259,9 +262,10 @@ void V3ErrorGuarded::v3errorEndGuts(std::ostringstream& sstr, const string& extr
             incWarnings();
         }
         if (m_message.code().severityFatal()) {
-            static bool inFatal = false;
-            if (!inFatal) {
-                inFatal = true;
+            static bool s_inFatal = false;
+            // cppcheck-suppress duplicateConditionalAssign // Used by VlcMain.cpp
+            if (!s_inFatal) {
+                s_inFatal = true;
 #ifndef V3ERROR_NO_GLOBAL_
                 if (dumpTreeLevel() || dumpTreeJsonLevel() || debug()) {
                     V3Broken::allowMidvisitorCheck(true);
@@ -367,8 +371,11 @@ void V3Error::abortIfWarnings() {
 // Abort/exit
 
 void V3Error::vlAbort() {
+#ifndef V3ERROR_NO_GLOBAL_
+    v3Global.shutdown();
+#endif
     VL_GCOV_DUMP();
-    std::abort();
+    std::abort();  // LCOV_EXCL_LINE
 }
 std::ostringstream& V3Error::v3errorPrep(V3ErrorCode code) VL_ACQUIRE(s().m_mutex) {
     V3Error::s().m_mutex.lock();
@@ -380,7 +387,7 @@ std::ostringstream& V3Error::v3errorPrepFileLine(V3ErrorCode code, const char* f
     v3errorPrep(code) << file << ":" << std::dec << line << ": ";
     return v3errorStr();
 }
-void V3Error::v3errorEnd(std::ostringstream& sstr, const string& extra, FileLine* fileline)
+void V3Error::v3errorEnd(const std::ostringstream& sstr, const string& extra, FileLine* fileline)
     VL_RELEASE(s().m_mutex) {
     s().v3errorEnd(sstr, extra, fileline);
     V3Error::s().m_mutex.unlock();

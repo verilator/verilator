@@ -17,5 +17,5 @@ class Cls2;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 endmodule

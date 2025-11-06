@@ -7,7 +7,7 @@
 class Cls#(type T = bit);
 endclass
 
-module t(/*AUTOARG*/);
+module t;
 
    Cls#(bit) cb;
 

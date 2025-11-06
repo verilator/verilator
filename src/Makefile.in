@@ -108,6 +108,7 @@ clang-format:
 
 maintainer-copy::
 clean mostlyclean distclean maintainer-clean::
+	-rm -f config_rev.h
 	-rm -rf obj_* *.log *.dmp *.vpd core
 	-rm -f *.o *.d *_gen_*
 	-rm -f *__gen* obj_*

@@ -7,7 +7,7 @@
 `define stop $stop
 `define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 
-module t (/*AUTOARG*/);
+module t;
 
    typedef string sarray_t[2];
    typedef sarray_t q_sarray_t[$];

@@ -3,9 +3,9 @@
    :linenos:
    :emphasize-lines: 2,5
 
-      always @(posedge clk) begin
-         out2[7:0] <= d0;  // <--- Warning
-      end
-      always @(negedge clk) begin
-         out2[15:8] <= d0;  // <--- Warning
-      end
+     always @(posedge clk) begin
+       out2[7:0] <= d0;  // <--- Warning
+     end
+     always @(negedge clk) begin
+       out2[15:8] <= d0;  // <--- Warning
+     end

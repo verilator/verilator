@@ -8,7 +8,7 @@ extern program ex_pgm;
 extern interface ex_ifc;
 extern module ex_mod;
 
-module t(/*AUTOARG*/);
+module t;
 
    ex_pgm u_pgm();
    ex_ifc u_ifc();

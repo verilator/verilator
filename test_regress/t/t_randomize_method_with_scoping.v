@@ -104,7 +104,7 @@ class SubC extends SubB;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    SubC obj = new;
 
    initial begin

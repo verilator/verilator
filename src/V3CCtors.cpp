@@ -67,11 +67,11 @@ class V3CCtorsBuilder final {
         funcp->slow(!m_type.isClass());  // Only classes construct on fast path
         string preventUnusedStmt;
         if (m_type.isClass()) {
-            funcp->argTypes(EmitCBase::symClassVar());
-            preventUnusedStmt = "(void)vlSymsp;  // Prevent unused variable warning\n";
+            funcp->argTypes(EmitCUtil::symClassVar());
+            preventUnusedStmt = "(void)vlSymsp;  // Prevent unused variable warning";
         } else if (m_type.isCoverage()) {
             funcp->argTypes("bool first");
-            preventUnusedStmt = "(void)first;  // Prevent unused variable warning\n";
+            preventUnusedStmt = "(void)first;  // Prevent unused variable warning";
         }
         if (!preventUnusedStmt.empty()) {
             funcp->addStmtsp(new AstCStmt{m_modp->fileline(), preventUnusedStmt});
@@ -138,13 +138,13 @@ class CCtorsVisitor final : public VNVisitor {
     V3CCtorsBuilder* m_varResetp = nullptr;  // Builder of _ctor_var_reset
 
     // METHODS
-    static void insertSc(AstCFunc* cfuncp, const AstNodeModule* modp, VNType type) {
-        auto textAndFileline = EmitCBaseVisitorConst::textSection(modp, type);
-        if (!textAndFileline.first.empty()) {
-            AstTextBlock* const newp
-                = new AstTextBlock{textAndFileline.second, textAndFileline.first, false, false};
-            cfuncp->addStmtsp(newp);
-        }
+    static void insertSc(AstCFunc* cfuncp, const AstNodeModule* modp, VSystemCSectionType type) {
+        const auto txtAndFlp = EmitCBaseVisitorConst::scSection(modp, type);
+        if (txtAndFlp.first.empty()) return;
+        // Use an AstCStmtUser as this is from user input
+        AstCStmtUser* const cstmtp = new AstCStmtUser{txtAndFlp.second};
+        cstmtp->add(txtAndFlp.first);
+        cfuncp->addStmtsp(cstmtp);
     }
 
     // VISITORS
@@ -177,7 +177,7 @@ class CCtorsVisitor final : public VNVisitor {
             // If can be referred to by base pointer, need virtual delete
             funcp->isVirtual(classp->isExtended());
             funcp->slow(false);
-            insertSc(funcp, classp, VNType::atScDtor);
+            insertSc(funcp, classp, VSystemCSectionType::DTOR);
             classp->addStmtsp(funcp);
         }
     }
@@ -188,7 +188,7 @@ class CCtorsVisitor final : public VNVisitor {
         m_varResetp = nullptr;
         m_cfuncp = nodep;
         iterateChildren(nodep);
-        if (nodep->name() == "new") insertSc(nodep, m_modp, VNType::atScCtor);
+        if (nodep->name() == "new") insertSc(nodep, m_modp, VSystemCSectionType::CTOR);
     }
     void visit(AstVar* nodep) override {
         if (nodep->needsCReset()) {

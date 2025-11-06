@@ -18,7 +18,7 @@ class Cls #(type STORE_T=string);
 endclass : Cls
 endpackage : P
 
-module t (/*AUTOARG*/);
+module t;
    P::Cls#(int) c;
    initial begin
       c = new;

@@ -18,6 +18,7 @@ module t (/*AUTOARG*/
 
    generate
       for (genvar i = 0; i < `CORES; ++i) Core core(clk);
+      for (genvar i = 0; i < `CORES; ++i) CoreHier hierCore(clk);
    endgenerate
 endmodule
 
@@ -41,6 +42,15 @@ module Core(input clk);
       wire [63:0] result = {rdata2, rdata};
 
       Check check(.clk(clk), .crc(crc), .result(result), .rdata(rdata), .rdata2(rdata2));
+endmodule
+
+module CoreHier(input clk);
+   // Dummy logic to have two different hier blocks at the same level.
+   integer cyc = 0;
+   always @(posedge clk) begin
+      cyc += 1;
+      if (cyc == 1) $display("%d", clk);
+   end
 endmodule
 
 module Check(

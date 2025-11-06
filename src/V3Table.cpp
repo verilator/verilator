@@ -213,12 +213,14 @@ private:
         if (chkvis.isCoverage()) {
             chkvis.clearOptimizable(nodep, "Table removes coverage points");
         }
+        // cppcheck-suppress knownConditionTrueFalse // set by TableSimulateVisitor
         if (!m_outWidthBytes || !m_inWidthBits) {
             chkvis.clearOptimizable(nodep, "Table has no outputs");
         }
         if (chkvis.instrCount() < TABLE_MIN_NODE_COUNT) {
             chkvis.clearOptimizable(nodep, "Table has too few nodes involved");
         }
+        // cppcheck-suppress knownConditionTrueFalse
         if (space > TABLE_MAX_BYTES) {
             chkvis.clearOptimizable(nodep, "Table takes too much space");
         }
@@ -232,8 +234,7 @@ private:
                                 << chkvis.instrCount() << " Data=" << chkvis.dataCount()
                                 << " in width (bits)=" << m_inWidthBits << " out width (bytes)="
                                 << m_outWidthBytes << " Spacetime=" << (space / time) << "("
-                                << space << "/" << time << ")"
-                                << ": " << nodep);
+                                << space << "/" << time << ")" << ": " << nodep);
         if (chkvis.optimizable()) {
             UINFO(3, " Table Optimize spacetime=" << (space / time) << " " << nodep);
             m_totalBytes += space;

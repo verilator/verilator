@@ -16,7 +16,9 @@ test.golden_filename = "t/t_trace_array_fst_sc.out"
 if not test.have_sc:
     test.skip("No SystemC installed")
 
-test.compile(verilator_flags2=['--sc --trace-fst --trace-structs', '-CFLAGS -DVL_PORTABLE_ONLY'])
+test.compile(verilator_flags2=[
+    '--sc --trace-fst --trace-structs --trace-max-width 0', '-CFLAGS -DVL_PORTABLE_ONLY'
+])
 
 test.execute()
 

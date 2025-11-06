@@ -21,7 +21,7 @@ virtual class C#(parameter type T = logic, parameter SIZE = 1);
     } t_struct;
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       uvm_resource_pool pool = new;
       typedef logic [7:0] t_t0;

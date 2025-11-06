@@ -12,9 +12,7 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t/t_lint_didnotconverge_bad.v"
 
-root = ".."
-
-if not os.path.exists(root + "/.git"):
+if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
 test.compile(make_flags=['CPPFLAGS_ADD=-UVL_DEBUG'])
@@ -22,7 +20,7 @@ test.compile(make_flags=['CPPFLAGS_ADD=-UVL_DEBUG'])
 test.execute(fails=True, expect_filename=test.golden_filename)
 
 test.extract(in_filename=test.golden_filename,
-             out_filename=root + "/docs/gen/ex_DIDNOTCONVERGE_nodbg_msg.rst",
+             out_filename=test.root + "/docs/gen/ex_DIDNOTCONVERGE_nodbg_msg.rst",
              lines="1")
 
 test.passes()

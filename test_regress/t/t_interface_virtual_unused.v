@@ -6,10 +6,10 @@
 
 // See also t_interface_virtual.v
 
-interface QBus;
+interface QBus();
 endinterface
 
-module t (/*AUTOARG*/);
+module t;
 
    virtual QBus q8;
 

@@ -1,0 +1,90 @@
+---
+# DESCRIPTION: Github actions config
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+name: Pages
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "ci/**"
+      - ".github/workflows"
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Code coverage"]
+    types: [completed]
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run
+# in-progress and latest queued. However, do NOT cancel in-progress runs as we
+# want to allow these deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: Build content
+    runs-on: ubuntu-24.04
+    outputs:
+      coverage-pr-run-ids: ${{ steps.build.outputs.coverage-pr-run-ids }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Build pages
+        id: build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bash -x ./ci/ci-pages.bash
+          ls -lsha
+          tree -L 3 pages
+      - name: Upload pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: pages
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
+
+  notify:
+    name: Notify
+    needs: [build, deploy]
+    runs-on: ubuntu-24.04
+    if: ${{ github.repository == 'verilator/verilator' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      # Use the Verilator CI app to post the comment
+      - name: Generate access token
+        id: generate-token
+        uses: actions/create-github-app-token@v2.1.4
+        with:
+          app-id: ${{ vars.VERILATOR_CI_ID }}
+          private-key: ${{ secrets.VERILATOR_CI_KEY }}
+          permission-actions: write
+          permission-pull-requests: write
+      - name: Comment on PR
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+          COVERAGE_PR_RUN_IDS: ${{ needs.build.outputs.coverage-pr-run-ids }}
+        run: bash -x ./ci/ci-pages-notify.bash

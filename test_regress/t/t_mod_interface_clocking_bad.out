@@ -1,0 +1,11 @@
+%Error: t/t_mod_interface_clocking_bad.v:16:25: Modport item is not a clocking block: 'reset'
+   16 |   modport mp(input clk, clocking reset, clocking cx);
+      |                         ^~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_mod_interface_clocking_bad.v:16:41: Modport item not found: 'cx'
+   16 |   modport mp(input clk, clocking reset, clocking cx);
+      |                                         ^~~~~~~~
+%Error: t/t_mod_interface_clocking_bad.v:25:10: Can't find definition of 'cb'
+   25 |     x.cb.reset <= 1;
+      |          ^~~~~
+%Error: Exiting due to

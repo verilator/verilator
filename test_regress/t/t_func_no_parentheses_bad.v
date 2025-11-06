@@ -9,7 +9,7 @@ function static int func();
    return ++cnt;
 endfunction
 
-module t (/*AUTOARG*/);
+module t;
 
    int   a;
    initial begin

@@ -6,7 +6,7 @@
 
 `define show(x) $display("oarray[%2d] is %2d", x, oarray[x])
 
-module t (/*AUTOARG*/);
+module t;
 
    int iarray [63:0];
    int oarray [63:0];

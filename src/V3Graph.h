@@ -197,12 +197,11 @@ public:
 
 class V3GraphVertex VL_NOT_FINAL {
     VL_RTTI_IMPL_BASE(V3GraphVertex)
-    // Vertices may be a 'gate'/wire statement OR a variable
-protected:
     friend class V3Graph;
     friend class V3GraphEdge;
     friend class GraphAcyc;
     friend class GraphAlgRank;
+    friend class GraphAlgRankDepth;
     V3ListLinks<V3GraphVertex> m_links;  // List links to store instances of this class
     V3GraphEdge::OList m_outs;  // List of outbound edges
     V3GraphEdge::IList m_ins;  // List of inbound edges
@@ -307,8 +306,9 @@ public:
     bool outSize1() const { return m_outs.hasSingleElement(); }
     // METHODS
     /// Error reporting
-    void v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) VL_MT_DISABLED;
-    void v3errorEndFatal(std::ostringstream& str) const
+    void v3errorEnd(const std::ostringstream& str) const
+        VL_RELEASE(V3Error::s().m_mutex) VL_MT_DISABLED;
+    void v3errorEndFatal(const std::ostringstream& str) const
         VL_RELEASE(V3Error::s().m_mutex) VL_MT_DISABLED;
     /// Edges are routed around this vertex to point from "from" directly to "to"
     void rerouteEdges(V3Graph* graphp) VL_MT_DISABLED;
@@ -383,10 +383,18 @@ public:
     void stronglyConnected(V3EdgeFuncP edgeFuncp) VL_MT_DISABLED;
 
     /// Assign an ordering number to all vertexes in a tree.
+    /// For multiple usages of a vertex, get the maximum of all inbound ranks + 1
     /// All nodes with no inputs will get rank 1
     /// Side-effect: changes user()
     void rank(V3EdgeFuncP edgeFuncp) VL_MT_DISABLED;
     void rank() VL_MT_DISABLED;
+
+    /// Assign an ordering number to all vertexes in a tree.
+    /// For multiple usages of a vertex, get the minimu of all inbound ranks + 1
+    /// All nodes with no inputs will get rank 1
+    /// Side-effect: changes user()
+    void rankMin(V3EdgeFuncP edgeFuncp) VL_MT_DISABLED;
+    void rankMin() VL_MT_DISABLED;
 
     /// Sort all vertices and edges using the V3GraphVertex::sortCmp() function
     void sortVertices() VL_MT_DISABLED;

@@ -38,7 +38,6 @@ class DepthVisitor final : public VNVisitor {
 
     // STATE - for current visit position (use VL_RESTORER)
     AstCFunc* m_cfuncp = nullptr;  // Current block
-    AstMTaskBody* m_mtaskbodyp = nullptr;  // Current mtaskbody
     AstNode* m_stmtp = nullptr;  // Current statement
     int m_depth = 0;  // How deep in an expression
     int m_maxdepth = 0;  // Maximum depth in an expression
@@ -52,9 +51,7 @@ class DepthVisitor final : public VNVisitor {
         AstVar* const varp = new AstVar{nodep->fileline(), VVarType::STMTTEMP,
                                         m_tempNames.get(nodep), nodep->dtypep()};
         if (m_cfuncp) {
-            m_cfuncp->addInitsp(varp);
-        } else if (m_mtaskbodyp) {
-            m_mtaskbodyp->addStmtsFirstp(varp);
+            m_cfuncp->addVarsp(varp);
         } else {
             nodep->v3fatalSrc("Deep expression not under a function");
         }
@@ -70,26 +67,12 @@ class DepthVisitor final : public VNVisitor {
     // VISITORS
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_cfuncp);
-        VL_RESTORER(m_mtaskbodyp);
         VL_RESTORER(m_depth);
         VL_RESTORER(m_maxdepth);
         m_cfuncp = nodep;
-        m_mtaskbodyp = nullptr;
         m_depth = 0;
         m_maxdepth = 0;
         m_tempNames.reset();
-        iterateChildren(nodep);
-    }
-    void visit(AstMTaskBody* nodep) override {
-        VL_RESTORER(m_cfuncp);
-        VL_RESTORER(m_mtaskbodyp);
-        VL_RESTORER(m_depth);
-        VL_RESTORER(m_maxdepth);
-        m_cfuncp = nullptr;
-        m_mtaskbodyp = nodep;
-        m_depth = 0;
-        m_maxdepth = 0;
-        // We don't reset the names, as must share across tasks
         iterateChildren(nodep);
     }
     void visitStmt(AstNodeStmt* nodep) {
@@ -131,11 +114,11 @@ class DepthVisitor final : public VNVisitor {
             m_cfuncp->isStatic(false);
         }
     }
-    void visit(AstUCFunc* nodep) override {
+    void visit(AstCExprUser* nodep) override {
         needNonStaticFunc(nodep);
         iterateChildren(nodep);
     }
-    void visit(AstUCStmt* nodep) override {
+    void visit(AstCStmtUser* nodep) override {
         needNonStaticFunc(nodep);
         visitStmt(nodep);
     }
@@ -150,6 +133,8 @@ public:
     explicit DepthVisitor(AstNetlist* nodep)
         : m_tempNames{"__Vdeeptemp"} {
         iterate(nodep);
+        // Extracting expressions can effect purity
+        VIsCached::clearCacheTree();
     }
     ~DepthVisitor() override = default;
 };

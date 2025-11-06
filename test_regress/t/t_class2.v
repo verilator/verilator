@@ -8,7 +8,7 @@ package Pkg;
    typedef enum { ENUMP_VAL = 33 } enump_t;
 endpackage
 
-module t (/*AUTOARG*/);
+module t;
 class Cls;
    int imembera;
    int imemberb;

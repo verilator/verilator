@@ -13,7 +13,7 @@
          a=0; b=0; c=0; \
       end while(0);
 
-module t (/*AUTOARG*/);
+module t;
 
    int a, b, c;
 

@@ -25,7 +25,10 @@
 #include <atomic>
 
 class AstNetlist;
-class AstMTaskBody;
+class AstCFunc;
+class AstExecGraph;
+class AstNodeStmt;
+class AstScope;
 
 //*************************************************************************
 // MTasks and graph structures
@@ -33,9 +36,9 @@ class AstMTaskBody;
 class ExecMTask final : public V3GraphVertex {
     VL_RTTI_IMPL(ExecMTask, V3GraphVertex)
 private:
-    AstMTaskBody* const m_bodyp;  // Task body
     const uint32_t m_id;  // Unique ID of this ExecMTask.
     static std::atomic<uint32_t> s_nextId;  // Next ID to use
+    AstCFunc* const m_funcp;  // The function that contains the task body
     const std::string m_hashName;  // Hashed name based on body for profile-driven optimization
     // Predicted critical path from the start of this mtask to the ends of the graph that are
     // reachable from this mtask. In abstract time units.
@@ -46,9 +49,12 @@ private:
     int m_threads = 1;  // Threads used by this mtask
     VL_UNCOPYABLE(ExecMTask);
 
+    static AstCFunc* createCFunc(AstExecGraph* execGraphp, AstScope* scopep, AstNodeStmt* stmtsp,
+                                 uint32_t id);
+
 public:
-    ExecMTask(V3Graph* graphp, AstMTaskBody* bodyp) VL_MT_DISABLED;
-    AstMTaskBody* bodyp() const { return m_bodyp; }
+    ExecMTask(AstExecGraph* execGraphp, AstScope* scopep, AstNodeStmt* stmtsp) VL_MT_DISABLED;
+    AstCFunc* funcp() const { return m_funcp; }
     uint32_t id() const VL_MT_SAFE { return m_id; }
     uint32_t priority() const { return m_priority; }
     void priority(uint32_t pri) { m_priority = pri; }

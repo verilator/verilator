@@ -61,7 +61,7 @@ class Ext extends Pkg::Base0;
    function int get_io(); return innerover.innerover; endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       Ext c;
       c = new;

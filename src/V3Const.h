@@ -28,7 +28,7 @@ class V3Const final {
 public:
     static void constifyParamsEdit(AstNode* nodep) VL_MT_DISABLED;
     static void constifyParamsNoWarnEdit(AstNode* nodep) VL_MT_DISABLED;
-    static AstNode* constifyGenerateParamsEdit(AstNode* nodep) VL_MT_DISABLED;
+    static void constifyGenerateParamsEdit(AstNode* nodep) VL_MT_DISABLED;
     // Only do constant pushing, without removing dead logic
     static void constifyAllLive(AstNetlist* nodep) VL_MT_DISABLED;
     // Everything that's possible

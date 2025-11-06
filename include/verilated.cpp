@@ -72,7 +72,7 @@
 # include <execinfo.h>
 # define _VL_HAVE_STACKTRACE
 #endif
-#if defined(__linux) || (defined(__APPLE__) && defined(__MACH__))
+#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
 # include <sys/time.h>
 # include <sys/resource.h>
 # define _VL_HAVE_GETRLIMIT
@@ -256,8 +256,8 @@ std::string _vl_string_vprintf(const char* formatp, va_list ap) VL_MT_SAFE {
 }
 
 uint64_t _vl_dbg_sequence_number() VL_MT_SAFE {
-    static std::atomic<uint64_t> sequence;
-    return ++sequence;
+    static std::atomic<uint64_t> s_sequence;
+    return ++s_sequence;
 }
 
 uint32_t VL_THREAD_ID() VL_MT_SAFE {
@@ -292,6 +292,16 @@ void VL_PRINTF_MT(const char* formatp, ...) VL_MT_SAFE {
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
         VL_PRINTF("%s", result.c_str());
     }});
+}
+
+//===========================================================================
+// Process -- parts of std::process implementation
+
+std::string VlProcess::randstate() const VL_MT_UNSAFE {
+    return VlRNG::vl_thread_rng().get_randstate();
+}
+void VlProcess::randstate(const std::string& state) VL_MT_UNSAFE {
+    VlRNG::vl_thread_rng().set_randstate(state);
 }
 
 //===========================================================================
@@ -1322,6 +1332,19 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 _vl_vsss_advance(fp, floc);
                 break;
             }
+            case '0':  // FALLTHRU
+            case '1':  // FALLTHRU
+            case '2':  // FALLTHRU
+            case '3':  // FALLTHRU
+            case '4':  // FALLTHRU
+            case '5':  // FALLTHRU
+            case '6':  // FALLTHRU
+            case '7':  // FALLTHRU
+            case '8':  // FALLTHRU
+            case '9': {
+                inPct = true;
+                break;
+            }
             case '*':
                 inPct = true;
                 inIgnore = true;
@@ -1329,7 +1352,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
             default: {
                 // Deal with all read-and-scan somethings
                 // Note LSBs are preserved if there's an overflow
-                const int obits = inIgnore ? 0 : va_arg(ap, int);
+                int obits = inIgnore ? 0 : va_arg(ap, int);
                 VlWide<VL_WQ_WORDS_E> qowp;
                 VL_SET_WQ(qowp, 0ULL);
                 WDataOutP owp = qowp;
@@ -1390,7 +1413,26 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     VL_SET_WQ(owp, u.ld);
                     break;
                 }
-                case 't':  // FALLTHRU  // Time
+                case 't': {  // Time
+                    _vl_vsss_skipspace(fp, floc, fromp, fstr);
+                    _vl_vsss_read_str(fp, floc, fromp, fstr, t_tmp, "+-.0123456789eE");
+                    if (!t_tmp[0]) goto done;
+                    union {
+                        double r;
+                        int64_t ld;
+                    } u;
+                    // Get pointer argument first, as proceeds the timeunit value
+                    if (obits != 64) goto done;
+                    QData* const realp = va_arg(ap, QData*);
+                    const int timeunit = va_arg(ap, int);
+                    const int userUnits
+                        = Verilated::threadContextp()->impp()->timeFormatUnits();  // 0..-15
+                    const int shift = -userUnits + timeunit;  // 0..-15
+                    u.r = std::strtod(t_tmp, nullptr) * vl_time_multiplier(-shift);
+                    *realp = VL_CLEAN_QQ(obits, obits, u.ld);
+                    obits = 0;  // Already loaded the value, don't read arg
+                    break;
+                }
                 case '#': {  // Unsigned decimal
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
                     _vl_vsss_read_str(fp, floc, fromp, fstr, t_tmp, "0123456789+-xXzZ?_");
@@ -1755,7 +1797,7 @@ uint64_t VL_MURMUR64_HASH(const char* key) VL_PURE {
 
     uint64_t h = seed ^ (len * m);
 
-    const uint64_t* data = (const uint64_t*)key;
+    const uint64_t* data = reinterpret_cast<const uint64_t*>(key);
     const uint64_t* end = data + (len / 8);
 
     while (data != end) {
@@ -1769,7 +1811,7 @@ uint64_t VL_MURMUR64_HASH(const char* key) VL_PURE {
         h *= m;
     }
 
-    const unsigned char* data2 = (const unsigned char*)data;
+    const unsigned char* data2 = reinterpret_cast<const unsigned char*>(data);
 
     switch (len & 7) {
     case 7: h ^= uint64_t(data2[6]) << 48; /* fallthrough */
@@ -2461,11 +2503,11 @@ void VL_WRITEMEM_N(bool hex,  // Hex format, else binary
 // Timescale conversion
 
 static const char* vl_time_str(int scale) VL_PURE {
-    static const char* const names[]
+    static const char* const s_names[]
         = {"100s",  "10s",  "1s",  "100ms", "10ms", "1ms", "100us", "10us", "1us",
            "100ns", "10ns", "1ns", "100ps", "10ps", "1ps", "100fs", "10fs", "1fs"};
     if (VL_UNLIKELY(scale > 2 || scale < -15)) scale = 0;
-    return names[2 - scale];
+    return s_names[2 - scale];
 }
 double vl_time_multiplier(int scale) VL_PURE {
     // Return timescale multiplier -18 to +18
@@ -2765,11 +2807,11 @@ void VerilatedContext::threads(unsigned n) {
 
     if (m_threads == n) return;  // To avoid unnecessary warnings
     m_threads = n;
-    const unsigned hardwareThreadsAvailable = std::thread::hardware_concurrency();
-    if (m_threads > hardwareThreadsAvailable) {
-        VL_PRINTF_MT("%%Warning: System has %u hardware threads but simulation thread count set "
-                     "to %u. This will likely cause significant slowdown.\n",
-                     hardwareThreadsAvailable, m_threads);
+    const unsigned threadsAvailableToProcess = VlOs::getProcessDefaultParallelism();
+    if (m_threads > threadsAvailableToProcess) {
+        VL_PRINTF_MT("%%Warning: Process has %u hardware threads available, but simulation thread "
+                     "count set to %u. This will likely cause significant slowdown.\n",
+                     threadsAvailableToProcess, m_threads);
     }
 }
 
@@ -2817,11 +2859,13 @@ void VerilatedContext::addModel(const VerilatedModel* modelp) {
 
     // We look for time passing, as opposed to post-eval(), as embedded
     // models might get added inside initial blocks.
-    if (VL_UNLIKELY(time()))
-        VL_FATAL_MT(
-            "", 0, "",
-            "Adding model when time is non-zero. ... Suggest check time(), or for restarting"
-            " model use a new VerilatedContext");
+    if (VL_UNLIKELY(time())) {
+        const std::string msg
+            = "Adding model '"s + modelp->hierName()
+              + "' when time is non-zero. ... Suggest check time(), or for restarting"
+                " model use a new VerilatedContext";
+        VL_FATAL_MT("", 0, "", msg.c_str());
+    }
 
     threadPoolp();  // Ensure thread pool is created, so m_threads cannot change any more
     m_threadsInModels += modelp->threads();
@@ -3379,7 +3423,7 @@ VerilatedModule::VerilatedModule(const char* namep)
 
 VerilatedModule::~VerilatedModule() {
     // Memory cleanup - not called during normal operation
-    // NOLINTNEXTLINE(google-readability-casting)
+    // cppcheck-suppress cstyleCast  // NOLINTNEXTLINE(google-readability-casting)
     if (m_namep) VL_DO_CLEAR(free((void*)(m_namep)), m_namep = nullptr);
 }
 

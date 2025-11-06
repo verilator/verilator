@@ -21,12 +21,6 @@
 
 namespace vlstd {
 
-// constexpr std::max with arguments passed by value (required by constexpr before C++14)
-template <typename T>
-constexpr T max(T a, T b) {
-    return a > b ? a : b;
-}
-
 // C++17 is_invocable
 template <typename F, typename... Args>
 struct is_invocable

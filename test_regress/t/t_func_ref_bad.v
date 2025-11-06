@@ -10,7 +10,7 @@ class Cls;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    logic [10:0] a;
    logic b;
    Cls cls;

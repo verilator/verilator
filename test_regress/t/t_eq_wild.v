@@ -8,7 +8,7 @@ function bit get_1_or_0(bit get_1);
    return get_1 ? 1'b1 : 1'b0;
 endfunction
 
-module t (/*AUTOARG*/);
+module t;
 
    initial begin
       if (get_1_or_0(0) ==? get_1_or_0(1)) $stop;

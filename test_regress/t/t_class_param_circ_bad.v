@@ -14,7 +14,7 @@ class ClsB #(parameter PARAM = 12);
    ClsA #(PARAM+1) a;
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    ClsA #(.PARAM(15)) c;  // Bad param name
 

@@ -79,7 +79,7 @@ private:
         m_stackSize = 0;
         return savedCount;
     }
-    void endVisitBase(uint32_t savedCount, AstNode* nodep) {
+    void endVisitBase(uint32_t savedCount, const AstNode* nodep) {
         UINFO(8, "cost " << std::setw(6) << std::left << m_stackSize << "  " << nodep);
         if (!m_ignoreRemaining) m_stackSize += savedCount;
     }
@@ -142,10 +142,11 @@ private:
     void visit(AstFork* nodep) override {
         if (m_ignoreRemaining) return;
         const VisitBase vb{this, nodep};
+        iterateAndNextConstNull(nodep->stmtsp());
         uint32_t totalCount = m_stackSize;
         VL_RESTORER(m_ignoreRemaining);
         // Sum counts in each statement
-        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* stmtp = nodep->forksp(); stmtp; stmtp = stmtp->nextp()) {
             reset();
             iterateConst(stmtp);
             totalCount += m_stackSize;

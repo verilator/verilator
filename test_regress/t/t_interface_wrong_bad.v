@@ -19,7 +19,7 @@ module foo_mod (foo_intf foo_port);
 //  end
 endmodule
 
-module t (/*AUTOARG*/);
+module t;
 
    foo_intf foo ();
    bar_intf bar ();

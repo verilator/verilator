@@ -1,22 +1,34 @@
-%Error: t/t_class_new_bad.v:31:16: Too many arguments in function call to FUNC 'new'
+%Error: t/t_class_new_bad.v:27:19: class 'new()' cannot be static (IEEE 1800-2023 18.3)
                                  : ... note: In instance 't'
-   31 |       c1 = new(3);   
-      |                ^
+   27 |   static function new();   
+      |                   ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_class_new_bad.v:32:16: Too many arguments in function call to FUNC 'new'
+%Error: t/t_class_new_bad.v:32:20: class 'new()' cannot be virual (IEEE 1800-2023 18.3)
                                  : ... note: In instance 't'
-   32 |       c2 = new(3);   
+   32 |   virtual function new();   
+      |                    ^~~
+%Error: t/t_class_new_bad.v:39:19: class 'new()' cannot be virual (IEEE 1800-2023 18.3)
+                                 : ... note: In instance 't'
+   39 | function ClsNew3::new();
+      |                   ^~~
+%Error: t/t_class_new_bad.v:47:16: Too many arguments in function call to FUNC 'new'
+                                 : ... note: In instance 't'
+   47 |       c1 = new(3);   
       |                ^
-%Error: t/t_class_new_bad.v:33:12: Missing argument on non-defaulted argument 'i' in function call to FUNC 'new'
+%Error: t/t_class_new_bad.v:48:16: Too many arguments in function call to FUNC 'new'
                                  : ... note: In instance 't'
-   33 |       c3 = new();   
-      |            ^~~
-%Error: t/t_class_new_bad.v:34:12: dynamic new() not expected in this context (data type must be dynamic array)
+   48 |       c2 = new(3);   
+      |                ^
+%Error: t/t_class_new_bad.v:49:12: Missing argument on non-defaulted argument 'i' in function call to FUNC 'new'
                                  : ... note: In instance 't'
-   34 |       c1 = new[2];
+   49 |       c3 = new();   
       |            ^~~
-%Error: Internal Error: t/t_class_new_bad.v:34:12: ../V3Width.cpp:#: Node has no type
+%Error: t/t_class_new_bad.v:50:12: dynamic new() not expected in this context (data type must be dynamic array)
+                                 : ... note: In instance 't'
+   50 |       c1 = new[2];
+      |            ^~~
+%Error: Internal Error: t/t_class_new_bad.v:50:12: ../V3Width.cpp:#: Node has no type
                                                  : ... note: In instance 't'
-   34 |       c1 = new[2];
+   50 |       c1 = new[2];
       |            ^~~
                         ... This fatal error may be caused by the earlier error(s); resolve those first.

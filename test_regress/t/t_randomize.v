@@ -50,7 +50,7 @@ class Packet;
 
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    Packet p;
 
@@ -65,6 +65,10 @@ module t (/*AUTOARG*/);
       if (v != 1) $stop;
       v = p.randomize() with { if_4 == local::if_4; header == 2; };
       if (v != 1) $stop;
+      // verilator lint_off WIDTH
+      assert(p.randomize && p.randomize);  // No parens, math
+      // verilator lint_on WIDTH
+
       // TODO not testing other randomize forms as unused in UVM
 
       $write("*-* All Finished *-*\n");

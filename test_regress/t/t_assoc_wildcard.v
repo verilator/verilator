@@ -23,8 +23,8 @@ module t (/*AUTOARG*/
       begin
          // Wildcard
          typedef string dict_t [*];
-         string a [*] = '{default: "nope", "BBBBB": "fooing", 23'h434343: "baring"};
-         dict_t b = '{default: "nope", "BBBBB": "fooing", 23'h434343: "baring"};
+         static string a [*] = '{default: "nope", "BBBBB": "fooing", 23'h434343: "baring"};
+         static dict_t b = '{default: "nope", "BBBBB": "fooing", 23'h434343: "baring"};
          int k;
          string v;
 

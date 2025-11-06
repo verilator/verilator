@@ -5,21 +5,23 @@
 name: format
 on:
   push:
-  pull_request_target:
-  workflow_dispatch:
+    branches-ignore:
+      - 'dependabot/**'  # Avoid duplicates: only run the PR, not the push
+
 permissions:
   contents: write
+
 jobs:
   format:
-    runs-on: ubuntu-22.04
-    name: Ubuntu 22.04 | format
+    runs-on: ubuntu-24.04
+    name: Ubuntu 24.04 | format
     env:
       CI_OS_NAME: linux
-      CI_RUNS_ON: ubuntu-22.04
+      CI_RUNS_ON: ubuntu-24.04
       CI_COMMIT: ${{ github.sha }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install packages for build
@@ -27,7 +29,7 @@ jobs:
           CI_BUILD_STAGE_NAME: build
         run: |
           bash ci/ci-install.bash &&
-          sudo apt-get install clang-format-14 yapf3 &&
+          sudo apt-get install clang-format-18 yapf3 &&
           sudo pip3 install gersemi mbake &&
           git config --global user.email "action@example.com" &&
           git config --global user.name "github action"
@@ -35,10 +37,10 @@ jobs:
         run: |
           autoconf &&
           ./configure &&
-          make -j 2 format CLANGFORMAT=clang-format-14 &&
+          make -j 2 format CLANGFORMAT=clang-format-18 &&
           git status
       - name: Push
-        run: |
+        run: |-
           if [ -n "$(git status --porcelain)" ]; then
             git commit . -m "Apply 'make format'" &&
             git push origin

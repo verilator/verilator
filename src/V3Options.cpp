@@ -151,7 +151,7 @@ VTimescale::VTimescale(const string& value, bool& badr)
 // Parse "--hierarchical-block orig_name,mangled_name,param0_name,param0_value,... " option.
 // The format of value is as same as -G option. (can be string literal surrounded by ")
 V3HierarchicalBlockOption::V3HierarchicalBlockOption(const string& opts) {
-    V3StringList vals;
+    VStringList vals;
     bool inStr = false;
     string cur;
     static const string hierBlock("--hierarchical-block");
@@ -386,14 +386,6 @@ bool V3Options::isLibraryFile(const string& filename, const string& libname) con
 void V3Options::addLibraryFile(const string& filename, const string& libname) {
     m_libraryFiles.insert({filename, libname});
 }
-bool V3Options::isClocker(const string& signame) const {
-    return m_clockers.find(signame) != m_clockers.end();
-}
-void V3Options::addClocker(const string& signame) { m_clockers.insert(signame); }
-bool V3Options::isNoClocker(const string& signame) const {
-    return m_noClockers.find(signame) != m_noClockers.end();
-}
-void V3Options::addNoClocker(const string& signame) { m_noClockers.insert(signame); }
 void V3Options::addVFile(const string& filename, const string& libname) {
     // We use a list for v files, because it's legal to have includes
     // in a specific order and multiple of them.
@@ -419,6 +411,7 @@ string V3Options::allArgsString() const VL_MT_SAFE {
 
 // Delete some options for Verilation of the hierarchical blocks.
 string V3Options::allArgsStringForHierBlock(bool forTop) const {
+    // cppcheck-suppress shadowFunction
     std::set<string> vFiles;
     for (const auto& vFile : m_vFiles) vFiles.insert(vFile.filename());
     string out;
@@ -482,6 +475,41 @@ void V3Options::decorations(FileLine* fl, const string& arg) {  // --decorations
                     << arg << "'\n"
                     << fl->warnMore() << "... Suggest 'none', 'medium', or 'node'");
     }
+}
+
+std::vector<std::string> V3Options::traceClassBases() const VL_MT_SAFE {
+    std::vector<std::string> result;
+    if (traceEnabledFst()) result.emplace_back("VerilatedFst");
+    if (traceEnabledSaif()) result.emplace_back("VerilatedSaif");
+    if (traceEnabledVcd()) result.emplace_back("VerilatedVcd");
+    return result;
+}
+std::vector<std::string> V3Options::traceClassLangs() const VL_MT_SAFE {
+    std::vector<std::string> result;
+    for (auto& cbase : traceClassBases()) result.emplace_back(cbase + (systemC() ? "Sc" : "C"));
+    return result;
+}
+std::vector<std::string> V3Options::traceSourceBases() const VL_MT_SAFE {
+    std::vector<std::string> result;
+    if (traceEnabledFst()) result.emplace_back("verilated_fst");
+    if (traceEnabledSaif()) result.emplace_back("verilated_saif");
+    if (traceEnabledVcd()) result.emplace_back("verilated_vcd");
+    return result;
+}
+std::vector<std::string> V3Options::traceSourceLangs() const VL_MT_SAFE {
+    std::vector<std::string> result = traceSourceBases();
+    for (std::string& str : result) str += systemC() ? "_sc"s : "_c"s;
+    return result;
+}
+std::string V3Options::traceClassBase() const VL_MT_SAFE {
+    // Deprecated - Needs to be fixed to support multiple trace, issue #5813
+    UASSERT(!traceClassBases().empty(), "Call traceClassBase only when trace() enabled");
+    return traceClassBases().front();
+}
+std::string V3Options::traceClassLang() const VL_MT_SAFE {
+    // Deprecated - Needs to be fixed to support multiple trace, issue #5813
+    UASSERT(!traceClassBases().empty(), "Call traceClassLang only when trace() enabled");
+    return traceClassLangs().front();
 }
 
 //######################################################################
@@ -552,17 +580,44 @@ string V3Options::filePathCheckOneDir(const string& modname, const string& dirna
 // 2: Delete the option and its argument
 // 3: Delete the option and its argument if it is a number
 int V3Options::stripOptionsForChildRun(const string& opt, bool forTop) {
-    if (opt == "j") return 3;
-    if (opt == "Mdir" || opt == "clk" || opt == "lib-create" || opt == "f" || opt == "F"
-        || opt == "v" || opt == "l2-name" || opt == "mod-prefix" || opt == "prefix"
-        || opt == "protect-lib" || opt == "protect-key" || opt == "threads"
-        || opt == "top-module") {
-        return 2;
+    // Options to strip for both the top wrapper, and hier blocks
+    static const std::unordered_map<std::string, int> commonOpts{
+        //
+        {"j", 3},
+        //
+        {"Mdir", 2},
+        {"clk", 2},
+        {"lib-create", 2},
+        {"f", 2},
+        {"F", 2},
+        {"v", 2},
+        {"l2-name", 2},
+        {"mod-prefix", 2},
+        {"prefix", 2},
+        {"protect-lib", 2},
+        {"protect-key", 2},
+        {"threads", 2},
+        {"top-module", 2},
+        //
+        {"build", 1},
+        {"hierarchical", 1},
+    };
+    if (commonOpts.count(opt)) return commonOpts.at(opt);
+
+    // Options to strip only for hier blocks
+    if (!forTop) {
+        static const std::unordered_map<std::string, int> subOpts{
+            {"cc", 1},
+            {"exe", 1},
+            {"sc", 1},
+            {"binary", 1},
+        };
+        if (subOpts.count(opt)) return subOpts.at(opt);
+        if (VString::startsWith(opt, "G")) return 1;
+        if (VString::startsWith(opt, "pvalue")) return 1;
     }
-    if (opt == "build" || (!forTop && (opt == "cc" || opt == "exe" || opt == "sc"))
-        || opt == "hierarchical" || (opt.length() > 2 && opt.substr(0, 2) == "G=")) {
-        return 1;
-    }
+
+    // Do not strip
     return 0;
 }
 
@@ -606,15 +661,15 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
 }
 
 string V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
-    static bool shown_notfound_msg = false;
+    static bool s_shown_notfound_msg = false;
     std::ostringstream ss;
     if (modname.find("__Vhsh") != string::npos) {
         ss << V3Error::warnMore() << "... Note: Name is longer than 127 characters; automatic"
            << " file lookup may have failed due to OS filename length limits.\n";
         ss << V3Error::warnMore() << "... Suggest putting filename with this module/package"
            << " onto command line instead.\n";
-    } else if (!shown_notfound_msg) {
-        shown_notfound_msg = true;
+    } else if (!s_shown_notfound_msg) {
+        s_shown_notfound_msg = true;
         if (m_impp->m_incDirUsers.empty()) {
             ss << V3Error::warnMore()
                << "... This may be because there's no search path specified with -I<dir>.\n";
@@ -813,6 +868,11 @@ string V3Options::getSupported(const string& var) {
     // If update below, also update V3Options::showVersion()
     if (var == "COROUTINES" && coroutineSupport()) {
         return "1";
+    } else if (var == "DEV_ASAN" && devAsan()) {
+        return "1";
+    } else if (var == "DEV_GCOV" && devGcov()) {
+        return "1";
+        // cppcheck-suppress knownConditionTrueFalse
     } else if (var == "SYSTEMC" && systemCFound()) {
         return "1";
     } else {
@@ -835,6 +895,22 @@ bool V3Options::systemCFound() {
 
 bool V3Options::coroutineSupport() {
 #ifdef HAVE_COROUTINES
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool V3Options::devAsan() {
+#ifdef HAVE_DEV_ASAN
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool V3Options::devGcov() {
+#ifdef HAVE_DEV_GCOV
     return true;
 #else
     return false;
@@ -899,6 +975,14 @@ void V3Options::notify() VL_MT_DISABLED {
         m_main = false;
     }
 
+    if (trace() && !traceEnabledFst() && !traceEnabledSaif() && !traceEnabledVcd()) {
+        m_traceEnabledVcd = true;  // No format, with --trace means wanted --trace-vcd
+    }
+    if (traceEnabledFst() || traceEnabledSaif() || traceEnabledVcd()) m_trace = true;
+    const int ntraces = traceEnabledFst() + traceEnabledSaif() + traceEnabledVcd();
+    if (ntraces > 1)  // Issue #5813
+        cmdfl->v3error("Only one of --trace-fst, --trace-saif or --trace--vcd may be used");
+
     if (protectIds()) {
         if (allPublic()) {
             // We always call protect() on names, we don't check if public or not
@@ -936,7 +1020,7 @@ void V3Options::notify() VL_MT_DISABLED {
 
     if (trace()) {
         // With --trace-vcd, --trace-threads is ignored
-        if (traceFormat().vcd()) m_traceThreads = 1;
+        if (traceEnabledVcd()) m_traceThreads = 1;
     }
 
     UASSERT(!(useTraceParallel() && useTraceOffload()),
@@ -987,8 +1071,8 @@ string V3Options::version() VL_PURE {
 }
 
 string V3Options::protectKeyDefaulted() VL_MT_SAFE {
-    static V3Mutex mutex;
-    const V3LockGuard lock{mutex};
+    static V3Mutex s_mutex;
+    const V3LockGuard lock{s_mutex};
     if (m_protectKey.empty()) {
         // Create a key with a human-readable symbol-like name.
         // This conversion drops ~2 bits of entropy out of 256, shouldn't matter.
@@ -1180,6 +1264,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
                 [this](const char* optp) { addLangExt(optp, V3LangCode::L1800_2023); });
 
     // Minus options
+    DECL_OPTION("-aslr", CbOnOff, [](bool) {});  // Processed only in bin/verilator shell
     DECL_OPTION("-assert", CbOnOff, [this](bool flag) {
         m_assert = flag;
         m_assertCase = flag;
@@ -1208,15 +1293,19 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
                                                                               << "' was passed");
             val = 1;
         } else if (val == 0) {
-            val = std::thread::hardware_concurrency();
+            val = VlOs::getProcessDefaultParallelism();
         }
         m_buildJobs = val;
     });
 
     DECL_OPTION("-CFLAGS", CbVal, callStrSetter(&V3Options::addCFlags));
     DECL_OPTION("-cc", CbCall, [this]() { ccSet(); });
-    DECL_OPTION("-clk", CbVal, callStrSetter(&V3Options::addClocker));
-    DECL_OPTION("-no-clk", CbVal, callStrSetter(&V3Options::addNoClocker));
+    DECL_OPTION("-clk", CbVal, [fl](const std::string&) {
+        fl->v3warn(DEPRECATED, "Option '--clk' is deprecated and has no effect.");
+    });
+    DECL_OPTION("-no-clk", CbVal, [fl](const std::string&) {
+        fl->v3warn(DEPRECATED, "Option '--no-clk' is deprecated and has no effect.");
+    });
     DECL_OPTION("-comp-limit-blocks", Set, &m_compLimitBlocks).undocumented();
     DECL_OPTION("-comp-limit-members", Set,
                 &m_compLimitMembers)
@@ -1260,9 +1349,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-debugi-", CbPartialMatchVal, [this](const char* optp, const char* valp) {
         m_debugLevel[optp] = std::atoi(valp);
     });
-    DECL_OPTION("-debug-abort", CbCall,
-                V3Error::vlAbort)
-        .undocumented();  // See also --debug-sigsegv
+    DECL_OPTION("-debug-abort", CbCall, []() {
+        V3Error::vlAbort();  // LCOV_EXCL_LINE
+    }).undocumented();  // See also --debug-sigseg
     DECL_OPTION("-debug-check", OnOff, &m_debugCheck);
     DECL_OPTION("-debug-collision", OnOff, &m_debugCollision).undocumented();
     DECL_OPTION("-debug-emitv", OnOff, &m_debugEmitV).undocumented();
@@ -1273,8 +1362,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         v3fatalSrc("--debug-fatal-src");
     }).undocumented();  // See also --debug-abort
     DECL_OPTION("-debug-leak", OnOff, &m_debugLeak);
-    DECL_OPTION("-debug-nondeterminism", OnOff, &m_debugNondeterminism);
+    DECL_OPTION("-debug-nondeterminism", OnOff, &m_debugNondeterminism).undocumented();
+    DECL_OPTION("-debug-options", OnOff, &m_debugOptions).undocumented();
     DECL_OPTION("-debug-partition", OnOff, &m_debugPartition).undocumented();
+    DECL_OPTION("-debug-preproc-passthru", OnOff, &m_debugPreprocPassthru).undocumented();
     DECL_OPTION("-debug-protect", OnOff, &m_debugProtect).undocumented();
     DECL_OPTION("-debug-self-test", OnOff, &m_debugSelfTest).undocumented();
     DECL_OPTION("-debug-sigsegv", CbCall, throwSigsegv).undocumented();  // See also --debug-abort
@@ -1367,28 +1458,31 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-freloop", FOnOff, &m_fReloop);
     DECL_OPTION("-freorder", FOnOff, &m_fReorder);
     DECL_OPTION("-fslice", FOnOff, &m_fSlice);
+    DECL_OPTION("-fslice-element-limit", CbVal, [this, fl](const char* valp) {
+        m_fSliceElementLimit = std::atoi(valp);
+        if (m_fSliceElementLimit < 0) fl->v3fatal("--fslice-element-limit must be >= 0: " << valp);
+    });
     DECL_OPTION("-fsplit", FOnOff, &m_fSplit);
     DECL_OPTION("-fsubst", FOnOff, &m_fSubst);
     DECL_OPTION("-fsubst-const", FOnOff, &m_fSubstConst);
     DECL_OPTION("-ftable", FOnOff, &m_fTable);
     DECL_OPTION("-ftaskify-all-forked", FOnOff, &m_fTaskifyAll).undocumented();  // Debug
     DECL_OPTION("-fvar-split", FOnOff, &m_fVarSplit);
-
     DECL_OPTION("-G", CbPartialMatch, [this](const char* optp) { addParameter(optp, false); });
     DECL_OPTION("-gate-stmts", Set, &m_gateStmts);
     DECL_OPTION("-gdb", CbCall, []() {});  // Processed only in bin/verilator shell
     DECL_OPTION("-gdbbt", CbCall, []() {});  // Processed only in bin/verilator shell
     DECL_OPTION("-generate-key", CbCall, [this]() {
         cout << protectKeyDefaulted() << endl;
-        std::exit(0);
+        v3Global.vlExit(0);
     });
     DECL_OPTION("-getenv", CbVal, [](const char* valp) {
         cout << V3Options::getenvBuiltins(valp) << endl;
-        std::exit(0);
+        v3Global.vlExit(0);
     });
     DECL_OPTION("-get-supported", CbVal, [](const char* valp) {
         cout << V3Options::getSupported(valp) << endl;
-        std::exit(0);
+        v3Global.vlExit(0);
     });
 
     DECL_OPTION("-hierarchical", OnOff, &m_hierarchical);
@@ -1397,14 +1491,13 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_hierBlocks.emplace(opt.mangledName(), opt);
     });
     DECL_OPTION("-hierarchical-child", Set, &m_hierChild);
-    DECL_OPTION("-hierarchical-params-file", CbVal, [this](const char* optp) {
-        m_hierParamsFile.push_back({optp, work()});
-    });
+    DECL_OPTION("-hierarchical-params-file", CbVal,
+                [this](const char* optp) { m_hierParamsFile.push_back({optp, work()}); });
 
     DECL_OPTION("-I", CbPartialMatch,
                 [this, &optdir](const char* optp) { addIncDirUser(parseFileArg(optdir, optp)); });
     DECL_OPTION("-if-depth", Set, &m_ifDepth);
-    DECL_OPTION("-ignc", OnOff, &m_ignc);
+    DECL_OPTION("-ignc", OnOff, &m_ignc).undocumented();
     DECL_OPTION("-inline-mult", Set, &m_inlineMult);
     DECL_OPTION("-instr-count-dpi", CbVal, [this, fl](int val) {
         m_instrCountDpi = val;
@@ -1460,6 +1553,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-make", CbVal, [this, fl](const char* valp) {
         if (!std::strcmp(valp, "cmake")) {
             m_cmake = true;
+            fl->v3warn(DEPRECATED,
+                       "Option '--make cmake' is deprecated, use '--make json' instead");
         } else if (!std::strcmp(valp, "gmake")) {
             m_gmake = true;
         } else if (!std::strcmp(valp, "json")) {
@@ -1482,7 +1577,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-o", Set, &m_exeName);
     DECL_OPTION("-order-clock-delay", CbOnOff, [fl](bool /*flag*/) {
         fl->v3warn(DEPRECATED, "Option order-clock-delay is deprecated and has no effect.");
-    });
+    }).undocumented();
     DECL_OPTION("-output-groups", CbVal, [this, fl](const char* valp) {
         m_outputGroups = std::atoi(valp);
         if (m_outputGroups < -1) fl->v3error("--output-groups must be >= -1: " << valp);
@@ -1520,11 +1615,13 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
     DECL_OPTION("-pins-uint8", OnOff, &m_pinsUint8);
     DECL_OPTION("-pipe-filter", Set, &m_pipeFilter);
-    DECL_OPTION("-pp-comments", OnOff, &m_ppComments);
+    DECL_OPTION("-pp-comments", OnOff, &m_preprocComments).undocumented();  // Renamed
     DECL_OPTION("-prefix", CbVal, [this, fl](const char* valp) {
         validateIdentifier(fl, valp, "--prefix");
         m_prefix = valp;
     });
+    DECL_OPTION("-preproc-comments", OnOff, &m_preprocComments);
+    DECL_OPTION("-preproc-defines", OnOff, &m_preprocDefines);
     DECL_OPTION("-preproc-resolve", OnOff, &m_preprocResolve);
     DECL_OPTION("-preproc-token-limit", CbVal, [this, fl](const char* valp) {
         m_preprocTokenLimit = std::atoi(valp);
@@ -1535,8 +1632,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-prof-cfuncs", CbCall, [this]() { m_profC = m_profCFuncs = true; });
     DECL_OPTION("-prof-exec", OnOff, &m_profExec);
     DECL_OPTION("-prof-pgo", OnOff, &m_profPgo);
-    DECL_OPTION("-profile-cfuncs", CbCall,
-                [this]() { m_profC = m_profCFuncs = true; });  // Renamed
+    DECL_OPTION("-profile-cfuncs", CbCall, [this]() {
+        m_profC = m_profCFuncs = true;
+    }).undocumented();  // Renamed
     DECL_OPTION("-protect-ids", OnOff, &m_protectIds);
     DECL_OPTION("-protect-key", Set, &m_protectKey);
     DECL_OPTION("-protect-lib", CbVal, [this, fl](const char* valp) {
@@ -1664,25 +1762,20 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-top", Set, &m_topModule);
     DECL_OPTION("-top-module", Set, &m_topModule);
     DECL_OPTION("-trace", OnOff, &m_trace);
-    DECL_OPTION("-trace-saif", CbCall, [this]() {
-        m_trace = true;
-        m_traceFormat = TraceFormat::SAIF;
-    });
+    DECL_OPTION("-trace-saif", CbCall, [this]() { m_traceEnabledSaif = true; });
     DECL_OPTION("-trace-coverage", OnOff, &m_traceCoverage);
     DECL_OPTION("-trace-depth", Set, &m_traceDepth);
     DECL_OPTION("-trace-fst", CbCall, [this]() {
-        m_trace = true;
-        m_traceFormat = TraceFormat::FST;
+        m_traceEnabledFst = true;
         addLdLibs("-lz");
     });
     DECL_OPTION("-trace-fst-thread", CbCall, [this, fl]() {
-        m_trace = true;
-        m_traceFormat = TraceFormat::FST;
+        m_traceEnabledFst = true;
         addLdLibs("-lz");
         fl->v3warn(DEPRECATED, "Option --trace-fst-thread is deprecated. "
                                "Use --trace-fst with --trace-threads > 0.");
         if (m_traceThreads == 0) m_traceThreads = 1;
-    });
+    }).undocumented();
     DECL_OPTION("-trace-max-array", Set, &m_traceMaxArray);
     DECL_OPTION("-trace-max-width", Set, &m_traceMaxWidth);
     DECL_OPTION("-trace-params", OnOff, &m_traceParams);
@@ -1694,13 +1787,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
     DECL_OPTION("-no-trace-top", Set, &m_noTraceTop);
     DECL_OPTION("-trace-underscore", OnOff, &m_traceUnderscore);
-    DECL_OPTION("-trace-vcd", CbCall, [this]() {
-        m_trace = true;
-        m_traceFormat = TraceFormat::VCD;
-    });
+    DECL_OPTION("-trace-vcd", CbCall, [this]() { m_traceEnabledVcd = true; });
 
     DECL_OPTION("-U", CbPartialMatch, &V3PreShell::undef);
-    DECL_OPTION("-underline-zero", OnOff, &m_underlineZero);  // Deprecated
+    DECL_OPTION("-underline-zero", OnOff, &m_underlineZero).undocumented();  // Deprecated
     DECL_OPTION("-no-unlimited-stack", CbCall, []() {});  // Processed only in bin/verilator shell
     DECL_OPTION("-unroll-count", Set, &m_unrollCount).undocumented();  // Optimization tweak
     DECL_OPTION("-unroll-stmts", Set, &m_unrollStmts).undocumented();  // Optimization tweak
@@ -1708,7 +1798,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
 
     DECL_OPTION("-V", CbCall, [this]() {
         showVersion(true);
-        std::exit(0);
+        v3Global.vlExit(0);
     });
     DECL_OPTION("-v", CbVal, [this, &optdir](const char* valp) {
         V3Options::addLibraryFile(parseFileArg(optdir, valp), work());
@@ -1722,13 +1812,13 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
                         << valp << "' was passed");
             val = 1;
         } else if (val == 0) {
-            val = std::thread::hardware_concurrency();
+            val = VlOs::getProcessDefaultParallelism();
         }
         m_verilateJobs = val;
     });
     DECL_OPTION("-version", CbCall, [this]() {
         showVersion(false);
-        std::exit(0);
+        v3Global.vlExit(0);
     });
     DECL_OPTION("-vpi", OnOff, &m_vpi);
 
@@ -1755,13 +1845,15 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         addFuture(optp);
     });
     DECL_OPTION("-Wno-", CbPartialMatch, [fl, &parser](const char* optp) VL_MT_DISABLED {
-        if (!FileLine::globalWarnOff(optp, true)) {
+        const string err = FileLine::globalWarnOffParse(optp, true);
+        if (!err.empty()) {
             const string fullopt = "-Wno-"s + optp;
             fl->v3fatal("Unknown warning specified: " << fullopt
                                                       << parser.getSuggestion(fullopt.c_str()));
         }
     });
     for (int i = V3ErrorCode::EC_FIRST_WARN; i < V3ErrorCode::_ENUM_MAX; ++i) {
+        // cppcheck-suppress shadowFunction
         for (const string prefix : {"-Wno-", "-Wwarn-"})
             parser.addSuggestionCandidate(prefix + V3ErrorCode{i}.ascii());
     }
@@ -1871,7 +1963,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
             int val = 0;
             if (i < argc && std::isdigit(argv[i][0])) {
                 val = std::atoi(argv[i]);  // Can't be negative due to isdigit above
-                if (val == 0) val = std::thread::hardware_concurrency();
+                if (val == 0) val = VlOs::getProcessDefaultParallelism();
                 ++i;
             }
             if (m_buildJobs == -1) m_buildJobs = val;
@@ -1909,6 +2001,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
             }
             ++i;
         }
+    }
+
+    if (m_debugOptions) {
+        parser.dumpOptions();
+        v3Global.vlExit(0);
     }
 }
 
@@ -2089,6 +2186,7 @@ void V3Options::showVersion(bool verbose) {
     cout << "    SYSTEMC_INCLUDE    = " << DEFENV_SYSTEMC_INCLUDE << "\n";
     cout << "    SYSTEMC_LIBDIR     = " << DEFENV_SYSTEMC_LIBDIR << "\n";
     cout << "    VERILATOR_ROOT     = " << DEFENV_VERILATOR_ROOT << "\n";
+    cout << "    VERILATOR_SOLVER   = " << DEFENV_VERILATOR_SOLVER << "\n";
     cout << "    SystemC system-wide = " << cvtToStr(systemCSystemWide()) << "\n";
 
     // If update below, also update V3Options::getenvBuiltins()
@@ -2104,6 +2202,7 @@ void V3Options::showVersion(bool verbose) {
     // wrapper uses VERILATOR_BIN
     cout << "    VERILATOR_BIN      = " << V3Os::getenvStr("VERILATOR_BIN", "") << "\n";
     cout << "    VERILATOR_ROOT     = " << V3Os::getenvStr("VERILATOR_ROOT", "") << "\n";
+    cout << "    VERILATOR_SOLVER   = " << V3Os::getenvStr("VERILATOR_SOLVER", "") << "\n";
 
     // If update below, also update V3Options::getSupported()
     cout << "\n";
@@ -2116,8 +2215,6 @@ void V3Options::showVersion(bool verbose) {
 
 V3Options::V3Options() {
     m_impp = new V3OptionsImp;
-
-    m_traceFormat = TraceFormat::VCD;
 
     m_makeDir = "obj_dir";
     m_unusedRegexp = "*unused*";
@@ -2170,13 +2267,13 @@ unsigned V3Options::dumpSrcLevel(const string& srcfile_path) const VL_MT_SAFE {
 }
 
 bool V3Options::dumpTreeAddrids() const VL_MT_SAFE {
-    static int level = -1;
-    if (VL_UNLIKELY(level < 0)) {
+    static int s_level = -1;
+    if (VL_UNLIKELY(s_level < 0)) {
         const unsigned value = dumpLevel("tree-addrids");
         if (!available()) return value > 0;
-        level = static_cast<unsigned>(value);
+        s_level = static_cast<unsigned>(value);
     }
-    return level > 0;
+    return s_level > 0;
 }
 
 void V3Options::optimize(int level) {

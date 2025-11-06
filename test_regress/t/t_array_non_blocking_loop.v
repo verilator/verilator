@@ -7,8 +7,8 @@
 
 interface intf
   #(
-    parameter int write_data_width) ();
-    logic [write_data_width-1:0] writedata;
+    parameter int WRITE_DATA_WIDTH) ();
+    logic [WRITE_DATA_WIDTH-1:0] writedata;
 endinterface
 module t( /*AUTOARG*/
     clk
@@ -20,7 +20,7 @@ module t( /*AUTOARG*/
         for (num_chunks = 1; num_chunks <= 2; num_chunks++) begin : gen_n
             localparam int decoded_width = 55 * num_chunks;
                 intf #(
-                    .write_data_width(decoded_width))
+                    .WRITE_DATA_WIDTH(decoded_width))
                 the_intf ();
                 always @(posedge clk) begin
                     for (int i = 0; i < decoded_width; i++)

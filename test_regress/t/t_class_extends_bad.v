@@ -13,5 +13,5 @@ endclass
 class Cls extends Base1, Base2;
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 endmodule

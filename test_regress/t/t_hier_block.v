@@ -20,12 +20,22 @@ interface byte_ifs(input clk);
    modport receiver(input clk, input data);
 endinterface;
 
+typedef enum logic [1:0] {
+  enum_val_0 = 2'd0,
+  enum_val_1 = 2'd1,
+  enum_val_2 = 2'd2,
+  enum_val_3 = 2'd3
+} enum_t;
+
 `ifdef AS_PROT_LIB
 module secret (
    clk
    );
 `else
-module t (/*AUTOARG*/
+module t #(
+  parameter int PARAM_A = 33,
+  parameter int PARAM_B = 44
+) (/*AUTOARG*/
    // Inputs
    clk
    );
@@ -55,7 +65,18 @@ module t (/*AUTOARG*/
 
    always_ff @(posedge clk) begin
       if (out3 != out3_2) $stop;
-      $display("%d out0:%d %d %d %d %d", count, out0, out1, out2, out3, out5, out6);
+`ifndef AS_PROT_LIB
+`ifdef PARAM_OVERRIDE
+      if (PARAM_A != 100) $stop;
+      if (PARAM_B != 200) $stop;
+`else
+      if (PARAM_A != 33) $stop;
+      if (PARAM_B != 44) $stop;
+`endif
+`endif
+      $display("%d %m out0:%d %d %d %d %d", count, out0, out1, out2, out3, out5, out6);
+      $display("%d %m child input  ports: %d %d %d", count, i_sub1.in, i_sub2.in, i_sub3.in);
+      $display("%d %m child output ports: %d %d %d", count, i_sub1.out, i_sub2.out, i_sub3.out);
       if (count == 16) begin
          if (out6 == 19) begin
              $write("*-* All Finished *-*\n");
@@ -162,9 +183,9 @@ module non_hier_sub3(
    assign in_wire = in.data;
    localparam string sparam = "single quote escape comma:'\\,";
    // Parameter appears in the different order from module declaration
-   sub3 #(.STR(sparam), .UNUSED(-16'sd3), .P0(8'd3)) i_sub3(.clk(in.clk), .in(in.data), .out(out_1));
+   sub3 #(.STR(sparam), .UNUSED(-16'sd3), .P0(8'd3), .ENUM(enum_val_3)) i_sub3(.clk(in.clk), .in(in.data), .out(out_1));
    // Instantiate again, should use the same wrapper
-   sub3 #(.STR(sparam), .UNUSED(-16'sd3), .P0(8'd3)) i_sub3_2(.clk(in.clk), .in(in.data), .out(out_2));
+   sub3 #(.STR(sparam), .UNUSED(-16'sd3), .P0(8'd3), .ENUM(enum_val_3)) i_sub3_2(.clk(in.clk), .in(in.data), .out(out_2));
    always @(posedge in.clk)
       if (out_1 != out_2) $stop;
 
@@ -176,12 +197,13 @@ module sub3 #(
    type TYPE = logic,
    parameter int UNPACKED_ARRAY[2] = '{0, 1},
    parameter logic signed [15:0] UNUSED = -3,
-   parameter string STR = "str") (
+   parameter string STR = "str",
+   parameter enum_t ENUM = enum_val_0) (
    input wire clk,
    input wire [7:0] in,
    output wire [7:0] out); `HIER_BLOCK
 
-   initial $display("P0:%d UNUSED:%d %s", P0, UNUSED, STR);
+   initial $display("P0:%d UNUSED:%d %s %d", P0, UNUSED, STR, ENUM);
 
    TYPE [7:0] ff;
    always_ff @(posedge clk) ff <= in + P0;
@@ -192,8 +214,16 @@ module sub3 #(
    assign out = out4;
    /* verilator lint_off REALCVT */
    sub4 #(.P0(1.6), .P1(3.1), .P3(4.1)) i_sub4_0(.clk(clk), .in(ff), .out(out4));  // incr 2
-   sub4 #(.P0(2.4), .P1(3.1), .P3(5)) i_sub4_1(.clk(clk), .in(ff), .out(out4_2));
+   sub4 #(.P0(2.4), .P1(3.1), .P3(5)) i_sub4_1(.clk(clk), .in(), .out(out4_2));
    /* verilator lint_on REALCVT */
+   /* verilator lint_off ASSIGNIN */
+   assign i_sub4_1.in = ff;  // Hierarchical reference to port of hier_block is OK
+   /* verilator lint_off ASSIGNIN */
+
+   always @(posedge clk) begin
+     $display("%d %m child input  ports: %d %d", $time, i_sub4_0.in, i_sub4_1.in);
+     $display("%d %m child output ports: %d %d", $time, i_sub4_0.out, i_sub4_1.out);
+   end
 endmodule
 
 module sub4 #(
@@ -246,6 +276,10 @@ module sub4 #(
                  automatic byte exp = !count[0] ? 8'(3 * (1 - i) + (2- j) + 1) : 8'b0;
                 if (sub5_out[i][j] != exp) begin
                    $display("in[%d][%d] act:%d exp:%d", i, j, sub5_out[i][j], exp);
+                   $stop;
+                end
+                if (i_sub5.out[i][j] != exp) begin
+                   $display("in[%d][%d] act:%d exp:%d", i, j, i_sub5.out[i][j], exp);
                    $stop;
                 end
             end

@@ -37,6 +37,7 @@ Welcome to Verilator
    * - **Widely Used**
         * Wide industry and academic deployment
         * Out-of-the-box support from Arm and RISC-V vendor IP
+        * Over 700 contributors
      - |verilator usage|
    * - |verilator community|
      - **Community Driven & Openly Licensed**
@@ -136,6 +137,9 @@ Related Projects
 
 - `Icarus Verilog`_ - Icarus is a highly-featured interpreted Verilog
   simulator. If Verilator does not support your needs, perhaps Icarus may.
+
+- `Surfer <https://surfer-project.org/>`_ - Web or offline waveform viewer
+  for Verilator traces.
 
 
 Open License

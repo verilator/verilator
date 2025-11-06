@@ -11,7 +11,11 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile(v_flags2=["-f t/t_flag_define.vc -DCMD_DEF -DCMD_UNDEF -UCMD_UNDEF +define+CMD_DEF2"])
+# We also test +librescan and +notimingchecks here, which are NOPs
+test.compile(v_flags2=[
+    "-f t/t_flag_define.vc -DCMD_DEF -DCMD_UNDEF -UCMD_UNDEF +define+CMD_DEF2", "+librescan",
+    "+notimingchecks"
+])
 
 test.execute()
 

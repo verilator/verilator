@@ -186,15 +186,6 @@ struct VlIsCustomStruct : public std::false_type {};
 template <typename T>
 struct VlContainsCustomStruct : VlIsCustomStruct<T> {};
 
-//=============================================================================
-// Utility functions
-
-template <size_t N>
-inline constexpr size_t roundUpToMultipleOf(size_t value) {
-    static_assert((N & (N - 1)) == 0, "'N' must be a power of 2");
-    return (value + N - 1) & ~(N - 1);
-}
-
 //=========================================================================
 // Mutex and threading support
 
@@ -451,7 +442,7 @@ protected:
     // Implementation details
     const std::unique_ptr<VerilatedContextImpData> m_impdatap;
     // Number of threads to use for simulation (size of m_threadPool + 1 for main thread)
-    unsigned m_threads = std::thread::hardware_concurrency();
+    unsigned m_threads = VlOs::getProcessDefaultParallelism();
     // Number of threads in added models
     unsigned m_threadsInModels = 0;
     // The thread pool shared by all models added to this context

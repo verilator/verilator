@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# mypy: disallow-untyped-defs
 # pylint: disable=
 ######################################################################
 
@@ -17,7 +18,7 @@ SUPPRESSES = [
 
 ######################################################################
 
-def process():
+def process() -> None:
     anymsg = False
     for line in sys.stdin:
         line = line.rstrip();

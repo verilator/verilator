@@ -7,7 +7,7 @@
 // without warranty, 2015 by Mike Thyer.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
    localparam [ 0:0] one1_lp = 1;
    localparam [ 1:0] one2_lp = 1;

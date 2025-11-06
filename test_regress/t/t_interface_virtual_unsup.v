@@ -21,7 +21,7 @@ module t;
    initial begin
       if (write_data(vif.data)) $write("dummy op");
       while (write_data(vif.data));
-      for (int i = 0; write_data(vif.data); i += int'(write_data(vif.data)));
+      do ; while (write_data(vif.data));
       for (int i = 0; write_data(vif.data++); i++);
    end
 

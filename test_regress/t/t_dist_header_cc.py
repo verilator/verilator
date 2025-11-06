@@ -11,13 +11,11 @@ import vltest_bootstrap
 
 test.scenarios('dist')
 
-root = ".."
-
-if not os.path.exists(root + "/.git"):
+if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
 test.run(cmd=[
-    "cd " + root + "/src/obj_dbg && " + os.environ['MAKE'] +
+    "cd " + test.root + "/src/obj_dbg && " + os.environ['MAKE'] +
     " -j 4 -k -f ../Makefile_obj VL_NOOPT=1 header_cc"
 ],
          check_finished=False)

@@ -218,6 +218,7 @@ module t (/*AUTOARG*/
 
       str = $sformatf("cyc=%d", cyc);
       $display("str = %s", str);
+      $display("struct = %p", ps);
       $display("%% [%t] [%t] to=%o td=%d", $time, $realtime, $time, $time);
       $sscanf("foo=5", "foo=%d", i);
       $printtimescale;
@@ -269,6 +270,74 @@ module t (/*AUTOARG*/
       repeat (2) if (sum != 10) $stop;
       release sum;
    end
+
+   property p;
+      @(posedge clk) ##1 sum[0]
+   endproperty
+   property p1;
+      @(clk) sum[0]
+   endproperty
+
+   assert property (@(clk) not ##1 in);
+
+   initial begin
+      assert_simple_immediate_else: assert(0) else $display("fail");
+      assert_simple_immediate_stmt: assert(0) $display("pass");
+      assert_simple_immediate_stmt_else: assert(0) $display("pass"); else $display("fail");
+
+      assume_simple_immediate: assume(0);
+      assume_simple_immediate_else: assume(0) else $display("fail");
+      assume_simple_immediate_stmt: assume(0) $display("pass");
+      assume_simple_immediate_stmt_else: assume(0) $display("pass"); else $display("fail");
+   end
+
+   assert_observed_deferred_immediate: assert #0 (0);
+   assert_observed_deferred_immediate_else: assert #0 (0) else $display("fail");
+   assert_observed_deferred_immediate_stmt: assert #0 (0) $display("pass");
+   assert_observed_deferred_immediate_stmt_else: assert #0 (0) $display("pass"); else $display("fail");
+
+   assume_observed_deferred_immediate: assume #0 (0);
+   assume_observed_deferred_immediate_else: assume #0 (0) else $display("fail");
+   assume_observed_deferred_immediate_stmt: assume #0 (0) $display("pass");
+   assume_observed_deferred_immediate_stmt_else: assume #0 (0) $display("pass"); else $display("fail");
+
+   assert_final_deferred_immediate: assert final (0);
+   assert_final_deferred_immediate_else: assert final (0) else $display("fail");
+   assert_final_deferred_immediate_stmt: assert final (0) $display("pass");
+   assert_final_deferred_immediate_stmt_else: assert final (0) $display("pass"); else $display("fail");
+
+   assume_final_deferred_immediate: assume final (0);
+   assume_final_deferred_immediate_else: assume final (0) else $display("fail");
+   assume_final_deferred_immediate_stmt: assume final (0) $display("pass");
+   assume_final_deferred_immediate_stmt_else: assume final (0) $display("pass"); else $display("fail");
+
+   property prop();
+      @(posedge clk) 0
+   endproperty
+
+   assert_concurrent: assert property (prop);
+   assert_concurrent_else: assert property(prop) else $display("fail");
+   assert_concurrent_stmt: assert property(prop) $display("pass");
+   assert_concurrent_stmt_else: assert property(prop) $display("pass"); else $display("fail");
+
+   assume_concurrent: assume property(prop);
+   assume_concurrent_else: assume property(prop) else $display("fail");
+   assume_concurrent_stmt: assume property(prop) $display("pass");
+   assume_concurrent_stmt_else: assume property(prop) $display("pass"); else $display("fail");
+
+   cover_concurrent: cover property(prop);
+   cover_concurrent_stmt: cover property(prop) $display("pass");
+
+
+   int a;
+   int ao;
+
+   // verilator lint_off CASTCONST
+   initial begin : assert_intrinsic
+      $cast(ao, a);
+   end
+
+   restrict property (@(posedge clk) ##1 a[0]);
 endmodule
 
 module sub(input logic clk);

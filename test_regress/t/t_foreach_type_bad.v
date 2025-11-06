@@ -7,7 +7,7 @@
 class Cls;
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    real r;
 

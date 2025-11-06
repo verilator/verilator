@@ -105,7 +105,8 @@ template V3GraphEdge* V3GraphVertex::findConnectingEdgep<GraphWay::FORWARD>(V3Gr
 template V3GraphEdge* V3GraphVertex::findConnectingEdgep<GraphWay::REVERSE>(V3GraphVertex*);
 
 // cppcheck-has-bug-suppress constParameter
-void V3GraphVertex::v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) {
+void V3GraphVertex::v3errorEnd(const std::ostringstream& str) const  // LCOV_EXCL_START
+    VL_RELEASE(V3Error::s().m_mutex) {
     std::ostringstream nsstr;
     nsstr << str.str();
     if (debug()) nsstr << "\n-vertex: " << this << '\n';
@@ -115,12 +116,12 @@ void V3GraphVertex::v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error
         V3Error::v3errorEnd(nsstr, "", nullptr);
     }
 }
-void V3GraphVertex::v3errorEndFatal(std::ostringstream& str) const
+void V3GraphVertex::v3errorEndFatal(const std::ostringstream& str) const
     VL_RELEASE(V3Error::s().m_mutex) {
     v3errorEnd(str);
-    assert(0);  // LCOV_EXCL_LINE
+    assert(0);
     VL_UNREACHABLE;
-}
+}  // LCOV_EXCL_STOP
 
 std::ostream& operator<<(std::ostream& os, V3GraphVertex* vertexp) {
     os << "  VERTEX=" << vertexp->name();
@@ -329,8 +330,8 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
             }
         }
         if (subgr != "") *logp << "\t";
-        *logp << "\tn" << vertexp->dotName() << (n++) << "\t[fontsize=8 "
-              << "label=\"" << (vertexp->name() != "" ? vertexp->name() : "\\N");
+        *logp << "\tn" << vertexp->dotName() << (n++) << "\t[fontsize=8 " << "label=\""
+              << (vertexp->name() != "" ? vertexp->name() : "\\N");
         if (vertexp->rank()) *logp << " r" << vertexp->rank();
         if (vertexp->fanout() != 0.0) *logp << " f" << vertexp->fanout();
         if (vertexp->color()) *logp << "\\n c" << vertexp->color();
@@ -353,8 +354,7 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
                       << " ["
                       // <<"fontsize=8 label=\""<<(edge.name()!="" ? edge.name() : "\\E")<<"\""
                       << "fontsize=8 label=\"" << (edge.dotLabel() != "" ? edge.dotLabel() : "")
-                      << "\""
-                      << " weight=" << edge.weight() << " color=" << edge.dotColor();
+                      << "\"" << " weight=" << edge.weight() << " color=" << edge.dotColor();
                 if (edge.dotStyle() != "") *logp << " style=" << edge.dotStyle();
                 // if (edge.cutable()) *logp << ",constraint=false";  // to rank without
                 // following edges

@@ -66,7 +66,9 @@ class FileLineSingleton final {
     ~FileLineSingleton() = default;
 
     fileNameIdx_t nameToNumber(const string& filename);
-    string numberToName(fileNameIdx_t filenameno) const VL_MT_SAFE { return m_names[filenameno]; }
+    const std::string& numberToName(fileNameIdx_t filenameno) const VL_MT_SAFE {
+        return m_names[filenameno];
+    }
     V3LangCode numberToLang(fileNameIdx_t filenameno) const { return m_languages[filenameno]; }
     void numberToLang(fileNameIdx_t filenameno, const V3LangCode& l) {
         m_languages[filenameno] = l;
@@ -291,7 +293,9 @@ public:
     string ascii() const VL_MT_SAFE;
     string asciiLineCol() const;
     int filenameno() const VL_MT_SAFE { return m_filenameno; }
-    string filename() const VL_MT_SAFE { return singleton().numberToName(filenameno()); }
+    const std::string& filename() const VL_MT_SAFE {
+        return singleton().numberToName(filenameno());
+    }
     // Filename with C string escapes
     string filenameEsc() const VL_MT_SAFE { return VString::quoteBackslash(filename()); }
     bool filenameIsGlobal() const VL_MT_SAFE {
@@ -318,7 +322,7 @@ public:
         m_msgEnIdx = singleton().msgEnSetBit(m_msgEnIdx, code, flag);
     }
     void warnOff(V3ErrorCode code, bool flag) { warnOn(code, !flag); }
-    bool warnOff(const string& msg, bool flag);  // Returns 1 if ok
+    string warnOffParse(const string& msgs, bool flag);  // Returns "" if ok
     bool warnIsOff(V3ErrorCode code) const VL_MT_SAFE;
     void warnLintOff(bool flag);
     void warnStyleOff(bool flag);
@@ -346,8 +350,8 @@ public:
     static void globalWarnOff(V3ErrorCode code, bool flag) {
         defaultFileLine().warnOff(code, flag);
     }
-    static bool globalWarnOff(const string& code, bool flag) {
-        return defaultFileLine().warnOff(code, flag);
+    static string globalWarnOffParse(const string& msgs, bool flag) {
+        return defaultFileLine().warnOffParse(msgs, flag);
     }
     static void fileNameNumMapDumpXml(std::ostream& os) { singleton().fileNameNumMapDumpXml(os); }
     static void fileNameNumMapDumpJson(std::ostream& os) {

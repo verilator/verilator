@@ -18,6 +18,7 @@
 
 #include "V3Control.h"
 
+#include "V3InstrCount.h"
 #include "V3String.h"
 
 #include <memory>
@@ -83,35 +84,21 @@ public:
     }
 };
 
-// Only public_flat_rw has the sensitity tree
-class V3ControlVarAttr final {
+// List of attributes for variables
+class V3ControlVar final {
+    std::vector<VAttrType> m_attrs;  // The list of attributes
 public:
-    VAttrType m_type;  // Type of attribute
-    AstSenTree* m_sentreep;  // Sensitivity tree for public_flat_rw
-    explicit V3ControlVarAttr(VAttrType type)
-        : m_type{type}
-        , m_sentreep{nullptr} {}
-    V3ControlVarAttr(VAttrType type, AstSenTree* sentreep)
-        : m_type{type}
-        , m_sentreep{sentreep} {}
-};
-
-// Overload vector with the required update function and to apply all entries
-class V3ControlVar final : public std::vector<V3ControlVarAttr> {
-public:
+    // Add new attribugte
+    void add(VAttrType attr) { m_attrs.emplace_back(attr); }
     // Update from other by copying all attributes
-    void update(const V3ControlVar& node) {
-        reserve(size() + node.size());
-        insert(end(), node.begin(), node.end());
+    void update(const V3ControlVar& other) {
+        m_attrs.reserve(m_attrs.size() + other.m_attrs.size());
+        m_attrs.insert(m_attrs.end(), other.m_attrs.begin(), other.m_attrs.end());
     }
     // Apply all attributes to the variable
-    void apply(AstVar* varp) {
-        for (const_iterator it = begin(); it != end(); ++it) {
-            AstNode* const newp = new AstAttrOf{varp->fileline(), it->m_type};
-            varp->addAttrsp(newp);
-            if (it->m_type == VAttrType::VAR_PUBLIC_FLAT_RW && it->m_sentreep) {
-                newp->addNext(new AstAlwaysPublic{varp->fileline(), it->m_sentreep, nullptr});
-            }
+    void apply(AstVar* varp) const {
+        for (const VAttrType attr : m_attrs) {
+            varp->addAttrsp(new AstAttrOf{varp->fileline(), attr});
         }
     }
 };
@@ -156,18 +143,19 @@ class WildcardContents final {
         clearCacheImp();
     }
 
-    bool resolveUncachedImp(const string& name) {
+    bool resolveUncachedImp(const string& contentsRegexp) {
         for (const string& i : m_lines) {
-            if (VString::wildmatch(i, name)) return true;
+            if (VString::wildmatch(i, contentsRegexp)) return true;
         }
         return false;
     }
-    bool resolveCachedImp(const string& name) {
+    bool resolveCachedImp(const string& contentsRegexp) {
         // Lookup if it was resolved before, typically is
-        const auto pair = m_mapPatterns.emplace(name, false);
+        if (contentsRegexp.empty()) return true;
+        const auto pair = m_mapPatterns.emplace(contentsRegexp, false);
         bool& entryr = pair.first->second;
         // Resolve entry when first requested, cache the result
-        if (pair.second) entryr = resolveUncachedImp(name);
+        if (pair.second) entryr = resolveUncachedImp(contentsRegexp);
         return entryr;
     }
 
@@ -176,8 +164,10 @@ public:
         m_lines.emplace_back("");  // start with no leftover
     }
     ~WildcardContents() = default;
-    // Return true iff name in parsed contents
-    static bool resolve(const string& name) { return s().resolveCachedImp(name); }
+    // Return true iff contentsRegexp in parsed contents
+    static bool resolve(const string& contentsRegexp) {
+        return s().resolveCachedImp(contentsRegexp);
+    }
     // Add arbitrary text (need not be line-by-line)
     static void pushText(const string& text) { s().pushTextImp(text); }
 };
@@ -272,12 +262,24 @@ public:
         }
     }
 
-    void applyBlock(AstNodeBlock* nodep) {
+    void applyBlock(AstGenBlock* nodep) {
         const VPragmaType pragma = VPragmaType::COVERAGE_BLOCK_OFF;
         if (!nodep->unnamed()) {
             for (const string& i : m_coverageOffBlocks) {
-                if (VString::wildmatch(nodep->prettyOrigOrName(), i)) {
-                    nodep->addStmtsp(new AstPragma{nodep->fileline(), pragma});
+                if (VString::wildmatch(nodep->prettyDehashOrigOrName(), i)) {
+                    nodep->addItemsp(new AstPragma{nodep->fileline(), pragma});
+                }
+            }
+        }
+    }
+
+    void applyBlock(AstNodeBlock* nodep) {
+        const VPragmaType pragma = VPragmaType::COVERAGE_BLOCK_OFF;
+        FileLine* const flp = nodep->fileline();
+        if (!nodep->unnamed()) {
+            for (const string& i : m_coverageOffBlocks) {
+                if (VString::wildmatch(nodep->prettyDehashOrigOrName(), i)) {
+                    nodep->addStmtsp(new AstStmtPragma{flp, new AstPragma{flp, pragma}});
                 }
             }
         }
@@ -318,7 +320,7 @@ std::ostream& operator<<(std::ostream& os, const V3ControlIgnoresLine& rhs) {
 
 // Some attributes are attached to entities of the occur on a fileline
 // and multiple attributes can be attached to a line
-using V3ControlLineAttribute = std::bitset<VPragmaType::ENUM_SIZE>;
+using V3ControlLineAttribute = std::bitset<VPragmaType::_ENUM_SIZE>;
 
 class WaiverSetting final {
 public:
@@ -385,14 +387,22 @@ public:
         // allow old rules to still match using a final '*'
         string newMatch = match;
         if (newMatch.empty() || newMatch.back() != '*') newMatch += '*';
-        m_waivers.emplace_back(WaiverSetting{code, contents, newMatch});
+        m_waivers.emplace_back(code, contents, newMatch);
     }
 
-    void applyBlock(AstNodeBlock* nodep) {
+    void applyBlock(AstGenBlock* nodep) {
         // Apply to block at this line
         const VPragmaType pragma = VPragmaType::COVERAGE_BLOCK_OFF;
         if (lineMatch(nodep->fileline()->lineno(), pragma)) {
-            nodep->addStmtsp(new AstPragma{nodep->fileline(), pragma});
+            nodep->addItemsp(new AstPragma{nodep->fileline(), pragma});
+        }
+    }
+    void applyBlock(AstNodeBlock* nodep) {
+        // Apply to block at this line
+        const VPragmaType pragma = VPragmaType::COVERAGE_BLOCK_OFF;
+        FileLine* const flp = nodep->fileline();
+        if (lineMatch(flp->lineno(), pragma)) {
+            nodep->addStmtsp(new AstStmtPragma{flp, new AstPragma{flp, pragma}});
         }
     }
     void applyCase(AstCase* nodep) {
@@ -420,14 +430,15 @@ public:
             m_lastIgnore.lineno = filelinep->lastLineno();
         }
     }
-    bool waive(V3ErrorCode code, const string& match) {
+    bool waive(V3ErrorCode code, const string& message) {
         if (code.hardError()) return false;
         for (const auto& itr : m_waivers) {
-            if ((code.isUnder(itr.m_code) || (itr.m_code == V3ErrorCode::I_LINT))
-                && VString::wildmatch(match, itr.m_match)
-                && WildcardContents::resolve(itr.m_contents)) {
-                return true;
-            }
+            if ((code.isUnder(itr.m_code) || (itr.m_code == V3ErrorCode::I_LINT)))
+                if ((code.isUnder(itr.m_code) || (itr.m_code == V3ErrorCode::I_LINT))
+                    && VString::wildmatch(message, itr.m_match)
+                    && WildcardContents::resolve(itr.m_contents)) {
+                    return true;
+                }
         }
         return false;
     }
@@ -479,8 +490,7 @@ class V3ControlScopeTraceResolver final {
 
 public:
     void addScopeTraceOn(bool on, const string& scope, int levels) {
-        UINFO(9, "addScopeTraceOn " << on << " '" << scope << "' "
-                                    << " levels=" << levels);
+        UINFO(9, "addScopeTraceOn " << on << " '" << scope << "' " << " levels=" << levels);
         m_entries.emplace_back(V3ControlScopeTraceEntry{scope, on, levels});
         m_matchCache.clear();
     }
@@ -494,7 +504,7 @@ public:
     }
 
     bool getScopeTraceOn(const string& scope) {
-        // Apply in the order the user provided them, so they can choose on/off preferencing
+        // Apply in the order the user provided them, so they can choose on/off preferences
         int maxLevel = 1;
         for (const auto& ch : scope) {
             if (ch == '.') ++maxLevel;
@@ -575,7 +585,11 @@ public:
                         ProfileDataMode mode = MTASK) {
         if (!m_profileFileLine) m_profileFileLine = fl;
         if (cost == 0) cost = 1;  // Cost 0 means delete (or no data)
-        m_profileData[model][key] += cost;
+        if (mode == MTASK) {
+            m_profileData[model][key] += cost;
+        } else if (mode == HIER_DPI) {
+            m_profileData[model][key] = std::max(m_profileData[model][key], cost);
+        }
         m_mode |= mode;
     }
     bool containsMTaskProfileData() const { return m_mode & MTASK; }
@@ -604,6 +618,16 @@ public:
         return it->second;
     }
     FileLine* getProfileDataFileLine() const { return m_profileFileLine; }  // Maybe null
+    static uint64_t getCurrentHierBlockCost() {
+        if (uint64_t cost = V3Control::getProfileData(v3Global.opt.prefix())) {
+            UINFO(9, "Fetching cost from profile info: " << cost);
+            return cost;
+        } else {
+            cost = V3InstrCount::count(v3Global.rootp()->evalp(), false);
+            UINFO(9, "Evaluating cost: " << cost);
+            return cost;
+        }
+    }
 };
 
 //######################################################################
@@ -651,7 +675,7 @@ void V3Control::addInline(FileLine* fl, const string& module, const string& ftas
         V3ControlResolver::s().modules().at(module).setInline(on);
     } else {
         if (!on) {
-            fl->v3error("Unsupported: no_inline for tasks");
+            fl->v3warn(E_UNSUPPORTED, "Unsupported: no_inline for tasks");
         } else {
             V3ControlResolver::s().modules().at(module).ftasks().at(ftask).setNoInline(on);
         }
@@ -677,10 +701,15 @@ void V3Control::addScopeTraceOn(bool on, const string& scope, int levels) {
 
 void V3Control::addVarAttr(FileLine* fl, const string& module, const string& ftask,
                            const string& var, VAttrType attr, AstSenTree* sensep) {
-    // Semantics: sensep only if public_flat_rw
-    if ((attr != VAttrType::VAR_PUBLIC_FLAT_RW) && sensep) {
-        sensep->v3error("sensitivity not expected for attribute");
-        return;
+    if (sensep) {
+        FileLine* const flp = sensep->fileline();
+        // Historical, not actually needed, only parsed for compatibility, delete it
+        VL_DO_DANGLING(sensep->deleteTree(), sensep);
+        // Used to be only accepted on public_flat_rw
+        if (attr != VAttrType::VAR_PUBLIC_FLAT_RW) {
+            flp->v3error("sensitivity not expected for attribute");
+            return;
+        }
     }
     // Semantics: Most of the attributes operate on signals
     if (var.empty()) {
@@ -708,15 +737,14 @@ void V3Control::addVarAttr(FileLine* fl, const string& module, const string& fta
             } else if (!ftask.empty()) {
                 fl->v3error("Signals inside functions/tasks cannot be marked forceable");
             } else {
-                V3ControlResolver::s().modules().at(module).vars().at(var).push_back(
-                    V3ControlVarAttr{attr});
+                V3ControlResolver::s().modules().at(module).vars().at(var).add(attr);
             }
         } else {
             V3ControlModule& mod = V3ControlResolver::s().modules().at(module);
             if (ftask.empty()) {
-                mod.vars().at(var).push_back(V3ControlVarAttr{attr, sensep});
+                mod.vars().at(var).add(attr);
             } else {
-                mod.ftasks().at(ftask).vars().at(var).push_back(V3ControlVarAttr{attr, sensep});
+                mod.ftasks().at(ftask).vars().at(var).add(attr);
             }
         }
     }
@@ -732,7 +760,16 @@ void V3Control::applyCoverageBlock(AstNodeModule* modulep, AstBegin* nodep) {
     const string& filename = nodep->fileline()->filename();
     V3ControlFile* const filep = V3ControlResolver::s().files().resolve(filename);
     if (filep) filep->applyBlock(nodep);
-    const string& modname = modulep->prettyOrigOrName();
+    const string& modname = modulep->prettyDehashOrigOrName();
+    V3ControlModule* const modp = V3ControlResolver::s().modules().resolve(modname);
+    if (modp) modp->applyBlock(nodep);
+}
+
+void V3Control::applyCoverageBlock(AstNodeModule* modulep, AstGenBlock* nodep) {
+    const string& filename = nodep->fileline()->filename();
+    V3ControlFile* const filep = V3ControlResolver::s().files().resolve(filename);
+    if (filep) filep->applyBlock(nodep);
+    const string& modname = modulep->prettyDehashOrigOrName();
     V3ControlModule* const modp = V3ControlResolver::s().modules().resolve(modname);
     if (modp) modp->applyBlock(nodep);
 }
@@ -744,16 +781,16 @@ void V3Control::applyIgnores(FileLine* filelinep) {
 }
 
 void V3Control::applyModule(AstNodeModule* modulep) {
-    const string& modname = modulep->prettyOrigOrName();
+    const string& modname = modulep->prettyDehashOrigOrName();
     V3ControlModule* const modp = V3ControlResolver::s().modules().resolve(modname);
     if (modp) modp->apply(modulep);
 }
 
 void V3Control::applyFTask(AstNodeModule* modulep, AstNodeFTask* ftaskp) {
-    const string& modname = modulep->prettyOrigOrName();
+    const string& modname = modulep->prettyDehashOrigOrName();
     V3ControlModule* const modp = V3ControlResolver::s().modules().resolve(modname);
     if (!modp) return;
-    const V3ControlFTask* const ftp = modp->ftasks().resolve(ftaskp->prettyOrigOrName());
+    const V3ControlFTask* const ftp = modp->ftasks().resolve(ftaskp->prettyDehashOrigOrName());
     if (ftp) ftp->apply(ftaskp);
 }
 
@@ -761,14 +798,14 @@ void V3Control::applyVarAttr(const AstNodeModule* modulep, const AstNodeFTask* f
                              AstVar* varp) {
     V3ControlVar* vp;
     V3ControlModule* const modp
-        = V3ControlResolver::s().modules().resolve(modulep->prettyOrigOrName());
+        = V3ControlResolver::s().modules().resolve(modulep->prettyDehashOrigOrName());
     if (!modp) return;
     if (ftaskp) {
-        V3ControlFTask* const ftp = modp->ftasks().resolve(ftaskp->prettyOrigOrName());
+        V3ControlFTask* const ftp = modp->ftasks().resolve(ftaskp->prettyDehashOrigOrName());
         if (!ftp) return;
-        vp = ftp->vars().resolve(varp->prettyOrigOrName());
+        vp = ftp->vars().resolve(varp->prettyDehashOrigOrName());
     } else {
-        vp = modp->vars().resolve(varp->prettyOrigOrName());
+        vp = modp->vars().resolve(varp->prettyDehashOrigOrName());
     }
     if (vp) vp->apply(varp);
 }
@@ -796,6 +833,9 @@ void V3Control::contentsPushText(const string& text) { return WildcardContents::
 
 bool V3Control::containsMTaskProfileData() {
     return V3ControlResolver::s().containsMTaskProfileData();
+}
+uint64_t V3Control::getCurrentHierBlockCost() {
+    return V3ControlResolver::s().getCurrentHierBlockCost();
 }
 
 bool V3Control::waive(const FileLine* filelinep, V3ErrorCode code, const string& message) {

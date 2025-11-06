@@ -18,7 +18,7 @@ function Cls_report_object get_report_object;
    return c;
 endfunction
 
-module t (/*AUTOARG*/);
+module t;
 
    string s;
 

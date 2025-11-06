@@ -12,9 +12,7 @@ import vltest_bootstrap
 test.scenarios('vlt_all')
 test.sim_time = 2000000
 
-root = ".."
-
-if not os.path.exists(root + "/.git"):
+if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
 # Generate the equivalence checks and declaration boilerplate
@@ -70,13 +68,14 @@ test.compile(verilator_flags2=[
     "--stats",
     "--build",
     "--fdfg-synthesize-all",
+    "-fno-dfg-pre-inline",
     "-fno-dfg-post-inline",
-    "-fno-dfg-scoped",
     "--exe",
     "+incdir+" + test.obj_dir,
     "-Mdir", test.obj_dir + "/obj_opt",
     "--prefix", "Vopt",
     "-fno-const-before-dfg",  # Otherwise V3Const makes testing painful
+    "-fno-split", # Dfg will take care of it
     "--debug", "--debugi", "0", "--dumpi-tree", "0",
     "-CFLAGS \"-I .. -I ../obj_ref\"",
     "../obj_ref/Vref__ALL.a",
@@ -84,14 +83,13 @@ test.compile(verilator_flags2=[
 ])  # yapf:disable
 
 test.file_grep(test.obj_dir + "/obj_opt/Vopt__stats.txt",
-               r'DFG pre inline Synthesis, synt / always blocks considered\s+(\d+)$',
+               r'DFG scoped Synthesis, synt / always blocks considered\s+(\d+)$',
                nAlwaysSynthesized + nAlwaysReverted + nAlwaysNotSynthesized)
 test.file_grep(test.obj_dir + "/obj_opt/Vopt__stats.txt",
-               r'DFG pre inline Synthesis, synt / always blocks synthesized\s+(\d+)$',
+               r'DFG scoped Synthesis, synt / always blocks synthesized\s+(\d+)$',
                nAlwaysSynthesized + nAlwaysReverted)
 test.file_grep(test.obj_dir + "/obj_opt/Vopt__stats.txt",
-               r'DFG pre inline Synthesis, synt / reverted \(multidrive\)\s+(\d)$',
-               nAlwaysReverted)
+               r'DFG scoped Synthesis, synt / reverted \(multidrive\)\s+(\d)$', nAlwaysReverted)
 
 # Execute test to check equivalence
 test.execute(executable=test.obj_dir + "/obj_opt/Vopt")

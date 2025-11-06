@@ -22,22 +22,20 @@
 `define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-module t (  /*AUTOARG*/
-  // Inputs
-  clk
-  );
-  input clk;
+module t (
+    input clk
+);
 
-  int         cyc;
-  reg  [63:0] crc;
-  reg  [63:0] sum;
+  int cyc;
+  logic [63:0] crc;
+  logic [63:0] sum;
 
   // Take CRC data and apply to testblock inputs
   wire [31:0] in = crc[31:0];
 
   /*AUTOWIRE*/
   // Beginning of automatic wires (for undeclared instantiated-module outputs)
-  wire [31:0]           out;                    // From test of Test.v
+  logic [31:0]          out;                    // From test of Test.v
   // End of automatics
 
   Test test (  /*AUTOINST*/
@@ -66,8 +64,6 @@ module t (  /*AUTOARG*/
     else if (cyc < 10) begin
       sum <= '0;
     end
-    else if (cyc < 90) begin
-    end
     else if (cyc == 99) begin
       $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
       `checkh(crc, 64'hc77bb9b3784ea091);
@@ -80,21 +76,16 @@ module t (  /*AUTOARG*/
 
 endmodule
 
-module Test (  /*AUTOARG*/
-  // Outputs
-  out,
-  // Inputs
-  clk, in
-  );
+module Test (
+    input clk,
+    input [31:0] in,
+    output logic [31:0] out
+);
 
   // Replace this module with the device under test.
   //
   // Change the code in the t module to apply values to the inputs and
   // merge the output values into the result vector.
-
-  input clk;
-  input [31:0] in;
-  output reg [31:0] out;
 
   always @(posedge clk) begin
     out <= in;

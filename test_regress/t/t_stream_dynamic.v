@@ -13,7 +13,7 @@ typedef enum bit [5:0] {
    B = 6,b111111
 } enum_t;
 
-module t (/*AUTOARG*/);
+module t;
    task test1;
       bit arr[];
       bit [1:0] arr2[$];
@@ -36,7 +36,7 @@ module t (/*AUTOARG*/);
       arr160 = '{2{160'h0123456789abcdef0123456789abcdef01234567}};
 
       { >> bit {arr}} = bit6;
-      `checkp(arr, "'{'h1, 'h1, 'h1, 'h0, 'h0, 'h0} ");
+      `checkp(arr, "'{'h1, 'h1, 'h1, 'h0, 'h0, 'h0}");
       ans = { >> bit {arr} };
       `checkh(ans, bit6);
 
@@ -44,7 +44,7 @@ module t (/*AUTOARG*/);
       `checkh(ans_enum, bit6);
 
       { << bit {arr}} = bit6;
-      `checkp(arr, "'{'h0, 'h0, 'h0, 'h1, 'h1, 'h1} ");
+      `checkp(arr, "'{'h0, 'h0, 'h0, 'h1, 'h1, 'h1}");
 
       ans = { << bit {arr} };
       `checkh(ans, bit6);
@@ -55,7 +55,7 @@ module t (/*AUTOARG*/);
 `ifdef VERILATOR
       // This set flags errors on other simulators
       { >> bit[1:0] {arr2}} = bit6;
-      `checkp(arr2, "'{'h3, 'h2, 'h0} ");
+      `checkp(arr2, "'{'h3, 'h2, 'h0}");
 
       ans = { >> bit[1:0] {arr2} };
       `checkh(ans, bit6);
@@ -64,7 +64,7 @@ module t (/*AUTOARG*/);
       `checkh(ans_enum, bit6);
 
       { << bit[1:0] {arr2}} = bit6;
-      `checkp(arr2, "'{'h0, 'h2, 'h3} ");
+      `checkp(arr2, "'{'h0, 'h2, 'h3}");
 
       ans = { << bit[1:0] {arr2} };
       `checkh(ans, bit6);
@@ -73,7 +73,7 @@ module t (/*AUTOARG*/);
       `checkh(ans_enum, bit6);
 
       { >> bit [5:0] {arr6} } = bit6;
-      `checkp(arr6, "'{'h38} ");
+      `checkp(arr6, "'{'h38}");
 
       ans = { >> bit[5:0] {arr6} };
       `checkh(ans, bit6);
@@ -82,7 +82,7 @@ module t (/*AUTOARG*/);
       `checkh(ans_enum, bit6);
 
       { << bit [5:0] {arr6} } = bit6;
-      `checkp(arr6, "'{'h38} ");
+      `checkp(arr6, "'{'h38}");
 
       ans = { << bit[5:0] {arr6} };
       `checkh(ans, bit6);

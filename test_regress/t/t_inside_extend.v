@@ -9,7 +9,7 @@ class Cls;
   my_enum sp = V0;
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       Cls c = new;
       int i = 0;

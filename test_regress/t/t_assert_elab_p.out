@@ -1,0 +1,4 @@
+-Info: t/t_assert_elab_p.v:14:5: %m test.sv:25: 4=4 2=2 STAGE_IDS='{'h1, 'h1, 'h1, 'h1}
+                               : ... note: In instance 't.pipe'
+   14 |     $info("%m %s:%0d: 4=%0d 2=%0d STAGE_IDS=%p", "test.sv", 25, 4, 2, STAGE_IDS);
+      |     ^~~~~

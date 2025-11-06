@@ -4,7 +4,7 @@
 // without warranty, 2013 by Sean Moore.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
    rec rec ();
 

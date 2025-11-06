@@ -35,7 +35,6 @@
 
 #include "V3Global.h"
 #include "V3Stats.h"
-#include "V3ThreadPool.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -170,14 +169,25 @@ public:
     static AstConcat* apply(AstConcat* rootp) { return balance(rootp); }
 };
 
+struct FuncOptStats final {
+    // STATE - Statistic tracking
+    VDouble0 m_balancedConcats;  // Number of concatenations balanced
+    VDouble0 m_concatSplits;  // Number of splits in assignments with Concat on RHS
+
+    FuncOptStats() = default;
+    ~FuncOptStats() {
+        V3Stats::addStat("Optimizations, FuncOpt concat trees balanced", m_balancedConcats);
+        V3Stats::addStat("Optimizations, FuncOpt concat splits", m_concatSplits);
+    }
+};
+
 class FuncOptVisitor final : public VNVisitor {
     // NODE STATE
     //  AstNodeAssign::user()     -> bool.  Already checked, safe to split. Omit expensive check.
     //  AstConcat::user()         -> bool.  Already balanced.
 
-    // STATE - Statistic tracking
-    VDouble0 m_balancedConcats;  // Number of concatenations balanced
-    VDouble0 m_concatSplits;  // Number of splits in assignments with Concat on RHS
+    // STATE
+    FuncOptStats& m_stats;  // Statistics
 
     // True for e.g.: foo = foo >> 1; or foo[foo[0]] = ...;
     static bool readsLhs(AstNodeAssign* nodep) {
@@ -228,6 +238,8 @@ class FuncOptVisitor final : public VNVisitor {
         UASSERT_OBJ(lhsp->width() == rhsp->width(), nodep, "Inconsistent assignment");
         // Only consider pure assignments. Nodes inserted below are safe.
         if (!nodep->user1() && (!lhsp->isPure() || !rhsp->isPure())) return false;
+        // Do not split assignments to SC variables, they cannot be assigned in parts
+        if (lhsp->exists([](AstVarRef* refp) { return refp->varp()->isSc(); })) return false;
         // Check for a Sel on the LHS if present, and skip over it
         uint32_t lsb = 0;
         if (AstSel* const selp = VN_CAST(lhsp, Sel)) {
@@ -254,7 +266,7 @@ class FuncOptVisitor final : public VNVisitor {
 
         // Ok, actually split it now
         UINFO(5, "splitConcat optimizing " << nodep);
-        ++m_concatSplits;
+        ++m_stats.m_concatSplits;
         // The 2 parts and their offsets
         AstNodeExpr* const rrp = rhsp->rhsp()->unlinkFrBack();
         AstNodeExpr* const rlp = rhsp->lhsp()->unlinkFrBack();
@@ -280,7 +292,7 @@ class FuncOptVisitor final : public VNVisitor {
     // VISIT
     void visit(AstNodeAssign* nodep) override {
         // TODO: Only thing remaining inside functions should be AstAssign (that is, an actual
-        //       assignment statemant), but we stil use AstAssignW, AstAssignDly, and all, fix.
+        //       assignment statement), but we stil use AstAssignW, AstAssignDly, and all, fix.
         iterateChildren(nodep);
 
         if (v3Global.opt.fFuncSplitCat()) {
@@ -292,7 +304,7 @@ class FuncOptVisitor final : public VNVisitor {
         if (v3Global.opt.fFuncBalanceCat() && !nodep->user1() && !VN_IS(nodep->backp(), Concat)) {
             if (AstConcat* const newp = BalanceConcatTree::apply(nodep)) {
                 UINFO(5, "balanceConcat optimizing " << nodep);
-                ++m_balancedConcats;
+                ++m_stats.m_balancedConcats;
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 newp->user1(true);  // Must not attempt again.
@@ -306,14 +318,13 @@ class FuncOptVisitor final : public VNVisitor {
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     // CONSTRUCTORS
-    explicit FuncOptVisitor(AstCFunc* funcp) { iterateChildren(funcp); }
-    ~FuncOptVisitor() override {
-        V3Stats::addStatSum("Optimizations, FuncOpt concat trees balanced", m_balancedConcats);
-        V3Stats::addStatSum("Optimizations, FuncOpt concat splits", m_concatSplits);
+    explicit FuncOptVisitor(FuncOptStats& stats, AstCFunc* funcp)
+        : m_stats{stats} {
+        iterateChildren(funcp);
     }
 
 public:
-    static void apply(AstCFunc* funcp) { FuncOptVisitor{funcp}; }
+    static void apply(FuncOptStats& stats, AstCFunc* funcp) { FuncOptVisitor{stats, funcp}; }
 };
 
 //######################################################################
@@ -322,13 +333,12 @@ void V3FuncOpt::funcOptAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     {
         const VNUser1InUse user1InUse;
-        V3ThreadScope threadScope;
-        for (AstNodeModule *modp = nodep->modulesp(), *nextModp; modp; modp = nextModp) {
-            nextModp = VN_AS(modp->nextp(), NodeModule);
-            for (AstNode *stmtp = modp->stmtsp(), *nextStmtp; stmtp; stmtp = nextStmtp) {
-                nextStmtp = stmtp->nextp();
+        FuncOptStats stats;
+        for (AstNodeModule* modp = nodep->modulesp(); modp;
+             modp = VN_AS(modp->nextp(), NodeModule)) {
+            for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
                 if (AstCFunc* const cfuncp = VN_CAST(stmtp, CFunc)) {
-                    threadScope.enqueue([cfuncp]() { FuncOptVisitor::apply(cfuncp); });
+                    FuncOptVisitor::apply(stats, cfuncp);
                 }
             }
         }

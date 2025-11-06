@@ -41,7 +41,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Support classes
 
 namespace V3TSP {
-static uint32_t edgeIdNext = 0;
+static uint32_t s_edgeIdNext = 0;
 
 static void selfTestStates();
 static void selfTestString();
@@ -105,13 +105,14 @@ public:
         // The only time we may create duplicate edges is when
         // combining the MST with the perfect-matched pairs,
         // and in that case, we want to permit duplicate edges.
-        const uint32_t edgeId = ++V3TSP::edgeIdNext;
+        const uint32_t edgeId = ++V3TSP::s_edgeIdNext;
 
         // We want to be able to compare edges quickly for a total
         // ordering, so pre-compute a sorting key and store it in
         // the edge user field. We also want easy access to the 'id'
         // which uniquely identifies a single bidir edge. Luckily we
         // can do both efficiently.
+        // cppcheck-suppress badBitmaskCheck
         const uint64_t userValue = (static_cast<uint64_t>(cost) << 32) | edgeId;
         (new V3GraphEdge{this, fp, tp, cost})->user(userValue);
         (new V3GraphEdge{this, tp, fp, cost})->user(userValue);
@@ -121,6 +122,7 @@ public:
         return static_cast<uint32_t>(edgep->user());
     }
 
+    // cppcheck-suppress duplInheritedMember
     bool empty() const { return m_vertices.empty(); }
 
     const std::list<Vertex*> keysToVertexList(const std::vector<T_Key>& odds) {

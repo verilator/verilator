@@ -42,8 +42,8 @@ For --cc/--sc, it creates:
 
 .. list-table::
 
-   * - *{prefix}*\ .cmake
-     - CMake include script for compiling (from --make cmake)
+   * - *{prefix}*\ .json
+     - JSON build definition compiling (from --make json)
    * - *{prefix}*\ .mk
      - Make include file for compiling (from --make gmake)
    * - *{prefix}*\ _classes.mk
@@ -58,12 +58,8 @@ For --cc/--sc, it creates:
      - Top-level internal C++ file (from SystemVerilog $root)
    * - *{prefix}*\ ___024root\ *{__n}*\ .cpp
      - Additional top-level internal C++ files
-   * - *{prefix}*\ ___024root\ *{__DepSet_hash__n}*\ .cpp
-     - Additional top-level internal C++ files (hashed to reduce build times)
    * - *{prefix}*\ ___024root__Slow\ *{__n}*\ .cpp
      - Infrequent cold routines
-   * - *{prefix}*\ ___024root\ *{__DepSet_hash__n}*\ .cpp
-     - Infrequent cold routines (hashed to reduce build times)
    * - *{prefix}*\ ___024root__Trace\ *{__n}*\ .cpp
      - Wave file generation code (from --trace-\*)
    * - *{prefix}*\ ___024root__Trace__Slow\ *{__n}*\ .cpp
@@ -86,8 +82,6 @@ For --cc/--sc, it creates:
      - Lower level internal C++ files
    * - *{prefix}{each_verilog_module}{__n}*\ .cpp
      - Additional lower C++ files
-   * - *{prefix}{each_verilog_module}{__DepSet_hash__n}*\ .cpp
-     - Additional lower C++ files (hashed to reduce build times)
 
 For --hierarchical mode, it creates:
 
@@ -99,8 +93,8 @@ For --hierarchical mode, it creates:
      - Make dependencies of the top module (from --hierarchical)
    * - *{prefix}*\ _hier.mk
      - Make file for hierarchical blocks (from --make gmake)
-   * - *{prefix}*\ __hierCMakeArgs.f
-     - Arguments for hierarchical Verilation (from --make cmake)
+   * - *{prefix}*\ __hierMkJsonArgs.f
+     - Arguments for hierarchical Verilation (from --make json)
    * - *{prefix}*\ __hierMkArgs.f
      - Arguments for hierarchical Verilation (from --make gmake)
    * - *{prefix}*\ __hierParameters.v

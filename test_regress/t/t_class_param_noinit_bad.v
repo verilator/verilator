@@ -8,7 +8,7 @@
 class Cls #(int A, int B, type T);
 endclass
 
-module t(/*AUTOARG*/);
+module t;
    initial begin
       Cls #(1) c;  // Bad: missing B
       $write("*-* All Finished *-*\n");

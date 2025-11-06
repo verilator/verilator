@@ -41,7 +41,7 @@ endclass
 
 typedef Cls#(8) Cls8_t;
 
-module t (/*AUTOARG*/);
+module t;
 
    Cls c12;
    Cls #(.PBASE(4)) c4;

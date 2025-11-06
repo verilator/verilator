@@ -4,7 +4,7 @@
 // any use, without warranty, 2020 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
    wire signed [16:0] fft_oQ [6:0];
    round round(
                .i_data(fft_oQ[6:0])

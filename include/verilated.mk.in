@@ -21,6 +21,7 @@ PYTHON3 = @PYTHON3@
 
 # Configuration time options
 CFG_WITH_CCWARN = @CFG_WITH_CCWARN@
+CFG_WITH_DEV_GCOV = @CFG_WITH_DEV_GCOV@
 CFG_WITH_LONGTESTS = @CFG_WITH_LONGTESTS@
 
 # Compiler version found during configure. This make variable is not used
@@ -143,6 +144,13 @@ OPT_FAST = -Os
 # files in the run-time library. Normally there should be no need for the user
 # to change this as the library is small, but can have significant speed impact.
 OPT_GLOBAL = -Os
+
+# Disable optimization when collecing code coverage for Verilator itself
+ifeq ($(CFG_WITH_DEV_GCOV),yes)
+  OPT_SLOW = -O0
+  OPT_FAST = -O0
+  OPT_GLOBAL = -O0
+endif
 
 #######################################################################
 ##### Profile builds
@@ -322,12 +330,11 @@ ifneq ($(findstring ccache-report,$(MAKECMDGOALS)),)
   $(VK_CCACHE_REPORT): $(VK_OBJS)
 	$(VERILATOR_CCACHE_REPORT) -o $@ $(VK_CCACHE_LOGDIR)
 
+  # ccache-report runs last
   .PHONY: ccache-report
-  ccache-report: $(VK_CCACHE_REPORT)
+  ccache-report: $(VK_CCACHE_REPORT) $(VK_OTHER_GOALS)
 	@cat $<
 
-# ccache-report runs last
-  ccache-report: $(VK_OTHER_GOALS)
 endif
 
 ######################################################################

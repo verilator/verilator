@@ -20,7 +20,7 @@ class uvm_queue;
    endfunction
 endclass
 
-module t(/*AUTOARG*/);
+module t;
 
    uvm_queue q;
 

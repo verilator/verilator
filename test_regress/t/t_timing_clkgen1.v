@@ -13,7 +13,7 @@ module clkgen(output bit clk);
    end
 endmodule
 
-module t(/*AUTOARG*/);
+module t;
    wire logic clk;
 
    clkgen clkgen (.clk);

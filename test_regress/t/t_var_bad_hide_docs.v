@@ -5,5 +5,5 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   integer t;  //<--- Warning ('t' hidden by module 't')
+  integer t;  //<--- Warning ('t' hidden by module 't')
 endmodule

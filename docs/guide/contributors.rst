@@ -13,8 +13,8 @@ When possible, please instead report bugs at `Verilator Issues
 
 The primary author is Wilson Snyder <wsnyder@wsnyder.org>.
 
-Major concepts by Paul Wasson, Duane Galbi, John Coiner, Geza Lore, Yutetsu
-Takatsukasa, and Jie Xu.
+Major concepts by Krzysztof Bieganski, John Coiner, Duane Galbi, Geza Lore,
+Ryszard Rozak, Yutetsu Takatsukasa, Paul Wasson, and Jie Xu.
 
 
 Contributors

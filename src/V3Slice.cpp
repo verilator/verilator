@@ -58,6 +58,7 @@ class SliceVisitor final : public VNVisitor {
 
     // STATE - across all visitors
     VDouble0 m_statAssigns;  // Statistic tracking
+    VDouble0 m_statSliceElementSkips;  // Statistic tracking
 
     // STATE - for current visit position (use VL_RESTORER)
     AstNode* m_assignp = nullptr;  // Assignment we are under
@@ -248,6 +249,14 @@ class SliceVisitor final : public VNVisitor {
             return false;
         }
 
+        // Skip optimization if array is too large
+        const int elements = arrayp->rangep()->elementsConst();
+        const int elementLimit = v3Global.opt.fSliceElementLimit();
+        if (elements > elementLimit && elementLimit > 0) {
+            ++m_statSliceElementSkips;
+            return false;
+        }
+
         UINFO(4, "Slice optimizing " << nodep);
         ++m_statAssigns;
 
@@ -256,7 +265,6 @@ class SliceVisitor final : public VNVisitor {
         // Assign of an ascending range slice to a descending range one must reverse
         // the elements
         AstNodeAssign* newlistp = nullptr;
-        const int elements = arrayp->rangep()->elementsConst();
         for (int elemIdx = 0; elemIdx < elements; ++elemIdx) {
             // Original node is replaced, so it is safe to copy it one time even if it is impure.
             AstNodeAssign* const newp
@@ -286,7 +294,6 @@ class SliceVisitor final : public VNVisitor {
     void visit(AstNodeAssign* nodep) override {
         // Called recursively on newly created assignments
         if (nodep->user1SetOnce()) return;  // Process once
-        if (VN_IS(nodep, AssignAlias)) return;
         UINFOTREE(9, nodep, "", "Deslice-In");
         VL_RESTORER(m_assignError);
         VL_RESTORER(m_assignp);
@@ -317,7 +324,9 @@ class SliceVisitor final : public VNVisitor {
                     "Array initialization should have been removed earlier");
     }
 
-    void expandBiOp(AstNodeBiop* nodep) {
+    template <typename T_NodeBiop>
+    void expandBiOp(T_NodeBiop* biopp) {
+        AstNodeBiop* nodep = biopp;
         if (nodep->user1SetOnce()) return;  // Process once
         UINFO(9, "  Bi-Eq/Neq expansion " << nodep);
 
@@ -331,10 +340,9 @@ class SliceVisitor final : public VNVisitor {
                 // EQ(a,b) -> LOGAND(EQ(ARRAYSEL(a,0), ARRAYSEL(b,0)), ...[1])
                 // Original node is replaced, so it is safe to copy it one time even if it is
                 // impure.
-                AstNodeBiop* const clonep = VN_AS(
-                    nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, elemIdx, elemIdx != 0),
-                                     cloneAndSel(nodep->rhsp(), elements, elemIdx, elemIdx != 0)),
-                    NodeBiop);
+                T_NodeBiop* const clonep = new T_NodeBiop{
+                    nodep->fileline(), cloneAndSel(nodep->lhsp(), elements, elemIdx, elemIdx != 0),
+                    cloneAndSel(nodep->rhsp(), elements, elemIdx, elemIdx != 0)};
                 if (elemIdx == 0) {
                     nodep->foreach([this](AstExprStmt* const exprp) {
                         // Result expression is always evaluated to the same value, so the
@@ -350,12 +358,12 @@ class SliceVisitor final : public VNVisitor {
                     logp = clonep;
                 } else {
                     switch (nodep->type()) {
-                    case VNType::atEq:  // FALLTHRU
-                    case VNType::atEqCase:
+                    case VNType::Eq:  // FALLTHRU
+                    case VNType::EqCase:
                         logp = new AstLogAnd{nodep->fileline(), logp, clonep};
                         break;
-                    case VNType::atNeq:  // FALLTHRU
-                    case VNType::atNeqCase:
+                    case VNType::Neq:  // FALLTHRU
+                    case VNType::NeqCase:
                         logp = new AstLogOr{nodep->fileline(), logp, clonep};
                         break;
                     default: nodep->v3fatalSrc("Unknown node type processing array slice"); break;
@@ -383,6 +391,8 @@ public:
     explicit SliceVisitor(AstNetlist* nodep) { iterate(nodep); }
     ~SliceVisitor() override {
         V3Stats::addStat("Optimizations, Slice array assignments", m_statAssigns);
+        V3Stats::addStat("Optimizations, Slice array skips due to size limit",
+                         m_statSliceElementSkips);
     }
 };
 

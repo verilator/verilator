@@ -12,7 +12,7 @@ class Cls2 extends Base1;
    int memb2;
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       Cls2 c;
       c.memb3 = 3;  // Not found

@@ -112,22 +112,32 @@ void set_3d(T* v) {
     v[(2 * 3 + 0) * 2 + 0] = 50;
     v[(3 * 3 + 0) * 2 + 0] = 51;
 }
+template <typename T>
+void set_1d1(T* v) {
+    v[0] = 52;
+}
+
+template <typename T>
+void set_2d1(T* v) {
+    v[0] = 53;
+}
+template <typename T>
+void set_3d1(T* v) {
+    v[0] = 54;
+}
 
 void set_0d(svLogicVecVal* v, int bitwidth) { set_uint(v, 42, bitwidth); }
-
 void set_1d(svLogicVecVal* v, int bitwidth) {
     const int unit = (bitwidth + 31) / 32;
     set_uint(v + 0 * unit, 43, bitwidth);
     set_uint(v + 1 * unit, 44, bitwidth);
 }
-
 void set_2d(svLogicVecVal* v, int bitwidth) {
     const int unit = (bitwidth + 31) / 32;
     set_uint(v + (0 * 2 + 1) * unit, 45, bitwidth);
     set_uint(v + (1 * 2 + 1) * unit, 46, bitwidth);
     set_uint(v + (2 * 2 + 1) * unit, 47, bitwidth);
 }
-
 void set_3d(svLogicVecVal* v, int bitwidth) {
     const int unit = (bitwidth + 31) / 32;
     set_uint(v + ((0 * 3 + 0) * 2 + 0) * unit, 48, bitwidth);
@@ -135,42 +145,42 @@ void set_3d(svLogicVecVal* v, int bitwidth) {
     set_uint(v + ((2 * 3 + 0) * 2 + 0) * unit, 50, bitwidth);
     set_uint(v + ((3 * 3 + 0) * 2 + 0) * unit, 51, bitwidth);
 }
+void set_1d1(svLogicVecVal* v, int bitwidth) { set_uint(v, 52, bitwidth); }
+void set_2d1(svLogicVecVal* v, int bitwidth) { set_uint(v, 53, bitwidth); }
+void set_3d1(svLogicVecVal* v, int bitwidth) { set_uint(v, 54, bitwidth); }
 
 void set_0d_scalar(svScalar* v) { *v = sv_0; }
-
 void set_1d_scalar(svScalar* v) {
     v[0] = sv_1;
     v[1] = sv_0;
 }
-
 void set_2d_scalar(svScalar* v) {
     v[0 * 2 + 1] = sv_1;
     v[1 * 2 + 1] = sv_0;
     v[2 * 2 + 1] = sv_1;
 }
-
 void set_3d_scalar(svScalar* v) {
     v[(0 * 3 + 0) * 2 + 0] = sv_0;
     v[(1 * 3 + 0) * 2 + 0] = sv_1;
     v[(2 * 3 + 0) * 2 + 0] = sv_0;
     v[(3 * 3 + 0) * 2 + 0] = sv_1;
 }
+void set_1d1_scalar(svScalar* v) { v[0] = sv_0; }
+void set_2d1_scalar(svScalar* v) { v[0] = sv_1; }
+void set_3d1_scalar(svScalar* v) { v[0] = sv_0; }
 
 void set_0d(svBitVecVal* v, int bitwidth) { set_uint(v, 42, bitwidth); }
-
 void set_1d(svBitVecVal* v, int bitwidth) {
     const int unit = (bitwidth + 31) / 32;
     set_uint(v + 0 * unit, 43, bitwidth);
     set_uint(v + 1 * unit, 44, bitwidth);
 }
-
 void set_2d(svBitVecVal* v, int bitwidth) {
     const int unit = (bitwidth + 31) / 32;
     set_uint(v + (0 * 2 + 1) * unit, 45, bitwidth);
     set_uint(v + (1 * 2 + 1) * unit, 46, bitwidth);
     set_uint(v + (2 * 2 + 1) * unit, 47, bitwidth);
 }
-
 void set_3d(svBitVecVal* v, int bitwidth) {
     const int unit = (bitwidth + 31) / 32;
     set_uint(v + ((0 * 3 + 0) * 2 + 0) * unit, 48, bitwidth);
@@ -178,6 +188,9 @@ void set_3d(svBitVecVal* v, int bitwidth) {
     set_uint(v + ((2 * 3 + 0) * 2 + 0) * unit, 50, bitwidth);
     set_uint(v + ((3 * 3 + 0) * 2 + 0) * unit, 51, bitwidth);
 }
+void set_1d1(svBitVecVal* v, int bitwidth) { set_uint(v, 52, bitwidth); }
+void set_2d1(svBitVecVal* v, int bitwidth) { set_uint(v, 53, bitwidth); }
+void set_3d1(svBitVecVal* v, int bitwidth) { set_uint(v, 54, bitwidth); }
 
 template <typename T>
 bool compare(const T& act, const T& exp) {
@@ -206,6 +219,18 @@ template <typename T>
 bool check_3d(const T (&v)[4][3][2]) {
     return compare<T>(v[0][0][0], 48) && compare<T>(v[1][0][0], 49) && compare<T>(v[2][0][0], 50)
            && compare<T>(v[3][0][0], 51);
+}
+template <typename T>
+bool check_1d1(const T (&v)[1]) {
+    return compare<T>(v[0], 52);
+}
+template <typename T>
+bool check_2d1(const T (&v)[1][1]) {
+    return compare<T>(v[0][0], 53);
+}
+template <typename T>
+bool check_3d1(const T (&v)[1][1][1]) {
+    return compare<T>(v[0][0][0], 54);
 }
 
 bool compare(const svLogicVecVal* v0, sv_longint_unsigned_t val, int bitwidth) {
@@ -256,6 +281,18 @@ bool check_3d(const T (&v)[4][3][2][N], int bitwidth) {
     return compare(v[0][0][0], 48, bitwidth) && compare(v[1][0][0], 49, bitwidth)
            && compare(v[2][0][0], 50, bitwidth) && compare(v[3][0][0], 51, bitwidth);
 }
+template <typename T, size_t N>
+bool check_1d1(const T (&v)[1][N], int bitwidth) {
+    return compare(v[0], 52, bitwidth);
+}
+template <typename T, size_t N>
+bool check_2d1(const T (&v)[1][1][N], int bitwidth) {
+    return compare(v[0][0], 53, bitwidth);
+}
+template <typename T, size_t N>
+bool check_3d1(const T (&v)[1][1][1][N], int bitwidth) {
+    return compare(v[0][0][0], 54, bitwidth);
+}
 
 }  // unnamed namespace
 
@@ -268,47 +305,74 @@ void i_byte_0d(char* v) { set_0d(v); }
 void i_byte_1d(char* v) { set_1d(v); }
 void i_byte_2d(char* v) { set_2d(v); }
 void i_byte_3d(char* v) { set_3d(v); }
+void i_byte_1d1(char* v) { set_1d1(v); }
+void i_byte_2d1(char* v) { set_2d1(v); }
+void i_byte_3d1(char* v) { set_3d1(v); }
 
 void i_byte_unsigned_0d(unsigned char* v) { set_0d(v); }
 void i_byte_unsigned_1d(unsigned char* v) { set_1d(v); }
 void i_byte_unsigned_2d(unsigned char* v) { set_2d(v); }
 void i_byte_unsigned_3d(unsigned char* v) { set_3d(v); }
+void i_byte_unsigned_1d1(unsigned char* v) { set_1d1(v); }
+void i_byte_unsigned_2d1(unsigned char* v) { set_2d1(v); }
+void i_byte_unsigned_3d1(unsigned char* v) { set_3d1(v); }
 
 void i_shortint_0d(short* v) { set_0d(v); }
 void i_shortint_1d(short* v) { set_1d(v); }
 void i_shortint_2d(short* v) { set_2d(v); }
 void i_shortint_3d(short* v) { set_3d(v); }
+void i_shortint_1d1(short* v) { set_1d1(v); }
+void i_shortint_2d1(short* v) { set_2d1(v); }
+void i_shortint_3d1(short* v) { set_3d1(v); }
 
 void i_shortint_unsigned_0d(unsigned short* v) { set_0d(v); }
 void i_shortint_unsigned_1d(unsigned short* v) { set_1d(v); }
 void i_shortint_unsigned_2d(unsigned short* v) { set_2d(v); }
 void i_shortint_unsigned_3d(unsigned short* v) { set_3d(v); }
+void i_shortint_unsigned_1d1(unsigned short* v) { set_1d1(v); }
+void i_shortint_unsigned_2d1(unsigned short* v) { set_2d1(v); }
+void i_shortint_unsigned_3d1(unsigned short* v) { set_3d1(v); }
 
 void i_int_0d(int* v) { set_0d(v); }
 void i_int_1d(int* v) { set_1d(v); }
 void i_int_2d(int* v) { set_2d(v); }
 void i_int_3d(int* v) { set_3d(v); }
+void i_int_1d1(int* v) { set_1d1(v); }
+void i_int_2d1(int* v) { set_2d1(v); }
+void i_int_3d1(int* v) { set_3d1(v); }
 
 void i_int_unsigned_0d(unsigned int* v) { set_0d(v); }
 void i_int_unsigned_1d(unsigned int* v) { set_1d(v); }
 void i_int_unsigned_2d(unsigned int* v) { set_2d(v); }
 void i_int_unsigned_3d(unsigned int* v) { set_3d(v); }
+void i_int_unsigned_1d1(unsigned int* v) { set_1d1(v); }
+void i_int_unsigned_2d1(unsigned int* v) { set_2d1(v); }
+void i_int_unsigned_3d1(unsigned int* v) { set_3d1(v); }
 
 void i_longint_0d(sv_longint_t* v) { set_0d(v); }
 void i_longint_1d(sv_longint_t* v) { set_1d(v); }
 void i_longint_2d(sv_longint_t* v) { set_2d(v); }
 void i_longint_3d(sv_longint_t* v) { set_3d(v); }
+void i_longint_1d1(sv_longint_t* v) { set_1d1(v); }
+void i_longint_2d1(sv_longint_t* v) { set_2d1(v); }
+void i_longint_3d1(sv_longint_t* v) { set_3d1(v); }
 
 void i_longint_unsigned_0d(sv_longint_unsigned_t* v) { set_0d(v); }
 void i_longint_unsigned_1d(sv_longint_unsigned_t* v) { set_1d(v); }
 void i_longint_unsigned_2d(sv_longint_unsigned_t* v) { set_2d(v); }
 void i_longint_unsigned_3d(sv_longint_unsigned_t* v) { set_3d(v); }
+void i_longint_unsigned_1d1(sv_longint_unsigned_t* v) { set_1d1(v); }
+void i_longint_unsigned_2d1(sv_longint_unsigned_t* v) { set_2d1(v); }
+void i_longint_unsigned_3d1(sv_longint_unsigned_t* v) { set_3d1(v); }
 
 #ifndef NO_TIME
 void i_time_0d(svLogicVecVal* v) { set_0d(v, 64); }
 void i_time_1d(svLogicVecVal* v) { set_1d(v, 64); }
 void i_time_2d(svLogicVecVal* v) { set_2d(v, 64); }
 void i_time_3d(svLogicVecVal* v) { set_3d(v, 64); }
+void i_time_1d1(svLogicVecVal* v) { set_1d1(v, 64); }
+void i_time_2d1(svLogicVecVal* v) { set_2d1(v, 64); }
+void i_time_3d1(svLogicVecVal* v) { set_3d1(v, 64); }
 #endif
 
 #ifndef NO_INTEGER
@@ -316,18 +380,27 @@ void i_integer_0d(svLogicVecVal* v) { set_0d(v, 32); }
 void i_integer_1d(svLogicVecVal* v) { set_1d(v, 32); }
 void i_integer_2d(svLogicVecVal* v) { set_2d(v, 32); }
 void i_integer_3d(svLogicVecVal* v) { set_3d(v, 32); }
+void i_integer_1d1(svLogicVecVal* v) { set_1d1(v, 32); }
+void i_integer_2d1(svLogicVecVal* v) { set_2d1(v, 32); }
+void i_integer_3d1(svLogicVecVal* v) { set_3d1(v, 32); }
 #endif
 
 void i_real_0d(double* v) { set_0d(v); }
 void i_real_1d(double* v) { set_1d(v); }
 void i_real_2d(double* v) { set_2d(v); }
 void i_real_3d(double* v) { set_3d(v); }
+void i_real_1d1(double* v) { set_1d1(v); }
+void i_real_2d1(double* v) { set_2d1(v); }
+void i_real_3d1(double* v) { set_3d1(v); }
 
 #ifndef NO_SHORTREAL
 void i_shortreal_0d(float* v) { set_0d(v); }
 void i_shortreal_1d(float* v) { set_1d(v); }
 void i_shortreal_2d(float* v) { set_2d(v); }
 void i_shortreal_3d(float* v) { set_3d(v); }
+void i_shortreal_1d1(float* v) { set_1d1(v); }
+void i_shortreal_2d1(float* v) { set_2d1(v); }
+void i_shortreal_3d1(float* v) { set_3d1(v); }
 #endif
 
 void i_chandle_0d(void** v) { v[0] = get_non_null(); }
@@ -346,6 +419,9 @@ void i_chandle_3d(void** v) {
     v[(2 * 3 + 0) * 2 + 0] = get_non_null();
     v[(3 * 3 + 0) * 2 + 0] = get_non_null();
 }
+void i_chandle_1d1(void** v) { v[0] = get_non_null(); }
+void i_chandle_2d1(void** v) { v[0] = get_non_null(); }
+void i_chandle_3d1(void** v) { v[0] = get_non_null(); }
 
 void i_string_0d(const char** v) {
     static const char s[] = "42";
@@ -379,41 +455,65 @@ void i_string_3d(const char** v) {
     v[(2 * 3 + 0) * 2 + 0] = s2;
     v[(3 * 3 + 0) * 2 + 0] = s3;
 }
+void i_string_1d1(const char** v) { v[0] = "52"; }
+void i_string_2d1(const char** v) { v[0] = "53"; }
+void i_string_3d1(const char** v) { v[0] = "54"; }
 
 void i_bit1_0d(svBit* v) { set_0d_scalar(v); }
 void i_bit1_1d(svBit* v) { set_1d_scalar(v); }
 void i_bit1_2d(svBit* v) { set_2d_scalar(v); }
 void i_bit1_3d(svBit* v) { set_3d_scalar(v); }
+void i_bit1_1d1(svBit* v) { set_1d1_scalar(v); }
+void i_bit1_2d1(svBit* v) { set_2d1_scalar(v); }
+void i_bit1_3d1(svBit* v) { set_3d1_scalar(v); }
 
 void i_bit7_0d(svBitVecVal* v) { set_0d(v, 7); }
 void i_bit7_1d(svBitVecVal* v) { set_1d(v, 7); }
 void i_bit7_2d(svBitVecVal* v) { set_2d(v, 7); }
 void i_bit7_3d(svBitVecVal* v) { set_3d(v, 7); }
+void i_bit7_1d1(svBitVecVal* v) { set_1d1(v, 7); }
+void i_bit7_2d1(svBitVecVal* v) { set_2d1(v, 7); }
+void i_bit7_3d1(svBitVecVal* v) { set_3d1(v, 7); }
 
 void i_bit121_0d(svBitVecVal* v) { set_0d(v, 121); }
 void i_bit121_1d(svBitVecVal* v) { set_1d(v, 121); }
 void i_bit121_2d(svBitVecVal* v) { set_2d(v, 121); }
 void i_bit121_3d(svBitVecVal* v) { set_3d(v, 121); }
+void i_bit121_1d1(svBitVecVal* v) { set_1d1(v, 121); }
+void i_bit121_2d1(svBitVecVal* v) { set_2d1(v, 121); }
+void i_bit121_3d1(svBitVecVal* v) { set_3d1(v, 121); }
 
 void i_logic1_0d(svLogic* v) { set_0d_scalar(v); }
 void i_logic1_1d(svLogic* v) { set_1d_scalar(v); }
 void i_logic1_2d(svLogic* v) { set_2d_scalar(v); }
 void i_logic1_3d(svLogic* v) { set_3d_scalar(v); }
+void i_logic1_1d1(svLogic* v) { set_1d1_scalar(v); }
+void i_logic1_2d1(svLogic* v) { set_2d1_scalar(v); }
+void i_logic1_3d1(svLogic* v) { set_3d1_scalar(v); }
 
 void i_logic7_0d(svLogicVecVal* v) { set_0d(v, 7); }
 void i_logic7_1d(svLogicVecVal* v) { set_1d(v, 7); }
 void i_logic7_2d(svLogicVecVal* v) { set_2d(v, 7); }
 void i_logic7_3d(svLogicVecVal* v) { set_3d(v, 7); }
+void i_logic7_1d1(svLogicVecVal* v) { set_1d1(v, 7); }
+void i_logic7_2d1(svLogicVecVal* v) { set_2d1(v, 7); }
+void i_logic7_3d1(svLogicVecVal* v) { set_3d1(v, 7); }
 
 void i_logic121_0d(svLogicVecVal* v) { set_0d(v, 121); }
 void i_logic121_1d(svLogicVecVal* v) { set_1d(v, 121); }
 void i_logic121_2d(svLogicVecVal* v) { set_2d(v, 121); }
 void i_logic121_3d(svLogicVecVal* v) { set_3d(v, 121); }
+void i_logic121_1d1(svLogicVecVal* v) { set_1d1(v, 121); }
+void i_logic121_2d1(svLogicVecVal* v) { set_2d1(v, 121); }
+void i_logic121_3d1(svLogicVecVal* v) { set_3d1(v, 121); }
 
 void i_pack_struct_0d(svLogicVecVal* v) { set_0d(v, 7); }
 void i_pack_struct_1d(svLogicVecVal* v) { set_1d(v, 7); }
 void i_pack_struct_2d(svLogicVecVal* v) { set_2d(v, 7); }
 void i_pack_struct_3d(svLogicVecVal* v) { set_3d(v, 7); }
+void i_pack_struct_1d1(svLogicVecVal* v) { set_1d1(v, 7); }
+void i_pack_struct_2d1(svLogicVecVal* v) { set_2d1(v, 7); }
+void i_pack_struct_3d1(svLogicVecVal* v) { set_3d1(v, 7); }
 
 #ifndef NO_UNPACK_STRUCT
 void i_unpack_struct_0d(unpack_struct_t* v) { set_uint(v->val, 42, 121); }
@@ -432,6 +532,9 @@ void i_unpack_struct_3d(unpack_struct_t* v) {
     set_uint(v[(2 * 3 + 0) * 2 + 0].val, 50, 121);
     set_uint(v[(3 * 3 + 0) * 2 + 0].val, 51, 121);
 }
+void i_unpack_struct_1d1(unpack_struct_t* v) { set_uint(v[0].val, 52, 121); }
+void i_unpack_struct_2d1(unpack_struct_t* v) { set_uint(v[0].val, 53, 121); }
+void i_unpack_struct_3d1(unpack_struct_t* v) { set_uint(v[0].val, 54, 121); }
 #endif
 
 void check_exports() {
@@ -447,6 +550,15 @@ void check_exports() {
         if (!check_3d(byte_array)) stop();
     }
     {
+        char array[1][1][1];
+        e_byte_1d1(&array[0][0][0]);
+        if (!check_1d1(array[0][0])) stop();
+        e_byte_2d1(&array[0][0][0]);
+        if (!check_2d1(array[0])) stop();
+        e_byte_3d1(&array[0][0][0]);
+        if (!check_3d1(array)) stop();
+    }
+    {
         unsigned char byte_unsigned_array[4][3][2];
         e_byte_unsigned_0d(&byte_unsigned_array[3][2][1]);
         if (!check_0d(byte_unsigned_array[3][2][1])) stop();
@@ -456,6 +568,15 @@ void check_exports() {
         if (!check_2d(byte_unsigned_array[1])) stop();
         e_byte_unsigned_3d(&byte_unsigned_array[0][0][0]);
         if (!check_3d(byte_unsigned_array)) stop();
+    }
+    {
+        unsigned char array[1][1][1];
+        e_byte_unsigned_1d1(&array[0][0][0]);
+        if (!check_1d1(array[0][0])) stop();
+        e_byte_unsigned_2d1(&array[0][0][0]);
+        if (!check_2d1(array[0])) stop();
+        e_byte_unsigned_3d1(&array[0][0][0]);
+        if (!check_3d1(array)) stop();
     }
     {
         short shortint_array[4][3][2];
@@ -469,6 +590,15 @@ void check_exports() {
         if (!check_3d(shortint_array)) stop();
     }
     {
+        short array[1][1][1];
+        e_shortint_1d1(&array[0][0][0]);
+        if (!check_1d1(array[0][0])) stop();
+        e_shortint_2d1(&array[0][0][0]);
+        if (!check_2d1(array[0])) stop();
+        e_shortint_3d1(&array[0][0][0]);
+        if (!check_3d1(array)) stop();
+    }
+    {
         unsigned short shortint_unsigned_array[4][3][2];
         e_shortint_unsigned_0d(&shortint_unsigned_array[3][2][1]);
         if (!check_0d(shortint_unsigned_array[3][2][1])) stop();
@@ -478,6 +608,15 @@ void check_exports() {
         if (!check_2d(shortint_unsigned_array[1])) stop();
         e_shortint_unsigned_3d(&shortint_unsigned_array[0][0][0]);
         if (!check_3d(shortint_unsigned_array)) stop();
+    }
+    {
+        unsigned short array[1][1][1];
+        e_shortint_unsigned_1d1(&array[0][0][0]);
+        if (!check_1d1(array[0][0])) stop();
+        e_shortint_unsigned_2d1(&array[0][0][0]);
+        if (!check_2d1(array[0])) stop();
+        e_shortint_unsigned_3d1(&array[0][0][0]);
+        if (!check_3d1(array)) stop();
     }
 
     {
@@ -492,6 +631,15 @@ void check_exports() {
         if (!check_3d(int_array)) stop();
     }
     {
+        int array[1][1][1];
+        e_int_1d1(&array[0][0][0]);
+        if (!check_1d1(array[0][0])) stop();
+        e_int_2d1(&array[0][0][0]);
+        if (!check_2d1(array[0])) stop();
+        e_int_3d1(&array[0][0][0]);
+        if (!check_3d1(array)) stop();
+    }
+    {
         unsigned int int_unsigned_array[4][3][2];
         e_int_unsigned_0d(&int_unsigned_array[3][2][1]);
         if (!check_0d(int_unsigned_array[3][2][1])) stop();
@@ -501,6 +649,15 @@ void check_exports() {
         if (!check_2d(int_unsigned_array[1])) stop();
         e_int_unsigned_3d(&int_unsigned_array[0][0][0]);
         if (!check_3d(int_unsigned_array)) stop();
+    }
+    {
+        unsigned int array[1][1][1];
+        e_int_unsigned_1d1(&array[0][0][0]);
+        if (!check_1d1(array[0][0])) stop();
+        e_int_unsigned_2d1(&array[0][0][0]);
+        if (!check_2d1(array[0])) stop();
+        e_int_unsigned_3d1(&array[0][0][0]);
+        if (!check_3d1(array)) stop();
     }
 
     {
@@ -515,6 +672,15 @@ void check_exports() {
         if (!check_3d(longint_array)) stop();
     }
     {
+        sv_longint_t array[1][1][1];
+        e_longint_1d1(&array[0][0][0]);
+        if (!check_1d1(array[0][0])) stop();
+        e_longint_2d1(&array[0][0][0]);
+        if (!check_2d1(array[0])) stop();
+        e_longint_3d1(&array[0][0][0]);
+        if (!check_3d1(array)) stop();
+    }
+    {
         sv_longint_unsigned_t longint_unsigned_array[4][3][2];
         e_longint_unsigned_0d(&longint_unsigned_array[3][2][1]);
         if (!check_0d(longint_unsigned_array[3][2][1])) stop();
@@ -524,6 +690,15 @@ void check_exports() {
         if (!check_2d(longint_unsigned_array[1])) stop();
         e_longint_unsigned_3d(&longint_unsigned_array[0][0][0]);
         if (!check_3d(longint_unsigned_array)) stop();
+    }
+    {
+        sv_longint_unsigned_t array[1][1][1];
+        e_longint_unsigned_1d1(&array[0][0][0]);
+        if (!check_1d1(array[0][0])) stop();
+        e_longint_unsigned_2d1(&array[0][0][0]);
+        if (!check_2d1(array[0])) stop();
+        e_longint_unsigned_3d1(&array[0][0][0]);
+        if (!check_3d1(array)) stop();
     }
 
 #ifndef NO_TIME
@@ -537,6 +712,15 @@ void check_exports() {
         if (!check_2d(time_array[1], 64)) stop();
         e_time_3d(time_array[0][0][0]);
         if (!check_3d(time_array, 64)) stop();
+    }
+    {
+        svLogicVecVal array[1][1][1][2];
+        e_time_1d1(array[0][0][0]);
+        if (!check_1d1(array[0][0], 64)) stop();
+        e_time_2d1(array[0][0][0]);
+        if (!check_2d1(array[0], 64)) stop();
+        e_time_3d1(array[0][0][0]);
+        if (!check_3d1(array, 64)) stop();
     }
 #endif
 
@@ -552,6 +736,15 @@ void check_exports() {
         e_integer_3d(integer_array[0][0][0]);
         if (!check_3d(integer_array, 32)) stop();
     }
+    {
+        svLogicVecVal array[1][1][1][1];
+        e_integer_1d1(array[0][0][0]);
+        if (!check_1d1(array[0][0], 32)) stop();
+        e_integer_2d1(array[0][0][0]);
+        if (!check_2d1(array[0], 32)) stop();
+        e_integer_3d1(array[0][0][0]);
+        if (!check_3d1(array, 32)) stop();
+    }
 #endif
 
     {
@@ -565,6 +758,15 @@ void check_exports() {
         e_real_3d(&real_array[0][0][0]);
         if (!check_3d(real_array)) stop();
     }
+    {
+        double array[1][1][1];
+        e_real_1d1(&array[0][0][0]);
+        if (!check_1d1(array[0][0])) stop();
+        e_real_2d1(&array[0][0][0]);
+        if (!check_2d1(array[0])) stop();
+        e_real_3d1(&array[0][0][0]);
+        if (!check_3d1(array)) stop();
+    }
 #ifndef NO_SHORTREAL
     {
         float shortreal_array[4][3][2];
@@ -576,6 +778,15 @@ void check_exports() {
         if (!check_2d(shortreal_array[1])) stop();
         e_shortreal_3d(&shortreal_array[0][0][0]);
         if (!check_3d(shortreal_array)) stop();
+    }
+    {
+        float array[1][1][1];
+        e_shortreal_1d1(&array[0][0][0]);
+        if (!check_1d1(array[0][0])) stop();
+        e_shortreal_2d1(&array[0][0][0]);
+        if (!check_2d1(array[0])) stop();
+        e_shortreal_3d1(&array[0][0][0]);
+        if (!check_3d1(array)) stop();
     }
 #endif
 
@@ -599,6 +810,15 @@ void check_exports() {
         if (!chandle_array[2][0][0]) stop();
         if (!chandle_array[3][0][0]) stop();
     }
+    {
+        void* chandle_array[1][1][1];
+        e_chandle_1d1(&chandle_array[0][0][0]);
+        if (!chandle_array[0][0][0]) stop();
+        e_chandle_2d1(&chandle_array[0][0][0]);
+        if (!chandle_array[0][0][0]) stop();
+        e_chandle_3d1(&chandle_array[0][0][0]);
+        if (!chandle_array[0][0][0]) stop();
+    }
 
     {
         const char* string_array[4][3][2];
@@ -619,6 +839,15 @@ void check_exports() {
         if (!compare<std::string>(string_array[1][0][0], "49")) stop();
         if (!compare<std::string>(string_array[2][0][0], "50")) stop();
         if (!compare<std::string>(string_array[3][0][0], "51")) stop();
+    }
+    {
+        const char* string_array[1][1][1];
+        e_string_1d1(&string_array[0][0][0]);
+        if (!compare<std::string>(string_array[0][0][0], "52")) stop();
+        e_string_2d1(&string_array[0][0][0]);
+        if (!compare<std::string>(string_array[0][0][0], "53")) stop();
+        e_string_3d1(&string_array[0][0][0]);
+        if (!compare<std::string>(string_array[0][0][0], "54")) stop();
     }
 
     {
@@ -655,6 +884,15 @@ void check_exports() {
         e_logic7_3d(logic7_array[0][0][0]);
         if (!check_3d(logic7_array, 7)) stop();
     }
+    {
+        svLogicVecVal array[1][1][1][1];
+        e_logic7_1d1(array[0][0][0]);
+        if (!check_1d1(array[0][0], 7)) stop();
+        e_logic7_2d1(array[0][0][0]);
+        if (!check_2d1(array[0], 7)) stop();
+        e_logic7_3d1(array[0][0][0]);
+        if (!check_3d1(array, 7)) stop();
+    }
 
     {
         svLogicVecVal logic121_array[4][3][2][4];
@@ -667,6 +905,15 @@ void check_exports() {
         e_logic121_3d(logic121_array[0][0][0]);
         if (!check_3d(logic121_array, 121)) stop();
     }
+    {
+        svLogicVecVal array[1][1][1][4];
+        e_logic121_1d1(array[0][0][0]);
+        if (!check_1d1(array[0][0], 121)) stop();
+        e_logic121_2d1(array[0][0][0]);
+        if (!check_2d1(array[0], 121)) stop();
+        e_logic121_3d1(array[0][0][0]);
+        if (!check_3d1(array, 121)) stop();
+    }
 
     {
         svLogicVecVal pack_struct_array[4][3][2][1];
@@ -678,6 +925,15 @@ void check_exports() {
         if (!check_2d(pack_struct_array[1], 7)) stop();
         e_pack_struct_3d(pack_struct_array[0][0][0]);
         if (!check_3d(pack_struct_array, 7)) stop();
+    }
+    {
+        svLogicVecVal array[1][1][1][1];
+        e_pack_struct_1d1(array[0][0][0]);
+        if (!check_1d1(array[0][0], 7)) stop();
+        e_pack_struct_2d1(array[0][0][0]);
+        if (!check_2d1(array[0], 7)) stop();
+        e_pack_struct_3d1(array[0][0][0]);
+        if (!check_3d1(array, 7)) stop();
     }
 
 #ifndef NO_UNPACK_STRUCT
@@ -697,6 +953,15 @@ void check_exports() {
         if (!compare(unpack_struct_array[1][0][0].val, 49, 121)) stop();
         if (!compare(unpack_struct_array[2][0][0].val, 50, 121)) stop();
         if (!compare(unpack_struct_array[3][0][0].val, 51, 121)) stop();
+    }
+    {
+        unpack_struct_t unpack_struct_array[1][1][1];
+        e_unpack_struct_1d1(&unpack_struct_array[0][0][0]);
+        if (!compare(unpack_struct_array[0][0][0].val, 52, 121)) stop();
+        e_unpack_struct_2d1(&unpack_struct_array[0][0][0]);
+        if (!compare(unpack_struct_array[0][0][0].val, 53, 121)) stop();
+        e_unpack_struct_3d1(&unpack_struct_array[0][0][0]);
+        if (!compare(unpack_struct_array[0][0][0].val, 54, 121)) stop();
     }
 #endif
 }

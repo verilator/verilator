@@ -21,7 +21,7 @@ module t
 
    wire [95: 0] lfsr_w = 1 >> P;
 
-   localparam [95: 0] lfsr_p = 1 >> P;
+   localparam [95: 0] LFSR_P = 1 >> P;
 
    initial begin
       $write("*-* All Finished *-*\n");

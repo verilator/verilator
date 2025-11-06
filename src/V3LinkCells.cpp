@@ -176,6 +176,20 @@ class LinkCellsVisitor final : public VNVisitor {
         return modp;
     }
 
+    static void removeLibFlag() {
+        // If the only NodeModules are in libraries, then presumably user
+        // wants to check the library, so clear library flag
+        if (!v3Global.opt.topModule().empty()) return;
+        for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
+             nodep = VN_AS(nodep->nextp(), NodeModule)) {
+            if (!nodep->inLibrary()) return;
+        }
+        for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
+             nodep = VN_AS(nodep->nextp(), NodeModule)) {
+            nodep->inLibrary(false);
+        }
+    }
+
     // VISITORS
     void visit(AstNetlist* nodep) override {
         readModNames();
@@ -189,6 +203,14 @@ class LinkCellsVisitor final : public VNVisitor {
                 // +1 so we leave level 1  for the new wrapper we'll make in a moment
                 AstNodeModule* const modp = vvertexp->modp();
                 modp->level(vvertexp->rank() + 1);
+            }
+        }
+        m_graph.rankMin();
+        for (V3GraphVertex& vtx : m_graph.vertices()) {
+            if (const LinkCellsVertex* const vvertexp = vtx.cast<LinkCellsVertex>()) {
+                // +1 so we leave level 1  for the new wrapper we'll make in a moment
+                AstNodeModule* const modp = vvertexp->modp();
+                modp->depth(vvertexp->rank() + 1);
             }
         }
         if (v3Global.opt.topModule() != "" && !m_topVertexp) {
@@ -448,10 +470,10 @@ class LinkCellsVisitor final : public VNVisitor {
                         if (pinStar) {
                             UINFO(9, "    need .* PORT  " << portp);
                             // Create any not already connected
-                            AstPin* const newp = new AstPin{
-                                nodep->fileline(), 0, portp->name(),
-                                new AstParseRef{nodep->fileline(), VParseRefExp::PX_TEXT,
-                                                portp->name(), nullptr, nullptr}};
+                            AstPin* const newp
+                                = new AstPin{nodep->fileline(), 0, portp->name(),
+                                             new AstParseRef{nodep->fileline(), portp->name(),
+                                                             nullptr, nullptr}};
                             newp->svDotName(true);
                             newp->svImplicit(true);
                             nodep->addPinsp(newp);
@@ -637,14 +659,14 @@ class LinkCellsVisitor final : public VNVisitor {
                 }
                 nodep->unlinkFrBack();
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
-            } else if (!libFoundp && globalFoundp && globalFoundp != nodep) {
+            } else if (globalFoundp && globalFoundp != nodep) {
                 // ...__LIB__ stripped by prettyName
                 const string newName = nodep->libname() + "__LIB__" + nodep->origName();
                 UINFO(9, "Module rename as in multiple libraries " << newName << " <- " << nodep);
                 insertModInLib(nodep->origName(), nodep->libname(), nodep);  // Original name
                 nodep->name(newName);
                 insertModInLib(nodep->name(), "__GLOBAL", nodep);
-            } else if (!libFoundp) {
+            } else {
                 insertModInLib(nodep->origName(), nodep->libname(), nodep);
                 insertModInLib(nodep->name(), "__GLOBAL", nodep);
             }
@@ -669,6 +691,7 @@ public:
         } else {
             m_origTopModuleName = v3Global.opt.topModule();
         }
+        removeLibFlag();
         iterate(nodep);
     }
     ~LinkCellsVisitor() override {

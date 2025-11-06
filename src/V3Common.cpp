@@ -52,13 +52,13 @@ string V3Common::makeToStringCall(AstNodeDType* nodep, const std::string& lhs) {
 static void makeVlToString(AstClass* nodep) {
     AstCFunc* const funcp
         = new AstCFunc{nodep->fileline(), "VL_TO_STRING", nullptr, "std::string"};
-    funcp->argTypes("const VlClassRef<" + EmitCBase::prefixNameProtect(nodep) + ">& obj");
+    funcp->argTypes("const VlClassRef<" + EmitCUtil::prefixNameProtect(nodep) + ">& obj");
     funcp->isMethod(false);
     funcp->isConst(false);
     funcp->isStatic(false);
     funcp->protect(false);
     AstNodeExpr* const exprp
-        = new AstCExpr{nodep->fileline(), "obj ? obj->to_string() : \"null\"", 0};
+        = new AstCExpr{nodep->fileline(), "obj ? obj->to_string() : \"null\""};
     exprp->dtypeSetString();
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
     nodep->addStmtsp(funcp);
@@ -66,12 +66,12 @@ static void makeVlToString(AstClass* nodep) {
 static void makeVlToString(AstIface* nodep) {
     AstCFunc* const funcp
         = new AstCFunc{nodep->fileline(), "VL_TO_STRING", nullptr, "std::string"};
-    funcp->argTypes("const " + EmitCBase::prefixNameProtect(nodep) + "* obj");
+    funcp->argTypes("const " + EmitCUtil::prefixNameProtect(nodep) + "* obj");
     funcp->isMethod(false);
     funcp->isConst(false);
     funcp->isStatic(false);
     funcp->protect(false);
-    AstNodeExpr* const exprp = new AstCExpr{nodep->fileline(), "obj ? obj->name() : \"null\"", 0};
+    AstNodeExpr* const exprp = new AstCExpr{nodep->fileline(), "obj ? obj->name() : \"null\""};
     exprp->dtypeSetString();
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
     nodep->addStmtsp(funcp);
@@ -81,12 +81,12 @@ static void makeVlToString(AstNodeUOrStructDType* nodep) {
     UASSERT_OBJ(modp, nodep, "Unlinked struct package");
     AstCFunc* const funcp
         = new AstCFunc{nodep->fileline(), "VL_TO_STRING", nullptr, "std::string"};
-    funcp->argTypes("const " + EmitCBase::prefixNameProtect(nodep) + "& obj");
+    funcp->argTypes("const " + EmitCUtil::prefixNameProtect(nodep) + "& obj");
     funcp->isMethod(false);
     funcp->isConst(false);
     funcp->isStatic(false);
     funcp->protect(false);
-    funcp->addStmtsp(new AstCStmt{nodep->fileline(), "std::string out;\n"});
+    funcp->addStmtsp(new AstCStmt{nodep->fileline(), "std::string out;"});
     for (const AstMemberDType* itemp = nodep->membersp(); itemp;
          itemp = VN_AS(itemp->nextp(), MemberDType)) {
         std::string stmt = "out += \"";
@@ -97,11 +97,15 @@ static void makeVlToString(AstNodeUOrStructDType* nodep) {
         }
         stmt += VIdProtect::protect(itemp->prettyName()) + ":\" + ";
         stmt += V3Common::makeToStringCall(itemp->dtypep(), "obj."s + itemp->nameProtect());
-        stmt += ";\n";
+        stmt += ";";
         funcp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
     }
-    funcp->addStmtsp(new AstCStmt{nodep->fileline(), "out += \"}\";\n"});
-    funcp->addStmtsp(new AstCStmt{nodep->fileline(), "return out;\n"});
+    funcp->addStmtsp(new AstCStmt{nodep->fileline(), "out += \"}\";"});
+
+    AstCExpr* const exprp = new AstCExpr{nodep->fileline(), "out"};
+    exprp->dtypeSetString();
+    funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
+
     modp->addStmtsp(funcp);
 }
 static void makeToString(AstClass* nodep) {
@@ -109,8 +113,7 @@ static void makeToString(AstClass* nodep) {
     funcp->isConst(true);
     funcp->isStatic(false);
     funcp->protect(false);
-    AstCExpr* const exprp
-        = new AstCExpr{nodep->fileline(), R"("'{"s + to_string_middle() + "}")", 0};
+    AstCExpr* const exprp = new AstCExpr{nodep->fileline(), R"("'{"s + to_string_middle() + "}")"};
     exprp->dtypeSetString();
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
     nodep->addStmtsp(funcp);
@@ -121,7 +124,7 @@ static void makeToStringMiddle(AstClass* nodep) {
     funcp->isConst(true);
     funcp->isStatic(false);
     funcp->protect(false);
-    funcp->addStmtsp(new AstCStmt{nodep->fileline(), "std::string out;\n"});
+    funcp->addStmtsp(new AstCStmt{nodep->fileline(), "std::string out;"});
     std::string comma;
     for (AstNode* itemp = nodep->membersp(); itemp; itemp = itemp->nextp()) {
         if (const auto* const varp = VN_CAST(itemp, Var)) {
@@ -135,7 +138,7 @@ static void makeToStringMiddle(AstClass* nodep) {
                 stmt += itemp->origNameProtect();
                 stmt += ":\" + ";
                 stmt += V3Common::makeToStringCall(itemp->dtypep(), itemp->nameProtect());
-                stmt += ";\n";
+                stmt += ";";
                 nodep->user1(true);  // So what we extend dumps this
                 funcp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
             }
@@ -145,12 +148,16 @@ static void makeToStringMiddle(AstClass* nodep) {
         string stmt = "out += ";
         if (!comma.empty()) stmt += "\", \"+ ";
         // comma = ", ";  // Nothing further so not needed
-        stmt += EmitCBase::prefixNameProtect(nodep->extendsp()->dtypep());
-        stmt += "::to_string_middle();\n";
+        stmt += EmitCUtil::prefixNameProtect(nodep->extendsp()->dtypep());
+        stmt += "::to_string_middle();";
         nodep->user1(true);  // So what we extend dumps this
         funcp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
     }
-    funcp->addStmtsp(new AstCStmt{nodep->fileline(), "return out;\n"});
+
+    AstCExpr* const exprp = new AstCExpr{nodep->fileline(), "out"};
+    exprp->dtypeSetString();
+    funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
+
     nodep->addStmtsp(funcp);
 }
 

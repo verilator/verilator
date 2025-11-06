@@ -1,0 +1,5 @@
+%Error: t/t_covergroup_with_function_foo_bad.v:9:35: Coverage sampling function must be named 'sample'
+    9 |   covergroup cg_bad with function foo(int x);
+      |                                   ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

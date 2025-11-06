@@ -14,6 +14,6 @@ test.scenarios('vlt')
 test.lint(verilator_flags2=['--stats', '--expand-limit 5'])
 
 test.file_grep(test.stats, r'Optimizations, Gate excluded wide expressions\s+(\d+)', 0)
-test.file_grep(test.stats, r'Optimizations, Gate sigs deleted\s+(\d+)', 3)
+test.file_grep(test.stats, r'Optimizations, Gate sigs deleted\s+(\d+)', 0)
 
 test.passes()

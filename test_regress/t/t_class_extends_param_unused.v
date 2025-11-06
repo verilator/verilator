@@ -7,7 +7,7 @@
 class Foo#(type T = logic) extends T;
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       $write("*-* All Finished *-*\n");
       $finish;

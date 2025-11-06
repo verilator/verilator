@@ -61,7 +61,7 @@ class Ext extends Cls;
    endtask
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       Cls c;
       Ext e;

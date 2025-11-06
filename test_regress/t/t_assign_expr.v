@@ -7,12 +7,13 @@
 `define stop $stop
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 
-module t(/*AUTOARG*/);
+module t;
 
    int a;
    int b;
    int i;
 
+   // verilator lint_off ASSIGNEQEXPR
    initial begin
       a = 10;
       i = (a = 2);

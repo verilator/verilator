@@ -4,7 +4,7 @@
 // any use, without warranty, 2023 by Antmicro Ltd.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
    class bar #(type T) extends T;
    endclass

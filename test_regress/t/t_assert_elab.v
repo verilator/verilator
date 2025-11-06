@@ -5,19 +5,23 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   localparam str = "string";
+   localparam STR = "string";
    function logic checkParameter(input logic [8:0] N);
-      $display("x is %d.", N);
+      $info("For %m, x is %d.", N);
       if (N == 1)
         return 0;
-      $fatal(1, "Parameter %d is invalid...%s and %s", N, str, "constant both work");
+      $fatal(1, "Parameter %d is invalid...%s and %s", N, STR, "constant both work");
    endfunction
 
 `ifdef FAILING_ASSERTIONS
-   localparam x = checkParameter(5);
+   localparam X = checkParameter(5);
 `else
-   localparam x = checkParameter(1);
+   localparam X = checkParameter(1);
 `endif
+
+   generate
+      $info("%m: In generate");  // Issue 6445
+   endgenerate
 
    initial begin
       $write("*-* All Finished *-*\n");

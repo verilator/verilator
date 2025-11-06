@@ -111,8 +111,8 @@ class OrderMoveDomScope final {
         struct Hash final {
             size_t operator()(const DomScopeMapKey& key) const {
                 // cppcheck-suppress unreadVariable  // cppcheck bug
-                V3Hash hash{reinterpret_cast<uint64_t>(key.m_domainp)};
-                hash += reinterpret_cast<uint64_t>(key.m_scopep);
+                V3Hash hash{key.m_domainp};
+                hash += key.m_scopep;
                 return hash.value();
             }
         };

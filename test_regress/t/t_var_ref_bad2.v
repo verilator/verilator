@@ -7,7 +7,7 @@
 // Make sure type errors aren't suppressable
 // verilator lint_off WIDTH
 
-module t(/*AUTOARG*/);
+module t;
 
    task checkset(const ref int bad_const_set);
       bad_const_set = 32'h4567;  // Bad setting const

@@ -34,7 +34,7 @@ void V3Waiver::addEntry(V3ErrorCode errorCode, const std::string& filename, cons
     string trimmsg = msg;
     if (!v3Global.opt.waiverMultiline()) {
         const size_t pos = trimmsg.find('\n');
-        trimmsg = trimmsg.substr(0, pos);
+        trimmsg.resize(pos);
         if (pos != std::string::npos) trimmsg += '*';
     }
     {  // Remove line numbers and context "\n [0-9] | ", "\n  ^[~]+"

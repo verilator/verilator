@@ -1,0 +1,12 @@
+%Error: t/t_string_add_bad.v:13:9: Operator ADD is not legal on string data types (IEEE 1800-2023 6.16)
+                                 : ... note: In instance 't'
+                                 : ... Suggest to concatenate strings use '{LHS, RHS, ...}'
+   13 |       s += $sformatf(" a%0d", a);   
+      |         ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_string_add_bad.v:14:13: Operator ADD is not legal on string data types (IEEE 1800-2023 6.16)
+                                  : ... note: In instance 't'
+                                  : ... Suggest to concatenate strings use '{LHS, RHS, ...}'
+   14 |       s = s + s;   
+      |             ^
+%Error: Exiting due to

@@ -35,7 +35,7 @@ endclass
 virtual class VC;
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 endmodule
 
 typedef class uvm_root;

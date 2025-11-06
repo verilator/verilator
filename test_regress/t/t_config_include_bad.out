@@ -1,4 +1,4 @@
-%Error-UNSUPPORTED: t/t_config_include_bad.v:7:1: Unsupported: Verilog 2001-config lib.map reserved word not implemented: 'include'
+%Error-UNSUPPORTED: t/t_config_include_bad.v:7:1: Unsupported: IEEE 1800-2001-config lib.map reserved word not implemented: 'include'
                                                 : ... Suggest unless in a lib.map file, want `include instead
     7 | include "meant_to_tick_include.v"
       | ^~~~~~~

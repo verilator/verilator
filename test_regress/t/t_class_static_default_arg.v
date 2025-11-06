@@ -10,7 +10,7 @@ class Foo;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    initial begin
       bit first;

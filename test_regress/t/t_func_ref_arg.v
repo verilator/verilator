@@ -28,7 +28,7 @@ class Cls;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    int a, b;
    int arr[1];
    Cls cls;

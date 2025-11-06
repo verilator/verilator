@@ -156,7 +156,7 @@ or "`ifdef`"'s may break other tools.
 
    .. t_dist_docs_style restart_sort
 
-.. option:: $c([string], ...);
+.. option:: $c([string], ...);, $cpure([string], ...);
 
    The string will be embedded directly in the output C++ code at the point
    where the surrounding Verilog code is compiled.  It may either be a
@@ -195,6 +195,11 @@ or "`ifdef`"'s may break other tools.
    the output, e.g., :code:`signal_32_bits = $c32("...");`.  This allows for
    compatibility with other simulators, which require a differently named
    PLI function name for each different output width.
+
+   `$cpure` is similar to `$c` except that it indicates the
+   expression is pure, versus `$c` which is assumed impure.
+   `$cpure` is for internal use only, and it might change
+   without notice in any future version or Verilator.
 
 .. option:: $display, $write, $fdisplay, $fwrite, $sformat, $swrite
 
@@ -240,7 +245,7 @@ or "`ifdef`"'s may break other tools.
          reg enable_r /*verilator clock_enable*/;
          wire gated_clk = clk & enable_r;
          always_ff @(posedge clk)
-            enable_r <= enable_early;
+           enable_r <= enable_early;
 
    The clock_enable attribute will cause the clock gate to be ignored in
    the scheduling algorithm, sometimes required for correct clock behavior,
@@ -254,6 +259,10 @@ or "`ifdef`"'s may break other tools.
 .. option:: /*verilator&32;clocker*/
 
 .. option:: /*verilator&32;no_clocker*/
+
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.042:
 
    Specifies whether the signal is used as clock or not. See :vlopt:`--clk`.
 
@@ -331,8 +340,8 @@ or "`ifdef`"'s may break other tools.
          // Note the placement of the semicolon above
          always_comb begin
            if (....) begin
-              splitme = ....;
-              other assignments
+             splitme = ....;
+             other assignments
            end
          end
 
@@ -346,27 +355,32 @@ or "`ifdef`"'s may break other tools.
          // All assignments excluding those to splitme
          always_comb begin
            if (....) begin
-              other assignments
+             other assignments
            end
          end
          // All assignments to splitme
          always_comb begin
            if (....) begin
-              splitme = ....;
+             splitme = ....;
            end
          end
 
    Same as :option:`isolate_assignments` control file option.
 
-.. option:: /*verilator&32;lint_off <msg>*/
+.. option:: /*verilator&32;lint_off <msgs>*/
 
-   Disable the specified warning message for any warnings following the
-   comment.
+   Disable the specified warning message(s) for any warnings following the
+   comment.  Multiple messages may be specified, separated with commas.
 
-.. option:: /*verilator&32;lint_on <msg>*/
+   If a one-line slash-slash-format comment is used, then the metacomment
+   ends at the newline or at an earlier next slash-slash. This allow
+   commenting the reason for the disable, e.g. :code:`// verilator lint_off
+   MSG // Because...`.
 
-   Re-enable the specified warning message for any warnings following the
-   comment.
+.. option:: /*verilator&32;lint_on <msgs>*/
+
+   Re-enable the specified warning message(s) for any warnings following
+   the comment.  Multiple messages may be specified, separated with commas.
 
 .. option:: /*verilator&32;lint_restore*/
 
@@ -505,13 +519,16 @@ or "`ifdef`"'s may break other tools.
 
    Same as :option:`public_flat_rd` control file option.
 
-.. option:: /*verilator&32;public_flat_rw @(<edge_list>)*/ (on variable)
+.. option:: /*verilator&32;public_flat_rw [@(<edge_list>)]*/ (on variable)
 
-   Used after an input, output, register, or wire declaration to indicate
-   the signal should be declared public_flat_rd (see above), and writable,
-   where writes should be considered to have the timing specified by the
-   given sensitivity edge list. Use of this is implied when using the
-   :vlopt:`--public-flat-rw` option.
+   Used after an input, output, register, or wire declaration to indicate the
+   signal should be declared public_flat_rd (see above), and writable. Use of
+   this is implied when using the :vlopt:`--public-flat-rw` option.
+
+   The edge list is optional and has no effect (is ignored). Prior to
+   Verilator 5.024 the edge list specified the timing when writes took
+   place. This is no longer necessary and is accepted only for
+   compatibility.
 
    Same as :option:`public_flat_rw` control file option.
 

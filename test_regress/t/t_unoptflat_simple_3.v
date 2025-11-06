@@ -15,10 +15,6 @@ module t (/*AUTOARG*/
 
    wire [2:0] x;
 
-   initial begin
-      x = 3'b000;
-   end
-
    test1 test1i ( .clk     (clk),
                   .xvecin  (x[1:0]),
                   .xvecout (x[2:1]));

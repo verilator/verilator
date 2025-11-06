@@ -6,7 +6,7 @@
 
 `define STRINGIFY(x) `"x`"
 
-module t(/*AUTOARG*/);
+module t;
    int sig;
    initial begin
       sig = 10;

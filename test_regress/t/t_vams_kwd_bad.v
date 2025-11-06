@@ -6,7 +6,7 @@
 
 `begin_keywords "VAMS-2.3"
 
-module t (/*AUTOARG*/);
+module t;
 
    // Just get errors on bad keywords (for code coverage)
    int above;

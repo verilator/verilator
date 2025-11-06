@@ -157,61 +157,12 @@ public:
             if (!childp->completed()) return false;
         return true;
     }
+
+    std::string randstate() const VL_MT_UNSAFE;
+    void randstate(const std::string& state) VL_MT_UNSAFE;
 };
 
 inline std::string VL_TO_STRING(const VlProcessRef& p) { return std::string("process"); }
-
-//===================================================================
-// Activity trigger vector
-
-template <std::size_t N_Size>  //
-class VlTriggerVec final {
-    // TODO: static assert N_Size > 0, and don't generate when empty
-
-    // MEMBERS
-    alignas(16) std::array<uint64_t, roundUpToMultipleOf<64>(N_Size) / 64> m_flags;  // The flags
-
-public:
-    // CONSTRUCTOR
-    VlTriggerVec() { clear(); }
-    ~VlTriggerVec() = default;
-
-    // METHODS
-
-    // Set all elements to false
-    void clear() { m_flags.fill(0); }
-
-    // Word at given 'wordIndex'
-    uint64_t word(size_t wordIndex) const { return m_flags[wordIndex]; }
-
-    // Set specified word to given value
-    void setWord(size_t wordIndex, uint64_t value) { m_flags[wordIndex] = value; }
-
-    // Set specified bit to given value
-    void setBit(size_t index, bool value) {
-        uint64_t& w = m_flags[index / 64];
-        const size_t bitIndex = index % 64;
-        w &= ~(1ULL << bitIndex);
-        w |= (static_cast<uint64_t>(value) << bitIndex);
-    }
-
-    // Return true iff at least one element is set
-    bool any() const {
-        for (size_t i = 0; i < m_flags.size(); ++i)
-            if (m_flags[i]) return true;
-        return false;
-    }
-
-    // Set all elements true in 'this' that are set in 'other'
-    void thisOr(const VlTriggerVec<N_Size>& other) {
-        for (size_t i = 0; i < m_flags.size(); ++i) m_flags[i] |= other.m_flags[i];
-    }
-
-    // Set elements of 'this' to 'a & !b' element-wise
-    void andNot(const VlTriggerVec<N_Size>& a, const VlTriggerVec<N_Size>& b) {
-        for (size_t i = 0; i < m_flags.size(); ++i) m_flags[i] = a.m_flags[i] & ~b.m_flags[i];
-    }
-};
 
 //===================================================================
 // SystemVerilog event type
@@ -495,11 +446,11 @@ public:
 private:
     // MEMBERS
     Deque m_deque;  // State of the assoc array
-    T_Value m_defaultValue;  // Default value
+    T_Value m_defaultValue{};  // Default value
 
 public:
     // CONSTRUCTORS
-    // cppcheck-suppress uninitMember // m_defaultValue isn't defaulted, caller's constructor must
+    // cppcheck-suppress uninitMemberVar // m_defaultValue isn't defaulted, caller must
     VlQueue() = default;
     ~VlQueue() = default;
     VlQueue(const VlQueue&) = default;
@@ -621,11 +572,8 @@ public:
     T_Value& atWriteAppend(int32_t index) {
         // cppcheck-suppress variableScope
         static thread_local T_Value t_throwAway;
+        if (index == m_deque.size()) push_back(atDefault());
         if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) {
-            if (index == m_deque.size()) {
-                push_back(atDefault());
-                return m_deque[index];
-            }
             t_throwAway = atDefault();
             return t_throwAway;
         }
@@ -917,7 +865,7 @@ public:
             out += comma + VL_TO_STRING(i);
             comma = ", ";
         }
-        return out + "} ";
+        return out + "}";
     }
 };
 
@@ -1126,7 +1074,7 @@ public:
             = std::find_if(m_map.cbegin(), m_map.cend(), [=](const std::pair<T_Key, T_Value>& i) {
                   return with_func(i.first, i.second);
               });
-        if (it == m_map.end()) return VlQueue<T_Value>{};
+        if (it == m_map.end()) return VlQueue<T_Key>{};
         return VlQueue<T_Key>::consV(it->first);
     }
     template <typename T_Func>
@@ -1142,7 +1090,7 @@ public:
         const auto it = std::find_if(
             m_map.crbegin(), m_map.crend(),
             [=](const std::pair<T_Key, T_Value>& i) { return with_func(i.first, i.second); });
-        if (it == m_map.rend()) return VlQueue<T_Value>{};
+        if (it == m_map.rend()) return VlQueue<T_Key>{};
         return VlQueue<T_Key>::consV(it->first);
     }
 
@@ -1229,8 +1177,8 @@ public:
         return out;
     }
     template <typename T_Func>
-    T_Value r_or(T_Func with_func) const {
-        T_Value out = T_Value(0);
+    WithFuncReturnType<T_Func> r_or(T_Func with_func) const {
+        WithFuncReturnType<T_Func> out = WithFuncReturnType<T_Func>(0);
         for (const auto& i : m_map) out |= with_func(i.first, i.second);
         return out;
     }
@@ -1256,7 +1204,7 @@ public:
             comma = ", ";
         }
         // Default not printed - maybe random init data
-        return out + "} ";
+        return out + "}";
     }
 };
 
@@ -1313,6 +1261,9 @@ class VlUnpacked final {
     using Unpacked = T_Value[N_Depth];
 
 public:
+    template <typename T_Func>
+    using WithFuncReturnType = decltype(std::declval<T_Func>()(0, std::declval<T_Value>()));
+
     // MEMBERS
     // This should be the only data member, otherwise generated static initializers need updating
     Unpacked m_storage;  // Contents of the unpacked array
@@ -1561,6 +1512,64 @@ public:
         return VlQueue<T_Value>::consV(*it);
     }
 
+    T_Value r_sum() const {
+        T_Value out(0);  // Type must have assignment operator
+        for (const auto& i : m_storage) out += i;
+        return out;
+    }
+    template <typename T_Func>
+    WithFuncReturnType<T_Func> r_sum(T_Func with_func) const {
+        WithFuncReturnType<T_Func> out
+            = WithFuncReturnType<T_Func>(0);  // Type must have assignment operator
+        for (const auto& i : m_storage) out += with_func(0, i);
+        return out;
+    }
+    T_Value r_product() const {
+        T_Value out = T_Value(1);
+        for (const auto& i : m_storage) out *= i;
+        return out;
+    }
+    template <typename T_Func>
+    WithFuncReturnType<T_Func> r_product(T_Func with_func) const {
+        WithFuncReturnType<T_Func> out = WithFuncReturnType<T_Func>(1);
+        for (const auto& i : m_storage) out *= with_func(0, i);
+        return out;
+    }
+    T_Value r_and() const {
+        if (m_storage.empty()) return T_Value(0);  // The big three do it this way
+        T_Value out = ~T_Value(0);
+        for (const auto& i : m_storage) out &= i;
+        return out;
+    }
+    template <typename T_Func>
+    WithFuncReturnType<T_Func> r_and(T_Func with_func) const {
+        WithFuncReturnType<T_Func> out = ~WithFuncReturnType<T_Func>(0);
+        for (const auto& i : m_storage) out &= with_func(0, i);
+        return out;
+    }
+    T_Value r_or() const {
+        T_Value out = T_Value(0);
+        for (const auto& i : m_storage) out |= i;
+        return out;
+    }
+    template <typename T_Func>
+    WithFuncReturnType<T_Func> r_or(T_Func with_func) const {
+        WithFuncReturnType<T_Func> out = WithFuncReturnType<T_Func>(0);
+        for (const auto& i : m_storage) out |= with_func(0, i);
+        return out;
+    }
+    T_Value r_xor() const {
+        T_Value out = T_Value(0);
+        for (const auto& i : m_storage) out ^= i;
+        return out;
+    }
+    template <typename T_Func>
+    WithFuncReturnType<T_Func> r_xor(T_Func with_func) const {
+        WithFuncReturnType<T_Func> out = WithFuncReturnType<T_Func>(0);
+        for (const auto& i : m_storage) out ^= with_func(0, i);
+        return out;
+    }
+
     // Dumping. Verilog: str = $sformatf("%p", assoc)
     std::string to_string() const {
         std::string out = "'{";
@@ -1569,7 +1578,7 @@ public:
             out += comma + VL_TO_STRING(m_storage[i]);
             comma = ", ";
         }
-        return out + "} ";
+        return out + "}";
     }
 
 private:

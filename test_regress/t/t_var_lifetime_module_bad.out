@@ -1,0 +1,5 @@
+%Error: t/t_var_lifetime_module_bad.v:8:17: Module variables cannot have automatic lifetime (IEEE 1800-2023 6.21): 'i'
+    8 |   automatic int i;
+      |                 ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

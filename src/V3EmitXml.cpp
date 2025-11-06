@@ -126,25 +126,26 @@ class EmitXmlFileVisitor final : public VNVisitorConst {
         }
         puts("</if>\n");
     }
-    void visit(AstWhile* nodep) override {
-        outputTag(nodep, "while");
+    void visit(AstLoop* nodep) override {
+        outputTag(nodep, "loop");
         puts(">\n");
-        if (nodep->condp()) {
-            puts("<begin>\n");
-            iterateAndNextConstNull(nodep->condp());
-            puts("</begin>\n");
-        }
         if (nodep->stmtsp()) {
             puts("<begin>\n");
             iterateAndNextConstNull(nodep->stmtsp());
             puts("</begin>\n");
         }
-        if (nodep->incsp()) {
+        if (nodep->contsp()) {
             puts("<begin>\n");
-            iterateAndNextConstNull(nodep->incsp());
+            iterateAndNextConstNull(nodep->contsp());
             puts("</begin>\n");
         }
-        puts("</while>\n");
+        puts("</loop>\n");
+    }
+    void visit(AstLoopTest* nodep) override {
+        outputTag(nodep, "looptest");
+        puts(">\n");
+        iterateAndNextConstNull(nodep->condp());
+        puts("</looptest>\n");
     }
     void visit(AstNetlist* nodep) override {
         puts("<netlist>\n");
@@ -198,11 +199,6 @@ class EmitXmlFileVisitor final : public VNVisitorConst {
         puts(" origName=");
         putsQuoted(nodep->origName());
         // Attributes
-        if (nodep->attrClocker() == VVarAttrClocker::CLOCKER_YES) {
-            puts(" clocker=\"true\"");
-        } else if (nodep->attrClocker() == VVarAttrClocker::CLOCKER_NO) {
-            puts(" clocker=\"false\"");
-        }
         if (nodep->attrIsolateAssign()) puts(" isolate_assignments=\"true\"");
         if (nodep->isLatched()) puts(" latched=\"true\"");
         if (nodep->isSigPublic()) puts(" public=\"true\"");
@@ -384,9 +380,8 @@ class HierCellsXmlVisitor final : public VNVisitorConst {
             && nodep->level() <= 2) {  // ==2 because we don't add wrapper when in XML mode
             m_os << "<cells>\n";
             m_os << "<cell " << nodep->fileline()->xmlDetailedLocation()  //
-                 << " name=\"" << nodep->prettyName() << "\""
-                 << " submodname=\"" << nodep->prettyName() << "\""
-                 << " hier=\"" << nodep->prettyName() << "\"";
+                 << " name=\"" << nodep->prettyName() << "\"" << " submodname=\""
+                 << nodep->prettyName() << "\"" << " hier=\"" << nodep->prettyName() << "\"";
             m_hier = nodep->prettyName() + ".";
             m_hasChildren = false;
             iterateChildrenConst(nodep);
@@ -402,9 +397,8 @@ class HierCellsXmlVisitor final : public VNVisitorConst {
         if (nodep->modp() && nodep->modp()->dead()) return;
         if (!m_hasChildren) m_os << ">\n";
         m_os << "<cell " << nodep->fileline()->xmlDetailedLocation() << " name=\"" << nodep->name()
-             << "\""
-             << " submodname=\"" << nodep->modName() << "\""
-             << " hier=\"" << m_hier + nodep->name() << "\"";
+             << "\"" << " submodname=\"" << nodep->modName() << "\"" << " hier=\""
+             << m_hier + nodep->name() << "\"";
         const std::string hier = m_hier;
         m_hier += nodep->name() + ".";
         m_hasChildren = false;
@@ -416,6 +410,11 @@ class HierCellsXmlVisitor final : public VNVisitorConst {
         }
         m_hier = hier;
         m_hasChildren = true;
+    }
+    void visit(AstGenBlock* nodep) override {
+        VL_RESTORER(m_hier);
+        if (nodep->name() != "") m_hier += nodep->name() + ".";
+        iterateChildrenConst(nodep);
     }
     void visit(AstBegin* nodep) override {
         VL_RESTORER(m_hier);

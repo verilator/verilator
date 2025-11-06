@@ -49,64 +49,80 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 
 class CaseLintVisitor final : public VNVisitorConst {
-    const AstNodeCase* m_caseExprp
-        = nullptr;  // Under a CASE value node, if so the relevant case statement
+    // Under a CASE value node, if so the relevant case statement
+    const AstNode* m_casep = nullptr;
 
     // METHODS
+    template <typename CaseItem>
+    static void detectMultipleDefaults(CaseItem* itemsp) {
+        bool hitDefault = false;
+        for (CaseItem* itemp = itemsp; itemp; itemp = AstNode::as<CaseItem>(itemp->nextp())) {
+            if (!itemp->isDefault()) continue;
+            if (hitDefault) itemp->v3error("Multiple default statements in case statement.");
+            hitDefault = true;
+        }
+    }
 
-    void visit(AstNodeCase* nodep) override {
-        if (VN_IS(nodep, Case) && VN_AS(nodep, Case)->casex()) {
+    template <typename CaseItem>
+    void checkXZinNonCaseX(AstNode* casep, AstNodeExpr* exprp, CaseItem* itemsp) {
+        VL_RESTORER(m_casep);
+        m_casep = casep;
+        iterateConst(exprp);
+        for (CaseItem* itemp = itemsp; itemp; itemp = AstNode::as<CaseItem>(itemp->nextp())) {
+            iterateAndNextConstNull(itemp->condsp());
+        }
+    }
+
+    // VISITORS
+    void visit(AstGenCase* nodep) override {
+        // Detect multiple defaults
+        detectMultipleDefaults(nodep->itemsp());
+        // Check for X/Z in non-casex statements
+        checkXZinNonCaseX(nodep, nodep->exprp(), nodep->itemsp());
+    }
+
+    void visit(AstCase* nodep) override {
+        if (nodep->casex()) {
             nodep->v3warn(CASEX, "Suggest casez (with ?'s) in place of casex (with X's)");
         }
         // Detect multiple defaults
-        bool hitDefault = false;
-        for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), CaseItem)) {
-            if (itemp->isDefault()) {
-                if (hitDefault) {
-                    itemp->v3error("Multiple default statements in case statement.");
-                }
-                hitDefault = true;
-            }
-        }
-
+        detectMultipleDefaults(nodep->itemsp());
         // Check for X/Z in non-casex statements
-        {
-            VL_RESTORER(m_caseExprp);
-            m_caseExprp = nodep;
-            iterateConst(nodep->exprp());
-            for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-                 itemp = VN_AS(itemp->nextp(), CaseItem)) {
-                iterateAndNextConstNull(itemp->condsp());
-            }
-        }
+        checkXZinNonCaseX(nodep, nodep->exprp(), nodep->itemsp());
     }
     void visit(AstConst* nodep) override {
-        // See also neverItem
-        if (m_caseExprp && nodep->num().isFourState()) {
-            if (VN_IS(m_caseExprp, GenCase)) {
-                nodep->v3error("Use of x/? constant in generate case statement, "
-                               "(no such thing as 'generate casez')");
-            } else if (VN_IS(m_caseExprp, Case) && VN_AS(m_caseExprp, Case)->casex()) {
-                // Don't sweat it, we already complained about casex in general
-            } else if (VN_IS(m_caseExprp, Case)
-                       && (VN_AS(m_caseExprp, Case)->casez()
-                           || VN_AS(m_caseExprp, Case)->caseInside())) {
-                if (nodep->num().isAnyX()) {
-                    nodep->v3warn(CASEWITHX, "Use of x constant in casez statement, "
-                                             "(perhaps intended ?/z in constant)");
-                }
-            } else {
-                nodep->v3warn(CASEWITHX, "Use of x/? constant in case statement, "
-                                         "(perhaps intended casex/casez)");
-            }
+        if (!nodep->num().isFourState()) return;
+
+        // Error if generate case
+        if (VN_IS(m_casep, GenCase)) {
+            nodep->v3error("Use of x/? constant in generate case statement, "
+                           "(no such thing as 'generate casez')");
+            return;
         }
+
+        // Otherwise must be a case statement
+        const AstCase* const casep = VN_AS(m_casep, Case);
+
+        // Don't sweat it, we already complained about casex in general
+        if (casep->casex()) return;
+
+        if (casep->casez() || casep->caseInside()) {
+            if (nodep->num().isAnyX()) {
+                nodep->v3warn(CASEWITHX, "Use of x constant in casez statement, "
+                                         "(perhaps intended ?/z in constant)");
+            }
+            return;
+        }
+
+        nodep->v3warn(CASEWITHX, "Use of x/? constant in case statement, "
+                                 "(perhaps intended casex/casez)");
     }
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit CaseLintVisitor(AstNodeCase* nodep) { iterateConst(nodep); }
+    explicit CaseLintVisitor(AstCase* nodep) { iterateConst(nodep); }
+    explicit CaseLintVisitor(AstGenCase* nodep) { iterateConst(nodep); }
     ~CaseLintVisitor() override = default;
 };
 
@@ -127,9 +143,11 @@ class CaseVisitor final : public VNVisitor {
     // Per-CASE
     int m_caseWidth = 0;  // Width of valueItems
     int m_caseItems = 0;  // Number of caseItem unique values
+    bool m_caseIncomplete = false;  // Proven incomplete
     bool m_caseNoOverlapsAllCovered = false;  // Proven to be synopsys parallel_case compliant
     // For each possible value, the case branch we need
     std::array<AstNode*, 1 << CASE_OVERLAP_WIDTH> m_valueItem;
+    bool m_needToClearCache = false;  // Whether cache needs to be cleared
 
     // METHODS
     //! Determine whether we should check case items are complete
@@ -162,6 +180,7 @@ class CaseVisitor final : public VNVisitor {
                     if (!m_valueItem[i]) {
                         nodep->v3warn(CASEINCOMPLETE, "Enum item " << itemp->prettyNameQ()
                                                                    << " not covered by case\n");
+                        m_caseIncomplete = true;
                         return false;  // enum has uncovered value by case items
                     }
                 }
@@ -290,6 +309,7 @@ class CaseVisitor final : public VNVisitor {
                         nodep->v3warn(CASEINCOMPLETE, "Case values incompletely covered "
                                                       "(example pattern 0x"
                                                           << std::hex << i << ")");
+                        m_caseIncomplete = true;
                         m_caseNoOverlapsAllCovered = false;
                         return false;
                     }
@@ -308,7 +328,7 @@ class CaseVisitor final : public VNVisitor {
         for (uint32_t i = 0; i < numCases; ++i) {
             if (AstNode* const condp = m_valueItem[i]) {
                 const AstCaseItem* const caseItemp = caseItemMap[condp];
-                UASSERT(caseItemp, "caseItemp should exist");
+                UASSERT_OBJ(caseItemp, condp, "caseItemp should exist");
                 m_valueItem[i] = caseItemp->stmtsp();
             }
         }
@@ -371,7 +391,14 @@ class CaseVisitor final : public VNVisitor {
         // CASEx(cexpr,....
         // ->  tree of IF(msb,  IF(msb-1, 11, 10)
         //                      IF(msb-1, 01, 00))
-        AstNodeExpr* const cexprp = nodep->exprp()->unlinkFrBack();
+        AstNodeExpr* cexprp;
+        AstExprStmt* cexprStmtp = nullptr;
+        if (nodep->exprp()->isPure()) {
+            cexprp = nodep->exprp()->unlinkFrBack();
+        } else {
+            cexprStmtp = VN_AS(nodep->exprp()->unlinkFrBack(), ExprStmt);
+            cexprp = cexprStmtp->resultp()->cloneTreePure(false);
+        }
 
         if (debug() >= 9) {  // LCOV_EXCL_START
             for (uint32_t i = 0; i < (1UL << m_caseWidth); ++i) {
@@ -386,6 +413,14 @@ class CaseVisitor final : public VNVisitor {
 
         AstNode::user3ClearTree();
         AstNode* ifrootp = replaceCaseFastRecurse(cexprp, m_caseWidth - 1, 0UL);
+        if (cexprStmtp) {
+            cexprStmtp->resultp()->unlinkFrBack()->deleteTree();
+            AstIf* const ifp = VN_AS(ifrootp, If);
+            cexprStmtp->resultp(ifp->condp()->unlinkFrBack());
+            ifp->condp(cexprStmtp);
+            m_needToClearCache = true;
+        }
+
         // Case expressions can't be linked twice, so clone them
         if (ifrootp && !ifrootp->user3()) ifrootp = ifrootp->cloneTree(true);
 
@@ -404,7 +439,14 @@ class CaseVisitor final : public VNVisitor {
         // ->  IF((cexpr==icond1),istmts1,
         //                       IF((EQ (AND MASK cexpr) (AND MASK icond1)
         //                              ,istmts2, istmts3
-        AstNodeExpr* const cexprp = nodep->exprp()->unlinkFrBack();
+        AstNodeExpr* cexprp;
+        AstExprStmt* cexprStmtp = nullptr;
+        if (nodep->exprp()->isPure()) {
+            cexprp = nodep->exprp()->unlinkFrBack();
+        } else {
+            cexprStmtp = VN_AS(nodep->exprp(), ExprStmt)->unlinkFrBack();
+            cexprp = cexprStmtp->resultp()->cloneTreePure(false);
+        }
         // We'll do this in two stages.  First stage, convert the conditions to
         // the appropriate IF AND terms.
         UINFOTREE(9, nodep, "", "_comp_IN::");
@@ -434,8 +476,10 @@ class CaseVisitor final : public VNVisitor {
                         condp = new AstConst{itemp->fileline(), AstConst::BitFalse{}};
                     } else if (AstInsideRange* const irangep = VN_CAST(icondp, InsideRange)) {
                         // Similar logic in V3Width::visit(AstInside)
-                        condp = irangep->newAndFromInside(cexprp, irangep->lhsp()->unlinkFrBack(),
+                        condp = irangep->newAndFromInside(cexprp->cloneTreePure(true),
+                                                          irangep->lhsp()->unlinkFrBack(),
                                                           irangep->rhsp()->unlinkFrBack());
+                        VL_DO_DANGLING(icondp->deleteTree(), icondp);
                     } else if (iconstp && iconstp->num().isFourState()
                                && (nodep->casex() || nodep->casez() || nodep->caseInside())) {
                         V3Number nummask{itemp, iconstp->width()};
@@ -482,7 +526,7 @@ class CaseVisitor final : public VNVisitor {
         // should pull out the most common item from here and instead make
         // it the first IF branch.
         int depth = 0;
-        AstNode* grouprootp = nullptr;
+        AstIf* grouprootp = nullptr;
         AstIf* groupnextp = nullptr;
         AstIf* itemnextp = nullptr;
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
@@ -531,6 +575,12 @@ class CaseVisitor final : public VNVisitor {
         if (grouprootp) {
             UINFOTREE(9, grouprootp, "", "_new");
             nodep->replaceWith(grouprootp);
+            if (cexprStmtp) {
+                pushDeletep(cexprStmtp->resultp()->unlinkFrBack());
+                cexprStmtp->resultp(grouprootp->condp()->unlinkFrBack());
+                grouprootp->condp(cexprStmtp);
+                m_needToClearCache = true;
+            }
         } else {
             nodep->unlinkFrBack();
         }
@@ -561,7 +611,8 @@ class CaseVisitor final : public VNVisitor {
 
     // VISITORS
     void visit(AstCase* nodep) override {
-        V3Case::caseLint(nodep);
+        VL_RESTORER(m_caseIncomplete);
+        { CaseLintVisitor{nodep}; }
         iterateChildren(nodep);
         UINFOTREE(9, nodep, "", "case_old");
         if (isCaseTreeFast(nodep) && v3Global.opt.fCase()) {
@@ -571,7 +622,8 @@ class CaseVisitor final : public VNVisitor {
             VL_DO_DANGLING(replaceCaseFast(nodep), nodep);
         } else {
             // If a case statement is whole, presume signals involved aren't forming a latch
-            if (m_alwaysp) m_alwaysp->fileline()->warnOff(V3ErrorCode::LATCH, true);
+            if (m_alwaysp && !m_caseIncomplete)
+                m_alwaysp->fileline()->warnOff(V3ErrorCode::LATCH, true);
             ++m_statCaseSlow;
             VL_DO_DANGLING(replaceCaseComplicated(nodep), nodep);
         }
@@ -589,6 +641,7 @@ public:
     explicit CaseVisitor(AstNetlist* nodep) {
         for (auto& itr : m_valueItem) itr = nullptr;
         iterate(nodep);
+        if (m_needToClearCache) VIsCached::clearCacheTree();
     }
     ~CaseVisitor() override {
         V3Stats::addStat("Optimizations, Cases parallelized", m_statCaseFast);
@@ -604,7 +657,7 @@ void V3Case::caseAll(AstNetlist* nodep) {
     { CaseVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("case", 0, dumpTreeEitherLevel() >= 3);
 }
-void V3Case::caseLint(AstNodeCase* nodep) {
+void V3Case::caseLint(AstGenCase* nodep) {
     UINFO(4, __FUNCTION__ << ": ");
     { CaseLintVisitor{nodep}; }
 }

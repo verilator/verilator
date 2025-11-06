@@ -13,7 +13,7 @@
 
 module t;
    integer file;
-   integer file_a[0];
+   integer file_a[1];
 
    integer      chars;
    reg [1*8:1]  letterl;

@@ -489,7 +489,7 @@ int V3Os::system(const string& command) {
     const int ret = ::system(command.c_str());
     if (VL_UNCOVERABLE(ret == -1)) {
         v3fatal("Failed to execute command:"  // LCOV_EXCL_LINE
-                << command << " " << std::strerror(errno));
+                << command << " " << std::strerror(errno));  // LCOV_EXCL_LINE
         return -1;  // LCOV_EXCL_LINE
     } else {
         UASSERT(WIFEXITED(ret), "system(" << command << ") returned unexpected value of " << ret);

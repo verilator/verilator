@@ -15,7 +15,7 @@ test.compile(verilator_flags2=["--x-initial unique"])
 
 test.execute()
 
-files = glob.glob(test.obj_dir + "/" + test.vm_prefix + "___024root__DepSet_*__Slow.cpp")
+files = glob.glob(test.obj_dir + "/" + test.vm_prefix + "___024root__*__Slow.cpp")
 test.file_grep_any(files, r"VL_SCOPED_RAND_RESET")
 
 test.passes()

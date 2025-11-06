@@ -6,7 +6,7 @@
 
 typedef enum {efgh} en;
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       en e;
       string s;

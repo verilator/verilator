@@ -11,7 +11,7 @@ function int side_effect;
   return 1;
 endfunction
 
-module t (/*AUTOARG*/);
+module t;
    reg [15:0] x;
    reg [15:0] y;
    initial begin

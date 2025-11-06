@@ -5,5 +5,5 @@
 // without warranty, 2023 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t_debug_inputs_a (/*AUTOARG*/);
+module t_debug_inputs_a;
 endmodule

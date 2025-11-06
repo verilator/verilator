@@ -10,6 +10,10 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+
+if test.have_dev_gcov:
+    test.skip("Code coverage build upsets ccache")
+
 test.top_filename = "t_a1_first_cc.v"
 
 if not test.cfg_with_ccache:
@@ -31,8 +35,8 @@ test.files_identical(report, "t/" + test.name + "__ccache_report_initial.out")
 # Now rebuild again (should be all up to date)
 test.run(logfile=test.obj_dir + "/rebuild.log",
          cmd=[
-             "make", "-C " + test.obj_dir, "-f " + test.vm_prefix + ".mk", test.vm_prefix,
-             "ccache-report"
+             os.environ["MAKE"], "-C " + test.obj_dir, "-f " + test.vm_prefix + ".mk",
+             test.vm_prefix, "ccache-report"
          ])
 
 test.files_identical(report, "t/" + test.name + "__ccache_report_rebuild.out")

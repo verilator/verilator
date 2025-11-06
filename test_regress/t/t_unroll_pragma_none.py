@@ -17,6 +17,9 @@ test.compile(verilator_flags2=['--unroll-count 4 --unroll-stmts 9999 --stats -DT
              make_top_shell=False,
              make_main=False)
 
-test.file_grep(test.stats, r'Optimizations, Unrolled Loops\s+(\d+)', 3)
+test.file_grep(test.stats, r'Optimizations, Loop unrolling, Unrolled loops\s+(\d+)', 3)
+test.file_grep(test.stats, r'Optimizations, Loop unrolling, Unrolled iterations\s+(\d+)', 9)
+test.file_grep(test.stats,
+               r'Optimizations, Loop unrolling, Failed - reached --unroll-count\s+(\d+)', 2)
 
 test.passes()

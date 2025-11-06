@@ -20,8 +20,8 @@ package uvm_pkg;
   export "DPI-C" function m__uvm_report_dpi;
   function void m__uvm_report_dpi(int severity, string id, string message, int verbosity,
                                   string filename, int line);
-    $display("UVM Report %s:%d: %s %s", filename, line, id, message);
-  endfunction : m__uvm_report_dpi
+    $display("UVM Report %s:%0d: %s %s", filename, line, id, message);
+  endfunction
 endpackage
 
 module t;
@@ -38,13 +38,17 @@ module t;
     // TODO TEST:
     // extern const char* uvm_dpi_get_next_arg_c(int init);
 
+    //===== Exports
+    uvm_pkg::m__uvm_report_dpi(1, "id", "message", 1, `__FILE__, `__LINE__);
+
     //===== Tool
     s = uvm_dpi_get_tool_name_c();
     $display("uvm_dpi_get_tool_name_c() = %s", s);
     `checks(s, "Verilator");
 
     s = uvm_dpi_get_tool_version_c();
-    $display("uvm_dpi_get_tool_version_c() = %s", s);
+    // - is so doesn't compare in .out file, in case version changes
+    $display("- uvm_dpi_get_tool_version_c() = %s", s);
     if (s == "") $stop;
 
     //===== Regexp

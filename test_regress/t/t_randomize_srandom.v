@@ -79,7 +79,7 @@ class Bar extends Foo;
    endfunction
 endclass
 
-module t(/*AUTOARG*/);
+module t;
 
    Cls ca;
    Cls cb;

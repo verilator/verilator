@@ -6,6 +6,6 @@
 
 typedef sometype;
 
-module t(/*AUTOARG*/);
+module t;
    sometype p;
 endmodule

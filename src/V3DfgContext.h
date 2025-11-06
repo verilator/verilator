@@ -33,9 +33,8 @@
 
 class V3DfgContext;
 
-//////////////////////////////////////////////////////////////////////////////
+//######################################################################
 // Base class for all context objects
-//////////////////////////////////////////////////////////////////////////////
 
 class V3DfgSubContext VL_NOT_FINAL {
     V3DfgContext& m_ctx;  // The whole context
@@ -59,9 +58,8 @@ public:
     const std::string& label() const { return m_label; }
 };
 
-//////////////////////////////////////////////////////////////////////////////
+//######################################################################
 // Contexts for various algorithms - keep sorted
-//////////////////////////////////////////////////////////////////////////////
 
 class V3DfgAstToDfgContext final : public V3DfgSubContext {
     // Only V3DfgContext can create an instance
@@ -158,27 +156,6 @@ private:
         addStat("result equations", m_resultEquations);
     }
 };
-class V3DfgEliminateVarsContext final : public V3DfgSubContext {
-    // Only V3DfgContext can create an instance
-    friend class V3DfgContext;
-
-public:
-    // STATE
-    std::vector<AstNode*> m_deleteps;  // AstVar/AstVarScope that can be deleted at the end
-    VDouble0 m_varsReplaced;  // Number of variables replaced
-    VDouble0 m_varsRemoved;  // Number of variables removed
-
-private:
-    V3DfgEliminateVarsContext(V3DfgContext& ctx, const std::string& label)
-        : V3DfgSubContext{ctx, label, "EliminateVars"} {}
-    ~V3DfgEliminateVarsContext() {
-        for (AstNode* const nodep : m_deleteps) {
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        }
-        addStat("variables replaced", m_varsReplaced);
-        addStat("variables removed", m_varsRemoved);
-    }
-};
 class V3DfgPeepholeContext final : public V3DfgSubContext {
     // Only V3DfgContext can create an instance
     friend class V3DfgContext;
@@ -200,12 +177,28 @@ class V3DfgRegularizeContext final : public V3DfgSubContext {
 
 public:
     // STATE
+    VDouble0 m_temporariesOmitted;  // Number of temporaries omitted as cheaper to re-compute
     VDouble0 m_temporariesIntroduced;  // Number of temporaries introduced
+
+    std::vector<AstNode*> m_deleteps;  // AstVar/AstVarScope that can be deleted at the end
+    VDouble0 m_usedVarsReplaced;  // Number of used variables replaced with equivalent ones
+    VDouble0 m_usedVarsInlined;  // Number of used variables inlined
+    VDouble0 m_unusedRemoved;  // Number of unused vertices remoevd
 
 private:
     V3DfgRegularizeContext(V3DfgContext& ctx, const std::string& label)
         : V3DfgSubContext{ctx, label, "Regularize"} {}
-    ~V3DfgRegularizeContext() { addStat("temporaries introduced", m_temporariesIntroduced); }
+    ~V3DfgRegularizeContext() {
+        for (AstNode* const nodep : m_deleteps) {
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        }
+        addStat("used variables replaced", m_usedVarsReplaced);
+        addStat("used variables inlined", m_usedVarsInlined);
+        addStat("unused vertices removed", m_unusedRemoved);
+
+        addStat("temporaries omitted", m_temporariesOmitted);
+        addStat("temporaries introduced", m_temporariesIntroduced);
+    }
 };
 class V3DfgSynthesisContext final : public V3DfgSubContext {
     // Only V3DfgContext can create an instance
@@ -226,6 +219,7 @@ public:
         VDouble0 nonRepDType;  // Non representable: unsupported data type
         VDouble0 nonRepLValue;  // Non representable: unsupported LValue form
         VDouble0 nonRepVarRef;  // Non representable: unsupported var reference
+        VDouble0 nonRepOOBSel;  // Non representable: out of bounds select
         VDouble0 nonRepNode;  // Non representable: unsupported AstNode type
         VDouble0 nonRepUnknown;  // Non representable: unhandled AstNode type
     } m_conv;
@@ -251,7 +245,13 @@ public:
         // Reverted
         VDouble0 revertNonSyn;  // Reverted due to being driven from non-synthesizable vertex
         VDouble0 revertMultidrive;  // Reverted due to multiple drivers
-
+        // Additional stats
+        VDouble0 cfgTrivial;  // Trivial input CFGs
+        VDouble0 cfgSp;  // Series-paralel input CFGs
+        VDouble0 cfgDag;  // Generic loop free input CFGs
+        VDouble0 cfgCyclic;  // Cyclic input CFGs
+        VDouble0 joinUsingPathPredicate;  // Num control flow joins using full path predicate
+        VDouble0 joinUsingBranchCondition;  // Num Control flow joins using dominating branch cond
     } m_synt;
 
 private:
@@ -266,6 +266,7 @@ private:
         addStat("conv / non-representable (dtype)", m_conv.nonRepDType);
         addStat("conv / non-representable (lhs)", m_conv.nonRepLValue);
         addStat("conv / non-representable (varref)", m_conv.nonRepVarRef);
+        addStat("conv / non-representable (oobsel)", m_conv.nonRepOOBSel);
         addStat("conv / non-representable (node)", m_conv.nonRepNode);
         addStat("conv / non-representable (unknown)", m_conv.nonRepUnknown);
         VDouble0 nConvNonRep;
@@ -273,6 +274,7 @@ private:
         nConvNonRep += m_conv.nonRepDType;
         nConvNonRep += m_conv.nonRepLValue;
         nConvNonRep += m_conv.nonRepVarRef;
+        nConvNonRep += m_conv.nonRepOOBSel;
         nConvNonRep += m_conv.nonRepNode;
         nConvNonRep += m_conv.nonRepUnknown;
         VDouble0 nConvExpect;
@@ -314,12 +316,19 @@ private:
         nSyntExpect -= m_synt.synthAlways;
         nSyntExpect -= m_synt.synthAssign;
         UASSERT(nSyntNonSyn == nSyntExpect, "Inconsistent statistics / synt");
+
+        addStat("synt / input CFG trivial", m_synt.cfgTrivial);
+        addStat("synt / input CFG sp", m_synt.cfgSp);
+        addStat("synt / input CFG dag", m_synt.cfgDag);
+        addStat("synt / input CFG cyclic", m_synt.cfgCyclic);
+
+        addStat("synt / joins using path predicate", m_synt.joinUsingPathPredicate);
+        addStat("synt / joins using branch condition", m_synt.joinUsingBranchCondition);
     }
 };
 
-//////////////////////////////////////////////////////////////////////////////
+//######################################################################
 // Top level V3DfgContext
-//////////////////////////////////////////////////////////////////////////////
 
 class V3DfgContext final {
     const std::string m_label;  // Label to add to stats, etc.
@@ -338,7 +347,6 @@ public:
     V3DfgCseContext m_cseContext0{*this, m_label + " 1st"};
     V3DfgCseContext m_cseContext1{*this, m_label + " 2nd"};
     V3DfgDfgToAstContext m_dfg2AstContext{*this, m_label};
-    V3DfgEliminateVarsContext m_eliminateVarsContext{*this, m_label};
     V3DfgPeepholeContext m_peepholeContext{*this, m_label};
     V3DfgRegularizeContext m_regularizeContext{*this, m_label};
     V3DfgSynthesisContext m_synthContext{*this, m_label};

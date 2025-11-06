@@ -32,7 +32,7 @@ class Cls;
   }
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    Cls obj;
    int res;
 

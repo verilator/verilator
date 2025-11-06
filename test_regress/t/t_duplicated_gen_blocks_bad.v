@@ -4,7 +4,7 @@
 // any use, without warranty, 2024 by Antmicro.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
    parameter X = 2;
    begin : block
    end

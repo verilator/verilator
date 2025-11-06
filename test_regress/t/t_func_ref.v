@@ -20,7 +20,7 @@ function int get_val_set_5(ref int x);
    return y;
 endfunction
 
-module t (/*AUTOARG*/);
+module t;
    int b;
    int arr[1];
    MyInt mi;

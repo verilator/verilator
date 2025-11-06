@@ -11,16 +11,14 @@ import vltest_bootstrap
 
 test.scenarios('dist')
 
-root = ".."
-
-if not os.path.exists(root + "/.git"):
+if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
 ### Must trim output before and after our file list
 warns = {}
 summary = None
 
-status = test.run_capture("cd " + root + " && git ls-files -o --exclude-standard")
+status = test.run_capture("cd " + test.root + " && git ls-files -o --exclude-standard")
 
 if test.verbose:
     print("-ST " + status)

@@ -119,7 +119,7 @@ if(NOT CMAKE_CXX_COMPILER_ID MATCHES MSVC)
     endif()
 endif()
 
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL "AppleClang")
+if(APPLE)
     add_link_options(-Wl,-U,__Z15vl_time_stamp64v,-U,__Z13sc_time_stampv)
 endif()
 

@@ -1,0 +1,48 @@
+---
+# DESCRIPTION: Github actions config
+# This name is key to badges in README.rst, so we use the name build
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+name: RTLMeter PR results
+
+on:
+  workflow_run:
+    workflows: [RTLMeter]
+    types: [completed]
+
+jobs:
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' }}
+    permissions:
+      actions: read
+      pull-requests: write
+    steps:
+      - name: Download report
+        uses: actions/download-artifact@v6
+        with:
+          name: rtlmeter-pr-results
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Download PR number
+        uses: actions/download-artifact@v6
+        with:
+          name: pr-number
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      # Use the Verilator CI app to post the comment
+      - name: Generate access token
+        id: generate-token
+        uses: actions/create-github-app-token@v2.1.4
+        with:
+          app-id: ${{ vars.VERILATOR_CI_ID }}
+          private-key: ${{ secrets.VERILATOR_CI_KEY }}
+          permission-pull-requests: write
+      - name: Comment on PR
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |-
+          ls -la
+          cat report.txt
+          gh pr --repo ${{ github.repository }} comment $(cat pr-number.txt) --body-file report.txt

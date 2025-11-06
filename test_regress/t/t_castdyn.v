@@ -15,7 +15,7 @@ class BasedB extends Base;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    int i;
    int a;
    int ao;

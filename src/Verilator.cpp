@@ -20,6 +20,7 @@
 #include "V3ActiveTop.h"
 #include "V3Assert.h"
 #include "V3AssertPre.h"
+#include "V3AssertProp.h"
 #include "V3Ast.h"
 #include "V3Begin.h"
 #include "V3Branch.h"
@@ -34,6 +35,7 @@
 #include "V3Combine.h"
 #include "V3Common.h"
 #include "V3Const.h"
+#include "V3Control.h"
 #include "V3Coverage.h"
 #include "V3CoverageJoin.h"
 #include "V3Dead.h"
@@ -147,7 +149,7 @@ static void process() {
         V3Error::abortIfErrors();
         if (v3Global.opt.debugExitParse()) {
             cout << "--debug-exit-parse: Exiting after parse\n";
-            std::exit(0);
+            v3Global.vlExit(0);
         }
 
         // Convert parseref's to varrefs, and other directly post parsing fixups
@@ -173,11 +175,12 @@ static void process() {
             V3Error::abortIfErrors();
             if (v3Global.opt.serializeOnly()) emitXmlOrJson();
             cout << "--debug-exit-uvm23: Exiting after UVM-supported pass\n";
-            std::exit(0);
+            v3Global.vlExit(0);
         }
 
         // Remove parameters by cloning modules to de-parameterized versions
         //   This requires some width calculations and constant propagation
+        // No more AstGenCase/AstGenFor/AstGenIf after this
         V3Param::param(v3Global.rootp());
         V3LinkDot::linkDotParamed(v3Global.rootp());  // Cleanup as made new modules
         V3LinkLValue::linkLValue(v3Global.rootp());  // Resolve new VarRefs
@@ -191,11 +194,11 @@ static void process() {
 
         // Create a hierarchical Verilation plan
         if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly()
-            && v3Global.opt.hierarchical()) {
-            V3HierBlockPlan::createPlan(v3Global.rootp());
+            && v3Global.opt.hierarchical() && !v3Global.opt.hierChild()) {
+            V3Hierarchical::createGraph(v3Global.rootp());
             // If a plan is created, further analysis is not necessary.
             // The actual Verilation will be done based on this plan.
-            if (v3Global.hierPlanp()) {
+            if (v3Global.hierGraphp()) {
                 reportStatsIfEnabled();
                 return;
             }
@@ -204,7 +207,7 @@ static void process() {
             V3Error::abortIfErrors();
             if (v3Global.opt.serializeOnly()) emitXmlOrJson();
             cout << "--debug-exit-uvm: Exiting after UVM-supported pass\n";
-            std::exit(0);
+            v3Global.vlExit(0);
         }
 
         // Calculate and check widths, edit tree to TRUNC/EXTRACT any width mismatches
@@ -238,6 +241,8 @@ static void process() {
 
         // Assertion insertion
         //    After we've added block coverage, but before other nasty transforms
+        V3AssertProp::assertPropAll(v3Global.rootp());
+        //
         V3AssertPre::assertPreAll(v3Global.rootp());
         //
         V3Assert::assertAll(v3Global.rootp());
@@ -270,6 +275,7 @@ static void process() {
 
             // Task inlining & pushing BEGINs names to variables/cells
             // Begin processing must be after Param, before module inlining
+            // No more AstGenBlocks after this
             V3Begin::debeginAll(v3Global.rootp());  // Flatten cell names, before inliner
 
             // Expand inouts, stage 2
@@ -336,6 +342,7 @@ static void process() {
             V3Const::constifyAll(v3Global.rootp());
 
             // Flatten hierarchy, creating a SCOPE for each module's usage as a cell
+            // No more AstAlias after linkDotScope
             V3Scope::scopeAll(v3Global.rootp());
             V3LinkDot::linkDotScope(v3Global.rootp());
 
@@ -368,7 +375,7 @@ static void process() {
             // After V3Task so task internal variables will get renamed
             V3Name::nameAll(v3Global.rootp());
 
-            // Loop unrolling & convert FORs to WHILEs
+            // Loop unrolling
             V3Unroll::unrollAll(v3Global.rootp());
 
             // Expand slices of arrays
@@ -455,8 +462,9 @@ static void process() {
 
             // Schedule the logic
             V3Sched::schedule(v3Global.rootp());
+            V3Sched::transformForks(v3Global.rootp());
 
-            // Convert sense lists into IF statements.
+            // Post scheduling transformations - TODO: this should at least be renamed
             V3Clock::clockAll(v3Global.rootp());
 
             // Cleanup any dly vars or other temps that are simple assignments
@@ -590,6 +598,11 @@ static void process() {
 
             // Create AstCUse to determine what class forward declarations/#includes needed in C
             V3CUse::cUseAll();
+
+            // Evaluate cost of a current hierarchical block
+            if (!v3Global.opt.libCreate().empty()) {
+                v3Global.currentHierBlockCost(V3Control::getCurrentHierBlockCost());
+            }
         }
 
         // Output the text
@@ -692,6 +705,7 @@ static bool verilate(const string& argString) {
     if (v3Global.opt.debugSelfTest()) {
         V3Os::selfTest();
         V3Number::selfTest();
+        VCMethod::selfTest();
         VString::selfTest();
         VHashSha256::selfTest();
         VSpellCheck::selfTest();
@@ -734,23 +748,24 @@ static bool verilate(const string& argString) {
 
     V3Error::abortIfWarnings();
 
-    if (v3Global.hierPlanp()) {  // This run is for just write a makefile
+    if (V3HierGraph* const hierGraphp
+        = v3Global.hierGraphp()) {  // This run is for just write a makefile
         UASSERT(v3Global.opt.hierarchical(), "hierarchical must be set");
         UASSERT(!v3Global.opt.hierChild(), "This must not be a hierarchical-child run");
         UASSERT(v3Global.opt.hierBlocks().empty(), "hierarchical-block must not be set");
         if (v3Global.opt.gmake()) {
-            v3Global.hierPlanp()->writeCommandArgsFiles(false);
-            V3EmitMk::emitHierVerilation(v3Global.hierPlanp());
+            hierGraphp->writeCommandArgsFiles(false);
+            V3EmitMk::emitHierVerilation(hierGraphp);
         }
         if (v3Global.opt.cmake()) {
-            v3Global.hierPlanp()->writeCommandArgsFiles(true);
+            hierGraphp->writeCommandArgsFiles(true);
             V3EmitCMake::emit();
         }
         if (v3Global.opt.makeJson()) {
-            v3Global.hierPlanp()->writeCommandArgsFiles(true);
+            hierGraphp->writeCommandArgsFiles(true);
             V3EmitMkJson::emit();
         }
-        v3Global.hierPlanp()->writeParametersFiles();
+        hierGraphp->writeParametersFiles();
     }
     if (v3Global.opt.makeDepend().isTrue()) {
         string filename = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix();
@@ -787,7 +802,7 @@ static bool verilate(const string& argString) {
 }
 
 static string buildMakeCmd(const string& makefile, const string& target) {
-    const V3StringList& makeFlags = v3Global.opt.makeFlags();
+    const VStringList& makeFlags = v3Global.opt.makeFlags();
     const int jobs = v3Global.opt.buildJobs();
     UASSERT(jobs >= 0, "-j option parser in V3Options.cpp filters out negative value");
 
@@ -809,6 +824,7 @@ static void execBuildJob() {
     UASSERT(v3Global.opt.build(), "--build is not specified.");
     UASSERT(v3Global.opt.gmake(), "--build requires GNU Make.");
     UASSERT(!v3Global.opt.cmake(), "--build cannot use CMake.");
+    UASSERT(!v3Global.opt.makeJson(), "--build cannot use json build.");
     VlOs::DeltaWallTime buildWallTime{true};
     UINFO(1, "Start Build");
 
@@ -819,12 +835,12 @@ static void execBuildJob() {
 
     if (exit_code != 0) {
         v3error(cmdStr << " exited with " << exit_code << std::endl);
-        std::exit(exit_code);
+        v3Global.vlExit(exit_code);
     }
 }
 
 static void execHierVerilation() {
-    UASSERT(v3Global.hierPlanp(), "must be called only when plan exists");
+    UASSERT(v3Global.hierGraphp(), "must be called only when plan exists");
     const string makefile = v3Global.opt.prefix() + "_hier.mk ";
     const string target = v3Global.opt.build() ? " hier_build" : " hier_verilation";
     const string cmdStr = buildMakeCmd(makefile, target);
@@ -832,7 +848,7 @@ static void execHierVerilation() {
     const int exit_code = V3Os::system(cmdStr);
     if (exit_code != 0) {
         v3error(cmdStr << " exited with " << exit_code << std::endl);
-        std::exit(exit_code);
+        v3Global.vlExit(exit_code);
     }
 }
 
@@ -874,7 +890,7 @@ int main(int argc, char** argv) {
         UINFO(1, "Option --no-verilate: Skip Verilation");
     }
 
-    if (v3Global.hierPlanp() && v3Global.opt.gmake()) {
+    if (v3Global.hierGraphp() && v3Global.opt.gmake()) {
         execHierVerilation();  // execHierVerilation() takes care of --build too
     } else if (v3Global.opt.build()) {
         execBuildJob();
@@ -884,9 +900,7 @@ int main(int argc, char** argv) {
     V3DiagSarif::output(true);
 
     // Explicitly release resources
-    V3PreShell::shutdown();
     v3Global.shutdown();
-    FileLine::deleteAllRemaining();
 
     if (!v3Global.opt.quietStats() && !v3Global.opt.preprocOnly()) {
         V3Stats::addStatPerf(V3Stats::STAT_CPUTIME, cpuTimeTotal.deltaTime());

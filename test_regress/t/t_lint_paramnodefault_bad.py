@@ -12,19 +12,14 @@ import vltest_bootstrap
 test.scenarios('linter')
 test.top_filename = 't/t_lint_paramnodefault.v'
 
-root = ".."
-
-if not os.path.exists(root + "/.git"):
-    test.skip("Not in a git repository")
-
 test.lint(fails=True, expect_filename=test.golden_filename)
 
 test.extract(in_filename=test.top_filename,
-             out_filename=root + "/docs/gen/ex_PARAMNODEFAULT_faulty.rst",
+             out_filename=test.root + "/docs/gen/ex_PARAMNODEFAULT_faulty.rst",
              lines="7-8")
 
 test.extract(in_filename=test.golden_filename,
-             out_filename=root + "/docs/gen/ex_PARAMNODEFAULT_msg.rst",
+             out_filename=test.root + "/docs/gen/ex_PARAMNODEFAULT_msg.rst",
              lines="1-3")
 
 test.passes()

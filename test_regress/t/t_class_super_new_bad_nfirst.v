@@ -19,7 +19,7 @@ class Cls extends Base;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       Cls   c;
       c = new;

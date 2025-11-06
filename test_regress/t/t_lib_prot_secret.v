@@ -36,7 +36,7 @@ module secret #(parameter GATED_CLK = 0)
     input [15:0]              s8x16up_3d_in[1:0][0:1][0:1],
     output logic [15:0]       s8x16up_3d_out[1:0][0:1][0:1],
     input                     clk_en,
-    input                     clk /*verilator clocker*/);
+    input                     clk);
 
    logic [31:0]               secret_accum_q = 0;
    logic [31:0]               secret_value = 7;

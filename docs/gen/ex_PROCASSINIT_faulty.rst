@@ -3,10 +3,10 @@
    :linenos:
    :emphasize-lines: 1,5
 
-      logic flop_out = 1;  // <--- Warning
+     logic flop_out = 1;  // <--- Warning
 
-      always @(posedge clk, negedge reset_l) begin
-         if (enable) begin
-            flop_out <= ~in;  // <--- Use of initialized
-         end
-      end
+     always @(posedge clk, negedge reset_l) begin
+       if (enable) begin
+         flop_out <= ~in;  // <--- Use of initialized
+       end
+     end

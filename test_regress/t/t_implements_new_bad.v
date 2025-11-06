@@ -7,7 +7,7 @@
 interface class Icls;
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    Icls c;
    initial begin
       c = new;  // Bad

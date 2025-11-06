@@ -48,6 +48,7 @@ public:
 
     static void applyCase(AstCase* nodep);
     static void applyCoverageBlock(AstNodeModule* modulep, AstBegin* nodep);
+    static void applyCoverageBlock(AstNodeModule* modulep, AstGenBlock* nodep);
     static void applyFTask(AstNodeModule* modulep, AstNodeFTask* ftaskp);
     static void applyIgnores(FileLine* filelinep);
     static void applyModule(AstNodeModule* modulep);
@@ -64,6 +65,7 @@ public:
     static void contentsPushText(const string& text);
 
     static bool containsMTaskProfileData();
+    static uint64_t getCurrentHierBlockCost();
 
     static bool waive(const FileLine* filelinep, V3ErrorCode code, const string& message);
 };

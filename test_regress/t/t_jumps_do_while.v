@@ -157,9 +157,10 @@ module t (/*AUTOARG*/
    endfunction
 
    always @(posedge clk) begin
-      bit [11:0] results = {test_1(), test_2(), test_3(), test_4(), test_5(),
-                            test_6(), test_7(), test_8(), test_9(), test_10(),
-                            test_11(), test_12()};
+      bit [11:0] results;
+      results = {test_1(), test_2(), test_3(), test_4(), test_5(),
+        test_6(), test_7(), test_8(), test_9(), test_10(),
+        test_11(), test_12()};
 
       if (results == '1) begin
          $write("*-* All Finished *-*\n");

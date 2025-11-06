@@ -6,8 +6,11 @@
 // any use, without warranty, 2025 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
    trireg unsup;
+   trireg (small) unsup_s;
+   trireg (medium) unsup_m;
+   trireg (large) unsup_l;
 
 endmodule

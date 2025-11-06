@@ -45,7 +45,7 @@
 #endif
 // clang-format on
 
-class Process final : private std::streambuf, public std::iostream {
+class VlRProcess final : private std::streambuf, public std::iostream {
     static constexpr int BUFFER_SIZE = 4096;
     const char* const* m_cmd = nullptr;  // fork() process argv
 #ifdef _VL_SOLVER_PIPE
@@ -69,6 +69,7 @@ protected:
         if (pbase() == pptr()) return 0;
         size_t size = pptr() - pbase();
         ssize_t n = ::write(m_writeFd, pbase(), size);
+        // VL_PRINTF_MT("solver-write '%s'\n", std::string(pbase(), size).c_str());
         if (n == -1) perror("write");
         if (n <= 0) {
             wait_report();
@@ -98,7 +99,7 @@ protected:
     }
 
 public:
-    explicit Process(const char* const* const cmd = nullptr)
+    explicit VlRProcess(const char* const* const cmd = nullptr)
         : std::streambuf{}
         , std::iostream{this}
         , m_cmd{cmd} {
@@ -120,7 +121,7 @@ public:
             else if (WIFEXITED(m_pidStatus))
                 msg << "exit status " << WEXITSTATUS(m_pidStatus);
             const std::string str = msg.str();
-            VL_WARN_MT("", 0, "Process", str.c_str());
+            VL_WARN_MT("", 0, "VlRProcess", str.c_str());
         }
 #endif
         m_pidExited = true;
@@ -151,11 +152,11 @@ public:
         constexpr int P_WR = 1;
 
         if (pipe(fd_stdin) != 0) {
-            perror("Process::open: pipe");
+            perror("VlRProcess::open: pipe");
             return false;
         }
         if (pipe(fd_stdout) != 0) {
-            perror("Process::open: pipe");
+            perror("VlRProcess::open: pipe");
             close(fd_stdin[P_RD]);
             close(fd_stdin[P_WR]);
             return false;
@@ -175,7 +176,7 @@ public:
 
         const pid_t pid = fork();
         if (pid < 0) {
-            perror("Process::open: fork");
+            perror("VlRProcess::open: fork");
             close(fd_stdin[P_RD]);
             close(fd_stdin[P_WR]);
             close(fd_stdout[P_RD]);
@@ -190,7 +191,7 @@ public:
             dup2(fd_stdout[P_WR], STDOUT_FILENO);
             execvp(cmd[0], const_cast<char* const*>(cmd));
             std::stringstream msg;
-            msg << "Process::open: execvp(" << cmd[0] << ")";
+            msg << "VlRProcess::open: execvp(" << cmd[0] << ")";
             const std::string str = msg.str();
             perror(str.c_str());
             _exit(127);
@@ -212,8 +213,8 @@ public:
     }
 };
 
-static Process& getSolver() {
-    static Process s_solver;
+static VlRProcess& getSolver() {
+    static VlRProcess s_solver;
     static bool s_done = false;
     if (s_done) return s_solver;
     s_done = true;
@@ -251,7 +252,7 @@ static Process& getSolver() {
     return s_solver;
 }
 
-std::string readUntilBalanced(std::istream& stream) {
+static std::string readUntilBalanced(std::istream& stream) {
     std::string result;
     std::string token;
     int parenCount = 1;
@@ -269,8 +270,8 @@ std::string readUntilBalanced(std::istream& stream) {
     return result;
 }
 
-std::string parseNestedSelect(const std::string& nested_select_expr,
-                              std::vector<std::string>& indices) {
+static std::string parseNestedSelect(const std::string& nested_select_expr,
+                                     std::vector<std::string>& indices) {
     std::istringstream nestedStream(nested_select_expr);
     std::string name, idx;
     nestedStream >> name;
@@ -367,47 +368,47 @@ void VlRandomizer::randomConstraint(std::ostream& os, VlRNG& rngr, int bits) {
 
 bool VlRandomizer::next(VlRNG& rngr) {
     if (m_vars.empty()) return true;
-    std::iostream& f = getSolver();
-    if (!f) return false;
+    std::iostream& os = getSolver();
+    if (!os) return false;
 
-    f << "(set-option :produce-models true)\n";
-    f << "(set-logic QF_ABV)\n";
-    f << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
-    f << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
+    os << "(set-option :produce-models true)\n";
+    os << "(set-logic QF_ABV)\n";
+    os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
+    os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
     for (const auto& var : m_vars) {
         if (var.second->dimension() > 0) {
             auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
             var.second->setArrayInfo(arrVarsp);
         }
-        f << "(declare-fun " << var.first << " () ";
-        var.second->emitType(f);
-        f << ")\n";
+        os << "(declare-fun " << var.first << " () ";
+        var.second->emitType(os);
+        os << ")\n";
     }
     for (const std::string& constraint : m_constraints) {
-        f << "(assert (= #b1 " << constraint << "))\n";
+        os << "(assert (= #b1 " << constraint << "))\n";
     }
-    f << "(check-sat)\n";
+    os << "(check-sat)\n";
 
-    bool sat = parseSolution(f);
+    bool sat = parseSolution(os);
     if (!sat) {
-        f << "(reset)\n";
+        os << "(reset)\n";
         return false;
     }
     for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; ++i) {
-        f << "(assert ";
-        randomConstraint(f, rngr, _VL_SOLVER_HASH_LEN);
-        f << ")\n";
-        f << "\n(check-sat)\n";
-        sat = parseSolution(f);
+        os << "(assert ";
+        randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
+        os << ")\n";
+        os << "\n(check-sat)\n";
+        sat = parseSolution(os);
     }
 
-    f << "(reset)\n";
+    os << "(reset)\n";
     return true;
 }
 
-bool VlRandomizer::parseSolution(std::iostream& f) {
+bool VlRandomizer::parseSolution(std::iostream& os) {
     std::string sat;
-    do { std::getline(f, sat); } while (sat == "");
+    do { std::getline(os, sat); } while (sat == "");
 
     if (sat == "unsat") return false;
     if (sat != "sat") {
@@ -418,25 +419,25 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
         return false;
     }
 
-    f << "(get-value (";
+    os << "(get-value (";
     for (const auto& var : m_vars) {
         if (var.second->dimension() > 0) {
             auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
             var.second->setArrayInfo(arrVarsp);
         }
-        var.second->emitGetValue(f);
+        var.second->emitGetValue(os);
     }
-    f << "))\n";
+    os << "))\n";
     // Quasi-parse S-expression of the form ((x #xVALUE) (y #bVALUE) (z #xVALUE))
     char c;
-    f >> c;
+    os >> c;
     if (c != '(') {
         VL_WARN_MT(__FILE__, __LINE__, "randomize",
                    "Internal: Unable to parse solver's response: invalid S-expression");
         return false;
     }
     while (true) {
-        f >> c;
+        os >> c;
         if (c == ')') break;
         if (c != '(') {
             VL_WARN_MT(__FILE__, __LINE__, "randomize",
@@ -445,13 +446,13 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
         }
         std::string name, idx, value;
         std::vector<std::string> indices;
-        f >> name;
+        os >> name;
         indices.clear();
         if (name == "(select") {
-            const std::string selectExpr = readUntilBalanced(f);
+            const std::string selectExpr = readUntilBalanced(os);
             name = parseNestedSelect(selectExpr, indices);
         }
-        std::getline(f, value, ')');
+        std::getline(os, value, ')');
         const auto it = m_vars.find(name);
         if (it == m_vars.end()) continue;
         const VlRandomVar& varr = *it->second;

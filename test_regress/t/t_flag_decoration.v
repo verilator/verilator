@@ -4,5 +4,5 @@
 // any use, without warranty, 2010 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 endmodule

@@ -9,7 +9,9 @@
 interface intf
   #(parameter PARAM = 0)
    ();
+   /* verilator lint_off MULTIDRIVEN */
    logic val;
+   /* verilator lint_on MULTIDRIVEN */
    function integer func (); return 5; endfunction
 endinterface
 

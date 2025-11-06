@@ -118,9 +118,10 @@ class V3DfgPatternStats final {
             }
 
             // Operands
-            vtx.forEachSource([&](const DfgVertex& src) {
+            vtx.foreachSource([&](const DfgVertex& src) {
                 ss << ' ';
                 if (render(ss, src, depth - 1)) deep = true;
+                return false;
             });
             // S-expression end
             ss << ')';
@@ -131,11 +132,10 @@ class V3DfgPatternStats final {
 
         // Annotate type
         ss << ':';
-        const AstNodeDType* const dtypep = vtx.dtypep();
-        if (!VN_IS(dtypep, BasicDType)) {
-            dtypep->dumpSmall(ss);
+        if (!vtx.dtype().isPacked()) {
+            vtx.dtype().astDtypep()->dumpSmall(ss);
         } else {
-            const uint32_t width = dtypep->width();
+            const uint32_t width = vtx.size();
             if (width == 1) {
                 ss << '1';
             } else if (width <= VL_QUADSIZE) {

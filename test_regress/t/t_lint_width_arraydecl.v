@@ -32,13 +32,13 @@ module t(
    } bar_s;
 
    // Warning due to concatenation, but this is actually a member assignment
-   localparam foo_s foo = '{
+   localparam foo_s FOO = '{
       y: (1 << e_0) | (1 << e_3)
       , default: '0
    };
 
    // No warning
-   localparam bar_s bar = '{
+   localparam bar_s BAR = '{
       y: (1 << e_0) | (1 << e_3)
    };
 

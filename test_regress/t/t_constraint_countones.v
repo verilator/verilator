@@ -38,7 +38,7 @@ class Rand3;
   constraint c {$countones(x) == 1;}
 endclass
 
-module t (  /*AUTOARG*/);
+module t;
   Rand1 r1 = new;
   Rand2 r2 = new;
   Rand3 r3 = new;

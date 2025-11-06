@@ -106,7 +106,6 @@ public:
 
 class V3OutFormatter VL_NOT_FINAL {
     // TYPES
-    static constexpr int MAXSPACE = 80;  // After this indent, stop indenting more
 public:
     enum AlignClass : uint8_t { AL_AUTO = 0, AL_STATIC = 1 };
     enum Language : uint8_t { LA_C, LA_JSON, LA_MK, LA_VERILOG, LA_XML };
@@ -134,8 +133,6 @@ public:
     V3OutFormatter(Language lang);
     virtual ~V3OutFormatter() = default;
     // ACCESSORS
-    int column() const { return m_column; }
-    int blockIndent() const { return m_blockIndent; }
     void blockIndent(int flag) { m_blockIndent = flag; }
     // METHODS
     void printf(const char* fmt...) VL_ATTR_PRINTF(2);
@@ -173,7 +170,7 @@ public:
         if (!m_nobreak) puts("\n");
     }
     // STATIC METHODS
-    static string indentSpaces(int num);
+    static const std::string& indentSpaces(int num);
     // Add escaped characters to strings
     static string quoteNameControls(const string& namein, Language lang = LA_C) VL_PURE;
     static bool tokenMatch(const char* cp, const char* cmp);
@@ -342,11 +339,10 @@ public:
     V3OutJsonFile& put(bool value) { return putNamed("", value ? "true" : "false", false); }
     V3OutJsonFile& put(int value) { return putNamed("", std::to_string(value), false); }
 
-    template <typename T>
-    V3OutJsonFile& putList(const std::string& name, const T& list) {
+    V3OutJsonFile& putList(const std::string& name, const std::vector<std::string>& list) {
         if (list.empty()) return *this;
         begin(name, '[');
-        for (auto it = list.begin(); it != list.end(); ++it) put(*it);
+        for (const std::string& str : list) put(str);
         return end();
     }
 
@@ -461,6 +457,8 @@ class VIdProtectImp;
 class VIdProtect final {
 public:
     // METHODS
+    // Return 'in' only if not protecting (e.g. for emitting a comment)
+    static string ifNoProtect(const string& in) VL_MT_SAFE;
     // Rename to a new encoded string (unless earlier passthru'ed)
     static string protect(const string& old) VL_MT_SAFE { return protectIf(old, true); }
     static string protectIf(const string& old, bool doIt = true) VL_MT_SAFE;

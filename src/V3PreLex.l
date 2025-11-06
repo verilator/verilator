@@ -57,7 +57,7 @@ void yyourtext(const char* textp, size_t size) {
 
 static void linenoInc() { LEXP->linenoInc(); }
 static bool pedantic() { return LEXP->m_pedantic; }
-static void yyerror(char* msg) { LEXP->curFilelinep()->v3error(msg); }
+static void yyerror(const char* msg) { LEXP->curFilelinep()->v3error(msg); }
 static void yyerrorf(const char* msg) { LEXP->curFilelinep()->v3error(msg); }
 static void appendDefValue(const char* t, size_t l) { LEXP->appendDefValue(t, l); }
 
@@ -75,6 +75,7 @@ static void appendDefValue(const char* t, size_t l) { LEXP->appendDefValue(t, l)
 %x ENCBASE64
 %x EXPR
 %x INCMODE
+%x PASSTHRU
 %x PRAGMA
 %x PRAGMAERR
 %x PRAGMAPRT
@@ -102,12 +103,15 @@ bom             [\357\273\277]
 
         /**************************************************************/
 %%
+        /* Passthru, to support dev-coverage of some main verilog.l rules */
+<PASSTHRU>{crnl}        { FL_FWDC; linenoInc(); yytext=(char*)"\n"; yyleng=1; return VP_WHITE; }
+<PASSTHRU>{word}        { yymore(); }
+<PASSTHRU>.             { FL_FWDC; return VP_TEXT; }
 
+        /* Special directives we recognize */
 <INITIAL>{bom}          { }
 <INITIAL,STRIFY>^{ws}*"`line"{ws}+.*{crnl}      { FL_FWDC; LEXP->lineDirective(yytext);
                                                   return VP_LINE; }
-
-        /* Special directives we recognize */
 <INITIAL>"`define"      { FL_FWDC; return VP_DEFINE; }
 <INITIAL>"`else"        { FL_FWDC; return VP_ELSE; }
 <INITIAL>"`elsif"       { FL_FWDC; return VP_ELSIF; }
@@ -236,14 +240,14 @@ bom             [\357\273\277]
                           BEGIN(INITIAL);
                           return VP_TEXT; }
 <INITIAL,STRIFY>"`__FILE__"     { FL_FWDC;
-                          static string rtnfile;
-                          rtnfile = '"'; rtnfile += LEXP->curFilelinep()->filenameEsc();
-                          rtnfile += '"'; yytext = (char*)rtnfile.c_str(); yyleng = rtnfile.length();
+                          static string s_rtnfile;
+                          s_rtnfile = '"'; s_rtnfile += LEXP->curFilelinep()->filenameEsc();
+                          s_rtnfile += '"'; yytext = (char*)s_rtnfile.c_str(); yyleng = s_rtnfile.length();
                           return VP_STRING; }
 <INITIAL,STRIFY>"`__LINE__"     { FL_FWDC;
-                          static char buf[25];
-                          VL_SNPRINTF(buf, 25, "%d", LEXP->curFilelinep()->lastLineno());
-                          yytext = buf; yyleng = std::strlen(yytext);
+                          static char s_buf[25];
+                          VL_SNPRINTF(s_buf, 25, "%d", LEXP->curFilelinep()->lastLineno());
+                          yytext = s_buf; yyleng = std::strlen(yytext);
                           return VP_TEXT; }
 
         /* Pass-through strings */
@@ -438,10 +442,10 @@ bom             [\357\273\277]
 <ARGMODE>.              { FL_FWDC; appendDefValue(yytext, yyleng); FL_BRK; }
 
         /* Pragma comments. */
-<INITIAL>"//"{ws}*"verilator lint_off"[^\n\r]*       { FL_FWDC; LEXP->verilatorCmtLint(yytext + 2, true); return VP_COMMENT; }
-<INITIAL>"//"{ws}*"verilator lint_on"[^\n\r]*        { FL_FWDC; LEXP->verilatorCmtLint(yytext + 2, false); return VP_COMMENT; }
-<INITIAL>"//"{ws}*"verilator lint_restore"[^\n\r]*   { FL_FWDC; LEXP->verilatorCmtLintRestore(); return VP_COMMENT; }
-<INITIAL>"//"{ws}*"verilator lint_save"[^\n\r]*      { FL_FWDC; LEXP->verilatorCmtLintSave(); return VP_COMMENT; }
+<INITIAL>"//"{ws}*"verilator lint_off"[^\n\r/]*      { FL_FWDC; LEXP->verilatorCmtLint(yytext + 2, true); return VP_COMMENT; }
+<INITIAL>"//"{ws}*"verilator lint_on"[^\n\r/]*       { FL_FWDC; LEXP->verilatorCmtLint(yytext + 2, false); return VP_COMMENT; }
+<INITIAL>"//"{ws}*"verilator lint_restore"[^\n\r/]*  { FL_FWDC; LEXP->verilatorCmtLintRestore(); return VP_COMMENT; }
+<INITIAL>"//"{ws}*"verilator lint_save"[^\n\r/]*     { FL_FWDC; LEXP->verilatorCmtLintSave(); return VP_COMMENT; }
 <INITIAL>"/*"{ws}*"verilator lint_off"[^*]*"*/"      { FL_FWDC; LEXP->verilatorCmtLint(yytext + 2, true); return VP_COMMENT; }
 <INITIAL>"/*"{ws}*"verilator lint_on"[^*]*"*/"       { FL_FWDC; LEXP->verilatorCmtLint(yytext + 2, false); return VP_COMMENT; }
 <INITIAL>"/*"{ws}*"verilator lint_restore"[^*]*"*/"  { FL_FWDC; LEXP->verilatorCmtLintRestore(); return VP_COMMENT; }
@@ -512,8 +516,19 @@ void V3PreLex::pushStateIncFilename() {
     yymore();
 }
 
+void V3PreLex::pushStatePassthru() {
+    yy_push_state(PASSTHRU);
+    yymore();
+}
+
 void V3PreLex::setYYDebug(bool on) {
     yy_flex_debug = static_cast<int>(on); }
+
+VPreStream* V3PreLex::newStream(FileLine* fl, V3PreLex* lexp) {
+    VPreStream* const streamp = new VPreStream{fl, lexp};
+    if (v3Global.opt.debugPreprocPassthru()) streamp->m_lexp->pushStatePassthru();
+    return streamp;
+}
 
 int V3PreLex::lex() {
     V3PreLex::s_currentLexp = this;  // Tell parser where to get/put data
@@ -548,7 +563,7 @@ again:
         if (len > (max_size - got)) {  // Front string too big
             len = (max_size - got);
             string remainder = front.substr(len);
-            front = front.substr(0, len);
+            front.resize(len);
             streamp->m_buffers.push_front(remainder);  // Put back remainder for next time
         }
         strncpy(buf + got, front.c_str(), len);
@@ -640,7 +655,7 @@ string V3PreLex::endOfStream(bool& againr) {
 void V3PreLex::initFirstBuffer(FileLine* filelinep) {
     // Called from constructor to make first buffer
     // yy_create_buffer also sets yy_fill_buffer=1 so reads from YY_INPUT
-    VPreStream* const streamp = new VPreStream{filelinep, this};
+    VPreStream* const streamp = newStream(filelinep, this);
     streamp->m_eof = true;
     m_streampStack.push(streamp);
     //
@@ -656,7 +671,7 @@ void V3PreLex::scanNewFile(FileLine* filelinep) {
         yyerrorf("Recursive `define or other nested inclusion");
         curStreamp()->m_eof = true;  // Fake it to stop recursion
     } else {
-        VPreStream* const streamp = new VPreStream{filelinep, this};
+        VPreStream* const streamp = newStream(filelinep, this);
         m_tokFilelinep = curFilelinep();
         streamp->m_file = true;
         scanSwitchStream(streamp);
@@ -675,7 +690,7 @@ void V3PreLex::scanBytes(const string& str) {
         yyerrorf("Recursive `define or other nested inclusion");
         curStreamp()->m_eof = true;  // Fake it to stop recursion
     } else {
-        VPreStream* const streamp = new VPreStream{curFilelinep(), this};
+        VPreStream* const streamp = newStream(curFilelinep(), this);
         streamp->m_buffers.push_front(str);
         scanSwitchStream(streamp);
     }
@@ -740,8 +755,8 @@ void V3PreLex::dumpStack() {  // LCOV_EXCL_START
     std::stack<VPreStream*> tmpstack = LEXP->m_streampStack;
     while (!tmpstack.empty()) {
         const VPreStream* const streamp = tmpstack.top();
-        cout << "-    bufferStack[" << cvtToHex(streamp) << "]: "
-             << " at=" << streamp->m_curFilelinep << " nBuf=" << streamp->m_buffers.size()
+        cout << "-    bufferStack[" << cvtToHex(streamp)
+             << "]: " << " at=" << streamp->m_curFilelinep << " nBuf=" << streamp->m_buffers.size()
              << " size0=" << (streamp->m_buffers.empty() ? 0 : streamp->m_buffers.front().length())
              << (streamp->m_eof ? " [EOF]" : "") << (streamp->m_file ? " [FILE]" : "") << endl;
         tmpstack.pop();
@@ -788,7 +803,7 @@ void V3PreLex::verilatorCmtLint(const char* textp, bool warnOff) {
         }
     }
     // No warnings on bad warning codes - the verilog.y parse will report as appropriate
-    curFilelinep()->warnOff(msg, warnOff);
+    curFilelinep()->warnOffParse(msg, warnOff);
 }
 
 /*###################################################################

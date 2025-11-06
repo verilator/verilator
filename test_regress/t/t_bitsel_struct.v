@@ -9,7 +9,7 @@
 // without warranty, 2012 by Jie Xu.
 // SPDX-License-Identifier: CC0-1.0
 
-module t(/*AUTOARG*/);
+module t;
 
    typedef struct packed {
        logic [1:0][15:0] channel;

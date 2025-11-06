@@ -14,7 +14,7 @@ class Cls;
 endclass
 endmodule
 
-module t (/*AUTOARG*/);
+module t;
    string s;
 
    initial begin

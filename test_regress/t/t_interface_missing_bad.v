@@ -15,7 +15,7 @@ module foo_mod
    );
 endmodule
 
-module t (/*AUTOARG*/);
+module t;
 
    foo_intf the_foo ();
 

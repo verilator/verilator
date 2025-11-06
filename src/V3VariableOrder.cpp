@@ -53,7 +53,7 @@ class GatherMTaskAffinity final : VNVisitorConst {
     GatherMTaskAffinity(const ExecMTask* mTaskp, MTaskAffinityMap& results)
         : m_results{results}
         , m_id{mTaskp->id()} {
-        iterateChildrenConst(mTaskp->bodyp());
+        iterateConst(mTaskp->funcp());
     }
     ~GatherMTaskAffinity() = default;
     VL_UNMOVABLE(GatherMTaskAffinity);
@@ -63,9 +63,6 @@ class GatherMTaskAffinity final : VNVisitorConst {
         // Cheaper than relying on emplace().second
         if (nodep->user1SetOnce()) return;
         AstVar* const varp = nodep->varp();
-        // Ignore TriggerVec. They are big and read-only in the MTask bodies
-        AstBasicDType* const basicp = varp->dtypep()->basicp();
-        if (basicp && basicp->isTriggerVec()) return;
         // Set affinity bit
         MTaskIdVec& affinity = m_results
                                    .emplace(std::piecewise_construct,  //
@@ -210,6 +207,7 @@ class VariableOrder final {
         sortAndAppend(m2v[emptyVec]);
     }
 
+    // cppcheck-suppress constParameterPointer
     void orderModuleVars(AstNodeModule* modp) {
         // Unlink all module variables from the module, compute attributes
         for (AstNode *nodep = modp->stmtsp(), *nextp; nodep; nodep = nextp) {
@@ -220,17 +218,17 @@ class VariableOrder final {
                 // Compute attributes up front
                 // Stratum
                 const int sigbytes = varp->dtypeSkipRefp()->widthAlignBytes();
-                const uint8_t stratum = (v3Global.opt.hierChild() && varp->isPrimaryIO()) ? 0
-                                        : (varp->isUsedClock() && varp->widthMin() == 1)  ? 1
-                                        : VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)  ? 9
-                                        : (varp->basicp() && varp->basicp()->isOpaque())  ? 8
-                                        : (varp->isScBv() || varp->isScBigUint())         ? 7
-                                        : (sigbytes == 8)                                 ? 6
-                                        : (sigbytes == 4)                                 ? 5
-                                        : (sigbytes == 2)                                 ? 3
-                                        : (sigbytes == 1)                                 ? 2
-                                                                                          : 10;
-                m_attributes.emplace(varp, VarAttributes{stratum, EmitCBase::isAnonOk(varp)});
+                const uint8_t stratum = (v3Global.opt.hierChild() && varp->isPrimaryIO())   ? 0
+                                        : (varp->isPrimaryClock() && varp->widthMin() == 1) ? 1
+                                        : VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)    ? 9
+                                        : (varp->basicp() && varp->basicp()->isOpaque())    ? 8
+                                        : (varp->isScBv() || varp->isScBigUint())           ? 7
+                                        : (sigbytes == 8)                                   ? 6
+                                        : (sigbytes == 4)                                   ? 5
+                                        : (sigbytes == 2)                                   ? 3
+                                        : (sigbytes == 1)                                   ? 2
+                                                                                            : 10;
+                m_attributes.emplace(varp, VarAttributes{stratum, EmitCUtil::isAnonOk(varp)});
             }
         }
 
@@ -276,7 +274,7 @@ void V3VariableOrder::orderAll(AstNetlist* netlistp) {
         for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
              modp = VN_AS(modp->nextp(), NodeModule)) {
             std::vector<AstVar*>& varps = sortedVars[modp];
-            threadScope.enqueue([modp, mTaskAffinity, &varps]() {
+            threadScope.enqueue([modp, &mTaskAffinity, &varps]() {
                 VariableOrder::processModule(modp, mTaskAffinity, varps);
             });
         }

@@ -435,8 +435,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                     && entryp->getNodep()) {
                     if (m_alwaysCombp
                         && (!entryp->isDrivenAlwaysCombWhole()
-                            || (entryp->isDrivenAlwaysCombWhole()
-                                && m_alwaysCombp != entryp->getAlwCombp()
+                            || (m_alwaysCombp != entryp->getAlwCombp()
                                 && m_alwaysCombp->fileline() != entryp->getAlwCombFileLinep()))) {
                         nodep->v3warn(
                             MULTIDRIVEN,
@@ -548,8 +547,8 @@ class UndrivenVisitor final : public VNVisitorConst {
     void visit(AstNodeCoverDecl*) override {}
     void visit(AstCoverInc*) override {}
     void visit(AstCoverToggle*) override {}
-    void visit(AstTraceDecl*) override {}
-    void visit(AstTraceInc*) override {}
+    void visit(AstTraceDecl* nodep) override { nodep->v3fatalSrc("Should not exist yet"); }
+    void visit(AstTraceInc* nodep) override { nodep->v3fatalSrc("Should not exist yet"); }
 
     // iterate
     void visit(AstConst* nodep) override {}

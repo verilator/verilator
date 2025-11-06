@@ -3,7 +3,7 @@
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty, 2020 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
-module t(/*AUTOARG*/);
+module t;
    logic [31:0] tmp;
    logic [31:0] tmp2;
    logic [31:0] tmp3;

@@ -33,7 +33,7 @@ ThreadScheduleWaitIntervals = []  # list of (start, tick, ecpu) pairs
 ######################################################################
 
 
-def read_data(filename):
+def read_data(filename: str) -> None:
     with open(filename, "r", encoding="utf8") as fh:
         re_thread = re.compile(r'^VLPROFTHREAD (\d+)$')
         re_record = re.compile(r'^VLPROFEXEC (\S+) (\d+)(.*)$')
@@ -51,6 +51,7 @@ def read_data(filename):
         re_proc_dat = re.compile(r'VLPROFPROC ([a-z_ ]+)\s*:\s*(.*)$')
         cpu = None
         thread = 0
+        thread_last_ecpu = None
 
         global LongestVcdStrValueLength
         global ExecGraphTime
@@ -109,9 +110,13 @@ def read_data(filename):
                                                              tick)
                 elif kind == "THREAD_SCHEDULE_WAIT_BEGIN":
                     ecpu = int(re_payload_wait.match(payload).groups()[0])
+                    thread_last_ecpu = ecpu
                     ThreadScheduleWait[ecpu].append(tick)
                 elif kind == "THREAD_SCHEDULE_WAIT_END":
-                    ecpu = int(re_payload_wait.match(payload).groups()[0])
+                    # Might have ended on different CPU then we got THREAD_SCHEDULE_WAIT_BEGIN
+                    assert thread_last_ecpu is not None, "THREAD_SCHEDULE_WAIT_END without BEGIN"
+                    ecpu = thread_last_ecpu
+                    thread_last_ecpu = None
                     start = ThreadScheduleWait[ecpu].pop()
                     WaitingTime += tick - start
                     ThreadScheduleWaitIntervals.append((start, tick, ecpu))
@@ -166,7 +171,7 @@ def re_match_result(regexp, line, result_to):
 ######################################################################
 
 
-def report():
+def report() -> None:
     print("Verilator Gantt report")
 
     print("\nArgument settings:")
@@ -215,12 +220,12 @@ def report():
     print()
 
 
-def report_numa():
+def report_numa() -> None:
     print("\nNUMA assignment:")
     print("  NUMA status        = %s" % Global['info']['numa'])
 
 
-def report_mtasks():
+def report_mtasks() -> None:
     if not Mtasks:
         return
 
@@ -238,6 +243,7 @@ def report_mtasks():
     thread_mtask_time = collections.defaultdict(lambda: 0)
     long_mtask_time = 0
     long_mtask = None
+    long_mtask_hier_block = None
     predict_mtask_time = 0
     predict_elapsed = 0
     for (hier_block, mtask_id) in Mtasks:
@@ -278,6 +284,9 @@ def report_mtasks():
     min_mtask = None
     max_p2e = -1000000
     max_mtask = None
+
+    min_hier_block = None
+    max_hier_block = None
 
     for (hier_block, mtask_id) in sorted(Mtasks.keys()):
         mtask = Mtasks[(hier_block, mtask_id)]
@@ -333,7 +342,7 @@ def report_mtasks():
     print("  e ^ stddev = %0.3f" % math.exp(stddev))
 
 
-def report_cpus():
+def report_cpus() -> None:
     print("\nCPU info:")
 
     Global['cpu_sockets'] = collections.defaultdict(lambda: 0)
@@ -368,14 +377,14 @@ def report_cpus():
                 Global['cpu_socket_cores_warning'] = True
 
 
-def report_sections():
+def report_sections() -> None:
     for thread, section in Sections.items():
         if section:
             print(f"\nSection profile for thread {thread}:")
             report_section(section)
 
 
-def report_section(section):
+def report_section(section) -> None:
     totalTime = collections.defaultdict(lambda: 0)
     selfTime = collections.defaultdict(lambda: 0)
 
@@ -427,7 +436,7 @@ def report_section(section):
 ######################################################################
 
 
-def write_vcd(filename):
+def write_vcd(filename: str) -> None:
     print("Writing %s" % filename)
     with open(filename, "w", encoding="utf8") as fh:
         # dict of dicts of hierarchy elements/signal name  -> (code, width)

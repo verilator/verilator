@@ -1,0 +1,5 @@
+%Error: t/t_interface_virtual_missing_bad.v:9:12: Cannot find file containing interface: 'foo'
+    9 |    virtual foo vif;
+      |            ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

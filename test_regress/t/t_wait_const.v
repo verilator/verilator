@@ -4,7 +4,7 @@
 // any use, without warranty, 2023 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t(/*AUTOARG*/);
+module t;
 
    initial begin
       // This test is separate from t_wait.v because we needed a process with

@@ -68,69 +68,104 @@
 #include <vector>
 
 //######################################################################
-// DenseMap - This can be made generic if needed
+// Control Flow Graph (CFG) and related data structures
 
-// Map from unique non-negative integers (IDs) to generic values. As opposed
-// to a std::map/std::unordered_map, in DenseMap, all entries are value
-// initialized at construction, and the map is always dense. This can be
-// improved if necessary but is sufficient for our current purposes.
-template <typename T_Key, size_t (T_Key::*Index)() const, typename T_Value>
-class DenseMap final {
-    std::vector<T_Value> m_map;  // The map, stored as a vector
+class CfgGraph;
+class CfgBlock;
+class CfgEdge;
 
-public:
-    // CONSTRUCTOR
-    explicit DenseMap(size_t size)
-        : m_map{size} {}
-
-    T_Value& operator[](const T_Key& key) { return m_map.at((key.*Index)()); }
-    const T_Value& operator[](const T_Key& key) const { return m_map.at((key.*Index)()); }
-};
+template <typename T_Key, typename T_Value>
+class CfgMap;
+template <typename T_Value>
+class CfgBlockMap;
+template <typename T_Value>
+class CfgEdgeMap;
 
 //######################################################################
-// ControlFlowGraph data structure
+// CfgBlock - A basic block (verticies of the control flow graph)
 
-class ControlFlowGraph;
-class BasicBlock;
-class ControlFlowEdge;
-
-// A basic block (verticies of the control flow graph)
-class BasicBlock final : public V3GraphVertex {
-    VL_RTTI_IMPL(BasicBlock, V3GraphVertex)
+class CfgBlock final : public V3GraphVertex {
+    friend class CfgGraph;
+    template <typename T_Key, typename T_Value>
+    friend class CfgMap;
     friend class CfgBuilder;
 
-    // STATE - Immutable after construction, set by CfgBuilder
-    // V3GraphEdge::user() is set to the unique id by CfgBuilder
-    std::vector<AstNodeStmt*> m_stmtps;  // statements in this BasicBlock
+    // STATE
+    CfgGraph* const m_cfgp;  // The control flow graph this CfgBlock is under
+    size_t m_rpoNumber = 0;  // Reverse post-order number and unique ID of this CfgBlock
 
-    // CONSTRUCTOR - via CfgBuilder only
-    inline explicit BasicBlock(ControlFlowGraph* graphp);
-    ~BasicBlock() override = default;
+    // V3GraphEdge::user() is set to the unique id by CfgBuilder
+    std::vector<AstNodeStmt*> m_stmtps;  // statements in this CfgBlock
+
+    // PRIVATE METHODS
+
+    // CONSTRUCTOR/DESTRUCTOR - via CfgGraph only
+    inline explicit CfgBlock(CfgGraph* cfgp);
+    ~CfgBlock() override = default;
 
 public:
-    // METHODS - all const
+    // PUBLIC METHODS
 
-    // Statements in this BasicBlock
+    // ID (reverse post-order number) of this block
+    inline size_t id();
+    inline size_t id() const;
+
+    // Is this the entry block of the CFG?
+    bool isEnter() const { return inEmpty(); }
+    // Is this the exit block of the CFG?
+    bool isExit() const { return outEmpty(); }
+    // Is this a branching block (multiple successors)?
+    bool isBranch() const { return outEdges().hasMultipleElements(); }
+    // Is this a control flow convergence block (multiple predecessors)?
+    bool isJoin() const { return inEdges().hasMultipleElements(); }
+    // Is this a join of exactly 2 paths?
+    bool isTwoWayJoin() const { return inEdges().hasTwoElements(); }
+
+    // The edge going to the taken (or uncinditional) successor, or nullptr if exit block
+    inline CfgEdge* takenEdgep();
+    inline const CfgEdge* takenEdgep() const;
+    // The edge going to the untaken successor, or nullptr if not a branch, or exit block
+    inline CfgEdge* untknEdgep();
+    inline const CfgEdge* untknEdgep() const;
+    // The taken successor block, or nullptr if exit block
+    inline CfgBlock* takenp();
+    inline const CfgBlock* takenp() const;
+    // The untakens successor block, or nullptr if not a branch, or exit block
+    inline CfgBlock* untknp();
+    inline const CfgBlock* untknp() const;
+
+    // The first predecessor edge, or nullptr if enter block
+    inline CfgEdge* firstPredecessorEdgep();
+    inline const CfgEdge* firstPredecessorEdgep() const;
+    // The last predecessor edge, or nullptr if enter block
+    inline CfgEdge* lastPredecessorEdgep();
+    inline const CfgEdge* lastPredecessorEdgep() const;
+    // The first predecessor block, or nullptr if enter block
+    inline CfgBlock* firstPredecessorp();
+    inline const CfgBlock* firstPredecessorp() const;
+    // The last predecessor block, or nullptr if enter block
+    inline CfgBlock* lastPredecessorp();
+    inline const CfgBlock* lastPredecessorp() const;
+
+    // Statements in this CfgBlock
     const std::vector<AstNodeStmt*>& stmtps() const { return m_stmtps; }
-    // Unique ID of this BasicBlock - defines topological ordering
-    size_t id() const { return V3GraphVertex::user(); }
 
-    // The edge corresponding to the terminator branch being taken (including unonditoinal goto)
-    inline const ControlFlowEdge* takenEdgep() const;
-    // The edge corresponding to the terminator branch being not taken (or nullptr if goto)
-    inline const ControlFlowEdge* untknEdgep() const;
-    // Same as takenpEdgep/untknEdgep but returns the successor basic blocks
-    inline const BasicBlock* takenSuccessorp() const;
-    inline const BasicBlock* untknSuccessorp() const;
+    // Ordering is done on reverese post-order numbering. For loop-free graph
+    // this ensures that a block that compares less than another is not a
+    // successor of the other block (it is an ancestor, or sibling).
+    bool operator<(const CfgBlock& that) const { return id() < that.id(); }
+    bool operator>(const CfgBlock& that) const { return id() > that.id(); }
+    bool operator==(const CfgBlock& that) const { return this == &that; }
 
-    void forEachSuccessor(std::function<void(const BasicBlock&)> f) const {
-        for (const V3GraphEdge& edge : outEdges()) f(*edge.top()->as<BasicBlock>());
+    // Iterators
+    void forEachSuccessor(std::function<void(const CfgBlock&)> f) const {
+        for (const V3GraphEdge& edge : outEdges()) f(*static_cast<CfgBlock*>(edge.top()));
+    }
+    void forEachPredecessor(std::function<void(const CfgBlock&)> f) const {
+        for (const V3GraphEdge& edge : inEdges()) f(*static_cast<CfgBlock*>(edge.fromp()));
     }
 
-    void forEachPredecessor(std::function<void(const BasicBlock&)> f) const {
-        for (const V3GraphEdge& edge : inEdges()) f(*edge.fromp()->as<BasicBlock>());
-    }
-
+    // Source location for debugging
     FileLine* fileline() const override {
         return !m_stmtps.empty() ? m_stmtps.front()->fileline() : nullptr;
     }
@@ -141,130 +176,398 @@ public:
     std::string dotRank() const override;
 };
 
-// A control flow graph edge
-class ControlFlowEdge final : public V3GraphEdge {
-    VL_RTTI_IMPL(ControlFlowEdge, V3GraphEdge)
-    friend class CfgBuilder;
+//######################################################################
+// CfgEdge - An edges of the control flow graph
+
+class CfgEdge final : public V3GraphEdge {
+    friend class CfgGraph;
+    template <typename T_Key, typename T_Value>
+    friend class CfgMap;
 
     // STATE - Immutable after construction, set by CfgBuilder
-    // V3GraphEdge::user() is set to the unique id by CfgBuilder
+    CfgGraph* const m_cfgp;  // The control flow graph this CfgEdge is under
+    size_t m_id = 0;  // Unique ID of this vertex
 
-    // CONSTRUCTOR - via CfgBuilder only
-    inline ControlFlowEdge(ControlFlowGraph* graphp, BasicBlock* srcp, BasicBlock* dstp);
-    ~ControlFlowEdge() override = default;
+    // PRIVATE METHODS
+
+    // CONSTRUCTOR/DESTRUCTOR - via CfgGraph only
+    inline CfgEdge(CfgGraph* graphp, CfgBlock* srcp, CfgBlock* dstp);
+    ~CfgEdge() override = default;
 
 public:
-    // METHODS - all const
+    // METHODS
 
-    // Unique ID of this ControlFlowEdge - no particular meaning
-    size_t id() const { return user(); }
+    // Unique ID of this CfgEdge - no particular meaning
+    inline size_t id();
+    inline size_t id() const;
 
-    // Source/destination BasicBlock
-    const BasicBlock& src() const { return *static_cast<BasicBlock*>(fromp()); }
-    const BasicBlock& dst() const { return *static_cast<BasicBlock*>(top()); }
+    // Source/destination CfgBlock
+    const CfgBlock* srcp() const { return static_cast<const CfgBlock*>(fromp()); }
+    const CfgBlock* dstp() const { return static_cast<const CfgBlock*>(top()); }
+    CfgBlock* srcp() { return static_cast<CfgBlock*>(fromp()); }
+    CfgBlock* dstp() { return static_cast<CfgBlock*>(top()); }
 
     // For Graphviz dumps only
     std::string dotLabel() const override;
 };
 
-template <typename T_Value>
-using BasicBlockMap = DenseMap<BasicBlock, &BasicBlock::id, T_Value>;
+//######################################################################
+// CfgGraph - The control flow graph
 
-template <typename T_Value>
-using ControlFlowEdgeMap = DenseMap<ControlFlowEdge, &ControlFlowEdge::id, T_Value>;
-
-// The control flow graph
-class ControlFlowGraph final : public V3Graph {
+class CfgGraph final : public V3Graph {
+    friend class CfgBlock;
+    friend class CfgEdge;
+    template <typename T_Key, typename T_Value>
+    friend class CfgMap;
     friend class CfgBuilder;
 
-    // STATE - Immutable after construction, set by CfgBuilder
-    BasicBlock* m_enterp = nullptr;  // The singular entry vertex
-    BasicBlock* m_exitp = nullptr;  // The singular exit vertex
-    size_t m_nBasicBlocks = 0;  // Number of BasicBlocks in this ControlFlowGraph
-    size_t m_nEdges = 0;  // Number of ControlFlowEdges in this ControlFlowGraph
+    // STATE
+    size_t m_nEdits = 0;  // Edit count of this graph
+    size_t m_nLastOrdered = 0;  // Last edit count blocks were ordered
+    CfgBlock* m_enterp = nullptr;  // The singular entry vertex
+    CfgBlock* m_exitp = nullptr;  // The singular exit vertex
+    size_t m_nBlocks = 0;  // Number of CfgBlocks in this CfgGraph
+    size_t m_nEdges = 0;  // Number of CfgEdges in this CfgGraph
 
-    // CONSTRUCTOR - via CfgBuilder only
-    ControlFlowGraph() = default;
+    // PRIVATE METHODS
 
-public:
-    ~ControlFlowGraph() override = default;
+    // Compute reverse post-order enumeration of blocks, and sort them
+    // accordingly. Assign blocks, and edge IDs. Invalidates all previous IDs.
+    void rpoBlocks();
 
-    // METHODS
-    void foreach(std::function<void(const BasicBlock&)> f) const {
-        for (const V3GraphVertex& vtx : vertices()) f(*vtx.as<BasicBlock>());
+    // Add a new CfgBlock to this graph
+    CfgBlock* addBlock() {
+        ++m_nEdits;
+        ++m_nBlocks;
+        return new CfgBlock{this};
     }
 
+    // Add a new taken (or unconditional) CfgEdge to this CFG
+    void addTakenEdge(CfgBlock* srcp, CfgBlock* dstp) {
+        UASSERT_OBJ(srcp->m_cfgp == this, srcp, "'srcp' is not in this graph");
+        UASSERT_OBJ(dstp->m_cfgp == this, dstp, "'dstp' is not in this graph");
+        UASSERT_OBJ(!srcp->takenEdgep(), srcp, "Taken edge should be added first");
+        //
+        UASSERT_OBJ(dstp != m_enterp, dstp, "Enter block cannot have a predecessor");
+        UASSERT_OBJ(srcp != m_exitp, srcp, "Exit block cannot have a successor");
+        ++m_nEdits;
+        ++m_nEdges;
+        new CfgEdge{this, srcp, dstp};
+    }
+
+    // Add a new untaken CfgEdge to this CFG
+    void addUntknEdge(CfgBlock* srcp, CfgBlock* dstp) {
+        UASSERT_OBJ(srcp->m_cfgp == this, srcp, "'srcp' is not in this graph");
+        UASSERT_OBJ(dstp->m_cfgp == this, dstp, "'dstp' is not in this graph");
+        UASSERT_OBJ(srcp->takenEdgep(), srcp, "Untaken edge shold be added second");
+        UASSERT_OBJ(srcp->takenp() != dstp, srcp, "Untaken branch targets the same block");
+        //
+        UASSERT_OBJ(dstp != m_enterp, dstp, "Enter block cannot have a predecessor");
+        UASSERT_OBJ(srcp != m_exitp, srcp, "Exit block cannot have a successor");
+        ++m_nEdits;
+        ++m_nEdges;
+        new CfgEdge{this, srcp, dstp};
+    }
+
+    size_t idOf(const CfgBlock* bbp) const {
+        UASSERT_OBJ(m_nEdits == m_nLastOrdered, m_enterp, "Cfg was edited but not re-ordered");
+        return bbp->m_rpoNumber;
+    }
+
+    size_t idOf(const CfgEdge* edgep) const {
+        UASSERT_OBJ(m_nEdits == m_nLastOrdered, m_enterp, "Cfg was edited but not re-ordered");
+        return edgep->m_id;
+    }
+
+    // Implementation for insertTwoWayJoins
+    CfgBlock* getOrCreateTwoWayJoinFor(CfgBlock* bbp);
+
+    // CONSTRUCTOR - use CfgGraph::build, which might fail, so this can't be public
+    CfgGraph() = default;
+
+public:
+    ~CfgGraph() override = default;
+
+    // STATIC FUNCTIONS
+
+    // Build CFG for the given list of statements
+    static std::unique_ptr<CfgGraph> build(AstNode* stmtsp);
+
+    // PUBLIC METHODS
+
     // Accessors
-    const BasicBlock& enter() const { return *m_enterp; }
-    const BasicBlock& exit() const { return *m_exitp; }
+    const CfgBlock& enter() const { return *m_enterp; }
+    const CfgBlock& exit() const { return *m_exitp; }
 
     // Number of basic blocks in this graph
-    size_t nBasicBlocks() const { return m_nBasicBlocks; }
+    size_t nBlocks() const { return m_nBlocks; }
     // Number of control flow edges in this graph
     size_t nEdges() const { return m_nEdges; }
 
-    // Create a BasicBlock map for this graph
+    // Create a CfgBlock map for this graph
     template <typename T_Value>
-    BasicBlockMap<T_Value> makeBasicBlockMap() const {
-        return BasicBlockMap<T_Value>{nBasicBlocks()};
-    }
-    // Create a ControlFlowEdgeMap map for this graph
+    inline CfgBlockMap<T_Value> makeBlockMap() const;
+    // Create a CfgEdgeMap map for this graph
     template <typename T_Value>
-    ControlFlowEdgeMap<T_Value> makeEdgeMap() const {
-        return ControlFlowEdgeMap<T_Value>{nEdges()};
-    }
+    inline CfgEdgeMap<T_Value> makeEdgeMap() const;
 
     // Returns true iff the graph contains a loop (back-edge)
     bool containsLoop() const;
+
+    //------------------------------------------------------------------
+    // The following methods mutate this CFG and invalidate CfgBlock and
+    // CfgEdge IDs and associated CfgBlockMap, CfgEdgeMap and other
+    // query instances.
+
+    // Remove empty blocks, combine sequential blocks. Keeps the enter/exit block, even if empty.
+    void minimize();
+
+    // Insert empty blocks to fix critical edges (edges that have a source with
+    // multiple successors, and a destination with multiple predecessors)
+    void breakCriticalEdges();
+
+    bool insertTwoWayJoins();
 };
 
 //######################################################################
-// Inline method definitions
+// CfgMap - Map from CfgBlock or CfgEdge to generic values
 
-BasicBlock::BasicBlock(ControlFlowGraph* cfgp)
-    : V3GraphVertex{cfgp} {}
+template <typename T_Key, typename T_Value>
+class CfgMap VL_NOT_FINAL {
+    // As opposed to a std::map/std::unordered_map, all entries are value
+    // initialized at construction, and the map is always dense. This can
+    // be improved if necessary but is sufficient for our current purposes.
 
-const ControlFlowEdge* BasicBlock::takenEdgep() const {
-    // It's always the first edge
-    const V3GraphEdge* const frontp = outEdges().frontp();
-    return static_cast<const ControlFlowEdge*>(frontp);
-}
+    const CfgGraph* m_cfgp;  // The control flow graph this map is for
+    size_t m_created;  // Edit count of CFG this map was created at
+    std::vector<T_Value> m_map;  // The map, stored as a vector
 
-const ControlFlowEdge* BasicBlock::untknEdgep() const {
-    // It's always the second (last) edge
-    const V3GraphEdge* const frontp = outEdges().frontp();
-    const V3GraphEdge* const backp = outEdges().backp();
-    return backp != frontp ? static_cast<const ControlFlowEdge*>(backp) : nullptr;
-}
+protected:
+    // CONSTRUCTOR
+    explicit CfgMap(const CfgGraph* cfgp, size_t size)
+        : m_cfgp{cfgp}
+        , m_created{cfgp->m_nEdits}
+        , m_map{size} {}
 
-const BasicBlock* BasicBlock::takenSuccessorp() const {
-    const ControlFlowEdge* const edgep = takenEdgep();
-    return edgep ? static_cast<const BasicBlock*>(edgep->top()) : nullptr;
-}
+public:
+    // Can create an empty map
+    CfgMap()
+        : m_cfgp{nullptr}
+        , m_created{0} {}
 
-const BasicBlock* BasicBlock::untknSuccessorp() const {
-    const ControlFlowEdge* const edgep = untknEdgep();
-    return edgep ? static_cast<const BasicBlock*>(edgep->top()) : nullptr;
-}
+    // Copyable, movable
+    CfgMap(const CfgMap<T_Key, T_Value>&) = default;
+    CfgMap(CfgMap<T_Key, T_Value>&&) = default;
+    CfgMap<T_Key, T_Value>& operator=(const CfgMap<T_Key, T_Value>&) = default;
+    CfgMap<T_Key, T_Value>& operator=(CfgMap<T_Key, T_Value>&&) = default;
 
-ControlFlowEdge::ControlFlowEdge(ControlFlowGraph* graphp, BasicBlock* srcp, BasicBlock* dstp)
-    : V3GraphEdge{graphp, srcp, dstp, 1, false} {}
+    T_Value& operator[](const T_Key& key) {
+        UASSERT_OBJ(m_created == m_cfgp->m_nEdits, m_cfgp->m_enterp, "Map is stale");
+        UASSERT_OBJ(m_cfgp == key.m_cfgp, m_cfgp->m_enterp, "Key not in this CFG");
+        return m_map.at(key.id());
+    }
+    const T_Value& operator[](const T_Key& key) const {
+        UASSERT_OBJ(m_created == m_cfgp->m_nEdits, m_cfgp->m_enterp, "Map is stale");
+        UASSERT_OBJ(m_cfgp == key.m_cfgp, m_cfgp->m_enterp, "Key not in this CFG");
+        return m_map.at(key.id());
+    }
+    T_Value& operator[](const T_Key* keyp) {
+        UASSERT_OBJ(m_created == m_cfgp->m_nEdits, m_cfgp->m_enterp, "Map is stale");
+        UASSERT_OBJ(m_cfgp == keyp->m_cfgp, m_cfgp->m_enterp, "Key not in this CFG");
+        return m_map.at(keyp->id());
+    }
+    const T_Value& operator[](const T_Key* keyp) const {
+        UASSERT_OBJ(m_created == m_cfgp->m_nEdits, m_cfgp->m_enterp, "Map is stale");
+        UASSERT_OBJ(m_cfgp == keyp->m_cfgp, m_cfgp->m_enterp, "Key not in this CFG");
+        return m_map.at(keyp->id());
+    }
+};
+
+template <typename T_Value>
+class CfgBlockMap final : public CfgMap<CfgBlock, T_Value> {
+    friend class CfgGraph;
+    // CONSTRUCTOR - Create one via CfgGraph::makeBlockMap
+    explicit CfgBlockMap(const CfgGraph* cfgp)
+        : CfgMap<CfgBlock, T_Value>{cfgp, cfgp->nBlocks()} {}
+
+public:
+    // Can create an empty map
+    CfgBlockMap() = default;
+    // Copyable, movable
+    CfgBlockMap(const CfgBlockMap&) = default;
+    CfgBlockMap(CfgBlockMap&&) = default;
+    CfgBlockMap& operator=(const CfgBlockMap&) = default;
+    CfgBlockMap& operator=(CfgBlockMap&&) = default;
+};
+
+template <typename T_Value>
+class CfgEdgeMap final : public CfgMap<CfgEdge, T_Value> {
+    friend class CfgGraph;
+    // CONSTRUCTOR - Create one via CfgGraph::makeEdgeMap
+    explicit CfgEdgeMap(const CfgGraph* cfgp)
+        : CfgMap<CfgEdge, T_Value>{cfgp, cfgp->nEdges()} {}
+
+public:
+    // Can create an empty map
+    CfgEdgeMap() = default;
+    // Copyable, movable
+    CfgEdgeMap(const CfgEdgeMap&) = default;
+    CfgEdgeMap(CfgEdgeMap&&) = default;
+    CfgEdgeMap& operator=(const CfgEdgeMap&) = default;
+    CfgEdgeMap& operator=(CfgEdgeMap&&) = default;
+};
 
 //######################################################################
-// ControlFlowGraph functions
+// Innline method definitions
+
+// --- CfgBlock ---
+
+CfgBlock::CfgBlock(CfgGraph* cfgp)
+    : V3GraphVertex{cfgp}
+    , m_cfgp{cfgp} {}
+
+size_t CfgBlock::id() { return m_cfgp->idOf(this); }
+size_t CfgBlock::id() const { return m_cfgp->idOf(this); }
+
+// Successor edges
+CfgEdge* CfgBlock::takenEdgep() {  // It's always the first edge
+    return isExit() ? nullptr : static_cast<CfgEdge*>(outEdges().frontp());
+}
+const CfgEdge* CfgBlock::takenEdgep() const {  // It's always the first edge
+    return isExit() ? nullptr : static_cast<const CfgEdge*>(outEdges().frontp());
+}
+CfgEdge* CfgBlock::untknEdgep() {  // It's always the second (last) edge
+    return isBranch() ? static_cast<CfgEdge*>(outEdges().backp()) : nullptr;
+}
+const CfgEdge* CfgBlock::untknEdgep() const {  // It's always the second (last) edge
+    return isBranch() ? static_cast<const CfgEdge*>(outEdges().backp()) : nullptr;
+}
+CfgBlock* CfgBlock::takenp() {
+    return isExit() ? nullptr : static_cast<CfgBlock*>(outEdges().frontp()->top());
+}
+const CfgBlock* CfgBlock::takenp() const {
+    return isExit() ? nullptr : static_cast<CfgBlock*>(outEdges().frontp()->top());
+}
+CfgBlock* CfgBlock::untknp() {
+    return isBranch() ? static_cast<CfgBlock*>(outEdges().backp()->top()) : nullptr;
+}
+const CfgBlock* CfgBlock::untknp() const {
+    return isBranch() ? static_cast<const CfgBlock*>(outEdges().backp()->top()) : nullptr;
+}
+
+// Predecessor edges
+CfgEdge* CfgBlock::firstPredecessorEdgep() {  //
+    return static_cast<CfgEdge*>(inEdges().frontp());
+}
+const CfgEdge* CfgBlock::firstPredecessorEdgep() const {  //
+    return static_cast<const CfgEdge*>(inEdges().frontp());
+}
+CfgEdge* CfgBlock::lastPredecessorEdgep() {  //
+    return static_cast<CfgEdge*>(inEdges().backp());
+}
+const CfgEdge* CfgBlock::lastPredecessorEdgep() const {  //
+    return static_cast<const CfgEdge*>(inEdges().backp());
+}
+CfgBlock* CfgBlock::firstPredecessorp() {  //
+    return isEnter() ? nullptr : firstPredecessorEdgep()->srcp();
+}
+const CfgBlock* CfgBlock::firstPredecessorp() const {  //
+    return isEnter() ? nullptr : firstPredecessorEdgep()->srcp();
+}
+CfgBlock* CfgBlock::lastPredecessorp() {  //
+    return isEnter() ? nullptr : lastPredecessorEdgep()->srcp();
+}
+const CfgBlock* CfgBlock::lastPredecessorp() const {  //
+    return isEnter() ? nullptr : lastPredecessorEdgep()->srcp();
+}
+
+// --- CfgEdge ---
+
+CfgEdge::CfgEdge(CfgGraph* cfgp, CfgBlock* srcp, CfgBlock* dstp)
+    : V3GraphEdge{cfgp, srcp, dstp, 1, false}
+    , m_cfgp{cfgp} {}
+
+size_t CfgEdge::id() { return m_cfgp->idOf(this); }
+size_t CfgEdge::id() const { return m_cfgp->idOf(this); }
+
+// --- CfgGraph ---
+
+template <typename T_Value>
+CfgBlockMap<T_Value> CfgGraph::makeBlockMap() const {
+    return CfgBlockMap<T_Value>{this};
+}
+template <typename T_Value>
+CfgEdgeMap<T_Value> CfgGraph::makeEdgeMap() const {
+    return CfgEdgeMap<T_Value>{this};
+}
+
+//######################################################################
+// CfgDominatorTree
+
+class CfgDominatorTree final {
+    // STATE
+    CfgBlockMap<const CfgBlock*> m_bb2Idom;  // Map from CfgBlock to its immediate dominator
+
+    // PRIVATE METHODS
+
+    // Part of algorithm to compute m_bb2Idom, see consructor
+    const CfgBlock* intersect(const CfgBlock* ap, const CfgBlock* bp);
+
+public:
+    // CONSTRUCTOR
+    explicit CfgDominatorTree(const CfgGraph& cfg);
+    // Can create an empty map
+    CfgDominatorTree() = default;
+    // Copyable, movable
+    CfgDominatorTree(const CfgDominatorTree&) = default;
+    CfgDominatorTree(CfgDominatorTree&&) = default;
+    CfgDominatorTree& operator=(const CfgDominatorTree&) = default;
+    CfgDominatorTree& operator=(CfgDominatorTree&&) = default;
+
+    // PUBLIC METHODS
+
+    // Return unique CfgBlock that dominates both of the given blocks, but does
+    // not strictly dominate any other block that dominates both blocks. It
+    // will return 'ap' or 'bp' if one dominates the other (or are the same)
+    const CfgBlock* closestCommonDominator(const CfgBlock* ap, const CfgBlock* bp) const {
+        while (ap != bp) {
+            if (*ap < *bp) {
+                bp = m_bb2Idom[bp];
+            } else {
+                ap = m_bb2Idom[ap];
+            }
+        }
+        return ap;
+    }
+
+    // Returns true if 'ap' dominates 'bp'
+    bool dominates(const CfgBlock* const ap, const CfgBlock* bp) {
+        // Walk up the dominator tree from 'bp' until reaching 'ap' or the root
+        while (true) {
+            // True if 'ap' is above (or same as) 'bp'
+            if (ap == bp) return true;
+            // Step up the dominator tree
+            bp = m_bb2Idom[bp];
+            // False if reached the root
+            if (!bp) return false;
+        }
+    }
+};
+
+//######################################################################
+// V3Cfg
 
 namespace V3Cfg {
-// Build control flow graph for given node
-std::unique_ptr<const ControlFlowGraph> build(const AstNodeProcedure*);
 
 // Compute AstVars live on entry to given CFG. That is, variables that might
 // be read before wholly assigned in the CFG. Returns nullptr if the analysis
 // failed due to unhandled statements or data types involved in the CFG.
 // On success, returns a vector of AstVar or AstVarScope nodes live on entry.
-std::unique_ptr<std::vector<AstVar*>> liveVars(const ControlFlowGraph&);
+std::unique_ptr<std::vector<AstVar*>> liveVars(const CfgGraph&);
 
 // Same as liveVars, but return AstVarScopes insted
-std::unique_ptr<std::vector<AstVarScope*>> liveVarScopes(const ControlFlowGraph&);
+std::unique_ptr<std::vector<AstVarScope*>> liveVarScopes(const CfgGraph&);
+
 }  //namespace V3Cfg
 
 #endif  // VERILATOR_V3CFG_H_

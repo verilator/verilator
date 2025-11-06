@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# mypy: disallow-untyped-defs
 # pylint: disable=C0103,C0114,C0115,C0116,C0123,C0209,C0301,R0902,R0913,R0914,R0912,R0915,W0621
 ######################################################################
 
@@ -36,7 +37,7 @@ results = {}
 elapsed = {}
 
 
-def toDateTime(s):
+def toDateTime(s: str) -> datetime:
     return datetime.strptime(s, "%Y-%m-%dT%H:%M:%S.%f")
 
 
@@ -53,6 +54,7 @@ for logfile in args.logdir.iterdir():
             match = re.match(r'\[(\S+)\s.*Result: (.*)$', line)
             if match:
                 assert obj is not None
+                assert start is not None
                 elapsed[obj] = toDateTime(match.group(1)) - start
                 results[obj] = match.group(2)
 

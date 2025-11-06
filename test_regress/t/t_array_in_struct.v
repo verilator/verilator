@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 //bug991
-module t (/*AUTOARG*/);
+module t;
 
    typedef struct {
       logic [31:0] arr [3:0];

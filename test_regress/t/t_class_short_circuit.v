@@ -18,7 +18,7 @@ class Cls;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       Cls cls;
       if (cls != null && cls.x == 10) $stop;

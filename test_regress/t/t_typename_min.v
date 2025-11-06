@@ -17,17 +17,17 @@ module t;
       s = $typename(array.min);
       `checks(s, "int$[$]");
       s = $sformatf("%p", array.min);
-      `checks(s, "'{'h1} ");
+      `checks(s, "'{'h1}");
 
       s = $typename(queue.min);
       `checks(s, "int$[$]");
       s = $sformatf("%p", queue.min);
-      `checks(s, "'{'h1} ");
+      `checks(s, "'{'h1}");
 
       s = $typename(assoc.min);
       `checks(s, "int$[$]");
       s = $sformatf("%p", assoc.min);
-      `checks(s, "'{'h1} ");
+      `checks(s, "'{'h1}");
 
       $write("*-* All Finished *-*\n");
       $finish;

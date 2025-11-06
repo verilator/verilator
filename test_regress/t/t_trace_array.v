@@ -11,7 +11,7 @@ module t (clk);
    // Trace would overflow at 256KB which is 256 kb dump, 16 kb in a chunk
 
    typedef struct packed {
-      logic [1024*1024:0] d;
+      logic [128*1024:0] d;
    } s1_t; // 128 b
 
    s1_t biggie;

@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 //
 
-module t(/*AUTOARG*/);
+module t;
    bit [3:0] addr;
    initial begin
        this.addr = 2;

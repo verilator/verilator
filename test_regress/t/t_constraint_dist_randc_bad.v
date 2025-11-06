@@ -10,5 +10,5 @@ class Cls1;
    constraint c_bad { rc dist {3 := 0, 10 := 5}; }  // Bad, no dist on randc
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 endmodule

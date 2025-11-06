@@ -31,8 +31,8 @@ module t (  /*AUTOARG*/
 );
 
 
-   parameter int do_generate = 1;
-   parameter longint long_int = 64'h123456789abcdef;
+   parameter int DO_GENERATE = 1;
+   parameter longint LONG_INT = 64'h123456789abcdef;
 
 
    input clk;
@@ -100,7 +100,7 @@ module t (  /*AUTOARG*/
 
 
    generate
-      if (do_generate == 1) begin : cond_scope
+      if (DO_GENERATE == 1) begin : cond_scope
          ModSub scoped_sub ();
          parameter int scoped_wire = 1;
 

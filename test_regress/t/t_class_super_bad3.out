@@ -1,0 +1,5 @@
+%Error: t/t_class_super_bad3.v:10:5: Syntax error: 'super' must be first name component, or after 'this.'
+   10 |     i.super.i = 1;   
+      |     ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

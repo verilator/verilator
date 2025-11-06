@@ -121,7 +121,7 @@ module t (/*AUTOARG*/
          string q[$];
          string p[$:3];
          string v;
-         int j = 0;
+         int j;
 
          // Empty queue checks
          `checkh($left(q), 0);
@@ -149,7 +149,7 @@ module t (/*AUTOARG*/
          v = q[4]; `checks(v, "");
          //Unsup: `checkh(q[$], "b2");
 
-         `checkp(q, "'{\"f2\", \"f1\", \"b1\", \"b2\"} ");
+         `checkp(q, "'{\"f2\", \"f1\", \"b1\", \"b2\"}");
          `checkp(p, "'{}");
 
          //Unsup: q.delete(1);
@@ -160,6 +160,7 @@ module t (/*AUTOARG*/
          //v = q[0]; `checks(v, "ins0");
          //v = q[3]; `checks(v, "ins3");
 
+         j = 0;
          foreach (q[i]) begin
             j++;
             v = q[i];

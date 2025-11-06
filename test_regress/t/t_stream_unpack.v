@@ -13,7 +13,7 @@ typedef enum bit [5:0] {
    B = 6,b111111
 } enum_t;
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       typedef bit [5:0] bit6_t;
       typedef bit bit6_unpacked_t[6];
@@ -43,10 +43,10 @@ module t (/*AUTOARG*/);
       logic [127:0] p[];
 
       { >> bit {arr}} = bit6;
-      `checkp(arr, "'{'h1, 'h1, 'h1, 'h0, 'h0, 'h0} ");
+      `checkp(arr, "'{'h1, 'h1, 'h1, 'h0, 'h0, 'h0}");
 
       arr = { >> bit {bit6}};
-      `checkp(arr, "'{'h1, 'h1, 'h1, 'h0, 'h0, 'h0} ");
+      `checkp(arr, "'{'h1, 'h1, 'h1, 'h0, 'h0, 'h0}");
 
       ans = { >> bit {arr} };
       `checkh(ans, bit6);
@@ -64,10 +64,10 @@ module t (/*AUTOARG*/);
       `checkh(ans_enum, bit6);
 
       { << bit {arr}} = bit6;
-      `checkp(arr, "'{'h0, 'h0, 'h0, 'h1, 'h1, 'h1} ");
+      `checkp(arr, "'{'h0, 'h0, 'h0, 'h1, 'h1, 'h1}");
 
       arr = { << bit {bit6}};
-      `checkp(arr, "'{'h0, 'h0, 'h0, 'h1, 'h1, 'h1} ");
+      `checkp(arr, "'{'h0, 'h0, 'h0, 'h1, 'h1, 'h1}");
 
       ans = { << bit {arr} };
       `checkh(ans, bit6);
@@ -85,10 +85,10 @@ module t (/*AUTOARG*/);
       `checkh(ans_enum, bit6);
 
       { >> bit[1:0] {arr2}} = bit6;
-      `checkp(arr2, "'{'h3, 'h2, 'h0} ");
+      `checkp(arr2, "'{'h3, 'h2, 'h0}");
 
       arr2 = { >> bit[1:0] {bit6}};
-      `checkp(arr2, "'{'h3, 'h2, 'h0} ");
+      `checkp(arr2, "'{'h3, 'h2, 'h0}");
 
       ans = { >> bit[1:0] {arr2} };
       `checkh(ans, bit6);
@@ -106,7 +106,7 @@ module t (/*AUTOARG*/);
       `checkh(ans_enum, bit6);
 
       { << bit[1:0] {arr2}} = bit6;
-      `checkp(arr2, "'{'h0, 'h2, 'h3} ");
+      `checkp(arr2, "'{'h0, 'h2, 'h3}");
 
       ans = { << bit[1:0] {arr2} };
       `checkh(ans, bit6);
@@ -124,10 +124,10 @@ module t (/*AUTOARG*/);
       `checkh(ans_enum, bit6);
 
       { >> bit [5:0] {arr6} } = bit6;
-      `checkp(arr6, "'{'h38} ");
+      `checkp(arr6, "'{'h38}");
 
       arr6 = { >> bit [5:0] {bit6}};
-      `checkp(arr6, "'{'h38} ");
+      `checkp(arr6, "'{'h38}");
 
       ans = { >> bit[5:0] {arr6} };
       `checkh(ans, bit6);
@@ -145,10 +145,10 @@ module t (/*AUTOARG*/);
       `checkh(ans_enum, bit6);
 
       { << bit [5:0] {arr6} } = bit6;
-      `checkp(arr6, "'{'h38} ");
+      `checkp(arr6, "'{'h38}");
 
       arr6 = { << bit [5:0] {bit6}};
-      `checkp(arr6, "'{'h38} ");
+      `checkp(arr6, "'{'h38}");
 
       ans = { << bit[5:0] {arr6} };
       `checkh(ans, bit6);
@@ -211,15 +211,15 @@ module t (/*AUTOARG*/);
       `checkh(d, 16'b0100110110001100);
 
       { >> {e, f}} = d;
-      `checkp(e, "'{'h4, 'hd} ");
-      `checkp(f, "'{'h1, 'h0, 'h0, 'h0, 'h1, 'h1, 'h0, 'h0} ");
+      `checkp(e, "'{'h4, 'hd}");
+      `checkp(f, "'{'h1, 'h0, 'h0, 'h0, 'h1, 'h1, 'h0, 'h0}");
 
       d = { << 4 {a, b, c}};
       `checkh(d, 16'b1100100011010100);
 
       { << 2 {e, f}} = d;
-      `checkp(e, "'{'h1, 'h7} ");
-      `checkp(f, "'{'h0, 'h0, 'h1, 'h0, 'h0, 'h0, 'h1, 'h1} ");
+      `checkp(e, "'{'h1, 'h7}");
+      `checkp(f, "'{'h0, 'h0, 'h1, 'h0, 'h0, 'h0, 'h1, 'h1}");
 
       g = { << 8 {16'hABCD}};
       `checkh(g, 16'hCDAB);

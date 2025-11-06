@@ -41,14 +41,15 @@ std::map<string, string> VName::s_dehashMap;
 // Wildcard
 
 // Double procedures, inlined, unrolls loop much better
-bool VString::wildmatchi(const char* s, const char* p) VL_PURE {
+template <bool Even = true>
+static bool wildMatchImpl(const char* s, const char* p) VL_PURE {
     for (; *p; s++, p++) {
         if (*p != '*') {
             if (((*s) != (*p)) && *p != '?') return false;
         } else {
             // Trailing star matches everything.
             if (!*++p) return true;
-            while (!wildmatch(s, p)) {
+            while (!wildMatchImpl<!Even>(s, p)) {
                 if (*++s == '\0') return false;
             }
             return true;
@@ -58,19 +59,11 @@ bool VString::wildmatchi(const char* s, const char* p) VL_PURE {
 }
 
 bool VString::wildmatch(const char* s, const char* p) VL_PURE {
-    for (; *p; s++, p++) {
-        if (*p != '*') {
-            if (((*s) != (*p)) && *p != '?') return false;
-        } else {
-            // Trailing star matches everything.
-            if (!*++p) return true;
-            while (!wildmatchi(s, p)) {
-                if (*++s == '\0') return false;
-            }
-            return true;
-        }
+    if (*s == '\0') {
+        while (*p == '*') ++p;
+        return *p == '\0';
     }
-    return (*s == '\0');
+    return wildMatchImpl(s, p);
 }
 
 bool VString::wildmatch(const string& s, const string& p) VL_PURE {
@@ -334,8 +327,12 @@ string VString::replaceWord(const string& str, const string& from, const string&
     return result;
 }
 
-bool VString::startsWith(const string& str, const string& prefix) {
-    return str.rfind(prefix, 0) == 0;  // Faster than .find(_) == 0
+std::deque<string> VString::split(const string& str, char delimiter) {
+    std::deque<std::string> results;
+    std::istringstream is{str};
+    std::string token;
+    while (std::getline(is, token, delimiter)) results.push_back(token);
+    return results;
 }
 
 bool VString::endsWith(const string& str, const string& suffix) {
@@ -364,7 +361,7 @@ uint64_t VString::hashMurmur(const string& str) VL_PURE {
 
     uint64_t h = seed ^ (len * m);
 
-    const uint64_t* data = (const uint64_t*)key;
+    const uint64_t* data = reinterpret_cast<const uint64_t*>(key);
     const uint64_t* end = data + (len / 8);
 
     while (data != end) {
@@ -378,7 +375,7 @@ uint64_t VString::hashMurmur(const string& str) VL_PURE {
         h *= m;
     }
 
-    const unsigned char* data2 = (const unsigned char*)data;
+    const unsigned char* data2 = reinterpret_cast<const unsigned char*>(data);
 
     switch (len & 7) {
     case 7: h ^= uint64_t(data2[6]) << 48; /* fallthrough */
@@ -510,7 +507,7 @@ void VHashSha256::insertFile(const string& filename) {
     if (fd < 0) return;
 
     std::array<char, BUFFER_SIZE + 1> buf;
-    while (const size_t got = ::read(fd, &buf, BUFFER_SIZE)) {
+    while (const ssize_t got = ::read(fd, &buf, BUFFER_SIZE)) {
         if (got <= 0) break;
         insert(&buf, got);
     }
@@ -761,7 +758,7 @@ VSpellCheck::EditDistance VSpellCheck::cutoffDistance(size_t goal_len, size_t ca
 }
 
 string VSpellCheck::bestCandidateInfo(const string& goal, EditDistance& distancer) const {
-    string bestCandidate;
+    string best;
     const size_t gLen = goal.length();
     distancer = LENGTH_LIMIT * 10;
     for (const string& candidate : m_candidates) {
@@ -779,13 +776,13 @@ string VSpellCheck::bestCandidateInfo(const string& goal, EditDistance& distance
                                       << " candidate=" << candidate);
         if (dist < distancer && dist <= cutoff) {
             distancer = dist;
-            bestCandidate = candidate;
+            best = candidate;
         }
     }
 
     // If goal matches candidate avoid suggesting replacing with self
     if (distancer == 0) return "";
-    return bestCandidate;
+    return best;
 }
 
 void VSpellCheck::selfTestDistanceOne(const string& a, const string& b, EditDistance expected) {

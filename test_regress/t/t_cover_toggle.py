@@ -33,6 +33,8 @@ test.run(cmd=[
 
 test.files_identical(test.obj_dir + "/annotated/" + test.name + ".v", test.golden_filename)
 
+test.file_grep_not(test.obj_dir + "/coverage.dat", "_under_toggle")
+
 test.run(cmd=[
     os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
     "--annotate-points",
@@ -44,5 +46,18 @@ test.run(cmd=[
 
 test.files_identical(test.obj_dir + "/annotated-points/" + test.name + ".v",
                      "t/" + test.name + "__points.out")
+
+test.run(cmd=[
+    os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
+    "--annotate-all",
+    "--annotate-min 1",
+    "--annotate",
+    test.obj_dir + "/annotated-all",
+    test.obj_dir + "/coverage.dat",
+],
+         verilator_run=True)
+
+test.files_identical(test.obj_dir + "/annotated-all/" + test.name + ".v",
+                     "t/" + test.name + "__all.out")
 
 test.passes()

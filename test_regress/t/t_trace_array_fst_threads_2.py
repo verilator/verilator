@@ -13,7 +13,8 @@ test.scenarios('vlt')
 test.top_filename = "t/t_trace_array.v"
 test.golden_filename = "t/t_trace_array_fst.out"
 
-test.compile(verilator_flags2=['--cc --trace-fst --trace-threads 2 --trace-structs'])
+test.compile(
+    verilator_flags2=['--cc --trace-fst --trace-threads 2 --trace-structs --trace-max-width 0'])
 
 test.execute()
 

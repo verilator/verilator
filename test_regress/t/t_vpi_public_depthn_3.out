@@ -1,0 +1,8 @@
+  scopesDump:
+    SCOPE 0x#: top.TOP
+    SCOPE 0x#: top.t
+    SCOPE 0x#: top.t.s_axis_if
+    SCOPE 0x#: top.t.u_dut
+    SCOPE 0x#: top.t.u_dut.u_sub
+
+*-* All Finished *-*

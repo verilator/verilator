@@ -8,7 +8,7 @@ class Cls;
    int imembera;
 endclass : Cls
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       Cls c;
       if (c != null) $stop;

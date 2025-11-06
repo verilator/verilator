@@ -108,7 +108,7 @@ interface example_if();
   endtask: wait_for_result
 endinterface: example_if
 
-module t(/*AUTOARG*/);
+module t;
 
   example_if example_if_inst();
 

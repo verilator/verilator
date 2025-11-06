@@ -4,7 +4,7 @@
 // without warranty, 2013 by Jeremy Bennett.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
    typedef enum int {
                      PADTYPE_DEFAULT = 32'd0,

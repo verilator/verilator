@@ -4,18 +4,19 @@
 // any use, without warranty, 2020 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t(/*AUTOARG*/);
+module t;
 
-   function int f;
-      fork
-         ;
-      join_any  // Illegal 13.4.4
-   endfunction
+  function int f;
+    fork
+      ;
+    join_any  // Illegal 13.4.4
+    return 0;
+  endfunction
 
-   int i;
+  int i;
 
-   initial begin
-      i = f();
-   end
+  initial begin
+    i = f();
+  end
 
 endmodule

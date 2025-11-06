@@ -101,7 +101,7 @@ endclass
 class :final CClsBadExtendsFinal extends CClsF;
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       Cls c;
       CClsF cc;

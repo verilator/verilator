@@ -1,6 +1,6 @@
-%Warning-VARHIDDEN: t/t_var_bad_hide_docs.v:8:12: Declaration of signal hides declaration in upper scope: 't'
-    8 |    integer t;   
-      |            ^
+%Warning-VARHIDDEN: t/t_var_bad_hide_docs.v:8:11: Declaration of signal hides declaration in upper scope: 't'
+    8 |   integer t;   
+      |           ^
                     t/t_var_bad_hide_docs.v:7:8: ... Location of original declaration
     7 | module t;
       |        ^

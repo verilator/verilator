@@ -28,6 +28,7 @@ autoflush STDOUT 1;
 autoflush STDERR 1;
 
 $Debug = 0;
+my $opt_aslr;
 my $opt_gdb;
 my $opt_rr;
 my $opt_gdbbt;
@@ -56,6 +57,7 @@ if (! GetOptions(
           "debug"            => \&debug,
           # "version!"       => \&version,   # Also passthru'ed
           # Switches
+          "aslr!"            => \$opt_aslr,
           "gdb!"             => \$opt_gdb,
           "gdbbt!"           => \$opt_gdbbt,
           "quiet!"           => \$opt_quiet_exit,  # As -quiet implies -quiet-exit
@@ -97,7 +99,7 @@ my @quoted_sw = map { sh_escape($_) } @Opt_Verilator_Sw;
 if ($opt_gdb) {
     # Generic GDB interactive
     run (ulimit_stack_unlimited()
-         . aslr_off()
+         . aslr(0)
          . ($ENV{VERILATOR_GDB} || "gdb")
          . " " . verilator_bin()
          # Note, uncomment to set breakpoints before running:
@@ -114,13 +116,13 @@ if ($opt_gdb) {
 } elsif ($opt_rr) {
     # Record with rr
     run (ulimit_stack_unlimited()
-         . aslr_off()
+         . aslr(0)
          . "rr record " . verilator_bin()
          . " " . join(' ', @quoted_sw));
 } elsif ($opt_gdbbt && $Debug) {
     # Run under GDB to get gdbbt
     run (ulimit_stack_unlimited()
-         . aslr_off()
+         . aslr(0)
          . "gdb"
          . " " . verilator_bin()
          . " --batch --quiet --return-child-result"
@@ -135,19 +137,19 @@ if ($opt_gdb) {
         );
 
     run (ulimit_stack_unlimited()
-         . aslr_off()
+         . aslr(0)
          . $valgrind_bin
          . " " . verilator_bin()
          . " " . join(' ', @quoted_sw));
 } elsif ($Debug) {
     # Debug
     run(ulimit_stack_unlimited()
-        . aslr_off()
+        . aslr(0)
         . verilator_bin()
         . " " . join(' ', @quoted_sw));
 } else {
     # Normal, non gdb
-    run(ulimit_stack_unlimited() . verilator_bin() . " " . join(' ', @quoted_sw));
+    run(ulimit_stack_unlimited() . aslr(1) . verilator_bin() . " " . join(' ', @quoted_sw));
 }
 
 #----------------------------------------------------------------------
@@ -192,21 +194,37 @@ sub gdb_works {
     return $status == 0;
 }
 
-sub aslr_off {
-    my $ok = `setarch --addr-no-randomize echo ok 2>/dev/null` || "";
-    if ($ok =~ /ok/) {
-        return "setarch --addr-no-randomize ";
-    } else {
-        return "";
+sub aslr {
+    my $want_on = shift;
+    $want_on = $opt_aslr if defined $opt_aslr;
+    if (!$want_on) {
+        my $ok = `setarch --addr-no-randomize echo ok 2>/dev/null` || "";
+        if ($ok =~ /ok/) {
+            return "setarch --addr-no-randomize ";
+        }
     }
+    return "";
 }
 
 sub ulimit_stack_unlimited {
     return "" if !$opt_unlimited_stack;
-    system("ulimit -s unlimited 2>/dev/null");
+    my $limit = "unlimited";
+    # AddressSanitizer doesn't work with 'ulimit -s unlimted'
+    if (`${\(verilator_bin())} --get-supported DEV_ASAN` eq "1\n") {
+        # Use host 'physical memory / #cores / 8' instead
+        open(my $fh, "<", "/proc/meminfo") || die "Can't read host memory for asan";
+        while (<$fh>) {
+            if (m/MemTotal:\s+(\d+)\s+kB/) {
+                $limit = int(int($1)/`nproc`/8);
+                last;
+            }
+        }
+        close($fh);
+    }
+    system("ulimit -s $limit 2>/dev/null");
     my $status = $?;
     if ($status == 0) {
-        return "ulimit -s unlimited 2>/dev/null; exec ";
+        return "ulimit -s $limit 2>/dev/null; exec ";
     } else {
         return "";
     }
@@ -227,17 +245,18 @@ sub run {
             warn "%Error: export VERILATOR_ROOT=" . ($ENV{VERILATOR_ROOT} || "") . "\n";
             warn "%Error: $command\n";
         }
-        if ($status & 127) {
-            if (($status & 127) == 4  # SIGILL
-                || ($status & 127) == 8  # SIGFPA
-                || ($status & 127) == 11) {  # SIGSEGV
+        my $signal = ($status & 127);
+        if ($signal) {
+            if ($signal == 4  # SIGILL
+                || $signal == 8  # SIGFPA
+                || $signal == 11) {  # SIGSEGV
                 warn "%Error: Verilator internal fault, sorry. "
                     . "Suggest trying --debug --gdbbt\n" if !$Debug;
-            } elsif (($status & 127) == 6) {  # SIGABRT
+            } elsif ($signal == 6) {  # SIGABRT
                 warn "%Error: Verilator aborted. "
                     . "Suggest trying --debug --gdbbt\n" if !$Debug;
             } else {
-                warn "%Error: Verilator threw signal $status. "
+                warn "%Error: Verilator threw signal $signal. "
                     . "Suggest trying --debug --gdbbt\n" if !$Debug;
             }
         }
@@ -245,8 +264,8 @@ sub run {
             warn "%Error: Command Failed $command\n";
         }
         exit $! if $!;  # errno
-        exit $? >> 8 if $? >> 8;  # child exit status
-        exit 255;  # last resort
+        exit $? >> 8 if $? >> 8;  # pass along child exit code
+        exit 128 + $signal;  # last resort
     }
 }
 
@@ -311,6 +330,7 @@ detailed descriptions of these arguments.
      +1800-2012ext+<ext>        Use SystemVerilog 2012 with file extension <ext>
      +1800-2017ext+<ext>        Use SystemVerilog 2017 with file extension <ext>
      +1800-2023ext+<ext>        Use SystemVerilog 2023 with file extension <ext>
+    --no-aslr                   Disable address space layout randomization
     --no-assert                 Disable all assertions
     --no-assert-case            Disable unique/unique0/priority-case assertions
     --autoflush                 Flush streams after all $displays
@@ -322,8 +342,6 @@ detailed descriptions of these arguments.
     --build-jobs <jobs>         Parallelism for --build
     --cc                        Create C++ output
      -CFLAGS <flags>            C++ compiler arguments for makefile
-    --clk <signal-name>         Mark specified signal as clock
-    --no-clk <signal-name>      Prevent marking specified signal as clock
     --compiler <compiler-name>  Tune for specified C++ compiler
     --compiler-include          Include additional header in the precompiled one
     --converge-limit <loops>    Tune convergence settle time
@@ -352,6 +370,7 @@ detailed descriptions of these arguments.
     --dump-defines              Show preprocessor defines with -E
     --dump-dfg                  Enable dumping DfgGraphs to .dot files
     --dump-graph                Enable dumping V3Graphs to .dot files
+    --dump-inputs               Enable dumping preprocessed input files
     --dump-tree                 Enable dumping Ast .tree files
     --dump-tree-addrids         Use short identifiers instead of addresses
     --dump-tree-dot             Enable dumping Ast .tree.dot debug files
@@ -382,7 +401,9 @@ detailed descriptions of these arguments.
     --getenv <var>              Get environment variable with defaults
     --help                      Show this help
     --hierarchical              Enable hierarchical Verilation
-    --hierarchical-params-file <name> Internal option that specifies parameters file for hier blocks
+    --hierarchical-block <block>  Internal use only for --hierarchical
+    --hierarchical-child <block>  Internal use only for --hierarchical
+    --hierarchical-params-file <name>  Internal option that specifies parameters file for hier blocks
     --hierarchical-threads <threads>  Number of threads for hierarchical scheduling
      -I<dir>                    Directory to search for includes
     --if-depth <value>          Tune IFDEPTH warning
@@ -400,6 +421,7 @@ detailed descriptions of these arguments.
      -LDFLAGS <flags>           Linker pre-object arguments for makefile
     --lib-create <name>         Create a DPI library
      +libext+<ext>+[ext]...     Extensions for finding modules
+     +librescan                 Ignored for compatibility
     --lint-only                 Lint, but do not make output
     --localize-max-size <value>  Tune localize optimization variable size
     --main                      Generate C++ main() file
@@ -414,6 +436,8 @@ detailed descriptions of these arguments.
      +notimingchecks            Ignored
      -o <executable>            Name of final executable
      -O0                        Disable optimizations
+     -O1                        Default optimizations
+     -O2                        Stronger optimizations
      -O3                        High-performance optimizations
      -O<optimization-letter>    Selectable optimizations
     --output-groups <numfiles>  Group .cpp files into larger ones
@@ -429,8 +453,9 @@ detailed descriptions of these arguments.
     --pins-uint8                Specify types for top-level ports
     --no-pins64                 Don't use uint64_t's for 33-64 bit sigs
     --pipe-filter <command>     Filter all input through a script
-    --pp-comments               Show preprocessor comments with -E
     --prefix <topname>          Name of top-level class
+    --preproc-comments          Include preprocessor comments in the output with -E
+    --preproc-defines           Include preprocessor defines in the output with -E
     --preproc-resolve           Include all found modules in the output with -E
     --preproc-token-limit       Maximum tokens on a line allowed by preprocessor
     --private                   Debugging; see docs

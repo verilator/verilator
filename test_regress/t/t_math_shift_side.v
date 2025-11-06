@@ -13,7 +13,7 @@ class Cls;
 
 endclass
 
-module t(/*AUTOARG*/);
+module t;
 
    int  i;
 

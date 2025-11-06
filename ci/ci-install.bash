@@ -37,6 +37,13 @@ else
   fatal "Unknown os: '$CI_OS_NAME'"
 fi
 
+if [ "$CI_OS_NAME" = "linux" ]; then
+  # Avoid slow "processing triggers for man db"
+  echo "path-exclude /usr/share/doc/*"  | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
+  echo "path-exclude /usr/share/man/*"  | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
+  echo "path-exclude /usr/share/info/*" | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
+fi
+
 install-vcddiff() {
   TMP_DIR="$(mktemp -d)"
   git clone https://github.com/veripool/vcddiff "$TMP_DIR"
@@ -70,7 +77,7 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
     fi
   elif [ "$CI_OS_NAME" = "osx" ]; then
     brew update
-    brew install ccache perl gperftools
+    brew install ccache perl gperftools autoconf bison flex help2man
   elif [ "$CI_OS_NAME" = "freebsd" ]; then
     sudo pkg install -y autoconf bison ccache gmake perl5
   else
@@ -78,7 +85,7 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
   fi
 
   if [ -n "$CCACHE_DIR" ]; then
-    mkdir -p "$CCACHE_DIR" && ./ci/ci-ccache-maint.bash
+    mkdir -p "$CCACHE_DIR"
   fi
 elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   ##############################################################################

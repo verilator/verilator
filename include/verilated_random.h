@@ -33,6 +33,7 @@
 #include <sstream>
 
 //=============================================================================
+
 // VlRandomExpr and subclasses represent expressions for the constraint solver.
 class ArrayInfo final {
 public:
@@ -110,7 +111,7 @@ public:
             return it->second->m_datap;
         } else {
             VL_FATAL_MT(__FILE__, __LINE__, "randomize", "indexed_name not found in m_arr_vars");
-            return nullptr;
+            return nullptr;  // LCOV_EXCL_BR_LINE
         }
     }
     void emitHexs(std::ostream& s, const std::vector<IData>& indices, const size_t bit_width,
@@ -192,6 +193,7 @@ public:
         s << ')';
     }
 };
+
 //=============================================================================
 // VlRandomizer is the object holding constraints and variable references.
 class VlRandomizer VL_NOT_FINAL {
@@ -216,9 +218,7 @@ public:
     // Finds the next solution satisfying the constraints
     bool next(VlRNG& rngr);
 
-    // -----------------------------------------------
     // ---  Process the key for associative array  ---
-    // -----------------------------------------------
 
     // process_key: Handle integral keys (<= 32-bit)
     template <typename T_Key>
@@ -313,9 +313,7 @@ public:
                     "supported currently.");
     }
 
-    // -----------------------------------------
     // ---  write_var to register variables  ---
-    // -----------------------------------------
 
     // Register scalar variable (non-struct, basic type)
     template <typename T>
@@ -402,9 +400,8 @@ public:
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (dimension > 0) record_struct_arr(var, name, dimension, {}, {});
     }
-    // ----------------------------------------
+
     // ---  Record Arrays: flat and struct  ---
-    // ----------------------------------------
 
     // Record a flat (non-class) element into the array variable table
     template <typename T>
@@ -546,9 +543,8 @@ public:
             }
         }
     }
-    // --------------------------
+
     // ---  Helper functions  ---
-    // --------------------------
 
     // Helper: Register all members of a user-defined struct
     template <typename T, std::size_t... I>
@@ -600,4 +596,5 @@ public:
     }
     bool next() { return VlRandomizer::next(m_rng); }
 };
+
 #endif  // Guard

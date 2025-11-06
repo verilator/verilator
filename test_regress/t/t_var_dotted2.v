@@ -10,7 +10,7 @@
  `define INLINE_MODULE /*verilator public_module*/
 `endif
 
-module t (/*AUTOARG*/);
+module t;
 
 `define DRAM1(bank) mem.mem_bank[bank].dccm.dccm_bank.ram_core
 `define DRAM2(bank) mem.mem_bank2[bank].dccm.dccm_bank.ram_core

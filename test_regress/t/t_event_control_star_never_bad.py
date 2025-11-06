@@ -12,19 +12,14 @@ import vltest_bootstrap
 test.scenarios('linter')
 test.top_filename = 't/t_event_control_star_never.v'
 
-root = ".."
-
-if not os.path.exists(root + "/.git"):
-    test.skip("Not in a git repository")
-
 test.lint(verilator_flags2=['--timing'], fails=True, expect_filename=test.golden_filename)
 
 test.extract(in_filename=test.top_filename,
-             out_filename=root + "/docs/gen/ex_ALWNEVER_faulty.rst",
+             out_filename=test.root + "/docs/gen/ex_ALWNEVER_faulty.rst",
              lines="9-9")
 
 test.extract(in_filename=test.golden_filename,
-             out_filename=root + "/docs/gen/ex_ALWNEVER_msg.rst",
+             out_filename=test.root + "/docs/gen/ex_ALWNEVER_msg.rst",
              lines="1-1")
 
 test.passes()

@@ -16,7 +16,7 @@ test.main_time_multiplier = 1e-6 / 1e-9
 
 test.compile(
     v_flags2=['+define+time_scale_units=1us +define+time_scale_prec=1ns', test.pli_filename],
-    verilator_flags2=['--vpi'])
+    verilator_flags2=['--vpi --trace-vcd'])
 
 test.execute(expect_filename=test.golden_filename)
 

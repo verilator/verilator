@@ -11,5 +11,5 @@ class Cls1;
     constraint raint2_bad { solve b1 before b2; }  // BAD no randc vars here
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 endmodule

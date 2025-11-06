@@ -24,7 +24,7 @@ function u_cache::new(string name="u_cache", u_cache::size_t max_size = 256);
    this.m_max_size = max_size;
 endfunction
 
-module t(/*AUTOARG*/);
+module t;
 
    u_cache #(real, real) obj;
 

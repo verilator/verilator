@@ -26,7 +26,7 @@ endclass
 //    endfunction
 // endclass
 
-module t(/*AUTOARG*/);
+module t;
 
    IclsImp i1;
 

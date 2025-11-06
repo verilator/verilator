@@ -8,7 +8,143 @@ The changes in each Verilator version are described below.  The
 contributors that suggested or implemented a given issue are shown in []. Thanks!
 
 
-Verilator 5.039 devel
+Verilator 5.043 devel
+==========================
+
+**Other:**
+
+* Optimize away calls to empty functions (#6626). [Geza Lore]
+* Fix `--timing` with `--x-initial-edge` (#6603) (#6631). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix merging of impure assignments in gate optimization (#6629) (#6630). [Geza Lore]
+* Fix determining Verilator revision when within git submodules without tags.
+
+
+Verilator 5.042 2025-11-02
+==========================
+
+**Other:**
+
+* Add HIERPARAM error on hierarchical parameter values (#1626) (#6456) (#6484) (#6587) (#6609) (#6621) (#6623). [Todd Strader] [Luca Rufer] [Paul Swirhun]
+* Add error on zero/negative unpacked dimensions (#1642). [Stefan Wallentowitz]
+* Add verilator_gantt profiling of DPI imports (#3084). [Geza Lore]
+* Add ASSIGNEQEXPR when use `=` inside expressions (#5567). [Ethan Sifferman]
+* Add error on non-packed struct randc (#5999). [Seth Pellegrino]
+* Add configure `--enable-dev-asan` to compile verilator_bin with the address sanitizer (#6404). [Geza Lore]
+* Add $(LDFLAGS) and $(LIBS) to when building shared libraries (#6425) (#6426). [Ahmed El-Mahmoudy]
+* Add IMPLICITSTATIC also on procedure variables.
+* Add FUNCTIMCTL error on function invoking task or time-controlling statements (#6385).
+* Add error on `virtual new` (#6486). [Alex Solomatnikov]
+* Add error on ranges with tristate values (#6534). [Alex Solomatnikov]
+* Add NORETURN warning on functions without return values (#6534). [Alex Solomatnikov]
+* Add `--aslr` and `--no-aslr` options.
+* Add `$cpure` (#6580). [Igor Zaworski, Antmicro Ltd.]
+* Add `--preproc-defines`.
+* Deprecate sensitivity list on public_flat_rw attributes (#6443). [Geza Lore]
+* Deprecate clocker attribute and --clk option (#6463). [Geza Lore]
+* Deprecate '--make cmake' option (#6540). [Geza Lore]
+* Change default `--expand-limit` to 256 (#3419).
+* Change developer coverage flow and add configure `--enable-dev-gcov` (#6526). [Geza Lore]
+* Change `verilator_difftree` to return exit code 1 on mismatch, 2 on error.
+* Change default thread pool sizes to respect processor affinity (#6604). [Geza Lore]
+* Change `--preproc-comments` to be new name of `--pp-comments` option.
+* Support modports referencing clocking blocks (#4555) (#6436). [Ryszard Rozak, Antmicro Ltd.]
+* Support class package reference on pattern keys (#5653). [Todd Strader]
+* Support digits in `$sscanf` field width formats (#6083). [Iztok Jeras]
+* Support pure functions in sensitivity lists (#6393). [Krzysztof Bieganski, Antmicro Ltd.]
+* Support simple alias statements (#6339) (#6501). [Ryszard Rozak, Antmicro Ltd.]
+* Support simple cycle delay sequence expressions inside properties (#6508). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Support impure expressions in `inside` (#6562). [Igor Zaworski, Antmicro Ltd.]
+* Support `case` impure expressions (#6563). [Igor Zaworski, Antmicro Ltd.]
+* Support dotted access to ports of a direct hier_block instance. (#6595). [Geza Lore]
+* Improve `lint_off` to allow multiple messages and comments (#2755).
+* Improve automatic selection of logic for DFG synthesis (#6370). [Geza Lore]
+* Improve `covergroup with function sample` handling  (#6387). [Jakub Wasilewski]
+* Improve DFG type system (#6390). [Geza Lore]
+* Improve DFG variable removal and temporary insertion (#6401). [Geza Lore]
+* Improve memory usage of statistics (#6513). [Geza Lore]
+* Improve conditional merging to preserve branch prediction. [Geza Lore]
+* Optimize duplicate 'if' and '?:' conditions (#3807) (#6495)
+* Optimize dead functions in more cases (#6380) (#6430). [Artur Bieniek, Antmicro Ltd.]
+* Optimize constant folding in wide expression expansion (#6381). [Geza Lore]
+* Fix `--trace-max-width` and increase to 4096. (#2385).
+* Fix missing BLKSEQ when connecting module port to array (#2973).
+* Fix LATCH warning with CASEINCOMPLETE (#3301).
+* Fix unused parameterized class causing internal error (#4013). [Alberto Del Rio]
+* Fix false CONSTVAR error on initializers (#4992).
+* Fix hierarchical references with parameterized modules and interfaces (#5649) (#6566). [Ryszard Rozak, Antmicro Ltd.]
+* Fix interface exposure with `--public-depth` or `--trace-depth` (#5758).
+* Fix cell scoping performance (#6059). [Jerry Tianchen]
+* Fix hierarchical `--prof-pgo` (#6213). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix while loop hang on timing-delayed assignment (#6343) (#6354). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix driver analysis of partially assigned variables (#6364) (#6378). [Geza Lore]
+* Fix V3Hash MacOS ambiguity (#6350). [Lan Zongwei]
+* Fix cmake APPLE variable (#6351). [Lan Zongwei]
+* Fix randomize local after parameters applied (#6371). [Alex Solomatnikov]
+* Fix package imports not found after parameters applied (#6373). [Alex Solomatnikov]
+* Fix deep shift pattern performance (#6379) (#6420). [Geza Lore]
+* Fix COVERAGEIGN-ignored `get_inst_coverage` and other covergroup methods (#6383). [Alex Solomatnikov]
+* Fix error when modport variable is unresolved (#6386). [Ryszard Rozak, Antmicro Ltd.]
+* Fix resolving parameters (#6388) (#6418) (#6421) (#6438) (#6429). [Artur Bieniek, Antmicro Ltd.]
+* Fix wire array with initial assignment (#6391). [Alex Solomatnikov]
+* Fix import of class with default params (#6396) (#6410) (#6413). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix use after free in elaboration (#6403). [Geza Lore]
+* Fix address sanitizer issues (#6406). [Geza Lore]
+* Fix timing control under fork under function (#6407). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix memory leaks and reduce requirements (#6411) (#6417) (#6419) (#6437) (#6439) (#6517). [Geza Lore]
+* Fix parameter implicit type from string (#6414). [Alex Solomatnikov]
+* Fix parsing for sequence expressions (#6427). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix parameterized class super functions (#6431) (#6438). [Artur Bieniek, Antmicro Ltd.]
+* Fix external function declarations with class typedef references (#6433).
+* Fix internal error on out-of-bounds real array access.
+* Fix pre/post increments in assertions (#6434).
+* Fix elaboration displays with `%m` and some `%p` (#6445) (#6451). [Alex Solomatnikov]
+* Fix cast in gdbinit.py (#6447). [Artur Bieniek, Antmicro Ltd.]
+* Fix false unique assertions on `else ;` (#6450). [Don Owen]
+* Fix loss of clock attribute in DFG variable removal (#6453). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix data types of method calls without parenthesis (#6457). [Artur Bieniek, Antmicro Ltd.]
+* Fix segfault on unsupported PLI calls (#6458). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix false assertion failure on failed DFG driver tracing (#6459). [Geza Lore]
+* Fix side effects when using select (#6460). [Igor Zaworski, Antmicro Ltd.]
+* Fix timeprecision backward assignment (#6469). [Artur Bieniek, Antmicro Ltd.]
+* Fix splitting hierarchically referenced variables (#6475). [Ryszard Rozak, Antmicro Ltd.]
+* Fix Windows compilation of Verilator with spaces in the path (#6477). [Fabian Keßler-Schulz]
+* Fix PROTOTYPEMIS error on implicit logic (#6482). [Alex Solomatnikov]
+* Fix configure misdetecting C++14 (#6488) (#6515). [Thomas O'Keeffe]
+* Fix false BLKSEQ on non-edged sensitivity list (#6492). [Oron Port]
+* Fix .vlt public_flat* and others to support long identifier names (#6516). [Szymon Gizler, Antmicro Ltd.]
+* Fix always_ff on constants (#6519). [Todd Strader]
+* Fix fault on operations on uninitialized strings (#6520). [Artur Bieniek, Antmicro Ltd.]
+* Fix find_index methods of associative arrays (#6525). [Ryszard Rozak, Antmicro Ltd.]
+* Fix parsing of `eventually[]` and property expression memory leaks (#6530). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix memory leak for unsupported `$past` (#6535). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix inconsistent force assignment (#6541). [Artur Bieniek, Antmicro Ltd.]
+* Fix DFG circular driver tracing with partial assignments. [Geza Lore]
+* Fix passing typedef value as parameter (#6543) (#6547). [Igor Zaworski, Antmicro Ltd.]
+* Fix indent error on quoted strings (#6544).
+* Fix incorrect nested interface-class error (#6549). [Matthew Ballance]
+* Fix std::process::get_randstate to not affect random stability (#6550) (#6565). [Aleksander Kiryk]
+* Fix exit code signal number reporting (#6554). [Artur Bieniek, Antmicro Ltd.]
+* Fix `$finish` inside fork blocks (#6555). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix single element unpacked array DPI parameters. [Geza Lore]
+* Fix DFG synthesis non-determinism (#6557) (#6568). [Todd Strader]
+* Fix side effects for improved function/task/process purity (#6559). [Igor Zaworski, Antmicro Ltd.]
+* Fix excessive logic replication in DFG circular driver tracing (#6561) (#6594). [Geza Lore]
+* Fix hierarchical with parameterized instances under hier block (#6572). [Geza Lore]
+* Fix segfault on type casts (#6574). [David Moberg]
+* Fix references to interfaces containing generate blocks (#6579). [Ryszard Rozak, Antmicro Ltd.]
+* Fix missing net type mappings in FST traces (#6582) (#6583). [Matt Stroud]
+* Fix function call expression coverage (#6589). [Todd Strader]
+* Fix V3Life eliminating assignments across timing controls (#6593) (#6596). [Geza Lore]
+* Fix incorrectly resuming process waiting on multiple events (#6597). [Geza Lore]
+* Fix `--hierarchical` with `--binary` (#6602). [Geza Lore]
+* Fix mis-ignoring virtual interface member triggers (#5116 reopened) (#6613). [Geza Lore]
+* Fix ENUMVALUE warning when overriding parameter using `-G/-pvalue` options. [Geza Lore]
+* Fix `-G` and `-pvalue` with `--hierarchical`. [Geza Lore]
+* Fix waiving messages with empty contents (#6610). [Yoshitomo KANEDA]
+* Fix constant-arrayed instance parameters (#6614). [Alex Solomatnikov]
+
+
+Verilator 5.040 2025-08-30
 ==========================
 
 **Other:**
@@ -21,13 +157,17 @@ Verilator 5.039 devel
 * Add PROTOTYPEMIS error on missing and mismatching prototypes (#6206) (#6207). [Alex Solomatnikov]
 * Add error when trying to assign class object to variable of non-class types (#6237). [Igor Zaworski, Antmicro Ltd.]
 * Add ALWNEVER warning, for `always @*` that never execute (#6291).
+* Add separate coverage counters for toggles 0->1 and 1->0 (#6086). [Ryszard Rozak, Antmicro Ltd.]
 * Add error on class 'function static'.
+* Add error on force/release non-constant selects.
 * Add `-DVERILATOR=1` definition to compiler flags when using verilated.mk.
 * Support member-level triggers for virtual interfaces (#5166) (#6148). [Yilou Wang]
 * Support unassigned virtual interfaces (#5265) (#6245). [Szymon Gizler, Antmicro Ltd.]
 * Support randomization of scope variables with 'std::randomize()' (#5438) (#6185). [Yilou Wang]
 * Support disabling a fork in additional contexts (#5432 partial) (#6174) (#6183). [Ryszard Rozak, Antmicro Ltd.]
 * Support bit queue streaming (#5830) (#6103). [Paul Swirhun]
+* Support `$fread` with missing start (#6125). [Iztok Jeras]
+* Support unpacked array `with` methods (#6134).
 * Support Verilog real ports as SystemC double ports (#6136) (#6158). [George Polack]
 * Support `$countones` in constraints (#6144 partial) (#6235). [Ryszard Rozak, Antmicro Ltd.]
 * Support disable dotted references (#6154). [Ryszard Rozak, Antmicro Ltd.]
@@ -35,15 +175,25 @@ Verilator 5.039 devel
 * Support multiple variables on RHS of a `force` assignment (#6163). [Artur Bieniek, Antmicro Ltd.]
 * Support covergroup extends, etc., as unsupported (#6160). [Artur Bieniek, Antmicro Ltd.]
 * Support parameter resolution of 1D unpacked array slices (#6257) (#6268). [Michael Bedford Taylor]
+* Support generic interfaces (#6272). [Igor Zaworski, Antmicro Ltd.]
+* Support disabling a fork from within that fork (#6314). [Ryszard Rozak, Antmicro Ltd.]
+* Support future sampled value functions.
+* Support simple disable within task (#6334). [Ryszard Rozak, Antmicro Ltd.]
+* Support recursive constant functions.
 * Change control file `public_flat_*` and other signal attributes to support __ in names (#6140).
 * Change runtime to exit() instead of abort(), unless under +verilated+debug.
+* Change `$display("%p")` to remove space after `}`.
 * Improve `--skip-identical` to skip on identical input file contents (#6109).
+* Improve testing on FreeBSD (#6328). [Aleksander Kiryk]
 * Optimize to return memory when using -build (#6192) (#6226). [Michael B. Taylor]
 * Optimize 2 ** X to 1 << X if base is signed (#6203). [Max Wipfli]
-* Optimize more complex combinational assignments in DFG (#6205) (#6209). [Geza Lore]
+* Optimize more complex combinational logic in DFG (#6205) (#6209) (#6298). [Geza Lore]
 * Optimize combinational cycles through arrays in DFG (#6210). [Geza Lore]
 * Optimize variable removal in scoped DFG (#6260). [Geza Lore]
 * Optimize acyclic DFG components into the original acyclic sub-graph. (#6261). [Geza Lore]
+* Optimize multiplexers in DFG synthesis (#6331). [Geza Lore]
+* Optimize interfaces in DFG (#6332). [Geza Lore]
+* Optimize logic in non-virtual interfaces with DFG (#6347). [Geza Lore]
 * Fix loop initialization visibility outside loop (#4237).
 * Fix constructor parameters in inheritance hierarchies (#6036) (#6070). [Petr Nohavica]
 * Fix replicate of negative giving 'REPLICATE has no expected width' internal error (#6048) (#6229).
@@ -66,10 +216,12 @@ Verilator 5.039 devel
 * Fix `--stats` overridden by skipping identical build (#6220). [Geza Lore]
 * Fix MODDUP with duplicate packages to take first package (#6222).
 * Fix replicate with unsigned count but MSB set (#6231) (#6233). [Geza Lore]
+* Fix randomize on function-local variable (#6234).
 * Fix queue typedef with unbounded slice (#6236).
 * Fix error when force assignment is used with ref function args (#6244). [Ryszard Rozak, Antmicro Ltd.]
 * Fix write of 0 in '%c' (#6248) (#6249). [Rodrigo Batista de Moraes]
 * Fix coverage of variables of complex types (#6250). [Ryszard Rozak, Antmicro Ltd.]
+* Fix broken support of unassigned virtual interfaces (#6253) (#6338). [Szymon Gizler, Antmicro Ltd.]
 * Fix partial DFG conversion of concat assignments (#6255). [Geza Lore]
 * Fix dynamic cast purity (#6267). [Igor Zaworski, Antmicro Ltd.]
 * Fix same variable on the RHS forced to two different LHSs. (#6269). [Artur Bieniek, Antmicro Ltd.]
@@ -78,8 +230,23 @@ Verilator 5.039 devel
 * Fix hierarchical NBAs (#6286) (#6300). [Geza Lore]
 * Fix variables hiding package imports (#6289). [Johan Wouters]
 * Fix DFG circular driver tracing. [Geza Lore]
-* Fix no matching function calls for randomized `VlWide` in unpacked and dynamic arrays (#6290). [Mateusz Gancarz]
+* Fix no matching function calls for randomized `VlWide` in unpacked and dynamic arrays (#6290). [Mateusz Gancarz, Antmicro Ltd.]
 * Fix PowerPC support (#6292). [Sergey Fedorov]
+* Fix referencing module variables above classes (#6304). [Artur Bieniek, Antmicro Ltd.]
+* Fix direct NBA to dynamically-sized variable (#6310). [Artur Bieniek, Antmicro Ltd.]
+* Fix static vars under member select (#6313). [Igor Zaworski, Antmicro Ltd.]
+* Fix expression type comparison (#6316). [Igor Zaworski, Antmicro Ltd.]
+* Fix of inline constraints with member selects  (#6321). [Igor Zaworski, Antmicro Ltd.]
+* Fix corner case bugs in module and variable inlining (#6322). [Geza Lore]
+* Fix queue extend to check bounds (#6324). [Aleksander Kiryk]
+* Fix gathering sensitivities from virtual interface members (#6325). [Aleksander Kiryk]
+* Fix FreeBSD missing headers (#6326). [Aleksander Kiryk]
+* Fix to select UDPs when they are the only candidate for a top module.
+* Fix splitting of assignments to SC variables (#6329) (#6336). [Geza Lore]
+* Fix to localize for super constructors with function calls as arguments (#6330). [Igor Zaworski, Antmicro Ltd.]
+* Fix wide select expansion and substitution (#6341) (#6345). [Geza Lore]
+* Fix upcasting class type parameters (#6344). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix undefined weak link for Apple GCC etc (#6348). [Congcong Cai]
 
 
 Verilator 5.038 2025-07-08
@@ -93,6 +260,7 @@ Verilator 5.038 2025-07-08
 
 * Support redeclaring type as non-type; major parsing change (#2412) (#6020) (#6042) (#6044).
 * Support scoped `new` (#4199).
+* Support elaboration-time printing of unpacked array with `%p` (#4732).
 * Support constrained random for associative arrays (#5985) (#5986). [Yilou Wang]
 * Support assignments to concatenations with impure RHS (#6002). [Ryszard Rozak, Antmicro Ltd.]
 * Support SARIF JSON diagnostic output with `--diagnostics-sarif`. (#6017)
@@ -183,7 +351,7 @@ Verilator 5.036 2025-04-27
 * Change `--output-groups` to default to value of `--build-jobs` (#5751).
   Those using build farms may need to now use `--output-groups 0` or otherwise.
 * Support user-defined primitives (UDPs) (#468) (#5807) (#5936). [Zhou Shen, Krzysztof Sychla, et al]
-* Add `--trace-saif` for SAIF power traces (#5812) (#5914). [Mateusz Gancarz]
+* Add `--trace-saif` for SAIF power traces (#5812) (#5914). [Mateusz Gancarz, Antmicro Ltd.]
 
 **Other:**
 

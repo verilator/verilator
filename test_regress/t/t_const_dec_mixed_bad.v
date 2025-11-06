@@ -4,7 +4,7 @@
 // any use, without warranty, 2005-2007 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
    parameter [200:0] MIXED = 32'dx_1;
 

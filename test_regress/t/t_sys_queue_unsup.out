@@ -1,0 +1,152 @@
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:22:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_initialize'
+   22 |     $q_initialize(1, 1, 3, status);
+      |     ^~~~~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:25:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_initialize'
+   25 |     $q_initialize(2, 2, 2, status);
+      |     ^~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:28:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_initialize'
+   28 |     $q_initialize(3, 0, 10, status);
+      |     ^~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:31:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_initialize'
+   31 |     $q_initialize(3, 3, 10, status);
+      |     ^~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:34:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_initialize'
+   34 |     $q_initialize(3, 1, 0, status);
+      |     ^~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:37:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_initialize'
+   37 |     $q_initialize(3, 1, -1, status);
+      |     ^~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:40:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_initialize'
+   40 |     $q_initialize(1, 2, 20, status);
+      |     ^~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:43:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_add'
+   43 |     $q_add(3, 0, 0, status);
+      |     ^~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:46:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_remove'
+   46 |     $q_remove(3, job, value, status);
+      |     ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:49:11: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_full'
+   49 |     res = $q_full(3, status);
+      |           ^~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:52:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_exam'
+   52 |     $q_exam(3, 1, value, status);
+      |     ^~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:55:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_add'
+   55 |     $q_add(2, 1, 1, status);
+      |     ^~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:58:11: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_full'
+   58 |     res = $q_full(2, status);
+      |           ^~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:62:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_add'
+   62 |     $q_add(2, 1, 2, status);
+      |     ^~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:65:11: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_full'
+   65 |     res = $q_full(2, status);
+      |           ^~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:69:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_exam'
+   69 |     $q_exam(2, 1, value, status);
+      |     ^~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:72:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_exam'
+   72 |     $q_exam(2, 3, value, status);
+      |     ^~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:75:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_exam'
+   75 |     $q_exam(2, 5, value, status);
+      |     ^~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:79:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_add'
+   79 |     $q_add(2, 1, 3, status);
+      |     ^~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:82:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_remove'
+   82 |     $q_remove(2, job, value, status);
+      |     ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:86:11: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_full'
+   86 |     res = $q_full(2, status);
+      |           ^~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:90:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_remove'
+   90 |     $q_remove(2, job, value, status);
+      |     ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:95:11: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_full'
+   95 |     res = $q_full(2, status);
+      |           ^~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:99:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_exam'
+   99 |     $q_exam(2, 1, value, status);
+      |     ^~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:102:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_exam'
+  102 |     $q_exam(2, 3, value, status);
+      |     ^~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:105:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_exam'
+  105 |     $q_exam(2, 4, value, status);
+      |     ^~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:109:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_remove'
+  109 |     $q_remove(2, job, value, status);
+      |     ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:113:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_add'
+  113 |     $q_add(1, 2, 1, status);
+      |     ^~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:115:11: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_full'
+  115 |     res = $q_full(1, status);
+      |           ^~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:118:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_add'
+  118 |     $q_add(1, 2, 2, status);
+      |     ^~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:120:11: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_full'
+  120 |     res = $q_full(1, status);
+      |           ^~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:123:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_add'
+  123 |     $q_add(1, 2, 3, status);
+      |     ^~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:125:11: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_full'
+  125 |     res = $q_full(1, status);
+      |           ^~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:128:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_exam'
+  128 |     $q_exam(1, 1, value, status);
+      |     ^~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:131:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_exam'
+  131 |     $q_exam(1, 3, value, status);
+      |     ^~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:134:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_exam'
+  134 |     $q_exam(1, 5, value, status);
+      |     ^~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:138:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_add'
+  138 |     $q_add(1, 2, 4, status);
+      |     ^~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:141:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_remove'
+  141 |     $q_remove(1, job, value, status);
+      |     ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:146:11: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_full'
+  146 |     res = $q_full(1, status);
+      |           ^~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:150:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_remove'
+  150 |     $q_remove(1, job, value, status);
+      |     ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:154:11: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_full'
+  154 |     res = $q_full(1, status);
+      |           ^~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:158:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_add'
+  158 |     $q_add(1, 2, 4, status);
+      |     ^~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:160:11: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_full'
+  160 |     res = $q_full(1, status);
+      |           ^~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:164:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_remove'
+  164 |     $q_remove(1, job, value, status);
+      |     ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:168:11: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_full'
+  168 |     res = $q_full(1, status);
+      |           ^~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:171:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_remove'
+  171 |     $q_remove(1, job, value, status);
+      |     ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:175:11: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_full'
+  175 |     res = $q_full(1, status);
+      |           ^~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:178:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_exam'
+  178 |     $q_exam(1, 1, value, status);
+      |     ^~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:181:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_exam'
+  181 |     $q_exam(1, 3, value, status);
+      |     ^~~~~~~
+%Error-UNSUPPORTED: t/t_sys_queue_unsup.v:184:5: Unsupported: IEEE 1364-1995 reserved word not implemented: '$q_exam'
+  184 |     $q_exam(1, 4, value, status);
+      |     ^~~~~~~
+%Error: Exiting due to

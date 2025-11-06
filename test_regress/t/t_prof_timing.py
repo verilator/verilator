@@ -15,6 +15,8 @@ test.top_filename = "t/t_prof.v"
 
 if re.search(r'clang', test.cxx_version) and 'aarch64' in platform.processor():
     test.skip("Known compiler profile issues on clang aarch64")
+if platform.libc_ver()[0] != "glibc":
+    test.skip("The test depends on GMON_OUT_PREFIX which is glibc-specific")
 
 # TODO below might no longer be required as configure checks for -pg
 if 'VERILATOR_TEST_NO_GPROF' in os.environ:

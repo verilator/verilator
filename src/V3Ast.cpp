@@ -49,10 +49,32 @@ bool VNUser4InUse::s_userBusy = false;
 
 int AstNodeDType::s_uniqueNum = 0;
 
+V3AST_VCMETHOD_ITEMDATA_DECL;
+
+//======================================================================
+// VCMethod information
+
+VCMethod VCMethod::arrayMethod(const string& name) {
+    for (auto& it : s_itemData)
+        if (it.m_name == name) return it.m_e;
+    v3fatalSrc("Not a method name known to VCMethod::s_itemData: '" << name << '\'');
+    return VCMethod{};
+}
+void VCMethod::selfTest() {
+    int i = 0;
+    for (auto& it : s_itemData) {
+        VCMethod exp{i};
+        UASSERT_STATIC(it.m_e == exp,
+                       "VCMethod::s_itemData table rows are out-of-order, starting at row "s
+                           + cvtToStr(i) + " '" + +it.m_name + '\'');
+        ++i;
+    }
+}
+
 //######################################################################
 // VNType
 
-const VNTypeInfo VNType::typeInfoTable[] = {
+const VNTypeInfo VNType::s_typeInfoTable[VNType::NUM_TYPES()] = {
 #include "V3Ast__gen_type_info.h"  // From ./astgen
 };
 
@@ -73,6 +95,7 @@ bool VFwdType::isNodeCompatible(const AstNode* nodep) const {
     case VFwdType::UNION: return VN_IS(defp, UnionDType); break;
     case VFwdType::INTERFACE_CLASS:  // FALLTHRU  // TODO: Over permissive for now
     case VFwdType::CLASS: return VN_IS(defp, ClassRefDType) || VN_IS(defp, Class); break;
+    case VFwdType::GENERIC_INTERFACE: return VN_IS(defp, IfaceRefDType); break;
     default: v3fatalSrc("Bad case");
     }
     VL_UNREACHABLE;
@@ -590,11 +613,14 @@ AstNode* AstNode::unlinkFrBackWithNext(VNRelinker* linkerp) {
         backp->m_nextp = nullptr;
         // Old list gets truncated
         // New list becomes a list upon itself
-        // Most common case is unlinking a entire operand tree
-        // (else we'd probably call unlinkFrBack without next)
-        // We may be in the middle of a list; we have no way to find head or tail!
-        AstNode* oldtailp = oldp;
-        while (oldtailp->m_nextp) oldtailp = oldtailp->m_nextp;
+        // Most common case is unlinking a entire operand tree, or all but the
+        // head (else we'd probably call unlinkFrBack without next)
+        AstNode* oldtailp = backp->m_headtailp;
+        if (!oldtailp) {
+            // We are in the middle of a list; we have no way to find head or tail in O(1)
+            oldtailp = oldp;
+            while (oldtailp->m_nextp) oldtailp = oldtailp->m_nextp;
+        }
         // Create new head/tail of old list
         AstNode* const oldheadp = oldtailp->m_headtailp;
         oldheadp->m_headtailp = oldp->m_backp;
@@ -821,15 +847,6 @@ void AstNode::addHereThisAsNext(AstNode* newp) {
     }
     //
     debugTreeChange(this, "-addHereThisAsNext: ", __LINE__, true);
-}
-
-void AstNode::swapWith(AstNode* bp) {
-    VNRelinker aHandle;
-    VNRelinker bHandle;
-    this->unlinkFrBack(&aHandle);
-    bp->unlinkFrBack(&bHandle);
-    aHandle.relink(bp);
-    bHandle.relink(this);
 }
 
 //======================================================================
@@ -1077,11 +1094,9 @@ AstNode* AstNode::iterateSubtreeReturnEdits(VNVisitor& v) {
     } else if (!nodep->backp()) {
         // Calling on standalone tree; insert a shim node so we can keep
         // track, then delete it on completion
-        AstBegin* const tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", nodep};
-        {
-            VL_DO_DANGLING(tempp->stmtsp()->accept(v),
-                           nodep);  // nodep to null as may be replaced
-        }
+        AstBegin* const tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", nodep, false};
+        // nodep to null as may be replaced
+        VL_DO_DANGLING(tempp->stmtsp()->accept(v), nodep);
         nodep = tempp->stmtsp()->unlinkFrBackWithNext();
         VL_DO_DANGLING(tempp->deleteTree(), tempp);
     } else {
@@ -1161,8 +1176,7 @@ bool AstNode::sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ig
 void AstNode::checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE {
     // private: Check a tree and children
     UASSERT_OBJ(prevBackp == this->backp(), this, "Back node inconsistent");
-    // cppcheck-suppress danglingTempReference
-    const VNTypeInfo& typeInfo = *type().typeInfo();
+    const VNTypeInfo& typeInfo = VNType::typeInfo(this->type());
     for (int i = 1; i <= 4; i++) {
         AstNode* nodep = nullptr;
         switch (i) {
@@ -1258,10 +1272,10 @@ char* AstNode::dumpTreeJsonGdb(const char* str) { return strdup(str); }
 // allow for passing pointer literals like 0x42.. without manual cast
 char* AstNode::dumpTreeJsonGdb(intptr_t nodep) {
     if (!nodep) return strdup("{\"addr\":\"NULL\"}\n");
-    return dumpTreeJsonGdb((const AstNode*)nodep);
+    return dumpTreeJsonGdb(reinterpret_cast<const AstNode*>(nodep));
 }
 // cppcheck-suppress unusedFunction  // Debug only
-void AstNode::dumpGdb(const AstNode* nodep) {  // For GDB only  // LCOV_EXCL_LINE
+void AstNode::dumpGdb(const AstNode* nodep) {  // For GDB only  // LCOV_EXCL_START
     if (!nodep) {
         cout << "<nullptr>" << endl;
         return;
@@ -1393,8 +1407,8 @@ void AstNode::dumpTreeFile(const string& filename, bool doDump) {
 static void drawChildren(std::ostream& os, const AstNode* thisp, const AstNode* childp,
                          const std::string& childName) {
     if (childp) {
-        os << "\tn" << cvtToHex(thisp) << " -> n" << cvtToHex(childp) << " ["
-           << "label=\"" << childName << "\" color=red];\n";
+        os << "\tn" << cvtToHex(thisp) << " -> n" << cvtToHex(childp) << " [" << "label=\""
+           << childName << "\" color=red];\n";
         for (const AstNode* nodep = childp; nodep; nodep = nodep->nextp()) {
             nodep->dumpTreeDot(os);
             if (nodep->nextp()) {
@@ -1408,8 +1422,7 @@ static void drawChildren(std::ostream& os, const AstNode* thisp, const AstNode* 
 }
 
 void AstNode::dumpTreeDot(std::ostream& os) const {
-    os << "\tn" << cvtToHex(this) << "\t["
-       << "label=\"" << typeName() << "\\n"
+    os << "\tn" << cvtToHex(this) << "\t[" << "label=\"" << typeName() << "\\n"
        << name() << "\"];\n";
     drawChildren(os, this, m_op1p, "op1");
     drawChildren(os, this, m_op2p, "op2");
@@ -1446,8 +1459,7 @@ void AstNode::dumpTreeDotFile(const string& filename, bool doDump) {
         const std::unique_ptr<std::ofstream> treedotp{V3File::new_ofstream(filename)};
         if (treedotp->fail()) v3fatal("Can't write file: " << filename);
         *treedotp << "digraph vTree{\n";
-        *treedotp << "\tgraph\t[label=\"" << filename + ".dot"
-                  << "\",\n";
+        *treedotp << "\tgraph\t[label=\"" << filename + ".dot" << "\",\n";
         *treedotp << "\t\t labelloc=t, labeljust=l,\n";
         *treedotp << "\t\t //size=\"7.5,10\",\n"
                   << "];\n";
@@ -1477,7 +1489,7 @@ string AstNode::instanceStr() const {
     }
     return "";
 }
-void AstNode::v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) {
+void AstNode::v3errorEnd(const std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) {
     // Don't look for instance name when warning is disabled.
     // In case of large number of warnings, this can
     // take significant amount of time
@@ -1497,7 +1509,8 @@ void AstNode::v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().
         m_fileline->v3errorEnd(nsstr, instanceStrExtra);
     }
 }
-void AstNode::v3errorEndFatal(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) {
+void AstNode::v3errorEndFatal(const std::ostringstream& str) const
+    VL_RELEASE(V3Error::s().m_mutex) {
     v3errorEnd(str);
     assert(0);  // LCOV_EXCL_LINE
     VL_UNREACHABLE;

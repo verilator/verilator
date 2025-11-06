@@ -1,0 +1,14 @@
+%Error: t/t_lint_range_negative_bad.v:8:16: Size of range is '[0]', must be positive integer (IEEE 1800-2023 7.4.2)
+                                          : ... note: In instance 't'
+    8 |   int array_bad[0];   
+      |                ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_lint_range_negative_bad.v:9:17: Size of range is '[-1]', must be positive integer (IEEE 1800-2023 7.4.2)
+                                          : ... note: In instance 't'
+    9 |   int array2_bad[-1];   
+      |                 ^
+%Error: t/t_lint_range_negative_bad.v:11:10: left side of bit range isn't a two-state constant (IEEE 1800-2023 6.9.1)
+                                           : ... note: In instance 't'
+   11 |   logic [X:0] x;   
+      |          ^
+%Error: Exiting due to

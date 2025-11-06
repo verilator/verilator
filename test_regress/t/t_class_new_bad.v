@@ -23,7 +23,23 @@ class ClsArg;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+class ClsNew1;
+  static function new();  // <--- Error: new can't be static
+  endfunction
+endclass
+
+class ClsNew2;
+  virtual function new();  // <--- Error: new can't be virtual
+  endfunction
+endclass
+
+class ClsNew3;
+  extern virtual function new();  // <--- Error: new can't be virtual
+endclass
+function ClsNew3::new();
+endfunction
+
+module t;
    initial begin
       ClsNoArg c1;
       ClsNoNew c2;

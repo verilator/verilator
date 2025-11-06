@@ -23,7 +23,11 @@ module top
       string number;
       string filename;
       number.itoa(trace_number);
+`ifdef TRACE_FST
+      filename = {`STRINGIFY(`TEST_OBJ_DIR), "/trace", number, ".fst"};
+`else
       filename = {`STRINGIFY(`TEST_OBJ_DIR), "/trace", number, ".vcd"};
+`endif
       $display("Writing dumpfile '%s'", filename);
       $dumpfile(filename);
       $dumpvars();

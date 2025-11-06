@@ -4,7 +4,7 @@
 // any use, without warranty, 2009 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
    enum bit [1:0] { BADX = 2'b1x } BAD1;
 

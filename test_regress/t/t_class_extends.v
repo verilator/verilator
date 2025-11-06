@@ -27,6 +27,7 @@ endclass : Cls
 
 class uvm_object_wrapper;
   function int create ();
+    return 0;
   endfunction
 endclass
 
@@ -35,10 +36,11 @@ class uvm__registry #(type T=int) extends uvm_object_wrapper;
   // under the extend's symbol table
   function int create ();
     T obj;
+    return 0;
   endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       Cls c;
       c = new;

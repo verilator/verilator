@@ -14,15 +14,13 @@ import os
 test.scenarios('vlt_all')
 test.sim_time = 2000000
 
-root = ".."
-
-if not os.path.exists(root + "/.git"):
+if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
 # Read expected source lines hit
 expectedLines = set()
 
-with open(root + "/src/V3DfgBreakCycles.cpp", 'r', encoding="utf8") as fd:
+with open(test.root + "/src/V3DfgBreakCycles.cpp", 'r', encoding="utf8") as fd:
     for lineno, line in enumerate(fd, 1):
         line = line.split("//")[0]
         if re.match(r'^[^#]*SET_RESULT', line):
@@ -44,9 +42,10 @@ with open(rdFile, 'r', encoding="utf8") as rdFh, \
      open(pdeclFile, 'w', encoding="utf8") as pdeclFh, \
      open(checkFile, 'w', encoding="utf8") as checkFh:
     for line in rdFh:
-        if "// UNOPTFLAT" in line:
+        line, _, cmt = line.partition("//")
+        cmt, _, _ = cmt.partition("//")
+        if "UNOPTFLAT" in cmt:
             nExpectedCycles += 1
-        line = line.split("//")[0]
         m = re.search(r'`signal\((\w+),', line)
         if not m:
             continue

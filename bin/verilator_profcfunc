@@ -10,7 +10,7 @@ import re
 ######################################################################
 
 
-def profcfunc(filename):
+def profcfunc(filename: str) -> None:
     funcs = {}
 
     with open(filename, "r", encoding="utf8") as fh:
@@ -26,7 +26,7 @@ def profcfunc(filename):
                 calls = float(match.group(3))
                 func = match.group(4)
                 if func not in funcs:
-                    funcs[func] = {'pct': 0, 'sec': 0, 'calls': 0}
+                    funcs[func] = {'pct': 0.0, 'sec': 0.0, 'calls': 0}
                 funcs[func]['pct'] += pct
                 funcs[func]['sec'] += sec
                 funcs[func]['calls'] += calls
@@ -150,7 +150,7 @@ def profcfunc(filename):
     print((" time   seconds   seconds      calls   %-" + str(design_width) +
            "s  type      filename and line number") % "design")
 
-    cume = 0
+    cume = 0.0
     for func in sorted(vfuncs.keys(), key=lambda f: vfuncs[f]['sec'], reverse=True):
         cume += vfuncs[func]['sec']
         print(("%6.2f %9.2f %8.2f %10d   %-" + str(design_width) + "s  %s") %

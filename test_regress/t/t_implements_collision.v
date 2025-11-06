@@ -22,7 +22,7 @@ class Cls implements IclsBoth;
    endfunction
 endclass
 
-module t(/*AUTOARG*/);
+module t;
 
    Cls c;
 

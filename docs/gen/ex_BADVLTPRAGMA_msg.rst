@@ -2,6 +2,6 @@
 .. code-block::
    :emphasize-lines: 1,2
 
-   %Error-BADVLTPRAGMA: example.v:1:4 Unknown verilator comment: '/*verilator lintt_off WIDTH <--- Warning (lint_off misspelled)*/'
-       7 |    /*verilator lintt_off WIDTH <--- Warning (lint_off misspelled)*/
-         |    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   %Error-BADVLTPRAGMA: example.v:1:3 Unknown verilator comment: '/*verilator lintt_off WIDTH <--- Warning (lint_off misspelled)*/'
+       7 |   /*verilator lintt_off WIDTH <--- Warning (lint_off misspelled)*/
+         |   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

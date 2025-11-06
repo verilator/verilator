@@ -33,7 +33,7 @@ public:
     static void dearrayAll(AstNetlist* nodep) VL_MT_DISABLED;
     static AstAssignW* pinReconnectSimple(AstPin* pinp, AstCell* cellp, bool forTristate,
                                           bool alwaysCvt = false) VL_MT_DISABLED;
-    static void checkOutputShort(AstPin* nodep) VL_MT_DISABLED;
+    static void checkOutputShort(const AstPin* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard

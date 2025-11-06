@@ -8,7 +8,7 @@
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       logic [7:0] src_1 = 8'b1010_0011; // 8 bits wide source
       logic [1:0] dst_1 [3]; // 6 bits wide target

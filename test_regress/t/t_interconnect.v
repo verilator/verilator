@@ -7,7 +7,7 @@
 // Note: Other simulator's support for interconnect seems rare, the below might
 // not be correct code.
 
-module t(/*AUTOARG*/);
+module t;
 
    interconnect a;
    interconnect b;

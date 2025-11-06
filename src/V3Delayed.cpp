@@ -19,7 +19,7 @@
 // For the Pre/Post scheduling semantics, see V3OrderGraph.
 //
 // There are several "Schemes" we can choose from for implementing a
-// non-blocking assignment (NBA), repserented by an AstAssignDly.
+// non-blocking assignment (NBA), represented by an AstAssignDly.
 //
 // It is assumed and required in this pass that each NBA updates at
 // most one variable. Earlier passes should have ensured this.
@@ -185,7 +185,10 @@ class DelayedVisitor final : public VNVisitor {
 
     public:
         VarScopeInfo() = default;
-        ~VarScopeInfo() = default;
+        ~VarScopeInfo() {
+            // Might not be linked if there was an error
+            if (!m_senTreep->backp()) VL_DO_DANGLING(m_senTreep->deleteTree(), m_senTreep);
+        }
         // Accessors for the above union fields
         auto& shadowVariableKit() {
             UASSERT(m_scheme == Scheme::ShadowVar, "Inconsistent Scheme");
@@ -387,18 +390,18 @@ class DelayedVisitor final : public VNVisitor {
         if (bIt != blkRefs.end() && nIt != nbaRefs.end()) {
             const Ref& blkRef = *bIt;
             const Ref& nbaRef = *nIt;
-            vscp->v3warn(BLKANDNBLK,
-                         "Unsupported: Blocking and non-blocking assignments to "
-                         "potentially overlapping bits of same packed variable: "
-                             << vscp->varp()->prettyNameQ() << '\n'
-                             << vscp->warnContextPrimary() << '\n'
-                             << blkRef.m_refp->warnOther() << "... Location of blocking assignment"
-                             << " (bits [" << blkRef.m_msb << ":" << blkRef.m_lsb << "])\n"
-                             << blkRef.m_refp->warnContextSecondary() << '\n'
-                             << nbaRef.m_refp->warnOther()
-                             << "... Location of nonblocking assignment"
-                             << " (bits [" << nbaRef.m_msb << ":" << nbaRef.m_lsb << "])\n"
-                             << nbaRef.m_refp->warnContextSecondary());
+            vscp->v3warn(BLKANDNBLK, "Unsupported: Blocking and non-blocking assignments to "
+                                     "potentially overlapping bits of same packed variable: "
+                                         << vscp->varp()->prettyNameQ() << '\n'
+                                         << vscp->warnContextPrimary() << '\n'
+                                         << blkRef.m_refp->warnOther()
+                                         << "... Location of blocking assignment" << " (bits ["
+                                         << blkRef.m_msb << ":" << blkRef.m_lsb << "])\n"
+                                         << blkRef.m_refp->warnContextSecondary() << '\n'
+                                         << nbaRef.m_refp->warnOther()
+                                         << "... Location of nonblocking assignment" << " (bits ["
+                                         << nbaRef.m_msb << ":" << nbaRef.m_lsb << "])\n"
+                                         << nbaRef.m_refp->warnContextSecondary());
         }
 
         return true;
@@ -442,7 +445,7 @@ class DelayedVisitor final : public VNVisitor {
         // Check for mixed usage (this also warns if not OK)
         if (checkMixedUsage(vscp, isIntegralOrPacked)) {
             // If it's a variable updated by both blocking and non-blocking
-            // asignments, use the ShadowVarMasked schem if masked update is
+            // assignments, use the ShadowVarMasked schem if masked update is
             // possible. This can handle blocking and non-blocking updates to
             // inpdendent parts correctly at run-time, and always works, even
             // in loops or other dynamic context.
@@ -856,8 +859,8 @@ class DelayedVisitor final : public VNVisitor {
         AstAlwaysPost* const postp = new AstAlwaysPost{flp};
         activep->addStmtsp(postp);
         // Add the commit
-        AstCMethodHard* const callp
-            = new AstCMethodHard{flp, new AstVarRef{flp, queueVscp, VAccess::READWRITE}, "commit"};
+        AstCMethodHard* const callp = new AstCMethodHard{
+            flp, new AstVarRef{flp, queueVscp, VAccess::READWRITE}, VCMethod::SCHED_COMMIT};
         callp->dtypeSetVoid();
         callp->addPinsp(new AstVarRef{flp, vscp, VAccess::WRITE});
         postp->addStmtsp(callp->makeStmt());
@@ -932,6 +935,7 @@ class DelayedVisitor final : public VNVisitor {
                             AstConst* const cp = new AstConst{flp, AstConst::DTyped{}, eDTypep};
                             cp->num().setAllBits0();
                             cp->num().opSelInto(cValuep->num(), cLsbp->toSInt(), sWidth);
+                            VL_DO_DANGLING(valuep->deleteTree(), valuep);
                             return cp;
                         }
                     }
@@ -965,7 +969,8 @@ class DelayedVisitor final : public VNVisitor {
 
         // Enqueue the update at the site of the original NBA
         AstCMethodHard* const callp = new AstCMethodHard{
-            flp, new AstVarRef{flp, vscpInfo.valueQueueKit().vscp, VAccess::READWRITE}, "enqueue"};
+            flp, new AstVarRef{flp, vscpInfo.valueQueueKit().vscp, VAccess::READWRITE},
+            VCMethod::SCHED_ENQUEUE};
         callp->dtypeSetVoid();
         callp->addPinsp(valuep);
         if (partial) callp->addPinsp(maskp);
@@ -1002,7 +1007,7 @@ class DelayedVisitor final : public VNVisitor {
             switch (vscpInfo.m_scheme) {
             case Scheme::Undecided:  // LCOV_EXCL_START
                 UASSERT_OBJ(false, vscp, "Failed to choose NBA scheme");
-                break;
+                break;  // LCOV_EXCL_STOP
             case Scheme::UnsupportedCompoundArrayInLoop: {
                 // Will report error at the site of the NBA
                 break;
@@ -1122,7 +1127,7 @@ class DelayedVisitor final : public VNVisitor {
 
         // There were some timing domains involved in the process. Add all of them as sensitivities
         // of all NBA targets in this process. Note this is a bit of a sledgehammer, we should only
-        // need those that directly preceed the NBA in control flow, but that is hard to compute,
+        // need those that directly precede the NBA in control flow, but that is hard to compute,
         // so we will hammer away.
 
         // First gather all senItems
@@ -1154,12 +1159,12 @@ class DelayedVisitor final : public VNVisitor {
         AstNodeExpr* const eventp = nodep->operandp()->unlinkFrBack();
 
         // Enqueue for clearing 'triggered' state on next eval
-        AstTextBlock* const blockp = new AstTextBlock{flp};
-        blockp->addText(flp, "vlSymsp->fireEvent(", true);
-        blockp->addNodesp(eventp);
-        blockp->addText(flp, ");\n", true);
+        AstCStmt* const cstmtp = new AstCStmt{flp};
+        cstmtp->add("vlSymsp->fireEvent(");
+        cstmtp->add(eventp);
+        cstmtp->add(");");
 
-        AstNode* newp = new AstCStmt{flp, blockp};
+        AstNode* newp = cstmtp;
         if (nodep->isDelayed()) {
             const AstVarRef* const vrefp = VN_AS(eventp, VarRef);
             const std::string newvarname = "__Vdly__" + vrefp->varp()->shortName();
@@ -1293,10 +1298,7 @@ class DelayedVisitor final : public VNVisitor {
         // Record write reference
         recordWriteRef(nodep, false);
     }
-    void visit(AstNodeFor* nodep) override {  // LCOV_EXCL_LINE
-        nodep->v3fatalSrc("For statements should have been converted to while statements");
-    }
-    void visit(AstWhile* nodep) override {
+    void visit(AstLoop* nodep) override {
         VL_RESTORER(m_inLoop);
         m_inLoop = true;
         iterateChildren(nodep);

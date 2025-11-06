@@ -8,7 +8,7 @@
 class Cls #(int A, int B);
 endclass
 
-module t(/*AUTOARG*/);
+module t;
    initial begin
       $write("*-* All Finished *-*\n");
       $finish;

@@ -45,9 +45,11 @@ module t (/*AUTOARG*/
                       .intf_array (array_interface)
                       );
 
+   // verilator lint_off HIERPARAM
    localparam THE_TOP_FOO = the_interface.FOO;
    localparam THE_TOP_FOO_BITS = $bits({the_interface.FOO, the_interface.FOO});
    localparam THE_ARRAY_FOO = array_interface[0].FOO;
+   // verilator lint_on HIERPARAM
 
    initial begin
       if (THE_TOP_FOO != 5) begin
@@ -68,6 +70,7 @@ endmodule
 
 
 module testmod
+  #(parameter SOME_PARAM = 789)
   (
    input clk,
    test_if.mp intf,
@@ -75,16 +78,24 @@ module testmod
    test_if.mp intf_array [1:0]
    );
 
+   test_if #(.FOO (intf.FOO)) some_other_intf ();
+
+   // verilator lint_off HIERPARAM
    localparam THE_FOO = intf.FOO;
    localparam THE_OTHER_FOO = intf_no_mp.FOO;
    localparam THE_ARRAY_FOO = intf_array[0].FOO;
    localparam THE_BAR = intf.BAR;
    localparam THE_OTHER_BAR = intf_no_mp.BAR;
    localparam THE_ARRAY_BAR = intf_array[0].BAR;
+   // verilator lint_on HIERPARAM
 
    always @(posedge clk) begin
       if (THE_FOO != 5) begin
          $display("%%Error: THE_FOO = %0d", THE_FOO);
+         $stop;
+      end
+      if (some_other_intf.FOO != 5) begin
+         $display("%%Error: some_other_intf.FOO = %0d", some_other_intf.FOO);
          $stop;
       end
       if (THE_OTHER_FOO != 5) begin

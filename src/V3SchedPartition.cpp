@@ -103,6 +103,8 @@ public:
         : V3GraphVertex{graphp}
         , m_vscp{vscp} {}
 
+    AstVar* varp() const { return m_vscp->varp(); }
+
     // LCOV_EXCL_START // Debug code
     string name() const override VL_MT_STABLE { return m_vscp->name(); }
     string dotShape() const override {
@@ -238,7 +240,6 @@ class SchedGraphBuilder final : public VNVisitor {
     void visit(AstNodeProcedure* nodep) override { visitLogic(nodep); }
     void visit(AstNodeAssign* nodep) override { visitLogic(nodep); }
     void visit(AstCoverToggle* nodep) override { visitLogic(nodep); }
-    void visit(AstAlwaysPublic* nodep) override { visitLogic(nodep); }
 
     // Pre and Post logic are handled separately
     void visit(AstAlwaysPre* nodep) override {}
@@ -315,6 +316,12 @@ void colorActiveRegion(V3Graph& graph) {
 
         // Enqueue all parent vertices that feed this vertex.
         for (V3GraphEdge& edge : vtx.inEdges()) queue.push_back(edge.fromp());
+
+        // Mark top level ports that drive a sensitivity list
+        if (SchedVarVertex* const vvtxp = vtx.cast<SchedVarVertex>()) {
+            AstVar* const varp = vvtxp->varp();
+            if (varp->isPrimaryIO()) varp->setPrimaryClock();
+        }
 
         // If this is a logic vertex, also enqueue all variable vertices that are driven from this
         // logic. This will ensure that if a variable is set in the active region, then all

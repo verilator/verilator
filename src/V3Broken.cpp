@@ -60,29 +60,38 @@ static bool s_brokenAllowMidvisitorCheck = false;
 // Table of allocated AstNode pointers
 
 static class AllocTable final {
+    friend class V3Broken;
     // MEMBERS
-    std::unordered_set<const AstNode*> m_allocated;  // Set of all nodes allocated but not freed
+    V3Mutex m_mutex;  // Mutex for m_allocated
+    // Set of all nodes allocated but not freed
+    std::unordered_set<const AstNode*> m_allocated VL_GUARDED_BY(m_mutex);
 
 public:
     // METHODS
-    void addNewed(const AstNode* nodep) {
+    void addNewed(const AstNode* nodep) VL_MT_SAFE_EXCLUDES(m_mutex) {
         // Called by operator new on any node - only if VL_LEAK_CHECKS
         // LCOV_EXCL_START
+        V3LockGuard lock{m_mutex};
         if (VL_UNCOVERABLE(!m_allocated.emplace(nodep).second)) {
             nodep->v3fatalSrc("Newing AstNode object that is already allocated");
         }
         // LCOV_EXCL_STOP
     }
-    void deleted(const AstNode* nodep) {
+    void deleted(const AstNode* nodep) VL_MT_SAFE_EXCLUDES(m_mutex) {
         // Called by operator delete on any node - only if VL_LEAK_CHECKS
         // LCOV_EXCL_START
+        V3LockGuard lock{m_mutex};
         if (VL_UNCOVERABLE(m_allocated.erase(nodep) == 0)) {
             nodep->v3fatalSrc("Deleting AstNode object that was not allocated or already freed");
         }
         // LCOV_EXCL_STOP
     }
-    bool isAllocated(const AstNode* nodep) const { return m_allocated.count(nodep) != 0; }
-    void checkForLeaks() {
+
+private:  // for V3Broken only
+    bool isAllocated(const AstNode* nodep) const VL_REQUIRES(m_mutex) {
+        return m_allocated.count(nodep) != 0;
+    }
+    void checkForLeaks() VL_REQUIRES(m_mutex) {
         if (!v3Global.opt.debugCheck()) return;
 
         const uint8_t brokenCntCurrent = s_brokenCntGlobal.get();
@@ -216,8 +225,7 @@ private:
     // VISITORS
     void visit(AstNodeAssign* nodep) override {
         processAndIterate(nodep);
-        UASSERT_OBJ(!(v3Global.assertDTypesResolved() && nodep->brokeLhsMustBeLvalue()
-                      && VN_IS(nodep->lhsp(), NodeVarRef)
+        UASSERT_OBJ(!(v3Global.assertDTypesResolved() && VN_IS(nodep->lhsp(), NodeVarRef)
                       && !VN_AS(nodep->lhsp(), NodeVarRef)->access().isWriteOrRW()),
                     nodep, "Assignment LHS is not an lvalue");
     }
@@ -333,16 +341,18 @@ public:
 
 void V3Broken::brokenAll(AstNetlist* nodep) {
     // UINFO(9, __FUNCTION__ << ": ");
-    static bool inBroken = false;
-    if (VL_UNCOVERABLE(inBroken)) {
+    static bool s_inBroken = false;
+    if (VL_UNCOVERABLE(s_inBroken)) {
         // A error called by broken can recurse back into broken; avoid this
         UINFO(1, "Broken called under broken, skipping recursion.");  // LCOV_EXCL_LINE
     } else {
-        inBroken = true;
+        s_inBroken = true;
+
+        V3LockGuard lock{s_allocTable.m_mutex};
 
         // Mark every node in the tree
         const uint8_t brokenCntCurrent = s_brokenCntGlobal.get();
-        nodep->foreach([brokenCntCurrent](AstNode* nodep) {
+        nodep->foreach([brokenCntCurrent](AstNode* nodep) VL_NO_THREAD_SAFETY_ANALYSIS {
 #ifdef VL_LEAK_CHECKS
             UASSERT_OBJ(s_allocTable.isAllocated(nodep), nodep,
                         "AstNode is in tree, but not allocated");
@@ -359,7 +369,7 @@ void V3Broken::brokenAll(AstNetlist* nodep) {
         s_allocTable.checkForLeaks();
         s_linkableTable.clear();
         s_brokenCntGlobal.inc();
-        inBroken = false;
+        s_inBroken = false;
     }
 }
 
@@ -371,12 +381,12 @@ void V3Broken::allowMidvisitorCheck(bool flag) { s_brokenAllowMidvisitorCheck = 
 void V3Broken::selfTest() {
     // Exercise addNewed and deleted for coverage, as otherwise only used with VL_LEAK_CHECKS
     FileLine* const fl = new FileLine{FileLine::commandLineFilename()};
-    const AstNode* const newp = new AstBegin{fl, "[EditWrapper]", nullptr};
+    AstNode* const newp = new AstBegin{fl, "[EditWrapper]", nullptr, false};
     // Don't actually do it with VL_LEAK_CHECKS, when new/delete calls these.
     // Otherwise you call addNewed twice on the same address, which is an error.
 #ifndef VL_LEAK_CHECKS
     addNewed(newp);
     deleted(newp);
 #endif
-    VL_DO_DANGLING(delete newp, newp);
+    VL_DO_DANGLING(newp->deleteTree(), newp);
 }

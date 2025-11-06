@@ -10,12 +10,7 @@ on:
   schedule:
     - cron: '0 2 * * *'  # Daily, starting at 02:00 UTC
   pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
-      - labeled
-      - unlabeled
+    types: [opened, synchronize, reopened, labeled, unlabeled]
 
 permissions:
   contents: read
@@ -25,7 +20,8 @@ defaults:
     shell: bash
 
 concurrency:
-  group: ${{ github.ref }}
+  # At most 1 job per branch. Auto cancel all but scheduled jobs
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 jobs:
@@ -66,6 +62,7 @@ jobs:
     needs: build-gcc
     uses: ./.github/workflows/reusable-rtlmeter-run.yml
     with:
+      tag: gcc
       runs-on: ubuntu-24.04
       cc: gcc
       cases: ${{ matrix.cases }}
@@ -77,6 +74,9 @@ jobs:
       max-parallel: ${{ github.event == 'schedule' && 2 || 7 }}
       matrix:
         cases:
+          - "BlackParrot:1x1:*"
+          - "BlackParrot:2x2:*"
+          - "BlackParrot:4x4:*"
           - "NVDLA:*"
           - "OpenPiton:1x1:*"
           - "OpenPiton:2x2:*"
@@ -107,6 +107,7 @@ jobs:
     needs: build-clang
     uses: ./.github/workflows/reusable-rtlmeter-run.yml
     with:
+      tag: clang
       runs-on: ubuntu-24.04
       cc: clang
       cases: ${{ matrix.cases }}
@@ -118,6 +119,9 @@ jobs:
       max-parallel: ${{ github.event == 'schedule' && 2 || 7 }}
       matrix:
         cases:
+          - "BlackParrot:1x1:*"
+          - "BlackParrot:2x2:*"
+          - "BlackParrot:4x4:*"
           - "NVDLA:*"
           - "OpenPiton:1x1:*"
           - "OpenPiton:2x2:*"
@@ -143,36 +147,73 @@ jobs:
           - "XuanTie-C906:*"
           - "XuanTie-C910:*"
 
+  run-gcc-hier:
+    name: Run GCC hier | ${{ matrix.cases }}
+    needs: build-gcc
+    uses: ./.github/workflows/reusable-rtlmeter-run.yml
+    with:
+      tag: gcc-hier
+      runs-on: ubuntu-24.04
+      cc: gcc
+      cases: ${{ matrix.cases }}
+      run-name: "gcc --hierarchical"
+      compileArgs: "--hierarchical"
+      executeArgs: ""
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ github.event == 'schedule' && 2 || 7 }}
+      matrix:
+        cases:
+          - "BlackParrot:1x1:* !-hier"
+          - "BlackParrot:2x2:* !-hier"
+          - "BlackParrot:4x4:* !-hier"
+          - "NVDLA:* !-hier"
+          - "OpenPiton:1x1:* !-hier"
+          - "OpenPiton:2x2:* !-hier"
+          - "OpenPiton:4x4:* !-hier"
+          - "OpenPiton:8x8:* !-hier"
+          - "OpenPiton:16x16:dhry !-hier"
+          - "XuanTie-C910:* !-hier"
+
   combine-results:
     name: Combine results
-    needs: [run-gcc, run-clang]
+    needs: [run-gcc, run-clang, run-gcc-hier]
     # Run if any of the dependencies have run, even if failed.
     # That is: do not run if all skipped, or the workflow was cancelled.
     if: ${{ (contains(needs.*.result, 'success') || contains(needs.*.result, 'failure')) && !cancelled() }}
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        tag: [gcc, clang, gcc-hier]
     steps:
+      - name: Checkout RTLMeter
+        uses: actions/checkout@v5
+        with:
+          repository: "verilator/rtlmeter"
+          path: rtlmeter
+      - name: Setup RTLMeter venv
+        working-directory: rtlmeter
+        run: make venv
       - name: Download all results
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
-          pattern: rtlmeter-results-*
-          path: all-results-${{ github.run_id }}
+          pattern: rtlmeter-${{ matrix.tag }}-results-*
+          path: all-results-${{ matrix.tag }}
           merge-multiple: true
-      - name: Tar up all results into single archive
+      - name: Combine results
+        working-directory: rtlmeter
         run: |
-          # Ensure combined result directory exists in case of no results
-          mkdir -p all-results-${{ github.run_id }}
-          ls -la all-results-${{ github.run_id }}
-          # Tar up the results directory
-          tar --posix -c -z -f all-results-${{ github.run_id }}.tar.gz all-results-${{ github.run_id }}
+          ./rtlmeter collate ../all-results-${{ matrix.tag }}/*.json > ../all-results-${{ matrix.tag }}.json
       - name: Upload combined results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
-          path: all-results-${{ github.run_id }}.tar.gz
-          name: all-results
+          path: all-results-${{ matrix.tag }}.json
+          name: all-results-${{ matrix.tag }}
           overwrite: true
           retention-days: 30
 
-  publish-results:
+  publish-scheduled-results:
     name: Publish results to verilator/verilator-rtlmeter-results
     needs: combine-results
     # Only run on scheduled builds on the main repository. We also restrict
@@ -184,27 +225,28 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Download combined results
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
-          name: all-results
+          pattern: all-results-*
           path: results
-      - name: Extract combined results
-        working-directory: results
-        run: |
-          tar xzfv all-results-${{ github.run_id }}.tar.gz
-          ls -la
+          merge-multiple: true
+      - name: Upload published results
+        uses: actions/upload-artifact@v5
+        with:
+          path: results/*.json
+          name: published-results
       # Pushing to verilator/verilator-rtlmeter-results requires elevated permissions
       - name: Generate access token
         id: generate-token
-        uses: actions/create-github-app-token@v2.0.6
+        uses: actions/create-github-app-token@v2.1.4
         with:
-          app-id: ${{ vars.RTLMETER_RESULTS_CI_APP_ID }}
-          private-key: ${{ secrets.RTLMETER_RESULTS_CI_APP_PRIVATE_KEY }}
+          app-id: ${{ vars.VERILATOR_CI_ID }}
+          private-key: ${{ secrets.VERILATOR_CI_KEY }}
           owner: verilator
           repositories: verilator-rtlmeter-results
           permission-contents: write
       - name: Checkout verilator-rtlmeter-results
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: "verilator/verilator-rtlmeter-results"
           token: ${{ steps.generate-token.outputs.token }}
@@ -228,28 +270,142 @@ jobs:
           git commit -m "Verilator CI: Results of 'RTLMeter' workflow run #${{ github.run_number }}"
           git push origin
 
-  # Create GitHub issue for failed schedueld jobs
+  prepare-pr-results:
+    name: Prepare Pull Request results
+    needs: combine-results
+    if: ${{ github.event_name == 'pull_request' && github.repository == 'verilator/verilator' && contains(needs.*.result, 'success') && !cancelled() }}
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+    steps:
+      - name: Checkout RTLMeter
+        uses: actions/checkout@v5
+        with:
+          repository: "verilator/rtlmeter"
+          path: rtlmeter
+      - name: Setup RTLMeter venv
+        working-directory: rtlmeter
+        run: make venv
+      - name: Download combined results
+        uses: actions/download-artifact@v6
+        with:
+          pattern: all-results-*
+          path: all-results
+          merge-multiple: true
+      - name: Get scheduled run info
+        id: scheduled-info
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ID=$(gh run --repo ${{ github.repository }} list --workflow RTLMeter --event schedule --status success --limit 1 --json databaseId --jq ".[0].databaseId")
+          echo "id=$ID" >> $GITHUB_OUTPUT
+          URL=$(gh run --repo ${{ github.repository }} view $ID --json url --jq ".url")
+          echo "url=$URL" >> $GITHUB_OUTPUT
+          NUM=$(gh run --repo ${{ github.repository }} view $ID --json number --jq ".number")
+          echo "num=$NUM" >> $GITHUB_OUTPUT
+          DATE=$(gh run --repo ${{ github.repository }} view $ID --json createdAt --jq ".createdAt")
+          echo "date=$DATE" >> $GITHUB_OUTPUT
+      - name: Download scheduled run results
+        uses: actions/download-artifact@v6
+        with:
+          name: published-results
+          path: nightly-results
+          run-id: ${{ steps.scheduled-info.outputs.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Compare results
+        working-directory: rtlmeter
+        run: |
+          for tag in gcc clang gcc-hier; do
+            ADATA=../nightly-results/all-results-${tag}.json
+            BDATA=../all-results/all-results-${tag}.json
+            touch ../verilate-${tag}.txt
+            touch ../execute-${tag}.txt
+            touch ../cppbuild-${tag}.txt
+            if [[ ! -e $ADATA ]]; then
+              continue
+            fi
+            ./rtlmeter compare --cases '* !Example:* !*:hello' --steps "verilate" --metrics "elapsed memory"              $ADATA $BDATA > ../verilate-${tag}.txt
+            cat ../verilate-${tag}.txt
+            ./rtlmeter compare --cases '* !Example:* !*:hello' --steps "execute"  --metrics "speed memory elapsed"        $ADATA $BDATA > ../execute-${tag}.txt
+            cat ../execute-${tag}.txt
+            ./rtlmeter compare --cases '* !Example:* !*:hello' --steps "cppbuild" --metrics "elapsed memory cpu codeSize" $ADATA $BDATA > ../cppbuild-${tag}.txt
+            cat ../cppbuild-${tag}.txt
+          done
+      - name: Create report
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -x
+          NUM=$(gh run --repo ${{ github.repository }} view ${{ github.run_id }} --json number --jq ".number")
+          URL=$(gh run --repo ${{ github.repository }} view ${{ github.run_id }} --json url    --jq ".url")
+          echo -n "Performance metrics for PR workflow [#$NUM]($URL) (B) compared to scheduled run" > report.txt
+          echo -n " [#${{ steps.scheduled-info.outputs.num }}](${{ steps.scheduled-info.outputs.url }}) (A)" >> report.txt
+          echo    " from ${{ steps.scheduled-info.outputs.date }}" >> report.txt
+          for tag in gcc clang gcc-hier; do
+            echo "" >> report.txt
+            if [[ $tag == "gcc" ]]; then
+              echo "<details open>" >> report.txt
+            else
+              echo "<details>" >> report.txt
+            fi
+            echo -n "<summary><strong><em>" >> report.txt
+            jq -rj ".[0].runName" all-results/all-results-${tag}.json >> report.txt
+            echo "</em></strong></summary>" >> report.txt
+            awk -v RS= -v tag=${tag} '{print > sprintf("frag-%02d-verilate-%s.txt",NR,tag)}' verilate-${tag}.txt
+            awk -v RS= -v tag=${tag} '{print > sprintf("frag-%02d-execute-%s.txt" ,NR,tag)}'  execute-${tag}.txt
+            awk -v RS= -v tag=${tag} '{print > sprintf("frag-$02d-cppbuild-%s.txt",NR,tag)}' cppbuild-${tag}.txt
+            for f in $(ls -1 frag-*-verilate-${tag}.txt | sort) $(ls -1 frag-*-execute-${tag}.txt | sort) $(ls -1 frag-*-cppbuild-${tag}.txt | sort); do
+              if [[ $f == frag-01-verilate-${tag}.txt || $f == frag-01-execute-${tag}.txt ]]; then
+                echo "<details open>" >> report.txt
+              else
+                echo "<details>" >> report.txt
+              fi
+              echo -n "<summary>" >> report.txt
+              head -n 1 $f | tr -d '\n' >> report.txt
+              echo "</summary>" >> report.txt
+              echo '<pre>' >> report.txt
+              tail -n +2 $f >> report.txt
+              echo '</pre>' >> report.txt
+              echo "</details>" >> report.txt
+            done
+            echo "</details>" >> report.txt
+          done
+          cat report.txt
+      - name: Upload report
+        uses: actions/upload-artifact@v5
+        with:
+          path: report.txt
+          name: rtlmeter-pr-results
+      - name: Save PR number
+        run: echo ${{ github.event.number }} > pr-number.txt
+      - name: Upload PR number
+        uses: actions/upload-artifact@v5
+        with:
+          path: pr-number.txt
+          name: pr-number
+
+  # Create GitHub issue for failed scheduled jobs
   # This should always be the last job (we want an issue if anything breaks)
   create-issue:
     name: Create issue on failure
-    needs: publish-results
+    needs: publish-scheduled-results
     if: ${{ github.event_name == 'schedule' && github.repository == 'verilator/verilator' && github.run_attempt == 1 && failure() && !cancelled() }}
     runs-on: ubuntu-24.04
     steps:
       # Creating issues requires elevated privilege
       - name: Generate access token
         id: generate-token
-        uses: actions/create-github-app-token@v2.0.6
+        uses: actions/create-github-app-token@v2.1.4
         with:
-          app-id: ${{ vars.RTLMETER_RESULTS_CI_APP_ID }}
-          private-key: ${{ secrets.RTLMETER_RESULTS_CI_APP_PRIVATE_KEY }}
+          app-id: ${{ vars.VERILATOR_CI_ID }}
+          private-key: ${{ secrets.VERILATOR_CI_KEY }}
           owner: verilator
           repositories: verilator
           permission-issues: write
       - name: Create issue
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
-        run: |
+        run: |-
           echo "This issue was created automatically by the GitHub Actions CI due to the failure of a scheduled RTLMeter run." >> body.txt
           echo "" >> body.txt
           echo "Workflow status: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> body.txt

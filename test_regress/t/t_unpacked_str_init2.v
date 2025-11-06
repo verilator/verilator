@@ -6,7 +6,7 @@
 
 // issue2895
 
-module t (/*AUTOARG*/);
+module t;
 
    localparam string REG_X [0:31] = '{"zero", "ra", "sp", "gp", "tp", "t0",
                                       "t1", "t2", "s0/fp", "s1", "a0", "a1",

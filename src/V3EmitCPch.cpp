@@ -23,19 +23,19 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 // Precompiled header emitter
 
-class EmitCPch final : EmitCBase {
+class EmitCPch final {
 public:
     // METHODS
 
     void emitPch() {
         // Generate the makefile
-        V3OutCFile of{v3Global.opt.makeDir() + "/" + pchClassName() + ".h"};
+        V3OutCFile of{v3Global.opt.makeDir() + "/" + EmitCUtil::pchClassName() + ".h"};
         of.putsHeader();
         of.puts("// DESCRIPTION: Verilator output: Precompiled header\n");
         of.puts("//\n");
         of.puts("// Internal details; most user sources do not need this header,\n");
         of.puts("// unless using verilator public meta comments.\n");
-        of.puts("// Suggest use " + topClassName() + ".h instead.\n");
+        of.puts("// Suggest use " + EmitCUtil::topClassName() + ".h instead.\n");
         of.puts("\n");
 
         of.putsGuard();
@@ -54,8 +54,8 @@ public:
         if (v3Global.dpi()) of.puts("#include \"verilated_dpi.h\"\n");
 
         of.puts("\n");
-        of.puts("#include \"" + symClassName() + ".h\"\n");
-        of.puts("#include \"" + topClassName() + ".h\"\n");
+        of.puts("#include \"" + EmitCUtil::symClassName() + ".h\"\n");
+        of.puts("#include \"" + EmitCUtil::topClassName() + ".h\"\n");
 
         of.puts("\n// Additional include files added using '--compiler-include'\n");
         for (const string& filename : v3Global.opt.compilerIncludes()) {

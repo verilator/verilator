@@ -11,7 +11,7 @@ class Cls;
    int imemberb;
 endclass : Cls
 
-module t (/*AUTOARG*/);
+module t;
    typedef Cls Cls2;
 
    initial begin

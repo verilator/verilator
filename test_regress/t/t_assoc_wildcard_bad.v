@@ -11,7 +11,7 @@ class Cls;
    integer imemberb;
 endclass : Cls
 
-module t (/*AUTOARG*/);
+module t;
 
    initial begin
       string a [*];

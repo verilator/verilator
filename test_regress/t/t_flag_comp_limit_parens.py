@@ -15,7 +15,7 @@ test.compile(verilator_flags2=["--comp-limit-parens 2"])
 
 test.execute()
 
-files = test.glob_some(test.obj_dir + "/" + test.vm_prefix + "___024root__DepSet*__Slow.cpp")
+files = test.glob_some(test.obj_dir + "/" + test.vm_prefix + "___024root__*__Slow.cpp")
 test.file_grep_any(files, r'Vdeeptemp')
 
 test.passes()

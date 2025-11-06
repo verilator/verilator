@@ -40,7 +40,7 @@ module Vt_debug_emitv_t;
     Iface the_ifaces[3:0] ();
     initial begin
         begin
-            if ($test$plusargs(40'h48454c4c4f)) begin
+            if ($test$plusargs("HELLO")) begin
                 $display("Hello argument found.");
             end
             if ((Pkg::FOO == 'sh0)) begin
@@ -49,7 +49,7 @@ module Vt_debug_emitv_t;
             if ((ZERO == 'sh0)) begin
                 $write("");
             end
-            if ($value$plusargs(56'h544553543d2564i1)) begin
+            if ($value$plusargs("TEST=%d", i1)) begin
                 $display("value was %~", i1);
             end
             else begin
@@ -74,7 +74,7 @@ module Vt_debug_emitv_t;
             if (the_ifaces[2].ifsig) begin
                 $write("");
             end
-            #64'h1;
+            #1;
             $write("After #1 delay");
         end
     end
@@ -185,10 +185,10 @@ module Vt_debug_emitv_t;
                                  : $c('sh1e)));
             $c(;);
             $display("%d", $c(0));
-            fd = $fopen(72'h2f6465762f6e756c6c);
+            fd = $fopen("/dev/null");
             ;
             $fclose(fd);
-            fd = $fopen(72'h2f6465762f6e756c6c, 8'h72);
+            fd = $fopen("/dev/null", "r");
             ;
             $fgetc(fd);
             $fflush(fd);
@@ -196,9 +196,9 @@ module Vt_debug_emitv_t;
             ;
             $fdisplay(32'h69203d20, "%~", sum);
             $fwrite(fd, "hello");
-            $readmemh(fd, array);
-            $readmemh(fd, array, 'sh0);
-            $readmemh(fd, array, 'sh0, 'sh0);
+            $readmemh(string'(fd), array);
+            $readmemh(string'(fd), array, 'sh0);
+            $readmemh(string'(fd), array, 'sh0, 'sh0);
             sum = 'sh0;
             begin : unnamedblk3
                 int signed i;
@@ -277,6 +277,7 @@ module Vt_debug_emitv_t;
             str = $sformatf("cyc=%~", cyc);
             ;
             $display("str = %@", str);
+            $display("struct = %@", ps);
             $display("%% [%t] [%^] to=%o td=%d", $time, 
                      $realtime, $time, $time);
             $sscanf(40'h666f6f3d35, "foo=%d", i);
@@ -359,7 +360,308 @@ module Vt_debug_emitv_t;
             release sum;
         end
     end
-    /*verilator public_flat_rw @(posedge clk) pubflat*/
+    property p;
+    @(posedge clk) ##1 sum[0]
+    endproperty
+    property p1;
+    @( clk) sum[0]
+    endproperty
+    assert property (@( clk) (! ##1 in)
+    ) begin
+    end
+    else begin
+    end
+    initial begin
+        begin
+            begin : assert_simple_immediate_else
+                assert ('sh0) begin
+                end
+                else begin
+                    $display("fail");
+                end
+            end
+            begin : assert_simple_immediate_stmt
+                assert ('sh0) begin
+                    $display("pass");
+                end
+                else begin
+                end
+            end
+            begin : assert_simple_immediate_stmt_else
+                assert ('sh0) begin
+                    $display("pass");
+                end
+                else begin
+                    $display("fail");
+                end
+            end
+            begin : assume_simple_immediate
+                assume ('sh0) begin
+                end
+                else begin
+                end
+            end
+            begin : assume_simple_immediate_else
+                assume ('sh0) begin
+                end
+                else begin
+                    $display("fail");
+                end
+            end
+            begin : assume_simple_immediate_stmt
+                assume ('sh0) begin
+                    $display("pass");
+                end
+                else begin
+                end
+            end
+            begin : assume_simple_immediate_stmt_else
+                assume ('sh0) begin
+                    $display("pass");
+                end
+                else begin
+                    $display("fail");
+                end
+            end
+        end
+    end
+    always  begin
+        begin : assert_observed_deferred_immediate
+            assert #0 ('sh0) begin
+            end
+            else begin
+            end
+        end
+    end
+    always  begin
+        begin : assert_observed_deferred_immediate_else
+            assert #0 ('sh0) begin
+            end
+            else begin
+                $display("fail");
+            end
+        end
+    end
+    always  begin
+        begin : assert_observed_deferred_immediate_stmt
+            assert #0 ('sh0) begin
+                $display("pass");
+            end
+            else begin
+            end
+        end
+    end
+    always  begin
+        begin : assert_observed_deferred_immediate_stmt_else
+            assert #0 ('sh0) begin
+                $display("pass");
+            end
+            else begin
+                $display("fail");
+            end
+        end
+    end
+    always  begin
+        begin : assume_observed_deferred_immediate
+            assume #0 ('sh0) begin
+            end
+            else begin
+            end
+        end
+    end
+    always  begin
+        begin : assume_observed_deferred_immediate_else
+            assume #0 ('sh0) begin
+            end
+            else begin
+                $display("fail");
+            end
+        end
+    end
+    always  begin
+        begin : assume_observed_deferred_immediate_stmt
+            assume #0 ('sh0) begin
+                $display("pass");
+            end
+            else begin
+            end
+        end
+    end
+    always  begin
+        begin : assume_observed_deferred_immediate_stmt_else
+            assume #0 ('sh0) begin
+                $display("pass");
+            end
+            else begin
+                $display("fail");
+            end
+        end
+    end
+    always  begin
+        begin : assert_final_deferred_immediate
+            assert final ('sh0) begin
+            end
+            else begin
+            end
+        end
+    end
+    always  begin
+        begin : assert_final_deferred_immediate_else
+            assert final ('sh0) begin
+            end
+            else begin
+                $display("fail");
+            end
+        end
+    end
+    always  begin
+        begin : assert_final_deferred_immediate_stmt
+            assert final ('sh0) begin
+                $display("pass");
+            end
+            else begin
+            end
+        end
+    end
+    always  begin
+        begin : assert_final_deferred_immediate_stmt_else
+            assert final ('sh0) begin
+                $display("pass");
+            end
+            else begin
+                $display("fail");
+            end
+        end
+    end
+    always  begin
+        begin : assume_final_deferred_immediate
+            assume final ('sh0) begin
+            end
+            else begin
+            end
+        end
+    end
+    always  begin
+        begin : assume_final_deferred_immediate_else
+            assume final ('sh0) begin
+            end
+            else begin
+                $display("fail");
+            end
+        end
+    end
+    always  begin
+        begin : assume_final_deferred_immediate_stmt
+            assume final ('sh0) begin
+                $display("pass");
+            end
+            else begin
+            end
+        end
+    end
+    always  begin
+        begin : assume_final_deferred_immediate_stmt_else
+            assume final ('sh0) begin
+                $display("pass");
+            end
+            else begin
+                $display("fail");
+            end
+        end
+    end
+    property prop;
+    @(posedge clk) 'sh0
+    endproperty
+    begin : assert_concurrent
+        assert property ( prop
+        ) begin
+        end
+        else begin
+        end
+    end
+    begin : assert_concurrent_else
+        assert property ( prop
+        ) begin
+        end
+        else begin
+            $display("fail");
+        end
+    end
+    begin : assert_concurrent_stmt
+        assert property ( prop
+        ) begin
+            $display("pass");
+        end
+        else begin
+        end
+    end
+    begin : assert_concurrent_stmt_else
+        assert property ( prop
+        ) begin
+            $display("pass");
+        end
+        else begin
+            $display("fail");
+        end
+    end
+    begin : assume_concurrent
+        assume property ( prop
+        ) begin
+        end
+        else begin
+        end
+    end
+    begin : assume_concurrent_else
+        assume property ( prop
+        ) begin
+        end
+        else begin
+            $display("fail");
+        end
+    end
+    begin : assume_concurrent_stmt
+        assume property ( prop
+        ) begin
+            $display("pass");
+        end
+        else begin
+        end
+    end
+    begin : assume_concurrent_stmt_else
+        assume property ( prop
+        ) begin
+            $display("pass");
+        end
+        else begin
+            $display("fail");
+        end
+    end
+    begin : cover_concurrent
+        cover property ( prop
+        ) begin
+        end
+    end
+    begin : cover_concurrent_stmt
+        cover property ( prop
+        ) begin
+            $display("pass");
+        end
+    end
+    int signed a;
+    int signed ao;
+    initial begin
+        begin : assert_intrinsic
+            assert ((| $_EXPRSTMT(
+                        ao = (a);
+                        , );
+                )) begin
+            end
+            else begin
+            end
+        end
+    end
+    restrict (@(posedge clk) ##1 a[0]
+    );
 endmodule
 package Vt_debug_emitv___024unit;
     class Vt_debug_emitv_Cls;

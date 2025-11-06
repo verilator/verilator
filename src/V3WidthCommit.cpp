@@ -38,13 +38,24 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 class WidthCommitVisitor final : public VNVisitor {
     // NODE STATE
     // AstVar::user1p           -> bool, processed
+    //  AstNodeFTask::user2()    -> int. Non-zero if ever referenced (called)
+    //  AstNew::user2()          -> int. Count of number of references, minus references in
+    //  functions never called
     const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
 
     // STATE
-    AstNodeModule* m_modp = nullptr;
+    AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    AstNodeModule* m_modp = nullptr;  // Current module
     std::string m_contNba;  // In continuous- or non-blocking assignment
+    bool m_dynsizedelem
+        = false;  // Writing a dynamically-sized array element, not the array itself
     VMemberMap m_memberMap;  // Member names cached for fast lookup
-    bool m_underSel = false;  // Whether is currently under AstMemberSel or AstSel
+    bool m_taskRefWarn = true;  // Allow task reference warnings
+    bool m_underSel = false;  // Under AstMemberSel or AstSel
+    bool m_underAlwaysEdged = false;  // Under always with sequential SenTree
+    std::vector<AstNew*> m_virtualNewsp;  // Instantiations of virtual classes
+    std::vector<AstNodeFTask*> m_tasksp;  // All the tasks, we will check if they are ever called
 
 public:
     // METHODS
@@ -53,8 +64,16 @@ public:
 private:
     // METHODS
     void editDType(AstNode* nodep) {
-        // Edit dtypes for this node
+        // Called by every visitor. Edit dtypes for this node, also check for some warnings
         nodep->dtypep(editOneDType(nodep->dtypep()));
+        if (m_ftaskp && m_ftaskp->verilogFunction() && m_taskRefWarn && nodep->isTimingControl())
+            nodep->v3warn(
+                FUNCTIMECTL,
+                "Functions cannot contain time-controlling statements (IEEE 1800-2023 13.4)\n"
+                    << nodep->warnContextPrimary() << "\n"
+                    << nodep->warnMore() << "... Suggest make caller 'function "
+                    << m_ftaskp->prettyName() << "' a task\n"
+                    << m_ftaskp->warnContextSecondary());
     }
     AstNodeDType* editOneDType(AstNodeDType* nodep) {
         // See if the dtype/refDType can be converted to a standard one
@@ -138,7 +157,7 @@ private:
             else if (varp->isClassMember() && !varp->lifetime().isStatic()
                      && !VN_IS(varDtp, IfaceRefDType))
                 varType = "Class non-static";
-            else if (varDtp->isDynamicallySized())
+            else if (varDtp->isDynamicallySized() && m_dynsizedelem)
                 varType = "Dynamically-sized";
             if (!varType.empty()) {
                 UINFO(1, "    Related var dtype: " << varDtp);
@@ -146,6 +165,20 @@ private:
                                << " variable not allowed in " << m_contNba
                                << " assignment (IEEE 1800-2023 6.21): " << varp->prettyNameQ());
             }
+        }
+    }
+
+    void deadCheckTasks() {
+        for (AstNodeFTask* taskp : m_tasksp) {
+            if (!taskp->user2()) {
+                taskp->foreach([](AstNew* newp) { newp->user2Inc(-1); });
+            }
+        }
+        for (AstNew* newp : m_virtualNewsp) {
+            if (newp->user2() > 0)
+                newp->v3error("Illegal to call 'new' using an abstract virtual class "
+                              + AstNode::prettyNameQ(newp->classOrPackagep()->origName())
+                              + " (IEEE 1800-2023 8.21)");
         }
     }
 
@@ -186,7 +219,17 @@ private:
                 return;
             }
         }
+        VL_RESTORER(m_underAlwaysEdged);
+        m_underAlwaysEdged
+            = nodep->sentreep() && nodep->sentreep()->sensesp() && nodep->sentreep()->hasEdge();
         // Iterate will delete ComboStar sentrees, so after above
+        iterateChildren(nodep);
+        editDType(nodep);
+    }
+    void visit(AstFork* nodep) override {
+        VL_RESTORER(m_taskRefWarn);
+        // fork..join_any is allowed to call tasks, and UVM does this
+        if (!nodep->isTimingControl()) m_taskRefWarn = false;
         iterateChildren(nodep);
         editDType(nodep);
     }
@@ -289,6 +332,10 @@ private:
         nodep->virtRefDType2p(editOneDType(nodep->virtRefDType2p()));
     }
     void visit(AstNodeFTask* nodep) override {
+        if (!nodep->taskPublic() && !nodep->dpiExport() && !nodep->dpiImport())
+            m_tasksp.push_back(nodep);
+        VL_RESTORER(m_ftaskp);
+        m_ftaskp = nodep;
         iterateChildren(nodep);
         editDType(nodep);
         {
@@ -345,6 +392,28 @@ private:
         classEncapCheck(nodep, nodep->varp(), VN_CAST(nodep->classOrPackagep(), Class));
         if (nodep->access().isWriteOrRW()) varLifetimeCheck(nodep, nodep->varp());
     }
+    void visit(AstAssign* nodep) override {
+        iterateChildren(nodep);
+        editDType(nodep);
+        // Lint
+        if (m_underAlwaysEdged) {
+            const bool ignore = nodep->lhsp()->forall([&](const AstVarRef* refp) {
+                // Ignore reads (e.g.: index expressions)
+                if (refp->access().isReadOnly()) return true;
+                const AstVar* const varp = refp->varp();
+                // Ignore ...
+                return varp->isUsedLoopIdx()  // ... loop indices
+                       || varp->isTemp()  // ... temporaries
+                       || varp->fileline()->warnIsOff(V3ErrorCode::BLKSEQ);  // ... user said so
+            });
+            if (!ignore) {
+                nodep->v3warn(BLKSEQ,
+                              "Blocking assignment '=' in sequential logic process\n"
+                                  << nodep->warnMore()  //
+                                  << "... Suggest using delayed assignment '<='");
+            }
+        }
+    }
     void visit(AstAssignDly* nodep) override {
         iterateAndNextNull(nodep->timingControlp());
         iterateAndNextNull(nodep->rhsp());
@@ -369,6 +438,28 @@ private:
         iterateChildren(nodep);
         editDType(nodep);
         classEncapCheck(nodep, nodep->taskp(), VN_CAST(nodep->classOrPackagep(), Class));
+        if (nodep->taskp() && nodep->taskp()->verilogTask() && m_ftaskp
+            && m_ftaskp->verilogFunction() && m_taskRefWarn) {
+            nodep->v3warn(FUNCTIMECTL,
+                          "Functions cannot invoke tasks (IEEE 1800-2023 13.4)\n"
+                              << nodep->warnContextPrimary() << "\n"
+                              << nodep->warnMore() << "... Suggest make caller 'function "
+                              << m_ftaskp->prettyName() << "' a task\n"
+                              << m_ftaskp->warnContextSecondary() << "\n"
+                              << nodep->warnMore() << "... Or, suggest make called 'task "
+                              << nodep->taskp()->prettyName() << "' a function void\n"
+                              << nodep->taskp()->warnContextSecondary());
+        }
+        if (nodep->taskp()) nodep->taskp()->user2(1);
+        if (AstNew* const newp = VN_CAST(nodep, New)) {
+            if (!VN_IS(newp->backp(), Assign)) return;
+            if (AstClass* const classp = VN_CAST(newp->classOrPackagep(), Class)) {
+                if (classp->isVirtual() || classp->isInterfaceClass()) {
+                    m_virtualNewsp.push_back(newp);
+                    newp->user2Inc();
+                }
+            }
+        }
     }
     void visit(AstMemberSel* nodep) override {
         {
@@ -395,6 +486,20 @@ private:
         // This check could go anywhere after V3Param
         nodep->v3fatalSrc("Presels should have been removed before this point");
     }
+    void visit(AstCMethodHard* nodep) override {
+        VL_RESTORER(m_dynsizedelem);
+        if (nodep->method() == VCMethod::ARRAY_AT || nodep->method() == VCMethod::ARRAY_AT_WRITE
+            || nodep->method() == VCMethod::DYN_AT_WRITE_APPEND)
+            m_dynsizedelem = true;
+        iterateChildren(nodep);
+        editDType(nodep);
+    }
+    void visit(AstAssocSel* nodep) override {
+        VL_RESTORER(m_dynsizedelem);
+        m_dynsizedelem = true;
+        iterateChildren(nodep);
+        editDType(nodep);
+    }
     void visit(AstSel* nodep) override {
         {
             VL_RESTORER(m_underSel);
@@ -414,6 +519,7 @@ public:
         // Were changing widthMin's, so the table is now somewhat trashed
         nodep->typeTablep()->clearCache();
         iterate(nodep);
+        deadCheckTasks();
         // Don't want to AstTypeTable::repairCache, as all needed nodes
         // have been added back in; a repair would prevent dead nodes from
         // being detected

@@ -18,6 +18,8 @@
 
 #include "V3Number.h"
 
+#include "V3File.h"
+
 #include <algorithm>
 #include <cerrno>
 #include <cmath>
@@ -95,7 +97,7 @@ void V3Number::v3errorEndFatal(const std::ostringstream& str) const
 // Read class functions
 // CREATION
 
-V3Number::V3Number(VerilogStringLiteral, AstNode* nodep, const string& str) {
+V3Number::V3Number(AstNode* nodep, VerilogStringLiteral, const string& str) {
     // Create a number using a verilog string as the value, thus 8 bits per character.
     if (str.empty()) {  // IEEE 1800-2023 11.10.3 "" = "\000"
         init(nodep, 8);
@@ -275,11 +277,11 @@ void V3Number::create(const char* sourcep) {
                 break;
             }
             case '_': break;
-            default: {
+            default: {  // LCOV_EXCL_START
                 // Likely impossible as parser prevents hitting it
-                v3error("Illegal character in decimal constant: " << *cp);  // LCOV_EXCL_LINE
+                v3error("Illegal character in decimal constant: " << *cp);
                 break;
-            }
+            }  // LCOV_EXCL_STOP
             }
         }
         obit = width();
@@ -355,18 +357,18 @@ void V3Number::create(const char* sourcep) {
                 case 'x': setBit(obit++,'x'); setBit(obit++,'x'); setBit(obit++,'x'); setBit(obit++,'x'); break;
                     // clang-format on
                 case '_': break;
-                default:
+                default:  // LCOV_EXCL_START
                     // Likely impossible as parser prevents hitting it
-                    v3error("Illegal character in hex constant: " << *cp);  // LCOV_EXCL_LINE
+                    v3error("Illegal character in hex constant: " << *cp);
                     break;
-                }
+                }  // LCOV_EXCL_STOP
                 break;
             }
-            default:
+            default:  // LCOV_EXCL_START
                 // Likely impossible as parser prevents hitting it
-                v3error("Illegal base character: " << base);  // LCOV_EXCL_LINE
+                v3error("Illegal base character: " << base);
                 break;
-            }
+            }  // LCOV_EXCL_STOP
         }
     }
 
@@ -556,7 +558,7 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const VL_MT_STABLE {
     if (prefixed) {
         if (sized()) {
             out << width() << "'";
-        } else if (autoExtend() && !sized() && width() == 1) {
+        } else if (autoExtend() && width() == 1) {
             out << "'";
             if (bitIs0(0)) {
                 out << '0';
@@ -636,7 +638,7 @@ string V3Number::displayPad(size_t fmtsize, char pad, bool left, const string& i
     return left ? (in + padding) : (padding + in);
 }
 
-string V3Number::displayed(AstNode* nodep, const string& vformat) const VL_MT_STABLE {
+string V3Number::displayed(const AstNode* nodep, const string& vformat) const VL_MT_STABLE {
     return displayed(nodep->fileline(), vformat);
 }
 
@@ -871,10 +873,67 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const VL_MT_STAB
         str = displayPad(fmtsizen, ' ', left, toString());
         return str;
     }
-    default:
-        fl->v3fatalSrc("Unknown $display-like format code for number: %" << pos[0]);
-        return "ERR";
+    default: fl->v3fatalSrc("Unknown $display-like format code for number: %" << pos[0]);
     }
+}
+
+string V3Number::emitC() const VL_MT_STABLE {
+    constexpr size_t bufsize = 1000;
+    char sbuf[bufsize];
+    string result;
+    if (isNull()) {
+        return "VlNull{}";
+    } else if (isDouble()) {
+        const double dnum = toDouble();
+        if (std::isinf(dnum)) {
+            if (std::signbit(dnum)) result += '-';
+            result += "std::numeric_limits<double>::infinity()";
+        } else if (std::isnan(dnum)) {
+            if (std::signbit(dnum)) result += '-';
+            result += "std::numeric_limits<double>::quiet_NaN()";
+        } else {
+            const char* const fmt = (static_cast<int>(dnum) == dnum && -1000 < dnum && dnum < 1000)
+                                        ? "%3.1f"  // Force decimal point
+                                        : "%.17e";  // %e always yields a float literal
+            VL_SNPRINTF(sbuf, bufsize, fmt, dnum);
+            return sbuf;
+        }
+    } else if (isString()) {
+        const string strg = toString();
+        const string quoted
+            = V3OutFormatter::quoteNameControls(strg, V3OutFormatter::Language::LA_C);
+        // Note: putsQuoted does not track indentation, so we use this instead
+        return '"' + quoted + "\"s";
+    } else if (words() > 2) {
+        // Note the double {{ initializer. The first { starts the initializer of the VlWide,
+        // and the second starts the initializer of m_storage within the VlWide.
+        // Alternative is to have constructor with std::initializer_list
+        result = "VlWide<" + std::to_string(words()) + ">{{";
+        if (words() > 4) result += '\n';
+        for (int n = 0; n < words(); ++n) {
+            if (n) result += ((n % 4) ? ", " : ",\n");
+            VL_SNPRINTF(sbuf, bufsize, "0x%08" PRIx32, edataWord(n));
+            result += sbuf;
+        }
+        if (words() > 4) result += '\n';
+        result += "}}";
+    } else if (words() == 2) {  // Quad
+        const uint64_t qnum = static_cast<uint64_t>(toUQuad());
+        const char* const fmt = (qnum < 10) ? ("%" PRIx64 "ULL") : ("0x%016" PRIx64 "ULL");
+        VL_SNPRINTF(sbuf, bufsize, fmt, qnum);
+        return sbuf;
+    } else {
+        // Always emit unsigned, if signed, will call correct signed functions
+        // The 'U' must be here, to avoid <= comparisons etc ending up signed
+        const uint32_t unum = toUInt();
+        const char* const fmt = (unum < 10)      ? ("%" PRIu32 "U")
+                                : (width() > 16) ? ("0x%08" PRIx32 "U")
+                                : (width() > 8)  ? ("0x%04" PRIx32 "U")
+                                                 : ("0x%02" PRIx32 "U");
+        VL_SNPRINTF(sbuf, bufsize, fmt, unum);
+        return sbuf;
+    }
+    return result;
 }
 
 string V3Number::toDecimalS() const VL_MT_STABLE {
@@ -1835,7 +1894,7 @@ V3Number& V3Number::opShiftR(const V3Number& lhs, const V3Number& rhs) {
 }
 
 V3Number& V3Number::opShiftRS(const V3Number& lhs, const V3Number& rhs, uint32_t lbits) {
-    // Correct number of zero bits/width matters (hance lbits passed)
+    // Correct number of zero bits/width matters (hence lbits passed)
     // L(lhs) bit return
     // The spec says a unsigned >>> still acts as a normal >>.
     // We presume it is signed; as that's V3Width's job to convert to opShiftR
@@ -2040,7 +2099,7 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
     NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
     setZero();
     // Find MSB and check for zero.
-    const int words = lhs.words();
+    const int lWords = lhs.words();
     const int umsbp1 = lhs.mostSetBitP1();  // dividend
     const int vmsbp1 = rhs.mostSetBitP1();  // divisor
     if (VL_UNLIKELY(vmsbp1 == 0)  // rwp==0 so division by zero.  Return 0.
@@ -2077,8 +2136,8 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
     uint32_t vn[VL_MULS_MAX_WORDS + 1];  // v normalized
 
     // Zero for ease of debugging and to save having to zero for shifts
-    for (int i = 0; i < words; ++i) m_data.num()[i].m_value = 0;
-    for (int i = 0; i < words + 1; ++i) { un[i] = vn[i] = 0; }  // +1 as vn may get extra word
+    for (int i = 0; i < lWords; ++i) m_data.num()[i].m_value = 0;
+    for (int i = 0; i < lWords + 1; ++i) { un[i] = vn[i] = 0; }  // +1 as vn may get extra word
 
     // Algorithm requires divisor MSB to be set
     // Copy and shift to normalize divisor so MSB of vn[vw-1] is set
@@ -2155,7 +2214,7 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
         for (int i = 0; i < vw; ++i) {
             m_data.num()[i].m_value = (un[i] >> s) | (shift_mask & (un[i + 1] << (32 - s)));
         }
-        for (int i = vw; i < words; ++i) m_data.num()[i].m_value = 0;
+        for (int i = vw; i < lWords; ++i) m_data.num()[i].m_value = 0;
         opCleanThis();
         UINFO(9, "  opmoddiv-mod " << lhs << " " << rhs << " now=" << *this);
         return *this;

@@ -10,5 +10,5 @@ class Cls1;
    constraint c_bad { soft rc > 4; }  // Bad, no soft on randc
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 endmodule

@@ -21,7 +21,7 @@
 `endif
 
 // verilator lint_off DECLFILENAME
-module t(/*AUTOARG*/);
+module t;
    `MAILBOX_T #(int) m;
    int     msg;
    int     out;

@@ -98,8 +98,8 @@ class LinkLValueVisitor final : public VNVisitor {
         VL_RESTORER(m_setStrengthSpecified);
         {
             m_setRefLvalue = VAccess::WRITE;
-            m_setContinuously = VN_IS(nodep, AssignW) || VN_IS(nodep, AssignAlias);
-            if (AstAssignW* assignwp = VN_CAST(nodep, AssignW)) {
+            m_setContinuously = VN_IS(nodep, AssignW);
+            if (const AstAssignW* const assignwp = VN_CAST(nodep, AssignW)) {
                 if (assignwp->strengthSpecp()) m_setStrengthSpecified = true;
             }
             {
@@ -127,7 +127,7 @@ class LinkLValueVisitor final : public VNVisitor {
             } else {
                 const bool rhsHasAutomatic
                     = nodep->rhsp()->exists([](const AstNodeVarRef* const refp) {
-                          return refp->varp() && refp->varp()->lifetime() == VLifetime::AUTOMATIC;
+                          return refp->varp() && refp->varp()->lifetime().isAutomatic();
                       });
                 if (rhsHasAutomatic) {
                     nodep->rhsp()->v3error("Static variable initializer\n"
@@ -136,6 +136,11 @@ class LinkLValueVisitor final : public VNVisitor {
                 }
             }
         }
+    }
+    void visit(AstAlias* nodep) override {
+        VL_RESTORER(m_setRefLvalue);
+        m_setRefLvalue = VAccess::READWRITE;
+        iterateChildren(nodep);
     }
     void visit(AstInitialStatic* nodep) override {
         VL_RESTORER(m_inInitialStatic);
@@ -250,6 +255,7 @@ class LinkLValueVisitor final : public VNVisitor {
         iterateAndNextNull(nodep->rhsp());
         iterateAndNextNull(nodep->thsp());
     }
+    // cppcheck-suppress constParameterPointer
     void prepost_visit(AstNodeTriop* nodep) {
         VL_RESTORER(m_setRefLvalue);
         m_setRefLvalue = VAccess::NOCHANGE;

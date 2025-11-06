@@ -4,7 +4,7 @@
 // any use, without warranty, 2011 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
    task t1;
       return 1;  // Shouldn't return value

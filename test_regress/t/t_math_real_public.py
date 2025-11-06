@@ -15,4 +15,6 @@ test.compile(verilator_flags2=['--cc --public'])
 
 test.execute()
 
+test.file_grep(test.obj_dir + "/" + test.vm_prefix + "___024root.h", r'REAL_PARAM')
+
 test.passes()

@@ -1,48 +1,48 @@
-%Error: t/t_func_const_bad.v:12:20: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_output'
+%Error: t/t_func_const_bad.v:12:19: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_output'
                                   : ... note: In instance 't'
-        t/t_func_const_bad.v:13:64: ... Location of non-constant VAR 'o': Language violation: Outputs/refs not allowed in constant functions
-   12 |    localparam B1 = f_bad_output(1,2);
-      |                    ^~~~~~~~~~~~
+        t/t_func_const_bad.v:13:63: ... Location of non-constant VAR 'o': Language violation: Outputs/refs not allowed in constant functions
+   12 |   localparam B1 = f_bad_output(1, 2);
+      |                   ^~~~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_func_const_bad.v:21:20: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_dotted'
+%Error: t/t_func_const_bad.v:21:19: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_dotted'
                                   : ... note: In instance 't'
-        t/t_func_const_bad.v:23:24: ... Location of non-constant VARXREF 'EIGHT': Language violation: Dotted hierarchical references not allowed in constant functions
-        t/t_func_const_bad.v:21:20: ... Called from 'f_bad_dotted()' with parameters:
+        t/t_func_const_bad.v:23:22: ... Location of non-constant VARXREF 'EIGHT': Language violation: Dotted hierarchical references not allowed in constant functions
+        t/t_func_const_bad.v:21:19: ... Called from 'f_bad_dotted()' with parameters:
            a = ?32?h2
-   21 |    localparam B2 = f_bad_dotted(2);
-      |                    ^~~~~~~~~~~~
-%Error: t/t_func_const_bad.v:28:20: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_nonparam'
+   21 |   localparam B2 = f_bad_dotted(2);
+      |                   ^~~~~~~~~~~~
+%Error: t/t_func_const_bad.v:28:19: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_nonparam'
                                   : ... note: In instance 't'
-        t/t_func_const_bad.v:30:24: ... Location of non-constant VARREF 'modvar': Language violation: reference to non-function-local variable
-        t/t_func_const_bad.v:28:20: ... Called from 'f_bad_nonparam()' with parameters:
+        t/t_func_const_bad.v:30:22: ... Location of non-constant VARREF 'modvar': Language violation: reference to non-function-local variable
+        t/t_func_const_bad.v:28:19: ... Called from 'f_bad_nonparam()' with parameters:
            a = ?32?h3
-   28 |    localparam B3 = f_bad_nonparam(3);
-      |                    ^~~~~~~~~~~~~~
-%Error: t/t_func_const_bad.v:36:20: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_infinite'
+   28 |   localparam B3 = f_bad_nonparam(3);
+      |                   ^~~~~~~~~~~~~~
+%Error: t/t_func_const_bad.v:36:19: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_infinite'
                                   : ... note: In instance 't'
-        t/t_func_const_bad.v:38:7: ... Location of non-constant WHILE: Loop unrolling took too long; probably this is aninfinite loop, or use /*verilator unroll_full*/, or set --unroll-count above 16386
-        t/t_func_const_bad.v:36:20: ... Called from 'f_bad_infinite()' with parameters:
+        t/t_func_const_bad.v:38:5: ... Location of non-constant LOOP: Loop unrolling took too long; probably this is aninfinite loop, or use /*verilator unroll_full*/, or set --unroll-count above 16386
+        t/t_func_const_bad.v:36:19: ... Called from 'f_bad_infinite()' with parameters:
            a = ?32?h3
-   36 |    localparam B4 = f_bad_infinite(3);
-      |                    ^~~~~~~~~~~~~~
-%Error: t/t_func_const_bad.v:44:23: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_stop'
+   36 |   localparam B4 = f_bad_infinite(3);
+      |                   ^~~~~~~~~~~~~~
+%Error: t/t_func_const_bad.v:44:22: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_stop'
                                   : ... note: In instance 't'
-        t/t_func_const_bad.v:46:7: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
-        t/t_func_const_bad.v:44:23: ... Called from 'f_bad_stop()' with parameters:
+        t/t_func_const_bad.v:46:5: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
+        t/t_func_const_bad.v:44:22: ... Called from 'f_bad_stop()' with parameters:
            a = ?32?h3
-   44 |    localparam BSTOP = f_bad_stop(3);
-      |                       ^~~~~~~~~~
--Info: "Printing in loop:           0"
--Info: "Printing in loop:           1"
--Info: "Printing in loop:           2"
+   44 |   localparam BSTOP = f_bad_stop(3);
+      |                      ^~~~~~~~~~
+-Info: "Printing in loop: 0"
+-Info: "Printing in loop: 1"
+-Info: "Printing in loop: 2"
 %Warning-USERFATAL: "Fatal Error"
                     ... For warning description see https://verilator.org/warn/USERFATAL?v=latest
                     ... Use "/* verilator lint_off USERFATAL */" and lint_on around source to disable this message.
-%Error: t/t_func_const_bad.v:50:24: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_fatal'
+%Error: t/t_func_const_bad.v:51:23: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_fatal'
                                   : ... note: In instance 't'
-        t/t_func_const_bad.v:55:7: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
-        t/t_func_const_bad.v:50:24: ... Called from 'f_bad_fatal()' with parameters:
+        t/t_func_const_bad.v:56:5: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
+        t/t_func_const_bad.v:51:23: ... Called from 'f_bad_fatal()' with parameters:
            a = ?32?h3
-   50 |    localparam BFATAL = f_bad_fatal(3);
-      |                        ^~~~~~~~~~~
+   51 |   localparam BFATAL = f_bad_fatal(3);
+      |                       ^~~~~~~~~~~
 %Error: Exiting due to

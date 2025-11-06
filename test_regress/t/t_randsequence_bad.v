@@ -6,7 +6,7 @@
 // Version 2.0.
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-module t(/*AUTOARG*/);
+module t;
 
    initial begin;
       randsequence(no_such_production)  // Bad
@@ -16,6 +16,11 @@ module t(/*AUTOARG*/);
       randsequence(main)
          main: production_bad;  // Bad
          production_baa: {};
+      endsequence
+
+      randsequence()
+         duplicated_bad: { $display("dup1"); };
+         duplicated_bad: { $display("dup2"); };  // Bad
       endsequence
 
       $write("*-* All Finished *-*\n");

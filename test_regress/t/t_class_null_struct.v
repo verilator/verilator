@@ -12,7 +12,7 @@ typedef struct {
    int number;
 } str_t;
 
-module t (/*AUTOARG*/);
+module t;
    function automatic str_t func_null();
       return '{null, 42};
    endfunction

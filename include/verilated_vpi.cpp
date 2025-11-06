@@ -2399,7 +2399,7 @@ bool vl_check_format(const VerilatedVar* varp, const p_vpi_value valuep, const c
         case VLVT_UINT32:
         case VLVT_UINT64:
         case VLVT_WDATA: return status;
-        default: status = false;
+        default: status = false;  // LCOV_EXCL_LINE
         }
     } else if (valuep->format == vpiDecStrVal) {
         switch (varp->vltype()) {
@@ -2407,7 +2407,7 @@ bool vl_check_format(const VerilatedVar* varp, const p_vpi_value valuep, const c
         case VLVT_UINT16:
         case VLVT_UINT32:
         case VLVT_UINT64: return status;
-        default: status = false;
+        default: status = false;  // LCOV_EXCL_LINE
         }
     } else if (valuep->format == vpiStringVal) {
         switch (varp->vltype()) {
@@ -2424,7 +2424,7 @@ bool vl_check_format(const VerilatedVar* varp, const p_vpi_value valuep, const c
                 status = false;
                 break;
             }
-        default: status = false;
+        default: status = false;  // LCOV_EXCL_LINE
         }
     } else if (valuep->format == vpiIntVal) {
         switch (varp->vltype()) {
@@ -2433,12 +2433,12 @@ bool vl_check_format(const VerilatedVar* varp, const p_vpi_value valuep, const c
         case VLVT_UINT32:
         case VLVT_UINT64:
         case VLVT_WDATA: return status;
-        default: status = false;
+        default: status = false;  // LCOV_EXCL_LINE
         }
     } else if (valuep->format == vpiRealVal) {
         switch (varp->vltype()) {
         case VLVT_REAL: return status;
-        default: status = false;
+        default: status = false;  // LCOV_EXCL_LINE
         }
     } else if (valuep->format == vpiSuppressVal) {
         return status;
@@ -2919,14 +2919,14 @@ bool vl_check_array_format(const VerilatedVar* varp, const p_vpi_arrayvalue arra
         case VLVT_UINT32:
         case VLVT_UINT64:
         case VLVT_WDATA: return true;
-        default:;
+        default:;  // LCOV_EXCL_LINE
         }
     } else if (arrayvalue_p->format == vpiIntVal) {
         switch (varp->vltype()) {
         case VLVT_UINT8:
         case VLVT_UINT16:
         case VLVT_UINT32: return true;
-        default:;
+        default:;  // LCOV_EXCL_LINE
         }
     } else if ((arrayvalue_p->format == vpiRawTwoStateVal)
                || (arrayvalue_p->format == vpiRawFourStateVal)) {
@@ -2936,13 +2936,13 @@ bool vl_check_array_format(const VerilatedVar* varp, const p_vpi_arrayvalue arra
         case VLVT_UINT32:
         case VLVT_UINT64:
         case VLVT_WDATA: return true;
-        default:;
+        default:;  // LCOV_EXCL_LINE
         }
     } else if (arrayvalue_p->format == vpiShortIntVal) {
         switch (varp->vltype()) {
         case VLVT_UINT8:
         case VLVT_UINT16: return true;
-        default:;
+        default:;  // LCOV_EXCL_LINE
         }
     } else if (arrayvalue_p->format == vpiLongIntVal) {
         switch (varp->vltype()) {
@@ -2950,7 +2950,7 @@ bool vl_check_array_format(const VerilatedVar* varp, const p_vpi_arrayvalue arra
         case VLVT_UINT16:
         case VLVT_UINT32:
         case VLVT_UINT64: return true;
-        default:;
+        default:;  // LCOV_EXCL_LINE
         }
     }
 
@@ -3069,7 +3069,7 @@ void vl_get_value_array_rawvals(unsigned index, unsigned num, const unsigned siz
                                 const unsigned packedSize, const bool leftIsLow,
                                 const bool fourState, const T* src, PLI_BYTE8* dst) {
     static_assert(std::is_unsigned<T>::value,
-                  "type T is not unsigned");  //ensure loigcal right shift
+                  "type T is not unsigned");  //ensure logical right shift
     const unsigned element_size_bytes VL_BYTES_I(packedSize);
     const unsigned element_size_repr = (element_size_bytes + sizeof(T) - 1) / sizeof(T);
     size_t dst_index = 0;
@@ -3127,7 +3127,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
 
     const VerilatedVar* const varp = vop->varp();
 
-    static thread_local EData out_data[VL_VALUE_STRING_MAX_WORDS * 2];
+    static thread_local EData t_out_data[VL_VALUE_STRING_MAX_WORDS * 2];
 
     const unsigned size = vop->size();
     if (VL_UNCOVERABLE(num > size)) {
@@ -3147,7 +3147,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
                         "increase and recompile");
         }
 
-        PLI_INT16* shortintsp = (PLI_INT16*)out_data;
+        PLI_INT16* shortintsp = reinterpret_cast<PLI_INT16*>(t_out_data);
         arrayvalue_p->value.shortints = shortintsp;
 
         if (varp->vltype() == VLVT_UINT8) {
@@ -3166,7 +3166,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
                         "increase and recompile");
         }
 
-        PLI_INT32* integersp = (PLI_INT32*)out_data;
+        PLI_INT32* integersp = reinterpret_cast<PLI_INT32*>(t_out_data);
         arrayvalue_p->value.integers = integersp;
 
         if (varp->vltype() == VLVT_UINT8) {
@@ -3188,7 +3188,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
                         "increase and recompile");
         }
 
-        PLI_INT64* longintsp = (PLI_INT64*)out_data;
+        PLI_INT64* longintsp = reinterpret_cast<PLI_INT64*>(t_out_data);
         arrayvalue_p->value.longints = longintsp;
 
         if (varp->vltype() == VLVT_UINT8) {
@@ -3213,7 +3213,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
                         "increase and recompile");
         }
 
-        p_vpi_vecval vectorsp = (p_vpi_vecval)out_data;
+        p_vpi_vecval vectorsp = reinterpret_cast<p_vpi_vecval>(t_out_data);
         arrayvalue_p->value.vectors = vectorsp;
 
         if (varp->vltype() == VLVT_UINT8) {
@@ -3241,7 +3241,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
                         "increase and recompile");
         }
 
-        PLI_BYTE8* valuep = (PLI_BYTE8*)out_data;
+        PLI_BYTE8* valuep = reinterpret_cast<PLI_BYTE8*>(t_out_data);
         arrayvalue_p->value.rawvals = valuep;
 
         if (varp->vltype() == VLVT_UINT8) {
@@ -3269,7 +3269,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
                         "increase and recompile");
         }
 
-        PLI_BYTE8* valuep = (PLI_BYTE8*)out_data;
+        PLI_BYTE8* valuep = reinterpret_cast<PLI_BYTE8*>(t_out_data);
         arrayvalue_p->value.rawvals = valuep;
 
         if (varp->vltype() == VLVT_UINT8) {

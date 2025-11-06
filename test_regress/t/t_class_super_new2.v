@@ -19,7 +19,7 @@ module dut_unit_test;
    svunit_testcase svunit_ut = new("dut_ut");
 endmodule
 
-module t(/*AUTOARG*/);
+module t;
 
    dut_unit_test dut_ut();
 

@@ -17,11 +17,11 @@ module t;
       bottom_2_unknown[1:0] = i[1:0];
    endfunction
 
-   localparam p = bottom_4bits(8'h13);
-   localparam bu = bottom_2_unknown(8'h13);
+   localparam P = bottom_4bits(8'h13);
+   localparam BU = bottom_2_unknown(8'h13);
 
    initial begin
-      if (p != 3) $stop;
+      if (P != 3) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
    end

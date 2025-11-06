@@ -4,7 +4,7 @@
 // any use, without warranty, 2024 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t(/*AUTOARG*/);
+module t;
    defparam id_13.id_14 = -id_13,
      id_15 = id_14;
 

@@ -32,9 +32,9 @@ test.compile(
 
 if test.vltmt:
     test.file_grep(test.obj_dir + "/V" + test.name + "__hier.dir/V" + test.name + "__stats.txt",
-                   r'Optimizations, Thread schedule count\s+(\d+)', 3)
+                   r'Optimizations, Thread schedule count\s+(\d+)', 4)
     test.file_grep(test.obj_dir + "/V" + test.name + "__hier.dir/V" + test.name + "__stats.txt",
-                   r'Optimizations, Thread schedule total tasks\s+(\d+)', 4)
+                   r'Optimizations, Thread schedule total tasks\s+(\d+)', 6)
 
 test.execute()
 

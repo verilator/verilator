@@ -44,6 +44,10 @@
 #include <cstring>
 #include <iostream>
 
+extern "C" {
+#include <libgen.h>
+}
+
 // These require the above. Comment prevents clang-format moving them
 #include "TestCheck.h"
 #include "TestSimulator.h"
@@ -894,7 +898,7 @@ int _mon_check_putget_str(p_cb_data cb_data) {
         // setup and install
         for (int i = 1; i <= 6; i++) {
             char buf[32];
-            snprintf(buf, sizeof(buf), TestSimulator::rooted("arr[%d].arr"), i);
+            VL_SNPRINTF(buf, sizeof(buf), TestSimulator::rooted("arr[%d].arr"), i);
             CHECK_RESULT_NZ(data[i].scope = vpi_handle_by_name((PLI_BYTE8*)buf, NULL));
             CHECK_RESULT_NZ(data[i].sig = vpi_handle_by_name((PLI_BYTE8*)"sig", data[i].scope));
             CHECK_RESULT_NZ(data[i].rfr = vpi_handle_by_name((PLI_BYTE8*)"rfr", data[i].scope));
@@ -906,7 +910,7 @@ int _mon_check_putget_str(p_cb_data cb_data) {
 
         for (int i = 1; i <= 6; i++) {
             char buf[32];
-            snprintf(buf, sizeof(buf), TestSimulator::rooted("subs[%d].subsub"), i);
+            VL_SNPRINTF(buf, sizeof(buf), TestSimulator::rooted("subs[%d].subsub"), i);
             CHECK_RESULT_NZ(data[i].scope = vpi_handle_by_name((PLI_BYTE8*)buf, NULL));
         }
 

@@ -98,6 +98,7 @@ class UdpVisitor final : public VNVisitor {
         iterateChildren(nodep);
 
         nodep->replaceWith(m_alwaysBlockp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstUdpTableLine* nodep) override {
         FileLine* const fl = nodep->fileline();
@@ -110,18 +111,15 @@ class UdpVisitor final : public VNVisitor {
         }
         AstNode* iNodep = nodep->iFieldsp();
         AstNode* oNodep = nodep->oFieldsp();
-        uint32_t inputvars = 0;
         AstSenTree* edgetrigp = nullptr;
 
         AstLogAnd* logandp = new AstLogAnd{fl, new AstConst{fl, AstConst::BitTrue{}},
                                            new AstConst{fl, AstConst::BitTrue{}}};
 
-        for (AstVar* itr : m_inputVars) {
+        for (AstVar* const varp : m_inputVars) {
             if (!iNodep) break;
-            inputvars++;
             if (AstUdpTableLineVal* linevalp = VN_CAST(iNodep, UdpTableLineVal)) {
                 string valName = linevalp->name();
-                AstVarRef* const referencep = new AstVarRef{fl, itr, VAccess::READ};
                 if (isEdgeTrig(valName)) {
                     if (nodep->udpIsCombo()) {
                         linevalp->v3error(
@@ -129,18 +127,25 @@ class UdpVisitor final : public VNVisitor {
                     }
                     if (edgetrigp) {
                         linevalp->v3error("There can be only one edge tigger signal");
+                        VL_DO_DANGLING(pushDeletep(edgetrigp), edgetrigp);
                     }
                     edgetrigp = new AstSenTree{
                         fl, new AstSenItem{fl, VEdgeType::ET_BOTHEDGE,
-                                           new AstVarRef{fl, itr, VAccess::READ}}};
+                                           new AstVarRef{fl, varp, VAccess::READ}}};
                 }
-                if (valName == "0" || valName == "f")
-                    logandp = new AstLogAnd{fl, logandp, new AstLogNot{fl, referencep}};
-                else if (valName == "1" || valName == "r")
-                    logandp = new AstLogAnd{fl, logandp, referencep};
+                if (valName == "0" || valName == "f") {
+                    logandp = new AstLogAnd{
+                        fl, logandp, new AstLogNot{fl, new AstVarRef{fl, varp, VAccess::READ}}};
+                } else if (valName == "1" || valName == "r") {
+                    logandp = new AstLogAnd{fl, logandp, new AstVarRef{fl, varp, VAccess::READ}};
+                }
             }
             iNodep = iNodep->nextp();
         }
+
+        uint32_t inputvars = 0;
+        for (const AstNode* icountp = nodep->iFieldsp(); icountp; icountp = icountp->nextp())
+            ++inputvars;
         if (inputvars != m_inputVars.size()) {
             nodep->v3error("Incorrect number of input values, expected " << m_inputVars.size()
                                                                          << ", got " << inputvars);
@@ -154,11 +159,13 @@ class UdpVisitor final : public VNVisitor {
         }
 
         if (!nodep->udpIsCombo()) {
-            AstVarRef* const referencep = new AstVarRef{fl, m_oFieldVarp, VAccess::READ};
             if (oNodep->name() == "0") {
-                logandp = new AstLogAnd{fl, logandp, new AstLogNot{fl, referencep}};
+                logandp = new AstLogAnd{
+                    fl, logandp,
+                    new AstLogNot{fl, new AstVarRef{fl, m_oFieldVarp, VAccess::READ}}};
             } else if (oNodep->name() == "1") {
-                logandp = new AstLogAnd{fl, logandp, referencep};
+                logandp
+                    = new AstLogAnd{fl, logandp, new AstVarRef{fl, m_oFieldVarp, VAccess::READ}};
             }
         }
 
@@ -172,6 +179,7 @@ class UdpVisitor final : public VNVisitor {
                 oNodep->v3error("Illegal value for combinational UDP line output");
             }
             m_alwaysBlockp->addStmtsp(ifp);
+            if (edgetrigp) pushDeletep(edgetrigp);
             return;
         }
         if (!isSequentOutputSig(oValName)) {

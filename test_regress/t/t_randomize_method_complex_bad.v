@@ -8,7 +8,7 @@ class Cls;
    Cls f;
    rand int r;
 endclass
-module t (/*AUTOARG*/);
+module t;
    Cls x = new;
    int i;
    initial $display(

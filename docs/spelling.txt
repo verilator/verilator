@@ -218,6 +218,7 @@ Katzman
 Kelin
 Keren
 Keyi
+Keßler
 Kimmitt
 Kindgren
 Kirkham
@@ -361,6 +362,7 @@ Rolfe
 Rontionov
 Roodselaar
 Roshit
+Rufer
 Runtime
 Ruud
 Rystsov
@@ -428,6 +430,7 @@ Terpstra
 Thiede
 Thierry
 Thyer
+Tianchen
 Tianrui
 Tichelaar
 Timi
@@ -527,6 +530,8 @@ ar
 architected
 args
 arrarys
+asan
+aslr
 assertOn
 assertcontrol
 astgen
@@ -589,7 +594,9 @@ combinational
 combinatorial
 commandArgsPlusMatch
 compilable
+computable
 concat
+concatenatable
 concats
 conf
 config
@@ -608,6 +615,7 @@ covergroup
 cpp
 cppstyle
 cpu
+cpure
 ctor
 ctrace
 cutable
@@ -629,6 +637,7 @@ defparam
 demangling
 dep
 deparametrized
+deque
 der
 dereference
 dereferenced
@@ -641,7 +650,9 @@ detections
 dev
 devcontainer
 devel
+difftree
 dir
+disambiguates
 displayb
 distcc
 doxygen
@@ -670,6 +681,7 @@ elab
 eliasphanna
 elike
 elsif
+enablement
 endcase
 endcelldefine
 endclass
@@ -740,7 +752,9 @@ fwrite
 gantt
 gcc
 gcda
+gcov
 gdb
+gdbinit
 genblk
 genvar
 genvars
@@ -758,8 +772,8 @@ hdr
 hdzhangdoc
 hh
 hier
-hierCMakeArgs
 hierMkArgs
+hierMkJsonArgs
 hierParameters
 hierVer
 html
@@ -839,6 +853,7 @@ miree
 mis
 misconnected
 misconversion
+misdetecting
 misoptimized
 missized
 mk
@@ -975,6 +990,8 @@ realtime
 realtobits
 recoding
 recrem
+recurse
+recurses
 redeclaring
 regs
 reloop
@@ -1091,6 +1108,7 @@ unbased
 uncomment
 undef
 undefineall
+undefs
 undriven
 ungetc
 unhandled
@@ -1106,6 +1124,7 @@ unroller
 unsized
 unsup
 untyped
+upcasting
 urandom
 uselib
 utimes

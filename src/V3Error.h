@@ -60,6 +60,7 @@ public:
         I_TRACING,      // Tracing is on/off from /*verilator tracing_on/off*/
         I_UNUSED,       // Unused genvar, parameter or signal message (Backward Compatibility)
         // Error codes:
+        E_CONSTWRITTEN, // Error: Const variable being written.
         E_LIFETIME,     // Error: Reference to a variable might outlive the variable.
         E_NEEDTIMINGOPT,  // Error: --timing/--no-timing option not specified
         E_NOTIMING,     // Timing control encountered with --no-timing
@@ -74,6 +75,7 @@ public:
         ALWNEVER,       // always will never execute
         ASCRANGE,       // Ascending bit range vector
         ASSIGNDLY,      // Assignment delays
+        ASSIGNEQEXPR,   // Assignment equal (=) in expression
         ASSIGNIN,       // Assigning to input
         BADSTDPRAGMA,   // Any error related to pragmas
         BADVLTPRAGMA,   // Unknown Verilator pragma
@@ -103,9 +105,11 @@ public:
         ENUMITEMWIDTH,  // Error: enum item width mismatch
         ENUMVALUE,      // Error: enum type needs explicit cast
         EOFNEWLINE,     // End-of-file missing newline
+        FUNCTIMECTL,    // Functions cannot have timing/delay/wait
         GENCLK,         // Generated Clock. Historical, never issued.
         GENUNNAMED,     // Generate unnamed, without label
         HIERBLOCK,      // Ignored hierarchical block setting
+        HIERPARAM,      // Parameter using hierarchical value
         IFDEPTH,        // If statements too deep
         IGNOREDRETURN,  // Ignoring return value (function as task)
         IMPERFECTSCH,   // Imperfect schedule (disabled by default). Historical, never issued.
@@ -129,6 +133,7 @@ public:
         NOEFFECT,       // Statement has no effect
         NOLATCH,        // No latch detected in always_latch block
         NONSTD,         // Non-standard feature present in other sims
+        NORETURN,       // Function with no return
         NULLPORT,       // Null port detected in module definition
         PARAMNODEFAULT, // Parameter without default
         PINCONNECTEMPTY,// Cell pin connected by name with empty reference
@@ -202,27 +207,28 @@ public:
             " I_CELLDEFINE", " I_COVERAGE", " I_DEF_NETTYPE_WIRE", " I_LINT", " I_TIMING",
             " I_TRACING", " I_UNUSED",
             // Errors
-            "LIFETIME", "NEEDTIMINGOPT", "NOTIMING", "PORTSHORT", "TASKNSVAR", "UNSUPPORTED",
+            "CONSTWRITTEN", "LIFETIME", "NEEDTIMINGOPT", "NOTIMING", "PORTSHORT", "TASKNSVAR",
+            "UNSUPPORTED",
             // Warnings
-            " EC_FIRST_WARN", "ALWCOMBORDER", "ALWNEVER", "ASCRANGE", "ASSIGNDLY", "ASSIGNIN",
-            "BADSTDPRAGMA", "BADVLTPRAGMA", "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE",
-            "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST", "CDCRSTLOGIC",
-            "CLKDATA", "CMPCONST", "COLONPLUS", "COMBDLY", "CONSTRAINTIGN", "CONTASSREG",
-            "COVERIGN", "DECLFILENAME", "DEFOVERRIDE", "DEFPARAM", "DEPRECATED", "ENCAPSULATED",
-            "ENDLABEL", "ENUMITEMWIDTH", "ENUMVALUE", "EOFNEWLINE", "GENCLK", "GENUNNAMED",
-            "HIERBLOCK", "IFDEPTH", "IGNOREDRETURN", "IMPERFECTSCH", "IMPLICIT", "IMPLICITSTATIC",
-            "IMPORTSTAR", "IMPURE", "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
-            "LATCH", "LITENDIAN", "MINTYPMAXDLY", "MISINDENT", "MODDUP", "MODMISSING",
-            "MULTIDRIVEN", "MULTITOP", "NEWERSTD", "NOEFFECT", "NOLATCH", "NONSTD", "NULLPORT",
-            "PARAMNODEFAULT", "PINCONNECTEMPTY", "PINMISSING", "PINNOCONNECT", "PINNOTFOUND",
-            "PKGNODECL", "PREPROCZERO", "PROCASSINIT", "PROCASSWIRE", "PROFOUTOFDATE", "PROTECTED",
-            "PROTOTYPEMIS", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY", "SELRANGE",
-            "SHORTREAL", "SIDEEFFECT", "SPECIFYIGN", "SPLITVAR", "STATICVAR", "STMTDLY",
-            "SYMRSVDWORD", "SYNCASYNCNET", "TICKCOUNT", "TIMESCALEMOD", "UNDRIVEN", "UNOPT",
-            "UNOPTFLAT", "UNOPTTHREADS", "UNPACKED", "UNSIGNED", "UNUSEDGENVAR", "UNUSEDLOOP",
-            "UNUSEDPARAM", "UNUSEDSIGNAL", "USERERROR", "USERFATAL", "USERINFO", "USERWARN",
-            "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT", "WIDTHEXPAND", "WIDTHTRUNC",
-            "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL", " MAX"};
+            " EC_FIRST_WARN", "ALWCOMBORDER", "ALWNEVER", "ASCRANGE", "ASSIGNDLY", "ASSIGNEQEXPR",
+            "ASSIGNIN", "BADSTDPRAGMA", "BADVLTPRAGMA", "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ",
+            "BSSPACE", "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST",
+            "CDCRSTLOGIC", "CLKDATA", "CMPCONST", "COLONPLUS", "COMBDLY", "CONSTRAINTIGN",
+            "CONTASSREG", "COVERIGN", "DECLFILENAME", "DEFOVERRIDE", "DEFPARAM", "DEPRECATED",
+            "ENCAPSULATED", "ENDLABEL", "ENUMITEMWIDTH", "ENUMVALUE", "EOFNEWLINE", "FUNCTIMECTL",
+            "GENCLK", "GENUNNAMED", "HIERBLOCK", "HIERPARAM", "IFDEPTH", "IGNOREDRETURN",
+            "IMPERFECTSCH", "IMPLICIT", "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE", "INCABSPATH",
+            "INFINITELOOP", "INITIALDLY", "INSECURE", "LATCH", "LITENDIAN", "MINTYPMAXDLY",
+            "MISINDENT", "MODDUP", "MODMISSING", "MULTIDRIVEN", "MULTITOP", "NEWERSTD", "NOEFFECT",
+            "NOLATCH", "NONSTD", "NORETURN", "NULLPORT", "PARAMNODEFAULT", "PINCONNECTEMPTY",
+            "PINMISSING", "PINNOCONNECT", "PINNOTFOUND", "PKGNODECL", "PREPROCZERO", "PROCASSINIT",
+            "PROCASSWIRE", "PROFOUTOFDATE", "PROTECTED", "PROTOTYPEMIS", "RANDC", "REALCVT",
+            "REDEFMACRO", "RISEFALLDLY", "SELRANGE", "SHORTREAL", "SIDEEFFECT", "SPECIFYIGN",
+            "SPLITVAR", "STATICVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET", "TICKCOUNT",
+            "TIMESCALEMOD", "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS", "UNPACKED",
+            "UNSIGNED", "UNUSEDGENVAR", "UNUSEDLOOP", "UNUSEDPARAM", "UNUSEDSIGNAL", "USERERROR",
+            "USERFATAL", "USERINFO", "USERWARN", "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT",
+            "WIDTHEXPAND", "WIDTHTRUNC", "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL", " MAX"};
         return names[m_e];
     }
     // Warnings that default to off
@@ -249,10 +255,10 @@ public:
     bool pretendError() const VL_MT_SAFE {
         return (m_e == ASSIGNIN || m_e == BADSTDPRAGMA || m_e == BADVLTPRAGMA || m_e == BLKANDNBLK
                 || m_e == BLKLOOPINIT || m_e == CONTASSREG || m_e == ENCAPSULATED
-                || m_e == ENDLABEL || m_e == ENUMITEMWIDTH || m_e == ENUMVALUE || m_e == IMPURE
-                || m_e == MODMISSING || m_e == PARAMNODEFAULT || m_e == PINNOTFOUND
-                || m_e == PKGNODECL || m_e == PROCASSWIRE || m_e == PROTOTYPEMIS
-                || m_e == ZEROREPL  // Says IEEE
+                || m_e == ENDLABEL || m_e == ENUMITEMWIDTH || m_e == ENUMVALUE || m_e == HIERPARAM
+                || m_e == FUNCTIMECTL || m_e == IMPURE || m_e == MODMISSING
+                || m_e == PARAMNODEFAULT || m_e == PINNOTFOUND || m_e == PKGNODECL
+                || m_e == PROCASSWIRE || m_e == PROTOTYPEMIS || m_e == ZEROREPL  // Says IEEE
         );
     }
     // Warnings to mention manual
@@ -262,12 +268,12 @@ public:
     }
     // Warnings that are lint only
     bool lintError() const VL_MT_SAFE {
-        return (m_e == ALWCOMBORDER || m_e == ASCRANGE || m_e == BSSPACE || m_e == CASEINCOMPLETE
-                || m_e == CASEOVERLAP || m_e == CASEWITHX || m_e == CASEX || m_e == CASTCONST
-                || m_e == CMPCONST || m_e == COLONPLUS || m_e == IMPLICIT || m_e == IMPLICITSTATIC
-                || m_e == LATCH || m_e == MISINDENT || m_e == NEWERSTD || m_e == PREPROCZERO
-                || m_e == PINMISSING || m_e == REALCVT || m_e == STATICVAR || m_e == UNSIGNED
-                || m_e == WIDTH || m_e == WIDTHTRUNC || m_e == WIDTHEXPAND
+        return (m_e == ALWCOMBORDER || m_e == ASCRANGE || m_e == ASSIGNEQEXPR || m_e == BSSPACE
+                || m_e == CASEINCOMPLETE || m_e == CASEOVERLAP || m_e == CASEWITHX || m_e == CASEX
+                || m_e == CASTCONST || m_e == CMPCONST || m_e == COLONPLUS || m_e == IMPLICIT
+                || m_e == IMPLICITSTATIC || m_e == LATCH || m_e == MISINDENT || m_e == NEWERSTD
+                || m_e == PREPROCZERO || m_e == PINMISSING || m_e == REALCVT || m_e == STATICVAR
+                || m_e == UNSIGNED || m_e == WIDTH || m_e == WIDTHTRUNC || m_e == WIDTHEXPAND
                 || m_e == WIDTHXZEXPAND);
     }
     // Warnings that are style only
@@ -384,6 +390,8 @@ private:
     std::array<bool, V3ErrorCode::_ENUM_MAX> m_pretendError VL_GUARDED_BY(m_mutex);
     // Told user specifics about this warning
     std::array<bool, V3ErrorCode::_ENUM_MAX> m_describedEachWarn VL_GUARDED_BY(m_mutex);
+    // Debug about suppressed this warning
+    std::array<bool, V3ErrorCode::_ENUM_MAX> m_showedSuppressed VL_GUARDED_BY(m_mutex);
     int m_debugDefault = 0;  // Option: --debugi Default debugging level
     int m_errorLimit VL_GUARDED_BY(m_mutex)
         = MAX_ERRORS;  // Option: --error-limit Number of errors before exit
@@ -393,9 +401,9 @@ private:
     // METHODS
     void v3errorPrep(V3ErrorCode code) VL_REQUIRES(m_mutex);
     std::ostringstream& v3errorStr() VL_REQUIRES(m_mutex) { return m_errorStr; }
-    void v3errorEnd(std::ostringstream& sstr, const string& extra, FileLine* fileline)
+    void v3errorEnd(const std::ostringstream& sstr, const string& extra, FileLine* fileline)
         VL_REQUIRES(m_mutex);
-    void v3errorEndGuts(std::ostringstream& sstr, const string& extra, FileLine* fileline)
+    void v3errorEndGuts(const std::ostringstream& sstr, const string& extra, FileLine* fileline)
         VL_REQUIRES(m_mutex);
 
 public:
@@ -457,12 +465,8 @@ public:
 // ######################################################################
 
 class V3Error final {
-    // Base class for any object that wants debugging and error reporting
-    // CONSTRUCTORS
-    V3Error() {
-        std::cerr << ("Static class");
-        V3Error::vlAbort();
-    }
+    // Static members only
+    V3Error() = delete;
 
 public:
     static V3ErrorGuarded& s() VL_MT_SAFE {  // Singleton
@@ -586,7 +590,7 @@ public:
         VL_ACQUIRE(s().m_mutex);
     static std::ostringstream& v3errorStr() VL_REQUIRES(s().m_mutex) { return s().v3errorStr(); }
     // static, but often overridden in classes.
-    static void v3errorEnd(std::ostringstream& sstr, const string& extra, FileLine* fileline)
+    static void v3errorEnd(const std::ostringstream& sstr, const string& extra, FileLine* fileline)
         VL_RELEASE(s().m_mutex);
     static void vlAbort();
 };
@@ -725,17 +729,17 @@ void v3errorEndFatal(std::ostringstream& sstr)
     VL_ATTR_UNUSED static int debug##__VA_ARGS__() VL_MT_SAFE { \
         /* Don't complain this function is unused */ \
         (void)&debug##__VA_ARGS__; \
-        static int level = -1; \
-        if (VL_UNLIKELY(level < 0)) { \
+        static int s_level = -1; \
+        if (VL_UNLIKELY(s_level < 0)) { \
             std::string tag{VL_STRINGIFY(__VA_ARGS__)}; \
-            tag[0] = std::tolower(tag[0]); \
+            if (!tag.empty()) tag[0] = std::tolower(tag[0]); \
             const unsigned debugTag = v3Global.opt.debugLevel(tag); \
             const unsigned debugSrc = v3Global.opt.debugSrcLevel(__FILE__); \
             const unsigned debugLevel = debugTag >= debugSrc ? debugTag : debugSrc; \
             if (!v3Global.opt.available()) return static_cast<int>(debugLevel); \
-            level = static_cast<int>(debugLevel); \
+            s_level = static_cast<int>(debugLevel); \
         } \
-        return level; \
+        return s_level; \
     } \
     static_assert(true, "")
 
@@ -744,15 +748,15 @@ void v3errorEndFatal(std::ostringstream& sstr)
     VL_ATTR_UNUSED static int dump##func() VL_MT_SAFE { \
         /* Don't complain this function is unused */ \
         (void)&dump##func; \
-        static int level = -1; \
-        if (VL_UNLIKELY(level < 0)) { \
+        static int s_level = -1; \
+        if (VL_UNLIKELY(s_level < 0)) { \
             const unsigned dumpTag = v3Global.opt.dumpLevel(tag); \
             const unsigned dumpSrc = v3Global.opt.dumpSrcLevel(__FILE__); \
             const unsigned dumpLevel = dumpTag >= dumpSrc ? dumpTag : dumpSrc; \
             if (!v3Global.opt.available()) return static_cast<int>(dumpLevel); \
-            level = static_cast<int>(dumpLevel); \
+            s_level = static_cast<int>(dumpLevel); \
         } \
-        return level; \
+        return s_level; \
     } \
     static_assert(true, "")
 

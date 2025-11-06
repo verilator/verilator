@@ -18,7 +18,7 @@ class c;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    string str = "bar";
 
    function string get_str();

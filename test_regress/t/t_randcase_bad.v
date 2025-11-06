@@ -6,7 +6,7 @@
 // without warranty, 2022 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
    initial begin
       randcase  // Bad all zero weights

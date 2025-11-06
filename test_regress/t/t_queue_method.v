@@ -16,7 +16,7 @@ class Cls;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    typedef struct packed { int x, y; } point;
    typedef struct packed { point p; int z; } point_3d;
    initial begin
@@ -52,27 +52,27 @@ module t (/*AUTOARG*/);
       string_q.push_back("b");
 
       q = '{1, 2, 2, 4, 3};
-      `checkp(q, "'{'h1, 'h2, 'h2, 'h4, 'h3} ");
+      `checkp(q, "'{'h1, 'h2, 'h2, 'h4, 'h3}");
 
       // sort/rsort with clause is the field to use for the sorting
       q.sort;
-      `checkp(q, "'{'h1, 'h2, 'h2, 'h3, 'h4} ");
+      `checkp(q, "'{'h1, 'h2, 'h2, 'h3, 'h4}");
       q.sort with (10 - item);
-      `checkp(q, "'{'h4, 'h3, 'h2, 'h2, 'h1} ");
+      `checkp(q, "'{'h4, 'h3, 'h2, 'h2, 'h1}");
       q.sort(x) with (10 - x);
-      `checkp(q, "'{'h4, 'h3, 'h2, 'h2, 'h1} ");
+      `checkp(q, "'{'h4, 'h3, 'h2, 'h2, 'h1}");
       qe.sort(x) with (10 - x);
       `checkp(qe, "'{}");
       q.rsort;
-      `checkp(q, "'{'h4, 'h3, 'h2, 'h2, 'h1} ");
+      `checkp(q, "'{'h4, 'h3, 'h2, 'h2, 'h1}");
       q.rsort with (10 - item);
-      `checkp(q, "'{'h1, 'h2, 'h2, 'h3, 'h4} ");
+      `checkp(q, "'{'h1, 'h2, 'h2, 'h3, 'h4}");
       qe.rsort(x) with (10 - x);
-      `checkp(q, "'{'h1, 'h2, 'h2, 'h3, 'h4} ");
+      `checkp(q, "'{'h1, 'h2, 'h2, 'h3, 'h4}");
 
       q = '{2, 2, 4, 1, 3};
       qv = q.unique;
-      `checkp(qv, "'{'h2, 'h4, 'h1, 'h3} ");
+      `checkp(qv, "'{'h2, 'h4, 'h1, 'h3}");
       qv = qe.unique;
       `checkh(qv.size(), 0);
       qv = q.unique(x) with (x % 2);
@@ -83,7 +83,7 @@ module t (/*AUTOARG*/);
       // According to IEEE 1800-2023 7.12.1, it is not specified which index of duplicated value should be returned
       `checkh(qi.size(), 4);
       qi.delete(1);
-      `checkp(qi, "'{'h0, 'h3, 'h4} ");
+      `checkp(qi, "'{'h0, 'h3, 'h4}");
       qi = qe.unique_index;
       `checkh(qi.size(), 0);
       qi = q.unique_index(x) with (x % 3); qv.sort;
@@ -94,31 +94,31 @@ module t (/*AUTOARG*/);
       `checkh(cls_qv.size(), 1);
       qi = cls_q.unique_index with (item.x % 2);
       qi.sort;
-      `checkp(qi, "'{'h0, 'h1} ");
+      `checkp(qi, "'{'h0, 'h1}");
 
       q.reverse;
-      `checkp(q, "'{'h3, 'h1, 'h4, 'h2, 'h2} ");
+      `checkp(q, "'{'h3, 'h1, 'h4, 'h2, 'h2}");
       qe.reverse;
       `checkh(qe.size(), 0);
       q.shuffle(); q.sort;
-      `checkp(q, "'{'h1, 'h2, 'h2, 'h3, 'h4} ");
+      `checkp(q, "'{'h1, 'h2, 'h2, 'h3, 'h4}");
       qe.shuffle();
       `checkh(qe.size(), 0);
 
       // These require an with clause or are illegal
       // TODO add a lint check that with clause is provided
       qv = q.find with (item == 2);
-      `checkp(qv, "'{'h2, 'h2} ");
+      `checkp(qv, "'{'h2, 'h2}");
       qv = q.find with (item[0] == 1);
-      `checkp(qv, "'{'h1, 'h3} ");
+      `checkp(qv, "'{'h1, 'h3}");
       qv = q.find_first with (item == 2);
-      `checkp(qv, "'{'h2} ");
+      `checkp(qv, "'{'h2}");
       points_qv = points_q.find_first with (item.z == 5);
       `checkh(points_qv[0].p.y, 3);
       points_qv = points_q.find_first with (item.p.x == 1);
       `checkh(points_qv[0].p.y, 2);
       qv = q.find_last with (item == 2);
-      `checkp(qv, "'{'h2} ");
+      `checkp(qv, "'{'h2}");
       string_qv = string_q.find_last(s) with (s.tolower() == "a");
       `checks(string_qv[0], "A");
 
@@ -133,15 +133,15 @@ module t (/*AUTOARG*/);
       qvunused = q.find with (item == 20);
 
       qi = q.find_index with (item == 2);
-      qi.sort; `checkp(qi, "'{'h1, 'h2} ");
+      qi.sort; `checkp(qi, "'{'h1, 'h2}");
       qi = q.find_first_index with (item == 2);
-      `checkp(qi, "'{'h1} ");
+      `checkp(qi, "'{'h1}");
       qi = q.find_last_index with (item == 2);
-      `checkp(qi, "'{'h2} ");
+      `checkp(qi, "'{'h2}");
 
       i = 2;
       qi = q.find_index with (item == i);
-      qi.sort; `checkp(qi, "'{'h1, 'h2} ");
+      qi.sort; `checkp(qi, "'{'h1, 'h2}");
 
       qi = q.find_index with (item == 20); qi.sort;
       `checkh(qi.size, 0);
@@ -151,18 +151,18 @@ module t (/*AUTOARG*/);
       `checkh(qi.size, 0);
 
       qi = q.find_index with (item.index == 2);
-      `checkp(qi, "'{'h2} ");
+      `checkp(qi, "'{'h2}");
       qi = q.find_index with (item.index == item);
-      `checkp(qi, "'{'h2, 'h3, 'h4} ");
+      `checkp(qi, "'{'h2, 'h3, 'h4}");
 
       qv = q.min;
-      `checkp(qv, "'{'h1} ");
+      `checkp(qv, "'{'h1}");
       qv = q.min(x) with (x + 1);
-      `checkp(qv, "'{'h1} ");
+      `checkp(qv, "'{'h1}");
       qv = q.max;
-      `checkp(qv, "'{'h4} ");
+      `checkp(qv, "'{'h4}");
       qv = q.max(x) with ((x % 4) + 100);
-      `checkp(qv, "'{'h3} ");
+      `checkp(qv, "'{'h3}");
       qv = qe.min;
       `checkp(qv, "'{}");
       qv = qe.max;
