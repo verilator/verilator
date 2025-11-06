@@ -254,7 +254,7 @@ public:
                     processVtx(&vtx);
                     AstSExpr* const propp = VN_AS(dVtxp->nodep(), SExpr);
                     propp->replaceWith(m_pexprp);
-                    propp->deleteTree();
+                    VL_DO_DANGLING(propp->deleteTree(), propp);
                 }
             }
         }
