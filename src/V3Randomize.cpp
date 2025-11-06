@@ -150,8 +150,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
             if (VN_IS(pinp, With)) continue;
             const AstArg* const argp = VN_CAST(pinp, Arg);
             if (!argp) continue;
-
-            const AstNodeExpr* exprp = argp->exprp();
+            const AstNodeExpr* const exprp = argp->exprp();
             if (const AstNodeVarRef* const varrefp = VN_CAST(exprp, NodeVarRef)) {
                 if (varrefp->varp() == varp) return true;
             } else if (const AstMemberSel* const memberselp = VN_CAST(exprp, MemberSel)) {
@@ -160,7 +159,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
         }
         return false;
     }
-
     void markMembers(const AstClass* nodep) {
         for (const AstClass* classp = nodep; classp;
              classp = classp->extendsp() ? classp->extendsp()->classp() : nullptr) {
@@ -248,7 +246,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
     void visit(AstNodeFTaskRef* nodep) override {
         if (nodep->classOrPackagep() && nodep->classOrPackagep()->name() == "std")
             m_stdRandCallp = nodep;
-
         iterateChildrenConst(nodep);
         if (nodep->name() == "rand_mode") {
             AstMethodCall* const methodCallp = VN_CAST(nodep, MethodCall);
@@ -411,7 +408,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 AstArg* const argp = VN_CAST(pinp, Arg);
                 if (!argp) continue;
                 AstNodeExpr* exprp = argp->exprp();
-
                 while (exprp) {
                     AstVar* randVarp = nullptr;
                     if (AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
@@ -502,7 +498,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
         const bool randObject = nodep->fromp()->user1() || VN_IS(nodep->fromp(), LambdaArgRef);
         const bool randMember = nodep->varp()->rand().isRandomizable();
         const bool inStdWith = m_inStdWith && m_stdRandCallp;
-
         if (randObject && randMember && !inStdWith) {
             nodep->user1(true);
         } else if (inStdWith && isVarInStdRandomizeArgs(nodep->varp())) {
@@ -510,7 +505,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
             // Mark parent object for constraint expression visitor
             if (VN_IS(nodep->fromp(), VarRef)) nodep->fromp()->user1(true);
         }
-
         nodep->user2p(m_modp);
     }
     void visit(AstNodeModule* nodep) override {
@@ -1155,10 +1149,7 @@ class CaptureVisitor final : public VNVisitor {
             newVarp->fileline(fileline);
             newVarp->varType(VVarType::BLOCKTEMP);
             newVarp->funcLocal(true);
-            if (m_targetp)
-                newVarp->direction(VDirection::INPUT);
-            else
-                newVarp->direction(VDirection::REF);
+            newVarp->direction(m_targetp ? VDirection::INPUT : VDirection::REF);
             newVarp->lifetime(VLifetime::AUTOMATIC);
 
             m_varCloneMap.emplace(varrefp->varp(), newVarp);
@@ -1843,7 +1834,7 @@ class RandomizeVisitor final : public VNVisitor {
         AstCMethodHard* const clearp = new AstCMethodHard{
             fileline,
             new AstVarRef{fileline, VN_AS(genp->user2p(), NodeModule), genp, VAccess::READWRITE},
-            "clear"};
+            "clearConstraints"};
         clearp->dtypeSetVoid();
         return clearp->makeStmt();
     }
@@ -2353,10 +2344,10 @@ class RandomizeVisitor final : public VNVisitor {
                 AstArg* const argp = VN_CAST(pinp, Arg);
                 AstWith* const withp = VN_CAST(pinp, With);
                 if (withp) {
+                    FileLine* const fl = nodep->fileline();
                     // Capture variables in 'with {}' (nullptr = no target class)
                     captured = new CaptureVisitor{withp->exprp(), m_modp, nullptr};
                     captured->addFunctionArguments(randomizeFuncp);
-
                     // Clear old constraints and variables for std::randomize with clause
                     if (stdrand) {
                         randomizeFuncp->addStmtsp(
@@ -2368,22 +2359,16 @@ class RandomizeVisitor final : public VNVisitor {
                         ConstraintExprVisitor{m_memberMap, capturedTreep, randomizeFuncp, stdrand,
                                               nullptr};
                     }
-                    AstVarRef* const randNextp
-                        = new AstVarRef{nodep->fileline(), stdrand, VAccess::READWRITE};
-                    randNextp->AstNode::addNext(new AstText{nodep->fileline(), ".next()"});
-                    AstNodeExpr* const solverCallp = new AstCExpr{nodep->fileline(), randNextp};
+                    AstVarRef* const randNextp = new AstVarRef{fl, stdrand, VAccess::READWRITE};
+                    randNextp->AstNode::addNext(new AstText{fl, ".next()"});
+                    AstNodeExpr* const solverCallp = new AstCExpr{fl, randNextp};
                     solverCallp->dtypeSetBit();
-                    randomizeFuncp->addStmtsp(new AstAssign{
-                        nodep->fileline(),
-                        new AstVarRef{nodep->fileline(), VN_AS(randomizeFuncp->fvarp(), Var),
-                                      VAccess::WRITE},
-                        new AstAnd{nodep->fileline(),
-                                   new AstVarRef{nodep->fileline(),
-                                                 VN_AS(randomizeFuncp->fvarp(), Var),
-                                                 VAccess::READ},
-                                   solverCallp}});
+                    AstVar* const fvarp = VN_AS(randomizeFuncp->fvarp(), Var);
+                    AstVarRef* const retvalReadp = new AstVarRef{fl, fvarp, VAccess::READ};
+                    AstNodeExpr* const andExprp = new AstAnd{fl, retvalReadp, solverCallp};
+                    AstVarRef* const retvalWritep = new AstVarRef{fl, fvarp, VAccess::WRITE};
+                    randomizeFuncp->addStmtsp(new AstAssign{fl, retvalWritep, andExprp});
                 }
-
                 if (!argp) continue;
                 AstNodeExpr* exprp = argp->exprp();
                 AstCMethodHard* const basicMethodp = new AstCMethodHard{

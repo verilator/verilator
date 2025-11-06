@@ -194,7 +194,7 @@ public:
 };
 //=============================================================================
 // VlRandomizer is the object holding constraints and variable references.
-class VlRandomizer {
+class VlRandomizer VL_NOT_FINAL {
     // MEMBERS
     std::vector<std::string> m_constraints;  // Solver-dependent constraints
     std::map<std::string, std::shared_ptr<const VlRandomVar>> m_vars;  // Solver-dependent
@@ -573,7 +573,7 @@ public:
     }
 
     void hard(std::string&& constraint);
-    void clear();
+    void clearConstraints();
     void clearAll();  // Clear both constraints and variables
     void set_randmode(const VlQueue<CData>& randmode) { m_randmodep = &randmode; }
 #ifdef VL_DEBUG

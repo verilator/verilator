@@ -504,7 +504,7 @@ void VlRandomizer::hard(std::string&& constraint) {
     m_constraints.emplace_back(std::move(constraint));
 }
 
-void VlRandomizer::clear() {
+void VlRandomizer::clearConstraints() {
     m_constraints.clear();
     // Keep m_vars for class member randomization
 }
