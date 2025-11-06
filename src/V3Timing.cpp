@@ -307,6 +307,9 @@ class TimingSuspendableVisitor final : public VNVisitor {
         m_procp = nodep;
         iterateChildren(nodep);
         if (nodep->needProcess()) addFlags(nodep, T_FORCES_PROC | T_NEEDS_PROC);
+        // Functions returning VlCoroutine should be marked as suspendable
+        // so callers know to co_await them
+        if (nodep->isCoroutine()) addFlags(nodep, T_SUSPENDEE);
         DepVtx* const sVxp = getSuspendDepVtx(nodep);
         DepVtx* const pVxp = getNeedsProcDepVtx(nodep);
         if (!m_classp) return;
@@ -967,6 +970,9 @@ class TimingControlVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (hasFlags(nodep, T_HAS_PROC)) nodep->setNeedProcess();
         if (!(hasFlags(nodep, T_SUSPENDEE))) return;
+        
+        // If the function already returns VlCoroutine (e.g., DPI wrapper), skip transformation
+        if (nodep->isCoroutine()) return;
 
         nodep->rtnType("VlCoroutine");
         // If in a class, create a shared pointer to 'this'
