@@ -671,8 +671,9 @@ class AssertVisitor final : public VNVisitor {
         }
     }
     void visit(AstPExpr* nodep) override {
-        m_inSampled = false;
         if (m_underAssert) {
+            VL_RESTORER(m_inSampled);
+            m_inSampled = false;
             iterateChildren(nodep);
         } else if (m_inRestrict) {
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
