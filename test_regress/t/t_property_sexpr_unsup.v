@@ -47,6 +47,14 @@ module t (  /*AUTOARG*/
   assume property (@(posedge clk) disable iff (cyc != 5) ##1 0) $display("[%0t] disable iff stmt, fileline:%d", $time, `__LINE__);
 
   cover property (@(posedge clk) disable iff (cyc != 5) ##1 0) $display("[%0t] disable iff stmt, fileline:%d", $time, `__LINE__);
+
+  property prop_disableiff;
+    @(posedge clk) disable iff (cyc != 5) ##1 0;
+  endproperty
+
+  property prop_implication;
+    ##1 cyc == 4 |-> 1;
+  endproperty
 endmodule
 
 // Test parsing only

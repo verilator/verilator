@@ -60,8 +60,6 @@ private:
     bool m_inAssignDlyLhs = false;  // True if in AssignDly's LHS
     bool m_inSynchDrive = false;  // True if in synchronous drive
     std::vector<AstVarXRef*> m_xrefsp;  // list of xrefs that need name fixup
-    AstNodeExpr* m_hasUnsupp = nullptr;  // True if assert has unsupported construct inside
-    bool m_hasPExpr = false;  // True if assert has AstPExpr inside
     bool m_inPExpr = false;  // True if in AstPExpr
 
     // METHODS
@@ -471,24 +469,11 @@ private:
     void visit(AstNodeCoverOrAssert* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
 
-        VL_RESTORER(m_hasPExpr);
-        VL_RESTORER(m_hasUnsupp);
-
         clearAssertInfo();
 
         // Find Clocking's buried under nodep->exprsp
         iterateChildren(nodep);
         if (!nodep->immediate()) nodep->sentreep(newSenTree(nodep));
-        if (m_hasPExpr && m_hasUnsupp) {
-            if (VN_IS(m_hasUnsupp, Implication)) {
-                m_hasUnsupp->v3warn(E_UNSUPPORTED,
-                                    "Unsupported: Implication with sequence expression");
-            } else {
-                m_hasUnsupp->v3warn(E_UNSUPPORTED,
-                                    "Unsupported: Disable iff with sequence expression");
-            }
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        }
         clearAssertInfo();
     }
     void visit(AstFalling* nodep) override {
@@ -592,7 +577,6 @@ private:
 
     void visit(AstImplication* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
-        m_hasUnsupp = nodep;
 
         iterateChildren(nodep);
 
@@ -644,7 +628,6 @@ private:
         }
         if (AstNodeExpr* const disablep = nodep->disablep()) {
             m_disablep = disablep;
-            m_hasUnsupp = disablep;
             if (VN_IS(nodep->backp(), Cover)) {
                 blockp = new AstAnd{disablep->fileline(),
                                     new AstNot{disablep->fileline(), disablep->unlinkFrBack()},
@@ -661,7 +644,6 @@ private:
     void visit(AstPExpr* nodep) override {
         VL_RESTORER(m_inPExpr);
         m_inPExpr = true;
-        m_hasPExpr = true;
 
         if (AstLogNot* const notp = VN_CAST(nodep->backp(), LogNot)) {
             notp->replaceWith(nodep->unlinkFrBack());
