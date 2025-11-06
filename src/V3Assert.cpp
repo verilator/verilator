@@ -294,9 +294,10 @@ class AssertVisitor final : public VNVisitor {
     AstNode* assertBody(AstNodeCoverOrAssert* nodep, AstNode* propp, AstNode* passsp,
                         AstNode* failsp) {
         AstNode* bodyp = nullptr;
-        if (VString::startsWith(propp->name(), "__Vassert")) {
+        if (AstPExpr* const pexprp = VN_CAST(propp, PExpr)) {
             AstFork* const forkp = new AstFork{nodep->fileline(), VJoinType::JOIN_NONE};
-            forkp->addForksp(new AstBegin{nodep->fileline(), "", propp, true});
+            forkp->addForksp(pexprp->bodyp()->unlinkFrBack());
+            VL_DO_DANGLING(pushDeletep(pexprp), pexprp);
             bodyp = forkp;
         } else {
             bodyp = assertCond(nodep, VN_AS(propp, NodeExpr), passsp, failsp);
@@ -673,8 +674,6 @@ class AssertVisitor final : public VNVisitor {
         m_inSampled = false;
         if (m_underAssert) {
             iterateChildren(nodep);
-            nodep->replaceWith(nodep->bodyp()->unlinkFrBack());
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (m_inRestrict) {
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
         }
