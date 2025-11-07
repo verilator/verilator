@@ -8,7 +8,14 @@ module t (/*AUTOARG*/
    // Inputs
    clk
    );
+   class InnerPacket;
+       bit field;
+   endclass
+   class Packet;
+       InnerPacket inner_packet;
+   endclass
 
+   Packet p;
    input clk;
    logic rst;
    int   a;
@@ -158,6 +165,7 @@ module t (/*AUTOARG*/
          bins bin_with = binsof(a) with (a);
          bins bin_or_with = binsof(a) || binsof(a) with (a);
          bins bin_and_with = binsof(a) && binsof(a) with (a);
+         bins bin_multiple_fields = binsof(p.inner_packet.field);
       }
    endgroup
 
