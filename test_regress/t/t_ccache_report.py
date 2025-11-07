@@ -35,7 +35,8 @@ test.files_identical(report, "t/" + test.name + "__ccache_report_initial.out")
 # Now rebuild again (should be all up to date)
 test.run(logfile=test.obj_dir + "/rebuild.log",
          cmd=[
-             os.environ["MAKE"], "-C " + test.obj_dir, "-f " + test.vm_prefix + ".mk", "ccache-report"
+             os.environ["MAKE"], "-C " + test.obj_dir, "-f " + test.vm_prefix + ".mk",
+             "ccache-report"
          ])
 
 test.files_identical(report, "t/" + test.name + "__ccache_report_rebuild.out")
