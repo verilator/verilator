@@ -164,9 +164,9 @@ class EmitCImp final : EmitCFunc {
 
         puts("vlSymsp = symsp;\n");
         if (modp->isTop()) {
-            puts("__m_namep = strdup(namep);\n");
+            puts("vlNamep = strdup(namep);\n");
         } else {
-            puts("__m_namep = strdup(Verilated::catName(vlSymsp->name(), namep));\n");
+            puts("vlNamep = strdup(Verilated::catName(vlSymsp->name(), namep));\n");
         }
 
         putsDecoration(modp, "// Reset structure values\n");
@@ -210,13 +210,12 @@ class EmitCImp final : EmitCFunc {
             }
             // static doesn't need save-restore as is constant
             puts("static uint32_t fake_zero_count = 0;\n");
-            puts("std::string fullhier = std::string{VerilatedModule::name()} + hierp;\n");
+            puts("std::string fullhier = std::string{vlNamep} + hierp;\n");
             puts("if (!fullhier.empty() && fullhier[0] == '.') fullhier = fullhier.substr(1);\n");
             // Used for second++ instantiation of identical bin
             puts("if (!enable) count32p = &fake_zero_count;\n");
             puts("*count32p = 0;\n");
-            puts("VL_COVER_INSERT(vlSymsp->_vm_contextp__->coveragep(), VerilatedModule::name(), "
-                 "count32p,");
+            puts("VL_COVER_INSERT(vlSymsp->_vm_contextp__->coveragep(), vlNamep, count32p,");
             puts("  \"filename\",filenamep,");
             puts("  \"lineno\",lineno,");
             puts("  \"column\",column,\n");
@@ -247,7 +246,7 @@ class EmitCImp final : EmitCFunc {
             }
             // static doesn't need save-restore as is constant
             puts("static uint32_t fake_zero_count = 0;\n");
-            puts("std::string fullhier = std::string{VerilatedModule::name()} + hierp;\n");
+            puts("std::string fullhier = std::string{vlNamep} + hierp;\n");
             puts("if (!fullhier.empty() && fullhier[0] == '.') fullhier = fullhier.substr(1);\n");
             puts("std::string commentWithIndex = commentp;\n");
             puts("if (ranged) commentWithIndex += '[' + std::to_string(i) + ']';\n");
@@ -255,8 +254,7 @@ class EmitCImp final : EmitCFunc {
             // Used for second++ instantiation of identical bin
             puts("if (!enable) count32p = &fake_zero_count;\n");
             puts("*count32p = 0;\n");
-            puts("VL_COVER_INSERT(vlSymsp->_vm_contextp__->coveragep(), VerilatedModule::name(), "
-                 "count32p,");
+            puts("VL_COVER_INSERT(vlSymsp->_vm_contextp__->coveragep(), vlNamep, count32p,");
             puts("  \"filename\",filenamep,");
             puts("  \"lineno\",lineno,");
             puts("  \"column\",column,\n");
@@ -279,7 +277,7 @@ class EmitCImp final : EmitCFunc {
         } else {
             putns(modp, "void " + modName + "::dtor() {\n");
         }
-        putns(modp, "VL_DO_DANGLING(free(const_cast<char*>(__m_namep)), __m_namep);\n");
+        putns(modp, "VL_DO_DANGLING(free(const_cast<char*>(vlNamep)), vlNamep);\n");
         emitSystemCSection(modp, VSystemCSectionType::DTOR);
         puts("}\n");
     }

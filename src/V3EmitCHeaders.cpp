@@ -131,6 +131,7 @@ class EmitCHeader final : public EmitCConstInit {
         } else {  // not class
             putsDecoration(nullptr, "\n// INTERNAL VARIABLES\n");
             puts(EmitCUtil::symClassName() + "* vlSymsp;\n");
+            puts("const char* vlNamep;\n");
         }
     }
     void emitParamDecls(const AstNodeModule* modp) {
@@ -601,7 +602,7 @@ class EmitCHeader final : public EmitCConstInit {
                 puts("public virtual VlClass");
             }
         } else {
-            puts(" final : public VerilatedModule");
+            puts(" final");
         }
         puts(" {\n");
         ofp()->resetPrivate();

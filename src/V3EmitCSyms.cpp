@@ -544,7 +544,7 @@ void EmitCSyms::emitSymHdr() {
     }
 
     puts("\n// METHODS\n");
-    puts("const char* name() { return TOP.name(); }\n");
+    puts("const char* name() { return TOP.vlNamep; }\n");
 
     if (v3Global.hasEvents()) {
         if (v3Global.assignsEvents()) {

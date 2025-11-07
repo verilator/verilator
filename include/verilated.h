@@ -58,7 +58,6 @@
 #include <limits>
 #include <map>
 #include <memory>
-#include <type_traits>
 #include <set>
 #include <string>
 #include <unordered_set>
@@ -308,30 +307,6 @@ private:
     // Run-time trace configuration requested by this model
     virtual std::unique_ptr<VerilatedTraceConfig> traceConfig() const;
 };
-
-//=========================================================================
-/// Base class for all Verilated module classes.
-
-class VerilatedModule VL_NOT_FINAL {
-    VL_UNCOPYABLE(VerilatedModule);
-
-protected:
-    // Module name, set in emitted constructor, __ prefix to avoid clashing with signal
-    const char* /*const*/ __m_namep;
-
-public:
-    VerilatedModule() = default;
-    ~VerilatedModule() = default;
-    const char* name() const VL_MT_SAFE_POSTINIT { return __m_namep; }  ///< Return name of module
-};
-// To avoid many automatically generated constructor and destructor calls
-// in the generated model when there are a large number of modules, the
-// emitted modules should be trivially constructible/destructible. Make sure
-// at least the base class is such.
-static_assert(std::is_trivially_constructible<VerilatedModule>::value,
-              "VerilatedModule should be trivially constructible");
-static_assert(std::is_trivially_destructible<VerilatedModule>::value,
-              "VerilatedModule should be trivially destructible");
 
 //=========================================================================
 // Functions overridable by user defines
@@ -731,7 +706,7 @@ private:
     int8_t m_timeunit = 0;  // Timeunit in negative power-of-10
     Type m_type = SCOPE_OTHER;  // Type of the scope
 
-public:  // But internals only - called from VerilatedModule's
+public:  // But internals only - called from verilated modules
     VerilatedScope() = default;
     ~VerilatedScope();
     void configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,

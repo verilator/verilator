@@ -71,7 +71,7 @@ static void makeVlToString(AstIface* nodep) {
     funcp->isConst(false);
     funcp->isStatic(false);
     funcp->protect(false);
-    AstNodeExpr* const exprp = new AstCExpr{nodep->fileline(), "obj ? obj->name() : \"null\""};
+    AstNodeExpr* const exprp = new AstCExpr{nodep->fileline(), "obj ? obj->vlNamep : \"null\""};
     exprp->dtypeSetString();
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
     nodep->addStmtsp(funcp);
