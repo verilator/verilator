@@ -7031,7 +7031,7 @@ bins_expression<nodep>:  // ==IEEE: bins_expression
         //                      // "cover_point_identifier" and "variable_identifier" look identical
                 idAny/*variable_identifier or cover_point_identifier*/
                         { $$ = nullptr; /*UNSUP*/ }
-        |       idAny/*cover_point_identifier*/ '.' idAny/*bins_identifier*/
+        |       bins_expression '.' idAny /*cover_point_identifier [ . bin_identifier ]*/
                         { $$ = nullptr; /*UNSUP*/ }
         ;
 
