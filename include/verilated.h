@@ -680,6 +680,8 @@ public:  // But for internal use only
     explicit VerilatedSyms(VerilatedContext* contextp);  // Pass null for default context
     ~VerilatedSyms();
     VL_UNCOPYABLE(VerilatedSyms);
+
+    virtual const char* name() const = 0;
 };
 
 //===========================================================================
@@ -707,8 +709,8 @@ private:
     const Type m_type;  // Type of the scope
 
 public:  // But internals only - called from verilated modules, VerilatedSyms
-    VerilatedScope(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
-                   const char* identifier, const char* defnamep, int8_t timeunit, Type type);
+    VerilatedScope(VerilatedSyms* symsp, const char* suffixp, const char* identifier,
+                   const char* defnamep, int8_t timeunit, Type type);
     ~VerilatedScope();
 
     void exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE;
