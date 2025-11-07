@@ -919,7 +919,7 @@ public:
         if (!nodep->dpiExport()) {
             // this is where the DPI import context scope is set
             const string scope = nodep->scopeDpiName();
-            putnbs(nodep, "(&(vlSymsp->" + protect("__Vscope_" + scope) + "))");
+            putnbs(nodep, "(vlSymsp->" + protect("__Vscopep_" + scope) + ")");
         }
     }
     void visit(AstSFormat* nodep) override {

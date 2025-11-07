@@ -695,23 +695,22 @@ public:
     };  // Type of a scope, currently only module and package are interesting
 private:
     // Fastpath:
-    VerilatedSyms* m_symsp = nullptr;  // Symbol table
+    VerilatedSyms* const m_symsp;  // Symbol table
     void** m_callbacksp = nullptr;  // Callback table pointer (Fastpath)
     int m_funcnumMax = 0;  // Maximum function number stored (Fastpath)
     // 4 bytes padding (on -m64), for rent.
     VerilatedVarNameMap* m_varsp = nullptr;  // Variable map
-    const char* m_namep = nullptr;  // Scope name (Slowpath)
-    const char* m_identifierp = nullptr;  // Identifier of scope (with escapes removed)
-    const char* m_defnamep = nullptr;  // Definition name (SCOPE_MODULE only)
-    int8_t m_timeunit = 0;  // Timeunit in negative power-of-10
-    Type m_type = SCOPE_OTHER;  // Type of the scope
+    const char* const m_namep;  // Scope name (Slowpath)
+    const char* const m_identifierp;  // Identifier of scope (with escapes removed)
+    const char* const m_defnamep;  // Definition name (SCOPE_MODULE only)
+    const int8_t m_timeunit;  // Timeunit in negative power-of-10
+    const Type m_type;  // Type of the scope
 
-public:  // But internals only - called from verilated modules
-    VerilatedScope() = default;
+public:  // But internals only - called from verilated modules, VerilatedSyms
+    VerilatedScope(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
+                   const char* identifier, const char* defnamep, int8_t timeunit, Type type);
     ~VerilatedScope();
-    void configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
-                   const char* identifier, const char* defnamep, int8_t timeunit,
-                   const Type& type) VL_MT_UNSAFE;
+
     void exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE;
     void varInsert(const char* namep, void* datap, bool isParam, VerilatedVarType vltype,
                    int vlflags, int udims, int pdims, ...) VL_MT_UNSAFE;

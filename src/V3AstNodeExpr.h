@@ -2173,13 +2173,13 @@ public:
     bool dpiExport() const { return m_dpiExport; }
     void dpiExport(bool flag) { m_dpiExport = flag; }
     bool forFormat() const { return m_forFormat; }
-    // Name for __Vscope variable including children
+    // Name for __Vscopep variable including children
     string scopeSymName() const { return scopeNameFormatter(m_scopeAttr); }
     // Name for DPI import scope
     string scopeDpiName() const { return scopeNameFormatter(m_scopeEntr); }
-    // Name for __Vscope variable including children
+    // Name for __Vscopep variable including children
     string scopePrettySymName() const { return scopePrettyNameFormatter(m_scopeAttr); }
-    // Name for __Vscope variable including children
+    // Name for __Vscopep variable including children
     string scopePrettyDpiName() const { return scopePrettyNameFormatter(m_scopeEntr); }
 };
 class AstSelLoopVars final : public AstNodeExpr {

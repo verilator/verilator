@@ -535,7 +535,7 @@ void EmitCSyms::emitSymHdr() {
         puts("\n// SCOPE NAMES\n");
         for (const auto& itpair : m_scopeNames) {
             const ScopeData& sd = itpair.second;
-            putns(sd.m_nodep, "VerilatedScope " + protect("__Vscope_" + sd.m_symName) + ";\n");
+            putns(sd.m_nodep, "VerilatedScope* " + protect("__Vscopep_" + sd.m_symName) + ";\n");
         }
     }
 
@@ -632,16 +632,16 @@ void EmitCSyms::emitScopeHier(std::vector<std::string>& stmts, bool destroy) {
         const std::string& scopeType = sd.m_type;
         if (name.find('.') != string::npos) continue;
         if (scopeType != "SCOPE_MODULE" && scopeType != "SCOPE_PACKAGE") continue;
-        const std::string id = protect("__Vscope_" + sd.m_symName);
-        stmts.emplace_back("__Vhier." + method + "(0, &" + id + ");");
+        const std::string id = protect("__Vscopep_" + sd.m_symName);
+        stmts.emplace_back("__Vhier." + method + "(0, " + id + ");");
     }
     for (const auto& itpair : m_vpiScopeHierarchy) {
         const std::string fromName = scopeSymString(itpair.first);
-        const std::string fromId = protect("__Vscope_" + m_scopeNames.at(fromName).m_symName);
+        const std::string fromId = protect("__Vscopep_" + m_scopeNames.at(fromName).m_symName);
         for (const std::string& name : itpair.second) {
             const std::string toName = scopeSymString(name);
-            const std::string toId = protect("__Vscope_" + m_scopeNames.at(toName).m_symName);
-            stmts.emplace_back("__Vhier." + method + "(&" + fromId + ", &" + toId + ");");
+            const std::string toId = protect("__Vscopep_" + m_scopeNames.at(toName).m_symName);
+            stmts.emplace_back("__Vhier." + method + "(" + fromId + ", " + toId + ");");
         }
     }
 }
@@ -736,7 +736,7 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
     for (const auto& itpair : m_scopeNames) {
         const ScopeData& sd = itpair.second;
         std::string stmt;
-        stmt += protect("__Vscope_" + sd.m_symName) + ".configure(this, name(), \"";
+        stmt += protect("__Vscopep_" + sd.m_symName) + " = new VerilatedScope{this, name(), \"";
         stmt += V3OutFormatter::quoteNameControls(
             VIdProtect::protectWordsIf(sd.m_prettyName, true));
         stmt += "\", \"";
@@ -745,7 +745,7 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
         stmt += V3OutFormatter::quoteNameControls(sd.m_defName);
         stmt += "\", ";
         stmt += std::to_string(sd.m_timeunit);
-        stmt += ", VerilatedScope::" + sd.m_type + ");";
+        stmt += ", VerilatedScope::" + sd.m_type + "};";
         add(stmt);
     }
 
@@ -762,7 +762,7 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
                 if (!funcp->dpiExportImpl()) continue;
 
                 std::string stmt;
-                stmt += protect("__Vscope_" + scopep->scopeSymName()) + ".exportInsert(";
+                stmt += protect("__Vscopep_" + scopep->scopeSymName()) + "->exportInsert(";
                 stmt += vfinal + ", \"";
                 // Not protected - user asked for import/export
                 stmt += V3OutFormatter::quoteNameControls(funcp->cname());
@@ -815,7 +815,7 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
             }
 
             std::string stmt;
-            stmt += protect("__Vscope_" + svd.m_scopeName) + ".varInsert(\"";
+            stmt += protect("__Vscopep_" + svd.m_scopeName) + "->varInsert(\"";
             stmt += V3OutFormatter::quoteNameControls(protect(svd.m_varBasePretty)) + '"';
 
             const std::string varName
@@ -864,6 +864,13 @@ std::vector<std::string> EmitCSyms::getSymDtorStmts() {
         add("_vm_pgoProfiler.write(\"" + topClassName()
             + "\", _vm_contextp__->profVltFilename());");
     }
+    add("// Tear down scopes");
+    for (const auto& itpair : m_scopeNames) {
+        const ScopeData& sd = itpair.second;
+        const std::string id = protect("__Vscopep_" + sd.m_symName);
+        add("VL_DO_DANGLING(delete " + id + ", " + id + ");");
+    }
+
     add("// Tear down sub module instances");
     for (const ScopeModPair& itpair : vlstd::reverse_view(m_scopes)) {
         const AstScope* const scopep = itpair.first;
