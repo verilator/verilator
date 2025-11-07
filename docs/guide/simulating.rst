@@ -431,8 +431,7 @@ Profiling ccache efficiency
 The Verilator-generated Makefile supports basic profiling of ccache
 behavior during the build. This can be used to track down files that might
 be unnecessarily rebuilt, though as of today, even minor code changes will
-usually require rebuilding a large number of files. Improving ccache
-efficiency during the edit/compile/test loop is an active development area.
+usually require rebuilding a large number of files.
 
 To get a basic report of how well ccache is doing, add the `ccache-report`
 target when invoking the generated Makefile:
@@ -445,8 +444,9 @@ This will print a report based on all executions of ccache during this
 invocation of Make. The report is also written to a file, in this example
 `obj_dir/Vout__cache_report.txt`.
 
-To use the `ccache-report` target, at least one other explicit build target
-must be specified, and OBJCACHE must be set to 'ccache'.
+To use the `ccache-report` target, OBJCACHE must be set to 'ccache' (this is
+done by `configure` if 'ccache' is installed). If no other explicit build
+targets are specified, `cchache-report` will build the `default` target.
 
 This feature is currently experimental and might change in subsequent
 releases.

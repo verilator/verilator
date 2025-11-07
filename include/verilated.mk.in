@@ -311,30 +311,27 @@ ifneq ($(findstring ccache-report,$(MAKECMDGOALS)),)
   endif
   VK_OTHER_GOALS := $(strip $(subst ccache-report,,$(MAKECMDGOALS)))
   ifeq ($(VK_OTHER_GOALS),)
-    $(error ccache-report must be used with at least one other explicit target)
+    VK_OTHER_GOALS := default
   endif
 
   # Report ccache behaviour for this invocation of make
   VK_CCACHE_LOGDIR := ccache-logs
   VK_CCACHE_REPORT := $(VM_PREFIX)__ccache_report.txt
-  # Remove previous logfiles and report
+
+  # Remove previous logfiles and report, then create log directory
   $(shell rm -rf $(VK_CCACHE_LOGDIR) $(VK_CCACHE_REPORT))
+  $(shell mkdir -p $(VK_CCACHE_LOGDIR))
 
-  $(VK_CCACHE_LOGDIR):
-	mkdir -p $@
-
-  $(VK_OBJS): | $(VK_CCACHE_LOGDIR)
-
+  # Add ccache logging to compilation rules
   $(VK_OBJS): export CCACHE_LOGFILE=$(VK_CCACHE_LOGDIR)/$@.log
 
-  $(VK_CCACHE_REPORT): $(VK_OBJS)
+  # ccache-report runs last
+  $(VK_CCACHE_REPORT): $(VK_OBJS) $(VK_OTHER_GOALS)
 	$(VERILATOR_CCACHE_REPORT) -o $@ $(VK_CCACHE_LOGDIR)
 
-  # ccache-report runs last
   .PHONY: ccache-report
-  ccache-report: $(VK_CCACHE_REPORT) $(VK_OTHER_GOALS)
+  ccache-report: $(VK_CCACHE_REPORT)
 	@cat $<
-
 endif
 
 ######################################################################
