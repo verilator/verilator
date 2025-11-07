@@ -2633,7 +2633,6 @@ class RandomizeVisitor final : public VNVisitor {
                 AstWith* const withp = VN_CAST(pinp, With);
                 if (withp) {
                     FileLine* const fl = nodep->fileline();
-                    // Capture variables in 'with {}' (nullptr = no target class)
                     captured = new CaptureVisitor{withp->exprp(), m_modp, nullptr};
                     captured->addFunctionArguments(randomizeFuncp);
                     // Clear old constraints and variables for std::randomize with clause
@@ -2689,12 +2688,20 @@ class RandomizeVisitor final : public VNVisitor {
                                              VN_AS(randomizeFuncp->fvarp(), Var), VAccess::READ},
                                basicMethodp}});
             }
+            // Remove With nodes from pins as they have been processed
+            for (AstNode* pinp = nodep->pinsp(); pinp;) {
+                AstNode* const nextp = pinp->nextp();
+                if (VN_IS(pinp, With)) {
+                    VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
+                }
+                pinp = nextp;
+            }
             // Replace the node with a call to that function
             nodep->name(randomizeFuncp->name());
             nodep->taskp(randomizeFuncp);
             nodep->dtypeFrom(randomizeFuncp->dtypep());
             if (VN_IS(m_modp, Class)) nodep->classOrPackagep(m_modp);
-            if (nodep->pinsp()) pushDeletep(nodep->pinsp()->unlinkFrBackWithNext());
+            // if (nodep->pinsp()) pushDeletep(nodep->pinsp()->unlinkFrBackWithNext());
             if (captured) nodep->addPinsp(captured->getArgs());
             UINFOTREE(9, nodep, "", "std::rnd-call");
             UINFOTREE(9, randomizeFuncp, "", "std::rnd-func");
