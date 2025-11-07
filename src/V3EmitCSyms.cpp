@@ -544,7 +544,7 @@ void EmitCSyms::emitSymHdr() {
     }
 
     puts("\n// METHODS\n");
-    puts("const char* name() { return TOP.name(); }\n");
+    puts("const char* name() { return TOP.vlNamep; }\n");
 
     if (v3Global.hasEvents()) {
         if (v3Global.assignsEvents()) {
@@ -738,6 +738,15 @@ void EmitCSyms::emitSymImp() {
         puts("_vm_pgoProfiler.write(\"" + topClassName()
              + "\", _vm_contextp__->profVltFilename());\n");
     }
+    puts("// Tear down sub module instances\n");
+    for (const ScopeModPair& itpair : vlstd::reverse_view(m_scopes)) {
+        const AstScope* const scopep = itpair.first;
+        const AstNodeModule* const modp = itpair.second;
+        if (modp->isTop()) continue;
+        putns(scopep, protect(scopep->nameDotless()));
+        puts(".dtor();\n");
+        ++m_numStmts;
+    }
     puts("}\n");
 
     if (v3Global.needTraceDumper()) {
@@ -788,23 +797,16 @@ void EmitCSyms::emitSymImp() {
         puts("    , _vm_pgoProfiler{" + std::to_string(v3Global.currentHierBlockCost()) + "}\n");
     }
 
-    puts("    // Setup module instances\n");
+    puts("    // Setup top module instance\n");
     for (const ScopeModPair& itpair : m_scopes) {
         const AstScope* const scopep = itpair.first;
         const AstNodeModule* const modp = itpair.second;
+        if (!modp->isTop()) continue;
         puts("    , ");
         putns(scopep, protect(scopep->nameDotless()));
-        puts("{this");
-        if (modp->isTop()) {
-            puts(", namep");
-        } else {
-            // The "." is added by catName
-            puts(", Verilated::catName(namep, ");
-            putsQuoted(VIdProtect::protectWordsIf(scopep->prettyName(), scopep->protect()));
-            puts(")");
-        }
-        puts("}\n");
+        puts("{this, namep}\n");
         ++m_numStmts;
+        break;
     }
     puts("{\n");
 
@@ -817,6 +819,18 @@ void EmitCSyms::emitSymImp() {
         // TODO: 'm_statVarScopeBytes' is always 0, AstVarScope doesn't reach here (V3Descope)
         V3Stats::addStat("Size prediction, Heap, from Var Scopes (bytes)", m_statVarScopeBytes);
         V3Stats::addStat(V3Stats::STAT_MODEL_SIZE, stackSize + m_statVarScopeBytes);
+    }
+
+    puts("// Setup sub module instances\n");
+    for (const ScopeModPair& itpair : m_scopes) {
+        const AstScope* const scopep = itpair.first;
+        const AstNodeModule* const modp = itpair.second;
+        if (modp->isTop()) continue;
+        putns(scopep, protect(scopep->nameDotless()));
+        puts(".ctor(this, ");
+        putsQuoted(VIdProtect::protectWordsIf(scopep->prettyName(), scopep->protect()));
+        puts(");\n");
+        ++m_numStmts;
     }
 
     if (v3Global.opt.profPgo()) {

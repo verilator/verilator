@@ -732,7 +732,7 @@ void EmitCFunc::emitVarResetScopeHash() {
             = std::to_string(VString::hashMurmur(m_classOrPackage->name())) + "ULL";
     } else {
         puts(string("const uint64_t __VscopeHash = VL_MURMUR64_HASH(")
-             + (m_useSelfForThis ? "vlSelf" : "this") + "->name());\n");
+             + (m_useSelfForThis ? "vlSelf" : "this") + "->vlNamep);\n");
     }
     m_createdScopeHash = true;
 }

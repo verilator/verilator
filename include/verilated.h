@@ -309,20 +309,6 @@ private:
 };
 
 //=========================================================================
-/// Base class for all Verilated module classes.
-
-class VerilatedModule VL_NOT_FINAL {
-    VL_UNCOPYABLE(VerilatedModule);
-
-private:
-    const char* m_namep;  // Module name
-public:
-    explicit VerilatedModule(const char* namep);  // Create module with given hierarchy name
-    ~VerilatedModule();
-    const char* name() const VL_MT_SAFE_POSTINIT { return m_namep; }  ///< Return name of module
-};
-
-//=========================================================================
 // Functions overridable by user defines
 // (Internals however must use VL_PRINTF_MT, which calls these.)
 
@@ -720,7 +706,7 @@ private:
     int8_t m_timeunit = 0;  // Timeunit in negative power-of-10
     Type m_type = SCOPE_OTHER;  // Type of the scope
 
-public:  // But internals only - called from VerilatedModule's
+public:  // But internals only - called from verilated modules
     VerilatedScope() = default;
     ~VerilatedScope();
     void configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
