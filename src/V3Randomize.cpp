@@ -371,15 +371,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (!nodep->backp()) VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    void visit(AstWith* nodep) override {
-        for (AstNode* pinp = m_stdRandCallp ? m_stdRandCallp->pinsp() : nullptr; pinp;
-             pinp = pinp->nextp()) {
-            AstWith* const withp = VN_CAST(pinp, With);
-            if (withp == nodep) m_inStdWith = true;
-        }
-        iterateChildrenConst(nodep);
-        m_inStdWith = false;
-    }
     void visit(AstNodeFTaskRef* nodep) override {
         if (nodep->classOrPackagep() && nodep->classOrPackagep()->name() == "std")
             m_stdRandCallp = nodep;
@@ -705,7 +696,13 @@ class RandomizeMarkVisitor final : public VNVisitor {
     void visit(AstWith* nodep) override {
         VL_RESTORER(m_withp);
         m_withp = nodep;
+        for (AstNode* pinp = m_stdRandCallp ? m_stdRandCallp->pinsp() : nullptr; pinp;
+             pinp = pinp->nextp()) {
+            AstWith* const withp = VN_CAST(pinp, With);
+            if (withp == nodep) m_inStdWith = true;
+        }
         iterateChildrenConst(nodep);
+        m_inStdWith = false;
     }
 
     void visit(AstNodeExpr* nodep) override {
@@ -2650,10 +2647,10 @@ class RandomizeVisitor final : public VNVisitor {
                         ConstraintExprVisitor{m_memberMap, capturedTreep, randomizeFuncp, stdrand,
                                               nullptr};
                     }
-                    AstVarRef* const randNextp = new AstVarRef{fl, stdrand, VAccess::READWRITE};
-                    randNextp->AstNode::addNext(new AstText{fl, ".next()"});
-                    AstNodeExpr* const solverCallp = new AstCExpr{fl, randNextp};
+                    AstCExpr* const solverCallp = new AstCExpr{fl};
                     solverCallp->dtypeSetBit();
+                    solverCallp->add(new AstVarRef{fl, stdrand, VAccess::READWRITE});
+                    solverCallp->add(".next()");
                     AstVar* const fvarp = VN_AS(randomizeFuncp->fvarp(), Var);
                     AstVarRef* const retvalReadp = new AstVarRef{fl, fvarp, VAccess::READ};
                     AstNodeExpr* const andExprp = new AstAnd{fl, retvalReadp, solverCallp};

@@ -783,7 +783,8 @@ public:
         FORK_INIT,
         FORK_JOIN,
         RANDOMIZER_BASIC_STD_RANDOMIZATION,
-        RANDOMIZER_CLEAR,
+        RANDOMIZER_CLEARCONSTRAINTS,
+        RANDOMIZER_CLEARALL,
         RANDOMIZER_HARD,
         RANDOMIZER_WRITE_VAR,
         RNG_GET_RANDSTATE,
@@ -911,7 +912,8 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {FORK_INIT, "init", false}, \
            {FORK_JOIN, "join", false}, \
            {RANDOMIZER_BASIC_STD_RANDOMIZATION, "basicStdRandomization", false}, \
-           {RANDOMIZER_CLEAR, "clear", false}, \
+           {RANDOMIZER_CLEARCONSTRAINTS, "clearConstraints", false}, \
+           {RANDOMIZER_CLEARALL, "clearAll", false}, \
            {RANDOMIZER_HARD, "hard", false}, \
            {RANDOMIZER_WRITE_VAR, "write_var", false}, \
            {RNG_GET_RANDSTATE, "__Vm_rng.get_randstate", true}, \
