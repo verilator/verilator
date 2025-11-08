@@ -13,10 +13,28 @@ Verilator 5.043 devel
 
 **Other:**
 
+* Support basic global constraints (#6551) (#6552). [Yilou Wang]
+* Support this.randomize() with constraints (#6634). [Artur Bieniek, Antmicro Ltd.]
+* Support multi-expression sequences (#6639). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Optimize away calls to empty functions (#6626). [Geza Lore]
+* Optimize redundant headers in Syms implementation files. [Geza Lore]
+* Optimize constructor/destructor VerilatedModules (#6660). [Geza Lore]
+* Fix expression short circuiting (#6483). [Todd Strader]
+* Fix expression coverage of system calls (#6592). [Todd Strader]
 * Fix `--timing` with `--x-initial-edge` (#6603) (#6631). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix merging of impure assignments in gate optimization (#6629) (#6630). [Geza Lore]
 * Fix determining Verilator revision when within git submodules without tags.
+* Fix initial random values for verilator-created variables (#6611). [Todd Strader]
+* Fix parsing of `with` clause inside covergroups (#6618). [Pawel Kojma]
+* Fix slice memory overflow on large output arrays (#6636) (#6638). [Jens Yuechao Liu]
+* Fix memory usage statistics on MacOS (#6644). [Geza Lore]
+* Fix command line statistics with --stats (#6645) (#6646). [Geza Lore]
+* Fix slow compilation of generated sampled value code (#6652). [Geza Lore]
+* Fix non-deterministic output when splitting Syms file. [Geza Lore]
+* Fix crash on DFG driver lookup (#6649). [Geza Lore]
+* Fix ccache-report with PCH files. [Geza Lore]
+* Fix splitting of Syms constructor/destructor bodies (#6662). [Geza Lore]
+* Fix long C++ compilation due to VerilatedScope constructors (#6664). [Geza Lore]
 
 
 Verilator 5.042 2025-11-02

@@ -612,6 +612,7 @@ countbits
 countones
 cout
 covergroup
+covergroups
 cpp
 cppstyle
 cpu
