@@ -16,14 +16,14 @@ def check_splits():
     got1 = False
     gotSyms1 = False
     for filename in test.glob_some(test.obj_dir + "/*.cpp"):
-        if re.search(r'Syms__1', filename):
+        if re.search(r'Syms__.*__1', filename):
             gotSyms1 = True
         elif re.search(r'__1', filename):
             got1 = True
     if not got1:
         test.error("No __1 split file found")
     if not gotSyms1:
-        test.error("No Syms__1 split file found")
+        test.error("No Syms__*__1 split file found")
 
 
 test.compile(timing_loop=True,
