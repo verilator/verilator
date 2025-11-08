@@ -1,7 +1,15 @@
   scopesDump:
     SCOPE 0x#: top.TOP
+       VAR 0x#: clk
     SCOPE 0x#: top.t
+       VAR 0x#: clk
     SCOPE 0x#: top.t.s_axis_if
+       VAR 0x#: aclk
+       VAR 0x#: tdata
+       VAR 0x#: tready
+       VAR 0x#: tuser
+       VAR 0x#: tvalid
     SCOPE 0x#: top.t.u_dut
+       VAR 0x#: clk
 
 *-* All Finished *-*
