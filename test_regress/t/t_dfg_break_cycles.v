@@ -261,4 +261,14 @@ module t (
   `signal(PACKED_0_LSB, 1);
   assign PACKED_0_LSB = packed_0_lsb;
 
+  // verilator lint_off UNOPTFLAT
+  logic array_5 [0:6];
+  // Unconnected d[0:3]
+  assign array_5[4] = array_5[0] ? array_5[0] : array_5[1];
+  assign array_5[5] = array_5[2] ? array_5[2] : array_5[3];
+  assign array_5[6] = array_5[4] ? array_5[4] : array_5[5];
+  `signal(ARRAY_5, 1);
+  assign ARRAY_5 = array_5[6];
+  // verilator lint_on
+
 endmodule
