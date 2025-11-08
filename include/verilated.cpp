@@ -3481,7 +3481,7 @@ VerilatedScope::~VerilatedScope() {
     VL_DO_DANGLING(delete[] m_namep, m_namep);
     VL_DO_DANGLING(delete[] m_callbacksp, m_callbacksp);
     VL_DO_DANGLING(delete m_varsp, m_varsp);
-    m_funcnumMax = 0;  // Force callback table to empty
+    VL_DEBUG_IFDEF(m_funcnumMax = 0;);
 }
 
 void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE {

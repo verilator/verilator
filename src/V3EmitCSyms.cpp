@@ -868,7 +868,7 @@ std::vector<std::string> EmitCSyms::getSymDtorStmts() {
     for (const auto& itpair : m_scopeNames) {
         const ScopeData& sd = itpair.second;
         const std::string id = protect("__Vscopep_" + sd.m_symName);
-        add("VL_DO_DANGLING(delete " + id + ", " + id + ");");
+        add("VL_DO_CLEAR(delete " + id + ", " + id + " = nullptr);");
     }
 
     add("// Tear down sub module instances");
