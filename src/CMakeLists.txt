@@ -391,8 +391,7 @@ add_custom_command(
         --dfgdef V3DfgVertices.h --classes
 )
 list(
-    APPEND
-    GENERATED_FILES
+    APPEND GENERATED_FILES
     V3Ast__gen_forward_class_decls.h
     V3Dfg__gen_forward_class_decls.h
 )
