@@ -125,6 +125,12 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     std::vector<std::string> getSymCtorStmts();
     std::vector<std::string> getSymDtorStmts();
 
+    static size_t stmtCost(const std::string& stmt) {
+        if (stmt.empty()) return 0;
+        if (VString::startsWith(stmt, "/")) return 0;
+        return static_cast<size_t>(AstNode::INSTR_COUNT_SYM);
+    }
+
     static void nameCheck(AstNode* nodep) {
         // Prevent GCC compile time error; name check all things that reach C++ code
         if (nodep->name().empty()) return;
@@ -873,61 +879,83 @@ std::vector<std::string> EmitCSyms::getSymDtorStmts() {
 }
 
 void EmitCSyms::emitSplit(std::vector<std::string>& stmts, const std::string name,
-                          size_t maxStmts) {
+                          size_t maxCost) {
     const std::string baseName = m_symsFileBase + "__" + name;
-    size_t nSplits = 0;
+    size_t nSubFunctions = 0;
+    // Reduce into a balanced tree of sub-function calls until we end up with a single statement
     while (stmts.size() > 1) {
-        size_t nSubFunctions = 0;
-        for (size_t i = 0; i < stmts.size(); i += maxStmts) {
-            const std::string nStr = std::to_string(nSplits++);
+        size_t nSplits = 0;
+        size_t nStmts = stmts.size();
+        for (size_t splitStart = 0, splitEnd = 0; splitStart < nStmts; splitStart = splitEnd) {
+            // Gather up at at most 'maxCost' worth of statements in this split,
+            // but always at least 2 (if less than 2, the reduction makes no
+            // progress and the loop will not terminate).
+            size_t cost = 0;
+            while (((cost < maxCost) || (splitEnd - splitStart < 2)) && splitEnd < nStmts) {
+                cost += stmtCost(stmts[splitEnd++]);
+            }
+            UASSERT(splitStart < splitEnd, "Empty split");
+
+            // Create new sub-function and emit current range of statementss
+            const std::string nStr = std::to_string(nSubFunctions++);
             // Name of sub-function we are emitting now
             const std::string funcName = symClassName() + "__" + name + "__" + nStr;
             m_splitFuncNames.emplace_back(funcName);
-
             // Open split file
             openOutputFile(baseName + "__" + nStr + "__Slow.cpp");
             // Emit header
             emitSymImpPreamble();
             // Open sub-function definition in the split file
             puts("void " + symClassName() + "::" + funcName + "() {\n");
+
             // Emit statements
-            for (size_t j = 0; j < maxStmts; ++j) {
-                if (i + j >= stmts.size()) break;
+            for (size_t j = splitStart; j < splitEnd; ++j) {
                 m_ofp->putsNoTracking("    ");
-                m_ofp->putsNoTracking(stmts.at(i + j));
+                m_ofp->putsNoTracking(stmts[j]);
                 m_ofp->putsNoTracking("\n");
             }
+
             // Close sub-function
             puts("}\n");
             // Close split file
             closeOutputFile();
 
             // Replace statements with a call to the sub-function
-            stmts[nSubFunctions++] = funcName + "();";
+            stmts[nSplits++] = funcName + "();";
         }
-        stmts.resize(nSubFunctions);
+        // The statements at the front are now the calls to the sub-functions, drop the rest
+        stmts.resize(nSplits);
     }
 }
 
 void EmitCSyms::emitSymImp(AstNetlist* netlistp) {
     UINFO(6, __FUNCTION__ << ": ");
 
-    const size_t optSplit = static_cast<size_t>(v3Global.opt.outputSplitCFuncs());
-    // Allow at least 2 statements per function, to ensure tree reduction
-    // actually makes forward progress. Also assume each statement is worth 5
-    // units as each of these are somewhat complicated, not just simple ops.
-    const size_t maxStmts = optSplit ? std::max<size_t>(optSplit / 5, 2)  //
-                                     : std::numeric_limits<size_t>::max();
-
+    // Get the body of the constructor and destructor
     std::vector<std::string> ctorStmts = getSymCtorStmts();
     std::vector<std::string> dtorStmts = getSymDtorStmts();
 
-    // Split them if needed - fudge factor for all other contents in main file
-    if (ctorStmts.size() + dtorStmts.size() + 200 >= maxStmts) {
-        // Splitting files, so using parallel build.
-        v3Global.useParallelBuild(true);
-        emitSplit(ctorStmts, "ctor", maxStmts);
-        emitSplit(dtorStmts, "dtor", maxStmts);
+    // Check if needs splitting and if so split into sub-functions
+    if (const size_t maxCost = static_cast<size_t>(v3Global.opt.outputSplitCFuncs())) {
+        size_t totalCost = 200;  // Starting from 200 to consider all other contents in main file
+        if (totalCost <= maxCost) {
+            for (const std::string& stmt : ctorStmts) {
+                totalCost += stmtCost(stmt);
+                if (totalCost > maxCost) break;
+            }
+        }
+        if (totalCost <= maxCost) {
+            for (const std::string& stmt : dtorStmts) {
+                totalCost += stmtCost(stmt);
+                if (totalCost > maxCost) break;
+            }
+        }
+        // Split them if needed
+        if (totalCost > maxCost) {
+            v3Global.useParallelBuild(true);  // Splitting files, so using parallel build.
+            emitSplit(ctorStmts, "ctor", maxCost);
+            emitSplit(dtorStmts, "dtor", maxCost);
+        }
     }
 
     openOutputFile(m_symsFileBase + "__Slow.cpp");
