@@ -3454,35 +3454,34 @@ void* VerilatedVarProps::datapAdjustIndex(void* datap, int dim, int indx) const 
 //======================================================================
 // VerilatedScope:: Methods
 
-VerilatedScope::~VerilatedScope() {
-    // Memory cleanup - not called during normal operation
-    Verilated::threadContextp()->impp()->scopeErase(this);
-    if (m_namep) VL_DO_CLEAR(delete[] m_namep, m_namep = nullptr);
-    if (m_callbacksp) VL_DO_CLEAR(delete[] m_callbacksp, m_callbacksp = nullptr);
-    if (m_varsp) VL_DO_CLEAR(delete m_varsp, m_varsp = nullptr);
-    m_funcnumMax = 0;  // Force callback table to empty
-}
-
-void VerilatedScope::configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
+VerilatedScope::VerilatedScope(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
                                const char* identifier, const char* defnamep, int8_t timeunit,
-                               const Type& type) VL_MT_UNSAFE {
-    // Slowpath - called once/scope at construction
-    // We don't want the space and reference-count access overhead of strings.
-    m_symsp = symsp;
-    m_type = type;
-    m_timeunit = timeunit;
-    {
+                               Type type)
+    : m_symsp{symsp}
+    , m_namep{[prefixp, suffixp]() {
+        // We don't want the space and reference-count access overhead of strings.
         char* const namep = new char[std::strlen(prefixp) + std::strlen(suffixp) + 2];
         char* dp = namep;
         for (const char* sp = prefixp; *sp;) *dp++ = *sp++;
         if (*prefixp && *suffixp) *dp++ = '.';
         for (const char* sp = suffixp; *sp;) *dp++ = *sp++;
         *dp++ = '\0';
-        m_namep = namep;
-    }
-    m_identifierp = identifier;
-    m_defnamep = defnamep;
+        return namep;
+    }()}
+    , m_identifierp{identifier}
+    , m_defnamep{defnamep}
+    , m_timeunit{timeunit}
+    , m_type{type} {
     Verilated::threadContextp()->impp()->scopeInsert(this);
+}
+
+VerilatedScope::~VerilatedScope() {
+    // Memory cleanup - not called during normal operation
+    Verilated::threadContextp()->impp()->scopeErase(this);
+    VL_DO_DANGLING(delete[] m_namep, m_namep);
+    VL_DO_DANGLING(delete[] m_callbacksp, m_callbacksp);
+    VL_DO_DANGLING(delete m_varsp, m_varsp);
+    VL_DEBUG_IFDEF(m_funcnumMax = 0;);
 }
 
 void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE {
