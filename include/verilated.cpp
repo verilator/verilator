@@ -3454,12 +3454,12 @@ void* VerilatedVarProps::datapAdjustIndex(void* datap, int dim, int indx) const 
 //======================================================================
 // VerilatedScope:: Methods
 
-VerilatedScope::VerilatedScope(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
-                               const char* identifier, const char* defnamep, int8_t timeunit,
-                               Type type)
+VerilatedScope::VerilatedScope(VerilatedSyms* symsp, const char* suffixp, const char* identifier,
+                               const char* defnamep, int8_t timeunit, Type type)
     : m_symsp{symsp}
-    , m_namep{[prefixp, suffixp]() {
+    , m_namep{[symsp, suffixp]() {
         // We don't want the space and reference-count access overhead of strings.
+        const char* prefixp = symsp->name();
         char* const namep = new char[std::strlen(prefixp) + std::strlen(suffixp) + 2];
         char* dp = namep;
         for (const char* sp = prefixp; *sp;) *dp++ = *sp++;

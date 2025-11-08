@@ -552,7 +552,7 @@ void EmitCSyms::emitSymHdr() {
     for (const std::string& funcName : m_splitFuncNames) { puts("void " + funcName + "();\n"); }
 
     puts("\n// METHODS\n");
-    puts("const char* name() { return TOP.vlNamep; }\n");
+    puts("const char* name() const { return TOP.vlNamep; }\n");
 
     if (v3Global.hasEvents()) {
         if (v3Global.assignsEvents()) {
@@ -736,7 +736,7 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
     for (const auto& itpair : m_scopeNames) {
         const ScopeData& sd = itpair.second;
         std::string stmt;
-        stmt += protect("__Vscopep_" + sd.m_symName) + " = new VerilatedScope{this, name(), \"";
+        stmt += protect("__Vscopep_" + sd.m_symName) + " = new VerilatedScope{this, \"";
         stmt += V3OutFormatter::quoteNameControls(
             VIdProtect::protectWordsIf(sd.m_prettyName, true));
         stmt += "\", \"";
