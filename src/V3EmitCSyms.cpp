@@ -751,31 +751,34 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
 
     emitScopeHier(stmts, false);
 
-    if (!v3Global.dpi()) return stmts;
+    if (v3Global.dpi()) {
+        for (const std::string vfinal : {"0", "1"}) {
+            add("// Setup export functions - final: " + vfinal);
+            for (const auto& itpair : m_scopeFuncs) {
+                const ScopeFuncData& sfd = itpair.second;
+                const AstScopeName* const scopep = sfd.m_scopep;
+                const AstCFunc* const funcp = sfd.m_cfuncp;
+                const AstNodeModule* const modp = sfd.m_modp;
+                if (!funcp->dpiExportImpl()) continue;
 
-    for (const std::string vfinal : {"0", "1"}) {
-        add("// Setup export functions - final: " + vfinal);
-        for (const auto& itpair : m_scopeFuncs) {
-            const ScopeFuncData& sfd = itpair.second;
-            const AstScopeName* const scopep = sfd.m_scopep;
-            const AstCFunc* const funcp = sfd.m_cfuncp;
-            const AstNodeModule* const modp = sfd.m_modp;
-            if (!funcp->dpiExportImpl()) continue;
-
-            std::string stmt;
-            stmt += protect("__Vscope_" + scopep->scopeSymName()) + ".exportInsert(";
-            stmt += vfinal + ", \"";
-            // Not protected - user asked for import/export
-            stmt += V3OutFormatter::quoteNameControls(funcp->cname());
-            stmt += "\", (void*)(&";
-            stmt += EmitCUtil::prefixNameProtect(modp);
-            stmt += "__";
-            stmt += funcp->nameProtect();
-            stmt += "));";
-            add(stmt);
+                std::string stmt;
+                stmt += protect("__Vscope_" + scopep->scopeSymName()) + ".exportInsert(";
+                stmt += vfinal + ", \"";
+                // Not protected - user asked for import/export
+                stmt += V3OutFormatter::quoteNameControls(funcp->cname());
+                stmt += "\", (void*)(&";
+                stmt += EmitCUtil::prefixNameProtect(modp);
+                stmt += "__";
+                stmt += funcp->nameProtect();
+                stmt += "));";
+                add(stmt);
+            }
         }
-        // It would be less code if each module inserted its own variables.
-        // Someday.  For now public isn't common.
+    }
+
+    // It would be less code if each module inserted its own variables. Someday.
+    if (!m_scopeVars.empty()) {
+        add("// Setup public variables");
         for (const auto& itpair : m_scopeVars) {
             const ScopeVarData& svd = itpair.second;
             const AstScope* const scopep = svd.m_scopep;
@@ -812,8 +815,7 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
             }
 
             std::string stmt;
-            stmt += protect("__Vscope_" + svd.m_scopeName) + ".varInsert(";
-            stmt += vfinal + ", \"";
+            stmt += protect("__Vscope_" + svd.m_scopeName) + ".varInsert(\"";
             stmt += V3OutFormatter::quoteNameControls(protect(svd.m_varBasePretty)) + '"';
 
             const std::string varName
