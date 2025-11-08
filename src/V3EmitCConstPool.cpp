@@ -20,6 +20,7 @@
 #include "V3EmitCConstInit.h"
 #include "V3File.h"
 #include "V3Stats.h"
+#include "V3UniqueNames.h"
 
 #include <algorithm>
 #include <cinttypes>
@@ -34,40 +35,15 @@ class EmitCConstPool final : public EmitCConstInit {
     using OutCFilePair = std::pair<V3OutCFile*, AstCFile*>;
 
     // MEMBERS
-    uint32_t m_outFileCount = 0;
-    int m_outFileSize = 0;
     VDouble0 m_tablesEmitted;
     VDouble0 m_constsEmitted;
+    V3UniqueNames m_uniqueNames;  // Generates unique file names
+    const std::string m_fileBaseName = EmitCUtil::topClassName() + "__ConstPool";
 
     // METHODS
-
-    OutCFilePair newOutCFile() const {
-        const string fileName = v3Global.opt.makeDir() + "/" + EmitCUtil::topClassName()
-                                + "__ConstPool_" + cvtToStr(m_outFileCount) + ".cpp";
-        AstCFile* const cfilep = newCFile(fileName, /* slow: */ true, /* source: */ true);
-        V3OutCFile* const ofp = new V3OutCFile{fileName};
-        ofp->putsHeader();
-        ofp->puts("// DESCRIPTION: Verilator output: Constant pool\n");
-        ofp->puts("//\n");
-        ofp->puts("\n");
-        ofp->puts("#include \"verilated.h\"\n");
-        return {ofp, cfilep};
-    }
-
-    void maybeSplitCFile() {
-        if (v3Global.opt.outputSplit() && m_outFileSize < v3Global.opt.outputSplit()) return;
-        // Splitting file, so using parallel build.
-        v3Global.useParallelBuild(true);
-        // Close current file
-        closeOutputFile();
-        // Open next file
-        m_outFileSize = 0;
-        ++m_outFileCount;
-        const OutCFilePair outFileAndNodePair = newOutCFile();
-        setOutputFile(outFileAndNodePair.first, outFileAndNodePair.second);
-    }
-
     void emitVars(const AstConstPool* poolp) {
+        UASSERT(!ofp(), "Output file should not be open");
+
         std::vector<const AstVar*> varps;
         for (AstNode* nodep = poolp->modp()->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) varps.push_back(varp);
@@ -79,12 +55,24 @@ class EmitCConstPool final : public EmitCConstInit {
             return ap->name() < bp->name();
         });
 
-        const OutCFilePair outFileAndNodePair = newOutCFile();
-        setOutputFile(outFileAndNodePair.first, outFileAndNodePair.second);
-
         for (const AstVar* varp : varps) {
-            maybeSplitCFile();
-            const string nameProtect
+            if (splitNeeded()) {
+                // Splitting file, so using parallel build.
+                v3Global.useParallelBuild(true);
+                // Close old file
+                closeOutputFile();
+            }
+
+            if (!ofp()) {
+                openNewOutputSourceFile(m_uniqueNames.get(m_fileBaseName), true, false);
+                puts("// DESCR"
+                     "IPTION: Verilator output: Constant pool\n");
+                puts("//\n");
+                puts("\n");
+                puts("#include \"verilated.h\"\n");
+            }
+
+            const std::string nameProtect
                 = EmitCUtil::topClassName() + "__ConstPool__" + varp->nameProtect();
             puts("\n");
             putns(varp, "extern const ");
@@ -101,12 +89,12 @@ class EmitCConstPool final : public EmitCConstInit {
             }
         }
 
-        closeOutputFile();
+        if (ofp()) closeOutputFile();
     }
 
     // VISITORS
     void visit(AstConst* nodep) override {
-        m_outFileSize += nodep->num().isString() ? 10 : nodep->isWide() ? nodep->widthWords() : 1;
+        splitSizeInc(nodep->num().isString() ? 10 : nodep->isWide() ? nodep->widthWords() : 1);
         EmitCConstInit::visit(nodep);
     }
 

@@ -144,7 +144,7 @@ class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
     } m_emitDispState;
 
 protected:
-    EmitCLazyDecls m_lazyDecls;  // Visitor for emitting lazy declarations
+    EmitCLazyDecls m_lazyDecls{*this};  // Visitor for emitting lazy declarations
     bool m_useSelfForThis = false;  // Replace "this" with "vlSelf"
     bool m_usevlSelfRef = false;  // Use vlSelfRef reference instead of vlSelf pointer
     const AstNodeModule* m_modp = nullptr;  // Current module being emitted
@@ -169,16 +169,6 @@ protected:
     }
 
 public:
-    // METHODS
-
-    // ACCESSORS
-    void splitSizeInc(int count) { m_splitSize += count; }
-    void splitSizeInc(const AstNode* nodep) { splitSizeInc(nodep->nodeCount()); }
-    void splitSizeReset() { m_splitSize = 0; }
-    bool splitNeeded() const {
-        return v3Global.opt.outputSplit() && m_splitSize >= v3Global.opt.outputSplit();
-    }
-
     // METHODS
     void displayNode(AstNode* nodep, AstScopeName* scopenamep, const string& vformat,
                      AstNode* exprsp, bool isScan);
@@ -1730,13 +1720,8 @@ public:
         }
     }  // LCOV_EXCL_STOP
 
-    EmitCFunc()
-        : m_lazyDecls{*this} {}
-    EmitCFunc(AstNode* nodep, V3OutCFile* ofp, AstCFile* cfilep)
-        : EmitCFunc{} {
-        setOutputFile(ofp, cfilep);
-        iterateConst(nodep);
-    }
+protected:
+    EmitCFunc() = default;
     ~EmitCFunc() override = default;
 };
 

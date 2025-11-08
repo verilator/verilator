@@ -103,16 +103,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     const bool m_dpiHdrOnly;  // Only emit the DPI header
     std::vector<std::string> m_splitFuncNames;  // Split file names
     VDouble0 m_statVarScopeBytes;  // Statistic tracking
-    const std::string m_symsFileBase = v3Global.opt.makeDir() + "/" + symClassName();
 
     // METHODS
-    void openOutputFile(const std::string fileName) {
-        V3OutCFile* const fp = optSystemC() ? new V3OutScFile{fileName} : new V3OutCFile{fileName};
-        AstCFile* const cfilep = newCFile(fileName, true /*slow*/, true /*source*/);
-        cfilep->support(true);
-        setOutputFile(fp, cfilep);
-    }
-
     void emitSymHdr();
     void emitSymImpPreamble();
     void emitScopeHier(std::vector<std::string>& stmts, bool destroy);
@@ -415,12 +407,8 @@ public:
 
 void EmitCSyms::emitSymHdr() {
     UINFO(6, __FUNCTION__ << ": ");
-    const std::string filename = m_symsFileBase + ".h";
-    AstCFile* const cfilep = newCFile(filename, true /*slow*/, false /*source*/);
-    V3OutCFile* const ofilep = optSystemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
-    setOutputFile(ofilep, cfilep);
+    openNewOutputHeaderFile(symClassName());
 
-    ofp()->putsHeader();
     puts("// DESCR"
          "IPTION: Verilator output: Symbol table internal header\n");
     puts("//\n");
@@ -596,7 +584,6 @@ void EmitCSyms::emitSymHdr() {
 }
 
 void EmitCSyms::emitSymImpPreamble() {
-    ofp()->putsHeader();
     puts("// DESCR"
          "IPTION: Verilator output: Symbol table implementation internals\n");
     puts("\n");
@@ -883,7 +870,6 @@ std::vector<std::string> EmitCSyms::getSymDtorStmts() {
 
 void EmitCSyms::emitSplit(std::vector<std::string>& stmts, const std::string name,
                           size_t maxCost) {
-    const std::string baseName = m_symsFileBase + "__" + name;
     size_t nSubFunctions = 0;
     // Reduce into a balanced tree of sub-function calls until we end up with a single statement
     while (stmts.size() > 1) {
@@ -905,7 +891,7 @@ void EmitCSyms::emitSplit(std::vector<std::string>& stmts, const std::string nam
             const std::string funcName = symClassName() + "__" + name + "__" + nStr;
             m_splitFuncNames.emplace_back(funcName);
             // Open split file
-            openOutputFile(baseName + "__" + nStr + "__Slow.cpp");
+            openNewOutputSourceFile(funcName, true, true);
             // Emit header
             emitSymImpPreamble();
             // Open sub-function definition in the split file
@@ -913,9 +899,9 @@ void EmitCSyms::emitSplit(std::vector<std::string>& stmts, const std::string nam
 
             // Emit statements
             for (size_t j = splitStart; j < splitEnd; ++j) {
-                m_ofp->putsNoTracking("    ");
-                m_ofp->putsNoTracking(stmts[j]);
-                m_ofp->putsNoTracking("\n");
+                ofp()->putsNoTracking("    ");
+                ofp()->putsNoTracking(stmts[j]);
+                ofp()->putsNoTracking("\n");
             }
 
             // Close sub-function
@@ -961,7 +947,7 @@ void EmitCSyms::emitSymImp(AstNetlist* netlistp) {
         }
     }
 
-    openOutputFile(m_symsFileBase + "__Slow.cpp");
+    openNewOutputSourceFile(symClassName(), true, true);
     emitSymImpPreamble();
 
     // Constructor
@@ -988,18 +974,18 @@ void EmitCSyms::emitSymImp(AstNetlist* netlistp) {
     }
     puts("{\n");
     for (const std::string& stmt : ctorStmts) {
-        m_ofp->putsNoTracking("    ");
-        m_ofp->putsNoTracking(stmt);
-        m_ofp->putsNoTracking("\n");
+        ofp()->putsNoTracking("    ");
+        ofp()->putsNoTracking(stmt);
+        ofp()->putsNoTracking("\n");
     }
     puts("}\n");
 
     // Destructor
     puts("\n" + symClassName() + "::~" + symClassName() + "() {\n");
     for (const std::string& stmt : dtorStmts) {
-        m_ofp->putsNoTracking("    ");
-        m_ofp->putsNoTracking(stmt);
-        m_ofp->putsNoTracking("\n");
+        ofp()->putsNoTracking("    ");
+        ofp()->putsNoTracking(stmt);
+        ofp()->putsNoTracking("\n");
     }
     puts("}\n");
 
@@ -1058,13 +1044,9 @@ void EmitCSyms::emitSymImp(AstNetlist* netlistp) {
 
 void EmitCSyms::emitDpiHdr() {
     UINFO(6, __FUNCTION__ << ": ");
-    const std::string filename = v3Global.opt.makeDir() + "/" + topClassName() + "__Dpi.h";
-    AstCFile* const cfilep = newCFile(filename, false /*slow*/, false /*source*/);
-    cfilep->support(true);
-    V3OutCFile hf{filename};
-    setOutputFile(&hf, cfilep);
 
-    ofp()->putsHeader();
+    openNewOutputHeaderFile(topClassName() + "__Dpi");
+
     puts("// DESCR"
          "IPTION: Verilator output: Prototypes for DPI import and export functions.\n");
     puts("//\n");
@@ -1105,20 +1087,16 @@ void EmitCSyms::emitDpiHdr() {
     puts("#endif\n");
 
     ofp()->putsEndGuard();
-    setOutputFile(nullptr);
+
+    closeOutputFile();
 }
 
 //######################################################################
 
 void EmitCSyms::emitDpiImp() {
     UINFO(6, __FUNCTION__ << ": ");
-    const std::string filename = v3Global.opt.makeDir() + "/" + topClassName() + "__Dpi.cpp";
-    AstCFile* const cfilep = newCFile(filename, false /*slow*/, true /*source*/);
-    cfilep->support(true);
-    V3OutCFile hf(filename);
-    setOutputFile(&hf, cfilep);
+    openNewOutputSourceFile(topClassName() + "__Dpi", false, true);
 
-    ofp()->putsHeader();
     puts("// DESCR"
          "IPTION: Verilator output: Implementation of DPI export functions.\n");
     puts("//\n");
@@ -1164,7 +1142,7 @@ void EmitCSyms::emitDpiImp() {
         puts("#endif\n");
         puts("\n");
     }
-    setOutputFile(nullptr);
+    closeOutputFile();
 }
 
 //######################################################################

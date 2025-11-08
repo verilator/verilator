@@ -400,19 +400,6 @@ public:
     }
 };
 
-class V3OutScFile final : public V3OutCFile {
-public:
-    explicit V3OutScFile(const string& filename)
-        : V3OutCFile{filename} {}
-    ~V3OutScFile() override = default;
-    void putsHeader() override { puts("// Verilated -*- SystemC -*-\n"); }
-    void putsIntTopInclude() override {
-        putsForceIncs();
-        puts("#include \"systemc\"\n");
-        puts("#include \"verilated_sc.h\"\n");
-    }
-};
-
 class V3OutVFile final : public V3OutCFile {
 public:
     explicit V3OutVFile(const string& filename)

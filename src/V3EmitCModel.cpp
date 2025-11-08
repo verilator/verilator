@@ -53,14 +53,8 @@ class EmitCModel final : public EmitCFunc {
     }
 
     void emitHeader(AstNodeModule* modp) {
-        UASSERT(!ofp(), "Output file should not be open");
+        openNewOutputHeaderFile(EmitCUtil::topClassName());
 
-        const string filename = v3Global.opt.makeDir() + "/" + EmitCUtil::topClassName() + ".h";
-        setOutputFile(v3Global.opt.systemC() ? new V3OutScFile{filename}
-                                             : new V3OutCFile{filename},
-                      newCFile(filename, /* slow: */ false, /* source: */ false));
-
-        ofp()->putsHeader();
         puts("// DESCRIPTION: Verilator output: Primary model header\n");
         puts("//\n");
         puts("// This header should be included by all source files instantiating the design.\n");
@@ -72,7 +66,9 @@ class EmitCModel final : public EmitCFunc {
         // Include files
         puts("\n");
         ofp()->putsIntTopInclude();
+
         puts("#include \"verilated.h\"\n");
+        if (v3Global.opt.systemC()) puts("#include \"verilated_sc.h\"\n");
         if (v3Global.opt.mtasks()) puts("#include \"verilated_threads.h\"\n");
         if (v3Global.opt.savable()) puts("#include \"verilated_save.h\"\n");
         if (v3Global.opt.coverage()) puts("#include \"verilated_cov.h\"\n");
@@ -614,15 +610,10 @@ class EmitCModel final : public EmitCFunc {
     }
 
     void emitImplementation(AstNodeModule* modp) {
-        UASSERT(!ofp(), "Output file should not be open");
+        openNewOutputSourceFile(EmitCUtil::topClassName(), false, false);
 
-        const string filename = v3Global.opt.makeDir() + "/" + EmitCUtil::topClassName() + ".cpp";
-        setOutputFile(v3Global.opt.systemC() ? new V3OutScFile{filename}
-                                             : new V3OutCFile{filename},
-                      newCFile(filename, /* slow: */ false, /* source: */ true));
-
-        ofp()->putsHeader();
-        puts("// DESCRIPTION: Verilator output: "
+        puts("// DESCR"
+             "IPTION: Verilator output: "
              "Model implementation (design independent parts)\n");
 
         puts("\n");
@@ -643,6 +634,10 @@ class EmitCModel final : public EmitCFunc {
     void emitDpiExportDispatchers(AstNodeModule* modp) {
         UASSERT(!ofp(), "Output file should not be open");
 
+        // File name utils
+        V3UniqueNames uniqueNames;
+        const std::string fileBaseName = EmitCUtil::topClassName() + "__Dpi_Export";
+
         // Emit DPI Export dispatchers
         for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             AstCFunc* const funcp = VN_CAST(nodep, CFunc);
@@ -656,18 +651,10 @@ class EmitCModel final : public EmitCFunc {
             }
 
             if (!ofp()) {
-                string filename
-                    = v3Global.opt.makeDir() + "/" + EmitCUtil::topClassName() + "__Dpi_Export";
-                filename = m_uniqueNames.get(filename);
-                filename += ".cpp";
-                setOutputFile(v3Global.opt.systemC() ? new V3OutScFile{filename}
-                                                     : new V3OutCFile{filename},
-                              newCFile(filename, /* slow: */ false, /* source: */ true));
-                splitSizeReset();  // Reset file size tracking
+                openNewOutputSourceFile(uniqueNames.get(fileBaseName), false, false);
                 m_lazyDecls.reset();
-                ofp()->putsHeader();
-                puts(
-                    "// DESCRIPTION: Verilator output: Implementation of DPI export functions.\n");
+                puts("// DESCR"
+                     "IPTION: Verilator output: Implementation of DPI export functions.\n");
                 puts("//\n");
                 puts("#include \"" + EmitCUtil::topClassName() + ".h\"\n");
                 puts("#include \"" + EmitCUtil::symClassName() + ".h\"\n");

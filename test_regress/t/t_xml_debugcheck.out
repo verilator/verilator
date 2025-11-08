@@ -1786,6 +1786,7 @@
     <cfile loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck__Syms.h"/>
     <cfile loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck.h"/>
     <cfile loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck.cpp"/>
+    <cfile loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck__pch.h"/>
     <cfile loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$root.h"/>
     <cfile loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$unit.h"/>
     <cfile loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$root__Slow.cpp"/>
