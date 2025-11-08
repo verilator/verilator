@@ -7,7 +7,7 @@
                                           : ... note: In instance 'top'
    16 |         1 1 ?  :  ?: *;
       |                      ^
-%Error: t/t_udp_bad_illegal_output.v:17:11: There can be only one edge tigger signal
+%Error: t/t_udp_bad_illegal_output.v:17:11: There can be only one edge trigger signal
                                           : ... note: In instance 'top'
    17 |         f r 0  :  ?: 0;
       |           ^

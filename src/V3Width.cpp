@@ -6378,7 +6378,7 @@ class WidthVisitor final : public VNVisitor {
                         PROTOTYPEMIS,
                         "In prototype for "
                             << nodep->prettyNameQ()
-                            << ", the argumement counts do not match the out-of-block declaration"
+                            << ", the argument counts do not match the out-of-block declaration"
                             << " (IEEE 1800-2023 8.24)\n"
                             << protop->warnContextPrimary() << '\n'
                             << nodep->warnOther() << "... Location of out-of-block declaration\n"

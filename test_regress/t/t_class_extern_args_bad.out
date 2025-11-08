@@ -44,21 +44,21 @@
                      t/t_class_extern_args_bad.v:32:30: ... Location of out-of-block declaration
    32 | function void Cls::f1bit_bad(bit a);
       |                              ^~~
-%Error-PROTOTYPEMIS: t/t_class_extern_args_bad.v:13:24: In prototype for 'f2args1_bad', the argumement counts do not match the out-of-block declaration (IEEE 1800-2023 8.24)
+%Error-PROTOTYPEMIS: t/t_class_extern_args_bad.v:13:24: In prototype for 'f2args1_bad', the argument counts do not match the out-of-block declaration (IEEE 1800-2023 8.24)
                                                       : ... note: In instance 't'
    13 |   extern function void f2args1_bad(bit a);   
       |                        ^~~~~~~~~~~
                      t/t_class_extern_args_bad.v:35:15: ... Location of out-of-block declaration
    35 | function void Cls::f2args1_bad(bit a, bit b);
       |               ^~~
-%Error-PROTOTYPEMIS: t/t_class_extern_args_bad.v:14:24: In prototype for 'f2args2', the argumement counts do not match the out-of-block declaration (IEEE 1800-2023 8.24)
+%Error-PROTOTYPEMIS: t/t_class_extern_args_bad.v:14:24: In prototype for 'f2args2', the argument counts do not match the out-of-block declaration (IEEE 1800-2023 8.24)
                                                       : ... note: In instance 't'
    14 |   extern function void f2args2(bit a);   
       |                        ^~~~~~~
                      t/t_class_extern_args_bad.v:38:15: ... Location of out-of-block declaration
    38 | function void Cls::f2args2(bit a, bit b);
       |               ^~~
-%Error-PROTOTYPEMIS: t/t_class_extern_args_bad.v:15:24: In prototype for 'f2args3_bad', the argumement counts do not match the out-of-block declaration (IEEE 1800-2023 8.24)
+%Error-PROTOTYPEMIS: t/t_class_extern_args_bad.v:15:24: In prototype for 'f2args3_bad', the argument counts do not match the out-of-block declaration (IEEE 1800-2023 8.24)
                                                       : ... note: In instance 't'
    15 |   extern function void f2args3_bad(bit a, bit b, bit c);   
       |                        ^~~~~~~~~~~

@@ -126,7 +126,7 @@ class UdpVisitor final : public VNVisitor {
                             "There should not be a edge trigger for combinational UDP table line");
                     }
                     if (edgetrigp) {
-                        linevalp->v3error("There can be only one edge tigger signal");
+                        linevalp->v3error("There can be only one edge trigger signal");
                         VL_DO_DANGLING(pushDeletep(edgetrigp), edgetrigp);
                     }
                     edgetrigp = new AstSenTree{

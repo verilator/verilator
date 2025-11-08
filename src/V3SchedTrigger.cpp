@@ -462,7 +462,7 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
 
     // List of unique SenItems used by all 'senTreeps'
     std::vector<const AstSenItem*> senItemps;
-    // Map from SenItem to tigger bit standing for that SenItem. There might
+    // Map from SenItem to trigger bit standing for that SenItem. There might
     // be duplicate SenItems, we map all of them to the same index.
     std::unordered_map<VNRef<const AstSenItem>, size_t> senItem2TrigIdx;
 
