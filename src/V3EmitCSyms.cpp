@@ -603,12 +603,6 @@ void EmitCSyms::emitSymImpPreamble() {
 
     // Includes
     puts("#include \"" + EmitCUtil::pchClassName() + ".h\"\n");
-    puts("#include \"" + topClassName() + ".h\"\n");
-    for (AstNodeModule *nodep = v3Global.rootp()->modulesp(), *nextp; nodep; nodep = nextp) {
-        nextp = VN_AS(nodep->nextp(), NodeModule);
-        if (VN_IS(nodep, Class)) continue;  // Class included earlier
-        putns(nodep, "#include \"" + EmitCUtil::prefixNameProtect(nodep) + ".h\"\n");
-    }
     puts("\n");
     // Declarations for DPI Export implementation functions
     bool needsNewLine = false;
