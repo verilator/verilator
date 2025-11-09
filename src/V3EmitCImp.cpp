@@ -543,14 +543,14 @@ public:
                  + "\", " + std::to_string(nvals) + ", " + std::to_string(nodep->widthMin()) + ", "
                  + protect("__VenumItemNames") + ", " + protect("__VenumItemValues") + ");\n");
             puts("}\n");
-            splitSizeInc(3);
+            splitSizeInc(AstNode::INSTR_COUNT_CALL);
         }
         return enumNumr;
     }
 
     // Close output file
     void finalize() {
-        // close function definition
+        // Close function definition
         puts("}\n");
 
         const std::string modName = EmitCUtil::prefixNameProtect(m_modp);
@@ -570,7 +570,6 @@ public:
         }
         puts("}\n");
 
-        //
         closeOutputFile();
     }
 

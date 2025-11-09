@@ -94,7 +94,13 @@ class EmitCConstPool final : public EmitCConstInit {
 
     // VISITORS
     void visit(AstConst* nodep) override {
-        splitSizeInc(nodep->num().isString() ? 10 : nodep->isWide() ? nodep->widthWords() : 1);
+        if (nodep->num().isString()) {
+            splitSizeInc(AstNode::INSTR_COUNT_STR);
+        } else if (nodep->isWide()) {
+            splitSizeInc(nodep->widthWords());
+        } else {
+            splitSizeInc(1);
+        }
         EmitCConstInit::visit(nodep);
     }
 
