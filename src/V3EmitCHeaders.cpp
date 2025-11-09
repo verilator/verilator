@@ -635,16 +635,7 @@ class EmitCHeader final : public EmitCConstInit {
         UINFO(5, "  Emitting header for " << EmitCUtil::prefixNameProtect(modp));
 
         // Open output file
-        const string filename
-            = v3Global.opt.makeDir() + "/" + EmitCUtil::prefixNameProtect(modp) + ".h";
-        AstCFile* const cfilep = newCFile(filename, /* slow: */ false, /* source: */ false);
-        V3OutCFile* const ofilep
-            = v3Global.opt.systemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
-
-        setOutputFile(ofilep, cfilep);
-
-        ofp()->putsHeader();
-        puts("// DESCRIPTION: Verilator output: Design internal header\n");
+        openNewOutputHeaderFile(EmitCUtil::prefixNameProtect(modp), "Design internal header");
         puts("// See " + EmitCUtil::topClassName() + ".h for the primary calling header\n");
 
         ofp()->putsGuard();
@@ -653,6 +644,7 @@ class EmitCHeader final : public EmitCConstInit {
         puts("\n");
         ofp()->putsIntTopInclude();
         puts("#include \"verilated.h\"\n");
+        if (modp->isTop() && optSystemC()) puts("#include \"verilated_sc.h\"\n");
         if (v3Global.opt.mtasks()) puts("#include \"verilated_threads.h\"\n");
         if (v3Global.opt.savable()) puts("#include \"verilated_save.h\"\n");
         if (v3Global.opt.coverage()) puts("#include \"verilated_cov.h\"\n");

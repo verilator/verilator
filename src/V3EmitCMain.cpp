@@ -41,12 +41,6 @@ public:
 private:
     // MAIN METHOD
     void emitInt() {
-        const string filename
-            = v3Global.opt.makeDir() + "/" + EmitCUtil::topClassName() + "__main.cpp";
-        AstCFile* const cfilep = newCFile(filename, false /*slow*/, true /*source*/);
-        V3OutCFile cf{filename};
-        setOutputFile(&cf, cfilep);
-
         // Not defining main_time/vl_time_stamp, so
         v3Global.opt.addCFlags("-DVL_TIME_CONTEXT");  // On MSVC++ anyways
 
@@ -54,10 +48,11 @@ private:
         string topName = v3Global.opt.mainTopName();
         if (topName == "-") topName = "";
 
-        // Heavily commented output, as users are likely to look at or copy this code
-        ofp()->putsHeader();
-        puts("// DESCRIPTION: main() calling loop, created with Verilator --main\n");
+        openNewOutputSourceFile(EmitCUtil::topClassName() + "__main", false, false,
+                                "main() simulation loop, created with --main");
         puts("\n");
+
+        // Heavily commented output, as users are likely to look at or copy this code
 
         puts("#include \"verilated.h\"\n");
         puts("#include \"" + EmitCUtil::topClassName() + ".h\"\n");
@@ -116,7 +111,7 @@ private:
         puts("return 0;\n");
         puts("}\n");
 
-        setOutputFile(nullptr);
+        closeOutputFile();
     }
 };
 
