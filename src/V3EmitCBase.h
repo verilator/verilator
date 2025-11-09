@@ -97,7 +97,8 @@ class EmitCBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     // METHODS
 
     // Create new AstCFile and open it for writing
-    void openNewOutputFile(const std::string& baseName, bool slow, bool support, bool source) {
+    void openNewOutputFile(const std::string& baseName, bool slow, bool support, bool source,
+                           const char* const descriptionp) {
         std::string fileName = v3Global.opt.makeDir() + "/" + baseName;
         if (source) {
             if (slow) fileName += "__Slow";
@@ -110,23 +111,24 @@ class EmitCBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         cfilep->source(source);
         cfilep->support(support);
         m_newCfileps.emplace_back(cfilep);
-        openOutputFile(cfilep);
+        openOutputFile(cfilep, descriptionp);
     }
 
 public:
     // Create new source AstCFile and open it for writing
-    void openNewOutputSourceFile(const std::string& baseName, bool slow, bool support) {
+    void openNewOutputSourceFile(const std::string& baseName, bool slow, bool support,
+                                 const char* descriptionp) {
         V3Stats::addStatSum(V3Stats::STAT_CPP_FILES, 1);
-        openNewOutputFile(baseName, slow, support, true);
+        openNewOutputFile(baseName, slow, support, true, descriptionp);
     }
 
     // Create new header AstCFile and open it for writing
-    void openNewOutputHeaderFile(const std::string& baseName) {
-        openNewOutputFile(baseName, false, false, false);
+    void openNewOutputHeaderFile(const std::string& baseName, const char* descriptionp) {
+        openNewOutputFile(baseName, false, false, false, descriptionp);
     }
 
     // Open exisitng AstCFile for writing
-    void openOutputFile(AstCFile* cfilep) {
+    void openOutputFile(AstCFile* cfilep, const char* descriptionp) {
         UASSERT(!m_ofp, "Output file is already open");
         m_cfilep = cfilep;
         m_splitSize = 0;
@@ -138,6 +140,10 @@ public:
         }
         m_ofp = new V3OutCFile{cfilep->name()};
         putsHeader();
+        // Emit description
+        m_ofp->putsNoTracking("// DESCR" /* keep this comment */ "IPTION: Verilator output: ");
+        m_ofp->putsNoTracking(descriptionp);
+        m_ofp->putsNoTracking("\n");
     }
 
     // Close current output file. Sets ofp() and outFileNodep() to nullptr.

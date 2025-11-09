@@ -53,9 +53,7 @@ class EmitCModel final : public EmitCFunc {
     }
 
     void emitHeader(AstNodeModule* modp) {
-        openNewOutputHeaderFile(EmitCUtil::topClassName());
-
-        puts("// DESCRIPTION: Verilator output: Primary model header\n");
+        openNewOutputHeaderFile(EmitCUtil::topClassName(), "Primary model header");
         puts("//\n");
         puts("// This header should be included by all source files instantiating the design.\n");
         puts("// The class here is then constructed to instantiate the design.\n");
@@ -610,12 +608,8 @@ class EmitCModel final : public EmitCFunc {
     }
 
     void emitImplementation(AstNodeModule* modp) {
-        openNewOutputSourceFile(EmitCUtil::topClassName(), false, false);
-
-        puts("// DESCR"
-             "IPTION: Verilator output: "
-             "Model implementation (design independent parts)\n");
-
+        openNewOutputSourceFile(EmitCUtil::topClassName(), false, false,
+                                "Model implementation (design independent parts)");
         puts("\n");
         puts("#include \"" + EmitCUtil::pchClassName() + ".h\"\n");
         for (const string& base : v3Global.opt.traceSourceLangs())
@@ -651,15 +645,14 @@ class EmitCModel final : public EmitCFunc {
             }
 
             if (!ofp()) {
-                openNewOutputSourceFile(uniqueNames.get(fileBaseName), false, false);
-                m_lazyDecls.reset();
-                puts("// DESCR"
-                     "IPTION: Verilator output: Implementation of DPI export functions.\n");
-                puts("//\n");
+                openNewOutputSourceFile(uniqueNames.get(fileBaseName), false, false,
+                                        "Implementation of DPI export functions.");
+                puts("\n");
                 puts("#include \"" + EmitCUtil::topClassName() + ".h\"\n");
                 puts("#include \"" + EmitCUtil::symClassName() + ".h\"\n");
                 puts("#include \"verilated_dpi.h\"\n");
                 puts("\n");
+                m_lazyDecls.reset();
             }
 
             iterateConst(funcp);

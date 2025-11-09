@@ -407,10 +407,7 @@ public:
 
 void EmitCSyms::emitSymHdr() {
     UINFO(6, __FUNCTION__ << ": ");
-    openNewOutputHeaderFile(symClassName());
-
-    puts("// DESCR"
-         "IPTION: Verilator output: Symbol table internal header\n");
+    openNewOutputHeaderFile(symClassName(), "Symbol table internal header");
     puts("//\n");
     puts("// Internal details; most calling programs do not need this header,\n");
     puts("// unless using verilator public meta comments.\n");
@@ -584,8 +581,6 @@ void EmitCSyms::emitSymHdr() {
 }
 
 void EmitCSyms::emitSymImpPreamble() {
-    puts("// DESCR"
-         "IPTION: Verilator output: Symbol table implementation internals\n");
     puts("\n");
 
     // Includes
@@ -891,7 +886,7 @@ void EmitCSyms::emitSplit(std::vector<std::string>& stmts, const std::string nam
             const std::string funcName = symClassName() + "__" + name + "__" + nStr;
             m_splitFuncNames.emplace_back(funcName);
             // Open split file
-            openNewOutputSourceFile(funcName, true, true);
+            openNewOutputSourceFile(funcName, true, true, "Symbol table implementation internals");
             // Emit header
             emitSymImpPreamble();
             // Open sub-function definition in the split file
@@ -947,7 +942,7 @@ void EmitCSyms::emitSymImp(AstNetlist* netlistp) {
         }
     }
 
-    openNewOutputSourceFile(symClassName(), true, true);
+    openNewOutputSourceFile(symClassName(), true, true, "Symbol table implementation internals");
     emitSymImpPreamble();
 
     // Constructor
@@ -1045,10 +1040,8 @@ void EmitCSyms::emitSymImp(AstNetlist* netlistp) {
 void EmitCSyms::emitDpiHdr() {
     UINFO(6, __FUNCTION__ << ": ");
 
-    openNewOutputHeaderFile(topClassName() + "__Dpi");
-
-    puts("// DESCR"
-         "IPTION: Verilator output: Prototypes for DPI import and export functions.\n");
+    openNewOutputHeaderFile(topClassName() + "__Dpi",
+                            "Prototypes for DPI import and export functions.");
     puts("//\n");
     puts("// Verilator includes this file in all generated .cpp files that use DPI functions.\n");
     puts("// Manually include this file where DPI .c import functions are declared to ensure\n");
@@ -1095,10 +1088,8 @@ void EmitCSyms::emitDpiHdr() {
 
 void EmitCSyms::emitDpiImp() {
     UINFO(6, __FUNCTION__ << ": ");
-    openNewOutputSourceFile(topClassName() + "__Dpi", false, true);
-
-    puts("// DESCR"
-         "IPTION: Verilator output: Implementation of DPI export functions.\n");
+    openNewOutputSourceFile(topClassName() + "__Dpi", false, true,
+                            "Implementation of DPI export functions");
     puts("//\n");
     puts("// Verilator compiles this file in when DPI functions are used.\n");
     puts("// If you have multiple Verilated designs with the same DPI exported\n");

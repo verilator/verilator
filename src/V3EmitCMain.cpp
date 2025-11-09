@@ -48,12 +48,11 @@ private:
         string topName = v3Global.opt.mainTopName();
         if (topName == "-") topName = "";
 
-        openNewOutputSourceFile(EmitCUtil::topClassName() + "__main", false, false);
+        openNewOutputSourceFile(EmitCUtil::topClassName() + "__main", false, false,
+                                "main() simulation loop, created with --main");
+        puts("\n");
 
         // Heavily commented output, as users are likely to look at or copy this code
-        puts("// DESCR"
-             "IPTION: main() calling loop, created with Verilator --main\n");
-        puts("\n");
 
         puts("#include \"verilated.h\"\n");
         puts("#include \"" + EmitCUtil::topClassName() + ".h\"\n");

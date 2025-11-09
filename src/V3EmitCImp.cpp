@@ -40,9 +40,7 @@ class EmitCImp final : public EmitCFunc {
 
     // METHODS
     void openNextOutputFile(const std::string& fileName) {
-        openNewOutputSourceFile(fileName, m_slow, false);
-        puts("// DESCR"
-             "IPTION: Verilator output: Design implementation internals\n");
+        openNewOutputSourceFile(fileName, m_slow, false, "Design implementation internals");
         puts("// See " + EmitCUtil::topClassName() + ".h for the primary calling header\n");
         puts("\n");
         puts("#include \"" + EmitCUtil::pchClassName() + ".h\"\n");
@@ -493,9 +491,9 @@ class EmitCTraceTypes final : public EmitCFunc {
                                     : std::numeric_limits<size_t>::max();
 
     void openNextOutputFile() {
-        openNewOutputSourceFile(m_uniqueNames.get(m_fileBaseName), true, true);
-        puts("// DESCR"
-             "IPTION: Verilator output: Tracing declarations\n");
+        openNewOutputSourceFile(m_uniqueNames.get(m_fileBaseName), true, true,
+                                "Tracing declarations");
+        puts("\n");
         for (const std::string& base : v3Global.opt.traceSourceLangs()) {
             puts("#include \"" + base + ".h\"\n");
         }
@@ -592,9 +590,9 @@ class EmitCTrace final : public EmitCFunc {
 
     // METHODS
     void openNextOutputFile() {
-        openNewOutputSourceFile(m_uniqueNames.get(m_fileBaseName), m_slow, true);
-        puts("// DESCR"
-             "IPTION: Verilator output: Tracing implementation internals\n");
+        openNewOutputSourceFile(m_uniqueNames.get(m_fileBaseName), m_slow, true,
+                                "Tracing implementation internals");
+        puts("\n");
         for (const std::string& base : v3Global.opt.traceSourceLangs()) {
             puts("#include \"" + base + ".h\"\n");
         }
@@ -863,9 +861,7 @@ public:
 
 class EmitCFile final : public EmitCFunc {
     explicit EmitCFile(AstCFile* cfilep) {
-        openOutputFile(cfilep);
-        puts("// DESCR"
-             "IPTION: Verilator generated C++\n");
+        openOutputFile(cfilep, "Generated C++");
         iterateConst(cfilep->tblockp());
         closeOutputFile();
     }

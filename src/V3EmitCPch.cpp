@@ -28,14 +28,11 @@ public:
     // METHODS
 
     void emitPch() {
-        openNewOutputHeaderFile(EmitCUtil::pchClassName());
-
-        puts("// DESCRIPTION: Verilator output: Precompiled header\n");
+        openNewOutputHeaderFile(EmitCUtil::pchClassName(), "Precompiled header");
         puts("//\n");
         puts("// Internal details; most user sources do not need this header,\n");
         puts("// unless using verilator public meta comments.\n");
         puts("// Suggest use " + EmitCUtil::topClassName() + ".h instead.\n");
-        puts("\n");
 
         ofp()->putsGuard();
 

@@ -635,10 +635,7 @@ class EmitCHeader final : public EmitCConstInit {
         UINFO(5, "  Emitting header for " << EmitCUtil::prefixNameProtect(modp));
 
         // Open output file
-        openNewOutputHeaderFile(EmitCUtil::prefixNameProtect(modp));
-
-        puts("// DESCR"
-             "IPTION: Verilator output: Design internal header\n");
+        openNewOutputHeaderFile(EmitCUtil::prefixNameProtect(modp), "Design internal header");
         puts("// See " + EmitCUtil::topClassName() + ".h for the primary calling header\n");
 
         ofp()->putsGuard();

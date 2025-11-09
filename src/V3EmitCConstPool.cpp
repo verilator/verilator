@@ -64,10 +64,8 @@ class EmitCConstPool final : public EmitCConstInit {
             }
 
             if (!ofp()) {
-                openNewOutputSourceFile(m_uniqueNames.get(m_fileBaseName), true, false);
-                puts("// DESCR"
-                     "IPTION: Verilator output: Constant pool\n");
-                puts("//\n");
+                openNewOutputSourceFile(m_uniqueNames.get(m_fileBaseName), true, false,
+                                        "Constant pool");
                 puts("\n");
                 puts("#include \"verilated.h\"\n");
             }
