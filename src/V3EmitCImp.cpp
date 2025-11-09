@@ -587,7 +587,7 @@ class EmitCTrace final : public EmitCFunc {
 
     // MEMBERS
     const bool m_slow;  // Making slow file
-    EmitCTraceTypes* const m_emitTypesp = m_slow ? new EmitCTraceTypes{} : nullptr;
+    const std::unique_ptr<EmitCTraceTypes> m_emitTypesp{m_slow ? new EmitCTraceTypes{} : nullptr};
     V3UniqueNames m_uniqueNames;  // Generates unique file names
     const std::string m_fileBaseName = EmitCUtil::topClassName() + "_" + protect("_Trace");
 
@@ -842,7 +842,7 @@ class EmitCTrace final : public EmitCFunc {
         }
         // Close output file
         closeOutputFile();
-        if (m_emitTypesp) m_emitTypesp->finalize();
+        if (m_slow) m_emitTypesp->finalize();
     }
     ~EmitCTrace() override = default;
 
