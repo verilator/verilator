@@ -12,6 +12,7 @@ import sys
 
 def process() -> None:
     in_header = True
+    in_backslash = False
     for line in sys.stdin:
         line = line.rstrip()
         line = line.expandtabs(tabsize=8)
@@ -32,12 +33,14 @@ def process() -> None:
             continue
         if re.match(r'^`line ', line):
             continue
-        if re.match(r'^\s*$', line):
+        if re.match(r'^\s*$', line) and not in_backslash:
             continue
 
         if re.match(r'^ *endpackage', line):
             print(line)
             break
+
+        in_backslash = re.search(r'\\$', line)
 
         print(line)
 
