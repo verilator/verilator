@@ -1821,7 +1821,7 @@ Summary:
 
    Rarely needed.  Specifies the maximum number of unrolled loop iterations
    before assuming the loop is infinite and subsequently issuing an error.
-   This is a safety limit to make sure Verialtor terminates even in the
+   This is a safety limit to make sure Verilator terminates even in the
    of a true infinite loop in the input (e.g.: due to a generate for loop
    missing the increment statement)
 
