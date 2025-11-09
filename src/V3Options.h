@@ -347,6 +347,7 @@ private:
     int         m_traceMaxWidth = 4096; // main switch: --trace-max-width
     int         m_traceThreads = 0; // main switch: --trace-threads
     int         m_unrollCount = 64;  // main switch: --unroll-count
+    int         m_unrollError = 16384;  // main switch: --unroll-error
     int         m_unrollStmts = 30000;  // main switch: --unroll-stmts
     int         m_verilateJobs = -1;  // main switch: --verilate-jobs
 
@@ -626,7 +627,7 @@ public:
     }
     bool useFstWriterThread() const { return traceThreads() && traceEnabledFst(); }
     int unrollCount() const { return m_unrollCount; }
-    int unrollCountAdjusted(const VOptionBool& full, bool generate, bool simulate);
+    int unrollError() const { return m_unrollError; }
     int unrollStmts() const { return m_unrollStmts; }
     int verilateJobs() const { return m_verilateJobs; }
 

@@ -190,7 +190,8 @@ class UnrollGenVisitor final : public VNVisitor {
         AstNode* newbodysp = nullptr;
         if (stmtsp) {
             pushDeletep(stmtsp);  // Always cloned below.
-            int times = 0;
+            size_t iterCount = 0;
+            const size_t iterLimit = v3Global.opt.unrollError();
             while (true) {
                 UINFO(8, "      Looping " << loopValue);
                 V3Number res{nodep};
@@ -201,6 +202,13 @@ class UnrollGenVisitor final : public VNVisitor {
                 if (!res.isEqOne()) {
                     break;  // Done with the loop
                 } else {
+                    if (++iterCount > iterLimit) {
+                        nodep->v3error("Unrolling generate loop took too long; probably this is "
+                                       "an infinite loop, otherwise set '--unroll-error' above "
+                                       << iterLimit);
+                        break;
+                    }
+
                     // Replace iterator values with constant
                     AstNode* oneloopp = stmtsp->cloneTree(true);
                     AstConst* varValuep = new AstConst{nodep->fileline(), loopValue};
@@ -220,16 +228,6 @@ class UnrollGenVisitor final : public VNVisitor {
                         newbodysp->addNext(oneloopp);
                     } else {
                         newbodysp = oneloopp;
-                    }
-
-                    const int limit = v3Global.opt.unrollCountAdjusted(VOptionBool{}, true, false);
-                    if (++times / 3 > limit) {
-                        nodep->v3error(
-                            "Loop unrolling took too long;"
-                            " probably this is an infinite loop, "
-                            " or use /*verilator unroll_full*/, or set --unroll-count above "
-                            << times);
-                        break;
                     }
 
                     // loopValue += valInc

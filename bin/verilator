@@ -517,6 +517,7 @@ detailed descriptions of these arguments.
      -U<var>                    Undefine preprocessor define
     --no-unlimited-stack        Don't disable stack size limit
     --unroll-count <loops>      Tune maximum loop iterations
+    --unroll-error <loops>      Maximum loop iterations before assuming infinite loop
     --unroll-stmts <stmts>      Tune maximum loop body size
     --unused-regexp <regexp>    Tune UNUSED lint signals
      -V                         Verbose version and config

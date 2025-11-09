@@ -116,7 +116,7 @@ class UnrollOneVisitor final : VNVisitor {
             // Add statements to unrolled body
             while (AstNode* const nodep = m_wrapp->stmtsp()) {
                 // Check if we reached the size limit, unless full unrolling is requested
-                if (!m_loopp->unroll().isSetTrue()) {
+                if (!m_unrollFull) {
                     m_unrolledSize += nodep->nodeCount();
                     if (m_unrolledSize > static_cast<size_t>(v3Global.opt.unrollStmts())) {
                         cantUnroll(m_loopp, m_stats.m_nFailUnrollStmts);
@@ -256,14 +256,18 @@ class UnrollOneVisitor final : VNVisitor {
             lhsp->varScopep()->user1p(valp);
         }
         // Attempt to unroll the loop
-        const size_t iterLimit = v3Global.opt.unrollCountAdjusted(loopp->unroll(), false, false);
+        const size_t iterLimit
+            = m_unrollFull ? v3Global.opt.unrollError() : v3Global.opt.unrollCount();
         size_t iterCount = 0;
         do {
-            // Allow iterLimit + 1 iterations, which is consistent with the old behaviour
-            // where 'do' loops used to be unrolled at least once, and while/for loops are
-            // tested at the front on the last entry to the loop body
             if (iterCount > iterLimit) {
                 cantUnroll(m_loopp, m_stats.m_nFailUnrollCount);
+                if (m_unrollFull) {
+                    loopp->v3error("Unrolling procedural loop with '/* verilator unroll_full */' "
+                                   "took too long; probably this is an infinite loop, otherwise "
+                                   "set '--unroll-error' above "
+                                   << iterLimit);
+                }
                 return;
             }
             ++iterCount;
