@@ -1283,6 +1283,7 @@ class ParamVisitor final : public VNVisitor {
     // STATE - for current visit position (use VL_RESTORER)
     AstNodeModule* m_modp;  // Module iterating
     std::unordered_set<std::string> m_ifacePortNames;  // Interface port names in current module
+    std::unordered_set<std::string> m_ifaceInstNames;  // Interface decl names in current module
     string m_generateHierName;  // Generate portion of hierarchy name
 
     // METHODS
@@ -1314,8 +1315,10 @@ class ParamVisitor final : public VNVisitor {
                 {
                     VL_RESTORER(m_modp);
                     VL_RESTORER(m_ifacePortNames);
+                    VL_RESTORER(m_ifaceInstNames);
                     m_modp = modp;
                     m_ifacePortNames.clear();
+                    m_ifaceInstNames.clear();
                     iterateChildren(modp);
                 }
             }
@@ -1397,7 +1400,7 @@ class ParamVisitor final : public VNVisitor {
         });
     }
 
-    // Check if cell parameters reference interface ports
+    // Check if cell parameters reference interface ports or local interface instances
     bool cellParamsReferenceIfacePorts(AstCell* cellp) {
         if (!cellp->paramsp()) return false;
 
@@ -1406,7 +1409,10 @@ class ParamVisitor final : public VNVisitor {
                 if (AstNode* const exprp = pinp->exprp()) {
                     if (const AstVarXRef* const refp = VN_CAST(exprp, VarXRef)) {
                         const string refname = getRefBaseName(refp);
-                        if (!refname.empty() && m_ifacePortNames.count(refname)) return true;
+                        if (!refname.empty()
+                            && (m_ifacePortNames.count(refname)
+                                || m_ifaceInstNames.count(refname)))
+                            return true;
                     }
                 }
             }
@@ -1490,6 +1496,8 @@ class ParamVisitor final : public VNVisitor {
     }
     void visit(AstCell* nodep) override {
         checkParamNotHier(nodep->paramsp());
+        // Build cache of locally declared interface instance names
+        if (VN_IS(nodep->modp(), Iface)) { m_ifaceInstNames.insert(nodep->name()); }
         visitCellOrClassRef(nodep, VN_IS(nodep->modp(), Iface));
     }
     void visit(AstIfaceRefDType* nodep) override {
