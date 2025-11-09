@@ -1808,17 +1808,33 @@ Summary:
 
 .. option:: --unroll-count <loops>
 
-   Rarely needed.  Specifies the maximum number of loop iterations that may
-   be unrolled.  See also :option:`BLKLOOPINIT` warning, and
-   :option:`/*verilator&32;unroll_disable*/` and
-   :option:`/*verilator&32;unroll_full*/` metacomments.
+   Rarely needed.  Specifies the maximum number of iterations for procedural
+   loops that may be unrolled. If the loop has more iterations, it will not be
+   unrolled at all. Does not effect generate loops.  See also
+   :option:`BLKLOOPINIT` warning, and :option:`/*verilator&32;unroll_disable*/`
+   and :option:`/*verilator&32;unroll_full*/` metacomments.
+
+   Defaults to 64. Setting to 0 disables all unrolling of procedural loops
+   except those marked with :option:`/*verilator&32;unroll_full*/`.
+
+.. option:: --unroll-limit <loops>
+
+   Rarely needed.  Specifies the maximum number of unrolled loop iterations
+   before assuming the loop is infinite and subsequently issuing an error.
+   This is a safety limit to make sure Verialtor terminates even in the
+   of a true infinite loop in the input (e.g.: due to a generate for loop
+   missing the increment statement)
+
+   Defaults to 16K, can be increased if the input has larger finite loops.
 
 .. option:: --unroll-stmts <statements>
 
-   Rarely needed.  Specifies the maximum number of statements in a loop for
-   that loop to be unrolled.  See also :option:`BLKLOOPINIT` warning, and
-   :option:`/*verilator&32;unroll_disable*/` and
+   Rarely needed.  Specifies the maximum number of statements in the unrolling
+   of a loop for that loop to be unrolled.  See also :option:`BLKLOOPINIT`
+   warning, and :option:`/*verilator&32;unroll_disable*/` and
    :option:`/*verilator&32;unroll_full*/` metacomments.
+
+   Defaults to 30000.
 
 .. option:: --unused-regexp <regexp>
 

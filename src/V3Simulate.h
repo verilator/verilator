@@ -1086,20 +1086,20 @@ private:
         }
         if (!optimizable()) return;
 
-        int loops = 0;
+        size_t iterCount = 0;
+        const size_t iterLimit = v3Global.opt.unrollLimit();
         while (true) {
+            if (iterCount > iterLimit) {
+                clearOptimizable(nodep, "Loop simulation took too long; probably this is an "
+                                        "infinite loop, otherwise set '--unroll-limit' above "
+                                            + std::to_string(iterLimit));
+                break;
+            }
+            ++iterCount;
+
             UINFO(5, "    LOOP-ITER " << nodep);
             iterateAndNextConstNull(nodep->stmtsp());
             if (jumpingOver()) break;
-
-            // Prep for next loop
-            if (loops++ > v3Global.opt.unrollCountAdjusted(nodep->unroll(), m_params, true)) {
-                clearOptimizable(nodep, "Loop unrolling took too long; probably this is an"
-                                        "infinite loop, or use /*verilator unroll_full*/, or "
-                                        "set --unroll-count above "
-                                            + cvtToStr(loops));
-                break;
-            }
         }
 
         if (m_jumptargetp == nodep) {
