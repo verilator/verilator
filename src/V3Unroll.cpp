@@ -257,7 +257,7 @@ class UnrollOneVisitor final : VNVisitor {
         }
         // Attempt to unroll the loop
         const size_t iterLimit
-            = m_unrollFull ? v3Global.opt.unrollError() : v3Global.opt.unrollCount();
+            = m_unrollFull ? v3Global.opt.unrollLimit() : v3Global.opt.unrollCount();
         size_t iterCount = 0;
         do {
             if (iterCount > iterLimit) {
@@ -265,7 +265,7 @@ class UnrollOneVisitor final : VNVisitor {
                 if (m_unrollFull) {
                     loopp->v3error("Unrolling procedural loop with '/* verilator unroll_full */' "
                                    "took too long; probably this is an infinite loop, otherwise "
-                                   "set '--unroll-error' above "
+                                   "set '--unroll-limit' above "
                                    << iterLimit);
                 }
                 return;

@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile(verilator_flags2=['--unroll-count 0 --unroll-error 4'],
+test.compile(verilator_flags2=['--unroll-count 0 --unroll-limit 4'],
              fails=True,
              expect_filename=test.golden_filename)
 

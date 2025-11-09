@@ -1817,7 +1817,7 @@ Summary:
    Defaults to 64. Setting to 0 disables all unrolling of procedural loops
    except those marked with :option:`/*verilator&32;unroll_full*/`.
 
-.. option:: --unroll-error <loops>
+.. option:: --unroll-limit <loops>
 
    Rarely needed.  Specifies the maximum number of unrolled loop iterations
    before assuming the loop is infinite and subsequently issuing an error.

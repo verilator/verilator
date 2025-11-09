@@ -1,4 +1,4 @@
-%Error: t/t_flag_unroll_error_gen.v:13:3: Unrolling generate loop took too long; probably this is an infinite loop, otherwise set '--unroll-error' above 4
+%Error: t/t_flag_unroll_limit_gen.v:13:3: Unrolling generate loop took too long; probably this is an infinite loop, otherwise set '--unroll-limit' above 4
                                         : ... note: In instance 't'
    13 |   for (genvar i = 0; i < 5; ++i) begin
       |   ^~~

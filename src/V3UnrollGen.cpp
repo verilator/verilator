@@ -191,7 +191,7 @@ class UnrollGenVisitor final : public VNVisitor {
         if (stmtsp) {
             pushDeletep(stmtsp);  // Always cloned below.
             size_t iterCount = 0;
-            const size_t iterLimit = v3Global.opt.unrollError();
+            const size_t iterLimit = v3Global.opt.unrollLimit();
             while (true) {
                 UINFO(8, "      Looping " << loopValue);
                 V3Number res{nodep};
@@ -204,7 +204,7 @@ class UnrollGenVisitor final : public VNVisitor {
                 } else {
                     if (++iterCount > iterLimit) {
                         nodep->v3error("Unrolling generate loop took too long; probably this is "
-                                       "an infinite loop, otherwise set '--unroll-error' above "
+                                       "an infinite loop, otherwise set '--unroll-limit' above "
                                        << iterLimit);
                         break;
                     }

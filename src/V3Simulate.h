@@ -1087,11 +1087,11 @@ private:
         if (!optimizable()) return;
 
         size_t iterCount = 0;
-        const size_t iterLimit = v3Global.opt.unrollError();
+        const size_t iterLimit = v3Global.opt.unrollLimit();
         while (true) {
             if (iterCount > iterLimit) {
                 clearOptimizable(nodep, "Loop simulation took too long; probably this is an "
-                                        "infinite loop, otherwise set '--unroll-error' above "
+                                        "infinite loop, otherwise set '--unroll-limit' above "
                                             + std::to_string(iterLimit));
                 break;
             }
