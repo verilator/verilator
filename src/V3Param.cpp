@@ -1378,17 +1378,35 @@ class ParamVisitor final : public VNVisitor {
            // Re-scan for nested class refs with parameters
             UINFO(3, "Re-scanning " << modp->prettyTypeName() << " " << modp->name() << " for nested class refs");
             int foundCount = 0;
-            modp->foreach([this, &foundCount](AstClassOrPackageRef* refp) {
-               if (refp->paramsp()) {
-                  UINFO(4, "  Found unprocessed ClassOrPackageRef: " << refp->name() << " with params at " << refp->fileline());
-                  foundCount++;
-                  visitCellOrClassRef(refp, false);
+            modp->foreach(
+               /*
+               [this, &foundCount](AstClassOrPackageRef* refp) {
+                  if (refp->paramsp()) {
+                     UINFO(4, "  Found unprocessed ClassOrPackageRef: " << refp->name() << " with params at " << refp->fileline());
+                     foundCount++;
+                     visitCellOrClassRef(refp, false);
+                  }
                }
-            });
+               */
+               [this, &foundCount](AstNode* nodep) {
+                  if (AstClassOrPackageRef* const refp = VN_CAST(nodep, ClassOrPackageRef)) {
+                     if (refp->paramsp()) {
+                           UINFO(4, "  Found unprocessed ClassOrPackageRef: " << refp->name() << " with params at " << refp->fileline());
+                           foundCount++;
+                           visitCellOrClassRef(refp, false);
+                     }
+                  } else if (AstClassRefDType* const refp = VN_CAST(nodep, ClassRefDType)) {
+                     if (refp->paramsp()) {
+                           UINFO(4, "  Found unprocessed ClassRefDType: " << refp->name() << " with params at " << refp->fileline());
+                           foundCount++;
+                           visitCellOrClassRef(refp, false);
+                     }
+                  }
+               }
+            );
             if (foundCount > 0) {
                 UINFO(3, "  Found " << foundCount << " nested class ref(s) to process");
             }
-
         }
 
         m_iterateModule = false;
