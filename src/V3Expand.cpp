@@ -84,6 +84,7 @@ class ExpandVisitor final : public VNVisitor {
 
     // STATE - for current function
     size_t m_nTmps = 0;  // Sequence numbers for temopraries
+    bool m_slow = false;  // Current function is slow path code
 
     // METHODS
     // Use state that ExpandOkVisitor calculated
@@ -94,6 +95,7 @@ class ExpandVisitor final : public VNVisitor {
     }
 
     bool doExpandWide(AstNode* nodep) {
+        if (m_slow) return false;  // Do not optimize in slow functions
         if (isImpure(nodep)) return false;
         if (nodep->widthWords() <= v3Global.opt.expandLimit()) {
             ++m_statWides;
@@ -391,8 +393,10 @@ class ExpandVisitor final : public VNVisitor {
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_funcp);
         VL_RESTORER(m_nTmps);
+        VL_RESTORER(m_slow);
         m_funcp = nodep;
         m_nTmps = 0;
+        m_slow = nodep->slow();
         const VDouble0 statWidesBefore = m_statWides;
         iterateChildren(nodep);
 
