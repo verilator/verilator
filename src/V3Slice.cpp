@@ -254,6 +254,7 @@ class SliceVisitor final : public VNVisitor {
         const int elementLimit = v3Global.opt.fSliceElementLimit();
         if (elements > elementLimit && elementLimit > 0) {
             ++m_statSliceElementSkips;
+            m_okInitArray = true;  // VL_RESTORER in visit(AstNodeAssign)
             return false;
         }
 
