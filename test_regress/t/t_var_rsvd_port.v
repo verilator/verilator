@@ -13,6 +13,7 @@ module t (/*AUTOARG*/
 
    reg  vector; // OK, as not public
    reg  switch /*verilator public*/;    // Bad
+   reg  free /*verilator public*/;    // OK, not actually a keyword
 
    initial begin
       $write("*-* All Finished *-*\n");
