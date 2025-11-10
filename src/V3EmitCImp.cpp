@@ -253,7 +253,7 @@ class EmitCImp final : public EmitCFunc {
         } else {
             putns(modp, "void " + modName + "::dtor() {\n");
         }
-        putns(modp, "VL_DO_DANGLING(free(const_cast<char*>(vlNamep)), vlNamep);\n");
+        putns(modp, "VL_DO_DANGLING(std::free(const_cast<char*>(vlNamep)), vlNamep);\n");
         emitSystemCSection(modp, VSystemCSectionType::DTOR);
         puts("}\n");
     }
