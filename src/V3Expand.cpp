@@ -907,6 +907,8 @@ class ExpandVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (nodep->lhsp()->isWide()) {
             if (isImpure(nodep)) return;
+            if (!doExpandWide(nodep->lhsp())) return;
+            if (!doExpandWide(nodep->rhsp())) return;
             UINFO(8, "    Wordize EQ/NEQ " << nodep);
             // -> (0=={or{for each_word{WORDSEL(lhs,#)^WORDSEL(rhs,#)}}}
             FileLine* const fl = nodep->fileline();
@@ -933,6 +935,7 @@ class ExpandVisitor final : public VNVisitor {
         FileLine* const fl = nodep->fileline();
         if (nodep->lhsp()->isWide()) {
             if (isImpure(nodep)) return;
+            if (!doExpandWide(nodep->lhsp())) return;
             UINFO(8, "    Wordize REDOR " << nodep);
             // -> (0!={or{for each_word{WORDSEL(lhs,#)}}}
             AstNodeExpr* newp = nullptr;
@@ -957,6 +960,7 @@ class ExpandVisitor final : public VNVisitor {
         FileLine* const fl = nodep->fileline();
         if (nodep->lhsp()->isWide()) {
             if (isImpure(nodep)) return;
+            if (!doExpandWide(nodep->lhsp())) return;
             UINFO(8, "    Wordize REDAND " << nodep);
             // -> (0!={and{for each_word{WORDSEL(lhs,#)}}}
             AstNodeExpr* newp = nullptr;
@@ -988,6 +992,7 @@ class ExpandVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (nodep->lhsp()->isWide()) {
             if (isImpure(nodep)) return;
+            if (!doExpandWide(nodep->lhsp())) return;
             UINFO(8, "    Wordize REDXOR " << nodep);
             // -> (0!={redxor{for each_word{XOR(WORDSEL(lhs,#))}}}
             FileLine* const fl = nodep->fileline();
