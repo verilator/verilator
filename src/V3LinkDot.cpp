@@ -3203,7 +3203,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // Dot(PackageRef, ParseRef(text))
         // Dot(Dot(ClassOrPackageRef,ClassOrPackageRef), ParseRef(text))
         // Dot(Dot(Dot(ParseRef(text), ...
-        if (nodep->user3SetOnce()) return;
+        // EOM
+        //if (nodep->user3SetOnce()) return;
+         // Note: We defer setting user3 until after checking if this needs to be revisited
+         // in the PARAMED pass (when m_unresolvedClass/m_unresolvedCell is set)
+         if (nodep->user3()) return;
         LINKDOT_VISIT_START();
         UINFO(8, indent() << "visit " << nodep);
         UINFO(8, indent() << m_ds.ascii());
@@ -3340,6 +3344,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // UINFOTREE(9, nodep, "", "dot-rho");
             }
             if (!m_ds.m_unresolvedClass) {
+               // EOM
+                // Mark as visited only when fully resolved (not deferred)
+                nodep->user3(true);
                 if (start) {
                     AstNode* newp;
                     if (m_ds.m_dotErr) {

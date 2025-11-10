@@ -463,11 +463,14 @@ class ParamProcessor final {
     }
     void relinkPinsByName(AstPin* startpinp, AstNodeModule* modp) {
         std::map<const string, AstVar*> nameToPin;
+        std::map<const string, AstParamTypeDType*> nameToTypeParam;
         for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVar* const varp = VN_CAST(stmtp, Var)) {
                 if (varp->isIO() || varp->isGParam() || varp->isIfaceRef()) {
                     nameToPin.emplace(varp->name(), varp);
                 }
+            } else if (AstParamTypeDType* const ptp = VN_CAST(stmtp, ParamTypeDType)) {
+                if (ptp->isGParam()) nameToTypeParam.emplace(ptp->name(), ptp);
             }
         }
         for (AstPin* pinp = startpinp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
@@ -476,6 +479,11 @@ class ParamProcessor final {
                 UASSERT_OBJ(varIt != nameToPin.end(), varp,
                             "Not found in " << modp->prettyNameQ());
                 pinp->modVarp(varIt->second);
+            } else if (const AstParamTypeDType* const ptp = pinp->modPTypep()) {
+                const auto ptpIt = vlstd::as_const(nameToTypeParam).find(ptp->name());
+                UASSERT_OBJ(ptpIt != nameToTypeParam.end(), ptp,
+                            "Type param not found in " << modp->prettyNameQ());
+                pinp->modPTypep(ptpIt->second);
             }
         }
     }
@@ -662,7 +670,12 @@ class ParamProcessor final {
         // thus we need to stash this info.
         collectPins(clonemapp, newModp, srcModp->user3p());
         // Relink parameter vars to the new module
-        relinkPins(clonemapp, paramsp);
+        // For classes, use relinkPinsByName since clone map doesn't work for DOT expressions
+        if (VN_IS(newModp, Class)) {
+            relinkPinsByName(paramsp, newModp);
+        } else {
+            relinkPins(clonemapp, paramsp);
+        }
 
         // Fix any interface references
         for (auto it = ifaceRefRefs.cbegin(); it != ifaceRefRefs.cend(); ++it) {
@@ -1361,6 +1374,21 @@ class ParamVisitor final : public VNVisitor {
                     m_state.m_parentps[newModp].insert(modp);
                 }
             }
+
+           // Re-scan for nested class refs with parameters
+            UINFO(3, "Re-scanning " << modp->prettyTypeName() << " " << modp->name() << " for nested class refs");
+            int foundCount = 0;
+            modp->foreach([this, &foundCount](AstClassOrPackageRef* refp) {
+               if (refp->paramsp()) {
+                  UINFO(4, "  Found unprocessed ClassOrPackageRef: " << refp->name() << " with params at " << refp->fileline());
+                  foundCount++;
+                  visitCellOrClassRef(refp, false);
+               }
+            });
+            if (foundCount > 0) {
+                UINFO(3, "  Found " << foundCount << " nested class ref(s) to process");
+            }
+
         }
 
         m_iterateModule = false;
@@ -1608,20 +1636,32 @@ class ParamVisitor final : public VNVisitor {
     }
 
     void visit(AstDot* nodep) override {
-        iterate(nodep->lhsp());
-        // Check if it is a reference to a field of a parameterized class.
-        // If so, the RHS should be updated, when the LHS is replaced
-        // by a class with actual parameter values.
-        const AstClass* lhsClassp = nullptr;
-        const AstClassOrPackageRef* const classRefp = VN_CAST(nodep->lhsp(), ClassOrPackageRef);
+        // Check if it is a reference to a field/method of a parameterized class.
+        // If so, defer processing to linkDotParamed
+        AstClassOrPackageRef* const classRefp = VN_CAST(nodep->lhsp(), ClassOrPackageRef);
+        AstClass* lhsClassp = nullptr;
         if (classRefp) lhsClassp = VN_CAST(classRefp->classOrPackageSkipp(), Class);
         AstNode* rhsDefp = nullptr;
         AstClassOrPackageRef* const rhsp = VN_CAST(nodep->rhsp(), ClassOrPackageRef);
         if (rhsp) rhsDefp = rhsp->classOrPackageNodep();
-        if (lhsClassp && rhsDefp) {
+        AstNodeFTaskRef* const ftaskrefp = VN_CAST(nodep->rhsp(), NodeFTaskRef);
+
+        if (lhsClassp && ftaskrefp && classRefp->paramsp()) {
+            // FUNCREF on parameterized class - need to specialize class but defer FUNCREF linking
+            UINFO(4, "DOT with FUNCREF on parameterized class: " << lhsClassp->name() << " for " << ftaskrefp->name());
+            // Use existing visitCellOrClassRef to properly queue for specialization
+            visitCellOrClassRef(classRefp, false);
+            UINFO(4, "  Queued ClassOrPackageRef for specialization");
+            // Mark class as in-use to prevent deletion
+            if (!lhsClassp->user3p()) lhsClassp->user3p(lhsClassp);
+            // Don't iterate rhsp - FUNCREF linking deferred to linkDotParamed
+        } else if (lhsClassp && rhsDefp) {
+            // RHS is ClassOrPackageRef - iterate lhsp for specialization, add to m_dots for relinking
+            iterate(nodep->lhsp());
             m_state.m_dots.push_back(nodep);
-            // No need to iterate into rhsp, because there should be nothing to do
         } else {
+            // Normal case
+            iterate(nodep->lhsp());
             iterate(nodep->rhsp());
         }
     }
@@ -1820,7 +1860,12 @@ class ParamTop final : VNDeleter {
         for (AstDot* const dotp : m_state.m_dots) {
             const AstClassOrPackageRef* const classRefp = VN_AS(dotp->lhsp(), ClassOrPackageRef);
             const AstClass* const lhsClassp = VN_AS(classRefp->classOrPackageSkipp(), Class);
-            AstClassOrPackageRef* const rhsp = VN_AS(dotp->rhsp(), ClassOrPackageRef);
+            // EOM
+            //AstClassOrPackageRef* const rhsp = VN_AS(dotp->rhsp(), ClassOrPackageRef);
+            // RHS might be ClassOrPackageRef (field/nested class) or FUNCREF/TASKREF (method)
+            // Only ClassOrPackageRef needs relinking here; FUNCREF will be linked in linkDotParamed
+            AstClassOrPackageRef* const rhsp = VN_CAST(dotp->rhsp(), ClassOrPackageRef);
+            if (!rhsp) continue;  // Skip if RHS is FUNCREF or other node type
             for (auto* itemp = lhsClassp->membersp(); itemp; itemp = itemp->nextp()) {
                 if (itemp->name() == rhsp->name()) {
                     rhsp->classOrPackageNodep(itemp);
