@@ -891,6 +891,10 @@ class TimingControlVisitor final : public VNVisitor {
                                     new AstConst{flp, AstConst::Unsized64{},
                                                  static_cast<uint64_t>(timescaleFactor)}};
             }
+        } else if (constp->num().is1Step()) {
+            VL_DO_DANGLING(valuep->deleteTree(), valuep);
+            valuep = new AstConst{flp, AstConst::Unsized64{}, 1};
+            valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
         }
         // Replace self with a 'co_await dlySched.delay(<valuep>)'
         AstCMethodHard* const delayMethodp = new AstCMethodHard{
