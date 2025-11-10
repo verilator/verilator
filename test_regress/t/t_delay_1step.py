@@ -10,7 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
-test.top_filename = "t/t_delay_1step.v"
+
 
 test.compile(verilator_flags2=['--binary'])
 
