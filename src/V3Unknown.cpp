@@ -65,6 +65,16 @@ class UnknownVisitor final : public VNVisitor {
 
     // METHODS
 
+    void addVar(AstVar* varp) {
+        if (m_ftaskp) {
+            varp->funcLocal(true);
+            varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+            m_ftaskp->stmtsp()->addHereThisAsNext(varp);
+        } else {
+            m_modp->stmtsp()->addHereThisAsNext(varp);
+        }
+    }
+
     void replaceBoundLvalue(AstNodeExpr* nodep, AstNodeExpr* condp) {
         // Spec says a out-of-range LHS SEL results in a NOP.
         // This is a PITA.  We could:
@@ -113,7 +123,7 @@ class UnknownVisitor final : public VNVisitor {
         } else {
             AstVar* const varp
                 = new AstVar{fl, VVarType::MODULETEMP, m_lvboundNames.get(prep), prep->dtypep()};
-            m_modp->addStmtsp(varp);
+            addVar(varp);
             AstNode* stmtp = prep->backp();  // Grab above point before we replace 'prep'
             while (!VN_IS(stmtp, NodeStmt)) stmtp = stmtp->backp();
 
@@ -137,13 +147,7 @@ class UnknownVisitor final : public VNVisitor {
     AstVar* createAddTemp(const AstNodeExpr* const nodep) {
         AstVar* const varp = new AstVar{nodep->fileline(), VVarType::XTEMP,
                                         m_xrandNames->get(nodep), nodep->dtypep()};
-        if (m_ftaskp) {
-            varp->funcLocal(true);
-            varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            m_ftaskp->stmtsp()->addHereThisAsNext(varp);
-        } else {
-            m_modp->stmtsp()->addHereThisAsNext(varp);
-        }
+        addVar(varp);
         return varp;
     }
 

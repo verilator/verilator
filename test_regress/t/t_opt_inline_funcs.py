@@ -13,6 +13,6 @@ test.scenarios('vlt')
 
 test.compile(verilator_flags2=['--stats'], verilator_make_gmake=False)
 
-test.file_grep(test.stats, r'Optimizations, Functions inlined\s+(\d+)', 2)
+test.file_grep(test.stats, r'Optimizations, Functions inlined\s+(\d+)', 3)
 
 test.passes()
