@@ -67,7 +67,7 @@ jobs:
       cc: gcc
       cases: ${{ matrix.cases }}
       run-name: "gcc"
-      compileArgs: "-fno-inline-funcs-eager"
+      compileArgs: ""
       executeArgs: ""
     strategy:
       fail-fast: false
@@ -112,7 +112,7 @@ jobs:
       cc: clang
       cases: ${{ matrix.cases }}
       run-name: "clang --threads 4"
-      compileArgs: "--threads 4 -fno-inline-funcs-eager"
+      compileArgs: "--threads 4"
       executeArgs: ""
     strategy:
       fail-fast: false
@@ -157,7 +157,7 @@ jobs:
       cc: gcc
       cases: ${{ matrix.cases }}
       run-name: "gcc --hierarchical"
-      compileArgs: "--hierarchical -fno-inline-funcs-eager"
+      compileArgs: "--hierarchical"
       executeArgs: ""
     strategy:
       fail-fast: false
