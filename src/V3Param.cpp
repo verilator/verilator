@@ -487,6 +487,217 @@ class ParamProcessor final {
             }
         }
     }
+    void relinkInternalDTypes(AstClass* newClassp) {
+
+      UINFO(3, "relinkInternalDTypes class=" << newClassp->name());
+      {
+         int pcount = 0;
+         for (AstNode* np = newClassp->stmtsp(); np; np = np->nextp()) {
+            AstParamTypeDType* ptp = VN_CAST(np, ParamTypeDType);
+            if (ptp) { ++pcount; UINFO(3, "  ParamTypeDType[" << pcount << "] name=" << ptp->name()); }
+         }
+      }
+      {
+         int tcount = 0;
+         for (AstNode* np = newClassp->stmtsp(); np; np = np->nextp()) {
+            AstTypedef* tdp = VN_CAST(np, Typedef);
+            if (tdp) {
+                  ++tcount;
+                  AstNodeDType* child = tdp->childDTypep();
+                  const char* childKind = child ? child->typeName() : "null";
+                  UINFO(3, "  Typedef[" << tcount << "] name=" << tdp->name()
+                           << " childKind=" << childKind);
+            }
+         }
+      }
+
+      UINFO(3, "Relinking internal dtypes for class " << newClassp->name());
+
+      // Build map of typedef names to their cloned nodes
+      std::map<string, AstTypedef*> typedefs;
+      for (AstNode* stmtp = newClassp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+         if (AstTypedef* const typedefp = VN_CAST(stmtp, Typedef)) {
+               UINFO(4, "  Found typedef: '" << typedefp->name()
+                        << "' at " << cvtToHex(typedefp));
+               typedefs[typedefp->name()] = typedefp;
+         }
+      }
+
+      // Find and relink or clear RefDType nodes
+      // Scan both the class body AND inside parameter type nodes
+      int count = 0;
+      int relinked = 0;
+      int cleared = 0;
+
+      // Helper lambda to process each RefDType
+      auto processRefDType = [&](AstRefDType* refp, bool inParamChild) {
+         count++;
+         const string refName = refp->name();
+
+         UINFO(3, "  RefDType name=" << refName
+                    << " typedefp=" << cvtToHex(refp->typedefp())
+                    << " dtypep=" << cvtToHex(refp->dtypep())
+                    << " refDTypep=" << cvtToHex(refp->refDTypep())
+                    << " refDTypeKind=" << (refp->refDTypep() ? refp->refDTypep()->typeName() : "null"));
+         if (refp->refDTypep()) {
+            AstClass* owner = nullptr;
+            for (AstNode* bp = refp->refDTypep(); bp; bp = bp->backp()) {
+                AstClass* cp = VN_CAST(bp, Class);
+                if (cp) { owner = cp; break; }
+            }
+            UINFO(3, "    refDType ownerClass=" << (owner ? owner->name() : std::string("null")));
+         }
+         UINFO(3, "    user1p=" << cvtToHex(refp->user1p()));
+
+         // If refDTypep points to a ParamTypeDType, clear it only if it's cross-class
+         const AstParamTypeDType* const ptp = VN_CAST(refp->refDTypep(), ParamTypeDType);
+         if (ptp) {
+            AstClass* ownerClassp = nullptr;
+            for (AstNode* backp = ptp->backp(); backp; backp = backp->backp()) {
+                  AstClass* const classp = VN_CAST(backp, Class);
+                  if (classp) { ownerClassp = classp; break; }
+            }
+            if (ownerClassp && ownerClassp != newClassp) {
+                  refp->classOrPackagep(ownerClassp);
+                  bool paramAncestor = false;
+                  for (AstNode* b = refp->backp(); b && b != newClassp; b = b->backp()) {
+                      if (VN_IS(b, ParamTypeDType)) { paramAncestor = true; break; }
+                  }
+                  const bool inParamContext = inParamChild || paramAncestor;
+                  if (inParamContext) {
+                      UINFO(3, "  Keeping cross-class ParamTypeDType link for '" << refName
+                               << "' under ParamTypeDType child (owner=" << ownerClassp->name() << ")");
+                  } else {
+                      UINFO(3, "  Clearing RefDType '" << refName
+                               << "' direct link to ParamTypeDType from foreign class "
+                               << ownerClassp->name());
+                      refp->refDTypep(nullptr);
+                      refp->dtypep(nullptr);
+                      cleared++;
+                      return;  // Skip further processing for this node
+                  }
+            }
+
+            // Same-class ParamTypeDType: keep link intact
+         }
+
+         AstTypedef* const currentTypedefp = refp->typedefp();
+         UINFO(3, "  Checking RefDType: '" << refName << "' typedefp="
+                  << cvtToHex(currentTypedefp) << " refDTypep=" << cvtToHex(refp->refDTypep()));
+
+         // Try to find typedef by name in this class
+         auto it = typedefs.find(refName);
+         if (it != typedefs.end()) {
+            // Found matching typedef in this class - relink to it
+            if (currentTypedefp != it->second) {
+               UINFO(3, "  Relinking RefDType '" << refName
+                        << "' from " << cvtToHex(currentTypedefp)
+                        << " to " << cvtToHex(it->second));
+               refp->typedefp(it->second);
+               relinked++;
+            } else {
+               UINFO(4, "    RefDType '" << refName << "' already correctly linked");
+            }
+         } else if (currentTypedefp) {
+            // RefDType has a typedef pointer but no matching typedef in this class
+            // Check if it's a cross-class reference that needs to be cleared for V3LinkDot
+            AstTypedef* const typedefp = refp->typedefp();
+
+            // If refDTypep points to a ParamTypeDType, clear it so V3LinkDot can resolve later
+            if (const AstParamTypeDType* const ptp2 = VN_CAST(refp->refDTypep(), ParamTypeDType)) {
+               AstClass* ownerClassp2 = nullptr;
+               for (AstNode* backp2 = ptp2->backp(); backp2; backp2 = backp2->backp()) {
+                  AstClass* const classp2 = VN_CAST(backp2, Class);
+                  if (classp2) { ownerClassp2 = classp2; break; }
+               }
+               if (ownerClassp2 && ownerClassp2 != newClassp) {
+                  refp->classOrPackagep(ownerClassp2);
+                  bool paramAncestor = false;
+                  for (AstNode* b = refp->backp(); b && b != newClassp; b = b->backp()) {
+                      if (VN_IS(b, ParamTypeDType)) { paramAncestor = true; break; }
+                  }
+                  const bool inParamContext = inParamChild || paramAncestor;
+                  if (inParamContext) {
+                      UINFO(3, "  Keeping cross-class ParamTypeDType link for '" << refName
+                               << "' under ParamTypeDType child (owner=" << ownerClassp2->name() << ")");
+                  } else {
+                      UINFO(3, "  Clearing RefDType '" << refName
+                               << "' direct link to ParamTypeDType from foreign class "
+                               << ownerClassp2->name());
+                      refp->refDTypep(nullptr);
+                      refp->dtypep(nullptr);
+                      cleared++;
+                  }
+               }
+            }
+
+            // Find the class containing this typedef
+            AstClass* typedefClassp = nullptr;
+            for (AstNode* backp = typedefp->backp(); backp; backp = backp->backp()) {
+               if (AstClass* const classp = VN_CAST(backp, Class)) {
+                  typedefClassp = classp;
+                  break;
+               }
+            }
+
+            // If typedef is from a different class, clear it so V3LinkDot can relink
+            if (typedefClassp && typedefClassp != newClassp) {
+               UINFO(3, "  Clearing cross-class RefDType '" << refName
+                        << "' from class " << typedefClassp->name()
+                        << " (typedefp=" << cvtToHex(typedefp) << ")");
+               refp->typedefp(nullptr);
+               refp->dtypep(nullptr);
+               cleared++;
+            }
+         }
+      };
+
+      // Scan class body
+      newClassp->foreachAndNext([&](AstRefDType* refp) {
+         processRefDType(refp, false);
+      });
+
+      // Also scan inside parameter type nodes and typedefs
+      for (AstNode* stmtp = newClassp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+         if (AstParamTypeDType* const paramTypep = VN_CAST(stmtp, ParamTypeDType)) {
+            UINFO(3, "  Scanning parameter type: " << paramTypep->name()
+                     << " childDTypep=" << cvtToHex(paramTypep->childDTypep()));
+            if (paramTypep->childDTypep()) {
+               UINFO(3, "    childDTypep is: " << paramTypep->childDTypep()->typeName());
+            }
+            paramTypep->foreachAndNext([&](AstRefDType* refp) {
+               processRefDType(refp, true);
+            });
+         } else if (AstTypedef* const typedefp = VN_CAST(stmtp, Typedef)) {
+            // Scan parameter bindings in ClassRefDType nodes within typedefs
+            typedefp->foreachAndNext([&](AstClassRefDType* classRefp) {
+               // Scan parameter pins for cross-class RefDType references
+               for (AstPin* pinp = classRefp->paramsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+                  if (pinp->exprp()) {
+                     pinp->exprp()->foreachAndNext([&](AstRefDType* refp) {
+                        processRefDType(refp, false);
+                     });
+                  }
+               }
+            });
+         } else if (AstVar* const varp = VN_CAST(stmtp, Var)) {
+            // Scan parameter bindings in ClassRefDType nodes within var dtypes
+            if (varp->childDTypep()) {
+               varp->childDTypep()->foreachAndNext([&](AstClassRefDType* classRefp) {
+                  // Scan parameter pins for cross-class RefDType references
+                  for (AstPin* pinp = classRefp->paramsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+                     if (pinp->exprp()) {
+                        pinp->exprp()->foreachAndNext([&](AstRefDType* refp) {
+                           processRefDType(refp, false);
+                        });
+                     }
+                  }
+               });
+            }
+         }
+      }
+      UINFO(3, "  Scanned " << count << " RefDType nodes, relinked " << relinked << ", cleared " << cleared);
+    }
     // Check if parameter setting during instantiation is simple enough for hierarchical Verilation
     void checkSupportedParam(AstNodeModule* modp, AstPin* pinp) const {
         // InitArray is not supported because that can not be set via -G
@@ -669,6 +880,7 @@ class ParamProcessor final {
         // Note we allow multiple users of a parameterized model,
         // thus we need to stash this info.
         collectPins(clonemapp, newModp, srcModp->user3p());
+
         // Relink parameter vars to the new module
         // For classes, use relinkPinsByName since clone map doesn't work for DOT expressions
         if (VN_IS(newModp, Class)) {
@@ -710,11 +922,35 @@ class ParamProcessor final {
                     UASSERT_OBJ(dtypep, pinp, "unlinked param dtype");
                     if (modptp->childDTypep()) modptp->childDTypep()->unlinkFrBack()->deleteTree();
                     // Set this parameter to value requested by cell
-                    modptp->childDTypep(dtypep->cloneTree(false));
+                    AstNodeDType* const clonedChildp = dtypep->cloneTree(false);
+                    modptp->childDTypep(clonedChildp);
+                    // If the provided type reference comes from a different class, remember that
+                    // class on the cloned RefDType nodes so LinkDot resolves in the correct scope.
+                    if (AstClass* const destClassp = VN_CAST(newModp, Class)) {
+                        AstClass* ownerClassp = nullptr;
+                        for (AstNode* backp = pinp->exprp(); backp; backp = backp->backp()) {
+                            AstClass* const c = VN_CAST(backp, Class);
+                            if (c) { ownerClassp = c; break; }
+                        }
+                        if (ownerClassp && ownerClassp != destClassp) {
+                            UINFO(3, "Annotate ParamTypeDType value with source class=" << ownerClassp->name()
+                                     << " destClass=" << destClassp->name());
+                            clonedChildp->foreachAndNext([&](AstRefDType* refp) {
+                                if (!refp->classOrPackagep()) refp->classOrPackagep(ownerClassp);
+                            });
+                        }
+                    }
                     // Later V3LinkDot will convert the ParamDType to a Typedef
                     // Not done here as may be localparams, etc, that also need conversion
                 }
             }
+        }
+        // Clear stale cross-class typedef pointers so V3LinkDot can relink them
+        // Must be done AFTER parameter assignment, as parameters may contain cross-class refs
+        if (AstClass* const newClassp = VN_CAST(newModp, Class)) {
+            UINFO(3, "deepCloneModule after param assign; calling relinkInternalDTypes for class="
+                     << newClassp->name());
+            relinkInternalDTypes(newClassp);
         }
         return true;
     }
@@ -730,6 +966,11 @@ class ParamProcessor final {
             }
             it = m_modNameMap.find(newname);
             UASSERT(it != m_modNameMap.end(), "should find just-made module");
+            // Ensure the newly created specialized class gets fully processed
+            // by clearing user2, so nested class references get specialized
+            AstNodeModule* const newModp = it->second.m_modp;
+            newModp->user2(false);
+            UINFO(4, "     Created new specialization, queued for full processing: " << newModp);
         }
         const ModInfo* const modInfop = &(it->second);
         return modInfop;
@@ -1283,7 +1524,7 @@ class ParamVisitor final : public VNVisitor {
 
     // STATE - across all visitors
     ParamState& m_state;  // Common state
-    ParamProcessor m_processor;  // De-parameterize a cell, build modules
+    std::unique_ptr<ParamProcessor> m_processor;  // De-parameterize a cell, build modules
     GenForUnroller m_unroller;  // Unroller for AstGenFor
 
     bool m_iterateModule = false;  // Iterating module body
@@ -1365,7 +1606,7 @@ class ParamVisitor final : public VNVisitor {
 
                 // Apply parameter specialization
                 if (AstNodeModule* const newModp
-                    = m_processor.nodeDeparam(cellp, srcModp, modp, someInstanceName)) {
+                    = m_processor->nodeDeparam(cellp, srcModp, modp, someInstanceName)) {
 
                     // Add the (now potentially specialized) child module to the work queue
                     workQueue.emplace(newModp->level(), newModp);
@@ -1395,11 +1636,14 @@ class ParamVisitor final : public VNVisitor {
                            foundCount++;
                            visitCellOrClassRef(refp, false);
                      }
-                  } else if (AstClassRefDType* const refp = VN_CAST(nodep, ClassRefDType)) {
+                  }
+                  // commenting this causes other tests to fail.  this is required in order for test10 and test11..
+                  else if (AstClassRefDType* const refp = VN_CAST(nodep, ClassRefDType)) {
                      if (refp->paramsp()) {
                            UINFO(4, "  Found unprocessed ClassRefDType: " << refp->name() << " with params at " << refp->fileline());
                            foundCount++;
-                           visitCellOrClassRef(refp, false);
+                           //visitCellOrClassRef(refp, false);
+                           iterate(refp);
                      }
                   }
                }
@@ -1472,7 +1716,7 @@ class ParamVisitor final : public VNVisitor {
             AstCell* const cellp = VN_CAST(nodep, Cell);
             if (!cellParamsReferenceIfacePorts(cellp)) {
                 AstNodeModule* const srcModp = cellp->modp();
-                m_processor.nodeDeparam(cellp, srcModp, m_modp, m_modp->someInstanceName());
+                m_processor->nodeDeparam(cellp, srcModp, m_modp, m_modp->someInstanceName());
             }
         }
 
@@ -1853,7 +2097,7 @@ public:
     // CONSTRUCTORS
     explicit ParamVisitor(ParamState& state, AstNetlist* netlistp)
         : m_state{state}
-        , m_processor{netlistp} {
+        , m_processor{std::make_unique<ParamProcessor>(netlistp)} {
         // Relies on modules already being in top-down-order
         iterate(netlistp);
     }
@@ -1984,6 +2228,46 @@ public:
 
         resortNetlistModules(netlistp);
 
+        // Keep alive any classes referenced by RefDType -> ClassRefDType so they are not
+        // deleted before V3LinkDot has a chance to relink users
+        /*
+        netlistp->foreach([](AstRefDType* const refp) {
+            const AstClassRefDType* const classRefp = VN_CAST(refp->refDTypep(), ClassRefDType);
+            if (!classRefp) return;
+            AstClass* const classp = classRefp->classp();
+            if (classp && !classp->user3p()) classp->user3p(classp);
+        });
+        */
+
+         netlistp->foreach([](AstRefDType* const refp) {
+            // Case 1: Direct class reference
+            const AstClassRefDType* const classRefp
+               = VN_CAST(refp->refDTypep(), ClassRefDType);
+            if (classRefp) {
+               AstClass* const classp = classRefp->classp();
+               if (classp && !classp->user3p()) {
+                   UINFO(3, "ParamTop keep-alive: marking class due to ClassRefDType owner=" << classp->name());
+                   classp->user3p(classp);
+               }
+            }
+
+            // Case 2: Formal type parameter owner (ParamTypeDType)
+            const AstParamTypeDType* const ptp
+               = VN_CAST(refp->refDTypep(), ParamTypeDType);
+            if (ptp) {
+               AstClass* ownerClassp = nullptr;
+               for (AstNode* backp = ptp->backp(); backp; backp = backp->backp()) {
+                     AstClass* const classp = VN_CAST(backp, Class);
+                     if (classp) { ownerClassp = classp; break; }
+               }
+               if (ownerClassp && !ownerClassp->user3p()) {
+                   UINFO(3, "ParamTop keep-alive: marking owner of ParamTypeDType owner=" << ownerClassp->name());
+                   ownerClassp->user3p(ownerClassp);
+               }
+            }
+         });
+
+
         // Remove defaulted classes
         // Unlike modules, which we keep around and mark dead() for later V3Dead
         std::unordered_set<AstClass*> removedClassps;
@@ -2001,18 +2285,8 @@ public:
                 classp->hasGParam(false);
             }
         }
-        // Remove references to defaulted classes
-        // Reuse user3 to mark all nodes being deleted
-        AstNode::user3ClearTree();
-        for (AstClass* classp : removedClassps) {
-            classp->foreach([](AstNode* const nodep) { nodep->user3(true); });
-        }
-        // Set all links pointing to a user3 (deleting) node as null
-        netlistp->foreach([](AstNode* const nodep) {
-            nodep->foreachLink([](AstNode** const linkpp, const char*) {
-                if (*linkpp && (*linkpp)->user3()) *linkpp = nullptr;
-            });
-        });
+        // Defaulted classes are already unlinked and scheduled for deletion
+        // V3LinkDot::linkDotParamed will relink any stale typedef pointers in active classes
     }
     ~ParamTop() = default;
     VL_UNCOPYABLE(ParamTop);
