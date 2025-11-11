@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('vlt')
 
 # For code coverage of graph dumping, so does not matter much what the input is
-test.top_filename = "t/t_bench_mux4k.v"
+test.top_filename = "t/t_benchmark_mux4k.v"
 
 test.compile(verilator_flags2=["--dump-dfg", "--dumpi-dfg 9"])
 

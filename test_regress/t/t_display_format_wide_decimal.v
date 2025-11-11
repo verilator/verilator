@@ -6,7 +6,7 @@
 // Version 2.0.
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-module t_format_wide_decimal(/*AUTOARG*/
+module t(/*AUTOARG*/
    // Inputs
    clk
    );

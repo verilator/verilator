@@ -1,4 +1,4 @@
-%Warning-INFINITELOOP: t/t_continue_do_while_bad.v:14:7: Infinite loop (condition always true)
+%Warning-INFINITELOOP: t/t_do_while_continue_bad.v:14:7: Infinite loop (condition always true)
    14 |       do begin
       |       ^~
                        ... For warning description see https://verilator.org/warn/INFINITELOOP?v=latest

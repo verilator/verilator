@@ -10,7 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
-test.top_filename = "t/t_bench_mux4k.v"
+test.top_filename = "t/t_benchmark_mux4k.v"
 
 test.compile(v_flags2=["--stats", test.wno_unopthreads_for_few_cores])
 

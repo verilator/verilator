@@ -10,7 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator_st')
-test.top_filename = "t/t_dedupe_clk_gate.v"
+test.top_filename = "t/t_opt_dedupe_clk_gate.v"
 
 test.compile(verilator_flags2=["--stats", "-fno-dedup"])
 
