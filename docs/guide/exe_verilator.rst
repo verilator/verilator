@@ -683,6 +683,8 @@ Summary:
 
 .. option:: -fno-inline-funcs
 
+.. option:: -fno-inline-funcs-eager
+
 .. option:: -fno-life
 
 .. option:: -fno-life-post

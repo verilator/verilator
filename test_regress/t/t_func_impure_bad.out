@@ -5,4 +5,10 @@
    13 |       sig = '1;
       |       ^~~
                ... For error description see https://verilator.org/warn/IMPURE?v=latest
+%Error-IMPURE: t/t_func_impure_bad.v:20:9: Unsupported: External variable referenced by non-inlined function/task: 't.baz'
+   20 |    task baz;
+      |         ^~~
+               t/t_func_impure_bad.v:17:7: ... Location of the external reference: 't.sig'
+   17 |       sig = '1;
+      |       ^~~
 %Error: Exiting due to
