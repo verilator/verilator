@@ -12,8 +12,10 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t/t_opt_inline_funcs.v"
 
-test.compile(verilator_flags2=['--fno-inline-funcs-eager', '--stats'], verilator_make_gmake=False)
+test.compile(verilator_flags2=['--binary', '--fno-inline-funcs-eager', '--stats'])
 
 test.file_grep(test.stats, r'Optimizations, Functions inlined\s+(\d+)', 1)
+
+test.execute()
 
 test.passes()
