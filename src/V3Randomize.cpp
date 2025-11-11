@@ -1490,7 +1490,7 @@ class CaptureVisitor final : public VNVisitor {
         m_ignore.emplace(thisRefp);
         AstMemberSel* const memberSelp
             = new AstMemberSel{nodep->fileline(), thisRefp, nodep->varp()};
-        memberSelp->user1(true);
+        // memberSelp->user1(true);
         memberSelp->user2p(m_targetp);
         nodep->replaceWith(memberSelp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
