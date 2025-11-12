@@ -129,7 +129,6 @@ void VlTriggerScheduler::resume(const char* eventDescription) {
     std::swap(m_ready, m_resumeQueue);
     for (VlCoroutineHandle& coro : m_resumeQueue) coro.resume();
     m_resumeQueue.clear();
-    commit(eventDescription);
 }
 
 void VlTriggerScheduler::commit(const char* eventDescription) {

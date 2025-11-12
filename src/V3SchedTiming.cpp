@@ -83,7 +83,9 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
             if (schedrefp->varScopep()->dtypep()->basicp()->isDelayScheduler()) {
                 dlyShedIfp = ifp;
             } else {
-                m_resumeFuncp->addStmtsp(ifp);
+                // m_resumeFuncp->addStmtsp(ifp);
+                m_resumeFuncp->addStmtsp(ifp->thensp()->unlinkFrBackWithNext());
+                ifp->deleteTree();
             }
         }
         if (dlyShedIfp) m_resumeFuncp->addStmtsp(dlyShedIfp);
@@ -166,7 +168,7 @@ AstCCall* TimingKit::createCommit(AstNetlist* const netlistp) {
             AstCMethodHard* const callp = new AstCMethodHard{flp, refp, VCMethod::SCHED_COMMIT};
             callp->dtypeSetVoid();
             if (resumep->pinsp()) callp->addPinsp(resumep->pinsp()->cloneTree(false));
-            ifp->addElsesp(callp->makeStmt());
+            ifp->addThensp(callp->makeStmt());
         }
         // We still haven't created a commit function (no trigger schedulers), return null
         if (!m_commitFuncp) return nullptr;
