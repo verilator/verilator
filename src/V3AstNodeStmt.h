@@ -1180,6 +1180,8 @@ class AstTraceDecl final : public AstNodeStmt {
     // Parents:  {statement list}
     // Expression being traced - Moved to AstTraceInc by V3Trace
     // @astgen op1 := valuep : Optional[AstNodeExpr]
+    //
+    // @astgen ptr := m_dtypeVscp: Optional[AstVarScope] // Var scope for type tracing
     uint32_t m_code{0};  // Trace identifier code
     uint32_t m_fidx{0};  // Trace function index
     const string m_showname;  // Name of variable
@@ -1187,18 +1189,26 @@ class AstTraceDecl final : public AstNodeStmt {
     const VNumRange m_arrayRange;  // Property of var the trace details
     const VVarType m_varType;  // Type of variable (for localparam vs. param)
     const VDirection m_declDirection;  // Declared direction input/output etc
+    // NOCOMMIT -- pretty sure something isn't needed here
+    const AstCFunc* m_dtypeFunc;  // Type init function
+    const bool m_inDtypeFunc;  // Trace decl inside type init function
+    int m_codeInc{0};  // Code increment for type
 public:
     AstTraceDecl(FileLine* fl, const string& showname,
                  AstVar* varp,  // For input/output state etc
-                 AstNodeExpr* valuep, const VNumRange& bitRange, const VNumRange& arrayRange)
+                 AstNodeExpr* valuep, const VNumRange& bitRange, const VNumRange& arrayRange,
+                 const AstCFunc* dtypeFunc, AstVarScope* dtypeVscp, const bool inDtypeFunc)
         : ASTGEN_SUPER_TraceDecl(fl)
         , m_showname{showname}
         , m_bitRange{bitRange}
         , m_arrayRange{arrayRange}
         , m_varType{varp->varType()}
-        , m_declDirection{varp->declDirection()} {
+        , m_declDirection{varp->declDirection()}
+        , m_dtypeFunc(dtypeFunc)
+        , m_inDtypeFunc(inDtypeFunc) {
         dtypeFrom(valuep);
         this->valuep(valuep);
+        this->dtypeVscp(dtypeVscp);
     }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
@@ -1214,7 +1224,9 @@ public:
     void code(uint32_t code) { m_code = code; }
     uint32_t fidx() const { return m_fidx; }
     void fidx(uint32_t fidx) { m_fidx = fidx; }
+    void codeInc(uint32_t codeInc) { m_codeInc = codeInc; }
     uint32_t codeInc() const {
+        if (m_codeInc) { return m_codeInc; }
         return (m_arrayRange.ranged() ? m_arrayRange.elements() : 1)
                * valuep()->dtypep()->widthWords()
                * (VL_EDATASIZE / 32);  // A code is always 32-bits
@@ -1223,6 +1235,10 @@ public:
     const VNumRange& arrayRange() const { return m_arrayRange; }
     VVarType varType() const { return m_varType; }
     VDirection declDirection() const { return m_declDirection; }
+    const AstCFunc* dtypeFunc() const { return m_dtypeFunc; }
+    AstVarScope* dtypeVscp() const { return m_dtypeVscp; }
+    void dtypeVscp(AstVarScope* dtypeVscp) { m_dtypeVscp = dtypeVscp; }
+    bool inDtypeFunc() const { return m_inDtypeFunc; }
 };
 class AstTraceInc final : public AstNodeStmt {
     // Trace point dump

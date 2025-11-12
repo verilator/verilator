@@ -587,6 +587,8 @@ class EmitCTrace final : public EmitCFunc {
     const std::unique_ptr<EmitCTraceTypes> m_emitTypesp{m_slow ? new EmitCTraceTypes{} : nullptr};
     V3UniqueNames m_uniqueNames;  // Generates unique file names
     const std::string m_fileBaseName = EmitCUtil::topClassName() + "_" + protect("_Trace");
+    // NOCOMMIT -- rename
+    bool m_cForType;  // Have declared c_for_type
 
     // METHODS
     void openNextOutputFile() {
@@ -624,6 +626,28 @@ class EmitCTrace final : public EmitCFunc {
     }
 
     void emitTraceInitOne(const AstTraceDecl* nodep, int enumNum) {
+        std::string direction;
+        if (nodep->declDirection().isInout()) {
+            direction = "VerilatedTraceSigDirection::INOUT";
+        } else if (nodep->declDirection().isWritable()) {
+            direction = "VerilatedTraceSigDirection::OUTPUT";
+        } else if (nodep->declDirection().isNonOutput()) {
+            direction = "VerilatedTraceSigDirection::INPUT";
+        } else {
+            direction = "VerilatedTraceSigDirection::NONE";
+        }
+
+        if (nodep->dtypeFunc()) {
+            if (!m_cForType) {
+                puts("int c_for_type;\n");
+                puts("VerilatedTraceSigDirection dir_for_type;\n");
+            }
+            puts("c_for_type = c+" + cvtToStr(nodep->code()) + "-1;\n");
+            puts("dir_for_type = " + direction + ";");
+            m_cForType = true;
+            return;
+        }
+
         if (nodep->dtypep()->basicp()->isDouble()) {
             puts("tracep->declDouble(");
         } else if (nodep->isWide()) {
@@ -654,14 +678,10 @@ class EmitCTrace final : public EmitCFunc {
         puts("," + cvtToStr(enumNum));
 
         // Direction
-        if (nodep->declDirection().isInout()) {
-            puts(", VerilatedTraceSigDirection::INOUT");
-        } else if (nodep->declDirection().isWritable()) {
-            puts(", VerilatedTraceSigDirection::OUTPUT");
-        } else if (nodep->declDirection().isNonOutput()) {
-            puts(", VerilatedTraceSigDirection::INPUT");
+        if (nodep->inDtypeFunc()) {
+            puts(", direction");
         } else {
-            puts(", VerilatedTraceSigDirection::NONE");
+            puts(", " + direction);
         }
 
         // Kind
@@ -781,6 +801,7 @@ class EmitCTrace final : public EmitCFunc {
     // VISITORS
     using EmitCFunc::visit;  // Suppress hidden overloaded virtual function warning
     void visit(AstCFunc* nodep) override {
+        m_cForType = false;
         if (!nodep->isTrace()) return;
         if (nodep->slow() != m_slow) return;
 

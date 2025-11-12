@@ -39,6 +39,7 @@
 
 #include "V3Trace.h"
 
+#include "V3Ast.h"
 #include "V3DupFinder.h"
 #include "V3EmitCBase.h"
 #include "V3Graph.h"
@@ -46,6 +47,7 @@
 
 #include <limits>
 #include <set>
+#include <unordered_map>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -183,6 +185,12 @@ class TraceVisitor final : public VNVisitor {
     V3Graph m_graph;  // Var/CFunc tracking
     TraceActivityVertex* const m_alwaysVtxp;  // "Always trace" vertex
     bool m_finding = false;  // Pass one of algorithm?
+    class DtypeFuncs final {
+    public:
+        AstCFunc* fullFuncp = nullptr;
+        AstCFunc* chgFuncp = nullptr;
+    };
+    std::unordered_map<AstNodeDType*, DtypeFuncs> m_dtypeFuncs;  // Full / Chg funcs per type
 
     // Trace parallelism. Only VCD tracing can be parallelized at this time.
     const uint32_t m_parallelism
@@ -484,11 +492,11 @@ class TraceVisitor final : public VNVisitor {
     }
 
     AstCFunc* newCFunc(VTraceType traceType, AstCFunc* topFuncp, uint32_t funcNum,
-                       uint32_t baseCode = 0) {
+                       uint32_t baseCode = 0, const AstTraceDecl* declp = nullptr) {
         // Create new function
-        const bool isTopFunc = topFuncp == nullptr;
+        const bool isTopFunc = !declp && topFuncp == nullptr;
         std::string funcName;
-        if (isTopFunc) {
+        if (isTopFunc || declp) {
             if (traceType == VTraceType::CONSTANT) {
                 funcName = "trace_const";
             } else if (traceType == VTraceType::FULL) {
@@ -500,8 +508,13 @@ class TraceVisitor final : public VNVisitor {
             funcName = topFuncp->name();
             funcName += "_sub";
         }
-        funcName += "_";
-        funcName += cvtToStr(funcNum);
+        if (declp) {
+            funcName += "_type_";
+            funcName += declp->valuep()->dtypep()->name();
+        } else {
+            funcName += "_";
+            funcName += cvtToStr(funcNum);
+        }
 
         FileLine* const flp = m_topScopep->fileline();
         AstCFunc* const funcp = new AstCFunc{flp, funcName, m_topScopep};
@@ -514,7 +527,10 @@ class TraceVisitor final : public VNVisitor {
         m_topScopep->addBlocksp(funcp);
         const std::string bufArg
             = v3Global.opt.traceClassBase()
-              + "::" + (v3Global.opt.useTraceOffload() ? "OffloadBuffer" : "Buffer") + "* bufp";
+              + "::" + (v3Global.opt.useTraceOffload() ? "OffloadBuffer" : "Buffer") + "* bufp"
+              + (declp ? (", uint32_t offset, "
+                          + declp->dtypeVscp()->varp()->vlArgType(true, false, true, "", true))
+                       : "");
         if (isTopFunc) {
             // Top functions
             funcp->argTypes("void* voidSelf, " + bufArg);
@@ -546,7 +562,13 @@ class TraceVisitor final : public VNVisitor {
             funcp->argTypes(bufArg);
             // Setup base references. Note in rare occasions we can end up with an empty trace
             // sub function, hence the VL_ATTR_UNUSED attributes.
-            if (traceType != VTraceType::CHANGE) {
+            if (declp) {
+                // NOCOMMIT -- useTraceOffload?
+                funcp->addStmtsp(
+                    new AstCStmt{flp,  //
+                                 "uint32_t* const oldp VL_ATTR_UNUSED = "
+                                 "bufp->oldp(vlSymsp->__Vm_baseCode + offset - 1);\n"});
+            } else if (traceType != VTraceType::CHANGE) {
                 // Full dump sub function
                 funcp->addStmtsp(new AstCStmt{flp,  //
                                               "uint32_t* const oldp VL_ATTR_UNUSED = "
@@ -567,11 +589,13 @@ class TraceVisitor final : public VNVisitor {
                                                       + cvtToStr(baseCode) + ");\n"});
                 }
             }
-            // Add call to top function
-            AstCCall* const callp = new AstCCall{funcp->fileline(), funcp};
-            callp->dtypeSetVoid();
-            callp->argTypes("bufp");
-            topFuncp->addStmtsp(callp->makeStmt());
+            if (!declp) {
+                // Add call to top function
+                AstCCall* const callp = new AstCCall{funcp->fileline(), funcp};
+                callp->dtypeSetVoid();
+                callp->argTypes("bufp");
+                topFuncp->addStmtsp(callp->makeStmt());
+            }
         }
         // Done
         UINFO(5, "  newCFunc " << funcp);
@@ -627,6 +651,32 @@ class TraceVisitor final : public VNVisitor {
         }
     }
 
+    DtypeFuncs createNonConstDtypeTraceFunctions(const AstTraceDecl* declp) {
+        AstNodeDType* dtypep = declp->valuep()->dtypep();
+        auto pair = m_dtypeFuncs.emplace(dtypep, DtypeFuncs{});
+        if (pair.second) {
+            FileLine* const flp = declp->fileline();
+            AstCFunc* fullFuncp = newCFunc(VTraceType::FULL, nullptr, 0, 0, declp);
+            AstCFunc* chgFuncp = newCFunc(VTraceType::CHANGE, nullptr, 0, 0, declp);
+
+            for (AstNode* stmtp = declp->dtypeFunc()->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                if (AstTraceDecl* fieldDeclp = VN_CAST(stmtp, TraceDecl)) {
+                    AstTraceInc* incFullp = new AstTraceInc{flp, fieldDeclp, VTraceType::FULL};
+                    fullFuncp->addStmtsp(incFullp);
+                    AstTraceInc* incChgp = new AstTraceInc{flp, fieldDeclp, VTraceType::CHANGE};
+                    chgFuncp->addStmtsp(incChgp);
+                    fieldDeclp->valuep()->unlinkFrBack()->deleteTree();
+                    fieldDeclp->valuep(nullptr);
+                }
+            }
+
+            pair.first->second.fullFuncp = fullFuncp;
+            pair.first->second.chgFuncp = chgFuncp;
+        }
+
+        return pair.first->second;
+    }
+
     void createNonConstTraceFunctions(const TraceVec& traces, uint32_t nAllCodes,
                                       uint32_t parallelism) {
         const int splitLimit = v3Global.opt.outputSplitCTrace() ? v3Global.opt.outputSplitCTrace()
@@ -680,6 +730,7 @@ class TraceVisitor final : public VNVisitor {
                     ifp = nullptr;
                 }
 
+                // NOCOMMIT -- is it OK to do this only on the aggregate signal?
                 // If required, create the conditional node checking the activity flags
                 if (!prevActSet || actSet != *prevActSet) {
                     FileLine* const flp = m_topScopep->fileline();
@@ -702,24 +753,49 @@ class TraceVisitor final : public VNVisitor {
 
                 // Add TraceInc nodes
                 FileLine* const flp = declp->fileline();
-                AstTraceInc* const incFulp = new AstTraceInc{flp, declp, VTraceType::FULL};
-                subFulFuncp->addStmtsp(incFulp);
-                AstTraceInc* const incChgp
-                    = new AstTraceInc{flp, declp, VTraceType::CHANGE, baseCode};
-                ifp->addThensp(incChgp);
+                if (declp->dtypeFunc()) {
+                    DtypeFuncs funcs = createNonConstDtypeTraceFunctions(declp);
+                    AstVarRef* argsp = nullptr;
+                    argsp = AstNode::addNext(
+                        argsp, new AstVarRef{flp, declp->dtypeVscp(), VAccess::READ});
+                    AstCCall* const callFullp = new AstCCall{flp, funcs.fullFuncp, argsp};
+                    callFullp->dtypeSetVoid();
+                    callFullp->argTypes(callFullp->argTypes() + "bufp, "
+                                        + std::to_string(declp->code()));
+                    subFulFuncp->addStmtsp(callFullp->makeStmt());
+                    argsp = nullptr;
+                    argsp = AstNode::addNext(
+                        argsp, new AstVarRef{flp, declp->dtypeVscp(), VAccess::READ});
+                    AstCCall* const callChgp = new AstCCall{flp, funcs.chgFuncp, argsp};
+                    callChgp->dtypeSetVoid();
+                    callChgp->argTypes(callChgp->argTypes() + "bufp, "
+                                       + std::to_string(declp->code()));
+                    ifp->addThensp(callChgp->makeStmt());
 
-                // Set the function index of the decl
-                declp->fidx(topFuncNum);
+                    declp->dtypeVscp(nullptr);
 
-                // Track splitting due to size
-                UASSERT_OBJ(incFulp->nodeCount() == incChgp->nodeCount(), declp,
-                            "Should have equal cost");
-                const VNumRange range = declp->arrayRange();
-                if (range.ranged()) {
-                    // 2x because each element is a TraceInc and a VarRef
-                    subStmts += range.elements() * 2;
+                    // NOCOMMIT -- ????
+                    subStmts += 2;
                 } else {
-                    subStmts += incChgp->nodeCount();
+                    AstTraceInc* const incFulp = new AstTraceInc{flp, declp, VTraceType::FULL};
+                    subFulFuncp->addStmtsp(incFulp);
+                    AstTraceInc* const incChgp
+                        = new AstTraceInc{flp, declp, VTraceType::CHANGE, baseCode};
+                    ifp->addThensp(incChgp);
+
+                    // Set the function index of the decl
+                    declp->fidx(topFuncNum);
+
+                    // Track splitting due to size
+                    UASSERT_OBJ(incFulp->nodeCount() == incChgp->nodeCount(), declp,
+                                "Should have equal cost");
+                    const VNumRange range = declp->arrayRange();
+                    if (range.ranged()) {
+                        // 2x because each element is a TraceInc and a VarRef
+                        subStmts += range.elements() * 2;
+                    } else {
+                        subStmts += incChgp->nodeCount();
+                    }
                 }
 
                 // Track partitioning
@@ -899,7 +975,7 @@ class TraceVisitor final : public VNVisitor {
     }
     void visit(AstTraceDecl* nodep) override {
         UINFO(8, "   TRACE " << nodep);
-        if (!m_finding) {
+        if (!m_finding && !nodep->inDtypeFunc()) {
             V3GraphVertex* const vertexp = new TraceTraceVertex{&m_graph, nodep};
             nodep->user1p(vertexp);
 
