@@ -29,6 +29,7 @@ config cfg;
   default liblist liba libb;
 
   // Test uses m20-29
+  // TODO test taht default libraries also searched (compatibility)
   instance t.m20 liblist;  // Use parent's cell library
   instance t.m21 liblist libc;
   instance t.m22 liblist libc libd;  // m22 in libc

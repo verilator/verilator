@@ -1,0 +1,13 @@
+%Error-UNSUPPORTED: t/t_config_top2.v:21:1: Unsupported: config
+   21 | config cfg12;
+      | ^~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_config_top2.v:22:10: Unsupported: config cell
+   22 |   design work.m1 m2;   
+      |          ^~~~
+%Error-UNSUPPORTED: t/t_config_top2.v:22:18: Unsupported: config cell
+   22 |   design work.m1 m2;   
+      |                  ^~
+%Error: Specified --top-module 'cfg2' was not found in design.
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
