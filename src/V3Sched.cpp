@@ -153,9 +153,10 @@ EvalLoop createEvalLoop(
             phaseFuncp->addStmtsp(new AstAssign{flp, lhsp, rhsp});
 
             // Add the work
-            AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, executeFlagp, VAccess::READ}};
-            ifp->addThensp(phaseWorkp);
-            phaseFuncp->addStmtsp(ifp);
+            // AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, executeFlagp, VAccess::READ}};
+            // ifp->addThensp(phaseWorkp);
+            // phaseFuncp->addStmtsp(ifp);
+            phaseFuncp->addStmtsp(phaseWorkp);
         }
 
         // Construct the extra statements
@@ -762,6 +763,45 @@ cloneMapWithNewTriggerReferences(const std::unordered_map<const AstSenTree*, Ast
     return newMap;
 }
 
+class BeforeTriggerEvaluate : public VNVisitor {
+    const VNUser1InUse m_user1InUse;
+
+    AstNodeStmt* const m_eval;
+    AstStmtExpr* const m_commit;
+    AstNodeStmt* const m_orInto;
+
+    void visit(AstStmtExpr* const nodep) override {
+        if (nodep->user1SetOnce()) return;
+        if (const AstCAwait* const cAwaitp = VN_CAST(nodep->exprp(), CAwait)) {
+            if (const AstCMethodHard* const cMethodHardp
+                = VN_CAST(cAwaitp->exprp(), CMethodHard)) {
+                if (cMethodHardp->method() == VCMethod::SCHED_TRIGGER) {
+                    nodep->addHereThisAsNext(m_eval->cloneTree(false));
+                    nodep->addHereThisAsNext(m_commit->cloneTree(false));
+                    nodep->addHereThisAsNext(m_orInto->cloneTree(false));
+                }
+            }
+        }
+        iterateChildren(nodep);
+    }
+
+    void visit(AstNode* const nodep) override { iterateChildren(nodep); }
+
+public:
+    BeforeTriggerEvaluate(AstNodeStmt* const eval, AstStmtExpr* const commit,
+                          AstNodeStmt* const orInto, AstNetlist* nodep)
+        : m_eval{eval}
+        , m_commit{commit}
+        , m_orInto{orInto} {
+        iterate(nodep);
+    }
+    ~BeforeTriggerEvaluate() override {
+        m_eval->deleteTree();
+        m_commit->deleteTree();
+        m_orInto->deleteTree();
+    };
+};
+
 //============================================================================
 // Top level entry-point to scheduling
 
@@ -1007,6 +1047,10 @@ void schedule(AstNetlist* netlistp) {
     createEval(netlistp, icoLoopp, trigKit, actKit, nbaKit, obsKit, reactKit, postponedFuncp,
                timingKit);
 
+    if (AstCCall* const commit = timingKit.createCommit(netlistp)) {
+        BeforeTriggerEvaluate{trigKit.newCompCall(), commit->makeStmt(),
+                              trigKit.newOrIntoCall(nbaKit.m_vscp, actKit.m_vscp), netlistp};
+    }
     // Step 15: Clean up
     netlistp->clearStlFirstIterationp();
 
