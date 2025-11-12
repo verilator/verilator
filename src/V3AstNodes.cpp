@@ -628,6 +628,9 @@ string AstVar::vlEnumDir() const {
     } else if (isSigUserRdPublic()) {
         out += "|VLVF_PUB_RD";
     }
+    if (isForceable()) {
+        out += "|VLVF_FORCEABLE";
+    }
     //
     if (const AstBasicDType* const bdtypep = basicp()) {
         if (bdtypep->keyword().isDpiCLayout()) out += "|VLVF_DPI_CLAY";

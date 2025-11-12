@@ -156,6 +156,7 @@ public:
         return bits;
     }
     bool isPublicRW() const { return ((m_vlflags & VLVF_PUB_RW) != 0); }
+    bool isForceable() const { return ((m_vlflags & VLVF_FORCEABLE) != 0); }
     // DPI compatible C standard layout
     bool isDpiCLayout() const { return ((m_vlflags & VLVF_DPI_CLAY) != 0); }
     int udims() const VL_MT_SAFE { return m_unpacked.size(); }
