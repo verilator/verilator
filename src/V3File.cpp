@@ -752,7 +752,7 @@ void V3OutFormatter::putns(const AstNode* nodep, const char* strg) {
     }
 
     if (putNodeDecoration) {
-        FileLine* const flp = nodep->fileline();
+        const FileLine* const flp = nodep->fileline();
         m_sourceLastLineno = flp->firstLineno();
         m_sourceLastFilenameno = flp->filenameno();
         const std::string lineno = std::to_string(flp->lineno());

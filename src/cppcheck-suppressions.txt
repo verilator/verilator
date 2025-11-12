@@ -27,6 +27,12 @@ unmatchedSuppression
 *:verilog.c
 *:V3Lexer_pregen.yy.cpp
 *:V3PreLex_pregen.yy.cpp
+constParameterPointer:V3ParseBison.c
+cstyleCast:../V3PreLex.l
+cstyleCast:../verilog.l
+cstyleCast:../verilog.y
+cstyleCast:V3ParseBison.c
+redundantContinue:V3ParseBison.c
 // Just check the hand written code
 missingInclude:examples/*
 // We intentionally redefine AstNode methods to improve type safety

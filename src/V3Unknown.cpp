@@ -551,10 +551,11 @@ class UnknownVisitor final : public VNVisitor {
             } else if (!lvalue) {  // Mid-multidimension read, just use zero
                 // ARRAYSEL(...) -> ARRAYSEL(COND(LT(bit<maxbit), bit, 0))
                 VNRelinker replaceHandle;
-                AstNodeExpr* const bitp = nodep->bitp()->unlinkFrBack(&replaceHandle);
-                AstNodeExpr* const newp = new AstCond{
-                    bitp->fileline(), condp, bitp,
-                    new AstConst{bitp->fileline(), AstConst::WidthedValue{}, bitp->width(), 0}};
+                AstNodeExpr* const asBitp = nodep->bitp()->unlinkFrBack(&replaceHandle);
+                AstNodeExpr* const newp
+                    = new AstCond{asBitp->fileline(), condp, asBitp,
+                                  new AstConst{asBitp->fileline(), AstConst::WidthedValue{},
+                                               asBitp->width(), 0}};
                 // Added X's, tristate them too
                 UINFOTREE(9, newp, "", "_new");
                 replaceHandle.relink(newp);

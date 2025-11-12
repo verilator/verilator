@@ -607,8 +607,8 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
         for (uint32_t level = 0; level < WORD_SIZE_LOG2; ++level) {
             const uint32_t stride = 1 << level;
             for (uint32_t j = 0; j < WORD_SIZE; j += 2 * stride) {
-                FileLine* const flp = trigps[i + j]->fileline();
-                trigps[i + j] = new AstConcat{flp, trigps[i + j + stride], trigps[i + j]};
+                trigps[i + j] = new AstConcat{trigps[i + j]->fileline(), trigps[i + j + stride],
+                                              trigps[i + j]};
                 trigps[i + j + stride] = nullptr;
             }
         }
@@ -668,11 +668,11 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
         for (AstNodeStmt* const nodep : senResults.m_postUpdates) fp->addStmtsp(nodep);
         // Add the initialization time triggers
         if (initialTrigsp) {
-            AstVarScope* const vscp = scopep->createTemp("__V" + name + "DidInit", 1);
-            AstIf* const ifp = new AstIf{flp, new AstNot{flp, rd(vscp)}};
+            AstVarScope* const initVscp = scopep->createTemp("__V" + name + "DidInit", 1);
+            AstIf* const ifp = new AstIf{flp, new AstNot{flp, rd(initVscp)}};
             fp->addStmtsp(ifp);
             ifp->branchPred(VBranchPred::BP_UNLIKELY);
-            ifp->addThensp(util::setVar(vscp, 1));
+            ifp->addThensp(util::setVar(initVscp, 1));
             ifp->addThensp(initialTrigsp);
         }
         // If there are 'pre' triggers, compute them

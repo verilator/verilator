@@ -55,7 +55,7 @@ AstNodeStmt* createSerial(OrderMoveGraph& moveGraph,  //
                           const std::string& tag,  //
                           bool slow);
 
-AstNodeStmt* createParallel(OrderGraph& orderGraph,  //
+AstNodeStmt* createParallel(const OrderGraph& orderGraph,  //
                             OrderMoveGraph& moveGraph,  //
                             const std::string& tag,  //
                             bool slow);

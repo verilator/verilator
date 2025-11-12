@@ -124,7 +124,7 @@ class UnrollGenVisitor final : public VNVisitor {
         return true;
     }
 
-    bool simulateTree(AstNodeExpr* nodep, const V3Number* loopValue, AstNode* dtypep,
+    bool simulateTree(AstNodeExpr* nodep, const V3Number* loopValue, const AstNode* dtypep,
                       V3Number& outNum) {
         AstNode* clonep = nodep->cloneTree(true);
         UASSERT_OBJ(clonep, nodep, "Failed to clone tree");
@@ -146,7 +146,7 @@ class UnrollGenVisitor final : public VNVisitor {
             return false;
         }
         // Fetch the result
-        V3Number* resp = simvis.fetchNumberNull(clonep);
+        const V3Number* resp = simvis.fetchNumberNull(clonep);
         if (!resp) {
             UINFO(3, "No number returned from simulation");
             VL_DO_DANGLING(clonep->deleteTree(), clonep);
@@ -231,7 +231,7 @@ class UnrollGenVisitor final : public VNVisitor {
                     }
 
                     // loopValue += valInc
-                    AstAssign* const incpass = VN_AS(incp, Assign);
+                    const AstAssign* const incpass = VN_AS(incp, Assign);
                     V3Number newLoopValue{nodep};
                     if (!simulateTree(incpass->rhsp(), &loopValue, incpass, newLoopValue)) {
                         nodep->v3error("Loop unrolling failed");

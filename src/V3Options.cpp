@@ -486,7 +486,8 @@ std::vector<std::string> V3Options::traceClassBases() const VL_MT_SAFE {
 }
 std::vector<std::string> V3Options::traceClassLangs() const VL_MT_SAFE {
     std::vector<std::string> result;
-    for (auto& cbase : traceClassBases()) result.emplace_back(cbase + (systemC() ? "Sc" : "C"));
+    for (const auto& cbase : traceClassBases())
+        result.emplace_back(cbase + (systemC() ? "Sc" : "C"));
     return result;
 }
 std::vector<std::string> V3Options::traceSourceBases() const VL_MT_SAFE {

@@ -280,9 +280,8 @@ class AssertVisitor final : public VNVisitor {
         return newp;
     }
 
-    static AstIf* assertCond(AstNodeCoverOrAssert* nodep, AstNodeExpr* propp, AstNode* passsp,
-                             AstNode* failsp) {
-
+    static AstIf* assertCond(const AstNodeCoverOrAssert* nodep, AstNodeExpr* propp,
+                             AstNode* passsp, AstNode* failsp) {
         AstIf* const ifp = new AstIf{nodep->fileline(), propp, passsp, failsp};
         // It's more LIKELY that we'll take the nullptr if clause
         // than the sim-killing else clause:
@@ -291,7 +290,7 @@ class AssertVisitor final : public VNVisitor {
         return ifp;
     }
 
-    AstNode* assertBody(AstNodeCoverOrAssert* nodep, AstNode* propp, AstNode* passsp,
+    AstNode* assertBody(const AstNodeCoverOrAssert* nodep, AstNode* propp, AstNode* passsp,
                         AstNode* failsp) {
         AstNode* bodyp = nullptr;
         if (AstPExpr* const pexprp = VN_CAST(propp, PExpr)) {

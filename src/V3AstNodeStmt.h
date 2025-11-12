@@ -289,7 +289,7 @@ class AstCStmt final : public AstNodeStmt {
     // C statement emitted into output, with some arbitrary nodes interspersed
     // @astgen op1 := nodesp : List[AstNode<AstNodeStmt|AstNodeExpr|AstText>]
 public:
-    AstCStmt(FileLine* fl, const std::string& text = "")
+    explicit AstCStmt(FileLine* fl, const std::string& text = "")
         : ASTGEN_SUPER_CStmt(fl) {
         if (!text.empty()) add(text);
     }
@@ -315,7 +315,7 @@ class AstCStmtUser final : public AstNodeStmt {
     // @astgen op1 := nodesp : List[AstNode<AstNodeExpr|AstText>]
     const bool m_fromDollarC;  // Is from source '$c', emit decoration
 public:
-    AstCStmtUser(FileLine* fl, bool fromDollarC = false)
+    explicit AstCStmtUser(FileLine* fl, bool fromDollarC = false)
         : ASTGEN_SUPER_CStmtUser(fl)
         , m_fromDollarC{fromDollarC} {}
     ASTGEN_MEMBERS_AstCStmtUser;
@@ -763,7 +763,7 @@ class AstLoop final : public AstNodeStmt {
     // @astgen op2 := contsp : List[AstNode] // Empty after LinkJump
     VOptionBool m_unroll;  // Full, none, or default unrolling
 public:
-    AstLoop(FileLine* fl)
+    explicit AstLoop(FileLine* fl)
         : ASTGEN_SUPER_Loop(fl) {}
     ASTGEN_MEMBERS_AstLoop;
     void dump(std::ostream& str) const override;

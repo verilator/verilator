@@ -173,9 +173,7 @@ VStringList V3HierBlock::commandArgs(bool forMkJson) const {
 
     const StrGParams gparamsStr = stringifyParams(m_params, true);
     for (const StrGParam& param : gparamsStr) {
-        const string name = param.first;
-        const string value = param.second;
-        opts.push_back("-G" + name + "=" + value + "");
+        opts.push_back("-G" + param.first + "=" + param.second + "");
     }
     if (!m_typeParams.empty()) {
         opts.push_back(" --hierarchical-params-file " + typeParametersFilename());
@@ -382,7 +380,7 @@ class HierBlockUsageCollectVisitor final : public VNVisitorConst {
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
     // CONSTRUCTOR
-    HierBlockUsageCollectVisitor(AstNetlist* netlistp) {
+    explicit HierBlockUsageCollectVisitor(AstNetlist* netlistp) {
         iterateChildrenConst(netlistp);
         if (dumpGraphLevel() >= 3) m_graphp->dumpDotFilePrefixed("hierblocks_initial");
         // Simplify dependencies

@@ -64,7 +64,7 @@ public:
 
     // METHODS
     AstArg* argWrapList(AstNodeExpr* nodep) VL_MT_DISABLED;
-    bool allTracingOn(FileLine* fl) {
+    bool allTracingOn(const FileLine* fl) const {
         return v3Global.opt.trace() && m_tracingParse && fl->tracingOn();
     }
     AstRange* scrubRange(AstNodeRange* rangep) VL_MT_DISABLED;
@@ -99,11 +99,13 @@ public:
         nodep->addStmtsp(defaultVarp);
 
         // IEEE: function void sample()
-        AstFunc* const funcp = new AstFunc{nodep->fileline(), "sample", nullptr, nullptr};
-        funcp->addStmtsp(sampleArgs);
-        funcp->classMethod(true);
-        funcp->dtypep(funcp->findVoidDType());
-        nodep->addMembersp(funcp);
+        {
+            AstFunc* const funcp = new AstFunc{nodep->fileline(), "sample", nullptr, nullptr};
+            funcp->addStmtsp(sampleArgs);
+            funcp->classMethod(true);
+            funcp->dtypep(funcp->findVoidDType());
+            nodep->addMembersp(funcp);
+        }
 
         // IEEE: function void start(), void stop()
         for (const string& name : {"start"s, "stop"s}) {
@@ -200,10 +202,10 @@ public:
         V3ParseImp::parsep()->tagNodep(nodep);
         return nodep;
     }
-    void endLabel(FileLine* fl, AstNode* nodep, string* endnamep) {
+    void endLabel(FileLine* fl, const AstNode* nodep, const string* endnamep) {
         endLabel(fl, nodep->prettyName(), endnamep);
     }
-    void endLabel(FileLine* fl, const string& name, string* endnamep) {
+    void endLabel(FileLine* fl, const string& name, const string* endnamep) {
         if (fl && endnamep && *endnamep != "" && name != *endnamep
             && name != AstNode::prettyName(*endnamep)) {
             fl->v3warn(ENDLABEL, "End label '" << *endnamep << "' does not match begin label '"
