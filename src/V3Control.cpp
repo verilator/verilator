@@ -176,6 +176,8 @@ public:
 // Function or task: Have variables and properties
 
 class V3ControlFTask final {
+    V3ControlVarResolver m_params;  // Parameters in function/task
+    V3ControlVarResolver m_ports;  // Ports in function/task
     V3ControlVarResolver m_vars;  // Variables in function/task
     bool m_isolate = false;  // Isolate function return
     bool m_noinline = false;  // Don't inline function/task
@@ -188,9 +190,13 @@ public:
         if (f.m_isolate) m_isolate = true;
         if (f.m_noinline) m_noinline = true;
         if (f.m_public) m_public = true;
+        m_params.update(f.m_params);
+        m_ports.update(f.m_ports);
         m_vars.update(f.m_vars);
     }
 
+    V3ControlVarResolver& params() { return m_params; }
+    V3ControlVarResolver& ports() { return m_ports; }
     V3ControlVarResolver& vars() { return m_vars; }
 
     void setIsolate(bool set) { m_isolate = set; }
@@ -214,6 +220,8 @@ using V3ControlFTaskResolver = V3ControlWildcardResolver<V3ControlFTask>;
 
 class V3ControlModule final {
     V3ControlFTaskResolver m_tasks;  // Functions/tasks in module
+    V3ControlVarResolver m_params;  // Parameters in module
+    V3ControlVarResolver m_ports;  // Ports in module
     V3ControlVarResolver m_vars;  // Variables in module
     std::unordered_set<std::string> m_coverageOffBlocks;  // List of block names for coverage_off
     std::set<VPragmaType> m_modPragmas;  // List of Pragmas for modules
@@ -225,6 +233,8 @@ public:
 
     void update(const V3ControlModule& m) {
         m_tasks.update(m.m_tasks);
+        m_params.update(m.m_params);
+        m_ports.update(m.m_ports);
         m_vars.update(m.m_vars);
         for (const string& i : m.m_coverageOffBlocks) m_coverageOffBlocks.insert(i);
         if (!m_inline) {
@@ -237,6 +247,8 @@ public:
     }
 
     V3ControlFTaskResolver& ftasks() { return m_tasks; }
+    V3ControlVarResolver& params() { return m_params; }
+    V3ControlVarResolver& ports() { return m_ports; }
     V3ControlVarResolver& vars() { return m_vars; }
 
     void addCoverageBlockOff(const string& name) { m_coverageOffBlocks.insert(name); }
@@ -700,7 +712,8 @@ void V3Control::addScopeTraceOn(bool on, const string& scope, int levels) {
 }
 
 void V3Control::addVarAttr(FileLine* fl, const string& module, const string& ftask,
-                           const string& var, VAttrType attr, AstSenTree* sensep) {
+                           VarSpecKind kind, const string& pattern, VAttrType attr,
+                           AstSenTree* sensep) {
     if (sensep) {
         FileLine* const flp = sensep->fileline();
         // Historical, not actually needed, only parsed for compatibility, delete it
@@ -711,8 +724,20 @@ void V3Control::addVarAttr(FileLine* fl, const string& module, const string& fta
             return;
         }
     }
+
+    if (kind != VarSpecKind::VAR) {
+        switch (attr) {
+        case VAttrType::VAR_PUBLIC_FLAT:
+        case VAttrType::VAR_PUBLIC_FLAT_RD:
+        case VAttrType::VAR_PUBLIC_FLAT_RW: break;
+        default:
+            fl->v3error("'"s + attr.ascii() + "' attribute does not accept -param/-port");
+            return;
+        }
+    }
+
     // Semantics: Most of the attributes operate on signals
-    if (var.empty()) {
+    if (pattern.empty()) {
         if (attr == VAttrType::VAR_ISOLATE_ASSIGNMENTS) {
             if (ftask.empty()) {
                 fl->v3error("isolate_assignments only applies to signals or functions/tasks");
@@ -737,15 +762,23 @@ void V3Control::addVarAttr(FileLine* fl, const string& module, const string& fta
             } else if (!ftask.empty()) {
                 fl->v3error("Signals inside functions/tasks cannot be marked forceable");
             } else {
-                V3ControlResolver::s().modules().at(module).vars().at(var).add(attr);
+                V3ControlResolver::s().modules().at(module).vars().at(pattern).add(attr);
             }
         } else {
             V3ControlModule& mod = V3ControlResolver::s().modules().at(module);
-            if (ftask.empty()) {
-                mod.vars().at(var).add(attr);
-            } else {
-                mod.ftasks().at(ftask).vars().at(var).add(attr);
-            }
+            V3ControlVar& controlVar = [&]() -> V3ControlVar& {
+                if (ftask.empty()) {
+                    if (kind == VarSpecKind::PARAM) return mod.params().at(pattern);
+                    if (kind == VarSpecKind::PORT) return mod.ports().at(pattern);
+                    UASSERT_OBJ(kind == VarSpecKind::VAR, fl, "Unexpected VarSpecKind");
+                    return mod.vars().at(pattern);
+                }
+                if (kind == VarSpecKind::PARAM) return mod.ftasks().at(ftask).params().at(pattern);
+                if (kind == VarSpecKind::PORT) return mod.ftasks().at(ftask).ports().at(pattern);
+                UASSERT_OBJ(kind == VarSpecKind::VAR, fl, "Unexpected VarSpecKind");
+                return mod.ftasks().at(ftask).vars().at(pattern);
+            }();
+            controlVar.add(attr);
         }
     }
 }
@@ -794,20 +827,30 @@ void V3Control::applyFTask(AstNodeModule* modulep, AstNodeFTask* ftaskp) {
     if (ftp) ftp->apply(ftaskp);
 }
 
+template <typename T_Resolver>
+static void resolveThenApply(T_Resolver& resolver, AstVar* varp) {
+    const std::string name = varp->prettyDehashOrigOrName();
+    if (const V3ControlVar* const vp = resolver.vars().resolve(name)) vp->apply(varp);
+    if (varp->isParam()) {
+        if (const V3ControlVar* const vp = resolver.params().resolve(name)) vp->apply(varp);
+    }
+    if (varp->isIO()) {
+        if (const V3ControlVar* const vp = resolver.ports().resolve(name)) vp->apply(varp);
+    }
+}
+
 void V3Control::applyVarAttr(const AstNodeModule* modulep, const AstNodeFTask* ftaskp,
                              AstVar* varp) {
-    const V3ControlVar* vp;
     V3ControlModule* const modp
         = V3ControlResolver::s().modules().resolve(modulep->prettyDehashOrigOrName());
     if (!modp) return;
     if (ftaskp) {
         V3ControlFTask* const ftp = modp->ftasks().resolve(ftaskp->prettyDehashOrigOrName());
         if (!ftp) return;
-        vp = ftp->vars().resolve(varp->prettyDehashOrigOrName());
+        resolveThenApply(*ftp, varp);
     } else {
-        vp = modp->vars().resolve(varp->prettyDehashOrigOrName());
+        resolveThenApply(*modp, varp);
     }
-    if (vp) vp->apply(varp);
 }
 
 int V3Control::getHierWorkers(const string& model) {

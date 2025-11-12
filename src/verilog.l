@@ -155,6 +155,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   -?"-model"            { FL; return yVLT_D_MODEL; }
   -?"-module"           { FL; return yVLT_D_MODULE; }
   -?"-mtask"            { FL; return yVLT_D_MTASK; }
+  -?"-param"            { FL; return yVLT_D_PARAM; }
+  -?"-port"             { FL; return yVLT_D_PORT; }
   -?"-rule"             { FL; return yVLT_D_RULE; }
   -?"-scope"            { FL; return yVLT_D_SCOPE; }
   -?"-task"             { FL; return yVLT_D_TASK; }

@@ -37,6 +37,7 @@ public:
     VVarType m_varDecl = VVarType::UNKNOWN;  // Type for next signal declaration (reg/wire/etc)
     VDirection m_varIO = VDirection::NONE;  // Direction for next signal declaration (reg/wire/etc)
     VLifetime m_varLifetime;  // Static/Automatic for next signal
+    V3Control::VarSpecKind m_vltVarSpecKind = V3Control::VarSpecKind::VAR;
     bool m_impliedDecl = false;  // Allow implied wire declarations
     bool m_varDeclTyped = false;  // Var got reg/wire for dedup check
     bool m_pinAnsi = false;  // In ANSI parameter or port list
