@@ -378,7 +378,7 @@ class DeadVisitor final : public VNVisitor {
                 });
                 taskp->user1(-1);  // we don't want to try deleting twice
                 deleting(taskp);
-                m_statFTasksDeadified++;
+                ++m_statFTasksDeadified;
             }
         }
     }

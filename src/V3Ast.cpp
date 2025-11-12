@@ -55,14 +55,14 @@ V3AST_VCMETHOD_ITEMDATA_DECL;
 // VCMethod information
 
 VCMethod VCMethod::arrayMethod(const string& name) {
-    for (auto& it : s_itemData)
+    for (const auto& it : s_itemData)
         if (it.m_name == name) return it.m_e;
     v3fatalSrc("Not a method name known to VCMethod::s_itemData: '" << name << '\'');
     return VCMethod{};
 }
 void VCMethod::selfTest() {
     int i = 0;
-    for (auto& it : s_itemData) {
+    for (const auto& it : s_itemData) {
         VCMethod exp{i};
         UASSERT_STATIC(it.m_e == exp,
                        "VCMethod::s_itemData table rows are out-of-order, starting at row "s

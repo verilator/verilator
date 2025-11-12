@@ -133,7 +133,7 @@ public:
         , m_statep{statep} {}
     ~LifeBlock() = default;
     // METHODS
-    void checkRemoveAssign(AstVarScope* vscp, LifeVarEntry& entr) {
+    void checkRemoveAssign(const AstVarScope* vscp, LifeVarEntry& entr) {
         const AstVar* const varp = vscp->varp();
         // We don't optimize any public sigs
         if (varp->isSigPublic()) return;

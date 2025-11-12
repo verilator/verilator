@@ -269,8 +269,9 @@ class DataflowOptimize final {
                 }
                 // TODO: remove once Actives can tolerate NEVER SenItems
                 if (AstSenItem* senItemp = VN_CAST(nodep, SenItem)) {
-                    senItemp->foreach(
-                        [](AstVarRef* refp) { DfgVertexVar::setHasExtRdRefs(refp->varScopep()); });
+                    senItemp->foreach([](const AstVarRef* refp) {
+                        DfgVertexVar::setHasExtRdRefs(refp->varScopep());
+                    });
                 }
             } else {
                 if (AstVar* const varp = VN_CAST(nodep, Var)) {

@@ -35,13 +35,13 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 AstCFunc* ExecMTask::createCFunc(AstExecGraph* execGraphp, AstScope* scopep, AstNodeStmt* stmtsp,
                                  uint32_t id) {
-    const std::string name = execGraphp->name() + "_mtask" + std::to_string(id);
-    AstCFunc* const funcp = new AstCFunc{execGraphp->fileline(), name, scopep};
-    funcp->isLoose(true);
-    funcp->dontCombine(true);
-    funcp->addStmtsp(stmtsp);
-    if (scopep) scopep->addBlocksp(funcp);
-    return funcp;
+    const std::string newName = execGraphp->name() + "_mtask" + std::to_string(id);
+    AstCFunc* const newp = new AstCFunc{execGraphp->fileline(), newName, scopep};
+    newp->isLoose(true);
+    newp->dontCombine(true);
+    newp->addStmtsp(stmtsp);
+    if (scopep) scopep->addBlocksp(newp);
+    return newp;
 }
 
 ExecMTask::ExecMTask(AstExecGraph* execGraphp, AstScope* scopep,

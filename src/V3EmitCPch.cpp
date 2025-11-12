@@ -64,7 +64,7 @@ public:
     }
 
     // VISITOR
-    void visit(AstNode* nodep) { nodep->v3fatalSrc("Unused"); }
+    void visit(AstNode* nodep) override { nodep->v3fatalSrc("Unused"); }
 
 public:
     explicit EmitCPch() { emitPch(); }

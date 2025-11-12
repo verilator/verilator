@@ -748,7 +748,7 @@ static bool verilate(const string& argString) {
 
     V3Error::abortIfWarnings();
 
-    if (V3HierGraph* const hierGraphp
+    if (const V3HierGraph* const hierGraphp
         = v3Global.hierGraphp()) {  // This run is for just write a makefile
         UASSERT(v3Global.opt.hierarchical(), "hierarchical must be set");
         UASSERT(!v3Global.opt.hierChild(), "This must not be a hierarchical-child run");

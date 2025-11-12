@@ -583,7 +583,7 @@ class AstCExpr final : public AstNodeExpr {
 
 public:
     class Pure {};
-    AstCExpr(FileLine* fl, const string& text = "", int setwidth = 0)
+    explicit AstCExpr(FileLine* fl, const string& text = "", int setwidth = 0)
         : ASTGEN_SUPER_CExpr(fl)
         , m_pure{false} {
         init(text, setwidth);
@@ -617,7 +617,7 @@ class AstCExprUser final : public AstNodeExpr {
     const bool m_pure;  // Whether the function is pure
 public:
     class Pure {};
-    AstCExprUser(FileLine* fl)
+    explicit AstCExprUser(FileLine* fl)
         : ASTGEN_SUPER_CExprUser(fl)
         , m_pure{false} {}
     AstCExprUser(FileLine* fl, Pure)

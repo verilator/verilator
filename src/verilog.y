@@ -136,7 +136,7 @@ const VBasicDTypeKwd LOGIC_IMPLICIT = VBasicDTypeKwd::LOGIC_IMPLICIT;
 
 #define DEL(...) \
     { \
-        AstNode* nodeps[] = {__VA_ARGS__}; \
+        AstNode* const nodeps[] = {__VA_ARGS__}; \
         for (AstNode* const nodep : nodeps) \
             if (nodep) nodep->deleteTree(); \
     }
@@ -5500,9 +5500,9 @@ gateBuf<nodep>:
                           AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
                           $$->addNext(new AstAlways{ap});
                           for (AstNodeExpr* outp = $4; outp->nextp(); outp = VN_CAST(outp->nextp(), NodeExpr)) {
-                              AstNodeExpr* const rhsp = GRAMMARP->createGatePin(inp->cloneTree(false));
-                              AstAssignW* const ap = new AstAssignW{$<fl>1, outp->cloneTree(false), rhsp};
-                              $$->addNext(new AstAlways{ap});
+                              AstNodeExpr* const pinRhsp = GRAMMARP->createGatePin(inp->cloneTree(false));
+                              AstAssignW* const pinAssp = new AstAssignW{$<fl>1, outp->cloneTree(false), pinRhsp};
+                              $$->addNext(new AstAlways{pinAssp});
                           }
                           DEL($1); DEL($4); }
         ;
@@ -5515,9 +5515,9 @@ gateNot<nodep>:
                           AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
                           $$->addNext(new AstAlways{ap});
                           for (AstNodeExpr* outp = $4; outp->nextp(); outp = VN_CAST(outp->nextp(), NodeExpr)) {
-                              AstNodeExpr* const rhsp = new AstNot{$<fl>1, GRAMMARP->createGatePin(inp->cloneTree(false))};
-                              AstAssignW* const ap = new AstAssignW{$<fl>1, outp->cloneTree(false), rhsp};
-                              $$->addNext(new AstAlways{ap});
+                              AstNodeExpr* const pinRhsp = new AstNot{$<fl>1, GRAMMARP->createGatePin(inp->cloneTree(false))};
+                              AstAssignW* const pinAssp = new AstAssignW{$<fl>1, outp->cloneTree(false), pinRhsp};
+                              $$->addNext(new AstAlways{pinAssp});
                           }
                           DEL($1, $4); }
         ;

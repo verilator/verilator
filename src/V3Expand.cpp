@@ -234,7 +234,7 @@ class ExpandVisitor final : public VNVisitor {
     static AstNodeExpr* newWordIndex(AstNodeExpr* lsbp, uint32_t wordOffset = 0) {
         // This is indexing a WordSel, so a 32 bit constants are fine
         FileLine* const flp = lsbp->fileline();
-        if (AstConst* constp = VN_CAST(lsbp, Const)) {
+        if (const AstConst* constp = VN_CAST(lsbp, Const)) {
             return new AstConst{flp, wordOffset + VL_BITWORD_E(constp->toUInt())};
         }
 
@@ -250,7 +250,7 @@ class ExpandVisitor final : public VNVisitor {
                                        uint32_t wordOffset = 0) {
         UASSERT_OBJ(fromp->isWide(), fromp, "Only need AstWordSel on wide from's");
 
-        if (AstConst* const constp = VN_CAST(indexp, Const)) {
+        if (const AstConst* const constp = VN_CAST(indexp, Const)) {
             indexp = nullptr;
             wordOffset += constp->toUInt();
         }
@@ -545,7 +545,7 @@ class ExpandVisitor final : public VNVisitor {
         V3Const::constifyEditCpp(rhsp->lsbp());
 
         // If it's a constant select and aligned, we can just copy the words
-        if (AstConst* const lsbConstp = VN_CAST(rhsp->lsbp(), Const)) {
+        if (const AstConst* const lsbConstp = VN_CAST(rhsp->lsbp(), Const)) {
             const uint32_t lsb = lsbConstp->toUInt();
             if (VL_BITBIT_E(lsb) == 0) {
                 UINFO(8, "    Wordize ASSIGN(SEL,align) " << nodep);
@@ -577,7 +577,7 @@ class ExpandVisitor final : public VNVisitor {
         AstNodeExpr* loShftp = nullptr;
         AstNodeExpr* hiShftp = nullptr;
         AstNodeExpr* hiMaskp = nullptr;
-        if (AstConst* const lsbConstp = VN_CAST(rhsp->lsbp(), Const)) {
+        if (const AstConst* const lsbConstp = VN_CAST(rhsp->lsbp(), Const)) {
             const uint32_t bitOffset = VL_BITBIT_E(lsbConstp->toUInt());
             // Must be unaligned, otherwise we would have handled it above
             UASSERT_OBJ(bitOffset, nodep, "Missed aligned wide select");

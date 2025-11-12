@@ -796,7 +796,7 @@ void V3Control::applyFTask(AstNodeModule* modulep, AstNodeFTask* ftaskp) {
 
 void V3Control::applyVarAttr(const AstNodeModule* modulep, const AstNodeFTask* ftaskp,
                              AstVar* varp) {
-    V3ControlVar* vp;
+    const V3ControlVar* vp;
     V3ControlModule* const modp
         = V3ControlResolver::s().modules().resolve(modulep->prettyDehashOrigOrName());
     if (!modp) return;
