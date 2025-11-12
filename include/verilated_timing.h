@@ -242,10 +242,12 @@ class VlTriggerScheduler final {
     using VlCoroutineVec = std::vector<VlCoroutineHandle>;
 
     // MEMBERS
-    VlCoroutineVec m_uncommitted;  // Coroutines suspended before commit() was called
+    VlCoroutineVec m_uncommitted;  // Coroutines suspended before ready() was called
                                    // (not resumable)
-    VlCoroutineVec m_ready;  // Coroutines that can be resumed (all coros from m_uncommitted are
-                             // moved here in commit())
+    VlCoroutineVec m_ready;  // Coroutines that were triggered (all coros from m_uncommitted are
+                             // moved here in ready())
+    VlCoroutineVec m_commited;  // Coroutines that can be resumed (all coros from m_ready are
+                                // moved here in commit())
     VlCoroutineVec m_resumeQueue;  // Coroutines being resumed by resume(); kept as a field to
                                    // avoid reallocation. Resumed coroutines are moved to
                                    // m_resumeQueue to allow adding coroutines to m_ready
@@ -255,8 +257,10 @@ public:
     // METHODS
     // Resumes all coroutines from the 'ready' stage
     void resume(const char* eventDescription = VL_UNKNOWN);
-    // Moves all coroutines from m_uncommitted to m_ready
+    // Moves all coroutines from m_ready to m_commited
     void commit(const char* eventDescription = VL_UNKNOWN);
+    // Moves all coroutines from m_uncommitted to m_ready
+    void ready(const char* eventDescription = VL_UNKNOWN);
     // Are there no coroutines awaiting?
     bool empty() const { return m_ready.empty() && m_uncommitted.empty(); }
 #ifdef VL_DEBUG

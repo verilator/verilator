@@ -68,6 +68,19 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
         m_resumeFuncp->declPrivate(true);
         scopeTopp->addBlocksp(m_resumeFuncp);
 
+        for (auto& p : m_lbs) {
+            AstActive* const activep = p.second;
+            auto exprp = VN_AS(activep->stmtsp(), StmtExpr)->exprp();
+            auto fromp = VN_AS(exprp, CMethodHard)->fromp()->cloneTree(false);
+            if (VN_AS(fromp->dtypep(), BasicDType)->keyword().ascii() == "VlTriggerScheduler") {
+                // std::cout << "TRUE\n";
+                auto commitp
+                    = new AstCMethodHard{fromp->fileline(), fromp, VCMethod::SCHED_COMMIT};
+                commitp->dtypeSetVoid();
+                m_resumeFuncp->addStmtsp(commitp->makeStmt());
+            }
+        }
+
         // Put all the timing actives in the resume function
         AstIf* dlyShedIfp = nullptr;
         for (auto& p : m_lbs) {
@@ -165,7 +178,7 @@ AstCCall* TimingKit::createCommit(AstNetlist* const netlistp) {
             // Commit the processes suspended on this sensitivity expression
             //  in the **else** branch, when the event is known to be not fired.
             AstVarRef* const refp = new AstVarRef{flp, schedulerp, VAccess::READWRITE};
-            AstCMethodHard* const callp = new AstCMethodHard{flp, refp, VCMethod::SCHED_COMMIT};
+            AstCMethodHard* const callp = new AstCMethodHard{flp, refp, VCMethod::SCHED_READY};
             callp->dtypeSetVoid();
             if (resumep->pinsp()) callp->addPinsp(resumep->pinsp()->cloneTree(false));
             ifp->addThensp(callp->makeStmt());

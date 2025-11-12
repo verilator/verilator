@@ -1340,6 +1340,11 @@ public:
     void assign(const VlUnpacked<T_Value, N_Depth>& that) { *this = that; }
     bool operator==(const VlUnpacked<T_Value, N_Depth>& that) const { return !neq(that); }
     bool operator!=(const VlUnpacked<T_Value, N_Depth>& that) const { return neq(that); }
+    VlUnpacked<T_Value, N_Depth> operator|(const VlUnpacked<T_Value, N_Depth>& that) const {
+        VlUnpacked<T_Value, N_Depth> ans;
+        for (size_t i = 0; i < N_Depth; ++i) ans.m_storage[i] = m_storage[i] | that.m_storage[i];
+        return ans;
+    }
     // interface to C style arrays (used in ports), see issue #5125
     bool neq(const T_Value that[N_Depth]) const { return neq(*this, that); }
     void assign(const T_Value that[N_Depth]) { std::copy_n(that, N_Depth, m_storage); }
@@ -1923,7 +1928,7 @@ public:
     VlClassRef() = default;
     // Init with nullptr
     // cppcheck-suppress noExplicitConstructor
-    VlClassRef(VlNull){};
+    VlClassRef(VlNull) {};
     template <typename... T_Args>
     VlClassRef(VlDeleter& deleter, T_Args&&... args)
         // () required here to avoid narrowing conversion warnings,

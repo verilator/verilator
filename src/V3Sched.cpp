@@ -153,10 +153,9 @@ EvalLoop createEvalLoop(
             phaseFuncp->addStmtsp(new AstAssign{flp, lhsp, rhsp});
 
             // Add the work
-            // AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, executeFlagp, VAccess::READ}};
-            // ifp->addThensp(phaseWorkp);
-            // phaseFuncp->addStmtsp(ifp);
-            phaseFuncp->addStmtsp(phaseWorkp);
+            AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, executeFlagp, VAccess::READ}};
+            ifp->addThensp(phaseWorkp);
+            phaseFuncp->addStmtsp(ifp);
         }
 
         // Construct the extra statements
@@ -564,7 +563,8 @@ void createEval(AstNetlist* netlistp,  //
                 const EvalKit& obsKit,  //
                 const EvalKit& reactKit,  //
                 AstCFunc* postponedFuncp,  //
-                TimingKit& timingKit  //
+                TimingKit& timingKit,  //
+                AstVarScope* const actAccp  //
 ) {
     FileLine* const flp = netlistp->fileline();
 
@@ -573,8 +573,10 @@ void createEval(AstNetlist* netlistp,  //
     AstCCall* const timingResumep = timingKit.createResume(netlistp);
 
     // Create the active eval loop
+    AstVarScope* const tmpVecp = trigKit.newTrigVec("Tmp", true);
+    tmpVecp->varp()->noReset();
     EvalLoop topLoop = createEvalLoop(  //
-        netlistp, "act", "Active", /* slow: */ false, trigKit, actKit.m_vscp,
+        netlistp, "act", "Active", /* slow: */ false, trigKit, tmpVecp,
         // Inner loop statements
         nullptr,
         // Prep statements
@@ -583,17 +585,29 @@ void createEval(AstNetlist* netlistp,  //
             AstNodeStmt* stmtsp = trigKit.newCompCall(nbaKit.m_vscp);
             // Commit trigger awaits from the previous iteration
             if (timingCommitp) stmtsp = AstNode::addNext(stmtsp, timingCommitp->makeStmt());
+            AstNode::addNext(
+                stmtsp,
+                new AstAssign{flp, new AstVarRef{flp, tmpVecp, VAccess::WRITE},
+                              new AstOr{flp, new AstVarRef{flp, actAccp, VAccess::READ},
+                                        new AstVarRef{flp, actKit.m_vscp, VAccess::READ}}});
             // Latch the 'act' triggers under the 'nba' triggers
-            stmtsp = AstNode::addNext(stmtsp, trigKit.newOrIntoCall(nbaKit.m_vscp, actKit.m_vscp));
+            stmtsp = AstNode::addNext(stmtsp, trigKit.newOrIntoCall(nbaKit.m_vscp, tmpVecp));
             //
             return stmtsp;
         }(),
         // Work statements
         [&]() {
-            AstNodeStmt* workp = nullptr;
+            AstCMethodHard* const cCallp
+                = new AstCMethodHard{flp, new AstVarRef{flp, actAccp, VAccess::WRITE},
+                                     VCMethod::UNPACKED_FILL, new AstConst{flp, 0}};
+            cCallp->dtypeSetVoid();
+            AstNodeStmt* workp = cCallp->makeStmt();
             // Resume triggered timing schedulers
-            if (timingResumep) workp = timingResumep->makeStmt();
+            if (timingResumep) AstNode::addNext(workp, timingResumep->makeStmt());
             // Invoke the 'act' function
+            AstNode::addNext(workp,
+                             new AstAssign{flp, new AstVarRef{flp, actKit.m_vscp, VAccess::WRITE},
+                                           new AstVarRef{flp, tmpVecp, VAccess::READ}});
             workp = AstNode::addNext(workp, util::callVoidFunc(actKit.m_funcp));
             //
             return workp;
@@ -1029,13 +1043,20 @@ void schedule(AstNetlist* netlistp) {
     // Step 13: Create the 'postponed' region evaluation function
     auto* const postponedFuncp = createPostponed(netlistp, logicClasses);
 
+    AstVarScope* const trigAccp = trigKit.newTrigVec("Acc", true);
+
     // Step 14: Bolt it all together to create the '_eval' function
     createEval(netlistp, icoLoopp, trigKit, actKit, nbaKit, obsKit, reactKit, postponedFuncp,
-               timingKit);
+               timingKit, trigAccp);
 
     if (AstCCall* const commit = timingKit.createCommit(netlistp)) {
-        BeforeTriggerEvaluate{trigKit.newCompCall(), commit->makeStmt(),
-                              trigKit.newOrIntoCall(nbaKit.m_vscp, actKit.m_vscp), netlistp};
+        FileLine* const flp = commit->fileline();
+        BeforeTriggerEvaluate{
+            trigKit.newCompCall(), commit->makeStmt(),
+            new AstAssign{flp, new AstVarRef{flp, trigAccp, VAccess::WRITE},
+                          new AstOr{flp, new AstVarRef{flp, trigAccp, VAccess::READ},
+                                    new AstVarRef{flp, actKit.m_vscp, VAccess::READ}}},
+            netlistp};
     }
 
     // Haven't split static initializer yet
