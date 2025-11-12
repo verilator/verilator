@@ -425,9 +425,9 @@ class InstrumentTargetFndr final : public VNVisitor {
                     AstBasicDType* basicp = nodep->basicp();
                     bool literal = basicp->isLiteralType();
                     bool implicit = basicp->implicit();
-                    if (!implicit) {
-                        // Since the basicp is not implicit, there should be a rangep indicating
-                        // the width
+                    if (!implicit && nodep->basicp()->rangep() != nullptr) {
+                        // Since the basicp is not implicit and there is a rangep, we can use the
+                        // rangep for deducting the width
                         width = nodep->basicp()->rangep()->elementsConst();
                     }
                     bool isUnsupportedType = !literal && !implicit;
@@ -491,6 +491,7 @@ public:
 // Instrumentation class functions
 class InstrumentFunc final : public VNVisitor {
     bool m_assignw = false;  // Flag if a assignw exists in the netlist
+    bool m_assignNode = false; // Set to true to indicate that the visitor is in an assign
     bool m_addedport = false;  // Flag if a port was already added
     bool m_addedTask = false;  // Flag if a task was already added
     bool m_addedFunc = false;  // Flag if a function was already added
@@ -654,16 +655,42 @@ class InstrumentFunc final : public VNVisitor {
             if (nodep == pair.second.instrModulep) { pair.second.done = true; }
         }
     }
+    void instrAssigns(AstNodeAssign* nodep) {
+        if (m_current_module != nullptr && m_orig_varp != nullptr && m_assignwp != nodep) {
+            m_assignNode = true;
+            VDirection dir = m_orig_varp->direction();
+            if (dir == VDirection::INPUT || dir == VDirection::NONE) {
+                // Hier muss was mit dem rhsp gemacht werden
+                AstNodeExpr* rhsp = nodep->rhsp();
+                if(rhsp->type() != VNType::ParseRef) {
+                    // Muss ich hier loopen?
+                    for(AstNode* n = rhsp->op1p(); n; n = n->nextp()) {
+                        if(n->type() == VNType::ParseRef && n->name() == m_orig_varp->name()) {
+                            n->name(m_tmp_varp->name());
+                            break;
+                        }
+                    }
+                } else {
+                    if(rhsp->name() == m_orig_varp->name()) {
+                        rhsp->name(m_tmp_varp->name());
+                    }
+                }
+            }
+        } else if (nodep == m_assignwp) {
+            iterateChildren(nodep);
+        }
+        m_assignNode = false;
+    }
     AstNode* createDPIInterface(AstModule* nodep, AstVar* orig_varp, const string& task_name) {
         AstVar* varp = nullptr;
         if (orig_varp->basicp()->isLiteralType() || orig_varp->basicp()->implicit()) {
             int width = 0;
-            if (orig_varp->basicp()->implicit()) {
+            if (!orig_varp->basicp()->implicit() && orig_varp->basicp()->rangep() != nullptr) {
+                width = orig_varp->basicp()->rangep()->elementsConst();
+            } else {
                 // Since Var is implicit set/assume the width as 1 like in V3Width.cpp in the
                 // AstVar visitor
                 width = 1;
-            } else {
-                width = orig_varp->basicp()->rangep()->elementsConst();
             }
             if (width <= 1) {
                 varp = new AstVar{nodep->fileline(), VVarType::VAR, task_name, VFlagChildDType{},
@@ -755,7 +782,6 @@ class InstrumentFunc final : public VNVisitor {
             m_task_name = getMapEntryFunction(m_targetKey, m_targetIndex);
             if (isInstModEntry(nodep, m_targetKey) && !isDone(nodep)) {
                 m_current_module = nodep;
-
                 for (AstNode* n = nodep->op2p(); n; n = n->nextp()) {
                     if (VN_IS(n, Task) && n->name() == m_task_name) {
                         m_taskp = VN_CAST(n, Task);
@@ -792,7 +818,6 @@ class InstrumentFunc final : public VNVisitor {
                 nodep->addStmtsp(m_tmp_varp);
                 // Pruefung einbauen ob das schon passiert ist.
                 if (m_dpi_trigger == nullptr) {
-                    std::cout << "Added dpi_trigger" << std::endl;
                     m_dpi_trigger = new AstVar{
                         nodep->fileline(), VVarType::VAR, "dpi_trigger", VFlagChildDType{},
                         new AstBasicDType{nodep->fileline(), VBasicDTypeKwd::BIT,
@@ -858,7 +883,6 @@ class InstrumentFunc final : public VNVisitor {
             m_taskrefp = nullptr;
             m_addedTask = false;
             m_funcp = nullptr;
-            m_funcrefp = nullptr;
             m_addedFunc = false;
             m_addedport = false;
             m_instGenBlock = nullptr;
@@ -1070,6 +1094,7 @@ class InstrumentFunc final : public VNVisitor {
             nodep->addPinsp(new AstArg{nodep->fileline(), "", added_triggerp});
             nodep->addPinsp(new AstArg{nodep->fileline(), "", added_varrefp});
             m_orig_varp_instMod = nullptr;
+            m_funcrefp = nullptr;
         }
     }
 
@@ -1078,21 +1103,16 @@ class InstrumentFunc final : public VNVisitor {
     //Necessary for the AstParseRef visitor function to determine if the current node is part of an
     //assignment.
     void visit(AstAssignW* nodep) override {
-        if (m_current_module != nullptr) {
-            if (nodep != m_assignwp) { m_assignw = true; }
-            iterateChildren(nodep);
-        }
-        m_assignw = false;
-        m_interface = false;
+        instrAssigns(nodep);
     }
-
-    // These two function are used to circumvent the instrumentation of ParseRef nodes for
-    // interfaces
-    void visit(AstDot* nodep) override {
-        if (m_current_module != nullptr) { m_interface = true; }
+    void visit (AstAssign* nodep) override {
+        instrAssigns(nodep);
     }
-    void visit(AstReplicate* nodep) override {
-        if (m_current_module != nullptr) { m_interface = true; }
+    void visit(AstAssignDly* nodep) override {
+        instrAssigns(nodep);
+    }
+    void visit(AstAssignForce* nodep) override {
+        instrAssigns(nodep);
     }
 
     //ASTPARSE REF VISITOR FUNCTION:
@@ -1107,11 +1127,8 @@ class InstrumentFunc final : public VNVisitor {
     //the instrumented variable. This ensures that the instrumented variable is used as the new
     //input.
     void visit(AstParseRef* nodep) override {
-        if (m_current_module != nullptr && m_orig_varp != nullptr
-            && nodep->name() == m_orig_varp->name()) {
-            if (m_assignw && !m_interface && m_orig_varp->direction() != VDirection::OUTPUT) {
-                nodep->name(m_tmp_varp->name());
-            } else if (m_orig_varp->direction() == VDirection::INPUT) {
+        if (m_current_module != nullptr && m_orig_varp != nullptr && m_orig_varp->direction() != VDirection::OUTPUT) {
+            if (nodep->name() == m_orig_varp->name() && !m_assignNode) {
                 nodep->name(m_tmp_varp->name());
             }
         }
