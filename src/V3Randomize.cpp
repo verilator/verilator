@@ -168,7 +168,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     if (classRefp) {
                         AstClass* const rclassp = classRefp->classp();
                         if (!rclassp->user1()) {
-                            rclassp->user1(IS_RANDOMIZED);
+                            std::cout << rclassp->name() << " is marked \n";
+                            rclassp->user1(IS_RANDOMIZED_GLOBAL);
                             markMembers(rclassp);
                             markDerived(rclassp);
                         }
@@ -618,9 +619,9 @@ class RandomizeMarkVisitor final : public VNVisitor {
         }
         if (randObject && nodep->varp()
             && nodep->varp()->rand().isRandomizable()) {  // Process global constraints
-            if (m_classp && m_classp->user1() == IS_RANDOMIZED) {
-                m_classp->user1(IS_RANDOMIZED_GLOBAL);
-            }
+            // if (m_classp && m_classp->user1() == IS_RANDOMIZED) {
+            //     m_classp->user1(IS_RANDOMIZED_GLOBAL);
+            // }
             // Mark the entire nested chain as participating in global constraints
             if (VN_IS(nodep->fromp(), VarRef) || VN_IS(nodep->fromp(), MemberSel)) {
                 markNestedGlobalConstrainedRecurse(nodep->fromp());
@@ -2368,12 +2369,27 @@ class RandomizeVisitor final : public VNVisitor {
         nodep->baseMostClassp()->needRNG(true);
 
         const bool globalConstrained = nodep->user1() == IS_RANDOMIZED_GLOBAL;
+        FileLine* fl = nodep->fileline();
         AstFunc* const randomizep = V3Randomize::newRandomizeFunc(m_memberMap, nodep);
         AstVar* const fvarp = VN_AS(randomizep->fvarp(), Var);
-        addPrePostCall(nodep, randomizep, "pre_randomize");
-        FileLine* fl = nodep->fileline();
-
         AstVar* const randModeVarp = getRandModeVar(nodep);
+
+        addPrePostCall(nodep, randomizep, "pre_randomize");
+
+        // IS_RANDOMIZED_GLOBAL classes: only basic randomization, no constraint solver
+        if (globalConstrained) {
+            AstFunc* const basicRandomizep
+                = V3Randomize::newRandomizeFunc(m_memberMap, nodep, BASIC_RANDOMIZE_FUNC_NAME);
+            addBasicRandomizeBody(basicRandomizep, nodep, randModeVarp);
+            AstFuncRef* const basicRandomizeCallp = new AstFuncRef{fl, basicRandomizep, nullptr};
+            AstVarRef* const fvarRefp = new AstVarRef{fl, fvarp, VAccess::WRITE};
+            randomizep->addStmtsp(new AstAssign{fl, fvarRefp, basicRandomizeCallp});
+            addPrePostCall(nodep, randomizep, "post_randomize");
+            nodep->user1(false);
+            return;
+        }
+
+        // IS_RANDOMIZED classes: full randomization with constraint solver
         AstNodeExpr* beginValp = nullptr;
         AstVar* genp = getRandomGenerator(nodep);
         if (genp) {
@@ -2429,18 +2445,7 @@ class RandomizeVisitor final : public VNVisitor {
         }
 
         AstVarRef* const fvarRefp = new AstVarRef{fl, fvarp, VAccess::WRITE};
-
-        // For global constraints: call basic randomize first (without global constraints)
-        if (globalConstrained) {
-            AstFunc* const basicRandomizep
-                = V3Randomize::newRandomizeFunc(m_memberMap, nodep, BASIC_RANDOMIZE_FUNC_NAME);
-            addBasicRandomizeBody(basicRandomizep, nodep, randModeVarp);
-            AstFuncRef* const basicRandomizeCallp = new AstFuncRef{fl, basicRandomizep, nullptr};
-            randomizep->addStmtsp(new AstAssign{fl, fvarRefp, basicRandomizeCallp});
-        } else {
-            // For normal classes: use beginValp (standard flow)
-            randomizep->addStmtsp(new AstAssign{fl, fvarRefp, beginValp});
-        }
+        randomizep->addStmtsp(new AstAssign{fl, fvarRefp, beginValp});
 
         if (AstTask* const resizeAllTaskp
             = VN_AS(m_memberMap.findMember(nodep, "__Vresize_constrained_arrays"), Task)) {
@@ -2451,20 +2456,14 @@ class RandomizeVisitor final : public VNVisitor {
         AstVarRef* const fvarRefReadp = fvarRefp->cloneTree(false);
         fvarRefReadp->access(VAccess::READ);
 
-        // For global constraints: combine with solver result (beginValp)
-        // For normal classes: call basic randomize after resize
-        if (globalConstrained) {
-            randomizep->addStmtsp(new AstAssign{fl, fvarRefp->cloneTree(false),
-                                                new AstAnd{fl, fvarRefReadp, beginValp}});
-        } else {
-            AstFunc* const basicRandomizep
-                = V3Randomize::newRandomizeFunc(m_memberMap, nodep, BASIC_RANDOMIZE_FUNC_NAME);
-            addBasicRandomizeBody(basicRandomizep, nodep, randModeVarp);
-            AstFuncRef* const basicRandomizeCallp = new AstFuncRef{fl, basicRandomizep, nullptr};
-            randomizep->addStmtsp(
-                new AstAssign{fl, fvarRefp->cloneTree(false),
-                              new AstAnd{fl, fvarRefReadp, basicRandomizeCallp}});
-        }
+        AstFunc* const basicRandomizep
+            = V3Randomize::newRandomizeFunc(m_memberMap, nodep, BASIC_RANDOMIZE_FUNC_NAME);
+        addBasicRandomizeBody(basicRandomizep, nodep, randModeVarp);
+        AstFuncRef* const basicRandomizeCallp = new AstFuncRef{fl, basicRandomizep, nullptr};
+        randomizep->addStmtsp(
+            new AstAssign{fl, fvarRefp->cloneTree(false),
+                          new AstAnd{fl, fvarRefReadp, basicRandomizeCallp}});
+
         addPrePostCall(nodep, randomizep, "post_randomize");
         nodep->user1(false);
     }
