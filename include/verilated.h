@@ -154,7 +154,8 @@ enum VerilatedVarFlags {
     // Flags
     VLVF_PUB_RD = (1 << 8),  // Public readable
     VLVF_PUB_RW = (1 << 9),  // Public writable
-    VLVF_DPI_CLAY = (1 << 10)  // DPI compatible C standard layout
+    VLVF_DPI_CLAY = (1 << 10),  // DPI compatible C standard layout
+    VLVF_FORCEABLE = (1 << 11)  // Forceable
 };
 
 // IEEE 1800-2023 Table 20-6
