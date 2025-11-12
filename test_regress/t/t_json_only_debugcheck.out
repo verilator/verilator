@@ -866,7 +866,7 @@
     ]},
     {"type":"CFUNC","name":"_eval_final","addr":"(DN)","loc":"a,0:0,0:0","slow":true,"scopep":"(Z)","argsp": [],"varsp": [],"stmtsp": []},
     {"type":"CFUNC","name":"_eval_settle","addr":"(EN)","loc":"a,0:0,0:0","slow":true,"scopep":"(Z)","argsp": [],"varsp": [],"stmtsp": []},
-    {"type":"CFUNC","name":"_eval_triggers__act","addr":"(FN)","loc":"a,0:0,0:0","scopep":"(Z)","argsp": [],"varsp": [],
+    {"type":"CFUNC","name":"_eval_base_triggers__act","addr":"(FN)","loc":"a,0:0,0:0","scopep":"(Z)","argsp": [],"varsp": [],
      "stmtsp": [
       {"type":"ASSIGN","name":"","addr":"(GN)","loc":"d,11:8,11:9","dtypep":"(HN)",
        "rhsp": [
@@ -2481,7 +2481,7 @@
         ]}
       ],"elsesp": []}
     ]},
-    {"type":"CFUNC","name":"_trigger_orInto__act","addr":"(CKB)","loc":"a,0:0,0:0","isStatic":true,"scopep":"(Z)",
+    {"type":"CFUNC","name":"_trigger_orInto__act_vec_vec","addr":"(CKB)","loc":"a,0:0,0:0","isStatic":true,"scopep":"(Z)",
      "argsp": [
       {"type":"VAR","name":"out","addr":"(DKB)","loc":"a,0:0,0:0","dtypep":"(W)","origName":"out","verilogName":"out","direction":"INOUT","isFuncLocal":true,"lifetime":"NONE","varType":"BLOCKTEMP","dtypeName":"","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
       {"type":"ASSIGN","name":"","addr":"(EKB)","loc":"a,0:0,0:0","dtypep":"(W)",
@@ -2562,9 +2562,9 @@
         ],"timingControlp": []},
         {"type":"LOOPTEST","name":"","addr":"(HLB)","loc":"d,11:8,11:9",
          "condp": [
-          {"type":"GT","name":"","addr":"(ILB)","loc":"d,11:8,11:9","dtypep":"(GB)",
+          {"type":"GTE","name":"","addr":"(ILB)","loc":"d,11:8,11:9","dtypep":"(GB)",
            "lhsp": [
-            {"type":"CONST","name":"32'h1","addr":"(JLB)","loc":"d,11:8,11:9","dtypep":"(HC)"}
+            {"type":"CONST","name":"32'h0","addr":"(JLB)","loc":"d,11:8,11:9","dtypep":"(HC)"}
           ],
            "rhsp": [
             {"type":"VARREF","name":"n","addr":"(KLB)","loc":"d,11:8,11:9","dtypep":"(RP)","access":"RD","varp":"(LKB)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}
@@ -2576,11 +2576,11 @@
      "stmtsp": [
       {"type":"STMTEXPR","name":"","addr":"(MLB)","loc":"d,11:8,11:9",
        "exprp": [
-        {"type":"CCALL","name":"","addr":"(NLB)","loc":"d,11:8,11:9","dtypep":"(DB)","funcName":"_eval_triggers__act","funcp":"(FN)","argsp": []}
+        {"type":"CCALL","name":"","addr":"(NLB)","loc":"d,11:8,11:9","dtypep":"(DB)","funcName":"_eval_base_triggers__act","funcp":"(FN)","argsp": []}
       ]},
       {"type":"STMTEXPR","name":"","addr":"(OLB)","loc":"d,11:8,11:9",
        "exprp": [
-        {"type":"CCALL","name":"","addr":"(PLB)","loc":"d,11:8,11:9","dtypep":"(DB)","funcName":"_trigger_orInto__act","funcp":"(CKB)",
+        {"type":"CCALL","name":"","addr":"(PLB)","loc":"d,11:8,11:9","dtypep":"(DB)","funcName":"_trigger_orInto__act_vec_vec","funcp":"(CKB)",
          "argsp": [
           {"type":"VARREF","name":"__VnbaTriggered","addr":"(QLB)","loc":"d,11:8,11:9","dtypep":"(W)","access":"WR","varp":"(X)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"},
           {"type":"VARREF","name":"__VactTriggered","addr":"(RLB)","loc":"d,11:8,11:9","dtypep":"(W)","access":"RD","varp":"(V)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}

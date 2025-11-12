@@ -1344,6 +1344,11 @@ public:
     bool neq(const T_Value that[N_Depth]) const { return neq(*this, that); }
     void assign(const T_Value that[N_Depth]) { std::copy_n(that, N_Depth, m_storage); }
     void operator=(const T_Value that[N_Depth]) { assign(that); }
+    template <size_t N>
+    void operator=(const VlUnpacked<T_Value, N>& that) {
+        static_assert(N >= N_Depth, "Cannot copy from VlUnpacked with less elements");
+        std::copy_n(that.m_storage, N_Depth, m_storage);
+    }
     bool operator<(const VlUnpacked<T_Value, N_Depth>& that) const {
         for (int index = 0; index < N_Depth; ++index) {
             if (m_storage[index] < that.m_storage[index]) return true;
