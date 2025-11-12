@@ -357,10 +357,11 @@ AstNodeStmt* TriggerKit::newDumpCall(AstVarScope* const vscp, const std::string&
     return cstmtp;
 }
 
-AstVarScope* TriggerKit::newTrigVec(const std::string& name) const {
+AstVarScope* TriggerKit::newTrigVec(const std::string& name, bool extended) const {
     if (!m_nVecWords) return nullptr;
     AstScope* const scopep = v3Global.rootp()->topScopep()->scopep();
-    return scopep->createTemp("__V" + name + "Triggered", m_trigVecDTypep);
+    return scopep->createTemp("__V" + name + "Triggered",
+                              extended ? m_trigExtDTypep : m_trigVecDTypep);
 }
 
 AstSenTree* TriggerKit::newTriggerSenTree(AstVarScope* const vscp,

@@ -284,7 +284,7 @@ public:
     AstNodeStmt* newCompCall(AstVarScope* vscp = nullptr) const;
     AstNodeStmt* newDumpCall(AstVarScope* vscp, const std::string& tag, bool debugOnly) const;
     // Create a new (non-extended) trigger vector - might return nullptr if there are no triggers
-    AstVarScope* newTrigVec(const std::string& name) const;
+    AstVarScope* newTrigVec(const std::string& name, bool extended = false) const;
 
     // Create an AstSenTree that is sensitive to the given Extra trigger
     AstSenTree* newExtraTriggerSenTree(AstVarScope* vscp, uint32_t index) const;
