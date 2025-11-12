@@ -271,8 +271,9 @@ private:
     }
     void visit(AstVarRef* nodep) override {
         iterateChildren(nodep);
-        if (nodep->varp()->user4u().toGraphVertex() != m_curVxp) {
-            if (m_curVxp->pure() && !nodep->varp()->isXTemp()) m_curVxp->impure(nodep);
+        AstVar* const varp = nodep->varp();
+        if (varp->user4u().toGraphVertex() != m_curVxp) {
+            if (m_curVxp->pure() && !varp->isXTemp() && !varp->isParam()) m_curVxp->impure(nodep);
         }
     }
     void visit(AstClass* nodep) override {

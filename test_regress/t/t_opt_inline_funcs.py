@@ -11,8 +11,10 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile(verilator_flags2=['--stats'], verilator_make_gmake=False)
+test.compile(verilator_flags2=['--binary', '--stats'])
 
-test.file_grep(test.stats, r'Optimizations, Functions inlined\s+(\d+)', 3)
+test.file_grep(test.stats, r'Optimizations, Functions inlined\s+(\d+)', 4)
+
+test.execute()
 
 test.passes()
