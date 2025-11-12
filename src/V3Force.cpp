@@ -394,17 +394,39 @@ class ForceConvertVisitor final : public VNVisitor {
             }
         });
         // Replace write refs on RHS
-        resetRdp->rhsp()->foreach([this](AstVarRef* refp) {
-            if (refp->access() != VAccess::WRITE) return;
-            AstVarScope* const vscp = refp->varScopep();
-            if (vscp->varp()->isContinuously()) {
-                refp->access(VAccess::READ);
-                ForceState::markNonReplaceable(refp);
-            } else {
-                refp->replaceWith(m_state.getForceComponents(vscp).forcedUpdate(vscp, {}));
-                VL_DO_DANGLING(refp->deleteTree(), refp);
+        if (VN_IS(resetRdp->rhsp(), ArraySel)) {
+            std::vector<AstNodeExpr*> selIndices;
+            AstNodeExpr* exprp = resetRdp->rhsp();
+            while (AstArraySel* const selp = VN_CAST(exprp, ArraySel)) {
+                selIndices.push_back(selp->bitp());
+                exprp = selp->fromp();
             }
-        });
+            if (AstVarRef* const refp = VN_CAST(exprp, VarRef)) {
+                AstVarScope* const vscp = refp->varScopep();
+                std::vector<AstNodeExpr*> reversedIndices(selIndices.size());
+                std::reverse_copy(selIndices.begin(), selIndices.end(), reversedIndices.begin());
+                AstNodeExpr* const origRhsp = resetRdp->rhsp();
+                origRhsp->replaceWith(
+                    m_state.getForceComponents(vscp).forcedUpdate(vscp, reversedIndices));
+                VL_DO_DANGLING(origRhsp->deleteTree(), origRhsp);
+            } else {
+                exprp->v3warn(
+                    E_UNSUPPORTED,
+                    "Unsupported: Release statement argument is too complex array select");
+            }
+        } else {
+            resetRdp->rhsp()->foreach([this](AstVarRef* refp) {
+                if (refp->access() != VAccess::WRITE) return;
+                AstVarScope* const vscp = refp->varScopep();
+                if (vscp->varp()->isContinuously()) {
+                    refp->access(VAccess::READ);
+                    ForceState::markNonReplaceable(refp);
+                } else {
+                    refp->replaceWith(m_state.getForceComponents(vscp).forcedUpdate(vscp, {}));
+                    VL_DO_DANGLING(refp->deleteTree(), refp);
+                }
+            });
+        }
 
         resetRdp->addNext(resetEnp);
         relinker.relink(resetRdp);
