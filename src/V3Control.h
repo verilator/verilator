@@ -29,6 +29,12 @@
 
 class V3Control final {
 public:
+    enum class VarSpecKind {
+        PARAM,  // Select only matching parameters
+        PORT,  // Select only matching ports
+        VAR  // Select any matching AstVar (including params and ports)
+    };
+
     static void addCaseFull(const string& file, int lineno);
     static void addCaseParallel(const string& file, int lineno);
     static void addCoverageBlockOff(const string& file, int lineno);
@@ -44,7 +50,8 @@ public:
                                uint64_t cost);
     static void addScopeTraceOn(bool on, const string& scope, int levels);
     static void addVarAttr(FileLine* fl, const string& module, const string& ftask,
-                           const string& signal, VAttrType type, AstSenTree* nodep);
+                           VarSpecKind kind, const string& pattern, VAttrType type,
+                           AstSenTree* nodep);
 
     static void applyCase(AstCase* nodep);
     static void applyCoverageBlock(AstNodeModule* modulep, AstBegin* nodep);

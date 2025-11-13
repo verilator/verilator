@@ -1,0 +1,8 @@
+%Error: t/t_vlt_var_spec_bad.vlt:9:1: 'VAR_SC_BV' attribute does not accept -param/-port
+    9 | sc_bv -module "top" -param "*"
+      | ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_vlt_var_spec_bad.vlt:10:1: 'VAR_SC_BV' attribute does not accept -param/-port
+   10 | sc_bv -module "top" -port "*"
+      | ^~~~~
+%Error: Exiting due to

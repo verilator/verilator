@@ -282,6 +282,8 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_D_MODEL    "--model"
 %token<fl>              yVLT_D_MODULE   "--module"
 %token<fl>              yVLT_D_MTASK    "--mtask"
+%token<fl>              yVLT_D_PARAM    "--param"
+%token<fl>              yVLT_D_PORT     "--port"
 %token<fl>              yVLT_D_RULE     "--rule"
 %token<fl>              yVLT_D_SCOPE    "--scope"
 %token<fl>              yVLT_D_TASK     "--task"
@@ -931,6 +933,14 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %nonassoc yELSE
 
 //BISONPRE_TYPES
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
 //  Blank lines for type insertion
 //  Blank lines for type insertion
 //  Blank lines for type insertion
@@ -7991,9 +8001,9 @@ vltItem:
                           } else {
                               V3Control::addScopeTraceOn(true, *$2, $3->toUInt());
                           }}
-        |       vltVarAttrFront vltDModuleE vltDFTaskE vltVarAttrVarE attr_event_controlE
-                        { V3Control::addVarAttr($<fl>1, *$2, *$3, *$4, $1, $5); }
-        |       vltVarAttrFrontDeprecated vltDModuleE vltDFTaskE vltVarAttrVarE
+        |       vltVarAttrFront vltDModuleE vltDFTaskE vltVarAttrSpecE attr_event_controlE
+                        { V3Control::addVarAttr($<fl>1, *$2, *$3, GRAMMARP->m_vltVarSpecKind, *$4, $1, $5); }
+        |       vltVarAttrFrontDeprecated vltDModuleE vltDFTaskE vltVarAttrSpecE
                         { /* Historical, now has no effect */ }
         |       vltInlineFront vltDModuleE vltDFTaskE
                         { V3Control::addInline($<fl>1, *$2, *$3, $1); }
@@ -8115,9 +8125,15 @@ vltInlineFront<cbool>:
         |       yVLT_NO_INLINE                          { $$ = false; }
         ;
 
-vltVarAttrVarE<strp>:
-                /* empty */                             { static string empty; $$ = &empty; }
-        |       yVLT_D_VAR str                          { $$ = $2; }
+vltVarAttrSpecE<strp>:
+                /* empty */
+                        { GRAMMARP->m_vltVarSpecKind = V3Control::VarSpecKind::VAR; static std::string empty; $$ = &empty; }
+        |       yVLT_D_PARAM str
+                        { GRAMMARP->m_vltVarSpecKind = V3Control::VarSpecKind::PARAM; $$ = $2; }
+        |       yVLT_D_PORT str
+                        { GRAMMARP->m_vltVarSpecKind = V3Control::VarSpecKind::PORT; $$ = $2; }
+        |       yVLT_D_VAR str
+                        { GRAMMARP->m_vltVarSpecKind = V3Control::VarSpecKind::VAR; $$ = $2; }
         ;
 
 vltVarAttrFront<attrtypeen>:
