@@ -254,6 +254,7 @@ class VlTriggerScheduler final {
                                    // during resume(). Outside of resume() should always be empty.
 
 public:
+    static void reserveSpaceFor(VlCoroutineVec& vec, size_t size);
     // METHODS
     // Resumes all coroutines from the 'ready' stage
     void resume(const char* eventDescription = VL_UNKNOWN);
