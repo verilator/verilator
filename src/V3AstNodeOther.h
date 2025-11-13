@@ -1521,6 +1521,8 @@ class AstSenItem final : public AstNode {
     // @astgen op1 := sensp : Optional[AstNodeExpr] // Sensitivity expression
     // @astgen op2 := condp : Optional[AstNodeExpr] // Sensitivity condition
     VEdgeType m_edgeType;  // Edge type
+    int m_globalTrigIndex = -1;
+
 public:
     class Combo {};  // for constructor type-overload selection
     class Static {};  // for constructor type-overload selection
@@ -1571,6 +1573,8 @@ public:
     bool isInitial() const { return edgeType() == VEdgeType::ET_INITIAL; }
     bool isFinal() const { return edgeType() == VEdgeType::ET_FINAL; }
     bool isNever() const { return edgeType() == VEdgeType::ET_NEVER; }
+    int globalTrigIndex() const { return m_globalTrigIndex; }
+    void globalTrigIndex(int globalTrigIndex) { m_globalTrigIndex = globalTrigIndex; }
 };
 class AstSenTree final : public AstNode {
     // A sensitivity list
