@@ -615,29 +615,23 @@ void createEval(AstNetlist* netlistp,  //
         }(),
         // Work statements
         [&]() {
-            AstNodeStmt* workp;
-            auto addStmt = [&workp](auto nodep) {
-                if (workp) {
-                    AstNode::addNext(workp, nodep);
-                } else {
-                    workp = nodep;
-                }
-            };
+            AstNodeStmt* workp = nullptr;
             if (actAccp) {
                 AstCMethodHard* const cCallp
                     = new AstCMethodHard{flp, new AstVarRef{flp, actAccp, VAccess::WRITE},
                                          VCMethod::UNPACKED_FILL, new AstConst{flp, 0}};
                 cCallp->dtypeSetVoid();
-                addStmt(cCallp->makeStmt());
+                workp = AstNode::addNext(workp, cCallp->makeStmt());
             }
             // Resume triggered timing schedulers
-            if (timingResumep) addStmt(timingResumep->makeStmt());
+            if (timingResumep) workp = AstNode::addNext(workp, timingResumep->makeStmt());
             if (actKit.m_vscp) {  // This shall implicitly be also `tmpVecp != nullptr`
-                addStmt(new AstAssign{flp, new AstVarRef{flp, actKit.m_vscp, VAccess::WRITE},
-                                      new AstVarRef{flp, tmpVecp, VAccess::READ}});
+                workp = AstNode::addNext(
+                    workp, new AstAssign{flp, new AstVarRef{flp, actKit.m_vscp, VAccess::WRITE},
+                                         new AstVarRef{flp, tmpVecp, VAccess::READ}});
             }
             // Invoke the 'act' function
-            addStmt(util::callVoidFunc(actKit.m_funcp));
+            workp = AstNode::addNext(workp, util::callVoidFunc(actKit.m_funcp));
             //
             return workp;
         }());
