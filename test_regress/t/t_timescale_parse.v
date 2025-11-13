@@ -51,61 +51,61 @@ endmodule
 
 
 module r0;
-   timeunit 10ns / 1ns;
-   task check; $write("%m %0t\n", $time); endtask
+  timeunit 10ns / 1ns;
+  task check; $write("%m %0t\n", $time); endtask
 endmodule
 
 module r1;
-   timeunit 10ns;
-   timeprecision 1ns;
-   task check; $write("%m %0t\n", $time); endtask
+  timeunit 10ns;
+  timeprecision 1ns;
+  task check; $write("%m %0t\n", $time); endtask
 endmodule
 
 module t;
-   sp2 sp2();
-   sp1 sp1();
-   sp0 sp0();
-   sm1 sm1();
-   sm2 sm2();
-   sm3 sm3();
-   sm4 sm4();
-   sm5 sm5();
-   sm6 sm6();
-   sm7 sm7();
-   sm8 sm8();
-   sm9 sm9();
-   sm10 sm10();
-   sm11 sm11();
-   sm12 sm12();
-   sm13 sm13();
-   sm14 sm14();
-   sm15 sm15();
+  sp2 sp2();
+  sp1 sp1();
+  sp0 sp0();
+  sm1 sm1();
+  sm2 sm2();
+  sm3 sm3();
+  sm4 sm4();
+  sm5 sm5();
+  sm6 sm6();
+  sm7 sm7();
+  sm8 sm8();
+  sm9 sm9();
+  sm10 sm10();
+  sm11 sm11();
+  sm12 sm12();
+  sm13 sm13();
+  sm14 sm14();
+  sm15 sm15();
 
-   r0 r0();
-   r1 r1();
+  r0 r0();
+  r1 r1();
 
-   final begin
-      sp2.check();
-      sp1.check();
-      sp0.check();
-      sm1.check();
-      sm2.check();
-      sm3.check();
-      sm4.check();
-      sm5.check();
-      sm6.check();
-      sm7.check();
-      sm8.check();
-      sm9.check();
-      sm10.check();
-      sm11.check();
-      sm12.check();
-      sm13.check();
-      sm14.check();
-      sm15.check();
-      r0.check();
-      r1.check();
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  final begin
+    sp2.check();
+    sp1.check();
+    sp0.check();
+    sm1.check();
+    sm2.check();
+    sm3.check();
+    sm4.check();
+    sm5.check();
+    sm6.check();
+    sm7.check();
+    sm8.check();
+    sm9.check();
+    sm10.check();
+    sm11.check();
+    sm12.check();
+    sm13.check();
+    sm14.check();
+    sm15.check();
+    r0.check();
+    r1.check();
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

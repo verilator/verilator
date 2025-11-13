@@ -17,10 +17,10 @@
 %Error: t/t_timescale_parse_bad.v:15:1: `timescale syntax error: ' 1ns / 1ps /extra'
    15 | `timescale 1ns / 1ps /extra
       | ^~~~~~~~~~~~~~~~~~~~~~~~~~~
-%Error: t/t_timescale_parse_bad.v:18:13: timeunit illegal value
-   18 |    timeunit 2ps;   
-      |             ^~~
-%Error: t/t_timescale_parse_bad.v:19:18: timeprecision illegal value
-   19 |    timeprecision 2ps;    
-      |                  ^~~
+%Error: t/t_timescale_parse_bad.v:18:12: timeunit illegal value
+   18 |   timeunit 2ps;   
+      |            ^~~
+%Error: t/t_timescale_parse_bad.v:19:17: timeprecision illegal value
+   19 |   timeprecision 2ps;    
+      |                 ^~~
 %Error: Exiting due to
