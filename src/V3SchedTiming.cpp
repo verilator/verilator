@@ -103,7 +103,7 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
             } else {
                 // m_resumeFuncp->addStmtsp(ifp);
                 m_resumeFuncp->addStmtsp(ifp->thensp()->unlinkFrBackWithNext());
-                ifp->deleteTree();
+                VL_DO_DANGLING(ifp->deleteTree(), ifp);
             }
         }
         if (dlyShedIfp) m_resumeFuncp->addStmtsp(dlyShedIfp);
