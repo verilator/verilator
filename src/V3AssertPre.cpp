@@ -331,7 +331,9 @@ private:
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* valuep = V3Const::constifyEdit(nodep->lhsp()->unlinkFrBack());
         const AstConst* const constp = VN_CAST(valuep, Const);
-        if (constp->isZero()) {
+        if (!constp) {
+            nodep->v3error("Delay value is not an elaboration-tme constant");
+        } else if (constp->isZero()) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: ##0 delays");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             VL_DO_DANGLING(valuep->deleteTree(), valuep);
