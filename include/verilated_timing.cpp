@@ -133,11 +133,11 @@ void VlTriggerScheduler::resume(const char* eventDescription) {
 
 void VlTriggerScheduler::commit(const char* eventDescription) {
 #ifdef VL_DEBUG
-    if (!m_uncommitted.empty()) {
+    if (!m_ready.empty()) {
         VL_DEBUG_IF(
             VL_DBG_MSGF("         Committing processes waiting for %s:\n", eventDescription);
             for (const auto& susp
-                 : m_uncommitted) {
+                 : m_ready) {
                 VL_DBG_MSGF("           - ");
                 susp.dump();
             });

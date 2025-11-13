@@ -1061,7 +1061,7 @@ void schedule(AstNetlist* netlistp) {
     if (AstCCall* const commit = timingKit.createCommit(netlistp)) {
         FileLine* const flp = commit->fileline();
         BeforeTriggerEvaluate{
-            trigKit.newCompCall(), commit->makeStmt(),
+            trigKit.newCompCall(nbaKit.m_vscp), commit->makeStmt(),
             new AstAssign{flp, new AstVarRef{flp, trigAccp, VAccess::WRITE},
                           new AstOr{flp, new AstVarRef{flp, trigAccp, VAccess::READ},
                                     new AstVarRef{flp, actKit.m_vscp, VAccess::READ}}},
