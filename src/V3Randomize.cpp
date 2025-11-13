@@ -157,9 +157,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
             for (AstNode* memberp = cp->stmtsp(); memberp; memberp = memberp->nextp()) {
                 AstVar* const varp = VN_CAST(memberp, Var);
                 if (!varp) continue;
-                if (varp->rand().isRandomizable()) {
-                    varp->globalConstrained(true);
-                }
+                if (varp->rand().isRandomizable()) { varp->globalConstrained(true); }
             }
         }
     }
@@ -316,9 +314,9 @@ class RandomizeMarkVisitor final : public VNVisitor {
         }
     }
 
-    // Note: cloneNestedConstraints and nameManipulation removed - use processNestedConstraint directly
-    // Note: processGlobalConstraint from var-oriented approach removed
-    // In class-oriented approach, constraints are cloned directly in visit(AstNodeFTaskRef)
+    // Note: cloneNestedConstraints and nameManipulation removed - use processNestedConstraint
+    // directly Note: processGlobalConstraint from var-oriented approach removed In class-oriented
+    // approach, constraints are cloned directly in visit(AstNodeFTaskRef)
 
     // VISITORS
     void visit(AstClass* nodep) override {
@@ -508,7 +506,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 memberVarp->globalConstrained(true);
 
                 // Clone constraints from this IS_RANDOMIZED_GLOBAL member class
-                AstVarRef* rootVarRefp = new AstVarRef{nodep->fileline(), classp, memberVarp, VAccess::READ};
+                AstVarRef* rootVarRefp
+                    = new AstVarRef{nodep->fileline(), classp, memberVarp, VAccess::READ};
                 std::vector<AstVar*> emptyPath;
                 memberClassp->foreachMember([&](AstClass* const, AstConstraint* const constrp) {
                     processNestedConstraint(constrp, rootVarRefp, emptyPath, classp);
@@ -682,7 +681,8 @@ class ConstraintExprVisitor final : public VNVisitor {
     VMemberMap& m_memberMap;  // Member names cached for fast lookup
     bool m_structSel = false;  // Marks when inside structSel
                                // (used to format "%@.%@" for struct arrays)
-    std::set<std::string>& m_writtenVars;  // Track which variable paths have write_var generated (shared across all constraints)
+    std::set<std::string>& m_writtenVars;  // Track which variable paths have write_var generated
+                                           // (shared across all constraints)
 
     // Build full path for a MemberSel chain (e.g., "obj.l2.l3.l4")
     std::string buildMemberPath(const AstMemberSel* const memberSelp) {
@@ -866,14 +866,12 @@ class ConstraintExprVisitor final : public VNVisitor {
         // For global constraints: check if this specific path has been written
         // For normal constraints: only call write_var if varp->user3() is not set
         const bool alreadyWritten = (membersel && isGlobalConstrained)
-                                    ? m_writtenVars.count(smtName) > 0
-                                    : varp->user3();
+                                        ? m_writtenVars.count(smtName) > 0
+                                        : varp->user3();
         const bool shouldWriteVar = !alreadyWritten;
         if (shouldWriteVar) {
             // Track this variable path as written
-            if (membersel && isGlobalConstrained) {
-                m_writtenVars.insert(smtName);
-            }
+            if (membersel && isGlobalConstrained) { m_writtenVars.insert(smtName); }
             // For global constraints, delete nodep here after processing
             if (membersel && isGlobalConstrained) VL_DO_DANGLING(pushDeletep(nodep), nodep);
             AstCMethodHard* const methodp = new AstCMethodHard{
@@ -2406,20 +2404,23 @@ class RandomizeVisitor final : public VNVisitor {
                     resizeAllTaskp->addStmtsp(resizeTaskRefp->makeStmt());
                 }
 
-                ConstraintExprVisitor{m_memberMap, constrp->itemsp(), nullptr, genp, randModeVarp, m_writtenVars};
+                ConstraintExprVisitor{m_memberMap, constrp->itemsp(), nullptr,
+                                      genp,        randModeVarp,      m_writtenVars};
                 if (constrp->itemsp()) {
                     taskp->addStmtsp(wrapIfConstraintMode(
                         nodep, constrp, constrp->itemsp()->unlinkFrBackWithNext()));
                 }
             });
 
-            // Step 1: Call __VBasicRand first to randomize all variables (including nested objects)
+            // Step 1: Call __VBasicRand first to randomize all variables (including nested
+            // objects)
             AstVarRef* const fvarRefp = new AstVarRef{fl, fvarp, VAccess::WRITE};
             AstFunc* const basicRandomizep
                 = V3Randomize::newRandomizeFunc(m_memberMap, nodep, BASIC_RANDOMIZE_FUNC_NAME);
             addBasicRandomizeBody(basicRandomizep, nodep, randModeVarp);
             AstFuncRef* const basicRandomizeCallp = new AstFuncRef{fl, basicRandomizep, nullptr};
-            randomizep->addStmtsp(new AstAssign{fl, fvarRefp->cloneTree(false), basicRandomizeCallp});
+            randomizep->addStmtsp(
+                new AstAssign{fl, fvarRefp->cloneTree(false), basicRandomizeCallp});
 
             // Step 2: Setup constraints and call solver to override constrained variables
             randomizep->addStmtsp(implementConstraintsClear(fl, genp));
@@ -2701,8 +2702,8 @@ class RandomizeVisitor final : public VNVisitor {
         AstNode* const capturedTreep = withp->exprp()->unlinkFrBackWithNext();
         randomizeFuncp->addStmtsp(capturedTreep);
         {
-            ConstraintExprVisitor{m_memberMap, capturedTreep, randomizeFuncp, localGenp,
-                                  randModeVarp, m_writtenVars};
+            ConstraintExprVisitor{m_memberMap, capturedTreep, randomizeFuncp,
+                                  localGenp,   randModeVarp,  m_writtenVars};
         }
 
         // Call the solver and set return value
