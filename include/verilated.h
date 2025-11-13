@@ -155,7 +155,8 @@ enum VerilatedVarFlags {
     VLVF_PUB_RD = (1 << 8),  // Public readable
     VLVF_PUB_RW = (1 << 9),  // Public writable
     VLVF_DPI_CLAY = (1 << 10),  // DPI compatible C standard layout
-    VLVF_FORCEABLE = (1 << 11)  // Forceable
+    VLVF_FORCEABLE = (1 << 11),  // Forceable
+    VLVF_CONTINUOUSLY = (1 << 12)  // Is continously assigned
 };
 
 // IEEE 1800-2023 Table 20-6
