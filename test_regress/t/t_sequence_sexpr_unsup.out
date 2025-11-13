@@ -38,15 +38,9 @@
 %Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:55:4: Unsupported: sequence
    55 |    sequence s_uni_cycdelay_id;
       |    ^~~~~~~~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:56:7: Unsupported: ## id cycle delay range expression
-   56 |       ## DELAY b;
-      |       ^~
 %Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:58:4: Unsupported: sequence
    58 |    sequence s_uni_cycdelay_pid;
       |    ^~~~~~~~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:59:7: Unsupported: ## () cycle delay range expression
-   59 |       ## ( DELAY ) b;
-      |       ^~
 %Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:61:4: Unsupported: sequence
    61 |    sequence s_uni_cycdelay_range;
       |    ^~~~~~~~
@@ -68,15 +62,9 @@
 %Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:71:4: Unsupported: sequence
    71 |    sequence s_cycdelay_id;
       |    ^~~~~~~~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:72:9: Unsupported: ## id cycle delay range expression
-   72 |       a ## DELAY b;
-      |         ^~
 %Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:74:4: Unsupported: sequence
    74 |    sequence s_cycdelay_pid;
       |    ^~~~~~~~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:75:9: Unsupported: ## () cycle delay range expression
-   75 |       a ## ( DELAY ) b;
-      |         ^~
 %Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:77:4: Unsupported: sequence
    77 |    sequence s_cycdelay_range;
       |    ^~~~~~~~
