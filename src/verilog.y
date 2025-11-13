@@ -6690,11 +6690,9 @@ cycle_delay_range<delayp>:  // IEEE: ==cycle_delay_range
                 yP_POUNDPOUND intnumAsConst
                         { $$ = new AstDelay{$1, $2, true}; }
         |       yP_POUNDPOUND idAny
-                        { $$ = new AstDelay{$1, new AstConst{$1, AstConst::BitFalse{}}, true};
-                          BBUNSUP($<fl>1, "Unsupported: ## id cycle delay range expression"); }
+                        { $$ = new AstDelay{$1, new AstParseRef{$<fl>2, *$2}, true}; }
         |       yP_POUNDPOUND '(' constExpr ')'
-                        { $$ = new AstDelay{$1, new AstConst{$1, AstConst::BitFalse{}}, true};
-                          BBUNSUP($<fl>1, "Unsupported: ## () cycle delay range expression"); }
+                        { $$ = new AstDelay{$1, $3, true}; }
         //                      // In 1800-2009 ONLY:
         //                      // IEEE: yP_POUNDPOUND constant_primary
         //                      // UNSUP: This causes a big grammar ambiguity
