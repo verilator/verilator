@@ -1200,7 +1200,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             nodep->replaceWith(varRefp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             visit(varRefp);
-        } else if(nodep->user1()){
+        } else if (nodep->user1()) {
             iterateChildren(nodep);
             nodep->replaceWith(nodep->fromp()->unlinkFrBack());
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -1495,7 +1495,7 @@ class CaptureVisitor final : public VNVisitor {
         m_ignore.emplace(thisRefp);
         AstMemberSel* const memberSelp
             = new AstMemberSel{nodep->fileline(), thisRefp, nodep->varp()};
-        if(!m_targetp) memberSelp->user1(true);
+        if (!m_targetp) memberSelp->user1(true);
         memberSelp->user2p(m_targetp);
         nodep->replaceWith(memberSelp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
