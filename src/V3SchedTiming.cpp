@@ -75,9 +75,9 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
                     auto fromp = exprp->fromp();
                     if (auto dtypep = VN_CAST(fromp->dtypep(), BasicDType)) {
                         if (dtypep->keyword() == VBasicDTypeKwd::TRIGGER_SCHEDULER) {
-                            auto commitp
-                                = new AstCMethodHard{fromp->fileline(), fromp->cloneTree(false),
-                                                     VCMethod::SCHED_COMMIT};
+                            auto commitp = new AstCMethodHard{
+                                fromp->fileline(), fromp->cloneTree(false), VCMethod::SCHED_COMMIT,
+                                exprp->pinsp() ? exprp->pinsp()->cloneTree(true) : nullptr};
                             commitp->dtypeSetVoid();
                             m_resumeFuncp->addStmtsp(commitp->makeStmt());
                         }
