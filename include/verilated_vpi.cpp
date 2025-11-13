@@ -880,6 +880,7 @@ struct VerilatedVpiTimedCbsCmp final {
 };
 
 class VerilatedVpiError;
+void vl_vpi_put_word(const VerilatedVpioVar* vop, QData word, size_t bitCount, size_t addOffset);
 
 class VerilatedVpiImp final {
     enum { CB_ENUM_MAX_VALUE = cbAtEndOfSimTime + 1 };  // Maximum callback reason
@@ -1075,6 +1076,23 @@ public:
         }
         s().m_inertialPuts.clear();
     }
+    static std::pair<vpiHandle, vpiHandle> getForceControlSignals(const VerilatedVpioVarBase* vop);
+    static void setAllBitsToValue(const VerilatedVpioVar* vop, uint8_t bit_value) {
+        assert(bit_value == 0 || bit_value == 1);
+        const uint64_t word = (bit_value == 1) ? -1ULL : 0ULL;
+        constexpr int wordSize = 64;
+        const uint32_t varBits = vop->bitSize();
+        const std::size_t numChunks = (varBits / wordSize);
+        for (std::size_t i{0}; i < numChunks; ++i) {
+            vl_vpi_put_word(vop, word, wordSize, i * wordSize);
+        }
+        // addOffset == varBits would trigger assertion in vl_vpi_var_access_info even if
+        // bitCount == 0, so first check if there is a remainder
+        if (varBits % wordSize != 0)
+            vl_vpi_put_word(vop, word, varBits % wordSize, numChunks * wordSize);
+    }
+    static void setAllBits(const VerilatedVpioVar* vop) { setAllBitsToValue(vop, 1); }
+    static void clearAllBits(const VerilatedVpioVar* vop) { setAllBitsToValue(vop, 0); }
 };
 
 //======================================================================
@@ -1229,6 +1247,36 @@ VerilatedVpiError* VerilatedVpiImp::error_info() VL_MT_UNSAFE_ONE {
     return s().m_errorInfop;
 }
 
+std::pair<vpiHandle, vpiHandle>
+VerilatedVpiImp::getForceControlSignals(const VerilatedVpioVarBase* const vop) {
+    const std::string signalName = vop->fullname();
+    const std::string forceEnableSignalName = signalName + "__VforceEn";
+    const std::string forceValueSignalName = signalName + "__VforceVal";
+
+    vpiHandle forceEnableSignalp
+        = vpi_handle_by_name(const_cast<PLI_BYTE8*>(forceEnableSignalName.c_str()), nullptr);
+    vpiHandle forceValueSignalp
+        = vpi_handle_by_name(const_cast<PLI_BYTE8*>(forceValueSignalName.c_str()), nullptr);
+    if (VL_UNLIKELY(!VerilatedVpioVar::castp(forceEnableSignalp))) {
+        VL_VPI_ERROR_(__FILE__, __LINE__,
+                      "%s: vpi force or release requested for '%s', but vpiHandle '%p' of control "
+                      "signal '%s' could not be cast to VerilatedVpioVar*. Ensure signal is "
+                      "marked as forceable",
+                      __func__, signalName.c_str(), forceEnableSignalp,
+                      forceEnableSignalName.c_str());
+        forceEnableSignalp = nullptr;
+    }
+    if (VL_UNLIKELY(!VerilatedVpioVar::castp(forceValueSignalp))) {
+        VL_VPI_ERROR_(__FILE__, __LINE__,
+                      "%s: vpi force or release requested for '%s', but vpiHandle '%p' of value "
+                      "signal '%s' could not be cast to VerilatedVpioVar*. Ensure signal is "
+                      "marked as forceable",
+                      __func__, signalName.c_str(), forceValueSignalp,
+                      forceValueSignalName.c_str());
+        forceValueSignalp = nullptr;
+    }
+    return {forceEnableSignalp, forceValueSignalp};
+};
 //======================================================================
 // VerilatedVpiError Methods
 
@@ -2604,6 +2652,42 @@ void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
 
     const int varBits = vop->bitSize();
 
+    // TODO: __VforceRd already has the correct value, but that signal is not public and thus not
+    // present in the scope's m_varsp map, so its value has to be recreated using the __VforceEn
+    // and __VforceVal signals.
+    const auto forceControlSignals = vop->varp()->isForceable()
+                                         ? VerilatedVpiImp::getForceControlSignals(vop)
+                                         : std::pair<vpiHandle, vpiHandle>{nullptr, nullptr};
+    const vpiHandle& forceEnableSignalp = forceControlSignals.first;
+    const vpiHandle& forceValueSignalp = forceControlSignals.second;
+    // NOLINTNEXTLINE(readability-simplify-boolean-expr);
+    if (VL_UNLIKELY(vop->varp()->isForceable() && (!forceEnableSignalp || !forceValueSignalp))) {
+        VL_VPI_ERROR_(__FILE__, __LINE__,
+                      "%s: Signal '%s' is marked forceable, but force "
+                      "control signals could not be retrieved.",
+                      __func__, vop->fullname());
+        return;
+    }
+    const VerilatedVpioVarBase* const forceEnableVop
+        = VerilatedVpioVarBase::castp(forceEnableSignalp);
+    const VerilatedVpioVarBase* const forceValueVop
+        = VerilatedVpioVarBase::castp(forceValueSignalp);
+
+    const std::function<QData(const VerilatedVpioVarBase*, size_t, size_t)>
+        get_forceable_signal_word
+        = [forceEnableVop, forceValueVop](const VerilatedVpioVarBase* baseSignalVop,
+                                          size_t bitCount, size_t addOffset) -> QData {
+        const QData baseSignalData = vl_vpi_get_word(baseSignalVop, bitCount, addOffset);
+        const QData forceEnableData = vl_vpi_get_word(forceEnableVop, bitCount, addOffset);
+        const QData forceValueData = vl_vpi_get_word(forceValueVop, bitCount, addOffset);
+        const QData readData
+            = (forceEnableData & forceValueData) | (~forceEnableData & baseSignalData);
+        return readData;
+    };
+
+    const std::function<QData(const VerilatedVpioVarBase*, size_t, size_t)> get_word
+        = vop->varp()->isForceable() ? get_forceable_signal_word : vl_vpi_get_word;
+
     // We used to presume vpiValue.format = vpiIntVal or if single bit vpiScalarVal
     // This may cause backward compatibility issues with older code.
     if (valuep->format == vpiVectorVal) {
@@ -2621,19 +2705,19 @@ void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
                 return;
             }
             for (int i = 0; i < words; ++i) {
-                t_out[i].aval = vl_vpi_get_word(vop, 32, i * 32);
+                t_out[i].aval = get_word(vop, 32, i * 32);
                 t_out[i].bval = 0;
             }
             return;
         } else if (varp->vltype() == VLVT_UINT64 && varBits > 32) {
-            const QData data = vl_vpi_get_word(vop, 64, 0);
+            const QData data = get_word(vop, 64, 0);
             t_out[1].aval = static_cast<IData>(data >> 32ULL);
             t_out[1].bval = 0;
             t_out[0].aval = static_cast<IData>(data);
             t_out[0].bval = 0;
             return;
         } else {
-            t_out[0].aval = vl_vpi_get_word(vop, 32, 0);
+            t_out[0].aval = get_word(vop, 32, 0);
             t_out[0].bval = 0;
             return;
         }
@@ -2651,24 +2735,22 @@ void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
         const int chars = (varBits + 2) / 3;
         t_outDynamicStr.resize(chars);
         for (size_t i = 0; i < chars; ++i) {
-            const char val = vl_vpi_get_word(vop, 3, i * 3);
+            const char val = get_word(vop, 3, i * 3);
             t_outDynamicStr[chars - i - 1] = '0' + val;
         }
         valuep->value.str = const_cast<PLI_BYTE8*>(t_outDynamicStr.c_str());
         return;
     } else if (valuep->format == vpiDecStrVal) {
         if (varp->vltype() == VLVT_UINT8) {
-            vl_strprintf(t_outDynamicStr, "%hhu",
-                         static_cast<unsigned char>(vl_vpi_get_word(vop, 8, 0)));
+            vl_strprintf(t_outDynamicStr, "%hhu", static_cast<unsigned char>(get_word(vop, 8, 0)));
         } else if (varp->vltype() == VLVT_UINT16) {
             vl_strprintf(t_outDynamicStr, "%hu",
-                         static_cast<unsigned short>(vl_vpi_get_word(vop, 16, 0)));
+                         static_cast<unsigned short>(get_word(vop, 16, 0)));
         } else if (varp->vltype() == VLVT_UINT32) {
-            vl_strprintf(t_outDynamicStr, "%u",
-                         static_cast<unsigned int>(vl_vpi_get_word(vop, 32, 0)));
+            vl_strprintf(t_outDynamicStr, "%u", static_cast<unsigned int>(get_word(vop, 32, 0)));
         } else if (varp->vltype() == VLVT_UINT64) {
             vl_strprintf(t_outDynamicStr, "%llu",  // lintok-format-ll
-                         static_cast<unsigned long long>(vl_vpi_get_word(vop, 64, 0)));
+                         static_cast<unsigned long long>(get_word(vop, 64, 0)));
         }
         valuep->value.str = const_cast<PLI_BYTE8*>(t_outDynamicStr.c_str());
         return;
@@ -2676,7 +2758,7 @@ void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
         const int chars = (varBits + 3) >> 2;
         t_outDynamicStr.resize(chars);
         for (size_t i = 0; i < chars; ++i) {
-            const char val = vl_vpi_get_word(vop, 4, i * 4);
+            const char val = get_word(vop, 4, i * 4);
             t_outDynamicStr[chars - i - 1] = "0123456789abcdef"[static_cast<int>(val)];
         }
         valuep->value.str = const_cast<PLI_BYTE8*>(t_outDynamicStr.c_str());
@@ -2695,7 +2777,7 @@ void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
             const int chars = VL_BYTES_I(varBits);
             t_outDynamicStr.resize(chars);
             for (size_t i = 0; i < chars; ++i) {
-                const char val = vl_vpi_get_word(vop, 8, i * 8);
+                const char val = get_word(vop, 8, i * 8);
                 // other simulators replace [leading?] zero chars with spaces, replicate here.
                 t_outDynamicStr[chars - i - 1] = val ? val : ' ';
             }
@@ -2703,7 +2785,7 @@ void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
             return;
         }
     } else if (valuep->format == vpiIntVal) {
-        valuep->value.integer = vl_vpi_get_word(vop, 32, 0);
+        valuep->value.integer = get_word(vop, 32, 0);
         return;
     } else if (valuep->format == vpiRealVal) {
         valuep->value.real = *(vop->varRealDatap());
@@ -2749,55 +2831,162 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
         return nullptr;
     }
     const PLI_INT32 delay_mode = flags & 0xfff;
-    if (const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object)) {
-        VL_DEBUG_IF_PLI(
-            VL_DBG_MSGF("- vpi:   vpi_put_value name=%s fmt=%d vali=%d\n", vop->fullname(),
-                        valuep->format, valuep->value.integer);
-            VL_DBG_MSGF("- vpi:   varp=%p  putatp=%p\n", vop->varp()->datap(), vop->varDatap()););
+    const PLI_INT32 forceFlag = flags & 0xfff;
+    if (const VerilatedVpioVar* const baseSignalVop = VerilatedVpioVar::castp(object)) {
+        VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi:   vpi_put_value name=%s fmt=%d vali=%d\n",
+                                    baseSignalVop->fullname(), valuep->format,
+                                    valuep->value.integer);
+                        VL_DBG_MSGF("- vpi:   varp=%p  putatp=%p\n",
+                                    baseSignalVop->varp()->datap(), baseSignalVop->varDatap()););
 
-        if (VL_UNLIKELY(!vop->varp()->isPublicRW())) {
+        if (VL_UNLIKELY(!baseSignalVop->varp()->isPublicRW())) {
             VL_VPI_ERROR_(__FILE__, __LINE__,
                           "vpi_put_value was used on signal marked read-only,"
                           " use public_flat_rw instead for %s : %s",
-                          vop->fullname(), vop->scopep()->defname());
+                          baseSignalVop->fullname(), baseSignalVop->scopep()->defname());
             return nullptr;
         }
-        if (!vl_check_format(vop->varp(), valuep, vop->fullname(), false)) return nullptr;
+        // NOLINTNEXTLINE(readability-simplify-boolean-expr);
+        if (VL_UNLIKELY((forceFlag == vpiForceFlag || forceFlag == vpiReleaseFlag)
+                        && !baseSignalVop->varp()->isForceable())) {
+            VL_VPI_ERROR_(__FILE__, __LINE__,
+                          "vpi_put_value was used with %s on non-forceable signal %s : %s",
+                          forceFlag == vpiForceFlag ? "vpiForceFlag" : "vpiReleaseFlag",
+                          baseSignalVop->fullname(), baseSignalVop->scopep()->defname());
+            return nullptr;
+        }
+        if (!vl_check_format(baseSignalVop->varp(), valuep, baseSignalVop->fullname(), false))
+            return nullptr;
         if (delay_mode == vpiInertialDelay) {
             if (!VerilatedVpiPutHolder::canInertialDelay(valuep)) {
                 VL_VPI_WARNING_(
                     __FILE__, __LINE__,
                     "%s: Unsupported p_vpi_value as requested for '%s' with vpiInertialDelay",
-                    __func__, vop->fullname());
+                    __func__, baseSignalVop->fullname());
                 return nullptr;
             }
-            VerilatedVpiImp::inertialDelay(vop, valuep);
+            VerilatedVpiImp::inertialDelay(baseSignalVop, valuep);
             return object;
         }
         VerilatedVpiImp::evalNeeded(true);
-        const int varBits = vop->bitSize();
+        const int varBits = baseSignalVop->bitSize();
+
+        const auto forceControlSignals
+            = baseSignalVop->varp()->isForceable()
+                  ? VerilatedVpiImp::getForceControlSignals(baseSignalVop)
+                  : std::pair<vpiHandle, vpiHandle>{nullptr, nullptr};
+        const vpiHandle& forceEnableSignalp = forceControlSignals.first;
+        const vpiHandle& forceValueSignalp = forceControlSignals.second;
+        const VerilatedVpioVar* const forceEnableSignalVop
+            = baseSignalVop->varp()->isForceable() ? VerilatedVpioVar::castp(forceEnableSignalp)
+                                                   : nullptr;
+        ;
+        const VerilatedVpioVar* const forceValueSignalVop
+            = baseSignalVop->varp()->isForceable() ? VerilatedVpioVar::castp(forceValueSignalp)
+                                                   : nullptr;
+        ;
+        // NOLINTNEXTLINE(readability-simplify-boolean-expr);
+        if (VL_UNLIKELY(baseSignalVop->varp()->isForceable()
+                        && (!forceEnableSignalp || !forceEnableSignalVop || !forceValueSignalp
+                            || !forceValueSignalVop))) {
+            VL_VPI_ERROR_(__FILE__, __LINE__,
+                          "%s: Signal '%s' with vpiHandle '%p' is marked forceable, but force "
+                          "control signals could not be retrieved.",
+                          __func__, baseSignalVop->fullname(), object);
+            return nullptr;
+        }
+
+        const VerilatedVpioVar* const valueVop = (forceFlag == vpiForceFlag)
+                                                     ? VerilatedVpioVar::castp(forceValueSignalp)
+                                                     : baseSignalVop;
+
+        if (forceFlag == vpiForceFlag) {
+            // Enable __VforceEn
+            VerilatedVpiImp::setAllBits(forceEnableSignalVop);
+        }
+        if (forceFlag == vpiReleaseFlag) {
+            // Step 1: Deactivate __VforceEn
+            VerilatedVpiImp::clearAllBits(forceEnableSignalVop);
+
+            // Step 2: Set valuep
+            const bool isContinuously = false;
+            // TODO: valuep should be set to the value of the signal after release. For
+            // continuously assigned signals, this means the signal gets the value it was initially
+            // assigned to. For any other signal, it retains the forced value until another event
+            // occurs that changes its value. Need to implement the ability to access
+            // isContinuously in Verilated code.
+            if (isContinuously) {
+                vl_vpi_get_value(baseSignalVop, valuep);
+
+                t_vpi_error_info baseValueGetError{};
+                const bool errorOccurred = vpi_chk_error(&baseValueGetError);
+                // NOLINTNEXTLINE(readability-simplify-boolean-expr);
+                if (VL_UNLIKELY(errorOccurred && baseValueGetError.level >= vpiError)) {
+                    const std::string baseValueSignalName = baseSignalVop->fullname();
+                    const std::string previousErrorMessage = baseValueGetError.message;
+                    VL_VPI_ERROR_(__FILE__, __LINE__,
+                                  "%s: Could not retrieve value of signal '%s' with "
+                                  "vpiHandle '%p'. Error message: %s",
+                                  __func__, baseValueSignalName.c_str(), object,
+                                  previousErrorMessage.c_str());
+                    return nullptr;
+                }
+                // NOLINTNEXTLINE(readability-simplify-boolean-expr);
+                if (VL_UNLIKELY(errorOccurred && baseValueGetError.level < vpiError)) {
+                    vpi_printf(baseValueGetError.message);
+                    VL_VPI_ERROR_RESET_();
+                }
+            } else {
+                vl_vpi_get_value(forceValueSignalVop, valuep);
+
+                t_vpi_error_info forceValueGetError{};
+                const bool errorOccurred = vpi_chk_error(&forceValueGetError);
+                // NOLINTNEXTLINE(readability-simplify-boolean-expr);
+                if (VL_UNLIKELY(errorOccurred && forceValueGetError.level >= vpiError)) {
+                    const std::string forceValueSignalName = forceValueSignalVop->fullname();
+                    std::string previousErrorMessage = forceValueGetError.message;
+                    VL_VPI_ERROR_(__FILE__, __LINE__,
+                                  "%s: Could not retrieve value of force value signal '%s' with "
+                                  "vpiHandle '%p'. Error message: %s",
+                                  __func__, forceValueSignalName.c_str(), forceValueSignalp,
+                                  previousErrorMessage.c_str());
+                    return nullptr;
+                }
+                // NOLINTNEXTLINE(readability-simplify-boolean-expr);
+                if (VL_UNLIKELY(errorOccurred && forceValueGetError.level < vpiError)) {
+                    vpi_printf(forceValueGetError.message);
+                    VL_VPI_ERROR_RESET_();
+                }
+            }
+
+            return object;  // TODO: According to the SystemVerilog specification,
+                            // vpi_put_value should return a handle to the scheduled event
+                            // if the vpiReturnEvent flag is selected, NULL otherwise. Is
+                            // this even possible with Verilator?
+        }
+
         if (valuep->format == vpiVectorVal) {
             if (VL_UNLIKELY(!valuep->value.vector)) return nullptr;
-            if (vop->varp()->vltype() == VLVT_WDATA) {
+            if (valueVop->varp()->vltype() == VLVT_WDATA) {
                 const int words = VL_WORDS_I(varBits);
                 for (int i = 0; i < words; ++i)
-                    vl_vpi_put_word(vop, valuep->value.vector[i].aval, 32, i * 32);
+                    vl_vpi_put_word(valueVop, valuep->value.vector[i].aval, 32, i * 32);
                 return object;
-            } else if (vop->varp()->vltype() == VLVT_UINT64 && varBits > 32) {
+            } else if (valueVop->varp()->vltype() == VLVT_UINT64 && varBits > 32) {
                 const QData val = (static_cast<QData>(valuep->value.vector[1].aval) << 32)
                                   | static_cast<QData>(valuep->value.vector[0].aval);
-                vl_vpi_put_word(vop, val, 64, 0);
+                vl_vpi_put_word(valueVop, val, 64, 0);
                 return object;
             } else {
-                vl_vpi_put_word(vop, valuep->value.vector[0].aval, 32, 0);
+                vl_vpi_put_word(valueVop, valuep->value.vector[0].aval, 32, 0);
                 return object;
             }
         } else if (valuep->format == vpiBinStrVal) {
             const int len = std::strlen(valuep->value.str);
-            CData* const datap = reinterpret_cast<CData*>(vop->varDatap());
+            CData* const datap = reinterpret_cast<CData*>(valueVop->varDatap());
             for (int i = 0; i < varBits; ++i) {
                 const bool set = (i < len) && (valuep->value.str[len - i - 1] == '1');
-                const size_t pos = vop->bitOffset() + i;
+                const size_t pos = valueVop->bitOffset() + i;
 
                 if (set)
                     datap[pos >> 3] |= 1 << (pos & 7);
@@ -2814,10 +3003,10 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                                     "%s: Non octal character '%c' in '%s' as value %s for %s",
                                     __func__, digit + '0', valuep->value.str,
                                     VerilatedVpiError::strFromVpiVal(valuep->format),
-                                    vop->fullname());
+                                    valueVop->fullname());
                     digit = 0;
                 }
-                vl_vpi_put_word(vop, digit, 3, i * 3);
+                vl_vpi_put_word(valueVop, digit, 3, i * 3);
             }
             return object;
         } else if (valuep->format == vpiDecStrVal) {
@@ -2828,16 +3017,17 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             if (success < 1) {
                 VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Parsing failed for '%s' as value %s for %s",
                               __func__, valuep->value.str,
-                              VerilatedVpiError::strFromVpiVal(valuep->format), vop->fullname());
+                              VerilatedVpiError::strFromVpiVal(valuep->format),
+                              valueVop->fullname());
                 return nullptr;
             }
             if (success > 1) {
-                VL_VPI_WARNING_(__FILE__, __LINE__,
-                                "%s: Trailing garbage '%s' in '%s' as value %s for %s", __func__,
-                                remainder, valuep->value.str,
-                                VerilatedVpiError::strFromVpiVal(valuep->format), vop->fullname());
+                VL_VPI_WARNING_(
+                    __FILE__, __LINE__, "%s: Trailing garbage '%s' in '%s' as value %s for %s",
+                    __func__, remainder, valuep->value.str,
+                    VerilatedVpiError::strFromVpiVal(valuep->format), valueVop->fullname());
             }
-            vl_vpi_put_word(vop, val, 64, 0);
+            vl_vpi_put_word(valueVop, val, 64, 0);
             return object;
         } else if (valuep->format == vpiHexStrVal) {
             const int chars = (varBits + 3) >> 2;
@@ -2861,19 +3051,19 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                                         "%s: Non hex character '%c' in '%s' as value %s for %s",
                                         __func__, digit, valuep->value.str,
                                         VerilatedVpiError::strFromVpiVal(valuep->format),
-                                        vop->fullname());
+                                        valueVop->fullname());
                         hex = 0;
                     }
                 } else {
                     hex = 0;
                 }
                 // assign hex digit value to destination
-                vl_vpi_put_word(vop, hex, 4, i * 4);
+                vl_vpi_put_word(valueVop, hex, 4, i * 4);
             }
             return object;
         } else if (valuep->format == vpiStringVal) {
-            if (vop->varp()->vltype() == VLVT_STRING) {
-                *(vop->varStringDatap()) = valuep->value.str;
+            if (valueVop->varp()->vltype() == VLVT_STRING) {
+                *(valueVop->varStringDatap()) = valuep->value.str;
                 return object;
             } else {
                 const int chars = VL_BYTES_I(varBits);
@@ -2881,21 +3071,22 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                 for (int i = 0; i < chars; ++i) {
                     // prepend with 0 values before placing string the least significant bytes
                     const char c = (i < len) ? valuep->value.str[len - i - 1] : 0;
-                    vl_vpi_put_word(vop, c, 8, i * 8);
+                    vl_vpi_put_word(valueVop, c, 8, i * 8);
                 }
             }
             return object;
         } else if (valuep->format == vpiIntVal) {
-            vl_vpi_put_word(vop, valuep->value.integer, 64, 0);
+            vl_vpi_put_word(valueVop, valuep->value.integer, 64, 0);
             return object;
         } else if (valuep->format == vpiRealVal) {
-            if (vop->varp()->vltype() == VLVT_REAL) {
-                *(vop->varRealDatap()) = valuep->value.real;
+            if (valueVop->varp()->vltype() == VLVT_REAL) {
+                *(valueVop->varRealDatap()) = valuep->value.real;
                 return object;
             }
         }
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported format (%s) as requested for %s",
-                      __func__, VerilatedVpiError::strFromVpiVal(valuep->format), vop->fullname());
+                      __func__, VerilatedVpiError::strFromVpiVal(valuep->format),
+                      valueVop->fullname());
         return nullptr;
     } else if (const VerilatedVpioParam* const vop = VerilatedVpioParam::castp(object)) {
         VL_VPI_WARNING_(__FILE__, __LINE__, "%s: Ignoring vpi_put_value to vpiParameter: %s",
