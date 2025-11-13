@@ -70,14 +70,19 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
 
         for (auto& p : m_lbs) {
             AstActive* const activep = p.second;
-            auto exprp = VN_AS(activep->stmtsp(), StmtExpr)->exprp();
-            auto fromp = VN_AS(exprp, CMethodHard)->fromp()->cloneTree(false);
-            if (VN_AS(fromp->dtypep(), BasicDType)->keyword().ascii() == "VlTriggerScheduler") {
-                // std::cout << "TRUE\n";
-                auto commitp
-                    = new AstCMethodHard{fromp->fileline(), fromp, VCMethod::SCHED_COMMIT};
-                commitp->dtypeSetVoid();
-                m_resumeFuncp->addStmtsp(commitp->makeStmt());
+            if (auto stmtExprp = VN_CAST(activep->stmtsp(), StmtExpr)) {
+                if (auto exprp = VN_CAST(stmtExprp->exprp(), CMethodHard)) {
+                    auto fromp = exprp->fromp();
+                    if (auto dtypep = VN_CAST(fromp->dtypep(), BasicDType)) {
+                        if (dtypep->keyword() == VBasicDTypeKwd::TRIGGER_SCHEDULER) {
+                            auto commitp
+                                = new AstCMethodHard{fromp->fileline(), fromp->cloneTree(false),
+                                                     VCMethod::SCHED_COMMIT};
+                            commitp->dtypeSetVoid();
+                            m_resumeFuncp->addStmtsp(commitp->makeStmt());
+                        }
+                    }
+                }
             }
         }
 

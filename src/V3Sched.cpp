@@ -585,11 +585,15 @@ void createEval(AstNetlist* netlistp,  //
             AstNodeStmt* stmtsp = trigKit.newCompCall(nbaKit.m_vscp);
             // Commit trigger awaits from the previous iteration
             if (timingCommitp) stmtsp = AstNode::addNext(stmtsp, timingCommitp->makeStmt());
-            AstNode::addNext(
-                stmtsp,
-                new AstAssign{flp, new AstVarRef{flp, tmpVecp, VAccess::WRITE},
-                              new AstOr{flp, new AstVarRef{flp, actAccp, VAccess::READ},
-                                        new AstVarRef{flp, actKit.m_vscp, VAccess::READ}}});
+            if (actKit.m_vscp) {
+                auto tmpVarRefp = new AstVarRef{flp, tmpVecp, VAccess::WRITE};
+                auto vscpVarRefp = new AstVarRef{flp, actKit.m_vscp, VAccess::READ};
+                AstNode::addNext(
+                    stmtsp,
+                    new AstAssign{
+                        flp, tmpVarRefp,
+                        new AstOr{flp, new AstVarRef{flp, actAccp, VAccess::READ}, vscpVarRefp}});
+            }
             // Latch the 'act' triggers under the 'nba' triggers
             stmtsp = AstNode::addNext(stmtsp, trigKit.newOrIntoCall(nbaKit.m_vscp, tmpVecp));
             //
@@ -597,18 +601,29 @@ void createEval(AstNetlist* netlistp,  //
         }(),
         // Work statements
         [&]() {
-            AstCMethodHard* const cCallp
-                = new AstCMethodHard{flp, new AstVarRef{flp, actAccp, VAccess::WRITE},
-                                     VCMethod::UNPACKED_FILL, new AstConst{flp, 0}};
-            cCallp->dtypeSetVoid();
-            AstNodeStmt* workp = cCallp->makeStmt();
+            AstNodeStmt* workp;
+            auto addStmt = [&workp](auto nodep) {
+                if (workp) {
+                    AstNode::addNext(workp, nodep);
+                } else {
+                    workp = nodep;
+                }
+            };
+            if (actAccp) {
+                AstCMethodHard* const cCallp
+                    = new AstCMethodHard{flp, new AstVarRef{flp, actAccp, VAccess::WRITE},
+                                         VCMethod::UNPACKED_FILL, new AstConst{flp, 0}};
+                cCallp->dtypeSetVoid();
+                addStmt(cCallp->makeStmt());
+            }
             // Resume triggered timing schedulers
-            if (timingResumep) AstNode::addNext(workp, timingResumep->makeStmt());
+            if (timingResumep) addStmt(timingResumep->makeStmt());
+            if (actKit.m_vscp) {  // This shall implicitly be also `tmpVecp != nullptr`
+                addStmt(new AstAssign{flp, new AstVarRef{flp, actKit.m_vscp, VAccess::WRITE},
+                                      new AstVarRef{flp, tmpVecp, VAccess::READ}});
+            }
             // Invoke the 'act' function
-            AstNode::addNext(workp,
-                             new AstAssign{flp, new AstVarRef{flp, actKit.m_vscp, VAccess::WRITE},
-                                           new AstVarRef{flp, tmpVecp, VAccess::READ}});
-            workp = AstNode::addNext(workp, util::callVoidFunc(actKit.m_funcp));
+            addStmt(util::callVoidFunc(actKit.m_funcp));
             //
             return workp;
         }());
