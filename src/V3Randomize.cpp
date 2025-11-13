@@ -338,13 +338,27 @@ class RandomizeMarkVisitor final : public VNVisitor {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_clonedConstraints);
         m_modp = m_classp = nodep;
+        std::cout << "DEBUG visit(AstClass) ENTER: " << nodep->prettyName()
+                  << ", user1 BEFORE = " << nodep->user1() << std::endl;
         iterateChildrenConst(nodep);
         if (nodep->extendsp()) {
             // Record derived class for inheritance hierarchy tracking
             const AstClass* const basep = nodep->extendsp()->classp();
             m_baseToDerivedMap[basep].insert(nodep);
         }
-        for (AstConstraint* const constrp : m_clonedConstraints) m_classp->addStmtsp(constrp);
+        std::cout << "DEBUG visit(AstClass): " << nodep->prettyName()
+                  << ", user1 = " << nodep->user1()
+                  << ", m_clonedConstraints.size() = " << m_clonedConstraints.size() << std::endl;
+
+        // Only add cloned constraints to IS_RANDOMIZED classes (top-level randomize() callers)
+        if (nodep->user1() == IS_RANDOMIZED && !m_clonedConstraints.empty()) {
+            std::cout << "  This is IS_RANDOMIZED class, adding " << m_clonedConstraints.size() << " cloned constraints" << std::endl;
+            for (AstConstraint* const constrp : m_clonedConstraints) {
+                std::cout << "  Adding cloned constraint: " << constrp->name()
+                          << " (backp: " << (constrp->backp() ? "yes" : "no") << ")" << std::endl;
+                m_classp->addStmtsp(constrp);
+            }
+        }
         m_clonedConstraints.clear();
     }
     void visit(AstNodeStmt* nodep) override {
@@ -510,6 +524,59 @@ class RandomizeMarkVisitor final : public VNVisitor {
         if (classp) {
             if (!classp->user1()) classp->user1(IS_RANDOMIZED);
             markMembers(classp);
+
+            std::cout << "DEBUG: Detected randomize() call on class: " << classp->prettyName()
+                      << ", m_classp = " << (m_classp ? m_classp->prettyName() : "null") << std::endl;
+
+            // Step 2: Clone constraints from all IS_RANDOMIZED_GLOBAL members
+            classp->foreachMember([&](AstClass* const, AstVar* const memberVarp) {
+                if (!memberVarp->rand().isRandomizable()) return;
+                const AstNodeDType* const dtypep = memberVarp->dtypep()->skipRefp();
+                const AstClassRefDType* const classRefp = VN_CAST(dtypep, ClassRefDType);
+                if (!classRefp || !classRefp->classp()) return;
+                AstClass* const memberClassp = classRefp->classp();
+                if (memberClassp->user1() != IS_RANDOMIZED_GLOBAL) return;
+
+                std::cout << "DEBUG: Cloning constraints from IS_RANDOMIZED_GLOBAL member: "
+                          << memberVarp->name() << " (class: " << memberClassp->prettyName() << ")" << std::endl;
+
+                // Clone ALL constraints from this IS_RANDOMIZED_GLOBAL member class
+                // memberVarp is the rand member variable (e.g., Top::m_mid)
+                // memberClassp is its class type (e.g., Mid)
+                AstVarRef* rootVarRefp = new AstVarRef{nodep->fileline(), classp, memberVarp, VAccess::READ};
+                std::cout << "  DEBUG: Root var ref: " << rootVarRefp->name() << std::endl;
+                // Clone direct constraints of memberClassp (e.g., Mid::c_mid)
+                memberClassp->foreachMember([&](AstClass* const, AstConstraint* const constrp) {
+                    std::cout << "  DEBUG: Cloning constraint: " << constrp->name()
+                              << " (backp: " << (constrp->backp() ? "yes" : "no") << ")" << std::endl;
+                    AstConstraint* const cloneConstrp = constrp->cloneTree(false);
+                    std::cout << "  DEBUG: After cloneTree, cloneConstrp backp: "
+                              << (cloneConstrp->backp() ? "yes" : "no") << std::endl;
+                    nameManipulation(rootVarRefp, cloneConstrp);
+                    std::cout << "  DEBUG: After nameManipulation, new name: " << cloneConstrp->name() << std::endl;
+
+                    // Check for duplicate constraint names before adding
+                    const std::string& newName = cloneConstrp->name();
+                    bool isDuplicate = false;
+                    for (const AstConstraint* existingConstrp : m_clonedConstraints) {
+                        if (existingConstrp->name() == newName) {
+                            std::cout << "  DEBUG: Skipping duplicate constraint: " << newName << std::endl;
+                            isDuplicate = true;
+                            VL_DO_DANGLING(cloneConstrp->deleteTree(), cloneConstrp);
+                            break;
+                        }
+                    }
+                    if (!isDuplicate) {
+                        std::cout << "  DEBUG: Adding to m_clonedConstraints, size before: " << m_clonedConstraints.size() << std::endl;
+                        m_clonedConstraints.push_back(cloneConstrp);
+                        std::cout << "  DEBUG: Size after: " << m_clonedConstraints.size() << std::endl;
+                    }
+                });
+
+                // Clone nested constraints (e.g., Mid::m_inner's constraints)
+                std::cout << "  DEBUG: Calling cloneNestedConstraints" << std::endl;
+                cloneNestedConstraints(rootVarRefp, memberClassp);
+            });
         }
         if (nodep->classOrPackagep()->name() == "std") {
             for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
@@ -617,36 +684,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
         } else {
             nodep->user2p(m_modp);
         }
-        if (randObject && nodep->varp()
-            && nodep->varp()->rand().isRandomizable()) {  // Process global constraints
-            // if (m_classp && m_classp->user1() == IS_RANDOMIZED) {
-            //     m_classp->user1(IS_RANDOMIZED_GLOBAL);
-            // }
-            // Mark the entire nested chain as participating in global constraints
-            if (VN_IS(nodep->fromp(), VarRef) || VN_IS(nodep->fromp(), MemberSel)) {
-                markNestedGlobalConstrainedRecurse(nodep->fromp());
-            } else if (VN_IS(nodep->fromp(), ArraySel)) {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: " << nodep->prettyTypeName()
-                                                             << " within a global constraint");
-            }
-            // Global constraint processing algorithm:
-            // 1. Detect globally constrained object variables in randomized classes
-            // 2. Clone constraint trees from the constrained object's class
-            // 3. Rename cloned constraints with object prefix (obj.var format)
-            // 4. Insert cloned constraints into current class for solver processing
-            // 5. Use basic randomization for non-constrained variables to avoid recursion
-
-            // Extract and validate components early to avoid repeated type checks
-            AstVarRef* const varRefp = VN_CAST(nodep->fromp(), VarRef);
-            if (!varRefp) return;
-
-            const AstClassRefDType* const classRefp
-                = VN_AS(varRefp->dtypep()->skipRefp(), ClassRefDType);
-
-            if (nodep->user1() && varRefp->varp()->globalConstrained()) {
-                processGlobalConstraint(varRefp, classRefp->classp());
-            }
-        }
+        // Old global constraint detection removed - now handled proactively in visit(AstClass)
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
