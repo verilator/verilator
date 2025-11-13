@@ -98,7 +98,8 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
             AstIf* const ifp = V3Sched::util::createIfFromSenTree(activep->sentreep());
             ifp->addThensp(activep->stmtsp()->unlinkFrBackWithNext());
 
-            if (schedrefp->varScopep()->dtypep()->basicp()->isDelayScheduler()) {
+            if (false && schedrefp->varScopep()->dtypep()->basicp()->isDelayScheduler()) {
+                m_resumeFuncp->addStmtsp(ifp->thensp()->cloneTree(true));
                 dlyShedIfp = ifp;
             } else {
                 // m_resumeFuncp->addStmtsp(ifp);
@@ -287,7 +288,7 @@ class AwaitVisitor final : public VNVisitor {
     void visit(AstCAwait* nodep) override {
         if (AstSenTree* const sentreep = nodep->sentreep()) {
             if (!sentreep->user1SetOnce()) createResumeActive(nodep);
-            nodep->clearSentreep();  // Clear as these sentrees will get deleted later
+            // nodep->clearSentreep();  // Clear as these sentrees will get deleted later
             if (m_inProcess) m_processDomains.insert(sentreep);
         }
     }
