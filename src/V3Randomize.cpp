@@ -150,6 +150,22 @@ class RandomizeMarkVisitor final : public VNVisitor {
     std::unordered_set<const AstVar*> m_processedVars;  // Track by variable instance, not class
 
     // METHODS
+    // Step 3: Mark all rand variables in IS_RANDOMIZED_GLOBAL classes as globalConstrained
+    void markGlobalConstrainedVars(AstClass* classp) {
+        for (const AstClass* cp = classp; cp;
+             cp = cp->extendsp() ? cp->extendsp()->classp() : nullptr) {
+            for (AstNode* memberp = cp->stmtsp(); memberp; memberp = memberp->nextp()) {
+                AstVar* const varp = VN_CAST(memberp, Var);
+                if (!varp) continue;
+                if (varp->rand().isRandomizable()) {
+                    varp->globalConstrained(true);
+                    std::cout << "Marked " << classp->name() << "::" << varp->name()
+                              << " as globalConstrained\n";
+                }
+            }
+        }
+    }
+
     void markMembers(const AstClass* nodep) {
         for (const AstClass* classp = nodep; classp;
              classp = classp->extendsp() ? classp->extendsp()->classp() : nullptr) {
@@ -170,6 +186,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
                         if (!rclassp->user1()) {
                             std::cout << rclassp->name() << " is marked \n";
                             rclassp->user1(IS_RANDOMIZED_GLOBAL);
+                            // Step 3: Mark all rand variables in IS_RANDOMIZED_GLOBAL classes
+                            markGlobalConstrainedVars(rclassp);
                             markMembers(rclassp);
                             markDerived(rclassp);
                         }
@@ -537,6 +555,11 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 AstClass* const memberClassp = classRefp->classp();
                 if (memberClassp->user1() != IS_RANDOMIZED_GLOBAL) return;
 
+                // Step 3: Mark the class instance variable as globalConstrained
+                memberVarp->globalConstrained(true);
+                std::cout << "Marked class instance " << classp->name() << "::" << memberVarp->name()
+                          << " as globalConstrained\n";
+
                 std::cout << "DEBUG: Cloning constraints from IS_RANDOMIZED_GLOBAL member: "
                           << memberVarp->name() << " (class: " << memberClassp->prettyName() << ")" << std::endl;
 
@@ -883,6 +906,10 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         // Check if this variable is marked as globally constrained
         const bool isGlobalConstrained = nodep->varp()->globalConstrained();
+        std::cout << "DEBUG ConstraintExprVisitor::visit(VarRef): var=" << varp->name()
+                  << ", globalConstrained=" << isGlobalConstrained
+                  << ", user3=" << varp->user3()
+                  << ", hasBackpMemberSel=" << VN_IS(nodep->backp(), MemberSel) << "\n";
 
         AstMemberSel* membersel = nullptr;
         std::string smtName;
@@ -925,9 +952,17 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         // For global constraints: always call write_var with full path even if varp->user3() is
         // set For normal constraints: only call write_var if varp->user3() is not set
-        if (!varp->user3() || (membersel && nodep->varp()->globalConstrained())) {
+        const bool shouldWriteVar = !varp->user3() || (membersel && nodep->varp()->globalConstrained());
+        std::cout << "DEBUG write_var decision: var=" << varp->name()
+                  << ", user3=" << varp->user3()
+                  << ", hasMembersel=" << (membersel != nullptr)
+                  << ", isGlobalConstrained=" << isGlobalConstrained
+                  << ", shouldWriteVar=" << shouldWriteVar
+                  << ", smtName=" << smtName << "\n";
+        if (shouldWriteVar) {
             // For global constraints, delete nodep here after processing
             if (membersel && isGlobalConstrained) VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            std::cout << "  -> Generating write_var for " << smtName << "\n";
             AstCMethodHard* const methodp = new AstCMethodHard{
                 varp->fileline(),
                 new AstVarRef{varp->fileline(), VN_AS(m_genp->user2p(), NodeModule), m_genp,
@@ -1171,6 +1206,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         editSMT(nodep, nodep->fromp(), indexp);
     }
     void visit(AstMemberSel* nodep) override {
+        // Step 3: Check if rootVar is globalConstrained (original var-oriented logic)
         if (nodep->varp()->rand().isRandomizable() && nodep->fromp()) {
             AstNode* rootNode = nodep->fromp();
             while (const AstMemberSel* const selp = VN_CAST(rootNode, MemberSel))
@@ -1178,8 +1214,12 @@ class ConstraintExprVisitor final : public VNVisitor {
             // Check if the root variable participates in global constraints
             if (const AstVarRef* const varRefp = VN_CAST(rootNode, VarRef)) {
                 AstVar* const constrainedVar = varRefp->varp();
+                std::cout << "DEBUG ConstraintExprVisitor::visit(MemberSel): memberVar="
+                          << nodep->varp()->name() << ", rootVar=" << constrainedVar->name()
+                          << ", rootVar.globalConstrained=" << constrainedVar->globalConstrained() << "\n";
                 if (constrainedVar->globalConstrained()) {
                     // Global constraint - unwrap the MemberSel
+                    std::cout << "  -> Unwrapping MemberSel for global constraint\n";
                     iterateChildren(nodep);
                     nodep->replaceWith(nodep->fromp()->unlinkFrBack());
                     VL_DO_DANGLING(nodep->deleteTree(), nodep);
