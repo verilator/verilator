@@ -197,7 +197,7 @@ public:
 //=============================================================================
 
 // Object holding constraints and variable references.
-class VlRandomizer final {
+class VlRandomizer VL_NOT_FINAL {
     // MEMBERS
     std::vector<std::string> m_constraints;  // Solver-dependent constraints
     std::map<std::string, std::shared_ptr<const VlRandomVar>> m_vars;  // Solver-dependent
@@ -570,7 +570,8 @@ public:
     }
 
     void hard(std::string&& constraint);
-    void clear();
+    void clearConstraints();
+    void clearAll();  // Clear both constraints and variables
     void set_randmode(const VlQueue<CData>& randmode) { m_randmodep = &randmode; }
 #ifdef VL_DEBUG
     void dump() const;
@@ -580,7 +581,7 @@ public:
 //=============================================================================
 
 // Light wrapper for RNG used by std::randomize() to support scope-level randomization.
-class VlStdRandomizer final {
+class VlStdRandomizer final : public VlRandomizer {
     // MEMBERS
     VlRNG m_rng;  // Random number generator
 
@@ -594,6 +595,7 @@ public:
         value = VL_MASK_I(width) & VL_RANDOM_RNG_I(m_rng);
         return true;
     }
+    bool next() { return VlRandomizer::next(m_rng); }
 };
 
 #endif  // Guard

@@ -6712,13 +6712,6 @@ class WidthVisitor final : public VNVisitor {
                 for (const AstNode* argp = nodep->pinsp(); argp; argp = argp->nextp())
                     userIterateAndNext(VN_AS(argp, Arg)->exprp(), WidthVP{SELF, BOTH}.p());
                 handleStdRandomizeArgs(nodep);  // Provided args should be in current scope
-                if (withp) {
-                    nodep->v3warn(CONSTRAINTIGN, "Unsupported: std::randomize()'s 'with'");
-                    nodep->replaceWith(new AstConst{nodep->fileline(), 0});
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                    VL_DO_DANGLING(pushDeletep(withp), nodep);
-                    return;
-                }
                 processFTaskRefArgs(nodep);
                 nodep->addPinsp(withp);
                 nodep->didWidth(true);
