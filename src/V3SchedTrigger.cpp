@@ -414,12 +414,14 @@ void TriggerKit::addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index) co
 }
 
 TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords,
-                       uint32_t nExtraWords, uint32_t nPreWords)
+                       uint32_t nExtraWords, uint32_t nPreWords,
+                       std::unordered_map<VNRef<const AstSenItem>, size_t> senItem2TrigIdx)
     : m_name{name}
     , m_slow{slow}
     , m_nSenseWords{nSenseWords}
     , m_nExtraWords{nExtraWords}
-    , m_nPreWords{nPreWords} {
+    , m_nPreWords{nPreWords}
+    , m_senItem2TrigIdx{std::move(senItem2TrigIdx)} {
     // If no triggers, we don't need to generate anything
     if (!m_nVecWords) return;
     // Othewise construc the parts of the kit
@@ -512,7 +514,7 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
     const uint32_t nExtraWords = nExtraTriggers / WORD_SIZE;
 
     // We can now construct the trigger kit - this constructs all items that will be kept
-    TriggerKit kit{name, slow, nSenseWords, nExtraWords, nPreWords};
+    TriggerKit kit{name, slow, nSenseWords, nExtraWords, nPreWords, senItem2TrigIdx};
 
     // If there are no triggers we are done
     if (!kit.m_nVecWords) return kit;

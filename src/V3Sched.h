@@ -193,6 +193,7 @@ class TriggerKit final {
     const uint32_t m_nSenseWords;  // Number of words for Sense triggers
     const uint32_t m_nExtraWords;  // Number of words for Extra triggers
     const uint32_t m_nPreWords;  // Number of words for 'pre' part
+    std::unordered_map<VNRef<const AstSenItem>, size_t> m_senItem2TrigIdx;
     const uint32_t m_nVecWords = m_nSenseWords + m_nExtraWords;  // Number of words in 'vec' part
 
     // Data type of a single trigger word
@@ -235,7 +236,8 @@ class TriggerKit final {
     AstSenTree* newTriggerSenTree(AstVarScope* vscp, const std::vector<uint32_t>& indices) const;
 
     TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords, uint32_t nExtraWords,
-               uint32_t nPreWords);
+               uint32_t nPreWords,
+               std::unordered_map<VNRef<const AstSenItem>, size_t> senItem2TrigIdx);
     VL_UNCOPYABLE(TriggerKit);
     TriggerKit& operator=(TriggerKit&&) = delete;
 
@@ -274,6 +276,9 @@ public:
     AstVarScope* vscp() const { return m_vscp; }
     AstVarScope* vscAccp() const {
         return m_vscAccp ? m_vscAccp : (m_vscAccp = newTrigVec("Acc", true));
+    }
+    size_t senItem2TrigIdx(const AstSenItem* senItemp) const {
+        return m_senItem2TrigIdx.find(*senItemp)->second;
     }
     AstCFunc* compp() const { return m_compp; }
     const std::unordered_map<const AstSenTree*, AstSenTree*>& mapPre() const { return m_mapPre; }

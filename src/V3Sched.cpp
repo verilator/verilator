@@ -563,8 +563,7 @@ void createEval(AstNetlist* netlistp,  //
                 const EvalKit& obsKit,  //
                 const EvalKit& reactKit,  //
                 AstCFunc* postponedFuncp,  //
-                TimingKit& timingKit,  //
-                AstVarScope* const actAccp  //
+                TimingKit& timingKit  //
 ) {
     FileLine* const flp = netlistp->fileline();
 
@@ -590,9 +589,10 @@ void createEval(AstNetlist* netlistp,  //
                 auto vscpVarRefp = new AstVarRef{flp, actKit.m_vscp, VAccess::READ};
                 AstNode::addNext(
                     stmtsp,
-                    new AstAssign{
-                        flp, tmpVarRefp,
-                        new AstOr{flp, new AstVarRef{flp, actAccp, VAccess::READ}, vscpVarRefp}});
+                    new AstAssign{flp, tmpVarRefp,
+                                  new AstOr{flp,
+                                            new AstVarRef{flp, trigKit.vscAccp(), VAccess::READ},
+                                            vscpVarRefp}});
             }
             // Latch the 'act' triggers under the 'nba' triggers
             stmtsp = AstNode::addNext(stmtsp, trigKit.newOrIntoCall(nbaKit.m_vscp, tmpVecp));
@@ -602,7 +602,7 @@ void createEval(AstNetlist* netlistp,  //
         // Work statements
         [&]() {
             AstNodeStmt* workp = nullptr;
-            if (actAccp) {
+            if (auto actAccp = trigKit.vscAccp()) {
                 AstCMethodHard* const cCallp
                     = new AstCMethodHard{flp, new AstVarRef{flp, actAccp, VAccess::WRITE},
                                          VCMethod::UNPACKED_FILL, new AstConst{flp, 0}};
@@ -775,11 +775,75 @@ cloneMapWithNewTriggerReferences(const std::unordered_map<const AstSenTree*, Ast
 class BeforeTriggerEvaluate : public VNVisitor {
     const VNUser1InUse m_user1InUse;
 
+    V3UniqueNames m_preTriggerFuncUniqueName;
+
+    AstNetlist* const m_netlistp;
     AstNodeStmt* const m_eval;
     AstStmtExpr* const m_commit;
     AstNodeStmt* const m_orInto;
     SenExprBuilder& m_senExprBuilder;
     AstVarScope* const m_trigVecp;
+    const TriggerKit& m_trigKit;
+
+    std::vector<std::set<AstCFunc*>> m_trigToUsingFuncs;
+
+    AstNodeStmt* getPreTriggerStmt(AstSenTree* const senTreep) {
+        if (!senTreep->user1p()) {
+            AstCFunc* const funcp = util::makeSubFunction(
+                m_netlistp, m_preTriggerFuncUniqueName.get(senTreep), false);
+            senTreep->user1p(funcp);
+            FileLine* const flp = senTreep->fileline();
+            AstCMethodHard* const clear
+                = new AstCMethodHard{flp, new AstVarRef{flp, m_trigVecp, VAccess::WRITE},
+                                     VCMethod::UNPACKED_FILL, new AstConst{flp, 0}};
+            clear->dtypeSetVoid();
+            funcp->addStmtsp(clear->makeStmt());
+            AstNodeStmt* updatep = nullptr;
+            std::vector<AstNodeExpr*> trigps;
+            auto emplaceAt = [&trigps, flp](AstNodeExpr* const exprp, const size_t size) {
+                while (trigps.size() <= size) {
+                    trigps.push_back(new AstConst{flp, AstConst::BitFalse{}});
+                }
+                for (size_t i = trigps.size() % 64; i != 0 && i < 64; ++i) {
+                    trigps.push_back(new AstConst{flp, AstConst::BitFalse{}});
+                }
+                trigps[size]->deleteTree();
+                trigps[size] = exprp;
+            };
+            for (const AstSenItem* itemp = senTreep->sensesp(); itemp;
+                 itemp = VN_AS(itemp->nextp(), SenItem)) {
+                size_t idx = m_trigKit.senItem2TrigIdx(itemp);
+                emplaceAt(m_senExprBuilder.build(itemp).first, idx);
+                if (m_trigToUsingFuncs.size() <= idx) { m_trigToUsingFuncs.resize(idx + 1); }
+                m_trigToUsingFuncs[idx].insert(funcp);
+            }
+
+            for (size_t i = 0; i < trigps.size(); i += 64) {
+                // Concatenate all bits in this trigger word using a balanced
+                for (uint32_t level = 0; level < 6; ++level) {
+                    const uint32_t stride = 1 << level;
+                    for (uint32_t j = 0; j < 64; j += 2 * stride) {
+                        FileLine* const flp = trigps[i + j]->fileline();
+                        trigps[i + j] = new AstConcat{flp, trigps[i + j + stride], trigps[i + j]};
+                        trigps[i + j + stride] = nullptr;
+                    }
+                }
+
+                // Set the whole word in the trigger vector
+                const int wordIndex = static_cast<int>(i / 64);
+                AstArraySel* const aselp = new AstArraySel{
+                    flp, new AstVarRef(flp, m_trigVecp, VAccess::WRITE), wordIndex};
+                updatep = AstNode::addNext(updatep, new AstAssign{flp, aselp, trigps[i]});
+            }
+
+            SenExprBuilder::Results results = m_senExprBuilder.getResultsAndClearUpdates();
+            for (AstNodeStmt* const stmtsp : results.m_inits) funcp->addStmtsp(stmtsp);
+            for (AstNodeStmt* const stmtsp : results.m_preUpdates) funcp->addStmtsp(stmtsp);
+            funcp->addStmtsp(updatep);
+            for (AstNodeStmt* const stmtsp : results.m_postUpdates) funcp->addStmtsp(stmtsp);
+        }
+        return util::callVoidFunc(VN_AS(senTreep->user1p(), CFunc));
+    }
 
     void visit(AstStmtExpr* const nodep) override {
         if (nodep->user1SetOnce()) return;
@@ -787,39 +851,7 @@ class BeforeTriggerEvaluate : public VNVisitor {
             if (const AstCMethodHard* const cMethodHardp
                 = VN_CAST(cAwaitp->exprp(), CMethodHard)) {
                 if (cMethodHardp->method() == VCMethod::SCHED_TRIGGER) {
-                    FileLine* const flp = nodep->fileline();
-                    auto clear
-                        = new AstCMethodHard{flp, new AstVarRef{flp, m_trigVecp, VAccess::WRITE},
-                                             VCMethod::UNPACKED_FILL, new AstConst{flp, 0}};
-                    clear->dtypeSetVoid();
-                    nodep->addHereThisAsNext(clear->makeStmt());
-                    AstNodeStmt* updatep = nullptr;
-                    for (const AstSenItem* itemp = cAwaitp->sentreep()->sensesp(); itemp;
-                         itemp = VN_AS(itemp->nextp(), SenItem)) {
-                        AstNodeExpr* const exprp = m_senExprBuilder.build(itemp).first;
-                        const int idx = itemp->globalTrigIndex();
-                        AstNodeExpr* const rhsp
-                            = idx == 0 ? exprp
-                                       : new AstShiftL{
-                                             flp, exprp,
-                                             new AstConst{flp, static_cast<uint32_t>(idx - 1)}};
-                        rhsp->dtypeSetUInt64();
-                        updatep = AstNode::addNext(
-                            updatep,
-                            new AstAssign{
-                                flp,
-                                new AstArraySel{
-                                    flp, new AstVarRef{flp, m_trigVecp, VAccess::WRITE}, idx / 64},
-                                rhsp});
-                    }
-                    auto results = m_senExprBuilder.getResultsAndClearUpdates();
-                    for (auto stmtsp : results.m_inits) nodep->addHereThisAsNext(stmtsp);
-                    for (auto stmtsp : results.m_preUpdates) nodep->addHereThisAsNext(stmtsp);
-                    auto backp = nodep->backp();
-                    updatep->addNext(nodep->unlinkFrBackWithNext());
-                    backp->addNext(updatep);
-                    for (auto stmtsp : results.m_postUpdates) nodep->addHereThisAsNext(stmtsp);
-                    // nodep->addHereThisAsNext(m_eval->cloneTree(false));
+                    nodep->addHereThisAsNext(getPreTriggerStmt(cAwaitp->sentreep()));
                     nodep->addHereThisAsNext(m_commit->cloneTree(false));
                     nodep->addHereThisAsNext(m_orInto->cloneTree(false));
                 }
@@ -833,14 +865,18 @@ class BeforeTriggerEvaluate : public VNVisitor {
 
 public:
     BeforeTriggerEvaluate(AstNodeStmt* const eval, AstStmtExpr* const commit,
-                          AstNodeStmt* const orInto, AstNetlist* nodep,
-                          AstVarScope* const trigVecp, SenExprBuilder& senExprBuilder)
-        : m_eval{eval}
+                          AstNodeStmt* const orInto, AstNetlist* netlistp,
+                          AstVarScope* const trigVecp, SenExprBuilder& senExprBuilder,
+                          const TriggerKit& trigKit)
+        : m_netlistp{netlistp}
+        , m_preTriggerFuncUniqueName{"__VpreTrig"}
+        , m_eval{eval}
         , m_commit{commit}
         , m_orInto{orInto}
         , m_senExprBuilder{senExprBuilder}
-        , m_trigVecp{trigVecp} {
-        iterate(nodep);
+        , m_trigVecp{trigVecp}
+        , m_trigKit{trigKit} {
+        iterate(netlistp);
     }
     ~BeforeTriggerEvaluate() override {
         m_eval->deleteTree();
@@ -1090,28 +1126,29 @@ void schedule(AstNetlist* netlistp) {
     // Step 13: Create the 'postponed' region evaluation function
     auto* const postponedFuncp = createPostponed(netlistp, logicClasses);
 
-    AstVarScope* const trigAccp = trigKit.newTrigVec("Acc", true);
-
     // Step 14: Bolt it all together to create the '_eval' function
     createEval(netlistp, icoLoopp, trigKit, actKit, nbaKit, obsKit, reactKit, postponedFuncp,
-               timingKit, trigAccp);
+               timingKit);
 
     if (AstCCall* const commit = timingKit.createCommit(netlistp)) {
         FileLine* const flp = commit->fileline();
         staticp->addStmtsp(commit->cloneTree(true)->makeStmt());
+        auto vscAccp = trigKit.vscAccp();
+        UASSERT_OBJ(vscAccp, commit, "Expected trigger accumulator to exist");
         BeforeTriggerEvaluate{
             trigKit.newCompCall(nbaKit.m_vscp),
             commit->makeStmt(),
-            new AstAssign{flp, new AstVarRef{flp, trigAccp, VAccess::WRITE},
-                          new AstOr{flp, new AstVarRef{flp, trigAccp, VAccess::READ},
+            new AstAssign{flp, new AstVarRef{flp, trigKit.vscAccp(), VAccess::WRITE},
+                          new AstOr{flp, new AstVarRef{flp, trigKit.vscAccp(), VAccess::READ},
                                     new AstVarRef{flp, actKit.m_vscp, VAccess::READ}}},
             netlistp,
             actKit.m_vscp,
-            senExprBuilder};
+            senExprBuilder,
+            trigKit};
     } else {
         netlistp->foreach([](AstCAwait* const cAwaitp) { cAwaitp->clearSentreep(); });
     }
-    if (trigAccp) {
+    if (auto trigAccp = trigKit.vscAccp()) {
         staticp->addStmtsp(new AstAssign{
             trigAccp->fileline(), new AstVarRef{trigAccp->fileline(), trigAccp, VAccess::WRITE},
             new AstVarRef{trigAccp->fileline(), actKit.m_vscp, VAccess::READ}});
