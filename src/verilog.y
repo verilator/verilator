@@ -7029,10 +7029,14 @@ select_expression_r<nodep>:
 
 bins_expression<nodep>:  // ==IEEE: bins_expression
         //                      // "cover_point_identifier" and "variable_identifier" look identical
-                idAny/*variable_identifier or cover_point_identifier*/
-                        { $$ = nullptr; /*UNSUP*/ }
-        |       idAny '.' bins_expression/*cover_point_identifier [ . bin_identifier ]*/
-                        { $$ = nullptr; /*UNSUP*/ }
+        // IEEE specifies:
+        // bins_expression ::=
+        //    variable_identifier
+        //    | cover_point_identifier [ . bin_identifier ]
+        // Verilator supports hierarchical reference in a place of variable identifier.
+        // This is an extension based on other simulators.
+               idDotted
+                        { $$ = nullptr; /*UNSUP*/ DEL($1); }
         ;
 
 coverage_eventE<nodep>:  // IEEE: [ coverage_event ]
