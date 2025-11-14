@@ -2450,9 +2450,8 @@ class RandomizeVisitor final : public VNVisitor {
             = V3Randomize::newRandomizeFunc(m_memberMap, nodep, BASIC_RANDOMIZE_FUNC_NAME);
         addBasicRandomizeBody(basicRandomizep, nodep, randModeVarp);
         AstFuncRef* const basicRandomizeCallp = new AstFuncRef{fl, basicRandomizep, nullptr};
-        randomizep->addStmtsp(
-            new AstAssign{fl, fvarRefp->cloneTree(false),
-                          new AstAnd{fl, fvarRefReadp, basicRandomizeCallp}});
+        randomizep->addStmtsp(new AstAssign{fl, fvarRefp->cloneTree(false),
+                                            new AstAnd{fl, fvarRefReadp, basicRandomizeCallp}});
 
         addPrePostCall(nodep, randomizep, "post_randomize");
         nodep->user1(false);
