@@ -1181,8 +1181,9 @@ class ConstraintExprVisitor final : public VNVisitor {
                 if (constrainedVar->globalConstrained()) {
                     // Global constraint - unwrap the MemberSel
                     iterateChildren(nodep);
-                    nodep->replaceWith(nodep->fromp()->unlinkFrBack());
-                    VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                    AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
+                    nodep->replaceWith(fromp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return;
                 }
             }
@@ -1202,8 +1203,9 @@ class ConstraintExprVisitor final : public VNVisitor {
             visit(varRefp);
         } else if (nodep->user1()) {
             iterateChildren(nodep);
-            nodep->replaceWith(nodep->fromp()->unlinkFrBack());
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
+            nodep->replaceWith(fromp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
         } else {
             editFormat(nodep);

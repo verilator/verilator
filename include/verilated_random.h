@@ -195,7 +195,8 @@ public:
 };
 
 //=============================================================================
-// VlRandomizer is the object holding constraints and variable references.
+
+// Object holding constraints and variable references.
 class VlRandomizer VL_NOT_FINAL {
     // MEMBERS
     std::vector<std::string> m_constraints;  // Solver-dependent constraints
@@ -578,8 +579,8 @@ public:
 };
 
 //=============================================================================
-// VlStdRandomizer provides a light wrapper for RNG used by std::randomize()
-// to support scope-level randomization.
+
+// Light wrapper for RNG used by std::randomize() to support scope-level randomization.
 class VlStdRandomizer final : public VlRandomizer {
     // MEMBERS
     VlRNG m_rng;  // Random number generator
