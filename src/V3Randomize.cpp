@@ -2638,7 +2638,8 @@ class RandomizeVisitor final : public VNVisitor {
                 AstWith* const withp = VN_CAST(pinp, With);
                 if (withp) {
                     FileLine* const fl = nodep->fileline();
-                    withCapturep = std::make_unique<CaptureVisitor>(withp->exprp(), m_modp, nullptr);
+                    withCapturep
+                        = std::make_unique<CaptureVisitor>(withp->exprp(), m_modp, nullptr);
                     withCapturep->addFunctionArguments(randomizeFuncp);
                     // Clear old constraints and variables for std::randomize with clause
                     if (stdrand) {
