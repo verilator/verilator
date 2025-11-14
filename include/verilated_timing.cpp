@@ -132,7 +132,6 @@ void VlTriggerScheduler::resume(const char* eventDescription) {
     VL_DEBUG_IF(dump(eventDescription);
                 VL_DBG_MSGF("         Resuming processes waiting for %s\n", eventDescription););
 #endif
-    std::swap(m_commited, m_resumeQueue);
     for (VlCoroutineHandle& coro : m_resumeQueue) coro.resume();
     m_resumeQueue.clear();
 }
@@ -149,10 +148,7 @@ void VlTriggerScheduler::commit(const char* eventDescription) {
             });
     }
 #endif
-    reserveSpaceFor(m_commited, m_ready.size());
-    m_commited.insert(m_commited.end(), std::make_move_iterator(m_ready.begin()),
-                      std::make_move_iterator(m_ready.end()));
-    m_ready.clear();
+    std::swap(m_ready, m_resumeQueue);
 }
 
 void VlTriggerScheduler::ready(const char* eventDescription) {
