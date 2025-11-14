@@ -2351,12 +2351,6 @@ class RandomizeVisitor final : public VNVisitor {
         m_randCaseNum = 0;
         m_writtenVars.clear();  // Each class has its own set of written variables
 
-        // Clear user3 marks for this class's variables before processing
-        // This ensures each class randomization is independent
-        nodep->foreach([&](AstVar* varp) {
-            if (varp->user3()) varp->user3(false);
-        });
-
         iterateChildren(nodep);
         if (!nodep->user1()) return;  // Doesn't need randomize, or already processed
         UINFO(9, "Define randomize() for " << nodep);
@@ -2462,6 +2456,12 @@ class RandomizeVisitor final : public VNVisitor {
 
         addPrePostCall(nodep, randomizep, "post_randomize");
         nodep->user1(false);
+
+        // Clear user3 marks for this class's variables after processing
+        // This allows nested classes to be randomized independently
+        nodep->foreachMember([&](AstClass*, AstVar* varp) {
+            if (varp->user3()) varp->user3(false);
+        });
     }
     void visit(AstRandCase* nodep) override {
         // RANDCASE
