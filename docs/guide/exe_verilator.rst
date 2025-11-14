@@ -1224,7 +1224,8 @@ Summary:
    sc_biguint between 65 and 512, and sc_bv from 513 upwards.  When
    combined with the :vlopt:`--pins-sc-uint` combination, it results in
    sc_uint being used between 2 and 64 and sc_biguint being used between 65
-   and 512.
+   and 512.  Use the :option:`/*verilator&32;sc_biguint*/` metacomment to
+   selectively set specific signals to `sc_biguint` for any width.
 
 .. option:: --pins-sc-uint
 
@@ -2441,9 +2442,13 @@ The grammar of control commands is as follows:
    following :code:`<signame>` can contain :code:`*` and :code:`?` wildcard
    characters that match any substring or any single character respectively.
 
-.. option:: sc_bv -module "<modulename>" [-function "<funcname>"] -var "<signame>"
+.. option:: sc_biguint -module "<modulename>" -var "<signame>"
 
-.. option:: sc_bv -module "<modulename>" [-task "<taskname>"] -var "<signame>"
+   Sets the input/output signal to be of :code:`sc_biguint<{width}>` type.
+   This metacomment works for signals of any width.
+   Same as :option:`/*verilator&32;sc_biguint*/`metacomment.
+
+.. option:: sc_bv -module "<modulename>" -var "<signame>"
 
    Sets the port to be of :code:`sc_bv<{width}>` type, instead of bool,
    uint32_t, or uint64_t.  Same as :option:`/*verilator&32;sc_bv*/`

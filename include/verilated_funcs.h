@@ -490,6 +490,10 @@ static inline void VL_ASSIGNBIT_WO(int bit, WDataOutP owp) VL_MT_SAFE {
     { (vvar) = VL_CLEAN_II((obits), (obits), (svar).read().to_uint()); }
 #define VL_ASSIGN_QSU(obits, vvar, svar) \
     { (vvar) = VL_CLEAN_QQ((obits), (obits), (svar).read().to_uint64()); }
+#define VL_ASSIGN_ISB(obits, vvar, svar) \
+    { (vvar) = VL_CLEAN_II((obits), (obits), (svar).read().to_uint()); }
+#define VL_ASSIGN_QSB(obits, vvar, svar) \
+    { (vvar) = VL_CLEAN_QQ((obits), (obits), (svar).read().to_uint64()); }
 #define VL_ASSIGN_WSB(obits, owp, svar) \
     { \
         const int words = VL_WORDS_I(obits); \

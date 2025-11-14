@@ -135,6 +135,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "public_flat_rd"      { FL; return yVLT_PUBLIC_FLAT_RD; }
   "public_flat_rw"      { FL; return yVLT_PUBLIC_FLAT_RW; }
   "public_module"       { FL; return yVLT_PUBLIC_MODULE; }
+  "sc_biguint"          { FL; return yVLT_SC_BIGUINT; }
   "sc_bv"               { FL; return yVLT_SC_BV; }
   "sformat"             { FL; return yVLT_SFORMAT; }
   "split_var"           { FL; return yVLT_SPLIT_VAR; }
@@ -815,6 +816,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "/*verilator public_module*/"         { FL; return yVL_PUBLIC_MODULE; }
   "/*verilator public_on*/"             { FL; return yVL_PUBLIC_ON; }
   "/*verilator public_off*/"            { FL; return yVL_PUBLIC_OFF; }  // terminates previous 'verilator public*_on'
+  "/*verilator sc_biguint*/"            { FL; return yVL_SC_BIGUINT; }
   "/*verilator sc_bv*/"                 { FL; return yVL_SC_BV; }
   "/*verilator sc_clock*/"              { FL; yylval.fl->v3warn(DEPRECATED, "sc_clock is ignored"); FL_BRK; }
   "/*verilator sformat*/"               { FL; return yVL_SFORMAT; }
