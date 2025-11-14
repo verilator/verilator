@@ -42,7 +42,6 @@
 #include "V3MemberMap.h"
 #include "V3UniqueNames.h"
 
-#include <memory>
 #include <queue>
 #include <tuple>
 #include <utility>
@@ -1182,9 +1181,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                 if (constrainedVar->globalConstrained()) {
                     // Global constraint - unwrap the MemberSel
                     iterateChildren(nodep);
-                    AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
-                    nodep->replaceWith(fromp);
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    nodep->replaceWith(nodep->fromp()->unlinkFrBack());
+                    VL_DO_DANGLING(nodep->deleteTree(), nodep);
                     return;
                 }
             }
@@ -1204,9 +1202,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             visit(varRefp);
         } else if (nodep->user1()) {
             iterateChildren(nodep);
-            AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
-            nodep->replaceWith(fromp);
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            nodep->replaceWith(nodep->fromp()->unlinkFrBack());
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         } else {
             editFormat(nodep);
@@ -2634,15 +2631,15 @@ class RandomizeVisitor final : public VNVisitor {
                               new AstVarRef{nodep->fileline(), VN_AS(randomizeFuncp->fvarp(), Var),
                                             VAccess::WRITE},
                               new AstConst{nodep->fileline(), AstConst::WidthedValue{}, 32, 1}});
-            std::unique_ptr<CaptureVisitor> captured;
+            std::unique_ptr<CaptureVisitor> withCapturep;
             int argn = 0;
             for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
                 AstArg* const argp = VN_CAST(pinp, Arg);
                 AstWith* const withp = VN_CAST(pinp, With);
                 if (withp) {
                     FileLine* const fl = nodep->fileline();
-                    captured = std::make_unique<CaptureVisitor>(withp->exprp(), m_modp, nullptr);
-                    captured->addFunctionArguments(randomizeFuncp);
+                    withCapturep = std::make_unique<CaptureVisitor>(withp->exprp(), m_modp, nullptr);
+                    withCapturep->addFunctionArguments(randomizeFuncp);
                     // Clear old constraints and variables for std::randomize with clause
                     if (stdrand) {
                         randomizeFuncp->addStmtsp(
@@ -2709,8 +2706,7 @@ class RandomizeVisitor final : public VNVisitor {
             nodep->taskp(randomizeFuncp);
             nodep->dtypeFrom(randomizeFuncp->dtypep());
             if (VN_IS(m_modp, Class)) nodep->classOrPackagep(m_modp);
-            // if (nodep->pinsp()) pushDeletep(nodep->pinsp()->unlinkFrBackWithNext());
-            if (captured) nodep->addPinsp(captured->getArgs());
+            if (withCapturep) nodep->addPinsp(withCapturep->getArgs());
             UINFOTREE(9, nodep, "", "std::rnd-call");
             UINFOTREE(9, randomizeFuncp, "", "std::rnd-func");
             return;
