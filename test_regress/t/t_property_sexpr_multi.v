@@ -156,7 +156,7 @@ module t (  /*AUTOARG*/
   else
     results[cyc].fails = 1;
 
-  assert property (@(e3) ##1 val == 1 ##2 val == 3 ##3 val == 2)
+  assert property (@(e3) ##1 val == 1 ##2 val == 3 ##(1+2) val == 2)
     results[cyc].passs = 1;
   else
     results[cyc].fails = 1;
