@@ -1112,6 +1112,7 @@ void schedule(AstNetlist* netlistp) {
 
     if (AstCCall* const commit = timingKit.createCommit(netlistp)) {
         FileLine* const flp = commit->fileline();
+        staticp->addStmtsp(commit->cloneTree(true)->makeStmt());
         BeforeTriggerEvaluate{
             trigKit.newCompCall(nbaKit.m_vscp),
             commit->makeStmt(),
@@ -1124,6 +1125,13 @@ void schedule(AstNetlist* netlistp) {
     } else {
         netlistp->foreach([](AstCAwait* const cAwaitp) { cAwaitp->clearSentreep(); });
     }
+
+    if (trigAccp) {
+        staticp->addStmtsp(new AstAssign{
+            trigAccp->fileline(), new AstVarRef{trigAccp->fileline(), trigAccp, VAccess::WRITE},
+            new AstVarRef{trigAccp->fileline(), actKit.m_vscp, VAccess::READ}});
+    }
+
     // Step 15: Clean up
     netlistp->clearStlFirstIterationp();
 
