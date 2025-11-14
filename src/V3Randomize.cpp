@@ -42,6 +42,7 @@
 #include "V3MemberMap.h"
 #include "V3UniqueNames.h"
 
+#include <memory>
 #include <queue>
 #include <tuple>
 #include <utility>
@@ -887,7 +888,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstMemberSel* membersel = nullptr;
         std::string smtName;
         if (VN_IS(nodep->backp(), MemberSel)) {
-            // For global constraints: build complete path from topmost MemberSel
+            // Build complete path from topmost MemberSel
             AstNode* topMemberSel = nodep->backp();
             while (VN_IS(topMemberSel->backp(), MemberSel)) {
                 topMemberSel = topMemberSel->backp();
@@ -2633,14 +2634,14 @@ class RandomizeVisitor final : public VNVisitor {
                               new AstVarRef{nodep->fileline(), VN_AS(randomizeFuncp->fvarp(), Var),
                                             VAccess::WRITE},
                               new AstConst{nodep->fileline(), AstConst::WidthedValue{}, 32, 1}});
-            CaptureVisitor* captured = nullptr;
+            std::unique_ptr<CaptureVisitor> captured;
             int argn = 0;
             for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
                 AstArg* const argp = VN_CAST(pinp, Arg);
                 AstWith* const withp = VN_CAST(pinp, With);
                 if (withp) {
                     FileLine* const fl = nodep->fileline();
-                    captured = new CaptureVisitor{withp->exprp(), m_modp, nullptr};
+                    captured = std::make_unique<CaptureVisitor>(withp->exprp(), m_modp, nullptr);
                     captured->addFunctionArguments(randomizeFuncp);
                     // Clear old constraints and variables for std::randomize with clause
                     if (stdrand) {
