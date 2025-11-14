@@ -40,6 +40,29 @@ test.file_grep(test.obj_dir + "/" + test.vm_prefix + ".h",
 test.file_grep(test.obj_dir + "/" + test.vm_prefix + ".h",
                r'sc_core::sc_out<sc_dt::sc_bv<16>\s>\s+&obv16;')
 
+# sc_biguint pragma should override `--pins-uint8` flag
+test.file_grep(test.obj_dir + "/" + test.vm_prefix + ".h",
+               r'sc_core::sc_in<sc_dt::sc_biguint<1>\s>\s+&ibu1;')
+test.file_grep(test.obj_dir + "/" + test.vm_prefix + ".h",
+               r'sc_core::sc_in<sc_dt::sc_biguint<8>\s>\s+&ibu8;')
+test.file_grep(test.obj_dir + "/" + test.vm_prefix + ".h",
+               r'sc_core::sc_in<sc_dt::sc_biguint<16>\s>\s+&ibu16;')
+test.file_grep(test.obj_dir + "/" + test.vm_prefix + ".h",
+               r'sc_core::sc_in<sc_dt::sc_biguint<64>\s>\s+&ibu64;')
+test.file_grep(test.obj_dir + "/" + test.vm_prefix + ".h",
+               r'sc_core::sc_in<sc_dt::sc_biguint<512>\s>\s+&ibu512;')
+
+test.file_grep(test.obj_dir + "/" + test.vm_prefix + ".h",
+               r'sc_core::sc_out<sc_dt::sc_biguint<1>\s>\s+&obu1;')
+test.file_grep(test.obj_dir + "/" + test.vm_prefix + ".h",
+               r'sc_core::sc_out<sc_dt::sc_biguint<8>\s>\s+&obu8;')
+test.file_grep(test.obj_dir + "/" + test.vm_prefix + ".h",
+               r'sc_core::sc_out<sc_dt::sc_biguint<16>\s>\s+&obu16;')
+test.file_grep(test.obj_dir + "/" + test.vm_prefix + ".h",
+               r'sc_core::sc_out<sc_dt::sc_biguint<64>\s>\s+&obu64;')
+test.file_grep(test.obj_dir + "/" + test.vm_prefix + ".h",
+               r'sc_core::sc_out<sc_dt::sc_biguint<512>\s>\s+&obu512;')
+
 test.execute()
 
 test.passes()

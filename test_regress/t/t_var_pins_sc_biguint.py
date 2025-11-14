@@ -43,6 +43,20 @@ hgrep(r'sc_core::sc_out<sc_dt::sc_bv<513>\s>\s+&o513;')
 hgrep(r'sc_core::sc_out<sc_dt::sc_bv<1>\s>\s+&obv1;')
 hgrep(r'sc_core::sc_out<sc_dt::sc_bv<16>\s>\s+&obv16;')
 
+# sc_biguint pragma overrides `--pins-sc-biguint` flag
+hgrep(r'sc_core::sc_in<sc_dt::sc_biguint<1>\s>\s+&ibu1;')
+hgrep(r'sc_core::sc_in<sc_dt::sc_biguint<8>\s>\s+&ibu8;')
+hgrep(r'sc_core::sc_in<sc_dt::sc_biguint<16>\s>\s+&ibu16;')
+hgrep(r'sc_core::sc_in<sc_dt::sc_biguint<64>\s>\s+&ibu64;')
+hgrep(r'sc_core::sc_in<sc_dt::sc_biguint<512>\s>\s+&ibu512;')
+hgrep(r'sc_core::sc_in<sc_dt::sc_biguint<601>\s>\s+&ibu601;')
+hgrep(r'sc_core::sc_out<sc_dt::sc_biguint<1>\s>\s+&obu1;')
+hgrep(r'sc_core::sc_out<sc_dt::sc_biguint<8>\s>\s+&obu8;')
+hgrep(r'sc_core::sc_out<sc_dt::sc_biguint<16>\s>\s+&obu16;')
+hgrep(r'sc_core::sc_out<sc_dt::sc_biguint<64>\s>\s+&obu64;')
+hgrep(r'sc_core::sc_out<sc_dt::sc_biguint<512>\s>\s+&obu512;')
+hgrep(r'sc_core::sc_out<sc_dt::sc_biguint<601>\s>\s+&obu601;')
+
 test.execute()
 
 test.passes()
