@@ -332,7 +332,8 @@ private:
         AstNodeExpr* valuep = V3Const::constifyEdit(nodep->lhsp()->unlinkFrBack());
         const AstConst* const constp = VN_CAST(valuep, Const);
         if (!constp) {
-            nodep->v3error("Delay value is not an elaboration-tme constant");
+            nodep->v3error(
+                "Delay value is not an elaboration-time constant (IEEE 1800-2023 16.7)");
         } else if (constp->isZero()) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: ##0 delays");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
