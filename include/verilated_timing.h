@@ -246,12 +246,8 @@ class VlTriggerScheduler final {
                                    // (not resumable)
     VlCoroutineVec m_ready;  // Coroutines that were triggered (all coros from m_uncommitted are
                              // moved here in ready())
-    VlCoroutineVec m_commited;  // Coroutines that can be resumed (all coros from m_ready are
-                                // moved here in commit())
-    VlCoroutineVec m_resumeQueue;  // Coroutines being resumed by resume(); kept as a field to
-                                   // avoid reallocation. Resumed coroutines are moved to
-                                   // m_resumeQueue to allow adding coroutines to m_ready
-                                   // during resume(). Outside of resume() should always be empty.
+    VlCoroutineVec m_resumeQueue;  // Coroutines to resume in next resume()
+                                   // - moved here in commit()
 
 public:
     static void reserveSpaceFor(VlCoroutineVec& vec, size_t size);
