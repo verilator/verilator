@@ -204,6 +204,7 @@ class TriggerKit final {
     AstUnpackArrayDType* m_trigExtDTypep = nullptr;
     // The AstVarScope representing the extended trigger vector
     AstVarScope* m_vscp = nullptr;
+    mutable AstVarScope* m_vscAccp = nullptr;
     // The AstCFunc that computes the current active triggers
     AstCFunc* m_compp = nullptr;
     // The AstCFunc that dumps a trigger vector
@@ -271,6 +272,9 @@ public:
 
     // ACCESSORS
     AstVarScope* vscp() const { return m_vscp; }
+    AstVarScope* vscAccp() const {
+        return m_vscAccp ? m_vscAccp : (m_vscAccp = newTrigVec("Acc", true));
+    }
     AstCFunc* compp() const { return m_compp; }
     const std::unordered_map<const AstSenTree*, AstSenTree*>& mapPre() const { return m_mapPre; }
     const std::unordered_map<const AstSenTree*, AstSenTree*>& mapVec() const { return m_mapVec; }
