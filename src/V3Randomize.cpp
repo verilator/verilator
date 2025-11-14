@@ -2351,6 +2351,12 @@ class RandomizeVisitor final : public VNVisitor {
         m_randCaseNum = 0;
         m_writtenVars.clear();  // Each class has its own set of written variables
 
+        // Clear user3 marks for this class's variables before processing
+        // This ensures each class randomization is independent
+        nodep->foreach([&](AstVar* varp) {
+            if (varp->user3()) varp->user3(false);
+        });
+
         iterateChildren(nodep);
         if (!nodep->user1()) return;  // Doesn't need randomize, or already processed
         UINFO(9, "Define randomize() for " << nodep);
@@ -2411,18 +2417,6 @@ class RandomizeVisitor final : public VNVisitor {
                         nodep, constrp, constrp->itemsp()->unlinkFrBackWithNext()));
                 }
             });
-
-            // Step 1: Call __VBasicRand first to randomize all variables (including nested
-            // objects)
-            AstVarRef* const fvarRefp = new AstVarRef{fl, fvarp, VAccess::WRITE};
-            AstFunc* const basicRandomizep
-                = V3Randomize::newRandomizeFunc(m_memberMap, nodep, BASIC_RANDOMIZE_FUNC_NAME);
-            addBasicRandomizeBody(basicRandomizep, nodep, randModeVarp);
-            AstFuncRef* const basicRandomizeCallp = new AstFuncRef{fl, basicRandomizep, nullptr};
-            randomizep->addStmtsp(
-                new AstAssign{fl, fvarRefp->cloneTree(false), basicRandomizeCallp});
-
-            // Step 2: Setup constraints and call solver to override constrained variables
             randomizep->addStmtsp(implementConstraintsClear(fl, genp));
             AstTask* setupAllTaskp = getCreateConstraintSetupFunc(nodep);
             AstTaskRef* const setupTaskRefp = new AstTaskRef{fl, setupAllTaskp, nullptr};
@@ -2444,14 +2438,10 @@ class RandomizeVisitor final : public VNVisitor {
             }
         } else {
             beginValp = new AstConst{fl, AstConst::WidthedValue{}, 32, 1};
-            // For classes without constraints, still need to call __VBasicRand
-            AstVarRef* const fvarRefp = new AstVarRef{fl, fvarp, VAccess::WRITE};
-            AstFunc* const basicRandomizep
-                = V3Randomize::newRandomizeFunc(m_memberMap, nodep, BASIC_RANDOMIZE_FUNC_NAME);
-            addBasicRandomizeBody(basicRandomizep, nodep, randModeVarp);
-            AstFuncRef* const basicRandomizeCallp = new AstFuncRef{fl, basicRandomizep, nullptr};
-            randomizep->addStmtsp(new AstAssign{fl, fvarRefp, basicRandomizeCallp});
         }
+
+        AstVarRef* const fvarRefp = new AstVarRef{fl, fvarp, VAccess::WRITE};
+        randomizep->addStmtsp(new AstAssign{fl, fvarRefp, beginValp});
 
         if (AstTask* const resizeAllTaskp
             = VN_AS(m_memberMap.findMember(nodep, "__Vresize_constrained_arrays"), Task)) {
@@ -2459,9 +2449,16 @@ class RandomizeVisitor final : public VNVisitor {
             randomizep->addStmtsp(resizeTaskRefp->makeStmt());
         }
 
-        // Final assignment of return value
-        AstVarRef* const fvarRefFinal = new AstVarRef{fl, fvarp, VAccess::WRITE};
-        randomizep->addStmtsp(new AstAssign{fl, fvarRefFinal, beginValp});
+        AstVarRef* const fvarRefReadp = fvarRefp->cloneTree(false);
+        fvarRefReadp->access(VAccess::READ);
+
+        AstFunc* const basicRandomizep
+            = V3Randomize::newRandomizeFunc(m_memberMap, nodep, BASIC_RANDOMIZE_FUNC_NAME);
+        addBasicRandomizeBody(basicRandomizep, nodep, randModeVarp);
+        AstFuncRef* const basicRandomizeCallp = new AstFuncRef{fl, basicRandomizep, nullptr};
+        randomizep->addStmtsp(
+            new AstAssign{fl, fvarRefp->cloneTree(false),
+                          new AstAnd{fl, fvarRefReadp, basicRandomizeCallp}});
 
         addPrePostCall(nodep, randomizep, "post_randomize");
         nodep->user1(false);
@@ -2792,6 +2789,19 @@ public:
     explicit RandomizeVisitor(AstNetlist* nodep)
         : m_inlineUniqueNames{"__Vrandwith"} {
         createRandomizeClassVars(nodep);
+
+        // Mark all variables referenced via MemberSel in constraints as handled by solver
+        // These should not be randomized in __VBasicRand to avoid overwriting solver results
+        nodep->foreach([&](AstConstraint* constrp) {
+            std::cout << "Scanning constraint " << constrp->name() << "\n";
+            constrp->foreach([&](AstMemberSel* memberSelp) {
+                AstVar* const varp = memberSelp->varp();
+                std::cout << "  Found MemberSel for var " << varp->name()
+                          << ", setting user3=true\n";
+                if (!varp->user3()) varp->user3(true);
+            });
+        });
+
         iterate(nodep);
         nodep->foreach([&](AstConstraint* constrp) {
             VL_DO_DANGLING(pushDeletep(constrp->unlinkFrBack()), constrp);

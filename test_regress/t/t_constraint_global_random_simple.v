@@ -8,6 +8,7 @@
 
 class Inner;
   rand int m_val;
+  rand int m_rand_in_val;
   constraint c_inner { m_val inside {[1:5]}; }
 
   function new();
@@ -19,6 +20,7 @@ class Mid;
   int m_limit;
   rand int m_x;
   rand Inner m_inner;
+  rand int m_rand_mid_val;
   constraint c_mid { m_x == m_limit; }
 
   function new(int lim);
@@ -33,7 +35,7 @@ class Top;
   rand int m_y;
 
   constraint c_top {
-    m_y > m_mid.m_x;                    // 1-level reference
+    m_y < m_mid.m_x;                    // 1-level reference
     m_mid.m_inner.m_val < m_y;          // 2-level reference
   }
 
@@ -58,6 +60,8 @@ module t_constraint_global_random_simple;
     $display("  t.m_y = %0d", t.m_y);
     $display("  t.m_mid.m_x = %0d", t.m_mid.m_x);
     $display("  t.m_mid.m_inner.m_val = %0d", t.m_mid.m_inner.m_val);
+    $display("  t.m_mid.m_rand_mid_val = %0d", t.m_mid.m_rand_mid_val);
+    $display("  t.m_mid.m_inner.m_rand_in_val = %0d", t.m_mid.m_inner.m_rand_in_val);
 
     // Verify constraints
     // 1. c_mid: m_x == m_limit
