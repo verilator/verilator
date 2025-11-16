@@ -262,7 +262,7 @@ endif
 
 # Truncate the dependency list file used in the %.a target above.
 %.verilator_deplist.tmp:
-	echo "" > $@
+	@echo "" > $@
 
 $(VM_PREFIX)__ALL.a: $(VK_OBJS) $(VM_HIER_LIBS)
 
