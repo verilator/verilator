@@ -18,6 +18,10 @@ module t;
       logic [7:0] dst_2; // 8 bits wide target
       logic [7:0] exp_2; // 8 bits wide target
 
+      logic [7:0] src_3 = 8'hA5; // 8 bits wide source
+      logic [31:0] dst_3; // 32 bits wide target
+      logic [31:0] exp_3; // 32 bits wide target
+
       string expv;
       string gotv;
 
@@ -47,6 +51,24 @@ module t;
       exp_2 = 8'b01010100;
       expv = $sformatf("%p", exp_2);
       gotv = $sformatf("%p", dst_2);
+      `checks(gotv, expv);
+
+      // unpack as source, StreamL
+      // verilator lint_off WIDTHEXPAND
+      dst_3 = {<<{src_3}};
+      // verilator lint_on WIDTHEXPAND
+      exp_3 = 32'hA5000000;
+      expv = $sformatf("%p", exp_3);
+      gotv = $sformatf("%p", dst_3);
+      `checks(gotv, expv);
+
+      // unpack as source, StreamR
+      // verilator lint_off WIDTHEXPAND
+      dst_3 = {>>{src_3}};
+      // verilator lint_on WIDTHEXPAND
+      exp_3 = 32'hA5000000;
+      expv = $sformatf("%p", exp_3);
+      gotv = $sformatf("%p", dst_3);
       `checks(gotv, expv);
 
       $write("*-* All Finished *-*\n");

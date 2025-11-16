@@ -8175,6 +8175,26 @@ class WidthVisitor final : public VNVisitor {
                 } else if (pinp && pinp->modVarp()->direction() != VDirection::INPUT) {
                     // V3Inst::pinReconnectSimple must deal
                     UINFO(5, "pinInSizeMismatch: " << pinp);
+                } else if (assignp && VN_IS(underp, NodeStream)
+                           && expWidth > underp->width()) {
+                    // IEEE 1800-2023 11.4.14: When assigning a stream to a wider fixed-size
+                    // target, widen by filling zero bits on the right. That is, left-justify
+                    // the stream bits within the target width.
+                    // Build: ShiftL(Extend(stream, expWidth), expWidth - streamWidth)
+                    UINFO(5, "Widen NodeStream RHS with left-justify per 11.4.14");
+                    VNRelinker linker;
+                    const int shift = expWidth - underp->width();
+                    underp->unlinkFrBack(&linker);
+                    AstNodeExpr* widenedp
+                        = static_cast<AstNodeExpr*>(new AstExtend{underp->fileline(), underp});
+                    widenedp->didWidth(true);
+                    // Shift left so zeros fill on the right
+                    AstNodeExpr* const shiftedp = new AstShiftL{
+                        underp->fileline(), widenedp,
+                        new AstConst{underp->fileline(), static_cast<uint32_t>(shift)}, expWidth};
+                    // Final dtype should match expected
+                    shiftedp->dtypep(expDTypep);
+                    linker.relink(shiftedp);
                 } else {
                     VL_DO_DANGLING(fixWidthExtend(underp, expDTypep, extendRule), underp);
                 }
