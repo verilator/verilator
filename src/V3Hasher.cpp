@@ -280,6 +280,9 @@ class HasherVisitor final : public VNVisitorConst {
             iterateConstNull(nodep->funcp());
         });
     }
+    void visit(AstCaseItem* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, []() {});
+    }
     void visit(AstNodeFTaskRef* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {
             iterateConstNull(nodep->taskp());
