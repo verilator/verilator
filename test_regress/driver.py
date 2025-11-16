@@ -807,8 +807,8 @@ class VlTest:
         self.xrun_flags = []  # Doesn't really have a compile step
         self.xrun_flags2 = []  # Overridden in some sim files
         self.xrun_run_flags = [
-            "-64", "-access", "+rwc", "-newsv", "-sv", "-xmlibdirname", self.obj_dir + "/work",
-            "-l", self.obj_dir + "/history", "-quiet", "-plinowarn"
+            "+define+XRUN", "-64", "-access", "+rwc", "-newsv", "-sv", "-xmlibdirname",
+            self.obj_dir + "/work", "-l", self.obj_dir + "/history", "-quiet", "-plinowarn"
         ]
         # Verilator
         self.verilator_define = 'VERILATOR'
@@ -1540,6 +1540,7 @@ class VlTest:
                 "echo q | " + run_env + VtOs.getenv_def('VERILATOR_XRUN', "xrun"),
                 ' '.join(param['xrun_run_flags']),
                 ' '.join(param['xrun_flags2']),
+                ' '.join(param['v_flags']),
                 ' '.join(param['all_run_flags']),
                 pli_opt,
                 param['top_filename'],
