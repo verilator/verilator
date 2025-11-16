@@ -715,8 +715,13 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
     ~VerilatedScope();
 
     void exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE;
-    void varInsert(const char* namep, void* datap, bool isParam, VerilatedVarType vltype,
-                   int vlflags, int udims, int pdims, ...) VL_MT_UNSAFE;
+    VerilatedVar* varInsert(const char* namep, void* datap, bool isParam, VerilatedVarType vltype,
+                            int vlflags, int udims, int pdims, ...) VL_MT_UNSAFE;
+    VerilatedVar* forceableVarInsert(const char* namep, void* datap, bool isParam,
+                                     VerilatedVarType vltype, int vlflags, bool isContinuously,
+                                     void* forceReadSignalData,
+                                     std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals,
+                                     int udims, int pdims...) VL_MT_UNSAFE;
     // ACCESSORS
     const char* name() const VL_MT_SAFE_POSTINIT { return m_namep; }
     const char* identifier() const VL_MT_SAFE_POSTINIT { return m_identifierp; }
