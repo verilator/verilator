@@ -8185,8 +8185,7 @@ class WidthVisitor final : public VNVisitor {
                     VNRelinker linker;
                     const int shift = expWidth - underp->width();
                     underp->unlinkFrBack(&linker);
-                    AstNodeExpr* widenedp
-                        = static_cast<AstNodeExpr*>(new AstExtend{underp->fileline(), underp});
+                    AstExtend* const widenedp = new AstExtend{underp->fileline(), underp};
                     widenedp->didWidth(true);
                     // Shift left so zeros fill on the right
                     AstNodeExpr* const shiftedp = new AstShiftL{
