@@ -8175,8 +8175,7 @@ class WidthVisitor final : public VNVisitor {
                 } else if (pinp && pinp->modVarp()->direction() != VDirection::INPUT) {
                     // V3Inst::pinReconnectSimple must deal
                     UINFO(5, "pinInSizeMismatch: " << pinp);
-                } else if (assignp && VN_IS(underp, NodeStream)
-                           && expWidth > underp->width()) {
+                } else if (assignp && VN_IS(underp, NodeStream) && expWidth > underp->width()) {
                     // IEEE 1800-2023 11.4.14: When assigning a stream to a wider fixed-size
                     // target, widen by filling zero bits on the right. That is, left-justify
                     // the stream bits within the target width.
