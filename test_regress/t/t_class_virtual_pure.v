@@ -5,20 +5,27 @@
 // SPDX-License-Identifier: CC0-1.0
 
 virtual class VBase;
-   pure virtual function int hello();
+  pure virtual function int hello();
+  // See Issue #6698; appears IEEE illegal
+  // pure virtual task automatic fin();
+  pure virtual task fin();
 endclass
 
 class VA extends VBase;
-   virtual function int hello;
-      return 2;
-   endfunction
+  virtual function int hello;
+    return 2;
+  endfunction
+  virtual task automatic fin;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  endtask
 endclass
 
 module t;
-   initial begin
-      VA va = new;
-      if (va.hello() != 2) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    VA va;
+    va = new;
+    if (va.hello() != 2) $stop;
+    va.fin();
+  end
 endmodule
