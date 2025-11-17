@@ -867,11 +867,13 @@ class ConstraintExprVisitor final : public VNVisitor {
         // For normal constraints: only call write_var if varp->user3() is not set
         const bool alreadyWritten = (membersel && isGlobalConstrained)
                                         ? m_writtenVars.count(smtName) > 0
-                                        : varp->user3();
+                                        : (isGlobalConstrained && !membersel)
+                                              ? m_writtenVars.count(smtName) > 0
+                                              : varp->user3();
         const bool shouldWriteVar = !alreadyWritten;
         if (shouldWriteVar) {
             // Track this variable path as written
-            if (membersel && isGlobalConstrained) { m_writtenVars.insert(smtName); }
+            if (isGlobalConstrained) { m_writtenVars.insert(smtName); }
             // For global constraints, delete nodep here after processing
             if (membersel && isGlobalConstrained) VL_DO_DANGLING(pushDeletep(nodep), nodep);
             AstCMethodHard* const methodp = new AstCMethodHard{
@@ -2356,7 +2358,6 @@ class RandomizeVisitor final : public VNVisitor {
         UINFO(9, "Define randomize() for " << nodep);
         nodep->baseMostClassp()->needRNG(true);
 
-        const bool globalConstrained = nodep->user1() == IS_RANDOMIZED_GLOBAL;
         FileLine* fl = nodep->fileline();
         AstFunc* const randomizep = V3Randomize::newRandomizeFunc(m_memberMap, nodep);
         AstVar* const fvarp = VN_AS(randomizep->fvarp(), Var);
@@ -2364,21 +2365,8 @@ class RandomizeVisitor final : public VNVisitor {
 
         addPrePostCall(nodep, randomizep, "pre_randomize");
 
-        // IS_RANDOMIZED_GLOBAL classes: only basic randomization, no constraint solver
-        // Their constraints are cloned to parent class
-        if (globalConstrained) {
-            AstFunc* const basicRandomizep
-                = V3Randomize::newRandomizeFunc(m_memberMap, nodep, BASIC_RANDOMIZE_FUNC_NAME);
-            addBasicRandomizeBody(basicRandomizep, nodep, randModeVarp);
-            AstFuncRef* const basicRandomizeCallp = new AstFuncRef{fl, basicRandomizep, nullptr};
-            AstVarRef* const fvarRefp = new AstVarRef{fl, fvarp, VAccess::WRITE};
-            randomizep->addStmtsp(new AstAssign{fl, fvarRefp, basicRandomizeCallp});
-            addPrePostCall(nodep, randomizep, "post_randomize");
-            nodep->user1(false);
-            return;
-        }
-
-        // IS_RANDOMIZED classes: full randomization with constraint solver
+        // Both IS_RANDOMIZED and IS_RANDOMIZED_GLOBAL classes need full constraint support
+        // IS_RANDOMIZED_GLOBAL classes can be randomized independently (e.g., obj.member.randomize())
         AstNodeExpr* beginValp = nullptr;
         AstVar* genp = getRandomGenerator(nodep);
         if (genp) {
@@ -2458,9 +2446,9 @@ class RandomizeVisitor final : public VNVisitor {
 
         // Clear user3 marks for this class's own variables (not inherited)
         // This allows nested classes to be randomized independently
-        nodep->foreachMember([&](AstClass*, AstVar* varp) {
-            if (varp->user2p() == nodep && varp->user3()) { varp->user3(false); }
-        });
+        // nodep->foreachMember([&](AstClass*, AstVar* varp) {
+        //     if (varp->user2p() == nodep && varp->user3()) { varp->user3(false); }
+        // });
     }
     void visit(AstRandCase* nodep) override {
         // RANDCASE
