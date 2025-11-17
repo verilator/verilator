@@ -2456,10 +2456,12 @@ class RandomizeVisitor final : public VNVisitor {
         addPrePostCall(nodep, randomizep, "post_randomize");
         nodep->user1(false);
 
-        // Clear user3 marks for this class's variables after processing
+        // Clear user3 marks for this class's own variables (not inherited)
         // This allows nested classes to be randomized independently
         nodep->foreachMember([&](AstClass*, AstVar* varp) {
-            if (varp->user3()) varp->user3(false);
+            if (varp->user2p() == nodep && varp->user3()) {
+                varp->user3(false);
+            }
         });
     }
     void visit(AstRandCase* nodep) override {
@@ -2789,15 +2791,16 @@ public:
         : m_inlineUniqueNames{"__Vrandwith"} {
         createRandomizeClassVars(nodep);
 
-        // Mark all variables referenced via MemberSel in constraints as handled by solver
-        // These should not be randomized in __VBasicRand to avoid overwriting solver results
+        // Mark variables in global constraints (cloned or direct nested member access)
+        // These should not be randomized in nested class's __VBasicRand
         nodep->foreach([&](AstConstraint* constrp) {
-            std::cout << "Scanning constraint " << constrp->name() << "\n";
             constrp->foreach([&](AstMemberSel* memberSelp) {
-                AstVar* const varp = memberSelp->varp();
-                std::cout << "  Found MemberSel for var " << varp->name()
-                          << ", setting user3=true\n";
-                if (!varp->user3()) varp->user3(true);
+                // Only mark if this MemberSel was created during constraint cloning
+                // user2p is set in processNestedConstraint line 278
+                if (memberSelp->user2p()) {
+                    AstVar* const varp = memberSelp->varp();
+                    if (!varp->user3()) varp->user3(true);
+                }
             });
         });
 
