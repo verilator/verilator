@@ -5489,10 +5489,6 @@ class WidthVisitor final : public VNVisitor {
                     newp->dtypeFrom(nodep);
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                } else if (nodep->disablep()) {
-                    nodep->disablep()->v3warn(E_UNSUPPORTED,
-                                              "Unsupported: Disable iff with sequence expression");
-                    VL_DO_DANGLING(pushDeletep(nodep->disablep()->unlinkFrBack()), nodep);
                 }
             }
         }
