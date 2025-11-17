@@ -2459,9 +2459,7 @@ class RandomizeVisitor final : public VNVisitor {
         // Clear user3 marks for this class's own variables (not inherited)
         // This allows nested classes to be randomized independently
         nodep->foreachMember([&](AstClass*, AstVar* varp) {
-            if (varp->user2p() == nodep && varp->user3()) {
-                varp->user3(false);
-            }
+            if (varp->user2p() == nodep && varp->user3()) { varp->user3(false); }
         });
     }
     void visit(AstRandCase* nodep) override {
