@@ -1162,7 +1162,9 @@ class VlTest:
         self.compile_vlt_cmd(**param)
 
         if not re.search(r'TEST_DUMPFILE', ' '.join(self.v_flags)):
-            self.v_flags += [self._define_opt_calc() + "TEST_DUMPFILE=" + os.path.abspath(self.trace_filename)]
+            self.v_flags += [
+                self._define_opt_calc() + "TEST_DUMPFILE=" + os.path.abspath(self.trace_filename)
+            ]
 
         if not param['make_top_shell']:
             self.top_shell_filename = ""
