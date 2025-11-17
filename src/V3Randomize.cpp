@@ -856,11 +856,11 @@ class ConstraintExprVisitor final : public VNVisitor {
                 VCMethod::ARRAY_AT, new AstConst{nodep->fileline(), randMode.index}};
             atp->dtypeSetUInt32();
             exprp = new AstCond{varp->fileline(), atp, exprp, constFormatp};
-        } else if (!membersel || !isGlobalConstrained) {
-            // Only delete nodep here if it's not a global constraint
-            // Global constraints need nodep for write_var processing
+        } else if (!isGlobalConstrained) {
+            // Non-global constraints: delete nodep immediately
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
+        // else: Global constraints keep nodep alive for write_var processing
         relinker.relink(exprp);
 
         // For global constraints: check if this specific path has been written
@@ -873,8 +873,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (shouldWriteVar) {
             // Track this variable path as written
             if (isGlobalConstrained) { m_writtenVars.insert(smtName); }
-            // For global constraints, delete nodep here after processing
-            if (membersel && isGlobalConstrained) VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            // For global constraints, delete nodep after processing
+            if (isGlobalConstrained) VL_DO_DANGLING(pushDeletep(nodep), nodep);
             AstCMethodHard* const methodp = new AstCMethodHard{
                 varp->fileline(),
                 new AstVarRef{varp->fileline(), VN_AS(m_genp->user2p(), NodeModule), m_genp,
@@ -928,6 +928,11 @@ class ConstraintExprVisitor final : public VNVisitor {
                 UASSERT_OBJ(initTaskp, classp, "No new() in class");
             }
             initTaskp->addStmtsp(methodp->makeStmt());
+        } else {
+            // Variable already written, clean up cloned membersel if any
+            if (membersel) VL_DO_DANGLING(membersel->deleteTree(), membersel);
+            // Delete nodep if it's a global constraint (not deleted yet)
+            if (isGlobalConstrained) VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
     void visit(AstCountOnes* nodep) override {
