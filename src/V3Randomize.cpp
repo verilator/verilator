@@ -514,6 +514,9 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 });
 
                 cloneNestedConstraintsRecurse(rootVarRefp, memberClassp, emptyPath, classp);
+
+                // Delete the temporary VarRef created for constraint cloning
+                VL_DO_DANGLING(rootVarRefp->deleteTree(), rootVarRefp);
             });
         }
         if (nodep->classOrPackagep()->name() == "std") {
@@ -866,9 +869,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         // For global constraints: check if this specific path has been written
         // For normal constraints: only call write_var if varp->user3() is not set
         const bool alreadyWritten
-            = (membersel && isGlobalConstrained)    ? m_writtenVars.count(smtName) > 0
-              : (isGlobalConstrained && !membersel) ? m_writtenVars.count(smtName) > 0
-                                                    : varp->user3();
+            = isGlobalConstrained ? m_writtenVars.count(smtName) > 0 : varp->user3();
         const bool shouldWriteVar = !alreadyWritten;
         if (shouldWriteVar) {
             // Track this variable path as written
