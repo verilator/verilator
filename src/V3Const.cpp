@@ -2976,6 +2976,11 @@ class ConstVisitor final : public VNVisitor {
                     nodep->replaceWithKeepDType(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     did = true;
+                } else if (m_params && VN_IS(valuep, ConsPackUOrStruct)) {
+                    AstNode* const newp = valuep->cloneTree(false);
+                    nodep->replaceWithKeepDType(newp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    did = true;
                 } else if (nodep->varp()->isParam() && VN_IS(valuep, Unbounded)) {
                     AstNode* const newp = valuep->cloneTree(false);
                     nodep->replaceWithKeepDType(newp);
@@ -3654,6 +3659,8 @@ class ConstVisitor final : public VNVisitor {
     }
 
     void visit(AstInitArray* nodep) override { iterateChildren(nodep); }
+    void visit(AstConsPackUOrStruct* nodep) override { iterateChildren(nodep); }
+    void visit(AstConsPackMember* nodep) override { iterateChildren(nodep); }
     void visit(AstInitItem* nodep) override { iterateChildren(nodep); }
     void visit(AstUnbounded* nodep) override { iterateChildren(nodep); }
     // These are converted by V3Param.  Don't constify as we don't want the
