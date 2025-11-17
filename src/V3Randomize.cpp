@@ -865,11 +865,10 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         // For global constraints: check if this specific path has been written
         // For normal constraints: only call write_var if varp->user3() is not set
-        const bool alreadyWritten = (membersel && isGlobalConstrained)
-                                        ? m_writtenVars.count(smtName) > 0
-                                        : (isGlobalConstrained && !membersel)
-                                              ? m_writtenVars.count(smtName) > 0
-                                              : varp->user3();
+        const bool alreadyWritten
+            = (membersel && isGlobalConstrained)    ? m_writtenVars.count(smtName) > 0
+              : (isGlobalConstrained && !membersel) ? m_writtenVars.count(smtName) > 0
+                                                    : varp->user3();
         const bool shouldWriteVar = !alreadyWritten;
         if (shouldWriteVar) {
             // Track this variable path as written
@@ -2366,7 +2365,8 @@ class RandomizeVisitor final : public VNVisitor {
         addPrePostCall(nodep, randomizep, "pre_randomize");
 
         // Both IS_RANDOMIZED and IS_RANDOMIZED_GLOBAL classes need full constraint support
-        // IS_RANDOMIZED_GLOBAL classes can be randomized independently (e.g., obj.member.randomize())
+        // IS_RANDOMIZED_GLOBAL classes can be randomized independently (e.g.,
+        // obj.member.randomize())
         AstNodeExpr* beginValp = nullptr;
         AstVar* genp = getRandomGenerator(nodep);
         if (genp) {
