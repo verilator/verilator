@@ -231,7 +231,8 @@ class TriggerKit final {
     AstCFunc* createDumpExtFunc() const;
     AstCFunc* createAnySetFunc(AstUnpackArrayDType* const dtypep) const;
     AstCFunc* createClearFunc() const;
-    AstCFunc* createOrIntoFunc(AstUnpackArrayDType* const iDtypep) const;
+    AstCFunc* createOrIntoFunc(AstUnpackArrayDType* const oDtypep,
+                               AstUnpackArrayDType* const iDtypep) const;
 
     // Create an AstSenTree that is sensitive to the given trigger indices
     AstSenTree* newTriggerSenTree(AstVarScope* vscp, const std::vector<uint32_t>& indices) const;

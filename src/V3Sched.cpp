@@ -583,13 +583,8 @@ void createEval(AstNetlist* netlistp,  //
             // Commit trigger awaits from the previous iteration
             if (timingCommitp) stmtsp = AstNode::addNext(stmtsp, timingCommitp->makeStmt());
             if (actKit.m_vscp) {
-                AstVarRef* const tmpVarRefp = new AstVarRef{flp, actKit.m_vscp, VAccess::WRITE};
-                AstVarRef* const vscAccpVarRefp
-                    = new AstVarRef{flp, trigKit.vscAccp(), VAccess::READ};
-                AstVarRef* const vscpVarRefp = new AstVarRef{flp, actKit.m_vscp, VAccess::READ};
-                AstNode::addNext(
-                    stmtsp,
-                    new AstAssign{flp, tmpVarRefp, new AstOr{flp, vscAccpVarRefp, vscpVarRefp}});
+                stmtsp = AstNode::addNext(stmtsp,
+                                          trigKit.newOrIntoCall(actKit.m_vscp, trigKit.vscAccp()));
             }
             // Latch the 'act' triggers under the 'nba' triggers
             stmtsp = AstNode::addNext(stmtsp, trigKit.newOrIntoCall(nbaKit.m_vscp, actKit.m_vscp));
