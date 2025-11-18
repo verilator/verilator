@@ -91,8 +91,58 @@ void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp, V3EdgeFuncP edgeFunc
 //######################################################################
 // Link state, as a visitor of each AstNode
 
-struct LinkCellsCtx {
-    std::unordered_set<std::string> topModuleNames;
+// State to pass between config parsing and cell linking visitors.
+struct LinkCellsState {
+    // Set of possible top module names from command line and configs
+    std::unordered_set<std::string> m_topModuleNames;
+};
+
+
+class LinkConfigsVisitor : public VNVisitor {
+    // STATE
+    LinkCellsState& m_state;  // Context for linking cells
+
+    // VISITORS
+    void visit(AstConfig* nodep) override {
+        const string fullTopName = v3Global.opt.work() + '.' + v3Global.opt.topModule();
+        const bool topMatch = (fullTopName == nodep->name());
+        if (topMatch) {
+            m_state.m_topModuleNames.erase(fullTopName);
+            for (AstConfigCell* cellp = nodep->designp(); cellp;
+                 cellp = VN_AS(cellp->nextp(), ConfigCell)) {
+                m_state.m_topModuleNames.insert(cellp->name());
+            }
+        }
+        // We don't do iterateChildren here because we want to skip designp
+        iterateAndNextNull(nodep->itemsp());
+    }
+
+    void visit(AstConfigCell* nodep) override {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: config cell");
+        iterateChildren(nodep);
+    }
+    void visit(AstConfigRule* nodep) override {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: config rule");
+        iterateChildren(nodep);
+    }
+    void visit(AstConfigUse* nodep) override {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: config use");
+        iterateChildren(nodep);
+    }
+
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    // CONSTRUCTORS
+    LinkConfigsVisitor(AstNetlist* nodep, LinkCellsState& state)
+        : m_state{state} {
+        // Initialize top module from command line option
+        if (!m_state.m_topModuleNames.size() && !v3Global.opt.topModule().empty()) {
+            const string fullTopName = v3Global.opt.work() + '.' + v3Global.opt.topModule();
+            m_state.m_topModuleNames.insert(fullTopName);
+        }
+        iterate(nodep);
+    }
 };
 
 class LinkCellsVisitor final : public VNVisitor {
@@ -109,7 +159,7 @@ class LinkCellsVisitor final : public VNVisitor {
 
     // STATE
     VInFilter* const m_filterp;  // Parser filter
-    LinkCellsCtx* const m_ctx;  // Context for linking cells
+    LinkCellsState& m_state;  // State for linking cells
 
     // Below state needs to be preserved between each module call.
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -251,7 +301,7 @@ class LinkCellsVisitor final : public VNVisitor {
                 nodep->inLibrary(true);  // Interfaces can't be at top, unless asked
             }
             const string fullName = nodep->libname() + "." + nodep->name();
-            const bool topMatch = (m_ctx->topModuleNames.count(fullName) > 0);
+            const bool topMatch = (m_state.m_topModuleNames.count(fullName) > 0);
             if (topMatch) {
                 m_topVertexp = vertex(nodep);
                 UINFO(2, "Link --top-module: " << nodep);
@@ -665,9 +715,9 @@ class LinkCellsVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    LinkCellsVisitor(AstNetlist* nodep, VInFilter* filterp, LinkCellsCtx* ctx)
+    LinkCellsVisitor(AstNetlist* nodep, VInFilter* filterp, LinkCellsState& state)
         : m_filterp{filterp}
-        , m_ctx{ctx}
+        , m_state{state}
         , m_mods{nodep} {
         if (v3Global.opt.hierChild()) {
             const V3HierBlockOptSet& hierBlocks = v3Global.opt.hierBlocks();
@@ -689,59 +739,13 @@ public:
     }
 };
 
-class LinkConfigsVisitor : public VNVisitor {
-    // STATE
-    LinkCellsCtx* const m_ctx;  // Context for linking cells
-
-    // VISITORS
-    void visit(AstConfig* nodep) override {
-        const string fullTopName = v3Global.opt.work() + '.' + v3Global.opt.topModule();
-        const bool topMatch = (fullTopName == nodep->name());
-        if (topMatch) {
-            m_ctx->topModuleNames.erase(fullTopName);
-            for (AstConfigCell* cellp = nodep->designp(); cellp;
-                 cellp = VN_AS(cellp->nextp(), ConfigCell)) {
-                m_ctx->topModuleNames.insert(cellp->name());
-            }
-        }
-        // We don't do iterateChildren here because we want to skip designp
-        for (AstNode* itemp = nodep->itemsp(); itemp; itemp = itemp->nextp()) { iterate(itemp); }
-    }
-
-    void visit(AstConfigCell* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: config cell");
-        iterateChildren(nodep);
-    }
-    void visit(AstConfigRule* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: config rule");
-        iterateChildren(nodep);
-    }
-    void visit(AstConfigUse* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: config use");
-        iterateChildren(nodep);
-    }
-
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
-
-public:
-    // CONSTRUCTORS
-    LinkConfigsVisitor(AstNetlist* nodep, LinkCellsCtx* ctx)
-        : m_ctx{ctx} {
-        // Initialize top module from command line option
-        if (!m_ctx->topModuleNames.size() && !v3Global.opt.topModule().empty()) {
-            const string fullTopName = v3Global.opt.work() + '.' + v3Global.opt.topModule();
-            m_ctx->topModuleNames.insert(fullTopName);
-        }
-        iterate(nodep);
-    }
-};
-
 //######################################################################
 // Link class functions
 
 void V3LinkCells::link(AstNetlist* nodep, VInFilter* filterp) {
     UINFO(4, __FUNCTION__ << ": ");
-    LinkCellsCtx ctx;
-    { LinkConfigsVisitor{nodep, &ctx}; }
-    { LinkCellsVisitor{nodep, filterp, &ctx}; }
+    // Configs must be parsed first because they determine the library search order for linking
+    LinkCellsState state;
+    { LinkConfigsVisitor{nodep, state}; }
+    { LinkCellsVisitor{nodep, filterp, state}; }
 }
