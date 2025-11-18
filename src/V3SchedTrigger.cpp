@@ -225,19 +225,20 @@ AstCFunc* TriggerKit::createClearFunc() const {
     // Done
     return funcp;
 }
-AstCFunc* TriggerKit::createOrIntoFunc(AstUnpackArrayDType* const iDtypep) const {
+AstCFunc* TriggerKit::createOrIntoFunc(AstUnpackArrayDType* const oDtypep,
+                                       AstUnpackArrayDType* const iDtypep) const {
     AstNetlist* const netlistp = v3Global.rootp();
     FileLine* const flp = netlistp->topScopep()->fileline();
     AstNodeDType* const u32DTypep = netlistp->findUInt32DType();
 
     // Create function
     std::string name = "_trigger_orInto__" + m_name;
-    name += iDtypep == m_trigVecDTypep ? "" : "_ext";
+    name += oDtypep == m_trigVecDTypep ? "" : "_ext";
     AstCFunc* const funcp = util::makeSubFunction(netlistp, name, m_slow);
     funcp->isStatic(true);
 
     // Add arguments
-    AstVarScope* const oVscp = newArgument(funcp, m_trigVecDTypep, "out", VDirection::INOUT);
+    AstVarScope* const oVscp = newArgument(funcp, oDtypep, "out", VDirection::INOUT);
     AstVarScope* const iVscp = newArgument(funcp, iDtypep, "in", VDirection::CONSTREF);
 
     // Add loop counter variable
@@ -257,10 +258,10 @@ AstCFunc* TriggerKit::createOrIntoFunc(AstUnpackArrayDType* const iDtypep) const
     AstNodeExpr* const oWordp = new AstArraySel{flp, rd(oVscp), rd(nVscp)};
     AstNodeExpr* const iWordp = new AstArraySel{flp, rd(iVscp), rd(nVscp)};
     AstNodeExpr* const rhsp = new AstOr{flp, oWordp, iWordp};
-    AstNodeExpr* const limp = new AstConst{flp, AstConst::WidthedValue{}, 32, m_nVecWords};
+    AstNodeExpr* const limp = oDtypep->rangep()->leftp()->cloneTreePure(false);
     loopp->addStmtsp(new AstAssign{flp, lhsp, rhsp});
     loopp->addStmtsp(util::incrementVar(nVscp));
-    loopp->addStmtsp(new AstLoopTest{flp, loopp, new AstLt{flp, rd(nVscp), limp}});
+    loopp->addStmtsp(new AstLoopTest{flp, loopp, new AstLte{flp, rd(nVscp), limp}});
 
     // Done
     return funcp;
@@ -297,13 +298,18 @@ AstNodeStmt* TriggerKit::newClearCall(AstVarScope* const vscp) const {
 }
 AstNodeStmt* TriggerKit::newOrIntoCall(AstVarScope* const oVscp, AstVarScope* const iVscp) const {
     if (!m_nVecWords) return nullptr;
-    UASSERT_OBJ(oVscp->dtypep() == m_trigVecDTypep, oVscp, "Bad trigger vector type");
+    UASSERT_OBJ(oVscp->dtypep() == m_trigVecDTypep || oVscp->dtypep() == m_trigExtDTypep, oVscp,
+                "Bad trigger vector type");
     AstCFunc* funcp = nullptr;
-    if (iVscp->dtypep() == m_trigVecDTypep) {
-        if (!m_orIntoVecp) m_orIntoVecp = createOrIntoFunc(m_trigVecDTypep);
+    if (oVscp->dtypep() == m_trigVecDTypep) {
+        if (!m_orIntoVecp)
+            m_orIntoVecp
+                = createOrIntoFunc(m_trigVecDTypep, VN_AS(iVscp->dtypep(), UnpackArrayDType));
         funcp = m_orIntoVecp;
-    } else if (iVscp->dtypep() == m_trigExtDTypep) {
-        if (!m_orIntoExtp) m_orIntoExtp = createOrIntoFunc(m_trigExtDTypep);
+    } else if (oVscp->dtypep() == m_trigExtDTypep) {
+        if (!m_orIntoExtp)
+            m_orIntoExtp
+                = createOrIntoFunc(m_trigExtDTypep, VN_AS(iVscp->dtypep(), UnpackArrayDType));
         funcp = m_orIntoExtp;
     } else {
         iVscp->v3fatalSrc("Bad trigger vector type");
