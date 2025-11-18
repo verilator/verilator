@@ -250,7 +250,8 @@ class LinkCellsVisitor final : public VNVisitor {
             if (VN_IS(nodep, Iface) || VN_IS(nodep, Package)) {
                 nodep->inLibrary(true);  // Interfaces can't be at top, unless asked
             }
-            const bool topMatch = (m_ctx->topModuleNames.count(nodep->prettyName()) > 0);
+            const string fullName = nodep->libname() + "." + nodep->name();
+            const bool topMatch = (m_ctx->topModuleNames.count(fullName) > 0);
             if (topMatch) {
                 m_topVertexp = vertex(nodep);
                 UINFO(2, "Link --top-module: " << nodep);
@@ -694,11 +695,13 @@ class LinkConfigsVisitor : public VNVisitor {
 
     // VISITORS
     void visit(AstConfig* nodep) override {
-        const bool topMatch = (v3Global.opt.topModule() == nodep->prettyName());
+        const string fullTopName = v3Global.opt.work() + '.' + v3Global.opt.topModule();
+        const bool topMatch = (fullTopName == nodep->name());
         if (topMatch) {
+            m_ctx->topModuleNames.erase(fullTopName);
             for (AstConfigCell* cellp = nodep->designp(); cellp;
                  cellp = VN_AS(cellp->nextp(), ConfigCell)) {
-                m_ctx->topModuleNames.insert(cellp->cellname().c_str());
+                m_ctx->topModuleNames.insert(cellp->name().c_str());
             }
         }
         // We don't do iterateChildren here because we want to skip designp
@@ -724,9 +727,10 @@ public:
     // CONSTRUCTORS
     LinkConfigsVisitor(AstNetlist* nodep, LinkCellsCtx* ctx)
         : m_ctx{ctx} {
-        // Add option topModule name as default
-        if (!ctx->topModuleNames.size() && !v3Global.opt.topModule().empty()) {
-            ctx->topModuleNames.insert(v3Global.opt.topModule());
+        // Initialize top module from command line option
+        if (!m_ctx->topModuleNames.size() && !v3Global.opt.topModule().empty()) {
+            const string fullTopName = v3Global.opt.work() + '.' + v3Global.opt.topModule();
+            m_ctx->topModuleNames.insert(fullTopName);
         }
         iterate(nodep);
     }
