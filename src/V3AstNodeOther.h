@@ -825,7 +825,7 @@ class AstConfig final : public AstNode {
     std::string m_configname;  // Config name within library
 
 public:
-    AstConfig(FileLine* fl, const ::std::string& libname, const std::string& cellname)
+    AstConfig(FileLine* fl, const std::string& libname, const std::string& cellname)
         : ASTGEN_SUPER_Config(fl)
         , m_libname{libname}
         , m_configname{cellname} {}

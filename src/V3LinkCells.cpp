@@ -92,7 +92,7 @@ void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp, V3EdgeFuncP edgeFunc
 // Link state, as a visitor of each AstNode
 
 struct LinkCellsCtx {
-    std::unordered_set<string> topModuleNames;
+    std::unordered_set<std::string> topModuleNames;
 };
 
 class LinkCellsVisitor final : public VNVisitor {
@@ -701,7 +701,7 @@ class LinkConfigsVisitor : public VNVisitor {
             m_ctx->topModuleNames.erase(fullTopName);
             for (AstConfigCell* cellp = nodep->designp(); cellp;
                  cellp = VN_AS(cellp->nextp(), ConfigCell)) {
-                m_ctx->topModuleNames.insert(cellp->name().c_str());
+                m_ctx->topModuleNames.insert(cellp->name());
             }
         }
         // We don't do iterateChildren here because we want to skip designp
