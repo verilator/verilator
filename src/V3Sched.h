@@ -206,6 +206,7 @@ class TriggerKit final {
     // The AstVarScope representing the extended trigger vector
     AstVarScope* m_vscp = nullptr;
     mutable AstVarScope* m_vscAccp = nullptr;
+    mutable AstVarScope* m_vscTmpp = nullptr;
     // The AstCFunc that computes the current active triggers
     AstCFunc* m_compp = nullptr;
     // The AstCFunc that dumps a trigger vector
@@ -276,6 +277,9 @@ public:
     AstVarScope* vscp() const { return m_vscp; }
     AstVarScope* vscAccp() const {
         return m_vscAccp ? m_vscAccp : (m_vscAccp = newTrigVec("Acc", true));
+    }
+    AstVarScope* vscTmpp() const {
+        return m_vscTmpp ? m_vscTmpp : (m_vscTmpp = newTrigVec("Tmp", true));
     }
     size_t senItem2TrigIdx(const AstSenItem* senItemp) const {
         return m_senItem2TrigIdx.find(*senItemp)->second;
