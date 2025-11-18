@@ -55,9 +55,9 @@ namespace {
 //============================================================================
 // Utility functions
 
-std::vector<AstSenTree*> getSenTreesUsedBy(const std::vector<const LogicByScope*>& lbsps) {
+std::vector<const AstSenTree*> getSenTreesUsedBy(const std::vector<const LogicByScope*>& lbsps) {
     const VNUser1InUse user1InUse;
-    std::vector<AstSenTree*> result;
+    std::vector<const AstSenTree*> result;
     for (const LogicByScope* const lbsp : lbsps) {
         for (const auto& pair : *lbsp) {
             AstActive* const activep = pair.second;
