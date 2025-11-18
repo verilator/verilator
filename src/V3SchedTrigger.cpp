@@ -298,7 +298,7 @@ AstNodeStmt* TriggerKit::newClearCall(AstVarScope* const vscp) const {
 }
 AstNodeStmt* TriggerKit::newOrIntoCall(AstVarScope* const oVscp, AstVarScope* const iVscp) const {
     if (!m_nVecWords) return nullptr;
-    UASSERT_OBJ(oVscp->dtypep() == m_trigVecDTypep || oVscp->dtypep() == m_trigExtDTypep, oVscp,
+    UASSERT_OBJ(iVscp->dtypep() == m_trigVecDTypep || iVscp->dtypep() == m_trigExtDTypep, oVscp,
                 "Bad trigger vector type");
     AstCFunc* funcp = nullptr;
     if (oVscp->dtypep() == m_trigVecDTypep) {
@@ -478,7 +478,7 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
 
     // Process the 'pre' trees first, so they are at the begining of the vector
     for (const AstSenTree* const senTreep : preTreeps) {
-        for (AstSenItem *itemp = senTreep->sensesp(), *nextp; itemp; itemp = nextp) {
+        for (const AstSenItem *itemp = senTreep->sensesp(), *nextp; itemp; itemp = nextp) {
             nextp = VN_AS(itemp->nextp(), SenItem);
             UASSERT_OBJ(itemp->isClocked() || itemp->isHybrid(), itemp,
                         "Cannot create trigger expression for non-clocked sensitivity");
@@ -497,7 +497,7 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
 
     // Process the rest of the trees
     for (const AstSenTree* const senTreep : senTreeps) {
-        for (AstSenItem *itemp = senTreep->sensesp(), *nextp; itemp; itemp = nextp) {
+        for (const AstSenItem *itemp = senTreep->sensesp(), *nextp; itemp; itemp = nextp) {
             nextp = VN_AS(itemp->nextp(), SenItem);
             UASSERT_OBJ(itemp->isClocked() || itemp->isHybrid(), itemp,
                         "Cannot create trigger expression for non-clocked sensitivity");
