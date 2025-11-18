@@ -586,10 +586,8 @@ void createEval(AstNetlist* netlistp,  //
     AstCCall* const timingResumep = timingKit.createResume(netlistp);
 
     // Create the active eval loop
-    AstVarScope* const tmpVecp = trigKit.newTrigVec("Tmp", true);
-    tmpVecp->varp()->noReset();
     EvalLoop topLoop = createEvalLoop(  //
-        netlistp, "act", "Active", /* slow: */ false, trigKit, tmpVecp,
+        netlistp, "act", "Active", /* slow: */ false, trigKit, actKit.m_vscp,
         // Inner loop statements
         nullptr,
         // Prep statements
@@ -599,17 +597,16 @@ void createEval(AstNetlist* netlistp,  //
             // Commit trigger awaits from the previous iteration
             if (timingCommitp) stmtsp = AstNode::addNext(stmtsp, timingCommitp->makeStmt());
             if (actKit.m_vscp) {
-                auto tmpVarRefp = new AstVarRef{flp, tmpVecp, VAccess::WRITE};
-                auto vscpVarRefp = new AstVarRef{flp, actKit.m_vscp, VAccess::READ};
+                AstVarRef* const tmpVarRefp = new AstVarRef{flp, actKit.m_vscp, VAccess::WRITE};
+                AstVarRef* const vscAccpVarRefp
+                    = new AstVarRef{flp, trigKit.vscAccp(), VAccess::READ};
+                AstVarRef* const vscpVarRefp = new AstVarRef{flp, actKit.m_vscp, VAccess::READ};
                 AstNode::addNext(
                     stmtsp,
-                    new AstAssign{flp, tmpVarRefp,
-                                  new AstOr{flp,
-                                            new AstVarRef{flp, trigKit.vscAccp(), VAccess::READ},
-                                            vscpVarRefp}});
+                    new AstAssign{flp, tmpVarRefp, new AstOr{flp, vscAccpVarRefp, vscpVarRefp}});
             }
             // Latch the 'act' triggers under the 'nba' triggers
-            stmtsp = AstNode::addNext(stmtsp, trigKit.newOrIntoCall(nbaKit.m_vscp, tmpVecp));
+            stmtsp = AstNode::addNext(stmtsp, trigKit.newOrIntoCall(nbaKit.m_vscp, actKit.m_vscp));
             //
             return stmtsp;
         }(),
@@ -625,11 +622,6 @@ void createEval(AstNetlist* netlistp,  //
             }
             // Resume triggered timing schedulers
             if (timingResumep) workp = AstNode::addNext(workp, timingResumep->makeStmt());
-            if (actKit.m_vscp) {  // This shall implicitly be also `tmpVecp != nullptr`
-                workp = AstNode::addNext(
-                    workp, new AstAssign{flp, new AstVarRef{flp, actKit.m_vscp, VAccess::WRITE},
-                                         new AstVarRef{flp, tmpVecp, VAccess::READ}});
-            }
             // Invoke the 'act' function
             workp = AstNode::addNext(workp, util::callVoidFunc(actKit.m_funcp));
             //
@@ -789,14 +781,9 @@ cloneMapWithNewTriggerReferences(const std::unordered_map<const AstSenTree*, Ast
 class BeforeTriggerEvaluate : public VNVisitor {
     const VNUser1InUse m_user1InUse;
 
-    V3UniqueNames m_preTriggerFuncUniqueName;
-
     AstNetlist* const m_netlistp;
-    AstNodeStmt* const m_eval;
-    AstStmtExpr* const m_commit;
-    AstNodeStmt* const m_orInto;
+    V3UniqueNames m_preTriggerFuncUniqueName;
     SenExprBuilder& m_senExprBuilder;
-    AstVarScope* const m_trigVecp;
     const TriggerKit& m_trigKit;
 
     std::map<AstCFunc*, std::set<size_t>> m_funcToUsedTriggers;
@@ -808,11 +795,7 @@ class BeforeTriggerEvaluate : public VNVisitor {
                 m_netlistp, m_preTriggerFuncUniqueName.get(senTreep), false);
             senTreep->user1p(funcp);
             FileLine* const flp = senTreep->fileline();
-            AstCMethodHard* const clear
-                = new AstCMethodHard{flp, new AstVarRef{flp, m_trigVecp, VAccess::WRITE},
-                                     VCMethod::UNPACKED_FILL, new AstConst{flp, 0}};
-            clear->dtypeSetVoid();
-            funcp->addStmtsp(clear->makeStmt());
+            AstVarScope* const vscp = m_trigKit.vscTmpp();
             AstNodeStmt* updatep = nullptr;
             std::vector<AstNodeExpr*> trigps;
             auto emplaceAt = [&trigps, flp](AstNodeExpr* const exprp, const size_t size) {
@@ -844,9 +827,10 @@ class BeforeTriggerEvaluate : public VNVisitor {
                 }
 
                 // Set the whole word in the trigger vector
-                const int wordIndex = static_cast<int>(i / 64);
-                AstArraySel* const aselp = new AstArraySel{
-                    flp, new AstVarRef(flp, m_trigVecp, VAccess::WRITE), wordIndex};
+                const size_t wordIndex = i / 64;
+                AstArraySel* const aselp
+                    = new AstArraySel{flp, new AstVarRef(flp, vscp, VAccess::WRITE),
+                                      new AstConst{flp, AstConst::Unsized64{}, wordIndex}};
                 updatep = AstNode::addNext(updatep, new AstAssign{flp, aselp, trigps[i]});
             }
 
@@ -855,6 +839,11 @@ class BeforeTriggerEvaluate : public VNVisitor {
             for (AstNodeStmt* const stmtsp : results.m_preUpdates) funcp->addStmtsp(stmtsp);
             funcp->addStmtsp(updatep);
             for (AstNodeStmt* const stmtsp : results.m_postUpdates) funcp->addStmtsp(stmtsp);
+            AstVarScope* const vscAccp = m_trigKit.vscAccp();
+            funcp->addStmtsp(
+                new AstAssign{flp, new AstVarRef{flp, vscAccp, VAccess::WRITE},
+                              new AstOr{flp, new AstVarRef{flp, vscAccp, VAccess::READ},
+                                        new AstVarRef{flp, vscp, VAccess::READ}}});
         }
         return util::callVoidFunc(VN_AS(senTreep->user1p(), CFunc));
     }
@@ -866,8 +855,6 @@ class BeforeTriggerEvaluate : public VNVisitor {
                 = VN_CAST(cAwaitp->exprp(), CMethodHard)) {
                 if (cMethodHardp->method() == VCMethod::SCHED_TRIGGER) {
                     nodep->addHereThisAsNext(getPreTriggerStmt(cAwaitp->sentreep()));
-                    // nodep->addHereThisAsNext(m_commit->cloneTree(false));
-                    nodep->addHereThisAsNext(m_orInto->cloneTree(false));
                     m_senTreeToShed.emplace(cAwaitp->sentreep(),
                                             VN_AS(cAwaitp->exprp(), CMethodHard)->fromp());
                 }
@@ -880,17 +867,11 @@ class BeforeTriggerEvaluate : public VNVisitor {
     void visit(AstNode* const nodep) override { iterateChildren(nodep); }
 
 public:
-    BeforeTriggerEvaluate(AstNodeStmt* const eval, AstStmtExpr* const commit,
-                          AstNodeStmt* const orInto, AstNetlist* netlistp,
-                          AstVarScope* const trigVecp, SenExprBuilder& senExprBuilder,
+    BeforeTriggerEvaluate(AstNetlist* netlistp, SenExprBuilder& senExprBuilder,
                           const TriggerKit& trigKit)
         : m_netlistp{netlistp}
         , m_preTriggerFuncUniqueName{"__VpreTrig"}
-        , m_eval{eval}
-        , m_commit{commit}
-        , m_orInto{orInto}
         , m_senExprBuilder{senExprBuilder}
-        , m_trigVecp{trigVecp}
         , m_trigKit{trigKit} {
         iterate(netlistp);
         for (const auto& funcToUsedTriggers : m_funcToUsedTriggers) {
@@ -915,27 +896,30 @@ public:
                 size_t bias = 0;
                 for (size_t idx : usedTriggersInSenTree) {
                     if (idx - bias >= 64) {
-                        if (mask != 0) usedTrigsToUsingTrees[{bias, mask}].insert(shedp);
+                        if (mask != 0) usedTrigsToUsingTrees[{bias / 64, mask}].insert(shedp);
                         bias += 64;
                         mask = 0;
                     }
                     mask |= 1 << (idx - bias);
                 }
-                if (mask != 0) usedTrigsToUsingTrees[{bias, mask}].insert(shedp);
+                if (mask != 0) usedTrigsToUsingTrees[{bias / 64, mask}].insert(shedp);
             }
 
+            std::set<size_t> touchedIdx;
+            FileLine* const flp = funcp->fileline();
+            AstVarScope* const vscp = m_trigKit.vscTmpp();
             for (const auto& triggersToTrees : usedTrigsToUsingTrees) {
                 const size_t maskBias = triggersToTrees.first.first;
                 const size_t mask = triggersToTrees.first.second;
                 const auto& schedulers = triggersToTrees.second;
+                touchedIdx.emplace(maskBias);
 
-                FileLine* const flp = funcp->fileline();
                 AstIf* const ifp = new AstIf{
                     flp,
                     new AstAnd{flp,
-                               new AstArraySel{flp, new AstVarRef{flp, m_trigVecp, VAccess::READ},
-                                               maskBias / 64},
-                               new AstConst{flp, mask}}};
+                               new AstArraySel{flp, new AstVarRef{flp, vscp, VAccess::READ},
+                                               new AstConst{flp, AstConst::Unsized64{}, maskBias}},
+                               new AstConst{flp, AstConst::Unsized64{}, mask}}};
                 for (AstNodeExpr* const shedp : schedulers) {
                     AstCMethodHard* const callp
                         = new AstCMethodHard{flp, shedp->cloneTree(false), VCMethod::SCHED_READY};
@@ -944,13 +928,16 @@ public:
                 }
                 funcp->addStmtsp(ifp);
             }
+            for (size_t idx : touchedIdx) {
+                funcp->addStmtsp(
+                    new AstAssign{flp,
+                                  new AstArraySel{flp, new AstVarRef{flp, vscp, VAccess::WRITE},
+                                                  new AstConst{flp, AstConst::Unsized64{}, idx}},
+                                  new AstConst{flp, AstConst::Unsized64{}, 0}});
+            }
         }
     }
-    ~BeforeTriggerEvaluate() override {
-        m_eval->deleteTree();
-        m_commit->deleteTree();
-        m_orInto->deleteTree();
-    };
+    ~BeforeTriggerEvaluate() override = default;
 };
 
 //============================================================================
@@ -1199,24 +1186,12 @@ void schedule(AstNetlist* netlistp) {
                timingKit);
 
     if (AstCCall* const commit = timingKit.createCommit(netlistp)) {
-        FileLine* const flp = commit->fileline();
-        staticp->addStmtsp(commit->cloneTree(true)->makeStmt());
-        auto vscAccp = trigKit.vscAccp();
-        UASSERT_OBJ(vscAccp, commit, "Expected trigger accumulator to exist");
-        BeforeTriggerEvaluate{
-            trigKit.newCompCall(nbaKit.m_vscp),
-            commit->makeStmt(),
-            new AstAssign{flp, new AstVarRef{flp, trigKit.vscAccp(), VAccess::WRITE},
-                          new AstOr{flp, new AstVarRef{flp, trigKit.vscAccp(), VAccess::READ},
-                                    new AstVarRef{flp, actKit.m_vscp, VAccess::READ}}},
-            netlistp,
-            actKit.m_vscp,
-            senExprBuilder,
-            trigKit};
+        staticp->addStmtsp(commit->makeStmt());
+        BeforeTriggerEvaluate{netlistp, senExprBuilder, trigKit};
     } else {
         netlistp->foreach([](AstCAwait* const cAwaitp) { cAwaitp->clearSentreep(); });
     }
-    if (auto trigAccp = trigKit.vscAccp()) {
+    if (AstVarScope* const trigAccp = trigKit.vscAccp()) {
         staticp->addStmtsp(new AstAssign{
             trigAccp->fileline(), new AstVarRef{trigAccp->fileline(), trigAccp, VAccess::WRITE},
             new AstVarRef{trigAccp->fileline(), actKit.m_vscp, VAccess::READ}});
