@@ -702,9 +702,7 @@ class LinkConfigsVisitor : public VNVisitor {
             }
         }
         // We don't do iterateChildren here because we want to skip designp
-        for (AstNode* itemp = nodep->itemsp(); itemp; itemp = itemp->nextp()) {
-            iterate(itemp);
-        }
+        for (AstNode* itemp = nodep->itemsp(); itemp; itemp = itemp->nextp()) { iterate(itemp); }
     }
 
     void visit(AstConfigCell* nodep) override {
@@ -725,7 +723,8 @@ class LinkConfigsVisitor : public VNVisitor {
 public:
     // CONSTRUCTORS
     LinkConfigsVisitor(AstNetlist* nodep, VInFilter* filterp, LinkCellsCtx* ctx)
-        : m_filterp{filterp}, m_ctx{ctx} {
+        : m_filterp{filterp}
+        , m_ctx{ctx} {
         // Add option topModule name as default
         if (!ctx->topModuleNames.size() && !v3Global.opt.topModule().empty()) {
             ctx->topModuleNames.insert(v3Global.opt.topModule());

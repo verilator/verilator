@@ -11,9 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=[
-    '--binary', '--top cfg2'
-])
+test.compile(verilator_flags2=['--binary', '--top cfg2'])
 
 test.execute()
 
