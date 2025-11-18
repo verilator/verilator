@@ -97,7 +97,6 @@ struct LinkCellsState {
     std::unordered_set<std::string> m_topModuleNames;
 };
 
-
 class LinkConfigsVisitor : public VNVisitor {
     // STATE
     LinkCellsState& m_state;  // Context for linking cells
