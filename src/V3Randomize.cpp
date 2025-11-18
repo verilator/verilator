@@ -1129,6 +1129,11 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstNode* rootNode = nodep->fromp();
             while (const AstMemberSel* const selp = VN_CAST(rootNode, MemberSel))
                 rootNode = selp->fromp();
+            // Detect array/assoc array access in global constraints
+            if (VN_IS(rootNode, ArraySel) || VN_IS(rootNode, AssocSel)) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: array element access in global constraint ");
+            }
             // Check if the root variable participates in global constraints
             if (const AstVarRef* const varRefp = VN_CAST(rootNode, VarRef)) {
                 AstVar* const constrainedVar = varRefp->varp();
