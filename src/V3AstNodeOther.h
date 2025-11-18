@@ -824,11 +824,9 @@ class AstConfig final : public AstNode {
     std::string m_name;  // Config block name
 
 public:
-    AstConfig(FileLine* fl, const std::string& name, AstNode* itemsp)
+    AstConfig(FileLine* fl, const std::string& name)
         : ASTGEN_SUPER_Config(fl)
-        , m_name{name} {
-        addItemsp(itemsp);
-    }
+        , m_name{name} {}
     ASTGEN_MEMBERS_AstConfig;
     std::string name() const override VL_MT_STABLE { return m_name; }
 };

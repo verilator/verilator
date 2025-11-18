@@ -91,6 +91,10 @@ void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp, V3EdgeFuncP edgeFunc
 //######################################################################
 // Link state, as a visitor of each AstNode
 
+struct LinkCellsCtx {
+    std::unordered_set<string> topModuleNames;
+};
+
 class LinkCellsVisitor final : public VNVisitor {
     // NODE STATE
     //  Entire netlist:
@@ -105,6 +109,7 @@ class LinkCellsVisitor final : public VNVisitor {
 
     // STATE
     VInFilter* const m_filterp;  // Parser filter
+    LinkCellsCtx* const m_ctx;  // Context for linking cells
 
     // Below state needs to be preserved between each module call.
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -245,7 +250,7 @@ class LinkCellsVisitor final : public VNVisitor {
             if (VN_IS(nodep, Iface) || VN_IS(nodep, Package)) {
                 nodep->inLibrary(true);  // Interfaces can't be at top, unless asked
             }
-            const bool topMatch = (v3Global.opt.topModule() == nodep->prettyName());
+            const bool topMatch = (m_ctx->topModuleNames.count(nodep->prettyName()) > 0);
             if (topMatch) {
                 m_topVertexp = vertex(nodep);
                 UINFO(2, "Link --top-module: " << nodep);
@@ -603,23 +608,6 @@ class LinkCellsVisitor final : public VNVisitor {
         iterateAndNextNull(nodep->attrsp());
     }
 
-    void visit(AstConfig* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: config");
-        iterateChildren(nodep);
-    }
-    void visit(AstConfigCell* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: config cell");
-        iterateChildren(nodep);
-    }
-    void visit(AstConfigRule* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: config rule");
-        iterateChildren(nodep);
-    }
-    void visit(AstConfigUse* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: config use");
-        iterateChildren(nodep);
-    }
-
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     // METHODS
@@ -676,9 +664,10 @@ class LinkCellsVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    LinkCellsVisitor(AstNetlist* nodep, VInFilter* filterp)
+    LinkCellsVisitor(AstNetlist* nodep, VInFilter* filterp, LinkCellsCtx* ctx)
         : m_filterp{filterp}
-        , m_mods{nodep} {
+        , m_mods{nodep}
+        , m_ctx{ctx} {
         if (v3Global.opt.hierChild()) {
             const V3HierBlockOptSet& hierBlocks = v3Global.opt.hierBlocks();
             UASSERT(!v3Global.opt.topModule().empty(),
@@ -699,10 +688,58 @@ public:
     }
 };
 
+class LinkConfigsVisitor : public VNVisitor {
+    VInFilter* const m_filterp;  // Parser filter
+    LinkCellsCtx* const m_ctx;  // Context for linking cells
+
+    // VISITORS
+    void visit(AstConfig* nodep) override {
+        const bool topMatch = (v3Global.opt.topModule() == nodep->prettyName());
+        if (topMatch) {
+            for (AstConfigCell* cellp = nodep->designp(); cellp;
+                 cellp = VN_AS(cellp->nextp(), ConfigCell)) {
+                m_ctx->topModuleNames.insert(cellp->cellname().c_str());
+            }
+        }
+        // We don't do iterateChildren here because we want to skip designp
+        for (AstNode* itemp = nodep->itemsp(); itemp; itemp = itemp->nextp()) {
+            iterate(itemp);
+        }
+    }
+
+    void visit(AstConfigCell* nodep) override {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: config cell");
+        iterateChildren(nodep);
+    }
+    void visit(AstConfigRule* nodep) override {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: config rule");
+        iterateChildren(nodep);
+    }
+    void visit(AstConfigUse* nodep) override {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: config use");
+        iterateChildren(nodep);
+    }
+
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    // CONSTRUCTORS
+    LinkConfigsVisitor(AstNetlist* nodep, VInFilter* filterp, LinkCellsCtx* ctx)
+        : m_filterp{filterp}, m_ctx{ctx} {
+        // Add option topModule name as default
+        if (!ctx->topModuleNames.size() && !v3Global.opt.topModule().empty()) {
+            ctx->topModuleNames.insert(v3Global.opt.topModule());
+        }
+        iterate(nodep);
+    }
+};
+
 //######################################################################
 // Link class functions
 
 void V3LinkCells::link(AstNetlist* nodep, VInFilter* filterp) {
     UINFO(4, __FUNCTION__ << ": ");
-    { LinkCellsVisitor{nodep, filterp}; }
+    LinkCellsCtx ctx;
+    { LinkConfigsVisitor{nodep, filterp, &ctx}; }
+    { LinkCellsVisitor{nodep, filterp, &ctx}; }
 }
