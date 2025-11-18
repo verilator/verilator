@@ -785,7 +785,8 @@ class BeforeTriggerEvaluate : public VNVisitor {
     AstVarScope* const m_trigVecp;
     const TriggerKit& m_trigKit;
 
-    std::vector<std::set<AstCFunc*>> m_trigToUsingFuncs;
+    std::map<AstCFunc*, std::set<size_t>> m_funcToUsedTriggers;
+    std::map<const AstSenTree*, AstNodeExpr*> m_senTreeToShed;
 
     AstNodeStmt* getPreTriggerStmt(AstSenTree* const senTreep) {
         if (!senTreep->user1p()) {
@@ -814,8 +815,7 @@ class BeforeTriggerEvaluate : public VNVisitor {
                  itemp = VN_AS(itemp->nextp(), SenItem)) {
                 size_t idx = m_trigKit.senItem2TrigIdx(itemp);
                 emplaceAt(m_senExprBuilder.build(itemp).first, idx);
-                if (m_trigToUsingFuncs.size() <= idx) { m_trigToUsingFuncs.resize(idx + 1); }
-                m_trigToUsingFuncs[idx].insert(funcp);
+                m_funcToUsedTriggers[funcp].insert(idx);
             }
 
             for (size_t i = 0; i < trigps.size(); i += 64) {
@@ -852,8 +852,10 @@ class BeforeTriggerEvaluate : public VNVisitor {
                 = VN_CAST(cAwaitp->exprp(), CMethodHard)) {
                 if (cMethodHardp->method() == VCMethod::SCHED_TRIGGER) {
                     nodep->addHereThisAsNext(getPreTriggerStmt(cAwaitp->sentreep()));
-                    nodep->addHereThisAsNext(m_commit->cloneTree(false));
+                    // nodep->addHereThisAsNext(m_commit->cloneTree(false));
                     nodep->addHereThisAsNext(m_orInto->cloneTree(false));
+                    m_senTreeToShed.emplace(cAwaitp->sentreep(),
+                                            VN_AS(cAwaitp->exprp(), CMethodHard)->fromp());
                 }
             }
             cAwaitp->clearSentreep();
@@ -877,6 +879,58 @@ public:
         , m_trigVecp{trigVecp}
         , m_trigKit{trigKit} {
         iterate(netlistp);
+        for (const auto& funcToUsedTriggers : m_funcToUsedTriggers) {
+            AstCFunc* const funcp = funcToUsedTriggers.first;
+            const auto& usedTriggers = funcToUsedTriggers.second;
+
+            // To order `if`s so, V3Const can optimize it better
+            std::map<std::pair<size_t, size_t>, std::set<AstNodeExpr*>> usedTrigsToUsingTrees;
+            for (auto senTreeShed : m_senTreeToShed) {
+                const AstSenTree* const senTreep = senTreeShed.first;
+                AstNodeExpr* const shedp = senTreeShed.second;
+                std::set<size_t> usedTriggersInSenTree;
+                for (AstSenItem* senItemp = senTreep->sensesp(); senItemp;
+                     senItemp = VN_AS(senItemp->nextp(), SenItem)) {
+                    size_t idx = m_trigKit.senItem2TrigIdx(senItemp);
+                    if (usedTriggers.find(idx) != usedTriggers.end()) {
+                        usedTriggersInSenTree.emplace(idx);
+                    }
+                }
+
+                size_t mask = 0;
+                size_t bias = 0;
+                for (size_t idx : usedTriggersInSenTree) {
+                    if (idx - bias >= 64) {
+                        if (mask != 0) usedTrigsToUsingTrees[{bias, mask}].insert(shedp);
+                        bias += 64;
+                        mask = 0;
+                    }
+                    mask |= 1 << (idx - bias);
+                }
+                if (mask != 0) usedTrigsToUsingTrees[{bias, mask}].insert(shedp);
+            }
+
+            for (const auto& triggersToTrees : usedTrigsToUsingTrees) {
+                const size_t maskBias = triggersToTrees.first.first;
+                const size_t mask = triggersToTrees.first.second;
+                const auto& schedulers = triggersToTrees.second;
+
+                FileLine* const flp = funcp->fileline();
+                AstIf* const ifp = new AstIf{
+                    flp,
+                    new AstAnd{flp,
+                               new AstArraySel{flp, new AstVarRef{flp, m_trigVecp, VAccess::READ},
+                                               maskBias / 64},
+                               new AstConst{flp, mask}}};
+                for (AstNodeExpr* const shedp : schedulers) {
+                    AstCMethodHard* const callp
+                        = new AstCMethodHard{flp, shedp->cloneTree(false), VCMethod::SCHED_READY};
+                    callp->dtypeSetVoid();
+                    ifp->addThensp(callp->makeStmt());
+                }
+                funcp->addStmtsp(ifp);
+            }
+        }
     }
     ~BeforeTriggerEvaluate() override {
         m_eval->deleteTree();
