@@ -1858,6 +1858,16 @@ void AstClocking::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, isGlobal);
     dumpJsonGen(str);
 }
+void AstConfig::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " configname=" << configname();
+    if (libname() != "work") str << " libname=" << libname();
+}
+void AstConfig::dumpJson(std::ostream& str) const {
+    dumpJsonStrFunc(str, configname);
+    if (libname() != "work") dumpJsonStr(str, "libname=", libname());
+    dumpJsonGen(str);
+}
 void AstConfigRule::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isCell()) str << " [CELL]";
