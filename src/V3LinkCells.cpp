@@ -666,8 +666,8 @@ public:
     // CONSTRUCTORS
     LinkCellsVisitor(AstNetlist* nodep, VInFilter* filterp, LinkCellsCtx* ctx)
         : m_filterp{filterp}
-        , m_mods{nodep}
-        , m_ctx{ctx} {
+        , m_ctx{ctx}
+        , m_mods{nodep} {
         if (v3Global.opt.hierChild()) {
             const V3HierBlockOptSet& hierBlocks = v3Global.opt.hierBlocks();
             UASSERT(!v3Global.opt.topModule().empty(),
@@ -689,7 +689,7 @@ public:
 };
 
 class LinkConfigsVisitor : public VNVisitor {
-    VInFilter* const m_filterp;  // Parser filter
+    // STATE
     LinkCellsCtx* const m_ctx;  // Context for linking cells
 
     // VISITORS
@@ -722,9 +722,8 @@ class LinkConfigsVisitor : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    LinkConfigsVisitor(AstNetlist* nodep, VInFilter* filterp, LinkCellsCtx* ctx)
-        : m_filterp{filterp}
-        , m_ctx{ctx} {
+    LinkConfigsVisitor(AstNetlist* nodep, LinkCellsCtx* ctx)
+        : m_ctx{ctx} {
         // Add option topModule name as default
         if (!ctx->topModuleNames.size() && !v3Global.opt.topModule().empty()) {
             ctx->topModuleNames.insert(v3Global.opt.topModule());
@@ -739,6 +738,6 @@ public:
 void V3LinkCells::link(AstNetlist* nodep, VInFilter* filterp) {
     UINFO(4, __FUNCTION__ << ": ");
     LinkCellsCtx ctx;
-    { LinkConfigsVisitor{nodep, filterp, &ctx}; }
+    { LinkConfigsVisitor{nodep, &ctx}; }
     { LinkCellsVisitor{nodep, filterp, &ctx}; }
 }
