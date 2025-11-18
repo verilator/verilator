@@ -85,9 +85,9 @@ void VlDelayScheduler::resume() {
             return;
         }
 
-        // VL_FATAL_MT(__FILE__, __LINE__, "",
-        //             "%Error: Encountered process that should've been resumed at an "
-        //             "earlier simulation time. Missed a time slot?\n");
+        VL_FATAL_MT(__FILE__, __LINE__, "",
+                    "%Error: Encountered process that should've been resumed at an "
+                    "earlier simulation time. Missed a time slot?\n");
     }
 }
 

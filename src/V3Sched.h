@@ -268,8 +268,8 @@ public:
     static TriggerKit create(AstNetlist* netlistp,  //
                              AstCFunc* const initFuncp,  //
                              SenExprBuilder& senExprBuilder,  //
-                             const std::vector<AstSenTree*>& preTreeps,  //
-                             const std::vector<AstSenTree*>& senTreeps,  //
+                             const std::vector<const AstSenTree*>& preTreeps,  //
+                             const std::vector<const AstSenTree*>& senTreeps,  //
                              const string& name,  //
                              const ExtraTriggers& extraTriggers,  //
                              bool slow);
