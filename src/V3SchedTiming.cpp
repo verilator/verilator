@@ -68,14 +68,14 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
         m_resumeFuncp->declPrivate(true);
         scopeTopp->addBlocksp(m_resumeFuncp);
 
-        for (auto& p : m_lbs) {
+        for (const auto& p : m_lbs) {
             AstActive* const activep = p.second;
-            if (auto stmtExprp = VN_CAST(activep->stmtsp(), StmtExpr)) {
-                if (auto exprp = VN_CAST(stmtExprp->exprp(), CMethodHard)) {
-                    auto fromp = exprp->fromp();
-                    if (auto dtypep = VN_CAST(fromp->dtypep(), BasicDType)) {
+            if (AstStmtExpr* const stmtExprp = VN_CAST(activep->stmtsp(), StmtExpr)) {
+                if (AstCMethodHard* const exprp = VN_CAST(stmtExprp->exprp(), CMethodHard)) {
+                    AstNodeExpr* const fromp = exprp->fromp();
+                    if (AstBasicDType* dtypep = VN_CAST(fromp->dtypep(), BasicDType)) {
                         if (dtypep->keyword() == VBasicDTypeKwd::TRIGGER_SCHEDULER) {
-                            auto commitp = new AstCMethodHard{
+                            AstCMethodHard* const commitp = new AstCMethodHard{
                                 fromp->fileline(), fromp->cloneTree(false), VCMethod::SCHED_COMMIT,
                                 exprp->pinsp() ? exprp->pinsp()->cloneTree(true) : nullptr};
                             commitp->dtypeSetVoid();
@@ -95,16 +95,12 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
             AstVarRef* const schedrefp = VN_AS(
                 VN_AS(VN_AS(activep->stmtsp(), StmtExpr)->exprp(), CMethodHard)->fromp(), VarRef);
 
-            AstIf* const ifp = V3Sched::util::createIfFromSenTree(activep->sentreep());
-            ifp->addThensp(activep->stmtsp()->unlinkFrBackWithNext());
-
-            if (false && schedrefp->varScopep()->dtypep()->basicp()->isDelayScheduler()) {
-                m_resumeFuncp->addStmtsp(ifp->thensp()->cloneTree(true));
-                dlyShedIfp = ifp;
+            AstNode* const actionp = activep->stmtsp()->unlinkFrBackWithNext();
+            if (schedrefp->varScopep()->dtypep()->basicp()->isDelayScheduler()) {
+                dlyShedIfp = V3Sched::util::createIfFromSenTree(activep->sentreep());
+                dlyShedIfp->addThensp(actionp);
             } else {
-                // m_resumeFuncp->addStmtsp(ifp);
-                m_resumeFuncp->addStmtsp(ifp->thensp()->unlinkFrBackWithNext());
-                VL_DO_DANGLING(ifp->deleteTree(), ifp);
+                m_resumeFuncp->addStmtsp(actionp);
             }
         }
         if (dlyShedIfp) m_resumeFuncp->addStmtsp(dlyShedIfp);

@@ -463,21 +463,21 @@ TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords,
 TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
                               AstCFunc* const initFuncp,  //
                               SenExprBuilder& senExprBuilder,  //
-                              const std::vector<AstSenTree*>& preTreeps,  //
-                              const std::vector<AstSenTree*>& senTreeps,  //
+                              const std::vector<const AstSenTree*>& preTreeps,  //
+                              const std::vector<const AstSenTree*>& senTreeps,  //
                               const string& name,  //
                               const ExtraTriggers& extraTriggers,  //
                               bool slow) {
     // Need to gather all the unique SenItems under the given SenTrees
 
     // List of unique SenItems used by all 'senTreeps'
-    std::vector<AstSenItem*> senItemps;
+    std::vector<const AstSenItem*> senItemps;
     // Map from SenItem to trigger bit standing for that SenItem. There might
     // be duplicate SenItems, we map all of them to the same index.
     std::unordered_map<VNRef<const AstSenItem>, size_t> senItem2TrigIdx;
 
     // Process the 'pre' trees first, so they are at the begining of the vector
-    for (AstSenTree* const senTreep : preTreeps) {
+    for (const AstSenTree* const senTreep : preTreeps) {
         for (AstSenItem *itemp = senTreep->sensesp(), *nextp; itemp; itemp = nextp) {
             nextp = VN_AS(itemp->nextp(), SenItem);
             UASSERT_OBJ(itemp->isClocked() || itemp->isHybrid(), itemp,
@@ -496,7 +496,7 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
     const uint32_t nPreWords = nPreTriggers / WORD_SIZE;
 
     // Process the rest of the trees
-    for (AstSenTree* const senTreep : senTreeps) {
+    for (const AstSenTree* const senTreep : senTreeps) {
         for (AstSenItem *itemp = senTreep->sensesp(), *nextp; itemp; itemp = nextp) {
             nextp = VN_AS(itemp->nextp(), SenItem);
             UASSERT_OBJ(itemp->isClocked() || itemp->isHybrid(), itemp,
@@ -577,7 +577,7 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
     // Statements to exectue at initialization time to fire initial triggers
     AstNodeStmt* initialTrigsp = nullptr;
     for (size_t i = 0; i < senItemps.size(); ++i) {
-        AstSenItem* const senItemp = senItemps[i];
+        const AstSenItem* const senItemp = senItemps[i];
 
         // If this is just paddign, use constant zero
         if (!senItemp) {
@@ -588,7 +588,6 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
         // Create the trigger computation expression
         const auto& pair = senExprBuilder.build(senItemp);
         trigps.emplace_back(pair.first);
-        senItemp->globalTrigIndex(static_cast<int>(trigps.size()));
 
         // Add initialization time trigger
         if (pair.second || v3Global.opt.xInitialEdge()) {
