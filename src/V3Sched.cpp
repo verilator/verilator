@@ -825,11 +825,6 @@ class BeforeTriggerEvaluate : public VNVisitor {
             for (AstNodeStmt* const stmtsp : results.m_preUpdates) funcp->addStmtsp(stmtsp);
             funcp->addStmtsp(updatep);
             for (AstNodeStmt* const stmtsp : results.m_postUpdates) funcp->addStmtsp(stmtsp);
-            AstVarScope* const vscAccp = m_trigKit.vscAccp();
-            funcp->addStmtsp(
-                new AstAssign{flp, new AstVarRef{flp, vscAccp, VAccess::WRITE},
-                              new AstOr{flp, new AstVarRef{flp, vscAccp, VAccess::READ},
-                                        new AstVarRef{flp, vscp, VAccess::READ}}});
         }
         return util::callVoidFunc(VN_AS(senTreep->user1p(), CFunc));
     }
@@ -914,12 +909,19 @@ public:
                 }
                 funcp->addStmtsp(ifp);
             }
+            AstVarScope* const vscAccp = m_trigKit.vscAccp();
+            const auto getIdx = [flp](AstVarScope* const scocep, VAccess access, size_t idx) {
+                return new AstArraySel{flp, new AstVarRef{flp, scocep, access},
+                                       new AstConst{flp, AstConst::Unsized64{}, idx}};
+            };
             for (size_t idx : touchedIdx) {
-                funcp->addStmtsp(
-                    new AstAssign{flp,
-                                  new AstArraySel{flp, new AstVarRef{flp, vscp, VAccess::WRITE},
-                                                  new AstConst{flp, AstConst::Unsized64{}, idx}},
-                                  new AstConst{flp, AstConst::Unsized64{}, 0}});
+                funcp->addStmtsp(new AstAssign{flp, getIdx(vscAccp, VAccess::WRITE, idx),
+                                               new AstOr{flp, getIdx(vscAccp, VAccess::READ, idx),
+                                                         getIdx(vscp, VAccess::READ, idx)}});
+            }
+            for (size_t idx : touchedIdx) {
+                funcp->addStmtsp(new AstAssign{flp, getIdx(vscp, VAccess::WRITE, idx),
+                                               new AstConst{flp, AstConst::Unsized64{}, 0}});
             }
         }
     }
