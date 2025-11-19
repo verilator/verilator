@@ -568,7 +568,7 @@ string AstVar::verilogKwd() const {
 }
 
 string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc,
-                         bool asRef) const {
+                         bool asRef, bool constRef) const {
     UASSERT_OBJ(!forReturn, this,
                 "Internal data is never passed as return, but as first argument");
     string ostatic;
@@ -576,7 +576,7 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
 
     asRef = asRef || isDpiOpenArray() || (forFunc && (isWritable() || isRef() || isConstRef()));
 
-    if (forFunc && isReadOnly() && asRef) ostatic = ostatic + "const ";
+    if (forFunc && (isReadOnly() || constRef) && asRef) ostatic = ostatic + "const ";
 
     string oname;
     if (named) {
@@ -748,33 +748,34 @@ string AstVar::cPubArgType(bool named, bool forReturn) const {
     return arg;
 }
 
-class dpiTypesToStringConverter VL_NOT_FINAL {
-public:
-    virtual string openArray(const AstVar*) const { return "const svOpenArrayHandle"; }
-    virtual string bitLogicVector(const AstVar* /*varp*/, bool isBit) const {
-        return isBit ? "svBitVecVal" : "svLogicVecVal";
-    }
-    virtual string primitive(const AstVar* varp) const {
-        string type;
-        const VBasicDTypeKwd keyword = varp->basicp()->keyword();
-        if (keyword.isDpiUnsignable() && !varp->basicp()->isSigned()) type = "unsigned ";
-        type += keyword.dpiType();
-        return type;
-    }
-    string convert(const AstVar* varp) const {
-        if (varp->isDpiOpenArray()) {
-            return openArray(varp);
-        } else if (const AstBasicDType* const basicp = varp->basicp()) {
-            if (basicp->isDpiBitVec() || basicp->isDpiLogicVec()) {
-                return bitLogicVector(varp, basicp->isDpiBitVec());
-            } else {
-                return primitive(varp);
-            }
+class dpiTypesToStringConverter VL_NOT_FINAL{public : virtual string openArray(const AstVar*)
+                                                 const {return "const svOpenArrayHandle";
+}
+virtual string bitLogicVector(const AstVar* /*varp*/, bool isBit) const {
+    return isBit ? "svBitVecVal" : "svLogicVecVal";
+}
+virtual string primitive(const AstVar* varp) const {
+    string type;
+    const VBasicDTypeKwd keyword = varp->basicp()->keyword();
+    if (keyword.isDpiUnsignable() && !varp->basicp()->isSigned()) type = "unsigned ";
+    type += keyword.dpiType();
+    return type;
+}
+string convert(const AstVar* varp) const {
+    if (varp->isDpiOpenArray()) {
+        return openArray(varp);
+    } else if (const AstBasicDType* const basicp = varp->basicp()) {
+        if (basicp->isDpiBitVec() || basicp->isDpiLogicVec()) {
+            return bitLogicVector(varp, basicp->isDpiBitVec());
         } else {
-            return "UNKNOWN";
+            return primitive(varp);
         }
+    } else {
+        return "UNKNOWN";
     }
-};
+}
+}
+;
 
 string AstVar::dpiArgType(bool named, bool forReturn) const {
     if (forReturn) {
@@ -1706,6 +1707,14 @@ string AstBasicDType::prettyDTypeName(bool) const {
     }
     return os.str();
 }
+string AstBasicDType::cDTypeName() const {
+    std::ostringstream os;
+    os << keyword().ascii();
+    if (isRanged() && !rangep() && keyword().width() <= 1) {
+        os << "__BRA__" << cLeft() << "__" << cRight() << "__KET__";
+    }
+    return os.str();
+}
 
 void AstNodeExpr::dump(std::ostream& str) const { this->AstNode::dump(str); }
 void AstNodeExpr::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
@@ -2353,6 +2362,7 @@ string AstNodeUOrStructDType::prettyDTypeName(bool full) const {
     result += "}" + prettyName();
     return result;
 }
+string AstNodeUOrStructDType::cDTypeName() const { return verilogKwd() + "__" + name(); }
 void AstNodeDType::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (generic()) str << " [GENERIC]";
@@ -2409,6 +2419,25 @@ string AstUnpackArrayDType::prettyDTypeName(bool full) const {
         subp = adtypep->subDTypep()->skipRefp();
     }
     os << subp->prettyDTypeName(full) << "$" << ranges;
+    return os.str();
+}
+// NOCOMMIT -- copypastaed from prettyDTypeName() -- is there a better way? encodeName()? name()?
+string AstPackArrayDType::cDTypeName() const {
+    std::ostringstream os;
+    if (const auto subp = subDTypep()) os << subp->cDTypeName();
+    os << "__BRA__" + cLeft() + "__" + cRight() + "__KET__";
+    return os.str();
+}
+string AstUnpackArrayDType::cDTypeName() const {
+    std::ostringstream os;
+    string ranges = "__BRA__" + cLeft() + "__" + cRight() + "__KET__";
+    // See above re: $
+    AstNodeDType* subp = subDTypep()->skipRefp();
+    while (AstUnpackArrayDType* adtypep = VN_CAST(subp, UnpackArrayDType)) {
+        ranges += "__BRA__" + adtypep->cLeft() + "__" + adtypep->cRight() + "__KET__";
+        subp = adtypep->subDTypep()->skipRefp();
+    }
+    os << subp->cDTypeName() << "__024__" << ranges;
     return os.str();
 }
 std::vector<AstUnpackArrayDType*> AstUnpackArrayDType::unpackDimensions() {
@@ -3069,6 +3098,7 @@ void AstStop::dumpJson(std::ostream& str) const {
 void AstTraceDecl::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     if (code()) str << " [code=" << code() << "]";
+    if (dtypeCallp()) str << " [dtypeCallp=" << dtypeCallp() << "]";
 }
 void AstTraceDecl::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, code);
