@@ -184,10 +184,12 @@ struct LogicReplicas final {
 // "Extra" triggers, with "Sense" triggers taking up the bulk of the bits.
 //
 class TriggerKit final {
+public:
     // Triggers are storead as an UnpackedArray with a fixed word size
     static constexpr uint32_t WORD_SIZE_LOG2 = 6;  // 64-bits / VL_QUADSIZE
     static constexpr uint32_t WORD_SIZE = 1 << WORD_SIZE_LOG2;
 
+private:
     const std::string m_name;  // TriggerKit name
     const bool m_slow;  // TriggerKit is for schedulign 'slow' code
     const uint32_t m_nSenseWords;  // Number of words for Sense triggers
@@ -266,6 +268,9 @@ public:
         }
         uint32_t size() const { return m_descriptions.size(); }
     };
+    // Generates list of assignments that fills
+    static AstAssign* createSenTrigVecAssignment(AstVarScope* const target,
+                                                 std::vector<AstNodeExpr*>& trigps);
 
     // Create a TriggerKit for the given AstSenTree vector
     static TriggerKit create(AstNetlist* netlistp,  //

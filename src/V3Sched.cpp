@@ -774,16 +774,76 @@ cloneMapWithNewTriggerReferences(const std::unordered_map<const AstSenTree*, Ast
     return newMap;
 }
 
+/**
+ * Finds all CAwaits, clears SenTrees inside them, generates pre-trigger functions (functions that
+ * shall be called before awaiting with a trigger scheduler) and add thier calls before proper
+ * CAwaits
+ */
 class AwaitPostSchedVisitor final : public VNVisitor {
     const VNUser1InUse m_user1InUse;
 
-    AstNetlist* const m_netlistp;
-    V3UniqueNames m_preTriggerFuncUniqueName;
-    SenExprBuilder& m_senExprBuilder;
-    const TriggerKit& m_trigKit;
+    /**
+     * AstSenTree::user1p()     ->  AstCFunc*   Function that has to be called before awaiting for
+     *                                          CAwait pointing to this SenTree
+     */
 
+    // Net list - for using util::makeSubFunction()
+    AstNetlist* const m_netlistp;
+    // Expression builder - for building expressions from SenItems
+    SenExprBuilder& m_senExprBuilder;
+    // Trigger kit - for accessing trigger vectors and mapping senItems to thier indexes
+    const TriggerKit& m_trigKit;
+    // Generator of unique names for pre-trigger function
+    V3UniqueNames m_preTriggerFuncUniqueName;
+
+    // Map containing every generated CFuncs and indexes of triggers used within it
     std::map<AstCFunc*, std::set<size_t>> m_funcToUsedTriggers;
-    std::map<const AstSenTree*, AstNodeExpr*> m_senTreeToShed;
+    // Map from SenTree to coresponding trigger scheduler
+    std::map<const AstSenTree*, AstNodeExpr*> m_senTreeToSched;
+
+    // For set of bit indexes (insde sensitivity vector) returns map from those indexes (split into
+    // word index and bit index inside the word) to set of TriggerSchedulers sensitive to these
+    // indexes
+    // Values are put into map<par<word_index, bit_index>, ...> to sort those by word_index.
+    // Since, later after creating ifs ordered by word_indexes, V3Const will be able to join ifs
+    // with same condition into one - which will be a very common case
+    std::map<std::pair<size_t, size_t>, std::set<AstNodeExpr*>>
+    getUsedTriggersToTrees(const std::set<size_t>& usedTriggers) {
+        std::map<std::pair<size_t, size_t>, std::set<AstNodeExpr*>> usedTrigsToUsingTrees;
+        for (auto senTreeSched : m_senTreeToSched) {
+            const AstSenTree* const senTreep = senTreeSched.first;
+            AstNodeExpr* const shedp = senTreeSched.second;
+
+            // Find all common SenItem indexes for `senTreep` and `usedTriggers`
+            std::set<size_t> usedTriggersInSenTree;
+            for (AstSenItem* senItemp = senTreep->sensesp(); senItemp;
+                 senItemp = VN_AS(senItemp->nextp(), SenItem)) {
+                size_t idx = m_trigKit.senItem2TrigIdx(senItemp);
+                if (usedTriggers.find(idx) != usedTriggers.end()) {
+                    usedTriggersInSenTree.emplace(idx);
+                }
+            }
+
+            // Change bit index to word index and index within this word
+            size_t mask = 0;
+            size_t bias = 0;
+            for (size_t idx : usedTriggersInSenTree) {
+                // Since triggers are continuous `while` is not necessary
+                if (idx - bias >= TriggerKit::WORD_SIZE) {
+                    if (mask != 0) {
+                        usedTrigsToUsingTrees[{bias / TriggerKit::WORD_SIZE, mask}].insert(shedp);
+                    }
+                    bias += TriggerKit::WORD_SIZE;
+                    mask = 0;
+                }
+                mask |= 1 << (idx - bias);
+            }
+            if (mask != 0) {
+                usedTrigsToUsingTrees[{bias / TriggerKit::WORD_SIZE, mask}].insert(shedp);
+            }
+        }
+        return usedTrigsToUsingTrees;
+    }
 
     AstNodeStmt* getPreTriggerStmt(AstSenTree* const senTreep) {
         if (!senTreep->user1p()) {
@@ -791,49 +851,36 @@ class AwaitPostSchedVisitor final : public VNVisitor {
                 m_netlistp, m_preTriggerFuncUniqueName.get(senTreep), false);
             senTreep->user1p(funcp);
             FileLine* const flp = senTreep->fileline();
-            AstVarScope* const vscp = m_trigKit.vscTmpp();
-            AstNodeStmt* updatep = nullptr;
-            std::vector<AstNodeExpr*> trigps;
-            auto emplaceAt = [&trigps, flp](AstNodeExpr* const exprp, const size_t size) {
-                while (trigps.size() <= size) {
+            static std::vector<AstNodeExpr*> trigps;  // Static to reduce amount of allocations
+
+            // Puts `exprp` at `pos` and makes sure that trigps.size() is multiple of
+            // TriggerKit::WORD_SIZE
+            const auto emplaceAt = [flp](AstNodeExpr* const exprp, const size_t pos) {
+                const size_t targetSize
+                    = vlstd::roundUpToMultipleOf<TriggerKit::WORD_SIZE>(pos + 1);
+                if (trigps.capacity() < targetSize) trigps.reserve(targetSize * 2);
+                while (trigps.size() < targetSize) {
                     trigps.push_back(new AstConst{flp, AstConst::BitFalse{}});
                 }
-                for (size_t i = trigps.size() % 64; i != 0 && i < 64; ++i) {
-                    trigps.push_back(new AstConst{flp, AstConst::BitFalse{}});
-                }
-                trigps[size]->deleteTree();
-                trigps[size] = exprp;
+                trigps[pos]->deleteTree();
+                trigps[pos] = exprp;
             };
+
+            // Find all trigger indexes of SenItems inside `senTreep`
+            // and add them to `trigps` and `m_funcToUsedTriggers[funcp]`
             for (const AstSenItem* itemp = senTreep->sensesp(); itemp;
                  itemp = VN_AS(itemp->nextp(), SenItem)) {
-                size_t idx = m_trigKit.senItem2TrigIdx(itemp);
+                const size_t idx = m_trigKit.senItem2TrigIdx(itemp);
                 emplaceAt(m_senExprBuilder.build(itemp).first, idx);
                 m_funcToUsedTriggers[funcp].insert(idx);
             }
 
-            for (size_t i = 0; i < trigps.size(); i += 64) {
-                // Concatenate all bits in this trigger word using a balanced
-                for (uint32_t level = 0; level < 6; ++level) {
-                    const uint32_t stride = 1 << level;
-                    for (uint32_t j = 0; j < 64; j += 2 * stride) {
-                        FileLine* const flp = trigps[i + j]->fileline();
-                        trigps[i + j] = new AstConcat{flp, trigps[i + j + stride], trigps[i + j]};
-                        trigps[i + j + stride] = nullptr;
-                    }
-                }
-
-                // Set the whole word in the trigger vector
-                const size_t wordIndex = i / 64;
-                AstArraySel* const aselp
-                    = new AstArraySel{flp, new AstVarRef(flp, vscp, VAccess::WRITE),
-                                      new AstConst{flp, AstConst::Unsized64{}, wordIndex}};
-                updatep = AstNode::addNext(updatep, new AstAssign{flp, aselp, trigps[i]});
-            }
-
+            // Fill the function with neccessary statements
             SenExprBuilder::Results results = m_senExprBuilder.getResultsAndClearUpdates();
             for (AstNodeStmt* const stmtsp : results.m_inits) funcp->addStmtsp(stmtsp);
             for (AstNodeStmt* const stmtsp : results.m_preUpdates) funcp->addStmtsp(stmtsp);
-            funcp->addStmtsp(updatep);
+            funcp->addStmtsp(TriggerKit::createSenTrigVecAssignment(m_trigKit.vscTmpp(), trigps));
+            trigps.clear();
             for (AstNodeStmt* const stmtsp : results.m_postUpdates) funcp->addStmtsp(stmtsp);
         }
         return util::callVoidFunc(VN_AS(senTreep->user1p(), CFunc));
@@ -846,11 +893,10 @@ class AwaitPostSchedVisitor final : public VNVisitor {
                 = VN_CAST(cAwaitp->exprp(), CMethodHard)) {
                 if (cMethodHardp->method() == VCMethod::SCHED_TRIGGER) {
                     nodep->addHereThisAsNext(getPreTriggerStmt(cAwaitp->sentreep()));
-                    m_senTreeToShed.emplace(cAwaitp->sentreep(),
-                                            VN_AS(cAwaitp->exprp(), CMethodHard)->fromp());
+                    m_senTreeToSched.emplace(cAwaitp->sentreep(), cMethodHardp->fromp());
                 }
             }
-            cAwaitp->clearSentreep();
+            cAwaitp->clearSentreep();  // Clear as these sentrees will get deleted later
         }
         iterateChildren(nodep);
     }
@@ -861,75 +907,65 @@ public:
     AwaitPostSchedVisitor(AstNetlist* netlistp, SenExprBuilder& senExprBuilder,
                           const TriggerKit& trigKit)
         : m_netlistp{netlistp}
-        , m_preTriggerFuncUniqueName{"__VpreTrig"}
         , m_senExprBuilder{senExprBuilder}
-        , m_trigKit{trigKit} {
+        , m_trigKit{trigKit}
+        , m_preTriggerFuncUniqueName{"__VpreTrig"} {
         iterate(netlistp);
+
         for (const auto& funcToUsedTriggers : m_funcToUsedTriggers) {
             AstCFunc* const funcp = funcToUsedTriggers.first;
-            const auto& usedTriggers = funcToUsedTriggers.second;
 
             // Order `if`s using `map` so, V3Const can optimize it better
-            std::map<std::pair<size_t, size_t>, std::set<AstNodeExpr*>> usedTrigsToUsingTrees;
-            for (auto senTreeShed : m_senTreeToShed) {
-                const AstSenTree* const senTreep = senTreeShed.first;
-                AstNodeExpr* const shedp = senTreeShed.second;
-                std::set<size_t> usedTriggersInSenTree;
-                for (AstSenItem* senItemp = senTreep->sensesp(); senItemp;
-                     senItemp = VN_AS(senItemp->nextp(), SenItem)) {
-                    size_t idx = m_trigKit.senItem2TrigIdx(senItemp);
-                    if (usedTriggers.find(idx) != usedTriggers.end()) {
-                        usedTriggersInSenTree.emplace(idx);
-                    }
-                }
+            std::map<std::pair<size_t, size_t>, std::set<AstNodeExpr*>> usedTrigsToUsingTrees
+                = getUsedTriggersToTrees(funcToUsedTriggers.second);
 
-                size_t mask = 0;
-                size_t bias = 0;
-                for (size_t idx : usedTriggersInSenTree) {
-                    if (idx - bias >= 64) {
-                        if (mask != 0) usedTrigsToUsingTrees[{bias / 64, mask}].insert(shedp);
-                        bias += 64;
-                        mask = 0;
-                    }
-                    mask |= 1 << (idx - bias);
-                }
-                if (mask != 0) usedTrigsToUsingTrees[{bias / 64, mask}].insert(shedp);
-            }
-
-            std::set<size_t> touchedIdx;
             FileLine* const flp = funcp->fileline();
             AstVarScope* const vscp = m_trigKit.vscTmpp();
+
+            // Helper returning expression getting array index `idx` from `scocep` with access
+            // `access`
+            const auto getIdx = [flp](AstVarScope* const scocep, VAccess access, size_t idx) {
+                return new AstArraySel{flp, new AstVarRef{flp, scocep, access},
+                                       new AstConst{flp, AstConst::Unsized64{}, idx}};
+            };
+
+            // Mark triggered schedulers as ready
             for (const auto& triggersToTrees : usedTrigsToUsingTrees) {
                 const size_t maskBias = triggersToTrees.first.first;
                 const size_t mask = triggersToTrees.first.second;
                 const auto& schedulers = triggersToTrees.second;
-                touchedIdx.emplace(maskBias);
 
-                AstIf* const ifp = new AstIf{
-                    flp,
-                    new AstAnd{flp,
-                               new AstArraySel{flp, new AstVarRef{flp, vscp, VAccess::READ},
-                                               new AstConst{flp, AstConst::Unsized64{}, maskBias}},
-                               new AstConst{flp, AstConst::Unsized64{}, mask}}};
-                for (AstNodeExpr* const shedp : schedulers) {
+                // Create if checking if given bit is fired - single bits are checked since usually
+                // there is only a few of them (only 1 most of the times as we await only for one
+                // trigger) also separating ifs into one bit checks allows V3Cost to do a better
+                // job
+                AstConst* const maskConstp = new AstConst{flp, AstConst::Unsized64{}, mask};
+                AstAnd* const condp
+                    = new AstAnd{flp, getIdx(vscp, VAccess::READ, maskBias), maskConstp};
+                AstIf* const ifp = new AstIf{flp, condp};
+
+                // Call ready() on each scheduler sensitive to `condp`
+                for (AstNodeExpr* const schedp : schedulers) {
                     AstCMethodHard* const callp
-                        = new AstCMethodHard{flp, shedp->cloneTree(false), VCMethod::SCHED_READY};
+                        = new AstCMethodHard{flp, schedp->cloneTree(false), VCMethod::SCHED_READY};
                     callp->dtypeSetVoid();
                     ifp->addThensp(callp->makeStmt());
                 }
                 funcp->addStmtsp(ifp);
             }
+
             AstVarScope* const vscAccp = m_trigKit.vscAccp();
-            const auto getIdx = [flp](AstVarScope* const scocep, VAccess access, size_t idx) {
-                return new AstArraySel{flp, new AstVarRef{flp, scocep, access},
-                                       new AstConst{flp, AstConst::Unsized64{}, idx}};
-            };
-            for (size_t idx : touchedIdx) {
+            // Add touched values to accumulator
+            for (const auto& usedTrig : usedTrigsToUsingTrees) {
+                const size_t idx = usedTrig.first.first;
                 funcp->addStmtsp(new AstAssign{flp, getIdx(vscAccp, VAccess::WRITE, idx),
                                                new AstOr{flp, getIdx(vscAccp, VAccess::READ, idx),
                                                          getIdx(vscp, VAccess::READ, idx)}});
             }
-            for (size_t idx : touchedIdx) {
+
+            // Clear touched values
+            for (const auto& usedTrig : usedTrigsToUsingTrees) {
+                const size_t idx = usedTrig.first.first;
                 funcp->addStmtsp(new AstAssign{flp, getIdx(vscp, VAccess::WRITE, idx),
                                                new AstConst{flp, AstConst::Unsized64{}, 0}});
             }
@@ -1188,8 +1224,8 @@ void schedule(AstNetlist* netlistp) {
         staticp->addStmtsp(setReadyp->makeStmt());
         AwaitPostSchedVisitor{netlistp, senExprBuilder, trigKit};
     } else {
-        // AwaitPostSchedVisitor clears Sentree pointers in AstCAwaits
-        // if there was no need to call it, SenTrees have to be removed manually
+        // AwaitPostSchedVisitor clears Sentree pointers in AstCAwaits (as these sentrees will get
+        // deleted later) if there was no need to call it, SenTrees have to be removed manually
         netlistp->foreach([](AstCAwait* const cAwaitp) { cAwaitp->clearSentreep(); });
     }
 
