@@ -148,22 +148,20 @@ class RandomizeMarkVisitor final : public VNVisitor {
     bool m_inStdWith = false;  // True when inside a 'with {}' clause
     std::set<AstNodeVarRef*> m_staticRefs;  // References to static variables under `with` clauses
     AstWith* m_withp = nullptr;  // Current 'with' constraint node
-    // Note: m_clonedConstraints removed - constraints now added directly to class
     std::unordered_set<const AstVar*> m_processedVars;  // Track by variable instance, not class
 
     // METHODS
-    // Step 3: Mark all rand variables in IS_RANDOMIZED_GLOBAL classes as globalConstrained
+    // Mark all rand variables in IS_RANDOMIZED_GLOBAL classes as globalConstrained
     void markGlobalConstrainedVars(AstClass* classp) {
         for (const AstClass* cp = classp; cp;
              cp = cp->extendsp() ? cp->extendsp()->classp() : nullptr) {
             for (AstNode* memberp = cp->stmtsp(); memberp; memberp = memberp->nextp()) {
                 AstVar* const varp = VN_CAST(memberp, Var);
                 if (!varp) continue;
-                if (varp->rand().isRandomizable()) { varp->globalConstrained(true); }
+                if (varp->rand().isRandomizable()) varp->globalConstrained(true);
             }
         }
     }
-
     // Check if a variable is listed in std::randomize() arguments
     bool isVarInStdRandomizeArgs(const AstVar* varp) const {
         if (!m_inStdWith || !m_stdRandCallp) return false;
@@ -285,7 +283,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 isDuplicate = true;
             }
         });
-
         if (isDuplicate) return;
 
         AstConstraint* const cloneConstrp = constrp->cloneTree(false);
@@ -328,14 +325,9 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 [&](AstClass* const containingClassp, AstConstraint* const constrp) {
                     processNestedConstraint(constrp, rootVarRefp, newPath, targetClassp);
                 });
-
             cloneNestedConstraintsRecurse(rootVarRefp, nestedClassp, newPath, targetClassp);
         }
     }
-
-    // Note: cloneNestedConstraints and nameManipulation removed - use processNestedConstraint
-    // directly Note: processGlobalConstraint from var-oriented approach removed In class-oriented
-    // approach, constraints are cloned directly in visit(AstNodeFTaskRef)
 
     // VISITORS
     void visit(AstClass* nodep) override {
@@ -514,7 +506,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
         if (classp) {
             if (!classp->user1()) classp->user1(IS_RANDOMIZED);
             markMembers(classp);
-
             // Clone constraints from all IS_RANDOMIZED_GLOBAL members
             classp->foreachMember([&](AstClass* const, AstVar* const memberVarp) {
                 if (!memberVarp->rand().isRandomizable()) return;
@@ -523,9 +514,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 if (!classRefp || !classRefp->classp()) return;
                 AstClass* const memberClassp = classRefp->classp();
                 if (memberClassp->user1() != IS_RANDOMIZED_GLOBAL) return;
-
                 memberVarp->globalConstrained(true);
-
                 // Clone constraints from this IS_RANDOMIZED_GLOBAL member class
                 AstVarRef* rootVarRefp
                     = new AstVarRef{nodep->fileline(), classp, memberVarp, VAccess::READ};
@@ -533,9 +522,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 memberClassp->foreachMember([&](AstClass* const, AstConstraint* const constrp) {
                     processNestedConstraint(constrp, rootVarRefp, emptyPath, classp);
                 });
-
                 cloneNestedConstraintsRecurse(rootVarRefp, memberClassp, emptyPath, classp);
-
                 // Delete the temporary VarRef created for constraint cloning
                 VL_DO_DANGLING(rootVarRefp->deleteTree(), rootVarRefp);
             });
@@ -658,7 +645,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
         } else {
             nodep->user2p(m_modp);
         }
-        // Old global constraint detection removed - now handled proactively in visit(AstClass)
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
@@ -912,7 +898,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         const bool shouldWriteVar = !alreadyWritten;
         if (shouldWriteVar) {
             // Track this variable path as written
-            if (isGlobalConstrained) { m_writtenVars.insert(smtName); }
+            if (isGlobalConstrained) m_writtenVars.insert(smtName);
             // For global constraints, delete nodep after processing
             if (isGlobalConstrained) VL_DO_DANGLING(pushDeletep(nodep), nodep);
             AstCMethodHard* const methodp = new AstCMethodHard{
@@ -1163,7 +1149,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         editSMT(nodep, nodep->fromp(), indexp);
     }
     void visit(AstMemberSel* nodep) override {
-        // Step 3: Check if rootVar is globalConstrained (original var-oriented logic)
+        // Check if rootVar is globalConstrained
         if (nodep->varp()->rand().isRandomizable() && nodep->fromp()) {
             AstNode* rootNode = nodep->fromp();
             while (const AstMemberSel* const selp = VN_CAST(rootNode, MemberSel))
@@ -1171,7 +1157,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             // Detect array/assoc array access in global constraints
             if (VN_IS(rootNode, ArraySel) || VN_IS(rootNode, AssocSel)) {
                 nodep->v3warn(E_UNSUPPORTED,
-                              "Unsupported: array element access in global constraint ");
+                              "Unsupported: Array element access in global constraint ");
             }
             // Check if the root variable participates in global constraints
             if (const AstVarRef* const varRefp = VN_CAST(rootNode, VarRef)) {
@@ -2424,12 +2410,10 @@ class RandomizeVisitor final : public VNVisitor {
         AstFunc* const randomizep = V3Randomize::newRandomizeFunc(m_memberMap, nodep);
         AstVar* const fvarp = VN_AS(randomizep->fvarp(), Var);
         AstVar* const randModeVarp = getRandModeVar(nodep);
-
         addPrePostCall(nodep, randomizep, "pre_randomize");
 
         // Both IS_RANDOMIZED and IS_RANDOMIZED_GLOBAL classes need full constraint support
-        // IS_RANDOMIZED_GLOBAL classes can be randomized independently (e.g.,
-        // obj.member.randomize())
+        // IS_RANDOMIZED_GLOBAL classes can be randomized independently
         AstNodeExpr* beginValp = nullptr;
         AstVar* genp = getRandomGenerator(nodep);
         if (genp) {
@@ -2503,15 +2487,8 @@ class RandomizeVisitor final : public VNVisitor {
         AstFuncRef* const basicRandomizeCallp = new AstFuncRef{fl, basicRandomizep, nullptr};
         randomizep->addStmtsp(new AstAssign{fl, fvarRefp->cloneTree(false),
                                             new AstAnd{fl, fvarRefReadp, basicRandomizeCallp}});
-
         addPrePostCall(nodep, randomizep, "post_randomize");
         nodep->user1(false);
-
-        // Clear user3 marks for this class's own variables (not inherited)
-        // This allows nested classes to be randomized independently
-        // nodep->foreachMember([&](AstClass*, AstVar* varp) {
-        //     if (varp->user2p() == nodep && varp->user3()) { varp->user3(false); }
-        // });
     }
     void visit(AstRandCase* nodep) override {
         // RANDCASE
@@ -2876,13 +2853,11 @@ public:
     explicit RandomizeVisitor(AstNetlist* nodep)
         : m_inlineUniqueNames{"__Vrandwith"} {
         createRandomizeClassVars(nodep);
-
-        // Mark variables in global constraints (cloned or direct nested member access)
+        // Mark variables in global constraints
         // These should not be randomized in nested class's __VBasicRand
         nodep->foreach([&](AstConstraint* constrp) {
             constrp->foreach([&](AstMemberSel* memberSelp) {
                 // Only mark if this MemberSel was created during constraint cloning
-                // user2p is set in processNestedConstraint line 278
                 if (memberSelp->user2p()) {
                     AstVar* const varp = memberSelp->varp();
                     if (!varp->user3()) varp->user3(true);
