@@ -802,15 +802,12 @@ class AwaitPostSchedVisitor final : public VNVisitor {
     // Map from SenTree to coresponding scheduler
     std::map<const AstSenTree*, AstNodeExpr*> m_senTreeToSched;
 
-    // For set of bit indexes (insde sensitivity vector) returns map from those indexes (split into
-    // word index and bit index inside the word) to set of TriggerSchedulers sensitive to these
-    // indexes
-    // Values are put into map<par<word_index, bit_index>, ...> to sort those by word_index.
-    // Since, later after creating ifs ordered by word_indexes, V3Const will be able to join ifs
-    // with same condition into one - which will be a very common case
-    std::map<std::pair<size_t, size_t>, std::set<AstNodeExpr*>>
+    // For set of bits indexes (of sensitivity vector) return map from those indexes to set of
+    // scheudlers sensitive to these indexes.
+    // Indexes are split into word index and bit masking this index within given word
+    std::map<size_t, std::map<size_t, std::set<AstNodeExpr*>>>
     getUsedTriggersToTrees(const std::set<size_t>& usedTriggers) {
-        std::map<std::pair<size_t, size_t>, std::set<AstNodeExpr*>> usedTrigsToUsingTrees;
+        std::map<size_t, std::map<size_t, std::set<AstNodeExpr*>>> usedTrigsToUsingTrees;
         for (auto senTreeSched : m_senTreeToSched) {
             const AstSenTree* const senTreep = senTreeSched.first;
             AstNodeExpr* const shedp = senTreeSched.second;
@@ -819,19 +816,12 @@ class AwaitPostSchedVisitor final : public VNVisitor {
             std::set<size_t> usedTriggersInSenTree;
             for (AstSenItem* senItemp = senTreep->sensesp(); senItemp;
                  senItemp = VN_AS(senItemp->nextp(), SenItem)) {
-                size_t idx = m_trigKit.senItem2TrigIdx(senItemp);
+                const size_t idx = m_trigKit.senItem2TrigIdx(senItemp);
                 if (usedTriggers.find(idx) != usedTriggers.end()) {
-                    usedTriggersInSenTree.emplace(idx);
+                    usedTrigsToUsingTrees[idx / TriggerKit::WORD_SIZE]
+                                         [1 << (idx % TriggerKit::WORD_SIZE)]
+                                             .insert(shedp);
                 }
-            }
-
-            // Change bit index to word index and index within this word
-            size_t bias = 0;
-            for (size_t idx : usedTriggersInSenTree) {
-                // Since triggers are continuous `while` is not necessary
-                if (idx - bias >= TriggerKit::WORD_SIZE) bias += TriggerKit::WORD_SIZE;
-                usedTrigsToUsingTrees[{bias / TriggerKit::WORD_SIZE, 1 << (idx - bias)}].insert(
-                    shedp);
             }
         }
         return usedTrigsToUsingTrees;
@@ -914,8 +904,7 @@ public:
         for (const auto& funcToUsedTriggers : m_funcToUsedTriggers) {
             AstCFunc* const funcp = funcToUsedTriggers.first;
 
-            // Order `if`s using `map` so, V3Const can optimize it better
-            std::map<std::pair<size_t, size_t>, std::set<AstNodeExpr*>> usedTrigsToUsingTrees
+            std::map<size_t, std::map<size_t, std::set<AstNodeExpr*>>> usedTrigsToUsingTrees
                 = getUsedTriggersToTrees(funcToUsedTriggers.second);
 
             FileLine* const flp = funcp->fileline();
@@ -930,34 +919,59 @@ public:
 
             // Mark triggered schedulers as ready
             for (const auto& triggersToTrees : usedTrigsToUsingTrees) {
-                const size_t maskBias = triggersToTrees.first.first;
-                const size_t mask = triggersToTrees.first.second;
-                const auto& schedulers = triggersToTrees.second;
+                const size_t word = triggersToTrees.first;
 
-                // Create if checking if given bit is fired - single bits are checked since usually
-                // there is only a few of them (only 1 most of the times as we await only for one
-                // trigger) also separating ifs into one bit checks allows V3Cost to do a better
-                // job
-                AstConst* const maskConstp = new AstConst{flp, AstConst::Unsized64{}, mask};
-                AstAnd* const condp
-                    = new AstAnd{flp, getIdx(vscp, VAccess::READ, maskBias), maskConstp};
-                AstIf* const ifp = new AstIf{flp, condp};
+                AstNodeStmt* stmtsp = nullptr;
+                for (const auto& bitsToTrees : triggersToTrees.second) {
+                    const size_t bit = bitsToTrees.first;
+                    const auto& schedulers = bitsToTrees.second;
 
-                // Call ready() on each scheduler sensitive to `condp`
-                for (AstNodeExpr* const schedp : schedulers) {
-                    AstCMethodHard* const callp
-                        = new AstCMethodHard{flp, schedp->cloneTree(false), VCMethod::SCHED_READY};
-                    callp->dtypeSetVoid();
-                    ifp->addThensp(callp->makeStmt());
+                    // Create `if` checking if given bit is fired - single bits are checked since
+                    // usually there is only a few of them (only 1 most of the times as we await
+                    // only for one event)
+                    AstConst* const maskConstp = new AstConst{flp, AstConst::Unsized64{}, bit};
+                    AstAnd* const condp
+                        = new AstAnd{flp, getIdx(vscp, VAccess::READ, word), maskConstp};
+                    AstIf* const ifp = new AstIf{flp, condp};
+
+                    // Call ready() on each scheduler sensitive to `condp`
+                    for (AstNodeExpr* const schedp : schedulers) {
+                        AstCMethodHard* const callp = new AstCMethodHard{
+                            flp, schedp->cloneTree(false), VCMethod::SCHED_READY};
+                        callp->dtypeSetVoid();
+                        ifp->addThensp(callp->makeStmt());
+                    }
+                    stmtsp = AstNode::addNext(stmtsp, ifp);
                 }
-                funcp->addStmtsp(ifp);
+
+                // If we assume that probability of triggering an arbitrary trigger before awaiting
+                // for it in the same routine is 30% or less there is a certain range withtin which
+                // it is worth to put an `if` that checks if whole word in trigger vector is non
+                // zero
+                constexpr double triggerFiredProb = 0.3;
+                constexpr double triggerNotFiredProb = 1.0 - triggerFiredProb;
+                const double anyNotFiredProb
+                    = std::pow(triggerNotFiredProb, triggersToTrees.second.size());
+
+                const double ifCountDouble = static_cast<double>(triggersToTrees.second.size());
+                const double averagIfCheckWitchGuardCount
+                    = anyNotFiredProb + (1.0 - anyNotFiredProb) * (ifCountDouble + 1.0);
+
+                // TODO: When bumped to C++17 or greater below code could be under `if constexpr`
+                // since, if `triggerFiredProb` is 31% or more `if` below will never enter
+                // `then` branch
+                if (averagIfCheckWitchGuardCount < ifCountDouble) {
+                    funcp->addStmtsp(new AstIf{flp, getIdx(vscp, VAccess::READ, word), stmtsp});
+                } else {
+                    funcp->addStmtsp(stmtsp);
+                }
             }
 
             AstVarScope* const vscAccp = m_trigKit.vscAccp();
 
             // Add touched values to accumulator
             for (const auto& usedTrig : usedTrigsToUsingTrees) {
-                const size_t idx = usedTrig.first.first;
+                const size_t idx = usedTrig.first;
                 funcp->addStmtsp(new AstAssign{flp, getIdx(vscAccp, VAccess::WRITE, idx),
                                                new AstOr{flp, getIdx(vscAccp, VAccess::READ, idx),
                                                          getIdx(vscp, VAccess::READ, idx)}});
@@ -965,7 +979,7 @@ public:
 
             // Clear touched values
             for (const auto& usedTrig : usedTrigsToUsingTrees) {
-                const size_t idx = usedTrig.first.first;
+                const size_t idx = usedTrig.first;
                 funcp->addStmtsp(new AstAssign{flp, getIdx(vscp, VAccess::WRITE, idx),
                                                new AstConst{flp, AstConst::Unsized64{}, 0}});
             }
