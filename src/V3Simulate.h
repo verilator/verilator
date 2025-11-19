@@ -1204,7 +1204,7 @@ private:
         }
         // Apply value to the function
         if (!m_checkOnly && optimizable())
-            for (auto& it : portValues) {
+            for (const auto& it : portValues) {
                 if (!m_checkOnly && optimizable()) newValue(it.first, it.second);
             }
         SimStackNode stackNode{nodep, &tconnects};
@@ -1222,7 +1222,7 @@ private:
         // Evaluate the function
         iterateConst(funcp);
         m_callStack.pop_back();
-        AstNodeExpr* returnp = nullptr;
+        const AstNodeExpr* returnp = nullptr;
         if (!m_checkOnly && optimizable()) {
             // Grab return value from output variable
             UASSERT_OBJ(funcp->fvarp(), nodep, "Function reference points at non-function");

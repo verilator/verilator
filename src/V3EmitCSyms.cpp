@@ -108,11 +108,11 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     void emitSymHdr();
     void emitSymImpPreamble();
     void emitScopeHier(std::vector<std::string>& stmts, bool destroy);
-    void emitSymImp(AstNetlist* netlistp);
+    void emitSymImp(const AstNetlist* netlistp);
     void emitDpiHdr();
     void emitDpiImp();
 
-    void emitSplit(std::vector<std::string>& stmts, const std::string name, size_t max_stmts);
+    void emitSplit(std::vector<std::string>& stmts, const std::string& name, size_t max_stmts);
 
     std::vector<std::string> getSymCtorStmts();
     std::vector<std::string> getSymDtorStmts();
@@ -863,7 +863,7 @@ std::vector<std::string> EmitCSyms::getSymDtorStmts() {
     return stmts;
 }
 
-void EmitCSyms::emitSplit(std::vector<std::string>& stmts, const std::string name,
+void EmitCSyms::emitSplit(std::vector<std::string>& stmts, const std::string& name,
                           size_t maxCost) {
     size_t nSubFunctions = 0;
     // Reduce into a balanced tree of sub-function calls until we end up with a single statement
@@ -912,7 +912,7 @@ void EmitCSyms::emitSplit(std::vector<std::string>& stmts, const std::string nam
     }
 }
 
-void EmitCSyms::emitSymImp(AstNetlist* netlistp) {
+void EmitCSyms::emitSymImp(const AstNetlist* netlistp) {
     UINFO(6, __FUNCTION__ << ": ");
 
     // Get the body of the constructor and destructor

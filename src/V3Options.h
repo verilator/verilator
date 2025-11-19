@@ -405,6 +405,7 @@ private:
     bool m_fGate;        // main switch: -fno-gate: gate wire elimination
     bool m_fInline;      // main switch: -fno-inline: module inlining
     bool m_fInlineFuncs = true;  // main switch: -fno-inline-funcs: function inlining
+    bool m_fInlineFuncsEager = true;  // main switch: -fno-inline-funcs-eager: don't inline eagerly
     bool m_fLife;        // main switch: -fno-life: variable lifetime
     bool m_fLifePost;    // main switch: -fno-life-post: delayed assignment elimination
     bool m_fLocalize;    // main switch: -fno-localize: convert temps to local variables
@@ -719,6 +720,7 @@ public:
     bool fGate() const { return m_fGate; }
     bool fInline() const { return m_fInline; }
     bool fInlineFuncs() const { return m_fInlineFuncs; }
+    bool fInlineFuncsEager() const { return m_fInlineFuncsEager; }
     bool fLife() const { return m_fLife; }
     bool fLifePost() const { return m_fLifePost; }
     bool fLocalize() const { return m_fLocalize; }

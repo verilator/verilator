@@ -133,6 +133,7 @@ unsigned getProcessAvailableParallelism() VL_MT_SAFE {
 
 unsigned getProcessDefaultParallelism() VL_MT_SAFE {
     const unsigned n = getProcessAvailableParallelism();
+    // cppcheck-suppress knownConditionTrueFalse
     return n ? n : std::thread::hardware_concurrency();
 }
 

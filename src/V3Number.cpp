@@ -920,6 +920,7 @@ string V3Number::emitC() const VL_MT_STABLE {
     } else if (words() == 2) {  // Quad
         const uint64_t qnum = static_cast<uint64_t>(toUQuad());
         const char* const fmt = (qnum < 10) ? ("%" PRIx64 "ULL") : ("0x%016" PRIx64 "ULL");
+        // cppcheck-suppress wrongPrintfScanfArgNum
         VL_SNPRINTF(sbuf, bufsize, fmt, qnum);
         return sbuf;
     } else {
@@ -930,6 +931,7 @@ string V3Number::emitC() const VL_MT_STABLE {
                                 : (width() > 16) ? ("0x%08" PRIx32 "U")
                                 : (width() > 8)  ? ("0x%04" PRIx32 "U")
                                                  : ("0x%02" PRIx32 "U");
+        // cppcheck-suppress wrongPrintfScanfArgNum
         VL_SNPRINTF(sbuf, bufsize, fmt, unum);
         return sbuf;
     }

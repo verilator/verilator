@@ -15,6 +15,6 @@
 `timescale 1ns / 1ps /extra
 
 module t;
-   timeunit 2ps;  // Bad
-   timeprecision 2ps;   // Bad
+  timeunit 2ps;  // Bad
+  timeprecision 2ps;   // Bad
 endmodule

@@ -113,7 +113,7 @@ struct V3ParseBisonYYSType final {
     bool flag = false;  // Passed up some rules
     union {
         V3Number* nump;
-        string* strp;
+        std::string* strp;
         int cint;
         double cdouble;
         bool cbool;

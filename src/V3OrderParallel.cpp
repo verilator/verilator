@@ -2394,7 +2394,7 @@ struct MTaskVxIdLessThan final {
     }
 };
 
-AstNodeStmt* V3Order::createParallel(OrderGraph& orderGraph, OrderMoveGraph& moveGraph,
+AstNodeStmt* V3Order::createParallel(const OrderGraph& orderGraph, OrderMoveGraph& moveGraph,
                                      const std::string& tag, bool slow) {
     UINFO(2, "  Constructing parallel code for '" + tag + "'");
 

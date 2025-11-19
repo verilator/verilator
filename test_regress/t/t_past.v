@@ -59,6 +59,10 @@ module Test (/*AUTOARG*/
    reg [31:0]   dly1;
    reg [31:0]   dly2;
    reg [31:0]   dly3;
+   reg [31:0]   dly0Inc;
+   reg [31:0]   dly1Inc;
+   reg [31:0]   dly2Inc;
+   reg [31:0]   dly3Inc;
 
    // If called in an assertion, sequence, or property, the appropriate clocking event.
    // Otherwise, if called in a disable condition or a clock expression in an assertion, sequence, or prop, explicit.
@@ -71,6 +75,10 @@ module Test (/*AUTOARG*/
       dly1 <= dly0;
       dly2 <= dly1;
       dly3 <= dly2;
+      dly0Inc <= in + 1;
+      dly1Inc <= dly0Inc;
+      dly2Inc <= dly1Inc;
+      dly3Inc <= dly2Inc;
       if ($time > 40) begin
          // $past(expression, ticks, expression, clocking)
          // In clock expression
@@ -79,12 +87,18 @@ module Test (/*AUTOARG*/
          if (dly1 != $past(in, 2)) $stop;
          if (dly1 != $past(in, 2, )) $stop;
          if (dly1 != $past(in, 2, , )) $stop;
+         if (dly0Inc != $past(in + 1)) $stop;
+         if (dly0Inc != $past(in + 1,)) $stop;
+         if (dly1Inc != $past(in + 1, 2)) $stop;
+         if (dly1Inc != $past(in + 1, 2, )) $stop;
+         if (dly1Inc != $past(in + 1, 2, , )) $stop;
          // $sampled(expression) -> expression
          if (in != $sampled(in)) $stop;
       end
    end
 
    assert property (@(posedge clk) $time < 40 || dly0 == $past(in));
+   assert property (@(posedge clk) $time < 40 || dly0Inc == $past(in + 1));
 
 endmodule
 

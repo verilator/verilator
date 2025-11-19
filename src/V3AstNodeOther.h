@@ -1613,10 +1613,10 @@ class AstTextBlock final : public AstNode {
     const std::string m_separator;  // Separator to print between each element in 'nodesp'
     const std::string m_suffix;  // Suffix to pring after last element in 'nodesp'
 public:
-    AstTextBlock(FileLine* fl,  //
-                 const std::string& prefix = "",  //
-                 const std::string& separator = "",  //
-                 const std::string& suffix = "")
+    explicit AstTextBlock(FileLine* fl,  //
+                          const std::string& prefix = "",  //
+                          const std::string& separator = "",  //
+                          const std::string& suffix = "")
         : ASTGEN_SUPER_TextBlock(fl)
         , m_prefix{prefix}
         , m_separator{separator}
@@ -2641,7 +2641,7 @@ public:
         , m_keyword{keyword} {
         this->sentreep(sentreep);
     }
-    inline AstAlways(AstAssignW* assignp);
+    explicit inline AstAlways(AstAssignW* assignp);
     ASTGEN_MEMBERS_AstAlways;
     //
     void dump(std::ostream& str) const override;

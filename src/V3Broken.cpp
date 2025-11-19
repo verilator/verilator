@@ -88,6 +88,7 @@ public:
     }
 
 private:  // for V3Broken only
+    // cppcheck-suppress unusedPrivateFunction
     bool isAllocated(const AstNode* nodep) const VL_REQUIRES(m_mutex) {
         return m_allocated.count(nodep) != 0;
     }

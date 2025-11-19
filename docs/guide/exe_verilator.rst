@@ -683,6 +683,8 @@ Summary:
 
 .. option:: -fno-inline-funcs
 
+.. option:: -fno-inline-funcs-eager
+
 .. option:: -fno-life
 
 .. option:: -fno-life-post
@@ -2422,16 +2424,22 @@ The grammar of control commands is as follows:
 
 .. option:: public [-module "<modulename>"] [-task/-function "<taskname>"] [-var "<signame>"]
 
-.. option:: public_flat [-module "<modulename>"] [-task/-function "<taskname>"] [-var "<signame>"]
+.. option:: public_flat [-module "<modulename>"] [-task/-function "<taskname>"] [(-param | -port | -var) "<signame>"]
 
-.. option:: public_flat_rd [-module "<modulename>"] [-task/-function "<taskname>"] [-var "<signame>"]
+.. option:: public_flat_rd [-module "<modulename>"] [-task/-function "<taskname>"] [(-param | -port | -var) "<signame>"]
 
-.. option:: public_flat_rw [-module "<modulename>"] [-task/-function "<taskname>"] [-var "<signame>"] ["@(edge)"]
+.. option:: public_flat_rw [-module "<modulename>"] [-task/-function "<taskname>"] [(-param | -port | -var) "<signame>"] ["@(edge)"]
 
-   Sets the variable to be public.  Same as
+   Sets the specified signal to be public.  Same as
    :option:`/*verilator&32;public*/` or
    :option:`/*verilator&32;public_flat*/`, etc., metacomments. See
    also :ref:`VPI Example`.
+
+   Using :code:`-port` only selects matching ports, :code:`-param` matches
+   parameters and localparams, and :code:`-var` matches any signal (including
+   ports, parameters, and regular variables or nets). In all three, the
+   following :code:`<signame>` can contain :code:`*` and :code:`?` wildcard
+   characters that match any substring or any single character respectively.
 
 .. option:: sc_bv -module "<modulename>" [-function "<funcname>"] -var "<signame>"
 

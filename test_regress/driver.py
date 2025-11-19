@@ -807,8 +807,8 @@ class VlTest:
         self.xrun_flags = []  # Doesn't really have a compile step
         self.xrun_flags2 = []  # Overridden in some sim files
         self.xrun_run_flags = [
-            "-64", "-access", "+rwc", "-newsv", "-sv", "-xmlibdirname", self.obj_dir + "/work",
-            "-l", self.obj_dir + "/history", "-quiet", "-plinowarn"
+            "+define+XRUN", "-64", "-access", "+rwc", "-newsv", "-sv", "-xmlibdirname",
+            self.obj_dir + "/work", "-l", self.obj_dir + "/history", "-quiet", "-plinowarn"
         ]
         # Verilator
         self.verilator_define = 'VERILATOR'
@@ -1390,6 +1390,7 @@ class VlTest:
                 self.oprint("Compile vpi")
             cmd = [
                 os.environ['CXX'], *param['pli_flags'], "-D" + tool_define, "-DIS_VPI",
+                ("-ggdb" if Args.gdbsim else ""),
                 VtOs.getenv_def('CFLAGS', ''), self.pli_filename
             ]
             self.run(logfile=self.obj_dir + "/pli_compile.log", fails=param['fails'], cmd=cmd)
@@ -1475,15 +1476,23 @@ class VlTest:
                      logfile=param.get('logfile', self.obj_dir + "/ghdl_sim.log"),
                      tee=param['tee'])
         elif param['iv']:
+            debugger = ""
+            debugger_exec_cmd_start = ""
+            debugger_exec_cmd_end = ""
+            if Args.gdbsim:
+                debugger = VtOs.getenv_def('VERILATOR_GDB', "gdb") + " "
+                debugger_exec_cmd_start = " -ex 'run "
+                debugger_exec_cmd_end = "'"
             cmd = [
-                run_env + 'vvp', ' '.join(param['iv_run_flags']), ' '.join(param['all_run_flags'])
+                run_env + debugger + 'vvp', debugger_exec_cmd_start,
+                ' '.join(param['iv_run_flags']), ' '.join(param['all_run_flags'])
             ]
             if param['use_libvpi']:
                 # Don't enter command line on $stop
                 cmd += ["-n"]
                 # include vpi
                 cmd += ["-m", self.obj_dir + "/libvpi.so"]
-            cmd += [self.obj_dir + "/simiv"]
+            cmd += [self.obj_dir + "/simiv", debugger_exec_cmd_end]
             self.run(cmd=cmd,
                      check_finished=param['check_finished'],
                      entering=param['entering'],
@@ -1540,6 +1549,7 @@ class VlTest:
                 "echo q | " + run_env + VtOs.getenv_def('VERILATOR_XRUN', "xrun"),
                 ' '.join(param['xrun_run_flags']),
                 ' '.join(param['xrun_flags2']),
+                ' '.join(param['v_flags']),
                 ' '.join(param['all_run_flags']),
                 pli_opt,
                 param['top_filename'],

@@ -36,7 +36,7 @@ struct UnrollStats final {
         const char* const m_name;  // Name for stats file and UDEBUG
 
     public:
-        Stat(const char* const name)
+        explicit Stat(const char* const name)
             : m_name{name} {}
         ~Stat() { V3Stats::addStat("Optimizations, Loop unrolling, "s + m_name, m_value); }
         const char* name() const { return m_name; }
@@ -384,7 +384,7 @@ class UnrollAllVisitor final : VNVisitor {
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     // CONSTRUCTOR
-    UnrollAllVisitor(AstNetlist* netlistp) { iterate(netlistp); }
+    explicit UnrollAllVisitor(AstNetlist* netlistp) { iterate(netlistp); }
 
 public:
     static void apply(AstNetlist* netlistp) { UnrollAllVisitor{netlistp}; }

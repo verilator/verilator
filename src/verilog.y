@@ -136,7 +136,7 @@ const VBasicDTypeKwd LOGIC_IMPLICIT = VBasicDTypeKwd::LOGIC_IMPLICIT;
 
 #define DEL(...) \
     { \
-        AstNode* nodeps[] = {__VA_ARGS__}; \
+        AstNode* const nodeps[] = {__VA_ARGS__}; \
         for (AstNode* const nodep : nodeps) \
             if (nodep) nodep->deleteTree(); \
     }
@@ -282,6 +282,8 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_D_MODEL    "--model"
 %token<fl>              yVLT_D_MODULE   "--module"
 %token<fl>              yVLT_D_MTASK    "--mtask"
+%token<fl>              yVLT_D_PARAM    "--param"
+%token<fl>              yVLT_D_PORT     "--port"
 %token<fl>              yVLT_D_RULE     "--rule"
 %token<fl>              yVLT_D_SCOPE    "--scope"
 %token<fl>              yVLT_D_TASK     "--task"
@@ -931,6 +933,14 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %nonassoc yELSE
 
 //BISONPRE_TYPES
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
 //  Blank lines for type insertion
 //  Blank lines for type insertion
 //  Blank lines for type insertion
@@ -5500,9 +5510,9 @@ gateBuf<nodep>:
                           AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
                           $$->addNext(new AstAlways{ap});
                           for (AstNodeExpr* outp = $4; outp->nextp(); outp = VN_CAST(outp->nextp(), NodeExpr)) {
-                              AstNodeExpr* const rhsp = GRAMMARP->createGatePin(inp->cloneTree(false));
-                              AstAssignW* const ap = new AstAssignW{$<fl>1, outp->cloneTree(false), rhsp};
-                              $$->addNext(new AstAlways{ap});
+                              AstNodeExpr* const pinRhsp = GRAMMARP->createGatePin(inp->cloneTree(false));
+                              AstAssignW* const pinAssp = new AstAssignW{$<fl>1, outp->cloneTree(false), pinRhsp};
+                              $$->addNext(new AstAlways{pinAssp});
                           }
                           DEL($1); DEL($4); }
         ;
@@ -5515,9 +5525,9 @@ gateNot<nodep>:
                           AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
                           $$->addNext(new AstAlways{ap});
                           for (AstNodeExpr* outp = $4; outp->nextp(); outp = VN_CAST(outp->nextp(), NodeExpr)) {
-                              AstNodeExpr* const rhsp = new AstNot{$<fl>1, GRAMMARP->createGatePin(inp->cloneTree(false))};
-                              AstAssignW* const ap = new AstAssignW{$<fl>1, outp->cloneTree(false), rhsp};
-                              $$->addNext(new AstAlways{ap});
+                              AstNodeExpr* const pinRhsp = new AstNot{$<fl>1, GRAMMARP->createGatePin(inp->cloneTree(false))};
+                              AstAssignW* const pinAssp = new AstAssignW{$<fl>1, outp->cloneTree(false), pinRhsp};
+                              $$->addNext(new AstAlways{pinAssp});
                           }
                           DEL($1, $4); }
         ;
@@ -6680,11 +6690,9 @@ cycle_delay_range<delayp>:  // IEEE: ==cycle_delay_range
                 yP_POUNDPOUND intnumAsConst
                         { $$ = new AstDelay{$1, $2, true}; }
         |       yP_POUNDPOUND idAny
-                        { $$ = new AstDelay{$1, new AstConst{$1, AstConst::BitFalse{}}, true};
-                          BBUNSUP($<fl>1, "Unsupported: ## id cycle delay range expression"); }
+                        { $$ = new AstDelay{$1, new AstParseRef{$<fl>2, *$2}, true}; }
         |       yP_POUNDPOUND '(' constExpr ')'
-                        { $$ = new AstDelay{$1, new AstConst{$1, AstConst::BitFalse{}}, true};
-                          BBUNSUP($<fl>1, "Unsupported: ## () cycle delay range expression"); }
+                        { $$ = new AstDelay{$1, $3, true}; }
         //                      // In 1800-2009 ONLY:
         //                      // IEEE: yP_POUNDPOUND constant_primary
         //                      // UNSUP: This causes a big grammar ambiguity
@@ -7029,10 +7037,14 @@ select_expression_r<nodep>:
 
 bins_expression<nodep>:  // ==IEEE: bins_expression
         //                      // "cover_point_identifier" and "variable_identifier" look identical
-                idAny/*variable_identifier or cover_point_identifier*/
-                        { $$ = nullptr; /*UNSUP*/ }
-        |       idAny/*cover_point_identifier*/ '.' idAny/*bins_identifier*/
-                        { $$ = nullptr; /*UNSUP*/ }
+        // IEEE specifies:
+        // bins_expression ::=
+        //    variable_identifier
+        //    | cover_point_identifier [ . bin_identifier ]
+        // Verilator supports hierarchical reference in a place of variable identifier.
+        // This is an extension based on other simulators.
+               idDotted
+                        { $$ = nullptr; /*UNSUP*/ DEL($1); }
         ;
 
 coverage_eventE<nodep>:  // IEEE: [ coverage_event ]
@@ -7991,9 +8003,9 @@ vltItem:
                           } else {
                               V3Control::addScopeTraceOn(true, *$2, $3->toUInt());
                           }}
-        |       vltVarAttrFront vltDModuleE vltDFTaskE vltVarAttrVarE attr_event_controlE
-                        { V3Control::addVarAttr($<fl>1, *$2, *$3, *$4, $1, $5); }
-        |       vltVarAttrFrontDeprecated vltDModuleE vltDFTaskE vltVarAttrVarE
+        |       vltVarAttrFront vltDModuleE vltDFTaskE vltVarAttrSpecE attr_event_controlE
+                        { V3Control::addVarAttr($<fl>1, *$2, *$3, GRAMMARP->m_vltVarSpecKind, *$4, $1, $5); }
+        |       vltVarAttrFrontDeprecated vltDModuleE vltDFTaskE vltVarAttrSpecE
                         { /* Historical, now has no effect */ }
         |       vltInlineFront vltDModuleE vltDFTaskE
                         { V3Control::addInline($<fl>1, *$2, *$3, $1); }
@@ -8115,9 +8127,15 @@ vltInlineFront<cbool>:
         |       yVLT_NO_INLINE                          { $$ = false; }
         ;
 
-vltVarAttrVarE<strp>:
-                /* empty */                             { static string empty; $$ = &empty; }
-        |       yVLT_D_VAR str                          { $$ = $2; }
+vltVarAttrSpecE<strp>:
+                /* empty */
+                        { GRAMMARP->m_vltVarSpecKind = V3Control::VarSpecKind::VAR; static std::string empty; $$ = &empty; }
+        |       yVLT_D_PARAM str
+                        { GRAMMARP->m_vltVarSpecKind = V3Control::VarSpecKind::PARAM; $$ = $2; }
+        |       yVLT_D_PORT str
+                        { GRAMMARP->m_vltVarSpecKind = V3Control::VarSpecKind::PORT; $$ = $2; }
+        |       yVLT_D_VAR str
+                        { GRAMMARP->m_vltVarSpecKind = V3Control::VarSpecKind::VAR; $$ = $2; }
         ;
 
 vltVarAttrFront<attrtypeen>:

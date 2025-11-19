@@ -429,7 +429,7 @@ namespace ModuleInliner {
 // against it later in V3Scope (and also for tracing, which is inserted
 //later). Returns ture iff the given port variable should be inlined,
 // and false if a continuous assignment should be used.
-bool inlinePort(AstVar* nodep) {
+bool inlinePort(const AstVar* nodep) {
     // Interface references are always inlined
     if (nodep->isIfaceRef()) return true;
     // Ref ports must be always inlined
@@ -544,7 +544,6 @@ void inlineCell(AstNodeModule* modp, AstCell* cellp, bool last) {
                                          : cellp->modp()->cloneTree(false);
 
     // Compute map from original port variables and cells to their clones
-    std::unordered_map<const AstVar*, AstVar*> modVar2Clone;
     for (AstNode *ap = cellp->modp()->stmtsp(), *bp = inlinedp->stmtsp(); ap || bp;
          ap = ap->nextp(), bp = bp->nextp()) {
         UASSERT_OBJ(ap && bp, ap ? ap : bp, "Clone has different number of children");

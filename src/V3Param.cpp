@@ -771,10 +771,10 @@ class ParamProcessor final {
                     UINFOTREE(1, pinp, "", "errnode");
                     pinp->v3error("Can't convert defparam value to constant: Param "
                                   << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
-                    AstNode* const exprp = pinp->exprp();
-                    exprp->replaceWith(new AstConst{pinp->fileline(), AstConst::WidthedValue{},
-                                                    modvarp->width(), 0});
-                    VL_DO_DANGLING(exprp->deleteTree(), exprp);
+                    AstNode* const pinExprp = pinp->exprp();
+                    pinExprp->replaceWith(new AstConst{pinp->fileline(), AstConst::WidthedValue{},
+                                                       modvarp->width(), 0});
+                    VL_DO_DANGLING(pinExprp->deleteTree(), pinExprp);
                 } else if (origp && exprp->sameTree(origp)) {
                     // Setting parameter to its default value.  Just ignore it.
                     // This prevents making additional modules, and makes coverage more
@@ -1087,7 +1087,7 @@ class ParamProcessor final {
             // We need to relink the pins to the new module
             relinkPinsByName(pinsp, paramedModp);
             newModp = paramedModp;
-            any_overrides = true;
+            // any_overrides = true;  // Unused later, so not needed
         } else if (!any_overrides) {
             UINFO(8, "Cell parameters all match original values, skipping expansion.");
             // If it's the first use of the default instance, create a copy and store it in user3p.
@@ -1281,7 +1281,7 @@ class ParamVisitor final : public VNVisitor {
         m_isCircular;  // Stores information whether `AstRefDType` is circular
 
     // STATE - for current visit position (use VL_RESTORER)
-    AstNodeModule* m_modp;  // Module iterating
+    AstNodeModule* m_modp = nullptr;  // Module iterating
     std::unordered_set<std::string> m_ifacePortNames;  // Interface port names in current module
     std::unordered_set<std::string> m_ifaceInstNames;  // Interface decl names in current module
     string m_generateHierName;  // Generate portion of hierarchy name

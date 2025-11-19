@@ -486,7 +486,8 @@ std::vector<std::string> V3Options::traceClassBases() const VL_MT_SAFE {
 }
 std::vector<std::string> V3Options::traceClassLangs() const VL_MT_SAFE {
     std::vector<std::string> result;
-    for (auto& cbase : traceClassBases()) result.emplace_back(cbase + (systemC() ? "Sc" : "C"));
+    for (const auto& cbase : traceClassBases())
+        result.emplace_back(cbase + (systemC() ? "Sc" : "C"));
     return result;
 }
 std::vector<std::string> V3Options::traceSourceBases() const VL_MT_SAFE {
@@ -1439,6 +1440,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-fgate", FOnOff, &m_fGate);
     DECL_OPTION("-finline", FOnOff, &m_fInline);
     DECL_OPTION("-finline-funcs", FOnOff, &m_fInlineFuncs);
+    DECL_OPTION("-finline-funcs-eager", FOnOff, &m_fInlineFuncsEager);
     DECL_OPTION("-flife", FOnOff, &m_fLife);
     DECL_OPTION("-flife-post", FOnOff, &m_fLifePost);
     DECL_OPTION("-flocalize", FOnOff, &m_fLocalize);

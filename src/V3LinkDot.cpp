@@ -4769,7 +4769,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 } else {
                     nodep->v3warn(E_UNSUPPORTED,
                                   "Unsupported: " << foundp->nodep()->prettyTypeName()
-                                                  << " in AstClassExtends");
+                                                  << " in 'class extends'");
                     return;
                 }
             } else {

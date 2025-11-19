@@ -14,13 +14,21 @@ Verilator 5.043 devel
 **Other:**
 
 * Add `--unroll-limit` option (#6654) (#6668). [Geza Lore]
+* Add `-fno-inline-funcs-eager` option to disable excessive inlining (#6682). [Geza Lore]
+* Add `-param`/`-port` options to `public_flat*` control directives (#6685). [Geza Lore]
+* Support `std::randomize(){...}` (#4706) (#6573). [Yilou Wang]
 * Support basic global constraints (#6551) (#6552). [Yilou Wang]
 * Support this.randomize() with constraints (#6634). [Artur Bieniek, Antmicro Ltd.]
 * Support multi-expression sequences (#6639). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Support `#1step` delay as statement  (#6671). [Pawel Kojma]
+* Support parsing of dotted bins_expression  (#6683). [Pawel Kojma]
+* Support constant expression cycle delays in sequences (#6691). [Ryszard Rozak, Antmicro Ltd.]
 * Optimize away calls to empty functions (#6626). [Geza Lore]
 * Optimize redundant headers in Syms implementation files. [Geza Lore]
 * Optimize constructor/destructor VerilatedModules (#6660). [Geza Lore]
 * Optimize repeated function call during symbol table initialization (#6665). [Geza Lore]
+* Optimize functions reading external parameters as pure (#6684). [Geza Lore]
+* Optimize $past delayed variable reuse (#6689). [Geza Lore]
 * Fix expression short circuiting (#6483). [Todd Strader]
 * Fix expression coverage of system calls (#6592). [Todd Strader]
 * Fix `--timing` with `--x-initial-edge` (#6603) (#6631). [Krzysztof Bieganski, Antmicro Ltd.]
@@ -38,6 +46,11 @@ Verilator 5.043 devel
 * Fix local interface parameter hierarchical access (#6661) (#6666). [Paul Swirhun]
 * Fix splitting of Syms constructor/destructor bodies (#6662). [Geza Lore]
 * Fix long C++ compilation due to VerilatedScope constructors (#6664). [Geza Lore]
+* Fix large array initialization (#6669). [Artur Bieniek, Antmicro Ltd.]
+* Fix --expand-limit not respected for expressions (#6670). [Geza Lore]
+* Fix `free` name collision (#6675). [Todd Strader]
+* Fix bounds checking in non-inlined function (#6677). [Geza Lore]
+* Fix stream operator widening (#6693) (#6697). [Jean-Nicolas Strauss]
 
 
 Verilator 5.042 2025-11-02

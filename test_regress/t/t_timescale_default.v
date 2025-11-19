@@ -6,10 +6,10 @@
 
 // Intentionally no timescale here, nor in driver file
 module t;
-   initial begin
-      // Unspecified, but general consensus is 1s is default timeunit
-      $printtimescale;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    // Unspecified, but general consensus is 1s is default timeunit
+    $printtimescale;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

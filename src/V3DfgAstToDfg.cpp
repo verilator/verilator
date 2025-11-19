@@ -181,7 +181,7 @@ class AstToDfgVisitor final : public VNVisitor {
         const VAlwaysKwd kwd = nodep->keyword();
         if (kwd == VAlwaysKwd::CONT_ASSIGN) {
             // TODO: simplify once CFG analysis can handle arrays
-            if (AstAssignW* const ap = VN_CAST(nodep->stmtsp(), AssignW)) {
+            if (const AstAssignW* const ap = VN_CAST(nodep->stmtsp(), AssignW)) {
                 if (ap->nextp()) return false;
                 // Cannot handle assignment with timing control
                 if (ap->timingControlp()) return false;

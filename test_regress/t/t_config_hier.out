@@ -1,0 +1,85 @@
+%Error-UNSUPPORTED: t/t_config_hier.v:34:1: Unsupported: config
+   34 | config cfg21;
+      | ^~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_config_hier.v:35:10: Unsupported: config cell
+   35 |   design t;
+      |          ^
+%Error-UNSUPPORTED: t/t_config_hier.v:36:3: Unsupported: config rule
+   36 |   instance t.u_1 use work.cfg2 :config;
+      |   ^~~~~~~~
+%Error-UNSUPPORTED: t/t_config_hier.v:36:18: Unsupported: config use
+   36 |   instance t.u_1 use work.cfg2 :config;
+      |                  ^~~
+%Error-UNSUPPORTED: t/t_config_hier.v:39:1: Unsupported: config
+   39 | config cfg22;
+      | ^~~~~~
+%Error-UNSUPPORTED: t/t_config_hier.v:40:10: Unsupported: config cell
+   40 |   design t;
+      |          ^
+%Error-UNSUPPORTED: t/t_config_hier.v:41:3: Unsupported: config rule
+   41 |   instance t.u_1 use cfg2 :config;
+      |   ^~~~~~~~
+%Error-UNSUPPORTED: t/t_config_hier.v:41:18: Unsupported: config use
+   41 |   instance t.u_1 use cfg2 :config;
+      |                  ^~~
+%Error-UNSUPPORTED: t/t_config_hier.v:44:1: Unsupported: config
+   44 | config cfg31;
+      | ^~~~~~
+%Error-UNSUPPORTED: t/t_config_hier.v:45:10: Unsupported: config cell
+   45 |   design t;
+      |          ^
+%Error-UNSUPPORTED: t/t_config_hier.v:46:3: Unsupported: config rule
+   46 |   cell work.m1 use work.cfg2 :config;
+      |   ^~~~
+%Error-UNSUPPORTED: t/t_config_hier.v:46:8: Unsupported: config cell
+   46 |   cell work.m1 use work.cfg2 :config;
+      |        ^~~~
+%Error-UNSUPPORTED: t/t_config_hier.v:46:16: Unsupported: config use
+   46 |   cell work.m1 use work.cfg2 :config;
+      |                ^~~
+%Error-UNSUPPORTED: t/t_config_hier.v:49:1: Unsupported: config
+   49 | config cfg32;
+      | ^~~~~~
+%Error-UNSUPPORTED: t/t_config_hier.v:50:10: Unsupported: config cell
+   50 |   design t;
+      |          ^
+%Error-UNSUPPORTED: t/t_config_hier.v:51:3: Unsupported: config rule
+   51 |   cell m1 use cfg2 :config;
+      |   ^~~~
+%Error-UNSUPPORTED: t/t_config_hier.v:51:8: Unsupported: config cell
+   51 |   cell m1 use cfg2 :config;
+      |        ^~
+%Error-UNSUPPORTED: t/t_config_hier.v:51:11: Unsupported: config use
+   51 |   cell m1 use cfg2 :config;
+      |           ^~~
+%Error-UNSUPPORTED: t/t_config_hier.v:54:1: Unsupported: config
+   54 | config cfg41;
+      | ^~~~~~
+%Error-UNSUPPORTED: t/t_config_hier.v:55:10: Unsupported: config cell
+   55 |   design t;
+      |          ^
+%Error-UNSUPPORTED: t/t_config_hier.v:56:3: Unsupported: config rule
+   56 |   cell work.m1 use work.cfg2;   
+      |   ^~~~
+%Error-UNSUPPORTED: t/t_config_hier.v:56:8: Unsupported: config cell
+   56 |   cell work.m1 use work.cfg2;   
+      |        ^~~~
+%Error-UNSUPPORTED: t/t_config_hier.v:56:16: Unsupported: config use
+   56 |   cell work.m1 use work.cfg2;   
+      |                ^~~
+%Error-UNSUPPORTED: t/t_config_hier.v:60:1: Unsupported: config
+   60 | config cfg2;
+      | ^~~~~~
+%Error-UNSUPPORTED: t/t_config_hier.v:61:10: Unsupported: config cell
+   61 |   design c2_b;
+      |          ^~~~
+%Error-UNSUPPORTED: t/t_config_hier.v:62:3: Unsupported: config rule
+   62 |   instance u_bb use work.c2_bb;
+      |   ^~~~~~~~
+%Error-UNSUPPORTED: t/t_config_hier.v:62:17: Unsupported: config use
+   62 |   instance u_bb use work.c2_bb;
+      |                 ^~~
+%Error: Specified --top-module 'cfg21' was not found in design.
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

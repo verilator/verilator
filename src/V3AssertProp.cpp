@@ -109,7 +109,7 @@ class AssertPropBuildVisitor final : public VNVisitorConst {
     bool m_underSExpr = false;  // Is under sequence expression, for creating a start node
     size_t m_underLogNots = 0;  // Number of 'not' operators before sequence
 
-    DfaStmtVertex* makeClause(AstSExpr* nodep, bool pass) {
+    DfaStmtVertex* makeClause(const AstSExpr* nodep, bool pass) {
         return new DfaStmtVertex{
             &m_graph,
             new AstPExprClause{nodep->fileline(), m_underLogNots % 2 == 0 ? pass : !pass}};
@@ -227,7 +227,7 @@ class AssertPropTransformer final {
         m_current = passsp;
         return processEdge(vtxp->outEdges().frontp());
     }
-    V3GraphVertex* processEdge(V3GraphEdge* edgep) {
+    V3GraphVertex* processEdge(const V3GraphEdge* edgep) {
         if (edgep) return processVtx(edgep->top());
         return nullptr;
     }

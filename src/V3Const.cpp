@@ -1122,7 +1122,7 @@ class ConstVisitor final : public VNVisitor {
         return true;
     }
 
-    bool matchCondCond(AstCond* nodep) {
+    bool matchCondCond(const AstCond* nodep) {
         // Same condition on either leg of a condition means that
         // expression is either always true or always false
         if (VN_IS(nodep->backp(), Cond)) return false;  // Was checked when visited parent
@@ -1133,14 +1133,14 @@ class ConstVisitor final : public VNVisitor {
         matchCondCondRecurse(nodep, truesp /*ref*/, falsesp /*ref*/);
         return false;  // Can optimize further
     }
-    void matchCondCondRecurse(AstCond* nodep, std::vector<AstNodeExpr*>& truesp,
+    void matchCondCondRecurse(const AstCond* nodep, std::vector<AstNodeExpr*>& truesp,
                               std::vector<AstNodeExpr*>& falsesp) {
         // Avoid O(n^2) compares
         // Could reduce cost with hash table, but seems unlikely to be worth cost
         if (truesp.size() > 4 || falsesp.size() > 4) return;
         if (!nodep->condp()->isPure()) return;
         bool replaced = false;
-        for (AstNodeExpr* condp : truesp) {
+        for (const AstNodeExpr* condp : truesp) {
             if (replaced) break;
             if (!operandsSame(nodep->condp(), condp)) continue;
             UINFO(9, "COND(c, CONDb(c, tt, tf), f) -> CONDb(1, tt, tf) " << nodep);
@@ -1148,7 +1148,7 @@ class ConstVisitor final : public VNVisitor {
             replaced = true;
             ++m_statCondExprRedundant;
         }
-        for (AstNodeExpr* condp : falsesp) {
+        for (const AstNodeExpr* condp : falsesp) {
             if (replaced) break;
             if (!operandsSame(nodep->condp(), condp)) continue;
             UINFO(9, "COND(c, t, CONDb(c, ft, ff)) -> CONDb(0, ft, ff) " << nodep);
@@ -1156,18 +1156,18 @@ class ConstVisitor final : public VNVisitor {
             replaced = true;
             ++m_statCondExprRedundant;
         }
-        if (AstCond* subCondp = VN_CAST(nodep->thenp(), Cond)) {
+        if (const AstCond* subCondp = VN_CAST(nodep->thenp(), Cond)) {
             if (!replaced) truesp.emplace_back(nodep->condp());
             matchCondCondRecurse(subCondp, truesp /*ref*/, falsesp /*ref*/);
             if (!replaced) truesp.pop_back();
         }
-        if (AstCond* subCondp = VN_CAST(nodep->elsep(), Cond)) {
+        if (const AstCond* subCondp = VN_CAST(nodep->elsep(), Cond)) {
             if (!replaced) falsesp.emplace_back(nodep->condp());
             matchCondCondRecurse(subCondp, truesp /*ref*/, falsesp /*ref*/);
             if (!replaced) falsesp.pop_back();
         }
     }
-    void matchIfCondCond(AstNodeIf* nodep) {
+    void matchIfCondCond(const AstNodeIf* nodep) {
         // Same condition on either leg of a condition means that
         // expression is either always true or always false
         if (VN_IS(nodep->backp(), If)) return;  // Was checked when visited parent
@@ -1176,14 +1176,14 @@ class ConstVisitor final : public VNVisitor {
         std::vector<AstNodeExpr*> falsesp;
         matchIfCondCondRecurse(nodep, truesp /*ref*/, falsesp /*ref*/);
     }
-    void matchIfCondCondRecurse(AstNodeIf* nodep, std::vector<AstNodeExpr*>& truesp,
+    void matchIfCondCondRecurse(const AstNodeIf* nodep, std::vector<AstNodeExpr*>& truesp,
                                 std::vector<AstNodeExpr*>& falsesp) {
         // Avoid O(n^2) compares
         // Could reduce cost with hash table, but seems unlikely to be worth cost
         if (truesp.size() > 4 || falsesp.size() > 4) return;
         if (!nodep->condp()->isPure()) return;
         bool replaced = false;
-        for (AstNodeExpr* condp : truesp) {
+        for (const AstNodeExpr* condp : truesp) {
             if (replaced) break;
             if (!operandsSame(nodep->condp(), condp)) continue;
             UINFO(9, "COND(c, CONDb(c, tt, tf), f) -> CONDb(1, tt, tf) " << nodep);
@@ -1191,7 +1191,7 @@ class ConstVisitor final : public VNVisitor {
             replaced = true;
             ++m_statIfCondExprRedundant;
         }
-        for (AstNodeExpr* condp : falsesp) {
+        for (const AstNodeExpr* condp : falsesp) {
             if (replaced) break;
             if (!operandsSame(nodep->condp(), condp)) continue;
             UINFO(9, "COND(c, t, CONDb(c, ft, ff)) -> CONDb(0, ft, ff) " << nodep);
@@ -1202,12 +1202,12 @@ class ConstVisitor final : public VNVisitor {
         // We only check the first statement of parent IF is an If
         // So we don't need to check for effects in the executing thensp/elsesp
         // altering the child't condition.  e.g. 'if (x) begin x=1; if (x) end'
-        if (AstNodeIf* subIfp = VN_CAST(nodep->thensp(), NodeIf)) {
+        if (const AstNodeIf* subIfp = VN_CAST(nodep->thensp(), NodeIf)) {
             if (!replaced) truesp.emplace_back(nodep->condp());
             matchIfCondCondRecurse(subIfp, truesp /*ref*/, falsesp /*ref*/);
             if (!replaced) truesp.pop_back();
         }
-        if (AstNodeIf* subIfp = VN_CAST(nodep->elsesp(), NodeIf)) {
+        if (const AstNodeIf* subIfp = VN_CAST(nodep->elsesp(), NodeIf)) {
             if (!replaced) falsesp.emplace_back(nodep->condp());
             matchIfCondCondRecurse(subIfp, truesp /*ref*/, falsesp /*ref*/);
             if (!replaced) falsesp.pop_back();
@@ -2635,7 +2635,7 @@ class ConstVisitor final : public VNVisitor {
     }
     bool matchToStringNConst(AstToStringN* nodep) {
         iterateChildren(nodep);
-        if (AstInitArray* const initp = VN_CAST(nodep->lhsp(), InitArray)) {
+        if (const AstInitArray* const initp = VN_CAST(nodep->lhsp(), InitArray)) {
             if (!(m_doExpensive || m_params)) return false;
             // At present only support 1D unpacked arrays
             const auto initOfConst = [](const AstNode* const nodep) -> bool {  //
@@ -2823,9 +2823,9 @@ class ConstVisitor final : public VNVisitor {
         // cppcheck-suppress constVariablePointer // children unlinked below
         AstReplicate* const rep2p = VN_AS(nodep->srcp(), Replicate);
         AstNodeExpr* const from2p = rep2p->srcp();
-        AstConst* const cnt1p = VN_CAST(nodep->countp(), Const);
+        const AstConst* const cnt1p = VN_CAST(nodep->countp(), Const);
         if (!cnt1p) return false;
-        AstConst* const cnt2p = VN_CAST(rep2p->countp(), Const);
+        const AstConst* const cnt2p = VN_CAST(rep2p->countp(), Const);
         if (!cnt2p) return false;
         //
         from2p->unlinkFrBack();
@@ -3606,7 +3606,7 @@ class ConstVisitor final : public VNVisitor {
         bool thisLoopHasJumpDelay = m_hasJumpDelay;
         m_hasJumpDelay = thisLoopHasJumpDelay || oldHasJumpDelay;
         // If the first statement always break, the loop is useless
-        if (AstLoopTest* const testp = VN_CAST(nodep->stmtsp(), LoopTest)) {
+        if (const AstLoopTest* const testp = VN_CAST(nodep->stmtsp(), LoopTest)) {
             if (testp->condp()->isZero()) {
                 nodep->v3warn(UNUSEDLOOP, "Loop condition is always false");
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
@@ -3680,8 +3680,8 @@ class ConstVisitor final : public VNVisitor {
             return;
         }
         // Remove calls to empty functions
-        if (AstCCall* const callp = VN_CAST(nodep->exprp(), CCall)) {
-            AstCFunc* const funcp = callp->funcp();
+        if (const AstCCall* const callp = VN_CAST(nodep->exprp(), CCall)) {
+            const AstCFunc* const funcp = callp->funcp();
             if (!callp->argsp() && funcp->emptyBody()) {
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 return;

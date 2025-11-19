@@ -273,7 +273,7 @@ std::pair<string, FileLine*> EmitCBaseVisitorConst::scSection(const AstNodeModul
     FileLine* fl = nullptr;
     int last_line = -999;
     for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-        AstSystemCSection* const ssp = VN_CAST(nodep, SystemCSection);
+        const AstSystemCSection* const ssp = VN_CAST(nodep, SystemCSection);
         if (!ssp) continue;
         if (ssp->sectionType() != type) continue;
         if (text.empty()) {

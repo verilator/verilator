@@ -37,6 +37,7 @@ public:
     VVarType m_varDecl = VVarType::UNKNOWN;  // Type for next signal declaration (reg/wire/etc)
     VDirection m_varIO = VDirection::NONE;  // Direction for next signal declaration (reg/wire/etc)
     VLifetime m_varLifetime;  // Static/Automatic for next signal
+    V3Control::VarSpecKind m_vltVarSpecKind = V3Control::VarSpecKind::VAR;
     bool m_impliedDecl = false;  // Allow implied wire declarations
     bool m_varDeclTyped = false;  // Var got reg/wire for dedup check
     bool m_pinAnsi = false;  // In ANSI parameter or port list
@@ -64,7 +65,7 @@ public:
 
     // METHODS
     AstArg* argWrapList(AstNodeExpr* nodep) VL_MT_DISABLED;
-    bool allTracingOn(FileLine* fl) {
+    bool allTracingOn(const FileLine* fl) const {
         return v3Global.opt.trace() && m_tracingParse && fl->tracingOn();
     }
     AstRange* scrubRange(AstNodeRange* rangep) VL_MT_DISABLED;
@@ -99,11 +100,13 @@ public:
         nodep->addStmtsp(defaultVarp);
 
         // IEEE: function void sample()
-        AstFunc* const funcp = new AstFunc{nodep->fileline(), "sample", nullptr, nullptr};
-        funcp->addStmtsp(sampleArgs);
-        funcp->classMethod(true);
-        funcp->dtypep(funcp->findVoidDType());
-        nodep->addMembersp(funcp);
+        {
+            AstFunc* const funcp = new AstFunc{nodep->fileline(), "sample", nullptr, nullptr};
+            funcp->addStmtsp(sampleArgs);
+            funcp->classMethod(true);
+            funcp->dtypep(funcp->findVoidDType());
+            nodep->addMembersp(funcp);
+        }
 
         // IEEE: function void start(), void stop()
         for (const string& name : {"start"s, "stop"s}) {
@@ -200,10 +203,10 @@ public:
         V3ParseImp::parsep()->tagNodep(nodep);
         return nodep;
     }
-    void endLabel(FileLine* fl, AstNode* nodep, string* endnamep) {
+    void endLabel(FileLine* fl, const AstNode* nodep, const string* endnamep) {
         endLabel(fl, nodep->prettyName(), endnamep);
     }
-    void endLabel(FileLine* fl, const string& name, string* endnamep) {
+    void endLabel(FileLine* fl, const string& name, const string* endnamep) {
         if (fl && endnamep && *endnamep != "" && name != *endnamep
             && name != AstNode::prettyName(*endnamep)) {
             fl->v3warn(ENDLABEL, "End label '" << *endnamep << "' does not match begin label '"

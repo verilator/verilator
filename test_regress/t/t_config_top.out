@@ -1,0 +1,22 @@
+%Error-UNSUPPORTED: t/t_config_top.v:20:1: Unsupported: config
+   20 | config cfg1;
+      | ^~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_config_top.v:21:10: Unsupported: config cell
+   21 |   design m1;
+      |          ^~
+%Error-UNSUPPORTED: t/t_config_top.v:25:1: Unsupported: config
+   25 | config cfg2;
+      | ^~~~~~
+%Error-UNSUPPORTED: t/t_config_top.v:26:10: Unsupported: config cell
+   26 |   design m2;   
+      |          ^~
+%Error-UNSUPPORTED: t/t_config_top.v:29:1: Unsupported: config
+   29 | config cfg3;
+      | ^~~~~~
+%Error-UNSUPPORTED: t/t_config_top.v:30:10: Unsupported: config cell
+   30 |   design work.m3;
+      |          ^~~~
+%Error: Specified --top-module 'cfg2' was not found in design.
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
