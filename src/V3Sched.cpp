@@ -493,6 +493,7 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
     const auto& senTreeps = getSenTreesUsedBy({&logic});
     const TriggerKit trigKit = TriggerKit::create(netlistp, initFuncp, senExprBuilder, {},
                                                   senTreeps, "ico", extraTriggers, false);
+    std::ignore = senExprBuilder.getAndClearResults();
 
     if (dpiExportTriggerVscp) {
         trigKit.addExtraTriggerAssignment(dpiExportTriggerVscp, dpiExportTriggerIndex);
