@@ -2642,8 +2642,8 @@ class RandomizeVisitor final : public VNVisitor {
                     AstNode* const capturedTreep = withp->exprp()->unlinkFrBackWithNext();
                     randomizeFuncp->addStmtsp(capturedTreep);
                     {
-                        ConstraintExprVisitor{m_memberMap, capturedTreep, randomizeFuncp, stdrand,
-                                              nullptr, m_writtenVars};
+                        ConstraintExprVisitor{m_memberMap, capturedTreep, randomizeFuncp,
+                                              stdrand,     nullptr,       m_writtenVars};
                     }
                     AstCExpr* const solverCallp = new AstCExpr{fl};
                     solverCallp->dtypeSetBit();
