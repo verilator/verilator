@@ -235,7 +235,7 @@ public:
     Results getResultsAndClearUpdates() {
         m_hasPreUpdate.clear();
         m_hasPostUpdate.clear();
-        auto ans = std::move(m_results);
+        Results ans = std::move(m_results);
         m_results = {};
         return ans;
     }

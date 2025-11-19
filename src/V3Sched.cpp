@@ -568,8 +568,8 @@ void createEval(AstNetlist* netlistp,  //
 ) {
     FileLine* const flp = netlistp->fileline();
 
-    // 'createResume' consumes the contents that 'createCommit' needs, so do the right order
-    AstCCall* const timingCommitp = timingKit.createCommit(netlistp);
+    // 'createResume' consumes the contents that 'createSetReady' needs, so do the right order
+    AstCCall* const timingSetReadyp = timingKit.createSetReady(netlistp);
     AstCCall* const timingResumep = timingKit.createResume(netlistp);
 
     // Create the active eval loop
@@ -581,8 +581,8 @@ void createEval(AstNetlist* netlistp,  //
         [&]() {
             // Compute the current 'act' triggers - the NBA triggers are the latched value
             AstNodeStmt* stmtsp = trigKit.newCompCall(nbaKit.m_vscp);
-            // Commit trigger awaits from the previous iteration
-            if (timingCommitp) stmtsp = AstNode::addNext(stmtsp, timingCommitp->makeStmt());
+            // Set ready for triggered awaits
+            if (timingSetReadyp) stmtsp = AstNode::addNext(stmtsp, timingSetReadyp->makeStmt());
             if (actKit.m_vscp) {
                 stmtsp = AstNode::addNext(stmtsp,
                                           trigKit.newOrIntoCall(actKit.m_vscp, trigKit.vscAccp()));
@@ -595,7 +595,7 @@ void createEval(AstNetlist* netlistp,  //
         // Work statements
         [&]() {
             AstNodeStmt* workp = nullptr;
-            if (auto actAccp = trigKit.vscAccp()) {
+            if (AstVarScope* const actAccp = trigKit.vscAccp()) {
                 AstCMethodHard* const cCallp
                     = new AstCMethodHard{flp, new AstVarRef{flp, actAccp, VAccess::WRITE},
                                          VCMethod::UNPACKED_FILL, new AstConst{flp, 0}};
@@ -760,7 +760,7 @@ cloneMapWithNewTriggerReferences(const std::unordered_map<const AstSenTree*, Ast
     return newMap;
 }
 
-class BeforeTriggerEvaluate : public VNVisitor {
+class AwaitPostSchedVisitor final : public VNVisitor {
     const VNUser1InUse m_user1InUse;
 
     AstNetlist* const m_netlistp;
@@ -844,7 +844,7 @@ class BeforeTriggerEvaluate : public VNVisitor {
     void visit(AstNode* const nodep) override { iterateChildren(nodep); }
 
 public:
-    BeforeTriggerEvaluate(AstNetlist* netlistp, SenExprBuilder& senExprBuilder,
+    AwaitPostSchedVisitor(AstNetlist* netlistp, SenExprBuilder& senExprBuilder,
                           const TriggerKit& trigKit)
         : m_netlistp{netlistp}
         , m_preTriggerFuncUniqueName{"__VpreTrig"}
@@ -855,7 +855,7 @@ public:
             AstCFunc* const funcp = funcToUsedTriggers.first;
             const auto& usedTriggers = funcToUsedTriggers.second;
 
-            // To order `if`s so, V3Const can optimize it better
+            // Order `if`s using `map` so, V3Const can optimize it better
             std::map<std::pair<size_t, size_t>, std::set<AstNodeExpr*>> usedTrigsToUsingTrees;
             for (auto senTreeShed : m_senTreeToShed) {
                 const AstSenTree* const senTreep = senTreeShed.first;
@@ -921,7 +921,7 @@ public:
             }
         }
     }
-    ~BeforeTriggerEvaluate() override = default;
+    ~AwaitPostSchedVisitor() override = default;
 };
 
 //============================================================================
@@ -1169,12 +1169,18 @@ void schedule(AstNetlist* netlistp) {
     createEval(netlistp, icoLoopp, trigKit, actKit, nbaKit, obsKit, reactKit, postponedFuncp,
                timingKit);
 
-    if (AstCCall* const commit = timingKit.createCommit(netlistp)) {
-        staticp->addStmtsp(commit->makeStmt());
-        BeforeTriggerEvaluate{netlistp, senExprBuilder, trigKit};
+    // Step 15: Add neccessary evaluation before before awaits
+    if (AstCCall* const setReadyp = timingKit.createSetReady(netlistp)) {
+        staticp->addStmtsp(setReadyp->makeStmt());
+        AwaitPostSchedVisitor{netlistp, senExprBuilder, trigKit};
     } else {
+        // AwaitPostSchedVisitor clears Sentree pointers in AstCAwaits
+        // if there was no need to call it, SenTrees have to be removed manually
         netlistp->foreach([](AstCAwait* const cAwaitp) { cAwaitp->clearSentreep(); });
     }
+
+    // Step 16: Move 'actKit.m_vscp' to accumulator at the end of static initialziation so,
+    // triggers persist to the first resume
     if (AstVarScope* const trigAccp = trigKit.vscAccp()) {
         staticp->addStmtsp(new AstAssign{
             trigAccp->fileline(), new AstVarRef{trigAccp->fileline(), trigAccp, VAccess::WRITE},

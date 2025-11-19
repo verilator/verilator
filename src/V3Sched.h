@@ -193,9 +193,10 @@ class TriggerKit final {
     const uint32_t m_nSenseWords;  // Number of words for Sense triggers
     const uint32_t m_nExtraWords;  // Number of words for Extra triggers
     const uint32_t m_nPreWords;  // Number of words for 'pre' part
-    std::unordered_map<VNRef<const AstSenItem>, size_t> m_senItem2TrigIdx;
     const uint32_t m_nVecWords = m_nSenseWords + m_nExtraWords;  // Number of words in 'vec' part
 
+    // SenItems to corresponding bit indexes
+    std::unordered_map<VNRef<const AstSenItem>, size_t> m_senItem2TrigIdx;
     // Data type of a single trigger word
     AstNodeDType* m_wordDTypep = nullptr;
     // Data type of a trigger vector holding one copy of all triggers
@@ -205,7 +206,9 @@ class TriggerKit final {
     AstUnpackArrayDType* m_trigExtDTypep = nullptr;
     // The AstVarScope representing the extended trigger vector
     AstVarScope* m_vscp = nullptr;
+    // The AstVarScope representing the extended trigger accumulator vector
     mutable AstVarScope* m_vscAccp = nullptr;
+    // The AstVarScope representing the extended trigger temporary vector
     mutable AstVarScope* m_vscTmpp = nullptr;
     // The AstCFunc that computes the current active triggers
     AstCFunc* m_compp = nullptr;
@@ -310,7 +313,7 @@ public:
 // Everything needed for combining timing with static scheduling.
 class TimingKit final {
     AstCFunc* m_resumeFuncp = nullptr;  // Global timing resume function
-    AstCFunc* m_commitFuncp = nullptr;  // Global timing commit function
+    AstCFunc* m_setReadyp = nullptr;  // Global timing commit function
 
     // Additional var sensitivities for V3Order
     std::map<const AstVarScope*, std::set<AstSenTree*>> m_externalDomains;
@@ -325,7 +328,7 @@ public:
     // Creates a timing resume call (if needed, else returns null)
     AstCCall* createResume(AstNetlist* const netlistp) VL_MT_DISABLED;
     // Creates a timing commit call (if needed, else returns null)
-    AstCCall* createCommit(AstNetlist* const netlistp) VL_MT_DISABLED;
+    AstCCall* createSetReady(AstNetlist* const netlistp) VL_MT_DISABLED;
 
     TimingKit() = default;
     TimingKit(LogicByScope&& lbs, AstNodeStmt* postUpdates,
