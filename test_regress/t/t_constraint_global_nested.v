@@ -44,6 +44,10 @@ module t;
   initial begin
     top = new();
     if (!top.randomize()) $stop;
+    $display("After randomization:");
+    $display("  top.m_y = %0d", top.m_y);
+    $display("  top.m_mid.m_x = %0d", top.m_mid.m_x);
+    $display("  top.m_mid.m_inner.m_val = %0d", top.m_mid.m_inner.m_val);
     $write("*-* All Finished *-*\n");
     $finish;
   end
