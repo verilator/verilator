@@ -8,10 +8,19 @@
 %Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:47:24: Unsupported: array element access in global constraint 
    47 |     m_mid_arr[0].m_obj.m_x == 300;
       |                        ^~~
+%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:47:18: Unsupported: array element access in global constraint 
+   47 |     m_mid_arr[0].m_obj.m_x == 300;
+      |                  ^~~~~
 %Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:48:24: Unsupported: array element access in global constraint 
    48 |     m_mid_arr[0].m_obj.m_y == 301;
       |                        ^~~
+%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:48:18: Unsupported: array element access in global constraint 
+   48 |     m_mid_arr[0].m_obj.m_y == 301;
+      |                  ^~~~~
 %Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:53:27: Unsupported: array element access in global constraint 
    53 |     m_mid_arr[1].m_arr[2].m_y == 400;
       |                           ^~~
+%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:53:18: Unsupported: array element access in global constraint 
+   53 |     m_mid_arr[1].m_arr[2].m_y == 400;
+      |                  ^~~~~
 %Error: Exiting due to
