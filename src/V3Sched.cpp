@@ -761,14 +761,15 @@ cloneMapWithNewTriggerReferences(const std::unordered_map<const AstSenTree*, Ast
 }
 
 /**
- * Finds all CAwaits, clears SenTrees inside them, generates pre-trigger functions (functions that
- * shall be called before awaiting with a trigger scheduler) and add thier calls before proper
- * CAwaits
+ * Find all CAwaits, clear SenTrees inside them, generate pre-trigger functions (functions that
+ * shall be called before awaiting for a VCMethod::SCHED_TRIGGER) and add thier calls before
+ * proper CAwaits
  */
 class AwaitPostSchedVisitor final : public VNVisitor {
     const VNUser1InUse m_user1InUse;
 
     /**
+     * AstCAwait::user1()       ->  bool        Whether node has been visited
      * AstSenTree::user1p()     ->  AstCFunc*   Function that has to be called before awaiting for
      *                                          CAwait pointing to this SenTree
      */
@@ -784,7 +785,7 @@ class AwaitPostSchedVisitor final : public VNVisitor {
 
     // Map containing every generated CFuncs and indexes of triggers used within it
     std::map<AstCFunc*, std::set<size_t>> m_funcToUsedTriggers;
-    // Map from SenTree to coresponding trigger scheduler
+    // Map from SenTree to coresponding scheduler
     std::map<const AstSenTree*, AstNodeExpr*> m_senTreeToSched;
 
     // For set of bit indexes (insde sensitivity vector) returns map from those indexes (split into
@@ -831,6 +832,8 @@ class AwaitPostSchedVisitor final : public VNVisitor {
         return usedTrigsToUsingTrees;
     }
 
+    // Returns a statement calling to a pre-trigger function for a given SenTree,
+    // if such function is not generated yet it will be generated
     AstNodeStmt* getPreTriggerStmt(AstSenTree* const senTreep) {
         if (!senTreep->user1p()) {
             AstCFunc* const funcp = util::makeSubFunction(
@@ -872,19 +875,24 @@ class AwaitPostSchedVisitor final : public VNVisitor {
         return util::callVoidFunc(VN_AS(senTreep->user1p(), CFunc));
     }
 
-    void visit(AstStmtExpr* const nodep) override {
+    void visit(AstCAwait* const nodep) override {
         if (nodep->user1SetOnce()) return;
-        if (AstCAwait* const cAwaitp = VN_CAST(nodep->exprp(), CAwait)) {
-            if (const AstCMethodHard* const cMethodHardp
-                = VN_CAST(cAwaitp->exprp(), CMethodHard)) {
-                if (cMethodHardp->method() == VCMethod::SCHED_TRIGGER) {
-                    nodep->addHereThisAsNext(getPreTriggerStmt(cAwaitp->sentreep()));
-                    m_senTreeToSched.emplace(cAwaitp->sentreep(), cMethodHardp->fromp());
-                }
+
+        // Check whether it is a CAwait for a VCMethod::SCHED_TRIGGER
+        if (const AstCMethodHard* const cMethodHardp = VN_CAST(nodep->exprp(), CMethodHard)) {
+            if (cMethodHardp->method() == VCMethod::SCHED_TRIGGER) {
+                // Change CAwait Expression into StatExpr that calls to a preTrigger function first
+                // and then return CAwait
+                VNRelinker relinker;
+                AstExprStmt* const exprstmtp
+                    = new AstExprStmt{nodep->fileline(), getPreTriggerStmt(nodep->sentreep()),
+                                      nodep->unlinkFrBack(&relinker)};
+                relinker.relink(exprstmtp);
+                m_senTreeToSched.emplace(nodep->sentreep(), cMethodHardp->fromp());
             }
-            cAwaitp->clearSentreep();  // Clear as these sentrees will get deleted later
         }
-        iterateChildren(nodep);
+        nodep->clearSentreep();  // Clear as these sentrees will get deleted later
+        iterate(nodep);
     }
 
     void visit(AstNode* const nodep) override { iterateChildren(nodep); }
@@ -941,6 +949,7 @@ public:
             }
 
             AstVarScope* const vscAccp = m_trigKit.vscAccp();
+
             // Add touched values to accumulator
             for (const auto& usedTrig : usedTrigsToUsingTrees) {
                 const size_t idx = usedTrig.first.first;
