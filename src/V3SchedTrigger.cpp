@@ -233,7 +233,8 @@ AstCFunc* TriggerKit::createOrIntoFunc(AstUnpackArrayDType* const oDtypep,
 
     // Create function
     std::string name = "_trigger_orInto__" + m_name;
-    name += oDtypep == m_trigVecDTypep ? "" : "_ext";
+    name += iDtypep == m_trigVecDTypep ? "" : "_ext";
+    name += oDtypep == m_trigVecDTypep ? "" : "IntoExt";
     AstCFunc* const funcp = util::makeSubFunction(netlistp, name, m_slow);
     funcp->isStatic(true);
 
@@ -298,21 +299,16 @@ AstNodeStmt* TriggerKit::newClearCall(AstVarScope* const vscp) const {
 }
 AstNodeStmt* TriggerKit::newOrIntoCall(AstVarScope* const oVscp, AstVarScope* const iVscp) const {
     if (!m_nVecWords) return nullptr;
-    UASSERT_OBJ(iVscp->dtypep() == m_trigVecDTypep || iVscp->dtypep() == m_trigExtDTypep, oVscp,
-                "Bad trigger vector type");
-    AstCFunc* funcp = nullptr;
-    if (oVscp->dtypep() == m_trigVecDTypep) {
-        if (!m_orIntoVecp)
-            m_orIntoVecp
-                = createOrIntoFunc(m_trigVecDTypep, VN_AS(iVscp->dtypep(), UnpackArrayDType));
-        funcp = m_orIntoVecp;
-    } else if (oVscp->dtypep() == m_trigExtDTypep) {
-        if (!m_orIntoExtp)
-            m_orIntoExtp
-                = createOrIntoFunc(m_trigExtDTypep, VN_AS(iVscp->dtypep(), UnpackArrayDType));
-        funcp = m_orIntoExtp;
-    } else {
-        iVscp->v3fatalSrc("Bad trigger vector type");
+    UASSERT_OBJ(iVscp->dtypep() == m_trigVecDTypep || iVscp->dtypep() == m_trigExtDTypep, iVscp,
+                "Bad input trigger vector type");
+    UASSERT_OBJ(oVscp->dtypep() == m_trigVecDTypep || oVscp->dtypep() == m_trigExtDTypep, oVscp,
+                "Bad output trigger vector type");
+    const size_t mask
+        = ((oVscp->dtypep() == m_trigExtDTypep) << 1) | (iVscp->dtypep() == m_trigExtDTypep);
+    AstCFunc*& funcp = m_orIntoVecps[mask];
+    if (!funcp) {
+        funcp = createOrIntoFunc(VN_AS(oVscp->dtypep(), UnpackArrayDType),
+                                 VN_AS(iVscp->dtypep(), UnpackArrayDType));
     }
     FileLine* const flp = v3Global.rootp()->topScopep()->fileline();
     AstCCall* const callp = new AstCCall{flp, funcp};

@@ -222,8 +222,7 @@ private:
     mutable AstCFunc* m_anySetVecp = nullptr;
     mutable AstCFunc* m_anySetExtp = nullptr;
     // The AstCFunc setting bits in a trigger vector that are set in another - create lazily
-    mutable AstCFunc* m_orIntoVecp = nullptr;
-    mutable AstCFunc* m_orIntoExtp = nullptr;
+    mutable std::array<AstCFunc*, 4> m_orIntoVecps = {nullptr};
     // The AstCFunc setting a trigger vector to all zeroes - create lazily
     mutable AstCFunc* m_clearp = nullptr;
 
