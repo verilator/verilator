@@ -2039,6 +2039,13 @@ class VlTest:
 
             fh.write(
                 "    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};\n")
+
+            if self.trace:
+                fh.write("\n")
+                fh.write("#if VM_TRACE\n")
+                fh.write("    contextp->traceEverOn(true);\n")
+                fh.write("#endif\n")
+
             fh.write("    contextp->threads(" + str(self.context_threads) + ");\n")
             fh.write("    contextp->commandArgs(argc, argv);\n")
             fh.write("    contextp->debug(" + ('1' if self.verilated_debug else '0') + ");\n")
@@ -2067,7 +2074,6 @@ class VlTest:
             if self.trace:
                 fh.write("\n")
                 fh.write("#if VM_TRACE\n")
-                fh.write("    contextp->traceEverOn(true);\n")
                 if self.trace_format == 'fst-c':
                     fh.write("    std::unique_ptr<VerilatedFstC> tfp{new VerilatedFstC};\n")
                 if self.trace_format == 'fst-sc':
