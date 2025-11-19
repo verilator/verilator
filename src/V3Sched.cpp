@@ -812,21 +812,12 @@ class AwaitPostSchedVisitor final : public VNVisitor {
             }
 
             // Change bit index to word index and index within this word
-            size_t mask = 0;
             size_t bias = 0;
             for (size_t idx : usedTriggersInSenTree) {
                 // Since triggers are continuous `while` is not necessary
-                if (idx - bias >= TriggerKit::WORD_SIZE) {
-                    if (mask != 0) {
-                        usedTrigsToUsingTrees[{bias / TriggerKit::WORD_SIZE, mask}].insert(shedp);
-                    }
-                    bias += TriggerKit::WORD_SIZE;
-                    mask = 0;
-                }
-                mask |= 1 << (idx - bias);
-            }
-            if (mask != 0) {
-                usedTrigsToUsingTrees[{bias / TriggerKit::WORD_SIZE, mask}].insert(shedp);
+                if (idx - bias >= TriggerKit::WORD_SIZE) bias += TriggerKit::WORD_SIZE;
+                usedTrigsToUsingTrees[{bias / TriggerKit::WORD_SIZE, 1 << (idx - bias)}].insert(
+                    shedp);
             }
         }
         return usedTrigsToUsingTrees;
