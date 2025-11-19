@@ -459,6 +459,31 @@ TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords,
     m_dumpp->ifdef("VL_DEBUG");
 }
 
+AstAssign* TriggerKit::createSenTrigVecAssignment(AstVarScope* const target,
+                                                  std::vector<AstNodeExpr*>& trigps) {
+    FileLine* const flp = target->fileline();
+    AstAssign* trigStmtsp = nullptr;
+    // Assign sense triggers vector one word at a time
+    for (size_t i = 0; i < trigps.size(); i += WORD_SIZE) {
+        // Concatenate all bits in this trigger word using a balanced
+        for (uint32_t level = 0; level < WORD_SIZE_LOG2; ++level) {
+            const uint32_t stride = 1 << level;
+            for (uint32_t j = 0; j < WORD_SIZE; j += 2 * stride) {
+                trigps[i + j] = new AstConcat{trigps[i + j]->fileline(), trigps[i + j + stride],
+                                              trigps[i + j]};
+                trigps[i + j + stride] = nullptr;
+            }
+        }
+
+        // Set the whole word in the trigger vector
+        const int wordIndex = static_cast<int>(i / WORD_SIZE);
+        AstArraySel* const aselp
+            = new AstArraySel{flp, new AstVarRef{flp, target, VAccess::WRITE}, wordIndex};
+        trigStmtsp = AstNode::addNext(trigStmtsp, new AstAssign{flp, aselp, trigps[i]});
+    }
+    return trigStmtsp;
+}
+
 TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
                               AstCFunc* const initFuncp,  //
                               SenExprBuilder& senExprBuilder,  //
@@ -609,25 +634,7 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
     }
     UASSERT(trigps.size() == nSenseTriggers, "Inconsistent number of trigger expressions");
 
-    // Assign sense triggers vector one word at a time
-    AstNodeStmt* trigStmtsp = nullptr;
-    for (size_t i = 0; i < nSenseTriggers; i += WORD_SIZE) {
-        // Concatenate all bits in this trigger word using a balanced
-        for (uint32_t level = 0; level < WORD_SIZE_LOG2; ++level) {
-            const uint32_t stride = 1 << level;
-            for (uint32_t j = 0; j < WORD_SIZE; j += 2 * stride) {
-                trigps[i + j] = new AstConcat{trigps[i + j]->fileline(), trigps[i + j + stride],
-                                              trigps[i + j]};
-                trigps[i + j + stride] = nullptr;
-            }
-        }
-
-        // Set the whole word in the trigger vector
-        const int wordIndex = static_cast<int>(i / WORD_SIZE);
-        AstArraySel* const aselp = new AstArraySel{flp, wr(kit.m_vscp), wordIndex};
-        trigStmtsp = AstNode::addNext(trigStmtsp, new AstAssign{flp, aselp, trigps[i]});
-    }
-    trigps.clear();
+    AstAssign* const trigStmtsp = createSenTrigVecAssignment(kit.m_vscp, trigps);
 
     // Add a print for each of the extra triggers
     for (unsigned i = 0; i < extraTriggers.size(); ++i) {
