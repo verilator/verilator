@@ -11,6 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.lint(verilator_flags2=["--top cfg2"], fails=True, expect_filename=test.golden_filename)
+test.compile(verilator_flags2=['--binary', '--top cfg12'])
+
+test.execute()
 
 test.passes()
