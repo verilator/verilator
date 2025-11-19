@@ -17,4 +17,3 @@ config cfg1;
   design m1 m2;
 endconfig : cfg1  // Test end label
 // verilator lint_on MULTITOP
-
