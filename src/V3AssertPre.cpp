@@ -656,8 +656,6 @@ private:
         } else {
             iterateChildren(nodep);
         }
-
-        iterateChildren(nodep);
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_defaultClockingp);
