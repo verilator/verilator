@@ -116,7 +116,7 @@ class LinkConfigsVisitor final : public VNVisitor {
         }
         // We don't do iterateChildren here because we want to skip designp
         iterateAndNextNull(nodep->itemsp());
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
 
     void visit(AstConfigCell* nodep) override {
@@ -124,7 +124,7 @@ class LinkConfigsVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstConfigRule* nodep) override {
-        if (nodep->cellp() == nullptr) {
+        if (!nodep->cellp()) {
             for (AstNode* usep = nodep->usep(); usep;
                 usep = usep->nextp()) {
                 m_state.m_liblist.push_back(usep->name());
