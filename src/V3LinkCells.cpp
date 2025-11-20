@@ -92,7 +92,7 @@ void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp, V3EdgeFuncP edgeFunc
 // Link state, as a visitor of each AstNode
 
 // State to pass between config parsing and cell linking visitors.
-struct LinkCellsState {
+struct LinkCellsState final {
     // Set of possible top module names from command line and configs
     std::unordered_set<std::string> m_topModuleNames;
 };
