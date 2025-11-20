@@ -538,11 +538,15 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     if (AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
                         randVarp = memberSelp->varp();
                         exprp = memberSelp->fromp();
-                    } else {
-                        AstVarRef* const varrefp = VN_AS(exprp, VarRef);
+                    } else if(AstVarRef* varrefp = VN_CAST(exprp, VarRef)) {
                         randVarp = varrefp->varp();
                         exprp = nullptr;
                         varrefp->user1(true);
+                    } else {
+                        varrefp = VN_AS(VN_CAST(exprp, ArraySel)->fromp(), VarRef);
+                        randVarp = varrefp->varp();
+                        varrefp->access(VAccess::READWRITE);
+                        exprp = nullptr;
                     }
                     UASSERT_OBJ(randVarp, nodep, "No rand variable found");
                     AstNode* backp = randVarp;
@@ -2930,7 +2934,7 @@ AstFunc* V3Randomize::newRandomizeStdFunc(VMemberMap& memberMap, AstNodeModule* 
     if (VN_IS(nodep, Class)) {
         funcp->classMethod(true);
     } else {
-        funcp->classMethod(false);
+        funcp->classMethod(true);
         funcp->isStatic(true);
     }
     nodep->addStmtsp(funcp);
