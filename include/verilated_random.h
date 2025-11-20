@@ -598,8 +598,8 @@ public:
     template <typename Unpacked_T, std::size_t N_Depth>
     bool basicStdRandomization(VlUnpacked<Unpacked_T, N_Depth>& value, size_t width) {
         for (size_t i = 0; i < N_Depth; ++i) {
-                value.operator[](i) = VL_MASK_I(width) & VL_RANDOM_RNG_I(m_rng);
-            }
+            value.operator[](i) = VL_MASK_I(width) & VL_RANDOM_RNG_I(m_rng);
+        }
         return true;
     }
     bool next() { return VlRandomizer::next(m_rng); }
