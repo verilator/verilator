@@ -2671,7 +2671,6 @@ class RandomizeVisitor final : public VNVisitor {
                 }
                 AstNode* const capturedTreep = withp->exprp()->unlinkFrBackWithNext();
                 randomizeFuncp->addStmtsp(capturedTreep);
-                capturedTreep->dumpTreeJson(cout);
                 {
                     ConstraintExprVisitor{m_memberMap, capturedTreep, randomizeFuncp,
                                           stdrand,     nullptr,       m_writtenVars};
