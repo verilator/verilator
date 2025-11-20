@@ -1,17 +1,17 @@
-%Error-UNSUPPORTED: t/t_config_hier.v:36:3: Unsupported: config rule
+%Error-UNSUPPORTED: t/t_config_hier.v:36:3: Unsupported: config cell rule
    36 |   instance t.u_1 use work.cfg2 :config;
       |   ^~~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error-UNSUPPORTED: t/t_config_hier.v:36:18: Unsupported: config use
    36 |   instance t.u_1 use work.cfg2 :config;
       |                  ^~~
-%Error-UNSUPPORTED: t/t_config_hier.v:41:3: Unsupported: config rule
+%Error-UNSUPPORTED: t/t_config_hier.v:41:3: Unsupported: config cell rule
    41 |   instance t.u_1 use cfg2 :config;
       |   ^~~~~~~~
 %Error-UNSUPPORTED: t/t_config_hier.v:41:18: Unsupported: config use
    41 |   instance t.u_1 use cfg2 :config;
       |                  ^~~
-%Error-UNSUPPORTED: t/t_config_hier.v:46:3: Unsupported: config rule
+%Error-UNSUPPORTED: t/t_config_hier.v:46:3: Unsupported: config cell rule
    46 |   cell work.m1 use work.cfg2 :config;
       |   ^~~~
 %Error-UNSUPPORTED: t/t_config_hier.v:46:8: Unsupported: config cell
@@ -20,7 +20,7 @@
 %Error-UNSUPPORTED: t/t_config_hier.v:46:16: Unsupported: config use
    46 |   cell work.m1 use work.cfg2 :config;
       |                ^~~
-%Error-UNSUPPORTED: t/t_config_hier.v:51:3: Unsupported: config rule
+%Error-UNSUPPORTED: t/t_config_hier.v:51:3: Unsupported: config cell rule
    51 |   cell m1 use cfg2 :config;
       |   ^~~~
 %Error-UNSUPPORTED: t/t_config_hier.v:51:8: Unsupported: config cell
@@ -29,7 +29,7 @@
 %Error-UNSUPPORTED: t/t_config_hier.v:51:11: Unsupported: config use
    51 |   cell m1 use cfg2 :config;
       |           ^~~
-%Error-UNSUPPORTED: t/t_config_hier.v:56:3: Unsupported: config rule
+%Error-UNSUPPORTED: t/t_config_hier.v:56:3: Unsupported: config cell rule
    56 |   cell work.m1 use work.cfg2;   
       |   ^~~~
 %Error-UNSUPPORTED: t/t_config_hier.v:56:8: Unsupported: config cell
@@ -38,7 +38,7 @@
 %Error-UNSUPPORTED: t/t_config_hier.v:56:16: Unsupported: config use
    56 |   cell work.m1 use work.cfg2;   
       |                ^~~
-%Error-UNSUPPORTED: t/t_config_hier.v:62:3: Unsupported: config rule
+%Error-UNSUPPORTED: t/t_config_hier.v:62:3: Unsupported: config cell rule
    62 |   instance u_bb use work.c2_bb;
       |   ^~~~~~~~
 %Error-UNSUPPORTED: t/t_config_hier.v:62:17: Unsupported: config use
