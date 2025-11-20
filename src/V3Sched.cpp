@@ -929,6 +929,16 @@ public:
                     }
                     stmtsp = AstNode::addNext(stmtsp, ifp);
                 }
+                AstVarScope* const vscAccp = m_trigKit.vscAccp();
+                // Add to accumulator
+                stmtsp = AstNode::addNext(
+                    stmtsp, new AstAssign{flp, getIdx(vscAccp, VAccess::WRITE, word),
+                                          new AstOr{flp, getIdx(vscAccp, VAccess::READ, word),
+                                                    getIdx(vscp, VAccess::READ, word)}});
+                // Clear touched values
+                stmtsp = AstNode::addNext(
+                    stmtsp, new AstAssign{flp, getIdx(vscp, VAccess::WRITE, word),
+                                          new AstConst{flp, AstConst::Unsized64{}, 0}});
 
                 // If we assume that probability of triggering an arbitrary trigger before awaiting
                 // for it in the same routine is 30% or less there is a certain range withtin which
@@ -951,23 +961,6 @@ public:
                 } else {
                     funcp->addStmtsp(stmtsp);
                 }
-            }
-
-            AstVarScope* const vscAccp = m_trigKit.vscAccp();
-
-            // Add touched values to accumulator
-            for (const auto& usedTrig : usedTrigsToUsingTrees) {
-                const size_t idx = usedTrig.first;
-                funcp->addStmtsp(new AstAssign{flp, getIdx(vscAccp, VAccess::WRITE, idx),
-                                               new AstOr{flp, getIdx(vscAccp, VAccess::READ, idx),
-                                                         getIdx(vscp, VAccess::READ, idx)}});
-            }
-
-            // Clear touched values
-            for (const auto& usedTrig : usedTrigsToUsingTrees) {
-                const size_t idx = usedTrig.first;
-                funcp->addStmtsp(new AstAssign{flp, getIdx(vscp, VAccess::WRITE, idx),
-                                               new AstConst{flp, AstConst::Unsized64{}, 0}});
             }
         }
     }
