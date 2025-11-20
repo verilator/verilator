@@ -95,6 +95,8 @@ void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp, V3EdgeFuncP edgeFunc
 struct LinkCellsState final {
     // Set of possible top module names from command line and configs
     std::unordered_set<std::string> m_topModuleNames;
+    // Default library lists to search
+    std::vector<std::string> m_liblist;
 };
 
 class LinkConfigsVisitor final : public VNVisitor {
@@ -114,6 +116,7 @@ class LinkConfigsVisitor final : public VNVisitor {
         }
         // We don't do iterateChildren here because we want to skip designp
         iterateAndNextNull(nodep->itemsp());
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
 
     void visit(AstConfigCell* nodep) override {
@@ -121,7 +124,14 @@ class LinkConfigsVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstConfigRule* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: config rule");
+        if (nodep->cellp() == nullptr) {
+            for (AstNode* usep = nodep->usep(); usep;
+                usep = usep->nextp()) {
+                m_state.m_liblist.push_back(usep->name());
+            }
+        } else {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: config cell rule");
+        }
         iterateChildren(nodep);
     }
     void visit(AstConfigUse* nodep) override {
@@ -197,11 +207,16 @@ class LinkCellsVisitor final : public VNVisitor {
     }
     AstNodeModule* findModuleSym(const string& modName, const string& libname) {
         // Given module and library to start search in, resolve using config library choices
-        // TODO support IEEE config library search order
-        // First search local library
-        AstNodeModule* foundp = findModuleLibSym(modName, libname);
+        // First search IEEE config library list
+        AstNodeModule* foundp;
+        for (auto const& l : m_state.m_liblist) {
+                foundp = findModuleLibSym(modName, l);
+                if (foundp) return foundp;
+        }
+        // Then search local library
+        foundp = findModuleLibSym(modName, libname);
         if (foundp) return foundp;
-        // THen search global
+        // Then search global
         foundp = findModuleLibSym(modName, "__GLOBAL");
         return foundp;
     }
