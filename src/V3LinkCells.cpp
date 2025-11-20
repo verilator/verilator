@@ -125,8 +125,7 @@ class LinkConfigsVisitor final : public VNVisitor {
     }
     void visit(AstConfigRule* nodep) override {
         if (!nodep->cellp()) {
-            for (AstNode* usep = nodep->usep(); usep;
-                usep = usep->nextp()) {
+            for (AstNode* usep = nodep->usep(); usep; usep = usep->nextp()) {
                 m_state.m_liblist.push_back(usep->name());
             }
         } else {
@@ -210,8 +209,8 @@ class LinkCellsVisitor final : public VNVisitor {
         // First search IEEE config library list
         AstNodeModule* foundp;
         for (auto const& l : m_state.m_liblist) {
-                foundp = findModuleLibSym(modName, l);
-                if (foundp) return foundp;
+            foundp = findModuleLibSym(modName, l);
+            if (foundp) return foundp;
         }
         // Then search local library
         foundp = findModuleLibSym(modName, libname);
