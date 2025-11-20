@@ -279,7 +279,8 @@ public:
                              const std::vector<const AstSenTree*>& senTreeps,  //
                              const string& name,  //
                              const ExtraTriggers& extraTriggers,  //
-                             bool slow);
+                             bool slow,  //
+                             bool noAcc = false);
 
     // ACCESSORS
     AstVarScope* vscp() const { return m_vscp; }
