@@ -2612,7 +2612,6 @@ class RandomizeVisitor final : public VNVisitor {
             int argn = 0;
             AstWith* withp = nullptr;
             for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
-                AstArg* const argp = VN_CAST(pinp, Arg);
                 withp = VN_IS(pinp, With) ? VN_AS(pinp, With) : nullptr;
                 if (withp) break;
             }
