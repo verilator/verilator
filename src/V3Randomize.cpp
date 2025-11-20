@@ -538,7 +538,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     if (AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
                         randVarp = memberSelp->varp();
                         exprp = memberSelp->fromp();
-                    } else if(AstVarRef* varrefp = VN_CAST(exprp, VarRef)) {
+                    } else if (AstVarRef* varrefp = VN_CAST(exprp, VarRef)) {
                         randVarp = varrefp->varp();
                         exprp = nullptr;
                         varrefp->user1(true);
