@@ -545,6 +545,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     } else {
                         varrefp = VN_AS(VN_CAST(exprp, ArraySel)->fromp(), VarRef);
                         randVarp = varrefp->varp();
+                        varrefp->user1(true);
                         varrefp->access(VAccess::READWRITE);
                         exprp = nullptr;
                     }
