@@ -488,9 +488,8 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
                               const std::vector<const AstSenTree*>& senTreeps,  //
                               const string& name,  //
                               const ExtraTriggers& extraTriggers,  //
-                              bool slow,
-                              bool noAcc  //
-) {
+                              bool slow,  //
+                              bool noAcc) {
     // Need to gather all the unique SenItems under the given SenTrees
 
     // List of unique SenItems used by all 'senTreeps'
