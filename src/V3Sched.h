@@ -332,7 +332,7 @@ public:
         const std::unordered_map<const AstSenTree*, AstSenTree*>& trigMap) const VL_MT_DISABLED;
     // Creates a timing resume call (if needed, else returns null)
     AstCCall* createResume(AstNetlist* const netlistp) VL_MT_DISABLED;
-    // Creates a timing commit call (if needed, else returns null)
+    // Creates a timing setReady call (if needed, else returns null)
     AstCCall* createSetReady(AstNetlist* const netlistp) VL_MT_DISABLED;
 
     TimingKit() = default;

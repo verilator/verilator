@@ -584,8 +584,11 @@ void createEval(AstNetlist* netlistp,  //
             // Set ready for triggered awaits
             if (timingSetReadyp) stmtsp = AstNode::addNext(stmtsp, timingSetReadyp->makeStmt());
             if (actKit.m_vscp) {
-                stmtsp = AstNode::addNext(stmtsp,
-                                          trigKit.newOrIntoCall(actKit.m_vscp, trigKit.vscAccp()));
+                AstVarScope* const vscAccp = trigKit.vscAccp();
+                UASSERT_OBJ(
+                    vscAccp, actKit.m_vscp,
+                    "Trigger vector accumulator shall exist if trigger vector itself exists");
+                stmtsp = AstNode::addNext(stmtsp, trigKit.newOrIntoCall(actKit.m_vscp, vscAccp));
             }
             // Latch the 'act' triggers under the 'nba' triggers
             stmtsp = AstNode::addNext(stmtsp, trigKit.newOrIntoCall(nbaKit.m_vscp, actKit.m_vscp));
@@ -596,9 +599,9 @@ void createEval(AstNetlist* netlistp,  //
         [&]() {
             AstNodeStmt* workp = nullptr;
             if (AstVarScope* const actAccp = trigKit.vscAccp()) {
-                AstCMethodHard* const cCallp
-                    = new AstCMethodHard{flp, new AstVarRef{flp, actAccp, VAccess::WRITE},
-                                         VCMethod::UNPACKED_FILL, new AstConst{flp, 0}};
+                AstCMethodHard* const cCallp = new AstCMethodHard{
+                    flp, new AstVarRef{flp, actAccp, VAccess::WRITE}, VCMethod::UNPACKED_FILL,
+                    new AstConst{flp, AstConst::Unsized64{}, 0}};
                 cCallp->dtypeSetVoid();
                 workp = AstNode::addNext(workp, cCallp->makeStmt());
             }
@@ -776,10 +779,10 @@ class AwaitPostSchedVisitor final : public VNVisitor {
 
     // Net list - for using util::makeSubFunction()
     AstNetlist* const m_netlistp;
-    // Expression builder - for building expressions from SenItems
-    SenExprBuilder& m_senExprBuilder;
     // Trigger kit - for accessing trigger vectors and mapping senItems to thier indexes
     const TriggerKit& m_trigKit;
+    // Expression builder - for building expressions from SenItems
+    SenExprBuilder& m_senExprBuilder;
     // Generator of unique names for pre-trigger function
     V3UniqueNames m_preTriggerFuncUniqueName;
 
@@ -813,7 +816,7 @@ class AwaitPostSchedVisitor final : public VNVisitor {
         return usedTrigsToUsingTrees;
     }
 
-    // Returns a statement calling to a pre-trigger function for a given SenTree,
+    // Returns a CCall to a pre-trigger function for a given SenTree,
     // if such function is not generated yet it will be generated
     AstCCall* getPreTriggerStmt(AstSenTree* const senTreep) {
         FileLine* const flp = senTreep->fileline();
@@ -872,15 +875,18 @@ class AwaitPostSchedVisitor final : public VNVisitor {
         // Check whether it is a CAwait for a VCMethod::SCHED_TRIGGER
         if (const AstCMethodHard* const cMethodHardp = VN_CAST(nodep->exprp(), CMethodHard)) {
             if (cMethodHardp->method() == VCMethod::SCHED_TRIGGER) {
-                // Change CAwait Expression into StatExpr that calls to a preTrigger function first
-                // and then return CAwait
                 AstCCall* const preTrigp = getPreTriggerStmt(nodep->sentreep());
+
                 FileLine* const flp = nodep->fileline();
+                // Add eventDescription argument value to a CCall - it is used for --runtime-debug
                 if (AstNode* const pinp = cMethodHardp->pinsp()->nextp()->nextp()) {
                     preTrigp->addArgsp(VN_AS(pinp, NodeExpr)->cloneTree(false));
                 } else {
                     preTrigp->addArgsp(new AstCExpr{flp, "nullptr"});
                 }
+
+                // Change CAwait Expression into StmtExpr that calls to a pre-trigger function
+                // first and then return CAwait
                 VNRelinker relinker;
                 nodep->unlinkFrBack(&relinker);
                 AstExprStmt* const exprstmtp = new AstExprStmt{flp, preTrigp->makeStmt(), nodep};
@@ -898,11 +904,13 @@ public:
     AwaitPostSchedVisitor(AstNetlist* netlistp, SenExprBuilder& senExprBuilder,
                           const TriggerKit& trigKit)
         : m_netlistp{netlistp}
-        , m_senExprBuilder{senExprBuilder}
         , m_trigKit{trigKit}
+        , m_senExprBuilder{senExprBuilder}
         , m_preTriggerFuncUniqueName{"__VpreTrig"} {
         iterate(netlistp);
 
+        // In each of pre-trigger functions check if anything was triggered and mark triggered
+        // schedulers as ready
         for (const auto& funcToUsedTriggers : m_funcToUsedTriggers) {
             AstCFunc* const funcp = funcToUsedTriggers.first;
 
@@ -919,6 +927,7 @@ public:
                                        new AstConst{flp, AstConst::Unsized64{}, idx}};
             };
 
+            // Get eventDescription argument
             AstVarScope* const argpVscp = new AstVarScope{flp, funcp->scopep(), funcp->argsp()};
             funcp->scopep()->addVarsp(argpVscp);
 
@@ -932,7 +941,7 @@ public:
                     const auto& schedulers = bitsToTrees.second;
 
                     // Create `if` checking if given bit is fired - single bits are checked since
-                    // usually there is only a few of them (only 1 most of the times as we await
+                    // usually there is only a few of them (only one most of the times as we await
                     // only for one event)
                     AstConst* const maskConstp = new AstConst{flp, AstConst::Unsized64{}, bit};
                     AstAnd* const condp
@@ -970,13 +979,13 @@ public:
                     = std::pow(triggerNotFiredProb, triggersToTrees.second.size());
 
                 const double ifCountDouble = static_cast<double>(triggersToTrees.second.size());
-                const double averagIfCheckWitchGuardCount
+                const double averageCountOfIfChecksWithGuard
                     = anyNotFiredProb + (1.0 - anyNotFiredProb) * (ifCountDouble + 1.0);
 
                 // TODO: When bumped to C++17 or greater below code could be under `if constexpr`
                 // since, if `triggerFiredProb` is 31% or more `if` below will never enter
                 // `then` branch
-                if (averagIfCheckWitchGuardCount < ifCountDouble) {
+                if (averageCountOfIfChecksWithGuard < ifCountDouble) {
                     funcp->addStmtsp(new AstIf{flp, getIdx(vscp, VAccess::READ, word), stmtsp});
                 } else {
                     funcp->addStmtsp(stmtsp);
@@ -1232,13 +1241,13 @@ void schedule(AstNetlist* netlistp) {
     createEval(netlistp, icoLoopp, trigKit, actKit, nbaKit, obsKit, reactKit, postponedFuncp,
                timingKit);
 
-    // Step 15: Add neccessary evaluation before before awaits
+    // Step 15: Add neccessary evaluation before awaits
     if (AstCCall* const setReadyp = timingKit.createSetReady(netlistp)) {
         staticp->addStmtsp(setReadyp->makeStmt());
         AwaitPostSchedVisitor{netlistp, senExprBuilder, trigKit};
     } else {
         // AwaitPostSchedVisitor clears Sentree pointers in AstCAwaits (as these sentrees will get
-        // deleted later) if there was no need to call it, SenTrees have to be removed manually
+        // deleted later) if there was no need to call it, SenTrees have to be cleaned manually
         netlistp->foreach([](AstCAwait* const cAwaitp) { cAwaitp->clearSentreep(); });
     }
 
