@@ -6,20 +6,14 @@
 
 // verilator lint_off MULTITOP
 module m1;
-  initial begin
-    m2.fin;
-  end
+  initial $display("In '%m'");
 endmodule
 
 module m2;
-  task fin;
-    $write("*-* All Finished *-*\n");
-    $finish;
-  endtask
+  initial $display("In '%m'");
 endmodule
 
-// Test --top picks this config
-config cfg12;
-  design work.m1 m2;  // Test both modules listed, library.cell, and cell w/o library
-endconfig
+config cfg1;
+  design m1 m2;
+endconfig : cfg1  // Test end label
 // verilator lint_on MULTITOP

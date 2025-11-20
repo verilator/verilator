@@ -1,13 +1,7 @@
-%Error-UNSUPPORTED: t/t_config_rules.v:24:1: Unsupported: config
-   24 | config cfg;
-      | ^~~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_config_rules.v:25:10: Unsupported: config cell
-   25 |   design t;
-      |          ^
 %Error-UNSUPPORTED: t/t_config_rules.v:28:3: Unsupported: config rule
    28 |   default liblist;   
       |   ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error-UNSUPPORTED: t/t_config_rules.v:29:3: Unsupported: config rule
    29 |   default liblist liba libb;
       |   ^~~~~~~
@@ -74,6 +68,4 @@
 %Error-UNSUPPORTED: t/t_config_rules.v:48:17: Unsupported: config use
    48 |   cell work.m43 use work.m43alt;
       |                 ^~~
-%Error: Specified --top-module 'cfg' was not found in design.
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

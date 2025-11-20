@@ -11,8 +11,11 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--binary', '--top cfg12'])
+test.compile(verilator_flags2=['--binary', '--top cfg1'])
 
 test.execute()
+
+test.file_grep(test.run_log_filename, r"In 'm1'")
+test.file_grep(test.run_log_filename, r"In 'm2'")
 
 test.passes()

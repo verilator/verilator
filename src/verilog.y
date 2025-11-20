@@ -7783,8 +7783,9 @@ config_declaration:  // == IEEE: config_declaration
                 yCONFIG idAny/*config_identifier*/ ';'
         /*cont*/    configParameterListE design_statement config_rule_statementListE
         /*cont*/    yENDCONFIG endLabelE
-                { AstConfig* const newp = new AstConfig{$1, *$2, $4};
-                  newp->addItemsp($5);
+                { AstConfig* const newp = new AstConfig{$1, PARSEP->libname(), *$2};
+                  newp->addDesignp($5);
+                  newp->addItemsp($4);
                   newp->addItemsp($6);
                   GRAMMARP->endLabel($<fl>7, *$2, $8);
                   PARSEP->rootp()->addMiscsp(newp); }
@@ -7805,7 +7806,7 @@ configParameter<nodep>:  // IEEE: part of config_declaration
                         { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: config localparam declaration"); DEL($1); }
         ;
 
-design_statement<nodep>:  // == IEEE: design_statement
+design_statement<configCellp>:  // == IEEE: design_statement
                 yDESIGN configCellList ';'              { $$ = $2; }
         ;
 
@@ -7816,7 +7817,7 @@ configCellList<configCellp>:  // IEEE: part of design_statement
 
 configCell<configCellp>:  // IEEE: part of design_statement, part of cell_clause
                 idAny/*cell_identifier*/
-                        { $$ = new AstConfigCell{$<fl>1, "", *$1}; }
+                        { $$ = new AstConfigCell{$<fl>1, PARSEP->libname(), *$1}; }
         |       idAny/*library_identifier*/ '.' idAny/*cell_identifier*/
                         { $$ = new AstConfigCell{$<fl>1, *$1, *$3}; }
         ;
