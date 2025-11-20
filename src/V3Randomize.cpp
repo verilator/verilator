@@ -2633,7 +2633,7 @@ class RandomizeVisitor final : public VNVisitor {
                         AstVarRef* const replaceVar
                             = new AstVarRef{exprp->fileline(), refvarp, VAccess::READWRITE};
                         exp->replaceWith(replaceVar);
-                        replaceVar->user1(true);
+                        replaceVar->user1(exp->user1());
                         replaceVar->varp()->user2p(m_modp);
                         pushDeletep(exp);
                     }
