@@ -815,12 +815,20 @@ class AwaitPostSchedVisitor final : public VNVisitor {
 
     // Returns a statement calling to a pre-trigger function for a given SenTree,
     // if such function is not generated yet it will be generated
-    AstNodeStmt* getPreTriggerStmt(AstSenTree* const senTreep) {
+    AstCCall* getPreTriggerStmt(AstSenTree* const senTreep) {
+        FileLine* const flp = senTreep->fileline();
         if (!senTreep->user1p()) {
             AstCFunc* const funcp = util::makeSubFunction(
                 m_netlistp, m_preTriggerFuncUniqueName.get(senTreep), false);
             senTreep->user1p(funcp);
-            FileLine* const flp = senTreep->fileline();
+
+            AstVar* const argp = new AstVar{flp, VVarType::BLOCKTEMP, "__VeventDescription",
+                                            senTreep->findBasicDType(VBasicDTypeKwd::CHARPTR)};
+            argp->funcLocal(true);
+            argp->direction(VDirection::INPUT);
+            funcp->addArgsp(argp);
+            // Scope is created in the constructor after iterate finishes
+
             static std::vector<AstNodeExpr*> trigps;  // Static to reduce amount of allocations
 
             // Puts `exprp` at `pos` and makes sure that trigps.size() is multiple of
@@ -853,7 +861,9 @@ class AwaitPostSchedVisitor final : public VNVisitor {
             trigps.clear();
             for (AstNodeStmt* const stmtsp : results.m_postUpdates) funcp->addStmtsp(stmtsp);
         }
-        return util::callVoidFunc(VN_AS(senTreep->user1p(), CFunc));
+        AstCCall* const callp = new AstCCall{flp, VN_AS(senTreep->user1p(), CFunc)};
+        callp->dtypeSetVoid();
+        return callp;
     }
 
     void visit(AstCAwait* const nodep) override {
@@ -864,10 +874,16 @@ class AwaitPostSchedVisitor final : public VNVisitor {
             if (cMethodHardp->method() == VCMethod::SCHED_TRIGGER) {
                 // Change CAwait Expression into StatExpr that calls to a preTrigger function first
                 // and then return CAwait
+                AstCCall* const preTrigp = getPreTriggerStmt(nodep->sentreep());
+                FileLine* const flp = nodep->fileline();
+                if (AstNode* const pinp = cMethodHardp->pinsp()->nextp()->nextp()) {
+                    preTrigp->addArgsp(VN_AS(pinp, NodeExpr)->cloneTree(false));
+                } else {
+                    preTrigp->addArgsp(new AstCExpr{flp, "nullptr"});
+                }
                 VNRelinker relinker;
-                AstExprStmt* const exprstmtp
-                    = new AstExprStmt{nodep->fileline(), getPreTriggerStmt(nodep->sentreep()),
-                                      nodep->unlinkFrBack(&relinker)};
+                nodep->unlinkFrBack(&relinker);
+                AstExprStmt* const exprstmtp = new AstExprStmt{flp, preTrigp->makeStmt(), nodep};
                 relinker.relink(exprstmtp);
                 m_senTreeToSched.emplace(nodep->sentreep(), cMethodHardp->fromp());
             }
@@ -903,6 +919,9 @@ public:
                                        new AstConst{flp, AstConst::Unsized64{}, idx}};
             };
 
+            AstVarScope* const argpVscp = new AstVarScope{flp, funcp->scopep(), funcp->argsp()};
+            funcp->scopep()->addVarsp(argpVscp);
+
             // Mark triggered schedulers as ready
             for (const auto& triggersToTrees : usedTrigsToUsingTrees) {
                 const size_t word = triggersToTrees.first;
@@ -925,6 +944,7 @@ public:
                         AstCMethodHard* const callp = new AstCMethodHard{
                             flp, schedp->cloneTree(false), VCMethod::SCHED_READY};
                         callp->dtypeSetVoid();
+                        callp->addPinsp(new AstVarRef{flp, argpVscp, VAccess::READ});
                         ifp->addThensp(callp->makeStmt());
                     }
                     stmtsp = AstNode::addNext(stmtsp, ifp);
