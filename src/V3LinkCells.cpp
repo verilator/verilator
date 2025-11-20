@@ -96,11 +96,11 @@ struct LinkCellsState final {
     // Set of possible top module names from command line and configs
     std::unordered_set<std::string> m_topModuleNames;
     // Default library lists to search
-    std::vector<std::string> m_default_liblist;
+    std::vector<std::string> m_liblistDefault;
     // Library lists for specific cells
-    std::unordered_map<std::string, std::vector<std::string>> m_cell_liblist;
+    std::unordered_map<std::string, std::vector<std::string>> m_liblistCell;
     // Use list for specific cells (libname, cellname)
-    std::unordered_map<std::string, std::vector<std::pair<std::string, std::string>>> m_cell_uselist;
+    std::unordered_map<std::string, std::vector<std::pair<std::string, std::string>>> m_uselistCell;
 };
 
 class LinkConfigsVisitor final : public VNVisitor {
@@ -123,26 +123,22 @@ class LinkConfigsVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
 
-    void visit(AstConfigCell* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: config cell");
-        iterateChildren(nodep);
-    }
     void visit(AstConfigRule* nodep) override {
         if (!nodep->cellp()) {
             for (AstNode* usep = nodep->usep(); usep; usep = usep->nextp()) {
-                m_state.m_default_liblist.push_back(usep->name());
+                m_state.m_liblistDefault.push_back(usep->name());
             }
         } else if (nodep->isCell()) {
             string cellName = nodep->cellp()->name();
             if (VN_IS(nodep->usep(),ParseRef)) {
-                m_state.m_cell_liblist[cellName] = std::vector<std::string>{};
+                m_state.m_liblistCell[cellName] = std::vector<std::string>{};
                 for (AstParseRef* usep = VN_AS(nodep->usep(), ParseRef); usep; usep = VN_AS(usep->nextp(), ParseRef)) {
-                    m_state.m_cell_liblist[cellName].push_back(usep->name());
+                    m_state.m_liblistCell[cellName].push_back(usep->name());
                 }
             } else {
-                m_state.m_cell_uselist[cellName] = std::vector<std::pair<std::string, std::string>>{};
+                m_state.m_uselistCell[cellName] = std::vector<std::pair<std::string, std::string>>{};
                 for (AstConfigUse* usep = VN_AS(nodep->usep(), ConfigUse); usep; usep = VN_AS(usep->nextp(), ConfigUse)) {
-                    m_state.m_cell_uselist[cellName].push_back(std::pair<std::string, std::string>{usep->libname(), usep->cellname()});
+                    m_state.m_uselistCell[cellName].push_back(std::pair<std::string, std::string>{usep->libname(), usep->cellname()});
                 }
             }
         } else {
@@ -152,10 +148,6 @@ class LinkConfigsVisitor final : public VNVisitor {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: config inst use rule");
             }
         }
-    }
-    void visit(AstConfigUse* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: config use");
-        iterateChildren(nodep);
     }
 
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
@@ -229,23 +221,23 @@ class LinkCellsVisitor final : public VNVisitor {
         AstNodeModule* foundp;
         string fullName = libname + "." + modName;
         // First search cell-specific use list
-        const auto itCellUseList = m_state.m_cell_uselist.find(fullName);
-        if (itCellUseList != m_state.m_cell_uselist.end()) {
+        const auto itCellUseList = m_state.m_uselistCell.find(fullName);
+        if (itCellUseList != m_state.m_uselistCell.end()) {
             for (auto const& u : itCellUseList->second) {
                 foundp = findModuleLibSym(u.second, u.first);
                 if (foundp) return foundp;
             }
         }
         // Then search cell-specific library list
-        const auto itCellLibList = m_state.m_cell_liblist.find(fullName);
-        if (itCellLibList != m_state.m_cell_liblist.end()) {
+        const auto itCellLibList = m_state.m_liblistCell.find(fullName);
+        if (itCellLibList != m_state.m_liblistCell.end()) {
             for (auto const& l : itCellLibList->second) {
                 foundp = findModuleLibSym(modName, l);
                 if (foundp) return foundp;
             }
         }
         // Then search IEEE config default liblist
-        for (auto const& l : m_state.m_default_liblist) {
+        for (auto const& l : m_state.m_liblistDefault) {
             foundp = findModuleLibSym(modName, l);
             if (foundp) return foundp;
         }
