@@ -488,7 +488,9 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
                               const std::vector<const AstSenTree*>& senTreeps,  //
                               const string& name,  //
                               const ExtraTriggers& extraTriggers,  //
-                              bool slow) {
+                              bool slow,
+                              bool noAcc  //
+) {
     // Need to gather all the unique SenItems under the given SenTrees
 
     // List of unique SenItems used by all 'senTreeps'
@@ -617,7 +619,11 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
             AstNodeExpr* const wordp = new AstArraySel{flp, wr(kit.m_vscp), wrdIndex};
             AstNodeExpr* const lhsp = new AstSel{flp, wordp, bitIndex, 1};
             AstNodeExpr* const rhsp = new AstConst{flp, AstConst::BitTrue{}};
-            initFuncp->addStmtsp(new AstAssign{flp, lhsp, rhsp});
+            if (noAcc) {
+                initialTrigsp = AstNode::addNext(initialTrigsp, new AstAssign{flp, lhsp, rhsp});
+            } else {
+                initFuncp->addStmtsp(new AstAssign{flp, lhsp, rhsp});
+            }
         }
 
         // Add a debug statement for this trigger
