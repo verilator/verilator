@@ -9,3 +9,7 @@
 sc_bv -module "t" -var "ibv1_vlt"
 sc_bv -module "*" -var "ibv16_vlt"
 sc_bv -module "*" -var "obv*_vlt"
+
+sc_biguint -module "t" -var "ibu1_vlt"
+sc_biguint -module "*" -var "ibu16_vlt"
+sc_biguint -module "*" -var "obu*_vlt"

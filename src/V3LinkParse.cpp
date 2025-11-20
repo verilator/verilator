@@ -478,6 +478,10 @@ class LinkParseVisitor final : public VNVisitor {
                 m_varp->attrSplitVar(true);
             }
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        } else if (nodep->attrType() == VAttrType::VAR_SC_BIGUINT) {
+            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
+            m_varp->attrScBigUint(true);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (nodep->attrType() == VAttrType::VAR_SC_BV) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrScBv(true);

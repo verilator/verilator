@@ -518,6 +518,8 @@ bool AstVar::isScUintBool() const {
     return (isSc() && v3Global.opt.pinsScUintBool() && width() == 1);
 }
 bool AstVar::isScBigUint() const {
+    // Pragma has the highest priority
+    if (m_attrScBigUint) return true;
     return ((isSc() && v3Global.opt.pinsScBigUint() && width() >= 65 && width() <= 512)
             && !isScBv());
 }

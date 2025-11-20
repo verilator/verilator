@@ -1845,6 +1845,7 @@ class AstVar final : public AstNode {
     bool m_funcLocalSticky : 1;  // As m_funcLocal but remains set if var is moved to a static
     bool m_funcReturn : 1;  // Return variable for a function
     bool m_attrScBv : 1;  // User force bit vector attribute
+    bool m_attrScBigUint : 1;  // User force sc_biguint attribute
     bool m_attrIsolateAssign : 1;  // User isolate_assignments attribute
     bool m_attrSFormat : 1;  // User sformat attribute
     bool m_attrSplitVar : 1;  // declared with split_var metacomment
@@ -1895,6 +1896,7 @@ class AstVar final : public AstNode {
         m_funcLocalSticky = false;
         m_funcReturn = false;
         m_attrScBv = false;
+        m_attrScBigUint = false;
         m_attrIsolateAssign = false;
         m_attrSFormat = false;
         m_attrSplitVar = false;
@@ -2025,6 +2027,7 @@ public:
     void sensIfacep(AstIface* nodep) { m_sensIfacep = nodep; }
     void attrFileDescr(bool flag) { m_fileDescr = flag; }
     void attrScBv(bool flag) { m_attrScBv = flag; }
+    void attrScBigUint(bool flag) { m_attrScBigUint = flag; }
     void attrIsolateAssign(bool flag) { m_attrIsolateAssign = flag; }
     void attrSFormat(bool flag) { m_attrSFormat = flag; }
     void attrSplitVar(bool flag) { m_attrSplitVar = flag; }
@@ -2167,6 +2170,7 @@ public:
     bool isPullup() const { return m_isPullup; }
     bool isPulldown() const { return m_isPulldown; }
     bool attrScBv() const { return m_attrScBv; }
+    bool attrScBigUint() const { return m_attrScBigUint; }
     bool attrFileDescr() const { return m_fileDescr; }
     bool attrSFormat() const { return m_attrSFormat; }
     bool attrSplitVar() const { return m_attrSplitVar; }

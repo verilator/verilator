@@ -546,6 +546,15 @@ or "`ifdef`"'s may break other tools.
 
    Terminates the previous `/*verilator public*_on*/` directive; see above.
 
+.. option:: /*verilator&32;sc_biguint*/
+
+   Used after a port declaration.  It sets the port to be of
+   :code:`sc_biguint<{width}>` type, for signals of any width.
+   This may be useful if the port width is parameterized and the
+   instantiating C++ code always wants to have a sc_biguint accept any width.
+   In general, you should avoid using this attribute when unnecessary, as
+   the performance decreases significantly with increasing usage of sc_biguint.
+
 .. option:: /*verilator&32;sc_bv*/
 
    Used after a port declaration.  It sets the port to be of
