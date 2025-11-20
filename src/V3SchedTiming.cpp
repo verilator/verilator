@@ -139,36 +139,6 @@ AstCCall* TimingKit::createSetReady(AstNetlist* const netlistp) {
                 scopeTopp->addBlocksp(m_setReadyp);
             }
 
-            // There is a somewhat complicate dance here. Given a suspendable
-            // process of the form:
-            //    ->evntA;
-            //    $display("Fired evntA");
-            //    @(evntA or evntB);
-            // The firing of the event cannot trigger the event control
-            // following it, as the process is not yet sensitive to the event
-            // when it fires (same applies for change detects). The way the
-            // scheduling works, the @evnt will suspend the process before
-            // the firing of the event is recognized on the next iteration of
-            // the 'act' loop, and hence could incorrectly resume the @evnt
-            // statement. To make this work, whenever a process suspends, it
-            // goes into an "uncommitted" state, so it cannot be resumed
-            // immediately on the next iteration of the 'act' loop, which is
-            // what we want. The question then is, when should the suspended
-            // process be "committed" and hence possible to be resumed. This is
-            // done when it is know for sure the suspending expression was not
-            // triggered on the current iteration of the 'act' loop. With
-            // multiple events in the suspending expression, all events need
-            // to be not triggered to safely commit the suspended process.
-            //
-            // This is is consistent with IEEE scheduling semantics, and
-            // behaves as if the above was executed as:
-            //    ->evntA;
-            //    $display("Fired evnt");
-            //    ... all other statements in the 'act' loop that might fire evntA or evntB ...
-            //    @(evntA or evntB);
-            // which is a valid execution. Race conditions be fun to debug,
-            // but they are a responsibility of the user.
-
             AstSenTree* const senTreep = activep->sentreep();
             FileLine* const flp = senTreep->fileline();
 
