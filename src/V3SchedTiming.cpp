@@ -114,7 +114,7 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
 }
 
 //============================================================================
-// Creates a timing commit call (if needed, else returns null)
+// Creates a timing setReady call (if needed, else returns null)
 
 AstCCall* TimingKit::createSetReady(AstNetlist* const netlistp) {
     if (!m_setReadyp) {
@@ -184,7 +184,7 @@ AstCCall* TimingKit::createSetReady(AstNetlist* const netlistp) {
             if (resumep->pinsp()) callp->addPinsp(resumep->pinsp()->cloneTree(false));
             ifp->addThensp(callp->makeStmt());
         }
-        // We still haven't created a commit function (no trigger schedulers), return null
+        // We still haven't created a setReady function (no trigger schedulers), return null
         if (!m_setReadyp) return nullptr;
     }
     AstCCall* const callp = new AstCCall{m_setReadyp->fileline(), m_setReadyp};
