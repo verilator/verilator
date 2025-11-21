@@ -935,7 +935,6 @@ public:
             for (const auto& triggersToTrees : usedTrigsToUsingTrees) {
                 const size_t word = triggersToTrees.first;
 
-                AstNodeStmt* stmtsp = nullptr;
                 for (const auto& bitsToTrees : triggersToTrees.second) {
                     const size_t bit = bitsToTrees.first;
                     const auto& schedulers = bitsToTrees.second;
@@ -956,40 +955,24 @@ public:
                         callp->addPinsp(new AstVarRef{flp, argpVscp, VAccess::READ});
                         ifp->addThensp(callp->makeStmt());
                     }
-                    stmtsp = AstNode::addNext(stmtsp, ifp);
+                    funcp->addStmtsp(ifp);
                 }
-                AstVarScope* const vscAccp = m_trigKit.vscAccp();
-                // Add to accumulator
-                stmtsp = AstNode::addNext(
-                    stmtsp, new AstAssign{flp, getIdx(vscAccp, VAccess::WRITE, word),
-                                          new AstOr{flp, getIdx(vscAccp, VAccess::READ, word),
-                                                    getIdx(vscp, VAccess::READ, word)}});
-                // Clear touched values
-                stmtsp = AstNode::addNext(
-                    stmtsp, new AstAssign{flp, getIdx(vscp, VAccess::WRITE, word),
-                                          new AstConst{flp, AstConst::Unsized64{}, 0}});
+            }
 
-                // If we assume that probability of triggering an arbitrary trigger before awaiting
-                // for it in the same routine is 30% or less there is a certain range withtin which
-                // it is worth to put an `if` that checks if whole word in trigger vector is non
-                // zero
-                constexpr double triggerFiredProb = 0.3;
-                constexpr double triggerNotFiredProb = 1.0 - triggerFiredProb;
-                const double anyNotFiredProb
-                    = std::pow(triggerNotFiredProb, triggersToTrees.second.size());
+            AstVarScope* const vscAccp = m_trigKit.vscAccp();
+            // Add touched values to accumulator
+            for (const auto& triggersToTrees : usedTrigsToUsingTrees) {
+                const size_t word = triggersToTrees.first;
+                funcp->addStmtsp(new AstAssign{flp, getIdx(vscAccp, VAccess::WRITE, word),
+                                               new AstOr{flp, getIdx(vscAccp, VAccess::READ, word),
+                                                         getIdx(vscp, VAccess::READ, word)}});
+            }
 
-                const double ifCountDouble = static_cast<double>(triggersToTrees.second.size());
-                const double averageCountOfIfChecksWithGuard
-                    = anyNotFiredProb + (1.0 - anyNotFiredProb) * (ifCountDouble + 1.0);
-
-                // TODO: When bumped to C++17 or greater below code could be under `if constexpr`
-                // since, if `triggerFiredProb` is 31% or more `if` below will never enter
-                // `then` branch
-                if (averageCountOfIfChecksWithGuard < ifCountDouble) {
-                    funcp->addStmtsp(new AstIf{flp, getIdx(vscp, VAccess::READ, word), stmtsp});
-                } else {
-                    funcp->addStmtsp(stmtsp);
-                }
+            // Clear touched values
+            for (const auto& triggersToTrees : usedTrigsToUsingTrees) {
+                const size_t word = triggersToTrees.first;
+                funcp->addStmtsp(new AstAssign{flp, getIdx(vscp, VAccess::WRITE, word),
+                                               new AstConst{flp, AstConst::Unsized64{}, 0}});
             }
         }
     }
