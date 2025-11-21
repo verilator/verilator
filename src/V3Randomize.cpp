@@ -176,7 +176,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
             } else if (const AstMemberSel* const memberselp = VN_CAST(exprp, MemberSel)) {
                 if (memberselp->varp() == varp) return true;
             } else if (const AstArraySel* const arrselp = VN_CAST(exprp, ArraySel)) {
-                if (arrselp->fromp()->dtypep() == varp->dtypep()) return true;
+                // if (arrselp->fromp()->dtypep() == varp->dtypep()) return true;
+                if (VN_AS(arrselp->fromp(), VarRef)->varp() == varp) return true;
             }
         }
         return false;
@@ -1429,6 +1430,7 @@ class CaptureVisitor final : public VNVisitor {
 
     AstVar* getVar(AstVar* const varp) const {
         const auto it = m_varCloneMap.find(varp);
+        if(it->second->origName().rfind("__Varg",0)==0) return nullptr;
         if (it == m_varCloneMap.end()) return nullptr;
         return it->second;
     }
@@ -1588,7 +1590,11 @@ public:
                     // Keeping classOrPackagep will cause a broken link after inlining
                     varrefp->classOrPackagep(nullptr);
                 }
-                funcp->addStmtsp(getVar(varrefp->varp()));
+                // funcp->addStmtsp(getVar(varrefp->varp()));
+                if(!getVar(varrefp->varp())) {
+
+                }
+
             } else {
                 UASSERT_OBJ(VN_IS(argp->exprp(), ThisRef), argp->exprp(), "Wrong arg expression");
                 funcp->addStmtsp(m_thisp);
@@ -2628,8 +2634,13 @@ class RandomizeVisitor final : public VNVisitor {
                     = new AstVar{exprp->fileline(), VVarType::MEMBER,
                                  "__Varg"s + std::to_string(++argn), exprp->dtypep()};
                 withp->foreach([&](AstNodeExpr* exp) {
-                    if (exp->dtypep() == argp->exprp()->dtypep()) {
-                        AstVarRef* const replaceVar
+                    // if (exp->isSame(exprp)) {
+                    // if (exp->dtypep()==exprp->dtypep()) {
+                    if( (VN_IS(exprp,VarRef)&&VN_IS(exp,VarRef))?(VN_AS(exp,VarRef)->varp()==VN_AS(exprp,VarRef)->varp()):
+                        ((VN_IS(exprp,MemberSel)&&VN_IS(exp,MemberSel))?(exp->op1p()->op1p()==exprp->op1p()->op1p()):(0))){
+                    // if ((VN_IS(exp,VarRef)&&VN_IS(exprp,VarRef))?(VN_AS(exp,VarRef)->varp()==VN_AS(exprp,VarRef)->varp()):
+                    //     ((VN_IS(exp,MemberSel)&&VN_IS(exprp,MemberSel))?(VN_AS(exp,MemberSel)->varp()==VN_AS(exprp,MemberSel)->varp()):0)){
+                    AstVarRef* const replaceVar
                             = new AstVarRef{exprp->fileline(), refvarp, VAccess::READWRITE};
                         exp->replaceWith(replaceVar);
                         replaceVar->user1(exp->user1());
@@ -2661,9 +2672,9 @@ class RandomizeVisitor final : public VNVisitor {
             }
             if (withp) {
                 FileLine* const fl = nodep->fileline();
-                // withCapturep
-                // = std::make_unique<CaptureVisitor>(withp->exprp(), m_modp, nullptr);
-                // withCapturep->addFunctionArguments(randomizeFuncp);
+                withCapturep
+                = std::make_unique<CaptureVisitor>(withp->exprp(), m_modp, nullptr);
+                withCapturep->addFunctionArguments(randomizeFuncp);
                 // Clear old constraints and variables for std::randomize with clause
                 if (stdrand) {
                     randomizeFuncp->addStmtsp(
@@ -2700,6 +2711,7 @@ class RandomizeVisitor final : public VNVisitor {
             nodep->dtypeFrom(randomizeFuncp->dtypep());
             if (VN_IS(m_modp, Class)) nodep->classOrPackagep(m_modp);
             if (withCapturep) nodep->addPinsp(withCapturep->getArgs());
+            withCapturep->getArgs()->dumpTreeJson(cout);
             UINFOTREE(9, nodep, "", "std::rnd-call");
             UINFOTREE(9, randomizeFuncp, "", "std::rnd-func");
             return;
