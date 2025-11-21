@@ -1430,7 +1430,7 @@ class CaptureVisitor final : public VNVisitor {
 
     AstVar* getVar(AstVar* const varp) const {
         const auto it = m_varCloneMap.find(varp);
-        if(it->second->origName().rfind("__Varg",0)==0) return nullptr;
+        if (it->second->origName().rfind("__Varg", 0) == 0) return nullptr;
         if (it == m_varCloneMap.end()) return nullptr;
         return it->second;
     }
@@ -1502,7 +1502,7 @@ class CaptureVisitor final : public VNVisitor {
         if (m_ignore.count(nodep)) return;
         m_ignore.emplace(nodep);
         UASSERT_OBJ(nodep->varp(), nodep, "Variable unlinked");
-        if(nodep->varp()->origName().rfind("__Varg",0)==0) return;
+        if (nodep->varp()->origName().rfind("__Varg", 0) == 0) return;
         CaptureMode capMode = getVarRefCaptureMode(nodep);
         if (mode(capMode) == CaptureMode::CAP_NO) return;
         if (mode(capMode) == CaptureMode::CAP_VALUE) captureRefByValue(nodep, capMode);
@@ -2631,9 +2631,17 @@ class RandomizeVisitor final : public VNVisitor {
                     = new AstVar{exprp->fileline(), VVarType::MEMBER,
                                  "__Varg"s + std::to_string(++argn), exprp->dtypep()};
                 withp->foreach([&](AstNodeExpr* exp) {
-                    if( (VN_IS(exprp,VarRef)&&VN_IS(exp,VarRef))?(VN_AS(exp,VarRef)->varp()==VN_AS(exprp,VarRef)->varp()):
-                        ((VN_IS(exprp,MemberSel)&&VN_IS(exp,MemberSel))?(exp->op1p()->op1p()==exprp->op1p()->op1p())&&(VN_AS(exp, MemberSel)->varp()==VN_AS(exprp,MemberSel)->varp()):
-                        ((VN_IS(exprp,ArraySel)&&VN_IS(exp,ArraySel)))?((exprp->op1p()->op1p()==exp->op1p()->op1p())&& (VN_AS(exprp->op2p()->op1p(),VarRef)->varp()==VN_AS(exp->op2p()->op1p(),VarRef)->varp()) ):(0))){
+                    if ((VN_IS(exprp, VarRef) && VN_IS(exp, VarRef))
+                            ? (VN_AS(exp, VarRef)->varp() == VN_AS(exprp, VarRef)->varp())
+                            : ((VN_IS(exprp, MemberSel) && VN_IS(exp, MemberSel))
+                                   ? (exp->op1p()->op1p() == exprp->op1p()->op1p())
+                                         && (VN_AS(exp, MemberSel)->varp()
+                                             == VN_AS(exprp, MemberSel)->varp())
+                               : ((VN_IS(exprp, ArraySel) && VN_IS(exp, ArraySel)))
+                                   ? ((exprp->op1p()->op1p() == exp->op1p()->op1p())
+                                      && (VN_AS(exprp->op2p()->op1p(), VarRef)->varp()
+                                          == VN_AS(exp->op2p()->op1p(), VarRef)->varp()))
+                                   : (0))) {
                         AstVarRef* const replaceVar
                             = new AstVarRef{exprp->fileline(), refvarp, VAccess::READWRITE};
                         exp->replaceWith(replaceVar);
@@ -2666,8 +2674,7 @@ class RandomizeVisitor final : public VNVisitor {
             }
             if (withp) {
                 FileLine* const fl = nodep->fileline();
-                withCapturep
-                = std::make_unique<CaptureVisitor>(withp->exprp(), m_modp, nullptr);
+                withCapturep = std::make_unique<CaptureVisitor>(withp->exprp(), m_modp, nullptr);
                 withCapturep->addFunctionArguments(randomizeFuncp);
                 // Clear old constraints and variables for std::randomize with clause
                 if (stdrand) {
@@ -2706,8 +2713,10 @@ class RandomizeVisitor final : public VNVisitor {
             if (VN_IS(m_modp, Class)) nodep->classOrPackagep(m_modp);
             if (withCapturep) nodep->addPinsp(withCapturep->getArgs());
 
-            //  for (AstArg* argp = withCapturep->getArgs(); argp; argp = VN_AS(argp->nextp(), Arg)){
-            //     if(VN_IS(argp->exprp(),VarRef) && VN_AS(argp->exprp(),VarRef)->varp()->origName().rfind("__Varg",0)!=0)
+            //  for (AstArg* argp = withCapturep->getArgs(); argp; argp = VN_AS(argp->nextp(),
+            //  Arg)){
+            //     if(VN_IS(argp->exprp(),VarRef) &&
+            //     VN_AS(argp->exprp(),VarRef)->varp()->origName().rfind("__Varg",0)!=0)
             //     nodep->addPinsp(argp->cloneTreePure(false));
             //  }
             UINFOTREE(9, nodep, "", "std::rnd-call");
