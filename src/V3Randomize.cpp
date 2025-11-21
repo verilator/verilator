@@ -2630,7 +2630,9 @@ class RandomizeVisitor final : public VNVisitor {
                 AstVar* const refvarp
                     = new AstVar{exprp->fileline(), VVarType::MEMBER,
                                  "__Varg"s + std::to_string(++argn), exprp->dtypep()};
-                withp->foreach([&](AstNodeExpr* exp) {
+                
+                if(withp){
+                    withp->foreach([&](AstNodeExpr* exp) {
                     if ((VN_IS(exprp, VarRef) && VN_IS(exp, VarRef))
                             ? (VN_AS(exp, VarRef)->varp() == VN_AS(exprp, VarRef)->varp())
                             : ((VN_IS(exprp, MemberSel) && VN_IS(exp, MemberSel))
@@ -2650,6 +2652,7 @@ class RandomizeVisitor final : public VNVisitor {
                         pushDeletep(exp);
                     }
                 });
+                }
                 refvarp->direction(VDirection::REF);
                 refvarp->funcLocal(true);
                 refvarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
