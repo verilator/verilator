@@ -1590,11 +1590,7 @@ public:
                     // Keeping classOrPackagep will cause a broken link after inlining
                     varrefp->classOrPackagep(nullptr);
                 }
-                // funcp->addStmtsp(getVar(varrefp->varp()));
-                if(!getVar(varrefp->varp())) {
-
-                }
-
+                funcp->addStmtsp(getVar(varrefp->varp()));
             } else {
                 UASSERT_OBJ(VN_IS(argp->exprp(), ThisRef), argp->exprp(), "Wrong arg expression");
                 funcp->addStmtsp(m_thisp);
@@ -2638,9 +2634,7 @@ class RandomizeVisitor final : public VNVisitor {
                     // if (exp->dtypep()==exprp->dtypep()) {
                     if( (VN_IS(exprp,VarRef)&&VN_IS(exp,VarRef))?(VN_AS(exp,VarRef)->varp()==VN_AS(exprp,VarRef)->varp()):
                         ((VN_IS(exprp,MemberSel)&&VN_IS(exp,MemberSel))?(exp->op1p()->op1p()==exprp->op1p()->op1p()):(0))){
-                    // if ((VN_IS(exp,VarRef)&&VN_IS(exprp,VarRef))?(VN_AS(exp,VarRef)->varp()==VN_AS(exprp,VarRef)->varp()):
-                    //     ((VN_IS(exp,MemberSel)&&VN_IS(exprp,MemberSel))?(VN_AS(exp,MemberSel)->varp()==VN_AS(exprp,MemberSel)->varp()):0)){
-                    AstVarRef* const replaceVar
+                        AstVarRef* const replaceVar
                             = new AstVarRef{exprp->fileline(), refvarp, VAccess::READWRITE};
                         exp->replaceWith(replaceVar);
                         replaceVar->user1(exp->user1());
@@ -2699,9 +2693,9 @@ class RandomizeVisitor final : public VNVisitor {
             // Remove With nodes from pins as they have been processed
             for (AstNode* pinp = nodep->pinsp(); pinp;) {
                 AstNode* const nextp = pinp->nextp();
-                if (VN_IS(pinp, With)) {
+                // if (VN_IS(pinp, With)) {
                     VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
-                }
+                // }
                 pinp = nextp;
             }
             // if(withp)VL_DO_DANGLING(withp, withp);
@@ -2711,7 +2705,11 @@ class RandomizeVisitor final : public VNVisitor {
             nodep->dtypeFrom(randomizeFuncp->dtypep());
             if (VN_IS(m_modp, Class)) nodep->classOrPackagep(m_modp);
             if (withCapturep) nodep->addPinsp(withCapturep->getArgs());
-            withCapturep->getArgs()->dumpTreeJson(cout);
+
+            //  for (AstArg* argp = withCapturep->getArgs(); argp; argp = VN_AS(argp->nextp(), Arg)){
+            //     if(VN_IS(argp->exprp(),VarRef) && VN_AS(argp->exprp(),VarRef)->varp()->origName().rfind("__Varg",0)!=0)
+            //     nodep->addPinsp(argp->cloneTreePure(false));
+            //  }
             UINFOTREE(9, nodep, "", "std::rnd-call");
             UINFOTREE(9, randomizeFuncp, "", "std::rnd-func");
             return;
