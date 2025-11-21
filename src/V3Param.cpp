@@ -1088,6 +1088,10 @@ class ParamProcessor final {
             relinkPinsByName(pinsp, paramedModp);
             newModp = paramedModp;
             // any_overrides = true;  // Unused later, so not needed
+
+            const bool cloned = (newModp != srcModp);
+            UINFO(3, "[param-debug] module clone src=" << srcModp << " new=" << newModp << " name=" << newModp->name() << " from cell=" << nodep << " cellName=" << nodep->name() << " cloned=" << cloned);
+
         } else if (!any_overrides) {
             UINFO(8, "Cell parameters all match original values, skipping expansion.");
             // If it's the first use of the default instance, create a copy and store it in user3p.
@@ -1102,6 +1106,10 @@ class ParamProcessor final {
                 storeOriginalParams(nodeCopyp);
             }
             newModp = srcModp;
+
+            const bool cloned = (newModp != srcModp);
+            UINFO(3, "[param-debug] module clone src=" << srcModp << " new=" << newModp << " name=" << newModp->name() << " from cell=" << nodep << " cellName=" << nodep->name() << " cloned=" << cloned);
+
         } else {
             const string newname
                 = srcModp->hierBlock() ? longname : moduleCalcName(srcModp, longname);
@@ -1112,6 +1120,9 @@ class ParamProcessor final {
             relinkPinsByName(pinsp, modInfop->m_modp);
             UINFO(8, "     Done with " << modInfop->m_modp);
             newModp = modInfop->m_modp;
+
+            const bool cloned = (newModp != srcModp);
+            UINFO(3, "[param-debug] module clone src=" << srcModp << " new=" << newModp << " name=" << newModp->name() << " from cell=" << nodep << " cellName=" << nodep->name() << " cloned=" << cloned);
         }
         if (defaultsResolved) srcModp->user4p(newModp);
 
@@ -1130,6 +1141,26 @@ class ParamProcessor final {
                                    << " (IEEE 1800-2023 6.20.1): " << varp->prettyNameQ());
                 }
             }
+        }
+
+        if (debug() >= 3) {
+            struct RefScanVisitor final : VNVisitor {
+                AstNodeModule* const m_modp;
+                explicit RefScanVisitor(AstNodeModule* modp)
+                    : m_modp{modp} {}
+                void visit(AstRefDType* nodep) override {
+                    if (!nodep->name().empty()
+                        && (nodep->name() == "rq_t" || nodep->name() == "rs_t"
+                            || nodep->name() == "cfg_t")) {
+                        UINFO(3, "[param-debug] cloned ref name=" << nodep->name() << " ptr=" << nodep
+                                     << " module=" << m_modp << " modName="
+                                     << (m_modp ? m_modp->name() : "<null>")
+                                     << " user2=" << nodep->user2p() << " user3=" << nodep->user3());
+                    }
+                }
+                void visit(AstNode* nodep) override { iterateChildren(nodep); }
+            } visitor{newModp};
+            visitor.iterate(newModp);
         }
 
         genericInterfaceVarSetup(paramsp, pinsp);

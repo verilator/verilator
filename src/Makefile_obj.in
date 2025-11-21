@@ -291,6 +291,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3LifePost.o \
   V3LinkCells.o \
   V3LinkDot.o \
+  V3LinkDotIfaceCapture.o \
   V3LinkInc.o \
   V3LinkJump.o \
   V3LinkLValue.o \
