@@ -34,6 +34,7 @@ endclass
 module t_scope_std_randomize;
     bit [7:0] addr;
     bit [15:0] data;
+    int limit[10];
 
     function bit run();
         int ready;
@@ -74,6 +75,11 @@ module t_scope_std_randomize;
         ok = 0;
         ok = test.std_randomize();
         if (!ok) $stop;
+        foreach (limit[i]) begin
+            success = std::randomize(limit[i]) with { limit[i] < 100;};
+            ok = (success == 1) && (limit[i] < 100);
+            if (!ok) $stop;
+        end
 
         $write("*-* All Finished *-*\n");
         $finish;

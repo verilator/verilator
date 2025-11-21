@@ -538,15 +538,16 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     if (AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
                         randVarp = memberSelp->varp();
                         exprp = memberSelp->fromp();
-                    } else if (AstVarRef* varrefp = VN_CAST(exprp, VarRef)) {
-                        randVarp = varrefp->varp();
-                        exprp = nullptr;
-                        varrefp->user1(true);
                     } else {
-                        varrefp = VN_AS(VN_CAST(exprp, ArraySel)->fromp(), VarRef);
+                        AstVarRef* varrefp = nullptr;
+                        if (AstArraySel* const arraySelp = VN_CAST(exprp, ArraySel)) {
+                            varrefp = VN_AS(arraySelp->fromp(), VarRef);
+                            varrefp->access(VAccess::READWRITE);
+                        } else {
+                            varrefp = VN_AS(exprp, VarRef);
+                        }
                         randVarp = varrefp->varp();
                         varrefp->user1(true);
-                        varrefp->access(VAccess::READWRITE);
                         exprp = nullptr;
                     }
                     UASSERT_OBJ(randVarp, nodep, "No rand variable found");
