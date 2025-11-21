@@ -53,6 +53,7 @@
 #include "V3Const.h"
 #include "V3EmitV.h"
 #include "V3Hasher.h"
+#include "V3LinkDotIfaceCapture.h"
 #include "V3Os.h"
 #include "V3Parse.h"
 #include "V3Simulate.h"

@@ -6,18 +6,25 @@
 
 #include <unordered_map>
 
-namespace {
+namespace LinkDotIfaceCapture {
 
-using CapturedMap = std::unordered_map<const AstRefDType*, LinkDotIfaceCapture::CapturedIfaceTypedef>;
+const bool kDefaultEnabled = true;
 
-CapturedMap& capturedMap() {
-    static CapturedMap s_map;
-    return s_map;
+using CapturedMap
+    = std::unordered_map<const AstRefDType*, LinkDotIfaceCapture::CapturedIfaceTypedef>;
+
+static CapturedMap s_map;
+static bool s_enabled = kDefaultEnabled;
+
+CapturedMap& capturedMap() { return s_map; }
+bool& captureEnabled() { return s_enabled; }
+
+void enable(bool flag) {
+    captureEnabled() = flag;
+    if (!flag) capturedMap().clear();
 }
 
-}  // namespace
-
-namespace LinkDotIfaceCapture {
+bool enabled() { return captureEnabled(); }
 
 void reset() { capturedMap().clear(); }
 
@@ -61,5 +68,13 @@ bool replaceRef(const AstRefDType* oldRefp, AstRefDType* newRefp) {
 }
 
 std::size_t size() { return capturedMap().size(); }
+
+void propagateClone(const AstRefDType* origRefp, AstRefDType* newRefp) {
+    if (!origRefp || !newRefp) return;
+    const CapturedIfaceTypedef* const entry = find(origRefp);
+    if (!entry) return;
+    if (entry->cellp) newRefp->user2p(entry->cellp);
+    replaceRef(origRefp, newRefp);
+}
 
 }  // namespace LinkDotIfaceCapture

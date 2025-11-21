@@ -18,6 +18,9 @@ struct CapturedIfaceTypedef final {
     VSymEnt* ownerSymp = nullptr;
 };
 
+void enable(bool flag);
+bool enabled();
+
 void reset();
 void add(AstRefDType* refp, AstCell* cellp, VSymEnt* ownerSymp);
 void add(const CapturedIfaceTypedef& entry);
@@ -26,6 +29,8 @@ const CapturedIfaceTypedef* find(const AstRefDType* refp);
 void forEach(const std::function<void(const CapturedIfaceTypedef&)>& fn);
 bool replaceRef(const AstRefDType* oldRefp, AstRefDType* newRefp);
 std::size_t size();
+
+void propagateClone(const AstRefDType* origRefp, AstRefDType* newRefp);
 
 }  // namespace LinkDotIfaceCapture
 

@@ -73,6 +73,8 @@
 #include "V3String.h"
 #include "V3SymTable.h"
 
+#include "V3LinkDotIfaceCapture.h"
+
 #include <algorithm>
 #include <vector>
 
@@ -162,7 +164,6 @@ private:
     std::array<ScopeAliasMap, SAMN__MAX> m_scopeAliasMap;  // Map of <lhs,rhs> aliases
     std::vector<VSymEnt*> m_ifaceVarSyms;  // List of AstIfaceRefDType's to be imported
     IfaceModSyms m_ifaceModSyms;  // List of AstIface+Symbols to be processed
-    static std::vector<AstRefDType*> s_ifaceCapturedTypedefs; // Captured iface typedef refs
     const VLinkDotStep m_step;  // Operational step
 
 public:
@@ -216,8 +217,11 @@ public:
         s_errorThisp = this;
         V3Error::errorExitCb(preErrorDumpHandler);  // If get error, dump self
         if (forPrimary()) {
-            clearIfaceCapturedTypedefs();
-            UINFO(3, "[iface-debug] reset captured typedef list");
+            LinkDotIfaceCapture::enable(true);
+            if (LinkDotIfaceCapture::enabled()) {
+                LinkDotIfaceCapture::reset();
+                UINFO(3, "[iface-debug] reset captured typedef list");
+            }
         }
         readModNames();
     }
@@ -234,18 +238,16 @@ public:
     bool forPrearray() const { return m_step == LDS_PARAMED || m_step == LDS_PRIMARY; }
     bool forScopeCreation() const { return m_step == LDS_SCOPED; }
     void rememberIfaceCapturedTypedef(AstRefDType* refp) {
-        if (refp) s_ifaceCapturedTypedefs.push_back(refp);
+        if (!refp) return;
+        LinkDotIfaceCapture::add(refp, VN_CAST(refp->user2p(), Cell), nullptr);
     }
-    static const std::vector<AstRefDType*>& ifaceCapturedTypedefs() {
-        return s_ifaceCapturedTypedefs;
-    }
-    static void clearIfaceCapturedTypedefs() {
-        s_ifaceCapturedTypedefs.clear();
+    static void forEachCaptured(const std::function<void(AstRefDType*)>& fn) {
+        LinkDotIfaceCapture::forEach([&](const LinkDotIfaceCapture::CapturedIfaceTypedef& entry) {
+            if (fn) fn(entry.refp);
+        });
     }
     static bool isCapturedIfaceTypedef(const AstRefDType* refp) {
-        return refp
-               && std::find(s_ifaceCapturedTypedefs.begin(), s_ifaceCapturedTypedefs.end(), refp)
-                      != s_ifaceCapturedTypedefs.end();
+        return LinkDotIfaceCapture::contains(refp);
     }
     // METHODS
     static string nodeTextType(AstNode* nodep) {
@@ -880,7 +882,6 @@ public:
 };
 
 LinkDotState* LinkDotState::s_errorThisp = nullptr;
-std::vector<AstRefDType*> LinkDotState::s_ifaceCapturedTypedefs;
 
 //======================================================================
 
@@ -2553,7 +2554,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     LinkDotState* const m_statep;  // State, including dotted symbol table
     VSymEnt* m_curSymp = nullptr;  // SymEnt for current lookup point
     VSymEnt* m_modSymp = nullptr;  // SymEnt for current module
-    static constexpr bool kIfaceTypedefCaptureEnabled = true;
+    //static constexpr bool kIfaceTypedefCaptureEnabled = true;
     VSymEnt* m_pinSymp = nullptr;  // SymEnt for pin lookups
     VSymEnt* m_randSymp = nullptr;  // SymEnt for randomize target class's lookups
     const AstCell* m_cellp = nullptr;  // Current cell
@@ -2754,7 +2755,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (AstRefDType* const clonedRefp
             = VN_CAST(newTypep->childDTypep(), RefDType)) {
             clonedRefp->user2p(typedefRefp->user2p());
-            if (kIfaceTypedefCaptureEnabled && typedefRefp->user2p()) {
+            //if (kIfaceTypedefCaptureEnabled && typedefRefp->user2p()) {
+            if (LinkDotIfaceCapture::enabled() && typedefRefp->user2p()) {
                 UINFO(3, indent() << "[iface-debug] capture recorded owner var=" << varp->prettyName() << " typedef=" << typedefRefp << " cell=" << typedefRefp->user2p());
             }
         }
@@ -3491,10 +3493,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
             // Note m_ds.m_dotp remains nullptr; this is a reference not under a dot
         }
 
-        static constexpr bool kIfaceTypedefCaptureEnabled = true;
+        //static constexpr bool kIfaceTypedefCaptureEnabled = true;
         const auto captureIfaceTypedefContext
             = [&](AstRefDType* refp, const char* stageLabel) {
-                  if (!kIfaceTypedefCaptureEnabled || !refp) return;
+                  //if (!kIfaceTypedefCaptureEnabled || !refp) return;
+                  if (!LinkDotIfaceCapture::enabled() || !refp) return;
                   UINFO(3, indent() << "[iface-debug] capture request stage=" << stageLabel
                                      << " typedef=" << refp << " name=" << refp->name()
                                      << " dotPos=" << static_cast<int>(m_ds.m_dotPos)
@@ -3940,8 +3943,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
                       && VN_CAST(m_ds.m_dotSymp->nodep(), Cell)->modp()
                       && VN_IS(VN_CAST(m_ds.m_dotSymp->nodep(), Cell)->modp(), Iface);
                 ok = (m_ds.m_dotPos == DP_NONE || m_ds.m_dotPos == DP_SCOPE
-                      || (kIfaceTypedefCaptureEnabled && ifaceFinalSegmentAllowed));
-                if (kIfaceTypedefCaptureEnabled && ifaceFinalSegmentAllowed) {
+                      //|| (kIfaceTypedefCaptureEnabled && ifaceFinalSegmentAllowed));
+                      || (LinkDotIfaceCapture::enabled() && ifaceFinalSegmentAllowed));
+                //if (kIfaceTypedefCaptureEnabled && ifaceFinalSegmentAllowed) {
+                if (LinkDotIfaceCapture::enabled() && ifaceFinalSegmentAllowed) {
                     UINFO(3, indent() << "[iface-debug] allow final-segment typedef name="
                                        << nodep->name() << " dotText='" << m_ds.m_dotText
                                        << "' dotSym=" << m_ds.m_dotSymp);
@@ -5025,14 +5030,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                << " user2=" << nodep->user2p());
         }
         if (m_statep->forParamed() && nodep->user3()) {
-            if (kIfaceTypedefCaptureEnabled && nodep->user2p()) {
+            //if (kIfaceTypedefCaptureEnabled && nodep->user2p()) {
+            if (LinkDotIfaceCapture::enabled() && nodep->user2p()) {
                 UINFO(3, indent() << "[iface-debug] clear user3 for captured typedef name="
                                    << nodep->name() << " cell=" << nodep->user2p());
             }
             nodep->user3(false);
         }
         if (nodep->user3SetOnce()) {
-            if (kIfaceTypedefCaptureEnabled && nodep->user2p()) {
+            //if (kIfaceTypedefCaptureEnabled && nodep->user2p()) {
+            if (LinkDotIfaceCapture::enabled() && nodep->user2p()) {
                 UINFO(3, indent() << "[iface-debug] skip revisit name=" << nodep->name()
                                    << " already user3 and captured cell=" << nodep->user2p());
             }
@@ -5079,7 +5086,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
             VL_DO_DANGLING(pushDeletep(cpackagep->unlinkFrBack()), cpackagep);
         }
-        const bool ifaceCaptured = kIfaceTypedefCaptureEnabled && nodep->user2p();
+        //const bool ifaceCaptured = kIfaceTypedefCaptureEnabled && nodep->user2p();
+        const bool ifaceCaptured = LinkDotIfaceCapture::enabled() && nodep->user2p();
         AstCell* const capturedCellp = ifaceCaptured ? VN_CAST(nodep->user2p(), Cell) : nullptr;
         if (ifaceCaptured && m_statep->forParamed()) {
             UINFO(3, indent() << "[iface-debug] captured typedef name=" << nodep->name()
@@ -5332,16 +5340,17 @@ public:
         UINFO(4, __FUNCTION__ << ": ");
         if (m_statep->forParamed()) {
             size_t primedCount = 0;
-            for (AstRefDType* const refp : LinkDotState::ifaceCapturedTypedefs()) {
-                if (!refp) continue;
+            LinkDotState::forEachCaptured([&](AstRefDType* refp) {
+                if (!refp) return;
                 ++primedCount;
                 UINFO(3, indent() << "[iface-debug] prime typedef ptr=" << refp);
-                if (kIfaceTypedefCaptureEnabled && refp->user2p()) {
+                //if (kIfaceTypedefCaptureEnabled && refp->user2p()) {
+                if (LinkDotIfaceCapture::enabled() && refp->user2p()) {
                     UINFO(3, indent() << "[iface-debug] prime typedef revisit name="
                                        << refp->name() << " cell=" << refp->user2p());
                 }
                 refp->user3(false);
-            }
+            });
             UINFO(3, indent() << "[iface-debug] prime typedef total=" << primedCount);
         }
         iterate(rootp);
