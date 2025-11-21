@@ -1502,6 +1502,7 @@ class CaptureVisitor final : public VNVisitor {
         if (m_ignore.count(nodep)) return;
         m_ignore.emplace(nodep);
         UASSERT_OBJ(nodep->varp(), nodep, "Variable unlinked");
+        if(nodep->varp()->origName().rfind("__Varg",0)==0) return;
         CaptureMode capMode = getVarRefCaptureMode(nodep);
         if (mode(capMode) == CaptureMode::CAP_NO) return;
         if (mode(capMode) == CaptureMode::CAP_VALUE) captureRefByValue(nodep, capMode);
@@ -2630,10 +2631,9 @@ class RandomizeVisitor final : public VNVisitor {
                     = new AstVar{exprp->fileline(), VVarType::MEMBER,
                                  "__Varg"s + std::to_string(++argn), exprp->dtypep()};
                 withp->foreach([&](AstNodeExpr* exp) {
-                    // if (exp->isSame(exprp)) {
-                    // if (exp->dtypep()==exprp->dtypep()) {
                     if( (VN_IS(exprp,VarRef)&&VN_IS(exp,VarRef))?(VN_AS(exp,VarRef)->varp()==VN_AS(exprp,VarRef)->varp()):
-                        ((VN_IS(exprp,MemberSel)&&VN_IS(exp,MemberSel))?(exp->op1p()->op1p()==exprp->op1p()->op1p()):(0))){
+                        ((VN_IS(exprp,MemberSel)&&VN_IS(exp,MemberSel))?(exp->op1p()->op1p()==exprp->op1p()->op1p())&&(VN_AS(exp, MemberSel)->varp()==VN_AS(exprp,MemberSel)->varp()):
+                        ((VN_IS(exprp,ArraySel)&&VN_IS(exp,ArraySel)))?((exprp->op1p()->op1p()==exp->op1p()->op1p())&& (VN_AS(exprp->op2p()->op1p(),VarRef)->varp()==VN_AS(exp->op2p()->op1p(),VarRef)->varp()) ):(0))){
                         AstVarRef* const replaceVar
                             = new AstVarRef{exprp->fileline(), refvarp, VAccess::READWRITE};
                         exp->replaceWith(replaceVar);
@@ -2693,9 +2693,9 @@ class RandomizeVisitor final : public VNVisitor {
             // Remove With nodes from pins as they have been processed
             for (AstNode* pinp = nodep->pinsp(); pinp;) {
                 AstNode* const nextp = pinp->nextp();
-                // if (VN_IS(pinp, With)) {
+                if (VN_IS(pinp, With)) {
                     VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
-                // }
+                }
                 pinp = nextp;
             }
             // if(withp)VL_DO_DANGLING(withp, withp);
