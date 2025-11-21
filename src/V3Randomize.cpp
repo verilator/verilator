@@ -2630,28 +2630,28 @@ class RandomizeVisitor final : public VNVisitor {
                 AstVar* const refvarp
                     = new AstVar{exprp->fileline(), VVarType::MEMBER,
                                  "__Varg"s + std::to_string(++argn), exprp->dtypep()};
-                
-                if(withp){
+
+                if (withp) {
                     withp->foreach([&](AstNodeExpr* exp) {
-                    if ((VN_IS(exprp, VarRef) && VN_IS(exp, VarRef))
-                            ? (VN_AS(exp, VarRef)->varp() == VN_AS(exprp, VarRef)->varp())
-                            : ((VN_IS(exprp, MemberSel) && VN_IS(exp, MemberSel))
-                                   ? (exp->op1p()->op1p() == exprp->op1p()->op1p())
-                                         && (VN_AS(exp, MemberSel)->varp()
-                                             == VN_AS(exprp, MemberSel)->varp())
-                               : ((VN_IS(exprp, ArraySel) && VN_IS(exp, ArraySel)))
-                                   ? ((exprp->op1p()->op1p() == exp->op1p()->op1p())
-                                      && (VN_AS(exprp->op2p()->op1p(), VarRef)->varp()
-                                          == VN_AS(exp->op2p()->op1p(), VarRef)->varp()))
-                                   : (0))) {
-                        AstVarRef* const replaceVar
-                            = new AstVarRef{exprp->fileline(), refvarp, VAccess::READWRITE};
-                        exp->replaceWith(replaceVar);
-                        replaceVar->user1(exp->user1());
-                        replaceVar->varp()->user2p(m_modp);
-                        pushDeletep(exp);
-                    }
-                });
+                        if ((VN_IS(exprp, VarRef) && VN_IS(exp, VarRef))
+                                ? (VN_AS(exp, VarRef)->varp() == VN_AS(exprp, VarRef)->varp())
+                                : ((VN_IS(exprp, MemberSel) && VN_IS(exp, MemberSel))
+                                       ? (exp->op1p()->op1p() == exprp->op1p()->op1p())
+                                             && (VN_AS(exp, MemberSel)->varp()
+                                                 == VN_AS(exprp, MemberSel)->varp())
+                                   : ((VN_IS(exprp, ArraySel) && VN_IS(exp, ArraySel)))
+                                       ? ((exprp->op1p()->op1p() == exp->op1p()->op1p())
+                                          && (VN_AS(exprp->op2p()->op1p(), VarRef)->varp()
+                                              == VN_AS(exp->op2p()->op1p(), VarRef)->varp()))
+                                       : (0))) {
+                            AstVarRef* const replaceVar
+                                = new AstVarRef{exprp->fileline(), refvarp, VAccess::READWRITE};
+                            exp->replaceWith(replaceVar);
+                            replaceVar->user1(exp->user1());
+                            replaceVar->varp()->user2p(m_modp);
+                            pushDeletep(exp);
+                        }
+                    });
                 }
                 refvarp->direction(VDirection::REF);
                 refvarp->funcLocal(true);
