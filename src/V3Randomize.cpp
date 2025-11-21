@@ -900,7 +900,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             // Track this variable path as written
             if (isGlobalConstrained) m_writtenVars.insert(smtName);
             // For global constraints, delete nodep after processing
-            if (isGlobalConstrained) VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            if (isGlobalConstrained && !nodep->backp()) VL_DO_DANGLING(pushDeletep(nodep), nodep);
             AstCMethodHard* const methodp = new AstCMethodHard{
                 varp->fileline(),
                 new AstVarRef{varp->fileline(), VN_AS(m_genp->user2p(), NodeModule), m_genp,
@@ -958,7 +958,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             // Variable already written, clean up cloned membersel if any
             if (membersel) VL_DO_DANGLING(membersel->deleteTree(), membersel);
             // Delete nodep if it's a global constraint (not deleted yet)
-            if (isGlobalConstrained) VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            if (isGlobalConstrained && !nodep->backp()) VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
     void visit(AstCountOnes* nodep) override {
