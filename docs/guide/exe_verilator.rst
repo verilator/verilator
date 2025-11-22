@@ -2446,7 +2446,7 @@ The grammar of control commands is as follows:
 
    Sets the input/output signal to be of :code:`sc_biguint<{width}>` type.
    This metacomment works for signals of any width.
-   Same as :option:`/*verilator&32;sc_biguint*/`metacomment.
+   Same as :option:`/*verilator&32;sc_biguint*/` metacomment.
 
 .. option:: sc_bv -module "<modulename>" -var "<signame>"
 

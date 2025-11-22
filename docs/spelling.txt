@@ -324,6 +324,7 @@ PLI
 Palaniappan
 Patricio
 Petr
+Petrisko
 Piard
 Piechotka
 Piersall
@@ -362,6 +363,7 @@ Rolfe
 Rontionov
 Roodselaar
 Roshit
+Ruelas
 Rufer
 Runtime
 Ruud
@@ -822,6 +824,7 @@ len
 libc
 libext
 libgoogle
+liblist
 libsystemc
 libtcmalloc
 libverilated
