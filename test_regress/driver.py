@@ -2031,7 +2031,7 @@ class VlTest:
                         fh.write("    sc_signal<sc_dt::sc_uint<1>> clk;\n")
                     else:
                         fh.write("    sc_signal<bool> clk;\n")
-                fh.write("    sc_set_time_resolution(" + self.sc_time_resolution_multiplier +
+                fh.write("    sc_set_time_resolution(" + str(self.sc_time_resolution_multiplier) +
                          ", " + self.sc_time_resolution + ");\n")
                 fh.write("    sc_time sim_time(" + str(self.sim_time) + ", " +
                          self.sc_time_resolution + ");\n")
