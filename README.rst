@@ -4,19 +4,19 @@
 |badge1| |badge2| |badge3| |badge4| |badge5| |badge7| |badge8|
 
 .. |badge1| image:: https://img.shields.io/badge/Website-Verilator.org-181717.svg
-    :target: https://verilator.org
+   :target: https://verilator.org
 .. |badge2| image:: https://img.shields.io/badge/License-LGPL%20v3-blue.svg
-    :target: https://www.gnu.org/licenses/lgpl-3.0
+   :target: https://www.gnu.org/licenses/lgpl-3.0
 .. |badge3| image:: https://img.shields.io/badge/License-Artistic%202.0-0298c3.svg
-    :target: https://opensource.org/licenses/Artistic-2.0
+   :target: https://opensource.org/licenses/Artistic-2.0
 .. |badge4| image:: https://repology.org/badge/tiny-repos/verilator.svg?header=distro%20packages
-    :target: https://repology.org/project/verilator/versions
+   :target: https://repology.org/project/verilator/versions
 .. |badge5| image:: https://img.shields.io/docker/pulls/verilator/verilator
-    :target: https://hub.docker.com/r/verilator/verilator
+   :target: https://hub.docker.com/r/verilator/verilator
 .. |badge7| image:: https://github.com/verilator/verilator/workflows/build/badge.svg
-    :target: https://github.com/verilator/verilator/actions?query=workflow%3Abuild
+   :target: https://github.com/verilator/verilator/actions?query=workflow%3Abuild
 .. |badge8| image:: https://img.shields.io/github/actions/workflow/status/verilator/verilator/rtlmeter.yml?branch=master&event=schedule&label=benchmarks
-    :target: https://verilator.github.io/verilator-rtlmeter-results
+   :target: https://verilator.github.io/verilator-rtlmeter-results
 
 
 Welcome to Verilator
@@ -54,7 +54,7 @@ Welcome to Verilator
 What Verilator Does
 ===================
 
-Verilator is invoked with parameters similar to GCC or Synopsys's VCS.  It
+Verilator is invoked with parameters similar to GCC or Synopsys's VCS. It
 "Verilates" the specified Verilog or SystemVerilog code by reading it,
 performing lint checks, and optionally inserting assertion checks and
 coverage-analysis points. It outputs single- or multithreaded .cpp and .h
@@ -69,21 +69,21 @@ Verilated generated libraries, optionally encrypted, into other simulators.
 Verilator may not be the best choice if you are expecting a full-featured
 replacement for a closed-source Verilog simulator, need SDF annotation,
 mixed-signal simulation, or are doing a quick class project (we recommend
-`Icarus Verilog`_ for classwork).  However, if you are looking for a path
-to migrate SystemVerilog to C++/SystemC, or want high-speed simulation of
+`Icarus Verilog`_ for classwork). However, if you are looking for a path to
+migrate SystemVerilog to C++/SystemC, or want high-speed simulation of
 designs, Verilator is the tool for you.
 
 
 Performance
 ===========
 
-Verilator does not directly translate Verilog HDL to C++ or SystemC. Rather,
-Verilator compiles your code into a much faster optimized and optionally
-thread-partitioned model, which is in turn wrapped inside a C++/SystemC
-module. The results are a compiled Verilog model that executes even on a
-single thread over 10x faster than standalone SystemC, and on a single
-thread is about 100 times faster than interpreted Verilog simulators such
-as `Icarus Verilog`_. Another 2-10x speedup might be gained from
+Verilator does not directly translate Verilog HDL to C++ or SystemC.
+Rather, Verilator compiles your code into a much faster optimized and
+optionally thread-partitioned model, which is in turn wrapped inside a
+C++/SystemC module. The results are a compiled Verilog model that executes
+even on a single thread over 10x faster than standalone SystemC, and on a
+single thread is about 100 times faster than interpreted Verilog simulators
+such as `Icarus Verilog`_. Another 2-10x speedup might be gained from
 multithreading (yielding 200-1000x total over interpreted simulators).
 
 Verilator has typically similar or better performance versus closed-source
@@ -101,8 +101,8 @@ For more information:
 - `Verilator installation and package directory structure
   <https://verilator.org/install>`_
 
-- `Verilator manual (HTML) <https://verilator.org/verilator_doc.html>`_,
-  or `Verilator manual (PDF) <https://verilator.org/verilator_doc.pdf>`_
+- `Verilator manual (HTML) <https://verilator.org/verilator_doc.html>`_, or
+  `Verilator manual (PDF) <https://verilator.org/verilator_doc.pdf>`_
 
 - `Subscribe to Verilator announcements
   <https://github.com/verilator/verilator-announce>`_

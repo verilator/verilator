@@ -10,11 +10,10 @@
 Introduction
 ============
 
-This file discusses internal and programming details for Verilator. It's
-a reference for developers and debugging problems.
+This file discusses internal and programming details for Verilator. It's a
+reference for developers and debugging problems.
 
-See also the Verilator internals presentation at
-https://www.veripool.org.
+See also the Verilator internals presentation at https://www.veripool.org.
 
 
 Code Flows
@@ -27,53 +26,50 @@ Verilator Flow
 The main flow of Verilator can be followed by reading the Verilator.cpp
 ``process()`` function:
 
-1.  First, the files specified on the command line are read. Reading
-    involves preprocessing, then lexical analysis with Flex and parsing
-    with Bison. This produces an abstract syntax tree (AST)
-    representation of the design, which is what is visible in the .tree
-    files described below.
+#. First, the files specified on the command line are read. Reading
+   involves preprocessing, then lexical analysis with Flex and parsing with
+   Bison. This produces an abstract syntax tree (AST) representation of the
+   design, which is what is visible in the .tree files described below.
 
-2.  Verilator then makes a series of passes over the AST, progressively
-    refining and optimizing it.
+#. Verilator then makes a series of passes over the AST, progressively
+   refining and optimizing it.
 
-3.  Cells in the AST first linked, which will read and parse additional
-    files as above.
+#. Cells in the AST first linked, which will read and parse additional
+   files as above.
 
-4.  Functions, variable, and other references are linked to their
-    definitions.
+#. Functions, variable, and other references are linked to their
+   definitions.
 
-5.  Parameters are resolved, and the design is elaborated.
+#. Parameters are resolved, and the design is elaborated.
 
-6.  Verilator then performs additional edits and optimizations on
-    the hierarchical design. This includes coverage, assertions, X
-    elimination, inlining, constant propagation, and dead code
-    elimination.
+#. Verilator then performs additional edits and optimizations on the
+   hierarchical design. This includes coverage, assertions, X elimination,
+   inlining, constant propagation, and dead code elimination.
 
-7.  References in the design are then pseudo-flattened. Each module's
-    variables and functions get "Scope" references. A scope reference is
-    an occurrence of that un-flattened variable in the flattened
-    hierarchy. A module that occurs only once in the hierarchy will have
-    a single scope and single VarScope for each variable. A module that
-    occurs twice will have a scope for each occurrence, and two
-    VarScopes for each variable. This allows optimizations to proceed
-    across the flattened design while still preserving the hierarchy.
+#. References in the design are then pseudo-flattened. Each module's
+   variables and functions get "Scope" references. A scope reference is an
+   occurrence of that un-flattened variable in the flattened hierarchy. A
+   module that occurs only once in the hierarchy will have a single scope
+   and single VarScope for each variable. A module that occurs twice will
+   have a scope for each occurrence, and two VarScopes for each variable.
+   This allows optimizations to proceed across the flattened design while
+   still preserving the hierarchy.
 
-8.  Additional edits and optimizations proceed on the pseudo-flat
-    design. These include module references, function inlining, loop
-    unrolling, variable lifetime analysis, lookup table creation, always
-    splitting, and logic gate simplifications (pushing inverters, etc.).
+#. Additional edits and optimizations proceed on the pseudo-flat design.
+   These include module references, function inlining, loop unrolling,
+   variable lifetime analysis, lookup table creation, always splitting, and
+   logic gate simplifications (pushing inverters, etc.).
 
-9.  Verilator orders the code. Best case, this results in a single
-    "eval" function, which has all always statements flowing from top to
-    bottom with no loops.
+#. Verilator orders the code. Best case, this results in a single "eval"
+   function, which has all always statements flowing from top to bottom
+   with no loops.
 
-10. Verilator mostly removes the flattening, so that code may be shared
-    between multiple invocations of the same module. It localizes
-    variables, combines identical functions, expands macros to C
-    primitives, adds branch prediction hints, and performs additional
-    constant propagation.
+#. Verilator mostly removes the flattening, so that code may be shared
+   between multiple invocations of the same module. It localizes variables,
+   combines identical functions, expands macros to C primitives, adds
+   branch prediction hints, and performs additional constant propagation.
 
-11. Verilator finally writes the C++ modules.
+#. Verilator finally writes the C++ modules.
 
 
 Key Classes Used in the Verilator Flow
@@ -96,11 +92,12 @@ this.
 Each ``AstNode`` has pointers to up to four children, accessed by the
 ``op1p`` through ``op4p`` methods. These methods are then abstracted in a
 specific Ast\* node class to a more specific name. For example, with the
-``AstIf`` node (for ``if`` statements), ``thensp`` calls ``op2p`` to give the
-pointer to the AST for the "then" block, while ``elsesp`` calls ``op3p`` to
-give the pointer to the AST for the "else" block, or NULL if there is not
-one. These accessors are automatically generated by ``astgen`` after
-parsing the ``@astgen`` directives in the specific ``AstNode`` subclasses.
+``AstIf`` node (for ``if`` statements), ``thensp`` calls ``op2p`` to give
+the pointer to the AST for the "then" block, while ``elsesp`` calls
+``op3p`` to give the pointer to the AST for the "else" block, or NULL if
+there is not one. These accessors are automatically generated by ``astgen``
+after parsing the ``@astgen`` directives in the specific ``AstNode``
+subclasses.
 
 ``AstNode`` has the concept of a next and previous AST - for example, the
 next and previous statements in a block. Pointers to the AST for these
@@ -183,9 +180,9 @@ used in dot output. Typically users provided derived classes from
 
 This is the base class for graph algorithms. It implements a ``bool``
 method, ``followEdge`` which algorithms can use to decide whether an edge
-is followed. This method returns true if the graph edge has a weight greater
-than one and a user function, ``edgeFuncp`` (supplied in the constructor)
-returns ``true``.
+is followed. This method returns true if the graph edge has a weight
+greater than one and a user function, ``edgeFuncp`` (supplied in the
+constructor) returns ``true``.
 
 A number of predefined derived algorithm classes and access methods are
 provided and documented in ``V3GraphAlg.cpp``.
@@ -196,15 +193,15 @@ provided and documented in ``V3GraphAlg.cpp``.
 
 The data-flow graph-based combinational logic optimizer (DFG optimizer)
 converts an ``AstModule`` into a ``DfgGraph``. The graph represents the
-combinational equations (~continuous assignments) in the module, and for the
-duration of the DFG passes, it takes over the role of the represented
-``AstModule``. The ``DfgGraph`` keeps hold of the represented ``AstModule``,
-and the ``AstModule`` retains all other logic that is not representable as a
-data-flow graph. At the end of optimization, the combinational logic
-represented by the ``DfgGraph`` is converted back into AST form and is
-re-inserted into the corresponding ``AstModule``. The ``DfgGraph`` is distinct
-from ``V3Graph`` for efficiency and other desirable properties which make
-writing DFG passes easier.
+combinational equations (~continuous assignments) in the module, and for
+the duration of the DFG passes, it takes over the role of the represented
+``AstModule``. The ``DfgGraph`` keeps hold of the represented
+``AstModule``, and the ``AstModule`` retains all other logic that is not
+representable as a data-flow graph. At the end of optimization, the
+combinational logic represented by the ``DfgGraph`` is converted back into
+AST form and is re-inserted into the corresponding ``AstModule``. The
+``DfgGraph`` is distinct from ``V3Graph`` for efficiency and other
+desirable properties which make writing DFG passes easier.
 
 
 ``DfgVertex``
@@ -214,73 +211,75 @@ The ``DfgGraph`` represents combinational logic equations as a graph of
 ``DfgVertex`` vertices. Each sub-class of ``DfgVertex`` corresponds to an
 expression (a sub-class of ``AstNodeExpr``), a constant, or a variable
 reference. LValues and RValues referencing the same storage location are
-represented by the same ``DfgVertex``. Consumers of such vertices read as the
-LValue, writers of such vertices write the RValue. The bulk of the final
-``DfgVertex`` sub-classes are generated by ``astgen`` from the corresponding
-``AstNode`` definitions.
+represented by the same ``DfgVertex``. Consumers of such vertices read as
+the LValue, writers of such vertices write the RValue. The bulk of the
+final ``DfgVertex`` sub-classes are generated by ``astgen`` from the
+corresponding ``AstNode`` definitions.
 
 
 Scheduling
 ----------
 
-Verilator implements the Active and NBA regions of the SystemVerilog scheduling
-model as described in IEEE 1800-2023 chapter 4, and in particular sections
-4.5 and Figure 4.1. The static (Verilation time) scheduling of SystemVerilog
-processes is performed by code in the ``V3Sched`` namespace. The single
-entry point to the scheduling algorithm is ``V3Sched::schedule``. Some
-preparatory transformations important for scheduling are also performed in
-``V3Active`` and ``V3ActiveTop``. High-level evaluation functions are
-constructed by ``V3Order``, which ``V3Sched`` invokes on subsets of the logic
-in the design.
+Verilator implements the Active and NBA regions of the SystemVerilog
+scheduling model as described in IEEE 1800-2023 chapter 4, and in
+particular sections 4.5 and Figure 4.1. The static (Verilation time)
+scheduling of SystemVerilog processes is performed by code in the
+``V3Sched`` namespace. The single entry point to the scheduling algorithm
+is ``V3Sched::schedule``. Some preparatory transformations important for
+scheduling are also performed in ``V3Active`` and ``V3ActiveTop``.
+High-level evaluation functions are constructed by ``V3Order``, which
+``V3Sched`` invokes on subsets of the logic in the design.
 
-Scheduling deals with the problem of evaluating 'logic' in the correct order
-and the correct number of times in order to compute the correct state of the
-SystemVerilog program. Throughout this section, we use the term 'logic' to
-refer to all SystemVerilog constructs that describe the evolution of the state
-of the program. In particular, all SystemVerilog processes and continuous
-assignments are considered 'logic', but not for example variable definitions
-without initialization or other miscellaneous constructs.
+Scheduling deals with the problem of evaluating 'logic' in the correct
+order and the correct number of times in order to compute the correct state
+of the SystemVerilog program. Throughout this section, we use the term
+'logic' to refer to all SystemVerilog constructs that describe the
+evolution of the state of the program. In particular, all SystemVerilog
+processes and continuous assignments are considered 'logic', but not for
+example variable definitions without initialization or other miscellaneous
+constructs.
 
 
 Classes of logic
 ~~~~~~~~~~~~~~~~
 
-The first step in the scheduling algorithm is to gather all the logic present
-in the design, and classify it based on the conditions under which the logic
-needs to be evaluated.
+The first step in the scheduling algorithm is to gather all the logic
+present in the design, and classify it based on the conditions under which
+the logic needs to be evaluated.
 
 The classes of logic we distinguish between are:
 
 - SystemVerilog ``initial`` processes, that need to be executed once at
   startup.
 
-- Static variable initializers. These are a separate class as they need to be
-  executed before ``initial`` processes.
+- Static variable initializers. These are a separate class as they need to
+  be executed before ``initial`` processes.
 
 - SystemVerilog ``final`` processes.
 
 - Combinational logic. Any process or construct that has an implicit
-  sensitivity list with no explicit sensitivities is considered 'combinational'
-  logic. This includes among other things, ``always @*`` and ``always_comb``
-  processes, and continuous assignments. Verilator also converts some other
-  ``always`` processes to combinational logic in ``V3Active`` as described
-  below.
+  sensitivity list with no explicit sensitivities is considered
+  'combinational' logic. This includes among other things, ``always @*``
+  and ``always_comb`` processes, and continuous assignments. Verilator also
+  converts some other ``always`` processes to combinational logic in
+  ``V3Active`` as described below.
 
 - Clocked logic. Any process or construct that has an explicit sensitivity
   list, with no implicit sensitivities, is considered 'clocked' (or
   'sequential') logic. This includes, among other things ``always`` and
   ``always_ff`` processes with an explicit sensitivity list.
 
-Note that the distinction between clocked logic and combinational logic is only
-important for the scheduling algorithm within Verilator as we handle the two
-classes differently. It is possible to convert clocked logic into combinational
-logic if the explicit sensitivity list of the clocked logic is the same as the
-implicit sensitivity list of the equivalent combinational logic would be. The
-canonical examples are: ``always @(a) x = a;``, which is considered to be
-clocked logic by Verilator, and the equivalent ``assign x = a;``, which is
-considered to be combinational logic. ``V3Active`` in fact converts all clocked
-logic to combinational logic whenever possible, as this provides advantages for
-scheduling as described below.
+Note that the distinction between clocked logic and combinational logic is
+only important for the scheduling algorithm within Verilator as we handle
+the two classes differently. It is possible to convert clocked logic into
+combinational logic if the explicit sensitivity list of the clocked logic
+is the same as the implicit sensitivity list of the equivalent
+combinational logic would be. The canonical examples are: ``always @(a) x =
+a;``, which is considered to be clocked logic by Verilator, and the
+equivalent ``assign x = a;``, which is considered to be combinational
+logic. ``V3Active`` in fact converts all clocked logic to combinational
+logic whenever possible, as this provides advantages for scheduling as
+described below.
 
 There is also a 'hybrid' logic class, which has both explicit and implicit
 sensitivities. This kind of logic does not arise from a SystemVerilog
@@ -291,19 +290,19 @@ Details of this process and the hybrid logic class are described below.
 Scheduling of simple classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-SystemVerilog ``initial`` and ``final`` blocks can be scheduled (executed) in an
-arbitrary order.
+SystemVerilog ``initial`` and ``final`` blocks can be scheduled (executed)
+in an arbitrary order.
 
-Static variable initializers need to be executed in source code order in case
-there is a dependency between initializers, but the ordering of static variable
-initialization is otherwise not defined by the SystemVerilog standard
-(particularly, in the presence of hierarchical references in static variable
-initializers).
+Static variable initializers need to be executed in source code order in
+case there is a dependency between initializers, but the ordering of static
+variable initialization is otherwise not defined by the SystemVerilog
+standard (particularly, in the presence of hierarchical references in
+static variable initializers).
 
-The scheduling algorithm handles all three of these classes the same way and
-schedules the logic in these classes in source code order. This step yields the
-``_eval_static``, ``_eval_initial`` and ``_eval_final`` functions which execute
-the corresponding logic constructs.
+The scheduling algorithm handles all three of these classes the same way
+and schedules the logic in these classes in source code order. This step
+yields the ``_eval_static``, ``_eval_initial`` and ``_eval_final``
+functions which execute the corresponding logic constructs.
 
 
 Scheduling of clocked and combinational logic
@@ -313,94 +312,97 @@ For performance, clocked and combinational logic needs to be ordered.
 Conceptually this minimizes the iterations through the evaluation loop
 presented in the reference algorithm in the SystemVerilog standard (IEEE
 1800-2023 section 4.5), by evaluating logic constructs in data-flow order.
-Without going into a lot of detail here, accept that well thought out ordering
-is crucial to good simulation performance, and also enables further
-optimizations later on.
+Without going into a lot of detail here, accept that well thought out
+ordering is crucial to good simulation performance, and also enables
+further optimizations later on.
 
 At the highest level, ordering is performed by ``V3Order::order``, which is
-invoked by ``V3Sched::schedule`` on various subsets of the combinational and
-clocked logic as described below. The important thing to highlight now is that
-``V3Order::order`` operates by assuming that the state of all variables driven
-by combinational logic is consistent with that combinational logic. While this
-might seem subtle, it is very important, so here is an example:
+invoked by ``V3Sched::schedule`` on various subsets of the combinational
+and clocked logic as described below. The important thing to highlight now
+is that ``V3Order::order`` operates by assuming that the state of all
+variables driven by combinational logic is consistent with that
+combinational logic. While this might seem subtle, it is very important, so
+here is an example:
 
-::
-  always_comb d = q + 2;
-  always @(posedge clock) q <= d;
+.. code-block:: sv
 
+   always_comb d = q + 2;
+   always @(posedge clock) q <= d;
 
 During ordering, ``V3Order`` will assume that ``d`` equals ``q + 2`` at the
-beginning of an evaluation step. As a result it will order the clocked logic
-first, and all downstream combinational logic (like the assignment to ``d``)
-will execute after the clocked logic that drives inputs to the combinational
-logic, in data-flow (or dependency) order. At the end of the evaluation step,
-this ordering restores the invariant that variables driven by combinational
-logic are consistent with that combinational logic (i.e., the circuit is in a
-settled/steady state).
+beginning of an evaluation step. As a result it will order the clocked
+logic first, and all downstream combinational logic (like the assignment to
+``d``) will execute after the clocked logic that drives inputs to the
+combinational logic, in data-flow (or dependency) order. At the end of the
+evaluation step, this ordering restores the invariant that variables driven
+by combinational logic are consistent with that combinational logic (i.e.,
+the circuit is in a settled/steady state).
 
 One of the most important optimizations for performance is to only evaluate
-combinational logic, if its inputs might have changed. For example, there is no
-point in evaluating the above assignment to ``d`` on a negative edge of the
-clock signal. Verilator does this by pushing the combinational logic into the
-same (possibly multiple) event domains as the logic driving the inputs to that
-combinational logic, and only evaluating the combinational logic if at least
-one driving domain has been triggered. The impact of this activity gating is
-very high (observed 100x slowdown on large designs when turning it off), it is
-the reason we prefer to convert clocked logic to combinational logic in
-``V3Active`` whenever possible.
+combinational logic, if its inputs might have changed. For example, there
+is no point in evaluating the above assignment to ``d`` on a negative edge
+of the clock signal. Verilator does this by pushing the combinational logic
+into the same (possibly multiple) event domains as the logic driving the
+inputs to that combinational logic, and only evaluating the combinational
+logic if at least one driving domain has been triggered. The impact of this
+activity gating is very high (observed 100x slowdown on large designs when
+turning it off), it is the reason we prefer to convert clocked logic to
+combinational logic in ``V3Active`` whenever possible.
 
-The ordering procedure described above works straightforward unless there are
-combinational logic constructs that are circularly dependent (a.k.a.: the
-UNOPTFLAT warning). Combinational scheduling loops can arise in sound
-(realizable) circuits as Verilator considers each SystemVerilog process as a
-unit of scheduling (albeit we do try to split processes into smaller ones to
-avoid this circularity problem whenever possible, this is not always possible).
+The ordering procedure described above works straightforward unless there
+are combinational logic constructs that are circularly dependent (a.k.a.:
+the UNOPTFLAT warning). Combinational scheduling loops can arise in sound
+(realizable) circuits as Verilator considers each SystemVerilog process as
+a unit of scheduling (albeit we do try to split processes into smaller ones
+to avoid this circularity problem whenever possible, this is not always
+possible).
 
 
 Breaking combinational loops
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Combinational loops are broken by the introduction of instances of the 'hybrid'
-logic class. As described in the previous section, combinational loops require
-iteration until the logic is settled, in order to restore the invariant that
-combinationally driven signals are consistent with the combinational logic.
+Combinational loops are broken by the introduction of instances of the
+'hybrid' logic class. As described in the previous section, combinational
+loops require iteration until the logic is settled, in order to restore the
+invariant that combinationally driven signals are consistent with the
+combinational logic.
 
-To achieve this, ``V3Sched::schedule`` calls ``V3Sched::breakCycles``, which
-builds a dependency graph of all combinational logic in the design, and then
-breaks all combinational cycles by converting all combinational logic that
-consumes a variable driven via a 'back-edge' into hybrid logic. Here
-'back-edge' just means a graph edge that points from a higher-rank vertex to a
-lower rank vertex in some consistent ranking of the directed graph. Variables
-driven via a back-edge in the dependency graph are marked, and all
-combinational logic that depends on such variables is converted into hybrid
-logic, with the back-edge driven variables listed as explicit 'changed'
-sensitivities.
+To achieve this, ``V3Sched::schedule`` calls ``V3Sched::breakCycles``,
+which builds a dependency graph of all combinational logic in the design,
+and then breaks all combinational cycles by converting all combinational
+logic that consumes a variable driven via a 'back-edge' into hybrid logic.
+Here 'back-edge' just means a graph edge that points from a higher-rank
+vertex to a lower rank vertex in some consistent ranking of the directed
+graph. Variables driven via a back-edge in the dependency graph are marked,
+and all combinational logic that depends on such variables is converted
+into hybrid logic, with the back-edge driven variables listed as explicit
+'changed' sensitivities.
 
-Hybrid logic is handled by ``V3Order`` mostly in the same way as combinational
-logic, with two exceptions:
+Hybrid logic is handled by ``V3Order`` mostly in the same way as
+combinational logic, with two exceptions:
 
 - Explicit sensitivities of hybrid logic are ignored for the purposes of
-  data-flow ordering with respect to other combinational or hybrid logic. I.e.:
-  an explicit sensitivity suppresses the implicit sensitivity on the same
-  variable. This could also be interpreted as ordering the hybrid logic as if
-  all variables listed as explicit sensitivities were substituted as constants
-  with their current values.
+  data-flow ordering with respect to other combinational or hybrid logic.
+  I.e.: an explicit sensitivity suppresses the implicit sensitivity on the
+  same variable. This could also be interpreted as ordering the hybrid
+  logic as if all variables listed as explicit sensitivities were
+  substituted as constants with their current values.
 
-- The explicit sensitivities are included as an additional driving domain of
-  the logic, and also cause evaluation when triggered.
+- The explicit sensitivities are included as an additional driving domain
+  of the logic, and also cause evaluation when triggered.
 
 This means that hybrid logic is evaluated when either any of its implicit
-sensitivities might have been updated (the same way as combinational logic, by
-pushing it into the domains that write those variables), or if any of its
-explicit sensitivities are triggered.
+sensitivities might have been updated (the same way as combinational logic,
+by pushing it into the domains that write those variables), or if any of
+its explicit sensitivities are triggered.
 
-The effect of this transformation is that ``V3Order`` can proceed as if there
-are no combinational cycles (or alternatively, under the assumption that the
-back-edge-driven variables don't change during one evaluation pass). The
-evaluation loop invoking the ordered code, will then re-invoke it on a follow
-on iteration, if any of the explicit sensitivities of hybrid logic have
-actually changed due to the previous invocation, iterating until all the
-combinational (including hybrid) logic have settled.
+The effect of this transformation is that ``V3Order`` can proceed as if
+there are no combinational cycles (or alternatively, under the assumption
+that the back-edge-driven variables don't change during one evaluation
+pass). The evaluation loop invoking the ordered code, will then re-invoke
+it on a follow on iteration, if any of the explicit sensitivities of hybrid
+logic have actually changed due to the previous invocation, iterating until
+all the combinational (including hybrid) logic have settled.
 
 One might wonder if there can be a race condition between clocked logic
 triggered due to a combinational signal change from the previous evaluation
@@ -415,55 +417,59 @@ SystemVerilog semantics, so we accept this.
 Settling combinational logic after initialization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-At the beginning of simulation, once static initializer and ``initial`` blocks
-have been executed, we need to evaluate all combinational logic, in order to
-restore the invariant utilized by ``V3Order`` that the state of all
-combinationally driven variables are consistent with the combinational logic.
+At the beginning of simulation, once static initializer and ``initial``
+blocks have been executed, we need to evaluate all combinational logic, in
+order to restore the invariant utilized by ``V3Order`` that the state of
+all combinationally driven variables are consistent with the combinational
+logic.
 
-To achieve this, we invoke ``V3Order::order`` on all of the combinational and
-hybrid logic, and iterate the resulting evaluation function until no more
-hybrid logic is triggered. This yields the `_eval_settle` function, which is
-invoked at the beginning of simulation after the `_eval_initial`.
+To achieve this, we invoke ``V3Order::order`` on all of the combinational
+and hybrid logic, and iterate the resulting evaluation function until no
+more hybrid logic is triggered. This yields the `_eval_settle` function,
+which is invoked at the beginning of simulation after the `_eval_initial`.
 
 
 Partitioning logic for correct NBA updates
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``V3Order`` can order logic corresponding to non-blocking assignments (NBAs) to
-yield correct simulation results, as long as all the sensitivity expressions of
-clocked logic triggered in the Active scheduling region of the current time
-step are known up front. I.e., the ordering of NBA updates is only correct if
-derived clocks that are computed in an Active region update (that is, via a
-blocking or continuous assignment) are known up front.
+``V3Order`` can order logic corresponding to non-blocking assignments
+(NBAs) to yield correct simulation results, as long as all the sensitivity
+expressions of clocked logic triggered in the Active scheduling region of
+the current time step are known up front. I.e., the ordering of NBA updates
+is only correct if derived clocks that are computed in an Active region
+update (that is, via a blocking or continuous assignment) are known up
+front.
 
 We can ensure this by partitioning the logic into two regions. Note these
-regions are a concept of the Verilator scheduling algorithm, and they do not
-directly correspond to the similarly named SystemVerilog scheduling regions
-as defined in the standard:
+regions are a concept of the Verilator scheduling algorithm, and they do
+not directly correspond to the similarly named SystemVerilog scheduling
+regions as defined in the standard:
 
-- All logic (clocked, combinational and hybrid) that transitively feeds into,
-  or drives via a non-blocking or continuous assignments (or via any update
-  that SystemVerilog executes in the Active scheduling region), a variable that
-  is used in the explicit sensitivity list of some clocked or hybrid logic, is
-  assigned to the 'act' region.
+- All logic (clocked, combinational and hybrid) that transitively feeds
+  into, or drives via a non-blocking or continuous assignments (or via any
+  update that SystemVerilog executes in the Active scheduling region), a
+  variable that is used in the explicit sensitivity list of some clocked or
+  hybrid logic, is assigned to the 'act' region.
 
 - All other logic is assigned to the 'nba' region.
 
-For completeness, note that a subset of the 'act' region logic, specifically,
-the logic related to the pre-assignments of NBA updates (i.e., AstAlwaysPre
-nodes), is handled separately, but is executed as part of the 'act' region.
+For completeness, note that a subset of the 'act' region logic,
+specifically, the logic related to the pre-assignments of NBA updates
+(i.e., AstAlwaysPre nodes), is handled separately, but is executed as part
+of the 'act' region.
 
-Also note that all logic representing the committing of an NBA (i.e., Ast*Post)
-nodes) will be in the 'nba' region. This means that the evaluation of the 'act'
-region logic will not commit any NBA updates. As a result, the 'act' region
-logic can be iterated to compute all derived clock signals up front.
+Also note that all logic representing the committing of an NBA (i.e.,
+Ast*Post) nodes) will be in the 'nba' region. This means that the
+evaluation of the 'act' region logic will not commit any NBA updates. As a
+result, the 'act' region logic can be iterated to compute all derived clock
+signals up front.
 
-The correspondence between the SystemVerilog Active and NBA scheduling regions,
-and the internal 'act' and 'nba' regions, is that 'act' contains all Active
-region logic that can compute a clock signal, while 'nba' contains all other
-Active and NBA region logic. For example, if the only clocks in the design are
-top-level inputs, then 'act' will be empty, and 'nba' will contain the whole of
-the design.
+The correspondence between the SystemVerilog Active and NBA scheduling
+regions, and the internal 'act' and 'nba' regions, is that 'act' contains
+all Active region logic that can compute a clock signal, while 'nba'
+contains all other Active and NBA region logic. For example, if the only
+clocks in the design are top-level inputs, then 'act' will be empty, and
+'nba' will contain the whole of the design.
 
 The partitioning described above is performed by ``V3Sched::partition``.
 
@@ -475,23 +481,23 @@ We will separately invoke ``V3Order::order`` on the 'act' and 'nba' region
 logic.
 
 Combinational logic that reads variables driven from both 'act' and 'nba'
-region logic has the problem of needing to be reevaluated even if only one of
-the regions updates an input variable. We could pass additional trigger
+region logic has the problem of needing to be reevaluated even if only one
+of the regions updates an input variable. We could pass additional trigger
 expressions between the regions to make sure combinational logic is always
 reevaluated, or we can replicate combinational logic that is driven from
-multiple regions, by copying it into each region that drives it. Experiments
-show this simple replication works well performance-wise (and notably
-``V3Combine`` is good at combining the replicated code), so this is what we do
-in ``V3Sched::replicateLogic``.
+multiple regions, by copying it into each region that drives it.
+Experiments show this simple replication works well performance-wise (and
+notably ``V3Combine`` is good at combining the replicated code), so this is
+what we do in ``V3Sched::replicateLogic``.
 
-In ``V3Sched::replicateLogic``, in addition to replicating logic into the 'act'
-and 'nba' regions, we also replicate combinational (and hybrid) logic that
-depends on top level inputs. These become a separate 'ico' region (Input
-Combinational logic), which we will always evaluate at the beginning of a
-time-step to ensure the combinational invariant holds even if input signals
-have changed. Note that this eliminates the need of changing data and clock
-signals on separate evaluations, as was necessary with earlier versions of
-Verilator).
+In ``V3Sched::replicateLogic``, in addition to replicating logic into the
+'act' and 'nba' regions, we also replicate combinational (and hybrid) logic
+that depends on top level inputs. These become a separate 'ico' region
+(Input Combinational logic), which we will always evaluate at the beginning
+of a time-step to ensure the combinational invariant holds even if input
+signals have changed. Note that this eliminates the need of changing data
+and clock signals on separate evaluations, as was necessary with earlier
+versions of Verilator).
 
 
 Constructing the top level `_eval` function
@@ -499,14 +505,15 @@ Constructing the top level `_eval` function
 
 To construct the top level `_eval` function, which updates the state of the
 circuit to the end of the current time step, we invoke ``V3Order::order``
-separately on the 'ico', 'act' and 'nba' logic, which yields the `_eval_ico`,
-`_eval_act`, and `_eval_nba` functions. We then put these all together with the
-corresponding functions that compute the respective trigger expressions into
-the top level `_eval` function, which on the high level has the form:
+separately on the 'ico', 'act' and 'nba' logic, which yields the
+`_eval_ico`, `_eval_act`, and `_eval_nba` functions. We then put these all
+together with the corresponding functions that compute the respective
+trigger expressions into the top level `_eval` function, which on the high
+level has the form:
 
-::
+.. code-block:: C++
 
-    void _eval() {
+   void _eval() {
       // Update combinational logic dependent on top level inputs ('ico' region)
       while (true) {
         _eval__triggers__ico();
@@ -542,21 +549,21 @@ the top level `_eval` function, which on the high level has the form:
 Timing
 ------
 
-Timing support in Verilator utilizes C++ coroutines, which is a new feature in
-C++20. The basic idea is to represent processes and tasks that await a certain
-event or simulation time as coroutines. These coroutines get suspended at the
-await, and resumed whenever the triggering event occurs, or at the expected
-simulation time.
+Timing support in Verilator utilizes C++ coroutines, which is a new feature
+in C++20. The basic idea is to represent processes and tasks that await a
+certain event or simulation time as coroutines. These coroutines get
+suspended at the await, and resumed whenever the triggering event occurs,
+or at the expected simulation time.
 
-There are several runtime classes used for managing such coroutines defined in
-``verilated_timing.h`` and ``verilated_timing.cpp``.
+There are several runtime classes used for managing such coroutines defined
+in ``verilated_timing.h`` and ``verilated_timing.cpp``.
 
 ``VlCoroutineHandle``
 ~~~~~~~~~~~~~~~~~~~~~
 
-A thin wrapper around an ``std::coroutine_handle<>``. It forces move semantics,
-destroys the coroutine if it remains suspended at the end of the design's
-lifetime, and prevents multiple ``resume`` calls in the case of
+A thin wrapper around an ``std::coroutine_handle<>``. It forces move
+semantics, destroys the coroutine if it remains suspended at the end of the
+design's lifetime, and prevents multiple ``resume`` calls in the case of
 ``fork..join_any``.
 
 ``VlCoroutine``
@@ -564,44 +571,46 @@ lifetime, and prevents multiple ``resume`` calls in the case of
 
 Return value of all coroutines. Together with the promise type contained
 within, it allows for chaining coroutines - resuming coroutines from up the
-call stack. The calling coroutine's handle is saved in the promise object as a
-continuation, that is, the coroutine that must be resumed after the promise's
-coroutine finishes. This is necessary as C++ coroutines are stackless, meaning
-each one is suspended independently of others in the call graph.
+call stack. The calling coroutine's handle is saved in the promise object
+as a continuation, that is, the coroutine that must be resumed after the
+promise's coroutine finishes. This is necessary as C++ coroutines are
+stackless, meaning each one is suspended independently of others in the
+call graph.
 
 ``VlDelayScheduler``
 ~~~~~~~~~~~~~~~~~~~~
 
-This class manages processes suspended by delays. There is one instance of this
-class per design. Coroutines ``co_await`` this object's ``delay`` function.
-Internally, they are stored in a heap structure sorted by simulation time in
-ascending order. When ``resume`` is called on the delay scheduler, all
-coroutines awaiting the current simulation time are resumed. The current
-simulation time is retrieved from a ``VerilatedContext`` object.
+This class manages processes suspended by delays. There is one instance of
+this class per design. Coroutines ``co_await`` this object's ``delay``
+function. Internally, they are stored in a heap structure sorted by
+simulation time in ascending order. When ``resume`` is called on the delay
+scheduler, all coroutines awaiting the current simulation time are resumed.
+The current simulation time is retrieved from a ``VerilatedContext``
+object.
 
 ``VlTriggerScheduler``
 ~~~~~~~~~~~~~~~~~~~~~~
 
-This class manages processes that await events (triggers). There is one such
-object per each trigger awaited by coroutines. Coroutines ``co_await`` this
-object's ``trigger`` function. They are stored in two stages - `uncommitted`
-and `ready`. First, they land in the `uncommitted` stage, and cannot be
-resumed. The ``resume`` function resumes all coroutines from the `ready` stage
-and moves `uncommitted` coroutines into `ready`. The ``commit`` function only
-moves `uncommitted` coroutines into `ready`.
+This class manages processes that await events (triggers). There is one
+such object per each trigger awaited by coroutines. Coroutines ``co_await``
+this object's ``trigger`` function. They are stored in two stages -
+`uncommitted` and `ready`. First, they land in the `uncommitted` stage, and
+cannot be resumed. The ``resume`` function resumes all coroutines from the
+`ready` stage and moves `uncommitted` coroutines into `ready`. The
+``commit`` function only moves `uncommitted` coroutines into `ready`.
 
-This split is done to avoid self-triggering and triggering coroutines multiple
-times. See the `Scheduling with timing` section for details on how this is
-used.
+This split is done to avoid self-triggering and triggering coroutines
+multiple times. See the `Scheduling with timing` section for details on how
+this is used.
 
 ``VlDynamicTriggerScheduler``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Like ``VlTriggerScheduler``, ``VlDynamicTriggerScheduler`` manages processes
-that await triggers. However, it does not rely on triggers evaluated externally
-by the 'act' trigger eval function. Instead, it is also responsible for trigger
-evaluation. Coroutines that make use of this scheduler must adhere to a certain
-procedure:
+Like ``VlTriggerScheduler``, ``VlDynamicTriggerScheduler`` manages
+processes that await triggers. However, it does not rely on triggers
+evaluated externally by the 'act' trigger eval function. Instead, it is
+also responsible for trigger evaluation. Coroutines that make use of this
+scheduler must adhere to a certain procedure:
 
 ::
 
@@ -624,16 +633,16 @@ await proper resumption in the 'act' eval step.
 ~~~~~~~~~~~~~~
 
 Used for synchronizing ``fork..join`` and ``fork..join_any``. Forking
-coroutines ``co_await`` its ``join`` function, and forked ones call ``done``
-when they're finished. Once the required number of coroutines (set using
-``setCounter``) finish execution, the forking coroutine is resumed.
+coroutines ``co_await`` its ``join`` function, and forked ones call
+``done`` when they're finished. Once the required number of coroutines (set
+using ``setCounter``) finish execution, the forking coroutine is resumed.
 
 ``VlForever``
 ~~~~~~~~~~~~~
 
-A small utility awaitable type. It allows for blocking a coroutine forever. It
-is currently only used for ``wait`` statements that await a constant false
-condition. See the `Timing Pass` section for more details.
+A small utility awaitable type. It allows for blocking a coroutine forever.
+It is currently only used for ``wait`` statements that await a constant
+false condition. See the `Timing Pass` section for more details.
 
 Timing Pass
 ~~~~~~~~~~~
@@ -641,80 +650,88 @@ Timing Pass
 There are two visitors in ``V3Timing.cpp``.
 
 The first one, ``TimingSuspendableVisitor``, does not perform any AST
-transformations. It is responsible for marking processes and C++ functions that
-contain timing controls as suspendable. Processes that call suspendable
-functions are also marked as suspendable. Functions that call, are overridden
-by, or override suspendable functions are marked as suspendable as well.
+transformations. It is responsible for marking processes and C++ functions
+that contain timing controls as suspendable. Processes that call
+suspendable functions are also marked as suspendable. Functions that call,
+are overridden by, or override suspendable functions are marked as
+suspendable as well.
 
-The visitor keeps a dependency graph of functions and processes to handle such
-cases. A function or process is dependent on a function if it calls it. A
-virtual class method is dependent on another class method if it calls it,
-overrides it, or is overriden by it.
+The visitor keeps a dependency graph of functions and processes to handle
+such cases. A function or process is dependent on a function if it calls
+it. A virtual class method is dependent on another class method if it calls
+it, overrides it, or is overriden by it.
 
 The second visitor in ``V3Timing.cpp``, ``TimingControlVisitor``, uses the
-information provided by ``TimingSuspendableVisitor`` and transforms each timing
-control into a ``co_await``.
+information provided by ``TimingSuspendableVisitor`` and transforms each
+timing control into a ``co_await``.
 
 * event controls are turned into ``co_await`` on a trigger scheduler's
-  ``trigger`` method. The awaited trigger scheduler is the one corresponding to
-  the sentree referenced by the event control. This sentree is also referenced
-  by the ``AstCAwait`` node, to be used later by the static scheduling code.
+  ``trigger`` method. The awaited trigger scheduler is the one
+  corresponding to the sentree referenced by the event control. This
+  sentree is also referenced by the ``AstCAwait`` node, to be used later by
+  the static scheduling code.
+
 * if an event control waits on a local variable or class member, it uses a
   local trigger which it evaluates inline. It awaits a dynamic trigger
-  scheduler multiple times: for trigger evaluation, updates, and resumption.
-  The dynamic trigger scheduler is responsible for resuming the coroutine at
-  the correct point of evaluation.
-* delays are turned into ``co_await`` on a delay scheduler's ``delay`` method.
-  The created ``AstCAwait`` nodes also reference a special sentree related to
-  delays, to be used later by the static scheduling code.
-* ``join`` and ``join_any`` are turned into ``co_await`` on a ``VlForkSync``'s
-  ``join`` method. Each forked process gets a ``VlForkSync::done`` call at the
-  end.
+  scheduler multiple times: for trigger evaluation, updates, and
+  resumption. The dynamic trigger scheduler is responsible for resuming the
+  coroutine at the correct point of evaluation.
+
+* delays are turned into ``co_await`` on a delay scheduler's ``delay``
+  method. The created ``AstCAwait`` nodes also reference a special sentree
+  related to delays, to be used later by the static scheduling code.
+
+* ``join`` and ``join_any`` are turned into ``co_await`` on a
+  ``VlForkSync``'s ``join`` method. Each forked process gets a
+  ``VlForkSync::done`` call at the end.
 
 Assignments with intra-assignment timing controls are simplified into
-assignments after those timing controls, with the LHS and RHS values evaluated
-before them and stored in temporary variables.
+assignments after those timing controls, with the LHS and RHS values
+evaluated before them and stored in temporary variables.
 
-``wait`` statements are transformed into while loops that check the condition
-and then await changes in variables used in the condition. If the condition is
-always false, the ``wait`` statement is replaced by a ``co_await`` on a
-``VlForever``. This is done instead of a return in case the ``wait`` is deep in
-a call stack (otherwise, the coroutine's caller would continue execution).
+``wait`` statements are transformed into while loops that check the
+condition and then await changes in variables used in the condition. If the
+condition is always false, the ``wait`` statement is replaced by a
+``co_await`` on a ``VlForever``. This is done instead of a return in case
+the ``wait`` is deep in a call stack (otherwise, the coroutine's caller
+would continue execution).
 
 Each sub-statement of a ``fork`` is put in an ``AstBegin`` node for easier
-grouping. In a later step, each of these gets transformed into a new, separate
-function. See the `Forks` section for more detail.
+grouping. In a later step, each of these gets transformed into a new,
+separate function. See the `Forks` section for more detail.
 
-Suspendable functions get the return type of ``VlCoroutine``, which makes them
-coroutines. Later, during ``V3Sched``, suspendable processes are also
+Suspendable functions get the return type of ``VlCoroutine``, which makes
+them coroutines. Later, during ``V3Sched``, suspendable processes are also
 transformed into coroutines.
+
 
 Scheduling with timing
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Timing features in Verilator are built on top of the static scheduler. Triggers
-are used for determining which delay or trigger schedulers should resume. A
-special trigger is used for the delay scheduler. This trigger is set if there
-are any coroutines awaiting the current simulation time
+Timing features in Verilator are built on top of the static scheduler.
+Triggers are used for determining which delay or trigger schedulers should
+resume. A special trigger is used for the delay scheduler. This trigger is
+set if there are any coroutines awaiting the current simulation time
 (``VlDelayScheduler::awaitingCurrentTime()``).
 
-All triggers used by a suspendable process are mapped to variables written in
-that process. When ordering code using ``V3Order``, these triggers are provided
-as external domains of these variables. This ensures that the necessary
-combinational logic is triggered after a coroutine resumption.
+All triggers used by a suspendable process are mapped to variables written
+in that process. When ordering code using ``V3Order``, these triggers are
+provided as external domains of these variables. This ensures that the
+necessary combinational logic is triggered after a coroutine resumption.
 
 There are two functions for managing timing logic called by ``_eval()``:
 
-* ``_timing_commit()``, which commits all coroutines whose triggers were not set
-  in the current iteration,
+* ``_timing_commit()``, which commits all coroutines whose triggers were
+  not set in the current iteration,
 * ``_timing_resume()``, which calls `resume()` on all trigger and delay
   schedulers whose triggers were set in the current iteration.
 
-Thanks to this separation, a coroutine awaiting a trigger cannot be suspended
-and resumed in the same iteration, and it cannot be resumed before it suspends.
+Thanks to this separation, a coroutine awaiting a trigger cannot be
+suspended and resumed in the same iteration, and it cannot be resumed
+before it suspends.
 
-All coroutines are committed and resumed in the 'act' eval loop. With timing
-features enabled, the ``_eval()`` function takes this form:
+All coroutines are committed and resumed in the 'act' eval loop. With
+timing features enabled, the ``_eval()`` function takes this form:
 
 ::
 
@@ -748,10 +765,10 @@ features enabled, the ``_eval()`` function takes this form:
 Forks
 ~~~~~
 
-After the scheduling step, forks sub-statements are transformed into separate
-functions, and these functions are called in place of the sub-statements. These
-calls must be without ``co_await``, so that suspension of a forked process
-doesn't suspend the forking process.
+After the scheduling step, forks sub-statements are transformed into
+separate functions, and these functions are called in place of the
+sub-statements. These calls must be without ``co_await``, so that
+suspension of a forked process doesn't suspend the forking process.
 
 In forked processes, references to local variables are only allowed in
 ``fork..join``, as this is the only case that ensures the lifetime of these
@@ -800,7 +817,7 @@ synchronization is zero.
 Macro Task
 ~~~~~~~~~~
 
-When the partitioner coarsens the graph, it combines nodes together.  Each
+When the partitioner coarsens the graph, it combines nodes together. Each
 fine-grained node represents an atomic "task"; combined nodes in the
 coarsened graph are "macro-tasks". This term comes from Sarkar. Each
 macro-task executes from start to end on one processor, without any
@@ -831,7 +848,7 @@ increase the critical path through the graph and thus reduces par-factor.
 
 Sarkar's partitioner, and ours, chooses pairs of macro-tasks to merge such
 that the growth in critical path is minimized. Each candidate merge would
-result in a new node, which would have some local critical path.  We choose
+result in a new node, which would have some local critical path. We choose
 the candidate that would produce the shortest local critical path. Repeat
 until par-factor falls to a target threshold. It's a greedy algorithm, and
 it's not guaranteed to produce the best partition (which Sarkar proves is
@@ -849,22 +866,22 @@ path through the graph is the sum of macro-task execution costs. Sarkar
 does almost the same thing, except that he has nonzero estimates for
 synchronization costs.
 
-Verilator's cost estimates are assigned by ``InstrCountVisitor``.  This
-class is perhaps the most fragile piece of the multithread
-implementation. It's easy to have a bug where you count something cheap
-(e.g. accessing one element of a huge array) as if it were expensive (eg.
-by counting it as if it were an access to the entire array.) Even without
-such gross bugs, the estimates this produce are only loosely predictive of
-actual runtime cost. Multithread performance would be better with better
-runtime costs estimates. This is an area to improve.
+Verilator's cost estimates are assigned by ``InstrCountVisitor``. This
+class is perhaps the most fragile piece of the multithread implementation.
+It's easy to have a bug where you count something cheap (e.g. accessing one
+element of a huge array) as if it were expensive (eg. by counting it as if
+it were an access to the entire array.) Even without such gross bugs, the
+estimates this produce are only loosely predictive of actual runtime cost.
+Multithread performance would be better with better runtime costs
+estimates. This is an area to improve.
 
 
 Scheduling Macro-Tasks at Runtime
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-After coarsening the graph, we must schedule the macro-tasks for
-runtime. Sarkar describes two options: you can dynamically schedule tasks
-at runtime, with a runtime graph follower. Sarkar calls this the
+After coarsening the graph, we must schedule the macro-tasks for runtime.
+Sarkar describes two options: you can dynamically schedule tasks at
+runtime, with a runtime graph follower. Sarkar calls this the
 "macro-dataflow model." Verilator does not support this; early experiments
 with this approach had poor performance.
 
@@ -890,28 +907,27 @@ memory. This provides "spatial locality" - when we pull in a 64-byte cache
 line to access a 2-byte variable, we want the other 62 bytes to be ones
 we'll also likely access soon, for best cache performance.
 
-This is critical for performance. It should allow Verilator
-to scale to very large models. We don't rely on our working set fitting
-in any CPU cache; instead we essentially "stream" data into caches from
-memory. It's not literally streaming, where the address increases
-monotonically, but it should have similar performance characteristics,
-so long as each macro-task's dataset fits in one core's local caches.
+This is critical for performance. It should allow Verilator to scale to
+very large models. We don't rely on our working set fitting in any CPU
+cache; instead we essentially "stream" data into caches from memory. It's
+not literally streaming, where the address increases monotonically, but it
+should have similar performance characteristics, so long as each
+macro-task's dataset fits in one core's local caches.
 
 To achieve spatial locality, we tag each variable with the set of
 macro-tasks that access it. Let's call this set the "footprint" of that
-variable. The variables in a given module have a set of footprints. We
-can order those footprints to minimize the distance between them
-(distance is the number of macro-tasks that are different across any two
-footprints) and then emit all variables into the struct in
-ordered-footprint order.
+variable. The variables in a given module have a set of footprints. We can
+order those footprints to minimize the distance between them (distance is
+the number of macro-tasks that are different across any two footprints) and
+then emit all variables into the struct in ordered-footprint order.
 
-The footprint ordering is literally the traveling salesman problem, and
-we use a TSP-approximation algorithm to get close to an optimal sort.
+The footprint ordering is literally the traveling salesman problem, and we
+use a TSP-approximation algorithm to get close to an optimal sort.
 
 This is an old idea. Simulators designed at DEC in the early 1990s used
-similar techniques to optimize both single-thread and multithread
-modes. (Verilator does not optimize variable placement for spatial
-locality in serial mode; that is a possible area for improvement.)
+similar techniques to optimize both single-thread and multithread modes.
+(Verilator does not optimize variable placement for spatial locality in
+serial mode; that is a possible area for improvement.)
 
 
 Improving Multithreaded Performance Further (a TODO list)
@@ -976,9 +992,9 @@ increase the diversity of any given MTask, and this should reduce variance
 in the cost estimates.
 
 One way to do that might be to make various "tie breaker" comparison
-routines in the sources to rely more heavily on randomness, and
-generally try harder not to keep input nodes together when we have the
-option to scramble things.
+routines in the sources to rely more heavily on randomness, and generally
+try harder not to keep input nodes together when we have the option to
+scramble things.
 
 Profile-guided optimization make this a bit better, by adjusting mtask
 scheduling, but this does not yet guide the packing into mtasks.
@@ -1016,14 +1032,14 @@ until all signals are stable.
 On other evaluations, the Verilated code detects what input signals have
 changes. If any are clocks, it calls the appropriate sequential functions
 (from ``always @ posedge`` statements). Interspersed with sequential
-functions, it calls combo functions (from ``always @*``).  After this is
+functions, it calls combo functions (from ``always @*``). After this is
 complete, it detects any changes due to combo loops or internally generated
 clocks, and if one is found must reevaluate the model again.
 
 For SystemC code, the ``eval()`` function is wrapped in a SystemC
-``SC_METHOD``, sensitive to all inputs. (Ideally, it would only be sensitive
-to clocks and combo inputs, but tracing requires all signals to cause
-evaluation, and the performance difference is small.)
+``SC_METHOD``, sensitive to all inputs. (Ideally, it would only be
+sensitive to clocks and combo inputs, but tracing requires all signals to
+cause evaluation, and the performance difference is small.)
 
 If tracing is enabled, a callback examines all variables in the design for
 changes, and writes the trace for each change. To accelerate this process,
@@ -1035,85 +1051,85 @@ Constrained randomization
 -------------------------
 
 Because general constrained randomization is a co-NP-hard problem, not all
-cases are implemented in Verilator, and an external specialized SMT solver is
-used for any non-obvious ones.
+cases are implemented in Verilator, and an external specialized SMT solver
+is used for any non-obvious ones.
 
 The ``randomize()`` method spawns an SMT solver in a sub-process. Then the
 solver gets a setup query, then the definition of variables, then all the
 constraints (SMT assertions) about the variables. Since the solver has no
-information about the class' PRNG state, if the problem is satisfiable,
-the solution space is further constrained by adding extra random constraints,
-and querying the values satisfying the problem statement.
-The constraint is currently constructed as fixing a simple xor of randomly
-chosen bits of the variables being randomized.
+information about the class' PRNG state, if the problem is satisfiable, the
+solution space is further constrained by adding extra random constraints,
+and querying the values satisfying the problem statement. The constraint is
+currently constructed as fixing a simple xor of randomly chosen bits of the
+variables being randomized.
 
-The runtime classes used for handling the randomization are  defined in
+The runtime classes used for handling the randomization are defined in
 ``verilated_random.h`` and ``verilated_random.cpp``.
 
 
 ``VlSubprocess``
 ~~~~~~~~~~~~~~~~
 
-Subprocess handle, responsible for keeping track of the resources like child
-PID, read and write file descriptors, and presenting them as a C++ iostream.
+Subprocess handle, responsible for keeping track of the resources like
+child PID, read and write file descriptors, and presenting them as a C++
+iostream.
 
 
 ``VlRandomizer``
 ~~~~~~~~~~~~~~~~
 
-Randomizer class, responsible for keeping track of variables and constraints,
-and communicating with the solver subprocess.
+Randomizer class, responsible for keeping track of variables and
+constraints, and communicating with the solver subprocess.
 
 The solver gets the constraints in `SMT-LIB2
 <https://smtlib.cs.uiowa.edu/>`__ textual format in the following syntax:
 
 ::
 
-    (set-info :smt-lib-version 2.0)
-    (set-option :produce-models true)
-    (set-logic QF_BV)
+   (set-info :smt-lib-version 2.0)
+   (set-option :produce-models true)
+   (set-logic QF_BV)
 
-    (declare-fun v () (_ BitVec 16))
-    (declare-fun w () (_ BitVec 64))
-    (declare-fun x () (_ BitVec 48))
-    (declare-fun z () (_ BitVec 24))
-    (declare-fun t () (_ BitVec 23))
-    (assert (or (= v #x0003) (= v #x0008)))
-    (assert (= w #x0000000000000009))
-    (assert (or (or (= x #x000000000001) (= x #x000000000002)) (or (= x #x000000000004) (= x #x000000000009))))
-    (assert (bvult ((_ zero_extend 8) z) #x00000015))
-    (assert (bvugt ((_ zero_extend 8) z) #x0000000d))
+   (declare-fun v () (_ BitVec 16))
+   (declare-fun w () (_ BitVec 64))
+   (declare-fun x () (_ BitVec 48))
+   (declare-fun z () (_ BitVec 24))
+   (declare-fun t () (_ BitVec 23))
+   (assert (or (= v #x0003) (= v #x0008)))
+   (assert (= w #x0000000000000009))
+   (assert (or (or (= x #x000000000001) (= x #x000000000002)) (or (= x #x000000000004) (= x #x000000000009))))
+   (assert (bvult ((_ zero_extend 8) z) #x00000015))
+   (assert (bvugt ((_ zero_extend 8) z) #x0000000d))
 
-    (check-sat)
+   (check-sat)
 
-The solver responds with either ``sat`` or ``unsat``. Then the initial solution
-is queried with:
+The solver responds with either ``sat`` or ``unsat``. Then the initial
+solution is queried with:
 
 ::
 
-    (get-value (v w x z t ))
+   (get-value (v w x z t ))
 
 The solver then responds with e.g.:
 
 ::
 
-    ((v #x0008)
-     (w #x0000000000000005)
-     (x #x000000000002)
-     (z #x000010)
-     (t #b00000000000000000000000))
+   ((v #x0008)
+    (w #x0000000000000005)
+    (x #x000000000002)
+    (z #x000010)
+    (t #b00000000000000000000000))
 
-And then a follow-up query (or a series thereof) is asked, and the solver gets
-reset, so that it can be reused by subsequent randomization attempts:
+And then a follow-up query (or a series thereof) is asked, and the solver
+gets reset, so that it can be reused by subsequent randomization attempts:
 
 ::
 
-    (assert (= (bvxor (bvxor <...> (bvxor ((_ extract 21 21) z) ((_ extract 39 39) x)) ((_ extract 5 5) w)) <...> ((_ extract 10 10) w)) #b0))
-    (check-sat)
-    (get-value)
-    ...
-    (reset)
-
+   (assert (= (bvxor (bvxor <...> (bvxor ((_ extract 21 21) z) ((_ extract 39 39) x)) ((_ extract 5 5) w)) <...> ((_ extract 10 10) w)) #b0))
+   (check-sat)
+   (get-value)
+   ...
+   (reset)
 
 
 Coding Conventions
@@ -1139,8 +1155,8 @@ is appreciated if you could match our style for C/C++:
 
 - Comment every member variable.
 
-- In the include directory, use /// to document functions the user
-  calls. (This convention has not been applied retroactively.)
+- In the include directory, use /// to document functions the user calls.
+  (This convention has not been applied retroactively.)
 
 C and Python indentation is automatically maintained with "make format"
 using clang-format version 18, and yapf for Python, and is automatically
@@ -1148,8 +1164,7 @@ corrected in the CI actions. For those manually formatting C code:
 
 - Use four spaces per level, and no tabs.
 
-- Use two spaces between the end of source and the beginning of a
-  comment.
+- Use two spaces between the end of source and the beginning of a comment.
 
 - Use one space after if/for/switch/while and similar keywords.
 
@@ -1160,46 +1175,54 @@ Verilog indentation is not yet automatically maintained, but:
 
 - Use two spaces per level, and no tabs.
 
-- Place `begin` on the same line as the earlier starting statement
-  e.g. `if`, and place the `end` on a separate line indented the same as
-  the starting statement.
+- Place `begin` on the same line as the earlier starting statement e.g.
+  `if`, and place the `end` on a separate line indented the same as the
+  starting statement.
 
 
 Commit messages
 ---------------
 
 Pull requests do not typically edit ``Changes`` in order to reduce
-potential merge conflicts.  Instead, contributors should use an appropriate
-first line of the git commit message.  Maintainers periodically run
+potential merge conflicts. Instead, contributors should use an appropriate
+first line of the git commit message. Maintainers periodically run
 ``nodist/log_changes`` which analyzes the commit messages to suggest edits
 to the ``Changes`` file.
 
-The format of a commit message should be typically of the forms below.  The
+The format of a commit message should be typically of the forms below. The
 github issue number, and github pull number if different should be
 included.
 
 "Add <some feature> (#1234)"
    For adding a new feature.
+
 "Fix <some item> (#1234)"
    For a bug fix.
+
 "Improve <some item> (#1234)"
    For improving something that previously existed.
+
 "Optimize <some item> (#1234)"
    For improving performance.
+
 "Support <some feature> (#1234)"
    For features that are described by IEEE were previously not supported.
+
 "Commentary"
-   For a super-trivial change to e.g. documentation.
-   These will typically not get described in the Changes file.
+   For a super-trivial change to e.g. documentation. These will typically
+   not get described in the Changes file.
+
 "CI: <Add/Improve/etc as above> (#1234)"
-   For changes that only concern github actions.
-   These will typically not get described in the Changes file.
+   For changes that only concern github actions. These will typically not
+   get described in the Changes file.
+
 "Tests: <Add/Improve/etc as above> (#1234)"
-   For changes that only concern tests.
-   These will typically not get described in the Changes file.
+   For changes that only concern tests. These will typically not get
+   described in the Changes file.
+
 "Internals: <Add/Improve/etc as above> (#1234)"
-   For changes that only concern developers, e.g. code cleanups.
-   These will typically not get described in the Changes file.
+   For changes that only concern developers, e.g. code cleanups. These will
+   typically not get described in the Changes file.
 
 The line's grammar should match the phrasing used in the Changes file.
 
@@ -1213,23 +1236,25 @@ The ``astgen`` Script
 ---------------------
 
 The ``astgen`` script is used to generate some of the repetitive C++ code
-related to the ``AstNode`` type hierarchy. An example is the abstract ``visit``
-methods in ``VNVisitor``. There are other uses; please see the ``*__gen*``
-files in the build directories and the ``astgen`` script for details.  A
-description of the more advanced features of ``astgen`` are provided here.
+related to the ``AstNode`` type hierarchy. An example is the abstract
+``visit`` methods in ``VNVisitor``. There are other uses; please see the
+``*__gen*`` files in the build directories and the ``astgen`` script for
+details. A description of the more advanced features of ``astgen`` are
+provided here.
 
 
 Generating ``AstNode`` members
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Some of the member s of ``AstNode`` sub-classes are generated by ``astgen``.
-These are emitted as pre-processor macro definitions, which then need to be
-added to the ``AstNode`` sub-classes they correspond to. Specifically ``class
-AstFoo`` should contain an instance of ``ASTGEN_MEMBERS_AstFoo;`` at class
-scope.  The ``astgen`` script checks and errors if this is not present. The
-method generated depends on whether the class is a concrete final class, or an
-abstract ``AstNode*`` base-class, and on ``@astgen`` directives present in
-comment sections in the body of the ``AstNode`` sub-class definitions.
+Some of the member s of ``AstNode`` sub-classes are generated by
+``astgen``. These are emitted as pre-processor macro definitions, which
+then need to be added to the ``AstNode`` sub-classes they correspond to.
+Specifically ``class AstFoo`` should contain an instance of
+``ASTGEN_MEMBERS_AstFoo;`` at class scope. The ``astgen`` script checks and
+errors if this is not present. The method generated depends on whether the
+class is a concrete final class, or an abstract ``AstNode*`` base-class,
+and on ``@astgen`` directives present in comment sections in the body of
+the ``AstNode`` sub-class definitions.
 
 
 List of ``@astgen`` directives
@@ -1238,40 +1263,41 @@ List of ``@astgen`` directives
 ``@astgen`` directives in comments contained in the body of ``AstNode``
 sub-class definitions are parsed and contribute to the code generated by
 ``astgen``. The general syntax is ``@astgen <keywords> := <description>``,
-where ``<keywords>`` determines what is being defined, and ``<description>`` is
-a ``<keywords>`` dependent description of the definition. The list of
-``@astgen`` directives are as follows:
+where ``<keywords>`` determines what is being defined, and
+``<description>`` is a ``<keywords>`` dependent description of the
+definition. The list of ``@astgen`` directives are as follows:
 
 
-``op<N>`` operand  directives
-+++++++++++++++++++++++++++++
+``op<N>`` operand directives
+++++++++++++++++++++++++++++
 
-The ``op1``, ``op2``, ``op3`` and ``op4`` directives are used to describe the
-name and type of the up to 4 child operands of a node. The syntax of the
-``<description>`` field is ``<identifier> : <type>``, where ``<identifier>``
-will be used as the base name of the generated operand accessors, and
-``<type>`` is one of:
+The ``op1``, ``op2``, ``op3`` and ``op4`` directives are used to describe
+the name and type of the up to 4 child operands of a node. The syntax of
+the ``<description>`` field is ``<identifier> : <type>``, where
+``<identifier>`` will be used as the base name of the generated operand
+accessors, and ``<type>`` is one of:
 
-1. An ``AstNode`` sub-class, defining the operand to be of that type, always
-   no-null, and with an always null ``nextp()``. That is, the child node is
-   always present, and is a single ``AstNode`` (as opposed to a list).
+1. An ``AstNode`` sub-class, defining the operand to be of that type,
+   always no-null, and with an always null ``nextp()``. That is, the child
+   node is always present, and is a single ``AstNode`` (as opposed to a
+   list).
 
-2. ``Optional[<AstNode sub-class>]``. This is just like in point 1 above, but
-   defines the child node to be optional, meaning it may be null.
+2. ``Optional[<AstNode sub-class>]``. This is just like in point 1 above,
+   but defines the child node to be optional, meaning it may be null.
 
-3. ``List[AstNode sub-class]`` describes a list operand, which means the child
-   node may have a non-null ``nextp()`` and in addition the child itself may be
-   null, representing an empty list.
+3. ``List[AstNode sub-class]`` describes a list operand, which means the
+   child node may have a non-null ``nextp()`` and in addition the child
+   itself may be null, representing an empty list.
 
+An example of the full syntax of the directive is ``@astgen op1 := lhsp :
+AstNodeExpr``.
 
-An example of the full syntax of the directive is
-``@astgen op1 := lhsp : AstNodeExpr``.
-
-``astnode`` generates accessors for the child nodes based on these directives.
-For non-list children, the names of the getter and setter both are that of the
-given ``<identifier>``. For list-type children, the getter is ``<identifier>``,
-and instead of the setter, there an ``add<Identifier>`` method is generated
-that appends new nodes (or lists of nodes) to the child list.
+``astnode`` generates accessors for the child nodes based on these
+directives. For non-list children, the names of the getter and setter both
+are that of the given ``<identifier>``. For list-type children, the getter
+is ``<identifier>``, and instead of the setter, there an
+``add<Identifier>`` method is generated that appends new nodes (or lists of
+nodes) to the child list.
 
 
 ``alias op<N>`` operand alias directives
@@ -1279,8 +1305,8 @@ that appends new nodes (or lists of nodes) to the child list.
 
 If a super-class already defined a name and type for a child node using the
 ``op<N>`` directive, but a more appropriate name exists in the context of a
-sub-class, then the alias directive can be used to introduce an additional name
-for the child node. The is ``alias op<N> := <identifier>`` where
+sub-class, then the alias directive can be used to introduce an additional
+name for the child node. The is ``alias op<N> := <identifier>`` where
 ``<identifier>`` is the new name. ``op<N>`` must have been defined in some
 super-class of the current node.
 
@@ -1305,9 +1331,9 @@ In particular, ``astgen`` is used to pre-process some of the C++ source
 files. For example in ``V3Const.cpp``, it is used to implement the
 ``visit()`` functions for each binary operation using the ``TREEOP`` macro.
 
-The original C++ source code is transformed into C++ code in the ``obj_opt``
-and ``obj_dbg`` sub-directories (the former for the optimized version of
-Verilator, the latter for the debug version). So for example
+The original C++ source code is transformed into C++ code in the
+``obj_opt`` and ``obj_dbg`` sub-directories (the former for the optimized
+version of Verilator, the latter for the debug version). So for example
 ``V3Const.cpp`` into ``V3Const__gen.cpp``.
 
 
@@ -1321,8 +1347,8 @@ at https://en.wikipedia.org/wiki/Visitor_pattern.
 
 As noted above, all visitors are derived classes of ``VNVisitor``. All
 derived classes of ``AstNode`` implement the ``accept`` method, which takes
-as argument a reference to an instance or a ``VNVisitor`` derived class
-and applies the visit method of the ``VNVisitor`` to the invoking AstNode
+as argument a reference to an instance or a ``VNVisitor`` derived class and
+applies the visit method of the ``VNVisitor`` to the invoking AstNode
 instance (i.e. ``this``).
 
 One possible difficulty is that a call to ``accept`` may perform an edit
@@ -1346,30 +1372,29 @@ calling ``accept`` on ``AstIf`` will look in turn for:
 
 There are three ways data is passed between visitor functions.
 
-1. A visitor-class member variable. This is generally for passing
-   "parent" information down to children. ``m_modp`` is a common
-   example. It's set to NULL in the constructor, where that node
-   (``AstModule`` visitor) sets it, then the children are iterated, then
-   it's cleared. Children under an ``AstModule`` will see it set, while
-   nodes elsewhere will see it clear. If there can be nested items (for
-   example an ``AstFor`` under an ``AstFor``) the variable needs to be
-   save-set-restored in the ``AstFor`` visitor; otherwise exiting the
-   lower for will lose the upper for's setting.
+1. A visitor-class member variable. This is generally for passing "parent"
+   information down to children. ``m_modp`` is a common example. It's set
+   to NULL in the constructor, where that node (``AstModule`` visitor) sets
+   it, then the children are iterated, then it's cleared. Children under an
+   ``AstModule`` will see it set, while nodes elsewhere will see it clear.
+   If there can be nested items (for example an ``AstFor`` under an
+   ``AstFor``) the variable needs to be save-set-restored in the ``AstFor``
+   visitor; otherwise exiting the lower for will lose the upper for's
+   setting.
 
 2. User attributes. Each ``AstNode`` (**Note.** The AST node, not the
-   visitor) has five user attributes, which may be accessed as an
-   integer using the ``user1()`` through ``user4()`` methods, or as a
-   pointer (of type ``AstNUser``) using the ``user1p()`` through
-   ``user4p()`` methods (a common technique lifted from graph traversal
-   packages).
+   visitor) has five user attributes, which may be accessed as an integer
+   using the ``user1()`` through ``user4()`` methods, or as a pointer (of
+   type ``AstNUser``) using the ``user1p()`` through ``user4p()`` methods
+   (a common technique lifted from graph traversal packages).
 
    A visitor first clears the one it wants to use by calling
-   ``AstNode::user#ClearTree()``, then it can mark any node's
-   ``user#()`` with whatever data it wants. Readers just call
-   ``nodep->user()``, but may need to cast appropriately, so you'll often
-   see ``VN_CAST(nodep->userp(), SOMETYPE)``. At the top of each visitor
-   are comments describing how the ``user()`` stuff applies to that
-   visitor class. For example:
+   ``AstNode::user#ClearTree()``, then it can mark any node's ``user#()``
+   with whatever data it wants. Readers just call ``nodep->user()``, but
+   may need to cast appropriately, so you'll often see
+   ``VN_CAST(nodep->userp(), SOMETYPE)``. At the top of each visitor are
+   comments describing how the ``user()`` stuff applies to that visitor
+   class. For example:
 
    ::
 
@@ -1378,31 +1403,31 @@ There are three ways data is passed between visitor functions.
       //   AstModule::user1p()     // bool. True to inline this module
 
    This says that at the ``AstNetlist`` ``user1ClearTree()`` is called.
-   Each :literal:`AstModule's `user1()` is used to indicate if we're
-   going to inline it.
+   Each AstModule's `user1()` is used to indicate if we're going to inline
+   it.
 
    These comments are important to make sure a ``user#()`` on a given
    ``AstNode`` type is never being used for two different purposes.
 
-   Note that calling ``user#ClearTree`` is fast; it doesn't walk the
-   tree, so it's ok to call fairly often. For example, it's commonly
-   called on every module.
+   Note that calling ``user#ClearTree`` is fast; it doesn't walk the tree,
+   so it's ok to call fairly often. For example, it's commonly called on
+   every module.
 
-3. Parameters can be passed between the visitors in close to the
-   "normal" function caller to callee way. This is the second ``vup``
-   parameter of type ``AstNUser`` that is ignored on most of the visitor
-   functions. V3Width does this, but it proved messier than the above
-   and is deprecated. (V3Width was nearly the first module written.
-   Someday this scheme may be removed, as it slows the program down to
-   have to pass vup everywhere.)
+3. Parameters can be passed between the visitors in close to the "normal"
+   function caller to callee way. This is the second ``vup`` parameter of
+   type ``AstNUser`` that is ignored on most of the visitor functions.
+   V3Width does this, but it proved messier than the above and is
+   deprecated. (V3Width was nearly the first module written. Someday this
+   scheme may be removed, as it slows the program down to have to pass vup
+   everywhere.)
 
 
 Iterators
 ---------
 
-``VNVisitor`` provides a set of iterators to facilitate walking over
-the tree. Each operates on the current ``VNVisitor`` class (as this)
-and takes an argument type ``AstNode*``.
+``VNVisitor`` provides a set of iterators to facilitate walking over the
+tree. Each operates on the current ``VNVisitor`` class (as this) and takes
+an argument type ``AstNode*``.
 
 ``iterate``
    Applies the ``accept`` method of the ``AstNode`` to the visitor
@@ -1413,8 +1438,8 @@ and takes an argument type ``AstNode*``.
    connected by ``nextp`` and ``backp`` pointers).
 
 ``iterateAndNextNull``
-   Applies the ``accept`` method of each ``AstNode`` in a list, only if
-   the provided node is non-NULL. If a node is edited by the call to
+   Applies the ``accept`` method of each ``AstNode`` in a list, only if the
+   provided node is non-NULL. If a node is edited by the call to
    ``accept``, apply ``accept`` again, until the node does not change.
 
 ``iterateListBackwards``
@@ -1422,8 +1447,8 @@ and takes an argument type ``AstNode*``.
    with the last one.
 
 ``iterateChildren``
-   Applies the ``iterateAndNextNull`` method on each child ``op1p``
-   through ``op4p`` in turn.
+   Applies the ``iterateAndNextNull`` method on each child ``op1p`` through
+   ``op4p`` in turn.
 
 ``iterateChildrenBackwards``
    Applies the ``iterateListBackwards`` method on each child ``op1p``
@@ -1433,10 +1458,10 @@ and takes an argument type ``AstNode*``.
 Caution on Using Iterators When Child Changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Visitors often replace one node with another node; V3Width and V3Const
-are major examples. A visitor which is the parent of such a replacement
-needs to be aware that calling iteration may cause the children to
-change. For example:
+Visitors often replace one node with another node; V3Width and V3Const are
+major examples. A visitor which is the parent of such a replacement needs
+to be aware that calling iteration may cause the children to change. For
+example:
 
 ::
 
@@ -1445,9 +1470,9 @@ change. For example:
    // nodep->lhsp() is 0x5678400
    iterateAndNextNull(nodep->lhsp());
 
-Will work fine, as even if the first iterate causes a new node to take
-the place of the ``lhsp()``, that edit will update ``nodep->lhsp()``, and
-the second call will correctly see the change. Alternatively:
+Will work fine, as even if the first iterate causes a new node to take the
+place of the ``lhsp()``, that edit will update ``nodep->lhsp()``, and the
+second call will correctly see the change. Alternatively:
 
 ::
 
@@ -1457,12 +1482,12 @@ the second call will correctly see the change. Alternatively:
    // nodep->lhsp() is 0x5678400, lp is 0x1234000
    iterateAndNextNull(lp);
 
-This will cause bugs or a core dump, as lp is a dangling pointer. Thus
-it is advisable to set lhsp=NULL shown in the \*'s above to make sure
-these dangles are avoided. Another alternative used in special cases,
-mostly in V3Width, is to use acceptSubtreeReturnEdits, which operates on
-a single node and returns the new pointer if any. Note
-acceptSubtreeReturnEdits does not follow ``nextp()`` links.
+This will cause bugs or a core dump, as lp is a dangling pointer. Thus it
+is advisable to set lhsp=NULL shown in the \*'s above to make sure these
+dangles are avoided. Another alternative used in special cases, mostly in
+V3Width, is to use acceptSubtreeReturnEdits, which operates on a single
+node and returns the new pointer if any. Note acceptSubtreeReturnEdits does
+not follow ``nextp()`` links.
 
 ::
 
@@ -1472,20 +1497,19 @@ acceptSubtreeReturnEdits does not follow ``nextp()`` links.
 Identifying Derived Classes
 ---------------------------
 
-A common requirement is to identify the specific ``AstNode`` class we
-are dealing with. For example, a visitor might not implement separate
-``visit`` methods for ``AstIf`` and ``AstGenIf``, but just a single
-method for the base class:
+A common requirement is to identify the specific ``AstNode`` class we are
+dealing with. For example, a visitor might not implement separate ``visit``
+methods for ``AstIf`` and ``AstGenIf``, but just a single method for the
+base class:
 
 ::
 
    void visit(AstNodeIf* nodep)
 
-However that method might want to specify additional code if it is
-called for ``AstGenIf``. Verilator does this by providing a ``VN_IS``
-method for each possible node type, which returns true if the node is of
-that type (or derived from that type). So our ``visit`` method could
-use:
+However that method might want to specify additional code if it is called
+for ``AstGenIf``. Verilator does this by providing a ``VN_IS`` method for
+each possible node type, which returns true if the node is of that type (or
+derived from that type). So our ``visit`` method could use:
 
 ::
 
@@ -1494,10 +1518,10 @@ use:
    }
 
 Additionally the ``VN_CAST`` method converts pointers similar to C++
-``dynamic_cast``. This either returns a pointer to the object cast to
-that type (if it is of class ``SOMETYPE``, or a derived class of
-``SOMETYPE``) or else NULL. (However, for true/false tests, use ``VN_IS``
-as that is faster.)
+``dynamic_cast``. This either returns a pointer to the object cast to that
+type (if it is of class ``SOMETYPE``, or a derived class of ``SOMETYPE``)
+or else NULL. (However, for true/false tests, use ``VN_IS`` as that is
+faster.)
 
 
 .. _testing:
@@ -1508,12 +1532,12 @@ Testing
 For an overview of how to write a test, see the BUGS section of the
 `Verilator Manual <https://verilator.org/verilator_doc.html>`_.
 
-It is important to add tests for failures as well as success (for
-example to check that an error message is correctly triggered).
+It is important to add tests for failures as well as success (for example
+to check that an error message is correctly triggered).
 
 Tests that fail should, by convention have the suffix ``_bad`` in their
-name, and include ``fails = 1`` in either their ``compile`` or
-``execute`` step as appropriate.
+name, and include ``fails = 1`` in either their ``compile`` or ``execute``
+step as appropriate.
 
 
 Preparing to Run Tests
@@ -1521,27 +1545,27 @@ Preparing to Run Tests
 
 For all tests to pass, you must install the following packages:
 
--  SystemC to compile the SystemC outputs, see https://systemc.org
+- SystemC to compile the SystemC outputs, see https://systemc.org
 
--  vcddiff to find differences in VCD outputs. See the readme at
-   https://github.com/veripool/vcddiff
+- vcddiff to find differences in VCD outputs. See the readme at
+  https://github.com/veripool/vcddiff
 
--  Cmake for build paths that use it.
+- Cmake for build paths that use it.
 
 
 Controlling the Test Driver
 ---------------------------
 
 The test driver script `driver.py` runs tests; see the `Test Driver`
-section.  The individual test drivers are written in Perl; see `Test
+section. The individual test drivers are written in Perl; see `Test
 Language`.
 
 
 Manual Test Execution
 ---------------------
 
-A specific regression test can be executed manually. To start the
-"EXAMPLE" test, run the following command.
+A specific regression test can be executed manually. To start the "EXAMPLE"
+test, run the following command.
 
 ::
 
@@ -1560,10 +1584,10 @@ Developers will also want to call ./configure with two extra flags:
    SystemC) may not be warning free.
 
 ``--enable-longtests``
-   In addition to the standard C, SystemC examples, also run the tests
-   in the ``test_regress`` directory when using *make test*'. This is
-   disabled by default, as SystemC installation problems would otherwise
-   falsely indicate a Verilator problem.
+   In addition to the standard C, SystemC examples, also run the tests in
+   the ``test_regress`` directory when using *make test*'. This is disabled
+   by default, as SystemC installation problems would otherwise falsely
+   indicate a Verilator problem.
 
 There are some traps to avoid when running regression tests
 
@@ -1571,16 +1595,16 @@ There are some traps to avoid when running regression tests
   Verilator tree. So make sure to keep any such code outside the tree.
 
 - Not all Linux systems install Perldoc by default. This is needed for the
-  ``--help`` option to Verilator, and also for regression testing.  This
-  can be installed using CPAN:
+  ``--help`` option to Verilator, and also for regression testing. This can
+  be installed using CPAN:
 
   ::
 
-    cpan install Pod::Perldoc
+     cpan install Pod::Perldoc
 
   Many Linux systems also offer a standard package for this. Red
-  Hat/Fedora/Centos offer *perl-Pod-Perldoc*', while
-  Debian/Ubuntu/Linux Mint offer \`perl-doc'.
+  Hat/Fedora/Centos offer *perl-Pod-Perldoc*', while Debian/Ubuntu/Linux
+  Mint offer \`perl-doc'.
 
 - Running regression may exhaust resources on some Linux systems,
   particularly file handles and user processes. Increase these to
@@ -1592,9 +1616,9 @@ Diffing generated code after changes
 ------------------------------------
 
 When making a change in the code generation area that should not change the
-actual emitted code, it is useful to perform a diff to make sure the emitted
-code really did not change. To do this, the top level Makefile provides the
-*test-snap* and *test-diff* targets:
+actual emitted code, it is useful to perform a diff to make sure the
+emitted code really did not change. To do this, the top level Makefile
+provides the *test-snap* and *test-diff* targets:
 
 - Run the test suite with ``make test``
 - Take a snapshot with ``make test-snap``
@@ -1612,59 +1636,60 @@ all tests against different OS and compiler versions.
 Developers can enable Actions on their GitHub repository so that the CI
 environment can check their branches too by enabling the build workflow:
 
--  On GitHub, navigate to the main page of the repository.
+- On GitHub, navigate to the main page of the repository.
 
--  Under your repository name, click Actions.
+- Under your repository name, click Actions.
 
--  In the left sidebar, click the workflow you want to enable ("build").
+- In the left sidebar, click the workflow you want to enable ("build").
 
--  Click Enable workflow.
+- Click Enable workflow.
 
 Benchmarking
 ------------
 
-For benchmarking the effects of changes (simulation speed, memory consumption,
-Verilation time, etc.), you can use `RTLMeter
-<https://github.com/verilator/rtlmeter>`__, a benchmark suite designed for this
-purpose. The scripts provided with RTLMeter have many capabilities. For full
-details, see the `documentation of RTLMeter
+For benchmarking the effects of changes (simulation speed, memory
+consumption, Verilation time, etc.), you can use `RTLMeter
+<https://github.com/verilator/rtlmeter>`__, a benchmark suite designed for
+this purpose. The scripts provided with RTLMeter have many capabilities.
+For full details, see the `documentation of RTLMeter
 <https://verilator.github.io/rtlmeter>`__ itself.
 
-For a quick check, you an run the following after putting ``verilator`` on your
-``PATH``:
+For a quick check, you an run the following after putting ``verilator`` on
+your ``PATH``:
 
-.. code:: shell
+.. code-block:: shell
 
-  ./rtlmeter run --cases "+standard" --workRoot work-a
-  ./rtlmeter report work-a
+   ./rtlmeter run --cases "+standard" --workRoot work-a
+   ./rtlmeter report work-a
 
-To compare against an alternate version, again put that alternate ``verilator``
-on your ``PATH`` then run:
+To compare against an alternate version, again put that alternate
+``verilator`` on your ``PATH`` then run:
 
-.. code:: shell
+.. code-block:: shell
 
-  ./rtlmeter run --cases "+standard" --workRoot work-b
-  ./rtlmeter compare work-a work-b
+   ./rtlmeter run --cases "+standard" --workRoot work-b
+   ./rtlmeter compare work-a work-b
 
-The continuous integration system in GitHub Actions runs this benchmark suite
-nightly on the master branch. The performance numbers from these nightly runs
-can be viewed via the `RTLMeter results dashboard
-<https://verilator.github.io/verilator-rtlmeter-results>`__. Note that these
-results are collected on GitHub hosted runners. These are virtual machines
-operating in a potentially noisy environment, so time measurements can have
-significant variance. Experience shows that a ~20% time difference can be
-reliably measured on GitHub hosted runners, and smaller differences are
-noticeable over a few days of reruns as trends emerge from the noise.
+The continuous integration system in GitHub Actions runs this benchmark
+suite nightly on the master branch. The performance numbers from these
+nightly runs can be viewed via the `RTLMeter results dashboard
+<https://verilator.github.io/verilator-rtlmeter-results>`__. Note that
+these results are collected on GitHub hosted runners. These are virtual
+machines operating in a potentially noisy environment, so time measurements
+can have significant variance. Experience shows that a ~20% time difference
+can be reliably measured on GitHub hosted runners, and smaller differences
+are noticeable over a few days of reruns as trends emerge from the noise.
 
 Code coverage
 -------------
 
-Code coverage for developing Verilator itself can be collected using ``gcc``
-and ``gcov`` with the following flow. Note that configuring with
-``--enable-dev-gcov`` disables optimization for both the debug and optimized
-builds of Verilator, so running the resulting executables can be slow:
+Code coverage for developing Verilator itself can be collected using
+``gcc`` and ``gcov`` with the following flow. Note that configuring with
+``--enable-dev-gcov`` disables optimization for both the debug and
+optimized builds of Verilator, so running the resulting executables can be
+slow:
 
-.. code:: shell
+.. code-block:: shell
 
    ./configure --enable-longtests --enable-dev-gcov
    make -j$(nproc)        # Build verilator
@@ -1673,21 +1698,21 @@ builds of Verilator, so running the resulting executables can be slow:
 
 
 The ``coverage-view`` make target opens the generated coverage report. This
-depends on ``coverage-report``, which generates the HTML coverage report. That
-turn depends on ``coverage-combine``, which combines all ``.gcda`` files into
-an lcov data file. Each of these make targets can be used separately if
-desired.
+depends on ``coverage-report``, which generates the HTML coverage report.
+That turn depends on ``coverage-combine``, which combines all ``.gcda``
+files into an lcov data file. Each of these make targets can be used
+separately if desired.
 
-You can also use the ``coverage-zero`` target to remove all ``.gcda`` files,
-which in effect clears all collected coverage data. This can be useful when
-checking individual test cases while modifying them.
+You can also use the ``coverage-zero`` target to remove all ``.gcda``
+files, which in effect clears all collected coverage data. This can be
+useful when checking individual test cases while modifying them.
 
-To collect coverage only for select tests, instead of ``make test``, run the
-individual ``test_regress/t/*.py`` cases, then use ``make coverage-view`` as
-before.
+To collect coverage only for select tests, instead of ``make test``, run
+the individual ``test_regress/t/*.py`` cases, then use ``make
+coverage-view`` as before.
 
-Note that every time binary built with coverage collection is invoked, it will
-add the coverage data collected during that invocation to the existing
+Every time binary built with coverage collection is invoked, it will add
+the coverage data collected during that invocation to the existing
 ``.gcda`` files. This means that ``verilator`` can also be run on any other
 external files or projects to collect code coverage on those invocations.
 
@@ -1696,22 +1721,22 @@ report will still contain the old coverage. Use ``make coverage-zero`` and
 rerun all tests if this is a concern.
 
 It is also possible to generate a 'patch coverage' report, which will only
-contain information about lines modified compared to a Git ref specified by the
-``COVERAGE_BASE`` Make variable (including uncommitted changes). For example,
-to see coverage of changes compared to upstream, use:
+contain information about lines modified compared to a Git ref specified by
+the ``COVERAGE_BASE`` Make variable (including uncommitted changes). For
+example, to see coverage of changes compared to upstream, use:
 
-.. code:: shell
+.. code-block:: shell
 
    make coverage-view COVERAGE_BASE=origin/master
 
 Fuzzing
 -------
 
-There are scripts included to facilitate fuzzing of Verilator. These
-have been successfully used to find a number of bugs in the frontend.
+There are scripts included to facilitate fuzzing of Verilator. These have
+been successfully used to find a number of bugs in the frontend.
 
-The scripts are based on using `American fuzzy
-lop <https://lcamtuf.coredump.cx/afl/>`__ on a Debian-like system.
+The scripts are based on using `American fuzzy lop
+<https://lcamtuf.coredump.cx/afl/>`__ on a Debian-like system.
 
 To get started, cd to "nodist/fuzzer/" and run "./all". A sudo password may
 be required to setup the system for fuzzing.
@@ -1728,8 +1753,8 @@ The "UINFO" calls in the source indicate a debug level. Messages level 3
 and below are globally enabled with ``--debug``. Higher levels may be
 controlled with ``--debugi <level>``. An individual source file levels may
 be controlled with ``-debugi-<srcfile> <level>``. For example ``--debug
---debugi 5 --debugi-V3Width 9`` will use the debug binary at default
-debug level 5, with the V3Width.cpp file at level 9.
+--debugi 5 --debugi-V3Width 9`` will use the debug binary at default debug
+level 5, with the V3Width.cpp file at level 9.
 
 
 `--debug`
@@ -1741,7 +1766,7 @@ placed into the obj_dir, .vpp, .tree and .dot files.
 .vpp Output
 -----------
 
-Verilator creates a *{mod_prefix}*\ __inputs\ .vpp file containing all the
+Verilator creates a *{mod_prefix}*\ __inputs.vpp file containing all the
 files that were read, filtered by preprocessing. This file can be fed back
 into Verilator, replacing on the command line all of the previous input
 files, to enable simplification of test cases.
@@ -1819,11 +1844,10 @@ In more detail, the following fields are dumped common to all nodes. They
 are produced by the ``AstNode::dump()`` method:
 
 Tree Hierarchy
-   The dump lines begin with numbers and colons to indicate the child
-   node hierarchy. As noted above, ``AstNode`` has lists of items at the
-   same level in the AST, connected by the ``nextp()`` and ``prevp()``
-   pointers. These appear as nodes at the same level. For example, after
-   inlining:
+   The dump lines begin with numbers and colons to indicate the child node
+   hierarchy. As noted above, ``AstNode`` has lists of items at the same
+   level in the AST, connected by the ``nextp()`` and ``prevp()`` pointers.
+   These appear as nodes at the same level. For example, after inlining:
 
    ::
 
@@ -1842,19 +1866,18 @@ AstNode type
    ``NETLIST`` and ``BASICDTYPE``).
 
 Address of the node
-   A hexadecimal address of the node in memory. Useful for examining
-   with the debugger. If the actual address values are not important,
-   then using the ``--dump-tree-addrids`` option will convert address
-   values to short identifiers of the form ``([A-Z]*)``, which is
-   hopefully easier for the reader to cross-reference throughout the
-   dump.
+   A hexadecimal address of the node in memory. Useful for examining with
+   the debugger. If the actual address values are not important, then using
+   the ``--dump-tree-addrids`` option will convert address values to short
+   identifiers of the form ``([A-Z]*)``, which is hopefully easier for the
+   reader to cross-reference throughout the dump.
 
 Last edit number
-   Of the form ``<ennnn>`` or ``<ennnn#>`` , where ``nnnn`` is the
-   number of the last edit to modify this node. The trailing ``#``
-   indicates the node has been edited since the last tree dump
-   (typically in the last refinement or optimization pass). GDB can
-   watch for this; see << /Debugging >>.
+   Of the form ``<ennnn>`` or ``<ennnn#>`` , where ``nnnn`` is the number
+   of the last edit to modify this node. The trailing ``#`` indicates the
+   node has been edited since the last tree dump (typically in the last
+   refinement or optimization pass). GDB can watch for this; see
+   `Debugging`.
 
 Source file and line
    Of the form ``{xxnnnn}``, where C{xx} is the filename letter (or
@@ -1865,31 +1888,31 @@ User pointers
    Shows the value of the node's user1p...user4p, if non-NULL.
 
 Data type
-   Many nodes have an explicit data type. "@dt=0x..." indicates the
-   address of the data type (AstNodeDType) this node uses.
+   Many nodes have an explicit data type. "@dt=0x..." indicates the address
+   of the data type (AstNodeDType) this node uses.
 
    If a data type is present and is numeric, it then prints the width of
-   the item. This field is a sequence of flag characters and width data
-   as follows:
+   the item. This field is a sequence of flag characters and width data as
+   follows:
 
-   -  ``s`` if the node is signed.
+   - ``s`` if the node is signed.
 
-   -  ``d`` if the node is a double (i.e. a floating point entity).
+   - ``d`` if the node is a double (i.e. a floating point entity).
 
-   -  ``w`` always present, indicating this is the width field.
+   - ``w`` always present, indicating this is the width field.
 
-   -  ``u`` if the node is unsized.
+   - ``u`` if the node is unsized.
 
-   -  ``/nnnn`` if the node is unsized, where ``nnnn`` is the minimum
-      width.
+   - ``/nnnn`` if the node is unsized, where ``nnnn`` is the minimum
+        width.
 
 Name of the entity represented by the node if it exists
    For example, for a ``VAR`` is the name of the variable.
 
-Many nodes follow these fields with additional node-specific
-information. Thus the ``VARREF`` node will print either ``[LV]`` or
-``[RV]`` to indicate a left value or right value, followed by the node
-of the variable being referred to. For example:
+Many nodes follow these fields with additional node-specific information.
+Thus the ``VARREF`` node will print either ``[LV]`` or ``[RV]`` to indicate
+a left value or right value, followed by the node of the variable being
+referred to. For example:
 
 ::
 
@@ -1908,79 +1931,83 @@ Similarly, the ``NETLIST`` has a list of modules referred to by its
 .tree.json Output
 -----------------
 
-``.tree.json``` is an alternative dump format to ``.tree`` that is meant for
-programmatic processing (e.g. with `astsee <https://github.com/antmicro/astsee>`_).
-To enable this dump format, use :vlopt:`--dump-tree-json` or :vlopt:`--json-only`.
+``.tree.json``` is an alternative dump format to ``.tree`` that is meant
+for programmatic processing (e.g. with `astsee
+<https://github.com/antmicro/astsee>`_). To enable this dump format, use
+:vlopt:`--dump-tree-json` or :vlopt:`--json-only`.
 
 Structure:
+
 ::
 
-  {
-    /* Attributes that are common to all types of nodes */
-    "type": "VAR",
-    "name": "cyc",
-    /* By default addresses and filenames use short/stable ids rather than real value */
-    "addr": "(H)",
-    "loc": "a,25:12,26:15", /* "fileid,firstLine:firstCol,lastLine:endCol" (endCol is right exclusive) */
-    "editNum": 602,
-    /* Fields that are specific to AstVar nodes:  */
-    "origName": "cyc",
-    "isSc": false,
-    "ioDirection": "NONE",
-    "isConst": false,
-    "isPullup": false,
-    "isPulldown": false,
-    "isUsedClock": false,
-    "isSigPublic": false,
-    "isLatched": false,
-    "isUsedLoopIdx": false,
-    "noReset": false,
-    "attrIsolateAssign": false,
-    "attrFileDescr": false,
-    "isDpiOpenArray": false,
-    "isFuncReturn": false,
-    "isFuncLocal": false,
-    "attrClocker": "UNKNOWN",
-    "lifetime": "NONE",
-    "varType": "VAR",
-    /* Lists of child nodes (which use similar structure as their parent): */
-    "childDTypep": [ /* ... */ ],
-    "delayp": [ /* ... */ ],
-    "valuep": [ /* ... */ ],
-    "attrsp": [ /* ... */ ]
-  }
+   {
+     /* Attributes that are common to all types of nodes */
+     "type": "VAR",
+     "name": "cyc",
+     /* By default addresses and filenames use short/stable ids rather than real value */
+     "addr": "(H)",
+     "loc": "a,25:12,26:15", /* "fileid,firstLine:firstCol,lastLine:endCol" (endCol is right exclusive) */
+     "editNum": 602,
+     /* Fields that are specific to AstVar nodes:  */
+     "origName": "cyc",
+     "isSc": false,
+     "ioDirection": "NONE",
+     "isConst": false,
+     "isPullup": false,
+     "isPulldown": false,
+     "isUsedClock": false,
+     "isSigPublic": false,
+     "isLatched": false,
+     "isUsedLoopIdx": false,
+     "noReset": false,
+     "attrIsolateAssign": false,
+     "attrFileDescr": false,
+     "isDpiOpenArray": false,
+     "isFuncReturn": false,
+     "isFuncLocal": false,
+     "attrClocker": "UNKNOWN",
+     "lifetime": "NONE",
+     "varType": "VAR",
+     /* Lists of child nodes (which use similar structure as their parent): */
+     "childDTypep": [ /* ... */ ],
+     "delayp": [ /* ... */ ],
+     "valuep": [ /* ... */ ],
+     "attrsp": [ /* ... */ ]
+   }
 
 .tree.meta.json Output
-----------------
+----------------------
+
 .tree.meta.json contains metadata that is common across the whole AST tree
 (in case of --dump-tree-json, multiple trees share one meta file).
 
-Besides de-duplication of data shared between multiple stages, .meta.json enables offloading
-unstable data (that can vary from machine-to-machine or run-to-run) from main .tree.json.
-This offloading allows, for example, to use byte-to-byte comparisons of AST dumps in tests.
+Besides de-duplication of data shared between multiple stages, .meta.json
+enables offloading unstable data (that can vary from machine-to-machine or
+run-to-run) from main .tree.json. This offloading allows, for example, to
+use byte-to-byte comparisons of AST dumps in tests.
 
 ::
 
-  {"files": {
-    /* Map id to filename, and other metadata */
-    "d": {"filename":"/home/ant/tmp/verilator/include/verilated_std.sv", "realpath":"/home/ant/tmp/verilator/include/verilated_std.sv", "language":"1800-2023"},
-    "a": {"filename":"<built-in>", "realpath":"<built-in>", "language":"1800-2023"},
-    "b": {"filename":"<command-line>", "realpath":"<command-line>", "language":"1800-2023"},
-    "c": {"filename":"input.vc", "realpath":"/home/ant/tmp/verilator/test_regress/input.vc", "language":"1800-2023"},
-    "e": {"filename":"t/t_EXAMPLE.v", "realpath":"/home/ant/tmp/verilator/test_regress/t/t_EXAMPLE.v", "language":"1800-2023"}
-   },"pointers": {
-    /* Map id to real address */
-    "(AG)": "0x562997289180",
-    "(YF)": "0x5629971c50b0",
-    "(WF)": "0x5629971e7ae0",
-    /* ... /*
-   },"ptrFieldNames": [
-    /* List of fields that are used for storing pointers */
-    "aboveScopep",
-    "voidp",
-    "addr",
-    /* ... */
- ]}
+   {"files": {
+     /* Map id to filename, and other metadata */
+     "d": {"filename":"/home/ant/tmp/verilator/include/verilated_std.sv", "realpath":"/home/ant/tmp/verilator/include/verilated_std.sv", "language":"1800-2023"},
+     "a": {"filename":"<built-in>", "realpath":"<built-in>", "language":"1800-2023"},
+     "b": {"filename":"<command-line>", "realpath":"<command-line>", "language":"1800-2023"},
+     "c": {"filename":"input.vc", "realpath":"/home/ant/tmp/verilator/test_regress/input.vc", "language":"1800-2023"},
+     "e": {"filename":"t/t_EXAMPLE.v", "realpath":"/home/ant/tmp/verilator/test_regress/t/t_EXAMPLE.v", "language":"1800-2023"}
+    },"pointers": {
+     /* Map id to real address */
+     "(AG)": "0x562997289180",
+     "(YF)": "0x5629971c50b0",
+     "(WF)": "0x5629971e7ae0",
+     /* ... /*
+    },"ptrFieldNames": [
+     /* List of fields that are used for storing pointers */
+     "aboveScopep",
+     "voidp",
+     "addr",
+     /* ... */
+   ]}
 
 
 .tree.dot Output
@@ -1995,10 +2022,10 @@ represent the pointers (``op1p``, ``op2p``, etc) between the nodes.
 Debugging with GDB
 ------------------
 
-The `driver.py` script accepts ``--debug --gdb`` to start
-Verilator under gdb and break when an error is hit, or the program is about
-to exit. You can also use ``--debug --gdbbt`` to just backtrace and then
-exit gdb. To debug the Verilated executable, use ``--gdbsim``.
+The `driver.py` script accepts ``--debug --gdb`` to start Verilator under
+gdb and break when an error is hit, or the program is about to exit. You
+can also use ``--debug --gdbbt`` to just backtrace and then exit gdb. To
+debug the Verilated executable, use ``--gdbsim``.
 
 If you wish to start Verilator under GDB (or another debugger), then you
 can use ``--debug`` and look at the underlying invocation of
@@ -2032,8 +2059,8 @@ Start GDB, then ``start`` with the remaining arguments.
 
 You can then continue execution with breakpoints as required.
 
-To break at a specific edit number which changed a node (presumably to
-find what made a <e#*#*> line in the tree dumps):
+To break at a specific edit number which changed a node (presumably to find
+what made a <e#*#*> line in the tree dumps):
 
 ::
 
@@ -2055,8 +2082,8 @@ To print a node:
    pnt nodep
    # or: call dumpTreeGdb(nodep)  # aliased to "pnt" in src/.gdbinit
 
-``src/.gdbinit`` and ``src/.gdbinit.py`` define handy utilities for working with
-JSON AST dumps. For example:
+``src/.gdbinit`` and ``src/.gdbinit.py`` define handy utilities for working
+with JSON AST dumps. For example:
 
 * ``jstash nodep`` - Perform a JSON AST dump and save it into GDB value history (e.g. ``$1``)
 * ``jtree nodep`` - Perform a JSON AST dump and pretty print it using ``astsee_verilator``.
@@ -2065,9 +2092,11 @@ JSON AST dumps. For example:
 * ``jtree 0x55555613dca0`` - Pretty print using address literal (rather than actual pointer).
 * ``jtree $1 nodep`` - Diff ``nodep`` against an older dump.
 
-A detailed description of ``jstash`` and ``jtree`` can be displayed using ``gdb``'s ``help`` command.
+A detailed description of ``jstash`` and ``jtree`` can be displayed using
+``gdb``'s ``help`` command.
 
-These commands require `astsee <https://github.com/antmicro/astsee>`_ to be installed.
+These commands require `astsee <https://github.com/antmicro/astsee>`_ to be
+installed.
 
 When GDB halts, it is useful to understand that the backtrace will commonly
 show the iterator functions between each invocation of ``visit`` in the
@@ -2103,8 +2132,9 @@ Generally, what would you do to add a new feature?
 
 5. Now you can run ``test_regress/t/t_<newtestcase>.py --debug`` and it'll
    probably fail, but you'll see a
-   ``test_regress/obj_dir/t_<newtestcase>/*.tree`` file which you can examine
-   to see if the parsing worked. See also the sections above on debugging.
+   ``test_regress/obj_dir/t_<newtestcase>/*.tree`` file which you can
+   examine to see if the parsing worked. See also the sections above on
+   debugging.
 
 6. Modify the later visitor functions to process the new feature as needed.
 
@@ -2129,29 +2159,35 @@ to full support. However the following IEEE sections and features are not
 anticipated to be ever implemented for the reasons indicated.
 
 IEEE 1800-2023 3.3 modules within modules
-    Little/no tool support, and arguably not a good practice.
-IEEE 1800-2023 6.12 "shortreal"
-    Little/no tool support, and easily promoted to real.
-IEEE 1800-2023 11.11 Min, typ, max
-    No SDF support, so will always use typical.
-IEEE 1800-2023 20.16 Stochastic analysis
-    Little industry use.
-IEEE 1800-2023 20.17 PLA modeling
-    Little industry use and outdated technology.
-IEEE 1800-2023 31 Timing checks
-    No longer relevant with static timing analysis tools.
-IEEE 1800-2023 32 SDF annotation
-    No longer relevant with static timing analysis tools.
-IEEE 1800-2023 33 Config
-    Little industry use.
+   Little/no tool support, and arguably not a good practice.
 
+IEEE 1800-2023 6.12 "shortreal"
+   Little/no tool support, and easily promoted to real.
+
+IEEE 1800-2023 11.11 Min, typ, max
+   No SDF support, so will always use typical.
+
+IEEE 1800-2023 20.16 Stochastic analysis
+   Little industry use.
+
+IEEE 1800-2023 20.17 PLA modeling
+   Little industry use and outdated technology.
+
+IEEE 1800-2023 31 Timing checks
+   No longer relevant with static timing analysis tools.
+
+IEEE 1800-2023 32 SDF annotation
+   No longer relevant with static timing analysis tools.
+
+IEEE 1800-2023 33 Config
+   Little industry use.
 
 
 Test Driver
 ===========
 
-This section documents the test driver script, `driver.py`.  driver.py
-invokes Verilator or another simulator on each test file.  For test file
+This section documents the test driver script, `driver.py`. driver.py
+invokes Verilator or another simulator on each test file. For test file
 contents description see `Test Language`.
 
 The driver reports the number of tests which pass, fail, or skipped (some
@@ -2159,7 +2195,7 @@ resource required by the test is not available, such as SystemC).
 
 There are thousands of tests, and for faster completion you may want to run
 the regression tests with OBJCACHE enabled and in parallel on a machine
-with many cores.  See the -j option and OBJCACHE environment variable.
+with many cores. See the `-j` option and OBJCACHE environment variable.
 
 
 driver.py Pass-Thru Arguments
@@ -2177,7 +2213,7 @@ driver.py Non-Scenario Arguments
 
 .. option:: --benchmark [<cycles>]
 
-   Show execution times of each step.  If an optional number is given,
+   Show execution times of each step. If an optional number is given,
    specifies the number of simulation cycles (for tests that support it).
 
 .. option:: --debug
@@ -2193,7 +2229,7 @@ driver.py Non-Scenario Arguments
 
 .. option:: --driver-clean
 
-   After a test passes, remove the generated objects.  Reduces storage
+   After a test passes, remove the generated objects. Reduces storage
    requirements, but may result in longer runtime if the tests are run
    again.
 
@@ -2206,7 +2242,7 @@ driver.py Non-Scenario Arguments
 .. option:: --fail-max <numtests>
 
    Set the number of failing tests, after which the driver will stop
-   running additional tests.  Defaults to 20, 0 disables.
+   running additional tests. Defaults to 20, 0 disables.
 
 .. option:: --gdb
 
@@ -2215,7 +2251,7 @@ driver.py Non-Scenario Arguments
 .. option:: --gdbbt
 
    Same as ``verilator --gdbbt``: Run Verilator under the debugger, only to
-   print backtrace information.  Requires ``--debug``.
+   print backtrace information. Requires ``--debug``.
 
 .. option:: --gdbsim
 
@@ -2247,7 +2283,7 @@ driver.py Non-Scenario Arguments
 .. option:: --quiet
 
    Suppress all output except for failures and progress messages every 15
-   seconds.  Intended for use only in automated regressions.  See also
+   seconds. Intended for use only in automated regressions. See also
    ``--rerun``, and ``--verbose`` which is not the opposite of ``--quiet``.
 
 .. option:: --rerun
@@ -2297,7 +2333,7 @@ driver.py Scenario Arguments
 ----------------------------
 
 The following options control which simulator is used, and which tests are
-run.  Multiple flags may be used to run multiple simulators/scenarios
+run. Multiple flags may be used to run multiple simulators/scenarios
 simultaneously.
 
 .. option:: --atsim
@@ -2330,7 +2366,7 @@ simultaneously.
 
 .. option:: --vlt
 
-   Run Verilator tests in single-threaded mode.  Default unless another
+   Run Verilator tests in single-threaded mode. Default unless another
    scenario flag is provided.
 
 .. option:: --vltmt
@@ -2350,57 +2386,57 @@ driver.py Environment
 ---------------------
 
 HARNESS_UPDATE_GOLDEN
-  If true, update all .out golden reference files.  Typically, instead the
-  ``--golden`` option is used to update only a single test's reference.
+   If true, update all .out golden reference files. Typically, instead the
+   ``--golden`` option is used to update only a single test's reference.
 
 SYSTEMC
-  Root directory name of SystemC kit.  Only used if ``SYSTEMC_INCLUDE`` not
-  set.
+   Root directory name of SystemC kit. Only used if ``SYSTEMC_INCLUDE`` not
+   set.
 
 SYSTEMC_INCLUDE
-  Directory name with systemc.h in it.
+   Directory name with systemc.h in it.
 
 VERILATOR_ATSIM
-  Command to use to invoke Atsim.
+   Command to use to invoke Atsim.
 
 VERILATOR_GHDL
-  Command to use to invoke GHDL.
+   Command to use to invoke GHDL.
 
 VERILATOR_GDB
-  Command to use to invoke GDB debugger.
+   Command to use to invoke GDB debugger.
 
 VERILATOR_IVERILOG
-  Command to use to invoke Icarus Verilog.
+   Command to use to invoke Icarus Verilog.
 
 VERILATOR_MAKE
-  Command to use to rebuild Verilator and run single test.
+   Command to use to rebuild Verilator and run single test.
 
 VERILATOR_MODELSIM
-  Command to use to invoke ModelSim.
+   Command to use to invoke ModelSim.
 
 VERILATOR_NCVERILOG
-  Command to use to invoke ncverilog.
+   Command to use to invoke ncverilog.
 
 VERILATOR_ROOT
-  Standard path to Verilator distribution root; see primary Verilator
-  documentation.
+   Standard path to Verilator distribution root; see primary Verilator
+   documentation.
 
 VERILATOR_SOLVER
-  SMT solver command for constrained randomization; see primary Verilator
-  documentation.
+   SMT solver command for constrained randomization; see primary Verilator
+   documentation.
 
 VERILATOR_TESTS_SITE
-  Used with ``--site``, a colon-separated list of directories with tests to
-  be added to testlist.
+   Used with ``--site``, a colon-separated list of directories with tests
+   to be added to testlist.
 
 VERILATOR_VCS
-  Command to use to invoke VCS.
+   Command to use to invoke VCS.
 
 VERILATOR_XELAB
-  Command to use to invoke XSim xelab
+   Command to use to invoke XSim xelab
 
 VERILATOR_XVLOG
-  Command to use to invoke XSim xvlog
+   Command to use to invoke XSim xvlog
 
 
 Test Language
@@ -2414,27 +2450,27 @@ Test Language Summary
 
 For convenience, a summary of the most commonly used features is provided
 here, with a reference in a later section. All test files typically have a
-call to the ``test.lint`` or ``test.compile`` methods to compile the
-test. For run-time tests, this is followed by a call to the
-``test.execute`` method. Both of these functions can optionally be provided
-with arguments specifying additional options.
+call to the ``test.lint`` or ``test.compile`` methods to compile the test.
+For run-time tests, this is followed by a call to the ``test.execute``
+method. Both of these functions can optionally be provided with arguments
+specifying additional options.
 
 If those complete, the script calls ``test.passes`` to increment the count
 of successful tests.
 
 The driver.py script assumes by default that the source Verilog file name
-matches the test script name. So a test whose driver is
-``t/t_mytest.py`` will expect a Verilog source file ``t/t_mytest.v``.
-This can be changed using the ``top_filename`` subroutine, for example
+matches the test script name. So a test whose driver is ``t/t_mytest.py``
+will expect a Verilog source file ``t/t_mytest.v``. This can be changed
+using the ``top_filename`` subroutine, for example
 
 ::
 
    test.top_filename = "t/t_myothertest.v"
 
 By default, all tests will run with major simulators (Icarus Verilog, NC,
-VCS, ModelSim, etc.) as well as Verilator, to allow results to be
-compared. However, if you wish a test only to be used with Verilator, you
-can use the following:
+VCS, ModelSim, etc.) as well as Verilator, to allow results to be compared.
+However, if you wish a test only to be used with Verilator, you can use the
+following:
 
 ::
 
@@ -2444,10 +2480,11 @@ Of the many options that can be set through arguments to ``test.compiler``
 and ``test.execute``, the following are particularly useful:
 
 ``verilator_flags2``
-  A list of flags to be passed to verilator when compiling.
+   A list of flags to be passed to verilator when compiling.
 
 ``fails``
-  Set true to indicate that the compilation or execution is intended to fail.
+   Set true to indicate that the compilation or execution is intended to
+   fail.
 
 For example, the following would specify that compilation requires two
 defines and is expected to fail.
@@ -2523,74 +2560,74 @@ Test Language Compile/Lint/Run Arguments
 ----------------------------------------
 
 This section describes common arguments to ``test.compile``, ``test.lint``,
-and ``test.run``.  The full list of arguments can be found by looking at
-the ``driver.py`` source code.
+and ``test.run``. The full list of arguments can be found by looking at the
+``driver.py`` source code.
 
 all_run_flags
-  A list of flags to be passed when running the simulator (Verilated model
-  or one of the other simulators).
+   A list of flags to be passed when running the simulator (Verilated model
+   or one of the other simulators).
 
 check_finished
-  True to indicate successful completion of the test is indicated by the
-  string ``*-* All Finished *-*`` being printed on standard output. This is
-  the normal way for successful tests to finish.
+   True to indicate successful completion of the test is indicated by the
+   string ``*-* All Finished *-*`` being printed on standard output. This
+   is the normal way for successful tests to finish.
 
 fails
-  True to indicate this step is expected to fail.  Tests that are expected
-  to fail generally have _bad in their filename.
+   True to indicate this step is expected to fail. Tests that are expected
+   to fail generally have _bad in their filename.
 
 make_main
-  False to disable the automatic creation of a C++ test wrapper (for
-  example when a hand-written test wrapper is provided using ``verilator
-  --exe``).
+   False to disable the automatic creation of a C++ test wrapper (for
+   example when a hand-written test wrapper is provided using ``verilator
+   --exe``).
 
 make_top_shell
-  False to disable the automatic creation of a top level shell to run the
-  executable (for example when a hand-written test wrapper is provided
-  using ``verilator --exe``).
+   False to disable the automatic creation of a top level shell to run the
+   executable (for example when a hand-written test wrapper is provided
+   using ``verilator --exe``).
 
 ms_flags / ms_flags2 / ms_run_flags
-  The equivalent of ``v_flags``, ``v_flags2`` and ``all_run_flags``, but
-  only for use with the ModelSim simulator.
+   The equivalent of ``v_flags``, ``v_flags2`` and ``all_run_flags``, but
+   only for use with the ModelSim simulator.
 
 nc_flags / nc_flags2 / nc_run_flags
-  The equivalent of ``v_flags``, ``v_flags2`` and ``all_run_flags``, but
-  only for use with the Cadence NC simulator.
+   The equivalent of ``v_flags``, ``v_flags2`` and ``all_run_flags``, but
+   only for use with the Cadence NC simulator.
 
 iv_flags / iv_flags2 / iv_run_flags
-  The equivalent of ``v_flags``, ``v_flags2`` and ``all_run_flags``, but
-  only for use with the Icarus Verilog simulator.
+   The equivalent of ``v_flags``, ``v_flags2`` and ``all_run_flags``, but
+   only for use with the Icarus Verilog simulator.
 
 v_flags
-  A list of standard Verilog simulator flags to be passed to the simulator
-  compiler (Verilator or one of the other simulators).  This list is create
-  by the driver and rarely changed, use ``v_flags2`` instead.
+   A list of standard Verilog simulator flags to be passed to the simulator
+   compiler (Verilator or one of the other simulators). This list is create
+   by the driver and rarely changed, use ``v_flags2`` instead.
 
 v_flags2
-  A list of standard Verilog simulator flags to be passed to the simulator
-  compiler (Verilator or one of the other simulators). Unlike ``v_flags``,
-  these options may be overridden in some simulation files.
+   A list of standard Verilog simulator flags to be passed to the simulator
+   compiler (Verilator or one of the other simulators). Unlike ``v_flags``,
+   these options may be overridden in some simulation files.
 
-  Similar sets of flags exist for atsim, GHDL, Cadence NC, ModelSim and
-  Synopsys VCS.
+   Similar sets of flags exist for atsim, GHDL, Cadence NC, ModelSim and
+   Synopsys VCS.
 
 vcs_flags / vcs_flags2 / vcs_run_flags
-  The equivalent of ``v_flags``, ``v_flags2`` and ``all_run_flags``, but
-  only for use with the Synopsys VCS simulator.
+   The equivalent of ``v_flags``, ``v_flags2`` and ``all_run_flags``, but
+   only for use with the Synopsys VCS simulator.
 
 verilator_flags / verilator_flags2
-  The equivalent of ``v_flags`` and ``v_flags2``, but only for use with
-  Verilator.  If a flag is a standard flag, ``+incdir`` for example, pass
-  it with ``v_flags2`` instead.
+   The equivalent of ``v_flags`` and ``v_flags2``, but only for use with
+   Verilator. If a flag is a standard flag, ``+incdir`` for example, pass
+   it with ``v_flags2`` instead.
 
 benchmarksim
-  Output the number of model evaluations and execution time of a test to
-  ``test_output_dir>/<test_name>_benchmarksim.csv``. Multiple invocations
-  of the same test file will append to to the same .csv file.
+   Output the number of model evaluations and execution time of a test to
+   ``test_output_dir>/<test_name>_benchmarksim.csv``. Multiple invocations
+   of the same test file will append to to the same .csv file.
 
 xsim_flags / xsim_flags2 / xsim_run_flags
-  The equivalent of ``v_flags``, ``v_flags2`` and ``all_run_flags``, but
-  only for use with the Xilinx XSim simulator.
+   The equivalent of ``v_flags``, ``v_flags2`` and ``all_run_flags``, but
+   only for use with the Xilinx XSim simulator.
 
 
 Distribution

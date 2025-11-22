@@ -14,10 +14,10 @@ This section discusses how to install Verilator.
 Package Manager Quick Install
 =============================
 
-Using a distribution's package manager is the easiest way to get
-started. (Note distribution packages almost never have the most recent
-Verilator version, so we recommend following :ref:`Git Install` below,
-instead.) To install as a package:
+Using a distribution's package manager is the easiest way to get started.
+(Note distribution packages almost never have the most recent Verilator
+version, so we recommend following :ref:`Git Install` below, instead.) To
+install as a package:
 
 .. code-block:: bash
 
@@ -28,15 +28,16 @@ For other distributions, refer to `Repology Verilator Distro Packages
 
 .. _pre-commit quick install:
 
-pre-commit Quick Install
-=============================
+Pre-commit Quick Install
+========================
 
 You can use Verilator's `pre-commit <https://pre-commit.com/>`__ hook to
-lint your code before committing it.  It encapsulates the :ref:`Verilator
-Build Docker Container`, so you need docker on your system to use it.  The
+lint your code before committing it. It encapsulates the :ref:`Verilator
+Build Docker Container`, so you need docker on your system to use it. The
 verilator image will be downloaded automatically.
 
-To use the hook, add the following entry to your :code:`.pre-commit-config.yaml`:
+To use the hook, add the following entry to your
+``.pre-commit-config.yaml``:
 
 .. code-block:: yaml
 
@@ -129,15 +130,15 @@ For constraints:
 
    sudo apt-get install z3  # Optional solver
 
-The following is optional but is recommended for nicely rendered command line
-help when running Verilator:
+The following is optional but is recommended for nicely rendered command
+line help when running Verilator:
 
 .. code-block:: bash
 
    sudo apt-get install perl-doc
 
-To build or run Verilator, the following are optional but should be installed
-for good performance:
+To build or run Verilator, the following are optional but should be
+installed for good performance:
 
 .. code-block:: bash
 
@@ -176,7 +177,7 @@ SystemC code can be generated from Verilator (with :vlopt:`--sc`) if it is
 installed as a package (see above).
 
 Alternatively, from their sources, download `SystemC
-<https://www.accellera.org/downloads/standards/systemc>`__.  Follow their
+<https://www.accellera.org/downloads/standards/systemc>`__. Follow their
 installation instructions. You will need to set the
 :option:`SYSTEMC_INCLUDE` environment variable to point to the include
 directory with ``systemc.h`` in it, and set the :option:`SYSTEMC_LIBDIR`
@@ -192,18 +193,18 @@ required at Verilator build time.
 
 .. code-block:: bash
 
-    sudo apt-get install gtkwave  # Optional Waveform viewer
+   sudo apt-get install gtkwave  # Optional Waveform viewer
 
 
 Install Z3
 ^^^^^^^^^^
 
 In order to use constrained randomization the `Z3 Theorem Prover
-<https://github.com/z3prover/z3>`__ must be installed, however this is
-not required at Verilator build time. There are other compatible SMT solvers,
-like CVC5/CVC4, but they are not guaranteed to work. Since different solvers are
-faster for different scenarios, the solver to use at run-time can be specified
-by the environment variable :option:`VERILATOR_SOLVER`.
+<https://github.com/z3prover/z3>`__ must be installed, however this is not
+required at Verilator build time. There are other compatible SMT solvers,
+like CVC5/CVC4, but they are not guaranteed to work. Since different
+solvers are faster for different scenarios, the solver to use at run-time
+can be specified by the environment variable :option:`VERILATOR_SOLVER`.
 
 
 .. _obtain sources:
@@ -269,7 +270,7 @@ co-exist on a system.
    ./configure
    # Running will use files from $VERILATOR_ROOT, so no install needed
 
-Note after installing (see `Installation`_), a calling program or shell
+Note after installing (see ref:`Installation`), a calling program or shell
 must set the environment variable :option:`VERILATOR_ROOT` to point to this
 Git directory, then execute ``$VERILATOR_ROOT/bin/verilator``, which will
 find the path to all needed files.
@@ -281,7 +282,7 @@ find the path to all needed files.
 You may be an OS package maintainer building a Verilator package, or you
 may eventually be installing onto a project/company-wide "CAD" tools disk
 that may support multiple versions of every tool. Tell configure the
-eventual destination directory name.  We recommend that the destination
+eventual destination directory name. We recommend that the destination
 location include the Verilator version name:
 
 .. code-block:: bash
@@ -291,7 +292,7 @@ location include the Verilator version name:
    # For the tarball, use the version number instead of git describe
    ./configure --prefix /CAD_DISK/verilator/`git describe | sed "s/verilator_//"`
 
-Note after installing (see `Installation`_), you need to add the path to
+Note after installing (see ref:`Installation`), you need to add the path to
 the ``bin`` directory to your ``PATH``. Or, if you use `modulecmd
 <https://modules.sourceforge.net/>`__, you'll want a module file like the
 following:
@@ -317,7 +318,7 @@ configure's default system paths:
    unsetenv VERILATOR_ROOT   # if your shell is csh
    ./configure
 
-Then after installing (see `Installation`_), the binaries should be in a
+Then after installing (see ref:`Installation`), the binaries should be in a
 location already in your ``$PATH`` environment variable.
 
 

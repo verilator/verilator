@@ -5,8 +5,7 @@
 Copyright
 *********
 
-The latest version of Verilator is available from `https://verilator.org
-<https://verilator.org>`_.
+The latest version of Verilator is available from https://verilator.org.
 
 Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify the Verilator internals under the terms

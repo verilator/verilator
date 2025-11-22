@@ -177,24 +177,24 @@ Historical Origins
 ==================
 
 Verilator was conceived in 1994 by Paul Wasson at the Core Logic Group at
-Digital Equipment Corporation.  The Verilog code that was converted to C
-was then merged with a C-based CPU model of the Alpha processor and
-simulated in a C-based environment called CCLI.
+Digital Equipment Corporation. The Verilog code that was converted to C was
+then merged with a C-based CPU model of the Alpha processor and simulated
+in a C-based environment called CCLI.
 
 In 1995 Verilator started being used for Multimedia and Network Processor
-development inside Digital.  Duane Galbi took over the active development
-of Verilator, and added several performance enhancements, and CCLI was
-still being used as the shell.
+development inside Digital. Duane Galbi took over the active development of
+Verilator, and added several performance enhancements, and CCLI was still
+being used as the shell.
 
 In 1998, through the efforts of existing DECies, mainly Duane Galbi,
-Digital graciously agreed to release the source code.  (Subject to the code
+Digital graciously agreed to release the source code. (Subject to the code
 not being resold, which is compatible with the GNU Public License.)
 
-In 2001, Wilson Snyder took the kit, added a SystemC mode, and called
-it Verilator2.  This was the first packaged public release.
+In 2001, Wilson Snyder took the kit, added a SystemC mode, and called it
+Verilator2. This was the first packaged public release.
 
 In 2002, Wilson Snyder created Verilator 3.000 by rewriting Verilator from
-scratch in C++.  This added many optimizations, yielding about a 2-5x
+scratch in C++. This added many optimizations, yielding about a 2-5x
 performance gain.
 
 In 2009, major SystemVerilog and DPI language support was added.

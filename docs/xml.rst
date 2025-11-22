@@ -32,9 +32,9 @@ The XML document consists of 4 sections within the top level
 ``<files>``... ``</files>``
    This section contains a list of all design files read, including the
    built-in constructs and the command line as their own entries. Each
-   ``<file>`` has an attribute ``id`` which is a short ASCII string
-   unique to that file. Other elements' ``loc`` attributes use this id
-   to refer to a particular file.
+   ``<file>`` has an attribute ``id`` which is a short ASCII string unique
+   to that file. Other elements' ``loc`` attributes use this id to refer to
+   a particular file.
 
 ``<module_files>``... ``</module_files>``
    All files containing Verilog module definitions are listed in this
@@ -43,28 +43,27 @@ The XML document consists of 4 sections within the top level
 
 ``<cells>``... ``</cells>``
    The cells section of the XML document contains the design instance
-   hierarchy. Each instance is represented with the ``<cell>`` element
-   with the following attributes:
+   hierarchy. Each instance is represented with the ``<cell>`` element with
+   the following attributes:
 
-   -  ``loc``: The file id, first line number, last line number, first
-      column number and last column number of the identifier where the
-      module was instanced, separated by commas.
+   - ``loc``: The file id, first line number, last line number, first
+     column number and last column number of the identifier where the
+     module was instanced, separated by commas.
 
-   -  ``name``: The instance name.
+   - ``name``: The instance name.
 
-   -  ``submodname``: The module name uniquified with particular
-      parameter values (if any).
+   - ``submodname``: The module name uniquified with particular parameter
+     values (if any).
 
-   -  ``hier``: The full hierarchy path.
+   - ``hier``: The full hierarchy path.
 
 ``<netlist>``... ``</netlist>``
-   The netlist section contains a number of
-   ``<module>``... ``</module>`` elements, each describing the
-   contents of that module, and a single ``<typetable>``...
-   ``</typetable>`` element which lists all used types used within the
-   modules. Each type has a numeric ``id`` attribute that is referred to
-   by elements in the ``<module>`` elements using the ``dtype_id``
-   attribute.
+   The netlist section contains a number of ``<module>``... ``</module>``
+   elements, each describing the contents of that module, and a single
+   ``<typetable>``... ``</typetable>`` element which lists all used types
+   used within the modules. Each type has a numeric ``id`` attribute that
+   is referred to by elements in the ``<module>`` elements using the
+   ``dtype_id`` attribute.
 
 
 Distribution
