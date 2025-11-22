@@ -23,6 +23,7 @@ Verilator 5.043 devel
 * Support this.randomize() with constraints (#6634). [Artur Bieniek, Antmicro Ltd.]
 * Support multi-expression sequences (#6639). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Support `#1step` delay as statement  (#6671). [Pawel Kojma, Antmicro Ltd.]
+* Support clocking output delay `1step` (#6681). [Ondrej Ille]
 * Support parsing of dotted bins_expression  (#6683). [Pawel Kojma, Antmicro Ltd.]
 * Support constant expression cycle delays in sequences (#6691). [Ryszard Rozak, Antmicro Ltd.]
 * Support general global constraints (#6709) (#6711). [Yilou Wang]

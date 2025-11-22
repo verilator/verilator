@@ -902,11 +902,6 @@ class LinkParseVisitor final : public VNVisitor {
                     }
                     m_defaultInSkewp = itemp->skewp();
                 } else if (itemp->direction() == VDirection::OUTPUT) {
-                    if (AstConst* const constp = VN_CAST(itemp->skewp(), Const)) {
-                        if (constp->num().is1Step()) {
-                            itemp->skewp()->v3error("1step not allowed as output skew");
-                        }
-                    }
                     // Disallow default redefinition; note some simulators allow this
                     if (m_defaultOutSkewp) {
                         itemp->skewp()->v3error("Multiple default output skews not allowed");
@@ -929,10 +924,6 @@ class LinkParseVisitor final : public VNVisitor {
                 } else {
                     // Default is 0 (IEEE 1800-2023 14.3)
                     nodep->skewp(new AstConst{nodep->fileline(), 0});
-                }
-            } else if (AstConst* const constp = VN_CAST(nodep->skewp(), Const)) {
-                if (constp->num().is1Step()) {
-                    nodep->skewp()->v3error("1step not allowed as output skew");
                 }
             }
         } else if (nodep->direction() == VDirection::INPUT) {
