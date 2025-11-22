@@ -30,7 +30,7 @@ jobs:
         run: |
           bash ci/ci-install.bash &&
           sudo apt-get install clang-format-18 yapf3 &&
-          sudo pip3 install gersemi mbake &&
+          sudo pip3 install gersemi==0.23.1 mbake &&
           git config --global user.email "action@example.com" &&
           git config --global user.name "github action"
       - name: Format code
