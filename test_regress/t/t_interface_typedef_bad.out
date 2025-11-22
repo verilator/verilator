@@ -1,0 +1,11 @@
+%Error: t/t_interface_typedef_bad.v:15:11: Unsupported: SystemVerilog 2005 interface typedef
+   15 |   typedef not_found.choice_t choice1_t;   
+      |           ^~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_interface_typedef_bad.v:16:11: Unsupported: SystemVerilog 2005 interface typedef
+   16 |   typedef i.not_found_t choice2_t;   
+      |           ^
+%Error: t/t_interface_typedef_bad.v:17:11: Unsupported: SystemVerilog 2005 interface typedef
+   17 |   typedef not_ifc.x_t choice3_t;   
+      |           ^~~~~~~
+%Error: Exiting due to

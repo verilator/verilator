@@ -2516,8 +2516,9 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
                           AstNodeDType* const dtp = GRAMMARP->createArray(refp, $4, true);
                           $$ = GRAMMARP->createTypedef($<fl>5, *$5, $7, dtp, $6); }
         //                      //
-        |       yTYPEDEF idAny/*interface*/ '.' idAny/*type*/ idAny/*type*/ dtypeAttrListE ';'
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: SystemVerilog 2005 typedef in this context"); DEL($6); }
+        |       yTYPEDEF idAny/*interface_port*/ '.' idAny/*type*/ idAny/*type*/ dtypeAttrListE ';'
+                        { AstRefDType* const refp = new AstRefDType{$<fl>2, AstRefDType::FlagIfaceTypedef{}, *$2, *$4};
+                          $$ = GRAMMARP->createTypedef($<fl>5, *$5, $6, refp, nullptr); }
         //                      // idAny as also allows redeclaring same typedef again
         |       yTYPEDEF idAny ';'                      { $$ = GRAMMARP->createTypedefFwd($<fl>2, *$2, VFwdType::NONE); }
         //                      // IEEE: expanded forward_type to prevent conflict
