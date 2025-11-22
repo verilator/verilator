@@ -8,6 +8,6 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 if [ "$SOURCE_BRANCH"="stable" ]; then
-    docker tag $IMAGE_NAME $DOCKER_REPO:latest
-    docker push $DOCKER_REPO:latest
+  docker tag $IMAGE_NAME $DOCKER_REPO:latest
+  docker push $DOCKER_REPO:latest
 fi

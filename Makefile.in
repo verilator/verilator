@@ -460,6 +460,20 @@ analyzer-include:
 	-rm -rf examples/*/obj*
 	scan-build $(MAKE) -k examples
 
+# Bash/sh files
+BASH_FILES = \
+  ci/ci-install.bash \
+  ci/ci-pages-notify.bash \
+  ci/ci-pages.bash \
+  ci/ci-script.bash \
+  ci/docker/run/hooks/post_push \
+  ci/docker/run/verilator-docker \
+  ci/docker/run/verilator-wrap.sh \
+  nodist/fuzzer/all \
+  nodist/fuzzer/run \
+  nodist/fuzzer/setup_root \
+  nodist/fuzzer/setup_user \
+
 # CMake files
 CMAKE_FILES = \
   CMakeLists.txt \
@@ -526,6 +540,13 @@ PY_TEST_FILES = test_regress/t/*.py
 
 format:
 	$(MAKE) -j 5 format-c format-cmake format-exec format-py
+
+BEAUTYSH = beautysh
+BEAUTYSH_FLAGS = --indent-size 2
+
+format-bash:
+	$(BEAUTYSH) --version
+	$(BEAUTYSH) $(BEAUTYSH_FLAGS) $(BASH_FILES)
 
 CLANGFORMAT = clang-format-18
 CLANGFORMAT_FLAGS = -i
