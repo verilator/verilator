@@ -4,4 +4,4 @@
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
--F sub.F
+-F sub.vc

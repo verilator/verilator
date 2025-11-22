@@ -22,7 +22,7 @@ test.compile(verilator_make_cmake=True,
              verilator_make_gmake=False,
              verilator_flags2=[
                  '$TEST_ROOT/t_hier_block_import_def.vh',
-                 '-f $TEST_ROOT/t_hier_block_import_args.f', '-I$TEST_ROOT'
+                 '-f $TEST_ROOT/t_hier_block_import_args.vc', '-I$TEST_ROOT'
              ],
              threads=(6 if test.vltmt else 1))
 
