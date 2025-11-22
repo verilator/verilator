@@ -460,24 +460,6 @@ analyzer-include:
 	-rm -rf examples/*/obj*
 	scan-build $(MAKE) -k examples
 
-format:
-	$(MAKE) -j 5 format-c format-cmake format-exec format-py
-
-CLANGFORMAT = clang-format-18
-CLANGFORMAT_FLAGS = -i
-CLANGFORMAT_FILES = $(CHECK_CPP) $(CHECK_H) $(CHECK_YL) test_regress/t/*.c* test_regress/t/*.h
-
-format-c clang-format:
-	$(CLANGFORMAT) --version
-	@$(CLANGFORMAT) --version | fgrep 'version 18' > /dev/null \
-	|| echo "*** You are not using clang-format-18, indents may differ from master's ***"
-	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CLANGFORMAT_FILES)
-
-YAMLFIX = YAMLFIX_WHITELINES=1 YAMLFIX_LINE_LENGTH=200 YAMLFIX_preserve_quotes=true yamlfix
-
-yamlfix:
-	$(YAMLFIX) .
-
 # CMake files
 CMAKE_FILES = \
   CMakeLists.txt \
@@ -530,6 +512,39 @@ PY_FILES = \
 # Python files, test_regress tests
 PY_TEST_FILES = test_regress/t/*.py
 
+######################################################################
+# Format
+
+format:
+	$(MAKE) -j 5 format-c format-cmake format-exec format-py
+
+CLANGFORMAT = clang-format-18
+CLANGFORMAT_FLAGS = -i
+CLANGFORMAT_FILES = $(CHECK_CPP) $(CHECK_H) $(CHECK_YL) test_regress/t/*.c* test_regress/t/*.h
+
+format-c clang-format:
+	$(CLANGFORMAT) --version
+	@$(CLANGFORMAT) --version | fgrep 'version 18' > /dev/null \
+	|| echo "*** You are not using clang-format-18, indents may differ from master's ***"
+	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CLANGFORMAT_FILES)
+
+GERSEMI = gersemi
+GERSEMI_FLAGS = -i --no-warn-about-unknown-commands
+
+format-cmake:
+	$(GERSEMI) --version
+	$(GERSEMI) $(GERSEMI_FLAGS) $(CMAKE_FILES)
+
+MBAKE = mbake
+MBAKE_FLAGS = format --config ./.bake.toml
+
+format-exec:
+	-chmod a+x test_regress/t/*.py
+
+format-make mbake:
+	$(MBAKE) --version
+	$(MBAKE) $(MBAKE_FLAGS) $(MAKE_FILES)
+
 YAPF = yapf3
 YAPF_FLAGS = -i --parallel
 
@@ -537,19 +552,14 @@ format-py yapf:
 	$(YAPF) --version
 	$(YAPF) $(YAPF_FLAGS) $(PY_FILES)
 
-GERSEMI = gersemi
-GERSEMI_FLAGS = -i --no-warn-about-unknown-commands
+YAMLFIX = YAMLFIX_WHITELINES=1 YAMLFIX_LINE_LENGTH=200 YAMLFIX_preserve_quotes=true yamlfix
 
-format-cmake:
-	$(GERSEMI) $(GERSEMI_FLAGS) $(CMAKE_FILES)
+format-yaml yamlfix:
+	$(YAMLFIX) --version
+	$(YAMLFIX) .
 
-MBAKE = mbake
-MBAKE_FLAGS = format --config ./.bake.toml
-
-format-make:
-	$(MBAKE) $(MBAKE_FLAGS) $(MAKE_FILES)
-
-format-yaml: yamlfix
+######################################################################
+# Lint
 
 MYPY = mypy
 MYPY_FLAGS = --strict --no-error-summary
@@ -582,9 +592,6 @@ lint-py-pylint-tests:
 
 lint-py-ruff:
 	$(RUFF) $(RUFF_FLAGS) $(PY_PROGRAMS)
-
-format-exec:
-	-chmod a+x test_regress/t/*.py
 
 ######################################################################
 # Configure
