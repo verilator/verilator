@@ -5,7 +5,7 @@
  Errors and Warnings
 =====================
 
-.. _Disabling Warnings:
+.. _disabling warnings:
 
 Disabling Warnings
 ==================

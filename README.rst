@@ -152,9 +152,9 @@ Verilator is free software; you can redistribute it and/or modify it under
 the terms of either the GNU Lesser General Public License Version 3 or the
 Perl Artistic License Version 2.0. See the documentation for more details.
 
-.. _CHIPS Alliance: https://chipsalliance.org
-.. _Icarus Verilog: https://steveicarus.github.io/iverilog
-.. _Linux Foundation: https://www.linuxfoundation.org
+.. _chips alliance: https://chipsalliance.org
+.. _icarus verilog: https://steveicarus.github.io/iverilog
+.. _linux foundation: https://www.linuxfoundation.org
 .. |Logo| image:: https://www.veripool.org/img/verilator_256_200_min.png
 .. |verilator multithreaded performance| image:: https://www.veripool.org/img/verilator_multithreaded_performance_bg-min.png
 .. |verilator usage| image:: https://www.veripool.org/img/verilator_usage_400x200-min.png

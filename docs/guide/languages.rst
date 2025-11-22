@@ -172,7 +172,7 @@ using the :option:`timing_off` and :option:`timing_off` options in Verilator
 Control Files.
 
 
-.. _Language Limitations:
+.. _language limitations:
 
 Language Limitations
 ====================
@@ -254,7 +254,7 @@ generating one member of a structure from blocking, and another from
 non-blocking assignments is unsupported.
 
 
-.. _Unknown States:
+.. _unknown states:
 
 Unknown States
 --------------

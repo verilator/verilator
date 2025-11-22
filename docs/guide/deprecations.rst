@@ -21,7 +21,7 @@ XML output
   Verilator currently supports XML parser output (enabled with `--xml-only`).
   Support for `--xml-*` options will be deprecated no sooner than January 2026.
 
---make cmake
+`--make cmake`
   The `--make cmake` options is deprecated and will be removed no sooner than
   January 2026. Use `--make json` instead. Note that the CMake integration
   shipping with Verilator (verilator-config.mk) already uses `--make json` so

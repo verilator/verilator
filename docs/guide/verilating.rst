@@ -27,7 +27,7 @@ Verilator may be used in five major ways:
   expanded.
 
 
-.. _Binary, C++ and SystemC Generation:
+.. _binary, c++ and systemc generation:
 
 Binary, C++ and SystemC Generation
 ==================================
@@ -65,7 +65,7 @@ Once a model is built, the next step is typically for the user to run it,
 see :ref:`Simulating`.
 
 
-.. _Finding and Binding Modules:
+.. _finding and binding modules:
 
 Finding and Binding Modules
 ===========================
@@ -99,7 +99,7 @@ coexist uniquely within each library name.  When IEEE `config use` is
 supported, more complicated selections will be able to be specified.
 
 
-.. _Hierarchical Verilation:
+.. _hierarchical verilation:
 
 Hierarchical Verilation
 =======================
@@ -168,7 +168,7 @@ But, the following usage is supported:
   overridden using :code:`#(.param_name(value))` construct.
 
 
-.. _Overlapping Verilation and Compilation:
+.. _overlapping verilation and compilation:
 
 Overlapping Verilation and Compilation
 --------------------------------------
@@ -220,7 +220,7 @@ Makefiles produced by Verilator presume the target system is the same type
 as the build system.
 
 
-.. _Multithreading:
+.. _multithreading:
 
 Multithreading
 ==============
@@ -335,7 +335,7 @@ IEEE to be multithreaded, Verilator requires all VPI calls are only made
 from the main thread.
 
 
-.. _GNU Make:
+.. _gnu make:
 
 GNU Make
 ========
@@ -347,7 +347,7 @@ If calling Verilator from a makefile, the :vlopt:`--MMD` option will create
 a dependency file, allowing Make to only run Verilator if input Verilog
 files change.
 
-.. _CMake:
+.. _cmake:
 
 CMake
 =====
@@ -547,7 +547,7 @@ The search paths can be configured by setting some variables:
    SYSTEMC_ROOT).
 
 
-.. _Verilation Summary Report:
+.. _verilation summary report:
 
 Verilation Summary Report
 =========================

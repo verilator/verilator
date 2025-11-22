@@ -2196,7 +2196,7 @@ Summary:
    filenames.
 
 
-.. _Verilator Control Files:
+.. _verilator control files:
 
 =======================
 Verilator Control Files

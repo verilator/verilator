@@ -1,7 +1,7 @@
 .. Copyright 2003-2025 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-.. _Installation:
+.. _installation:
 
 ************
 Installation
@@ -9,7 +9,7 @@ Installation
 
 This section discusses how to install Verilator.
 
-.. _Package Manager Quick Install:
+.. _package manager quick install:
 
 Package Manager Quick Install
 =============================
@@ -26,7 +26,7 @@ instead.) To install as a package:
 For other distributions, refer to `Repology Verilator Distro Packages
 <https://repology.org/project/verilator>`__.
 
-.. _pre-commit Quick Install:
+.. _pre-commit quick install:
 
 pre-commit Quick Install
 =============================
@@ -46,7 +46,7 @@ To use the hook, add the following entry to your :code:`.pre-commit-config.yaml`
        hooks:
          - id: verilator
 
-.. _Git Install:
+.. _git install:
 
 Git Quick Install
 =================
@@ -83,7 +83,7 @@ In brief, to install from git:
    sudo make install
 
 
-.. _Detailed Build Instructions:
+.. _detailed build instructions:
 
 Detailed Build Instructions
 ===========================
@@ -206,7 +206,7 @@ faster for different scenarios, the solver to use at run-time can be specified
 by the environment variable :option:`VERILATOR_SOLVER`.
 
 
-.. _Obtain Sources:
+.. _obtain sources:
 
 Obtain Sources
 --------------

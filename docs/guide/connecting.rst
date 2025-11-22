@@ -1,7 +1,7 @@
 .. Copyright 2003-2025 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-.. _Connecting:
+.. _connecting:
 
 ******************************
 Connecting to Verilated Models
@@ -39,7 +39,7 @@ model:
   internals, including :code:`/* verilator public_flat */` items.
 
 
-.. _Porting from pre 4.210:
+.. _porting from pre 4.210:
 
 Model interface changes in version 4.210
 ------------------------------------------
@@ -78,7 +78,7 @@ often inlined into the root scope) will need to be updated as follows:
     contain one additional indirection via the :code:`rootp` pointer.
 
 
-.. _Connecting to C++:
+.. _connecting to C++:
 
 Connecting to C++
 =================
@@ -418,7 +418,7 @@ be deferred for later.  These delayed values can be flushed to the model with
 :code:`VerilatedVpi::doInertialPuts()`.
 
 
-.. _VPI Example:
+.. _vpi example:
 
 VPI Example
 -----------
@@ -482,7 +482,7 @@ accesses the above signal "readme" would be:
      EOF
 
 
-.. _Evaluation Loop:
+.. _evaluation loop:
 
 Wrappers and Model Evaluation Loop
 ==================================

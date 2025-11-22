@@ -1,7 +1,7 @@
 .. Copyright 2003-2025 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-.. _CMakeInstallation:
+.. _cmakeinstallation:
 
 ******************
 CMake Installation
@@ -10,7 +10,7 @@ CMake Installation
 This section discusses how to build and install Verilator using cmake.
 Currently cmake is only officially supported for Windows builds (not Linux).
 
-.. _Tools Install:
+.. _tools install:
 
 Quick Install
 =============
@@ -50,7 +50,7 @@ To build using ninja:
     cmake --install . --prefix $PWD/../install
 
 
-.. _CMake Usage:
+.. _cmake usage:
 
 Usage
 =====

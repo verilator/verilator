@@ -1500,7 +1500,7 @@ that type (if it is of class ``SOMETYPE``, or a derived class of
 as that is faster.)
 
 
-.. _Testing:
+.. _testing:
 
 Testing
 =======
@@ -1732,8 +1732,8 @@ be controlled with ``-debugi-<srcfile> <level>``. For example ``--debug
 debug level 5, with the V3Width.cpp file at level 9.
 
 
---debug
--------
+`--debug`
+---------
 
 When you run with ``--debug``, there are three primary output file types
 placed into the obj_dir, .vpp, .tree and .dot files.
@@ -2173,96 +2173,124 @@ arguments are passed as Verilator arguments.
 driver.py Non-Scenario Arguments
 --------------------------------
 
---benchmark [<cycles>]
-  Show execution times of each step.  If an optional number is given,
-  specifies the number of simulation cycles (for tests that support it).
+.. program:: driver.py
 
---debug
-  Same as ``verilator --debug``: Use the debug version of Verilator which
-  enables additional assertions, debugging messages, and structure dump
-  files.
+.. option:: --benchmark [<cycles>]
 
---debugi(-<srcfile>) <level>
-  Same as ``verilator --debugi level``: Set Verilator internal debugging
-  level globally to the specified debug level (1-10).
+   Show execution times of each step.  If an optional number is given,
+   specifies the number of simulation cycles (for tests that support it).
 
---driver-clean
-  After a test passes, remove the generated objects.  Reduces storage
-  requirements, but may result in longer runtime if the tests are run
-  again.
+.. option:: --debug
 
---dump-tree
-  Same as ``verilator --dump-tree``: Enable Verilator writing .tree debug
-  files with dumping level 3, which dumps the standard critical stages.
-  For details on the format see `.tree Output`.
+   Same as ``verilator --debug``: Use the debug version of Verilator which
+   enables additional assertions, debugging messages, and structure dump
+   files.
 
---fail-max <numtests>
-  Set the number of failing tests, after which the driver will stop running
-  additional tests.  Defaults to 20, 0 disables.
+.. option:: --debugi(-<srcfile>) <level>
 
---gdb
-  Same as ``verilator --gdb``: Run Verilator under the debugger.
+   Same as ``verilator --debugi level``: Set Verilator internal debugging
+   level globally to the specified debug level (1-10).
 
---gdbbt
-  Same as ``verilator --gdbbt``: Run Verilator under the debugger, only to
-  print backtrace information.  Requires ``--debug``.
+.. option:: --driver-clean
 
---gdbsim
-  Run Verilator generated executable under the debugger.
+   After a test passes, remove the generated objects.  Reduces storage
+   requirements, but may result in longer runtime if the tests are run
+   again.
 
---golden
-  Update golden files, equivalent to ``export HARNESS_UPDATE_GOLDEN=1``.
+.. option:: --dump-tree
 
---hashset <set>/<numsets>
-  Split tests based on a hash of the test names into <numsets> and run only
-  tests in set number <set> (0..<numsets>-1).
+   Same as ``verilator --dump-tree``: Enable Verilator writing .tree debug
+   files with dumping level 3, which dumps the standard critical stages.
+   For details on the format see `.tree Output`.
 
---help
-  Displays help message and exits.
+.. option:: --fail-max <numtests>
 
---j #
-  Run number of parallel tests, or 0 to determine the count based on the
-  number of cores installed.
+   Set the number of failing tests, after which the driver will stop
+   running additional tests.  Defaults to 20, 0 disables.
 
---obj-suffix <name>
-  Append the argument to the name of the ``test_regress/obj_`` directories.
+.. option:: --gdb
 
---quiet
-  Suppress all output except for failures and progress messages every 15
-  seconds.  Intended for use only in automated regressions.  See also
-  ``--rerun``, and ``--verbose`` which is not the opposite of ``--quiet``.
+   Same as ``verilator --gdb``: Run Verilator under the debugger.
 
---rerun
-  Rerun all tests that failed in this run. Reruns force the flags
-  ``--no-quiet --j 1``.
+.. option:: --gdbbt
 
---rr
-  Same as ``verilator --rr``: Run Verilator and record with ``rr``.
+   Same as ``verilator --gdbbt``: Run Verilator under the debugger, only to
+   print backtrace information.  Requires ``--debug``.
 
---rrsim
-  Run Verilator generated executable and record with ``rr``.
+.. option:: --gdbsim
 
---site
-  Run site-specific tests also.
+   Run Verilator generated executable under the debugger.
 
---stop
-  Stop on the first error.
+.. option:: --golden
 
---top-filename <file>
-  Override the default Verilog file name.
+   Update golden files, equivalent to ``export HARNESS_UPDATE_GOLDEN=1``.
 
---trace
-  Set the simulator-specific flags to request waveform tracing.
+.. option:: --hashset <set>/<numsets>
 
---valgrind
-  Same as ``verilator --valgrind``: Run Verilator under `Valgrind <https://valgrind.org/>`_.
+   Split tests based on a hash of the test names into <numsets> and run
+   only tests in set number <set> (0..<numsets>-1).
 
---verbose
-  Compile and run the test in verbose mode. This means ``TEST_VERBOSE``
-  will be defined for the test (Verilog and any C++/SystemC wrapper).
+.. option:: --help
 
---verilated-debug
-  For tests using the standard C++ wrapper, enable runtime debug mode.
+   Displays help message and exits.
+
+.. option:: --j #
+
+   Run number of parallel tests, or 0 to determine the count based on the
+   number of cores installed.
+
+.. option:: --obj-suffix <name>
+
+   Append the argument to the name of the ``test_regress/obj_``
+   directories.
+
+.. option:: --quiet
+
+   Suppress all output except for failures and progress messages every 15
+   seconds.  Intended for use only in automated regressions.  See also
+   ``--rerun``, and ``--verbose`` which is not the opposite of ``--quiet``.
+
+.. option:: --rerun
+
+   Rerun all tests that failed in this run. Reruns force the flags
+   ``--no-quiet --j 1``.
+
+.. option:: --rr
+
+   Same as ``verilator --rr``: Run Verilator and record with ``rr``.
+
+.. option:: --rrsim
+
+   Run Verilator generated executable and record with ``rr``.
+
+.. option:: --site
+
+   Run site-specific tests also.
+
+.. option:: --stop
+
+   Stop on the first error.
+
+.. option:: --top-filename <file>
+
+   Override the default Verilog file name.
+
+.. option:: --trace
+
+   Set the simulator-specific flags to request waveform tracing.
+
+.. option:: --valgrind
+
+   Same as ``verilator --valgrind``: Run Verilator under `Valgrind <https://valgrind.org/>`_.
+
+.. option:: --verbose
+
+   Compile and run the test in verbose mode. This means ``TEST_VERBOSE``
+   will be defined for the test (Verilog and any C++/SystemC wrapper).
+
+.. option:: --verilated-debug
+
+   For tests using the standard C++ wrapper, enable runtime debug mode.
 
 
 driver.py Scenario Arguments
@@ -2272,39 +2300,50 @@ The following options control which simulator is used, and which tests are
 run.  Multiple flags may be used to run multiple simulators/scenarios
 simultaneously.
 
---atsim
-  Run ATSIM simulator tests.
+.. option:: --atsim
 
---dist
-  Run simulator-agnostic distribution tests.
+   Run ATSIM simulator tests.
 
---ghdl
-  Run GHDL simulator tests.
+.. option:: --dist
 
---iv
-  Run Icarus Verilog simulator tests.
+   Run simulator-agnostic distribution tests.
 
---ms
-  Run ModelSim simulator tests.
+.. option:: --ghdl
 
---nc
-  Run Cadence NC-Verilog simulator tests.
+   Run GHDL simulator tests.
 
---vcs
-  Run Synopsys VCS simulator tests.
+.. option:: --iv
 
---vlt
-  Run Verilator tests in single-threaded mode.  Default unless another
-  scenario flag is provided.
+   Run Icarus Verilog simulator tests.
 
---vltmt
-  Run Verilator tests in multithreaded mode.
+.. option:: --ms
 
---xrun
-  Run Cadence Xcelium simulator tests.
+   Run ModelSim simulator tests.
 
---xsim
-  Run Xilinx XSim simulator tests.
+.. option:: --nc
+
+   Run Cadence NC-Verilog simulator tests.
+
+.. option:: --vcs
+
+   Run Synopsys VCS simulator tests.
+
+.. option:: --vlt
+
+   Run Verilator tests in single-threaded mode.  Default unless another
+   scenario flag is provided.
+
+.. option:: --vltmt
+
+   Run Verilator tests in multithreaded mode.
+
+.. option:: --xrun
+
+   Run Cadence Xcelium simulator tests.
+
+.. option:: --xsim
+
+   Run Xilinx XSim simulator tests.
 
 
 driver.py Environment

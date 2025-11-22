@@ -1,7 +1,7 @@
 .. Copyright 2003-2025 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-.. _Simulating:
+.. _simulating:
 
 ************************************
 Simulating (Verilated-Model Runtime)
@@ -12,7 +12,7 @@ Verilated model's executable.  For the runtime arguments to a simulated
 model, see :ref:`Simulation Runtime Arguments`.
 
 
-.. _Simulation Summary Report:
+.. _simulation summary report:
 
 Simulation Summary Report
 =========================
@@ -68,7 +68,7 @@ The information in this report is:
    Total memory used during simulation in megabytes.
 
 
-.. _Benchmarking & Optimization:
+.. _benchmarking & optimization:
 
 Benchmarking & Optimization
 ===========================
@@ -174,7 +174,7 @@ keep tabs on how Verilator compares and may be able to suggest additional
 improvements.
 
 
-.. _Coverage Analysis:
+.. _coverage analysis:
 
 Coverage Analysis
 =================
@@ -183,15 +183,15 @@ Verilator supports adding code to the Verilated model to support
 SystemVerilog code coverage.  With :vlopt:`--coverage`, Verilator enables
 all forms of coverage:
 
-* :ref:`User Coverage`
-* :ref:`Line Coverage`
-* :ref:`Toggle Coverage`
+- :ref:`User Coverage`
+- :ref:`Line Coverage`
+- :ref:`Toggle Coverage`
 
 When a model with coverage is executed, it will create a coverage file for
 collection and later analysis, see :ref:`Coverage Collection`.
 
 
-.. _User Coverage:
+.. _user coverage:
 
 Functional Coverage
 -------------------
@@ -208,7 +208,7 @@ point under the coverage name "DefaultClock":
     DefaultClock: cover property (@(posedge clk) cyc==3);
 
 
-.. _Line Coverage:
+.. _line coverage:
 
 Line Coverage
 -------------
@@ -225,7 +225,7 @@ disabled; for the most accurate results, do not disable this warning when
 using coverage.
 
 
-.. _Toggle Coverage:
+.. _toggle coverage:
 
 Toggle Coverage
 ---------------
@@ -265,7 +265,7 @@ A :option:`/*verilator&32;coverage_off*/`
 signals that do not need toggle analysis, such as RAMs and register files.
 
 
-.. _Expression Coverage:
+.. _expression coverage:
 
 Expression Coverage
 -------------------
@@ -301,7 +301,7 @@ are not mutually exclusive.
    -000003  point: comment=(t2==0 && t4==0) => 0 hier=top.t
    -000002  point: comment=(t3==0 && t4==1) => 1 hier=top.t
 
-.. _Suppressing Coverage:
+.. _suppressing coverage:
 
 Suppressing Coverage
 --------------------
@@ -317,7 +317,7 @@ that should not occur.  A :option:`/*verilator&32;coverage_block_off*/`
 metacomment will perform a similar function on any code in that block or
 below.
 
-.. _Coverage Collection:
+.. _coverage collection:
 
 Coverage Collection
 -------------------
@@ -362,7 +362,7 @@ and importing reports to sites such as `https://codecov.io
 <https://codecov.io>`_.
 
 
-.. _Profiling:
+.. _profiling:
 
 Code Profiling
 ==============
@@ -387,7 +387,7 @@ To use profiling:
    on which most of the time is being spent.
 
 
-.. _Execution Profiling:
+.. _execution profiling:
 
 Execution Profiling
 ===================
@@ -423,7 +423,7 @@ saved profiling file into a visual format and produce related statistics.
 For more information, see :command:`verilator_gantt`.
 
 
-.. _Profiling ccache efficiency:
+.. _profiling ccache efficiency:
 
 Profiling ccache efficiency
 ===========================
@@ -451,7 +451,7 @@ targets are specified, `cchache-report` will build the `default` target.
 This feature is currently experimental and might change in subsequent
 releases.
 
-.. _Save/Restore:
+.. _save/restore:
 
 Save/Restore
 ============
@@ -506,7 +506,7 @@ toggle rate PGO, branch prediction PGO, statement execution time PGO, or
 others, as they prove beneficial.
 
 
-.. _Thread PGO:
+.. _thread pgo:
 
 Thread Profile-Guided Optimization
 ----------------------------------
@@ -552,7 +552,7 @@ create new profiling data, then rerun Verilator with the same input source
 files and that new profiling data.
 
 
-.. _Compiler PGO:
+.. _compiler pgo:
 
 Compiler Profile-Guided Optimization
 ------------------------------------
@@ -605,7 +605,7 @@ feedback-directed optimization.  See the appropriate compiler
 documentation.
 
 
-.. _Runtime Debugging:
+.. _runtime debugging:
 
 Runtime Debugging
 =================
