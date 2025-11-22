@@ -6,11 +6,8 @@ name: Pages
 
 on:
   push:
-    branches:
-      - master
-    paths:
-      - "ci/**"
-      - ".github/workflows"
+    branches: [master]
+    paths: ["ci/**", ".github/workflows"]
   workflow_dispatch:
   workflow_run:
     workflows: ["Code coverage"]

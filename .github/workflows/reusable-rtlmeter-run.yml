@@ -124,5 +124,5 @@ jobs:
 
       - name: Report status
         working-directory: rtlmeter
-        run: | # This will fail the job if any of the runs failed
+        run: |-  # This will fail the job if any of the runs failed
           ./rtlmeter run --verbose --cases='${{inputs.cases}}' --compileArgs='${{inputs.compileArgs}}' --executeArgs='${{inputs.executeArgs}}'
