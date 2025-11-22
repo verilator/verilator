@@ -9,6 +9,7 @@
 class AstCell;
 class AstNodeModule;
 class AstRefDType;
+class AstTypedef;
 class VSymEnt;
 
 namespace LinkDotIfaceCapture {
@@ -16,10 +17,11 @@ namespace LinkDotIfaceCapture {
 struct CapturedIfaceTypedef final {
     AstRefDType* refp = nullptr;
     AstCell* cellp = nullptr;
-    AstNodeModule* ownerModp = nullptr;       // Module where the RefDType lives
+    AstNodeModule* ownerModp = nullptr;        // Module where the RefDType lives
     VSymEnt* ownerSymp = nullptr;
-    AstTypedef* typedefp = nullptr;           // Typedef definition being referenced
-    AstNodeModule* typedefOwnerModp = nullptr; // Interface/module that owns typedefp
+    AstTypedef* typedefp = nullptr;            // Typedef definition being referenced
+    AstNodeModule* typedefOwnerModp = nullptr;  // Interface/module that owns typedefp
+    AstRefDType* pendingClonep = nullptr;       // Cloned RefDType awaiting typedef rebinding
 };
 
 void enable(bool flag);

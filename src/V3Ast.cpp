@@ -140,6 +140,22 @@ AstNode* AstNode::abovep() const {
     return firstp->backp();
 }
 
+void AstNode::user2pDebugHook(const AstNode* nodep, void* userp) {
+    const AstRefDType* const refp = VN_CAST(nodep, RefDType);
+    if (VL_UNLIKELY(!refp)) return;
+
+    AstNode* const oldCellp = refp->user2p();
+    AstNode* const newCellp = static_cast<AstNode*>(userp);
+
+    if (newCellp) {
+        UINFO(2, "[iface-debug] user2 set node=" << refp << " name=" << refp->name()
+                   << " oldcell=" << oldCellp << " newcell=" << newCellp);
+    } else if (VL_UNLIKELY(oldCellp)) {
+        UINFO(2, "[iface-debug] user2 cleared node=" << refp << " name=" << refp->name()
+                   << " oldcell=" << oldCellp);
+    }
+}
+
 string AstNode::encodeName(const string& namein) {
     // Encode signal name raw from parser, then not called again on same signal
     string out;

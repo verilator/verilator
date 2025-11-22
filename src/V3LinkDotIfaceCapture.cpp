@@ -32,10 +32,24 @@ bool enabled() { return captureEnabled(); }
 
 void reset() { capturedMap().clear(); }
 
+namespace {
+AstNodeModule* findOwnerModule(AstNode* nodep) {
+    for (AstNode* curp = nodep; curp; curp = curp->backp()) {
+        if (AstNodeModule* const modp = VN_CAST(curp, NodeModule)) return modp;
+    }
+    return nullptr;
+}
+}  // namespace
+
 void add(AstRefDType* refp, AstCell* cellp, AstNodeModule* ownerModp, VSymEnt* ownerSymp,
-         AstTypedef* typedefp) {
+         AstTypedef* typedefp, AstNodeModule* typedefOwnerModp) {
     if (!refp) return;
-    capturedMap()[refp] = CapturedIfaceTypedef{refp, cellp, ownerModp, ownerSymp, typedefp ? typedefp : refp->typedefp()};
+    AstTypedef* const resolvedTypedefp = typedefp ? typedefp : refp->typedefp();
+    AstNodeModule* resolvedTypedefOwner = typedefOwnerModp;
+    if (!resolvedTypedefOwner && resolvedTypedefp)
+        resolvedTypedefOwner = findOwnerModule(resolvedTypedefp);
+    capturedMap()[refp] = CapturedIfaceTypedef{refp,  cellp,       ownerModp, ownerSymp,
+                                               resolvedTypedefp, resolvedTypedefOwner, nullptr};
 }
 
 void add(const CapturedIfaceTypedef& entry) {
@@ -72,37 +86,52 @@ bool replaceRef(const AstRefDType* oldRefp, AstRefDType* newRefp) {
     return true;
 }
 
-bool replaceTypedef(const AstTypedef* oldTypedefp, AstTypedef* newTypedefp) {
-    if (!oldTypedefp || !newTypedefp) return false;
+namespace {
+bool finalizeCapturedEntry(CapturedMap::iterator it, const char* reasonp) {
+    CapturedIfaceTypedef& entry = it->second;
+    AstRefDType* const pendingRefp = entry.pendingClonep;
+    AstTypedef* const reboundTypedefp = entry.typedefp;
+    if (!pendingRefp || !reboundTypedefp) return false;
+    AstRefDType* const origRefp = entry.refp;
+    if (entry.cellp) pendingRefp->user2p(entry.cellp);
+    pendingRefp->user3(false);
+    pendingRefp->typedefp(reboundTypedefp);
+    entry.pendingClonep = nullptr;
+    UINFO(2, "[iface-debug] finalize captured typedef reason=" << reasonp << " orig=" << origRefp
+               << " clone=" << pendingRefp << " cell=" << entry.cellp
+               << " typedef=" << reboundTypedefp);
+    replaceRef(origRefp, pendingRefp);
+    return true;
+}
+}  // namespace
+
+bool replaceTypedef(const AstRefDType* refp, AstTypedef* newTypedefp) {
+    if (!refp || !newTypedefp) return false;
     auto& map = capturedMap();
-    for (auto& entry : map) {
-        if (entry.second.typedefp == oldTypedefp) {
-            entry.second.typedefp = newTypedefp;
-            return true;
-        }
-    }
-    return false;
+    auto it = map.find(refp);
+    if (it == map.end()) return false;
+    it->second.typedefp = newTypedefp;
+    it->second.typedefOwnerModp = findOwnerModule(newTypedefp);
+    if (finalizeCapturedEntry(it, "typedef clone")) return true;
+    UINFO(2, "[iface-debug] recorded typedef clone awaiting ref clone ref=" << refp
+               << " typedef=" << newTypedefp);
+    return true;
 }
 
 std::size_t size() { return capturedMap().size(); }
 
 void propagateClone(const AstRefDType* origRefp, AstRefDType* newRefp) {
     if (!origRefp || !newRefp) return;
-    const CapturedIfaceTypedef* const entry = find(origRefp);
-    if (!entry) return;
-    AstTypedef* const origTypedefp = entry->typedefp ? entry->typedefp : origRefp->typedefp();
-    AstTypedef* const clonedTypedefp = origTypedefp ? origTypedefp->clonep() : nullptr;
-    if (entry->cellp) newRefp->user2p(entry->cellp);
+    auto& map = capturedMap();
+    auto it = map.find(origRefp);
+    if (it == map.end()) return;
+    CapturedIfaceTypedef& entry = it->second;
+    if (entry.cellp) newRefp->user2p(entry.cellp);
     newRefp->user3(false);
-    if (clonedTypedefp) {
-        newRefp->typedefp(clonedTypedefp);
-        UINFO(2, "[iface-debug] rebound typedef ref=" << origRefp << " clone=" << newRefp << " typedefp=" << origTypedefp << " typedefClone=" << clonedTypedefp);
-    } else if (origTypedefp) {
-        UINFO(1, "[iface-debug] missing typedef clone ref=" << origRefp << " typedefp=" << origTypedefp << " ownerMod=" << (entry->ownerModp ? entry->ownerModp->name() : "<null>"));
-    }
-    UINFO(2, "[iface-debug] scrub typedef" << " ownerMod=" << (entry->ownerModp ? entry->ownerModp->name() : "<null>") << " ref=" << origRefp << " clone=" << newRefp << " cell=" << entry->cellp);
-    replaceRef(origRefp, newRefp);
-    UINFO(3, "[iface-debug] scrubbed typedef name=" << newRefp->name() << " orig=" << origRefp << " clone=" << newRefp << " user2=" << newRefp->user2p() << " user3=" << newRefp->user3() << " typedefp=" << newRefp->typedefp());
+    entry.pendingClonep = newRefp;
+    if (finalizeCapturedEntry(it, "ref clone")) return;
+    UINFO(2, "[iface-debug] defer scrub awaiting typedef clone ref=" << origRefp
+               << " clone=" << newRefp << " cell=" << entry.cellp);
 }
 
 void dumpCaptured(int uinfoLevel) {

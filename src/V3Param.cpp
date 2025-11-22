@@ -633,8 +633,28 @@ class ParamProcessor final {
             LinkDotIfaceCapture::forEach(
                 [&](const LinkDotIfaceCapture::CapturedIfaceTypedef& entry) {
                     if (!entry.refp) return;
-                    if (entry.ownerModp && entry.ownerModp != srcModp) return;
+                    const bool ownerMatches
+                        = (!entry.ownerModp || entry.ownerModp == srcModp);
+                    const bool typedefOwnerMatches
+                        = (entry.typedefOwnerModp && entry.typedefOwnerModp == srcModp);
+                    if (!ownerMatches && !typedefOwnerMatches) return;
+
+                    if (typedefOwnerMatches) {
+                        AstTypedef* const origTypedefp = entry.typedefp;
+                        if (origTypedefp) {
+                            if (AstTypedef* const clonedTypedefp = origTypedefp->clonep()) {
+                                if (LinkDotIfaceCapture::replaceTypedef(entry.refp, clonedTypedefp)) {
+                                    UINFO(2, "[iface-debug] rebound typedef def module=" << srcModp->name() << " typedef=" << origTypedefp << " clone=" << clonedTypedefp << " ref=" << entry.refp);
+                                }
+                            } else {
+                                UINFO(1, "[iface-debug] missing typedef clone for module=" << srcModp->name() << " typedef=" << origTypedefp << " ref=" << entry.refp);
+                            }
+                        }
+                    }
+
                     UINFO(3, "[iface-debug] scrub candidate module=" << srcModp->name() << " typedef=" << entry.refp << " name=" << entry.refp->name() << " typedefp=" << entry.refp->typedefp());
+                    if (!ownerMatches) return;
+
                     if (AstRefDType* const clonedRefp = entry.refp->clonep()) {
                         LinkDotIfaceCapture::propagateClone(entry.refp, clonedRefp);
                     } else {

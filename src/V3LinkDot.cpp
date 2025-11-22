@@ -216,12 +216,14 @@ public:
         UINFO(4, __FUNCTION__ << ": ");
         s_errorThisp = this;
         V3Error::errorExitCb(preErrorDumpHandler);  // If get error, dump self
+        const std::size_t capturedCount = LinkDotIfaceCapture::size();
         if (forPrimary()) {
             LinkDotIfaceCapture::enable(true);
-            if (LinkDotIfaceCapture::enabled()) {
-                LinkDotIfaceCapture::reset();
-                UINFO(3, "[iface-debug] reset captured typedef list");
-            }
+            UINFO(3, "[iface-debug] capture enabled for primary pass (persisting entries) size="
+                           << capturedCount);
+        } else if (forParamed()) {
+            UINFO(3, "[iface-debug] entering paramed pass captured typedef count="
+                           << capturedCount);
         }
         readModNames();
     }
@@ -239,7 +241,8 @@ public:
     bool forScopeCreation() const { return m_step == LDS_SCOPED; }
     void rememberIfaceCapturedTypedef(AstRefDType* refp, AstNodeModule* ownerModp) {
         if (!refp) return;
-        LinkDotIfaceCapture::add(refp, VN_CAST(refp->user2p(), Cell), ownerModp, nullptr);
+        LinkDotIfaceCapture::add(refp, VN_CAST(refp->user2p(), Cell), ownerModp, nullptr,
+                                 refp->typedefp());
     }
     static void forEachCaptured(const std::function<void(AstRefDType*)>& fn) {
         LinkDotIfaceCapture::forEach([&](const LinkDotIfaceCapture::CapturedIfaceTypedef& entry) {
@@ -5347,7 +5350,8 @@ public:
             LinkDotState::forEachCaptured([&](AstRefDType* refp) {
                 if (!refp) return;
                 ++primedCount;
-                UINFO(3, indent() << "[iface-debug] prime typedef ptr=" << refp);
+                UINFO(3, indent() << "[iface-debug] prime typedef ptr=" << refp
+                           << " user2=" << refp->user2p());
                 //if (kIfaceTypedefCaptureEnabled && refp->user2p()) {
                 if (LinkDotIfaceCapture::enabled() && refp->user2p()) {
                     UINFO(3, indent() << "[iface-debug] prime typedef revisit name="
