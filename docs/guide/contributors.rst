@@ -28,9 +28,9 @@ Alliance <https://chipsalliance.org>`_, and `Antmicro Ltd
 
 Previous major corporate sponsors of Verilator, by providing significant
 contributions of time or funds include: Antmicro Ltd., Atmel Corporation,
-Compaq Corporation, Digital Equipment Corporation, Embecosm Ltd., Hicamp
-Systems, Intel Corporation, Marvell Inc., Mindspeed Technologies Inc.,
-MicroTune Inc., picoChip Designs Ltd., Sun Microsystems Inc., Nauticus
+Compaq Corporation, Digital Equipment Corporation, Embecosm Ltd., Fractile
+Ltd., Hicamp Systems, Intel Corporation, Marvell Inc., Mindspeed Technologies
+Inc., MicroTune Inc., picoChip Designs Ltd., Sun Microsystems Inc., Nauticus
 Networks Inc., SiCortex Inc, Shunyao CAD, and Western Digital Inc.
 
 The contributors of major functionality are: Jeremy Bennett, Krzysztof
