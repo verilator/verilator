@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # mypy: disallow-untyped-defs
-# pylint: disable=
+# pylint: disable=C0114,C0116
 ######################################################################
 
 import argparse
@@ -12,7 +12,7 @@ import sys
 
 def process() -> None:
     in_header = True
-    in_backslash = False
+    in_backslash = None
     for line in sys.stdin:
         line = line.rstrip()
         line = line.expandtabs(tabsize=8)
@@ -23,9 +23,8 @@ def process() -> None:
         if in_header:
             if re.match(r'^//', line):
                 continue
-            else:
-                in_header = False
-                print_header()
+            in_header = False
+            print_header()
         in_header = False
 
         # Drop some unneeded items
