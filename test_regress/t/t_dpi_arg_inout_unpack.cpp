@@ -1079,7 +1079,7 @@ void i_unpack_struct_3d(unpack_struct_t* v) {
         }
         {
             svLogicVecVal array[1][1][1][1];
-            set_uint(array[0][0][0], 52, 22);
+            set_uint(array[0][0][0], 52, 32);
             e_integer_1d1(array[0][0][0]);
             if (!check_1d1(array[0][0], 32)) stop();
             set_uint(array[0][0][0], 53, 32);
