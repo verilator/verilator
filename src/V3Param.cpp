@@ -624,6 +624,25 @@ class ParamProcessor final {
             newModp = srcModp->cloneTree(false);
         }
 
+        if (LinkDotIfaceCapture::enabled()) {
+            // cloneTree(false) temporarily populates origNode->clonep() for every node under
+            // srcModp.  The capture list still stores those orig AstRefDType* pointers, so walking
+            // it lets us follow clonep() into newModp and scrub each clone with the saved
+            // interface context before newModp is re-linked.  we have pointers to the same nodes saved
+            // in the capture map, so we can use them to scrub the new module.
+            LinkDotIfaceCapture::forEach(
+                [&](const LinkDotIfaceCapture::CapturedIfaceTypedef& entry) {
+                    if (!entry.refp) return;
+                    if (entry.ownerModp && entry.ownerModp != srcModp) return;
+                    UINFO(3, "[iface-debug] scrub candidate module=" << srcModp->name() << " typedef=" << entry.refp << " name=" << entry.refp->name() << " typedefp=" << entry.refp->typedefp());
+                    if (AstRefDType* const clonedRefp = entry.refp->clonep()) {
+                        LinkDotIfaceCapture::propagateClone(entry.refp, clonedRefp);
+                    } else {
+                        UINFO(1, "[iface-debug] missing clone for captured typedef name=" << entry.refp->name() << " module=" << srcModp->name());
+                    }
+                });
+        }
+
         newModp->name(newname);
         newModp->user2(false);  // We need to re-recurse this module once changed
         newModp->recursive(false);

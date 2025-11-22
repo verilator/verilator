@@ -237,9 +237,9 @@ public:
     bool forParamed() const { return m_step == LDS_PARAMED; }
     bool forPrearray() const { return m_step == LDS_PARAMED || m_step == LDS_PRIMARY; }
     bool forScopeCreation() const { return m_step == LDS_SCOPED; }
-    void rememberIfaceCapturedTypedef(AstRefDType* refp) {
+    void rememberIfaceCapturedTypedef(AstRefDType* refp, AstNodeModule* ownerModp) {
         if (!refp) return;
-        LinkDotIfaceCapture::add(refp, VN_CAST(refp->user2p(), Cell), nullptr);
+        LinkDotIfaceCapture::add(refp, VN_CAST(refp->user2p(), Cell), ownerModp, nullptr);
     }
     static void forEachCaptured(const std::function<void(AstRefDType*)>& fn) {
         LinkDotIfaceCapture::forEach([&](const LinkDotIfaceCapture::CapturedIfaceTypedef& entry) {
@@ -2755,9 +2755,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (AstRefDType* const clonedRefp
             = VN_CAST(newTypep->childDTypep(), RefDType)) {
             clonedRefp->user2p(typedefRefp->user2p());
-            //if (kIfaceTypedefCaptureEnabled && typedefRefp->user2p()) {
-            if (LinkDotIfaceCapture::enabled() && typedefRefp->user2p()) {
-                UINFO(3, indent() << "[iface-debug] capture recorded owner var=" << varp->prettyName() << " typedef=" << typedefRefp << " cell=" << typedefRefp->user2p());
+            if (LinkDotIfaceCapture::enabled()) {
+                if (LinkDotIfaceCapture::replaceRef(typedefRefp, clonedRefp)) {
+                    UINFO(3, indent() << "[iface-debug] retarget captured typedef var=" << varp->prettyName() << " orig=" << typedefRefp << " clone=" << clonedRefp);
+                }
+                if (typedefRefp->user2p()) {
+                    UINFO(3, indent() << "[iface-debug] capture recorded owner var=" << varp->prettyName() << " typedef=" << clonedRefp << " cell=" << clonedRefp->user2p());
+                }
             }
         }
         VSymEnt* const newSymEntp = new VSymEnt{m_statep->symsp(), newTypep};
@@ -3514,7 +3518,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                       return;
                   }
                   refp->user2p(const_cast<AstCell*>(ifaceCellp));
-                  m_statep->rememberIfaceCapturedTypedef(refp);
+                  m_statep->rememberIfaceCapturedTypedef(refp, m_modp);
                   UINFO(3, indent() << "[iface-debug] capture success typedef=" << refp << " cell=" << ifaceCellp << " mod=" << (ifaceCellp->modp() ? ifaceCellp->modp()->name() : "<null>") << " dotPos=" << static_cast<int>(m_ds.m_dotPos));
                   if (m_ds.m_dotPos != DP_FINAL) return;
                   AstVar* enclosingVarp = nullptr;

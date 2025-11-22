@@ -201,6 +201,7 @@ private:
     }
     void processExit(AstNode* nodep) { nodep->brokenState(m_brokenCntCurrentNotUnder); }
     void processAndIterate(AstNode* nodep) {
+        //UINFO(1, "[broken-debug] visit node=" << nodep << " type=" << nodep->typeName());
         processEnter(nodep);
         iterateChildrenConst(nodep);
         processExit(nodep);

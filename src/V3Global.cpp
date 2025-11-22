@@ -172,6 +172,9 @@ void V3Global::dumpCheckGlobalTree(const string& stagename, int newNumber, bool 
     if (v3Global.opt.debugCheck() || dumpTreeEitherLevel()) {
         // Error check
         v3Global.rootp()->checkTree();
+        // Snapshot the tree state before BrokenCheck for easier debugging
+        v3Global.rootp()->dumpTreeFile(v3Global.debugFilename(stagename + "_prebroken.tree",
+                                                              newNumber));
         // Broken isn't part of check tree because it can munge iterp's
         // set by other steps if it is called in the middle of other operations
         V3Broken::brokenAll(v3Global.rootp());

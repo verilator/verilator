@@ -1400,6 +1400,7 @@ void AstNode::dumpTreeFile(const string& filename, bool doDump) {
                 dumpTree(*logsp);
                 editCountSetLast();  // Next dump can indicate start from here
             }
+            logsp->flush();
         }
     }
 }
