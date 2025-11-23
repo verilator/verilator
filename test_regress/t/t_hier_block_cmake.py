@@ -13,6 +13,7 @@ import os
 # If a test fails, broken .cmake may disturb the next run
 test.clean_objs()
 
+test.priority(30)
 test.scenarios('simulator')
 test.top_filename = "t/t_hier_block.v"
 
