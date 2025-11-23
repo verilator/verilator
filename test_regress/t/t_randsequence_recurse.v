@@ -11,23 +11,23 @@
 
 module t(/*AUTOARG*/);
 
-   initial begin
+  initial begin
 
-      int o;
-      int i;
-      o = 0;
-      i = 0;
+    int o;
+    int i;
+    o = 0;
+    i = 0;
 
-      randsequence(main)
-         main : recurse recurse;
-         recurse: { i++; if ((i % 4) == 0) break; } add recurse;
-         add: { o++; } ;
-      endsequence
+    randsequence(main)
+      main : recurse recurse;
+      recurse: { i++; if ((i % 4) == 0) break; } add recurse;
+      add: { o++; } ;
+    endsequence
 
-     `checkd(o, 3);
+    `checkd(o, 3);
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule
