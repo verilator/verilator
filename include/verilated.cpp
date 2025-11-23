@@ -3584,6 +3584,7 @@ void VerilatedHierarchy::remove(const VerilatedScope* fromp, const VerilatedScop
     VerilatedImp::hierarchyRemove(fromp, top);
 }
 
+void VerilatedHierarchy::clear() { VerilatedImp::hierarchyClear(); }
 //===========================================================================
 // VerilatedOneThreaded:: Methods
 

@@ -744,6 +744,7 @@ class VerilatedHierarchy final {
 public:
     static void add(const VerilatedScope* fromp, const VerilatedScope* top);
     static void remove(const VerilatedScope* fromp, const VerilatedScope* top);
+    static void clear();
 };
 
 //===========================================================================
