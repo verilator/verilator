@@ -56,12 +56,38 @@ VlMTaskVertex::VlMTaskVertex(uint32_t upstreamDepCount)
 
 VlWorkerThread::VlWorkerThread(VerilatedContext* contextp)
     : m_ready_size{0}
-    , m_cthread{startWorker, this, contextp} {}
+    , m_contextp{contextp} {
+#ifdef VL_USE_PTHREADS
+    // Init attributes
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    // Attempt to use the same stack size as the current (main) thread if possible
+    const size_t stacksize = pthread_get_stacksize_np(pthread_self());
+    if (!stacksize || pthread_attr_setstacksize(&attr, stacksize)) {
+        // Fall back on default atributes if failed to get/set stack size
+        pthread_attr_destroy(&attr);
+        pthread_attr_init(&attr);
+    }
+    // Create thread
+    if (pthread_create(&m_pthread, &attr, &VlWorkerThread::start, this)) {
+        std::cerr << "pthread_create failed" << std::endl;
+        std::abort();
+    }
+    // Destroy attributes
+    pthread_attr_destroy(&attr);
+#else
+    m_cthread = std::thread(start, this);
+#endif
+}
 
 VlWorkerThread::~VlWorkerThread() {
     shutdown();
     // The thread should exit; join it.
+#ifdef VL_USE_PTHREADS
+    pthread_join(m_pthread, nullptr);
+#else
     m_cthread.join();
+#endif
 }
 
 static void shutdownTask(void*, bool) {  // LCOV_EXCL_LINE
@@ -83,23 +109,24 @@ void VlWorkerThread::wait() {
     while (!flag.load()) std::this_thread::yield();
 }
 
-void VlWorkerThread::workerLoop() {
+void VlWorkerThread::main() {
+    // Initialize thread_locals
+    Verilated::threadContextp(m_contextp);
+    // One work item
     ExecRec work;
-
     // Wait for the first task without spinning, in case the thread is never actually used.
     dequeWork</* SpinWait: */ false>(&work);
-
-    while (true) {
-        if (VL_UNLIKELY(work.m_fnp == shutdownTask)) break;
+    // Loop until shutdown task is received
+    while (VL_UNLIKELY(work.m_fnp != shutdownTask)) {
         work.m_fnp(work.m_selfp, work.m_evenCycle);
         // Wait for next task with spinning.
         dequeWork</* SpinWait: */ true>(&work);
     }
 }
 
-void VlWorkerThread::startWorker(VlWorkerThread* workerp, VerilatedContext* contextp) {
-    Verilated::threadContextp(contextp);
-    workerp->workerLoop();
+void* VlWorkerThread::start(void* argp) {
+    reinterpret_cast<VlWorkerThread*>(argp)->main();
+    return nullptr;
 }
 
 //=============================================================================

@@ -34,6 +34,15 @@
 #include <thread>
 #include <vector>
 
+// Use pthreads directly on macOS (could do this on Linux too if needing APIs unavailable via C++)
+#if defined(_POSIX_THREADS) && defined(__APPLE__)
+#define VL_USE_PTHREADS
+#endif
+
+#ifdef VL_USE_PTHREADS
+#include <pthread.h>
+#endif
+
 class VlExecutionProfiler;
 class VlThreadPool;
 
@@ -117,7 +126,8 @@ public:
 };
 
 class VlWorkerThread final {
-private:
+    friend class VlThreadPool;
+
     // TYPES
     struct ExecRec final {
         VlExecFnp m_fnp = nullptr;  // Function to execute
@@ -142,14 +152,20 @@ private:
     std::vector<ExecRec> m_ready VL_GUARDED_BY(m_mutex);
     // Store the size atomically, so we can spin wait
     std::atomic<size_t> m_ready_size;
+    // Thread context
+    VerilatedContext* const m_contextp;
+    // Underlying thread record
+#ifdef VL_USE_PTHREADS
+    pthread_t m_pthread{};
+#else
+    std::thread m_cthread{};
+#endif
 
-    std::thread m_cthread;  // Underlying C++ thread record
+    // METHDOS
+    static void* start(void*);  // Static entry point, invokes 'main'
+    void main();  // 'main' loop of thread
 
     VL_UNCOPYABLE(VlWorkerThread);
-
-protected:
-    friend class VlThreadPool;
-    const std::thread& cthread() const { return m_cthread; }
 
 public:
     // CONSTRUCTORS
@@ -192,9 +208,6 @@ public:
 
     void shutdown();  // Finish current tasks, then terminate thread
     void wait();  // Blocks calling thread until all tasks complete in this thread
-
-    void workerLoop();
-    static void startWorker(VlWorkerThread* workerp, VerilatedContext* contextp);
 };
 
 class VlThreadPool final : public VerilatedVirtualBase {
