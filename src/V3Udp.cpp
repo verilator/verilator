@@ -138,6 +138,12 @@ class UdpVisitor final : public VNVisitor {
                         fl, logandp, new AstLogNot{fl, new AstVarRef{fl, varp, VAccess::READ}}};
                 } else if (valName == "1" || valName == "r") {
                     logandp = new AstLogAnd{fl, logandp, new AstVarRef{fl, varp, VAccess::READ}};
+                } else if (valName == "x" || valName == "X") {
+                    // No x inputs supported yet, so this whole table line
+                    // can never match. Drop the whole thing.
+                    if (edgetrigp) pushDeletep(edgetrigp);
+                    if (logandp) pushDeletep(logandp);
+                    return;
                 }
             }
             iNodep = iNodep->nextp();
@@ -166,6 +172,12 @@ class UdpVisitor final : public VNVisitor {
             } else if (oNodep->name() == "1") {
                 logandp
                     = new AstLogAnd{fl, logandp, new AstVarRef{fl, m_oFieldVarp, VAccess::READ}};
+            } else if (oNodep->name() == "x" || oNodep->name() == "X") {
+                // No x inputs supported yet, so this whole table line
+                // can never match. Drop the whole thing.
+                if (edgetrigp) pushDeletep(edgetrigp);
+                if (logandp) pushDeletep(logandp);
+                return;
             }
         }
 
@@ -192,6 +204,7 @@ class UdpVisitor final : public VNVisitor {
     void visit(AstLogNot* nodep) override { iterateChildren(nodep); }
     // For logic processing.
     bool isEdgeTrig(std::string& valName) {
+        if (valName == "x" || valName == "X") return false;
         if (valName == "*") return true;
         if (valName == "01" || valName == "p" || valName == "P" || valName == "r"
             || valName == "R") {
@@ -204,7 +217,9 @@ class UdpVisitor final : public VNVisitor {
             return true;
         }
         if (valName.size() == 2) {
-            if (valName[0] == '1' || valName[1] == '0')
+            if (valName[0] == 'x' || valName[0] == 'X' || valName[1] == 'x' || valName[1] == 'X')
+                valName = "x";
+            else if (valName[0] == '1' || valName[1] == '0')
                 valName = "f";
             else if (valName[0] == '0' || valName[1] == '1')
                 valName = "r";
