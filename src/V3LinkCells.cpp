@@ -100,7 +100,8 @@ struct LinkCellsState final {
     // Library lists for specific cells
     std::unordered_map<std::string, std::vector<std::string>> m_liblistCell;
     // Use list for specific cells (libname, cellname)
-    std::unordered_map<std::string, std::vector<std::pair<std::string, std::string>>> m_uselistCell;
+    std::unordered_map<std::string, std::vector<std::pair<std::string, std::string>>>
+        m_uselistCell;
 };
 
 class LinkConfigsVisitor final : public VNVisitor {
@@ -130,19 +131,23 @@ class LinkConfigsVisitor final : public VNVisitor {
             }
         } else if (nodep->isCell()) {
             string cellName = nodep->cellp()->name();
-            if (VN_IS(nodep->usep(),ParseRef)) {
+            if (VN_IS(nodep->usep(), ParseRef)) {
                 m_state.m_liblistCell[cellName] = std::vector<std::string>{};
-                for (AstParseRef* usep = VN_AS(nodep->usep(), ParseRef); usep; usep = VN_AS(usep->nextp(), ParseRef)) {
+                for (AstParseRef* usep = VN_AS(nodep->usep(), ParseRef); usep;
+                     usep = VN_AS(usep->nextp(), ParseRef)) {
                     m_state.m_liblistCell[cellName].push_back(usep->name());
                 }
             } else {
-                m_state.m_uselistCell[cellName] = std::vector<std::pair<std::string, std::string>>{};
-                for (AstConfigUse* usep = VN_AS(nodep->usep(), ConfigUse); usep; usep = VN_AS(usep->nextp(), ConfigUse)) {
-                    m_state.m_uselistCell[cellName].push_back(std::pair<std::string, std::string>{usep->libname(), usep->cellname()});
+                m_state.m_uselistCell[cellName]
+                    = std::vector<std::pair<std::string, std::string>>{};
+                for (AstConfigUse* usep = VN_AS(nodep->usep(), ConfigUse); usep;
+                     usep = VN_AS(usep->nextp(), ConfigUse)) {
+                    m_state.m_uselistCell[cellName].push_back(
+                        std::pair<std::string, std::string>{usep->libname(), usep->cellname()});
                 }
             }
         } else {
-            if (VN_IS(nodep->usep(),ParseRef)) {
+            if (VN_IS(nodep->usep(), ParseRef)) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: config inst liblist rule");
             } else {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: config inst use rule");
