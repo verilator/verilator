@@ -2863,6 +2863,10 @@ def run_them() -> None:
 if __name__ == '__main__':
     os.environ['PYTHONUNBUFFERED'] = "1"
 
+    # GDB is broken on macOS
+    if platform.system() == "Darwin":
+        os.environ['VERILATOR_TEST_NO_GDB'] = "1"
+
     if ('VERILATOR_ROOT' not in os.environ) and os.path.isfile('../bin/verilator'):
         os.environ['VERILATOR_ROOT'] = os.getcwd() + "/.."
     if 'MAKE' not in os.environ:

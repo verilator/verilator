@@ -290,7 +290,7 @@ void VlPgoProfiler<N_Entries>::write(const char* modelp, const std::string& file
     VL_DEBUG_IF(VL_DBG_MSGF("+prof+vlt+file writing to '%s'\n", filename.c_str()););
 
     if (m_currentHierBlockCost) {
-        fprintf(fp, "profile_data -hier-dpi \"%s\" -cost 64'd%lu\n", modelp,
+        fprintf(fp, "profile_data -hier-dpi \"%s\" -cost 64'd%" PRIu64 "\n", modelp,
                 m_currentHierBlockCost);
     }
 
