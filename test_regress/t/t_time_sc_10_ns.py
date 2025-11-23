@@ -15,7 +15,7 @@ test.top_filename = "t/t_time_sc.v"
 test.sc_time_resolution = 'SC_NS'
 test.sc_time_resolution_multiplier = 10
 
-test.compile(verilator_flags2=['-sc', '-timescale 10ns/10ns', '+define+TEST_EXPECT=20ns'])
+test.compile(verilator_flags2=['-sc', '-timescale 10ns/10ns', '+define+TEST_EXPECT=200ns'])
 
 test.execute(expect_filename=test.golden_filename)
 
