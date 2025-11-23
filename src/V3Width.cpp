@@ -5500,7 +5500,6 @@ class WidthVisitor final : public VNVisitor {
         // IEEE says each item is a int (32-bits), and sizes are based on natural sizing,
         // but we'll sum to a 64-bit number then math is faster.
         assertAtStatement(nodep);
-        v3Global.useRandomizeMethods(true);
         AstNodeDType* const itemDTypep = nodep->findUInt32DType();
         for (AstCaseItem *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
             nextip = VN_AS(itemp->nextp(), CaseItem);  // Prelim may cause the node to get replaced

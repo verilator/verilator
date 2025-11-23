@@ -972,6 +972,7 @@ public:
     AstRandCase(FileLine* fl, AstCaseItem* itemsp)
         : ASTGEN_SUPER_RandCase(fl) {
         addItemsp(itemsp);
+        v3Global.useRandomizeMethods(true);
     }
     ASTGEN_MEMBERS_AstRandCase;
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
