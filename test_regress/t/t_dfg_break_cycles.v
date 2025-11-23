@@ -59,12 +59,24 @@ module t (
   assign SEL[1] = SEL[0];
   assign SEL[2] = SEL[1];
 
-  `signal(EXTEND, 8); // UNOPTFLAT
-  assign EXTEND[0] = rand_a[3];
-  assign EXTEND[3:1] = 3'(EXTEND[0]);
-  assign EXTEND[4] = EXTEND[1];
-  assign EXTEND[6:5] = EXTEND[2:1];
-  assign EXTEND[7] = EXTEND[3];
+  `signal(ZX, 8); // UNOPTFLAT
+  assign ZX[0] = rand_a[3];
+  assign ZX[3:1] = 3'(ZX[0]);
+  assign ZX[4] = ZX[1];
+  assign ZX[6:5] = ZX[2:1];
+  assign ZX[7] = ZX[3];
+
+  `signal(SX_0, 5); // UNOPTFLAT
+  assign SX_0[0] = rand_a[3];
+  assign SX_0[3:1] = 3'(signed'(SX_0[0]));
+  `signal(SX_1, 5); // UNOPTFLAT
+  assign SX_1 = 5'(signed'({rand_a[0], SX_1[1]}));
+  `signal(SX_2, 5); // UNOPTFLAT
+  assign SX_2 = 5'(signed'({rand_a[0], SX_2[2]}));
+  `signal(SX_3, 5); // UNOPTFLAT
+  assign SX_3 = 5'(signed'({rand_a[0], SX_3[3:2]}));
+  `signal(SX_4, 5); // UNOPTFLAT
+  assign SX_4 = 5'(signed'({rand_a[0], SX_4[4:3]}));
 
   `signal(NOT, 3); // UNOPTFLAT
   assign NOT = ~(rand_a[2:0] ^ 3'(NOT[2:1]));

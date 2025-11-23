@@ -496,6 +496,41 @@ class TraceDriver final : public DfgVisitor {
         }
     }
 
+    void visit(DfgExtendS* vtxp) override {
+        DfgVertex* const srcp = vtxp->srcp();
+        const uint32_t sWidth = srcp->width();
+        // If the traced bits are wholly in the input
+        if (sWidth > m_msb) {
+            SET_RESULT(trace(srcp, m_msb, m_lsb));
+            return;
+        }
+        // If there is a single traced bit, wholly in the extension
+        if (m_lsb >= sWidth && m_msb == m_lsb) {
+            if (DfgVertex* const sp = trace(srcp, sWidth - 1, sWidth - 1)) SET_RESULT(sp);
+            return;
+        }
+
+        // The rest need a real ExtendS
+        if (!m_aggressive) return;
+
+        // If the traced bits are wholly in the extension
+        if (m_lsb >= sWidth) {
+            if (DfgVertex* const sp = trace(srcp, sWidth - 1, sWidth - 1)) {
+                DfgExtendS* const resp = make<DfgExtendS>(vtxp, m_msb - m_lsb + 1);
+                resp->srcp(sp);
+                SET_RESULT(resp);
+            }
+            return;
+        }
+        // The traced bits span both sides
+        if (DfgVertex* const sp = trace(srcp, sWidth - 1, m_lsb)) {
+            DfgExtendS* const resp = make<DfgExtendS>(vtxp, m_msb - m_lsb + 1);
+            resp->srcp(sp);
+            SET_RESULT(resp);
+            return;
+        }
+    }
+
     void visit(DfgSel* vtxp) override {
         const uint32_t lsb = vtxp->lsb();
         SET_RESULT(trace(vtxp->srcp(), m_msb + lsb, m_lsb + lsb));
@@ -832,6 +867,15 @@ class IndependentBits final : public DfgVisitor {
         V3Number& m = MASK(vtxp);
         m.opSelInto(MASK(srcp), 0, sWidth);
         m.opSetRange(sWidth, vtxp->width() - sWidth, '0');
+    }
+
+    void visit(DfgExtendS* vtxp) override {
+        const DfgVertex* const srcp = vtxp->srcp();
+        const uint32_t sWidth = srcp->width();
+        V3Number& s = MASK(srcp);
+        V3Number& m = MASK(vtxp);
+        m.opSelInto(s, 0, sWidth);
+        m.opSetRange(sWidth, vtxp->width() - sWidth, s.bitIs0(sWidth - 1) ? '0' : '1');
     }
 
     void visit(DfgNot* vtxp) override {  //
