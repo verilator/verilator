@@ -2714,6 +2714,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         if (VL_UNLIKELY(m_ds.m_dotPos != DP_NONE)) {
             UINFO(9, indent() << "ds=" << m_ds.ascii());
+            UINFO(2, indent() << "[iface-debug] checkNoDot hit node=" << nodep
+                               << " dotState=" << m_ds.ascii());
             if (VL_UNLIKELY(!m_ds.m_dotp)) {
                 nodep->v3error("Syntax error: Not expecting "
                                << nodep->type() << " here (missing dot context)");
@@ -2752,6 +2754,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (!varSymp) return nullptr;
         VSymEnt* const parentSymp = varSymp->parentp();
         if (!parentSymp) return nullptr;
+        UINFO(3, indent() << "[iface-debug] promote var to ParamType name=" << varp->prettyName()
+                           << " dotState(before)=" << m_ds.ascii());
         AstParamTypeDType* const newTypep = new AstParamTypeDType{
             varp->fileline(), varp->varType(), VFwdType::NONE, varp->name(), VFlagChildDType{},
             typedefRefp->cloneTree(false)};
@@ -2776,8 +2780,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
         newTypep->user1p(newSymEntp);
         parentSymp->reinsert(varp->name(), newSymEntp);
         varp->replaceWith(newTypep);
+        // This conversion happens while linkDot is in the middle of a dotted lookup (e.g. bus_io.rq_t).
+        // Reset the dot state so subsequent symbols in this scope don’t inherit the pending dot.
+        m_ds.init(m_curSymp);
         UINFO(3, indent() << "[iface-debug] converted owner var to ParamType name="
-                           << varp->prettyName());
+                           << varp->prettyName() << " dotState(after-reset)=" << m_ds.ascii());
         VL_DO_DANGLING(pushDeletep(varp), varp);
         return newTypep;
     }
@@ -5096,6 +5103,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         //const bool ifaceCaptured = kIfaceTypedefCaptureEnabled && nodep->user2p();
         const bool ifaceCaptured = LinkDotIfaceCapture::enabled() && nodep->user2p();
         AstCell* const capturedCellp = ifaceCaptured ? VN_CAST(nodep->user2p(), Cell) : nullptr;
+        bool forcedIfaceDotScope = false;
         if (ifaceCaptured && m_statep->forParamed()) {
             UINFO(3, indent() << "[iface-debug] captured typedef name=" << nodep->name()
                                << " typedef=" << nodep->typedefp()
@@ -5122,6 +5130,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             UINFO(3, indent() << "[iface-debug] consume captured iface context name="
                                << nodep->name() << " cell=" << capturedCellp);
             m_ds.m_dotPos = DP_SCOPE;
+            forcedIfaceDotScope = true;
         }
         if (!nodep->typedefp() && !nodep->subDTypep()) {
             if (ifaceCaptured) {
@@ -5206,6 +5215,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     nodep->v3error("Can't find typedef/interface: " << nodep->prettyNameQ());
                 }
             }
+        }
+        if (forcedIfaceDotScope && m_ds.m_dotPos == DP_SCOPE && !m_ds.m_dotp) {
+            UINFO(3, indent() << "[iface-debug] reset dot state after captured typedef name="
+                               << nodep->name());
+            m_ds.init(m_curSymp);
         }
         iterateChildren(nodep);
     }
