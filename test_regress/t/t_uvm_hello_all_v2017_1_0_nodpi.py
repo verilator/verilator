@@ -9,6 +9,7 @@
 
 import vltest_bootstrap
 
+test.priority(50)
 test.scenarios('vlt')
 test.top_filename = 't/t_uvm_hello.v'
 

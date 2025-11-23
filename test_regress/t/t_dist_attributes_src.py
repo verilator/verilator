@@ -9,6 +9,7 @@
 
 import vltest_bootstrap
 
+test.priority(30)
 test.scenarios('dist')
 test.rerunnable = False
 
@@ -32,15 +33,18 @@ if not have_clang_check():
 
 # some of the files are only used in Verilation
 # and are only in "include" folder
-srcfiles = test.glob_some(test.root + "/include/*.cpp")
+srcfiles = test.glob_some(test.root +
+                          "/src/*.cpp") + test.glob_some(test.root +
+                                                         "/src/obj_dbg/V3Const__gen.cpp")
+srcfiles = [f for f in srcfiles if re.search(r'\/(V3Const|Vlc\w*|\w*_test|\w*_sc|\w*.yy).cpp$', f)]
 srcfiles_str = " ".join(srcfiles)
-clang_args = "-I" + test.root + "/include/ -I" + test.root + "/include/vltstd/ -fcoroutines-ts"
 
 test.run(logfile=test.run_log_filename,
          tee=True,
          cmd=["python3", test.root + "/nodist/clang_check_attributes",
               "--verilator-root=" + test.root,
-              "--cxxflags='" + clang_args + "'",
+              "--compilation-root=" + test.root + "/src/obj_dbg",
+              "--compile-commands-dir=" + test.root + "/src/obj_dbg",
               srcfiles_str])  # yapf:disable
 
 test.file_grep(test.run_log_filename, r'Number of functions reported unsafe: +(\d+)', 0)

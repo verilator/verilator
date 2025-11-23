@@ -9,6 +9,7 @@
 
 import vltest_bootstrap
 
+test.priority(30)
 test.scenarios('vlt_all')
 
 # stats will be deleted but generation will be skipped if libs of hierarchical blocks exist.

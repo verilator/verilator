@@ -383,7 +383,13 @@ class Forker:
 
 class Runner:
 
-    def __init__(self, driver_log_filename, quiet, ok_cnt=0, fail1_cnt=0, skip_cnt=0):
+    def __init__(self,
+                 driver_log_filename,
+                 quiet,
+                 ok_cnt=0,
+                 pass_tests=None,
+                 fail1_cnt=0,
+                 skip_cnt=0):
         self.driver_log_filename = driver_log_filename
         self.quiet = quiet
         # Counts
@@ -396,6 +402,10 @@ class Runner:
         self.skip_msgs = []
         self.fail_msgs = []
         self.fail_tests = []
+        if pass_tests:
+            self.pass_tests = pass_tests
+        else:
+            self.pass_tests = []
         self._last_proc_finish_time = 0
         self._last_summary_time = 0
         self._last_summary_left = 0
@@ -448,6 +458,7 @@ class Runner:
         test = VlTest(py_filename=process.name,
                       scenario=process.scenario,
                       running_id=process.running_id)
+
         test.oprint("=" * 50)
         test._prep()
         if process.rerun_skipping:
@@ -475,8 +486,10 @@ class Runner:
                       running_id=process.running_id)
         test._quit = Quitting
         test._read_status()
+
         if test.ok:
             self.ok_cnt += 1
+            self.pass_tests.append(test)
             if Args.driver_clean:
                 test.clean()
         elif test._quit:
@@ -525,17 +538,22 @@ class Runner:
     def report(self, filename: str) -> None:
         if filename:
             with open(filename, "w", encoding="utf8") as fh:
-                self._report_fh(fh)
+                # Time report is only in logfile to reduce user confusion
+                self._report_fh(fh, True)
         else:
-            self._report_fh(sys.stdout)
+            self._report_fh(sys.stdout, False)
 
-    def _report_fh(self, fh) -> None:
+    def _report_fh(self, fh, show_times: bool) -> None:
         fh.write("\n")
         fh.write('=' * 70 + "\n")
         for f in sorted(self.fail_msgs):
             fh.write(f.strip() + "\n")
         for f in sorted(self.skip_msgs):
             fh.write(f.strip() + "\n")
+
+        if show_times:
+            self._report_times(fh)
+
         if self.fail_cnt:
             sumtxt = 'FAILED'
         elif self.skip_cnt:
@@ -543,6 +561,30 @@ class Runner:
         else:
             sumtxt = 'PASSED'
         fh.write("==TESTS DONE, " + sumtxt + ": " + self.sprint_summary() + "\n")
+
+    def _report_times(self, fh) -> None:
+        if forker.is_any_left():
+            return
+        if len(self.pass_tests) < 10:
+            return
+        # PY file may be used for both vlt and vltmt, so take max
+        py_times = {}
+        for ftest in self.pass_tests:
+            if (ftest.py_filename not in py_times) or (py_times[ftest.py_filename]._wall_time
+                                                       < ftest._wall_time):
+                py_times[ftest.py_filename] = ftest
+        n = 0
+        top_n = 6
+        for py_filename in sorted(py_times, key=lambda key: py_times[key]._wall_time,
+                                  reverse=True):
+            if n > top_n:
+                break
+            n += 1
+            ftest = py_times[py_filename]
+            if ftest._priority == 1:
+                fh.write(py_filename +
+                         ": walltime=%0.3f is in top %d, add a test.priority() for it?\n" %
+                         (ftest._wall_time, top_n))
 
     def print_summary(self, force=False):
         change = self._last_summary_left != self.left_cnt
@@ -648,9 +690,13 @@ class VlTest:
         self._have_solver_called = False
         self._inputs = {}
         self._ok = False
+        self._priority = 1
         self._quit = False
+        self._scenario_parsed = False
         self._scenario_off = False  # scenarios() didn't match running scenario
         self._skips = None
+        self._start_time = time.time()
+        self._wall_time = 0
 
         match = re.match(r'^(.*/)?([^/]*)\.py', self.py_filename)
         self.name = match.group(2)  # Name of this test
@@ -904,11 +950,23 @@ class VlTest:
             self._skips = message
             raise VtSkipException
 
+    def priority(self, level: int) -> None:
+        """Called from tests as: priority(<constant_number>) to
+        specify what priority order the test should run at.
+        Higher numbers run first; in numeric tiers very roughly
+        corresponding to the wall time runtimes in seconds.
+        One is default. Tests with same priories run in name-sorted order.
+        priority() must be on one line; line is parsed outside Python."""
+        self._priority = level
+        if self._scenario_parsed:
+            self.error("priority() must be called before scenarios()")
+
     def scenarios(self, *scenario_list) -> None:
         """Called from tests as: scenarios(<list_of_scenarios>) to
         specify which scenarios this test runs under.  Where ... is
         one cases listed in  All_Scenarios.
-        All scenarios must be on one line; this is parsed outside Python."""
+        All scenarios must be on one line; line is parsed outside Python."""
+        self._scenario_parsed = True
         enabled_scenarios = {}
         for param in scenario_list:
             hit = False
@@ -926,19 +984,24 @@ class VlTest:
             # self._exit() implied by skip's exception
 
     @staticmethod
-    def _prefilter_scenario(py_filename: str, scenario: str) -> bool:
+    def _prefilter_scenario(py_filename: str) -> dict:
         """Read a python file to see if scenarios require it to be run.
-        Much faster than parsing the file for a runtime check."""
+        Much faster than parsing the file for a runtime check.
+        Return dict information on scenarios and priority."""
         (py_filename, _) = Runner._py_filename_adjust(py_filename, ".")
+        result = {'priority': 1}  # Also all secenarios enabled
         with open(py_filename, 'r', encoding="utf-8") as fh:
             for line in fh:
+                # Required that test.priority be earlier in file,
+                # the priority() function checks for this
+                m = re.search(r'^\s*test.priority\((.*?)\)', line)
+                if m:
+                    result['priority'] = int(m.group(1))
                 m = re.search(r'^\s*test.scenarios\((.*?)\)', line)
                 if m:
                     for param in re.findall(r"""["']([^,]*)["']""", m.group(1)):
-                        for allscarg in All_Scenarios[scenario]:
-                            if param == allscarg:
-                                return True
-        return False
+                        result[param] = True
+        return result
 
     def _prep(self) -> None:
         VtOs.mkdir_ok(self.obj_dir)  # Ok if already exists
@@ -977,10 +1040,13 @@ class VlTest:
 
     def _write_status(self) -> None:
         with open(self._status_filename, "wb") as fh:
+            # Vtest/self values to propagate up to driver's Vtest object
             pass_to_driver = {
                 '_ok': self._ok,
+                '_priority': self._priority,
                 '_scenario_off': self._scenario_off,
                 '_skips': self._skips,
+                '_wall_time': time.time() - self._start_time,
                 'errors': self.errors,
             }
             pickle.dump(pass_to_driver, fh)
@@ -2820,10 +2886,19 @@ def run_them() -> None:
     timestart = time.strftime("%Y%m%d_%H%M%S")
 
     runner = Runner(driver_log_filename="obj_dist/driver_" + timestart + ".log", quiet=Args.quiet)
+
+    test_data = {}
     for test_py in Arg_Tests:
+        test_data[test_py] = VlTest._prefilter_scenario(test_py)
+    for test_py in sorted(Arg_Tests, key=lambda key: test_data[key]['priority'], reverse=True):
         for scenario in sorted(set(Args.scenarios)):
-            if VlTest._prefilter_scenario(test_py, scenario):
+            run_it = False
+            for allscarg in All_Scenarios[scenario]:
+                if allscarg in test_data[test_py]:
+                    run_it = True
+            if run_it:
                 runner.one_test(py_filename=test_py, scenario=scenario)
+
     runner.wait_and_report()
 
     if Args.rerun and runner.fail_cnt and not Quitting:
@@ -2839,6 +2914,7 @@ def run_them() -> None:
         orig_runner = runner
         runner = Runner(driver_log_filename="obj_dist/driver_" + timestart + "_rerun.log",
                         quiet=False,
+                        pass_tests=orig_runner.pass_tests,
                         fail1_cnt=orig_runner.fail_cnt,
                         ok_cnt=orig_runner.ok_cnt,
                         skip_cnt=orig_runner.skip_cnt)

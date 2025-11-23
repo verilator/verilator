@@ -9,6 +9,7 @@
 
 import vltest_bootstrap
 
+test.priority(30)
 test.scenarios('vlt_all')
 test.top_filename = "t/t_hier_block.v"
 test.golden_filename = "t/t_hier_block_trace_saif.out"

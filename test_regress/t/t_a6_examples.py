@@ -9,6 +9,7 @@
 
 import vltest_bootstrap
 
+test.priority(180)
 test.scenarios('dist')
 
 test.clean_command = '/bin/rm -rf ../examples/*/build ../examples/*/obj*'
