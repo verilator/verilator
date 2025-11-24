@@ -5117,6 +5117,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
         const bool captureMapHit = captureEnabled && LinkDotIfaceCapture::contains(nodep);
         const auto* captureEntry = captureMapHit ? LinkDotIfaceCapture::find(nodep) : nullptr;
         AstCell* const captureEntryCellp = captureEntry ? captureEntry->cellp : nullptr;
+
+        AstTypedef* const capturedTypedefp =
+            captureMapHit ? LinkDotIfaceCapture::getCapturedTypedef(nodep) : nullptr;
+        const VSymEnt* const capturedTypedefSymp =
+            capturedTypedefp ? m_statep->getNodeSym(capturedTypedefp) : nullptr;
+
         const bool ifaceCaptured = captureEnabled && nodep->user2p();
         const bool missingIfaceContext = captureMapHit && !ifaceCaptured;
         const bool watchCapturedTypedef = captureMapHit && m_statep->forParamed()
@@ -5148,7 +5154,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             captureEntryRetired = true;
             UINFO(2, indent() << "[iface-debug] retire erase result name=" << nodep->name()
                               << " erased=" << erased);
-            if (watchCapturedTypedef) std::exit(0);
+            //if (watchCapturedTypedef) std::exit(0);
         };
         if (ifaceCaptured && m_statep->forParamed()) {
             UINFO(3, indent() << "[iface-debug] captured typedef name=" << nodep->name()
@@ -5213,58 +5219,71 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                        << capturedCellp);
                 }
             }
-            if (foundp) {
+
+            if (!foundp && ifaceCaptured && capturedTypedefp) {
+                UINFO(2, indent() << "[iface-debug] binding via captured typedef fallback name="
+                                   << nodep->name() << " typedef=" << capturedTypedefp);
+                nodep->typedefp(capturedTypedefp);
+                nodep->classOrPackagep(capturedTypedefSymp
+                                           ? capturedTypedefSymp->classOrPackagep()
+                                           : nullptr);
+                resolvedCapturedTypedef = true;
+                retireCapture("typedef");
+            }
+            if (!resolvedCapturedTypedef && foundp) {
                 VSymEnt* const parentSymp = foundp->parentp();
                 UINFO(3, indent() << "[iface-debug] resolved typedef name=" << nodep->name()
                                    << " foundNode=" << foundp->nodep()
                                    << " parentNode="
                                    << (parentSymp ? parentSymp->nodep() : nullptr));
             }
-            if (AstTypedef* const defp = foundp ? VN_CAST(foundp->nodep(), Typedef) : nullptr) {
-                // Don't check if typedef is to a <type T>::<reference> as might not be resolved
-                // yet
-                if (!nodep->classOrPackagep() && !defp->isUnderClass())
-                    checkDeclOrder(nodep, defp);
-                nodep->typedefp(defp);
-                nodep->classOrPackagep(foundp->classOrPackagep());
-                resolvedCapturedTypedef = true;
-                retireCapture("typedef");
-            } else if (AstParamTypeDType* const defp
-                       = foundp ? VN_CAST(foundp->nodep(), ParamTypeDType) : nullptr) {
-                if (defp == nodep->backp()) {  // Where backp is typically typedef
-                    nodep->v3error("Reference to '" << m_ds.m_dotText
-                                                    << (m_ds.m_dotText == "" ? "" : ".")
-                                                    << nodep->prettyName() << "'"
-                                                    << " type would form a recursive definition");
-                    nodep->refDTypep(nodep->findVoidDType());  // Try to reduce later errors
-                } else {
-                    nodep->refDTypep(defp);
+            if (!resolvedCapturedTypedef) {
+                if (AstTypedef* const defp = foundp ? VN_CAST(foundp->nodep(), Typedef) : nullptr) {
+                    // Don't check if typedef is to a <type T>::<reference> as might not be resolved
+                    // yet
+                    if (!nodep->classOrPackagep() && !defp->isUnderClass())
+                        checkDeclOrder(nodep, defp);
+                    nodep->typedefp(defp);
                     nodep->classOrPackagep(foundp->classOrPackagep());
                     resolvedCapturedTypedef = true;
-                    retireCapture("param typedef");
-                }
-            } else if (AstClass* const defp = foundp ? VN_CAST(foundp->nodep(), Class) : nullptr) {
-                // Don't check if typedef is to a <type T>::<reference> as might not be resolved
-                // yet
-                if (!nodep->classOrPackagep()) checkDeclOrder(nodep, defp);
-                AstPin* const paramsp = nodep->paramsp();
-                if (paramsp) paramsp->unlinkFrBackWithNext();
-                AstClassRefDType* const newp
-                    = new AstClassRefDType{nodep->fileline(), defp, paramsp};
-                newp->classOrPackagep(foundp->classOrPackagep());
-                resolvedCapturedTypedef = true;
-                retireCapture("class ref");
-                nodep->replaceWith(newp);
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                return;
-            } else if (m_insideClassExtParam) {
-                return;
-            } else {
-                if (foundp) {
-                    UINFO(1, "Found sym node: " << foundp->nodep());
-                    nodep->v3error("Expecting a data type: " << nodep->prettyNameQ());
+                    retireCapture("typedef");
+                } else if (AstParamTypeDType* const defp
+                           = foundp ? VN_CAST(foundp->nodep(), ParamTypeDType) : nullptr) {
+                    if (defp == nodep->backp()) {  // Where backp is typically typedef
+                        nodep->v3error("Reference to '" << m_ds.m_dotText
+                                                        << (m_ds.m_dotText == "" ? "" : ".")
+                                                        << nodep->prettyName() << "'"
+                                                        << " type would form a recursive definition");
+                        nodep->refDTypep(nodep->findVoidDType());  // Try to reduce later errors
+                    } else {
+                        nodep->refDTypep(defp);
+                        nodep->classOrPackagep(foundp->classOrPackagep());
+                        resolvedCapturedTypedef = true;
+                        retireCapture("param typedef");
+                    }
+                } else if (AstClass* const defp = foundp ? VN_CAST(foundp->nodep(), Class) : nullptr) {
+                    // Don't check if typedef is to a <type T>::<reference> as might not be resolved
+                    // yet
+                    if (!nodep->classOrPackagep()) checkDeclOrder(nodep, defp);
+                    AstPin* const paramsp = nodep->paramsp();
+                    if (paramsp) paramsp->unlinkFrBackWithNext();
+                    AstClassRefDType* const newp
+                        = new AstClassRefDType{nodep->fileline(), defp, paramsp};
+                    newp->classOrPackagep(foundp->classOrPackagep());
+                    resolvedCapturedTypedef = true;
+                    retireCapture("class ref");
+                    nodep->replaceWith(newp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
+                } else if (m_insideClassExtParam) {
+                    return;
                 } else {
-                    nodep->v3error("Can't find typedef/interface: " << nodep->prettyNameQ());
+                    if (foundp) {
+                        UINFO(1, "Found sym node: " << foundp->nodep());
+                        nodep->v3error("Expecting a data type: " << nodep->prettyNameQ());
+                    } else {
+                        nodep->v3error("Can't find typedef/interface: " << nodep->prettyNameQ());
+                    }
                 }
             }
         }

@@ -69,9 +69,13 @@ const CapturedIfaceTypedef* find(const AstRefDType* refp) {
     return &it->second;
 }
 
+AstTypedef* getCapturedTypedef(const AstRefDType* refp) {
+    if (const CapturedIfaceTypedef* const entry = find(refp)) return entry->typedefp;
+    return nullptr;
+}
+
 void forEach(const std::function<void(const CapturedIfaceTypedef&)>& fn) {
     if (!fn) return;
-    //for (const auto& entry : capturedMap()) fn(entry.second);
     auto& map = capturedMap();
     std::vector<const AstRefDType*> keys;
     keys.reserve(map.size());
@@ -80,7 +84,14 @@ void forEach(const std::function<void(const CapturedIfaceTypedef&)>& fn) {
     for (const AstRefDType* key : keys) {
         const auto it = map.find(key);
         if (it == map.end()) continue;  // entry may have been erased
-        fn(it->second);
+        CapturedIfaceTypedef& entry = it->second;
+        if (entry.cellp && entry.refp && entry.refp->user2p() != entry.cellp) {
+            UINFO(2, "[iface-debug] refresh captured context ref=" << entry.refp
+                       << " name=" << entry.refp->name() << " oldCell=" << entry.refp->user2p()
+                       << " newCell=" << entry.cellp);
+            entry.refp->user2p(entry.cellp);
+        }
+        fn(entry);
     }
 }
 
