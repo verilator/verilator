@@ -5122,8 +5122,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
             captureMapHit ? LinkDotIfaceCapture::getCapturedTypedef(nodep) : nullptr;
         const VSymEnt* const capturedTypedefSymp =
             capturedTypedefp ? m_statep->getNodeSym(capturedTypedefp) : nullptr;
-        const bool legacyLookupAllowed
-            = captureMapHit && LinkDotIfaceCapture::legacyLookupEnabled(nodep);
 
         const bool ifaceCaptured = captureEnabled && nodep->user2p();
         const bool missingIfaceContext = captureMapHit && !ifaceCaptured;
@@ -5201,29 +5199,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
             } else {
                 foundp = m_curSymp->findIdFlat(nodep->name());
             }
-            if (legacyLookupAllowed && !foundp && ifaceCaptured && capturedCellp
-                && capturedCellp->modp()) {
-                UINFO(1, indent() << "[iface-debug] legacy lookup triggered name=" << nodep->name());
-                VSymEnt* ifaceModSymp = nullptr;
-                if (LinkDotState::existsNodeSym(capturedCellp->modp())) {
-                    ifaceModSymp = LinkDotState::getNodeSym(capturedCellp->modp());
-                }
-                if (ifaceModSymp) {
-                    UINFO(3, indent() << "[iface-debug] resolve typedef via iface name="
-                                       << nodep->name() << " ifaceMod="
-                                       << capturedCellp->modp()->name() << " sym="
-                                       << ifaceModSymp);
-                    foundp = ifaceModSymp->findIdFlat(nodep->name());
-                    if (!foundp) {
-                        UINFO(3, indent() << "[iface-debug] typedef not found under iface name="
-                                           << nodep->name());
-                    }
-                } else {
-                    UINFO(3, indent() << "[iface-debug] missing iface sym for captured cell="
-                                       << capturedCellp);
-                }
-            }
-
             if (!foundp && ifaceCaptured && capturedTypedefp) {
                 UINFO(2, indent() << "[iface-debug] binding via captured typedef fallback name="
                                    << nodep->name() << " typedef=" << capturedTypedefp);
