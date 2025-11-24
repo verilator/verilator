@@ -804,18 +804,18 @@ public:
     }
     static bool checkIfClassOrPackage(const VSymEnt* const symp) {
         if (VN_IS(symp->nodep(), Class) || VN_IS(symp->nodep(), Package)) return true;
-        const AstRefDType* refDTypep = nullptr;
+        //const AstRefDType* refDTypep = nullptr;
         if (const AstTypedef* const typedefp = VN_CAST(symp->nodep(), Typedef)) {
             if (VN_IS(typedefp->childDTypep(), ClassRefDType)) return true;
             if (const AstRefDType* const refp = VN_CAST(typedefp->childDTypep(), RefDType)) {
-                refDTypep = refp;
+                //refDTypep = refp;
             }
         } else if (const AstParamTypeDType* const paramTypep
                    = VN_CAST(symp->nodep(), ParamTypeDType)) {
             if (const AstRequireDType* const requireDTypep
                 = VN_CAST(paramTypep->childDTypep(), RequireDType)) {
                 if (const AstRefDType* const refp = VN_CAST(requireDTypep->lhsp(), RefDType)) {
-                    refDTypep = refp;
+                    //refDTypep = refp;
                 } else if (VN_IS(requireDTypep->lhsp(), VoidDType)
                            || VN_IS(requireDTypep->lhsp(), BasicDType)
                            || VN_IS(requireDTypep->lhsp(), ClassRefDType)) {
