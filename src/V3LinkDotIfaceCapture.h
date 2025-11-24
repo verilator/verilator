@@ -1,16 +1,25 @@
+
+// -*- mode: C++; c-file-style: "cc-mode" -*-
+//*************************************************************************
+// DESCRIPTION: Interface typedef capture helper: stores (refp, typedefp,
+//    cellp, owners, pendingClone) so LinkDot can rebind refs when symbol
+//    lookup fails, and V3Param clones can retarget typedefs without legacy
+//    paths.
+//
+// Code available from: https://verilator.org
+//
+//*************************************************************************
+//
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
+// Lesser General Public License Version 3 or the Perl Artistic License
+// Version 2.0.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+//
+//*************************************************************************
+
 #ifndef VERILATOR_V3LINKDOTIFACECAPTURE_H_
 #define VERILATOR_V3LINKDOTIFACECAPTURE_H_
-
-/*
-LinkDotIfaceCapture: it stores (refp, typedefp, cellp, owners, pendingClone), plus helpers for add/find/replace/forEach/erase.
-
-Functions are used by either param cloning (replaceRef/replaceTypedef/propagateClone) or LinkDot (contains/find/getCapturedTypedef/erase).
-
-The capture lifecycle in V3LinkDot.cpp now has a single path: capture when we see an interface typedef, rebind from capturedTypedefp if symbol lookup fails, then retire the entry.
-
-V3Param.cpp only touches the capture map inside the module clone scrub. That code now just rebinds typedefs and propagates clones—no special cases.
-*/
-
 
 #include "config_build.h"
 
