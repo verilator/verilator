@@ -137,7 +137,7 @@ public:
                         AstVar* const loopVarp = new AstVar{
                             flp, VVarType::MODULETEMP,
                             m_rdVscp->varp()->name() + "__VwhileIter" + std::to_string(i),
-                            unpackedp->findIntDType()};
+                            VFlagBitPacked{}, 32};
                         m_rdVscp->varp()->addNext(loopVarp);
                         AstVarScope* const loopVarScopep
                             = new AstVarScope{flp, m_rdVscp->scopep(), loopVarp};
@@ -145,11 +145,9 @@ public:
                         AstVarRef* const readRefp
                             = new AstVarRef{flp, loopVarScopep, VAccess::READ};
                         loopVarRefs.push_back(readRefp);
-                        AstConst* const initConstp
-                            = new AstConst{flp, AstConst::DTyped{}, loopVarp->dtypep()};
-                        initConstp->num().setLongS(dims[i]->lo());
                         AstNodeStmt* const currInitp = new AstAssign{
-                            flp, new AstVarRef{flp, loopVarScopep, VAccess::WRITE}, initConstp};
+                            flp, new AstVarRef{flp, loopVarScopep, VAccess::WRITE},
+                            new AstConst{flp, static_cast<uint32_t>(dims[i]->lo())}};
                         if (toInsertp) {
                             toInsertp->addNextHere(currInitp);
                         } else {
@@ -157,11 +155,10 @@ public:
                         }
                         AstLoop* const currWhilep = new AstLoop{flp};
                         currInitp->addNext(currWhilep);
-                        AstConst* const finalConstp
-                            = new AstConst{flp, AstConst::DTyped{}, loopVarp->dtypep()};
-                        finalConstp->num().setLongS(dims[i]->hi());
                         AstLoopTest* const loopTestp = new AstLoopTest{
-                            flp, currWhilep, new AstNeq{flp, readRefp, finalConstp}};
+                            flp, currWhilep,
+                            new AstNeq{flp, readRefp,
+                                       new AstConst{flp, static_cast<uint32_t>(dims[i]->hi())}}};
                         currWhilep->addStmtsp(loopTestp);
                         toInsertp = loopTestp;
                         AstAssign* const currIncrp = new AstAssign{
