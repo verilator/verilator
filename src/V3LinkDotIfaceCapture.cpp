@@ -30,14 +30,6 @@ static AstNodeModule* findOwnerModule(AstNode* nodep) {
     return nullptr;
 }
 
-static CapturedIfaceTypedef* mutableEntry(const AstRefDType* refp) {
-    if (!refp) return nullptr;
-    auto& map = capturedMap();
-    const auto it = map.find(refp);
-    if (it == map.end()) return nullptr;
-    return &it->second;
-}
-
 void enable(bool flag) {
     captureEnabled() = flag;
     if (!flag) capturedMap().clear();
@@ -54,7 +46,7 @@ void add(AstRefDType* refp, AstCell* cellp, AstNodeModule* ownerModp, VSymEnt* o
     AstNodeModule* resolvedTypedefOwner = typedefOwnerModp;
     if (!resolvedTypedefOwner && resolvedTypedefp)
         resolvedTypedefOwner = findOwnerModule(resolvedTypedefp);
-    capturedMap()[refp] = CapturedIfaceTypedef{refp,cellp, ownerModp, ownerSymp, resolvedTypedefp, resolvedTypedefOwner, nullptr, true};
+    capturedMap()[refp] = CapturedIfaceTypedef{refp,cellp, ownerModp, ownerSymp, resolvedTypedefp, resolvedTypedefOwner, nullptr};
 }
 
 void add(const CapturedIfaceTypedef& entry) {
@@ -77,15 +69,6 @@ const CapturedIfaceTypedef* find(const AstRefDType* refp) {
 AstTypedef* getCapturedTypedef(const AstRefDType* refp) {
     if (const CapturedIfaceTypedef* const entry = find(refp)) return entry->typedefp;
     return nullptr;
-}
-
-bool legacyLookupEnabled(const AstRefDType* refp) {
-    if (const CapturedIfaceTypedef* const entry = find(refp)) return entry->allowLegacyLookup;
-    return false;
-}
-
-void disableLegacyLookup(const AstRefDType* refp) {
-    if (CapturedIfaceTypedef* entry = mutableEntry(refp)) entry->allowLegacyLookup = false;
 }
 
 void forEach(const std::function<void(const CapturedIfaceTypedef&)>& fn) {
@@ -131,7 +114,6 @@ static bool finalizeCapturedEntry(CapturedMap::iterator it, const char* reasonp)
     pendingRefp->user3(false);
     pendingRefp->typedefp(reboundTypedefp);
     entry.pendingClonep = nullptr;
-    entry.allowLegacyLookup = false;
     UINFO(2, "[iface-debug] finalize captured typedef reason=" << reasonp << " orig=" << origRefp
                << " clone=" << pendingRefp << " cell=" << entry.cellp
                << " typedef=" << reboundTypedefp);
@@ -146,7 +128,6 @@ bool replaceTypedef(const AstRefDType* refp, AstTypedef* newTypedefp) {
     if (it == map.end()) return false;
     it->second.typedefp = newTypedefp;
     it->second.typedefOwnerModp = findOwnerModule(newTypedefp);
-    it->second.allowLegacyLookup = false;
     if (finalizeCapturedEntry(it, "typedef clone")) return true;
     UINFO(2, "[iface-debug] recorded typedef clone awaiting ref clone ref=" << refp
                << " typedef=" << newTypedefp);
@@ -214,8 +195,7 @@ void dumpCaptured(int uinfoLevel) {
                               << " cell=" << entry.cellp << " ownerMod=" << entry.ownerModp
                               << " typedefp=" << entry.typedefp << " user2="
                               << (entry.refp ? entry.refp->user2p() : nullptr) << " user3="
-                              << (entry.refp ? entry.refp->user3() : false) << " legacyLookup="
-                              << entry.allowLegacyLookup);
+                              << (entry.refp ? entry.refp->user3() : false));
     }
 }
 

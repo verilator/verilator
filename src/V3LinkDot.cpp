@@ -5193,7 +5193,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                            ? capturedTypedefSymp->classOrPackagep()
                                            : nullptr);
                 resolvedCapturedTypedef = true;
-                LinkDotIfaceCapture::noteFallbackBind(nodep);
                 retireCapture("typedef");
             }
             if (!resolvedCapturedTypedef && foundp) {
