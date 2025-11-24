@@ -39,7 +39,6 @@ struct CapturedIfaceTypedef final {
     AstCell* cellp = nullptr;
     // Module where the RefDType lives
     AstNodeModule* ownerModp = nullptr;
-    VSymEnt* ownerSymp = nullptr;
     // Typedef definition being referenced
     AstTypedef* typedefp = nullptr;
     // Interface/module that owns typedefp
@@ -52,8 +51,7 @@ void enable(bool flag);
 bool enabled();
 
 void reset();
-void add(AstRefDType* refp, AstCell* cellp, AstNodeModule* ownerModp, VSymEnt* ownerSymp,
-         AstTypedef* typedefp = nullptr, AstNodeModule* typedefOwnerModp = nullptr);
+void add(AstRefDType* refp, AstCell* cellp, AstNodeModule* ownerModp, AstTypedef* typedefp = nullptr, AstNodeModule* typedefOwnerModp = nullptr);
 void add(const CapturedIfaceTypedef& entry);
 bool contains(const AstRefDType* refp);
 const CapturedIfaceTypedef* find(const AstRefDType* refp);

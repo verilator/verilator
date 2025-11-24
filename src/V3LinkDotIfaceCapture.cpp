@@ -39,14 +39,13 @@ bool enabled() { return captureEnabled(); }
 
 void reset() { capturedMap().clear(); }
 
-void add(AstRefDType* refp, AstCell* cellp, AstNodeModule* ownerModp, VSymEnt* ownerSymp,
-         AstTypedef* typedefp, AstNodeModule* typedefOwnerModp) {
+void add(AstRefDType* refp, AstCell* cellp, AstNodeModule* ownerModp, AstTypedef* typedefp, AstNodeModule* typedefOwnerModp) {
     if (!refp) return;
     AstTypedef* const resolvedTypedefp = typedefp ? typedefp : refp->typedefp();
     AstNodeModule* resolvedTypedefOwner = typedefOwnerModp;
     if (!resolvedTypedefOwner && resolvedTypedefp)
         resolvedTypedefOwner = findOwnerModule(resolvedTypedefp);
-    capturedMap()[refp] = CapturedIfaceTypedef{refp,cellp, ownerModp, ownerSymp, resolvedTypedefp, resolvedTypedefOwner, nullptr};
+    capturedMap()[refp] = CapturedIfaceTypedef{refp,cellp, ownerModp, resolvedTypedefp, resolvedTypedefOwner, nullptr};
 }
 
 void add(const CapturedIfaceTypedef& entry) {

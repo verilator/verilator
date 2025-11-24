@@ -3515,7 +3515,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                       return;
                   }
                   refp->user2p(const_cast<AstCell*>(ifaceCellp));
-                  LinkDotIfaceCapture::add(refp, const_cast<AstCell*>(ifaceCellp), m_modp, nullptr, refp->typedefp());
+                  LinkDotIfaceCapture::add(refp, const_cast<AstCell*>(ifaceCellp), m_modp, refp->typedefp());
                   UINFO(3, indent() << "[iface-debug] capture success typedef=" << refp << " cell=" << ifaceCellp << " mod=" << (ifaceCellp->modp() ? ifaceCellp->modp()->name() : "<null>") << " dotPos=" << static_cast<int>(m_ds.m_dotPos));
                   if (m_ds.m_dotPos != DP_FINAL) return;
                   AstVar* enclosingVarp = nullptr;
