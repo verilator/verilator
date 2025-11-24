@@ -38,7 +38,7 @@ jobs:
       coverage-pr-run-ids: ${{ steps.build.outputs.coverage-pr-run-ids }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Build pages
         id: build
         env:
@@ -70,7 +70,7 @@ jobs:
     if: ${{ github.repository == 'verilator/verilator' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       # Use the Verilator CI app to post the comment
       - name: Generate access token
         id: generate-token
