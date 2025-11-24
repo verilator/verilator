@@ -823,14 +823,6 @@ public:
                 }
             }
         }
-        // TODO: this should be handled properly - case when it is known what type is
-        // referenced by AstRefDType (refDTypep->typeofp() is null or
-        // refDTypep->classOrPackageOpp() is null)
-        if (refDTypep && !refDTypep->typeofp() && !refDTypep->classOrPackageOpp()) {
-            // When still unknown - return because it may be a class, classes may not be
-            // linked at this point. Return in case it gets resolved to a class in the future
-            return true;
-        }
         return false;
     }
     VSymEnt* resolveClassOrPackage(VSymEnt* lookSymp, AstClassOrPackageRef* nodep, bool fallback,
@@ -5021,6 +5013,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
         m_ds.m_dotSymp = VL_RESTORER_PREV(m_curSymp);
     }
     void visit(AstRefDType* nodep) override {
+
+        if (auto* const typeOfp = nodep->typeofp()) {
+            iterate(typeOfp);
+            return;
+        }
+
         // Resolve its reference
         if (LinkDotIfaceCapture::contains(nodep)) {
             UINFO(3, indent() << "[iface-debug] visit captured typedef ptr=" << nodep << " user2=" << nodep->user2p());
