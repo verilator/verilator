@@ -635,62 +635,16 @@ class ParamProcessor final {
                 if (!entry.refp) return;
 
                 if (entry.typedefOwnerModp) {
-                    AstTypedef* const origTypedefp = entry.typedefp;
-                    if (origTypedefp) {
-                        if (AstTypedef* const clonedTypedefp = origTypedefp->clonep()) {
-                            if (LinkDotIfaceCapture::replaceTypedef(entry.refp, clonedTypedefp)) {
-                                UINFO(2, "[iface-debug] rebound typedef def module=" << srcModp->name() << " typedef=" << origTypedefp << " clone=" << clonedTypedefp << " ref=" << entry.refp);
-                            }
-                        } else {
-                            UINFO(1, "[iface-debug] missing typedef clone for module=" << srcModp->name() << " typedef=" << origTypedefp << " ref=" << entry.refp);
-                        }
+                    if (AstTypedef* const origTypedefp = entry.typedefp) {
+                        LinkDotIfaceCapture::replaceTypedef(entry.refp, origTypedefp->clonep());
                     }
                 }
-
-                UINFO(3, "[iface-debug] scrub candidate module=" << srcModp->name() << " typedef=" << entry.refp << " name=" << entry.refp->name() << " typedefp=" << entry.refp->typedefp());
 
                 if (AstRefDType* const clonedRefp = entry.refp->clonep()) {
                     LinkDotIfaceCapture::propagateClone(entry.refp, clonedRefp);
-                } else {
-                    UINFO(1, "[iface-debug] missing clone for captured typedef name=" << entry.refp->name() << " module=" << srcModp->name());
                 }
             });
         }
-
-            /*
-            LinkDotIfaceCapture::forEach(
-                [&](const LinkDotIfaceCapture::CapturedIfaceTypedef& entry) {
-                    if (!entry.refp) return;
-                    const bool ownerMatches
-                        = (!entry.ownerModp || entry.ownerModp == srcModp);
-                    const bool typedefOwnerMatches
-                        = (entry.typedefOwnerModp && entry.typedefOwnerModp == srcModp);
-                    if (!ownerMatches && !typedefOwnerMatches) return;
-
-                    if (typedefOwnerMatches) {
-                        AstTypedef* const origTypedefp = entry.typedefp;
-                        if (origTypedefp) {
-                            if (AstTypedef* const clonedTypedefp = origTypedefp->clonep()) {
-                                if (LinkDotIfaceCapture::replaceTypedef(entry.refp, clonedTypedefp)) {
-                                    UINFO(2, "[iface-debug] rebound typedef def module=" << srcModp->name() << " typedef=" << origTypedefp << " clone=" << clonedTypedefp << " ref=" << entry.refp);
-                                }
-                            } else {
-                                UINFO(1, "[iface-debug] missing typedef clone for module=" << srcModp->name() << " typedef=" << origTypedefp << " ref=" << entry.refp);
-                            }
-                        }
-                    }
-
-                    UINFO(3, "[iface-debug] scrub candidate module=" << srcModp->name() << " typedef=" << entry.refp << " name=" << entry.refp->name() << " typedefp=" << entry.refp->typedefp());
-                    if (!ownerMatches) return;
-
-                    if (AstRefDType* const clonedRefp = entry.refp->clonep()) {
-                        LinkDotIfaceCapture::propagateClone(entry.refp, clonedRefp);
-                    } else {
-                        UINFO(1, "[iface-debug] missing clone for captured typedef name=" << entry.refp->name() << " module=" << srcModp->name());
-                    }
-                });
-        }
-        */
 
         newModp->name(newname);
         newModp->user2(false);  // We need to re-recurse this module once changed
@@ -1158,9 +1112,6 @@ class ParamProcessor final {
             newModp = paramedModp;
             // any_overrides = true;  // Unused later, so not needed
 
-            const bool cloned = (newModp != srcModp);
-            UINFO(3, "[param-debug] module clone src=" << srcModp << " new=" << newModp << " name=" << newModp->name() << " from cell=" << nodep << " cellName=" << nodep->name() << " cloned=" << cloned);
-
         } else if (!any_overrides) {
             UINFO(8, "Cell parameters all match original values, skipping expansion.");
             // If it's the first use of the default instance, create a copy and store it in user3p.
@@ -1175,10 +1126,6 @@ class ParamProcessor final {
                 storeOriginalParams(nodeCopyp);
             }
             newModp = srcModp;
-
-            const bool cloned = (newModp != srcModp);
-            UINFO(3, "[param-debug] module clone src=" << srcModp << " new=" << newModp << " name=" << newModp->name() << " from cell=" << nodep << " cellName=" << nodep->name() << " cloned=" << cloned);
-
         } else {
             const string newname
                 = srcModp->hierBlock() ? longname : moduleCalcName(srcModp, longname);
@@ -1189,10 +1136,16 @@ class ParamProcessor final {
             relinkPinsByName(pinsp, modInfop->m_modp);
             UINFO(8, "     Done with " << modInfop->m_modp);
             newModp = modInfop->m_modp;
-
-            const bool cloned = (newModp != srcModp);
-            UINFO(3, "[param-debug] module clone src=" << srcModp << " new=" << newModp << " name=" << newModp->name() << " from cell=" << nodep << " cellName=" << nodep->name() << " cloned=" << cloned);
         }
+
+        const bool cloned = (newModp != srcModp);
+        UINFO(3, "[param-debug] module clone src=" << srcModp
+           << " new=" << newModp
+           << " name=" << newModp->name()
+           << " from cell=" << nodep
+           << " cellName=" << nodep->name()
+           << " cloned=" << cloned);
+
         if (defaultsResolved) srcModp->user4p(newModp);
 
         for (auto* stmtp = newModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
@@ -1210,26 +1163,6 @@ class ParamProcessor final {
                                    << " (IEEE 1800-2023 6.20.1): " << varp->prettyNameQ());
                 }
             }
-        }
-
-        if (debug() >= 3) {
-            struct RefScanVisitor final : VNVisitor {
-                AstNodeModule* const m_modp;
-                explicit RefScanVisitor(AstNodeModule* modp)
-                    : m_modp{modp} {}
-                void visit(AstRefDType* nodep) override {
-                    if (!nodep->name().empty()
-                        && (nodep->name() == "rq_t" || nodep->name() == "rs_t"
-                            || nodep->name() == "cfg_t")) {
-                        UINFO(3, "[param-debug] cloned ref name=" << nodep->name() << " ptr=" << nodep
-                                     << " module=" << m_modp << " modName="
-                                     << (m_modp ? m_modp->name() : "<null>")
-                                     << " user2=" << nodep->user2p() << " user3=" << nodep->user3());
-                    }
-                }
-                void visit(AstNode* nodep) override { iterateChildren(nodep); }
-            } visitor{newModp};
-            visitor.iterate(newModp);
         }
 
         genericInterfaceVarSetup(paramsp, pinsp);
