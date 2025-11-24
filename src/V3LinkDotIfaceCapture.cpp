@@ -160,12 +160,4 @@ void propagateClone(const AstRefDType* origRefp, AstRefDType* newRefp) {
     UINFO(3, "[iface-debug] defer scrub awaiting typedef clone ref=" << origRefp << " clone=" << newRefp << " cell=" << entry.cellp);
 }
 
-void dumpCaptured(int uinfoLevel) {
-    UINFO(uinfoLevel, "[iface-debug] dump captured typedefs count=" << capturedMap().size() << " enabled=" << enabled());
-    for (const auto& kv : capturedMap()) {
-        const CapturedIfaceTypedef& entry = kv.second;
-        UINFO(uinfoLevel, "  entry refp=" << entry.refp << " name=" << (entry.refp ? entry.refp->name() : "")<< " cell=" << entry.cellp << " ownerMod=" << entry.ownerModp << " typedefp=" << entry.typedefp << " user2=" << (entry.refp ? entry.refp->user2p() : nullptr) << " user3=" << (entry.refp ? entry.refp->user3() : false));
-    }
-}
-
 }  // namespace LinkDotIfaceCapture

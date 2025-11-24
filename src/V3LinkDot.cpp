@@ -5349,20 +5349,13 @@ public:
     LinkDotResolveVisitor(AstNetlist* rootp, LinkDotState* statep)
         : m_statep{statep} {
         UINFO(4, __FUNCTION__ << ": ");
+
         if (m_statep->forParamed()) {
-            size_t primedCount = 0;
-               LinkDotIfaceCapture::forEach([&](const LinkDotIfaceCapture::CapturedIfaceTypedef& entry) {
-                AstRefDType* const refp = entry.refp;
-                if (!refp) return;
-                ++primedCount;
-                UINFO(3, indent() << "[iface-debug] prime typedef ptr=" << refp << " user2=" << refp->user2p());
-                if (LinkDotIfaceCapture::enabled() && refp->user2p()) {
-                    UINFO(3, indent() << "[iface-debug] prime typedef revisit name=" << refp->name() << " cell=" << refp->user2p());
-                }
-                refp->user3(false);
+            LinkDotIfaceCapture::forEach([](const LinkDotIfaceCapture::CapturedIfaceTypedef& entry) {
+                if (AstRefDType* const refp = entry.refp) refp->user3(false);
             });
-            UINFO(3, indent() << "[iface-debug] prime typedef total=" << primedCount);
         }
+
         iterate(rootp);
         std::map<std::string, AstNodeModule*> modulesToRevisit = std::move(m_modulesToRevisit);
         m_lastDeferredp = nullptr;

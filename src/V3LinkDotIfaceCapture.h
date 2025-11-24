@@ -56,7 +56,6 @@ bool erase(const AstRefDType* refp);
 std::size_t size();
 
 void propagateClone(const AstRefDType* origRefp, AstRefDType* newRefp);
-void dumpCaptured(int uinfoLevel = 3);
 
 
 }  // namespace LinkDotIfaceCapture
