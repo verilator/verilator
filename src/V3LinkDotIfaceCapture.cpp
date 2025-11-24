@@ -124,7 +124,6 @@ static bool finalizeCapturedEntry(CapturedMap::iterator it, const char* reasonp)
     AstRefDType* const pendingRefp = entry.pendingClonep;
     AstTypedef* const reboundTypedefp = entry.typedefp;
     if (!pendingRefp || !reboundTypedefp) return false;
-    AstRefDType* const origRefp = entry.refp;
     if (entry.cellp) pendingRefp->user2p(entry.cellp);
     pendingRefp->user3(false);
     pendingRefp->typedefp(reboundTypedefp);
