@@ -145,9 +145,9 @@ public:
                         AstVarRef* const readRefp
                             = new AstVarRef{flp, loopVarScopep, VAccess::READ};
                         loopVarRefs.push_back(readRefp);
-                        AstNodeStmt* const currInitp = new AstAssign{
-                            flp, new AstVarRef{flp, loopVarScopep, VAccess::WRITE},
-                            new AstConst{flp, static_cast<uint32_t>(dims[i]->lo())}};
+                        AstNodeStmt* const currInitp
+                            = new AstAssign{flp, new AstVarRef{flp, loopVarScopep, VAccess::WRITE},
+                                            new AstConst{flp, 0}};
                         if (toInsertp) {
                             toInsertp->addNextHere(currInitp);
                         } else {
@@ -158,7 +158,8 @@ public:
                         AstLoopTest* const loopTestp = new AstLoopTest{
                             flp, currWhilep,
                             new AstNeq{flp, readRefp,
-                                       new AstConst{flp, static_cast<uint32_t>(dims[i]->hi())}}};
+                                       new AstConst{
+                                           flp, static_cast<uint32_t>(dims[i]->elementsConst())}}};
                         currWhilep->addStmtsp(loopTestp);
                         toInsertp = loopTestp;
                         AstAssign* const currIncrp = new AstAssign{
