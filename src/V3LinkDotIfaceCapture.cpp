@@ -83,7 +83,6 @@ void forEach(const std::function<void(const CapturedIfaceTypedef&)>& fn) {
         if (it == map.end()) continue;  // entry may have been erased
         CapturedIfaceTypedef& entry = it->second;
         if (entry.cellp && entry.refp && entry.refp->user2p() != entry.cellp) {
-            UINFO(3, "[iface-debug] refresh captured context ref=" << entry.refp << " name=" << entry.refp->name() << " oldCell=" << entry.refp->user2p() << " newCell=" << entry.cellp);
             entry.refp->user2p(entry.cellp);
         }
         fn(entry);
@@ -112,8 +111,6 @@ static bool finalizeCapturedEntry(CapturedMap::iterator it, const char* reasonp)
     pendingRefp->user3(false);
     pendingRefp->typedefp(reboundTypedefp);
     entry.pendingClonep = nullptr;
-    UINFO(3, "[iface-debug] finalize captured typedef reason=" << reasonp << " orig=" << origRefp << " clone=" << pendingRefp << " cell=" << entry.cellp << " typedef=" << reboundTypedefp);
-    replaceRef(origRefp, pendingRefp);
     return true;
 }
 
@@ -125,7 +122,6 @@ bool replaceTypedef(const AstRefDType* refp, AstTypedef* newTypedefp) {
     it->second.typedefp = newTypedefp;
     it->second.typedefOwnerModp = findOwnerModule(newTypedefp);
     if (finalizeCapturedEntry(it, "typedef clone")) return true;
-    UINFO(3, "[iface-debug] recorded typedef clone awaiting ref clone ref=" << refp << " typedef=" << newTypedefp);
     return true;
 }
 
@@ -150,14 +146,11 @@ void propagateClone(const AstRefDType* origRefp, AstRefDType* newRefp) {
     }
     CapturedIfaceTypedef& entry = it->second;
 
-    UINFO(3, "[iface-debug] propagate clone entry ref=" << entry.refp << " name=" << (entry.refp ? entry.refp->name() : "<null>") << " cell=" << entry.cellp);
-
     if (entry.cellp) newRefp->user2p(entry.cellp);
     newRefp->user3(false);
     entry.pendingClonep = newRefp;
 
     if (finalizeCapturedEntry(it, "ref clone")) return;
-    UINFO(3, "[iface-debug] defer scrub awaiting typedef clone ref=" << origRefp << " clone=" << newRefp << " cell=" << entry.cellp);
 }
 
 }  // namespace LinkDotIfaceCapture
