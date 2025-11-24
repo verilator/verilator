@@ -89,6 +89,25 @@ void forEach(const std::function<void(const CapturedIfaceTypedef&)>& fn) {
     }
 }
 
+void forEachOwned(const AstNodeModule* ownerModp,
+                  const std::function<void(const CapturedIfaceTypedef&)>& fn) {
+    if (!ownerModp || !fn) return;
+    auto& map = capturedMap();
+    std::vector<const AstRefDType*> keys;
+    keys.reserve(map.size());
+    for (const auto& kv : map) keys.push_back(kv.first);
+    for (const AstRefDType* key : keys) {
+        const auto it = map.find(key);
+        if (it == map.end()) continue;
+        CapturedIfaceTypedef& entry = it->second;
+        if (entry.cellp && entry.refp && entry.refp->user2p() != entry.cellp) {
+            entry.refp->user2p(entry.cellp);
+        }
+        if (entry.ownerModp != ownerModp && entry.typedefOwnerModp != ownerModp) continue;
+        fn(entry);
+    }
+}
+
 bool replaceRef(const AstRefDType* oldRefp, AstRefDType* newRefp) {
     if (!oldRefp || !newRefp) return false;
     auto& map = capturedMap();

@@ -59,6 +59,7 @@ bool contains(const AstRefDType* refp);
 const CapturedIfaceTypedef* find(const AstRefDType* refp);
 AstTypedef* getCapturedTypedef(const AstRefDType* refp);
 void forEach(const std::function<void(const CapturedIfaceTypedef&)>& fn);
+void forEachOwned(const AstNodeModule* ownerModp, const std::function<void(const CapturedIfaceTypedef&)>& fn);
 bool replaceRef(const AstRefDType* oldRefp, AstRefDType* newRefp);
 bool replaceTypedef(const AstRefDType* refp, AstTypedef* newTypedefp);
 bool erase(const AstRefDType* refp);
