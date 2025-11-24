@@ -45,7 +45,7 @@ jobs:
           restore-keys: rtlmeter-build-ccache-${{ inputs.runs-on }}-${{ inputs.cc }}
 
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           path: repo
           fetch-depth: 0 # Required for 'git describe' used for 'verilator --version'

@@ -21,7 +21,7 @@ jobs:
       CI_COMMIT: ${{ github.sha }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install packages for build

@@ -80,7 +80,7 @@ jobs:
           restore-keys: rtlmeter-run-ccache-${{ inputs.runs-on }}-${{ inputs.cc }}-${{ inputs.cases }}-${{ inputs.compileArgs }}
 
       - name: Checkout RTLMeter
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: "verilator/rtlmeter"
           path: rtlmeter
