@@ -631,13 +631,10 @@ class ParamProcessor final {
         // interface context before newModp is re-linked.  we have pointers to the same nodes saved
         // in the capture map, so we can use them to scrub the new module.
         if (LinkDotIfaceCapture::enabled()) {
-            LinkDotIfaceCapture::forEachOwned( srcModp, [&](const LinkDotIfaceCapture::CapturedIfaceTypedef& entry) {
+            LinkDotIfaceCapture::forEachOwned(srcModp, [&](const LinkDotIfaceCapture::CapturedIfaceTypedef& entry) {
                 if (!entry.refp) return;
-
-                if (entry.typedefOwnerModp) {
-                    if (AstTypedef* const origTypedefp = entry.typedefp) {
-                        LinkDotIfaceCapture::replaceTypedef(entry.refp, origTypedefp->clonep());
-                    }
+                if (AstTypedef* const origTypedefp = entry.typedefp) {
+                    LinkDotIfaceCapture::replaceTypedef(entry.refp, origTypedefp->clonep());
                 }
 
                 if (AstRefDType* const clonedRefp = entry.refp->clonep()) {
