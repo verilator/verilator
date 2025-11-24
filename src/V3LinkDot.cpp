@@ -5122,6 +5122,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
             captureMapHit ? LinkDotIfaceCapture::getCapturedTypedef(nodep) : nullptr;
         const VSymEnt* const capturedTypedefSymp =
             capturedTypedefp ? m_statep->getNodeSym(capturedTypedefp) : nullptr;
+        const bool legacyLookupAllowed
+            = captureMapHit && LinkDotIfaceCapture::legacyLookupEnabled(nodep);
 
         const bool ifaceCaptured = captureEnabled && nodep->user2p();
         const bool missingIfaceContext = captureMapHit && !ifaceCaptured;
@@ -5199,7 +5201,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
             } else {
                 foundp = m_curSymp->findIdFlat(nodep->name());
             }
-            if (!foundp && ifaceCaptured && capturedCellp && capturedCellp->modp()) {
+            if (legacyLookupAllowed && !foundp && ifaceCaptured && capturedCellp
+                && capturedCellp->modp()) {
+                UINFO(1, indent() << "[iface-debug] legacy lookup triggered name=" << nodep->name());
                 VSymEnt* ifaceModSymp = nullptr;
                 if (LinkDotState::existsNodeSym(capturedCellp->modp())) {
                     ifaceModSymp = LinkDotState::getNodeSym(capturedCellp->modp());
@@ -5228,6 +5232,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                            ? capturedTypedefSymp->classOrPackagep()
                                            : nullptr);
                 resolvedCapturedTypedef = true;
+                LinkDotIfaceCapture::noteFallbackBind(nodep);
                 retireCapture("typedef");
             }
             if (!resolvedCapturedTypedef && foundp) {
@@ -5516,6 +5521,11 @@ void V3LinkDot::linkDotParamed(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     linkDotGuts(nodep, LDS_PARAMED);
     V3Global::dumpCheckGlobalTree("linkdotparam", 0, dumpTreeEitherLevel() >= 3);
+
+    if (LinkDotIfaceCapture::enabled()) {
+        UINFO(1, "[iface-debug] post-linkdot capture dump");
+        LinkDotIfaceCapture::dumpCaptured(1);
+    }
 }
 
 void V3LinkDot::linkDotArrayed(AstNetlist* nodep) {

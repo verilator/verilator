@@ -22,6 +22,7 @@ struct CapturedIfaceTypedef final {
     AstTypedef* typedefp = nullptr;            // Typedef definition being referenced
     AstNodeModule* typedefOwnerModp = nullptr;  // Interface/module that owns typedefp
     AstRefDType* pendingClonep = nullptr;       // Cloned RefDType awaiting typedef rebinding
+    bool allowLegacyLookup = true;
 };
 
 void enable(bool flag);
@@ -42,6 +43,10 @@ std::size_t size();
 
 void propagateClone(const AstRefDType* origRefp, AstRefDType* newRefp);
 void dumpCaptured(int uinfoLevel = 3);
+
+bool legacyLookupEnabled(const AstRefDType* refp);
+void disableLegacyLookup(const AstRefDType* refp);
+inline void noteFallbackBind(const AstRefDType* refp) { disableLegacyLookup(refp); }
 
 }  // namespace LinkDotIfaceCapture
 
