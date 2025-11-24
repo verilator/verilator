@@ -66,6 +66,7 @@
 #include <map>
 #include <memory>
 #include <vector>
+#include <cstdlib>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -637,6 +638,14 @@ class ParamProcessor final {
                         = (!entry.ownerModp || entry.ownerModp == srcModp);
                     const bool typedefOwnerMatches
                         = (entry.typedefOwnerModp && entry.typedefOwnerModp == srcModp);
+                    const bool watchEntry = ownerMatches
+                        && (entry.refp->name() == std::string("rq_t")
+                            || entry.refp->name() == std::string("rs_t"));
+                    if (watchEntry) {
+                        UINFO(3, "[iface-debug] param clone instrumentation module=" << srcModp->name()
+                                   << " ref=" << entry.refp << " name=" << entry.refp->name()
+                                   << " typedef=" << entry.typedefp);
+                    }
                     if (!ownerMatches && !typedefOwnerMatches) return;
 
                     if (typedefOwnerMatches) {

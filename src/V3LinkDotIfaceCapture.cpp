@@ -71,7 +71,17 @@ const CapturedIfaceTypedef* find(const AstRefDType* refp) {
 
 void forEach(const std::function<void(const CapturedIfaceTypedef&)>& fn) {
     if (!fn) return;
-    for (const auto& entry : capturedMap()) fn(entry.second);
+    //for (const auto& entry : capturedMap()) fn(entry.second);
+    auto& map = capturedMap();
+    std::vector<const AstRefDType*> keys;
+    keys.reserve(map.size());
+    for (const auto& kv : map) keys.push_back(kv.first);
+
+    for (const AstRefDType* key : keys) {
+        const auto it = map.find(key);
+        if (it == map.end()) continue;  // entry may have been erased
+        fn(it->second);
+    }
 }
 
 bool replaceRef(const AstRefDType* oldRefp, AstRefDType* newRefp) {
@@ -118,17 +128,54 @@ bool replaceTypedef(const AstRefDType* refp, AstTypedef* newTypedefp) {
     return true;
 }
 
+bool erase(const AstRefDType* refp) {
+    if (!refp) return false;
+    auto& map = capturedMap();
+    const auto it = map.find(refp);
+    if (it == map.end()) return false;
+    map.erase(it);
+    return true;
+}
+
 std::size_t size() { return capturedMap().size(); }
 
 void propagateClone(const AstRefDType* origRefp, AstRefDType* newRefp) {
     if (!origRefp || !newRefp) return;
     auto& map = capturedMap();
     auto it = map.find(origRefp);
-    if (it == map.end()) return;
+    if (it == map.end()) {
+        UINFO(1, "[iface-debug] propagate clone: missing entry for orig=" << origRefp
+                   << " clone=" << newRefp);
+        std::exit(0);  // optional if you want to stop immediately
+        return;
+    }
     CapturedIfaceTypedef& entry = it->second;
+
+    UINFO(3, "[iface-debug] propagate clone entry ref=" << entry.refp
+               << " name=" << (entry.refp ? entry.refp->name() : "<null>")
+               << " cell=" << entry.cellp);
+
+    const bool watchEntry = (entry.refp && (entry.refp->name() == std::string("rq_t")
+                                            || entry.refp->name() == std::string("rs_t")));
+    if (watchEntry) {
+        UINFO(3, "[iface-debug] propagate clone instrumentation orig=" << origRefp
+                   << " clone=" << newRefp << " cell=" << entry.cellp
+                   << " orig.user2=" << (origRefp ? origRefp->user2p() : nullptr)
+                   << " clone.user2(before)=" << newRefp->user2p()
+                   << " orig.typedef=" << origRefp->typedefp()
+                   << " clone.typedef(before)=" << newRefp->typedefp());
+    }
     if (entry.cellp) newRefp->user2p(entry.cellp);
     newRefp->user3(false);
     entry.pendingClonep = newRefp;
+
+    if (watchEntry) {
+        UINFO(3, "[iface-debug] propagate clone instrumentation (post) clone.user2(after)="
+                   << newRefp->user2p()
+                   << " clone.typedef(after)=" << newRefp->typedefp()
+                   << " pendingClone=" << entry.pendingClonep);
+    }
+
     if (finalizeCapturedEntry(it, "ref clone")) return;
     UINFO(2, "[iface-debug] defer scrub awaiting typedef clone ref=" << origRefp
                << " clone=" << newRefp << " cell=" << entry.cellp);

@@ -36,6 +36,7 @@ const CapturedIfaceTypedef* find(const AstRefDType* refp);
 void forEach(const std::function<void(const CapturedIfaceTypedef&)>& fn);
 bool replaceRef(const AstRefDType* oldRefp, AstRefDType* newRefp);
 bool replaceTypedef(const AstRefDType* refp, AstTypedef* newTypedefp);
+bool erase(const AstRefDType* refp);
 std::size_t size();
 
 void propagateClone(const AstRefDType* origRefp, AstRefDType* newRefp);
