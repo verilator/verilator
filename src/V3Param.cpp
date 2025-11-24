@@ -625,12 +625,39 @@ class ParamProcessor final {
             newModp = srcModp->cloneTree(false);
         }
 
+        // cloneTree(false) temporarily populates origNode->clonep() for every node under
+        // srcModp.  The capture list still stores those orig AstRefDType* pointers, so walking
+        // it lets us follow clonep() into newModp and scrub each clone with the saved
+        // interface context before newModp is re-linked.  we have pointers to the same nodes saved
+        // in the capture map, so we can use them to scrub the new module.
         if (LinkDotIfaceCapture::enabled()) {
-            // cloneTree(false) temporarily populates origNode->clonep() for every node under
-            // srcModp.  The capture list still stores those orig AstRefDType* pointers, so walking
-            // it lets us follow clonep() into newModp and scrub each clone with the saved
-            // interface context before newModp is re-linked.  we have pointers to the same nodes saved
-            // in the capture map, so we can use them to scrub the new module.
+            LinkDotIfaceCapture::forEachOwned( srcModp, [&](const LinkDotIfaceCapture::CapturedIfaceTypedef& entry) {
+                if (!entry.refp) return;
+
+                if (entry.typedefOwnerModp) {
+                    AstTypedef* const origTypedefp = entry.typedefp;
+                    if (origTypedefp) {
+                        if (AstTypedef* const clonedTypedefp = origTypedefp->clonep()) {
+                            if (LinkDotIfaceCapture::replaceTypedef(entry.refp, clonedTypedefp)) {
+                                UINFO(2, "[iface-debug] rebound typedef def module=" << srcModp->name() << " typedef=" << origTypedefp << " clone=" << clonedTypedefp << " ref=" << entry.refp);
+                            }
+                        } else {
+                            UINFO(1, "[iface-debug] missing typedef clone for module=" << srcModp->name() << " typedef=" << origTypedefp << " ref=" << entry.refp);
+                        }
+                    }
+                }
+
+                UINFO(3, "[iface-debug] scrub candidate module=" << srcModp->name() << " typedef=" << entry.refp << " name=" << entry.refp->name() << " typedefp=" << entry.refp->typedefp());
+
+                if (AstRefDType* const clonedRefp = entry.refp->clonep()) {
+                    LinkDotIfaceCapture::propagateClone(entry.refp, clonedRefp);
+                } else {
+                    UINFO(1, "[iface-debug] missing clone for captured typedef name=" << entry.refp->name() << " module=" << srcModp->name());
+                }
+            });
+        }
+
+            /*
             LinkDotIfaceCapture::forEach(
                 [&](const LinkDotIfaceCapture::CapturedIfaceTypedef& entry) {
                     if (!entry.refp) return;
@@ -663,6 +690,7 @@ class ParamProcessor final {
                     }
                 });
         }
+        */
 
         newModp->name(newname);
         newModp->user2(false);  // We need to re-recurse this module once changed
