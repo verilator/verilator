@@ -5125,19 +5125,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
 
         const bool ifaceCaptured = captureEnabled && nodep->user2p();
         const bool missingIfaceContext = captureMapHit && !ifaceCaptured;
-        const bool watchCapturedTypedef = captureMapHit && m_statep->forParamed()
-            && (nodep->name() == "rq_t" || nodep->name() == "rs_t");
         const char* const passLabel = m_statep->forParamed() ? "paramed" : "primary";
         if (missingIfaceContext) {
-            UINFO(2, indent() << "[iface-debug] captured typedef missing user2 name=" << nodep->name()
-                              << " ref=" << nodep << " pass=" << passLabel
-                              << " entryCell=" << captureEntryCellp);
-        }
-        if (watchCapturedTypedef) {
-            UINFO(1, indent() << "[iface-debug] captured typedef watch name=" << nodep->name()
-                              << " ref=" << nodep << " pass=" << passLabel
-                              << " user2=" << nodep->user2p() << " entryCell=" << captureEntryCellp
-                              << " typedefp=" << nodep->typedefp());
+            UINFO(3, indent() << "[iface-debug] captured typedef missing user2 name=" << nodep->name() << " ref=" << nodep << " pass=" << passLabel << " entryCell=" << captureEntryCellp);
         }
         AstCell* const capturedCellp = ifaceCaptured ? VN_CAST(nodep->user2p(), Cell) : nullptr;
         bool forcedIfaceDotScope = false;
@@ -5147,14 +5137,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (!ifaceCaptured || captureEntryRetired) return;
             const auto* entry = LinkDotIfaceCapture::find(nodep);
             AstCell* const entryCell = entry ? entry->cellp : nullptr;
-            UINFO(2, indent() << "[iface-debug] retire captured typedef reason=" << reason
-                              << " name=" << nodep->name() << " pass=" << passLabel
-                              << " user2=" << nodep->user2p() << " entryCell=" << entryCell);
+            UINFO(3, indent() << "[iface-debug] retire captured typedef reason=" << reason << " name=" << nodep->name() << " pass=" << passLabel << " user2=" << nodep->user2p() << " entryCell=" << entryCell);
             const bool erased = LinkDotIfaceCapture::erase(nodep);
             captureEntryRetired = true;
-            UINFO(2, indent() << "[iface-debug] retire erase result name=" << nodep->name()
-                              << " erased=" << erased);
-            //if (watchCapturedTypedef) std::exit(0);
+            UINFO(3, indent() << "[iface-debug] retire erase result name=" << nodep->name() << " erased=" << erased);
         };
         if (ifaceCaptured && m_statep->forParamed()) {
             UINFO(3, indent() << "[iface-debug] captured typedef name=" << nodep->name()
