@@ -235,6 +235,7 @@ public:
             if (capturedCount != 0) {
                 UINFO(1, "[iface-debug] warning: leftover captured typedef entries=" << capturedCount);
             }
+            LinkDotIfaceCapture::reset();
         }
         V3Error::errorExitCb(nullptr);
         s_errorThisp = nullptr;
