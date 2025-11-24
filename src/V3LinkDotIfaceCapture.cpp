@@ -161,26 +161,9 @@ void propagateClone(const AstRefDType* origRefp, AstRefDType* newRefp) {
                << " name=" << (entry.refp ? entry.refp->name() : "<null>")
                << " cell=" << entry.cellp);
 
-    const bool watchEntry = (entry.refp && (entry.refp->name() == std::string("rq_t")
-                                            || entry.refp->name() == std::string("rs_t")));
-    if (watchEntry) {
-        UINFO(3, "[iface-debug] propagate clone instrumentation orig=" << origRefp
-                   << " clone=" << newRefp << " cell=" << entry.cellp
-                   << " orig.user2=" << (origRefp ? origRefp->user2p() : nullptr)
-                   << " clone.user2(before)=" << newRefp->user2p()
-                   << " orig.typedef=" << origRefp->typedefp()
-                   << " clone.typedef(before)=" << newRefp->typedefp());
-    }
     if (entry.cellp) newRefp->user2p(entry.cellp);
     newRefp->user3(false);
     entry.pendingClonep = newRefp;
-
-    if (watchEntry) {
-        UINFO(3, "[iface-debug] propagate clone instrumentation (post) clone.user2(after)="
-                   << newRefp->user2p()
-                   << " clone.typedef(after)=" << newRefp->typedefp()
-                   << " pendingClone=" << entry.pendingClonep);
-    }
 
     if (finalizeCapturedEntry(it, "ref clone")) return;
     UINFO(2, "[iface-debug] defer scrub awaiting typedef clone ref=" << origRefp
