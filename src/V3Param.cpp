@@ -1135,12 +1135,7 @@ class ParamProcessor final {
         }
 
         const bool cloned = (newModp != srcModp);
-        UINFO(3, "[param-debug] module clone src=" << srcModp
-           << " new=" << newModp
-           << " name=" << newModp->name()
-           << " from cell=" << nodep
-           << " cellName=" << nodep->name()
-           << " cloned=" << cloned);
+        UINFO(5, "[param-debug] module clone src=" << srcModp << " new=" << newModp << " name=" << newModp->name() << " from cell=" << nodep << " cellName=" << nodep->name() << " cloned=" << cloned);
 
         if (defaultsResolved) srcModp->user4p(newModp);
 
