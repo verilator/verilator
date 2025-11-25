@@ -35,6 +35,11 @@ module t_scope_std_randomize;
     bit [7:0] addr;
     bit [15:0] data;
     int limit[10];
+    bit [6:0] limit_7bits[10];
+    bit [14:0] limit_15bits[10];
+    bit [30:0] limit_31bits[10];
+    bit [62:0] limit_63bits[10];
+    bit [94:0] limit_95bits[10];
 
     function bit run();
         int ready;
@@ -75,12 +80,38 @@ module t_scope_std_randomize;
         ok = 0;
         ok = test.std_randomize();
         if (!ok) $stop;
+        /* verilator lint_off WIDTHEXPAND */
+        success = std::randomize(limit) with { foreach (limit[i]) { limit[i] < 100;}};
         foreach (limit[i]) begin
-            success = std::randomize(limit[i]) with { limit[i] < 100;};
             ok = (success == 1) && (limit[i] < 100);
             if (!ok) $stop;
         end
-
+        success = std::randomize(limit_7bits) with { foreach (limit_7bits[i]) { limit_7bits[i] < 10;}};
+        foreach (limit_7bits[i]) begin
+            ok = (success == 1) && (limit_7bits[i] < 10);
+            if (!ok) $stop;
+        end
+        success = std::randomize(limit_15bits) with { foreach (limit_15bits[i]) { limit_15bits[i] < 1000;}};
+        foreach (limit_15bits[i]) begin
+            ok = (success == 1) && (limit_15bits[i] < 1000);
+            if (!ok) $stop;
+        end
+        success = std::randomize(limit_31bits) with { foreach (limit_31bits[i]) { limit_31bits[i] < 100000;}};
+        foreach (limit_31bits[i]) begin
+            ok = (success == 1) && (limit_31bits[i] < 100000);
+            if (!ok) $stop;
+        end
+        success = std::randomize(limit_63bits) with { foreach (limit_63bits[i]) { limit_63bits[i] < 10000000000;}};
+        foreach (limit_63bits[i]) begin
+            ok = (success == 1) && (limit_63bits[i] < 10000000000);
+            if (!ok) $stop;
+        end
+        success = std::randomize(limit_95bits) with { foreach (limit_95bits[i]) { limit_95bits[i] < 1000000000000;}};
+        foreach (limit_95bits[i]) begin
+            ok = (success == 1) && (limit_95bits[i] < 1000000000000);
+            if (!ok) $stop;
+        end
+        /* verilator lint_off WIDTHEXPAND */
         $write("*-* All Finished *-*\n");
         $finish;
     end
