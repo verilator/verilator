@@ -54,13 +54,15 @@ bool enabled() { return captureEnabled(); }
 
 void reset() { capturedMap().clear(); }
 
-void add(AstRefDType* refp, AstCell* cellp, AstNodeModule* ownerModp, AstTypedef* typedefp, AstNodeModule* typedefOwnerModp) {
+void add(AstRefDType* refp, AstCell* cellp, AstNodeModule* ownerModp, AstTypedef* typedefp,
+         AstNodeModule* typedefOwnerModp) {
     if (!refp) return;
     AstTypedef* const resolvedTypedefp = typedefp ? typedefp : refp->typedefp();
     AstNodeModule* resolvedTypedefOwner = typedefOwnerModp;
     if (!resolvedTypedefOwner && resolvedTypedefp)
         resolvedTypedefOwner = findOwnerModule(resolvedTypedefp);
-    capturedMap()[refp] = CapturedIfaceTypedef{refp,cellp, ownerModp, resolvedTypedefp, resolvedTypedefOwner, nullptr};
+    capturedMap()[refp] = CapturedIfaceTypedef{
+        refp, cellp, ownerModp, resolvedTypedefp, resolvedTypedefOwner, nullptr};
 }
 
 void add(const CapturedIfaceTypedef& entry) {
@@ -175,7 +177,8 @@ void propagateClone(const AstRefDType* origRefp, AstRefDType* newRefp) {
     auto& map = capturedMap();
     auto it = map.find(origRefp);
     if (it == map.end()) {
-        const string msg = string{"iface capture propagateClone missing entry for orig="} + cvtToStr(origRefp);
+        const string msg
+            = string{"iface capture propagateClone missing entry for orig="} + cvtToStr(origRefp);
         v3fatalSrc(msg);
     }
     CapturedIfaceTypedef& entry = it->second;
@@ -188,4 +191,3 @@ void propagateClone(const AstRefDType* origRefp, AstRefDType* newRefp) {
 }
 
 }  // namespace LinkDotIfaceCapture
-

@@ -62,11 +62,11 @@
 #include "V3Width.h"
 
 #include <cctype>
+#include <cstdlib>
 #include <deque>
 #include <map>
 #include <memory>
 #include <vector>
-#include <cstdlib>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -631,16 +631,17 @@ class ParamProcessor final {
         // interface context before newModp is re-linked.  we have pointers to the same nodes saved
         // in the capture map, so we can use them to scrub the new module.
         if (LinkDotIfaceCapture::enabled()) {
-            LinkDotIfaceCapture::forEachOwned(srcModp, [&](const LinkDotIfaceCapture::CapturedIfaceTypedef& entry) {
-                if (!entry.refp) return;
-                if (AstTypedef* const origTypedefp = entry.typedefp) {
-                    LinkDotIfaceCapture::replaceTypedef(entry.refp, origTypedefp->clonep());
-                }
+            LinkDotIfaceCapture::forEachOwned(
+                srcModp, [&](const LinkDotIfaceCapture::CapturedIfaceTypedef& entry) {
+                    if (!entry.refp) return;
+                    if (AstTypedef* const origTypedefp = entry.typedefp) {
+                        LinkDotIfaceCapture::replaceTypedef(entry.refp, origTypedefp->clonep());
+                    }
 
-                if (AstRefDType* const clonedRefp = entry.refp->clonep()) {
-                    LinkDotIfaceCapture::propagateClone(entry.refp, clonedRefp);
-                }
-            });
+                    if (AstRefDType* const clonedRefp = entry.refp->clonep()) {
+                        LinkDotIfaceCapture::propagateClone(entry.refp, clonedRefp);
+                    }
+                });
         }
 
         newModp->name(newname);
@@ -1135,7 +1136,10 @@ class ParamProcessor final {
         }
 
         const bool cloned = (newModp != srcModp);
-        UINFO(5, "[param-debug] module clone src=" << srcModp << " new=" << newModp << " name=" << newModp->name() << " from cell=" << nodep << " cellName=" << nodep->name() << " cloned=" << cloned);
+        UINFO(5, "[param-debug] module clone src=" << srcModp << " new=" << newModp << " name="
+                                                   << newModp->name() << " from cell=" << nodep
+                                                   << " cellName=" << nodep->name()
+                                                   << " cloned=" << cloned);
 
         if (defaultsResolved) srcModp->user4p(newModp);
 

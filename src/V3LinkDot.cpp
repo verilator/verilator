@@ -67,13 +67,12 @@
 
 #include "V3Global.h"
 #include "V3Graph.h"
+#include "V3LinkDotIfaceCapture.h"
 #include "V3MemberMap.h"
 #include "V3Parse.h"
 #include "V3Randomize.h"
 #include "V3String.h"
 #include "V3SymTable.h"
-
-#include "V3LinkDotIfaceCapture.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -220,20 +219,25 @@ public:
         const std::size_t capturedCount = LinkDotIfaceCapture::size();
         if (forPrimary()) {
             LinkDotIfaceCapture::enable(true);
-            UINFO(5, "[iface-debug] capture enabled for primary pass (persisting entries) size=" << capturedCount);
+            UINFO(5, "[iface-debug] capture enabled for primary pass (persisting entries) size="
+                         << capturedCount);
         } else if (forParamed()) {
-            UINFO(5, "[iface-debug] entering paramed pass captured typedef count=" << capturedCount);
+            UINFO(5,
+                  "[iface-debug] entering paramed pass captured typedef count=" << capturedCount);
         }
         readModNames();
     }
     ~LinkDotState() {
         const std::size_t capturedCount = LinkDotIfaceCapture::size();
         if (forPrimary()) {
-            UINFO(5, "[iface-debug] leaving primary pass captured typedef count=" << capturedCount);
+            UINFO(5,
+                  "[iface-debug] leaving primary pass captured typedef count=" << capturedCount);
         } else if (forParamed()) {
-            UINFO(5, "[iface-debug] leaving paramed pass captured typedef count=" << capturedCount);
+            UINFO(5,
+                  "[iface-debug] leaving paramed pass captured typedef count=" << capturedCount);
             if (capturedCount != 0) {
-                UINFO(5, "[iface-debug] warning: leftover captured typedef entries=" << capturedCount);
+                UINFO(5, "[iface-debug] warning: leftover captured typedef entries="
+                             << capturedCount);
             }
             LinkDotIfaceCapture::reset();
         }
@@ -2704,16 +2708,17 @@ class LinkDotResolveVisitor final : public VNVisitor {
     void checkNoDot(AstNode* nodep) {
         if (VL_UNLIKELY(!nodep)) {
             UINFO(5, indent() << "[iface-debug] null node passed to checkNoDot; dot state="
-                               << m_ds.ascii());
+                              << m_ds.ascii());
             m_ds.m_dotErr = true;
             return;
         }
         if (VL_UNLIKELY(m_ds.m_dotPos != DP_NONE)) {
             UINFO(9, indent() << "ds=" << m_ds.ascii());
-            UINFO(5, indent() << "[iface-debug] checkNoDot hit node=" << nodep << " dotState=" << m_ds.ascii());
+            UINFO(5, indent() << "[iface-debug] checkNoDot hit node=" << nodep
+                              << " dotState=" << m_ds.ascii());
             if (VL_UNLIKELY(!m_ds.m_dotp)) {
-                nodep->v3error("Syntax error: Not expecting "
-                               << nodep->type() << " here (missing dot context)");
+                nodep->v3error("Syntax error: Not expecting " << nodep->type()
+                                                              << " here (missing dot context)");
             } else {
                 nodep->v3error("Syntax error: Not expecting "
                                << nodep->type() << " under a " << nodep->backp()->type()
@@ -2749,19 +2754,23 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (!varSymp) return nullptr;
         VSymEnt* const parentSymp = varSymp->parentp();
         if (!parentSymp) return nullptr;
-        UINFO(5, indent() << "[iface-debug] promote var to ParamType name=" << varp->prettyName() << " dotState(before)=" << m_ds.ascii());
+        UINFO(5, indent() << "[iface-debug] promote var to ParamType name=" << varp->prettyName()
+                          << " dotState(before)=" << m_ds.ascii());
         AstParamTypeDType* const newTypep = new AstParamTypeDType{
-            varp->fileline(), varp->varType(), VFwdType::NONE, varp->name(), VFlagChildDType{},
-            typedefRefp->cloneTree(false)};
-        if (AstRefDType* const clonedRefp
-            = VN_CAST(newTypep->childDTypep(), RefDType)) {
+            varp->fileline(), varp->varType(),   VFwdType::NONE,
+            varp->name(),     VFlagChildDType{}, typedefRefp->cloneTree(false)};
+        if (AstRefDType* const clonedRefp = VN_CAST(newTypep->childDTypep(), RefDType)) {
             clonedRefp->user2p(typedefRefp->user2p());
             if (LinkDotIfaceCapture::enabled()) {
                 if (LinkDotIfaceCapture::replaceRef(typedefRefp, clonedRefp)) {
-                    UINFO(5, indent() << "[iface-debug] retarget captured typedef var=" << varp->prettyName() << " orig=" << typedefRefp << " clone=" << clonedRefp);
+                    UINFO(5, indent() << "[iface-debug] retarget captured typedef var="
+                                      << varp->prettyName() << " orig=" << typedefRefp
+                                      << " clone=" << clonedRefp);
                 }
                 if (typedefRefp->user2p()) {
-                    UINFO(5, indent() << "[iface-debug] capture recorded owner var=" << varp->prettyName() << " typedef=" << clonedRefp << " cell=" << clonedRefp->user2p());
+                    UINFO(5, indent() << "[iface-debug] capture recorded owner var="
+                                      << varp->prettyName() << " typedef=" << clonedRefp
+                                      << " cell=" << clonedRefp->user2p());
                 }
             }
         }
@@ -2774,10 +2783,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
         newTypep->user1p(newSymEntp);
         parentSymp->reinsert(varp->name(), newSymEntp);
         varp->replaceWith(newTypep);
-        // This conversion happens while linkDot is in the middle of a dotted lookup (e.g. bus_io.rq_t).
-        // Reset the dot state so subsequent symbols in this scope don’t inherit the pending dot.
+        // This conversion happens while linkDot is in the middle of a dotted lookup (e.g.
+        // bus_io.rq_t). Reset the dot state so subsequent symbols in this scope don’t inherit the
+        // pending dot.
         m_ds.init(m_curSymp);
-        UINFO(5, indent() << "[iface-debug] converted owner var to ParamType name=" << varp->prettyName() << " dotState(after-reset)=" << m_ds.ascii());
+        UINFO(5, indent() << "[iface-debug] converted owner var to ParamType name="
+                          << varp->prettyName() << " dotState(after-reset)=" << m_ds.ascii());
         VL_DO_DANGLING(pushDeletep(varp), varp);
         return newTypep;
     }
@@ -3500,39 +3511,48 @@ class LinkDotResolveVisitor final : public VNVisitor {
             // Note m_ds.m_dotp remains nullptr; this is a reference not under a dot
         }
 
-        const auto captureIfaceTypedefContext
-            = [&](AstRefDType* refp, const char* stageLabel) {
-                  if (!LinkDotIfaceCapture::enabled() || !refp) return;
-                  UINFO(5, indent() << "[iface-debug] capture request stage=" << stageLabel << " typedef=" << refp << " name=" << refp->name() << " dotPos=" << static_cast<int>(m_ds.m_dotPos) << " dotText='" << m_ds.m_dotText << "' dotSym=" << m_ds.m_dotSymp);
-                  const AstCell* ifaceCellp = nullptr;
-                  if (m_ds.m_dotSymp && VN_IS(m_ds.m_dotSymp->nodep(), Cell)) {
-                      const AstCell* const cellp = VN_AS(m_ds.m_dotSymp->nodep(), Cell);
-                      if (cellp->modp() && VN_IS(cellp->modp(), Iface)) ifaceCellp = cellp;
-                  }
-                  if (!ifaceCellp) {
-                      UINFO(5, indent() << "[iface-debug] capture skipped typedef=" << refp << " (no iface context)");
-                      return;
-                  }
-                  refp->user2p(const_cast<AstCell*>(ifaceCellp));
-                  LinkDotIfaceCapture::add(refp, const_cast<AstCell*>(ifaceCellp), m_modp, refp->typedefp());
-                  UINFO(5, indent() << "[iface-debug] capture success typedef=" << refp << " cell=" << ifaceCellp << " mod=" << (ifaceCellp->modp() ? ifaceCellp->modp()->name() : "<null>") << " dotPos=" << static_cast<int>(m_ds.m_dotPos));
-                  if (m_ds.m_dotPos != DP_FINAL) return;
-                  AstVar* enclosingVarp = nullptr;
-                  for (AstNode* curp = nodep; curp; curp = curp->backp()) {
-                      if (AstVar* const varp = VN_CAST(curp, Var)) {
-                          enclosingVarp = varp;
-                          break;
-                      }
-                      if (VN_IS(curp, NodeModule)) break;
-                  }
-                  if (!enclosingVarp || enclosingVarp->user3SetOnce()) return;
-                  UINFO(5, indent() << "[iface-debug] typedef owner var=" << enclosingVarp << " name=" << enclosingVarp->prettyName());
+        const auto captureIfaceTypedefContext = [&](AstRefDType* refp, const char* stageLabel) {
+            if (!LinkDotIfaceCapture::enabled() || !refp) return;
+            UINFO(5, indent() << "[iface-debug] capture request stage=" << stageLabel
+                              << " typedef=" << refp << " name=" << refp->name()
+                              << " dotPos=" << static_cast<int>(m_ds.m_dotPos) << " dotText='"
+                              << m_ds.m_dotText << "' dotSym=" << m_ds.m_dotSymp);
+            const AstCell* ifaceCellp = nullptr;
+            if (m_ds.m_dotSymp && VN_IS(m_ds.m_dotSymp->nodep(), Cell)) {
+                const AstCell* const cellp = VN_AS(m_ds.m_dotSymp->nodep(), Cell);
+                if (cellp->modp() && VN_IS(cellp->modp(), Iface)) ifaceCellp = cellp;
+            }
+            if (!ifaceCellp) {
+                UINFO(5, indent() << "[iface-debug] capture skipped typedef=" << refp
+                                  << " (no iface context)");
+                return;
+            }
+            refp->user2p(const_cast<AstCell*>(ifaceCellp));
+            LinkDotIfaceCapture::add(refp, const_cast<AstCell*>(ifaceCellp), m_modp,
+                                     refp->typedefp());
+            UINFO(5, indent() << "[iface-debug] capture success typedef=" << refp
+                              << " cell=" << ifaceCellp << " mod="
+                              << (ifaceCellp->modp() ? ifaceCellp->modp()->name() : "<null>")
+                              << " dotPos=" << static_cast<int>(m_ds.m_dotPos));
+            if (m_ds.m_dotPos != DP_FINAL) return;
+            AstVar* enclosingVarp = nullptr;
+            for (AstNode* curp = nodep; curp; curp = curp->backp()) {
+                if (AstVar* const varp = VN_CAST(curp, Var)) {
+                    enclosingVarp = varp;
+                    break;
+                }
+                if (VN_IS(curp, NodeModule)) break;
+            }
+            if (!enclosingVarp || enclosingVarp->user3SetOnce()) return;
+            UINFO(5, indent() << "[iface-debug] typedef owner var=" << enclosingVarp
+                              << " name=" << enclosingVarp->prettyName());
 
-                  if (promoteVarToParamType(enclosingVarp, refp)) return;
-                  UINFO(5, indent() << "[iface-debug] failed to convert owner var name=" << enclosingVarp->prettyName());
+            if (promoteVarToParamType(enclosingVarp, refp)) return;
+            UINFO(5, indent() << "[iface-debug] failed to convert owner var name="
+                              << enclosingVarp->prettyName());
 
-                  return;
-              };
+            return;
+        };
         if (nodep->name() == "super") {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: super");
             m_ds.m_dotErr = true;
@@ -3938,14 +3958,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 }
             } else if (AstTypedef* const defp = VN_CAST(foundp->nodep(), Typedef)) {
                 const bool ifaceFinalSegmentAllowed
-                    = (m_ds.m_dotPos == DP_FINAL)
-                      && m_ds.m_dotSymp && VN_IS(m_ds.m_dotSymp->nodep(), Cell)
+                    = (m_ds.m_dotPos == DP_FINAL) && m_ds.m_dotSymp
+                      && VN_IS(m_ds.m_dotSymp->nodep(), Cell)
                       && VN_CAST(m_ds.m_dotSymp->nodep(), Cell)->modp()
                       && VN_IS(VN_CAST(m_ds.m_dotSymp->nodep(), Cell)->modp(), Iface);
                 ok = (m_ds.m_dotPos == DP_NONE || m_ds.m_dotPos == DP_SCOPE
                       || (LinkDotIfaceCapture::enabled() && ifaceFinalSegmentAllowed));
                 if (LinkDotIfaceCapture::enabled() && ifaceFinalSegmentAllowed) {
-                    UINFO(5, indent() << "[iface-debug] allow final-segment typedef name=" << nodep->name() << " dotText='" << m_ds.m_dotText << "' dotSym=" << m_ds.m_dotSymp);
+                    UINFO(5, indent() << "[iface-debug] allow final-segment typedef name="
+                                      << nodep->name() << " dotText='" << m_ds.m_dotText
+                                      << "' dotSym=" << m_ds.m_dotSymp);
                 }
                 if (ok) {
                     AstRefDType* const refp = new AstRefDType{nodep->fileline(), nodep->name()};
@@ -4976,7 +4998,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     // Must be here instead of in LinkDotParam to handle
                     // "class (type T) extends T".
                     if (baseClassp == nodep) {
-                        cextp->v3error("Attempting to extend class " << nodep->prettyNameQ() << " from itself");
+                        cextp->v3error("Attempting to extend class " << nodep->prettyNameQ()
+                                                                     << " from itself");
                     } else if (cextp->isImplements() && !baseClassp->isInterfaceClass()) {
                         cextp->v3error("Attempting to implement from non-interface class "
                                        << baseClassp->prettyNameQ() << '\n'
@@ -5027,17 +5050,20 @@ class LinkDotResolveVisitor final : public VNVisitor {
 
         // Resolve its reference
         if (LinkDotIfaceCapture::contains(nodep)) {
-            UINFO(5, indent() << "[iface-debug] visit captured typedef ptr=" << nodep << " user2=" << nodep->user2p());
+            UINFO(5, indent() << "[iface-debug] visit captured typedef ptr=" << nodep
+                              << " user2=" << nodep->user2p());
         }
         if (m_statep->forParamed() && nodep->user3()) {
             if (LinkDotIfaceCapture::enabled() && nodep->user2p()) {
-                UINFO(5, indent() << "[iface-debug] clear user3 for captured typedef name=" << nodep->name() << " cell=" << nodep->user2p());
+                UINFO(5, indent() << "[iface-debug] clear user3 for captured typedef name="
+                                  << nodep->name() << " cell=" << nodep->user2p());
             }
             nodep->user3(false);
         }
         if (nodep->user3SetOnce()) {
             if (LinkDotIfaceCapture::enabled() && nodep->user2p()) {
-                UINFO(5, indent() << "[iface-debug] skip revisit name=" << nodep->name() << " already user3 and captured cell=" << nodep->user2p());
+                UINFO(5, indent() << "[iface-debug] skip revisit name=" << nodep->name()
+                                  << " already user3 and captured cell=" << nodep->user2p());
             }
             return;
         }
@@ -5087,16 +5113,18 @@ class LinkDotResolveVisitor final : public VNVisitor {
         const auto* captureEntry = captureMapHit ? LinkDotIfaceCapture::find(nodep) : nullptr;
         AstCell* const captureEntryCellp = captureEntry ? captureEntry->cellp : nullptr;
 
-        AstTypedef* const capturedTypedefp =
-            captureMapHit ? LinkDotIfaceCapture::getCapturedTypedef(nodep) : nullptr;
-        const VSymEnt* const capturedTypedefSymp =
-            capturedTypedefp ? m_statep->getNodeSym(capturedTypedefp) : nullptr;
+        AstTypedef* const capturedTypedefp
+            = captureMapHit ? LinkDotIfaceCapture::getCapturedTypedef(nodep) : nullptr;
+        const VSymEnt* const capturedTypedefSymp
+            = capturedTypedefp ? m_statep->getNodeSym(capturedTypedefp) : nullptr;
 
         const bool ifaceCaptured = captureEnabled && nodep->user2p();
         const bool missingIfaceContext = captureMapHit && !ifaceCaptured;
         const char* const passLabel = m_statep->forParamed() ? "paramed" : "primary";
         if (missingIfaceContext) {
-            UINFO(5, indent() << "[iface-debug] captured typedef missing user2 name=" << nodep->name() << " ref=" << nodep << " pass=" << passLabel << " entryCell=" << captureEntryCellp);
+            UINFO(5, indent() << "[iface-debug] captured typedef missing user2 name="
+                              << nodep->name() << " ref=" << nodep << " pass=" << passLabel
+                              << " entryCell=" << captureEntryCellp);
         }
         AstCell* const capturedCellp = ifaceCaptured ? VN_CAST(nodep->user2p(), Cell) : nullptr;
         bool forcedIfaceDotScope = false;
@@ -5106,15 +5134,21 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (!ifaceCaptured || captureEntryRetired) return;
             const auto* entry = LinkDotIfaceCapture::find(nodep);
             AstCell* const entryCell = entry ? entry->cellp : nullptr;
-            UINFO(5, indent() << "[iface-debug] retire captured typedef reason=" << reason << " name=" << nodep->name() << " pass=" << passLabel << " user2=" << nodep->user2p() << " entryCell=" << entryCell);
+            UINFO(5, indent() << "[iface-debug] retire captured typedef reason=" << reason
+                              << " name=" << nodep->name() << " pass=" << passLabel
+                              << " user2=" << nodep->user2p() << " entryCell=" << entryCell);
             const bool erased = LinkDotIfaceCapture::erase(nodep);
             captureEntryRetired = true;
-            UINFO(5, indent() << "[iface-debug] retire erase result name=" << nodep->name() << " erased=" << erased);
+            UINFO(5, indent() << "[iface-debug] retire erase result name=" << nodep->name()
+                              << " erased=" << erased);
         };
         if (ifaceCaptured && m_statep->forParamed()) {
-            UINFO(5, indent() << "[iface-debug] captured typedef name=" << nodep->name() << " typedef=" << nodep->typedefp() << " cell=" << capturedCellp);
+            UINFO(5, indent() << "[iface-debug] captured typedef name=" << nodep->name()
+                              << " typedef=" << nodep->typedefp() << " cell=" << capturedCellp);
             if (nodep->typedefp()) {
-                UINFO(5, indent() << "[iface-debug] refresh typedef binding name=" << nodep->name() << " typedef=" << nodep->typedefp() << " cell=" << capturedCellp);
+                UINFO(5, indent() << "[iface-debug] refresh typedef binding name=" << nodep->name()
+                                  << " typedef=" << nodep->typedefp()
+                                  << " cell=" << capturedCellp);
                 nodep->typedefp(nullptr);
                 nodep->classOrPackagep(nullptr);
             }
@@ -5130,13 +5164,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
         } else if (!ifaceCaptured) {
             checkNoDot(nodep);
         } else {
-            UINFO(5, indent() << "[iface-debug] consume captured iface context name=" << nodep->name() << " cell=" << capturedCellp);
+            UINFO(5, indent() << "[iface-debug] consume captured iface context name="
+                              << nodep->name() << " cell=" << capturedCellp);
             m_ds.m_dotPos = DP_SCOPE;
             forcedIfaceDotScope = true;
         }
         if (!nodep->typedefp() && !nodep->subDTypep()) {
             if (ifaceCaptured) {
-                UINFO(5, indent() << "[iface-debug] lookup start name=" << nodep->name() << " dotPos=" << static_cast<int>(m_ds.m_dotPos) << " dotSym=" << m_ds.m_dotSymp << " classPkg=" << nodep->classOrPackagep());
+                UINFO(5, indent() << "[iface-debug] lookup start name=" << nodep->name()
+                                  << " dotPos=" << static_cast<int>(m_ds.m_dotPos) << " dotSym="
+                                  << m_ds.m_dotSymp << " classPkg=" << nodep->classOrPackagep());
             }
             const VSymEnt* foundp;
             if (nodep->classOrPackagep()) {
@@ -5147,20 +5184,25 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 foundp = m_curSymp->findIdFlat(nodep->name());
             }
             if (!foundp && ifaceCaptured && capturedTypedefp) {
-                UINFO(5, indent() << "[iface-debug] binding via captured typedef fallback name=" << nodep->name() << " typedef=" << capturedTypedefp);
+                UINFO(5, indent() << "[iface-debug] binding via captured typedef fallback name="
+                                  << nodep->name() << " typedef=" << capturedTypedefp);
                 nodep->typedefp(capturedTypedefp);
-                nodep->classOrPackagep(capturedTypedefSymp ? capturedTypedefSymp->classOrPackagep() : nullptr);
+                nodep->classOrPackagep(capturedTypedefSymp ? capturedTypedefSymp->classOrPackagep()
+                                                           : nullptr);
                 resolvedCapturedTypedef = true;
                 retireCapture("typedef");
             }
             if (!resolvedCapturedTypedef && foundp) {
                 VSymEnt* const parentSymp = foundp->parentp();
-                UINFO(5, indent() << "[iface-debug] resolved typedef name=" << nodep->name() << " foundNode=" << foundp->nodep() << " parentNode=" << (parentSymp ? parentSymp->nodep() : nullptr));
+                UINFO(5, indent() << "[iface-debug] resolved typedef name=" << nodep->name()
+                                  << " foundNode=" << foundp->nodep() << " parentNode="
+                                  << (parentSymp ? parentSymp->nodep() : nullptr));
             }
             if (!resolvedCapturedTypedef) {
-                if (AstTypedef* const defp = foundp ? VN_CAST(foundp->nodep(), Typedef) : nullptr) {
-                    // Don't check if typedef is to a <type T>::<reference> as might not be resolved
-                    // yet
+                if (AstTypedef* const defp
+                    = foundp ? VN_CAST(foundp->nodep(), Typedef) : nullptr) {
+                    // Don't check if typedef is to a <type T>::<reference> as might not be
+                    // resolved yet
                     if (!nodep->classOrPackagep() && !defp->isUnderClass())
                         checkDeclOrder(nodep, defp);
                     nodep->typedefp(defp);
@@ -5170,10 +5212,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 } else if (AstParamTypeDType* const defp
                            = foundp ? VN_CAST(foundp->nodep(), ParamTypeDType) : nullptr) {
                     if (defp == nodep->backp()) {  // Where backp is typically typedef
-                        nodep->v3error("Reference to '" << m_ds.m_dotText
-                                                        << (m_ds.m_dotText == "" ? "" : ".")
-                                                        << nodep->prettyName() << "'"
-                                                        << " type would form a recursive definition");
+                        nodep->v3error("Reference to '"
+                                       << m_ds.m_dotText << (m_ds.m_dotText == "" ? "" : ".")
+                                       << nodep->prettyName() << "'"
+                                       << " type would form a recursive definition");
                         nodep->refDTypep(nodep->findVoidDType());  // Try to reduce later errors
                     } else {
                         nodep->refDTypep(defp);
@@ -5181,9 +5223,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         resolvedCapturedTypedef = true;
                         retireCapture("param typedef");
                     }
-                } else if (AstClass* const defp = foundp ? VN_CAST(foundp->nodep(), Class) : nullptr) {
-                    // Don't check if typedef is to a <type T>::<reference> as might not be resolved
-                    // yet
+                } else if (AstClass* const defp
+                           = foundp ? VN_CAST(foundp->nodep(), Class) : nullptr) {
+                    // Don't check if typedef is to a <type T>::<reference> as might not be
+                    // resolved yet
                     if (!nodep->classOrPackagep()) checkDeclOrder(nodep, defp);
                     AstPin* const paramsp = nodep->paramsp();
                     if (paramsp) paramsp->unlinkFrBackWithNext();
@@ -5208,12 +5251,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
         }
         if (forcedIfaceDotScope && m_ds.m_dotPos == DP_SCOPE && !m_ds.m_dotp) {
-            UINFO(5, indent() << "[iface-debug] reset dot state after captured typedef name=" << nodep->name());
+            UINFO(5, indent() << "[iface-debug] reset dot state after captured typedef name="
+                              << nodep->name());
             m_ds.init(m_curSymp);
         }
-        if (ifaceCaptured && resolvedCapturedTypedef) {
-            retireCapture("post resolve");
-        }
+        if (ifaceCaptured && resolvedCapturedTypedef) { retireCapture("post resolve"); }
         iterateChildren(nodep);
     }
     void visit(AstDpiExport* nodep) override {
@@ -5354,9 +5396,10 @@ public:
         UINFO(4, __FUNCTION__ << ": ");
 
         if (m_statep->forParamed()) {
-            LinkDotIfaceCapture::forEach([](const LinkDotIfaceCapture::CapturedIfaceTypedef& entry) {
-                if (AstRefDType* const refp = entry.refp) refp->user3(false);
-            });
+            LinkDotIfaceCapture::forEach(
+                [](const LinkDotIfaceCapture::CapturedIfaceTypedef& entry) {
+                    if (AstRefDType* const refp = entry.refp) refp->user3(false);
+                });
         }
 
         iterate(rootp);

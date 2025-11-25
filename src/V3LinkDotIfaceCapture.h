@@ -23,8 +23,8 @@
 
 #include "config_build.h"
 
-#include <functional>
 #include <cstddef>
+#include <functional>
 
 class AstCell;
 class AstNodeModule;
@@ -51,20 +51,21 @@ void enable(bool flag);
 bool enabled();
 
 void reset();
-void add(AstRefDType* refp, AstCell* cellp, AstNodeModule* ownerModp, AstTypedef* typedefp = nullptr, AstNodeModule* typedefOwnerModp = nullptr);
+void add(AstRefDType* refp, AstCell* cellp, AstNodeModule* ownerModp,
+         AstTypedef* typedefp = nullptr, AstNodeModule* typedefOwnerModp = nullptr);
 void add(const CapturedIfaceTypedef& entry);
 bool contains(const AstRefDType* refp);
 const CapturedIfaceTypedef* find(const AstRefDType* refp);
 AstTypedef* getCapturedTypedef(const AstRefDType* refp);
 void forEach(const std::function<void(const CapturedIfaceTypedef&)>& fn);
-void forEachOwned(const AstNodeModule* ownerModp, const std::function<void(const CapturedIfaceTypedef&)>& fn);
+void forEachOwned(const AstNodeModule* ownerModp,
+                  const std::function<void(const CapturedIfaceTypedef&)>& fn);
 bool replaceRef(const AstRefDType* oldRefp, AstRefDType* newRefp);
 bool replaceTypedef(const AstRefDType* refp, AstTypedef* newTypedefp);
 bool erase(const AstRefDType* refp);
 std::size_t size();
 
 void propagateClone(const AstRefDType* origRefp, AstRefDType* newRefp);
-
 
 }  // namespace LinkDotIfaceCapture
 
