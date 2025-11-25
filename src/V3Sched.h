@@ -209,6 +209,8 @@ private:
     // The AstVarScope representing the extended trigger vector
     AstVarScope* m_vscp = nullptr;
     // The AstVarScope representing the extended trigger accumulator vector
+    // It is used to accumulate triggers that were found fired and cleared in preTrigger's
+    // in current 'act' region iteration
     mutable AstVarScope* m_vscAccp = nullptr;
     // The AstVarScope representing the extended trigger temporary vector
     mutable AstVarScope* m_vscTmpp = nullptr;

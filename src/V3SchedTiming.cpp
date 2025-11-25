@@ -70,20 +70,20 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
 
         for (const auto& p : m_lbs) {
             AstActive* const activep = p.second;
-            if (AstStmtExpr* const stmtExprp = VN_CAST(activep->stmtsp(), StmtExpr)) {
-                if (AstCMethodHard* const exprp = VN_CAST(stmtExprp->exprp(), CMethodHard)) {
-                    AstNodeExpr* const fromp = exprp->fromp();
-                    if (AstBasicDType* dtypep = VN_CAST(fromp->dtypep(), BasicDType)) {
-                        if (dtypep->keyword() == VBasicDTypeKwd::TRIGGER_SCHEDULER) {
-                            AstCMethodHard* const commitp = new AstCMethodHard{
-                                fromp->fileline(), fromp->cloneTree(false), VCMethod::SCHED_COMMIT,
-                                exprp->pinsp() ? exprp->pinsp()->cloneTree(true) : nullptr};
-                            commitp->dtypeSetVoid();
-                            m_resumeFuncp->addStmtsp(commitp->makeStmt());
-                        }
-                    }
+            activep->foreach([this](AstCMethodHard* const exprp) {
+                if (exprp->method() != VCMethod::SCHED_RESUME) return;
+                AstNodeExpr* const fromp = exprp->fromp();
+                if (AstBasicDType* dtypep = VN_CAST(fromp->dtypep(), BasicDType)) {
+                    if (dtypep->keyword() != VBasicDTypeKwd::TRIGGER_SCHEDULER) return;
+                } else {
+                    return;
                 }
-            }
+                AstCMethodHard* const commitp = new AstCMethodHard{
+                    fromp->fileline(), fromp->cloneTree(false), VCMethod::SCHED_COMMIT,
+                    exprp->pinsp() ? exprp->pinsp()->cloneTree(true) : nullptr};
+                commitp->dtypeSetVoid();
+                m_resumeFuncp->addStmtsp(commitp->makeStmt());
+            });
         }
 
         // Put all the timing actives in the resume function
