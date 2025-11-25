@@ -3,6 +3,10 @@
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty, 2025 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
+//
+//     assign localparam from nested interface typedef
+//     instance of type, assign to instance and check
+//
 
 interface y_if #(
    parameter int p_awidth = 3
