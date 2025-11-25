@@ -1108,7 +1108,6 @@ class ParamProcessor final {
             relinkPinsByName(pinsp, paramedModp);
             newModp = paramedModp;
             // any_overrides = true;  // Unused later, so not needed
-
         } else if (!any_overrides) {
             UINFO(8, "Cell parameters all match original values, skipping expansion.");
             // If it's the first use of the default instance, create a copy and store it in user3p.
