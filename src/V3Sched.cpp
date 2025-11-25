@@ -1233,8 +1233,7 @@ void schedule(AstNetlist* netlistp) {
         // deleted later) if there was no need to call it, SenTrees have to be cleaned manually
         netlistp->foreach([](AstCAwait* const cAwaitp) { cAwaitp->clearSentreep(); });
     }
-
-    // Step 16: Move 'actKit.m_vscp' to accumulator at the end of static initialziation so,
+    // Move 'actKit.m_vscp' to accumulator at the end of static initialziation so,
     // triggers persist to the first resume
     if (AstVarScope* const trigAccp = trigKit.vscAccp()) {
         staticp->addStmtsp(new AstAssign{
