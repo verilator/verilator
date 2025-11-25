@@ -182,6 +182,7 @@ Hyperthreading
 Ibrahim
 Ikram
 Iles
+Ille
 Inlines
 Inout
 Iru
@@ -319,6 +320,7 @@ Oleg
 Oler
 Olof
 Olofsson
+Ondrej
 Oron
 Oyvind
 PLI

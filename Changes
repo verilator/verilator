@@ -28,12 +28,14 @@ Verilator 5.043 devel
 * Support constant expression cycle delays in sequences (#6691). [Ryszard Rozak, Antmicro Ltd.]
 * Support general global constraints (#6709) (#6711). [Yilou Wang]
 * Support `config` default liblist (#6714). [Dan Ruelas-Petrisko]
+* Support `config` cell clauses (#6717). [Dan Ruelas-Petrisko]
 * Optimize away calls to empty functions (#6626). [Geza Lore]
 * Optimize redundant headers in Syms implementation files. [Geza Lore, Fractile Ltd.]
 * Optimize constructor/destructor VerilatedModules (#6660). [Geza Lore, Fractile Ltd.]
 * Optimize repeated function call during symbol table initialization (#6665). [Geza Lore, Fractile Ltd.]
 * Optimize functions reading external parameters as pure (#6684). [Geza Lore, Fractile Ltd.]
 * Optimize $past delayed variable reuse (#6689). [Geza Lore, Fractile Ltd.]
+* Optimize combinational loops through sign extension (#6724). [Geza Lore]
 * Fix expression short circuiting (#6483). [Todd Strader]
 * Fix expression coverage of system calls (#6592). [Todd Strader]
 * Fix `--timing` with `--x-initial-edge` (#6603) (#6631). [Krzysztof Bieganski, Antmicro Ltd.]
@@ -57,6 +59,9 @@ Verilator 5.043 devel
 * Fix bounds checking in non-inlined function (#6677). [Geza Lore, Fractile Ltd.]
 * Fix stream operator widening (#6693) (#6697). [Jean-Nicolas Strauss]
 * Fix deleting linked node error in V3Randomize (#6718). [Igor Zaworski, Antmicro Ltd.]
+* Fix runtime worker thread stack sizes on MacOS (#6721). [Geza Lore]
+* Fix X handling in UDPs (#6722) (#6723). [Michael Bikovitsky]
+* Fix `--prof-exec` using `--lib-create`. [Geza Lore]
 
 
 Verilator 5.042 2025-11-02
