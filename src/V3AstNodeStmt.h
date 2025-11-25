@@ -795,8 +795,10 @@ class AstLoop final : public AstNodeStmt {
     // @astgen op2 := contsp : List[AstNode] // Empty after LinkJump
     VOptionBool m_unroll;  // Full, none, or default unrolling
 public:
-    explicit AstLoop(FileLine* fl)
-        : ASTGEN_SUPER_Loop(fl) {}
+    explicit AstLoop(FileLine* fl, AstNode* stmtsp = nullptr)
+        : ASTGEN_SUPER_Loop(fl) {
+        addStmtsp(stmtsp);
+    }
     ASTGEN_MEMBERS_AstLoop;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;

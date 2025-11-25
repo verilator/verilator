@@ -3561,8 +3561,7 @@ statement_item<nodeStmtp>:          // IEEE: statement_item
         //
         // do/for/forever/while loops all modelled as AstLoop
         |       yDO stmt yWHILE '(' expr ')' ';'
-                        { AstLoop* const loopp = new AstLoop{$1};
-                          loopp->addStmtsp($2);
+                        { AstLoop* const loopp = new AstLoop{$1, $2};
                           loopp->addContsp(new AstLoopTest{$<fl>5, loopp, $5});
                           $$ = loopp; }
         |       yFOR  '(' { VARRESET_NONLIST(UNKNOWN); } for_initializationE ';' exprE ';' for_stepE ')' stmt
@@ -3574,8 +3573,7 @@ statement_item<nodeStmtp>:          // IEEE: statement_item
                           blockp->addStmtsp(loopp);
                           $$ = blockp; }
         |       yFOREVER stmt
-                        { AstLoop* const loopp = new AstLoop{$1};
-                          loopp->addStmtsp($2);
+                        { AstLoop* const loopp = new AstLoop{$1, $2};
                           $$ = loopp; }
         |       yWHILE '(' expr ')' stmt
                         { AstLoop* const loopp = new AstLoop{$1};
