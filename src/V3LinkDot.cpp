@@ -2783,9 +2783,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         newTypep->user1p(newSymEntp);
         parentSymp->reinsert(varp->name(), newSymEntp);
         varp->replaceWith(newTypep);
-        // This conversion happens while linkDot is in the middle of a dotted lookup (e.g.
-        // bus_io.rq_t). Reset the dot state so subsequent symbols in this scope don’t inherit the
-        // pending dot.
+        // This conversion happens while linkDot is in the middle of a dotted lookup (e.g. bus_io.rq_t). Reset the dot state so subsequent symbols in this scope do not inherit the pending dot.
         m_ds.init(m_curSymp);
         UINFO(5, indent() << "[iface-debug] converted owner var to ParamType name="
                           << varp->prettyName() << " dotState(after-reset)=" << m_ds.ascii());
