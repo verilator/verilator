@@ -625,9 +625,7 @@ public:
     // Unpacked array randomization
     template <typename T_Unpacked, std::size_t N_Depth>
     bool basicStdRandomization(VlUnpacked<T_Unpacked, N_Depth>& value, size_t width) {
-        for (size_t i = 0; i < N_Depth; ++i) {
-            basicStdRandomization(value.operator[](i), width);
-        }
+        for (size_t i = 0; i < N_Depth; ++i) { basicStdRandomization(value.operator[](i), width); }
         return true;
     }
     bool next() { return VlRandomizer::next(m_rng); }

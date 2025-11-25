@@ -4,6 +4,21 @@
 // any use, without warranty, 2025 by PlanV GmbH.
 // SPDX-License-Identifier: CC0-1.0
 
+// Test helper macros
+`define ASSERT(expr) \
+    if (!(expr)) begin \
+        $display("%%Error: Assertion failed at line %0d: %s", `__LINE__, `"expr`"); \
+        $stop; \
+    end
+
+`define RAND_ARRAY_CHECK(array, max_val) \
+    begin \
+        int _success; \
+        _success = std::randomize(array) with { foreach (array[i]) { array[i] < max_val;}}; \
+        `ASSERT(_success == 1) \
+        foreach (array[i]) `ASSERT(array[i] < max_val) \
+    end
+
 class std_randomize_class;
 
     rand bit [7:0] addr;
@@ -63,55 +78,30 @@ module t_scope_std_randomize;
     std_randomize_class test;
 
     initial begin
-        bit ok = 0;
-        int success;
 
+        // Test class member randomization
         test = new();
         test.old_addr = test.addr;
         test.old_data = test.data;
         test.old_data_x_4 = test.data_x_4;
-        success = std::randomize(test.addr, test.data);
-        ok = (success == 1) && !(test.addr == test.old_addr || test.data == test.old_data) && test.data_x_4 == test.old_data_x_4;
-        if (!ok) $stop;
+        `ASSERT(std::randomize(test.addr, test.data) == 1)
+        `ASSERT(!(test.addr == test.old_addr || test.data == test.old_data))
+        `ASSERT(test.data_x_4 == test.old_data_x_4)
 
-        ok = 0;
-        ok = run();
-        if (!ok) $stop;
-        ok = 0;
-        ok = test.std_randomize();
-        if (!ok) $stop;
+        // Test function-based randomization
+        `ASSERT(run())
+        `ASSERT(test.std_randomize())
+
+        // Test array randomization with constraints
         /* verilator lint_off WIDTHEXPAND */
-        success = std::randomize(limit) with { foreach (limit[i]) { limit[i] < 100;}};
-        foreach (limit[i]) begin
-            ok = (success == 1) && (limit[i] < 100);
-            if (!ok) $stop;
-        end
-        success = std::randomize(limit_7bits) with { foreach (limit_7bits[i]) { limit_7bits[i] < 10;}};
-        foreach (limit_7bits[i]) begin
-            ok = (success == 1) && (limit_7bits[i] < 10);
-            if (!ok) $stop;
-        end
-        success = std::randomize(limit_15bits) with { foreach (limit_15bits[i]) { limit_15bits[i] < 1000;}};
-        foreach (limit_15bits[i]) begin
-            ok = (success == 1) && (limit_15bits[i] < 1000);
-            if (!ok) $stop;
-        end
-        success = std::randomize(limit_31bits) with { foreach (limit_31bits[i]) { limit_31bits[i] < 100000;}};
-        foreach (limit_31bits[i]) begin
-            ok = (success == 1) && (limit_31bits[i] < 100000);
-            if (!ok) $stop;
-        end
-        success = std::randomize(limit_63bits) with { foreach (limit_63bits[i]) { limit_63bits[i] < 10000000000;}};
-        foreach (limit_63bits[i]) begin
-            ok = (success == 1) && (limit_63bits[i] < 10000000000);
-            if (!ok) $stop;
-        end
-        success = std::randomize(limit_95bits) with { foreach (limit_95bits[i]) { limit_95bits[i] < 1000000000000;}};
-        foreach (limit_95bits[i]) begin
-            ok = (success == 1) && (limit_95bits[i] < 1000000000000);
-            if (!ok) $stop;
-        end
-        /* verilator lint_off WIDTHEXPAND */
+        `RAND_ARRAY_CHECK(limit, 100)
+        `RAND_ARRAY_CHECK(limit_7bits, 10)
+        `RAND_ARRAY_CHECK(limit_15bits, 1000)
+        `RAND_ARRAY_CHECK(limit_31bits, 100000)
+        `RAND_ARRAY_CHECK(limit_63bits, 64'd10000000000)
+        `RAND_ARRAY_CHECK(limit_95bits, 96'd1000000000000)
+        /* verilator lint_on WIDTHEXPAND */
+
         $write("*-* All Finished *-*\n");
         $finish;
     end
