@@ -491,7 +491,7 @@ public:
 // Instrumentation class functions
 class InstrumentFunc final : public VNVisitor {
     bool m_assignw = false;  // Flag if a assignw exists in the netlist
-    bool m_assignNode = false; // Set to true to indicate that the visitor is in an assign
+    bool m_assignNode = false;  // Set to true to indicate that the visitor is in an assign
     bool m_addedport = false;  // Flag if a port was already added
     bool m_addedTask = false;  // Flag if a task was already added
     bool m_addedFunc = false;  // Flag if a function was already added
@@ -662,18 +662,16 @@ class InstrumentFunc final : public VNVisitor {
             if (dir == VDirection::INPUT || dir == VDirection::NONE) {
                 // Hier muss was mit dem rhsp gemacht werden
                 AstNodeExpr* rhsp = nodep->rhsp();
-                if(rhsp->type() != VNType::ParseRef) {
+                if (rhsp->type() != VNType::ParseRef) {
                     // Muss ich hier loopen?
-                    for(AstNode* n = rhsp->op1p(); n; n = n->nextp()) {
-                        if(n->type() == VNType::ParseRef && n->name() == m_orig_varp->name()) {
+                    for (AstNode* n = rhsp->op1p(); n; n = n->nextp()) {
+                        if (n->type() == VNType::ParseRef && n->name() == m_orig_varp->name()) {
                             n->name(m_tmp_varp->name());
                             break;
                         }
                     }
                 } else {
-                    if(rhsp->name() == m_orig_varp->name()) {
-                        rhsp->name(m_tmp_varp->name());
-                    }
+                    if (rhsp->name() == m_orig_varp->name()) { rhsp->name(m_tmp_varp->name()); }
                 }
             }
         } else if (nodep == m_assignwp) {
@@ -1102,18 +1100,10 @@ class InstrumentFunc final : public VNVisitor {
     //Sets the m_assignw flag to true if the current module is not null.
     //Necessary for the AstParseRef visitor function to determine if the current node is part of an
     //assignment.
-    void visit(AstAssignW* nodep) override {
-        instrAssigns(nodep);
-    }
-    void visit (AstAssign* nodep) override {
-        instrAssigns(nodep);
-    }
-    void visit(AstAssignDly* nodep) override {
-        instrAssigns(nodep);
-    }
-    void visit(AstAssignForce* nodep) override {
-        instrAssigns(nodep);
-    }
+    void visit(AstAssignW* nodep) override { instrAssigns(nodep); }
+    void visit(AstAssign* nodep) override { instrAssigns(nodep); }
+    void visit(AstAssignDly* nodep) override { instrAssigns(nodep); }
+    void visit(AstAssignForce* nodep) override { instrAssigns(nodep); }
 
     //ASTPARSE REF VISITOR FUNCTION:
     //The function is used to change the parseref nodes to link to the instrumented variable
@@ -1127,7 +1117,8 @@ class InstrumentFunc final : public VNVisitor {
     //the instrumented variable. This ensures that the instrumented variable is used as the new
     //input.
     void visit(AstParseRef* nodep) override {
-        if (m_current_module != nullptr && m_orig_varp != nullptr && m_orig_varp->direction() != VDirection::OUTPUT) {
+        if (m_current_module != nullptr && m_orig_varp != nullptr
+            && m_orig_varp->direction() != VDirection::OUTPUT) {
             if (nodep->name() == m_orig_varp->name() && !m_assignNode) {
                 nodep->name(m_tmp_varp->name());
             }
