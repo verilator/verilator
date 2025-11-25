@@ -2151,6 +2151,7 @@ class AstVar final : public AstNode {
     bool m_isDpiOpenArray : 1;  // DPI import open array
     bool m_isHideLocal : 1;  // Verilog local
     bool m_isHideProtected : 1;  // Verilog protected
+    bool m_maybeWritten : 1;  // Design might write to this signal (not very accurate)
     bool m_noCReset : 1;  // Do not do automated CReset creation
     bool m_noReset : 1;  // Do not do automated reset/randomization
     bool m_noSubst : 1;  // Do not substitute out references
@@ -2213,6 +2214,7 @@ class AstVar final : public AstNode {
         m_isDpiOpenArray = false;
         m_isHideLocal = false;
         m_isHideProtected = false;
+        m_maybeWritten = false;
         m_noCReset = false;
         m_noReset = false;
         m_noSubst = false;
@@ -2385,6 +2387,8 @@ public:
     void isHideLocal(bool flag) { m_isHideLocal = flag; }
     bool isHideProtected() const { return m_isHideProtected; }
     void isHideProtected(bool flag) { m_isHideProtected = flag; }
+    void maybeWritten(bool flag) { m_maybeWritten = flag; }
+    bool maybeWritten() const { return m_maybeWritten; }
     bool noCReset() const { return m_noCReset; }
     void noCReset(bool flag) { m_noCReset = flag; }
     bool noReset() const { return m_noReset; }

@@ -3073,6 +3073,7 @@ class WidthVisitor final : public VNVisitor {
             UASSERT_OBJ(nodep->dtypep(), nodep, "LHS var should be dtype completed");
         }
         // UINFOTREE(9, nodep, "", "VRout");
+        if (nodep->access().isWriteOrRW()) nodep->varp()->maybeWritten(true);
         if (nodep->access().isWriteOrRW() && nodep->varp()->direction() == VDirection::CONSTREF) {
             nodep->v3error("Assigning to const ref variable: " << nodep->prettyNameQ());
         } else if (nodep->access().isWriteOrRW() && nodep->varp()->isInput()
