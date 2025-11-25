@@ -101,16 +101,6 @@ AstNodeStmt* checkIterationLimit(AstNetlist* netlistp, const string& name, AstVa
     return ifp;
 }
 
-AstNodeStmt* profExecSectionPush(FileLine* flp, const string& section) {
-    const string name
-        = (v3Global.opt.hierChild() ? (v3Global.opt.topModule() + " ") : "") + section;
-    return new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPush(\"" + name + "\");"};
-}
-
-AstNodeStmt* profExecSectionPop(FileLine* flp) {
-    return new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPop();"};
-}
-
 static AstCFunc* splitCheckCreateNewSubFunc(AstCFunc* ofuncp) {
     static std::map<AstCFunc*, uint32_t> s_funcNums;  // What split number to attach to a function
     const uint32_t funcNum = s_funcNums[ofuncp]++;

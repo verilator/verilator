@@ -405,10 +405,6 @@ AstNodeStmt* callVoidFunc(AstCFunc* funcp);
 // Create statement that checks counterp' to see if the eval loop iteration limit is reached
 AstNodeStmt* checkIterationLimit(AstNetlist* netlistp, const string& name, AstVarScope* counterp,
                                  AstNodeStmt* dumpCallp);
-// Create statement that pushed a --prof-exec section
-AstNodeStmt* profExecSectionPush(FileLine* flp, const string& section);
-// Create statement that pops a --prof-exec section
-AstNodeStmt* profExecSectionPop(FileLine* flp);
 // Split large function according to --output-split-cfuncs
 void splitCheck(AstCFunc* ofuncp);
 // Build an AstIf conditional on the given SenTree being triggered

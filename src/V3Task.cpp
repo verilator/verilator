@@ -1064,10 +1064,9 @@ class TaskVisitor final : public VNVisitor {
                            AstCFunc* dpiFuncp) {
         const char* const tmpSuffixp = V3Task::dpiTemporaryVarSuffix();
 
-        if (v3Global.opt.profExec())
-            cfuncp->addStmtsp(
-                new AstCStmt{nodep->fileline(),
-                             "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPush(\"dpiimports\");"});
+        if (v3Global.opt.profExec()) {
+            cfuncp->addStmtsp(AstCStmt::profExecSectionPush(nodep->fileline(), "dpiimports"));
+        }
 
         // Convert input/inout arguments to DPI types
         string args;
@@ -1161,9 +1160,9 @@ class TaskVisitor final : public VNVisitor {
             }
         }
 
-        if (v3Global.opt.profExec())
-            cfuncp->addStmtsp(new AstCStmt{nodep->fileline(),
-                                           "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPop();"});
+        if (v3Global.opt.profExec()) {
+            cfuncp->addStmtsp(AstCStmt::profExecSectionPop(nodep->fileline(), "dpiimports"));
+        }
     }
 
     AstVarScope* getDpiExporTrigger() {

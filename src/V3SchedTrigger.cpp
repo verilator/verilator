@@ -661,7 +661,9 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
         AstCFunc* const fp = kit.m_compp;
         AstScope* const scopep = netlistp->topScopep()->scopep();
         // Profiling push
-        if (v3Global.opt.profExec()) fp->addStmtsp(util::profExecSectionPush(flp, "trig " + name));
+        if (v3Global.opt.profExec()) {
+            fp->addStmtsp(AstCStmt::profExecSectionPush(flp, "trig " + name));
+        }
         // Trigger computation
         for (AstNodeStmt* const nodep : senResults.m_preUpdates) fp->addStmtsp(nodep);
         fp->addStmtsp(trigStmtsp);
@@ -702,7 +704,9 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
         // Add a call to the dumping function if debug is enabled
         fp->addStmtsp(kit.newDumpCall(kit.m_vscp, name, true));
         // Profiling pop
-        if (v3Global.opt.profExec()) fp->addStmtsp(util::profExecSectionPop(flp));
+        if (v3Global.opt.profExec()) {
+            fp->addStmtsp(AstCStmt::profExecSectionPop(flp, "trig " + name));
+        }
         // Done with the trigger computation function, split as might be large
         util::splitCheck(fp);
     };

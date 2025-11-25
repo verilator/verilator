@@ -288,6 +288,27 @@ public:
 class AstCStmt final : public AstNodeStmt {
     // C statement emitted into output, with some arbitrary nodes interspersed
     // @astgen op1 := nodesp : List[AstNode<AstNodeStmt|AstNodeExpr|AstText>]
+
+    static AstCStmt* profExecSection(FileLine* flp, const std::string& section, bool push) {
+        // Compute the label
+        std::string label;
+        if (v3Global.opt.hierChild()) label += v3Global.opt.topModule() + ":";
+        label += section;
+        // The profiler statement
+        std::string pStmt = "VL_EXEC_TRACE_ADD_RECORD(vlSymsp)";
+        pStmt += push ? ".sectionPush" : ".sectionPop";
+        pStmt += "(";
+        if (push) pStmt += "\"" + label + "\"";
+        pStmt += ");";
+        // The debug statement
+        std::string dStmt = "VL_DEBUG_IF(VL_DBG_MSGF(\"+    --prof-exec ";
+        dStmt += push ? "sectionPush " : "sectionPop ";
+        dStmt += label;
+        dStmt += "\\n\"););";
+        // Concatenate
+        return new AstCStmt{flp, push ? pStmt + "\n" + dStmt : dStmt + "\n" + pStmt};
+    }
+
 public:
     explicit AstCStmt(FileLine* fl, const std::string& text = "")
         : ASTGEN_SUPER_CStmt(fl) {
@@ -302,6 +323,13 @@ public:
     // Add some text, or a node to this statement
     void add(const std::string& text) { addNodesp(new AstText{fileline(), text}); }
     void add(AstNode* nodep) { addNodesp(nodep); }
+    // Static factory methods for specific cases
+    static AstCStmt* profExecSectionPush(FileLine* flp, const std::string& section) {
+        return profExecSection(flp, section, true);
+    }
+    static AstCStmt* profExecSectionPop(FileLine* flp, const std::string& section) {
+        return profExecSection(flp, section, false);
+    }
 };
 class AstCStmtUser final : public AstNodeStmt {
     // User '$c' statement, also used for handling some AstSystemCSection.
