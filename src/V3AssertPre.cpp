@@ -625,25 +625,11 @@ private:
         iterateAndNextNull(nodep->sensesp());
         if (m_senip)
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Only one PSL clock allowed per assertion");
-        // Block is the new expression to evaluate
-        AstNodeExpr* blockp = VN_AS(nodep->propp()->unlinkFrBack(), NodeExpr);
         if (!nodep->disablep() && m_defaultDisablep) {
             nodep->disablep(m_defaultDisablep->condp()->cloneTreePure(true));
         }
-        if (AstNodeExpr* const disablep = nodep->disablep()) {
-            m_disablep = disablep;
-            if (VN_IS(nodep->backp(), Cover)) {
-                blockp = new AstAnd{disablep->fileline(),
-                                    new AstNot{disablep->fileline(), disablep->unlinkFrBack()},
-                                    blockp};
-            } else {
-                blockp = new AstOr{disablep->fileline(), disablep->unlinkFrBack(), blockp};
-            }
-        }
         // Unlink and just keep a pointer to it, convert to sentree as needed
         m_senip = nodep->sensesp();
-        nodep->replaceWith(blockp);
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstPExpr* nodep) override {
         VL_RESTORER(m_inPExpr);

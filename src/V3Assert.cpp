@@ -452,7 +452,13 @@ class AssertVisitor final : public VNVisitor {
         m_underAssert = true;
         iterate(nodep->propp());
 
-        AstNode* bodysp = assertBody(nodep, nodep->propp()->unlinkFrBack(), passsp, failsp);
+        AstNode* propExprp;
+        if (AstPropSpec* const specp = VN_CAST(nodep->propp(), PropSpec)) {
+            propExprp = specp->propp()->unlinkFrBack();
+        } else {
+            propExprp = nodep->propp()->unlinkFrBack();
+        }
+        AstNode* bodysp = assertBody(nodep, propExprp, passsp, failsp);
         if (sentreep) {
             bodysp = new AstAlways{nodep->fileline(), VAlwaysKwd::ALWAYS, sentreep, bodysp};
         }
