@@ -292,7 +292,11 @@ class AstCStmt final : public AstNodeStmt {
     static AstCStmt* profExecSection(FileLine* flp, const std::string& section, bool push) {
         // Compute the label
         std::string label;
-        if (v3Global.opt.hierChild()) label += v3Global.opt.topModule() + ":";
+        if (v3Global.opt.hierChild()) {
+            label += v3Global.opt.topModule() + ":";
+        } else if (!v3Global.opt.libCreate().empty()) {
+            label += v3Global.opt.libCreate() + ":";
+        }
         label += section;
         // The profiler statement
         std::string pStmt = "VL_EXEC_TRACE_ADD_RECORD(vlSymsp)";

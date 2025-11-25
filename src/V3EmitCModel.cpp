@@ -421,8 +421,10 @@ class EmitCModel final : public EmitCFunc {
         puts(topModNameProtected + "__" + protect("_eval_settle") + "(&(vlSymsp->TOP));\n");
         puts("}\n");
 
-        if (v3Global.opt.profExec() && !v3Global.opt.hierChild())
+        if (v3Global.opt.profExec() && !v3Global.opt.hierChild()
+            && v3Global.opt.libCreate().empty()) {
             puts("vlSymsp->__Vm_executionProfilerp->configure();\n");
+        }
 
         puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+ Eval\\n\"););\n");
         puts(topModNameProtected + "__" + protect("_eval") + "(&(vlSymsp->TOP));\n");
