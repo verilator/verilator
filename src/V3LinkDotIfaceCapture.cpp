@@ -70,13 +70,15 @@ void add(const CapturedIfaceTypedef& entry) {
 
 bool contains(const AstRefDType* refp) {
     if (!refp) return false;
-    return capturedMap().find(refp) != capturedMap().end();
+    auto& map = capturedMap();
+    return map.find(refp) != map.end();
 }
 
 const CapturedIfaceTypedef* find(const AstRefDType* refp) {
     if (!refp) return nullptr;
-    const auto it = capturedMap().find(refp);
-    if (VL_UNLIKELY(it == capturedMap().end())) return nullptr;
+    auto& map = capturedMap();
+    const auto it = map.find(refp);
+    if (VL_UNLIKELY(it == map.end())) return nullptr;
     return &it->second;
 }
 
@@ -186,3 +188,4 @@ void propagateClone(const AstRefDType* origRefp, AstRefDType* newRefp) {
 }
 
 }  // namespace LinkDotIfaceCapture
+
