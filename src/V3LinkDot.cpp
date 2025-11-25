@@ -804,24 +804,31 @@ public:
     }
     static bool checkIfClassOrPackage(const VSymEnt* const symp) {
         if (VN_IS(symp->nodep(), Class) || VN_IS(symp->nodep(), Package)) return true;
-        //const AstRefDType* refDTypep = nullptr;
+        const AstRefDType* refDTypep = nullptr;
+        (void)refDTypep;
         if (const AstTypedef* const typedefp = VN_CAST(symp->nodep(), Typedef)) {
             if (VN_IS(typedefp->childDTypep(), ClassRefDType)) return true;
             if (const AstRefDType* const refp = VN_CAST(typedefp->childDTypep(), RefDType)) {
-                //refDTypep = refp;
+                refDTypep = refp;
+                (void)refDTypep;
             }
         } else if (const AstParamTypeDType* const paramTypep
                    = VN_CAST(symp->nodep(), ParamTypeDType)) {
             if (const AstRequireDType* const requireDTypep
                 = VN_CAST(paramTypep->childDTypep(), RequireDType)) {
                 if (const AstRefDType* const refp = VN_CAST(requireDTypep->lhsp(), RefDType)) {
-                    //refDTypep = refp;
+                    refDTypep = refp;
+                    (void)refDTypep;
                 } else if (VN_IS(requireDTypep->lhsp(), VoidDType)
                            || VN_IS(requireDTypep->lhsp(), BasicDType)
                            || VN_IS(requireDTypep->lhsp(), ClassRefDType)) {
                     return true;
                 }
             }
+        }
+        if (refDTypep && !refDTypep->typeofp() && !refDTypep->classOrPackageOpp()) {
+            // Unknown ref may resolve to a class once parameters are elaborated.
+            return true;
         }
         return false;
     }
