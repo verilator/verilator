@@ -623,7 +623,7 @@ private:
         nodep = substitutePropertyCall(nodep);
         // No need to iterate the body, once replace will get iterated
         iterateAndNextNull(nodep->sensesp());
-        if (m_senip)
+        if (m_senip && m_senip != nodep->sensesp())
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Only one PSL clock allowed per assertion");
         if (!nodep->disablep() && m_defaultDisablep) {
             nodep->disablep(m_defaultDisablep->condp()->cloneTreePure(true));
