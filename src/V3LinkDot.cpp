@@ -2787,8 +2787,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // bus_io.rq_t). Reset the dot state so subsequent symbols in this scope do not inherit the
         // pending dot.
         m_ds.init(m_curSymp);
-        UINFO(5, indent() << "[iface-debug] converted owner var to ParamType name="
-                          << varp->prettyName() << " dotState(after-reset)=" << m_ds.ascii());
+        UINFO(5, indent() << "[iface-debug] converted owner var to ParamType name=" << varp->prettyName() << " dotState(after-reset)=" << m_ds.ascii());
         VL_DO_DANGLING(pushDeletep(varp), varp);
         return newTypep;
     }
@@ -3541,6 +3540,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     enclosingVarp = varp;
                     break;
                 }
+                // Stop if we hit a ParamTypeDType - we're in a localparam type context
+                // and don't need to promote (the type is assigned directly)
+                if (VN_IS(curp, ParamTypeDType)) break;
                 if (VN_IS(curp, NodeModule)) break;
             }
             if (!enclosingVarp || enclosingVarp->user3SetOnce()) return;
@@ -5045,6 +5047,26 @@ class LinkDotResolveVisitor final : public VNVisitor {
 
         if (auto* const typeOfp = nodep->typeofp()) {
             iterate(typeOfp);
+            // After iteration, typeofp() may have been replaced with a resolved type
+            // (e.g., DOT expression like if0.rq_t resolved to REFDTYPE)
+            // If it's now a NodeDType, replace this RefDType with it
+            if (AstNodeDType* const resolvedDTypep = VN_CAST(nodep->typeofp(), NodeDType)) {
+                UINFO(5, indent() << "[iface-debug] typeofp resolved to dtype, replacing RefDType\n");
+                resolvedDTypep->unlinkFrBack();
+                nodep->replaceWith(resolvedDTypep);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                // If the resolved dtype is a RefDType with an interface typedef,
+                // ensure it's captured for re-resolution during paramed pass
+                if (AstRefDType* const resolvedRefp = VN_CAST(resolvedDTypep, RefDType)) {
+                    if (resolvedRefp->user2p() && !LinkDotIfaceCapture::contains(resolvedRefp)) {
+                        AstCell* const cellp = VN_AS(resolvedRefp->user2p(), Cell);
+                        UINFO(5, indent() << "[iface-debug] re-capture resolved RefDType="
+                                          << resolvedRefp << " cell=" << cellp << "\n");
+                        LinkDotIfaceCapture::add(resolvedRefp, cellp, m_modp,
+                                                 resolvedRefp->typedefp());
+                    }
+                }
+            }
             return;
         }
 
@@ -5168,6 +5190,22 @@ class LinkDotResolveVisitor final : public VNVisitor {
                               << nodep->name() << " cell=" << capturedCellp);
             m_ds.m_dotPos = DP_SCOPE;
             forcedIfaceDotScope = true;
+            // Set dotSymp to the cell's symbol entry so lookup happens in the interface scope
+            //if (capturedCellp) {
+            //    if (VSymEnt* const cellSymp = m_statep->getNodeSym(capturedCellp)) {
+            //        m_ds.m_dotSymp = cellSymp;
+            //        UINFO(5, indent() << "[iface-debug] set dotSymp to cell scope cellSymp="
+            //                          << cellSymp << " node=" << cellSymp->nodep());
+            //    }
+            //}
+
+            if (capturedCellp && m_statep->existsNodeSym(capturedCellp)) {
+                VSymEnt* const cellSymp = m_statep->getNodeSym(capturedCellp);
+                m_ds.m_dotSymp = cellSymp;
+                UINFO(5, indent() << "[iface-debug] set dotSymp to cell scope cellSymp="
+                                  << cellSymp << " node=" << cellSymp->nodep());
+            }
+
         }
         if (!nodep->typedefp() && !nodep->subDTypep()) {
             if (ifaceCaptured) {
@@ -5181,7 +5219,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
             } else if (m_ds.m_dotPos == DP_FIRST || m_ds.m_dotPos == DP_NONE) {
                 foundp = m_curSymp->findIdFallback(nodep->name());
             } else {
-                foundp = m_curSymp->findIdFlat(nodep->name());
+                //foundp = m_curSymp->findIdFlat(nodep->name());
+                // Use dotSymp if set (e.g., for captured interface typedefs), else curSymp
+                VSymEnt* const lookupSymp = m_ds.m_dotSymp ? m_ds.m_dotSymp : m_curSymp;
+                foundp = lookupSymp->findIdFlat(nodep->name());
             }
             if (!foundp && ifaceCaptured && capturedTypedefp) {
                 UINFO(5, indent() << "[iface-debug] binding via captured typedef fallback name="
