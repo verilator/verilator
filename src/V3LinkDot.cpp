@@ -2787,7 +2787,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // bus_io.rq_t). Reset the dot state so subsequent symbols in this scope do not inherit the
         // pending dot.
         m_ds.init(m_curSymp);
-        UINFO(5, indent() << "[iface-debug] converted owner var to ParamType name=" << varp->prettyName() << " dotState(after-reset)=" << m_ds.ascii());
+        UINFO(5, indent() << "[iface-debug] converted owner var to ParamType name="
+                          << varp->prettyName() << " dotState(after-reset)=" << m_ds.ascii());
         VL_DO_DANGLING(pushDeletep(varp), varp);
         return newTypep;
     }
@@ -5051,7 +5052,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
             // (e.g., DOT expression like if0.rq_t resolved to REFDTYPE)
             // If it's now a NodeDType, replace this RefDType with it
             if (AstNodeDType* const resolvedDTypep = VN_CAST(nodep->typeofp(), NodeDType)) {
-                UINFO(5, indent() << "[iface-debug] typeofp resolved to dtype, replacing RefDType\n");
+                UINFO(5,
+                      indent() << "[iface-debug] typeofp resolved to dtype, replacing RefDType\n");
                 resolvedDTypep->unlinkFrBack();
                 nodep->replaceWith(resolvedDTypep);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -5205,7 +5207,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 UINFO(5, indent() << "[iface-debug] set dotSymp to cell scope cellSymp="
                                   << cellSymp << " node=" << cellSymp->nodep());
             }
-
         }
         if (!nodep->typedefp() && !nodep->subDTypep()) {
             if (ifaceCaptured) {
