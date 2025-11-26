@@ -2634,35 +2634,36 @@ class RandomizeVisitor final : public VNVisitor {
 
                 // Replace argument occurrences in 'with' clause with __Varg* reference.
                 // Uses "similarNode" matching (semantic equality, not pointer equality).
+                // Supports: VarRef (x), MemberSel (obj.y), ArraySel (arr[i])
                 if (withp) {
                     auto similarNode = [](AstNodeExpr* withExpr, AstNodeExpr* argExpr) -> bool {
-                        // VarRef: match by variable pointer
+                        // VarRef: compare variable pointers
                         if (VN_IS(argExpr, VarRef) && VN_IS(withExpr, VarRef)) {
                             return VN_AS(withExpr, VarRef)->varp()
                                 == VN_AS(argExpr, VarRef)->varp();
                         }
-                        // MemberSel: match by object and member
+                        // MemberSel: compare object and member (obj.y)
                         if (VN_IS(argExpr, MemberSel) && VN_IS(withExpr, MemberSel)) {
                             AstNode* withObj = withExpr->op1p();
                             AstNode* argObj = argExpr->op1p();
                             if (!withObj || !argObj) return false;
-                            withObj = withObj->op1p();
+                            withObj = withObj->op1p();  // Navigate to VarRef
                             argObj = argObj->op1p();
                             return (withObj == argObj)
                                 && (VN_AS(withExpr, MemberSel)->varp()
                                     == VN_AS(argExpr, MemberSel)->varp());
                         }
-                        // ArraySel: match by array base and index variable
+                        // ArraySel: compare array base and index (arr[i])
                         if (VN_IS(argExpr, ArraySel) && VN_IS(withExpr, ArraySel)) {
                             AstNode* withBase = withExpr->op1p();
                             AstNode* argBase = argExpr->op1p();
                             if (!withBase || !argBase) return false;
-                            withBase = withBase->op1p();
+                            withBase = withBase->op1p();  // Navigate to VarRef
                             argBase = argBase->op1p();
                             AstNode* withIdx = withExpr->op2p();
                             AstNode* argIdx = argExpr->op2p();
                             if (!withIdx || !argIdx) return false;
-                            withIdx = withIdx->op1p();
+                            withIdx = withIdx->op1p();  // Navigate to index expr
                             argIdx = argIdx->op1p();
                             if (!VN_IS(withIdx, VarRef) || !VN_IS(argIdx, VarRef)) return false;
                             return (withBase == argBase)
