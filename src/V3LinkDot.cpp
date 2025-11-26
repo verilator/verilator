@@ -825,7 +825,9 @@ public:
                     (void)refDTypep;
                 } else if (VN_IS(requireDTypep->lhsp(), VoidDType)
                            || VN_IS(requireDTypep->lhsp(), BasicDType)
-                           || VN_IS(requireDTypep->lhsp(), ClassRefDType)) {
+                           || VN_IS(requireDTypep->lhsp(), ClassRefDType)
+                           // ParseRef may resolve to a class later (e.g., type T=Foo)
+                           || VN_IS(requireDTypep->lhsp(), ParseRef)) {
                     return true;
                 }
             }

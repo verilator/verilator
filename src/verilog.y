@@ -3108,8 +3108,9 @@ type_assignment<varp>:          // ==IEEE: type_assignment
         |       idAny/*new-parameter*/ sigAttrListE '=' exprOrDataType
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
                           AstNode* valuep = $4;
-                          // If not already a dtype, wrap in RefDType for later resolution
-                          if (!VN_IS(valuep, NodeDType)) {
+                          // Only wrap DOT expressions (hierarchical refs like if0.rq_t) in RefDType
+                          // for later resolution. Simple identifiers are handled by existing logic.
+                          if (!VN_IS(valuep, NodeDType) && VN_IS(valuep, Dot)) {
                               valuep = new AstRefDType{$<fl>4, AstRefDType::FlagTypeOfExpr{}, valuep};
                           }
                           $$->valuep(valuep); }
