@@ -628,6 +628,7 @@ public:
         for (size_t i = 0; i < N_Depth; ++i) { basicStdRandomization(value.operator[](i), width); }
         return true;
     }
+
     bool next() { return VlRandomizer::next(m_rng); }
 };
 
