@@ -2640,7 +2640,7 @@ class RandomizeVisitor final : public VNVisitor {
                         // VarRef: compare variable pointers
                         if (VN_IS(argExpr, VarRef) && VN_IS(withExpr, VarRef)) {
                             return VN_AS(withExpr, VarRef)->varp()
-                                == VN_AS(argExpr, VarRef)->varp();
+                                   == VN_AS(argExpr, VarRef)->varp();
                         }
                         // MemberSel: compare object and member (obj.y)
                         if (VN_IS(argExpr, MemberSel) && VN_IS(withExpr, MemberSel)) {
@@ -2650,8 +2650,8 @@ class RandomizeVisitor final : public VNVisitor {
                             withObj = withObj->op1p();  // Navigate to VarRef
                             argObj = argObj->op1p();
                             return (withObj == argObj)
-                                && (VN_AS(withExpr, MemberSel)->varp()
-                                    == VN_AS(argExpr, MemberSel)->varp());
+                                   && (VN_AS(withExpr, MemberSel)->varp()
+                                       == VN_AS(argExpr, MemberSel)->varp());
                         }
                         // ArraySel: compare array base and index (arr[i])
                         if (VN_IS(argExpr, ArraySel) && VN_IS(withExpr, ArraySel)) {
@@ -2667,8 +2667,8 @@ class RandomizeVisitor final : public VNVisitor {
                             argIdx = argIdx->op1p();
                             if (!VN_IS(withIdx, VarRef) || !VN_IS(argIdx, VarRef)) return false;
                             return (withBase == argBase)
-                                && (VN_AS(withIdx, VarRef)->varp()
-                                    == VN_AS(argIdx, VarRef)->varp());
+                                   && (VN_AS(withIdx, VarRef)->varp()
+                                       == VN_AS(argIdx, VarRef)->varp());
                         }
                         return false;
                     };
