@@ -540,12 +540,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                         exprp = memberSelp->fromp();
                     } else {
                         AstVarRef* varrefp = nullptr;
-                        if (AstArraySel* const arraySelp = VN_CAST(exprp, ArraySel)) {
-                            varrefp = VN_AS(arraySelp->fromp(), VarRef);
-                            varrefp->access(VAccess::READWRITE);
-                        } else {
-                            varrefp = VN_AS(exprp, VarRef);
-                        }
+                        varrefp = VN_AS(exprp, VarRef);
                         randVarp = varrefp->varp();
                         varrefp->user1(true);
                         exprp = nullptr;
