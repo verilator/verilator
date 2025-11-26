@@ -42,7 +42,10 @@ class VirtIfaceVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // AstIface::user1() -> AstVarScope*. Trigger var for this interface
+    // AstCFunc::user1() -> bool. Is visited
+    // AstCFunc::user2() -> bool. Has timing control
     const VNUser1InUse m_user1InUse;
+    const VNUser2InUse m_user2InUse;
 
     // TYPES
     using OnWriteToVirtIface = std::function<void(AstVarRef*, AstIface*)>;
@@ -58,6 +61,8 @@ private:
     V3UniqueNames m_vifTriggerNames{"__VvifTrigger"};  // Unique names for virt iface
                                                        // triggers
     VirtIfaceTriggers m_triggers;  // Interfaces and corresponding trigger vars
+    AstNodeStmt* m_curStmt = nullptr;  // Current statement
+    bool m_hasTimingControl = false;  // Whether current CFunc has timing control
 
     // METHODS
     // For each write across a virtual interface boundary
@@ -70,25 +75,6 @@ private:
                 }
             } else if (AstIface* const ifacep = refp->varp()->sensIfacep()) {
                 onWrite(refp, ifacep);
-            }
-        });
-    }
-    // For each write across a virtual interface boundary (member-level tracking)
-    static void foreachWrittenVirtIfaceMember(
-        AstNode* const nodep, const std::function<void(AstVarRef*, AstIface*, AstVar*)>& onWrite) {
-        nodep->foreach([&](AstVarRef* const refp) {
-            if (refp->access().isReadOnly()) return;
-            if (AstIfaceRefDType* const dtypep = VN_CAST(refp->varp()->dtypep(), IfaceRefDType)) {
-                if (dtypep->isVirtual()) {
-                    if (AstMemberSel* const memberSelp = VN_CAST(refp->firstAbovep(), MemberSel)) {
-                        // Extract the member varp from the MemberSel node
-                        AstVar* memberVarp = memberSelp->varp();
-                        onWrite(refp, dtypep->ifacep(), memberVarp);
-                    }
-                }
-            } else if (AstIface* const ifacep = refp->varp()->sensIfacep()) {
-                AstVar* memberVarp = refp->varp();
-                onWrite(refp, ifacep, memberVarp);
             }
         });
     }
@@ -156,49 +142,82 @@ private:
         iterateChildren(nodep);
     }
     void visit(AstCFunc* nodep) override {
+        if (nodep->user1SetOnce()) return;
+        // By default set hasTiming to true - it may generate some false positives but it is better
+        // than generating false negatives.
+        // False positive may occur when there are func F and G, G has no timing control, F calls G
+        // and G calls F, and F has first timing control after call to G
+        nodep->user2(v3Global.usesTiming());
         VL_RESTORER(m_trigAssignp);
         m_trigAssignp = nullptr;
         VL_RESTORER(m_trigAssignIfacep);
         m_trigAssignIfacep = nullptr;
         VL_RESTORER(m_trigAssignMemberVarp);
         m_trigAssignMemberVarp = nullptr;
+        VL_RESTORER(m_hasTimingControl);
+        m_hasTimingControl = false;
+        iterateChildren(nodep);
+    }
+    void visit(AstNodeCCall* nodep) override {
+        iterate(nodep->funcp());
+        if (nodep->funcp()->user2()) {
+            m_trigAssignp = nullptr;
+            m_trigAssignIfacep = nullptr;
+            m_trigAssignMemberVarp = nullptr;
+            m_hasTimingControl = true;
+        }
         iterateChildren(nodep);
     }
     void visit(AstNodeIf* nodep) override {
         unsupportedWriteToVirtIfaceMember(nodep->condp(), "if condition");
+        iterateAndNextNull(nodep->condp());
+        bool hasTimeingControl;
         {
             VL_RESTORER(m_trigAssignp);
             VL_RESTORER(m_trigAssignIfacep);
             VL_RESTORER(m_trigAssignMemberVarp);
+            VL_RESTORER(m_hasTimingControl);
+            m_hasTimingControl = false;
             iterateAndNextNull(nodep->thensp());
+            hasTimeingControl = m_hasTimingControl;
         }
         {
             VL_RESTORER(m_trigAssignp);
             VL_RESTORER(m_trigAssignIfacep);
             VL_RESTORER(m_trigAssignMemberVarp);
+            VL_RESTORER(m_hasTimingControl);
+            m_hasTimingControl = false;
             iterateAndNextNull(nodep->elsesp());
+            hasTimeingControl |= m_hasTimingControl;
         }
-        if (v3Global.usesTiming()) {
+        if (hasTimeingControl) {
             // Clear the trigger assignment, as there could have been timing controls in either
             // branch
             m_trigAssignp = nullptr;
             m_trigAssignIfacep = nullptr;
             m_trigAssignMemberVarp = nullptr;
+            m_hasTimingControl = true;
         }
     }
     void visit(AstLoop* nodep) override {
         UASSERT_OBJ(!nodep->contsp(), nodep, "'contsp' only used before LinkJump");
+        iterateAndNextNull(nodep->contsp());
+        bool hasTimeingControl;
         {
             VL_RESTORER(m_trigAssignp);
             VL_RESTORER(m_trigAssignIfacep);
             VL_RESTORER(m_trigAssignMemberVarp);
+            VL_RESTORER(m_hasTimingControl);
+            m_hasTimingControl = false;
             iterateAndNextNull(nodep->stmtsp());
+            hasTimeingControl = m_hasTimingControl;
         }
-        if (v3Global.usesTiming()) {
+        if (hasTimeingControl) {
             // Clear the trigger assignment, as there could have been timing controls in the loop
             m_trigAssignp = nullptr;
             m_trigAssignIfacep = nullptr;
             m_trigAssignMemberVarp = nullptr;
+            m_hasTimingControl = true;
         }
     }
     void visit(AstLoopTest* nodep) override {
@@ -220,16 +239,42 @@ private:
         }
     }
     void visit(AstNodeStmt* nodep) override {
-        if (v3Global.usesTiming()
-            && nodep->exists([](AstNode* nodep) { return nodep->isTimingControl(); })) {
+        if (v3Global.usesTiming() && nodep->isTimingControl()) {
+            // Only check for expressions since statements are handled separately one at a time
             m_trigAssignp = nullptr;
             m_trigAssignIfacep = nullptr;
             m_trigAssignMemberVarp = nullptr;
+            m_hasTimingControl = true;
         }
-        FileLine* const flp = nodep->fileline();
+        VL_RESTORER(m_curStmt);
+        m_curStmt = nodep;
+        iterateChildren(nodep);
+    }
+    void visit(AstVarRef* const nodep) override {
+        if (!m_curStmt) return;
+        if (nodep->access().isReadOnly()) return;
+        AstIface* ifacep = nullptr;
+        AstVar* memberVarp = nullptr;
+        if (AstIfaceRefDType* const dtypep = VN_CAST(nodep->varp()->dtypep(), IfaceRefDType)) {
+            if (dtypep->isVirtual()) {
+                if (AstMemberSel* const memberSelp = VN_CAST(nodep->firstAbovep(), MemberSel)) {
+                    // Extract the member varp from the MemberSel node
+                    memberVarp = memberSelp->varp();
+                    ifacep = dtypep->ifacep();
+                }
+            }
+        } else if ((ifacep = nodep->varp()->sensIfacep())) {
+            memberVarp = nodep->varp();
+        } else if (VN_IS(nodep->backp(), AssignW)) {
+            memberVarp = nodep->varScopep()->varp();
+            AstNode* backp = memberVarp;
+            while ((backp = backp->backp())) {
+                if ((ifacep = VN_CAST(backp, Iface))) break;
+            }
+        }
 
-        foreachWrittenVirtIfaceMember(nodep, [&](AstVarRef*, AstIface* ifacep,
-                                                 AstVar* memberVarp) {
+        FileLine* const flp = nodep->fileline();
+        if (ifacep && memberVarp) {
             if (ifacep != m_trigAssignIfacep || memberVarp != m_trigAssignMemberVarp) {
                 // Write to different interface member than before - need new trigger assignment
                 m_trigAssignIfacep = ifacep;
@@ -240,26 +285,19 @@ private:
                 m_trigAssignp
                     = new AstAssign{flp, createVirtIfaceMemberTriggerRefp(flp, ifacep, memberVarp),
                                     new AstConst{flp, AstConst::BitTrue{}}};
-                nodep->addNextHere(m_trigAssignp);
+                m_curStmt->addNextHere(m_trigAssignp);
             }
-        });
-        // Fallback to whole-interface tracking if no member-specific assignments found
-        if (!m_trigAssignp) {
-            foreachWrittenVirtIface(nodep, [&](AstVarRef*, AstIface* ifacep) {
-                if (ifacep != m_trigAssignIfacep) {
-                    m_trigAssignIfacep = ifacep;
-                    m_trigAssignMemberVarp = nullptr;
-                    m_trigAssignp = nullptr;
-                }
-                if (!m_trigAssignp) {
-                    m_trigAssignp = new AstAssign{flp, createVirtIfaceTriggerRefp(flp, ifacep),
-                                                  new AstConst{flp, AstConst::BitTrue{}}};
-                    nodep->addNextHere(m_trigAssignp);
-                }
-            });
         }
     }
-    void visit(AstNodeExpr*) override {}  // Accelerate
+    void visit(AstNodeExpr* const nodep) override {
+        if (v3Global.usesTiming() && nodep->isTimingControl()) {
+            m_trigAssignp = nullptr;
+            m_trigAssignIfacep = nullptr;
+            m_trigAssignMemberVarp = nullptr;
+            m_hasTimingControl = true;
+        }
+        iterateChildren(nodep);
+    }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
