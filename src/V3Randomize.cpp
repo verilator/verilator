@@ -2643,15 +2643,31 @@ class RandomizeVisitor final : public VNVisitor {
                         }
                         // MemberSel: match by object and member
                         if (VN_IS(argExpr, MemberSel) && VN_IS(withExpr, MemberSel)) {
-                            return (withExpr->op1p()->op1p() == argExpr->op1p()->op1p())
+                            AstNode* withObj = withExpr->op1p();
+                            AstNode* argObj = argExpr->op1p();
+                            if (!withObj || !argObj) return false;
+                            withObj = withObj->op1p();
+                            argObj = argObj->op1p();
+                            return (withObj == argObj)
                                 && (VN_AS(withExpr, MemberSel)->varp()
                                     == VN_AS(argExpr, MemberSel)->varp());
                         }
                         // ArraySel: match by array base and index variable
                         if (VN_IS(argExpr, ArraySel) && VN_IS(withExpr, ArraySel)) {
-                            return (withExpr->op1p()->op1p() == argExpr->op1p()->op1p())
-                                && (VN_AS(withExpr->op2p()->op1p(), VarRef)->varp()
-                                    == VN_AS(argExpr->op2p()->op1p(), VarRef)->varp());
+                            AstNode* withBase = withExpr->op1p();
+                            AstNode* argBase = argExpr->op1p();
+                            if (!withBase || !argBase) return false;
+                            withBase = withBase->op1p();
+                            argBase = argBase->op1p();
+                            AstNode* withIdx = withExpr->op2p();
+                            AstNode* argIdx = argExpr->op2p();
+                            if (!withIdx || !argIdx) return false;
+                            withIdx = withIdx->op1p();
+                            argIdx = argIdx->op1p();
+                            if (!VN_IS(withIdx, VarRef) || !VN_IS(argIdx, VarRef)) return false;
+                            return (withBase == argBase)
+                                && (VN_AS(withIdx, VarRef)->varp()
+                                    == VN_AS(argIdx, VarRef)->varp());
                         }
                         return false;
                     };
