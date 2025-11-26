@@ -524,6 +524,11 @@ class ForkVisitor final : public VNVisitor {
     AstVar* m_capturedVarsp = nullptr;  // Local copies of captured variables
     AstArg* m_capturedArgsp = nullptr;  // References to captured variables (as args)
 
+    // STATE - across all visitors
+    AstClass* m_processClassp = nullptr;
+    AstFunc* m_statusMethodp = nullptr;
+    VMemberMap m_memberMap;  // for lookup of process class methods
+
     // METHODS
     AstVar* capture(AstVarRef* refp) {
         AstVar* varp = nullptr;
@@ -577,6 +582,19 @@ class ForkVisitor final : public VNVisitor {
         return true;
     }
 
+    AstClass* getProcessClassp() {
+        if (!m_processClassp)
+            m_processClassp
+                = VN_AS(m_memberMap.findMember(v3Global.rootp()->stdPackagep(), "process"), Class);
+        return m_processClassp;
+    }
+
+    AstFunc* getStatusmethodp() {
+        if (m_statusMethodp == nullptr)
+            m_statusMethodp = VN_AS(m_memberMap.findMember(getProcessClassp(), "status"), Func);
+        return m_statusMethodp;
+    }
+
     // VISITORS
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
@@ -594,6 +612,34 @@ class ForkVisitor final : public VNVisitor {
         if (nodep->joinType().join()) {
             iterateChildren(nodep);
             return;
+        }
+
+        // IEEE 1800-2023 9.3.2: In all cases, processes spawned by a fork-join block shall not
+        // start executing until the parent process is blocked or terminates.
+        // Because join and join_any block the parent process, it is only needed when join_none
+        // is used.
+        if (nodep->joinType().joinNone()) {
+            UINFO(9, "Visiting fork..join_none " << nodep);
+            FileLine* fl = nodep->fileline();
+            AstVarRef* forkParentrefp = nodep->parentProcessp();
+
+            if (forkParentrefp) {  // Forks created by V3Fork will not have this
+                for (AstBegin *itemp = nodep->forksp(), *nextp; itemp; itemp = nextp) {
+                    nextp = VN_AS(itemp->nextp(), Begin);
+                    if (!itemp->stmtsp()) continue;
+                    AstMethodCall* const statusCallp = new AstMethodCall{
+                        fl, forkParentrefp->cloneTree(false), "status", nullptr};
+                    statusCallp->taskp(getStatusmethodp());
+                    statusCallp->classOrPackagep(getProcessClassp());
+                    statusCallp->dtypep(getStatusmethodp()->dtypep());
+                    AstNeq* const condp
+                        = new AstNeq{fl, statusCallp,
+                                     new AstConst{fl, AstConst::WidthedValue{},
+                                                  getStatusmethodp()->dtypep()->width(), 1}};
+                    AstWait* const waitStmt = new AstWait{fl, condp, nullptr};
+                    itemp->stmtsp()->addHereThisAsNext(waitStmt);
+                }
+            }
         }
 
         iterateAndNextNull(nodep->declsp());

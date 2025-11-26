@@ -89,6 +89,10 @@ private:
             for (AstNode* itemp = anodep->membersp(); itemp; itemp = itemp->nextp()) {
                 memberInsert(mmapr, itemp);
             }
+        } else if (const AstPackage* const anodep = VN_CAST(nodep, Package)) {
+            for (AstNode* itemp = anodep->stmtsp(); itemp; itemp = itemp->nextp()) {
+                memberInsert(mmapr, itemp);
+            }
         } else {
             nodep->v3fatalSrc("Unsupported node type");
         }

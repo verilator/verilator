@@ -50,7 +50,7 @@ module t();
         bar.ewait();
       end
     join_none
-
+    #1;
     p.kill();
 
     ->evt1;

@@ -3400,23 +3400,23 @@ par_blockJoin<joinType>:
         |       yJOIN_NONE  { $$ = VJoinType::JOIN_NONE; }
         ;
 
-par_block<forkp>:               // ==IEEE: par_block
+par_block<nodeStmtp>:               // ==IEEE: par_block
                 yFORK startLabelE blockDeclListE stmtListE par_blockJoin endLabelE
                         {
-                            $$ = new AstFork{$1, $5, $2 ? *$2 : ""};
-                            GRAMMARP->endLabel($<fl>6, $$, $6);
-                            $$->addDeclsp($3);
-                            $$->addForksp(V3ParseGrammar::wrapInBegin($4));
+                            AstFork* const forkp = new AstFork{$1, $5, $2 ? *$2 : ""};
+                            GRAMMARP->endLabel($<fl>6, forkp, $6);
+                            forkp->addDeclsp($3);
+                            $$ = V3ParseGrammar::wrapFork(PARSEP, forkp, $4);
                         }
         ;
 
-par_blockPreId<forkp>:          // ==IEEE: par_block but called with leading ID
+par_blockPreId<nodeStmtp>:          // ==IEEE: par_block but called with leading ID
                 id yP_COLON__FORK yFORK blockDeclListE stmtListE par_blockJoin endLabelE
                         {
-                            $$ = new AstFork{$3, $6, *$1};
-                            GRAMMARP->endLabel($<fl>7, $$, $7);
-                            $$->addDeclsp($4);
-                            $$->addForksp(V3ParseGrammar::wrapInBegin($5));
+                            AstFork* const forkp = new AstFork{$3, $6, *$1};
+                            GRAMMARP->endLabel($<fl>7, forkp, $7);
+                            forkp->addDeclsp($4);
+                            $$ = V3ParseGrammar::wrapFork(PARSEP, forkp, $5);
                         }
             ;
 
