@@ -108,6 +108,16 @@ module t_scope_std_randomize;
             `checkd(std::randomize(limit_95bits[i]) with { limit_95bits[i] >= 96'd50; limit_95bits[i] < 96'd1000;}, 1);
             if (limit_95bits[i] < 96'd50 || limit_95bits[i] >= 96'd1000) `stop;
         end
+
+        // Test mixed argument types (VarRef + MemberSel + ArraySel) with interdependent constraints
+        `checkd(std::randomize(addr, test.addr, limit_31bits[0]) with {
+            addr > 8'd10; addr < 8'd50;
+            test.addr > addr; test.addr < 8'd100;
+            limit_31bits[0] > test.addr; limit_31bits[0] < 31'd200;
+        }, 1);
+        if (addr <= 8'd10 || addr >= 8'd50) `stop;
+        if (test.addr <= addr || test.addr >= 8'd100) `stop;
+        if (limit_31bits[0] <= test.addr || limit_31bits[0] >= 31'd200) `stop;
         /* verilator lint_on WIDTHEXPAND */
 
         $write("*-* All Finished *-*\n");

@@ -1431,8 +1431,8 @@ class CaptureVisitor final : public VNVisitor {
 
     AstVar* getVar(AstVar* const varp) const {
         const auto it = m_varCloneMap.find(varp);
-        if (it->second->origName().rfind("__Varg", 0) == 0) return nullptr;
         if (it == m_varCloneMap.end()) return nullptr;
+        if (it->second->origName().rfind("__Varg", 0) == 0) return nullptr;
         return it->second;
     }
 
@@ -2632,19 +2632,32 @@ class RandomizeVisitor final : public VNVisitor {
                     = new AstVar{exprp->fileline(), VVarType::MEMBER,
                                  "__Varg"s + std::to_string(++argn), exprp->dtypep()};
 
+                // Replace argument occurrences in 'with' clause with __Varg* reference.
+                // Uses "similarNode" matching (semantic equality, not pointer equality).
                 if (withp) {
+                    auto similarNode = [](AstNodeExpr* withExpr, AstNodeExpr* argExpr) -> bool {
+                        // VarRef: match by variable pointer
+                        if (VN_IS(argExpr, VarRef) && VN_IS(withExpr, VarRef)) {
+                            return VN_AS(withExpr, VarRef)->varp()
+                                == VN_AS(argExpr, VarRef)->varp();
+                        }
+                        // MemberSel: match by object and member
+                        if (VN_IS(argExpr, MemberSel) && VN_IS(withExpr, MemberSel)) {
+                            return (withExpr->op1p()->op1p() == argExpr->op1p()->op1p())
+                                && (VN_AS(withExpr, MemberSel)->varp()
+                                    == VN_AS(argExpr, MemberSel)->varp());
+                        }
+                        // ArraySel: match by array base and index variable
+                        if (VN_IS(argExpr, ArraySel) && VN_IS(withExpr, ArraySel)) {
+                            return (withExpr->op1p()->op1p() == argExpr->op1p()->op1p())
+                                && (VN_AS(withExpr->op2p()->op1p(), VarRef)->varp()
+                                    == VN_AS(argExpr->op2p()->op1p(), VarRef)->varp());
+                        }
+                        return false;
+                    };
+
                     withp->foreach([&](AstNodeExpr* exp) {
-                        if ((VN_IS(exprp, VarRef) && VN_IS(exp, VarRef))
-                                ? (VN_AS(exp, VarRef)->varp() == VN_AS(exprp, VarRef)->varp())
-                                : ((VN_IS(exprp, MemberSel) && VN_IS(exp, MemberSel))
-                                       ? (exp->op1p()->op1p() == exprp->op1p()->op1p())
-                                             && (VN_AS(exp, MemberSel)->varp()
-                                                 == VN_AS(exprp, MemberSel)->varp())
-                                   : ((VN_IS(exprp, ArraySel) && VN_IS(exp, ArraySel)))
-                                       ? ((exprp->op1p()->op1p() == exp->op1p()->op1p())
-                                          && (VN_AS(exprp->op2p()->op1p(), VarRef)->varp()
-                                              == VN_AS(exp->op2p()->op1p(), VarRef)->varp()))
-                                       : (0))) {
+                        if (similarNode(exp, exprp)) {
                             AstVarRef* const replaceVar
                                 = new AstVarRef{exprp->fileline(), refvarp, VAccess::READWRITE};
                             exp->replaceWith(replaceVar);
@@ -2709,20 +2722,12 @@ class RandomizeVisitor final : public VNVisitor {
                 }
                 pinp = nextp;
             }
-            // if(withp)VL_DO_DANGLING(withp, withp);
             // Replace the node with a call to that function
             nodep->name(randomizeFuncp->name());
             nodep->taskp(randomizeFuncp);
             nodep->dtypeFrom(randomizeFuncp->dtypep());
             if (VN_IS(m_modp, Class)) nodep->classOrPackagep(m_modp);
             if (withCapturep) nodep->addPinsp(withCapturep->getArgs());
-
-            //  for (AstArg* argp = withCapturep->getArgs(); argp; argp = VN_AS(argp->nextp(),
-            //  Arg)){
-            //     if(VN_IS(argp->exprp(),VarRef) &&
-            //     VN_AS(argp->exprp(),VarRef)->varp()->origName().rfind("__Varg",0)!=0)
-            //     nodep->addPinsp(argp->cloneTreePure(false));
-            //  }
             UINFOTREE(9, nodep, "", "std::rnd-call");
             UINFOTREE(9, randomizeFuncp, "", "std::rnd-func");
             return;
