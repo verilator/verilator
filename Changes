@@ -58,6 +58,7 @@ Verilator 5.043 devel
 * Fix `free` name collision (#6675). [Todd Strader]
 * Fix bounds checking in non-inlined function (#6677). [Geza Lore, Fractile Ltd.]
 * Fix stream operator widening (#6693) (#6697). [Jean-Nicolas Strauss]
+* Fix multitop cross references (#6699).
 * Fix deleting linked node error in V3Randomize (#6718). [Igor Zaworski, Antmicro Ltd.]
 * Fix runtime worker thread stack sizes on MacOS (#6721). [Geza Lore]
 * Fix X handling in UDPs (#6722) (#6723). [Michael Bikovitsky]

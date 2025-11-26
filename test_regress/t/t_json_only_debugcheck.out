@@ -2839,7 +2839,7 @@
     ]},
     {"type":"CUSE","name":"$unit","addr":"(SPB)","loc":"a,0:0,0:0","useType":"INT_FWD"}
   ]},
-  {"type":"PACKAGE","name":"$unit","addr":"(E)","loc":"a,0:0,0:0","origName":"__024unit","level":0,"modPublic":false,"inLibrary":true,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"NONE","inlinesp": [],
+  {"type":"PACKAGE","name":"$unit","addr":"(E)","loc":"a,0:0,0:0","origName":"__024unit","level":2,"modPublic":false,"inLibrary":true,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"NONE","inlinesp": [],
    "stmtsp": [
     {"type":"VAR","name":"__Venumtab_enum_next1","addr":"(AC)","loc":"d,17:12,17:16","dtypep":"(ZB)","origName":"__Venumtab_enum_next1","isSc":false,"isPrimaryIO":false,"isPrimaryClock":false,"direction":"NONE","isConst":true,"isPullup":false,"isPulldown":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"lifetime":"VSTATIC","varType":"MODULETEMP","dtypeName":"","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"ignorePostWrite":false,"ignoreSchedWrite":false,"sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],
      "valuep": [

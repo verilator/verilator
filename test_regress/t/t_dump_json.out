@@ -1,6 +1,6 @@
 {"type":"NETLIST","name":"$root","addr":"(B)","loc":"a,0:0,0:0","timeunit":"1ps","timeprecision":"1ps","typeTablep":"(C)","constPoolp":"(D)","dollarUnitPkgp":"(E)","stdPackagep":"(F)","evalp":"UNLINKED","evalNbap":"UNLINKED","dpiExportTriggerp":"UNLINKED","delaySchedulerp":"UNLINKED","nbaEventp":"UNLINKED","nbaEventTriggerp":"UNLINKED","topScopep":"UNLINKED",
  "modulesp": [
-  {"type":"MODULE","name":"t","addr":"(G)","loc":"e,7:8,7:9","isChecker":false,"isProgram":false,"hasGenericIface":false,"origName":"t","level":2,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": [],
+  {"type":"MODULE","name":"t","addr":"(G)","loc":"e,7:8,7:9","isChecker":false,"isProgram":false,"hasGenericIface":false,"origName":"t","level":1,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": [],
    "stmtsp": [
     {"type":"PORT","name":"clk","addr":"(H)","loc":"e,9:4,9:7","exprp": []},
     {"type":"VAR","name":"clk","addr":"(I)","loc":"e,11:10,11:13","dtypep":"UNLINKED","origName":"clk","isSc":false,"isPrimaryIO":false,"isPrimaryClock":false,"direction":"INPUT","isConst":false,"isPullup":false,"isPulldown":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"lifetime":"NONE","varType":"PORT","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"ignorePostWrite":false,"ignoreSchedWrite":false,"sensIfacep":"UNLINKED",
@@ -437,7 +437,7 @@
       ]}
     ]}
   ]},
-  {"type":"MODULE","name":"Test","addr":"(SB)","loc":"e,66:8,66:12","isChecker":false,"isProgram":false,"hasGenericIface":false,"origName":"Test","level":3,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": [],
+  {"type":"MODULE","name":"Test","addr":"(SB)","loc":"e,66:8,66:12","isChecker":false,"isProgram":false,"hasGenericIface":false,"origName":"Test","level":2,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": [],
    "stmtsp": [
     {"type":"PORT","name":"out","addr":"(CH)","loc":"e,68:4,68:7","exprp": []},
     {"type":"PORT","name":"clk","addr":"(DH)","loc":"e,70:4,70:7","exprp": []},
@@ -1202,13 +1202,13 @@
       ]}
     ],"sentreep": [],"passsp": []}
   ]},
-  {"type":"PACKAGE","name":"$unit","addr":"(E)","loc":"a,0:0,0:0","origName":"__024unit","level":3,"modPublic":false,"inLibrary":true,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": [],
+  {"type":"PACKAGE","name":"$unit","addr":"(E)","loc":"a,0:0,0:0","origName":"__024unit","level":2,"modPublic":false,"inLibrary":true,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": [],
    "stmtsp": [
     {"type":"PACKAGEIMPORT","name":"*","addr":"(CS)","loc":"d,31:9,31:12","packagep":"(F)","resolvedClassp": []}
   ]},
-  {"type":"PACKAGE","name":"std","addr":"(F)","loc":"d,31:9,31:12","origName":"std","level":4,"modPublic":false,"inLibrary":true,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": [],
+  {"type":"PACKAGE","name":"std","addr":"(F)","loc":"d,31:9,31:12","origName":"std","level":3,"modPublic":false,"inLibrary":true,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": [],
    "stmtsp": [
-    {"type":"CLASS","name":"mailbox","addr":"(DS)","loc":"d,32:3,32:8","isExtended":false,"isInterfaceClass":false,"isVirtual":false,"origName":"mailbox","level":5,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"NONE","classOrPackagep":"UNLINKED","inlinesp": [],
+    {"type":"CLASS","name":"mailbox","addr":"(DS)","loc":"d,32:3,32:8","isExtended":false,"isInterfaceClass":false,"isVirtual":false,"origName":"mailbox","level":4,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"NONE","classOrPackagep":"UNLINKED","inlinesp": [],
      "stmtsp": [
       {"type":"VAR","name":"T","addr":"(ES)","loc":"d,33:12,33:13","dtypep":"UNLINKED","origName":"T","isSc":false,"isPrimaryIO":false,"isPrimaryClock":false,"direction":"NONE","isConst":false,"isPullup":false,"isPulldown":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"lifetime":"NONE","varType":"GPARAM","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":true,"isParam":true,"attrScBv":false,"attrSFormat":false,"ignorePostWrite":false,"ignoreSchedWrite":false,"sensIfacep":"UNLINKED",
        "childDTypep": [
@@ -1437,7 +1437,7 @@
         ]}
       ],"scopeNamep": []}
     ],"extendsp": []},
-    {"type":"CLASS","name":"semaphore","addr":"(SV)","loc":"d,97:3,97:8","isExtended":false,"isInterfaceClass":false,"isVirtual":false,"origName":"semaphore","level":5,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"NONE","classOrPackagep":"UNLINKED","inlinesp": [],
+    {"type":"CLASS","name":"semaphore","addr":"(SV)","loc":"d,97:3,97:8","isExtended":false,"isInterfaceClass":false,"isVirtual":false,"origName":"semaphore","level":4,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"NONE","classOrPackagep":"UNLINKED","inlinesp": [],
      "stmtsp": [
       {"type":"VAR","name":"m_keyCount","addr":"(TV)","loc":"d,98:19,98:29","dtypep":"UNLINKED","origName":"m_keyCount","isSc":false,"isPrimaryIO":false,"isPrimaryClock":false,"direction":"NONE","isConst":false,"isPullup":false,"isPulldown":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"lifetime":"NONE","varType":"VAR","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"ignorePostWrite":false,"ignoreSchedWrite":false,"sensIfacep":"UNLINKED",
        "childDTypep": [
@@ -1543,7 +1543,7 @@
         ]}
       ],"scopeNamep": []}
     ],"extendsp": []},
-    {"type":"CLASS","name":"process","addr":"(IX)","loc":"d,126:3,126:8","isExtended":false,"isInterfaceClass":false,"isVirtual":false,"origName":"process","level":5,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"NONE","classOrPackagep":"UNLINKED","inlinesp": [],
+    {"type":"CLASS","name":"process","addr":"(IX)","loc":"d,126:3,126:8","isExtended":false,"isInterfaceClass":false,"isVirtual":false,"origName":"process","level":4,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"NONE","classOrPackagep":"UNLINKED","inlinesp": [],
      "stmtsp": [
       {"type":"TYPEDEF","name":"state","addr":"(JX)","loc":"d,133:7,133:12","dtypep":"UNLINKED","attrPublic":false,"isUnderClass":false,
        "childDTypep": [

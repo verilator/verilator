@@ -2460,6 +2460,7 @@ AstPackage* AstNetlist::dollarUnitPkgAddp() {
     if (!m_dollarUnitPkgp) {
         m_dollarUnitPkgp = new AstPackage{fileline(), AstPackage::dollarUnitName(), "work"};
         // packages are always libraries; don't want to make them a "top"
+        m_dollarUnitPkgp->level(1);
         m_dollarUnitPkgp->inLibrary(true);
         m_dollarUnitPkgp->modTrace(false);  // may reconsider later
         m_dollarUnitPkgp->internal(true);

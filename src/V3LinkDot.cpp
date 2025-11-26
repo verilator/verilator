@@ -953,7 +953,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         // This may not be the module with isTop() set, as early in the steps,
         // wrapTop may have not been created yet.
         if (!nodep->modulesp()) nodep->v3error("No top level module found");
-        for (AstNodeModule* modp = nodep->modulesp(); modp && modp->level() <= 2;
+        for (AstNodeModule* modp = nodep->modulesp(); modp && modp->isTop();
              modp = VN_AS(modp->nextp(), NodeModule)) {
             UINFO(8, "Top Module: " << modp);
             m_scope = "TOP";

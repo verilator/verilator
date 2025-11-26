@@ -47,7 +47,7 @@ void V3LinkLevel::modSortByLevel() {
     ModVec tops;  // Top level modules
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
          nodep = VN_AS(nodep->nextp(), NodeModule)) {
-        if (nodep->level() <= 2 && !VN_IS(nodep, NotFoundModule)) {
+        if (nodep->isTop() && !VN_IS(nodep, NotFoundModule)) {
             UINFO(9, "top candidate " << nodep);
             tops.push_back(nodep);
         }
@@ -198,6 +198,11 @@ void V3LinkLevel::wrapTop(AstNetlist* rootp) {
         }
     }
 
+    // All modules and hier-classes except one we created are now a level deeper
+    rootp->foreach([&](AstNodeModule* const modp) {
+        if (modp != newmodp && modp->level()) modp->level(1 + modp->level());
+    });
+
     V3Global::dumpCheckGlobalTree("wraptop", 0, dumpTreeEitherLevel() >= 6);
 }
 
@@ -212,7 +217,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
     // For all modules, skipping over new top
     // cppcheck-suppress constVariablePointer
     for (AstNodeModule* oldmodp = VN_AS(rootp->modulesp()->nextp(), NodeModule);
-         oldmodp && oldmodp->level() <= 2; oldmodp = VN_AS(oldmodp->nextp(), NodeModule)) {
+         oldmodp && oldmodp->isTop(); oldmodp = VN_AS(oldmodp->nextp(), NodeModule)) {
         for (AstNode* subnodep = oldmodp->stmtsp(); subnodep; subnodep = subnodep->nextp()) {
             if (AstVar* const oldvarp = VN_CAST(subnodep, Var)) {
                 if (oldvarp->isIO()) {
@@ -252,7 +257,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
 
     // For all modules, skipping over new top
     for (AstNodeModule* oldmodp = VN_AS(rootp->modulesp()->nextp(), NodeModule);
-         oldmodp && oldmodp->level() <= 2; oldmodp = VN_AS(oldmodp->nextp(), NodeModule)) {
+         oldmodp && oldmodp->isTop(); oldmodp = VN_AS(oldmodp->nextp(), NodeModule)) {
         if (VN_IS(oldmodp, Package)) continue;
         // Add instance
         UINFO(5, "LOOP " << oldmodp);

@@ -1463,8 +1463,8 @@ class ParamVisitor final : public VNVisitor {
         }
 
         // Start traversal at root-like things
-        if (nodep->level() <= 2  // Haven't added top yet, so level 2 is the top
-            || VN_IS(nodep, Class)  // Nor moved classes
+        if (nodep->isTop()  // Tops
+            || VN_IS(nodep, Class)  //  Moved classes
             || VN_IS(nodep, Package)) {  // Likewise haven't done wrapTopPackages yet
             m_state.m_workQueueNext.emplace(nodep->level(), nodep);
             processWorkQ();

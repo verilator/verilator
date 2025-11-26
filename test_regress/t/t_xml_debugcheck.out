@@ -15,9 +15,6 @@
       <cell loc="a,0,0,0,0" name="__PVT____024unit" submodname="__024unit" hier="$root.__PVT____024unit"/>
     </cell>
   </cells>
-  <cells>
-    <cell loc="a,0,0,0,0" name="$unit" submodname="$unit" hier="$unit"/>
-  </cells>
   <netlist>
     <module loc="d,11,8,11,9" name="$root" origName="$root" topModule="1" public="true">
       <var loc="d,15,10,15,13" name="clk" dtype_id="1" dir="input" pinIndex="1" vartype="logic" origName="clk" public="true"/>

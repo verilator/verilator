@@ -280,8 +280,7 @@ class CoverageVisitor final : public VNVisitor {
         VL_RESTORER(m_funcTemps);
         createHandle(nodep);
         m_modp = nodep;
-        m_state.m_inModOff
-            = nodep->isTop();  // Ignore coverage on top module; it's a shell we created
+        m_state.m_inModOff = false;  // Haven't made top shell, so tops are real tops
         if (!origModp) {
             // No blocks cross (non-nested) modules, so save some memory
             m_varnames.clear();

@@ -302,15 +302,14 @@ class LinkCellsVisitor final : public VNVisitor {
         m_graph.rank();
         for (V3GraphVertex& vtx : m_graph.vertices()) {
             if (const LinkCellsVertex* const vvertexp = vtx.cast<LinkCellsVertex>()) {
-                // +1 so we leave level 1  for the new wrapper we'll make in a moment
                 AstNodeModule* const modp = vvertexp->modp();
-                modp->level(vvertexp->rank() + 1);
+                modp->level(vvertexp->rank());
             }
         }
         m_graph.rankMin();
         for (V3GraphVertex& vtx : m_graph.vertices()) {
             if (const LinkCellsVertex* const vvertexp = vtx.cast<LinkCellsVertex>()) {
-                // +1 so we leave level 1  for the new wrapper we'll make in a moment
+                // +1 so we leave level 1 for the new wrapper we'll make in a moment
                 AstNodeModule* const modp = vvertexp->modp();
                 modp->depth(vvertexp->rank() + 1);
             }
@@ -329,6 +328,8 @@ class LinkCellsVisitor final : public VNVisitor {
             if (m_modp) newEdge(vertex(m_modp), vertex(nodep), 1, false);
             //
             m_modp = nodep;
+            vertex(m_modp);  // Need vertex to levelize even if no edges
+
             UINFO(4, "Link Module: " << nodep);
             if (nodep->fileline()->filebasenameNoExt() != nodep->prettyName()
                 && !v3Global.opt.isLibraryFile(nodep->fileline()->filename(), nodep->libname())

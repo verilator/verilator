@@ -392,8 +392,7 @@ class DeadVisitor final : public VNVisitor {
             AstNodeModule* nextmodp;
             for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp; modp = nextmodp) {
                 nextmodp = VN_AS(modp->nextp(), NodeModule);
-                if (modp->dead()
-                    || (modp->level() > 2 && modp->user1() == 0 && !modp->internal())) {
+                if (modp->dead() || (!modp->isTop() && modp->user1() == 0 && !modp->internal())) {
                     // > 2 because L1 is the wrapper, L2 is the top user module
                     UINFO(4, "  Dead module " << modp);
                     // And its children may now be killable too; correct counts
@@ -518,7 +517,7 @@ class DeadVisitor final : public VNVisitor {
     // cppcheck-suppress constParameterPointer
     void preserveTopIfaces(AstNetlist* rootp) {
         // cppcheck-suppress constVariablePointer
-        for (AstNodeModule* modp = rootp->modulesp(); modp && modp->level() <= 2;
+        for (AstNodeModule* modp = rootp->modulesp(); modp && modp->isTop();
              modp = VN_AS(modp->nextp(), NodeModule)) {
             for (AstNode* subnodep = modp->stmtsp(); subnodep; subnodep = subnodep->nextp()) {
                 if (AstVar* const varp = VN_CAST(subnodep, Var)) {
