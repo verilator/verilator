@@ -98,6 +98,16 @@ module t_scope_std_randomize;
 
         `checkd(std::randomize(limit_95bits) with { foreach (limit_95bits[i]) { limit_95bits[i] < 96'd1000000000000;}}, 1);
         foreach (limit_95bits[i]) if (limit_95bits[i] >= 96'd1000000000000) $stop;
+
+        foreach (limit_63bits[i]) begin
+            `checkd(std::randomize(limit_63bits[i]) with { limit_63bits[i] >= 64'd50; limit_63bits[i] < 64'd100;}, 1);
+            if ((limit_63bits[i] < 64'd50) || (limit_63bits[i] >= 64'd100)) `stop;
+        end
+
+        foreach (limit_95bits[i]) begin
+            `checkd(std::randomize(limit_95bits[i]) with { limit_95bits[i] >= 96'd50; limit_95bits[i] < 96'd1000;}, 1);
+            if (limit_95bits[i] < 96'd50 || limit_95bits[i] >= 96'd1000) `stop;
+        end
         /* verilator lint_on WIDTHEXPAND */
 
         $write("*-* All Finished *-*\n");
