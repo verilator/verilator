@@ -5312,7 +5312,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // Unwrapping here breaks type parameter resolution during cloning.
         if (nodep->lhsp() && !VN_IS(nodep->lhsp(), NodeDType)) {
             // Not a type - emit error
-            nodep->lhsp()->v3error("Expecting a data type: " << nodep->lhsp()->prettyNameQ());
+            if (AstConst* const constp = VN_CAST(nodep->lhsp(), Const)) {
+                nodep->lhsp()->v3error("Expecting a data type, not a constant: " << constp->toSInt());
+            } else {
+                nodep->lhsp()->v3error("Expecting a data type, not " << nodep->lhsp()->typeName()
+                    << ": '" << nodep->lhsp()->prettyName() << "'");
+            }
+            // Replace with void to keep AST valid and allow clean exit
+            nodep->replaceWith(new AstVoidDType{nodep->fileline()});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
     void visit(AstDpiExport* nodep) override {
