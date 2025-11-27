@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef VERILATOR_V3INSTRUMENT_H_
-#define VERILATOR_V3INSTRUMENT_H_
+#ifndef VERILATOR_V3INSERTHOOK_H_
+#define VERILATOR_V3INSERTHOOK_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -24,10 +24,10 @@ class AstNetlist;
 
 //=========================================================================
 
-class V3Instrument final {
+class V3InsertHook final {
 public:
     static void findTargets(AstNetlist* nodep) VL_MT_DISABLED;
-    static void instrument(AstNetlist* nodep) VL_MT_DISABLED;
+    static void insertHooks(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard

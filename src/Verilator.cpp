@@ -65,7 +65,7 @@
 #include "V3HierBlock.h"
 #include "V3Inline.h"
 #include "V3Inst.h"
-#include "V3Instrument.h"
+#include "V3InsertHook.h"
 #include "V3Interface.h"
 #include "V3Life.h"
 #include "V3LifePost.h"
@@ -156,11 +156,11 @@ static void process() {
 
         if (v3Global.opt.dumpSignals()) { V3DumpSignals::dumpSignals(v3Global.rootp()); }
 
-        // Instrument Design with the configurations given in .vlt file
-        if (v3Global.opt.instrument()) {
+        // Hook-insert design with the configurations given in .vlt file
+        if (v3Global.opt.insertHook()) {
             v3Global.dpi(true);
-            V3Instrument::findTargets(v3Global.rootp());
-            V3Instrument::instrument(v3Global.rootp());
+            V3InsertHook::findTargets(v3Global.rootp());
+            V3InsertHook::insertHooks(v3Global.rootp());
         }
 
         // Convert parseref's to varrefs, and other directly post parsing fixups

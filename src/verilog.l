@@ -123,7 +123,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "hier_params"         { FL; return yVLT_HIER_PARAMS; }
   "hier_workers"        { FL; return yVLT_HIER_WORKERS; }
   "inline"              { FL; return yVLT_INLINE; }
-  "instrument"          { FL; return yVLT_INSTRUMENT; }
+  "insert_hook"          { FL; return yVLT_INSERTHOOK; }
   "isolate_assignments" { FL; return yVLT_ISOLATE_ASSIGNMENTS; }
   "lint_off"            { FL; return yVLT_LINT_OFF; }
   "lint_on"             { FL; return yVLT_LINT_ON; }
