@@ -87,28 +87,26 @@ public:
 
             FileLine* const flp = vscp->fileline();
 
-            {  // Add initialization of the enable signal
-                AstVarRef* const lhsp = new AstVarRef{flp, m_enVscp, VAccess::WRITE};
-                V3Number zero{m_enVscp, m_enVscp->width()};
-                zero.setAllBits0();
-                AstNodeExpr* const rhsp = new AstConst{flp, zero};
-                AstNodeStmt* set0p;
-                if (VN_IS(lhsp->dtypep()->skipRefp(), UnpackArrayDType)) {
-                    AstCMethodHard* const fillMethodp
-                        = new AstCMethodHard{flp, lhsp, VCMethod::UNPACKED_FILL, rhsp};
-                    fillMethodp->dtypeSetVoid();
-                    set0p = fillMethodp->makeStmt();
-                } else {
-                    set0p = new AstAssign{flp, lhsp, rhsp};
-                }
-                AstActive* const activep = new AstActive{
-                    flp, "force-init",
-                    new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Static{}}}};
-                activep->senTreeStorep(activep->sentreep());
+            // Add initialization of the enable signal
+            AstActive* const activeInitp = new AstActive{
+                flp, "force-init", new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Static{}}}};
+            activeInitp->senTreeStorep(activeInitp->sentreep());
+            vscp->scopep()->addBlocksp(activeInitp);
 
-                activep->addStmtsp(new AstInitial{flp, set0p});
-                vscp->scopep()->addBlocksp(activep);
+            AstVarRef* const lhsp = new AstVarRef{flp, m_enVscp, VAccess::WRITE};
+            V3Number zero{m_enVscp, m_enVscp->width()};
+            zero.setAllBits0();
+            AstNodeExpr* const rhsp = new AstConst{flp, zero};
+            AstNodeStmt* set0p;
+            if (VN_IS(lhsp->dtypep()->skipRefp(), UnpackArrayDType)) {
+                AstCMethodHard* const fillMethodp
+                    = new AstCMethodHard{flp, lhsp, VCMethod::UNPACKED_FILL, rhsp};
+                fillMethodp->dtypeSetVoid();
+                set0p = fillMethodp->makeStmt();
+            } else {
+                set0p = new AstAssign{flp, lhsp, rhsp};
             }
+            activeInitp->addStmtsp(new AstInitial{flp, set0p});
             {  // Add the combinational override
                 // Explicitly list dependencies for update.
                 // Note: rdVscp is also needed to retrigger assignment for the first time.
