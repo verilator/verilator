@@ -24,10 +24,12 @@ module t;
     int c;
   } substruct_t;
 
+  typedef substruct_t substruct_t_t;
+
   typedef struct {
     int a;
     int b;
-    substruct_t sub;
+    substruct_t_t sub;
     int c;
   } struct_t;
 
