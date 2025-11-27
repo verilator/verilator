@@ -5226,7 +5226,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 nodep->classOrPackagep(capturedTypedefSymp ? capturedTypedefSymp->classOrPackagep()
                                                            : nullptr);
                 resolvedCapturedTypedef = true;
-                retireCapture("typedef");
             }
             if (!resolvedCapturedTypedef && foundp) {
                 VSymEnt* const parentSymp = foundp->parentp();
@@ -5244,7 +5243,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     nodep->typedefp(defp);
                     nodep->classOrPackagep(foundp->classOrPackagep());
                     resolvedCapturedTypedef = true;
-                    retireCapture("typedef");
                 } else if (AstParamTypeDType* const defp
                            = foundp ? VN_CAST(foundp->nodep(), ParamTypeDType) : nullptr) {
                     if (defp == nodep->backp()) {  // Where backp is typically typedef
@@ -5257,7 +5255,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         nodep->refDTypep(defp);
                         nodep->classOrPackagep(foundp->classOrPackagep());
                         resolvedCapturedTypedef = true;
-                        retireCapture("param typedef");
                     }
                 } else if (AstClass* const defp
                            = foundp ? VN_CAST(foundp->nodep(), Class) : nullptr) {
@@ -5270,7 +5267,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         = new AstClassRefDType{nodep->fileline(), defp, paramsp};
                     newp->classOrPackagep(foundp->classOrPackagep());
                     resolvedCapturedTypedef = true;
-                    retireCapture("class ref");
+                    retireCapture("resolved");  // Must retire before replacing node
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return;
@@ -5291,7 +5288,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                               << nodep->name());
             m_ds.init(m_curSymp);
         }
-        if (ifaceCaptured && resolvedCapturedTypedef) { retireCapture("post resolve"); }
+        if (ifaceCaptured && resolvedCapturedTypedef) { retireCapture("resolved"); }
         iterateChildren(nodep);
     }
     void visit(AstDpiExport* nodep) override {
