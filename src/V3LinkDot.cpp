@@ -5308,12 +5308,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // Handle type validation for localparam type assignments
         // Iterate child to resolve any ParseRef nodes
         iterateChildren(nodep);
-        // Check if the child resolved to a type
-        if (AstNodeDType* const dtp = VN_CAST(nodep->lhsp(), NodeDType)) {
-            // Resolved to a type - replace RequireDType with the resolved type
-            nodep->replaceWith(dtp->unlinkFrBack());
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else if (nodep->lhsp()) {
+        // Only emit error if the child is not a type.
+        // Do NOT unwrap valid types here - leave that to V3Width.
+        // Unwrapping here breaks type parameter resolution during cloning.
+        if (nodep->lhsp() && !VN_IS(nodep->lhsp(), NodeDType)) {
             // Not a type - emit error
             nodep->lhsp()->v3error("Expecting a data type: " << nodep->lhsp()->prettyNameQ());
         }
