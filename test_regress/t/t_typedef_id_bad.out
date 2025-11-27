@@ -1,4 +1,4 @@
-%Error: t/t_typedef_id_bad.v:9:34: Expecting a data type: 'i'
+%Error: t/t_typedef_id_bad.v:9:34: Expecting a data type, not VARREF: 'i'
     9 | class Cls #(parameter type P_T = i);
       |                                  ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
