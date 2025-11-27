@@ -176,7 +176,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
             } else if (const AstMemberSel* const memberselp = VN_CAST(exprp, MemberSel)) {
                 if (memberselp->varp() == varp) return true;
             } else if (const AstArraySel* const arrselp = VN_CAST(exprp, ArraySel)) {
-                // if (arrselp->fromp()->dtypep() == varp->dtypep()) return true;
                 if (VN_AS(arrselp->fromp(), VarRef)->varp() == varp) return true;
             }
         }
@@ -1432,7 +1431,7 @@ class CaptureVisitor final : public VNVisitor {
     AstVar* getVar(AstVar* const varp) const {
         const auto it = m_varCloneMap.find(varp);
         if (it == m_varCloneMap.end()) return nullptr;
-        if (it->second->origName().rfind("__Varg", 0) == 0) return nullptr;
+        if (it->second->isStdRandomizeArg()) return nullptr;
         return it->second;
     }
 
@@ -1503,7 +1502,7 @@ class CaptureVisitor final : public VNVisitor {
         if (m_ignore.count(nodep)) return;
         m_ignore.emplace(nodep);
         UASSERT_OBJ(nodep->varp(), nodep, "Variable unlinked");
-        if (nodep->varp()->origName().rfind("__Varg", 0) == 0) return;
+        if (nodep->varp()->isStdRandomizeArg()) return;
         CaptureMode capMode = getVarRefCaptureMode(nodep);
         if (mode(capMode) == CaptureMode::CAP_NO) return;
         if (mode(capMode) == CaptureMode::CAP_VALUE) captureRefByValue(nodep, capMode);
@@ -1642,6 +1641,40 @@ class RandomizeVisitor final : public VNVisitor {
     std::set<std::string> m_writtenVars;  // Track write_var calls per class to avoid duplicates
 
     // METHODS
+    // Check if two nodes are semantically equivalent (not pointer equality):
+    static bool isSimilarNode(const AstNodeExpr* withExpr, const AstNodeExpr* argExpr) {
+        // VarRef: compare variable pointers
+        if (VN_IS(argExpr, VarRef) && VN_IS(withExpr, VarRef)) {
+            return VN_AS(withExpr, VarRef)->varp() == VN_AS(argExpr, VarRef)->varp();
+        }
+        // MemberSel: compare object and member (obj.y)
+        if (VN_IS(argExpr, MemberSel) && VN_IS(withExpr, MemberSel)) {
+            const AstNode* withObj = withExpr->op1p();
+            const AstNode* argObj = argExpr->op1p();
+            if (!withObj || !argObj) return false;
+            withObj = withObj->op1p();  // Navigate to VarRef
+            argObj = argObj->op1p();
+            return (withObj == argObj)
+                   && (VN_AS(withExpr, MemberSel)->varp() == VN_AS(argExpr, MemberSel)->varp());
+        }
+        // ArraySel: compare array base and index (arr[i])
+        if (VN_IS(argExpr, ArraySel) && VN_IS(withExpr, ArraySel)) {
+            const AstNode* withBase = withExpr->op1p();
+            const AstNode* argBase = argExpr->op1p();
+            if (!withBase || !argBase) return false;
+            withBase = withBase->op1p();  // Navigate to VarRef
+            argBase = argBase->op1p();
+            const AstNode* withIdx = withExpr->op2p();
+            const AstNode* argIdx = argExpr->op2p();
+            if (!withIdx || !argIdx) return false;
+            withIdx = withIdx->op1p();  // Navigate to index expr
+            argIdx = argIdx->op1p();
+            if (!VN_IS(withIdx, VarRef) || !VN_IS(argIdx, VarRef)) return false;
+            return (withBase == argBase)
+                   && (VN_AS(withIdx, VarRef)->varp() == VN_AS(argIdx, VarRef)->varp());
+        }
+        return false;
+    }
     void createRandomGenerator(AstClass* const classp) {
         if (classp->user3p()) return;
         if (classp->extendsp()) {
@@ -2616,12 +2649,10 @@ class RandomizeVisitor final : public VNVisitor {
             int argn = 0;
             AstWith* withp = nullptr;
             for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
-                withp = VN_IS(pinp, With) ? VN_AS(pinp, With) : nullptr;
-                if (withp) break;
+                if ((withp = VN_CAST(pinp, With))) break;
             }
-
-            for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
-                AstArg* const argp = VN_CAST(pinp, Arg);
+            for (const AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
+                const AstArg* const argp = VN_CAST(pinp, Arg);
                 if (!argp) continue;
                 AstNodeExpr* exprp = argp->exprp();
                 AstCMethodHard* const basicMethodp = new AstCMethodHard{
@@ -2631,50 +2662,11 @@ class RandomizeVisitor final : public VNVisitor {
                 AstVar* const refvarp
                     = new AstVar{exprp->fileline(), VVarType::MEMBER,
                                  "__Varg"s + std::to_string(++argn), exprp->dtypep()};
-
+                refvarp->setStdRandomizeArg();
                 // Replace argument occurrences in 'with' clause with __Varg* reference.
-                // Uses "similarNode" matching (semantic equality, not pointer equality).
-                // Supports: VarRef (x), MemberSel (obj.y), ArraySel (arr[i])
                 if (withp) {
-                    auto similarNode = [](AstNodeExpr* withExpr, AstNodeExpr* argExpr) -> bool {
-                        // VarRef: compare variable pointers
-                        if (VN_IS(argExpr, VarRef) && VN_IS(withExpr, VarRef)) {
-                            return VN_AS(withExpr, VarRef)->varp()
-                                   == VN_AS(argExpr, VarRef)->varp();
-                        }
-                        // MemberSel: compare object and member (obj.y)
-                        if (VN_IS(argExpr, MemberSel) && VN_IS(withExpr, MemberSel)) {
-                            AstNode* withObj = withExpr->op1p();
-                            AstNode* argObj = argExpr->op1p();
-                            if (!withObj || !argObj) return false;
-                            withObj = withObj->op1p();  // Navigate to VarRef
-                            argObj = argObj->op1p();
-                            return (withObj == argObj)
-                                   && (VN_AS(withExpr, MemberSel)->varp()
-                                       == VN_AS(argExpr, MemberSel)->varp());
-                        }
-                        // ArraySel: compare array base and index (arr[i])
-                        if (VN_IS(argExpr, ArraySel) && VN_IS(withExpr, ArraySel)) {
-                            AstNode* withBase = withExpr->op1p();
-                            AstNode* argBase = argExpr->op1p();
-                            if (!withBase || !argBase) return false;
-                            withBase = withBase->op1p();  // Navigate to VarRef
-                            argBase = argBase->op1p();
-                            AstNode* withIdx = withExpr->op2p();
-                            AstNode* argIdx = argExpr->op2p();
-                            if (!withIdx || !argIdx) return false;
-                            withIdx = withIdx->op1p();  // Navigate to index expr
-                            argIdx = argIdx->op1p();
-                            if (!VN_IS(withIdx, VarRef) || !VN_IS(argIdx, VarRef)) return false;
-                            return (withBase == argBase)
-                                   && (VN_AS(withIdx, VarRef)->varp()
-                                       == VN_AS(argIdx, VarRef)->varp());
-                        }
-                        return false;
-                    };
-
                     withp->foreach([&](AstNodeExpr* exp) {
-                        if (similarNode(exp, exprp)) {
+                        if (isSimilarNode(exp, exprp)) {
                             AstVarRef* const replaceVar
                                 = new AstVarRef{exprp->fileline(), refvarp, VAccess::READWRITE};
                             exp->replaceWith(replaceVar);

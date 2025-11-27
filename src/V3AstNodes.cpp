@@ -2776,6 +2776,7 @@ void AstVar::dump(std::ostream& str) const {
     if (isDpiOpenArray()) str << " [DPIOPENA]";
     if (ignorePostWrite()) str << " [IGNPWR]";
     if (ignoreSchedWrite()) str << " [IGNWR]";
+    if (isStdRandomizeArg()) str << " [STDRANDARG]";
     if (!lifetime().isNone()) str << " [" << lifetime().ascii() << "] ";
     str << " " << varType();
 }
@@ -2797,6 +2798,7 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, isDpiOpenArray);
     dumpJsonBoolFunc(str, isFuncReturn);
     dumpJsonBoolFunc(str, isFuncLocal);
+    dumpJsonBoolFunc(str, isStdRandomizeArg);
     dumpJsonStr(str, "lifetime", lifetime().ascii());
     dumpJsonStr(str, "varType", varType().ascii());
     if (dtypep()) dumpJsonStr(str, "dtypeName", dtypep()->name());
