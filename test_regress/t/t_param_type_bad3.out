@@ -1,5 +1,5 @@
 %Error: t/t_param_type_bad3.v:9:26: Expecting a data type, not VARREF: 'PI'
     9 |    localparam type P_T = PI;   
       |                          ^~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+        ... See the manual at https://verilator.org/verilator_doc.html?v=5.043 for more assistance.
 %Error: Exiting due to
