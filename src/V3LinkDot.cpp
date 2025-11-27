@@ -5062,7 +5062,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // If the resolved dtype is a RefDType with an interface typedef,
                 // ensure it's captured for re-resolution during paramed pass
                 if (AstRefDType* const resolvedRefp = VN_CAST(resolvedDTypep, RefDType)) {
-                    if (resolvedRefp->user2p() && !LinkDotIfaceCapture::contains(resolvedRefp)) {
+                    if (resolvedRefp->user2p() && !LinkDotIfaceCapture::find(resolvedRefp)) {
                         AstCell* const cellp = VN_AS(resolvedRefp->user2p(), Cell);
                         UINFO(5, indent() << "[iface-debug] re-capture resolved RefDType="
                                           << resolvedRefp << " cell=" << cellp << "\n");
@@ -5075,7 +5075,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
 
         // Resolve its reference
-        if (LinkDotIfaceCapture::contains(nodep)) {
+        if (LinkDotIfaceCapture::find(nodep)) {
             UINFO(5, indent() << "[iface-debug] visit captured typedef ptr=" << nodep
                               << " user2=" << nodep->user2p());
         }
@@ -5135,12 +5135,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(cpackagep->unlinkFrBack()), cpackagep);
         }
         const bool captureEnabled = LinkDotIfaceCapture::enabled();
-        const bool captureMapHit = captureEnabled && LinkDotIfaceCapture::contains(nodep);
-        const auto* captureEntry = captureMapHit ? LinkDotIfaceCapture::find(nodep) : nullptr;
+        // Single map lookup instead of contains() + find() + getCapturedTypedef()
+        const auto* const captureEntry
+            = captureEnabled ? LinkDotIfaceCapture::find(nodep) : nullptr;
+        const bool captureMapHit = captureEntry != nullptr;
         AstCell* const captureEntryCellp = captureEntry ? captureEntry->cellp : nullptr;
-
-        AstTypedef* const capturedTypedefp
-            = captureMapHit ? LinkDotIfaceCapture::getCapturedTypedef(nodep) : nullptr;
+        AstTypedef* const capturedTypedefp = captureEntry ? captureEntry->typedefp : nullptr;
         const VSymEnt* const capturedTypedefSymp
             = capturedTypedefp ? m_statep->getNodeSym(capturedTypedefp) : nullptr;
 
@@ -5195,14 +5195,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_ds.m_dotPos = DP_SCOPE;
             forcedIfaceDotScope = true;
             // Set dotSymp to the cell's symbol entry so lookup happens in the interface scope
-            //if (capturedCellp) {
-            //    if (VSymEnt* const cellSymp = m_statep->getNodeSym(capturedCellp)) {
-            //        m_ds.m_dotSymp = cellSymp;
-            //        UINFO(5, indent() << "[iface-debug] set dotSymp to cell scope cellSymp="
-            //                          << cellSymp << " node=" << cellSymp->nodep());
-            //    }
-            //}
-
             if (capturedCellp && m_statep->existsNodeSym(capturedCellp)) {
                 VSymEnt* const cellSymp = m_statep->getNodeSym(capturedCellp);
                 m_ds.m_dotSymp = cellSymp;

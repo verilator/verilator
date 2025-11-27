@@ -70,23 +70,12 @@ void add(const CapturedIfaceTypedef& entry) {
     capturedMap()[entry.refp] = entry;
 }
 
-bool contains(const AstRefDType* refp) {
-    if (!refp) return false;
-    auto& map = capturedMap();
-    return map.find(refp) != map.end();
-}
-
 const CapturedIfaceTypedef* find(const AstRefDType* refp) {
     if (!refp) return nullptr;
     auto& map = capturedMap();
     const auto it = map.find(refp);
     if (VL_UNLIKELY(it == map.end())) return nullptr;
     return &it->second;
-}
-
-AstTypedef* getCapturedTypedef(const AstRefDType* refp) {
-    if (const CapturedIfaceTypedef* const entry = find(refp)) return entry->typedefp;
-    return nullptr;
 }
 
 void forEach(const std::function<void(const CapturedIfaceTypedef&)>& fn) {
