@@ -5291,6 +5291,20 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (ifaceCaptured && resolvedCapturedTypedef) { retireCapture("resolved"); }
         iterateChildren(nodep);
     }
+    void visit(AstRequireDType* nodep) override {
+        // Handle type validation for localparam type assignments
+        // Iterate child to resolve any ParseRef nodes
+        iterateChildren(nodep);
+        // Check if the child resolved to a type
+        if (AstNodeDType* const dtp = VN_CAST(nodep->lhsp(), NodeDType)) {
+            // Resolved to a type - replace RequireDType with the resolved type
+            nodep->replaceWith(dtp->unlinkFrBack());
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        } else if (nodep->lhsp()) {
+            // Not a type - emit error
+            nodep->lhsp()->v3error("Expecting a data type: " << nodep->lhsp()->prettyNameQ());
+        }
+    }
     void visit(AstDpiExport* nodep) override {
         // AstDpiExport: Make sure the function referenced exists, then dump it
         LINKDOT_VISIT_START();

@@ -1,4 +1,4 @@
-%Error: ../my-verilator-fork/test_regress/t/t_param_type_bad.v:9:27: Expected data type, not a CONST '?32?sh2'
+%Error: t/t_param_type_bad.v:9:27: Expected data type, not a CONST '?32?sh2'
                                                                    : ... note: In instance 't'
     9 |    localparam type bad2 = 2;
       |                           ^
