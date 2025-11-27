@@ -78,8 +78,8 @@ const CapturedIfaceTypedef* find(const AstRefDType* refp) {
     return &it->second;
 }
 
-void forEach(const std::function<void(const CapturedIfaceTypedef&)>& fn) {
-    if (!fn) return;
+template <typename FilterFn, typename Fn>
+static void forEachImpl(FilterFn&& filter, Fn&& fn) {
     auto& map = capturedMap();
     std::vector<const AstRefDType*> keys;
     keys.reserve(map.size());
@@ -87,32 +87,30 @@ void forEach(const std::function<void(const CapturedIfaceTypedef&)>& fn) {
 
     for (const AstRefDType* key : keys) {
         const auto it = map.find(key);
-        if (it == map.end()) continue;  // entry may have been erased
+        if (it == map.end()) continue;
+
         CapturedIfaceTypedef& entry = it->second;
         if (entry.cellp && entry.refp && entry.refp->user2p() != entry.cellp) {
             entry.refp->user2p(entry.cellp);
         }
+        if (!filter(entry)) continue;
         fn(entry);
     }
+}
+
+void forEach(const std::function<void(const CapturedIfaceTypedef&)>& fn) {
+    if (!fn) return;
+    forEachImpl([](const CapturedIfaceTypedef&) { return true; }, fn);
 }
 
 void forEachOwned(const AstNodeModule* ownerModp,
                   const std::function<void(const CapturedIfaceTypedef&)>& fn) {
     if (!ownerModp || !fn) return;
-    auto& map = capturedMap();
-    std::vector<const AstRefDType*> keys;
-    keys.reserve(map.size());
-    for (const auto& kv : map) keys.push_back(kv.first);
-    for (const AstRefDType* key : keys) {
-        const auto it = map.find(key);
-        if (it == map.end()) continue;
-        CapturedIfaceTypedef& entry = it->second;
-        if (entry.cellp && entry.refp && entry.refp->user2p() != entry.cellp) {
-            entry.refp->user2p(entry.cellp);
-        }
-        if (entry.ownerModp != ownerModp && entry.typedefOwnerModp != ownerModp) continue;
-        fn(entry);
-    }
+    forEachImpl(
+        [ownerModp](const CapturedIfaceTypedef& e) {
+            return e.ownerModp == ownerModp || e.typedefOwnerModp == ownerModp;
+        },
+        fn);
 }
 
 bool replaceRef(const AstRefDType* oldRefp, AstRefDType* newRefp) {
@@ -146,7 +144,8 @@ bool replaceTypedef(const AstRefDType* refp, AstTypedef* newTypedefp) {
     if (it == map.end()) return false;
     it->second.typedefp = newTypedefp;
     it->second.typedefOwnerModp = findOwnerModule(newTypedefp);
-    if (finalizeCapturedEntry(it, "typedef clone")) return true;
+    //if (finalizeCapturedEntry(it, "typedef clone")) return true;
+    finalizeCapturedEntry(it, "typedef clone");
     return true;
 }
 
@@ -175,8 +174,8 @@ void propagateClone(const AstRefDType* origRefp, AstRefDType* newRefp) {
     if (entry.cellp) newRefp->user2p(entry.cellp);
     newRefp->user3(false);
     entry.pendingClonep = newRefp;
-
-    if (finalizeCapturedEntry(it, "ref clone")) return;
+    //if (finalizeCapturedEntry(it, "ref clone")) return;
+    finalizeCapturedEntry(it, "ref clone");
 }
 
 }  // namespace LinkDotIfaceCapture
