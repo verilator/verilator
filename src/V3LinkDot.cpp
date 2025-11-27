@@ -5313,10 +5313,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (nodep->lhsp() && !VN_IS(nodep->lhsp(), NodeDType)) {
             // Not a type - emit error
             if (AstConst* const constp = VN_CAST(nodep->lhsp(), Const)) {
-                nodep->lhsp()->v3error("Expecting a data type, not a constant: " << constp->toSInt());
+                nodep->lhsp()->v3error(
+                    "Expecting a data type, not a constant: " << constp->toSInt());
             } else {
-                nodep->lhsp()->v3error("Expecting a data type, not " << nodep->lhsp()->typeName()
-                    << ": '" << nodep->lhsp()->prettyName() << "'");
+                nodep->lhsp()->v3error("Expecting a data type, not "
+                                       << nodep->lhsp()->typeName() << ": '"
+                                       << nodep->lhsp()->prettyName() << "'");
             }
             // Replace with void to keep AST valid and allow clean exit
             nodep->replaceWith(new AstVoidDType{nodep->fileline()});
