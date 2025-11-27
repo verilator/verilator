@@ -931,7 +931,6 @@ class ConstVisitor final : public VNVisitor {
     bool m_underRecFunc = false;  // Under a recursive function
     AstNodeModule* m_modp = nullptr;  // Current module
     const AstArraySel* m_selp = nullptr;  // Current select
-    const AstStructSel* m_structselp = nullptr;  // Current struct select
     const AstNode* m_scopep = nullptr;  // Current scope
     const AstAttrOf* m_attrp = nullptr;  // Current attribute
     VDouble0 m_statBitOpReduction;  // Ops reduced in ConstBitOpTreeVisitor
@@ -2933,16 +2932,28 @@ class ConstVisitor final : public VNVisitor {
     }
 
     void visit(AstStructSel* nodep) override {
-        if (VN_IS(nodep->fromp(), VarRef)) { m_structselp = nodep; }
+        iterateChildren(nodep);
 
-        iterateAndNextNull(nodep->fromp());
+        if (VN_IS(nodep->fromp(), ConsPackUOrStruct)) {
+            const AstConsPackUOrStruct* const consp = VN_AS(nodep->fromp(), ConsPackUOrStruct);
+            for (AstConsPackMember* memberp = consp->membersp(); memberp;
+                 memberp = VN_AS(memberp->nextp(), ConsPackMember)) {
 
-        if (VN_IS(nodep->fromp(), Const)) {
-            AstNode* const fromp = nodep->fromp()->unlinkFrBack();
-            nodep->replaceWithKeepDType(fromp);
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                if (memberp->dtypep() && memberp->dtypep()->name() == nodep->name()) {
+                    AstNode* const valuep = memberp->rhsp();
+
+                    if (VN_IS(valuep, Const)) {
+                        const V3Number& num = VN_AS(valuep, Const)->num();
+                        VL_DO_DANGLING(replaceNum(nodep, num), nodep);
+                    } else {
+                        AstNode* const newp = valuep->cloneTree(false);
+                        nodep->replaceWith(newp);
+                        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    }
+                    break;
+                }
+            }
         }
-        m_structselp = nullptr;
     }
 
     void visit(AstCAwait* nodep) override {
@@ -2980,23 +2991,6 @@ class ConstVisitor final : public VNVisitor {
                         // UINFO(2, "constVisit " << cvtToHex(valuep) << " " << num);
                         VL_DO_DANGLING(replaceNum(nodep, num), nodep);
                         did = true;
-                    }
-                } else if (m_structselp && VN_IS(valuep, ConsPackUOrStruct)) {
-                    const AstConsPackUOrStruct* const consp = VN_AS(valuep, ConsPackUOrStruct);
-                    for (AstConsPackMember* memberp = consp->membersp(); memberp;
-                         memberp = VN_AS(memberp->nextp(), ConsPackMember)) {
-
-                        if (memberp->dtypep()
-                            && memberp->dtypep()->name() == m_structselp->name()) {
-                            const AstNode* const valuep = memberp->rhsp();
-
-                            if (VN_IS(valuep, Const)) {
-                                const V3Number& num = VN_AS(valuep, Const)->num();
-                                VL_DO_DANGLING(replaceNum(nodep, num), nodep);
-                                did = true;
-                            }
-                            break;
-                        }
                     }
                 } else if (m_params && VN_IS(valuep, InitArray)) {
                     // Allow parameters to pass arrays
