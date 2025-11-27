@@ -3107,14 +3107,8 @@ type_assignment<varp>:          // ==IEEE: type_assignment
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2); }
         |       idAny/*new-parameter*/ sigAttrListE '=' exprOrDataType
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
-                          AstNode* valuep = $4;
-                          // Wrap non-type expressions in RequireDType for validation during elaboration.
-                          // This catches cases like "localparam type T = 2" (CONST) or
-                          // "localparam type T = i" (VARREF) which should error.
-                          if (!VN_IS(valuep, NodeDType)) {
-                              valuep = new AstRequireDType{$<fl>4, valuep};
-                          }
-                          $$->valuep(valuep); }
+                          // V3LinkParse will wrap this in RequireDType when creating ParamTypeDType
+                          $$->valuep($4); }
         ;
 
 list_of_type_assignments<varp>:         // ==IEEE: list_of_type_assignments

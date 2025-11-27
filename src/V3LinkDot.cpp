@@ -826,8 +826,21 @@ public:
                 } else if (VN_IS(requireDTypep->lhsp(), VoidDType)
                            || VN_IS(requireDTypep->lhsp(), BasicDType)
                            || VN_IS(requireDTypep->lhsp(), ClassRefDType)
-                           // ParseRef may resolve to a class later (e.g., type T=Foo)
-                           || VN_IS(requireDTypep->lhsp(), ParseRef)) {
+                           // ParseRef/RefDType may resolve to a class later (e.g., type T=Foo)
+                           || VN_IS(requireDTypep->lhsp(), ParseRef)
+                           || VN_IS(requireDTypep->lhsp(), RefDType)) {
+                    return true;
+                }
+            } else {
+                // RequireDType may have been unwrapped by visit(AstRequireDType*)
+                // Check the direct child of ParamTypeDType
+                if (const AstRefDType* const refp
+                    = VN_CAST(paramTypep->childDTypep(), RefDType)) {
+                    refDTypep = refp;
+                    (void)refDTypep;
+                } else if (VN_IS(paramTypep->childDTypep(), VoidDType)
+                           || VN_IS(paramTypep->childDTypep(), BasicDType)
+                           || VN_IS(paramTypep->childDTypep(), ClassRefDType)) {
                     return true;
                 }
             }
