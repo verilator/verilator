@@ -2931,6 +2931,31 @@ class ConstVisitor final : public VNVisitor {
         replaceWithSimulation(nodep);
     }
 
+    void visit(AstStructSel* nodep) override {
+        iterateChildren(nodep);
+
+        if (VN_IS(nodep->fromp(), ConsPackUOrStruct)) {
+            const AstConsPackUOrStruct* const consp = VN_AS(nodep->fromp(), ConsPackUOrStruct);
+            for (AstConsPackMember* memberp = consp->membersp(); memberp;
+                 memberp = VN_AS(memberp->nextp(), ConsPackMember)) {
+
+                if (memberp->dtypep() && memberp->dtypep()->name() == nodep->name()) {
+                    AstNode* const valuep = memberp->rhsp();
+
+                    if (VN_IS(valuep, Const)) {
+                        const V3Number& num = VN_AS(valuep, Const)->num();
+                        VL_DO_DANGLING(replaceNum(nodep, num), nodep);
+                    } else {
+                        AstNode* const newp = valuep->cloneTree(false);
+                        nodep->replaceWith(newp);
+                        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
     void visit(AstCAwait* nodep) override {
         m_hasJumpDelay = true;
         iterateChildren(nodep);
@@ -2972,6 +2997,11 @@ class ConstVisitor final : public VNVisitor {
                     // Earlier recursion of InitArray made sure each array value is constant
                     // This exception is fairly fragile, i.e. doesn't
                     // support arrays of arrays or other stuff
+                    AstNode* const newp = valuep->cloneTree(false);
+                    nodep->replaceWithKeepDType(newp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    did = true;
+                } else if (m_params && VN_IS(valuep, ConsPackUOrStruct)) {
                     AstNode* const newp = valuep->cloneTree(false);
                     nodep->replaceWithKeepDType(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -3654,6 +3684,8 @@ class ConstVisitor final : public VNVisitor {
     }
 
     void visit(AstInitArray* nodep) override { iterateChildren(nodep); }
+    void visit(AstConsPackUOrStruct* nodep) override { iterateChildren(nodep); }
+    void visit(AstConsPackMember* nodep) override { iterateChildren(nodep); }
     void visit(AstInitItem* nodep) override { iterateChildren(nodep); }
     void visit(AstUnbounded* nodep) override { iterateChildren(nodep); }
     // These are converted by V3Param.  Don't constify as we don't want the
