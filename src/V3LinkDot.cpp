@@ -834,8 +834,7 @@ public:
             } else {
                 // RequireDType may have been unwrapped by visit(AstRequireDType*)
                 // Check the direct child of ParamTypeDType
-                if (const AstRefDType* const refp
-                    = VN_CAST(paramTypep->childDTypep(), RefDType)) {
+                if (const AstRefDType* const refp = VN_CAST(paramTypep->childDTypep(), RefDType)) {
                     refDTypep = refp;
                     (void)refDTypep;
                 } else if (VN_IS(paramTypep->childDTypep(), VoidDType)
