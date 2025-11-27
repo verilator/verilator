@@ -462,7 +462,8 @@ class AssertVisitor final : public VNVisitor {
         }
         AstNode* bodysp = assertBody(nodep, propExprp, passsp, failsp);
         if (disablep) {
-            bodysp = new AstIf{nodep->fileline(), new AstNot{nodep->fileline(), disablep}, bodysp};
+            bodysp
+                = new AstIf{nodep->fileline(), new AstLogNot{nodep->fileline(), disablep}, bodysp};
         }
         if (sentreep) {
             bodysp = new AstAlways{nodep->fileline(), VAlwaysKwd::ALWAYS, sentreep, bodysp};
