@@ -441,6 +441,7 @@ class HookInsTargetFndr final : public VNVisitor {
                     AstVar* varp = nodep->cloneTree(false);
                     varp->name("tmp_" + nodep->name());
                     varp->origName("tmp_" + nodep->name());
+                    varp->hasHookInserted(true);
                     varp->trace(true);
                     if (varp->varType() == VVarType::WIRE) { varp->varType(VVarType::VAR); }
                     setVar(nodep, varp, m_target);
