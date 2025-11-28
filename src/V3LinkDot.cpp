@@ -808,45 +808,30 @@ public:
     }
     static bool checkIfClassOrPackage(const VSymEnt* const symp) {
         if (VN_IS(symp->nodep(), Class) || VN_IS(symp->nodep(), Package)) return true;
-        const AstRefDType* refDTypep = nullptr;
-        (void)refDTypep;
+
+        // Helper: check if a RefDType might resolve to a class later
+        const auto checkUnresolvedRef = [](const AstRefDType* refp) -> bool {
+            return refp && !refp->typeofp() && !refp->classOrPackageOpp();
+        };
+
+        // Helper: check if a type node is valid in class/package context
+        const auto isValidTypeNode = [](const AstNode* nodep) -> bool {
+            return VN_IS(nodep, VoidDType) || VN_IS(nodep, BasicDType)
+                   || VN_IS(nodep, ClassRefDType) || VN_IS(nodep, ParseRef);
+        };
+
         if (const AstTypedef* const typedefp = VN_CAST(symp->nodep(), Typedef)) {
             if (VN_IS(typedefp->childDTypep(), ClassRefDType)) return true;
-            if (const AstRefDType* const refp = VN_CAST(typedefp->childDTypep(), RefDType)) {
-                refDTypep = refp;
-                (void)refDTypep;
-            }
+            if (checkUnresolvedRef(VN_CAST(typedefp->childDTypep(), RefDType))) return true;
         } else if (const AstParamTypeDType* const paramTypep
                    = VN_CAST(symp->nodep(), ParamTypeDType)) {
-            if (const AstRequireDType* const requireDTypep
-                = VN_CAST(paramTypep->childDTypep(), RequireDType)) {
-                if (const AstRefDType* const refp = VN_CAST(requireDTypep->lhsp(), RefDType)) {
-                    refDTypep = refp;
-                    (void)refDTypep;
-                } else if (VN_IS(requireDTypep->lhsp(), VoidDType)
-                           || VN_IS(requireDTypep->lhsp(), BasicDType)
-                           || VN_IS(requireDTypep->lhsp(), ClassRefDType)
-                           // ParseRef/RefDType may resolve to a class later (e.g., type T=Foo)
-                           || VN_IS(requireDTypep->lhsp(), ParseRef)
-                           || VN_IS(requireDTypep->lhsp(), RefDType)) {
-                    return true;
-                }
-            } else {
-                // RequireDType may have been unwrapped by visit(AstRequireDType*)
-                // Check the direct child of ParamTypeDType
-                if (const AstRefDType* const refp = VN_CAST(paramTypep->childDTypep(), RefDType)) {
-                    refDTypep = refp;
-                    (void)refDTypep;
-                } else if (VN_IS(paramTypep->childDTypep(), VoidDType)
-                           || VN_IS(paramTypep->childDTypep(), BasicDType)
-                           || VN_IS(paramTypep->childDTypep(), ClassRefDType)) {
-                    return true;
-                }
+            // ParamTypeDType child may be wrapped in RequireDType or unwrapped
+            AstNode* childp = paramTypep->childDTypep();
+            if (const AstRequireDType* const reqp = VN_CAST(childp, RequireDType)) {
+                childp = reqp->lhsp();
             }
-        }
-        if (refDTypep && !refDTypep->typeofp() && !refDTypep->classOrPackageOpp()) {
-            // Unknown ref may resolve to a class once parameters are elaborated.
-            return true;
+            if (isValidTypeNode(childp)) return true;
+            if (checkUnresolvedRef(VN_CAST(childp, RefDType))) return true;
         }
         return false;
     }
