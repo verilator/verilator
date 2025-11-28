@@ -1649,29 +1649,32 @@ class RandomizeVisitor final : public VNVisitor {
         }
         // MemberSel: compare object and member (obj.y)
         if (VN_IS(argExpr, MemberSel) && VN_IS(withExpr, MemberSel)) {
-            const AstNode* withObj = withExpr->op1p();
-            const AstNode* argObj = argExpr->op1p();
+            const AstMemberSel* const withMS = VN_AS(withExpr, MemberSel);
+            const AstMemberSel* const argMS = VN_AS(argExpr, MemberSel);
+            // First check: member variable must be the same
+            if (withMS->varp() != argMS->varp()) return false;
+            // Second check: base object expression must be the same
+            const AstNode* withObj = withMS->fromp();
+            const AstNode* argObj = argMS->fromp();
             if (!withObj || !argObj) return false;
-            withObj = withObj->op1p();  // Navigate to VarRef
-            argObj = argObj->op1p();
-            return (withObj == argObj)
-                   && (VN_AS(withExpr, MemberSel)->varp() == VN_AS(argExpr, MemberSel)->varp());
+            return withObj == argObj;
         }
         // ArraySel: compare array base and index (arr[i])
         if (VN_IS(argExpr, ArraySel) && VN_IS(withExpr, ArraySel)) {
-            const AstNode* withBase = withExpr->op1p();
-            const AstNode* argBase = argExpr->op1p();
+            const AstArraySel* const withAS = VN_AS(withExpr, ArraySel);
+            const AstArraySel* const argAS = VN_AS(argExpr, ArraySel);
+            // Compare array base (must be same VarRef)
+            const AstNodeExpr* const withBase = withAS->fromp();
+            const AstNodeExpr* const argBase = argAS->fromp();
             if (!withBase || !argBase) return false;
-            withBase = withBase->op1p();  // Navigate to VarRef
-            argBase = argBase->op1p();
-            const AstNode* withIdx = withExpr->op2p();
-            const AstNode* argIdx = argExpr->op2p();
+            if (!VN_IS(withBase, VarRef) || !VN_IS(argBase, VarRef)) return false;
+            if (VN_AS(withBase, VarRef)->varp() != VN_AS(argBase, VarRef)->varp()) return false;
+            // Compare array index (must be same VarRef, typically loop iterator)
+            const AstNodeExpr* const withIdx = withAS->bitp();
+            const AstNodeExpr* const argIdx = argAS->bitp();
             if (!withIdx || !argIdx) return false;
-            withIdx = withIdx->op1p();  // Navigate to index expr
-            argIdx = argIdx->op1p();
             if (!VN_IS(withIdx, VarRef) || !VN_IS(argIdx, VarRef)) return false;
-            return (withBase == argBase)
-                   && (VN_AS(withIdx, VarRef)->varp() == VN_AS(argIdx, VarRef)->varp());
+            return VN_AS(withIdx, VarRef)->varp() == VN_AS(argIdx, VarRef)->varp();
         }
         return false;
     }
@@ -2672,7 +2675,7 @@ class RandomizeVisitor final : public VNVisitor {
                             exp->replaceWith(replaceVar);
                             replaceVar->user1(exp->user1());
                             replaceVar->varp()->user2p(m_modp);
-                            pushDeletep(exp);
+                            VL_DO_DANGLING(pushDeletep(exp), exp);
                         }
                     });
                 }
@@ -2718,10 +2721,10 @@ class RandomizeVisitor final : public VNVisitor {
                 solverCallp->add(new AstVarRef{fl, stdrand, VAccess::READWRITE});
                 solverCallp->add(".next()");
                 AstVar* const fvarp = VN_AS(randomizeFuncp->fvarp(), Var);
-                AstVarRef* const retvalReadp = new AstVarRef{fl, fvarp, VAccess::READ};
-                AstNodeExpr* const andExprp = new AstAnd{fl, retvalReadp, solverCallp};
-                AstVarRef* const retvalWritep = new AstVarRef{fl, fvarp, VAccess::WRITE};
-                randomizeFuncp->addStmtsp(new AstAssign{fl, retvalWritep, andExprp});
+                AstNodeExpr* const andExprp
+                    = new AstAnd{fl, new AstVarRef{fl, fvarp, VAccess::READ}, solverCallp};
+                randomizeFuncp->addStmtsp(
+                    new AstAssign{fl, new AstVarRef{fl, fvarp, VAccess::WRITE}, andExprp});
             }
             // Remove With nodes from pins as they have been processed
             for (AstNode* pinp = nodep->pinsp(); pinp;) {
