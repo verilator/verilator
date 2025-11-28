@@ -878,6 +878,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstNodeExpr* exprp = new AstSFormatF{nodep->fileline(), smtName, false, nullptr};
         if (randMode.usesMode) {
             AstNodeExpr* constFormatp = getConstFormat(nodep);
+            UASSERT_OBJ(m_randModeVarp, nodep, "No m_randModeVarp");
             AstCMethodHard* const atp = new AstCMethodHard{
                 nodep->fileline(),
                 new AstVarRef{varp->fileline(), VN_AS(m_randModeVarp->user2p(), NodeModule),
