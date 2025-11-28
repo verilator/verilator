@@ -1655,22 +1655,27 @@ class RandomizeVisitor final : public VNVisitor {
             const AstNode* withObj = withMS->fromp();
             const AstNode* argObj = argMS->fromp();
             if (!withObj || !argObj) return false;
+            withObj = withObj->op1p();  // Navigate to VarRef
+            argObj = argObj->op1p();
             return withObj == argObj;
         }
         // ArraySel: compare array base and index (arr[i])
         if (VN_IS(argExpr, ArraySel) && VN_IS(withExpr, ArraySel)) {
             const AstArraySel* const withAS = VN_AS(withExpr, ArraySel);
             const AstArraySel* const argAS = VN_AS(argExpr, ArraySel);
-            const AstNodeExpr* const withBase = withAS->fromp();
-            const AstNodeExpr* const argBase = argAS->fromp();
+            const AstNode* withBase = withAS->fromp();
+            const AstNode* argBase = argAS->fromp();
             if (!withBase || !argBase) return false;
-            if (!VN_IS(withBase, VarRef) || !VN_IS(argBase, VarRef)) return false;
-            if (VN_AS(withBase, VarRef)->varp() != VN_AS(argBase, VarRef)->varp()) return false;
-            const AstNodeExpr* const withIdx = withAS->bitp();
-            const AstNodeExpr* const argIdx = argAS->bitp();
+            withBase = withBase->op1p();  // Navigate to VarRef
+            argBase = argBase->op1p();
+            const AstNode* withIdx = withAS->bitp();
+            const AstNode* argIdx = argAS->bitp();
             if (!withIdx || !argIdx) return false;
+            withIdx = withIdx->op1p();  // Navigate to index expr
+            argIdx = argIdx->op1p();
             if (!VN_IS(withIdx, VarRef) || !VN_IS(argIdx, VarRef)) return false;
-            return VN_AS(withIdx, VarRef)->varp() == VN_AS(argIdx, VarRef)->varp();
+            return (withBase == argBase)
+                   && (VN_AS(withIdx, VarRef)->varp() == VN_AS(argIdx, VarRef)->varp());
         }
         return false;
     }
