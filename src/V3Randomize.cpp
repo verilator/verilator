@@ -1651,9 +1651,7 @@ class RandomizeVisitor final : public VNVisitor {
         if (VN_IS(argExpr, MemberSel) && VN_IS(withExpr, MemberSel)) {
             const AstMemberSel* const withMS = VN_AS(withExpr, MemberSel);
             const AstMemberSel* const argMS = VN_AS(argExpr, MemberSel);
-            // First check: member variable must be the same
             if (withMS->varp() != argMS->varp()) return false;
-            // Second check: base object expression must be the same
             const AstNode* withObj = withMS->fromp();
             const AstNode* argObj = argMS->fromp();
             if (!withObj || !argObj) return false;
@@ -1663,13 +1661,11 @@ class RandomizeVisitor final : public VNVisitor {
         if (VN_IS(argExpr, ArraySel) && VN_IS(withExpr, ArraySel)) {
             const AstArraySel* const withAS = VN_AS(withExpr, ArraySel);
             const AstArraySel* const argAS = VN_AS(argExpr, ArraySel);
-            // Compare array base (must be same VarRef)
             const AstNodeExpr* const withBase = withAS->fromp();
             const AstNodeExpr* const argBase = argAS->fromp();
             if (!withBase || !argBase) return false;
             if (!VN_IS(withBase, VarRef) || !VN_IS(argBase, VarRef)) return false;
             if (VN_AS(withBase, VarRef)->varp() != VN_AS(argBase, VarRef)->varp()) return false;
-            // Compare array index (must be same VarRef, typically loop iterator)
             const AstNodeExpr* const withIdx = withAS->bitp();
             const AstNodeExpr* const argIdx = argAS->bitp();
             if (!withIdx || !argIdx) return false;
