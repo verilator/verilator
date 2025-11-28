@@ -93,16 +93,62 @@ public:
             activeInitp->senTreeStorep(activeInitp->sentreep());
             vscp->scopep()->addBlocksp(activeInitp);
 
-            AstVarRef* const lhsp = new AstVarRef{flp, m_enVscp, VAccess::WRITE};
+            AstNodeExpr* lhsp = new AstVarRef{flp, m_enVscp, VAccess::WRITE};
             V3Number zero{m_enVscp, m_enVscp->width()};
             zero.setAllBits0();
             AstNodeExpr* const rhsp = new AstConst{flp, zero};
             AstNodeStmt* set0p;
             if (VN_IS(lhsp->dtypep()->skipRefp(), UnpackArrayDType)) {
-                AstCMethodHard* const fillMethodp
-                    = new AstCMethodHard{flp, lhsp, VCMethod::UNPACKED_FILL, rhsp};
-                fillMethodp->dtypeSetVoid();
-                set0p = fillMethodp->makeStmt();
+                std::vector<AstNodeExpr*> loopVarRefs;
+
+                AstNodeStmt* toInsertp = nullptr;
+                AstNodeStmt* outerStmtp = nullptr;
+                if (AstUnpackArrayDType* const unpackedp
+                    = VN_CAST(m_rdVscp->varp()->dtypep(), UnpackArrayDType)) {
+                    std::vector<AstUnpackArrayDType*> dims = unpackedp->unpackDimensions();
+                    loopVarRefs.reserve(dims.size());
+                    for (int i = dims.size() - 1; i >= 0; i--) {
+                        AstVar* const loopVarp = new AstVar{
+                            flp, VVarType::MODULETEMP,
+                            m_rdVscp->varp()->name() + "__VwhileInitIter" + std::to_string(i),
+                            VFlagBitPacked{}, 32};
+                        m_rdVscp->varp()->addNext(loopVarp);
+                        AstVarScope* const loopVarScopep
+                            = new AstVarScope{flp, m_rdVscp->scopep(), loopVarp};
+                        m_rdVscp->addNext(loopVarScopep);
+                        AstVarRef* const readRefp
+                            = new AstVarRef{flp, loopVarScopep, VAccess::READ};
+                        loopVarRefs.push_back(readRefp);
+                        AstNodeStmt* const currInitp
+                            = new AstAssign{flp, new AstVarRef{flp, loopVarScopep, VAccess::WRITE},
+                                            new AstConst{flp, 0}};
+                        if (toInsertp) {
+                            toInsertp->addNextHere(currInitp);
+                        } else {
+                            outerStmtp = currInitp;
+                        }
+                        AstLoop* const currWhilep = new AstLoop{flp};
+                        currInitp->addNext(currWhilep);
+                        AstLoopTest* const loopTestp = new AstLoopTest{
+                            flp, currWhilep,
+                            new AstNeq{flp, readRefp,
+                                       new AstConst{
+                                           flp, static_cast<uint32_t>(dims[i]->elementsConst())}}};
+                        currWhilep->addStmtsp(loopTestp);
+                        toInsertp = loopTestp;
+                        AstAssign* const currIncrp = new AstAssign{
+                            flp, new AstVarRef{flp, loopVarScopep, VAccess::WRITE},
+                            new AstAdd{flp, readRefp->cloneTree(false), new AstConst{flp, 1}}};
+                        currWhilep->addStmtsp(currIncrp);
+                    }
+                }
+                lhsp = applySelects(lhsp, loopVarRefs);
+                set0p = new AstAssign{flp, lhsp, rhsp};
+                if (toInsertp) {
+                    toInsertp->addNextHere(set0p);
+                    set0p = outerStmtp;
+                }
+
             } else {
                 set0p = new AstAssign{flp, lhsp, rhsp};
             }
