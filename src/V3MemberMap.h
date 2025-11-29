@@ -37,6 +37,9 @@ class VMemberMap final {
     using MemberMap = std::map<std::string, AstNode*>;
     using NodeMap = std::map<const AstNode*, MemberMap>;
     NodeMap m_map;  // Map of nodes being tracked
+
+    VL_DEFINE_DEBUG_FUNCTIONS;
+
 public:
     void clear() { m_map.clear(); }
     // Find 'name' under 'nodep', caching nodep's children if needed
@@ -80,7 +83,7 @@ private:
                     for (AstNode* blockp = scopep->blocksp(); blockp; blockp = blockp->nextp()) {
                         memberInsert(mmapr, blockp);
                     }
-                } else {
+                } else if (!VN_IS(itemp, Always)) {
                     memberInsert(mmapr, itemp);
                 }
             }
