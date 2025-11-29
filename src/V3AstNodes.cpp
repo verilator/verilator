@@ -2738,7 +2738,6 @@ void AstVarRef::dump(std::ostream& str) const {
 void AstVarRef::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 const char* AstVarRef::broken() const {
     BROKEN_RTN(!varp());
-    BROKEN_RTN(varScopep() && varScopep()->varp() != varp());
     return nullptr;
 }
 bool AstVarRef::sameNode(const AstNode* samep) const { return sameNode(VN_DBG_AS(samep, VarRef)); }
