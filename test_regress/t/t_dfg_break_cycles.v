@@ -167,6 +167,21 @@ module t (
   assign SUB_B = (SUB_A << 4) - rand_a[7:0];
   assign SUB_A = {SUB_C[7], 7'd0};
 
+  `signal(REDAND_A, 1); // UNOPTFLAT
+  `signal(REDAND_B, 3);
+  assign REDAND_A = &(REDAND_B >> 1);
+  assign REDAND_B = {rand_a[1:0], REDAND_A};
+
+  `signal(REDOR_A, 1); // UNOPTFLAT
+  `signal(REDOR_B, 3);
+  assign REDOR_A = |(REDOR_B >> 1);
+  assign REDOR_B = {rand_a[1:0], REDOR_A};
+
+  `signal(REDXOR_A, 1); // UNOPTFLAT
+  `signal(REDXOR_B, 3);
+  assign REDXOR_A = ^(REDXOR_B >> 1);
+  assign REDXOR_B = {rand_a[1:0], REDXOR_A};
+
   `signal(EQ_A, 1); // UNOPTFLAT
   `signal(EQ_B, 3);
   assign EQ_A = EQ_B >> 1 == rand_b[2:0];
