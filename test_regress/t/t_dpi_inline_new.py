@@ -9,7 +9,6 @@
 
 import vltest_bootstrap
 
-
 test.scenarios('simulator')
 
 # Compile the SystemVerilog test with the DPI C stub.
