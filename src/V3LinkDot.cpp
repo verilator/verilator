@@ -3532,7 +3532,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                      refp->typedefp());
                                      */
 
-
         const auto captureIfaceTypedefContext = [&](AstRefDType* refp, const char* stageLabel) {
             if (!LinkDotIfaceCapture::enabled() || !refp) return;
             UINFO(9, indent() << "[iface-debug] capture request stage=" << stageLabel
@@ -3554,13 +3553,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (!m_ds.m_dotText.empty() && m_curSymp) {
                 // dotText may contain nested dots; extract first segment (the port name)
                 const size_t dotPos = m_ds.m_dotText.find('.');
-                const string portName = (dotPos != string::npos)
-                    ? m_ds.m_dotText.substr(0, dotPos)
-                    : m_ds.m_dotText;
+                const string portName
+                    = (dotPos != string::npos) ? m_ds.m_dotText.substr(0, dotPos) : m_ds.m_dotText;
                 if (VSymEnt* const portSymp = m_curSymp->findIdFallback(portName)) {
                     ifacePortVarp = VN_CAST(portSymp->nodep(), Var);
-                    UINFO(9, indent() << "[iface-debug] found port var '" << portName
-                                      << "' -> " << ifacePortVarp);
+                    UINFO(9, indent() << "[iface-debug] found port var '" << portName << "' -> "
+                                      << ifacePortVarp);
                 }
             }
             refp->user2p(const_cast<AstCell*>(ifaceCellp));

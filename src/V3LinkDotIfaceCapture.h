@@ -54,7 +54,8 @@ bool enabled();
 
 void reset();
 void add(AstRefDType* refp, AstCell* cellp, AstNodeModule* ownerModp,
-         AstTypedef* typedefp = nullptr, AstNodeModule* typedefOwnerModp = nullptr, AstVar* ifacePortVarp = nullptr);
+         AstTypedef* typedefp = nullptr, AstNodeModule* typedefOwnerModp = nullptr,
+         AstVar* ifacePortVarp = nullptr);
 void add(const CapturedIfaceTypedef& entry);
 const CapturedIfaceTypedef* find(const AstRefDType* refp);
 void forEach(const std::function<void(const CapturedIfaceTypedef&)>& fn);

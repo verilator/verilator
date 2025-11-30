@@ -631,51 +631,49 @@ class ParamProcessor final {
         // interface context before newModp is re-linked.  we have pointers to the same nodes saved
         // in the capture map, so we can use them to scrub the new module.
         if (LinkDotIfaceCapture::enabled()) {
-          /*
-            LinkDotIfaceCapture::forEachOwned(
-                srcModp, [&](const LinkDotIfaceCapture::CapturedIfaceTypedef& entry) {
-                    if (!entry.refp) return;
-                    AstTypedef* const origTypedefp = entry.typedefp;
-                    if (!origTypedefp) return;
+            /*
+              LinkDotIfaceCapture::forEachOwned(
+                  srcModp, [&](const LinkDotIfaceCapture::CapturedIfaceTypedef& entry) {
+                      if (!entry.refp) return;
+                      AstTypedef* const origTypedefp = entry.typedefp;
+                      if (!origTypedefp) return;
 
-                    // Find the correct typedef from the correct interface clone.
-                    // entry.typedefp points to the original interface's typedef,
-                    // but we need the typedef in the interface clone this module connects to.
-                    AstTypedef* targetTypedefp = nullptr;
-                    const string& typedefName = origTypedefp->name();
+                      // Find the correct typedef from the correct interface clone.
+                      // entry.typedefp points to the original interface's typedef,
+                      // but we need the typedef in the interface clone this module connects to.
+                      AstTypedef* targetTypedefp = nullptr;
+                      const string& typedefName = origTypedefp->name();
 
-                    for (auto it = ifaceRefRefs.cbegin(); it != ifaceRefRefs.cend(); ++it) {
-                        AstNodeModule* const pinIfacep = it->second->ifaceViaCellp();
-                        if (!pinIfacep) continue;
-                        // Search for typedef with same name in the connected interface clone
-                        for (AstNode* stmtp = pinIfacep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                            if (AstTypedef* const tdp = VN_CAST(stmtp, Typedef)) {
-                                if (tdp->name() == typedefName) {
-                                    targetTypedefp = tdp;
-                                    UINFO(8, "     [iface-capture] found '"
-                                                 << typedefName << "' in " << pinIfacep->name()
-                                                 << endl);
-                                    break;
-                                }
-                            }
-                        }
-                        if (targetTypedefp) break;
-                    }
+                      for (auto it = ifaceRefRefs.cbegin(); it != ifaceRefRefs.cend(); ++it) {
+                          AstNodeModule* const pinIfacep = it->second->ifaceViaCellp();
+                          if (!pinIfacep) continue;
+                          // Search for typedef with same name in the connected interface clone
+                          for (AstNode* stmtp = pinIfacep->stmtsp(); stmtp; stmtp = stmtp->nextp())
+              { if (AstTypedef* const tdp = VN_CAST(stmtp, Typedef)) { if (tdp->name() ==
+              typedefName) { targetTypedefp = tdp; UINFO(8, "     [iface-capture] found '"
+                                                   << typedefName << "' in " << pinIfacep->name()
+                                                   << endl);
+                                      break;
+                                  }
+                              }
+                          }
+                          if (targetTypedefp) break;
+                      }
 
-                    // Fallback to clone of original typedef (existing behavior)
-                    if (!targetTypedefp) targetTypedefp = origTypedefp->clonep();
+                      // Fallback to clone of original typedef (existing behavior)
+                      if (!targetTypedefp) targetTypedefp = origTypedefp->clonep();
 
-                    if (targetTypedefp) {
-                        UINFO(8, "     [iface-capture] replaceTypedef "
-                                     << origTypedefp->name() << " -> " << targetTypedefp << endl);
-                        LinkDotIfaceCapture::replaceTypedef(entry.refp, targetTypedefp);
-                    }
+                      if (targetTypedefp) {
+                          UINFO(8, "     [iface-capture] replaceTypedef "
+                                       << origTypedefp->name() << " -> " << targetTypedefp <<
+              endl); LinkDotIfaceCapture::replaceTypedef(entry.refp, targetTypedefp);
+                      }
 
-                    if (AstRefDType* const clonedRefp = entry.refp->clonep()) {
-                        LinkDotIfaceCapture::propagateClone(entry.refp, clonedRefp);
-                    }
-                });
-          */
+                      if (AstRefDType* const clonedRefp = entry.refp->clonep()) {
+                          LinkDotIfaceCapture::propagateClone(entry.refp, clonedRefp);
+                      }
+                  });
+            */
 
             LinkDotIfaceCapture::forEachOwned(
                 srcModp, [&](const LinkDotIfaceCapture::CapturedIfaceTypedef& entry) {
@@ -699,8 +697,9 @@ class ParamProcessor final {
                         if (entry.ifacePortVarp) {
                             // Get the IfaceRefDType from the captured port variable
                             AstIfaceRefDType* const entryPortIrefp
-                                = LinkDotState::ifaceRefFromArray(entry.ifacePortVarp->subDTypep());
-                            if (entryPortIrefp != portIrefp) continue;  // Not the right port
+                                =
+                        LinkDotState::ifaceRefFromArray(entry.ifacePortVarp->subDTypep()); if
+                        (entryPortIrefp != portIrefp) continue;  // Not the right port
                         }
                         */
                         if (entry.ifacePortVarp) {
@@ -708,24 +707,24 @@ class ParamProcessor final {
                             AstNodeDType* const portDTypep = entry.ifacePortVarp->subDTypep();
                             AstIfaceRefDType* entryPortIrefp = VN_CAST(portDTypep, IfaceRefDType);
                             if (!entryPortIrefp && arraySubDTypep(portDTypep)) {
-                                entryPortIrefp = VN_CAST(arraySubDTypep(portDTypep), IfaceRefDType);
+                                entryPortIrefp
+                                    = VN_CAST(arraySubDTypep(portDTypep), IfaceRefDType);
                             }
                             if (entryPortIrefp != portIrefp) continue;  // Not the right port
                         }
 
                         // Search for typedef with same name in the connected interface clone
-                        for (AstNode* stmtp = pinIfacep->stmtsp(); stmtp;
-                             stmtp = stmtp->nextp()) {
+                        for (AstNode* stmtp = pinIfacep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
                             if (AstTypedef* const tdp = VN_CAST(stmtp, Typedef)) {
                                 if (tdp->name() == typedefName) {
                                     targetTypedefp = tdp;
-                                    UINFO(8, "     [iface-capture] found '"
-                                                  << typedefName << "' in " << pinIfacep->name()
-                                                  << " via port "
-                                                  << (entry.ifacePortVarp
-                                                          ? entry.ifacePortVarp->name()
-                                                          : "<unknown>")
-                                                  << endl);
+                                    UINFO(8,
+                                          "     [iface-capture] found '"
+                                              << typedefName << "' in " << pinIfacep->name()
+                                              << " via port "
+                                              << (entry.ifacePortVarp ? entry.ifacePortVarp->name()
+                                                                      : "<unknown>")
+                                              << endl);
                                     break;
                                 }
                             }
