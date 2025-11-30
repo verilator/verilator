@@ -12,8 +12,8 @@ module t;
 endmodule
 
 config cfg1;
-    design t;
-    // Use libb's version of m3 for m1 and liba's version of m3 for m2
-    instance t.u_1.u_13 liblist libb;
-    instance t.u_2.u_23 use liba.m3;
+  design t;
+  // Use libb's version of m3 for m1 and liba's version of m3 for m2
+  instance t.u_1.u_13 liblist libb;
+  instance t.u_2.u_23 use liba.m3;
 endconfig

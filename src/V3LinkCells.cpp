@@ -81,6 +81,7 @@ public:
     CellEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, int weight, bool cutable, AstCell* cellp)
         : V3GraphEdge{graphp, fromp, top, weight, cutable}, m_cellp{cellp} {}
     AstCell* cellp() const { return m_cellp; }
+    string name() const override VL_MT_STABLE { return cellp() ? cvtToHex(cellp()) + ' ' + cellp()->name() : ""; }
 };
 
 void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp, V3EdgeFuncP edgeFuncp) {
@@ -104,18 +105,18 @@ void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp, V3EdgeFuncP edgeFunc
 // State to pass between config parsing and cell linking visitors.
 struct LinkCellsState final {
     // Set of possible top module names from command line and configs
-    std::vector<std::pair<string, string>> m_designs;
+    std::vector<std::pair<std::string, std::string>> m_designs;
     // Default library lists to search
-    std::vector<string> m_liblistDefault;
+    std::vector<std::string> m_liblistDefault;
     // Library lists for specific cells
-    std::unordered_map<string, std::vector<string>> m_liblistCell;
+    std::unordered_map<std::string, std::vector<std::string>> m_liblistCell;
     // Use list for specific cells (libname, cellname)
-    std::unordered_map<string, std::vector<std::pair<string, string>>>
+    std::unordered_map<std::string, std::vector<std::pair<std::string, std::string>>>
         m_uselistCell;
     // Library lists for specific insts
-    std::unordered_map<string, std::vector<string>> m_liblistInst;
+    std::unordered_map<std::string, std::vector<std::string>> m_liblistInst;
     // Use list for specific insts (libname, cellname)
-    std::unordered_map<string, std::vector<std::pair<string, string>>>
+    std::unordered_map<std::string, std::vector<std::pair<std::string, std::string>>>
         m_uselistInst;
 };
 
@@ -123,10 +124,10 @@ class LinkConfigsVisitor final : public VNVisitor {
     // STATE
     LinkCellsState& m_state;  // Context for linking cells
     bool m_isDefault = false; // Whether we're currently in a default clause
-    string m_libname = ""; // Current library name being processed
-    string m_configname = ""; // Current configuration name being processed
-    string m_cell = ""; // Current cell being processed
-    string m_hierInst = ""; // Current hierarchical instance being processed
+    string m_libname; // Current library name being processed
+    string m_configname; // Current configuration name being processed
+    string m_cell; // Current cell being processed
+    string m_hierInst; // Current hierarchical instance being processed
     AstDot* m_dotp = nullptr; // Current dot being processed
 
 
@@ -336,9 +337,9 @@ class LinkCellsVisitor final : public VNVisitor {
         }
     }
 
-    AstCell* findCellByHier(const string& hierPath) {
+    AstCell* findCellByHier(AstNetlist* nodep, const std::string& hierPath) {
         std::stringstream ss(hierPath);
-        string top;
+        std::string top;
         bool topFound = false;
         std::getline(ss, top, '.');
         for (auto const& pair : m_state.m_designs) {
@@ -348,13 +349,13 @@ class LinkCellsVisitor final : public VNVisitor {
             }
         }
         if (!topFound) {
-            v3error("Can't find top-level module for instance path: '" << hierPath << "'");
+            nodep->v3error("Can't find top-level module for instance path: '" << hierPath << "'");
             return nullptr;
         }
 
         const V3GraphVertex* vtx = m_topVertexp;
         const CellEdge* finalEdgep = nullptr;
-        string seg;
+        std::string seg;
         while (std::getline(ss, seg, '.')) {
             finalEdgep = nullptr;
             for (const V3GraphEdge& edge : vtx->outEdges()) {
@@ -383,7 +384,7 @@ class LinkCellsVisitor final : public VNVisitor {
 
         // Search liblists for each instance
         for (auto const& pair : m_state.m_liblistInst) {
-            cellp = findCellByHier(pair.first);
+            cellp = findCellByHier(nodep, pair.first);
             for (auto const& libname : pair.second) {
                 modp = findModuleLibSym(cellp->modName(), libname);
                 if (modp) {
@@ -396,7 +397,7 @@ class LinkCellsVisitor final : public VNVisitor {
 
         // Search uselists for each instance
         for (auto const& pair : m_state.m_uselistInst) {
-            cellp = findCellByHier(pair.first);
+            cellp = findCellByHier(nodep, pair.first);
             for (auto const& u : pair.second) {
                 modp = findModuleLibSym(u.second, u.first);
                 if (modp) {
@@ -458,8 +459,9 @@ class LinkCellsVisitor final : public VNVisitor {
             if (VN_IS(nodep, Iface) || VN_IS(nodep, Package)) {
                 nodep->inLibrary(true);  // Interfaces can't be at top, unless asked
             }
-            const string fullName = nodep->libname() + "." + nodep->name();
-            const bool topMatch = (std::find(m_state.m_designs.begin(), m_state.m_designs.end(), std::pair<string, string>{nodep->libname(), nodep->name()}) != m_state.m_designs.end());
+
+            auto const& fullName = std::pair<std::string, std::string>(nodep->libname(), nodep->name());
+            const bool topMatch = std::find(m_state.m_designs.begin(), m_state.m_designs.end(), fullName) != m_state.m_designs.end();
             if (topMatch) {
                 m_topVertexp = vertex(nodep);
                 UINFO(2, "Link --top-module: " << nodep);
