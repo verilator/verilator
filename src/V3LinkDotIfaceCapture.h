@@ -45,6 +45,8 @@ struct CapturedIfaceTypedef final {
     AstNodeModule* typedefOwnerModp = nullptr;
     // Cloned RefDType awaiting typedef rebinding
     AstRefDType* pendingClonep = nullptr;
+    // Interface port variable for matching during cloning
+    AstVar* ifacePortVarp = nullptr;
 };
 
 void enable(bool flag);
@@ -52,7 +54,7 @@ bool enabled();
 
 void reset();
 void add(AstRefDType* refp, AstCell* cellp, AstNodeModule* ownerModp,
-         AstTypedef* typedefp = nullptr, AstNodeModule* typedefOwnerModp = nullptr);
+         AstTypedef* typedefp = nullptr, AstNodeModule* typedefOwnerModp = nullptr, AstVar* ifacePortVarp = nullptr);
 void add(const CapturedIfaceTypedef& entry);
 const CapturedIfaceTypedef* find(const AstRefDType* refp);
 void forEach(const std::function<void(const CapturedIfaceTypedef&)>& fn);

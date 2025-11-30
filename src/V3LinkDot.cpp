@@ -3510,6 +3510,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             // Note m_ds.m_dotp remains nullptr; this is a reference not under a dot
         }
 
+        /*
         const auto captureIfaceTypedefContext = [&](AstRefDType* refp, const char* stageLabel) {
             if (!LinkDotIfaceCapture::enabled() || !refp) return;
             UINFO(9, indent() << "[iface-debug] capture request stage=" << stageLabel
@@ -3529,6 +3530,43 @@ class LinkDotResolveVisitor final : public VNVisitor {
             refp->user2p(const_cast<AstCell*>(ifaceCellp));
             LinkDotIfaceCapture::add(refp, const_cast<AstCell*>(ifaceCellp), m_modp,
                                      refp->typedefp());
+                                     */
+
+
+        const auto captureIfaceTypedefContext = [&](AstRefDType* refp, const char* stageLabel) {
+            if (!LinkDotIfaceCapture::enabled() || !refp) return;
+            UINFO(9, indent() << "[iface-debug] capture request stage=" << stageLabel
+                              << " typedef=" << refp << " name=" << refp->name()
+                              << " dotPos=" << static_cast<int>(m_ds.m_dotPos) << " dotText='"
+                              << m_ds.m_dotText << "' dotSym=" << m_ds.m_dotSymp);
+            const AstCell* ifaceCellp = nullptr;
+            if (m_ds.m_dotSymp && VN_IS(m_ds.m_dotSymp->nodep(), Cell)) {
+                const AstCell* const cellp = VN_AS(m_ds.m_dotSymp->nodep(), Cell);
+                if (cellp->modp() && VN_IS(cellp->modp(), Iface)) ifaceCellp = cellp;
+            }
+            if (!ifaceCellp) {
+                UINFO(9, indent() << "[iface-debug] capture skipped typedef=" << refp
+                                  << " (no iface context)");
+                return;
+            }
+            // Find the interface port variable from dotText
+            AstVar* ifacePortVarp = nullptr;
+            if (!m_ds.m_dotText.empty() && m_curSymp) {
+                // dotText may contain nested dots; extract first segment (the port name)
+                const size_t dotPos = m_ds.m_dotText.find('.');
+                const string portName = (dotPos != string::npos)
+                    ? m_ds.m_dotText.substr(0, dotPos)
+                    : m_ds.m_dotText;
+                if (VSymEnt* const portSymp = m_curSymp->findIdFallback(portName)) {
+                    ifacePortVarp = VN_CAST(portSymp->nodep(), Var);
+                    UINFO(9, indent() << "[iface-debug] found port var '" << portName
+                                      << "' -> " << ifacePortVarp);
+                }
+            }
+            refp->user2p(const_cast<AstCell*>(ifaceCellp));
+            LinkDotIfaceCapture::add(refp, const_cast<AstCell*>(ifaceCellp), m_modp,
+                                     refp->typedefp(), nullptr, ifacePortVarp);
+
             UINFO(5, indent() << "[iface-debug] capture success typedef=" << refp
                               << " cell=" << ifaceCellp << " mod="
                               << (ifaceCellp->modp() ? ifaceCellp->modp()->name() : "<null>")
