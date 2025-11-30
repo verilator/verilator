@@ -99,6 +99,10 @@ module t (
   `signal(SHIFTR_VARIABLE, 2); // UNOPTFLAT
   assign SHIFTR_VARIABLE = rand_a[1:0] ^ ({1'b0, SHIFTR_VARIABLE[1]} >> rand_b[0]);
 
+  `signal(SHIFTR_2_A, 10); // UNOPTFLAT
+  wire logic [9:0] SHIFTR_2_B = SHIFTR_2_A >> 2;
+  assign SHIFTR_2_A = {rand_a[1:0], SHIFTR_2_B[9:2]};
+
   `signal(SHIFTL, 14); // UNOPTFLAT
   assign SHIFTL = {
     SHIFTL[6:5],         // 13:12
@@ -111,13 +115,30 @@ module t (
   `signal(SHIFTL_VARIABLE, 2); // UNOPTFLAT
   assign SHIFTL_VARIABLE = rand_a[1:0] ^ ({SHIFTL_VARIABLE[0], 1'b0} << rand_b[0]);
 
+  `signal(SHIFTL_2_A, 10); // UNOPTFLAT
+  wire logic [9:0] SHIFTL_2_B = SHIFTL_2_A << 2;
+  assign SHIFTL_2_A = {SHIFTL_2_B[9:2], rand_a[1:0]};
+
   `signal(VAR_A, 2); // UNOPTFLAT
   wire logic [1:0] VAR_B;
   assign VAR_A = {rand_a[0], VAR_B[0]};
   assign VAR_B = (VAR_A >> 1) ^ 2'(VAR_B[1]);
 
-  `signal(REPLICATE, 4); // UNOPTFLAT
-  assign REPLICATE = rand_a[3:0] ^ ({2{REPLICATE[3:2]}} >> 2);
+  `signal(REPLICATE_1, 4); // UNOPTFLAT
+  assign REPLICATE_1 = rand_a[3:0] ^ ({2{REPLICATE_1[3:2]}} >> 2);
+
+  `signal(REPLICATE_2_A, 10); // UNOPTFLAT
+  wire logic [7:0] REPLICATE_2_B;
+  assign REPLICATE_2_B = {4{REPLICATE_2_A[1:0]}};
+  assign REPLICATE_2_A = {^REPLICATE_2_A[8:0], REPLICATE_2_B, rand_a[0]};
+
+  `signal(REPLICATE_3_A, 9); // UNOPTFLAT
+  assign REPLICATE_3_A = {{4{REPLICATE_3_A[1:0]}}, rand_a[0]};
+
+  `signal(REPLICATE_4_A, 4); // UNOPTFLAT
+  wire logic [3:0] REPLICATE_4_B;
+  assign REPLICATE_4_B = {2{REPLICATE_4_A[1:0]}};
+  assign REPLICATE_4_A = {REPLICATE_4_B[2:1], rand_a[1:0]};
 
   `signal(PARTIAL, 4); // UNOPTFLAT
   assign PARTIAL[0] = rand_a[0];
