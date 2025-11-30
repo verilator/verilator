@@ -142,10 +142,7 @@ class LinkConfigsVisitor final : public VNVisitor {
     }
 
     void visit(AstConfigCell* nodep) override {
-        const bool topMatch = (v3Global.opt.work() == m_libname && v3Global.opt.topModule() == m_configname);
-        if (topMatch) {
-            m_state.m_designs.emplace_back(nodep->libname(), nodep->cellname());
-        }
+        m_state.m_designs.emplace_back(nodep->libname(), nodep->cellname());
     }
 
     void visit(AstConfigRule* nodep) override {
@@ -385,6 +382,7 @@ class LinkCellsVisitor final : public VNVisitor {
         // Search liblists for each instance
         for (auto const& pair : m_state.m_liblistInst) {
             cellp = findCellByHier(nodep, pair.first);
+            if (!cellp) continue;
             for (auto const& libname : pair.second) {
                 modp = findModuleLibSym(cellp->modName(), libname);
                 if (modp) {

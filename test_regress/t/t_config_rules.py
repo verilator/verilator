@@ -15,13 +15,8 @@ test.compile(verilator_flags2=[
     "--binary", "--top cfg", "--work liba t/t_config_rules_sub.v",
     "--work libb t/t_config_rules_sub.v", "--work libc t/t_config_rules_sub.v",
     "--work libd t/t_config_rules_sub.v"
-],
-             fails=True,
-             expect_filename=test.golden_filename)
+])
 
-#test.execute()
-
-# Sort so that 'initial' scheduling order is not relevant
-#test.files_identical_sorted(test.run_log_filename, test.golden_filename, is_logfile=True)
+test.execute()
 
 test.passes()
