@@ -1649,33 +1649,22 @@ class RandomizeVisitor final : public VNVisitor {
         }
         // MemberSel: compare object and member (obj.y)
         if (VN_IS(argExpr, MemberSel) && VN_IS(withExpr, MemberSel)) {
-            const AstMemberSel* const withMS = VN_AS(withExpr, MemberSel);
-            const AstMemberSel* const argMS = VN_AS(argExpr, MemberSel);
-            if (withMS->varp() != argMS->varp()) return false;
-            const AstNode* withObj = withMS->fromp();
-            const AstNode* argObj = argMS->fromp();
-            if (!withObj || !argObj) return false;
-            withObj = withObj->op1p();  // Navigate to VarRef
-            argObj = argObj->op1p();
-            return withObj == argObj;
+            const AstMemberSel* const withMSp = VN_AS(withExpr, MemberSel);
+            const AstMemberSel* const argMSp = VN_AS(argExpr, MemberSel);
+            if (withMSp->varp() != argMSp->varp()) return false;
+            // Recursively compare the base object expression
+            return isSimilarNode(withMSp->fromp(), argMSp->fromp());
         }
         // ArraySel: compare array base and index (arr[i])
         if (VN_IS(argExpr, ArraySel) && VN_IS(withExpr, ArraySel)) {
-            const AstArraySel* const withAS = VN_AS(withExpr, ArraySel);
-            const AstArraySel* const argAS = VN_AS(argExpr, ArraySel);
-            const AstNode* withBase = withAS->fromp();
-            const AstNode* argBase = argAS->fromp();
-            if (!withBase || !argBase) return false;
-            withBase = withBase->op1p();  // Navigate to VarRef
-            argBase = argBase->op1p();
-            const AstNode* withIdx = withAS->bitp();
-            const AstNode* argIdx = argAS->bitp();
-            if (!withIdx || !argIdx) return false;
-            withIdx = withIdx->op1p();  // Navigate to index expr
-            argIdx = argIdx->op1p();
-            if (!VN_IS(withIdx, VarRef) || !VN_IS(argIdx, VarRef)) return false;
-            return (withBase == argBase)
-                   && (VN_AS(withIdx, VarRef)->varp() == VN_AS(argIdx, VarRef)->varp());
+            const AstArraySel* const withASp = VN_AS(withExpr, ArraySel);
+            const AstArraySel* const argASp = VN_AS(argExpr, ArraySel);
+            // Index must be Sel type, extract VarRef using fromp()
+            if (!VN_IS(withASp->bitp(), Sel) || !VN_IS(argASp->bitp(), Sel)) return false;
+            const AstNodeExpr* const withIdxp = VN_AS(withASp->bitp(), Sel)->fromp();
+            const AstNodeExpr* const argIdxp = VN_AS(argASp->bitp(), Sel)->fromp();
+            return isSimilarNode(withASp->fromp(), argASp->fromp())
+                   && isSimilarNode(withIdxp, argIdxp);
         }
         return false;
     }
