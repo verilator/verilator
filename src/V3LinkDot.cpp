@@ -3561,8 +3561,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 if (braPos != string::npos) portName = portName.substr(0, braPos);
                 if (VSymEnt* const portSymp = m_curSymp->findIdFallback(portName)) {
                     ifacePortVarp = VN_CAST(portSymp->nodep(), Var);
-                    UINFO(9, indent() << "[iface-debug] found port var '" << portName
-                                      << "' -> " << ifacePortVarp);
+                    UINFO(9, indent() << "[iface-debug] found port var '" << portName << "' -> "
+                                      << ifacePortVarp);
                 }
             }
             /*
