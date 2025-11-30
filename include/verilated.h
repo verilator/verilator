@@ -154,7 +154,8 @@ enum VerilatedVarFlags {
     // Flags
     VLVF_PUB_RD = (1 << 8),  // Public readable
     VLVF_PUB_RW = (1 << 9),  // Public writable
-    VLVF_DPI_CLAY = (1 << 10)  // DPI compatible C standard layout
+    VLVF_DPI_CLAY = (1 << 10),  // DPI compatible C standard layout
+    VLVF_FORCEABLE = (1 << 11)  // Forceable
 };
 
 // IEEE 1800-2023 Table 20-6
@@ -714,8 +715,13 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
     ~VerilatedScope();
 
     void exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE;
-    void varInsert(const char* namep, void* datap, bool isParam, VerilatedVarType vltype,
-                   int vlflags, int udims, int pdims, ...) VL_MT_UNSAFE;
+    VerilatedVar* varInsert(const char* namep, void* datap, bool isParam, VerilatedVarType vltype,
+                            int vlflags, int udims, int pdims, ...) VL_MT_UNSAFE;
+    VerilatedVar* forceableVarInsert(const char* namep, void* datap, bool isParam,
+                                     VerilatedVarType vltype, int vlflags, bool isContinuously,
+                                     void* forceReadSignalData,
+                                     std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals,
+                                     int udims, int pdims...) VL_MT_UNSAFE;
     // ACCESSORS
     const char* name() const VL_MT_SAFE_POSTINIT { return m_namep; }
     const char* identifier() const VL_MT_SAFE_POSTINIT { return m_identifierp; }
@@ -743,6 +749,7 @@ class VerilatedHierarchy final {
 public:
     static void add(const VerilatedScope* fromp, const VerilatedScope* top);
     static void remove(const VerilatedScope* fromp, const VerilatedScope* top);
+    static void clear();
 };
 
 //===========================================================================
