@@ -1,10 +1,10 @@
 
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Interface typedef capture helper: stores (refp, typedefp,
-//    cellp, owners, pendingClone) so LinkDot can rebind refs when symbol
-//    lookup fails, and V3Param clones can retarget typedefs without legacy
-//    paths.
+// DESCRIPTION: Interface typedef capture helper.
+//   Stores (refp, typedefp, cellp, owners, pendingClone) so LinkDot can
+//   rebind refs when symbol lookup fails, and V3Param clones can retarget
+//   typedefs without legacy paths.
 //
 // Code available from: https://verilator.org
 //

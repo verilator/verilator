@@ -6,27 +6,24 @@
 //
 
 interface x_if #(
-   parameter int a_width = 3
+  parameter int a_width = 3
 )();
 
-    typedef struct packed {
-        logic [a_width-1:0] addr;
-    } rq_t;
-
+  typedef struct packed {
+    logic [a_width-1:0] addr;
+  } rq_t;
 endinterface
 
 module top();
+  x_if #(
+      .a_width(8)
+  ) if0();
 
-    x_if #(
-        .a_width(8)
-    ) if0();
+  localparam type p0_t = if0.rq_t;
 
-   localparam type p0_t = if0.rq_t;
-
-   initial begin
-        #1;
-        $write("*-* All Finished *-*\n");
-        $finish;
-   end
-
+  initial begin
+    #1;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule
