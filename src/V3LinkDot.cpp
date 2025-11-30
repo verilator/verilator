@@ -3549,6 +3549,23 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 return;
             }
             // Find the interface port variable from dotText
+            // Find the interface port variable from dotText
+            AstVar* ifacePortVarp = nullptr;
+            if (!m_ds.m_dotText.empty() && m_curSymp) {
+                // dotText may contain nested dots; extract first segment (the port name)
+                // Also handle array references like "bus_tgt_io_a__BRA__??__KET__"
+                string portName = m_ds.m_dotText;
+                const size_t dotPos = portName.find('.');
+                if (dotPos != string::npos) portName = portName.substr(0, dotPos);
+                const size_t braPos = portName.find("__BRA__");
+                if (braPos != string::npos) portName = portName.substr(0, braPos);
+                if (VSymEnt* const portSymp = m_curSymp->findIdFallback(portName)) {
+                    ifacePortVarp = VN_CAST(portSymp->nodep(), Var);
+                    UINFO(9, indent() << "[iface-debug] found port var '" << portName
+                                      << "' -> " << ifacePortVarp);
+                }
+            }
+            /*
             AstVar* ifacePortVarp = nullptr;
             if (!m_ds.m_dotText.empty() && m_curSymp) {
                 // dotText may contain nested dots; extract first segment (the port name)
@@ -3561,6 +3578,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                       << ifacePortVarp);
                 }
             }
+            */
             refp->user2p(const_cast<AstCell*>(ifaceCellp));
             LinkDotIfaceCapture::add(refp, const_cast<AstCell*>(ifaceCellp), m_modp,
                                      refp->typedefp(), nullptr, ifacePortVarp);
