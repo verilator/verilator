@@ -123,26 +123,26 @@ struct LinkCellsState final {
 class LinkConfigsVisitor final : public VNVisitor {
     // STATE
     LinkCellsState& m_state;  // Context for linking cells
+    bool m_isTop = false; // Whether we're in the top-level config
     bool m_isDefault = false; // Whether we're currently in a default clause
-    string m_libname; // Current library name being processed
-    string m_configname; // Current configuration name being processed
     string m_cell; // Current cell being processed
     string m_hierInst; // Current hierarchical instance being processed
     AstDot* m_dotp = nullptr; // Current dot being processed
 
-
     // VISITORS
     void visit(AstConfig* nodep) override {
-        VL_RESTORER(m_configname);
-        VL_RESTORER(m_libname);
-        m_configname = nodep->configname();
-        m_libname = nodep->libname();
+        VL_RESTORER(m_isTop);
+        const auto& fullName = std::pair<std::string, std::string>{nodep->libname(), nodep->configname()};
+        m_isTop = std::find(m_state.m_designs.begin(), m_state.m_designs.end(), fullName) != m_state.m_designs.end();
+        m_state.m_designs.erase(
+            std::remove(m_state.m_designs.begin(), m_state.m_designs.end(), fullName),
+            m_state.m_designs.end());
         iterateChildren(nodep);
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
 
     void visit(AstConfigCell* nodep) override {
-        m_state.m_designs.emplace_back(nodep->libname(), nodep->cellname());
+        if (m_isTop) m_state.m_designs.emplace_back(nodep->libname(), nodep->cellname());
     }
 
     void visit(AstConfigRule* nodep) override {
