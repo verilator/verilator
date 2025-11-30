@@ -11,6 +11,7 @@ interface x_if #(
   parameter int p_awidth = 4
   ,parameter int p_dwidth = 7
 )();
+  localparam int Bits = p_awidth + p_dwidth;
   typedef struct packed {
     logic [p_awidth-1:0] addr;
     logic [p_dwidth-1:0] data;
@@ -34,6 +35,8 @@ module top();
 
   initial begin
     #1;
+    if(if0[0].Bits != 24) $stop;
+    if($bits(rq) != 24) $stop;
     if(rq.addr != 16'h1234) $stop;
     if(rq.data != 8'h37) $stop;
     $write("*-* All Finished *-*\n");

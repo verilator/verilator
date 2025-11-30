@@ -77,6 +77,10 @@ module top();
 
   initial begin
     #1;
+    if($bits(p0_rq2) != 16) $stop;
+    if($bits(p0_rq) != 16) $stop;
+    if($bits(p0_rs) != 8) $stop;
+    if($bits(p0_req) != 24) $stop;
     if(p0_rq2.addr != 16'hcafe) $stop;
     if(p0_rq.addr != 16'hbeef) $stop;
     if(p0_rs.data != 8'h5a) $stop;
