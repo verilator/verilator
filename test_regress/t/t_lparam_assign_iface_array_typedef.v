@@ -1,0 +1,67 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2025 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
+//
+//
+
+package a_pkg;
+  typedef struct packed {
+    int unsigned IdBits;
+  } cfg_t;
+endpackage
+
+interface bus_if #(
+  parameter a_pkg::cfg_t cfg = 0
+)();
+  typedef logic [cfg.IdBits-1:0] id_t;
+  id_t id;
+endinterface
+
+module a_mod #()(
+  bus_if bus_tgt_io
+  ,bus_if bus_mst_io
+);
+
+  localparam type tgt_id_t = bus_tgt_io.id_t;
+  localparam type mst_id_t = bus_mst_io.id_t;
+
+  tgt_id_t tgt_id;
+  mst_id_t mst_id;
+
+  initial begin
+    #10;
+    if($bits(tgt_id) != 5) begin
+      $display("a_mod: bits(tgt_id) = %d, expect 5", $bits(tgt_id));
+      $stop;
+    end
+    if($bits(mst_id) != 10) begin
+      $display("a_mod: bits(mst_id) = %d, expect 10", $bits(mst_id));
+      $stop;
+    end
+  end
+
+endmodule
+
+module t(
+  input logic clk
+);
+  localparam a_pkg::cfg_t cfg0 = '{IdBits: 5};
+  localparam a_pkg::cfg_t cfg1 = '{IdBits: 10};
+
+  bus_if #(.cfg(cfg0)) bus_io0();
+  bus_if #(.cfg(cfg1)) bus_io1();
+
+  a_mod a_mod0(
+    .bus_tgt_io(bus_io0)
+    ,.bus_mst_io(bus_io1)
+  );
+
+  initial begin
+    #10;
+    #10;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
+endmodule
