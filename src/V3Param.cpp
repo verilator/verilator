@@ -651,7 +651,9 @@ class ParamProcessor final {
                             if (AstTypedef* const tdp = VN_CAST(stmtp, Typedef)) {
                                 if (tdp->name() == typedefName) {
                                     targetTypedefp = tdp;
-                                    UINFO(8, "     [iface-capture] found '" << typedefName << "' in " << pinIfacep->name() << endl);
+                                    UINFO(8, "     [iface-capture] found '"
+                                                 << typedefName << "' in " << pinIfacep->name()
+                                                 << endl);
                                     break;
                                 }
                             }
@@ -663,7 +665,8 @@ class ParamProcessor final {
                     if (!targetTypedefp) targetTypedefp = origTypedefp->clonep();
 
                     if (targetTypedefp) {
-                        UINFO(8, "     [iface-capture] replaceTypedef " << origTypedefp->name() << " -> " << targetTypedefp << endl);
+                        UINFO(8, "     [iface-capture] replaceTypedef "
+                                     << origTypedefp->name() << " -> " << targetTypedefp << endl);
                         LinkDotIfaceCapture::replaceTypedef(entry.refp, targetTypedefp);
                     }
 
