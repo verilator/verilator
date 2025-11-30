@@ -7087,9 +7087,11 @@ hierarchical_btf_identifier<nodep>:  // ==IEEE: hierarchical_btf_identifier
 
 randsequence_statement<nodeStmtp>:  // ==IEEE: randsequence_statement
                 yRANDSEQUENCE '(' ')' rs_productionList yENDSEQUENCE
-                        { $$ = new AstRandSequence{$1, "", $4}; }
+                        { $$ = new AstRandSequence{$1, "", $4};
+                          v3Global.useRandSequence(true); }
         |       yRANDSEQUENCE '(' idAny/*rs_production_identifier*/ ')' rs_productionList yENDSEQUENCE
-                        { $$ = new AstRandSequence{$1, *$3, $5}; }
+                        { $$ = new AstRandSequence{$1, *$3, $5};
+                          v3Global.useRandSequence(true); }
         ;
 
 rs_productionList<rSProdp>:  // IEEE: rs_production+
@@ -7190,15 +7192,15 @@ rs_prod<nodep>:  // ==IEEE: rs_prod
         |       rs_code_block                           { $$ = $1; }
         //                      // IEEE: rs_if_else
         |       yIF '(' expr ')' rs_production_item %prec prLOWER_THAN_ELSE
-                        { $$ = new AstRSIf{$<fl>1, $3, $5, nullptr}; }
+                        { $$ = new AstIf{$<fl>1, $3, $5, nullptr}; }
         |       yIF '(' expr ')' rs_production_item yELSE rs_production_item
-                        { $$ = new AstRSIf{$<fl>1, $3, $5, $7}; }
+                        { $$ = new AstIf{$<fl>1, $3, $5, $7}; }
         //                      // IEEE: rs_repeat
         |       yREPEAT '(' expr ')' rs_production_item
-                        { $$ = new AstRSRepeat{$<fl>1, $3, $5}; }
+                               { $$ = new AstRepeat{$<fl>1, $3, $5}; }
         //                      // IEEE: rs_case
         |       yCASE '(' expr ')' rs_case_itemList yENDCASE
-                        { $$ = new AstRSCase{$<fl>1, $3, $5}; }
+                        { $$ = new AstCase{$<fl>1, VCaseType::CT_RANDSEQUENCE, $3, $5}; }
         ;
 
 rs_production_itemList<nodep>:  // IEEE: rs_production_item+

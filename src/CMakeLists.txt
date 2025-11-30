@@ -156,6 +156,7 @@ set(HEADERS
     V3PreShell.h
     V3Premit.h
     V3ProtectLib.h
+    V3RandSequence.h
     V3Randomize.h
     V3Reloop.h
     V3Rtti.h
@@ -319,6 +320,7 @@ set(COMMON_SOURCES
     V3PreShell.cpp
     V3Premit.cpp
     V3ProtectLib.cpp
+    V3RandSequence.cpp
     V3Randomize.cpp
     V3Reloop.cpp
     V3Sampled.cpp

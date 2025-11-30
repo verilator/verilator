@@ -1,5 +1,0 @@
-%Error-UNSUPPORTED: t/t_randsequence_rule_code_bad.v:12:5: Unsupported: randsequence
-   12 |     randsequence()
-      |     ^~~~~~~~~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: Exiting due to

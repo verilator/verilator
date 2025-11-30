@@ -5721,6 +5721,12 @@ class WidthVisitor final : public VNVisitor {
         }
     }
 
+    void visit(AstRSRule* nodep) override {
+        if (nodep->weightp()) iterateCheckUInt32(nodep, "weight", nodep->weightp(), BOTH);
+        userIterateAndNext(nodep->prodlistsp(), nullptr);
+        userIterateAndNext(nodep->weightStmtsp(), nullptr);
+    }
+
     void visit(AstRelease* nodep) override {
         userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
         UASSERT_OBJ(nodep->lhsp()->dtypep(), nodep, "How can LValue be untyped?");

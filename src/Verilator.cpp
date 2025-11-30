@@ -83,6 +83,7 @@
 #include "V3PreShell.h"
 #include "V3Premit.h"
 #include "V3ProtectLib.h"
+#include "V3RandSequence.h"
 #include "V3Randomize.h"
 #include "V3Reloop.h"
 #include "V3Sampled.h"
@@ -227,6 +228,9 @@ static void process() {
         // Coverage insertion
         //    Before we do dead code elimination and inlining, or we'll lose it.
         if (v3Global.opt.coverage()) V3Coverage::coverage(v3Global.rootp());
+
+        // Resolve randsequence if they are used by the design
+        if (v3Global.useRandSequence()) V3RandSequence::randSequenceNetlist(v3Global.rootp());
 
         // Add randomize() class methods if they are used by the design
         if (v3Global.useRandomizeMethods()) V3Randomize::randomizeNetlist(v3Global.rootp());

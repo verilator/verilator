@@ -309,6 +309,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Param.o \
   V3Premit.o \
   V3ProtectLib.o \
+  V3RandSequence.o \
   V3Randomize.o \
   V3Reloop.o \
   V3Sampled.o \

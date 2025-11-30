@@ -94,6 +94,10 @@ class LinkNodeMatcherModport final : public VNodeMatcher {
 public:
     bool nodeMatch(const AstNode* nodep) const override { return VN_IS(nodep, Modport); }
 };
+class LinkNodeMatcherProd final : public VNodeMatcher {
+public:
+    bool nodeMatch(const AstNode* nodep) const override { return VN_IS(nodep, RSProd); }
+};
 class LinkNodeMatcherVar final : public VNodeMatcher {
 public:
     bool nodeMatch(const AstNode* nodep) const override {
@@ -246,20 +250,22 @@ public:
             } else {
                 return "local type parameter";
             }
+        } else if (VN_IS(nodep, Begin)) {
+            return "block";
         } else if (VN_IS(nodep, Cell)) {
             return "instance";
         } else if (VN_IS(nodep, Constraint)) {
             return "constraint";
-        } else if (VN_IS(nodep, Task)) {
-            return "task";
         } else if (VN_IS(nodep, Func)) {
             return "function";
-        } else if (VN_IS(nodep, Begin)) {
-            return "block";
-        } else if (VN_IS(nodep, Iface)) {
-            return "interface";
         } else if (VN_IS(nodep, GenBlock)) {
             return "generate block";
+        } else if (VN_IS(nodep, Iface)) {
+            return "interface";
+        } else if (VN_IS(nodep, RSProd)) {
+            return "randsequence production";
+        } else if (VN_IS(nodep, Task)) {
+            return "task";
         } else {
             return nodep->prettyTypeName();
         }
@@ -1856,6 +1862,23 @@ class LinkDotFindVisitor final : public VNVisitor {
         }
     }
 
+    void visit(AstRandSequence* nodep) override {
+        VL_RESTORER(m_curSymp);
+        m_curSymp = m_statep->insertBlock(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
+        iterateChildren(nodep);
+    }
+    void visit(AstRSProd* nodep) override {
+        VL_RESTORER(m_curSymp);
+        m_curSymp = m_statep->insertBlock(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
+        if (nodep->fvarp())
+            nodep->fvarp()->v3warn(E_UNSUPPORTED,
+                                   "Unsupported: randsequence production function variable");
+        if (nodep->portsp())
+            nodep->portsp()->v3warn(E_UNSUPPORTED,
+                                    "Unsupported: randsequence production function ports");
+        iterateChildren(nodep);
+    }
+
     void visit(AstWithParse* nodep) override {  // FindVisitor::
         // Change WITHPARSE(FUNCREF, equation) to FUNCREF(WITH(equation))
         AstNodeFTaskRef* funcrefp = VN_CAST(nodep->funcrefp(), NodeFTaskRef);
@@ -2724,6 +2747,21 @@ class LinkDotResolveVisitor final : public VNVisitor {
         AstVar* const ifaceTopVarp = ifaceSymp ? VN_AS(ifaceSymp->nodep(), Var) : nullptr;
         UASSERT_OBJ(ifaceTopVarp, nodep, "Can't find interface var ref: " << findName);
         return ifaceTopVarp;
+    }
+    AstRSProd* findProd(AstNode* nodep, VSymEnt* parentEntp, const string& name) {
+        const VSymEnt* const foundp = parentEntp->findIdFallback(name);
+        AstRSProd* foundNodep = foundp ? VN_CAST(foundp->nodep(), RSProd) : nullptr;
+        if (!foundNodep) {
+            VSpellCheck speller;
+            LinkNodeMatcherProd matcher;
+            parentEntp->candidateIdFlat(&speller, &matcher);
+            const string suggest = speller.bestCandidateMsg(name);
+            UINFO(1, "   ErrParseRef curSymp=se" << cvtToHex(parentEntp));
+            nodep->v3error("Production " << AstNode::prettyNameQ(name) << " not found\n"
+                                         << (suggest.empty() ? "" : nodep->warnMore() + suggest));
+            return nullptr;
+        }
+        return foundNodep;
     }
     void markAndCheckPinDup(AstPin* nodep, AstNode* refp, const char* whatp) {
         const auto pair = m_usedPins.emplace(refp, nodep);
@@ -4721,6 +4759,27 @@ class LinkDotResolveVisitor final : public VNVisitor {
         UINFO(5, indent() << "visit " << nodep);
         checkNoDot(nodep);
         symIterateChildren(nodep, m_statep->getNodeSym(nodep));
+    }
+    void visit(AstRandSequence* nodep) override {
+        LINKDOT_VISIT_START();
+        UINFO(5, indent() << "visit " << nodep);
+        checkNoDot(nodep);
+        if (!nodep->start().empty())
+            nodep->prodp(findProd(nodep, m_statep->getNodeSym(nodep), nodep->start()));
+        symIterateChildren(nodep, m_statep->getNodeSym(nodep));
+    }
+    void visit(AstRSProd* nodep) override {
+        LINKDOT_VISIT_START();
+        UINFO(5, indent() << "visit " << nodep);
+        checkNoDot(nodep);
+        symIterateChildren(nodep, m_statep->getNodeSym(nodep));
+    }
+    void visit(AstRSProdItem* nodep) override {
+        LINKDOT_VISIT_START();
+        UINFO(5, indent() << "visit " << nodep);
+        checkNoDot(nodep);
+        nodep->prodp(findProd(nodep, m_curSymp, nodep->name()));
+        iterateChildren(nodep);
     }
     void visit(AstWith* nodep) override {
         LINKDOT_VISIT_START();

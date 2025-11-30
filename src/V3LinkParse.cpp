@@ -66,6 +66,7 @@ class LinkParseVisitor final : public VNVisitor {
     int m_genblkAbove = 0;  // Begin block number of if/case/for above
     int m_genblkNum = 0;  // Begin block number, 0=none seen
     int m_beginDepth = 0;  // How many begin blocks above current node within current AstNodeModule
+    int m_randSequenceNum = 0;  // RandSequence uniqify number
     VLifetime m_lifetime = VLifetime::STATIC_IMPLICIT;  // Propagating lifetime
     bool m_insideLoop = false;  // True if the node is inside a loop
     bool m_lifetimeAllowed = false;  // True to allow lifetime settings
@@ -647,30 +648,6 @@ class LinkParseVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
-    void visit(AstRandSequence* nodep) override {
-        cleanFileline(nodep);
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: randsequence");
-        iterateChildren(nodep);
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-    }
-    void visit(AstRSCase* nodep) override {
-        cleanFileline(nodep);
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: randsequence case");
-        iterateChildren(nodep);
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-    }
-    void visit(AstRSIf* nodep) override {
-        cleanFileline(nodep);
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: randsequence if");
-        iterateChildren(nodep);
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-    }
-    void visit(AstRSRepeat* nodep) override {
-        cleanFileline(nodep);
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: randsequence repeat");
-        iterateChildren(nodep);
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-    }
     void visit(AstWait* nodep) override {
         cleanFileline(nodep);
         iterateChildren(nodep);
@@ -701,6 +678,7 @@ class LinkParseVisitor final : public VNVisitor {
         VL_RESTORER(m_lifetime);
         VL_RESTORER(m_lifetimeAllowed);
         VL_RESTORER(m_moduleWithGenericIface);
+        VL_RESTORER(m_randSequenceNum);
         VL_RESTORER(m_valueModp);
 
         // Module: Create sim table for entire module and iterate
@@ -718,6 +696,8 @@ class LinkParseVisitor final : public VNVisitor {
         m_lifetime = nodep->lifetime().makeImplicit();
         m_lifetimeAllowed = VN_IS(nodep, Class);
         m_moduleWithGenericIface = false;
+        m_randSequenceNum = 0;
+
         if (m_lifetime.isNone()) {
             m_lifetime
                 = VN_IS(nodep, Class) ? VLifetime::AUTOMATIC_IMPLICIT : VLifetime::STATIC_IMPLICIT;
@@ -891,6 +871,11 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
         nodep->name(m_modp->name());
         nodep->timeunit(m_modp->timeunit());
+    }
+    void visit(AstRandSequence* nodep) override {
+        cleanFileline(nodep);
+        nodep->name("__Vrs" + std::to_string(m_randSequenceNum++));
+        iterateChildren(nodep);
     }
     void visit(AstSFormatF* nodep) override {
         cleanFileline(nodep);

@@ -199,7 +199,7 @@ public:
 
 // === AstNode ===
 class AstCaseItem final : public AstNode {
-    // Single item of AstCase/AstRandCase/AstRSCase
+    // Single item of AstCase/AstRandCase
     // @astgen op1 := condsp : List[AstNodeExpr]
     // @astgen op2 := stmtsp : List[AstNode]
 public:
@@ -887,42 +887,17 @@ public:
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }
     VTimescale timeunit() const { return m_timeunit; }
 };
-class AstRSCase final : public AstNodeStmt {
-    // Randsequence case statement
-    // @astgen op1 := exprp : AstNodeExpr // Condition (scurtinee) expression
-    // @astgen op2 := itemsp : List[AstCaseItem]
+class AstRSBreak final : public AstNodeStmt {
+    // randsequence break
 public:
-    AstRSCase(FileLine* fl, AstNodeExpr* exprp, AstCaseItem* itemsp)
-        : ASTGEN_SUPER_Case(fl) {
-        this->exprp(exprp);
-        addItemsp(itemsp);
-    }
-    ASTGEN_MEMBERS_AstRSCase;
-    int instrCount() const override { return INSTR_COUNT_BRANCH; }
-    bool sameNode(const AstNode* samep) const override { return true; }
-};
-class AstRSIf final : public AstNodeStmt {
-    // Randsequence if
-    // @astgen op1 := condp : AstNodeExpr
-    // @astgen op2 := thensp : List[AstNode]
-    // @astgen op3 := elsesp : List[AstNode]
-public:
-    AstRSIf(FileLine* fl, AstNodeExpr* condp, AstNode* thensp, AstNode* elsesp)
-        : ASTGEN_SUPER_RSIf(fl) {
-        this->condp(condp);
-        addThensp(thensp);
-        addElsesp(elsesp);
-    }
-
-public:
-    ASTGEN_MEMBERS_AstRSIf;
-    bool isGateOptimizable() const override { return false; }
-    bool isGateDedupable() const override { return false; }
-    int instrCount() const override { return INSTR_COUNT_BRANCH; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    explicit AstRSBreak(FileLine* fl)
+        : ASTGEN_SUPER_RSBreak(fl) {}
+    ASTGEN_MEMBERS_AstRSBreak;
+    string verilogKwd() const override { return "break"; }
+    bool isBrancher() const override { V3ERROR_NA_RETURN(true); }  // Node removed early
 };
 class AstRSProd final : public AstNodeStmt {
-    // randomsquence production, under a AstRandSequence
+    // randomsequence production, under a AstRandSequence
     // @astgen op1 := fvarp : Optional[AstVar]
     // @astgen op2 := portsp : List[AstNode]
     // @astgen op3 := rulesp : List[AstRSRule]
@@ -935,12 +910,14 @@ public:
         addRulesp(rulesp);
     }
     ASTGEN_MEMBERS_AstRSProd;
+    bool maybePointedTo() const override VL_MT_SAFE { return true; }
     string name() const override VL_MT_STABLE { return m_name; }
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
 };
 class AstRSProdItem final : public AstNodeStmt {
     // randomsquence production item
     // @astgen op1 := argsp : List[AstNodeExpr]
+    // @astgen ptr := m_prodp : Optional[AstRSProd]  // Pointer to production
     string m_name;  // Name of block, or "" to use first production
 public:
     AstRSProdItem(FileLine* fl, const string& name, AstNodeExpr* argsp)
@@ -951,6 +928,8 @@ public:
     ASTGEN_MEMBERS_AstRSProdItem;
     string name() const override VL_MT_STABLE { return m_name; }
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
+    AstRSProd* prodp() const { return m_prodp; }
+    void prodp(AstRSProd* nodep) { m_prodp = nodep; }
 };
 class AstRSProdList final : public AstNodeStmt {
     // randomsquence production list
@@ -970,32 +949,26 @@ public:
     bool randJoin() const { return m_randJoin; }
     void randJoin(bool flag) { m_randJoin = flag; }
 };
-class AstRSRepeat final : public AstNodeStmt {
-    // randsequence repeat
-    // @astgen op1 := countp : AstNodeExpr
-    // @astgen op2 := stmtsp : List[AstNode]
+class AstRSReturn final : public AstNodeStmt {
+    // randsequence return
 public:
-    AstRSRepeat(FileLine* fl, AstNodeExpr* countp, AstNode* stmtsp)
-        : ASTGEN_SUPER_RSRepeat(fl) {
-        this->countp(countp);
-        addStmtsp(stmtsp);
-    }
-    ASTGEN_MEMBERS_AstRSRepeat;
-    bool isGateOptimizable() const override { return false; }
-    int instrCount() const override { return INSTR_COUNT_BRANCH; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    explicit AstRSReturn(FileLine* fl)
+        : ASTGEN_SUPER_RSReturn(fl) {}
+    ASTGEN_MEMBERS_AstRSReturn;
+    string verilogKwd() const override { return "return"; }
+    bool isBrancher() const override { V3ERROR_NA_RETURN(true); }  // Node removed early
 };
 class AstRSRule final : public AstNodeStmt {
     // randomsquence rule
     // @astgen op1 := weightp : Optional[AstNodeExpr]
     // @astgen op2 := prodlistsp : List[AstRSProdList]
-    // @astgen op3 := stmtsp : List[AstNode]
+    // @astgen op3 := weightStmtsp : List[AstNode]
 public:
-    AstRSRule(FileLine* fl, AstNodeExpr* weightp, AstRSProdList* prodlistsp, AstNode* stmtsp)
+    AstRSRule(FileLine* fl, AstNodeExpr* weightp, AstRSProdList* prodlistsp, AstNode* weightStmtsp)
         : ASTGEN_SUPER_RSRule(fl) {
         this->weightp(weightp);
         addProdlistsp(prodlistsp);
-        addStmtsp(stmtsp);
+        addWeightStmtsp(weightStmtsp);
     }
     ASTGEN_MEMBERS_AstRSRule;
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
@@ -1013,16 +986,24 @@ public:
 };
 class AstRandSequence final : public AstNodeStmt {
     // @astgen op2 := prodsp : List[AstRSProd]
-    string m_name;  // Name of block, or "" to use first production
+    // @astgen ptr := m_prodp : Optional[AstRSProd]  // Pointer to start production (if any)
+    string m_name;  // Created unique name
+    string m_start;  // Name of start production, or "" to use first production
 public:
-    AstRandSequence(FileLine* fl, const string& name, AstRSProd* prodsp)
+    AstRandSequence(FileLine* fl, const string& start, AstRSProd* prodsp)
         : ASTGEN_SUPER_RandSequence(fl)
-        , m_name{name} {
+        , m_start{start} {
         addProdsp(prodsp);
     }
     ASTGEN_MEMBERS_AstRandSequence;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }  // * = Block name
+    void name(const string& name) override { m_name = name; }
+    string start() const VL_MT_STABLE { return m_start; }
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
+    AstRSProd* prodp() const { return m_prodp; }
+    void prodp(AstRSProd* nodep) { m_prodp = nodep; }
 };
 class AstRelease final : public AstNodeStmt {
     // Procedural 'release' statement

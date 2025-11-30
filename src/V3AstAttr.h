@@ -940,7 +940,7 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
 
 class VCaseType final {
 public:
-    enum en : uint8_t { CT_CASE, CT_CASEX, CT_CASEZ, CT_CASEINSIDE };
+    enum en : uint8_t { CT_CASE, CT_CASEX, CT_CASEZ, CT_CASEINSIDE, CT_RANDSEQUENCE };
     enum en m_e;
     VCaseType()
         : m_e{CT_CASE} {}

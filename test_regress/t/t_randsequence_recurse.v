@@ -19,12 +19,12 @@ module t(/*AUTOARG*/);
     i = 0;
 
     randsequence(main)
-      main : recurse recurse;
-      recurse: { i++; if ((i % 4) == 0) break; } add recurse;
+      main : add /*1*/ add /*1*/ recurse /* 2 */ recurse /* 0 */;
+      recurse: { i++; if (i >= 3) break; } add recurse;
       add: { o++; } ;
     endsequence
 
-    `checkd(o, 3);
+    `checkd(o, 4);
 
     $write("*-* All Finished *-*\n");
     $finish;

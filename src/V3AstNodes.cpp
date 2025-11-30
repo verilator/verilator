@@ -2271,6 +2271,14 @@ void AstTypedefFwd::dumpJson(std::ostream& str) const {
 }
 void AstNodeRange::dump(std::ostream& str) const { this->AstNode::dump(str); }
 void AstNodeRange::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
+void AstRandSequence::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " start=" << start();
+}
+void AstRandSequence::dumpJson(std::ostream& str) const {
+    if (!start().empty()) dumpJsonStr(str, "start", start());
+    dumpJsonGen(str);
+}
 void AstRange::dump(std::ostream& str) const {
     this->AstNodeRange::dump(str);
     if (fromBracket()) str << " [FB]";

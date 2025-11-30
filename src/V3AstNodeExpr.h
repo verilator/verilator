@@ -1917,6 +1917,12 @@ public:
         , m_urandom{urandom} {
         this->seedp(seedp);
     }
+    class SRandomU32 {};
+    AstRand(FileLine* fl, SRandomU32)
+        : ASTGEN_SUPER_Rand(fl)
+        , m_urandom{true} {
+        dtypeSetUInt32();
+    }
     ASTGEN_MEMBERS_AstRand;
     string emitVerilog() override {
         return seedp() ? (m_urandom ? "%f$urandom(%l)" : "%f$random(%l)")
