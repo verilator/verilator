@@ -347,6 +347,7 @@ class LinkCellsVisitor final : public VNVisitor {
         }
         if (!topFound) {
             nodep->v3error("Can't find top-level module for instance path: '" << hierPath << "'");
+            V3Error::abortIfErrors();
             return nullptr;
         }
 
