@@ -30,6 +30,7 @@ class AstCell;
 class AstNodeModule;
 class AstRefDType;
 class AstTypedef;
+class AstVar;
 class VSymEnt;
 
 namespace LinkDotIfaceCapture {
