@@ -3527,7 +3527,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 return;
             }
             // Find the interface port variable from dotText
-            // Find the interface port variable from dotText
             AstVar* ifacePortVarp = nullptr;
             if (!m_ds.m_dotText.empty() && m_curSymp) {
                 // dotText may contain nested dots; extract first segment (the port name)

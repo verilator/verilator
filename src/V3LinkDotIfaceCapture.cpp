@@ -65,11 +65,6 @@ void add(AstRefDType* refp, AstCell* cellp, AstNodeModule* ownerModp, AstTypedef
         refp, cellp, ownerModp, resolvedTypedefp, resolvedTypedefOwner, nullptr, ifacePortVarp};
 }
 
-void add(const CapturedIfaceTypedef& entry) {
-    if (!entry.refp) return;
-    capturedMap()[entry.refp] = entry;
-}
-
 const CapturedIfaceTypedef* find(const AstRefDType* refp) {
     if (!refp) return nullptr;
     auto& map = capturedMap();
@@ -144,7 +139,6 @@ bool replaceTypedef(const AstRefDType* refp, AstTypedef* newTypedefp) {
     if (it == map.end()) return false;
     it->second.typedefp = newTypedefp;
     it->second.typedefOwnerModp = findOwnerModule(newTypedefp);
-    //if (finalizeCapturedEntry(it, "typedef clone")) return true;
     finalizeCapturedEntry(it, "typedef clone");
     return true;
 }
@@ -174,7 +168,6 @@ void propagateClone(const AstRefDType* origRefp, AstRefDType* newRefp) {
     if (entry.cellp) newRefp->user2p(entry.cellp);
     newRefp->user3(false);
     entry.pendingClonep = newRefp;
-    //if (finalizeCapturedEntry(it, "ref clone")) return;
     finalizeCapturedEntry(it, "ref clone");
 }
 
