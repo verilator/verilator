@@ -1097,7 +1097,7 @@ class ParamProcessor final {
                 // Only consider formal class type parameters (generic parameters),
                 // not localparam type declarations inside the class body.
                 if (!paramTypep->isGParam()) continue;
-                m_paramIndex.emplace(paramTypep, m_classParams.size());
+                m_paramIndex.emplace(paramTypep, static_cast<int>(m_classParams.size()));
                 m_classParams.emplace_back(paramTypep, -1);
             }
         }
