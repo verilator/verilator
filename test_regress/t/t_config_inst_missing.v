@@ -19,4 +19,3 @@ config cfg1;
   // t2 not found, causes error
   instance t2.u_2.u_23 use liba.m3;
 endconfig
-
