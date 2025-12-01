@@ -80,25 +80,43 @@ module t_scope_std_randomize;
         `checkd(test.std_randomize(), 1);
 
         // Test array randomization with constraints
-        /* verilator lint_off WIDTHEXPAND */
-        `checkd(std::randomize(limit) with { foreach (limit[i]) { limit[i] < 100;}}, 1);
-        foreach (limit[i]) if (limit[i] >= 100) $stop;
+        `checkd(std::randomize(limit) with { foreach (limit[i]) { limit[i] < 32'd100;}}, 1);
+        foreach (limit[i]) if (limit[i] >= 32'd100) $stop;
 
-        `checkd(std::randomize(limit_7bits) with { foreach (limit_7bits[i]) { limit_7bits[i] < 10;}}, 1);
-        foreach (limit_7bits[i]) if (limit_7bits[i] >= 10) $stop;
+        `checkd(std::randomize(limit_7bits) with { foreach (limit_7bits[i]) { limit_7bits[i] < 7'd10;}}, 1);
+        foreach (limit_7bits[i]) if (limit_7bits[i] >= 7'd10) $stop;
 
-        `checkd(std::randomize(limit_15bits) with { foreach (limit_15bits[i]) { limit_15bits[i] < 1000;}}, 1);
-        foreach (limit_15bits[i]) if (limit_15bits[i] >= 1000) $stop;
+        `checkd(std::randomize(limit_15bits) with { foreach (limit_15bits[i]) { limit_15bits[i] < 15'd1000;}}, 1);
+        foreach (limit_15bits[i]) if (limit_15bits[i] >= 15'd1000) $stop;
 
-        `checkd(std::randomize(limit_31bits) with { foreach (limit_31bits[i]) { limit_31bits[i] < 100000;}}, 1);
-        foreach (limit_31bits[i]) if (limit_31bits[i] >= 100000) $stop;
+        `checkd(std::randomize(limit_31bits) with { foreach (limit_31bits[i]) { limit_31bits[i] < 31'd100000;}}, 1);
+        foreach (limit_31bits[i]) if (limit_31bits[i] >= 31'd100000) $stop;
 
-        `checkd(std::randomize(limit_63bits) with { foreach (limit_63bits[i]) { limit_63bits[i] < 64'd10000000000;}}, 1);
-        foreach (limit_63bits[i]) if (limit_63bits[i] >= 64'd10000000000) $stop;
+        `checkd(std::randomize(limit_63bits) with { foreach (limit_63bits[i]) { limit_63bits[i] < 63'd10000000000;}}, 1);
+        foreach (limit_63bits[i]) if (limit_63bits[i] >= 63'd10000000000) $stop;
 
-        `checkd(std::randomize(limit_95bits) with { foreach (limit_95bits[i]) { limit_95bits[i] < 96'd1000000000000;}}, 1);
-        foreach (limit_95bits[i]) if (limit_95bits[i] >= 96'd1000000000000) $stop;
-        /* verilator lint_on WIDTHEXPAND */
+        `checkd(std::randomize(limit_95bits) with { foreach (limit_95bits[i]) { limit_95bits[i] < 95'd1000000000000;}}, 1);
+        foreach (limit_95bits[i]) if (limit_95bits[i] >= 95'd1000000000000) $stop;
+
+        foreach (limit_63bits[i]) begin
+            `checkd(std::randomize(limit_63bits[i]) with { limit_63bits[i] >= 63'd50; limit_63bits[i] < 63'd100;}, 1);
+            if ((limit_63bits[i] < 63'd50) || (limit_63bits[i] >= 63'd100)) `stop;
+        end
+
+        foreach (limit_95bits[i]) begin
+            `checkd(std::randomize(limit_95bits[i]) with { limit_95bits[i] >= 95'd50; limit_95bits[i] < 95'd1000;}, 1);
+            if (limit_95bits[i] < 95'd50 || limit_95bits[i] >= 95'd1000) $stop;
+        end
+
+        // Test mixed argument types (VarRef + MemberSel + ArraySel) with interdependent constraints
+        `checkd(std::randomize(addr, test.addr, limit_31bits[0]) with {
+            addr > 8'd10; addr < 8'd50;
+            test.addr > addr; test.addr < 8'd100;
+            limit_31bits[0] > 31'(test.addr); limit_31bits[0] < 31'd200;
+        }, 1);
+        if (addr <= 8'd10 || addr >= 8'd50) `stop;
+        if (test.addr <= addr || test.addr >= 8'd100) `stop;
+        if (limit_31bits[0] <= 31'(test.addr) || limit_31bits[0] >= 31'd200) `stop;
 
         $write("*-* All Finished *-*\n");
         $finish;
