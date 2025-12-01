@@ -16,31 +16,30 @@ module t (  /*AUTOARG*/
 
   integer cyc = 0;
 
-  logic in[2][-3:-5];
+  logic in[2][-2:2][-3:-5];
 
   // Test loop
   always @(posedge clk) begin
     cyc <= cyc + 1;
     if (cyc == 0) begin
-      in[0][-4] <= 1;
+      in[0][2][-4] <= 1;
     end else if (cyc == 1) begin
-      `checkh(in[0][-4], 1);
+      `checkh(in[0][2][-4], 1);
     end else if (cyc == 2) begin
-      force in[0][-4] = 0;
+      force in[0][2][-4] = 0;
     end else if (cyc == 3) begin
-      `checkh(in[0][-4], 0);
-      in[0][-4] <= 1;
+      `checkh(in[0][2][-4], 0);
+      in[0][2][-4] <= 1;
     end else if (cyc == 4) begin
-      `checkh(in[0][-4], 0);
+      `checkh(in[0][2][-4], 0);
     end else if (cyc == 5) begin
-      release in[0][-4];
+      release in[0][2][-4];
     end else if (cyc == 6) begin
-      `checkh(in[0][-4], 0);
-      in[0][-4] <= 1;
+      `checkh(in[0][2][-4], 0);
+      in[0][2][-4] <= 1;
     end else if (cyc == 7) begin
-      `checkh(in[0][-4], 1);
-    end
-    else if (cyc == 8) begin
+      `checkh(in[0][2][-4], 1);
+    end else if (cyc == 8) begin
       $write("*-* All Finished *-*\n");
       $finish;
     end
