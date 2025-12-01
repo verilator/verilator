@@ -128,7 +128,7 @@ public:
                             outerStmtp = currInitp;
                         }
                         AstLoop* const currWhilep = new AstLoop{flp};
-                        currInitp->addNext(currWhilep);
+                        currInitp->addNextHere(currWhilep);
                         AstLoopTest* const loopTestp = new AstLoopTest{
                             flp, currWhilep,
                             new AstNeq{flp, readRefp,
@@ -198,7 +198,7 @@ public:
                             outerStmtp = currInitp;
                         }
                         AstLoop* const currWhilep = new AstLoop{flp};
-                        currInitp->addNext(currWhilep);
+                        currInitp->addNextHere(currWhilep);
                         AstLoopTest* const loopTestp = new AstLoopTest{
                             flp, currWhilep,
                             new AstNeq{flp, readRefp,
