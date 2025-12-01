@@ -107,7 +107,7 @@ public:
                     = VN_CAST(m_rdVscp->varp()->dtypep(), UnpackArrayDType)) {
                     std::vector<AstUnpackArrayDType*> dims = unpackedp->unpackDimensions();
                     loopVarRefs.reserve(dims.size());
-                    for (int i = dims.size() - 1; i >= 0; i--) {
+                    for (size_t i = 0; i < dims.size(); i++) {
                         AstVar* const loopVarp = new AstVar{
                             flp, VVarType::MODULETEMP,
                             m_rdVscp->varp()->name() + "__VwhileInitIter" + std::to_string(i),
@@ -177,7 +177,7 @@ public:
                     = VN_CAST(m_rdVscp->varp()->dtypep(), UnpackArrayDType)) {
                     std::vector<AstUnpackArrayDType*> dims = unpackedp->unpackDimensions();
                     loopVarRefs.reserve(dims.size());
-                    for (int i = dims.size() - 1; i >= 0; i--) {
+                    for (size_t i = 0; i  < dims.size(); i++) {
                         AstVar* const loopVarp = new AstVar{
                             flp, VVarType::MODULETEMP,
                             m_rdVscp->varp()->name() + "__VwhileIter" + std::to_string(i),
