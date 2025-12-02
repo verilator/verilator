@@ -110,7 +110,7 @@ public:
     //=========================================================================
     // Internal interface to Verilator generated code
 
-    void pushPrefix(const std::string&, VerilatedTracePrefixType);
+    void pushPrefix(const char*, VerilatedTracePrefixType);
     void popPrefix();
 
     void declEvent(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
