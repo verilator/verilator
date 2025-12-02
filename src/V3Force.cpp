@@ -262,7 +262,7 @@ private:
     //  AstVar::user1p        -> ForceComponentsVar* instance (via m_forceComponentsVar)
     //  AstVarScope::user1p   -> ForceComponentsVarScope* instance (via m_forceComponentsVarScope)
     //  AstVarRef::user2      -> Flag indicating not to replace reference
-    //  AstAssign::user2     -> Flag indicating that the assignment
+    //  AstAssign::user2      -> Flag indicating that assignment was created for AstRelease handling
     //  AstVarScope::user3p   -> AstAssign*, the assignment <lhs>__VforceVal = <rhs>
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
@@ -502,7 +502,7 @@ class ForceReplaceVisitor final : public VNVisitor {
     AstNodeStmt* m_stmtp = nullptr;
     bool m_inLogic = false;
     bool m_releaseRhs = false;  // Inside RHS of assignment created for release statement
-    std::vector<AstNodeExpr*> m_selIndices;  // Indices of select expressions above
+    std::vector<AstNodeExpr*> m_selIndices;  // Indices of array select expressions above
 
     // METHODS
     void iterateLogic(AstNode* logicp) {
