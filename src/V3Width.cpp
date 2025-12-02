@@ -6729,6 +6729,8 @@ class WidthVisitor final : public VNVisitor {
                 v3Global.rootp()->typeTablep()->addTypesp(adtypep);
                 withp = methodWithArgument(nodep, false, false, adtypep->findVoidDType(),
                                            adtypep->findBitDType(), adtypep);
+                for (const AstNode* argp = nodep->pinsp(); argp; argp = argp->nextp())
+                    userIterateAndNext(VN_AS(argp, Arg)->exprp(), WidthVP{SELF, BOTH}.p());
                 handleRandomizeArgs(nodep, classp);
             } else if (nodep->name() == "srandom") {
                 nodep->taskp(V3Randomize::newSRandomFunc(m_memberMap, classp));
