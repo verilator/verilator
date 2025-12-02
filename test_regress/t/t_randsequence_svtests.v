@@ -7,6 +7,19 @@
 
 module t;
 
+  function int abort_break();
+    int x;
+    static int return_on = 1;
+    randsequence( main )
+      main : first second third;
+      first : { x = x + 20; };
+      second : { if (return_on == 1) return; x = x + 10; };
+      third : { x = x + 5;};
+    endsequence
+    return x;
+  endfunction
+
+
   initial begin
     int x;
     bit flag = 1;
@@ -133,7 +146,7 @@ module t;
       main : first second third;
       first : { x = x + 20; };
       second : { if (return_on == 1) return; x = x + 10; };
-      third : { x = x + 5;};
+      third : { x = x + 5; };
     endsequence
     `checkd(x, 25);
 
@@ -143,7 +156,7 @@ module t;
       main : first second third;
       first : { x = x + 20; };
       second : { if (return_on == 1) return; x = x + 10; };
-      third : { x = x + 5;};
+      third : { x = x + 5; };
     endsequence
     `checkd(x, 35);
 
@@ -159,6 +172,9 @@ module t;
     endsequence
     `checkd(x, 17);
 `endif
+
+    x = abort_break();
+    `checkd(x, 25);
 
     $finish;
   end

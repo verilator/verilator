@@ -356,13 +356,13 @@ class LinkJumpVisitor final : public VNVisitor {
     void visit(AstReturn* nodep) override {
         iterateChildren(nodep);
         const AstFunc* const funcp = VN_CAST(m_ftaskp, Func);
-        if (m_inFork) {
-            nodep->v3error("Return isn't legal under fork (IEEE 1800-2023 9.2.3)");
-            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-            return;
-        } else if (!m_ftaskp && m_randsequencep) {
+        if (m_randsequencep) {
             nodep->replaceWith(new AstRSReturn{nodep->fileline()});
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        } else if (m_inFork) {
+            nodep->v3error("Return isn't legal under fork (IEEE 1800-2023 9.2.3)");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         } else if (!m_ftaskp) {
             nodep->v3error("Return isn't underneath a task or function");
