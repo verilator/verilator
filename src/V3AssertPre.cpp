@@ -630,6 +630,7 @@ private:
         }
         // Unlink and just keep a pointer to it, convert to sentree as needed
         m_senip = nodep->sensesp();
+        iterateChildren(nodep);
     }
     void visit(AstPExpr* nodep) override {
         VL_RESTORER(m_inPExpr);
