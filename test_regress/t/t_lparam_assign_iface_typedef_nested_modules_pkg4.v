@@ -1,4 +1,11 @@
-package aerial;
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2025 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
+//
+
+package aer;
   typedef struct packed {
     int unsigned NumCca;
   } cfg_t;
@@ -21,7 +28,7 @@ interface tb_if #(parameter cca::cfg_t cfg=0)();
 endinterface
 
 module modA#(
-  parameter aerial::cfg_t cfg=0
+  parameter aer::cfg_t cfg=0
   //
   ,localparam type rule_t = amb::rule_t
 )();
@@ -36,7 +43,7 @@ endmodule
 
 module tb();
 
-  localparam aerial::cfg_t aer_cfg= '{
+  localparam aer::cfg_t aer_cfg= '{
     NumCca : 2
   };
 
