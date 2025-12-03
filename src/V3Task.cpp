@@ -1520,14 +1520,22 @@ class TaskVisitor final : public VNVisitor {
 
             if (m_inNew) {
                 AstVar* varp = outvscp->varp();
-                varp->funcLocal(true);
 
                 // Create a new var that will be inside the lambda
                 AstVar* newvarp = varp->cloneTree(false);
+                newvarp->funcLocal(true);
 
-                // Replace all references so they point to the new var
-                lambdap->stmtsp()->foreachAndNext([varp, newvarp](AstVarRef* refp) {
-                    if (refp->varp() == varp) refp->varp(newvarp);
+                // Create a new VarScope for the new variable
+                AstVarScope* const newvscp
+                    = new AstVarScope{newvarp->fileline(), m_scopep, newvarp};
+                m_scopep->addVarsp(newvscp);
+
+                // Replace all references so they point to the new var and varscope
+                lambdap->stmtsp()->foreachAndNext([outvscp, newvscp](AstVarRef* refp) {
+                    if (refp->varScopep() == outvscp) {
+                        refp->varScopep(newvscp);
+                        refp->varp(newvscp->varp());
+                    }
                 });
 
                 // Add variable initialization
