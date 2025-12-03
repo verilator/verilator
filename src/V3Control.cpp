@@ -652,14 +652,13 @@ public:
         return {prefix, varTarget};
     }
     // Add the hook-insertion config data to the map to create the initial map (Used in verilog.y)
-    void addHookInsCfg(FileLine* fl, const string& insFunction, int insID,
-                          const string& target) {
+    void addHookInsCfg(FileLine* fl, const string& insFunction, int insID, const string& target) {
         // Error MSG if the hook-insertion of the top module is not possible
         if ((std::count(target.begin(), target.end(), '.') < 2)) {
-            v3fatal(
-                "In .vlt defined target tries to insert-hook to the highest MODULE, which is not possible!"
-                " ... Target string: "
-                << target);
+            v3fatal("In .vlt defined target tries to insert-hook to the highest MODULE, which is "
+                    "not possible!"
+                    " ... Target string: "
+                    << target);
         }
         // Implement custom iterator to remove the last part of the target and insert it into the
         // vector of the map If the target string is the same as one already in the map, push the
@@ -740,7 +739,7 @@ void V3Control::addModulePragma(const string& module, VPragmaType pragma) {
 }
 
 void V3Control::addHookInsCfg(FileLine* fl, const string& insfunc, int insID,
-                                 const string& target) {
+                              const string& target) {
     V3ControlResolver::s().addHookInsCfg(fl, insfunc, insID, target);
 }
 

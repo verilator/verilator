@@ -139,19 +139,19 @@ class HookInsTargetFndr final : public VNVisitor {
     void addParam(AstModule* modp) {
         AstVar* paramp = new AstVar{modp->fileline(), VVarType::GPARAM, "HOOKINS",
                                     VFlagChildDType{}, nullptr};
-        paramp->valuep(new AstConst{modp->fileline(), AstConst::Signed32{}, 0});
+        paramp->valuep(new AstConst{modp->fileline(), AstConst::String{}, ""});
         paramp->dtypep(paramp->valuep()->dtypep());
         paramp->ansi(true);
         modp->addStmtsp(paramp);
     }
     // Helper function for adding the parameters into the tree
-    void addPin(AstCell* cellp, bool isInsPath) {
+    void addPin(AstCell* cellp, bool isInsPath, const string& target) {
         int pinnum = 0;
         if (isInsPath) {
             for (AstNode* n = cellp->pinsp(); n; n = n->nextp()) { pinnum++; }
             AstPin* pinp = new AstPin{cellp->fileline(), pinnum + 1, "HOOKINS",
                                       // The pin is set to 1 to enable the hook-insertion path
-                                      new AstConst{cellp->fileline(), AstConst::Signed32{}, 1}};
+                                      new AstConst{cellp->fileline(), AstConst::String{}, target}};
             pinp->param(true);
             cellp->addParamsp(pinp);
         } else {
@@ -372,17 +372,17 @@ class HookInsTargetFndr final : public VNVisitor {
                 m_foundModp = false;
                 m_initModp = false;
                 m_currHier = m_currHier + "." + nodep->name();
-                if (!hasPin(nodep)) { addPin(nodep, false); }
+                if (!hasPin(nodep)) { addPin(nodep, false, m_target); }
                 multCellForModp(nodep);
-                setCell(nodep, m_target);
+                setCell(nodep->cloneTree(false, false), m_target);
             } else if (targetHasPrefix(m_currHier + "." + nodep->name(), m_target)) {
                 m_foundCellp = true;
                 m_foundModp = false;
                 m_initModp = false;
                 m_currHier = m_currHier + "." + nodep->name();
-                if (!hasPin(nodep)) { addPin(nodep, true); }
+                if (!hasPin(nodep)) { addPin(nodep, true, m_target); }
                 multCellForModp(nodep);
-                setCell(nodep, m_target);
+                setCell(nodep->cloneTree(false, false), m_target);
             } else if (!m_foundCellp && !VN_IS(nodep->nextp(), Cell)) {
                 v3error("Verilator-configfile': could not find initial 'instance' in "
                         "'topModule.instance.__' ... Target string: '"
@@ -395,15 +395,15 @@ class HookInsTargetFndr final : public VNVisitor {
             m_foundCellp = true;
             m_foundModp = false;
             m_currHier = m_currHier + "." + nodep->name();
-            if (!hasPin(nodep)) { addPin(nodep, false); }
+            if (!hasPin(nodep)) { addPin(nodep, false, m_target); }
             multCellForModp(nodep);
-            setCell(nodep, m_target);
+            setCell(nodep->cloneTree(false, false), m_target);
         } else if (m_modp != nullptr
                    && targetHasPrefix(m_currHier + "." + nodep->name(), m_target)) {
             m_foundCellp = true;
             m_foundModp = false;
             m_currHier = m_currHier + "." + nodep->name();
-            if (!hasPin(nodep)) { addPin(nodep, false); }
+            if (!hasPin(nodep)) { addPin(nodep, false, m_target); }
             multCellForModp(nodep);
         }
     }
@@ -417,8 +417,7 @@ class HookInsTargetFndr final : public VNVisitor {
     //the original version are added to the hook-insertion config map.
     void visit(AstVar* nodep) override {
         if (m_targetModp != nullptr) {
-            const HookInsertTarget& target
-                = V3Control::getHookInsCfg().find(m_currHier)->second;
+            const HookInsertTarget& target = V3Control::getHookInsCfg().find(m_currHier)->second;
             for (const auto& entry : target.entries) {
                 if (nodep->name() == entry.varTarget) {
                     int width = 0;
@@ -566,6 +565,11 @@ class HookInsFunc final : public VNVisitor {
         }
         return nullptr;
     }
+    bool isTarget(const std::string& key) {
+        const auto& map = V3Control::getHookInsCfg();
+        const auto insCfg = map.find(key);
+        return insCfg != map.end();
+    }
     // Check if the given module node pointer is an hook-inserted module entry in the configuration
     // map for the given key
     bool isInsModEntry(AstModule* nodep, const std::string& key) {
@@ -637,7 +641,8 @@ class HookInsFunc final : public VNVisitor {
             return -1;
         }
     }
-    // Get the callback function name from the hook-insertion for the given key in the configuration map
+    // Get the callback function name from the hook-insertion for the given key in the
+    // configuration map
     string getMapEntryFunction(const std::string& key, size_t index) {
         const auto& map = V3Control::getHookInsCfg();
         const auto insCfg = map.find(key);
@@ -645,6 +650,13 @@ class HookInsFunc final : public VNVisitor {
             const auto& entries = insCfg->second.entries;
             if (index < entries.size()) { return entries[index].insFunc; }
             return "";
+        } else {
+            return "";
+        }
+    }
+    string cleanString(const string& str) {
+        if (str.size() >= 2 && str.front() == '"' && str.back() == '"') {
+            return str.substr(1, str.size() - 2);
         } else {
             return "";
         }
@@ -852,8 +864,7 @@ class HookInsFunc final : public VNVisitor {
                     if (VN_IS(n, Port)) { m_pinnum = VN_CAST(n, Port)->pinNum(); }
                 }
                 iterateChildren(nodep);
-            } else if ((std::count(m_targetKey.begin(), m_targetKey.end(), '.') > 0)
-                       && (isPointingModEntry(nodep) || isTopModEntry(nodep))
+            } else if ((isPointingModEntry(nodep) || isTopModEntry(nodep))
                        && !hasMultiple(m_targetKey)) {
                 m_current_module_cell_check = nodep;
                 AstCell* insCellp = getMapEntryCell(m_targetKey);
@@ -864,14 +875,57 @@ class HookInsFunc final : public VNVisitor {
                 AstCell* insCellp = getMapEntryCell(m_targetKey)->cloneTree(false);
                 insCellp->modp(getMapEntryInsModule(m_targetKey));
                 for (AstNode* n = insCellp->pinsp(); n; n = n->nextp()) { m_pinnum++; }
+                bool addedInitGenIf = false;
+                bool breakOuter = false;
+                std::string condValue = "";
                 m_insGenBlock = new AstGenBlock{nodep->fileline(), "", insCellp, false};
-                AstGenIf* genifp = new AstGenIf{
-                    nodep->fileline(), new AstParseRef{nodep->fileline(), "HOOKINS"},
-                    m_insGenBlock,
-                    new AstGenBlock{nodep->fileline(), "",
-                                    getMapEntryCell(m_targetKey)->cloneTree(false), false}};
-
-                nodep->addStmtsp(genifp);
+                for (AstNode* n = nodep->op2p(); n; n = n->nextp()) {
+                    if (VN_IS(n, GenIf)) {
+                        condValue = cleanString(VN_CAST(n, GenIf)->condp()->op2p()->name());
+                        if (condValue != "" && isTarget(condValue)) { addedInitGenIf = true; }
+                        for (AstNode* m = n; VN_CAST(m, GenIf)->elsesp()->op2p();
+                             m = VN_CAST(m, GenIf)->elsesp()->op2p()) {
+                            if (VN_IS(m, GenIf)) {
+                                condValue
+                                    = cleanString(VN_CAST(m, GenIf)->condp()->op2p()->name());
+                                if (condValue == m_targetKey) {
+                                    breakOuter = true;
+                                    break;
+                                }
+                                if (VN_CAST(m, GenIf)->elsesp()->op2p()->type() != VNType::GenIf) {
+                                    AstGenIf* genifp = new AstGenIf{
+                                        nodep->fileline(),
+                                        new AstEq{nodep->fileline(),
+                                                  new AstParseRef{nodep->fileline(), "HOOKINS"},
+                                                  new AstConst{nodep->fileline(),
+                                                               AstConst::String{}, m_targetKey}},
+                                        m_insGenBlock,
+                                        new AstGenBlock{
+                                            nodep->fileline(), "",
+                                            getMapEntryCell(m_targetKey)->cloneTree(false),
+                                            false}};
+                                    VN_CAST(m, GenIf)->elsesp()->op2p()->replaceWith(genifp);
+                                    breakOuter = true;
+                                    break;
+                                }
+                            } else {
+                                v3fatal("Something went wrong!");
+                            }
+                        }
+                    }
+                    if (breakOuter) { break; }
+                }
+                if (!addedInitGenIf) {
+                    AstGenIf* genifp = new AstGenIf{
+                        nodep->fileline(),
+                        new AstEq{
+                            nodep->fileline(), new AstParseRef{nodep->fileline(), "HOOKINS"},
+                            new AstConst{nodep->fileline(), AstConst::String{}, m_targetKey}},
+                        m_insGenBlock,
+                        new AstGenBlock{nodep->fileline(), "",
+                                        getMapEntryCell(m_targetKey)->cloneTree(false), false}};
+                    nodep->addStmtsp(genifp);
+                }
                 iterateChildren(m_insGenBlock);
                 iterateChildren(nodep);
             }
@@ -923,16 +977,21 @@ class HookInsFunc final : public VNVisitor {
     //by the ASTPIN VISITOR FUNCTION.
     //    - If hasMultiple is true, the cell is unlinked from the back and deleted.
     //      This ensures that the cell is not used anymore in the module, and the conditional
-    //statment deciding between the hook-inserted and the original cell can be created/used. A third
-    //action is performed if the variable beeing hook-inserted is an ouput variable. In this case
-    //the children of this cell nodes are visited by the ASTPIN VISITOR FUNCTION.
+    //statment deciding between the hook-inserted and the original cell can be created/used. A
+    //third action is performed if the variable beeing hook-inserted is an ouput variable. In this
+    //case the children of this cell nodes are visited by the ASTPIN VISITOR FUNCTION.
     void visit(AstCell* nodep) override {
-        if (m_current_module_cell_check != nullptr && !hasMultiple(m_targetKey)
-            && nodep == getMapEntryCell(m_targetKey)) {
+        bool nodeHasName = false;
+        bool nodeHasCorrectBackp = false;
+        bool isCorrectMultCell = false;
+        nodeHasName = (nodep->name() == getMapEntryCell(m_targetKey)->name());
+        nodeHasCorrectBackp = (nodep->backp()->type() != VNType::GenBlock);
+        isCorrectMultCell = nodeHasName && nodeHasCorrectBackp;
+        if (m_current_module_cell_check != nullptr && !hasMultiple(m_targetKey) && nodeHasName) {
             nodep->modp(getMapEntryInsModule(m_targetKey));
             if (m_orig_varp->direction() == VDirection::OUTPUT) { iterateChildren(nodep); }
         } else if (m_current_module_cell_check != nullptr && hasMultiple(m_targetKey)
-                   && nodep == getMapEntryCell(m_targetKey)) {
+                   && isCorrectMultCell) {
             nodep->unlinkFrBack();
             nodep->deleteTree();
         } else if (m_insGenBlock != nullptr && nodep->modp() == getMapEntryInsModule(m_targetKey)
@@ -965,8 +1024,8 @@ class HookInsFunc final : public VNVisitor {
             AstVar* tmp_var_task = nullptr;
 
             insID = new AstVar{nodep->fileline(), VVarType::PORT, "insID", VFlagChildDType{},
-                                 new AstBasicDType{nodep->fileline(), VBasicDTypeKwd::INT,
-                                                   VSigning::SIGNED, 32, 0}};
+                               new AstBasicDType{nodep->fileline(), VBasicDTypeKwd::INT,
+                                                 VSigning::SIGNED, 32, 0}};
             insID->direction(VDirection::INPUT);
 
             var_x_task = m_orig_varp->cloneTree(false);
@@ -992,8 +1051,8 @@ class HookInsFunc final : public VNVisitor {
             AstVar* var_x_func = nullptr;
 
             insID = new AstVar{nodep->fileline(), VVarType::PORT, "insID", VFlagChildDType{},
-                                 new AstBasicDType{nodep->fileline(), VBasicDTypeKwd::INT,
-                                                   VSigning::SIGNED, 32, 0}};
+                               new AstBasicDType{nodep->fileline(), VBasicDTypeKwd::INT,
+                                                 VSigning::SIGNED, 32, 0}};
             insID->direction(VDirection::INPUT);
 
             var_x_func = m_orig_varp->cloneTree(false);

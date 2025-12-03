@@ -71,7 +71,7 @@ public:
                                const string& match);
     static void addInline(FileLine* fl, const string& module, const string& ftask, bool on);
     static void addHookInsCfg(FileLine* fl, const string& insfunc, int insID,
-                                 const string& target);
+                              const string& target);
     static std::map<string, HookInsertTarget, LengthThenLexiographic>& getHookInsCfg();
     static void addModulePragma(const string& module, VPragmaType pragma);
     static void addProfileData(FileLine* fl, const string& hierDpi, uint64_t cost);
