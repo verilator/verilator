@@ -1947,7 +1947,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
 
     DECL_OPTION("-insert-hook", OnOff, &m_insertHook);
-    DECL_OPTION("-dump-signals", OnOff, &m_dumpSignals);
 
     parser.finalize();
 

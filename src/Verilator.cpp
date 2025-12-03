@@ -45,7 +45,6 @@
 #include "V3Descope.h"
 #include "V3DfgOptimizer.h"
 #include "V3DiagSarif.h"
-#include "V3DumpSignals.h"
 #include "V3EmitC.h"
 #include "V3EmitCMain.h"
 #include "V3EmitCMake.h"
@@ -153,8 +152,6 @@ static void process() {
             cout << "--debug-exit-parse: Exiting after parse\n";
             v3Global.vlExit(0);
         }
-
-        if (v3Global.opt.dumpSignals()) { V3DumpSignals::dumpSignals(v3Global.rootp()); }
 
         // Hook-insert design with the configurations given in .vlt file
         if (v3Global.opt.insertHook()) {
