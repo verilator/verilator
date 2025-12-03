@@ -882,20 +882,51 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         VNRelinker relinker;
         nodep->unlinkFrBack(&relinker);
-        AstNodeExpr* exprp = new AstSFormatF{nodep->fileline(), smtName, false, nullptr};
+        AstNodeExpr* exprp;
         if (randMode.usesMode) {
-            AstNodeExpr* constFormatp = getConstFormat(nodep);
-            UASSERT_OBJ(m_randModeVarp, nodep, "No m_randModeVarp");
+            // Use string literal to avoid double formatting
+            exprp = new AstCExpr{nodep->fileline(), "std::string(\"" + smtName + "\")", 1};
+            exprp->dtypeSetString();
+
+            // Get const format, using membersel if available for correct width/value
+            AstNodeExpr* constFormatp = membersel ? getConstFormat(membersel->cloneTree(false))
+                                                  : getConstFormat(nodep);
+
+            // Build randmode access: for membersel, access parent object's __Vrandmode
+            AstNodeExpr* randModeAccess;
+            if (membersel) {
+                AstNodeExpr* parentAccess = membersel->fromp()->cloneTree(false);
+                AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
+                AstVar* const effectiveRandModeVarp = VN_AS(varClassp->user2p(), Var);
+                if (effectiveRandModeVarp) {
+                    AstMemberSel* randModeSel = new AstMemberSel{
+                        varp->fileline(), parentAccess, effectiveRandModeVarp};
+                    randModeSel->dtypep(effectiveRandModeVarp->dtypep());
+                    randModeAccess = randModeSel;
+                } else {
+                    UASSERT_OBJ(m_randModeVarp, nodep, "No m_randModeVarp");
+                    randModeAccess = new AstVarRef{varp->fileline(),
+                                                   VN_AS(m_randModeVarp->user2p(), NodeModule),
+                                                   m_randModeVarp, VAccess::READ};
+                }
+            } else {
+                UASSERT_OBJ(m_randModeVarp, nodep, "No m_randModeVarp");
+                randModeAccess = new AstVarRef{varp->fileline(),
+                                               VN_AS(m_randModeVarp->user2p(), NodeModule),
+                                               m_randModeVarp, VAccess::READ};
+            }
+
             AstCMethodHard* const atp = new AstCMethodHard{
-                nodep->fileline(),
-                new AstVarRef{varp->fileline(), VN_AS(m_randModeVarp->user2p(), NodeModule),
-                              m_randModeVarp, VAccess::READ},
-                VCMethod::ARRAY_AT, new AstConst{nodep->fileline(), randMode.index}};
+                nodep->fileline(), randModeAccess, VCMethod::ARRAY_AT,
+                new AstConst{nodep->fileline(), randMode.index}};
             atp->dtypeSetUInt32();
             exprp = new AstCond{varp->fileline(), atp, exprp, constFormatp};
-        } else if (!isGlobalConstrained) {
-            // Non-global constraints: delete nodep immediately
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            exprp->user1(true);  // Mark as formatted
+        } else {
+            exprp = new AstSFormatF{nodep->fileline(), smtName, false, nullptr};
+            if (!isGlobalConstrained) {
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            }
         }
         // else: Global constraints keep nodep alive for write_var processing
         relinker.relink(exprp);
@@ -952,7 +983,9 @@ class ConstraintExprVisitor final : public VNVisitor {
             methodp->addPinsp(varnamep);
             methodp->addPinsp(
                 new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{}, dimension});
-            if (randMode.usesMode) {
+            // Don't pass randMode.index for global constraints with membersel
+            // because constraint object can't access nested object's randmode array
+            if (randMode.usesMode && !(isGlobalConstrained && membersel)) {
                 methodp->addPinsp(
                     new AstConst{varp->fileline(), AstConst::Unsized64{}, randMode.index});
             }
