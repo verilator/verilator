@@ -174,8 +174,7 @@ void propagateClone(const AstRefDType* origRefp, AstRefDType* newRefp) {
     // If replaceTypedef was already called (interface cloned before module),
     // entry.typedefp will differ from the original RefDType's typedef.
     // In that case, finalize now with the updated typedef.
-    if (entry.typedefp && origRefp->typedefp()
-        && entry.typedefp != origRefp->typedefp()) {
+    if (entry.typedefp && origRefp->typedefp() && entry.typedefp != origRefp->typedefp()) {
         finalizeCapturedEntry(it, "ref clone");
     }
 }
