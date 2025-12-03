@@ -889,8 +889,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             exprp->dtypeSetString();
 
             // Get const format, using membersel if available for correct width/value
-            AstNodeExpr* constFormatp = membersel ? getConstFormat(membersel->cloneTree(false))
-                                                  : getConstFormat(nodep);
+            AstNodeExpr* constFormatp
+                = membersel ? getConstFormat(membersel->cloneTree(false)) : getConstFormat(nodep);
 
             // Build randmode access: for membersel, access parent object's __Vrandmode
             AstNodeExpr* randModeAccess;
@@ -899,8 +899,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                 AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
                 AstVar* const effectiveRandModeVarp = VN_AS(varClassp->user2p(), Var);
                 if (effectiveRandModeVarp) {
-                    AstMemberSel* randModeSel = new AstMemberSel{
-                        varp->fileline(), parentAccess, effectiveRandModeVarp};
+                    AstMemberSel* randModeSel
+                        = new AstMemberSel{varp->fileline(), parentAccess, effectiveRandModeVarp};
                     randModeSel->dtypep(effectiveRandModeVarp->dtypep());
                     randModeAccess = randModeSel;
                 } else {
@@ -911,22 +911,20 @@ class ConstraintExprVisitor final : public VNVisitor {
                 }
             } else {
                 UASSERT_OBJ(m_randModeVarp, nodep, "No m_randModeVarp");
-                randModeAccess = new AstVarRef{varp->fileline(),
-                                               VN_AS(m_randModeVarp->user2p(), NodeModule),
-                                               m_randModeVarp, VAccess::READ};
+                randModeAccess
+                    = new AstVarRef{varp->fileline(), VN_AS(m_randModeVarp->user2p(), NodeModule),
+                                    m_randModeVarp, VAccess::READ};
             }
 
-            AstCMethodHard* const atp = new AstCMethodHard{
-                nodep->fileline(), randModeAccess, VCMethod::ARRAY_AT,
-                new AstConst{nodep->fileline(), randMode.index}};
+            AstCMethodHard* const atp
+                = new AstCMethodHard{nodep->fileline(), randModeAccess, VCMethod::ARRAY_AT,
+                                     new AstConst{nodep->fileline(), randMode.index}};
             atp->dtypeSetUInt32();
             exprp = new AstCond{varp->fileline(), atp, exprp, constFormatp};
             exprp->user1(true);  // Mark as formatted
         } else {
             exprp = new AstSFormatF{nodep->fileline(), smtName, false, nullptr};
-            if (!isGlobalConstrained) {
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
-            }
+            if (!isGlobalConstrained) { VL_DO_DANGLING(pushDeletep(nodep), nodep); }
         }
         // else: Global constraints keep nodep alive for write_var processing
         relinker.relink(exprp);
