@@ -39,31 +39,29 @@
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //##################################################################################
-// Hook-insertion class finder
+// Collect nodes and data from the AST for hook-insertion
 class HookInsTargetFndr final : public VNVisitor {
     AstNetlist* m_netlist
-        = nullptr;  // Enable traversing from the beginning if the visitor is to deep
-    AstNodeModule* m_cellModp = nullptr;  // Stores the modulep of a Cell node
-    AstModule* m_modp = nullptr;  // Stores the current modulep the visitor is looking at
-    AstModule* m_targetModp = nullptr;  // Stores the targeted modulep
-    bool m_error = false;  // Displays if there was already an error message earlier
-    bool m_foundCellp = false;  // If the visitor found the relevant instance
-    bool m_foundModp = false;  // If the visitor found the relevant model
-    bool m_foundVarp = false;  // If the visitor found the relevant variable
+        = nullptr;  // Used for traversing AST from the beginning if the visitor is to deep
+    AstNodeModule* m_cellModp = nullptr;
+    AstModule* m_modp = nullptr;
+    AstModule* m_targetModp = nullptr;
+    bool m_error = false;
+    bool m_foundCellp = false;
+    bool m_foundModp = false;
+    bool m_foundVarp = false;
     bool m_initModp = true;  // If the visitor is in the first module node of the netlist
     size_t m_insIdx = 0;
-    string m_currHier;  // Stores the current hierarchy of the visited nodes (Module, Cell, Var)
-    string m_target;  // Stores the currently visited target string from the config map
+    string m_currHier;
+    string m_target;
 
     // METHODS
-    //----------------------------------------------------------------------------------
     AstModule* findModp(AstNetlist* netlist, AstModule* modp) {
         for (AstNode* n = netlist->op1p(); n; n = n->nextp()) {
             if (VN_IS(n, Module) && VN_CAST(n, Module) == modp) { return VN_CAST(n, Module); }
         }
         return nullptr;
     }
-    // Helper function to compare the target string starts with the given prefix
     bool cmpPrefix(const string& prefix, const string& target) {
         if (target.compare(0, prefix.size(), prefix) == 0
             && (target.size() == prefix.size() || target[prefix.size()] == '.')) {
@@ -71,21 +69,18 @@ class HookInsTargetFndr final : public VNVisitor {
         }
         return false;
     }
-    // Helper function to check if a parameter was already added to the tree previously
     bool hasParam(AstModule* modp) {
         for (AstNode* n = modp->op2p(); n; n = n->nextp()) {
             if (n->name() == "HOOKINS") { return true; }
         }
         return false;
     }
-    // Helper function to check if a pin was already added to the tree previously
     bool hasPin(AstCell* cellp) {
         for (AstNode* n = cellp->paramsp(); n; n = n->nextp()) {
             if (n->name() == "HOOKINS") { return true; }
         }
         return false;
     }
-    // Check if the multipleCellps flag is set for the given target
     bool hasMultiple(const std::string& target) {
         auto& insCfg = V3Control::getHookInsCfg();
         auto it = insCfg.find(target);
@@ -112,18 +107,17 @@ class HookInsTargetFndr final : public VNVisitor {
     bool targetHasPointingMod(const string& pointingModuleName, const string& target) {
         return pointingModuleName == reduce2Depth(split(target), KeyDepth::RelevantModule);
     }
-    // Check if the given prefix matches the beginning of the current target string
     bool targetHasPrefix(const string& prefix, const string& target) {
         return cmpPrefix(prefix, target);
     }
-    // Helper Function to split a string by '.' and return a vector of tokens
+    // Split given string by '.' and return a vector of tokens
     std::vector<std::string> split(const std::string& str) {
         static const std::regex dot_regex("\\.");
         std::sregex_token_iterator iter(str.begin(), str.end(), dot_regex, -1);
         std::sregex_token_iterator end;
         return std::vector<std::string>(iter, end);
     }
-    // Helper function to reduce a given key to a certain hierarchy level.
+    // Reduce given key to a certain hierarchy level.
     enum class KeyDepth { TopModule = 0, RelevantModule = 1, Instance = 2, FullKey = 3 };
     string reduce2Depth(std::vector<std::string> keyTokens, KeyDepth hierarchyLevel) {
         std::string reducedKey = keyTokens[0];
@@ -135,7 +129,6 @@ class HookInsTargetFndr final : public VNVisitor {
             return reducedKey;
         }
     }
-    // Helper function for adding the parameters into the tree
     void addParam(AstModule* modp) {
         AstVar* paramp = new AstVar{modp->fileline(), VVarType::GPARAM, "HOOKINS",
                                     VFlagChildDType{}, nullptr};
@@ -144,7 +137,6 @@ class HookInsTargetFndr final : public VNVisitor {
         paramp->ansi(true);
         modp->addStmtsp(paramp);
     }
-    // Helper function for adding the parameters into the tree
     void addPin(AstCell* cellp, bool isInsPath, const string& target) {
         int pinnum = 0;
         if (isInsPath) {
@@ -162,13 +154,11 @@ class HookInsTargetFndr final : public VNVisitor {
             cellp->addParamsp(pinp);
         }
     }
-    // Edit the hook-insertion data for the cell in the map
     void editInsData(AstCell* cellp, const string& target) {
         auto& insCfg = V3Control::getHookInsCfg();
         auto it = insCfg.find(target);
         if (it != insCfg.end()) { it->second.cellp = cellp; }
     }
-    // Edit the hook-insertion data for the pointing module in the map
     void editInsData(AstModule* modulep, const string& target) {
         auto& insCfg = V3Control::getHookInsCfg();
         auto it = insCfg.find(target);
@@ -187,13 +177,11 @@ class HookInsTargetFndr final : public VNVisitor {
             setMultiple(m_target);
         }
     }
-    // Insert the cell node that is/will pointing/point to the targeted module
     void setCell(AstCell* cellp, const string& target) {
         auto& insCfg = V3Control::getHookInsCfg();
         auto it = insCfg.find(target);
         if (it != insCfg.end()) { it->second.cellp = cellp; }
     }
-    // Insert the original and hook-inserted module nodes to the map
     void setInsModule(AstModule* origModulep, AstModule* insModulep, const string& target) {
         auto& insCfg = V3Control::getHookInsCfg();
         auto it = insCfg.find(target);
@@ -202,32 +190,26 @@ class HookInsTargetFndr final : public VNVisitor {
             it->second.insModulep = insModulep;
         }
     }
-    // Set the multipleCellps flag
     void setMultiple(const string& target) {
         auto& insCfg = V3Control::getHookInsCfg();
         auto it = insCfg.find(target);
         if (it != insCfg.end()) { it->second.multipleCellps = true; }
     }
-    // Insert the module node that includes the cell pointing to the targeted module
-    // to the map
     void setPointingMod(AstModule* modulep, const string& target) {
         auto& insCfg = V3Control::getHookInsCfg();
         auto it = insCfg.find(target);
         if (it != insCfg.end()) { it->second.pointingModulep = modulep; }
     }
-    // Set the processed flag
     void setProcessed(const string& target) {
         auto& insCfg = V3Control::getHookInsCfg();
         auto it = insCfg.find(target);
         if (it != insCfg.end()) { it->second.processed = true; }
     }
-    // Insert the top module node of the netlist to the map
     void setTopMod(AstModule* modulep, const string& target) {
         auto& insCfg = V3Control::getHookInsCfg();
         auto it = insCfg.find(target);
         if (it != insCfg.end()) { it->second.topModulep = modulep; }
     }
-    // Insert the original and hook-inserted variable nodes to the map
     void setVar(AstVar* varp, AstVar* insVarp, const string& target) {
         auto& insCfg = V3Control::getHookInsCfg();
         auto it = insCfg.find(target);
@@ -244,33 +226,10 @@ class HookInsTargetFndr final : public VNVisitor {
     }
 
     // VISITORS
-    //----------------------------------------------------------------------------------
-
-    //ASTMODULE VISITOR FUNCTION:
-    //Iterates over the existing module nodes in the netlist.
-    //For the first module in the netlist the node name is checked if it is at the first position
-    //in the target string provided by the configuration file. If not an error is thown, otherwise
-    //the modules is checked for an already existing HOOKINS parameter. If there is no
-    //HOOKINS parameter present we add it to the module. This parameter is used to control the
-    //hook-insertion of the target. The module is then added to the map of the hook-insertion
-    //configs as the top module. Additionally the hierarchy the function viewed is currently add is
-    //initialized with the module name. This module hierarchy is used to identify the correct
-    //target path in the netlist. The function iterates over the children of the module, with the
-    //Cells and Vars beeing the relevant targets.
-
-    //After the iteration of the children the m_modp variable needs to be set by the Cell visitor
-    //to continue or there needs no suitable cell to be found. (See CELL VISITOR FUNCTION & VAR
-    //VISITOR FUNCTION) Since the module from the m_modp can appear earlier in the tree the
-    //fundModp function is used to iterate over the netlift from the beginning to find the module.
-    //The module node displayed by the m_modp variable is then checked if this is the module
-    //containing the target variable (relevant module) or if it the module containing the cell
-    //pointing to the relevant module (pointing module). If the module node suits one of these two
-    //conditions the module nodes are added to the hook-insertion configs map. Independetly from
-    //these conditions the HOOKINS parameter is added to the module nodes in the target path.
-    //This parameter is used to control the hook-insertion of the target.
     void visit(AstModule* nodep) override {
         if (m_initModp) {
             if (targetHasTop(nodep->name(), m_target)) {
+                // Add decision parameters to the module if not present
                 m_foundModp = true;
                 m_modp = nodep;
                 m_currHier = nodep->name();
@@ -280,8 +239,9 @@ class HookInsTargetFndr final : public VNVisitor {
                     m_foundCellp = true;  // Set to true since there is no Instance that the cell
                                           // visitor could find
                 }
+                // Store top module pointer for later
                 setTopMod(nodep, m_target);
-                iterateChildren(nodep);
+                iterateChildren(nodep);  // Continue to Cell/Var nodes
             } else if (!m_foundModp && nodep->name() == "@CONST-POOL@") {
                 v3error("Verilator-configfile': could not find initial 'module' in "
                         "'module.instance.__'"
@@ -290,7 +250,7 @@ class HookInsTargetFndr final : public VNVisitor {
                 m_initModp = false;
                 m_error = true;
             }
-        } else if (m_cellModp != nullptr
+        } else if (m_cellModp != nullptr  // Find module pointed to by the cell from cell visitor
                    && (nodep = findModp(m_netlist, VN_CAST(m_cellModp, Module))) != nullptr) {
             if (targetHasFullName(m_currHier, m_target)) {
                 AstModule* insModp = nullptr;
@@ -319,7 +279,7 @@ class HookInsTargetFndr final : public VNVisitor {
                 insModp->name(nodep->name() + "__hookIns__" + std::to_string(m_insIdx));
                 if (hasMultiple(m_target)) { insModp->inLibrary(true); }
                 setInsModule(nodep, insModp, m_target);
-                iterateChildren(nodep);
+                iterateChildren(nodep);  // Continue to var node
             } else if (targetHasPointingMod(m_currHier, m_target)) {
                 m_foundModp = true;
                 m_foundCellp = false;
@@ -327,14 +287,14 @@ class HookInsTargetFndr final : public VNVisitor {
                 m_cellModp = nullptr;
                 if (!hasParam(nodep)) { addParam(nodep); }
                 setPointingMod(nodep, m_target);
-                iterateChildren(nodep);
+                iterateChildren(nodep);  // Continue to cell
             } else if (targetHasPrefix(m_currHier, m_target)) {
                 m_foundModp = true;
                 m_foundCellp = false;
                 m_modp = nodep;
                 m_cellModp = nullptr;
                 if (!hasParam(nodep)) { addParam(nodep); }
-                iterateChildren(nodep);
+                iterateChildren(nodep);  // Continue to cell
             }
         } else if (!m_error && !m_foundCellp) {
             v3error("Verilator-configfile: could not find 'instance' in "
@@ -347,24 +307,6 @@ class HookInsTargetFndr final : public VNVisitor {
         }
     }
 
-    //ASTCELL VISITOR FUNCTION:
-    //This cell visitor function is called if the module visitor function found a module that
-    //matches the target string from the config. The first function call should be when visiting
-    //the initial module in the netlist. When a cell is found that matches the target string and is
-    //not marked as found, the current hierarchy is updated and the cell marked as found.
-    //Additionally, if this is the cell in the initial module, the initial module flag is set to
-    //false. The in the current module existing cells are checked if there are multiple cells
-    //linking to the next module in the target string. After that the m_modp is updated to match
-    //the cell's module pointer, which is needed for the next call of the module visitor. Next the
-    //pin for the HOOKINS parameter is added to the cell. This parameter is added either as a
-    //constant or as a reference, depending on the traversal stage. If there are multiple cells
-    //linking to the next module in the target string, the multiple flag is set in the
-    //hook-insertion config map. For the inistial module the found cell is then added to the
-    //hook-insertion configuration map with the current hierarchy as the target path. Otherwise
-    //the cell is added to the hook-insertion configuration map, when the current hierarchy with
-    //the cell name fully matches a target path, with the last two entrances removed (Module, Var).
-    //This function ensures that the correct cells in the design hierarchy are hook-inserted and
-    //tracked, supporting both unique and repeated module instances.
     void visit(AstCell* nodep) override {
         if (m_initModp) {
             if (targetHasFullName(m_currHier + "." + nodep->name(), m_target)) {
@@ -408,19 +350,14 @@ class HookInsTargetFndr final : public VNVisitor {
         }
     }
 
-    //ASTVAR VISITOR FUNCTION:
-    //The var visitor function is used to find the variable that matches the target string from the
-    //config. This is only done if the Cell visitor does not find a matching cell in the current
-    //module of the target hierarchy. Since we therefore know that we will not traverse any further
-    //in the hierarchy of the model, we can check for this variable. If a variable is found, with
-    //its name added to the current hierarchy, that siuts the target string, an edited version and
-    //the original version are added to the hook-insertion config map.
     void visit(AstVar* nodep) override {
         if (m_targetModp != nullptr) {
             const HookInsertTarget& target = V3Control::getHookInsCfg().find(m_currHier)->second;
             for (const auto& entry : target.entries) {
+                // Go over all var targets if in same module
                 if (nodep->name() == entry.varTarget) {
                     int width = 0;
+                    // Check for if target var is supported
                     AstBasicDType* basicp = nodep->basicp();
                     bool literal = basicp->isLiteralType();
                     bool implicit = basicp->implicit();
@@ -469,12 +406,14 @@ public:
     explicit HookInsTargetFndr(AstNetlist* nodep) {
         const auto& insCfg = V3Control::getHookInsCfg();
         for (const auto& pair : insCfg) {
+            // Set initial flag values
             m_netlist = nodep;
             m_target = pair.first;
             m_initModp = true;
             m_currHier = "";
             iterate(nodep);
             setProcessed(m_target);
+            // Reset flags
             m_foundModp = false;
             m_foundCellp = false;
             m_foundVarp = false;
@@ -488,42 +427,35 @@ public:
 };
 
 //##################################################################################
-// Hook-insertion class functions
+// Do the hook-insertion transformations
 class HookInsFunc final : public VNVisitor {
-    bool m_assignw = false;  // Flag if a assignw exists in the netlist
+    bool m_assignw = false;
     bool m_assignNode = false;  // Set to true to indicate that the visitor is in an assign
-    bool m_addedport = false;  // Flag if a port was already added
-    bool m_addedTask = false;  // Flag if a task was already added
-    bool m_addedFunc = false;  // Flag if a function was already added
-    bool m_interface = false;  // Flag if the ParseRef node is part of an interface
-    int m_pinnum = 0;  // Pinnumber for the new Port nodes
-    string m_targetKey;  // Stores the target string from the hook-insertion config
+    bool m_addedport = false;
+    bool m_addedTask = false;
+    bool m_addedFunc = false;
+    int m_pinnum = 0;
+    string m_targetKey;
     string m_task_name;
-    size_t m_targetIndex = 0;  // Index of the target variable in the hook-insertion config
-    AstAlways* m_alwaysp = nullptr;  // Stores the added always node
-    AstAssignW* m_assignwp = nullptr;  // Stores the added assignw node
-    AstGenBlock* m_insGenBlock
-        = nullptr;  // Store the GenBlock node for hook-insertion hierarchy check
-    AstTask* m_taskp = nullptr;  // // Stores the created task node
-    AstFunc* m_funcp = nullptr;  // Stores the created function node
-    AstFuncRef* m_funcrefp = nullptr;  // Stores the created funcref node
-    AstLoop* m_loopp = nullptr;  // Stores the created loop pointer
-    AstTaskRef* m_taskrefp = nullptr;  // Stores the created taskref node
-    AstModule* m_current_module = nullptr;  // Stores the currenty visited module
+    size_t m_targetIndex = 0;
+    AstAlways* m_alwaysp = nullptr;
+    AstAssignW* m_assignwp = nullptr;
+    AstGenBlock* m_insGenBlock = nullptr;
+    AstTask* m_taskp = nullptr;
+    AstFunc* m_funcp = nullptr;
+    AstFuncRef* m_funcrefp = nullptr;
+    AstLoop* m_loopp = nullptr;
+    AstTaskRef* m_taskrefp = nullptr;
+    AstModule* m_current_module = nullptr;
     AstModule* m_current_module_cell_check
         = nullptr;  // Stores the module node(used by cell visitor)
-    AstVar* m_tmp_varp = nullptr;  // Stores the hook-inserted variable node
-    AstVar* m_orig_varp = nullptr;  // Stores the original variable node
-    AstVar* m_orig_varp_insMod
-        = nullptr;  // Stores the original variable node in hook-inserted module node
-    AstVar* m_dpi_trigger
-        = nullptr;  // Stores the variable noded for the dpi-trigger, which ensures the changing of
-                    // a signal and the execution of the DPI function
-    AstPort* m_orig_portp = nullptr;  // Stores the original port node
+    AstVar* m_tmp_varp = nullptr;
+    AstVar* m_orig_varp = nullptr;
+    AstVar* m_orig_varp_insMod = nullptr;
+    AstVar* m_dpi_trigger = nullptr;  // Trigger ensuring changing execution of the DPI function
+    AstPort* m_orig_portp = nullptr;
 
     // METHODS
-    //----------------------------------------------------------------------------------
-    // Find the relevant hook-insertion config in the map corresponding to the given key
     const HookInsertTarget* getInsCfg(const std::string& key) {
         const auto& map = V3Control::getHookInsCfg();
         auto insCfg = map.find(key);
@@ -533,23 +465,18 @@ class HookInsFunc final : public VNVisitor {
             return nullptr;
         }
     }
-    // Get the Cell nodep pointer from the configuration map for the given key
     AstCell* getMapEntryCell(const std::string& key) {
         if (auto cfg = getInsCfg(key)) { return cfg->cellp; }
         return nullptr;
     }
-    // Get the hook-inserted Module node pointer from the configuration map for the given key
     AstModule* getMapEntryInsModule(const std::string& key) {
         if (auto cfg = getInsCfg(key)) { return cfg->insModulep; }
         return nullptr;
     }
-    // Get the Module node pointer pointing to the hook-inserted/original module from the
-    // configuration map for the given key
     AstModule* getMapEntryPointingModule(const std::string& key) {
         if (auto cfg = getInsCfg(key)) { return cfg->pointingModulep; }
         return nullptr;
     }
-    // Get the hook-inserted variable node pointer from the configuration map for the given key
     AstVar* getMapEntryInsVar(const std::string& key, size_t index) {
         if (auto cfg = getInsCfg(key)) {
             const auto& entries = cfg->entries;
@@ -557,7 +484,6 @@ class HookInsFunc final : public VNVisitor {
         }
         return nullptr;
     }
-    // Get the original variable node pointer from the configuration map for the given key
     AstVar* getMapEntryVar(const std::string& key, size_t index) {
         if (auto cfg = getInsCfg(key)) {
             const auto& entries = cfg->entries;
@@ -570,8 +496,6 @@ class HookInsFunc final : public VNVisitor {
         const auto insCfg = map.find(key);
         return insCfg != map.end();
     }
-    // Check if the given module node pointer is an hook-inserted module entry in the configuration
-    // map for the given key
     bool isInsModEntry(AstModule* nodep, const std::string& key) {
         const auto& map = V3Control::getHookInsCfg();
         const auto insCfg = map.find(key);
@@ -581,7 +505,6 @@ class HookInsFunc final : public VNVisitor {
             return false;
         }
     }
-    // Check if the given module node pointer is the top module entry in the configuration map
     bool isTopModEntry(AstModule* nodep) {
         auto& insCfg = V3Control::getHookInsCfg();
         for (const auto& pair : insCfg) {
@@ -589,7 +512,6 @@ class HookInsFunc final : public VNVisitor {
         }
         return false;
     }
-    // Check if the given module node pointer is the pointing module entry in the configuration map
     bool isPointingModEntry(AstModule* nodep) {
         auto& insCfg = V3Control::getHookInsCfg();
         for (const auto& pair : insCfg) {
@@ -597,7 +519,6 @@ class HookInsFunc final : public VNVisitor {
         }
         return false;
     }
-    // Check if the given module node pointer has already been hook-inserted/done flag has been set
     bool isDone(AstModule* nodep) {
         auto& insCfg = V3Control::getHookInsCfg();
         for (const auto& pair : insCfg) {
@@ -605,7 +526,6 @@ class HookInsFunc final : public VNVisitor {
         }
         return true;
     }
-    // Check if the multipleCellps flag is set for the given key in the configuration map
     bool hasMultiple(const std::string& key) {
         const auto& map = V3Control::getHookInsCfg();
         const auto insCfg = map.find(key);
@@ -615,21 +535,18 @@ class HookInsFunc final : public VNVisitor {
             return false;
         }
     }
-    // Check if the module and instances defined in the target string were found in
-    // the previous step
+    // Check if issues happend during collection in HookInsTargetFndr
     bool hasNullptr(const std::pair<const string, HookInsertTarget>& pair) {
         bool moduleNullptr = pair.second.origModulep == nullptr;
         bool cellNullptr = pair.second.cellp == nullptr;
         return moduleNullptr || cellNullptr;
     }
-    // Check if the, in the target string, defined variable was found in the previous step
     bool isFound(const std::pair<const string, HookInsertTarget>& pair) {
         for (auto& entry : pair.second.entries) {
             if (entry.found == false) { return entry.found; }
         }
         return true;
     }
-    // Get the fault case for the given key in the configuration map
     int getMapEntryFaultCase(const std::string& key, size_t index) {
         const auto& map = V3Control::getHookInsCfg();
         const auto insCfg = map.find(key);
@@ -641,8 +558,6 @@ class HookInsFunc final : public VNVisitor {
             return -1;
         }
     }
-    // Get the callback function name from the hook-insertion for the given key in the
-    // configuration map
     string getMapEntryFunction(const std::string& key, size_t index) {
         const auto& map = V3Control::getHookInsCfg();
         const auto insCfg = map.find(key);
@@ -654,6 +569,7 @@ class HookInsFunc final : public VNVisitor {
             return "";
         }
     }
+    // Remove "" from string from ->name()
     string cleanString(const string& str) {
         if (str.size() >= 2 && str.front() == '"' && str.back() == '"') {
             return str.substr(1, str.size() - 2);
@@ -661,7 +577,6 @@ class HookInsFunc final : public VNVisitor {
             return "";
         }
     }
-    // Set the done flag for the given module node pointer in the configuraiton map
     void setDone(AstModule* nodep) {
         auto& insCfg = V3Control::getHookInsCfg();
         for (auto& pair : insCfg) {
@@ -673,10 +588,8 @@ class HookInsFunc final : public VNVisitor {
             m_assignNode = true;
             VDirection dir = m_orig_varp->direction();
             if (dir == VDirection::INPUT || dir == VDirection::NONE) {
-                // Hier muss was mit dem rhsp gemacht werden
                 AstNodeExpr* rhsp = nodep->rhsp();
                 if (rhsp->type() != VNType::ParseRef) {
-                    // Muss ich hier loopen?
                     for (AstNode* n = rhsp->op1p(); n; n = n->nextp()) {
                         if (n->type() == VNType::ParseRef && n->name() == m_orig_varp->name()) {
                             n->name(m_tmp_varp->name());
@@ -741,10 +654,6 @@ class HookInsFunc final : public VNVisitor {
     }
 
     // Visitors
-    //----------------------------------------------------------------------------------
-
-    //ASTNETLIST VISITOR FUNCTION:
-    //Loop over map entries for module nodes and add them to the tree
     void visit(AstNetlist* nodep) override {
         const auto& insCfg = V3Control::getHookInsCfg();
         for (const auto& pair : insCfg) {
@@ -762,37 +671,18 @@ class HookInsFunc final : public VNVisitor {
             }
         }
     }
-
-    //ASTMODULE VISITOR FUNCTION:
-    //This function is called for each module node in the netlist.
-    //It checks if the module node is part of the hook-insertion configuration map.
-    //Depending on the type of the module node (Hook-inserted, Top, Pointing, or Original),
-    //it performs different actions:
-    //    - If the module is an hook-inserted module entry and has not been done, it creates a new
-    //task for the hook-insertion function, adds the temporary variable, and creates a task
-    //reference to the callback function.
-    //    - If the module is a pointing module or a top module and has no multiple cellps, it
-    //    checks
-    //the cell for the target key and counts the pins. This pin count is used in the CELL VISITOR
-    //FUNCTION to set a siutable pin number for the HOOKINS parameter. Look there fore further
-    //information.
-    //    - If the module is a pointing module and has multiple cellps, it creates a begin block
-    //    with
-    //a conditional statement to select between the hook-inserted and original cell.
-    //      Additionally like in the previous case, the pin count is used to set a suitable pin
-    //number for the HOOKINS parameter.\ Since the cell which need to be edited are located not
-    //in the original module, but in the pointing/top module, the current_module_cell_check
-    //variable is set to the module visited by the function and fulfilling this condition.
     void visit(AstModule* nodep) override {
         const auto& insCfg = V3Control::getHookInsCfg().find(m_targetKey);
         const HookInsertTarget& target = insCfg->second;
         const auto& entries = target.entries;
+        // Insert nodes for hooks into module for each defined target
         for (m_targetIndex = 0; m_targetIndex < entries.size(); ++m_targetIndex) {
             m_tmp_varp = getMapEntryInsVar(m_targetKey, m_targetIndex);
             m_orig_varp = getMapEntryVar(m_targetKey, m_targetIndex);
             m_task_name = getMapEntryFunction(m_targetKey, m_targetIndex);
             if (isInsModEntry(nodep, m_targetKey) && !isDone(nodep)) {
                 m_current_module = nodep;
+                // Add DPI function/task if not already present
                 for (AstNode* n = nodep->op2p(); n; n = n->nextp()) {
                     if (VN_IS(n, Task) && n->name() == m_task_name) {
                         m_taskp = VN_CAST(n, Task);
@@ -821,13 +711,14 @@ class HookInsFunc final : public VNVisitor {
                         nodep->addStmtsp(m_taskp);
                     }
                 }
+                // Prepare and add faulty variable
                 if (m_orig_varp->direction() == VDirection::INPUT) {
                     m_tmp_varp->varType(VVarType::VAR);
                     m_tmp_varp->direction(VDirection::NONE);
                     m_tmp_varp->trace(true);
                 }
                 nodep->addStmtsp(m_tmp_varp);
-                // Pruefung einbauen ob das schon passiert ist.
+                // Add trigger if not already present
                 if (m_dpi_trigger == nullptr) {
                     m_dpi_trigger = new AstVar{
                         nodep->fileline(), VVarType::VAR, "dpi_trigger", VFlagChildDType{},
@@ -840,6 +731,7 @@ class HookInsFunc final : public VNVisitor {
                         nodep->fileline(), new AstBegin{nodep->fileline(), "", m_loopp, false}};
                     nodep->addStmtsp(initialp);
                 }
+                // Add taks/function ref depending on taks/func added & create always block
                 if (m_taskp != nullptr) {
                     m_taskrefp = new AstTaskRef{
                         nodep->fileline(), m_task_name,
@@ -860,6 +752,7 @@ class HookInsFunc final : public VNVisitor {
                     nodep->addStmtsp(alwaysp);
                 }
                 if (m_targetIndex == entries.size() - 1) { setDone(nodep); }
+                // Get pin number for cell edits
                 for (AstNode* n = nodep->op2p(); n; n = n->nextp()) {
                     if (VN_IS(n, Port)) { m_pinnum = VN_CAST(n, Port)->pinNum(); }
                 }
@@ -875,6 +768,8 @@ class HookInsFunc final : public VNVisitor {
                 AstCell* insCellp = getMapEntryCell(m_targetKey)->cloneTree(false);
                 insCellp->modp(getMapEntryInsModule(m_targetKey));
                 for (AstNode* n = insCellp->pinsp(); n; n = n->nextp()) { m_pinnum++; }
+                // Add logic for deciding between original and hook-inserted module
+                // depending on the value of HOOKINS parameter
                 bool addedInitGenIf = false;
                 bool breakOuter = false;
                 std::string condValue = "";
@@ -915,6 +810,7 @@ class HookInsFunc final : public VNVisitor {
                     }
                     if (breakOuter) { break; }
                 }
+                // If no GenIf for HOOKINS added yet, add one
                 if (!addedInitGenIf) {
                     AstGenIf* genifp = new AstGenIf{
                         nodep->fileline(),
@@ -944,16 +840,8 @@ class HookInsFunc final : public VNVisitor {
         m_loopp = nullptr;
         m_targetIndex = 0;
     }
-
-    //ASTPORT VISITOR FUNCTION:
-    //When the target variable is an ouput port, this function is called.
-    //If no port is added yet, two new ports are added to the current module.
-    //This enabled the hook-insertion of the ouput port and link this hook-inserted port to the
-    //modules reading from the original port. The idea behind this function is to set the
-    //hook-inserted port on the position of the original port in the module and move the original
-    //port to another pin number. This should ensure the linking over the name and the port
-    //position in the module should work.
     void visit(AstPort* nodep) override {
+        // Replace original port with tmp port; keep original port for to be sure
         if (m_current_module != nullptr && m_orig_varp->direction() == VDirection::OUTPUT
             && nodep->name() == m_orig_varp->name() && !m_addedport) {
             m_orig_portp = nodep->cloneTree(false);
@@ -966,20 +854,6 @@ class HookInsFunc final : public VNVisitor {
             m_addedport = true;
         }
     }
-
-    //ASTCELL VISITOR FUNCTION:
-    //This function visits the cell nodes in the module pointing to the hook-inserted module.
-    //Depending if hasMultiple is set for the target key, two different actions are performed:
-    //    - If hasMultiple is false, the cell is modified to link to the hook-inserted module and
-    //    the
-    //children are iterated. This ensures that the hook-inserted mopdule is used in the cell. Also
-    //if the original variable is an output variable, the children of this cell nodes are visited
-    //by the ASTPIN VISITOR FUNCTION.
-    //    - If hasMultiple is true, the cell is unlinked from the back and deleted.
-    //      This ensures that the cell is not used anymore in the module, and the conditional
-    //statment deciding between the hook-inserted and the original cell can be created/used. A
-    //third action is performed if the variable beeing hook-inserted is an ouput variable. In this
-    //case the children of this cell nodes are visited by the ASTPIN VISITOR FUNCTION.
     void visit(AstCell* nodep) override {
         bool nodeHasName = false;
         bool nodeHasCorrectBackp = false;
@@ -987,11 +861,15 @@ class HookInsFunc final : public VNVisitor {
         nodeHasName = (nodep->name() == getMapEntryCell(m_targetKey)->name());
         nodeHasCorrectBackp = (nodep->backp()->type() != VNType::GenBlock);
         isCorrectMultCell = nodeHasName && nodeHasCorrectBackp;
+        // Edit cell reference depending on situation
         if (m_current_module_cell_check != nullptr && !hasMultiple(m_targetKey) && nodeHasName) {
+            // Not multiple cells refer to target module; edit module reference
             nodep->modp(getMapEntryInsModule(m_targetKey));
             if (m_orig_varp->direction() == VDirection::OUTPUT) { iterateChildren(nodep); }
         } else if (m_current_module_cell_check != nullptr && hasMultiple(m_targetKey)
                    && isCorrectMultCell) {
+            // Multiple cells link to target module;
+            // delete original cell add logic with module visitor
             nodep->unlinkFrBack();
             nodep->deleteTree();
         } else if (m_insGenBlock != nullptr && nodep->modp() == getMapEntryInsModule(m_targetKey)
@@ -1001,11 +879,6 @@ class HookInsFunc final : public VNVisitor {
             iterateChildren(nodep);
         }
     }
-
-    //ASTPIN VISITOR FUNCTION:
-    //The function is used to change the pin name of the original variable to the hook-inserted
-    //variable name. This is done to ensure that the pin is correctly linked to the hook-inserted
-    //variable in the cell.
     void visit(AstPin* nodep) override {
         if (nodep->name() == m_orig_varp->name()
             && m_orig_varp->direction() == VDirection::INPUT) {
@@ -1014,9 +887,6 @@ class HookInsFunc final : public VNVisitor {
             nodep->name(m_tmp_varp->name());
         }
     }
-
-    //ASTTASK VISITOR FUNCTION:
-    //The function is used to further specify the task node created at the module visitor.
     void visit(AstTask* nodep) override {
         if (m_addedTask == false && nodep == m_taskp && m_current_module != nullptr) {
             AstVar* insID = nullptr;
@@ -1041,9 +911,6 @@ class HookInsFunc final : public VNVisitor {
             nodep->addStmtsp(tmp_var_task);
         }
     }
-
-    //ASTFUNC VISITOR FUNCITON:
-    //The function is used to further specify the function node created at the module visitor.
     void visit(AstFunc* nodep) override {
         if (m_addedFunc == false && nodep == m_funcp && m_current_module != nullptr) {
             AstVar* insID = nullptr;
@@ -1067,11 +934,8 @@ class HookInsFunc final : public VNVisitor {
             nodep->addStmtsp(var_x_func);
         }
     }
-
-    //ASTLOOP VISITOR FUNCTION:
-    //The function is used to add the logic for the dpi trigger, that triggers the DPI function at
-    //the smallest possible time intervals.
     void visit(AstLoop* nodep) override {
+        // Add initial block for DPI trigger variable
         if (nodep == m_loopp && m_current_module != nullptr) {
             AstParseRef* initialParseRefrhsp
                 = new AstParseRef{nodep->fileline(), m_dpi_trigger->name()};
@@ -1088,11 +952,8 @@ class HookInsFunc final : public VNVisitor {
             nodep->addContsp(initialBeginp);
         }
     }
-
-    //ASTALWAYS VISITOR FUNCTION:
-    //The function is used to add the task reference node to the always node and further specify
-    //the always node.
     void visit(AstAlways* nodep) override {
+        // Add task reference in the new always block
         if (nodep == m_alwaysp && m_current_module != nullptr) {
             AstBegin* newBegin = nullptr;
 
@@ -1104,15 +965,12 @@ class HookInsFunc final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
-
     void visit(AstVar* nodep) override {
+        // Store hooked var in hooked module to ensure correct references
         if (m_current_module != nullptr && nodep->name() == m_orig_varp->name()) {
             m_orig_varp_insMod = nodep;
         }
     }
-
-    //ASTTASKREF VISITOR FUNCTION:
-    //The function is used to further specify the task reference node called by the always node.
     void visit(AstTaskRef* nodep) override {
         if (nodep == m_taskrefp && m_current_module != nullptr) {
             AstConst* constp_id = nullptr;
@@ -1130,10 +988,6 @@ class HookInsFunc final : public VNVisitor {
             m_orig_varp_insMod = nullptr;
         }
     }
-
-    //ASTFUNCREF VISITOR FUNCTION:
-    //The function is used to further specify the function reference node called by the assignw
-    //node
     void visit(AstFuncRef* nodep) override {
         if (nodep == m_funcrefp && m_current_module != nullptr) {
             AstConst* constp_id = nullptr;
@@ -1155,28 +1009,12 @@ class HookInsFunc final : public VNVisitor {
             m_funcrefp = nullptr;
         }
     }
-
-    //ASTASSIGNW VISITOR FUNCTION:
-    //Sets the m_assignw flag to true if the current module is not null.
-    //Necessary for the AstParseRef visitor function to determine if the current node is part of an
-    //assignment.
-    void visit(AstAssignW* nodep) override { insAssigns(nodep); }
-    void visit(AstAssign* nodep) override { insAssigns(nodep); }
-    void visit(AstAssignDly* nodep) override { insAssigns(nodep); }
-    void visit(AstAssignForce* nodep) override { insAssigns(nodep); }
-
-    //ASTPARSE REF VISITOR FUNCTION:
-    //The function is used to change the parseref nodes to link to the hook-inserted variable
-    //instead of the original variable. Depending on the direction of the original variable,
-    //different actions are performed:
-    //    - If the original variable is not an output variable and the assignment is true, the
-    //parseref node is changed to link to the hook-inserted variable. This ensures that the
-    //hook-inserted variable is used in the assignment.
-    //    - If the original variable is an input variable, every parseref node is changed to link
-    //    to
-    //the hook-inserted variable. This ensures that the hook-inserted variable is used as the new
-    //input.
+    void visit(AstAssignW* nodep) override { insAssigns(nodep); }  // Edit assigns if needed
+    void visit(AstAssign* nodep) override { insAssigns(nodep); }  // Edit assigns if needed
+    void visit(AstAssignDly* nodep) override { insAssigns(nodep); }  // Edit assigns if needed
+    void visit(AstAssignForce* nodep) override { insAssigns(nodep); }  // Edit assigns if needed
     void visit(AstParseRef* nodep) override {
+        // Replace original var with tmp var in non-assign nodes
         if (m_current_module != nullptr && m_orig_varp != nullptr
             && m_orig_varp->direction() != VDirection::OUTPUT) {
             if (nodep->name() == m_orig_varp->name() && !m_assignNode) {
@@ -1197,15 +1035,12 @@ public:
 //##################################################################################
 // Hook-insertion class functions
 
-// Function to find hook-insertion targets and additional information for the hook-insertion
-// process
 void V3InsertHook::findTargets(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { HookInsTargetFndr{nodep}; }
     V3Global::dumpCheckGlobalTree("hookInsertFinder", 0, dumpTreeEitherLevel() >= 3);
 }
 
-// Function for the actual hook-insertion process
 void V3InsertHook::insertHooks(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { HookInsFunc{nodep}; }
