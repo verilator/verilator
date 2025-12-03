@@ -168,7 +168,16 @@ void propagateClone(const AstRefDType* origRefp, AstRefDType* newRefp) {
     if (entry.cellp) newRefp->user2p(entry.cellp);
     newRefp->user3(false);
     entry.pendingClonep = newRefp;
-    finalizeCapturedEntry(it, "ref clone");
+
+    //finalizeCapturedEntry(it, "ref clone");
+
+    // If replaceTypedef was already called (interface cloned before module),
+    // entry.typedefp will differ from the original RefDType's typedef.
+    // In that case, finalize now with the updated typedef.
+    if (entry.typedefp && origRefp->typedefp()
+        && entry.typedefp != origRefp->typedefp()) {
+        finalizeCapturedEntry(it, "ref clone");
+    }
 }
 
 }  // namespace LinkDotIfaceCapture
