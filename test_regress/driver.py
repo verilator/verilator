@@ -27,7 +27,10 @@ from functools import lru_cache  # Eventually use python 3.9's cache
 from pprint import pformat, pprint
 from typing import Optional
 
-import distro
+try:
+    import distro  # type: ignore[import]
+except ImportError:
+    distro = None
 
 if False:  # pylint: disable=using-constant-test
     pprint(pformat("Ignored"))  # Prevent unused warning
