@@ -3085,6 +3085,7 @@ void AstStop::dumpJson(std::ostream& str) const {
 void AstTraceDecl::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     if (code()) str << " [code=" << code() << "]";
+    if (dtypeFunc()) str << " [dtypeFunc=" << dtypeFunc() << "]";
 }
 void AstTraceDecl::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, code);
