@@ -1297,7 +1297,7 @@ public:
     ASTGEN_MEMBERS_AstEnumItemRef;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
-    string name() const override VL_MT_STABLE { return itemp()->name(); }
+    string name() const override VL_MT_STABLE { return itemp() ? itemp()->name() : "<null>"; }
     int instrCount() const override { return 0; }
     bool sameNode(const AstNode* samep) const override {
         const AstEnumItemRef* const sp = VN_DBG_AS(samep, EnumItemRef);
