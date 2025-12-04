@@ -19,6 +19,9 @@ Verilator 5.043 devel
 * Add `--top` specifying `config` name (#6710). [Dan Ruelas-Petrisko]
 * Add `sc_biguint` pragma (#6712). [Jakub Wasilewski, Antmicro Ltd.]
 * Support `std::randomize(){...}` (#4706) (#6573). [Yilou Wang]
+* Support unpacked struct in localparam (#6053 partial) (#6708). [Jonathan Drolet]
+* Support randsequence (#6131).
+* Support array reference arguments into 'std::randomize()' (#6384) (#6719). [Yilou Wang]
 * Support basic global constraints (#6551) (#6552). [Yilou Wang]
 * Support this.randomize() with constraints (#6634). [Artur Bieniek, Antmicro Ltd.]
 * Support multi-expression sequences (#6639). [Bartłomiej Chmiel, Antmicro Ltd.]
@@ -29,6 +32,7 @@ Verilator 5.043 devel
 * Support general global constraints (#6709) (#6711). [Yilou Wang]
 * Support `config` default liblist (#6714). [Dan Ruelas-Petrisko]
 * Support `config` cell clauses (#6717). [Dan Ruelas-Petrisko]
+* Support complex std::randomize patterns (#6736) (#6737). [Yilou Wang]
 * Optimize away calls to empty functions (#6626). [Geza Lore]
 * Optimize redundant headers in Syms implementation files. [Geza Lore, Fractile Ltd.]
 * Optimize constructor/destructor VerilatedModules (#6660). [Geza Lore, Fractile Ltd.]
@@ -36,6 +40,7 @@ Verilator 5.043 devel
 * Optimize functions reading external parameters as pure (#6684). [Geza Lore, Fractile Ltd.]
 * Optimize $past delayed variable reuse (#6689). [Geza Lore, Fractile Ltd.]
 * Optimize combinational loops through sign extension (#6724). [Geza Lore]
+* Optimize trace initialization code size (#6749). [Geza Lore]
 * Fix expression short circuiting (#6483). [Todd Strader]
 * Fix expression coverage of system calls (#6592). [Todd Strader]
 * Fix `--timing` with `--x-initial-edge` (#6603) (#6631). [Krzysztof Bieganski, Antmicro Ltd.]
@@ -59,10 +64,13 @@ Verilator 5.043 devel
 * Fix bounds checking in non-inlined function (#6677). [Geza Lore, Fractile Ltd.]
 * Fix stream operator widening (#6693) (#6697). [Jean-Nicolas Strauss]
 * Fix multitop cross references (#6699).
+* Fix DFG independent bits analysis performance (#6713) (#6743). [Geza Lore]
 * Fix deleting linked node error in V3Randomize (#6718). [Igor Zaworski, Antmicro Ltd.]
 * Fix runtime worker thread stack sizes on MacOS (#6721). [Geza Lore]
 * Fix X handling in UDPs (#6722) (#6723). [Michael Bikovitsky]
 * Fix `--prof-exec` using `--lib-create`. [Geza Lore]
+* Fix fork scheduling semantics (#6730). [Artur Bieniek, Antmicro Ltd.]
+* Fix internal fault when cross-class calling with DPI (#6735) (#6742). [Matthew Ballance]
 
 
 Verilator 5.042 2025-11-02
