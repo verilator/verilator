@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_sequence_ref_unsup.v:9:12: Unsupported: sequence
+                                                 : ... note: In instance 't'
+    9 |   sequence s_one;
+      |            ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

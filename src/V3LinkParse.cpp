@@ -931,28 +931,29 @@ class LinkParseVisitor final : public VNVisitor {
         VL_RESTORER(m_defaultInSkewp);
         VL_RESTORER(m_defaultOutSkewp);
         // Find default input and output skews
-        AstClockingItem* nextItemp = nodep->itemsp();
-        for (AstClockingItem* itemp = nextItemp; itemp; itemp = nextItemp) {
-            nextItemp = VN_AS(itemp->nextp(), ClockingItem);
-            if (itemp->exprp() || itemp->assignp()) continue;
-            if (itemp->skewp()) {
-                if (itemp->direction() == VDirection::INPUT) {
-                    // Disallow default redefinition; note some simulators allow this
-                    if (m_defaultInSkewp) {
-                        itemp->skewp()->v3error("Multiple default input skews not allowed");
+        for (AstNode *nextp, *itemp = nodep->itemsp(); itemp; itemp = nextp) {
+            nextp = itemp->nextp();
+            if (AstClockingItem* citemp = VN_CAST(itemp, ClockingItem)) {
+                if (citemp->exprp() || citemp->assignp()) continue;
+                if (citemp->skewp()) {
+                    if (citemp->direction() == VDirection::INPUT) {
+                        // Disallow default redefinition; note some simulators allow this
+                        if (m_defaultInSkewp) {
+                            citemp->skewp()->v3error("Multiple default input skews not allowed");
+                        }
+                        m_defaultInSkewp = citemp->skewp();
+                    } else if (citemp->direction() == VDirection::OUTPUT) {
+                        // Disallow default redefinition; note some simulators allow this
+                        if (m_defaultOutSkewp) {
+                            citemp->skewp()->v3error("Multiple default output skews not allowed");
+                        }
+                        m_defaultOutSkewp = citemp->skewp();
+                    } else {
+                        citemp->v3fatalSrc("Incorrect direction");
                     }
-                    m_defaultInSkewp = itemp->skewp();
-                } else if (itemp->direction() == VDirection::OUTPUT) {
-                    // Disallow default redefinition; note some simulators allow this
-                    if (m_defaultOutSkewp) {
-                        itemp->skewp()->v3error("Multiple default output skews not allowed");
-                    }
-                    m_defaultOutSkewp = itemp->skewp();
-                } else {
-                    itemp->v3fatalSrc("Incorrect direction");
                 }
+                VL_DO_DANGLING(pushDeletep(citemp->unlinkFrBack()), citemp);
             }
-            VL_DO_DANGLING(pushDeletep(itemp->unlinkFrBack()), itemp);
         }
         iterateChildren(nodep);
     }

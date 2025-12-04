@@ -161,14 +161,15 @@ private:
     void visit(AstModportClockingRef* const nodep) override {
         // It has to be converted to a list of ModportClockingVarRefs,
         // because clocking blocks are removed in this pass
-        for (AstClockingItem* itemp = nodep->clockingp()->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), ClockingItem)) {
-            AstVar* const varp = itemp->varp() ? itemp->varp() : VN_AS(itemp->user1p(), Var);
-            if (varp) {
-                AstModportVarRef* const modVarp
-                    = new AstModportVarRef{nodep->fileline(), varp->name(), itemp->direction()};
-                modVarp->varp(varp);
-                nodep->addNextHere(modVarp);
+        for (AstNode* itemp = nodep->clockingp()->itemsp(); itemp; itemp = itemp->nextp()) {
+            if (AstClockingItem* citemp = VN_CAST(itemp, ClockingItem)) {
+                if (AstVar* const varp
+                    = citemp->varp() ? citemp->varp() : VN_AS(citemp->user1p(), Var)) {
+                    AstModportVarRef* const modVarp = new AstModportVarRef{
+                        nodep->fileline(), varp->name(), citemp->direction()};
+                    modVarp->varp(varp);
+                    nodep->addNextHere(modVarp);
+                }
             }
         }
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);

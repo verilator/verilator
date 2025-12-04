@@ -6127,17 +6127,17 @@ clocking_event<senItemp>:       // IEEE: clocking_event
         |       '@' '(' event_expression ')'            { $$ = $3; }
         ;
 
-clocking_itemListE<clockingItemp>:
+clocking_itemListE<nodep>:
                 /* empty */                             { $$ = nullptr; }
         |       clocking_itemList                       { $$ = $1; }
         ;
 
-clocking_itemList<clockingItemp>:  // IEEE: [ clocking_item ]
+clocking_itemList<nodep>:  // IEEE: [ clocking_item ]
                 clocking_item                           { $$ = $1; }
         |       clocking_itemList clocking_item         { if ($1) $$ = addNextNull($1, $2); }
         ;
 
-clocking_item<clockingItemp>:   // IEEE: clocking_item
+clocking_item<nodep>:   // IEEE: clocking_item
                 yDEFAULT yINPUT clocking_skew ';'       { $$ = new AstClockingItem{$<fl>1, VDirection::INPUT, $3, nullptr}; }
         |       yDEFAULT yOUTPUT clocking_skew ';'      { $$ = new AstClockingItem{$<fl>1, VDirection::OUTPUT, $3, nullptr}; }
         |       yDEFAULT yINPUT clocking_skew yOUTPUT clocking_skew ';'
@@ -6154,8 +6154,16 @@ clocking_item<clockingItemp>:   // IEEE: clocking_item
                         { $$ = GRAMMARP->makeClockingItemList($<fl>1, VDirection::INPUT, nullptr, $2->cloneTree(true));
                           $$->addNext(GRAMMARP->makeClockingItemList($<fl>1, VDirection::OUTPUT, nullptr, $2)); }
         |       assertion_item_declaration
-                        { $$ = nullptr;
-                          BBUNSUP($1, "Unsupported: assertion items in clocking blocks"); DEL($1); }
+                        { $$ = $1;
+                          for (AstNode* nodep = $1; nodep; nodep = nodep->nextp()) {
+                              if (!VN_IS(nodep, Sequence)) {
+                                  $$ = nullptr;
+                                  BBUNSUP(nodep, "Unsupported: assertion items in clocking blocks");
+                                  DEL($1);
+                                  break;
+                              }
+                          }
+                        }
         ;
 
 list_of_clocking_decl_assign<nodep>:  // IEEE: list_of_clocking_decl_assign
@@ -6395,13 +6403,16 @@ sequence_declaration<nodeFTaskp>:  // ==IEEE: sequence_declaration
                         { $$ = $1;
                           $$->addStmtsp($2);
                           $$->addStmtsp($4);
-                          GRAMMARP->endLabel($<fl>6, $$, $6); }
+                          GRAMMARP->endLabel($<fl>6, $$, $6);
+                          // No error on UVM special case with no reference; see t_sequence_unused.v
+                          if (! (!$$->stmtsp() || (VN_IS($$->stmtsp(), Const) && !$$->stmtsp()->nextp())))
+                              $$->v3warn(E_UNSUPPORTED, "Unsupported: sequence");
+                        }
         ;
 
 sequence_declarationFront<nodeFTaskp>:  // IEEE: part of sequence_declaration
                 ySEQUENCE idAny/*new_sequence*/
-                        { BBUNSUP($1, "Unsupported: sequence");
-                          $$ = new AstProperty{$<fl>2, *$2, nullptr}; }
+                        { $$ = new AstSequence{$<fl>2, *$2, nullptr}; }
         ;
 
 sequence_port_listE<nodep>:  // IEEE: [ ( [ sequence_port_list ] ) ]

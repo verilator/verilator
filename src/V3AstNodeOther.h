@@ -765,15 +765,15 @@ class AstClocking final : public AstNode {
     // Parents:  MODULE
     // Children: SENITEM, CLOCKING ITEMs, VARs
     // @astgen op1 := sensesp : AstSenItem
-    // @astgen op2 := itemsp : List[AstClockingItem]
+    // @astgen op2 := itemsp : List[AstNode]
     // @astgen op3 := eventp : Optional[AstVar]
     std::string m_name;  // Clocking block name
     const bool m_isDefault;  // True if default clocking
     const bool m_isGlobal;  // True if global clocking
 
 public:
-    AstClocking(FileLine* fl, const std::string& name, AstSenItem* sensesp,
-                AstClockingItem* itemsp, bool isDefault, bool isGlobal)
+    AstClocking(FileLine* fl, const std::string& name, AstSenItem* sensesp, AstNode* itemsp,
+                bool isDefault, bool isGlobal)
         : ASTGEN_SUPER_Clocking(fl)
         , m_name{name}
         , m_isDefault{isDefault}
@@ -2346,6 +2346,22 @@ public:
         return new AstProperty{fileline(), name, nullptr};
     }
     string verilogKwd() const override { return "property"; }
+};
+class AstSequence final : public AstNodeFTask {
+    // A sequence inside a module
+    // TODO when supported might not want to be a NodeFTask
+    bool m_referenced = false;  // Ever referenced (for unsupported check)
+public:
+    AstSequence(FileLine* fl, const string& name, AstNode* stmtp)
+        : ASTGEN_SUPER_Sequence(fl, name, stmtp) {}
+    ASTGEN_MEMBERS_AstSequence;
+    bool hasDType() const override VL_MT_SAFE { return true; }
+    AstNodeFTask* cloneType(const string& name) override {
+        return new AstSequence{fileline(), name, nullptr};
+    }
+    string verilogKwd() const override { return "sequence"; }
+    bool isReferenced() const { return m_referenced; }
+    void isReferenced(bool flag) { m_referenced = flag; }
 };
 class AstTask final : public AstNodeFTask {
     // A task inside a module

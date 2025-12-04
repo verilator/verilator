@@ -3469,10 +3469,12 @@ class WidthVisitor final : public VNVisitor {
     AstVar* memberSelClocking(AstMemberSel* nodep, AstClocking* clockingp) {
         // Returns node if ok
         VSpellCheck speller;
-        for (AstClockingItem* itemp = clockingp->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), ClockingItem)) {
-            if (itemp->varp()->name() == nodep->name()) return itemp->varp();
-            speller.pushCandidate(itemp->varp()->prettyName());
+
+        for (AstNode* itemp = clockingp->itemsp(); itemp; itemp = itemp->nextp()) {
+            if (AstClockingItem* citemp = VN_CAST(itemp, ClockingItem)) {
+                if (citemp->varp()->name() == nodep->name()) return citemp->varp();
+                speller.pushCandidate(citemp->varp()->prettyName());
+            }
         }
         const string suggest = speller.bestCandidateMsg(nodep->prettyName());
         nodep->v3error(
@@ -6462,6 +6464,15 @@ class WidthVisitor final : public VNVisitor {
         nodep->doingWidth(false);
     }
     void visit(AstReturn* nodep) override { nodep->v3fatalSrc("'return' missed in LinkJump"); }
+    void visit(AstSequence* nodep) override {
+        // UNSUPPORTED message is thrown only where the sequence is referenced
+        // in order to enable some UVM tests.
+        // When support more here will need finer-grained UNSUPPORTED if items
+        // under the sequence are not supported
+        if (nodep->isReferenced()) nodep->v3warn(E_UNSUPPORTED, "Unsupported: sequence");
+        userIterateChildren(nodep, nullptr);
+        if (!nodep->isReferenced()) VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+    }
 
     AstPackage* getItemPackage(AstNode* pkgItemp) {
         while (pkgItemp->backp() && pkgItemp->backp()->nextp() == pkgItemp) {
