@@ -108,6 +108,13 @@ class UnknownVisitor final : public VNVisitor {
                || VN_IS(prep->backp(), MemberSel) || VN_IS(prep->backp(), StructSel)) {
             prep = VN_AS(prep->backp(), NodeExpr);
         }
+        if (VN_IS(prep->backp(), AssignForce) || VN_IS(prep->backp(), Release)) {
+            // The conversion done in this function breaks force and release statements
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Force / release statement with complex select expression");
+            VL_DO_DANGLING(condp->deleteTree(), condp);
+            return;
+        }
         FileLine* const fl = nodep->fileline();
         VL_DANGLING(nodep);  // Zap it so we don't use it by mistake - use prep
 
