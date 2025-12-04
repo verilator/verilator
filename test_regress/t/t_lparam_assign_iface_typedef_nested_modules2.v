@@ -9,6 +9,14 @@
 //     parameter
 //
 
+`define stop $stop
+`define checkh(gotv,expv) \
+  do if ((gotv) !== (expv)) begin \
+    $write("%%Error: %s:%0d:  got=%0h exp=%0h\n", \
+            `__FILE__,`__LINE__, (gotv), (expv)); \
+    `stop; \
+  end while(0);
+
 interface bus_if #(
   parameter int p_awidth = 4
   ,parameter int p_dwidth = 7
@@ -48,7 +56,7 @@ module top();
 
   initial begin
     #1;
-    if(bus_io.rs.data != 8'ha5) $stop;
+    `checkh(bus_io.rs.data, 8'ha5);
     $write("*-* All Finished *-*\n");
     $finish;
   end

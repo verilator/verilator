@@ -6,6 +6,14 @@
 //
 //
 
+`define stop $stop
+`define checkd(gotv,expv) \
+  do if ((gotv) !== (expv)) begin \
+    $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", \
+            `__FILE__,`__LINE__, (gotv), (expv)); \
+    `stop; \
+  end while(0);
+
 package a_pkg;
   typedef struct packed {
     int unsigned IdBits;
@@ -32,14 +40,8 @@ module a_mod #()(
 
   initial begin
     #10;
-    if($bits(tgt_id) != 5) begin
-      $display("a_mod: bits(tgt_id) = %d, expect 5", $bits(tgt_id));
-      $stop;
-    end
-    if($bits(mst_id) != 10) begin
-      $display("a_mod: bits(mst_id) = %d, expect 10", $bits(mst_id));
-      $stop;
-    end
+    `checkd($bits(tgt_id), 5);
+    `checkd($bits(mst_id), 10);
   end
 
 endmodule

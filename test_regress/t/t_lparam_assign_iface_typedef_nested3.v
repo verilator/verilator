@@ -8,6 +8,14 @@
 //     including nesting
 //
 
+`define stop $stop
+`define checkh(gotv,expv) \
+  do if ((gotv) !== (expv)) begin \
+    $write("%%Error: %s:%0d:  got=%0h exp=%0h\n", \
+            `__FILE__,`__LINE__, (gotv), (expv)); \
+    `stop; \
+  end while(0);
+
 interface y_if #(
   parameter int p_awidth = 3
 )();
@@ -56,10 +64,10 @@ module top();
 
   initial begin
     #1;
-    if(p0_rq2.addr != 16'hcafe) $stop;
-    if(p0_rq.addr != 16'hbeef) $stop;
-    if(p0_rq.data != 8'ha5) $stop;
-    if(p0_rs.data != 8'h5a) $stop;
+    `checkh(p0_rq2.addr, 16'hcafe);
+    `checkh(p0_rq.addr, 16'hbeef);
+    `checkh(p0_rq.data, 8'ha5);
+    `checkh(p0_rs.data, 8'h5a);
     $write("*-* All Finished *-*\n");
     $finish;
   end

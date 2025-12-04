@@ -8,6 +8,14 @@
 //     instance of type, assign to instance and check
 //
 
+`define stop $stop
+`define checkh(gotv,expv) \
+  do if ((gotv) !== (expv)) begin \
+    $write("%%Error: %s:%0d:  got=%0h exp=%0h\n", \
+            `__FILE__,`__LINE__, (gotv), (expv)); \
+    `stop; \
+  end while(0);
+
 interface y_if #(
   parameter int p_awidth = 3
 )();
@@ -46,7 +54,7 @@ module top();
 
   initial begin
     #1;
-    if(p0_rq2.addr != 16'hcafe) $stop;
+    `checkh(p0_rq2.addr, 16'hcafe);
     $write("*-* All Finished *-*\n");
     $finish;
   end

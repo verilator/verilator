@@ -5,6 +5,13 @@
 // SPDX-License-Identifier: CC0-1.0
 //
 //
+`define stop $stop
+`define checkd(gotv,expv) \
+  do if ((gotv) !== (expv)) begin \
+    $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", \
+            `__FILE__,`__LINE__, (gotv), (expv)); \
+    `stop; \
+  end while(0);
 
 package a_pkg;
   typedef struct packed {
@@ -31,11 +38,7 @@ module a_mod #(
 
   initial begin
     #10;
-    if($bits(cfg_id) != p_expect) begin
-      $display("a_mod: bits(cfg_id) = %d, p_expect = %d", $bits(cfg_id), p_expect);
-      $display("a_mod: bus_io.cfg.IdBits = %d", bus_io.cfg.IdBits);
-      $stop;
-    end
+    `checkd($bits(cfg_id), p_expect);
   end
 
 endmodule

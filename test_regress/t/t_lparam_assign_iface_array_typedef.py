@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["--timing --trace-fst --trace-structs --trace-max-width 512"])
+test.compile(verilator_flags2=["--binary"])
 
 test.execute()
 

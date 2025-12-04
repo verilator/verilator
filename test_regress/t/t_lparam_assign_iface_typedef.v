@@ -7,6 +7,14 @@
 //     assign localparam from interface typedef, single level nesting
 //
 
+`define stop $stop
+`define checkh(gotv,expv) \
+  do if ((gotv) !== (expv)) begin \
+    $write("%%Error: %s:%0d:  got=%0h exp=%0h\n", \
+            `__FILE__,`__LINE__, (gotv), (expv)); \
+    `stop; \
+  end while(0);
+
 interface x_if #(
   parameter int p_awidth = 4
   ,parameter int p_dwidth = 7
@@ -41,9 +49,9 @@ module top();
 
   initial begin
     #1;
-    if(rq.addr != 16'h1234) $stop;
-    if(rq.data != 8'h37) $stop;
-    if(rs.data != 8'h5a) $stop;
+    `checkh(rq.addr, 16'h1234);
+    `checkh(rq.data, 8'h37);
+    `checkh(rs.data, 8'h5a);
     $write("*-* All Finished *-*\n");
     $finish;
   end

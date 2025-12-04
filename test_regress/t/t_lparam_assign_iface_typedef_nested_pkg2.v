@@ -9,6 +9,14 @@
 //     to pass params to module hierarchy and ultimately interface
 //
 
+`define stop $stop
+`define checkh(gotv,expv) \
+  do if ((gotv) !== (expv)) begin \
+    $write("%%Error: %s:%0d:  got=%0h exp=%0h\n", \
+            `__FILE__,`__LINE__, (gotv), (expv)); \
+    `stop; \
+  end while(0);
+
 package a_pkg;
   typedef struct packed {
     int unsigned a_cfg;
@@ -78,10 +86,10 @@ module top();
 
   initial begin
     #1;
-    if(p0_rq2.addr != 16'hcafe) $stop;
-    if(p0_rq.addr != 16'hbeef) $stop;
-    if(p0_rs.data != 8'h5a) $stop;
-    if(p0_req.data != 24'hbeef5a) $stop;
+    `checkh(p0_rq2.addr, 16'hcafe);
+    `checkh(p0_rq.addr, 16'hbeef);
+    `checkh(p0_rs.data, 8'h5a);
+    `checkh(p0_req.data, 24'hbeef5a);
     $write("*-* All Finished *-*\n");
     $finish;
   end
