@@ -566,6 +566,7 @@ void inlineCell(AstNodeModule* modp, AstCell* cellp, bool last) {
 
         // Warn
         V3Inst::checkOutputShort(pinp);
+        if (!pinp->exprp()) continue;
 
         // Pick up the old and new port variables signal (new is the same on last instance)
         const AstVar* const oldModVarp = pinp->modVarp();

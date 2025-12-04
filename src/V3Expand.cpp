@@ -728,7 +728,8 @@ class ExpandVisitor final : public VNVisitor {
                 UINFO(8, "    ASSIGNSEL(varlsb,wide,1bit) " << nodep);
                 AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
                 AstNodeExpr* const destp = lhsp->fromp()->unlinkFrBack();
-                AstNodeExpr* oldvalp = newWordSelBit(lfl, destp, lhsp->lsbp());
+                AstNodeExpr* oldvalp
+                    = newWordSelBit(lfl, destp->cloneTreePure(false), lhsp->lsbp());
                 fixCloneLvalue(oldvalp);
                 if (!ones) {
                     oldvalp = new AstAnd{

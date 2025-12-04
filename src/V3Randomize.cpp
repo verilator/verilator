@@ -2174,6 +2174,8 @@ class RandomizeVisitor final : public VNVisitor {
     AstNodeExpr* makeSiblingRefp(AstNodeExpr* const exprp, AstVar* const varp,
                                  const VAccess access) {
         if (AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
+            // TODO: this ignored 'access' and will create a read reference in
+            // t_randomize_inline_var_ctl, see issue #6756
             return new AstMemberSel{exprp->fileline(), memberSelp->fromp()->cloneTree(false),
                                     varp};
         }
