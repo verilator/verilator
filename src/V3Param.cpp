@@ -630,9 +630,9 @@ class ParamProcessor final {
         // it lets us follow clonep() into newModp and scrub each clone with the saved
         // interface context before newModp is re-linked.  we have pointers to the same nodes saved
         // in the capture map, so we can use them to scrub the new module.
-        if (LinkDotIfaceCapture::enabled()) {
-            LinkDotIfaceCapture::forEachOwned(
-                srcModp, [&](const LinkDotIfaceCapture::CapturedIfaceTypedef& entry) {
+        if (V3LinkDotIfaceCapture::enabled()) {
+            V3LinkDotIfaceCapture::forEachOwned(
+                srcModp, [&](const V3LinkDotIfaceCapture::CapturedIfaceTypedef& entry) {
                     if (!entry.refp) return;
                     AstTypedef* const origTypedefp = entry.typedefp;
                     if (!origTypedefp) return;
@@ -685,11 +685,11 @@ class ParamProcessor final {
                     if (targetTypedefp) {
                         UINFO(8, "     [iface-capture] replaceTypedef "
                                      << origTypedefp->name() << " -> " << targetTypedefp << endl);
-                        LinkDotIfaceCapture::replaceTypedef(entry.refp, targetTypedefp);
+                        V3LinkDotIfaceCapture::replaceTypedef(entry.refp, targetTypedefp);
                     }
                     // Propagate to cloned RefDType in new module
                     if (AstRefDType* const clonedRefp = entry.refp->clonep()) {
-                        LinkDotIfaceCapture::propagateClone(entry.refp, clonedRefp);
+                        V3LinkDotIfaceCapture::propagateClone(entry.refp, clonedRefp);
                     }
                 });
         }
