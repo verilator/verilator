@@ -443,7 +443,7 @@ class ProtectVisitor final : public VNVisitor {
         if (m_hasClk) {
             const std::string pname = varp->prettyName();
             m_seqParamsp->add(pname);
-            m_clkSensp->add("posedge " + pname + " or negedge " + pname);
+            m_clkSensp->add(pname);
         }
         m_cSeqParamsp->add(varp->dpiArgType(true, false));
         m_cSeqClksp->add(cInputConnection(varp));
