@@ -53,18 +53,21 @@ string V3LinkDotIfaceCapture::extractIfacePortName(const string& dotText) {
     return name;
 }
 
-void V3LinkDotIfaceCapture::add(AstRefDType* refp, AstCell* cellp, AstNodeModule* ownerModp, AstTypedef* typedefp, AstNodeModule* typedefOwnerModp, AstVar* ifacePortVarp) {
+void V3LinkDotIfaceCapture::add(AstRefDType* refp, AstCell* cellp, AstNodeModule* ownerModp,
+                                AstTypedef* typedefp, AstNodeModule* typedefOwnerModp,
+                                AstVar* ifacePortVarp) {
     if (!refp) return;
 
-    if(!typedefp) typedefp = refp->typedefp();
+    if (!typedefp) typedefp = refp->typedefp();
 
-    if (!typedefOwnerModp && typedefp)
-        typedefOwnerModp = findOwnerModule(typedefp);
+    if (!typedefOwnerModp && typedefp) typedefOwnerModp = findOwnerModule(typedefp);
 
-    s_map[refp] = CapturedIfaceTypedef{refp, cellp, ownerModp, typedefp, typedefOwnerModp, nullptr, ifacePortVarp};
+    s_map[refp] = CapturedIfaceTypedef{
+        refp, cellp, ownerModp, typedefp, typedefOwnerModp, nullptr, ifacePortVarp};
 }
 
-const V3LinkDotIfaceCapture::CapturedIfaceTypedef* V3LinkDotIfaceCapture::find(const AstRefDType* refp) {
+const V3LinkDotIfaceCapture::CapturedIfaceTypedef*
+V3LinkDotIfaceCapture::find(const AstRefDType* refp) {
     if (!refp) return nullptr;
     const auto it = s_map.find(refp);
     if (VL_UNLIKELY(it == s_map.end())) return nullptr;
@@ -103,7 +106,8 @@ bool V3LinkDotIfaceCapture::replaceTypedef(const AstRefDType* refp, AstTypedef* 
 void V3LinkDotIfaceCapture::propagateClone(const AstRefDType* origRefp, AstRefDType* newRefp) {
     if (!origRefp || !newRefp) return;
     auto it = s_map.find(origRefp);
-    UASSERT_OBJ(it != s_map.end(), origRefp, "iface capture propagateClone missing entry for orig=" << cvtToStr(origRefp));
+    UASSERT_OBJ(it != s_map.end(), origRefp,
+                "iface capture propagateClone missing entry for orig=" << cvtToStr(origRefp));
     CapturedIfaceTypedef& entry = it->second;
 
     if (entry.cellp) newRefp->user2p(entry.cellp);
@@ -142,7 +146,8 @@ void V3LinkDotIfaceCapture::forEach(const std::function<void(const CapturedIface
     forEachImpl([](const CapturedIfaceTypedef&) { return true; }, fn);
 }
 
-void V3LinkDotIfaceCapture::forEachOwned(const AstNodeModule* ownerModp, const std::function<void(const CapturedIfaceTypedef&)>& fn) {
+void V3LinkDotIfaceCapture::forEachOwned(
+    const AstNodeModule* ownerModp, const std::function<void(const CapturedIfaceTypedef&)>& fn) {
     if (!ownerModp || !fn) return;
     forEachImpl(
         [ownerModp](const CapturedIfaceTypedef& e) {
@@ -153,21 +158,15 @@ void V3LinkDotIfaceCapture::forEachOwned(const AstNodeModule* ownerModp, const s
 
 // replaces the lambda used in V3LinkDot.cpp for iface capture
 void V3LinkDotIfaceCapture::captureTypedefContext(
-    AstRefDType* refp,
-    const char* stageLabel,
-    int dotPos,
-    bool dotIsFinal,
-    const std::string& dotText,
-    VSymEnt* dotSymp,
-    VSymEnt* curSymp,
-    AstNodeModule* modp,
-    AstNode* nodep,
-    const std::function<bool(AstVar*, AstRefDType*)>& promoteVarCb,
-    const std::function<std::string()>& indentFn)
-{
+    AstRefDType* refp, const char* stageLabel, int dotPos, bool dotIsFinal,
+    const std::string& dotText, VSymEnt* dotSymp, VSymEnt* curSymp, AstNodeModule* modp,
+    AstNode* nodep, const std::function<bool(AstVar*, AstRefDType*)>& promoteVarCb,
+    const std::function<std::string()>& indentFn) {
     if (!enabled() || !refp) return;
 
-    UINFO(9, indentFn() << "iface capture capture request stage=" << stageLabel << " typedef=" << refp << " name=" << refp->name() << " dotPos=" << dotPos << " dotText='" << dotText << "' dotSym=" << dotSymp);
+    UINFO(9, indentFn() << "iface capture capture request stage=" << stageLabel
+                        << " typedef=" << refp << " name=" << refp->name() << " dotPos=" << dotPos
+                        << " dotText='" << dotText << "' dotSym=" << dotSymp);
 
     const AstCell* ifaceCellp = nullptr;
     if (dotSymp && VN_IS(dotSymp->nodep(), Cell)) {
@@ -175,7 +174,8 @@ void V3LinkDotIfaceCapture::captureTypedefContext(
         if (cellp->modp() && VN_IS(cellp->modp(), Iface)) ifaceCellp = cellp;
     }
     if (!ifaceCellp) {
-        UINFO(9, indentFn() << "iface capture capture skipped typedef=" << refp << " (no iface context)");
+        UINFO(9, indentFn() << "iface capture capture skipped typedef=" << refp
+                            << " (no iface context)");
         return;
     }
 
@@ -184,14 +184,19 @@ void V3LinkDotIfaceCapture::captureTypedefContext(
         const std::string portName = extractIfacePortName(dotText);
         if (VSymEnt* const portSymp = curSymp->findIdFallback(portName)) {
             ifacePortVarp = VN_CAST(portSymp->nodep(), Var);
-            UINFO(9, indentFn() << "iface capture found port var '" << portName << "' -> " << ifacePortVarp);
+            UINFO(9, indentFn() << "iface capture found port var '" << portName << "' -> "
+                                << ifacePortVarp);
         }
     }
 
     refp->user2p(const_cast<AstCell*>(ifaceCellp));
-    V3LinkDotIfaceCapture::add(refp, const_cast<AstCell*>(ifaceCellp), modp, refp->typedefp(), nullptr, ifacePortVarp);
+    V3LinkDotIfaceCapture::add(refp, const_cast<AstCell*>(ifaceCellp), modp, refp->typedefp(),
+                               nullptr, ifacePortVarp);
 
-    UINFO(9, indentFn() << "iface capture capture success typedef=" << refp << " cell=" << ifaceCellp << " mod=" << (ifaceCellp->modp() ? ifaceCellp->modp()->name() : "<null>") << " dotPos=" << dotPos);
+    UINFO(9, indentFn() << "iface capture capture success typedef=" << refp
+                        << " cell=" << ifaceCellp
+                        << " mod=" << (ifaceCellp->modp() ? ifaceCellp->modp()->name() : "<null>")
+                        << " dotPos=" << dotPos);
     if (!dotIsFinal) return;
 
     AstVar* enclosingVarp = nullptr;
@@ -204,8 +209,10 @@ void V3LinkDotIfaceCapture::captureTypedefContext(
         if (VN_IS(curp, NodeModule)) break;
     }
     if (!enclosingVarp || enclosingVarp->user3SetOnce()) return;
-    UINFO(9, indentFn() << "iface capture typedef owner var=" << enclosingVarp << " name=" << enclosingVarp->prettyName());
+    UINFO(9, indentFn() << "iface capture typedef owner var=" << enclosingVarp
+                        << " name=" << enclosingVarp->prettyName());
 
     if (promoteVarCb && promoteVarCb(enclosingVarp, refp)) return;
-    UINFO(9, indentFn() << "iface capture failed to convert owner var name=" << enclosingVarp->prettyName());
+    UINFO(9, indentFn() << "iface capture failed to convert owner var name="
+                        << enclosingVarp->prettyName());
 }
