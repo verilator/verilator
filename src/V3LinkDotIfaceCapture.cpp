@@ -19,8 +19,6 @@
 #include "V3Error.h"
 #include "V3Global.h"
 
-#include <unordered_map>
-
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 V3LinkDotIfaceCapture::CapturedMap V3LinkDotIfaceCapture::s_map{};
@@ -72,10 +70,6 @@ bool V3LinkDotIfaceCapture::erase(const AstRefDType* refp) {
     return true;
 }
 
-std::size_t V3LinkDotIfaceCapture::size() {
-  return s_map.size();
-}
-
 bool V3LinkDotIfaceCapture::replaceRef(const AstRefDType* oldRefp, AstRefDType* newRefp) {
     if (!oldRefp || !newRefp) return false;
     const auto it = s_map.find(oldRefp);
@@ -100,11 +94,7 @@ bool V3LinkDotIfaceCapture::replaceTypedef(const AstRefDType* refp, AstTypedef* 
 void V3LinkDotIfaceCapture::propagateClone(const AstRefDType* origRefp, AstRefDType* newRefp) {
     if (!origRefp || !newRefp) return;
     auto it = s_map.find(origRefp);
-    if (it == s_map.end()) {
-        const string msg
-            = string{"iface capture propagateClone missing entry for orig="} + cvtToStr(origRefp);
-        v3fatalSrc(msg);
-    }
+    UASSERT_OBJ(it != s_map.end(), origRefp, "iface capture propagateClone missing entry for orig=" << cvtToStr(origRefp));
     CapturedIfaceTypedef& entry = it->second;
 
     if (entry.cellp) newRefp->user2p(entry.cellp);

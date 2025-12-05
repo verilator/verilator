@@ -1186,7 +1186,7 @@ class ParamProcessor final {
         }
 
         const bool cloned = (newModp != srcModp);
-        UINFO(5, "[param-debug] module clone src=" << srcModp << " new=" << newModp << " name="
+        UINFO(9, "iface capture module clone src=" << srcModp << " new=" << newModp << " name="
                                                    << newModp->name() << " from cell=" << nodep
                                                    << " cellName=" << nodep->name()
                                                    << " cloned=" << cloned);

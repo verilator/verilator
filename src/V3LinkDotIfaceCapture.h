@@ -1,4 +1,3 @@
-
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 // DESCRIPTION: Interface typedef capture helper.
@@ -25,13 +24,13 @@
 
 #include <cstddef>
 #include <functional>
+#include <unordered_map>
 
 #include "V3Ast.h"
 #include "V3SymTable.h"
 
 class V3LinkDotIfaceCapture final {
 public:
-
     struct CapturedIfaceTypedef final {
         AstRefDType* refp = nullptr;
         AstCell* cellp = nullptr;
@@ -60,26 +59,26 @@ private:
     static void forEachImpl(FilterFn&& filter, Fn&& fn);
 
 public:
-
     static void enable(bool flag) {
-      s_enabled = flag;
-      if (!flag) s_map.clear();
+        s_enabled = flag;
+        if (!flag) s_map.clear();
     }
     static bool enabled() {
-      return s_enabled;
+        return s_enabled;
     }
     static void reset() {
-      s_map.clear();
+        s_map.clear();
     }
     static void add(AstRefDType* refp, AstCell* cellp, AstNodeModule* ownerModp, AstTypedef* typedefp = nullptr, AstNodeModule* typedefOwnerModp = nullptr, AstVar* ifacePortVarp = nullptr);
-
     static const CapturedIfaceTypedef* find(const AstRefDType* refp);
     static void forEach(const std::function<void(const CapturedIfaceTypedef&)>& fn);
     static void forEachOwned(const AstNodeModule* ownerModp, const std::function<void(const CapturedIfaceTypedef&)>& fn);
     static bool replaceRef(const AstRefDType* oldRefp, AstRefDType* newRefp);
     static bool replaceTypedef(const AstRefDType* refp, AstTypedef* newTypedefp);
     static bool erase(const AstRefDType* refp);
-    static std::size_t size();
+    static std::size_t size() {
+        return s_map.size();
+    }
     static void propagateClone(const AstRefDType* origRefp, AstRefDType* newRefp);
 };
 
