@@ -626,6 +626,11 @@ void EmitCSyms::emitScopeHier(std::vector<std::string>& stmts, bool destroy) {
             stmts.emplace_back("__Vhier." + method + "(" + fromId + ", " + toId + ");");
         }
     }
+
+    if (destroy) {
+        stmts.emplace_back("// Clear keys from hierarchy map after values have been removed");
+        stmts.emplace_back("__Vhier.clear();");
+    }
 }
 
 std::vector<std::string> EmitCSyms::getSymCtorStmts() {
