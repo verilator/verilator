@@ -552,6 +552,10 @@ DfgVertexVar* DfgVertex::getResultVar() {
     this->foreachSink([&resp](DfgVertex& sink) {
         DfgVertexVar* const varp = sink.cast<DfgVertexVar>();
         if (!varp) return false;
+
+        // Do not use it if value might differ from its drivers
+        if (varp->isVolatile()) return false;
+
         // First variable found
         if (!resp) {
             resp = varp;
@@ -559,12 +563,8 @@ DfgVertexVar* DfgVertex::getResultVar() {
         }
 
         // Prefer those variables that must be kept anyway
-        if (resp->hasExtRefs() != varp->hasExtRefs()) {
-            if (!resp->hasExtRefs()) resp = varp;
-            return false;
-        }
-        if (resp->hasModWrRefs() != varp->hasModWrRefs()) {
-            if (!resp->hasModWrRefs()) resp = varp;
+        if (resp->hasExtRdRefs() != varp->hasExtRdRefs()) {
+            if (!resp->hasExtRdRefs()) resp = varp;
             return false;
         }
         if (resp->hasDfgRefs() != varp->hasDfgRefs()) {
