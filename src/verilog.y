@@ -6775,6 +6775,7 @@ covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
                           newp->isConstructor(true);
                           newp->dtypep(cgClassp->dtypep());
                           newp->addStmtsp($3);
+                          newp->addStmtsp($6);
                           cgClassp->addMembersp(newp);
                           GRAMMARP->createCoverGroupMethods(cgClassp, $4);
 
@@ -6792,6 +6793,7 @@ covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
                           newp->classMethod(true);
                           newp->isConstructor(true);
                           newp->dtypep(cgClassp->dtypep());
+                          newp->addStmtsp($5);
                           cgClassp->addMembersp(newp);
                           GRAMMARP->createCoverGroupMethods(cgClassp, nullptr);
 
