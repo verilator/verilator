@@ -1,0 +1,12 @@
+%Error: Verilator-configfile': could not find initial 'module' in 'module.instance.__' ... Target: 'top.a1.b1'
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Verilator-configfile: target variable 'bigRegister' in 'top_module.a1.b1' must be a supported type!
+%Error: Verilator-configfile': could not find defined 'var' in 'topModule.instance.var' ... Target string: 'top_module.a1.b1.clk'
+%Error: Verilator-configfile': could not find '.var' in '__.module.var' ... Target: 'top_module.a1.b1'
+%Error: Verilator-configfile: could not find 'instance' in '__.instance.__' ... Target string: 'top_module.a1.b3'
+%Error: Verilator-configfile': could not find initial 'instance' in 'topModule.instance.__' ... Target string: 'top_module.a3.b1'
+%Error: Verilator-configfile: Incomplete instrumentation configuration for target 'top.a1.b1'. Please check previous Errors from V3Instrument:findTargets and ensure all necessary components are correct defined.
+%Error: Verilator-configfile: Incomplete instrumentation configuration for target 'top_module.a1.b1'. Please check previous Errors from V3Instrument:findTargets and ensure all necessary components are correct defined.
+%Error: Verilator-configfile: Incomplete instrumentation configuration for target 'top_module.a1.b3'. Please check previous Errors from V3Instrument:findTargets and ensure all necessary components are correct defined.
+%Error: Verilator-configfile: Incomplete instrumentation configuration for target 'top_module.a3.b1'. Please check previous Errors from V3Instrument:findTargets and ensure all necessary components are correct defined.
+%Error: Exiting due to

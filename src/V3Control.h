@@ -26,6 +26,32 @@
 #include "V3Mutex.h"
 
 //######################################################################
+struct LengthThenLexiographic final {
+    // Used to sort strings by length, then lexicographically
+    bool operator()(const string& a, const string& b) const {
+        if (a.length() != b.length()) return a.length() < b.length();
+        return a < b;
+    }
+};
+struct HookInsertEntry final {
+    int insID;
+    std::string insFunc;
+    std::string varTarget;
+    AstVar* origVarps;
+    AstVar* insVarps;
+    bool found = false;
+};
+struct HookInsertTarget final {
+    std::vector<HookInsertEntry> entries;
+    AstModule* origModulep;
+    AstModule* insModulep;
+    AstModule* topModulep;
+    AstModule* pointingModulep;
+    AstCell* cellp;
+    bool processed = false;
+    bool done = false;
+    bool multipleCellps = false;
+};
 
 class V3Control final {
 public:
@@ -44,6 +70,9 @@ public:
     static void addIgnoreMatch(V3ErrorCode code, const string& filename, const string& contents,
                                const string& match);
     static void addInline(FileLine* fl, const string& module, const string& ftask, bool on);
+    static void addHookInsCfg(FileLine* fl, const string& insfunc, int insID,
+                              const string& target);
+    static std::map<string, HookInsertTarget, LengthThenLexiographic>& getHookInsCfg();
     static void addModulePragma(const string& module, VPragmaType pragma);
     static void addProfileData(FileLine* fl, const string& hierDpi, uint64_t cost);
     static void addProfileData(FileLine* fl, const string& model, const string& key,

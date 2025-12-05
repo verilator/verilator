@@ -1,0 +1,2 @@
+%Error: In .vlt defined target tries to instrument the highest MODULE, is not possible! ... Target string: top_module.outa
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

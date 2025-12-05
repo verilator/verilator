@@ -576,6 +576,7 @@ class V3ControlResolver final {
     uint8_t m_mode = NONE;
     std::unordered_map<string, V3ControlResolverHierWorkerEntry> m_hierWorkers;
     FileLine* m_profileFileLine = nullptr;
+    std::map<string, HookInsertTarget, LengthThenLexiographic> m_hookInsCfg;
 
     V3ControlResolver() = default;
     ~V3ControlResolver() = default;
@@ -640,6 +641,45 @@ public:
             return cost;
         }
     }
+    // Helper for adding targets to the hook-insertion config map
+    std::pair<string, string> splitPrefixAndVar(const string& target) {
+        auto pos = target.rfind('.');
+        if (pos == string::npos) {
+            // No prefix, return error
+        }
+        string prefix = target.substr(0, pos);
+        string varTarget = target.substr(pos + 1);
+        return {prefix, varTarget};
+    }
+    // Add the hook-insertion config data to the map to create the initial map (Used in verilog.y)
+    void addHookInsCfg(FileLine* fl, const string& insFunction, int insID, const string& target) {
+        // Error MSG if the hook-insertion of the top module is not possible
+        if ((std::count(target.begin(), target.end(), '.') < 2)) {
+            v3fatal("In .vlt defined target tries to insert-hook to the highest MODULE, which is "
+                    "not possible!"
+                    " ... Target string: "
+                    << target);
+        }
+        // Implement custom iterator to remove the last part of the target and insert it into the
+        // vector of the map If the target string is the same as one already in the map, push the
+        // var to the vector
+        auto result = splitPrefixAndVar(target);
+        auto prefix = result.first;
+        auto varTarget = result.second;
+        HookInsertEntry entry{insID, insFunction, varTarget, {}, {}};
+        auto it = m_hookInsCfg.find(prefix);
+        if (it != m_hookInsCfg.end()) {
+            it->second.entries.push_back(entry);
+        } else {
+            // Create a new entry in the map
+            HookInsertTarget newTarget;
+            newTarget.entries.push_back(entry);
+            m_hookInsCfg[prefix] = std::move(newTarget);
+        }
+    }
+    std::map<string, HookInsertTarget, LengthThenLexiographic>& getHookInsCfg() {
+        return m_hookInsCfg;
+    }
 };
 
 //######################################################################
@@ -696,6 +736,11 @@ void V3Control::addInline(FileLine* fl, const string& module, const string& ftas
 
 void V3Control::addModulePragma(const string& module, VPragmaType pragma) {
     V3ControlResolver::s().modules().at(module).addModulePragma(pragma);
+}
+
+void V3Control::addHookInsCfg(FileLine* fl, const string& insfunc, int insID,
+                              const string& target) {
+    V3ControlResolver::s().addHookInsCfg(fl, insfunc, insID, target);
 }
 
 void V3Control::addProfileData(FileLine* fl, const string& hierDpi, uint64_t cost) {
@@ -858,6 +903,9 @@ int V3Control::getHierWorkers(const string& model) {
 }
 FileLine* V3Control::getHierWorkersFileLine(const string& model) {
     return V3ControlResolver::s().getHierWorkersFileLine(model);
+}
+std::map<string, HookInsertTarget, LengthThenLexiographic>& V3Control::getHookInsCfg() {
+    return V3ControlResolver::s().getHookInsCfg();
 }
 uint64_t V3Control::getProfileData(const string& hierDpi) {
     return V3ControlResolver::s().getProfileData(hierDpi);
