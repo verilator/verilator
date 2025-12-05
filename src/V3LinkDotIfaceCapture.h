@@ -54,6 +54,7 @@ private:
 
     static AstNodeModule* findOwnerModule(AstNode* nodep);
     static bool finalizeCapturedEntry(CapturedMap::iterator it, const char* reasonp);
+    static string extractIfacePortName(const string& dotText);
 
     template <typename FilterFn, typename Fn>
     static void forEachImpl(FilterFn&& filter, Fn&& fn);
@@ -80,6 +81,19 @@ public:
         return s_map.size();
     }
     static void propagateClone(const AstRefDType* origRefp, AstRefDType* newRefp);
+
+    static void captureTypedefContext(
+        AstRefDType* refp,
+        const char* stageLabel,
+        int dotPos,
+        bool dotIsFinal,
+        const std::string& dotText,
+        VSymEnt* dotSymp,
+        VSymEnt* curSymp,
+        AstNodeModule* modp,
+        AstNode* nodep,
+        const std::function<bool(AstVar*, AstRefDType*)>& promoteVarCb,
+        const std::function<std::string()>& indentFn);
 };
 
 #endif  // VERILATOR_V3LINKDOTIFACECAPTURE_H_
