@@ -1479,8 +1479,11 @@
 -V{t#,#}         'act' region trigger index 2 is active: @([true] __VdynSched.evaluate())
 -V{t#,#}+    Vt_timing_debug2___024root___timing_commit
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
+-V{t#,#}         No ready processes waiting for @([event] t.ec.e)
+-V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes:
 -V{t#,#}           - Process waiting at t/t_timing_class.v:229
 -V{t#,#}             Resuming: Process waiting at t/t_timing_class.v:229
