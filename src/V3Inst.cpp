@@ -58,9 +58,10 @@ class InstVisitor final : public VNVisitor {
             // Simplify it
             V3Inst::pinReconnectSimple(nodep, m_cellp, false);
         }
-        if (!nodep->exprp()) return;  // No-connect
         UINFOTREE(9, nodep, "", "Pin_oldb");
+        if (!nodep->exprp()) return;  // No-connect
         V3Inst::checkOutputShort(nodep);
+        if (!nodep->exprp()) return;  // Connection removed by checkOutputShort
         // Use user1p on the PIN to indicate we created an assign for this pin
         if (!nodep->user1SetOnce()) {
             // Make an ASSIGNW (expr, pin)
@@ -644,6 +645,7 @@ public:
             // Make a new temp wire
             // UINFOTREE(9, pinp, "", "in_pin");
             V3Inst::checkOutputShort(pinp);
+            if (!pinp->exprp()) return nullptr;
             // Simplify, so stuff like '{a[0], b[0]}[1]' produced during
             // instance array expansion are brought to normal 'a[0]'
             AstNodeExpr* const pinexprp
@@ -700,6 +702,8 @@ void V3Inst::checkOutputShort(const AstPin* nodep) {
             // Uses v3warn for error, as might be found multiple times
             nodep->v3warn(E_PORTSHORT, "Output port is connected to a constant pin,"
                                        " electrical short");
+            // Delete so we don't create a 'CONST = ...' assignment
+            nodep->exprp()->unlinkFrBack()->deleteTree();
         }
     }
 }
