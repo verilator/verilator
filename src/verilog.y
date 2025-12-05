@@ -6768,6 +6768,7 @@ covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
         /*cont*/    coverage_spec_or_optionListE
         /*cont*/ yENDGROUP endLabelE
                         { AstClass *cgClassp = new AstClass{$<fl>2, *$2, PARSEP->libname()};
+                          cgClassp->isCovergroup(true);
                           AstFunc* const newp = new AstFunc{$<fl>1, "new", nullptr, nullptr};
                           newp->fileline()->warnOff(V3ErrorCode::NORETURN, true);
                           newp->classMethod(true);
@@ -6785,6 +6786,7 @@ covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
         /*cont*/     coverage_spec_or_optionListE
         /*cont*/ yENDGROUP endLabelE
                         { AstClass *cgClassp = new AstClass{$<fl>3, *$3, PARSEP->libname()};
+                          cgClassp->isCovergroup(true);
                           AstFunc* const newp = new AstFunc{$<fl>1, "new", nullptr, nullptr};
                           newp->fileline()->warnOff(V3ErrorCode::NORETURN, true);
                           newp->classMethod(true);
@@ -6829,8 +6831,15 @@ coverage_spec_or_option<nodep>:  // ==IEEE: coverage_spec_or_option
 coverage_option<nodep>:  // ==IEEE: coverage_option
         //                      // option/type_option aren't really keywords
                 id/*yOPTION | yTYPE_OPTION*/ '.' idAny/*member_identifier*/ '=' expr
-                        { // TODO: check that 'id' is 'option' or 'type_option'
-                          $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: coverage option"); DEL($5); }
+                        { if (*$1 == "option") {
+                              $$ = new AstCgOptionAssign{$<fl>1, false, *$3, $5};
+                          } else if (*$1 == "type_option") {
+                              $$ = new AstCgOptionAssign{$<fl>1, true, *$3, $5};
+                          } else {
+                              $$ = nullptr;
+                              $<fl>1->v3error("Syntax error; expected 'option' or 'type_option': '" << *$1 << "'");
+                              DEL($5);
+                          } }
         ;
 
 cover_point<nodep>:  // ==IEEE: cover_point

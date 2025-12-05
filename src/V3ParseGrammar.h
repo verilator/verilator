@@ -99,6 +99,30 @@ public:
         defaultVarp->lifetime(VLifetime::STATIC_EXPLICIT);
         nodep->addStmtsp(defaultVarp);
 
+        // IEEE: option
+        {
+            v3Global.setUsesStdPackage();
+            AstVar* const varp
+                = new AstVar{nodep->fileline(), VVarType::MEMBER, "option", VFlagChildDType{},
+                             new AstRefDType{nodep->fileline(), "vl_covergroup_options_t",
+                                             new AstClassOrPackageRef{nodep->fileline(), "std",
+                                                                      nullptr, nullptr},
+                                             nullptr}};
+            nodep->addMembersp(varp);
+        }
+
+        // IEEE: type_option
+        {
+            v3Global.setUsesStdPackage();
+            AstVar* const varp
+                = new AstVar{nodep->fileline(), VVarType::MEMBER, "type_option", VFlagChildDType{},
+                             new AstRefDType{nodep->fileline(), "vl_covergroup_type_options_t",
+                                             new AstClassOrPackageRef{nodep->fileline(), "std",
+                                                                      nullptr, nullptr},
+                                             nullptr}};
+            nodep->addMembersp(varp);
+        }
+
         // IEEE: function void sample()
         {
             AstFunc* const funcp = new AstFunc{nodep->fileline(), "sample", nullptr, nullptr};

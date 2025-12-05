@@ -1789,6 +1789,7 @@ bool AstClass::isClassExtendedFrom(const AstClass* refClassp, const AstClass* ba
 }
 void AstClass::dump(std::ostream& str) const {
     this->AstNodeModule::dump(str);
+    if (isCovergroup()) str << " [CG]";
     if (isExtended()) str << " [EXT]";
     if (isInterfaceClass()) str << " [IFCCLS]";
     if (isVirtual()) str << " [VIRT]";
@@ -1796,6 +1797,7 @@ void AstClass::dump(std::ostream& str) const {
 }
 void AstClass::dumpJson(std::ostream& str) const {
     // dumpJsonNumFunc(str, declTokenNum);  // Not dumped as adding token changes whole file
+    if (isCovergroup()) dumpJsonBoolFunc(str, isCovergroup);
     dumpJsonBoolFunc(str, isExtended);
     dumpJsonBoolFunc(str, isInterfaceClass);
     dumpJsonBoolFunc(str, isVirtual);
@@ -3239,6 +3241,14 @@ string AstCase::pragmaString() const {
     return "";
 }
 
+void AstCgOptionAssign::dump(std::ostream& str) const {
+    if (typeOption()) str << " [TYPEOPT]";
+    this->AstNode::dump(str);
+}
+void AstCgOptionAssign::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, typeOption);
+    dumpJsonGen(str);
+}
 void AstDelay::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     if (isCycleDelay()) str << " [CYCLE]";

@@ -3,54 +3,6 @@
       |    ^~~~~~~~~~
                    ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
                    ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
-%Warning-COVERIGN: t/t_covergroup_unsup.v:43:7: Ignoring unsupported: coverage option
-   43 |       type_option.weight = 1;   
-      |       ^~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:44:7: Ignoring unsupported: coverage option
-   44 |       type_option.goal = 99;   
-      |       ^~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:45:7: Ignoring unsupported: coverage option
-   45 |       type_option.comment = "type_option_comment";   
-      |       ^~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:46:7: Ignoring unsupported: coverage option
-   46 |       type_option.strobe = 0;   
-      |       ^~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:47:7: Ignoring unsupported: coverage option
-   47 |       type_option.merge_instances = 1;   
-      |       ^~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:48:7: Ignoring unsupported: coverage option
-   48 |       type_option.distribute_first = 1;   
-      |       ^~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:49:7: Ignoring unsupported: coverage option
-   49 |       option.name = "the_name";   
-      |       ^~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:50:7: Ignoring unsupported: coverage option
-   50 |       option.weight = 1;   
-      |       ^~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:51:7: Ignoring unsupported: coverage option
-   51 |       option.goal = 98;   
-      |       ^~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:52:7: Ignoring unsupported: coverage option
-   52 |       option.comment = "option_comment";   
-      |       ^~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:53:7: Ignoring unsupported: coverage option
-   53 |       option.at_least = 20;   
-      |       ^~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:54:7: Ignoring unsupported: coverage option
-   54 |       option.auto_bin_max = 10;   
-      |       ^~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:55:7: Ignoring unsupported: coverage option
-   55 |       option.cross_num_print_missing = 2;   
-      |       ^~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:56:7: Ignoring unsupported: coverage option
-   56 |       option.detect_overlap = 1;   
-      |       ^~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:57:7: Ignoring unsupported: coverage option
-   57 |       option.per_instance = 1;   
-      |       ^~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:58:7: Ignoring unsupported: coverage option
-   58 |       option.get_inst_coverage = 1;   
-      |       ^~~~~~
 %Warning-COVERIGN: t/t_covergroup_unsup.v:42:4: Ignoring unsupported: covergroup
    42 |    covergroup cg_opt;
       |    ^~~~~~~~~~
@@ -72,9 +24,6 @@
 %Warning-COVERIGN: t/t_covergroup_unsup.v:67:4: Ignoring unsupported: covergroup
    67 |    covergroup cg_bracket;
       |    ^~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:71:9: Ignoring unsupported: coverage option
-   71 |       { option.name = "option"; }
-      |         ^~~~~~
 %Warning-COVERIGN: t/t_covergroup_unsup.v:70:4: Ignoring unsupported: covergroup
    70 |    covergroup cg_bracket2;
       |    ^~~~~~~~~~
@@ -165,12 +114,6 @@
 %Warning-COVERIGN: t/t_covergroup_unsup.v:101:4: Ignoring unsupported: covergroup
   101 |    covergroup cg_cross2;
       |    ^~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:105:20: Ignoring unsupported: coverage option
-  105 |       cross a, b { option.comment = "cross"; option.weight = 12; }
-      |                    ^~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:105:46: Ignoring unsupported: coverage option
-  105 |       cross a, b { option.comment = "cross"; option.weight = 12; }
-      |                                              ^~~~~~
 %Warning-COVERIGN: t/t_covergroup_unsup.v:105:7: Ignoring unsupported: cover cross
   105 |       cross a, b { option.comment = "cross"; option.weight = 12; }
       |       ^~~~~

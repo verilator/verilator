@@ -1632,6 +1632,11 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstCLog2* nodep) override {
         if (m_vup->prelim()) iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
     }
+    void visit(AstCgOptionAssign* nodep) override {
+        // We report COVERIGN on the whole covergroup; if get more fine-grained add this
+        // nodep->v3warn(COVERIGN, "Ignoring unsupported: coverage option");
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
     void visit(AstPow* nodep) override {
         // Pow is special, output sign only depends on LHS sign, but
         // function result depends on both signs
@@ -3442,8 +3447,8 @@ class WidthVisitor final : public VNVisitor {
         }
         const string suggest = speller.bestCandidateMsg(nodep->prettyName());
         nodep->v3error(
-            "Member " << nodep->prettyNameQ() << " not found in class "
-                      << first_classp->prettyNameQ() << "\n"
+            "Member " << nodep->prettyNameQ() << " not found in " << first_classp->verilogKwd()
+                      << " " << first_classp->prettyNameQ() << "\n"
                       << (suggest.empty() ? "" : nodep->fileline()->warnMore() + suggest));
         return false;  // Caller handles error
     }
@@ -4446,8 +4451,9 @@ class WidthVisitor final : public VNVisitor {
             }
             const string suggest = speller.bestCandidateMsg(nodep->prettyName());
             nodep->v3error("Class method "
-                           << nodep->prettyNameQ() << " not found in class "
-                           << first_classp->prettyNameQ() << "\n"
+                           << nodep->prettyNameQ() << " not found in "
+                           << first_classp->verilogKwd() << " " << first_classp->prettyNameQ()
+                           << "\n"
                            << (suggest.empty() ? "" : nodep->fileline()->warnMore() + suggest));
         }
         nodep->dtypeSetSigned32();  // Guess on error

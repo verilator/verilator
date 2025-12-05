@@ -733,6 +733,26 @@ public:
         return m_cellp->origModName();
     }  // * = modp()->origName() before inlining
 };
+class AstCgOptionAssign final : public AstNode {
+    // A covergroup set of option
+    // Parents: CLASS(covergroup) or cross
+    string m_name;  // Option name
+    const bool m_typeOption;  // type_option vs option
+    // @astgen op1 := valuep : AstNodeExpr
+public:
+    AstCgOptionAssign(FileLine* fl, bool typeOption, const string& name, AstNodeExpr* valuep)
+        : ASTGEN_SUPER_CgOptionAssign(fl)
+        , m_name{name}
+        , m_typeOption{typeOption} {
+        this->valuep(valuep);
+    }
+    ASTGEN_MEMBERS_AstCgOptionAssign;
+    // ACCESSORS
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    string name() const override VL_MT_STABLE { return m_name; }  // * = Bind Target name
+    bool typeOption() const { return m_typeOption; }
+};
 class AstClassExtends final : public AstNode {
     // class extends class name, or class implements class name
     // Children: List of AstParseRef for packages/classes
@@ -2487,6 +2507,7 @@ class AstClass final : public AstNodeModule {
     // @astgen ptr := m_classOrPackagep : Optional[AstClassPackage]  // Package to be emitted with
     uint32_t m_declTokenNum;  // Declaration token number
     VBaseOverride m_baseOverride;  // BaseOverride (inital/final/extends)
+    bool m_covergroup = false;  // Is covergroup (TODO perhaps make a new Ast node type for CG?)
     bool m_extended = false;  // Is extension or extended by other classes
     bool m_interfaceClass = false;  // Interface class
     bool m_needRNG = false;  // Need RNG, uses srandom/randomize
@@ -2498,7 +2519,7 @@ public:
         : ASTGEN_SUPER_Class(fl, name, libname)
         , m_declTokenNum{fl->tokenNum()} {}
     ASTGEN_MEMBERS_AstClass;
-    string verilogKwd() const override { return "class"; }
+    string verilogKwd() const override { return isCovergroup() ? "covergroup" : "class"; }
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
@@ -2507,6 +2528,8 @@ public:
     void classOrPackagep(AstClassPackage* classpackagep) { m_classOrPackagep = classpackagep; }
     AstNode* membersp() const VL_MT_STABLE { return stmtsp(); }
     void addMembersp(AstNode* nodep) { addStmtsp(nodep); }
+    bool isCovergroup() const { return m_covergroup; }
+    void isCovergroup(bool flag) { m_covergroup = flag; }
     bool isExtended() const { return m_extended; }
     void isExtended(bool flag) { m_extended = flag; }
     bool isInterfaceClass() const { return m_interfaceClass; }
