@@ -16,10 +16,8 @@
 
 #include "V3LinkDotIfaceCapture.h"
 
-#include "V3Ast.h"
 #include "V3Error.h"
 #include "V3Global.h"
-#include "V3SymTable.h"
 
 #include <unordered_map>
 
@@ -50,29 +48,27 @@ bool V3LinkDotIfaceCapture::finalizeCapturedEntry(CapturedMap::iterator it, cons
 
 void V3LinkDotIfaceCapture::add(AstRefDType* refp, AstCell* cellp, AstNodeModule* ownerModp, AstTypedef* typedefp, AstNodeModule* typedefOwnerModp, AstVar* ifacePortVarp) {
     if (!refp) return;
-    AstTypedef* const resolvedTypedefp = typedefp ? typedefp : refp->typedefp();
-    AstNodeModule* resolvedTypedefOwner = typedefOwnerModp;
-    if (!resolvedTypedefOwner && resolvedTypedefp)
-        resolvedTypedefOwner = findOwnerModule(resolvedTypedefp);
-    //capturedMap()[refp] = CapturedIfaceTypedef{
-    s_map[refp] = CapturedIfaceTypedef{
-        refp, cellp, ownerModp, resolvedTypedefp, resolvedTypedefOwner, nullptr, ifacePortVarp};
+
+    if(!typedefp) typedefp = refp->typedefp();
+
+    if (!typedefOwnerModp && typedefp)
+        typedefOwnerModp = findOwnerModule(typedefp);
+
+    s_map[refp] = CapturedIfaceTypedef{refp, cellp, ownerModp, typedefp, typedefOwnerModp, nullptr, ifacePortVarp};
 }
 
 const V3LinkDotIfaceCapture::CapturedIfaceTypedef* V3LinkDotIfaceCapture::find(const AstRefDType* refp) {
     if (!refp) return nullptr;
-    auto& map = s_map;
-    const auto it = map.find(refp);
-    if (VL_UNLIKELY(it == map.end())) return nullptr;
+    const auto it = s_map.find(refp);
+    if (VL_UNLIKELY(it == s_map.end())) return nullptr;
     return &it->second;
 }
 
 bool V3LinkDotIfaceCapture::erase(const AstRefDType* refp) {
     if (!refp) return false;
-    auto& map = s_map;
-    const auto it = map.find(refp);
-    if (it == map.end()) return false;
-    map.erase(it);
+    const auto it = s_map.find(refp);
+    if (it == s_map.end()) return false;
+    s_map.erase(it);
     return true;
 }
 
@@ -82,21 +78,19 @@ std::size_t V3LinkDotIfaceCapture::size() {
 
 bool V3LinkDotIfaceCapture::replaceRef(const AstRefDType* oldRefp, AstRefDType* newRefp) {
     if (!oldRefp || !newRefp) return false;
-    auto& map = s_map;
-    const auto it = map.find(oldRefp);
-    if (it == map.end()) return false;
+    const auto it = s_map.find(oldRefp);
+    if (it == s_map.end()) return false;
     auto entry = it->second;
     entry.refp = newRefp;
-    map.erase(it);
-    map.emplace(newRefp, entry);
+    s_map.erase(it);
+    s_map.emplace(newRefp, entry);
     return true;
 }
 
 bool V3LinkDotIfaceCapture::replaceTypedef(const AstRefDType* refp, AstTypedef* newTypedefp) {
     if (!refp || !newTypedefp) return false;
-    auto& map = s_map;
-    auto it = map.find(refp);
-    if (it == map.end()) return false;
+    auto it = s_map.find(refp);
+    if (it == s_map.end()) return false;
     it->second.typedefp = newTypedefp;
     it->second.typedefOwnerModp = findOwnerModule(newTypedefp);
     finalizeCapturedEntry(it, "typedef clone");
@@ -105,9 +99,8 @@ bool V3LinkDotIfaceCapture::replaceTypedef(const AstRefDType* refp, AstTypedef* 
 
 void V3LinkDotIfaceCapture::propagateClone(const AstRefDType* origRefp, AstRefDType* newRefp) {
     if (!origRefp || !newRefp) return;
-    auto& map = s_map;
-    auto it = map.find(origRefp);
-    if (it == map.end()) {
+    auto it = s_map.find(origRefp);
+    if (it == s_map.end()) {
         const string msg
             = string{"iface capture propagateClone missing entry for orig="} + cvtToStr(origRefp);
         v3fatalSrc(msg);
@@ -128,14 +121,13 @@ void V3LinkDotIfaceCapture::propagateClone(const AstRefDType* origRefp, AstRefDT
 
 template <typename FilterFn, typename Fn>
 void V3LinkDotIfaceCapture::forEachImpl(FilterFn&& filter, Fn&& fn) {
-    auto& map = s_map;
     std::vector<const AstRefDType*> keys;
-    keys.reserve(map.size());
-    for (const auto& kv : map) keys.push_back(kv.first);
+    keys.reserve(s_map.size());
+    for (const auto& kv : s_map) keys.push_back(kv.first);
 
     for (const AstRefDType* key : keys) {
-        const auto it = map.find(key);
-        if (it == map.end()) continue;
+        const auto it = s_map.find(key);
+        if (it == s_map.end()) continue;
 
         CapturedIfaceTypedef& entry = it->second;
         if (entry.cellp && entry.refp && entry.refp->user2p() != entry.cellp) {
@@ -159,52 +151,3 @@ void V3LinkDotIfaceCapture::forEachOwned(const AstNodeModule* ownerModp, const s
         },
         fn);
 }
-
-
-/*
-namespace LinkDotIfaceCapture {
-
-
-template <typename FilterFn, typename Fn>
-static void forEachImpl(FilterFn&& filter, Fn&& fn) {
-    auto& map = capturedMap();
-    std::vector<const AstRefDType*> keys;
-    keys.reserve(map.size());
-    for (const auto& kv : map) keys.push_back(kv.first);
-
-    for (const AstRefDType* key : keys) {
-        const auto it = map.find(key);
-        if (it == map.end()) continue;
-
-        CapturedIfaceTypedef& entry = it->second;
-        if (entry.cellp && entry.refp && entry.refp->user2p() != entry.cellp) {
-            entry.refp->user2p(entry.cellp);
-        }
-        if (!filter(entry)) continue;
-        fn(entry);
-    }
-}
-
-void forEach(const std::function<void(const CapturedIfaceTypedef&)>& fn) {
-    if (!fn) return;
-    forEachImpl([](const CapturedIfaceTypedef&) { return true; }, fn);
-}
-
-void forEachOwned(const AstNodeModule* ownerModp,
-                  const std::function<void(const CapturedIfaceTypedef&)>& fn) {
-    if (!ownerModp || !fn) return;
-    forEachImpl(
-        [ownerModp](const CapturedIfaceTypedef& e) {
-            return e.ownerModp == ownerModp || e.typedefOwnerModp == ownerModp;
-        },
-        fn);
-}
-
-
-
-
-
-
-
-}  // namespace LinkDotIfaceCapture
-*/

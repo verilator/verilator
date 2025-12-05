@@ -26,12 +26,8 @@
 #include <cstddef>
 #include <functional>
 
-class AstCell;
-class AstNodeModule;
-class AstRefDType;
-class AstTypedef;
-class AstVar;
-class VSymEnt;
+#include "V3Ast.h"
+#include "V3SymTable.h"
 
 class V3LinkDotIfaceCapture final {
 public:
@@ -77,7 +73,6 @@ public:
     }
     static void add(AstRefDType* refp, AstCell* cellp, AstNodeModule* ownerModp, AstTypedef* typedefp = nullptr, AstNodeModule* typedefOwnerModp = nullptr, AstVar* ifacePortVarp = nullptr);
 
-    //static void add(const CapturedIfaceTypedef& entry);
     static const CapturedIfaceTypedef* find(const AstRefDType* refp);
     static void forEach(const std::function<void(const CapturedIfaceTypedef&)>& fn);
     static void forEachOwned(const AstNodeModule* ownerModp, const std::function<void(const CapturedIfaceTypedef&)>& fn);
@@ -87,46 +82,5 @@ public:
     static std::size_t size();
     static void propagateClone(const AstRefDType* origRefp, AstRefDType* newRefp);
 };
-
-/*
-namespace LinkDotIfaceCapture {
-
-struct CapturedIfaceTypedef final {
-    AstRefDType* refp = nullptr;
-    AstCell* cellp = nullptr;
-    // Module where the RefDType lives
-    AstNodeModule* ownerModp = nullptr;
-    // Typedef definition being referenced
-    AstTypedef* typedefp = nullptr;
-    // Interface/module that owns typedefp
-    AstNodeModule* typedefOwnerModp = nullptr;
-    // Cloned RefDType awaiting typedef rebinding
-    AstRefDType* pendingClonep = nullptr;
-    // Interface port variable for matching during cloning
-    AstVar* ifacePortVarp = nullptr;
-};
-
-void enable(bool flag);
-bool enabled();
-
-void reset();
-void add(AstRefDType* refp, AstCell* cellp, AstNodeModule* ownerModp,
-         AstTypedef* typedefp = nullptr, AstNodeModule* typedefOwnerModp = nullptr,
-         AstVar* ifacePortVarp = nullptr);
-void add(const CapturedIfaceTypedef& entry);
-const CapturedIfaceTypedef* find(const AstRefDType* refp);
-void forEach(const std::function<void(const CapturedIfaceTypedef&)>& fn);
-void forEachOwned(const AstNodeModule* ownerModp,
-                  const std::function<void(const CapturedIfaceTypedef&)>& fn);
-bool replaceRef(const AstRefDType* oldRefp, AstRefDType* newRefp);
-bool replaceTypedef(const AstRefDType* refp, AstTypedef* newTypedefp);
-bool erase(const AstRefDType* refp);
-std::size_t size();
-
-void propagateClone(const AstRefDType* origRefp, AstRefDType* newRefp);
-
-}  // namespace LinkDotIfaceCapture
-*/
-
 
 #endif  // VERILATOR_V3LINKDOTIFACECAPTURE_H_
