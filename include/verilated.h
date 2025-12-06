@@ -1026,18 +1026,13 @@ void VerilatedContext::timeprecision(int value) VL_MT_SAFE {
         m_s.m_timeprecision = value;
 #if VM_SC
         const sc_core::sc_time sc_res = sc_core::sc_get_time_resolution();
-        if (sc_res == sc_core::sc_time(1, sc_core::SC_SEC)) {
-            sc_prec = 0;
-        } else if (sc_res == sc_core::sc_time(1, sc_core::SC_MS)) {
-            sc_prec = 3;
-        } else if (sc_res == sc_core::sc_time(1, sc_core::SC_US)) {
-            sc_prec = 6;
-        } else if (sc_res == sc_core::sc_time(1, sc_core::SC_NS)) {
-            sc_prec = 9;
-        } else if (sc_res == sc_core::sc_time(1, sc_core::SC_PS)) {
-            sc_prec = 12;
-        } else if (sc_res == sc_core::sc_time(1, sc_core::SC_FS)) {
-            sc_prec = 15;
+        double mult = 1.0;
+        for (int i = 0; i < 16; i++) {
+            if (sc_res == sc_core::sc_time(mult, sc_core::SC_FS)) {
+                sc_prec = 15 - i;
+                break;
+            }
+            mult *= 10.0;
         }
         // SC_AS, SC_ZS, SC_YS not supported as no Verilog equivalent; will error below
 #endif
