@@ -326,6 +326,7 @@ class TraceDriver final : public DfgVisitor {
     }
 
     void visit(DfgVarPacked* vtxp) override {
+        UASSERT_OBJ(!vtxp->isVolatile(), vtxp, "Should not trace through volatile VarPacked");
         VL_RESTORER(m_defaultp);
         m_defaultp = vtxp->defaultp();
         SET_RESULT(trace(vtxp->srcp(), m_msb, m_lsb));
@@ -338,9 +339,11 @@ class TraceDriver final : public DfgVisitor {
         // From a variable
         const DfgVarArray* varp = vtxp->fromp()->cast<DfgVarArray>();
         if (!varp) return;
+        UASSERT_OBJ(!varp->isVolatile(), vtxp, "Should not trace through volatile VarArray");
         // Skip through intermediate variables
         while (varp->srcp() && varp->srcp()->is<DfgVarArray>()) {
             varp = varp->srcp()->as<DfgVarArray>();
+            UASSERT_OBJ(!varp->isVolatile(), vtxp, "Should not trace through volatile VarArray");
         }
         // Find driver
         const DfgVertex* srcp = varp->srcp();
@@ -649,6 +652,8 @@ class IndependentBits final : public DfgVisitor {
     }  // LCOV_EXCL_STOP
 
     void visit(DfgVarPacked* vtxp) override {
+        // We cannot trace through a volatile variable, so pretend all bits are dependent
+        if (vtxp->isVolatile()) return;
         V3Number& m = MASK(vtxp);
         DfgVertex* const srcp = vtxp->srcp();
         DfgVertex* const defaultp = vtxp->defaultp();
@@ -665,9 +670,12 @@ class IndependentBits final : public DfgVisitor {
         // From a variable
         const DfgVarArray* varp = vtxp->fromp()->cast<DfgVarArray>();
         if (!varp) return;
+        // We cannot trace through a volatile variable, so pretend all bits are dependent
+        if (varp->isVolatile()) return;
         // Skip through intermediate variables
         while (varp->srcp() && varp->srcp()->is<DfgVarArray>()) {
             varp = varp->srcp()->as<DfgVarArray>();
+            if (varp->isVolatile()) return;
         }
         // Find driver
         const DfgVertex* srcp = varp->srcp();

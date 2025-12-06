@@ -309,6 +309,10 @@ module t (
   `signal(PACKED_0_LSB, 1);
   assign PACKED_0_LSB = packed_0_lsb;
 
+  //////////////////////////////////////////////////////////////////////////
+  // Cases that can't be fixed up currently
+  //////////////////////////////////////////////////////////////////////////
+
   // verilator lint_off UNOPTFLAT
   logic array_5 [0:6];
   // Unconnected d[0:3]
@@ -317,6 +321,47 @@ module t (
   assign array_5[6] = array_5[4] ? array_5[4] : array_5[5];
   `signal(ARRAY_5, 1);
   assign ARRAY_5 = array_5[6];
+  // verilator lint_on
+
+  //////////////////////////////////////////////////////////////////////////
+  // Volatile variables
+  //////////////////////////////////////////////////////////////////////////
+
+  `signal(VOLATILE_PACKED_OUT_OF_CYCLE, 64); // UNOPTFLAT
+  wire logic [63:0] volatile_packed_out_of_cycle /* verilator forceable */ = rand_a;
+  assign VOLATILE_PACKED_OUT_OF_CYCLE = volatile_packed_out_of_cycle ^ 64'(VOLATILE_PACKED_OUT_OF_CYCLE[63:1]);
+
+  // verilator lint_off UNOPTFLAT
+  `signal(VOLATILE_PACKED_IN_CYCLE, 3);
+  wire logic [2:0] volatile_packed_in_cycle /* verilator forceable */;
+  assign volatile_packed_in_cycle = rand_a[2:0] ^ 3'(volatile_packed_in_cycle[2:1]);
+  assign VOLATILE_PACKED_IN_CYCLE = volatile_packed_in_cycle;
+  // verilator lint_on
+
+  wire [2:0] volatile_array_out_of_cycle_a [2] /* verilator public_flat_rw */;
+  assign volatile_array_out_of_cycle_a[0] = rand_a[2:0];
+  wire [2:0] volatile_array_out_of_cycle_b [2];
+  assign volatile_array_out_of_cycle_b[0] = volatile_array_out_of_cycle_a[0];
+  assign volatile_array_out_of_cycle_b[1] = volatile_array_out_of_cycle_b[0];
+  `signal(VOLATILE_ARRAY_OUT_OF_CYCLE, 3); // UNOPTFLAT
+  assign VOLATILE_ARRAY_OUT_OF_CYCLE = volatile_array_out_of_cycle_a[1];
+
+  // verilator lint_off UNOPTFLAT
+  wire [2:0] volatile_array_in_cycle_0 [2] /* verilator public_flat_rw */;
+  assign volatile_array_in_cycle_0[0] = rand_a[2:0];
+  assign volatile_array_in_cycle_0[1] = volatile_array_in_cycle_0[0];
+  `signal(VOLATILE_ARRAY_IN_CYCLE_0, 3); // UNOPTFLAT
+  assign VOLATILE_ARRAY_IN_CYCLE_0 = volatile_array_in_cycle_0[1];
+  // verilator lint_on
+
+  // verilator lint_off UNOPTFLAT
+  wire [2:0] volatile_array_in_cycle_1a [2] /* verilator public_flat_rw */;
+  wire [2:0] volatile_array_in_cycle_1b [2] /* verilator public_flat_rw */;
+  assign volatile_array_in_cycle_1a[0] = rand_a[2:0];
+  assign volatile_array_in_cycle_1a[1] = volatile_array_in_cycle_1b[0];
+  assign volatile_array_in_cycle_1b = volatile_array_in_cycle_1a;
+  `signal(VOLATILE_ARRAY_IN_CYCLE_1, 3); // UNOPTFLAT
+  assign VOLATILE_ARRAY_IN_CYCLE_1 = volatile_array_in_cycle_1a[1];
   // verilator lint_on
 
 endmodule
