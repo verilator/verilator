@@ -288,6 +288,7 @@ set(COMMON_SOURCES
     V3Inst.cpp
     V3InstrCount.cpp
     V3Interface.cpp
+    V3LibMap.cpp
     V3Life.cpp
     V3LifePost.cpp
     V3LinkCells.cpp
