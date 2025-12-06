@@ -78,10 +78,14 @@ class CellEdge final : public V3GraphEdge {
     AstCell* const m_cellp;
 
 public:
-    CellEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, int weight, bool cutable, AstCell* cellp)
-        : V3GraphEdge{graphp, fromp, top, weight, cutable}, m_cellp{cellp} {}
+    CellEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, int weight, bool cutable,
+             AstCell* cellp)
+        : V3GraphEdge{graphp, fromp, top, weight, cutable}
+        , m_cellp{cellp} {}
     AstCell* cellp() const { return m_cellp; }
-    string name() const override VL_MT_STABLE { return cellp() ? cvtToHex(cellp()) + ' ' + cellp()->name() : ""; }
+    string name() const override VL_MT_STABLE {
+        return cellp() ? cvtToHex(cellp()) + ' ' + cellp()->name() : "";
+    }
 };
 
 void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp, V3EdgeFuncP edgeFuncp) {
@@ -123,17 +127,19 @@ struct LinkCellsState final {
 class LinkConfigsVisitor final : public VNVisitor {
     // STATE
     LinkCellsState& m_state;  // Context for linking cells
-    bool m_isTop = false; // Whether we're in the top-level config
-    bool m_isDefault = false; // Whether we're currently in a default clause
-    string m_cell; // Current cell being processed
-    string m_hierInst; // Current hierarchical instance being processed
-    AstDot* m_dotp = nullptr; // Current dot being processed
+    bool m_isTop = false;  // Whether we're in the top-level config
+    bool m_isDefault = false;  // Whether we're currently in a default clause
+    string m_cell;  // Current cell being processed
+    string m_hierInst;  // Current hierarchical instance being processed
+    AstDot* m_dotp = nullptr;  // Current dot being processed
 
     // VISITORS
     void visit(AstConfig* nodep) override {
         VL_RESTORER(m_isTop);
-        const auto& fullName = std::pair<std::string, std::string>{nodep->libname(), nodep->configname()};
-        m_isTop = std::find(m_state.m_designs.begin(), m_state.m_designs.end(), fullName) != m_state.m_designs.end();
+        const auto& fullName
+            = std::pair<std::string, std::string>{nodep->libname(), nodep->configname()};
+        m_isTop = std::find(m_state.m_designs.begin(), m_state.m_designs.end(), fullName)
+                  != m_state.m_designs.end();
         m_state.m_designs.erase(
             std::remove(m_state.m_designs.begin(), m_state.m_designs.end(), fullName),
             m_state.m_designs.end());
@@ -165,9 +171,7 @@ class LinkConfigsVisitor final : public VNVisitor {
         }
     }
 
-    void visit(AstDot* nodep) override {
-        iterateChildren(nodep);
-    }
+    void visit(AstDot* nodep) override { iterateChildren(nodep); }
 
     void visit(AstParseRef* nodep) override {
         if (m_isDefault) {
@@ -189,8 +193,7 @@ class LinkConfigsVisitor final : public VNVisitor {
         } else if (m_dotp) {
             m_hierInst += m_hierInst.empty() ? nodep->name() : '.' + nodep->name();
         } else if (!m_hierInst.empty()) {
-            m_state.m_uselistInst[m_hierInst].emplace_back(
-                nodep->libname(), nodep->cellname());
+            m_state.m_uselistInst[m_hierInst].emplace_back(nodep->libname(), nodep->cellname());
         }
     }
 
@@ -244,8 +247,10 @@ class LinkCellsVisitor final : public VNVisitor {
         const V3GraphEdge* const edgep = new V3GraphEdge{&m_graph, fromp, top, weight, cuttable};
         UINFO(9, "    newEdge " << edgep << " " << fromp->name() << " -> " << top->name());
     }
-    void cellEdge(V3GraphVertex* fromp, V3GraphVertex* top, int weight, bool cuttable, AstCell* cellp) {
-        const V3GraphEdge* const edgep = new CellEdge{&m_graph, fromp, top, weight, cuttable, cellp};
+    void cellEdge(V3GraphVertex* fromp, V3GraphVertex* top, int weight, bool cuttable,
+                  AstCell* cellp) {
+        const V3GraphEdge* const edgep
+            = new CellEdge{&m_graph, fromp, top, weight, cuttable, cellp};
         UINFO(9, "    cellEdge " << edgep << " " << fromp->name() << " -> " << top->name());
     }
     void insertModInLib(const string& name, const string& libname, AstNodeModule* nodep) {
@@ -390,7 +395,6 @@ class LinkCellsVisitor final : public VNVisitor {
                     cellp->modp(modp);
                     break;
                 }
-
             }
         }
 
@@ -459,8 +463,11 @@ class LinkCellsVisitor final : public VNVisitor {
                 nodep->inLibrary(true);  // Interfaces can't be at top, unless asked
             }
 
-            auto const& fullName = std::pair<std::string, std::string>(nodep->libname(), nodep->name());
-            const bool topMatch = std::find(m_state.m_designs.begin(), m_state.m_designs.end(), fullName) != m_state.m_designs.end();
+            auto const& fullName
+                = std::pair<std::string, std::string>(nodep->libname(), nodep->name());
+            const bool topMatch
+                = std::find(m_state.m_designs.begin(), m_state.m_designs.end(), fullName)
+                  != m_state.m_designs.end();
             if (topMatch) {
                 m_topVertexp = vertex(nodep);
                 UINFO(2, "Link --top-module: " << nodep);
