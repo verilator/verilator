@@ -4851,7 +4851,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             iterateChildren(nodep);
             if (isNew) {
                 const AstClassExtends* const classExtendsp = VN_AS(m_modp, Class)->extendsp();
-                if (m_explicitSuperNewp && !m_explicitSuperNewp->isImplicit()
+                if (m_explicitSuperNewp && !m_explicitSuperNewp->isImplicit() && classExtendsp
                     && classExtendsp->argsp()) {
                     m_explicitSuperNewp->v3error(
                         "Explicit super.new not allowed with class "
