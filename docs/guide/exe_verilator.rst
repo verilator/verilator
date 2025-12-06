@@ -867,6 +867,16 @@ Summary:
    compatibility and is not recommended usage as this is not supported by
    some third-party tools.
 
+.. option:: --inline-cfuncs
+
+   With :vlopt:`--inline-cfuncs`, which is the default, Verilator will
+   inline small CFunc calls directly into their callers. This reduces
+   function call overhead when :vlopt:`--output-split-cfuncs` places
+   functions in separate compilation units that the C++ compiler cannot
+   inline. Use :vlopt:`--no-inline-cfuncs` to disable this optimization.
+   This is automatically disabled when :vlopt:`--prof-cfuncs` is used, as
+   profiling requires separate functions.
+
 .. option:: --inline-mult <value>
 
    Tune the inlining of modules. The default value of 2000 specifies that
