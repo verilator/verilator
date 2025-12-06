@@ -44,7 +44,7 @@ with open(rdFile, 'r', encoding="utf8") as rdFh, \
     for line in rdFh:
         line, _, cmt = line.partition("//")
         cmt, _, _ = cmt.partition("//")
-        if "UNOPTFLAT" in cmt:
+        if "UNOPTFLAT" in cmt and "lint_off" not in cmt:
             nExpectedCycles += 1
         m = re.search(r'`signal\((\w+),', line)
         if not m:
