@@ -3648,7 +3648,7 @@ class ConstVisitor final : public VNVisitor {
             while (AstNode* const nextp = lastp->nextp()) lastp = nextp;
             if (AstLoopTest* const testp = VN_CAST(lastp, LoopTest)) {
                 if (testp->condp()->isZero()) {
-                    VL_DO_DANGLING(pushDeletep(testp->unlinkFrBack()), testp);
+                    VL_DO_DANGLING2(pushDeletep(testp->unlinkFrBack()), testp, lastp);
                     nodep->replaceWith(nodep->stmtsp()->unlinkFrBackWithNext());
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return;

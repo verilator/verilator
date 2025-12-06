@@ -5597,7 +5597,7 @@ class WidthVisitor final : public VNVisitor {
         AstNode* const bodyp = nodep->stmtsp();
         userIterateAndNext(bodyp, nullptr);
         if (AstForeach* const loopp = VN_CAST(nodep, Foreach)) {
-            VL_DO_DANGLING(V3Begin::convertToWhile(loopp), nodep);
+            VL_DO_DANGLING2(V3Begin::convertToWhile(loopp), loopp, nodep);
             return;
         }
     }
@@ -8945,7 +8945,7 @@ class WidthVisitor final : public VNVisitor {
         if (!constp || (noFourState && constp->num().isFourState())) {
             nodep->v3error(message);
             nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::Unsized32{}, 1});
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            VL_DO_DANGLING2(pushDeletep(nodep), nodep, constp);
             return;
         }
     }

@@ -619,7 +619,7 @@ class LinkParseVisitor final : public VNVisitor {
                 = new AstSelLoopVars{selp->fileline(), selp->fromp()->unlinkFrBack(),
                                      selp->bitp()->unlinkFrBackWithNext()};
             selp->replaceWith(newp);
-            VL_DO_DANGLING(selp->deleteTree(), selp);
+            VL_DO_DANGLING2(selp->deleteTree(), selp, bracketp);
         } else if (VN_IS(bracketp, SelLoopVars)) {
             // Ok
         } else {
@@ -952,7 +952,7 @@ class LinkParseVisitor final : public VNVisitor {
                         citemp->v3fatalSrc("Incorrect direction");
                     }
                 }
-                VL_DO_DANGLING(pushDeletep(citemp->unlinkFrBack()), citemp);
+                VL_DO_DANGLING2(pushDeletep(citemp->unlinkFrBack()), citemp, itemp);
             }
         }
         iterateChildren(nodep);

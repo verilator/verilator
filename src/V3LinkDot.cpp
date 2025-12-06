@@ -1870,13 +1870,13 @@ class LinkDotFindVisitor final : public VNVisitor {
             for (AstNode *nextp, *argp = loopvarsp->elementsp(); argp; argp = nextp) {
                 nextp = argp->nextp();
                 AstVar* argrefp = nullptr;
-                if (const auto parserefp = VN_CAST(argp, ParseRef)) {
+                if (AstParseRef* const parserefp = VN_CAST(argp, ParseRef)) {
                     // We use an int type, this might get changed in V3Width when types resolve
                     argrefp = new AstVar{parserefp->fileline(), VVarType::BLOCKTEMP,
                                          parserefp->name(), argp->findSigned32DType()};
                     argrefp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                     parserefp->replaceWith(argrefp);
-                    VL_DO_DANGLING(parserefp->deleteTree(), parserefp);
+                    VL_DO_DANGLING2(parserefp->deleteTree(), parserefp, argp);
                     // Insert argref's name into symbol table
                     m_statep->insertSym(m_curSymp, argrefp->name(), argrefp, nullptr);
                 } else if (const auto largrefp = VN_CAST(argp, Var)) {
@@ -4646,7 +4646,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                     AstNode* addp = pinp;
                                     if (AstArg* const argp = VN_CAST(pinp, Arg)) {
                                         addp = argp->exprp()->unlinkFrBack();
-                                        VL_DO_DANGLING(pushDeletep(pinp), pinp);
+                                        VL_DO_DANGLING2(pushDeletep(pinp), pinp, argp);
                                     }
                                     outp = AstNode::addNext(outp, addp);
                                 }

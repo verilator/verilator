@@ -479,7 +479,7 @@ class CaseVisitor final : public VNVisitor {
                         condp = irangep->newAndFromInside(cexprp->cloneTreePure(true),
                                                           irangep->lhsp()->unlinkFrBack(),
                                                           irangep->rhsp()->unlinkFrBack());
-                        VL_DO_DANGLING(icondp->deleteTree(), icondp);
+                        VL_DO_DANGLING2(icondp->deleteTree(), icondp, irangep);
                     } else if (iconstp && iconstp->num().isFourState()
                                && (nodep->casex() || nodep->casez() || nodep->caseInside())) {
                         V3Number nummask{itemp, iconstp->width()};

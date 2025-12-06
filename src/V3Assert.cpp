@@ -303,7 +303,7 @@ class AssertVisitor final : public VNVisitor {
         if (AstPExpr* const pexprp = VN_CAST(propp, PExpr)) {
             AstFork* const forkp = new AstFork{nodep->fileline(), VJoinType::JOIN_NONE};
             forkp->addForksp(pexprp->bodyp()->unlinkFrBack());
-            VL_DO_DANGLING(pushDeletep(pexprp), pexprp);
+            VL_DO_DANGLING2(pushDeletep(pexprp), pexprp, propp);
             bodyp = forkp;
         } else {
             bodyp = assertCond(nodep, VN_AS(propp, NodeExpr), passsp, failsp);
