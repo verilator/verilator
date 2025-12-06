@@ -9,8 +9,11 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('simulator')
 
-test.lint(fails=test.vlt_all, expect_filename=test.golden_filename)
+test.lint(verilator_flags2=[
+    '--binary', '--top cfg1', '--work liba', 't/t_config_work__liba.v', '--work libb',
+    't/t_config_work__libb.v'
+    ], fails=test.vlt_all, expect_filename=test.golden_filename)
 
 test.passes()

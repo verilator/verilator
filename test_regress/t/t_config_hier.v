@@ -59,5 +59,5 @@ endconfig
 // Base usage
 config cfg2;
   design c2_b;
-  instance u_bb use work.c2_bb;
+  instance c2_b.u_bb use work.c2_bb;
 endconfig

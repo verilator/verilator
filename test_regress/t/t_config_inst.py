@@ -12,11 +12,13 @@ import vltest_bootstrap
 test.scenarios('simulator')
 
 test.compile(verilator_flags2=[
-    "--binary", "--top cfg", "--work liba t/t_config_rules_sub.v",
-    "--work libb t/t_config_rules_sub.v", "--work libc t/t_config_rules_sub.v",
-    "--work libd t/t_config_rules_sub.v"
+    '--binary', '--top cfg1', '--work liba', 't/t_config_work__liba.v', '--work libb',
+    't/t_config_work__libb.v'
 ])
 
 test.execute()
+
+# Sort so that 'initial' scheduling order is not relevant
+test.files_identical_sorted(test.run_log_filename, test.golden_filename, is_logfile=True)
 
 test.passes()
