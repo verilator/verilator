@@ -3104,11 +3104,15 @@ list_of_param_assignments<varp>:        // ==IEEE: list_of_param_assignments
         ;
 
 type_assignment<varp>:          // ==IEEE: type_assignment
-        //                      // note exptOrDataType being a data_type is only for yPARAMETER yTYPE
+        //                      // note exprOrDataType being a data_type is only for yPARAMETER yTYPE
+        //                      // Using exprOrDataType allows hierarchical refs like if0.rq_t
+        //                      // which get resolved to types during linking
                 idAny/*new-parameter*/ sigAttrListE
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2); }
-        |       idAny/*new-parameter*/ sigAttrListE '=' data_typeAny
-                        { $$ = VARDONEA($<fl>1, *$1, nullptr, $2); $$->valuep($4); }
+        |       idAny/*new-parameter*/ sigAttrListE '=' exprOrDataType
+                        { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
+                          // V3LinkParse will wrap this in RequireDType when creating ParamTypeDType
+                          $$->valuep($4); }
         ;
 
 list_of_type_assignments<varp>:         // ==IEEE: list_of_type_assignments
