@@ -261,6 +261,16 @@
         VL_DANGLING(var); \
     } while (false)
 
+/// As with VL_DO_DANGLING, but two variables dangle.
+#define VL_DO_DANGLING2(stmt, var, var2) \
+    do { \
+        do { \
+            stmt; \
+        } while (false); \
+        VL_DANGLING(var); \
+        VL_DANGLING(var2); \
+    } while (false)
+
 /// Perform an e.g. delete, then set variable to nullptr as a requirement
 #define VL_DO_CLEAR(stmt, stmt2) \
     do { \

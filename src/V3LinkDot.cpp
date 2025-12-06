@@ -966,18 +966,17 @@ class LinkDotFindVisitor final : public VNVisitor {
 
     void moveExternFuncDecl(AstNodeFTask* nodep, AstClass* classp) {
         // Move an 'extern function|task' to inside a class or, from an outer to inner-class
-        if (!nodep->isExternDef()) {
-            // Move it to proper spot under the target class
-            nodep->unlinkFrBack();
-            classp->addStmtsp(nodep);
-            nodep->isExternDef(true);  // So we check there's a matching extern
-            nodep->classOrPackagep()->unlinkFrBack()->deleteTree();
-            // Any "Type::" reference in the function's IO are really "MovedToClass::" references
-            if (nodep->fvarp()) moveExternFuncDeclRefs(nodep->fvarp(), classp);
-            for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                if (AstVar* const portp = VN_CAST(stmtp, Var)) {
-                    if (portp->isIO()) moveExternFuncDeclRefs(portp, classp);
-                }
+        if (nodep->isExternDef()) return;
+        // Move it to proper spot under the target class
+        nodep->unlinkFrBack();
+        classp->addStmtsp(nodep);
+        nodep->isExternDef(true);  // So we check there's a matching extern
+        nodep->classOrPackagep()->unlinkFrBack()->deleteTree();
+        // Any "Type::" reference in the function's IO are really "MovedToClass::" references
+        if (nodep->fvarp()) moveExternFuncDeclRefs(nodep->fvarp(), classp);
+        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (AstVar* const portp = VN_CAST(stmtp, Var)) {
+                if (portp->isIO()) moveExternFuncDeclRefs(portp, classp);
             }
         }
     }
@@ -985,7 +984,14 @@ class LinkDotFindVisitor final : public VNVisitor {
         nodep->foreach([this, classp](AstClassOrPackageRef* refp) {  //
             if (refp->name() == classp->name() && !refp->paramsp()) {
                 UINFO(9, "Cleaning up external function type for class " << refp);
-                pushDeletep(refp->unlinkFrBack());
+                AstDot* const dotp = VN_CAST(refp->backp(), Dot);
+                if (dotp && dotp->lhsp() == refp) {
+                    // If had DOT(CLASSREF this, ...) the DOT can go away
+                    dotp->replaceWith(dotp->rhsp()->unlinkFrBack());
+                    VL_DO_DANGLING2(pushDeletep(dotp), dotp, refp);
+                } else {
+                    VL_DO_DANGLING(pushDeletep(refp->unlinkFrBack()), refp);
+                }
             }
         });
     }

@@ -41,6 +41,7 @@ Verilator 5.043 devel
 * Optimize $past delayed variable reuse (#6689). [Geza Lore, Fractile Ltd.]
 * Optimize combinational loops through sign extension (#6724). [Geza Lore]
 * Optimize trace initialization code size (#6749). [Geza Lore]
+* Fix extern function that returns parametrized class (#4924).
 * Fix expression short circuiting (#6483). [Todd Strader]
 * Fix expression coverage of system calls (#6592). [Todd Strader]
 * Fix `--timing` with `--x-initial-edge` (#6603) (#6631). [Krzysztof Bieganski, Antmicro Ltd.]
