@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_config_libmap_inc.map:9:1: Unsupported: config include
+    9 | include ./t_config_libmap/lib.map;
+      | ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

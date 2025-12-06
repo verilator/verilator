@@ -206,6 +206,7 @@ private:
     VFileLibSet m_libraryFiles; // argument: Verilog -v files
     VFileLibList m_vFiles;      // argument: Verilog files to read
     VFileLibSet m_vltFiles;     // argument: Verilator config files to read
+    VStringSet m_libmapFiles;  // argument: --libmap files to read
     VStringList m_forceIncs;   // argument: -FI
     DebugLevelMap m_debugLevel; // argument: --debugi-<srcfile/tag> <level>
     DebugLevelMap m_dumpLevel;  // argument: --dumpi-<srcfile/tag> <level>
@@ -467,6 +468,7 @@ public:
     void addCompilerIncludes(const string& filename);
     void addLdLibs(const string& filename);
     void addMakeFlags(const string& filename);
+    void addLibmapFile(const string& filename);
     void addLibraryFile(const string& filename, const string& libname);
     void addVFile(const string& filename, const string& libname);
     void addVltFile(const string& filename, const string& libname);
@@ -677,6 +679,7 @@ public:
     const VStringList& ldLibs() const { return m_ldLibs; }
     const VStringList& makeFlags() const { return m_makeFlags; }
     const VFileLibSet& libraryFiles() const { return m_libraryFiles; }
+    const VStringSet& libmapFiles() const { return m_libmapFiles; }
     const VFileLibList& vFiles() const { return m_vFiles; }
     const VFileLibSet& vltFiles() const { return m_vltFiles; }
     const VStringList& forceIncs() const { return m_forceIncs; }

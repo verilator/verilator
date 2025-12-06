@@ -433,6 +433,8 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yIMPLEMENTS     "implements"
 %token<fl>              yIMPLIES        "implies"
 %token<fl>              yIMPORT         "import"
+%token<fl>              yINCDIR         "incdir"
+%token<fl>              yINCLUDE        "include"
 %token<fl>              yINITIAL        "initial"
 %token<fl>              yINOUT          "inout"
 %token<fl>              yINPUT          "input"
@@ -448,6 +450,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yJOIN_NONE      "join_none"
 %token<fl>              yLET            "let"
 %token<fl>              yLIBLIST        "liblist"
+%token<fl>              yLIBRARY        "library"
 %token<fl>              yLOCALPARAM     "localparam"
 %token<fl>              yLOCAL__COLONCOLON "local-then-::"
 %token<fl>              yLOCAL__ETC     "local"
@@ -1028,6 +1031,9 @@ descriptionList:                // IEEE: part of source_text
 description:                    // ==IEEE: description
                 module_declaration                      { }
         //                      // udp_declaration moved into module_declaration
+        //                      // library_declaration and include_statement moved from library_description
+        |       library_declaration                     { if ($1) PARSEP->rootp()->addMiscsp($1); }
+        |       include_statement                       { }
         |       interface_declaration                   { }
         |       program_declaration                     { }
         |       package_declaration                     { }
@@ -7995,33 +8001,26 @@ colonConfigE<cbool>:  // IEEE: [ ':' yCONFIG]
 //**********************************************************************
 // Config - lib.map
 //
-// TODO when implement this support, add -libmap option which takes multiple files.
 
-//UNSUP library_text:  // == IEEE: library_text (note is top-level entry point)
-//UNSUP         library_description                     { }
-//UNSUP |       library_text library_description        { }
-//UNSUP ;
-
-//UNSUP library_description:  // == IEEE: library_description
-//UNSUP //                      // IEEE: library_declaration
-//UNSUP         yLIBRARY idAny/*library_identifier*/ file_path_specList ';'
-//UNSUP                 { BBUNSUP($<fl>1, "Unsupported: config lib.map library"); }
-//UNSUP         yLIBRARY idAny/*library_identifier*/ file_path_specList '-' yINCDIR file_path_specList ';'
-//UNSUP                 { BBUNSUP($<fl>1, "Unsupported: config lib.map library"); }
-//UNSUP //                      // IEEE: include_statement
-//UNSUP |       yINCLUDE file_path_spec ';'             { BBUNSUP($<fl>1, "Unsupported: config include"); }
-//UNSUP |       config_declaration                      { }
-//UNSUP |       ';'                                     { }
-//UNSUP ;
-
-//UNSUP file_path_specList:  // IEEE: file_path_spec { ',' file_path_spec }
-//UNSUP         file_path_spec                          { }
-//UNSUP |       file_path_specList ',' file_path_spec   { }
-//UNSUP ;
-
-//UNSUP file_path_spec:  // IEEE: file_path_spec
-//UNSUP         Needs to be lexer rule, Note '/' '*' must not be a comment.
-//UNSUP ;
+library_declaration<nodep>:  // IEEE: library_declaration
+                yLIBRARY yaSTRING file_path_specList incdirE ';'
+                        { $$ = new AstLibrary{$<fl>1, *$2, $3, $4}; }
+        ;
+incdirE<nodeExprp>:  // IEEE: [ '-' yINCDIR file_path_specList ';']
+                /* empty */                             { $$ = nullptr; }
+                                // https://accellera.mantishub.io/view.php?id=1166
+        |       yINCDIR file_path_specList              { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: config incdir"); }
+        ;
+include_statement<nodep>:  // IEEE: include_statement
+                yINCLUDE file_path_spec ';'             { BBUNSUP($<fl>1, "Unsupported: config include"); }
+        ;
+file_path_specList<nodeExprp>:  // IEEE: file_path_spec { ',' file_path_spec }
+                file_path_spec                          { $$ = $1; }
+        |       file_path_specList ',' file_path_spec   { $$ = addNextNull($1, $3); }
+        ;
+file_path_spec<nodeExprp>:  // IEEE: file_path_spec
+        yaSTRING { $$ = new AstParseRef{$<fl>1, *$1}; }
+        ;
 
 //**********************************************************************
 // VLT Files

@@ -1888,6 +1888,11 @@ void AstConfigUse::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, isConfig);
     dumpJsonGen(str);
 }
+void AstLibrary::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " " << name();
+}
+void AstLibrary::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstDisplay::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     str << " [" << displayType().ascii() << "]";

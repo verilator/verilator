@@ -54,6 +54,12 @@
         yylval.strp = PARSEP->newString(AstNode::encodeName(str)); \
     } while (false)
 
+#define STR_FILEPATH \
+    do { \
+        const string str(yytext, yyleng); \
+        yylval.strp = PARSEP->newString(str); \
+    } while (false)
+
 #define ERROR_RSVD_WORD(language) \
     do { \
         yylval.fl->v3warn(E_UNSUPPORTED, "Unsupported: " << language \
@@ -88,6 +94,7 @@ static double lexParseDouble(FileLine* fl, const char* textp, size_t length) {
 %s ATTRMODE QQQ STRING TABLE EDGEDESC
 %s VA5 SAX VLT
 %s SYSCHDR SYSCHDRP SYSCINT SYSCIMP SYSCIMPH SYSCCTOR SYSCDTOR
+%x FILEPATH
 
 ws      [ \t\f\r]+
 wsnr    [ \t\f]+
@@ -105,6 +112,18 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 %%
 
 <INITIAL>.|\n           { BEGIN STATE_VERILOG_RECENT; yyless(0); }
+
+  /************************************************************************/
+  /* File paths */
+<FILEPATH>{
+  {ws}            { FL_FWD; FL_BRK; }
+  {crnl}          { FL_FWD; FL_BRK; }
+  \"              { yy_pop_state(); yyless(0); }
+  "-incdir"       { FL; return yINCDIR; }
+  ";"             { yy_pop_state(); return ';'; }
+  ","             { FL; return ','; }
+  [^ \t\n\r;,"]+  { FL; STR_FILEPATH; return yaSTRING; }
+}
 
   /************************************************************************/
   /* Verilator control files */
@@ -461,15 +480,11 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "config"              { FL; return yCONFIG; }
   "design"              { FL; return yDESIGN; }
   "endconfig"           { FL; return yENDCONFIG; }
-  "incdir"              { FL; ERROR_RSVD_WORD("IEEE 1800-2001-config lib.map"); FL_BRK; }
-  "include"             { FL; yylval.fl->v3warn(E_UNSUPPORTED, "Unsupported: IEEE 1800-2001-config lib.map"
-                                                " reserved word not implemented: 'include'\n"
-                                                << yylval.fl->warnMore() << "... Suggest unless in a lib.map file,"
-                                                " want `include instead");
-                          FL_BRK; }
+  "incdir"              { FL; yy_push_state(FILEPATH); return yINCDIR; }
+  "include"             { FL; yy_push_state(FILEPATH); return yINCLUDE; }
   "instance"            { FL; return yINSTANCE; }
   "liblist"             { FL; return yLIBLIST; }
-  "library"             { FL; ERROR_RSVD_WORD("IEEE 1800-2001-config lib.map"); FL_BRK; }
+  "library"             { FL; yy_push_state(FILEPATH); return yLIBRARY; }
   "use"                 { FL; return yUSE; }
 }
 

@@ -65,6 +65,7 @@
 #include "V3Inline.h"
 #include "V3Inst.h"
 #include "V3Interface.h"
+#include "V3LibMap.h"
 #include "V3Life.h"
 #include "V3LifePost.h"
 #include "V3LinkDot.h"
@@ -687,6 +688,9 @@ static bool verilate(const string& argString) {
 
     // Initialize thread pool
     v3Global.threadPoolp(new V3ThreadPool{v3Global.opt.verilateJobs()});
+
+    // Initialize library mappings
+    v3Global.libMapp(new V3LibMap());
 
     // --FRONTEND------------------
 

@@ -22,6 +22,7 @@
 #include "V3Error.h"
 #include "V3File.h"
 #include "V3HierBlock.h"
+#include "V3LibMap.h"
 #include "V3LinkCells.h"
 #include "V3Parse.h"
 #include "V3PreShell.h"
@@ -57,6 +58,7 @@ void V3Global::shutdown() {
     V3PreShell::shutdown();
     VL_DO_CLEAR(delete m_hierGraphp, m_hierGraphp = nullptr);  // delete nullptr is safe
     VL_DO_CLEAR(delete m_threadPoolp, m_threadPoolp = nullptr);  // delete nullptr is safe
+    VL_DO_CLEAR(delete m_libMapp, m_libMapp = nullptr);  // delete nullptr is safe
 #ifdef VL_LEAK_CHECKS
     if (m_rootp) VL_DO_CLEAR(m_rootp->deleteTree(), m_rootp = nullptr);
 #endif
@@ -100,10 +102,19 @@ void V3Global::readFiles() {
                 "Cannot find verilated_std.sv containing built-in std:: definitions: ");
         }
 
+        // Parse libmap files
+        for (const string& filename : v3Global.opt.libmapFiles()) {
+            parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filename, false,
+                             "work", "Cannot find file containing libmap definitions: ");
+        }
+        // Create library mapping
+        V3LibMap::map(v3Global.rootp());
+
         // Read top module
         for (const auto& filelib : v3Global.opt.vFiles()) {
+            const string& libname = filelib.libname() == "work" ? v3Global.libMapp()->matchMapping(filelib.filename()) : filelib.libname();
             parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filelib.filename(),
-                             false, filelib.libname(), "Cannot find file containing module: ");
+                             false, libname, "Cannot find file containing module: ");
         }
 
         // Read libraries
