@@ -28,7 +28,6 @@ Test_Waivers = [
     '-O',  # Covered; other text fallows option letter
     '-U',  # Covered; other text fallows option letter
     '-gdb',  # Covered: no way to test, part of --gdbbt
-    '-inline-cfuncs',  # Covered: on by default, tested implicitly in all tests
     '-rr',  # Not testing; not requiring rr installation
     # Need testing:
     '-fconst',  # TODO breaks due to some needed V3Const steps
