@@ -38,6 +38,7 @@
 
 class AstNetlist;
 class V3HierGraph;
+class V3LibMap;
 class V3ThreadPool;
 
 //======================================================================
@@ -103,6 +104,8 @@ class V3Global final {
     V3HierGraph* m_hierGraphp = nullptr;
     // Thread Pool, nullptr unless 'verilatedJobs' is known, set via threadPoolp(V3ThreadPool*)
     V3ThreadPool* m_threadPoolp = nullptr;
+    // Library Mapping, nullptr unless --libmap is used
+    V3LibMap* m_libMapp = nullptr;
     VWidthMinUsage m_widthMinUsage
         = VWidthMinUsage::LINT_WIDTH;  // What AstNode::widthMin() is used for
 
@@ -152,6 +155,11 @@ public:
 
     // ACCESSORS (general)
     AstNetlist* rootp() const VL_MT_SAFE { return m_rootp; }
+    V3LibMap* libMapp() const VL_PURE { return m_libMapp; }
+    void libMapp(V3LibMap* libMapp) {
+        UASSERT(!m_libMapp, "attempted to create multiple libMap singletons");
+        m_libMapp = libMapp;
+    }
     V3ThreadPool* threadPoolp() const VL_PURE { return m_threadPoolp; }
     void threadPoolp(V3ThreadPool* threadPoolp) {
         UASSERT(!m_threadPoolp, "attempted to create multiple threadPool singletons");

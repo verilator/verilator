@@ -1125,6 +1125,25 @@ public:
     string name() const override VL_MT_STABLE { return m_name; }
     ASTGEN_MEMBERS_AstIntfRef;
 };
+class AstLibrary final : public AstNode {
+    // Parents: NETLIST
+    // Library declaration from lib.map file
+    // @astgen op1 := filesp : List[AstNodeExpr]
+    // @astgen op2 := incdirsp : List[AstNodeExpr]
+    std::string m_name;  // Library name
+
+public:
+    AstLibrary(FileLine* fl, const std::string& name, AstNodeExpr* filesp, AstNodeExpr* incdirsp)
+        : ASTGEN_SUPER_Library(fl)
+        , m_name{name} {
+        addFilesp(filesp);
+        addIncdirsp(incdirsp);
+    }
+    ASTGEN_MEMBERS_AstLibrary;
+    std::string name() const override VL_MT_STABLE { return m_name; }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+};
 class AstModport final : public AstNode {
     // A modport in an interface
     // @astgen op1 := varsp : List[AstNode]

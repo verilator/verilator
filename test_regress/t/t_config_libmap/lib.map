@@ -6,12 +6,11 @@
 // SPDX-License-Identifier: CC0-1.0
 
 //    lib.map file:
-include ./t_config_libmap_inc.map
 
-library rtllib *.v;
-library rtllib2 *.v, *.sv;
-library rtllib3 *.v -incdir *.vh;
-library rtllib4 *.v -incdir *.vh, *.svh;
+library rtllib m*.v; // wildcard match
+library rtllib2 m*.sv; // wildcard match
+library rtllib4 sub/; // include directory match
+library work ../t_config_libmap.v; // explicit match
 
 // Note this does not start a comment
 library gatelib ./*.vg;
