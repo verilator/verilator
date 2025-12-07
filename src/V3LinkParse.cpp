@@ -34,31 +34,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 // Link state, as a visitor of each AstNode
 
-// EOM.  Come back to this.  This seems like it might have to move into a class method to make wsnyder happy :)
-// Helper to create AstDot/AstParseRef tree from dotted name like "if0.x_if0.rq_t"
-static AstNodeExpr* createDotExprFromName(FileLine* fl, const std::string& dottedName) {
-    AstNodeExpr* resultp = nullptr;
-    std::string remaining = dottedName;
-    while (!remaining.empty()) {
-        std::string component;
-        const auto dot = remaining.find('.');
-        if (dot == std::string::npos) {
-            component = remaining;
-            remaining.clear();
-        } else {
-            component = remaining.substr(0, dot);
-            remaining = remaining.substr(dot + 1);
-        }
-        AstNodeExpr* const refp = new AstParseRef{fl, component, nullptr, nullptr};
-        if (!resultp) {
-            resultp = refp;
-        } else {
-            resultp = new AstDot{fl, false, resultp, refp};
-        }
-    }
-    return resultp;
-}
-
 class LinkParseVisitor final : public VNVisitor {
     // NODE STATE
     // Cleared on netlist
@@ -418,17 +393,6 @@ class LinkParseVisitor final : public VNVisitor {
             } else {
                 dtypep = new AstVoidDType{nodep->fileline()};
             }
-
-            // EOM
-            // Transform dotted ParseRef to Dot tree for interface typedef
-            if (AstParseRef* const prefp = VN_CAST(dtypep, ParseRef)) {
-                const std::string& name = prefp->name();
-                if (name.find('.') != std::string::npos) {
-                    dtypep = createDotExprFromName(prefp->fileline(), name);
-                    VL_DO_DANGLING(prefp->deleteTree(), prefp);
-                }
-            }
-            // EOM
 
             AstNode* const newp = new AstParamTypeDType{
                 nodep->fileline(), nodep->varType(),

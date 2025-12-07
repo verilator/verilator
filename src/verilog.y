@@ -1053,10 +1053,10 @@ timeunits_declaration<nodep>:   // ==IEEE: timeunits_declaration
         ;
 
 // Must contain at least one dot
-hierarchical_identifier<strp>:
-        idAny '.' idAny                     { $$ = new string(*$1 + "." + *$3); }
-    |   hierarchical_identifier '.' idAny   { $$ = new string(*$1 + "." + *$3); }
-    ;
+//hierarchical_identifier<strp>:
+//        idAny '.' idAny                     { $$ = new string(*$1 + "." + *$3); }
+//    |   hierarchical_identifier '.' idAny   { $$ = new string(*$1 + "." + *$3); }
+//    ;
 
 //**********************************************************************
 // Packages
@@ -2502,15 +2502,25 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
                         { AstNodeDType* const dtp = $2;
                           $$ = GRAMMARP->createTypedef($<fl>3, *$3, $5, dtp, $4); }
 
-          |       yTYPEDEF hierarchical_identifier
-          /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
-                { VARRESET_NONLIST(LPARAM);  // Set variable type like varParamReset does
+        //  |       yTYPEDEF hierarchical_identifier
+        //  /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
+        //        { VARRESET_NONLIST(LPARAM);  // Set variable type like varParamReset does
+        //        AstParseTypeDType* const ptypep = new AstParseTypeDType{$<fl>2, VFwdType::NONE};
+        //          VARDTYPE(ptypep);
+        //          AstVar* const varp = VARDONEA($<fl>3, *$3, $4, $5);
+        //          // Store dotted name as ParseRef; V3LinkParse will expand to Dot tree
+        //          varp->valuep(new AstParseRef{$<fl>2, *$2, nullptr, nullptr});
+        //          $$ = varp; }
+
+        |       yTYPEDEF idDottedOrArrayed
+        /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
+              { VARRESET_NONLIST(LPARAM);
                 AstParseTypeDType* const ptypep = new AstParseTypeDType{$<fl>2, VFwdType::NONE};
-                  VARDTYPE(ptypep);
-                  AstVar* const varp = VARDONEA($<fl>3, *$3, $4, $5);
-                  // Store dotted name as ParseRef; V3LinkParse will expand to Dot tree
-                  varp->valuep(new AstParseRef{$<fl>2, *$2, nullptr, nullptr});
-                  $$ = varp; }
+                VARDTYPE(ptypep);
+                AstVar* const varp = VARDONEA($<fl>3, *$3, $4, $5);
+                // idDottedOrArrayed produces Dot/SelBit tree for hierarchical refs like if0[0].rq_t
+                varp->valuep($2);
+                $$ = varp; }
 
         |       yTYPEDEF packageClassScope idAny packed_dimensionListE
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
@@ -6010,6 +6020,16 @@ idClassSelForeach<nodeExprp>:
                         { $$ = new AstDot{$4, false, new AstParseRef{$<fl>3, "super"}, $5}; }
         //                      // Expanded: package_scope idForeach
         |       packageClassScope idDottedForeach       { $$ = new AstDot{$<fl>2, true, $1, $2}; }
+        ;
+
+// Dotted identifier for typedef - must have at least one '.'
+// First component is plain id (no array index), subsequent components can have arrays
+// For array on first component, use localparam type instead
+idDottedOrArrayed<nodeExprp>:
+                id '.' idArrayed
+                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, *$1, nullptr, nullptr}, $3}; }
+        |       idDottedOrArrayed '.' idArrayed
+                        { $$ = new AstDot{$2, false, $1, $3}; }
         ;
 
 idDotted<nodeExprp>:
