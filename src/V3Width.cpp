@@ -207,13 +207,16 @@ class WidthVisitor final : public VNVisitor {
     using TableMap = std::map<std::pair<const AstNodeDType*, VAttrType>, AstVar*>;
     using PatVecMap = std::map<int, AstPatMember*>;
     using DTypeMap = std::map<const std::string, AstPatMember*>;
+    using ModVarExpMap = std::map<AstVar*, AstNodeExpr*>;
 
     // STATE
     V3UniqueNames m_insideTempNames;  // For generating unique temporary variable names for
                                       // `inside` expressions
     VMemberMap m_memberMap;  // Member names cached for fast lookup
+    ModVarExpMap m_modVarExpMap;
     V3TaskConnectState m_taskConnectState;  // State to cache V3Task::taskConnects
     WidthVP* m_vup = nullptr;  // Current node state
+    static std::map<AstNodeDType*, AstNodeDType*> m_typeMap;
     bool m_underFork = false;  // Visiting under a fork
     bool m_underSExpr = false;  // Visiting under a sequence expression
     AstNode* m_seqUnsupp = nullptr;  // Property has unsupported node
@@ -232,6 +235,7 @@ class WidthVisitor final : public VNVisitor {
     const bool m_doGenerate;  // Do errors later inside generate statement
     bool m_streamConcat = false;  // True if visiting arguments of stream concatenation
     int m_dtTables = 0;  // Number of created data type tables
+    bool m_hasParamRef;  // Whether there is parameter ref.
     TableMap m_tableMap;  // Created tables so can remove duplicates
     std::map<const AstNodeDType*, AstQueueDType*>
         m_queueDTypeIndexed;  // Queues with given index type
@@ -2095,6 +2099,11 @@ class WidthVisitor final : public VNVisitor {
                                         new AstConst(elementsNewFl, 1)},
                              true}};
         }
+        AstUnpackArrayDType* arrDtypep = VN_CAST(newp, UnpackArrayDType);
+        if (m_hasParamRef && arrDtypep) {
+            if (m_typeMap.find(arrDtypep) == m_typeMap.end())
+                m_typeMap[arrDtypep] = arrDtypep->cloneTree(false);
+        }
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         // Normally parent's iteration would cover this, but we might have entered by a specific
@@ -2708,6 +2717,7 @@ class WidthVisitor final : public VNVisitor {
         nodep->doingWidth(false);
     }
     void visit(AstNodeVarRef* nodep) override {
+        if (m_modVarExpMap.find(nodep->varp()) != m_modVarExpMap.end()) { m_hasParamRef = true; }
         if (nodep->didWidth()) return;
         if (!nodep->varp()) {
             if (m_paramsOnly && VN_IS(nodep, VarXRef)) {
@@ -6195,12 +6205,26 @@ class WidthVisitor final : public VNVisitor {
             bool didWidth = false;
             if (AstPattern* const patternp = VN_CAST(nodep->exprp(), Pattern)) {
                 const AstVar* const modVarp = nodep->modVarp();
+                m_hasParamRef = false;
                 // Convert BracketArrayDType
                 userIterate(modVarp->childDTypep(),
                             WidthVP{SELF, BOTH}.p());  // May relink pointed to node
                 AstNodeDType* const setDtp = modVarp->childDTypep();
-                if (!patternp->childDTypep()) patternp->childDTypep(setDtp->cloneTree(false));
+                if (!patternp->childDTypep()) {
+                    if (m_typeMap.find(setDtp) != m_typeMap.end()) {
+                        AstNodeDType* const currentDtypep = m_typeMap[setDtp]->cloneTree(false);
+                        currentDtypep->foreach([&](AstNodeVarRef* nodep) {
+                            if (m_modVarExpMap.find(nodep->varp()) != m_modVarExpMap.end())
+                                nodep->replaceWith(
+                                    m_modVarExpMap[nodep->varp()]->cloneTree(false));
+                        });
+                        patternp->childDTypep(currentDtypep);
+                        VL_DO_DANGLING(userIterate(currentDtypep, nullptr), currentDtypep);
+                    } else
+                        patternp->childDTypep(setDtp->cloneTree(false));
+                }
                 userIterateChildren(nodep, WidthVP{setDtp, BOTH}.p());
+                m_hasParamRef = false;
                 didWidth = true;
             }
             if (!didWidth) userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
@@ -6335,7 +6359,21 @@ class WidthVisitor final : public VNVisitor {
             if (nodep->rangep()) userIterateAndNext(nodep->rangep(), WidthVP{SELF, BOTH}.p());
             userIterateAndNext(nodep->pinsp(), nullptr);
         }
+        if (nodep->paramsp()) {
+            nodep->paramsp()->foreach([&](const AstPin* pinNodep) {
+                if (!VN_CAST(pinNodep->exprp(), Pattern)) {
+                    if (AstNodeExpr* const nodeExprp = VN_CAST(pinNodep->exprp(), NodeExpr)) {
+                        m_modVarExpMap[pinNodep->modVarp()] = nodeExprp->cloneTree(false);
+                    }
+                }
+            });
+        }
         userIterateAndNext(nodep->paramsp(), nullptr);
+        for (auto itr = m_modVarExpMap.begin(); itr != m_modVarExpMap.end(); itr++) {
+            AstNodeExpr* exprp = itr->second;
+            VL_DO_DANGLING(exprp->deleteTree(), exprp);
+        }
+        m_modVarExpMap.clear();
     }
     void visit(AstGatePin* nodep) override {
         assertAtExpr(nodep);
@@ -9167,6 +9205,13 @@ class WidthVisitor final : public VNVisitor {
     }
 
 public:
+    static void clearTypeMap() {
+        for (auto itr = m_typeMap.begin(); itr != m_typeMap.end(); itr++) {
+            AstNodeDType* nodeDTypep = itr->second;
+            VL_DO_DANGLING(nodeDTypep->deleteTree(), nodeDTypep);
+        }
+        m_typeMap.clear();
+    }
     // CONSTRUCTORS
     WidthVisitor(bool paramsOnly,  // [in] TRUE if we are considering parameters only.
                  bool doGenerate)  // [in] TRUE if we are inside a generate statement and
@@ -9179,6 +9224,7 @@ public:
     }
     ~WidthVisitor() override = default;
 };
+std::map<AstNodeDType*, AstNodeDType*> WidthVisitor::m_typeMap;
 
 //######################################################################
 // Width class functions
@@ -9224,3 +9270,4 @@ AstNode* V3Width::widthGenerateParamsEdit(
     // No WidthRemoveVisitor, as don't want to drop $signed etc inside gen blocks
     return nodep;
 }
+void V3Width::clearTypeMap() { WidthVisitor::clearTypeMap(); }
