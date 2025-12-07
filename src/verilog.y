@@ -2512,12 +2512,6 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
                   varp->valuep(new AstParseRef{$<fl>2, *$2, nullptr, nullptr});
                   $$ = varp; }
 
-        //|       yTYPEDEF hierarchical_identifier
-        ///*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
-        //                { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, nullptr, nullptr};
-        //                  // Emit as ParamTypeDType so interface capture plumbing handles rebinding
-        //                  $$ = new AstParamTypeDType{$<fl>3, VVarType::LPARAM, VFwdType::NONE, *$3, VFlagChildDType{}, refp}; }
-
         |       yTYPEDEF packageClassScope idAny packed_dimensionListE
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
                         { AstRefDType* const refp = new AstRefDType{$<fl>3, *$3, $2, nullptr};
