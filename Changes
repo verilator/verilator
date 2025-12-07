@@ -45,6 +45,7 @@ Verilator 5.043 devel
 * Optimize trace initialization code size (#6749). [Geza Lore]
 * Fix extern function that returns parameterized class (#4924).
 * Fix randomize called within func/task (#6144) (#6753). [Yilou Wang]
+* Fix pre/post_randomize on extended classes (#6467). [Alex Solomatnikov]
 * Fix expression short circuiting (#6483). [Todd Strader]
 * Fix expression coverage of system calls (#6592). [Todd Strader]
 * Fix `--timing` with `--x-initial-edge` (#6603) (#6631). [Krzysztof Bieganski, Antmicro Ltd.]
@@ -64,7 +65,7 @@ Verilator 5.043 devel
 * Fix splitting of Syms constructor/destructor bodies (#6662). [Geza Lore, Fractile Ltd.]
 * Fix long C++ compilation due to VerilatedScope constructors (#6664). [Geza Lore, Fractile Ltd.]
 * Fix large array initialization (#6669). [Artur Bieniek, Antmicro Ltd.]
-* Fix --expand-limit not respected for expressions (#6670). [Geza Lore, Fractile Ltd.]
+* Fix `--expand-limit` not respected for expressions (#6670). [Geza Lore, Fractile Ltd.]
 * Fix `free` name collision (#6675). [Todd Strader]
 * Fix bounds checking in non-inlined function (#6677). [Geza Lore, Fractile Ltd.]
 * Fix stream operator widening (#6693) (#6697). [Jean-Nicolas Strauss]

@@ -45,6 +45,25 @@ class Cls extends Base;
   endfunction
 endclass
 
+package emp_pkg;
+  virtual class emp_sequence #(
+      type REQ = int
+  );
+  endclass
+  class emp_txn;
+  endclass
+  class emp_base_sequence extends emp_sequence #(emp_txn);
+  endclass
+  class emp_base_port_seq extends emp_base_sequence;
+    function void pre_randomize();
+      super.pre_randomize();
+    endfunction
+    function void post_randomize();
+      super.post_randomize();
+    endfunction
+  endclass
+endpackage
+
 module t;
 
   initial begin

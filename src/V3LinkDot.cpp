@@ -4622,9 +4622,25 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     }
                 } else if (VN_IS(nodep, New) && m_statep->forPrearray()) {
                     // Resolved in V3Width
+                } else if ((nodep->name() == "pre_randomize" || nodep->name() == "post_randomize")
+                           && VN_IS(dotSymp->nodep(), Class)) {
+                    AstClass* const classp = VN_AS(dotSymp->nodep(), Class);
+                    // Functions that might be defined by user, but if not, they get empty
+                    // definitions within referenced class.
+                    // TODO perhaps cleaner to add to symbol table up-front with
+                    // a lambda to construct them on a reference.
+                    AstFunc* const funcp
+                        = new AstFunc{nodep->fileline(), nodep->name(), nullptr, nullptr};
+                    funcp->classMethod(true);
+                    funcp->dtypep(funcp->findVoidDType());
+                    classp->addMembersp(funcp);
+                    m_statep->insertBlock(dotSymp, nodep->name(), funcp, classp);
+                    nodep->taskp(funcp);
+                    nodep->classOrPackagep(classp);
+                    UINFO(9, indent() << " Auto-made " << funcp);
+                    return;
                 } else if (nodep->name() == "randomize" || nodep->name() == "srandom"
                            || nodep->name() == "get_randstate" || nodep->name() == "set_randstate"
-                           || nodep->name() == "pre_randomize" || nodep->name() == "post_randomize"
                            || nodep->name() == "rand_mode" || nodep->name() == "constraint_mode") {
                     if (AstClass* const classp = VN_CAST(m_modp, Class)) {
                         nodep->classOrPackagep(classp);
