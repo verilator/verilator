@@ -5265,9 +5265,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
             const VSymEnt* foundp;
             if (nodep->classOrPackagep()) {
                 foundp = m_statep->getNodeSym(nodep->classOrPackagep())->findIdFlat(nodep->name());
-            } //else if (!nodep->ifacePortName().empty()) {  // Interface typedef
-                //nodep->v3error("Unsupported: SystemVerilog 2005 interface typedef");
-                //return;
+            }  //else if (!nodep->ifacePortName().empty()) {  // Interface typedef
+               //nodep->v3error("Unsupported: SystemVerilog 2005 interface typedef");
+               //return;
             //}
             else if (m_ds.m_dotPos == DP_FIRST || m_ds.m_dotPos == DP_NONE) {
                 foundp = m_curSymp->findIdFallback(nodep->name());
@@ -5282,10 +5282,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (ifaceCaptured && capturedTypedefp) {
                 // When we have a captured interface typedef context, use the captured typedef
                 // instead of any local lookup result. This handles the case where the local
-                // typedef has the same name as the interface typedef (e.g., `typedef if0.rq_t rq_t;`)
-                UINFO(9, indent() << "iface capture binding via captured typedef fallback name=" << nodep->name() << " typedef=" << capturedTypedefp);
+                // typedef has the same name as the interface typedef (e.g., `typedef if0.rq_t
+                // rq_t;`)
+                UINFO(9, indent() << "iface capture binding via captured typedef fallback name="
+                                  << nodep->name() << " typedef=" << capturedTypedefp);
                 nodep->typedefp(capturedTypedefp);
-                nodep->classOrPackagep(capturedTypedefSymp ? capturedTypedefSymp->classOrPackagep() : nullptr);
+                nodep->classOrPackagep(capturedTypedefSymp ? capturedTypedefSymp->classOrPackagep()
+                                                           : nullptr);
                 resolvedCapturedTypedef = true;
             }
             if (!resolvedCapturedTypedef && foundp) {
