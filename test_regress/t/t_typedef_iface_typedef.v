@@ -37,17 +37,17 @@ module top();
 
   typedef if0.rq_t p0_rq_t;
 
-  //p0_rq_t rq;
+  p0_rq_t rq;
 
-  //always_comb begin
-  //  rq.addr = 'h1234;
-  //  rq.data = 'h37;
-  //end
+  always_comb begin
+    rq.addr = 'h1234;
+    rq.data = 'h37;
+  end
 
   initial begin
     #1;
-    //`checkh(rq.addr, 16'h1234);
-    //`checkh(rq.data, 8'h37);
+    `checkh(rq.addr, 16'h1234);
+    `checkh(rq.data, 8'h37);
     $write("*-* All Finished *-*\n");
     $finish;
   end
