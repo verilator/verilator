@@ -524,6 +524,11 @@ public:
         const auto it = find(scopes.begin(), scopes.end(), top);
         if (it != scopes.end()) scopes.erase(it);
     }
+    static void hierarchyClear() VL_MT_SAFE {
+        const VerilatedLockGuard lock{s().m_hierMapMutex};
+        VerilatedHierarchyMap& map = s().m_hierMap;
+        map.clear();
+    }
     static const VerilatedHierarchyMap* hierarchyMap() VL_MT_SAFE_POSTINIT {
         // Thread save only assuming this is called only after model construction completed
         return &s().m_hierMap;
