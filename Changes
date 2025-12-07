@@ -84,6 +84,7 @@ Verilator 5.043 devel
 * Fix DFG assertion on out-of-bounds selects. [Geza Lore]
 * Fix crash when super.new() called without a base class (#6772). [Matthew Ballance]
 * Fix class-in-class extends with parameters (#6773).
+* Fix enum item references in class extends with parameters.
 
 
 Verilator 5.042 2025-11-02

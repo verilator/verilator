@@ -2032,8 +2032,12 @@ public:
         }
         // Set all links pointing to a user3 (deleting) node as null
         netlistp->foreach([](AstNode* const nodep) {
-            nodep->foreachLink([](AstNode** const linkpp, const char*) {
-                if (*linkpp && (*linkpp)->user3()) *linkpp = nullptr;
+            nodep->foreachLink([&](AstNode** const linkpp, const char*) {
+                if (*linkpp && (*linkpp)->user3()) {
+                    UINFO(9, "clear   link " << nodep);
+                    *linkpp = nullptr;
+                    UINFO(9, "cleared link " << nodep);
+                }
             });
         });
     }

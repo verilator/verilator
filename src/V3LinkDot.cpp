@@ -4370,8 +4370,25 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
     }
     void visit(AstEnumItemRef* nodep) override {
-        // EnumItemRef may be under a dot.  Should already be resolved.
+        // Resolve its reference
+        // EnumItemRefs are created by the first pass, but V3Param may regenerate due to
+        // a parameterized class/module, so we shouldn't get can't find errors.
+        // No checkNoDot; created and iterated from a parseRef
         LINKDOT_VISIT_START();
+        if (!nodep->itemp()) {
+            UINFO(9, indent() << "linkEnumRef se" << cvtToHex(m_curSymp) << "  n=" << nodep);
+            UASSERT_OBJ(m_curSymp, nodep, "nullptr lookup symbol table");
+            VSymEnt* const foundp = m_curSymp->findIdFallback(nodep->name());
+            if (AstEnumItem* const itemp = foundp ? VN_CAST(foundp->nodep(), EnumItem) : nullptr) {
+                nodep->itemp(itemp);
+                nodep->classOrPackagep(foundp->classOrPackagep());
+                UINFO(9, indent() << " resolved " << nodep);
+            }
+            if (VL_UNCOVERABLE(!nodep->itemp())) {
+                nodep->v3error("Can't find definition of enum item, again: "  // LCOV_EXCL_LINE
+                               << nodep->prettyNameQ());
+            }
+        }
         iterateChildren(nodep);
     }
     void visit(AstMethodCall* nodep) override {

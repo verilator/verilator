@@ -2817,6 +2817,7 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void visit(AstEnumItemRef* nodep) override {
+        UASSERT_OBJ(nodep->itemp(), nodep, "Unlinked");
         if (!nodep->itemp()->didWidth()) {
             // We need to do the whole enum en masse
             AstNode* enump = nodep->itemp();
