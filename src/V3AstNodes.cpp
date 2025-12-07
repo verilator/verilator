@@ -2328,12 +2328,12 @@ void AstRefDType::dump(std::ostream& str) const {
             s_recursing = false;
         }
     } else {
-        if (!ifacePortName().empty()) str << " ifcPort=" << ifacePortName();
+        //if (!ifacePortName().empty()) str << " ifcPort=" << ifacePortName();
         str << " -> UNLINKED";
     }
 }
 void AstRefDType::dumpJson(std::ostream& str) const {
-    if (!ifacePortName().empty()) dumpJsonStr(str, "ifcPortName", ifacePortName());
+    //if (!ifacePortName().empty()) dumpJsonStr(str, "ifcPortName", ifacePortName());
     dumpJsonGen(str);
 }
 

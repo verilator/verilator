@@ -1052,6 +1052,12 @@ timeunits_declaration<nodep>:   // ==IEEE: timeunits_declaration
                         { $$ = PARSEP->createTimescale($<fl>2, false, 0, true, $2); }
         ;
 
+// Must contain at least one dot
+hierarchical_identifier<strp>:
+        idAny '.' idAny                     { $$ = new string(*$1 + "." + *$3); }
+    |   hierarchical_identifier '.' idAny   { $$ = new string(*$1 + "." + *$3); }
+    ;
+
 //**********************************************************************
 // Packages
 
@@ -2495,6 +2501,12 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
                         { AstNodeDType* const dtp = $2;
                           $$ = GRAMMARP->createTypedef($<fl>3, *$3, $5, dtp, $4); }
+
+        |       yTYPEDEF hierarchical_identifier
+        /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
+                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, nullptr, nullptr};
+                          // Emit as ParamTypeDType so interface capture plumbing handles rebinding
+                          $$ = new AstParamTypeDType{$<fl>3, VVarType::LPARAM, VFwdType::NONE, *$3, VFlagChildDType{}, refp}; }
         |       yTYPEDEF packageClassScope idAny packed_dimensionListE
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
                         { AstRefDType* const refp = new AstRefDType{$<fl>3, *$3, $2, nullptr};
@@ -2516,9 +2528,9 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
                           AstNodeDType* const dtp = GRAMMARP->createArray(refp, $4, true);
                           $$ = GRAMMARP->createTypedef($<fl>5, *$5, $7, dtp, $6); }
         //                      //
-        |       yTYPEDEF idAny/*interface_port*/ '.' idAny/*type*/ idAny/*type*/ dtypeAttrListE ';'
-                        { AstRefDType* const refp = new AstRefDType{$<fl>2, AstRefDType::FlagIfaceTypedef{}, *$2, *$4};
-                          $$ = GRAMMARP->createTypedef($<fl>5, *$5, $6, refp, nullptr); }
+        //|       yTYPEDEF idAny/*interface_port*/ '.' idAny/*type*/ idAny/*type*/ dtypeAttrListE ';'
+        //                { AstRefDType* const refp = new AstRefDType{$<fl>2, AstRefDType::FlagIfaceTypedef{}, *$2, *$4};
+        //                  $$ = GRAMMARP->createTypedef($<fl>5, *$5, $6, refp, nullptr); }
         //                      // idAny as also allows redeclaring same typedef again
         |       yTYPEDEF idAny ';'                      { $$ = GRAMMARP->createTypedefFwd($<fl>2, *$2, VFwdType::NONE); }
         //                      // IEEE: expanded forward_type to prevent conflict

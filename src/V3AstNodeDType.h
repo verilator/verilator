@@ -1177,7 +1177,7 @@ class AstRefDType final : public AstNodeDType {
     // @astgen ptr := m_refDTypep : Optional[AstNodeDType]  // Data type references
     // @astgen ptr := m_classOrPackagep : Optional[AstNodeModule]  // Class/package defined in
     string m_name;  // Name of an AstTypedef
-    string m_ifacePortName;  // Name of pre-dot interface port identifier
+    //string m_ifacePortName;  // Name of pre-dot interface port identifier
 public:
     AstRefDType(FileLine* fl, const string& name)
         : ASTGEN_SUPER_RefDType(fl)
@@ -1194,11 +1194,11 @@ public:
         this->typeofp(typeofp);
         if (AstNodeDType* const dtp = VN_CAST(typeofp, NodeDType)) refDTypep(dtp);
     }
-    class FlagIfaceTypedef {};
-    AstRefDType(FileLine* fl, FlagIfaceTypedef, const string& ifc, const string& name)
-        : ASTGEN_SUPER_RefDType(fl)
-        , m_name{name}
-        , m_ifacePortName{ifc} {}
+    //class FlagIfaceTypedef {};
+    //AstRefDType(FileLine* fl, FlagIfaceTypedef, const string& ifc, const string& name)
+    //    : ASTGEN_SUPER_RefDType(fl)
+    //    , m_name{name}
+    //    , m_ifacePortName{ifc} {}
     ASTGEN_MEMBERS_AstRefDType;
     // METHODS
     bool sameNode(const AstNode* samep) const override {
@@ -1213,7 +1213,7 @@ public:
     void dumpJson(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
-    string ifacePortName() const { return m_ifacePortName; }
+    //string ifacePortName() const { return m_ifacePortName; }
     string prettyDTypeName(bool full) const override {
         return subDTypep() ? prettyName(subDTypep()->prettyDTypeName(full)) : prettyName();
     }
