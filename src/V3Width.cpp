@@ -6792,6 +6792,10 @@ class WidthVisitor final : public VNVisitor {
             nodep->v3error("Cannot call non-static member function "
                            << nodep->prettyNameQ() << " without object (IEEE 1800-2023 8.10)");
         }
+        if (nodep->taskp() && !nodep->scopeNamep()
+            && (nodep->taskp()->dpiContext() || nodep->taskp()->dpiExport())) {
+            nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
+        }
         // And do the arguments to the task/function too
         processFTaskRefArgs(nodep);
         nodep->addPinsp(withp);

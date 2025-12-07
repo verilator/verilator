@@ -249,10 +249,6 @@ class LinkResolveVisitor final : public VNVisitor {
             letp->user2(false);
             return;
         }
-        if (nodep->taskp() && !nodep->scopeNamep()
-            && (nodep->taskp()->dpiContext() || nodep->taskp()->dpiExport())) {
-            nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
-        }
     }
 
     void visit(AstCaseItem* nodep) override {

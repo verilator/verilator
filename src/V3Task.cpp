@@ -711,8 +711,9 @@ class TaskVisitor final : public VNVisitor {
         if (needSyms) ccallp->argTypes("vlSymsp");
 
         if (refp->taskp()->dpiContext()) {
-            AstScopeName* const snp = refp->scopeNamep()->unlinkFrBack();
+            AstScopeName* const snp = refp->scopeNamep();
             UASSERT_OBJ(snp, refp, "Missing scoping context");
+            snp->unlinkFrBack();
             FileLine* const flp = refp->fileline();
             // __Vscopep
             ccallp->addArgsp(snp);
