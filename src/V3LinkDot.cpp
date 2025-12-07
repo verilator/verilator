@@ -5189,43 +5189,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(cpackagep->unlinkFrBack()), cpackagep);
         }
 
-        //----EOM
-        // Seed dot scope for dotted typename strings like "if0.rq_t"
-        if (!nodep->classOrPackagep()
-            && m_ds.m_dotPos == DP_NONE
-            && nodep->name().find('.') != std::string::npos) {
-            std::string full = nodep->name();
-            std::string prefix, suffix = full;
-            VSymEnt* cellSymp = nullptr;
-            AstCell* cellp = nullptr;
-
-            // walk left-to-right: a.b.c -> try "a", then "a.b", etc.
-            while (true) {
-                const auto dot = suffix.find('.');
-                if (dot == std::string::npos) break;
-                prefix = prefix.empty() ? suffix.substr(0, dot)
-                                        : prefix + "." + suffix.substr(0, dot);
-                suffix = suffix.substr(dot + 1);
-                if (VSymEnt* const symp = m_curSymp->findIdFallback(prefix)) {
-                    if (AstCell* const cp = VN_CAST(symp->nodep(), Cell)) {
-                        if (cp->modp() && VN_IS(cp->modp(), Iface)) {
-                            cellSymp = symp;
-                            cellp = cp;
-                            break;
-                        }
-                    }
-                }
-            }
-            if (cellp) {
-                nodep->name(suffix);
-                nodep->user2p(cellp);
-                m_ds.m_dotSymp = cellSymp;
-                m_ds.m_dotPos = DP_SCOPE;
-                m_ds.m_dotText = prefix;
-            }
-        }
-        //----EOM
-
         const bool capEnable = V3LinkDotIfaceCapture::enabled();
         const auto* const capEntryp = capEnable ? V3LinkDotIfaceCapture::find(nodep) : nullptr;
         const bool captureMapHit = capEntryp != nullptr;
@@ -5314,12 +5277,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 VSymEnt* const lookupSymp = m_ds.m_dotSymp ? m_ds.m_dotSymp : m_curSymp;
                 foundp = lookupSymp->findIdFlat(nodep->name());
             }
-            if (!foundp && ifaceCaptured && capturedTypedefp) {
-                UINFO(9, indent() << "iface capture binding via captured typedef fallback name="
-                                  << nodep->name() << " typedef=" << capturedTypedefp);
+            // EOM
+            //if (!foundp && ifaceCaptured && capturedTypedefp) {
+            if (ifaceCaptured && capturedTypedefp) {
+                // When we have a captured interface typedef context, use the captured typedef
+                // instead of any local lookup result. This handles the case where the local
+                // typedef has the same name as the interface typedef (e.g., `typedef if0.rq_t rq_t;`)
+                UINFO(9, indent() << "iface capture binding via captured typedef fallback name=" << nodep->name() << " typedef=" << capturedTypedefp);
                 nodep->typedefp(capturedTypedefp);
-                nodep->classOrPackagep(capturedTypedefSymp ? capturedTypedefSymp->classOrPackagep()
-                                                           : nullptr);
+                nodep->classOrPackagep(capturedTypedefSymp ? capturedTypedefSymp->classOrPackagep() : nullptr);
                 resolvedCapturedTypedef = true;
             }
             if (!resolvedCapturedTypedef && foundp) {
@@ -5338,16 +5304,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     nodep->typedefp(defp);
                     nodep->classOrPackagep(foundp->classOrPackagep());
                     resolvedCapturedTypedef = true;
-                    //---- EOM
-                    if (ifaceCaptured) {
-                        V3LinkDotIfaceCapture::captureTypedefContext(
-                            nodep, "typedef-dotted-name", static_cast<int>(m_ds.m_dotPos),
-                            m_ds.m_dotPos == DP_SCOPE, m_ds.m_dotText, m_ds.m_dotSymp,
-                            m_curSymp, m_modp, nodep,
-                            [this](AstVar* v, AstRefDType* r) { return promoteVarToParamType(v, r); },
-                            [this]() { return indent(); });
-                    }
-                    //---- EOM
                 } else if (AstParamTypeDType* const defp
                            = foundp ? VN_CAST(foundp->nodep(), ParamTypeDType) : nullptr) {
                     if (defp == nodep->backp()) {  // Where backp is typically typedef
@@ -5393,9 +5349,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                               << nodep->name());
             m_ds.init(m_curSymp);
         }
-        /*
+        // EOM
         if (ifaceCaptured && resolvedCapturedTypedef) { retireCapture("resolved"); }
-        */
         iterateChildren(nodep);
     }
     void visit(AstRequireDType* nodep) override {

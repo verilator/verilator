@@ -2502,11 +2502,22 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
                         { AstNodeDType* const dtp = $2;
                           $$ = GRAMMARP->createTypedef($<fl>3, *$3, $5, dtp, $4); }
 
-        |       yTYPEDEF hierarchical_identifier
-        /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
-                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, nullptr, nullptr};
-                          // Emit as ParamTypeDType so interface capture plumbing handles rebinding
-                          $$ = new AstParamTypeDType{$<fl>3, VVarType::LPARAM, VFwdType::NONE, *$3, VFlagChildDType{}, refp}; }
+          |       yTYPEDEF hierarchical_identifier
+          /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
+                { VARRESET_NONLIST(LPARAM);  // Set variable type like varParamReset does
+                AstParseTypeDType* const ptypep = new AstParseTypeDType{$<fl>2, VFwdType::NONE};
+                  VARDTYPE(ptypep);
+                  AstVar* const varp = VARDONEA($<fl>3, *$3, $4, $5);
+                  // Store dotted name as ParseRef; V3LinkParse will expand to Dot tree
+                  varp->valuep(new AstParseRef{$<fl>2, *$2, nullptr, nullptr});
+                  $$ = varp; }
+
+        //|       yTYPEDEF hierarchical_identifier
+        ///*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
+        //                { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, nullptr, nullptr};
+        //                  // Emit as ParamTypeDType so interface capture plumbing handles rebinding
+        //                  $$ = new AstParamTypeDType{$<fl>3, VVarType::LPARAM, VFwdType::NONE, *$3, VFlagChildDType{}, refp}; }
+
         |       yTYPEDEF packageClassScope idAny packed_dimensionListE
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
                         { AstRefDType* const refp = new AstRefDType{$<fl>3, *$3, $2, nullptr};
