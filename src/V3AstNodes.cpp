@@ -2946,6 +2946,7 @@ void AstNodeFTask::dump(std::ostream& str) const {
     if (dpiOpenParent()) str << " [DPIOPENPARENT]";
     if (isExternDef()) str << " [EXTDEF]";
     if (isExternProto()) str << " [EXTPROTO]";
+    if (isVirtual()) str << " [VIRT]";
     if (prototype()) str << " [PROTOTYPE]";
     if (pureVirtual()) str << " [PUREVIRTUAL]";
     if (recursive()) str << " [RECURSIVE]";
@@ -2953,6 +2954,7 @@ void AstNodeFTask::dump(std::ostream& str) const {
     if (isStatic()) str << " [STATIC]";
     if (verilogTask()) str << " [VTASK]";
     if (verilogFunction()) str << " [VFUNC]";
+    if (needProcess()) str << " [NPRC]";
     if ((dpiImport() || dpiExport()) && cname() != name()) str << " [c=" << cname() << "]";
 }
 bool AstNodeFTask::isPure() {
@@ -2992,6 +2994,8 @@ void AstNodeFTask::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, dpiOpenParent);
     dumpJsonBoolFunc(str, isExternDef);
     dumpJsonBoolFunc(str, isExternProto);
+    if (isVirtual()) dumpJsonBoolFunc(str, isVirtual);
+    if (needProcess()) dumpJsonBoolFunc(str, needProcess);
     dumpJsonBoolFunc(str, prototype);
     dumpJsonBoolFunc(str, recursive);
     dumpJsonBoolFunc(str, taskPublic);
