@@ -475,6 +475,7 @@ _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-shadow)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-unused-parameter)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Xclang -fno-pch-timestamp)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-faligned-new)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-exceptions)
 AC_SUBST(CFG_CXXFLAGS_SRC)
 
 # Flags for compiling Verilator parser always (in addition to above CFG_CXXFLAGS_SRC)
