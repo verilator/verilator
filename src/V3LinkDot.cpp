@@ -4580,6 +4580,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 nodep->taskp(randFuncp);
                 m_curSymp = m_statep->insertBlock(m_curSymp, nodep->name(), randFuncp, m_modp);
             }
+            if (m_insideClassExtParam) {
+                // The reference may point to a method declared in a super class, which is proved
+                // by a parameter. In such a case, it can't be linked at the first stage.
+                // Must not do any linking, because e.g. might find an extends of an upper class
+                // because the current class (under parent) isn't yet importing it's extended class
+                // symbols
+                return;
+            }
+
             VSymEnt* const foundp
                 = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, first);
             AstNodeFTask* const taskp
@@ -4593,10 +4602,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 nodep->taskp(taskp);
                 nodep->classOrPackagep(foundp->classOrPackagep());
                 UINFO(7, indent() << "Resolved " << nodep);  // Also prints taskp
-            } else if (m_insideClassExtParam) {
-                // The reference may point to a method declared in a super class, which is proved
-                // by a parameter. In such a case, it can't be linked at the first stage.
-                return;
             } else {
                 // Note ParseRef has similar error handling/message output
                 UINFO(7, indent() << "   ErrFtask curSymp=se" << cvtToHex(m_curSymp)
