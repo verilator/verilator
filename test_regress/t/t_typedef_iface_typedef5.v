@@ -46,11 +46,11 @@ interface z_if #(
   y_if #(p_dwidth) y_if0();
 endinterface
 
-module a_top(
-  z_if z_if0
-);
-  typedef z_if0.x_if0.rq_t rq_t;
-  typedef z_if0.y_if0.rs_t rs_t;
+module top();
+  z_if #(.p_awidth(16) ,.p_dwidth(8)) if0();
+
+  typedef if0.x_if0.rq_t rq_t;
+  typedef if0.y_if0.rs_t rs_t;
 
   rq_t rq;
   rs_t rs;
@@ -64,18 +64,6 @@ module a_top(
     #1;
     `checkh(rq.addr,16'h1234);
     `checkh(rs.data,8'ha5);
-  end
-
-endmodule
-
-module top();
-  z_if #(.p_awidth(16) ,.p_dwidth(8)) z_if0();
-
-  a_top a_top(z_if0);
-
-  initial begin
-    #1;
-    #1;
     $write("*-* All Finished *-*\n");
     $finish;
   end
