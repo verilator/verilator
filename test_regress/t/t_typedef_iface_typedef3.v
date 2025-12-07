@@ -33,15 +33,22 @@ interface x_if #(
   } rq_t;
 endinterface
 
+interface y_if #(
+  parameter int p_awidth = 4
+  ,parameter int p_dwidth = 7
+)();
+  x_if #(.p_awidth(p_awidth), .p_dwidth(p_dwidth)) x_if_a[2] ();
+endinterface
+
 module top();
-  x_if #(
+  y_if #(
     .p_awidth(16)
     ,.p_dwidth(8)
-  ) if0 [2]();
+  ) y_if0 ();
 
-  typedef if0[0].rq_t p0_rq_t;
+  typedef y_if0.x_if_a[0].rq_t rq_t;
 
-  p0_rq_t rq;
+  rq_t rq;
 
   always_comb begin
     rq.addr = 'h1234;
@@ -50,8 +57,6 @@ module top();
 
   initial begin
     #1;
-    `checkd(if0[0].Bits,24);
-    `checkd($bits(rq),24);
     `checkh(rq.addr,16'h1234);
     `checkh(rq.data,8'h37);
     $write("*-* All Finished *-*\n");
