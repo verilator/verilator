@@ -2495,6 +2495,32 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
                         { AstNodeDType* const dtp = $2;
                           $$ = GRAMMARP->createTypedef($<fl>3, *$3, $5, dtp, $4); }
+
+        // IEEE 1800-2017 6.18 typedef: dotted or arrayed type identifier
+        // Handles interface typedef references like if0.rq_t and if0[0].rq_t (arrays allowed after first component)
+        |       yTYPEDEF idDottedOrArrayed
+        /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
+              { VARRESET_NONLIST(LPARAM);
+                AstParseTypeDType* const ptypep = new AstParseTypeDType{$<fl>2, VFwdType::NONE};
+                VARDTYPE(ptypep);
+                AstVar* const varp = VARDONEA($<fl>3, *$3, $4, $5);
+                // idDottedOrArrayed produces Dot/SelBit tree for hierarchical refs like if0[0].rq_t
+                varp->valuep($2);
+                $$ = varp; }
+
+        // IEEE 1800-2017 6.18 typedef with hierarchical type identifier
+        // Special-case array on first component requiring a '.' after ']' to disambiguate from packed dims
+        // Examples: typedef if0[0].rq_t my_t; typedef if0[0].x_if.rq_t my_t;
+        |       yTYPEDEF id '[' expr ']' '.' idDottedSelMore
+        /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
+              { VARRESET_NONLIST(LPARAM);
+                AstParseTypeDType* const ptypep = new AstParseTypeDType{$<fl>2, VFwdType::NONE};
+                VARDTYPE(ptypep);
+                AstVar* const varp = VARDONEA($<fl>8, *$8, $9, $10);
+                AstNodeExpr* const arrp = new AstSelBit{$3, new AstParseRef{$<fl>2, *$2, nullptr, nullptr}, $4};
+                varp->valuep(new AstDot{$6, false, arrp, $7});
+                $$ = varp; }
+
         |       yTYPEDEF packageClassScope idAny packed_dimensionListE
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
                         { AstRefDType* const refp = new AstRefDType{$<fl>3, *$3, $2, nullptr};
@@ -2505,20 +2531,36 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
                         { AstRefDType* const refp = new AstRefDType{$<fl>3, *$3, $2, $4};
                           AstNodeDType* const dtp = GRAMMARP->createArray(refp, $5, true);
                           $$ = GRAMMARP->createTypedef($<fl>6, *$6, $8, dtp, $7); }
-        |       yTYPEDEF idAny packed_dimensionListE
+
+        // Type alias without packed dimensions: typedef existing_t new_t;
+        |       yTYPEDEF idAny idAny variable_dimensionListE dtypeAttrListE ';'
+                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, nullptr, nullptr};
+                          $$ = GRAMMARP->createTypedef($<fl>3, *$3, $5, refp, $4); }
+
+        // IEEE 1800-2017 6.18.2 typedef with packed dimensions on an existing type identifier
+        // Disambiguated from interface array access by requiring ':' inside the brackets
+        // (applies to both plain identifiers and type identifiers)
+        |       yTYPEDEF id '[' constExpr ':' constExpr ']' packed_dimensionListE
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, nullptr, nullptr};
-                          AstNodeDType* const dtp = GRAMMARP->createArray(refp, $3, true);
-                          $$ = GRAMMARP->createTypedef($<fl>4, *$4, $6, dtp, $5); }
+                          AstNodeRange* const rangep = new AstRange{$3, $4, $6};
+                          AstNodeDType* const dtp = GRAMMARP->createArray(refp, addNextNull(rangep, $8), true);
+                          $$ = GRAMMARP->createTypedef($<fl>9, *$9, $11, dtp, $10); }
+
+        // Same as above but for type identifiers (parameter types, etc.)
+        |       yTYPEDEF idType '[' constExpr ':' constExpr ']' packed_dimensionListE
+        /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
+                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, nullptr, nullptr};
+                          AstNodeRange* const rangep = new AstRange{$3, $4, $6};
+                          AstNodeDType* const dtp = GRAMMARP->createArray(refp, addNextNull(rangep, $8), true);
+                          $$ = GRAMMARP->createTypedef($<fl>9, *$9, $11, dtp, $10); }
+
         |       yTYPEDEF idAny parameter_value_assignmentClass packed_dimensionListE
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, nullptr, $3};
                           AstNodeDType* const dtp = GRAMMARP->createArray(refp, $4, true);
                           $$ = GRAMMARP->createTypedef($<fl>5, *$5, $7, dtp, $6); }
-        //                      //
-        |       yTYPEDEF idAny/*interface_port*/ '.' idAny/*type*/ idAny/*type*/ dtypeAttrListE ';'
-                        { AstRefDType* const refp = new AstRefDType{$<fl>2, AstRefDType::FlagIfaceTypedef{}, *$2, *$4};
-                          $$ = GRAMMARP->createTypedef($<fl>5, *$5, $6, refp, nullptr); }
+
         //                      // idAny as also allows redeclaring same typedef again
         |       yTYPEDEF idAny ';'                      { $$ = GRAMMARP->createTypedefFwd($<fl>2, *$2, VFwdType::NONE); }
         //                      // IEEE: expanded forward_type to prevent conflict
@@ -5993,6 +6035,16 @@ idClassSelForeach<nodeExprp>:
                         { $$ = new AstDot{$4, false, new AstParseRef{$<fl>3, "super"}, $5}; }
         //                      // Expanded: package_scope idForeach
         |       packageClassScope idDottedForeach       { $$ = new AstDot{$<fl>2, true, $1, $2}; }
+        ;
+
+
+// Dotted identifier for typedef - must have at least one '.'
+// First component is plain id or id with array index, subsequent components can have arrays
+idDottedOrArrayed<nodeExprp>:
+                id '.' idArrayed
+                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, *$1, nullptr, nullptr}, $3}; }
+        |       idDottedOrArrayed '.' idArrayed
+                        { $$ = new AstDot{$2, false, $1, $3}; }
         ;
 
 idDotted<nodeExprp>:

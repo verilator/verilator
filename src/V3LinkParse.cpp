@@ -390,9 +390,36 @@ class LinkParseVisitor final : public VNVisitor {
             AstNode* dtypep = nodep->valuep();
             if (dtypep) {
                 dtypep->unlinkFrBack();
+                // Transform right-associative Dot tree to left-associative
+                // This handles typedef with arrayed interface on first component:
+                //   typedef if0[0].x_if0.rq_t my_t;
+                // Grammar produces: DOT(SELBIT, DOT(x_if0, rq_t))
+                // We need:          DOT(DOT(SELBIT, x_if0), rq_t)
+                if (AstNodeExpr* exprp = VN_CAST(dtypep, NodeExpr)) {
+                    AstDot* dotp = VN_CAST(exprp, Dot);
+                    while (dotp) {
+                        AstDot* rhsDotp = VN_CAST(dotp->rhsp(), Dot);
+                        if (!rhsDotp) break;
+                        FileLine* const fl = dotp->fileline();
+                        const bool colon = dotp->colon();
+                        AstNodeExpr* const lhs = VN_AS(dotp->lhsp()->unlinkFrBack(), NodeExpr);
+                        AstNodeExpr* const rhsLhs
+                            = VN_AS(rhsDotp->lhsp()->unlinkFrBack(), NodeExpr);
+                        AstNodeExpr* const rhsRhs
+                            = VN_AS(rhsDotp->rhsp()->unlinkFrBack(), NodeExpr);
+                        FileLine* const rhsFl = rhsDotp->fileline();
+                        const bool rhsColon = rhsDotp->colon();
+                        AstDot* const newLhs = new AstDot{fl, colon, lhs, rhsLhs};
+                        exprp = new AstDot{rhsFl, rhsColon, newLhs, rhsRhs};
+                        VL_DO_DANGLING(dotp->deleteTree(), dotp);
+                        dotp = VN_CAST(exprp, Dot);
+                    }
+                    dtypep = exprp;
+                }
             } else {
                 dtypep = new AstVoidDType{nodep->fileline()};
             }
+
             AstNode* const newp = new AstParamTypeDType{
                 nodep->fileline(), nodep->varType(),
                 ptypep->fwdType(), nodep->name(),

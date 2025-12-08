@@ -1,5 +1,5 @@
-%Error: t/t_interface_typedef3.v:22:11: Unsupported: SystemVerilog 2005 interface typedef
+%Error: t/t_interface_typedef3.v:22:19: Expecting a data type, not DOT: ''
    22 |   typedef iface_mp.choice_t tdef_t;
-      |           ^~~~~~~~
+      |                   ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to
