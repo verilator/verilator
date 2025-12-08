@@ -2558,6 +2558,14 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
                           AstNodeDType* const dtp = GRAMMARP->createArray(refp, addNextNull(rangep, $8), true);
                           $$ = GRAMMARP->createTypedef($<fl>9, *$9, $11, dtp, $10); }
 
+        // Same as above but for type identifiers (parameter types, etc.)
+        |       yTYPEDEF idType '[' constExpr ':' constExpr ']' packed_dimensionListE
+        /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
+                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, nullptr, nullptr};
+                          AstNodeRange* const rangep = new AstRange{$3, $4, $6};
+                          AstNodeDType* const dtp = GRAMMARP->createArray(refp, addNextNull(rangep, $8), true);
+                          $$ = GRAMMARP->createTypedef($<fl>9, *$9, $11, dtp, $10); }
+
         |       yTYPEDEF idAny parameter_value_assignmentClass packed_dimensionListE
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, nullptr, $3};

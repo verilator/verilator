@@ -11,9 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator_st')
 
-test.compile(verilator_flags2=['--binary'],
-             fails=test.vlt_all,
-             expect_filename=test.golden_filename)
+test.compile(verilator_flags2=['--binary'])
 
 if not test.vlt_all:
     test.execute()
