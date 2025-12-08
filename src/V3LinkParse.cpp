@@ -403,8 +403,10 @@ class LinkParseVisitor final : public VNVisitor {
                         FileLine* const fl = dotp->fileline();
                         const bool colon = dotp->colon();
                         AstNodeExpr* const lhs = VN_AS(dotp->lhsp()->unlinkFrBack(), NodeExpr);
-                        AstNodeExpr* const rhsLhs = VN_AS(rhsDotp->lhsp()->unlinkFrBack(), NodeExpr);
-                        AstNodeExpr* const rhsRhs = VN_AS(rhsDotp->rhsp()->unlinkFrBack(), NodeExpr);
+                        AstNodeExpr* const rhsLhs
+                            = VN_AS(rhsDotp->lhsp()->unlinkFrBack(), NodeExpr);
+                        AstNodeExpr* const rhsRhs
+                            = VN_AS(rhsDotp->rhsp()->unlinkFrBack(), NodeExpr);
                         FileLine* const rhsFl = rhsDotp->fileline();
                         const bool rhsColon = rhsDotp->colon();
                         AstDot* const newLhs = new AstDot{fl, colon, lhs, rhsLhs};

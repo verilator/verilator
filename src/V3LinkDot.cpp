@@ -5265,8 +5265,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             const VSymEnt* foundp;
             if (nodep->classOrPackagep()) {
                 foundp = m_statep->getNodeSym(nodep->classOrPackagep())->findIdFlat(nodep->name());
-            }
-            else if (m_ds.m_dotPos == DP_FIRST || m_ds.m_dotPos == DP_NONE) {
+            } else if (m_ds.m_dotPos == DP_FIRST || m_ds.m_dotPos == DP_NONE) {
                 foundp = m_curSymp->findIdFallback(nodep->name());
             } else {
                 // Use dotSymp if set (e.g., for captured interface typedefs), else curSymp
