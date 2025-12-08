@@ -52,7 +52,8 @@ static AstNodeExpr* makeLeftAssociativeDot(AstNodeExpr* nodep) {
     // Unlink children
     AstNodeExpr* const lhsp = VN_AS(dotp->lhsp()->unlinkFrBack(), NodeExpr);
     AstNodeExpr* const rhsLhsp = VN_AS(rhsDotp->lhsp()->unlinkFrBack(), NodeExpr);
-    AstNodeExpr* const rhsRhsp = VN_AS(rhsDotp->rhsp()->unlinkFrBack(), NodeExpr);FileLine* const rhsFl = rhsDotp->fileline();
+    AstNodeExpr* const rhsRhsp = VN_AS(rhsDotp->rhsp()->unlinkFrBack(), NodeExpr);
+    FileLine* const rhsFl = rhsDotp->fileline();
     const bool rhsColon = rhsDotp->colon();
 
     // Build new left-associative structure: DOT(DOT(A, B), C)

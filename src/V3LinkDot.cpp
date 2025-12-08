@@ -5235,7 +5235,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         // EOM
         if (m_ds.m_dotp && (m_ds.m_dotPos == DP_PACKAGE || m_ds.m_dotPos == DP_SCOPE)) {
-        //if (m_ds.m_dotp && (m_ds.m_dotPos == DP_PACKAGE || m_ds.m_dotPos == DP_SCOPE) && VN_IS(m_ds.m_dotp->lhsp(), ClassOrPackageRef)) {
+            //if (m_ds.m_dotp && (m_ds.m_dotPos == DP_PACKAGE || m_ds.m_dotPos == DP_SCOPE) &&
+            //VN_IS(m_ds.m_dotp->lhsp(), ClassOrPackageRef)) {
             UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), ClassOrPackageRef), m_ds.m_dotp->lhsp(),
                         "Bad package link");
             auto* const cpackagerefp = VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef);
