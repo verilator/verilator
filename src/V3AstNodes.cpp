@@ -2331,9 +2331,7 @@ void AstRefDType::dump(std::ostream& str) const {
         str << " -> UNLINKED";
     }
 }
-void AstRefDType::dumpJson(std::ostream& str) const {
-    dumpJsonGen(str);
-}
+void AstRefDType::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 
 void AstRefDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
