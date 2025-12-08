@@ -495,10 +495,17 @@ class TraceDriver final : public DfgVisitor {
             return;
         }
 
-        DfgShiftR* const resp = make<DfgShiftR>(vtxp, m_msb - m_lsb + 1);
-        resp->rhsp(trace(vtxp->rhsp(), vtxp->rhsp()->width() - 1, 0));
-        resp->lhsp(trace(vtxp->lhsp(), m_msb, m_lsb));
-        SET_RESULT(resp);
+        DfgShiftR* const shiftrp = make<DfgShiftR>(vtxp, vtxp->lhsp()->width() - m_lsb);
+        shiftrp->rhsp(trace(vtxp->rhsp(), vtxp->rhsp()->width() - 1, 0));
+        shiftrp->lhsp(trace(vtxp->lhsp(), vtxp->lhsp()->width() - 1, m_lsb));
+        if (m_msb == vtxp->lhsp()->width() - 1) {
+            SET_RESULT(shiftrp);
+            return;
+        }
+        DfgSel* const selp = make<DfgSel>(vtxp, m_msb - m_lsb + 1);
+        selp->fromp(shiftrp);
+        selp->lsb(0);
+        SET_RESULT(selp);
     }
 
     void visit(DfgShiftL* vtxp) override {
@@ -525,15 +532,22 @@ class TraceDriver final : public DfgVisitor {
             return;
         }
 
-        DfgShiftL* const resp = make<DfgShiftL>(vtxp, m_msb - m_lsb + 1);
-        resp->rhsp(trace(vtxp->rhsp(), vtxp->rhsp()->width() - 1, 0));
-        resp->lhsp(trace(vtxp->lhsp(), m_msb, m_lsb));
-        SET_RESULT(resp);
+        DfgShiftL* const shiftlp = make<DfgShiftL>(vtxp, m_msb + 1);
+        shiftlp->rhsp(trace(vtxp->rhsp(), vtxp->rhsp()->width() - 1, 0));
+        shiftlp->lhsp(trace(vtxp->lhsp(), m_msb, 0));
+        if (m_lsb == 0) {
+            SET_RESULT(shiftlp);
+            return;
+        }
+        DfgSel* const selp = make<DfgSel>(vtxp, m_msb - m_lsb + 1);
+        selp->fromp(shiftlp);
+        selp->lsb(m_lsb);
+        SET_RESULT(selp);
     }
 
     void visit(DfgCond* vtxp) override {
         DfgCond* const resp = make<DfgCond>(vtxp, m_msb - m_lsb + 1);
-        resp->condp(trace(vtxp->condp(), 0, 0));
+        resp->condp(trace(vtxp->condp(), vtxp->condp()->width() - 1, 0));
         resp->thenp(trace(vtxp->thenp(), m_msb, m_lsb));
         resp->elsep(trace(vtxp->elsep(), m_msb, m_lsb));
         SET_RESULT(resp);

@@ -94,6 +94,9 @@ test.compile(verilator_flags2=[
     "../../t/" + test.name + ".cpp"
 ])  # yapf:disable
 
+# Execute test to check equivalence
+test.execute(executable=test.obj_dir + "/obj_opt/Vopt")
+
 # Check all source lines hit
 coveredLines = set()
 
@@ -118,8 +121,5 @@ if coveredLines != expectedLines:
 
 test.file_grep_not(test.obj_dir + "/obj_opt/Vopt__stats.txt",
                    r'DFG.*non-representable.*\s[1-9]\d*$')
-
-# Execute test to check equivalence
-test.execute(executable=test.obj_dir + "/obj_opt/Vopt")
 
 test.passes()

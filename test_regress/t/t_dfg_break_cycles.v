@@ -96,12 +96,20 @@ module t (
     rand_a[3:0]          // 3:0
   };
 
-  `signal(SHIFTR_VARIABLE, 2); // UNOPTFLAT
-  assign SHIFTR_VARIABLE = rand_a[1:0] ^ ({1'b0, SHIFTR_VARIABLE[1]} >> rand_b[0]);
-
   `signal(SHIFTR_2_A, 10); // UNOPTFLAT
   wire logic [9:0] SHIFTR_2_B = SHIFTR_2_A >> 2;
   assign SHIFTR_2_A = {rand_a[1:0], SHIFTR_2_B[9:2]};
+
+  `signal(SHIFTR_VARIABLE, 2); // UNOPTFLAT
+  assign SHIFTR_VARIABLE = rand_a[1:0] ^ ({1'b0, SHIFTR_VARIABLE[1]} >> rand_b[0]);
+
+  `signal(SHIFTR_VARIABLE_2, 2); // UNOPTFLAT
+  assign SHIFTR_VARIABLE_2 = rand_a[1:0] ^ ({1'b1, SHIFTR_VARIABLE_2[1]} >> rand_b[0]);
+
+  `signal(SHIFTR_VARIABLE_3_A, 4); // UNOPTFLAT
+  `signal(SHIFTR_VARIABLE_3_B, 5);
+  assign SHIFTR_VARIABLE_3_B = {4'b1111, SHIFTR_VARIABLE_3_A[1]} >> rand_b[0];
+  assign SHIFTR_VARIABLE_3_A = rand_a[3:0] ^ SHIFTR_VARIABLE_3_B[3:0];
 
   `signal(SHIFTL, 14); // UNOPTFLAT
   assign SHIFTL = {
@@ -112,12 +120,20 @@ module t (
     rand_a[3:0]          // 3:0
   };
 
-  `signal(SHIFTL_VARIABLE, 2); // UNOPTFLAT
-  assign SHIFTL_VARIABLE = rand_a[1:0] ^ ({SHIFTL_VARIABLE[0], 1'b0} << rand_b[0]);
-
   `signal(SHIFTL_2_A, 10); // UNOPTFLAT
   wire logic [9:0] SHIFTL_2_B = SHIFTL_2_A << 2;
   assign SHIFTL_2_A = {SHIFTL_2_B[9:2], rand_a[1:0]};
+
+  `signal(SHIFTL_VARIABLE, 2); // UNOPTFLAT
+  assign SHIFTL_VARIABLE = rand_a[1:0] ^ ({SHIFTL_VARIABLE[0], 1'b0} << rand_b[0]);
+
+  `signal(SHIFTL_VARIABLE_2, 2); // UNOPTFLAT
+  assign SHIFTL_VARIABLE_2 = rand_a[1:0] ^ ({SHIFTL_VARIABLE_2[0], 1'b1} << rand_b[0]);
+
+  `signal(SHIFTL_VARIABLE_3_A, 4); // UNOPTFLAT
+  `signal(SHIFTL_VARIABLE_3_B, 5);
+  assign SHIFTL_VARIABLE_3_B = {SHIFTL_VARIABLE_3_A[0], 4'b1111} << rand_b[0];
+  assign SHIFTL_VARIABLE_3_A = rand_a[3:0] ^ SHIFTL_VARIABLE_3_B[4:1];
 
   `signal(VAR_A, 2); // UNOPTFLAT
   wire logic [1:0] VAR_B;
@@ -241,6 +257,17 @@ module t (
 
   `signal(COND_COND, 3); // UNOPTFLAT
   assign COND_COND = {rand_a[0], (COND_COND >> 2) == 3'b001 ? rand_b[3:2] : rand_b[1:0]};
+
+  // verilator lint_off WIDTHTRUNC
+  `signal(COND_THEN_2, 3); // UNOPTFLAT
+  assign COND_THEN_2 = {rand_a[0], rand_a[1:0] ? 2'(COND_THEN_2 << 2) : rand_b[1:0]};
+
+  `signal(COND_ELSE_2, 3); // UNOPTFLAT
+  assign COND_ELSE_2 = {rand_a[0], rand_a[1:0] ? rand_b[1:0] : 2'(COND_ELSE_2 << 2)};
+
+  `signal(COND_COND_2, 3); // UNOPTFLAT
+  assign COND_COND_2 = {rand_a[0], COND_COND_2 >> 2 ? rand_b[3:2] : rand_b[1:0]};
+  // verilator lint_on WIDTHTRUNC
 
   // verilator lint_off ALWCOMBORDER
   logic [3:0] always_0;
