@@ -2502,16 +2502,8 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
                         { AstNodeDType* const dtp = $2;
                           $$ = GRAMMARP->createTypedef($<fl>3, *$3, $5, dtp, $4); }
 
-        //  |       yTYPEDEF hierarchical_identifier
-        //  /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
-        //        { VARRESET_NONLIST(LPARAM);  // Set variable type like varParamReset does
-        //        AstParseTypeDType* const ptypep = new AstParseTypeDType{$<fl>2, VFwdType::NONE};
-        //          VARDTYPE(ptypep);
-        //          AstVar* const varp = VARDONEA($<fl>3, *$3, $4, $5);
-        //          // Store dotted name as ParseRef; V3LinkParse will expand to Dot tree
-        //          varp->valuep(new AstParseRef{$<fl>2, *$2, nullptr, nullptr});
-        //          $$ = varp; }
-
+        // IEEE 1800-2017 §6.18 typedef: dotted or arrayed type identifier
+        // Handles interface typedef references like if0.rq_t and if0[0].rq_t (arrays allowed after first component)
         |       yTYPEDEF idDottedOrArrayed
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
               { VARRESET_NONLIST(LPARAM);
@@ -2522,8 +2514,9 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
                 varp->valuep($2);
                 $$ = varp; }
 
-        // Interface array access: typedef if0[0].rq_t my_t; or typedef if0[0].x_if.rq_t my_t;
-        // Disambiguated by '.' after ']'
+        // IEEE 1800-2017 §6.18 typedef with hierarchical type identifier
+        // Special-case array on first component requiring a '.' after ']' to disambiguate from packed dims
+        // Examples: typedef if0[0].rq_t my_t; typedef if0[0].x_if.rq_t my_t;
         |       yTYPEDEF id '[' expr ']' '.' idDottedSelMore
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
               { VARRESET_NONLIST(LPARAM);
@@ -2549,8 +2542,10 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
         |       yTYPEDEF idAny idAny variable_dimensionListE dtypeAttrListE ';'
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, nullptr, nullptr};
                           $$ = GRAMMARP->createTypedef($<fl>3, *$3, $5, refp, $4); }
-        // Type alias with packed dimensions: typedef existing_t[7:0] new_t;
-        // Uses 'id' and explicit '[' to disambiguate from interface array access
+
+        // IEEE 1800-2017 §6.18.2 typedef with packed dimensions on an existing type identifier
+        // Disambiguated from interface array access by requiring ':' inside the brackets
+        // (applies to both plain identifiers and type identifiers)
         |       yTYPEDEF id '[' constExpr ':' constExpr ']' packed_dimensionListE
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, nullptr, nullptr};
@@ -2571,10 +2566,7 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, nullptr, $3};
                           AstNodeDType* const dtp = GRAMMARP->createArray(refp, $4, true);
                           $$ = GRAMMARP->createTypedef($<fl>5, *$5, $7, dtp, $6); }
-        //                      //
-        //|       yTYPEDEF idAny/*interface_port*/ '.' idAny/*type*/ idAny/*type*/ dtypeAttrListE ';'
-        //                { AstRefDType* const refp = new AstRefDType{$<fl>2, AstRefDType::FlagIfaceTypedef{}, *$2, *$4};
-        //                  $$ = GRAMMARP->createTypedef($<fl>5, *$5, $6, refp, nullptr); }
+
         //                      // idAny as also allows redeclaring same typedef again
         |       yTYPEDEF idAny ';'                      { $$ = GRAMMARP->createTypedefFwd($<fl>2, *$2, VFwdType::NONE); }
         //                      // IEEE: expanded forward_type to prevent conflict

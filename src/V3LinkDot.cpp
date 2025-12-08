@@ -5233,10 +5233,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 nodep->classOrPackagep(nullptr);
             }
         }
-        // EOM
         if (m_ds.m_dotp && (m_ds.m_dotPos == DP_PACKAGE || m_ds.m_dotPos == DP_SCOPE)) {
-            //if (m_ds.m_dotp && (m_ds.m_dotPos == DP_PACKAGE || m_ds.m_dotPos == DP_SCOPE) &&
-            //VN_IS(m_ds.m_dotp->lhsp(), ClassOrPackageRef)) {
             UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), ClassOrPackageRef), m_ds.m_dotp->lhsp(),
                         "Bad package link");
             auto* const cpackagerefp = VN_CAST(m_ds.m_dotp->lhsp(), ClassOrPackageRef);
@@ -5275,13 +5272,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
             else if (m_ds.m_dotPos == DP_FIRST || m_ds.m_dotPos == DP_NONE) {
                 foundp = m_curSymp->findIdFallback(nodep->name());
             } else {
-                //foundp = m_curSymp->findIdFlat(nodep->name());
                 // Use dotSymp if set (e.g., for captured interface typedefs), else curSymp
                 VSymEnt* const lookupSymp = m_ds.m_dotSymp ? m_ds.m_dotSymp : m_curSymp;
                 foundp = lookupSymp->findIdFlat(nodep->name());
             }
-            // EOM
-            //if (!foundp && ifaceCaptured && capturedTypedefp) {
             if (ifaceCaptured && capturedTypedefp) {
                 // When we have a captured interface typedef context, use the captured typedef
                 // instead of any local lookup result. This handles the case where the local
@@ -5355,7 +5349,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                               << nodep->name());
             m_ds.init(m_curSymp);
         }
-        // EOM
+
         if (ifaceCaptured && resolvedCapturedTypedef) { retireCapture("resolved"); }
         iterateChildren(nodep);
     }
