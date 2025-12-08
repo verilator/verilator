@@ -1052,12 +1052,6 @@ timeunits_declaration<nodep>:   // ==IEEE: timeunits_declaration
                         { $$ = PARSEP->createTimescale($<fl>2, false, 0, true, $2); }
         ;
 
-// Must contain at least one dot
-//hierarchical_identifier<strp>:
-//        idAny '.' idAny                     { $$ = new string(*$1 + "." + *$3); }
-//    |   hierarchical_identifier '.' idAny   { $$ = new string(*$1 + "." + *$3); }
-//    ;
-
 //**********************************************************************
 // Packages
 
