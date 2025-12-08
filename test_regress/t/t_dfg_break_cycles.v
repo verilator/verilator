@@ -96,8 +96,20 @@ module t (
     rand_a[3:0]          // 3:0
   };
 
+  `signal(SHIFTR_2_A, 10); // UNOPTFLAT
+  wire logic [9:0] SHIFTR_2_B = SHIFTR_2_A >> 2;
+  assign SHIFTR_2_A = {rand_a[1:0], SHIFTR_2_B[9:2]};
+
   `signal(SHIFTR_VARIABLE, 2); // UNOPTFLAT
   assign SHIFTR_VARIABLE = rand_a[1:0] ^ ({1'b0, SHIFTR_VARIABLE[1]} >> rand_b[0]);
+
+  `signal(SHIFTR_VARIABLE_2, 2); // UNOPTFLAT
+  assign SHIFTR_VARIABLE_2 = rand_a[1:0] ^ ({1'b1, SHIFTR_VARIABLE_2[1]} >> rand_b[0]);
+
+  `signal(SHIFTR_VARIABLE_3_A, 4); // UNOPTFLAT
+  `signal(SHIFTR_VARIABLE_3_B, 5);
+  assign SHIFTR_VARIABLE_3_B = {4'b1111, SHIFTR_VARIABLE_3_A[1]} >> rand_b[0];
+  assign SHIFTR_VARIABLE_3_A = rand_a[3:0] ^ SHIFTR_VARIABLE_3_B[3:0];
 
   `signal(SHIFTL, 14); // UNOPTFLAT
   assign SHIFTL = {
@@ -108,16 +120,41 @@ module t (
     rand_a[3:0]          // 3:0
   };
 
+  `signal(SHIFTL_2_A, 10); // UNOPTFLAT
+  wire logic [9:0] SHIFTL_2_B = SHIFTL_2_A << 2;
+  assign SHIFTL_2_A = {SHIFTL_2_B[9:2], rand_a[1:0]};
+
   `signal(SHIFTL_VARIABLE, 2); // UNOPTFLAT
   assign SHIFTL_VARIABLE = rand_a[1:0] ^ ({SHIFTL_VARIABLE[0], 1'b0} << rand_b[0]);
+
+  `signal(SHIFTL_VARIABLE_2, 2); // UNOPTFLAT
+  assign SHIFTL_VARIABLE_2 = rand_a[1:0] ^ ({SHIFTL_VARIABLE_2[0], 1'b1} << rand_b[0]);
+
+  `signal(SHIFTL_VARIABLE_3_A, 4); // UNOPTFLAT
+  `signal(SHIFTL_VARIABLE_3_B, 5);
+  assign SHIFTL_VARIABLE_3_B = {SHIFTL_VARIABLE_3_A[0], 4'b1111} << rand_b[0];
+  assign SHIFTL_VARIABLE_3_A = rand_a[3:0] ^ SHIFTL_VARIABLE_3_B[4:1];
 
   `signal(VAR_A, 2); // UNOPTFLAT
   wire logic [1:0] VAR_B;
   assign VAR_A = {rand_a[0], VAR_B[0]};
   assign VAR_B = (VAR_A >> 1) ^ 2'(VAR_B[1]);
 
-  `signal(REPLICATE, 4); // UNOPTFLAT
-  assign REPLICATE = rand_a[3:0] ^ ({2{REPLICATE[3:2]}} >> 2);
+  `signal(REPLICATE_1, 4); // UNOPTFLAT
+  assign REPLICATE_1 = rand_a[3:0] ^ ({2{REPLICATE_1[3:2]}} >> 2);
+
+  `signal(REPLICATE_2_A, 10); // UNOPTFLAT
+  wire logic [7:0] REPLICATE_2_B;
+  assign REPLICATE_2_B = {4{REPLICATE_2_A[1:0]}};
+  assign REPLICATE_2_A = {^REPLICATE_2_A[8:0], REPLICATE_2_B, rand_a[0]};
+
+  `signal(REPLICATE_3_A, 9); // UNOPTFLAT
+  assign REPLICATE_3_A = {{4{REPLICATE_3_A[1:0]}}, rand_a[0]};
+
+  `signal(REPLICATE_4_A, 4); // UNOPTFLAT
+  wire logic [3:0] REPLICATE_4_B;
+  assign REPLICATE_4_B = {2{REPLICATE_4_A[1:0]}};
+  assign REPLICATE_4_A = {REPLICATE_4_B[2:1], rand_a[1:0]};
 
   `signal(PARTIAL, 4); // UNOPTFLAT
   assign PARTIAL[0] = rand_a[0];
@@ -221,6 +258,17 @@ module t (
   `signal(COND_COND, 3); // UNOPTFLAT
   assign COND_COND = {rand_a[0], (COND_COND >> 2) == 3'b001 ? rand_b[3:2] : rand_b[1:0]};
 
+  // verilator lint_off WIDTHTRUNC
+  `signal(COND_THEN_2, 3); // UNOPTFLAT
+  assign COND_THEN_2 = {rand_a[0], rand_a[1:0] ? 2'(COND_THEN_2 << 2) : rand_b[1:0]};
+
+  `signal(COND_ELSE_2, 3); // UNOPTFLAT
+  assign COND_ELSE_2 = {rand_a[0], rand_a[1:0] ? rand_b[1:0] : 2'(COND_ELSE_2 << 2)};
+
+  `signal(COND_COND_2, 3); // UNOPTFLAT
+  assign COND_COND_2 = {rand_a[0], COND_COND_2 >> 2 ? rand_b[3:2] : rand_b[1:0]};
+  // verilator lint_on WIDTHTRUNC
+
   // verilator lint_off ALWCOMBORDER
   logic [3:0] always_0;
   always_comb begin
@@ -288,6 +336,10 @@ module t (
   `signal(PACKED_0_LSB, 1);
   assign PACKED_0_LSB = packed_0_lsb;
 
+  //////////////////////////////////////////////////////////////////////////
+  // Cases that can't be fixed up currently
+  //////////////////////////////////////////////////////////////////////////
+
   // verilator lint_off UNOPTFLAT
   logic array_5 [0:6];
   // Unconnected d[0:3]
@@ -296,6 +348,47 @@ module t (
   assign array_5[6] = array_5[4] ? array_5[4] : array_5[5];
   `signal(ARRAY_5, 1);
   assign ARRAY_5 = array_5[6];
+  // verilator lint_on
+
+  //////////////////////////////////////////////////////////////////////////
+  // Volatile variables
+  //////////////////////////////////////////////////////////////////////////
+
+  `signal(VOLATILE_PACKED_OUT_OF_CYCLE, 64); // UNOPTFLAT
+  wire logic [63:0] volatile_packed_out_of_cycle /* verilator forceable */ = rand_a;
+  assign VOLATILE_PACKED_OUT_OF_CYCLE = volatile_packed_out_of_cycle ^ 64'(VOLATILE_PACKED_OUT_OF_CYCLE[63:1]);
+
+  // verilator lint_off UNOPTFLAT
+  `signal(VOLATILE_PACKED_IN_CYCLE, 3);
+  wire logic [2:0] volatile_packed_in_cycle /* verilator forceable */;
+  assign volatile_packed_in_cycle = rand_a[2:0] ^ 3'(volatile_packed_in_cycle[2:1]);
+  assign VOLATILE_PACKED_IN_CYCLE = volatile_packed_in_cycle;
+  // verilator lint_on
+
+  wire [2:0] volatile_array_out_of_cycle_a [2] /* verilator public_flat_rw */;
+  assign volatile_array_out_of_cycle_a[0] = rand_a[2:0];
+  wire [2:0] volatile_array_out_of_cycle_b [2];
+  assign volatile_array_out_of_cycle_b[0] = volatile_array_out_of_cycle_a[0];
+  assign volatile_array_out_of_cycle_b[1] = volatile_array_out_of_cycle_b[0];
+  `signal(VOLATILE_ARRAY_OUT_OF_CYCLE, 3); // UNOPTFLAT
+  assign VOLATILE_ARRAY_OUT_OF_CYCLE = volatile_array_out_of_cycle_a[1];
+
+  // verilator lint_off UNOPTFLAT
+  wire [2:0] volatile_array_in_cycle_0 [2] /* verilator public_flat_rw */;
+  assign volatile_array_in_cycle_0[0] = rand_a[2:0];
+  assign volatile_array_in_cycle_0[1] = volatile_array_in_cycle_0[0];
+  `signal(VOLATILE_ARRAY_IN_CYCLE_0, 3); // UNOPTFLAT
+  assign VOLATILE_ARRAY_IN_CYCLE_0 = volatile_array_in_cycle_0[1];
+  // verilator lint_on
+
+  // verilator lint_off UNOPTFLAT
+  wire [2:0] volatile_array_in_cycle_1a [2] /* verilator public_flat_rw */;
+  wire [2:0] volatile_array_in_cycle_1b [2] /* verilator public_flat_rw */;
+  assign volatile_array_in_cycle_1a[0] = rand_a[2:0];
+  assign volatile_array_in_cycle_1a[1] = volatile_array_in_cycle_1b[0];
+  assign volatile_array_in_cycle_1b = volatile_array_in_cycle_1a;
+  `signal(VOLATILE_ARRAY_IN_CYCLE_1, 3); // UNOPTFLAT
+  assign VOLATILE_ARRAY_IN_CYCLE_1 = volatile_array_in_cycle_1a[1];
   // verilator lint_on
 
 endmodule
