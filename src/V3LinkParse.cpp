@@ -79,44 +79,6 @@ class LinkParseVisitor final : public VNVisitor {
         = false;  // Set when std::process internals were unprotected, we only need to do this once
 
     // METHODS
-    // Helper to restructure right-associative AstDot tree to left-associative
-    // This is needed for typedef with arrayed interface on first component.
-    // Grammar produces: DOT(SELBIT(if0,0), DOT(x_if0, rq_t)) - right-associative
-    // But expr produces: DOT(DOT(SELBIT(if0,0), x_if0), rq_t) - left-associative
-    // We need to match the expr structure for downstream plumbing to work.
-    static AstNodeExpr* makeLeftAssociativeDot(AstNodeExpr* nodep) {
-        AstDot* dotp = VN_CAST(nodep, Dot);
-        if (!dotp) return nodep;
-
-        // If rhs is also a Dot, we need to restructure
-        AstDot* rhsDotp = VN_CAST(dotp->rhsp(), Dot);
-        if (!rhsDotp) return nodep;
-
-        // DOT(A, DOT(B, C)) -> DOT(DOT(A, B), C)
-        FileLine* const fl = dotp->fileline();
-        const bool colon = dotp->colon();
-
-        // Unlink children
-        AstNodeExpr* const lhsp = VN_AS(dotp->lhsp()->unlinkFrBack(), NodeExpr);
-        AstNodeExpr* const rhsLhsp = VN_AS(rhsDotp->lhsp()->unlinkFrBack(), NodeExpr);
-        AstNodeExpr* const rhsRhsp = VN_AS(rhsDotp->rhsp()->unlinkFrBack(), NodeExpr);
-        FileLine* const rhsFl = rhsDotp->fileline();
-        const bool rhsColon = rhsDotp->colon();
-
-        // Build new left-associative structure: DOT(DOT(A, B), C)
-        AstDot* const newLhsp = new AstDot{fl, colon, lhsp, rhsLhsp};
-
-        // Recursively process the new left side in case there are more levels
-        AstNodeExpr* const processedLhs = makeLeftAssociativeDot(newLhsp);
-
-        AstNodeExpr* const result = new AstDot{rhsFl, rhsColon, processedLhs, rhsRhsp};
-
-        // Delete old structure
-        VL_DO_DANGLING(dotp->deleteTree(), dotp);
-
-        return result;
-    }
-
     void cleanFileline(AstNode* nodep) {
         if (nodep->user2SetOnce()) return;  // Process once
         // We make all filelines unique per AstNode.  This allows us to
@@ -433,8 +395,24 @@ class LinkParseVisitor final : public VNVisitor {
                 //   typedef if0[0].x_if0.rq_t my_t;
                 // Grammar produces: DOT(SELBIT, DOT(x_if0, rq_t))
                 // We need:          DOT(DOT(SELBIT, x_if0), rq_t)
-                if (AstNodeExpr* const exprp = VN_CAST(dtypep, NodeExpr)) {
-                    dtypep = makeLeftAssociativeDot(exprp);
+                if (AstNodeExpr* exprp = VN_CAST(dtypep, NodeExpr)) {
+                    AstDot* dotp = VN_CAST(exprp, Dot);
+                    while (dotp) {
+                        AstDot* rhsDotp = VN_CAST(dotp->rhsp(), Dot);
+                        if (!rhsDotp) break;
+                        FileLine* const fl = dotp->fileline();
+                        const bool colon = dotp->colon();
+                        AstNodeExpr* const lhs = VN_AS(dotp->lhsp()->unlinkFrBack(), NodeExpr);
+                        AstNodeExpr* const rhsLhs = VN_AS(rhsDotp->lhsp()->unlinkFrBack(), NodeExpr);
+                        AstNodeExpr* const rhsRhs = VN_AS(rhsDotp->rhsp()->unlinkFrBack(), NodeExpr);
+                        FileLine* const rhsFl = rhsDotp->fileline();
+                        const bool rhsColon = rhsDotp->colon();
+                        AstDot* const newLhs = new AstDot{fl, colon, lhs, rhsLhs};
+                        exprp = new AstDot{rhsFl, rhsColon, newLhs, rhsRhs};
+                        VL_DO_DANGLING(dotp->deleteTree(), dotp);
+                        dotp = VN_CAST(exprp, Dot);
+                    }
+                    dtypep = exprp;
                 }
             } else {
                 dtypep = new AstVoidDType{nodep->fileline()};

@@ -5265,10 +5265,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             const VSymEnt* foundp;
             if (nodep->classOrPackagep()) {
                 foundp = m_statep->getNodeSym(nodep->classOrPackagep())->findIdFlat(nodep->name());
-            }  //else if (!nodep->ifacePortName().empty()) {  // Interface typedef
-               //nodep->v3error("Unsupported: SystemVerilog 2005 interface typedef");
-               //return;
-            //}
+            }
             else if (m_ds.m_dotPos == DP_FIRST || m_ds.m_dotPos == DP_NONE) {
                 foundp = m_curSymp->findIdFallback(nodep->name());
             } else {
@@ -5349,7 +5346,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                               << nodep->name());
             m_ds.init(m_curSymp);
         }
-
         if (ifaceCaptured && resolvedCapturedTypedef) { retireCapture("resolved"); }
         iterateChildren(nodep);
     }
