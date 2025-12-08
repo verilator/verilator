@@ -340,11 +340,17 @@ protected:
 
     // We don't do AstLoop, due to the standard question of what is before vs. after
 
+    void visit(AstExprStmt* nodep) override {
+        VL_RESTORER(m_inDly);
+        m_inDly = false;
+        iterateChildren(nodep);
+    }
     void visit(AstAssignDly* nodep) override {
+        UINFO(4, "    ASSIGNDLY " << nodep);
+        iterate(nodep->rhsp());
         VL_RESTORER(m_inDly);
         m_inDly = true;
-        UINFO(4, "    ASSIGNDLY " << nodep);
-        iterateChildren(nodep);
+        iterate(nodep->lhsp());
     }
     void visit(AstVarRef* nodep) override {
         if (!m_stmtStackps.empty()) {
