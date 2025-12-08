@@ -621,7 +621,6 @@ private:
 
     void visit(AstPropSpec* nodep) override {
         nodep = substitutePropertyCall(nodep);
-        // No need to iterate the body, once replace will get iterated
         iterateAndNextNull(nodep->sensesp());
         if (m_senip && m_senip != nodep->sensesp())
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Only one PSL clock allowed per assertion");
@@ -631,7 +630,8 @@ private:
         m_disablep = nodep->disablep();
         // Unlink and just keep a pointer to it, convert to sentree as needed
         m_senip = nodep->sensesp();
-        iterateChildren(nodep);
+        iterateNull(nodep->disablep());
+        iterate(nodep->propp());
     }
     void visit(AstPExpr* nodep) override {
         VL_RESTORER(m_inPExpr);
