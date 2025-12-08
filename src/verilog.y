@@ -2544,11 +2544,6 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
                         { AstRefDType* const refp = new AstRefDType{$<fl>3, *$3, $2, $4};
                           AstNodeDType* const dtp = GRAMMARP->createArray(refp, $5, true);
                           $$ = GRAMMARP->createTypedef($<fl>6, *$6, $8, dtp, $7); }
-        //|       yTYPEDEF idAny packed_dimensionListE
-        ///*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
-        //                { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, nullptr, nullptr};
-        //                  AstNodeDType* const dtp = GRAMMARP->createArray(refp, $3, true);
-        //                  $$ = GRAMMARP->createTypedef($<fl>4, *$4, $6, dtp, $5); }
 
         // Type alias without packed dimensions: typedef existing_t new_t;
         |       yTYPEDEF idAny idAny variable_dimensionListE dtypeAttrListE ';'
