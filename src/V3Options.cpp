@@ -1346,9 +1346,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-debug-check", OnOff, &m_debugCheck);
     DECL_OPTION("-debug-collision", OnOff, &m_debugCollision).undocumented();
     DECL_OPTION("-debug-emitv", OnOff, &m_debugEmitV).undocumented();
+    DECL_OPTION("-debug-exit-elab", OnOff, &m_debugExitElab).undocumented();
     DECL_OPTION("-debug-exit-parse", OnOff, &m_debugExitParse).undocumented();
-    DECL_OPTION("-debug-exit-uvm", OnOff, &m_debugExitUvm).undocumented();
-    DECL_OPTION("-debug-exit-uvm23", OnOff, &m_debugExitUvm23).undocumented();
     DECL_OPTION("-debug-fatalsrc", CbCall, []() {
         v3fatalSrc("--debug-fatal-src");
     }).undocumented();  // See also --debug-abort

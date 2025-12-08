@@ -1960,7 +1960,7 @@ class VlTest:
         return True
 
     def _run_output(self, data, logfh, tee):
-        if re.search(r'--debug-exit-uvm23: Exiting', str(data)):
+        if re.search(r'--debug-exit-.*: Exiting', str(data)):
             self._force_pass = True
             print("EXIT: " + str(data))
         if tee:

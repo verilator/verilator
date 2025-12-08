@@ -172,12 +172,6 @@ static void process() {
         V3Error::abortIfErrors();
 
         if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "Link");
-        if (v3Global.opt.debugExitUvm23()) {
-            V3Error::abortIfErrors();
-            if (v3Global.opt.serializeOnly()) emitXmlOrJson();
-            cout << "--debug-exit-uvm23: Exiting after UVM-supported pass\n";
-            v3Global.vlExit(0);
-        }
 
         // Remove parameters by cloning modules to de-parameterized versions
         //   This requires some width calculations and constant propagation
@@ -204,12 +198,6 @@ static void process() {
                 return;
             }
         }
-        if (v3Global.opt.debugExitUvm()) {
-            V3Error::abortIfErrors();
-            if (v3Global.opt.serializeOnly()) emitXmlOrJson();
-            cout << "--debug-exit-uvm: Exiting after UVM-supported pass\n";
-            v3Global.vlExit(0);
-        }
 
         // Calculate and check widths, edit tree to TRUNC/EXTRACT any width mismatches
         V3Width::width(v3Global.rootp());
@@ -224,6 +212,12 @@ static void process() {
         // End of elaboration
         V3Stats::addStatPerf(V3Stats::STAT_WALLTIME_ELAB, elabWallTime.deltaTime());
         VlOs::DeltaWallTime cvtWallTime{true};
+        if (v3Global.opt.debugExitElab()) {
+            V3Error::abortIfErrors();
+            if (v3Global.opt.serializeOnly()) emitXmlOrJson();
+            cout << "--debug-exit-elab: Exiting after elaboration pass\n";
+            v3Global.vlExit(0);
+        }
 
         // Coverage insertion
         //    Before we do dead code elimination and inlining, or we'll lose it.

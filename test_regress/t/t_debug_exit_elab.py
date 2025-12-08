@@ -10,15 +10,10 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
-test.top_filename = "t_process.v"
+test.top_filename = "t_EXAMPLE.v"
 
-out_filename = test.obj_dir + "/V" + test.name + ".tree.json"
+test.lint(verilator_flags2=["--debug-exit-elab"])
 
-test.compile(verilator_flags2=["--debug-exit-uvm", "--json-only"],
-             make_main=False,
-             make_top_shell=False,
-             verilator_make_gmake=False)
-
-test.file_grep(out_filename, r'.')  # Exists
+test.file_grep(test.compile_log_filename, r'--debug-exit-elab')
 
 test.passes()
