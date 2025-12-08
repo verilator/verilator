@@ -828,6 +828,8 @@ class ParamProcessor final {
                 any_overridesr = true;
             } else {
                 V3Const::constifyParamsEdit(pinp->exprp());
+                // Default parameter value may be a cast or other non-CONST
+                if (modvarp->valuep()) V3Const::constifyParamsEdit(modvarp->valuep());
                 // String constants are parsed as logic arrays and converted to strings in V3Const.
                 // At this moment, some constants may have been already converted.
                 // To correctly compare constants, both should be of the same type,
@@ -846,7 +848,7 @@ class ParamProcessor final {
                     pinExprp->replaceWith(new AstConst{pinp->fileline(), AstConst::WidthedValue{},
                                                        modvarp->width(), 0});
                     VL_DO_DANGLING(pinExprp->deleteTree(), pinExprp);
-                } else if (origp && exprp->sameTree(origp)) {
+                } else if (origp && ParameterizedHierBlocks::areSame(exprp, origp)) {
                     // Setting parameter to its default value.  Just ignore it.
                     // This prevents making additional modules, and makes coverage more
                     // obvious as it won't show up under a unique module page name.
