@@ -192,7 +192,7 @@ jobs:
       # Creating issues requires elevated privilege
       - name: Generate access token
         id: generate-token
-        uses: actions/create-github-app-token@v2.2.0
+        uses: actions/create-github-app-token@v2.2.1
         with:
           app-id: ${{ vars.VERILATOR_CI_ID }}
           private-key: ${{ secrets.VERILATOR_CI_KEY }}
