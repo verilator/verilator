@@ -8,3 +8,4 @@
 //    lib.map file:
 include ./t_config_libmap/lib.map;
 
+library rtllib1 somepath -incdir somedir;
