@@ -94,12 +94,13 @@ public:
             vscp->scopep()->addBlocksp(activeInitp);
 
             AstVarRef* const enRefp = new AstVarRef{flp, m_enVscp, VAccess::WRITE};
-            AstNodeExpr* enLhsp = enRefp;
 
             AstNodeStmt* toInsertp = nullptr;
             AstNodeStmt* outerStmtp = nullptr;
             std::vector<AstNodeExpr*> loopVarRefs;
             if (VN_IS(enRefp->dtypep()->skipRefp(), UnpackArrayDType)) {
+                // Create a loop to set all elements of __VforceEn array to 0.
+                // That loop node is then copied and used for updating elements of __VforceRd array
                 if (AstUnpackArrayDType* const unpackedp
                     = VN_CAST(m_rdVscp->varp()->dtypep(), UnpackArrayDType)) {
                     std::vector<AstUnpackArrayDType*> dims = unpackedp->unpackDimensions();
@@ -107,7 +108,7 @@ public:
                     for (size_t i = 0; i < dims.size(); i++) {
                         AstVar* const loopVarp = new AstVar{
                             flp, VVarType::MODULETEMP,
-                            m_rdVscp->varp()->name() + "__VwhileInitIter" + std::to_string(i),
+                            m_rdVscp->varp()->name() + "__VwhileIter" + std::to_string(i),
                             VFlagBitPacked{}, 32};
                         m_rdVscp->varp()->addNext(loopVarp);
                         AstVarScope* const loopVarScopep
@@ -143,7 +144,7 @@ public:
             V3Number zero{m_enVscp, m_enVscp->width()};
             zero.setAllBits0();
             AstNodeExpr* const enRhsp = new AstConst{flp, zero};
-            enLhsp = applySelects(enLhsp, loopVarRefs);
+            AstNodeExpr* enLhsp = applySelects(enRefp, loopVarRefs);
             AstNodeStmt* stmtp = new AstAssign{flp, enLhsp, enRhsp};
             if (toInsertp) {
                 toInsertp->addNextHere(stmtp);
