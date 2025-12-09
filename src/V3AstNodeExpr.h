@@ -1299,7 +1299,7 @@ public:
     ASTGEN_MEMBERS_AstEnumItemRef;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
-    const char* broken() const;
+    const char* broken() const override;
     string name() const override VL_MT_STABLE { return itemp() ? itemp()->name() : m_name; }
     int instrCount() const override { return 0; }
     bool sameNode(const AstNode* samep) const override {
