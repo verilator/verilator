@@ -2170,7 +2170,7 @@ class VlTest:
                         fh.write("            topp.reset(nullptr);\n")
                         fh.write("            return 0;\n")
                         fh.write("        }\n")
-                    self._print_advance_time(fh, 1, action)
+                    self._print_advance_time(fh, self.sc_time_resolution_multiplier, action)
             if self.benchmarksim:
                 fh.write("        if (VL_UNLIKELY(!warm)) {\n")
                 fh.write("            starttime = std::chrono::steady_clock::now();\n")
