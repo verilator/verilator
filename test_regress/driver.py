@@ -2113,7 +2113,8 @@ class VlTest:
             if 'clk' in self._inputs:
                 fh.write("        " + setp + "clk = false;\n")
             if not timing_loop:
-                self._print_advance_time(fh, 10, None)
+                start_time = 10
+                self._print_advance_time(fh, start_time * self.sc_time_resolution_multiplier, None)
             fh.write("    }\n")
 
             timestamp = "sc_time_stamp()" if self.sc else "contextp->time()"
