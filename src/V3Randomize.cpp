@@ -989,9 +989,17 @@ class ConstraintExprVisitor final : public VNVisitor {
             }
             AstNodeFTask* initTaskp = m_inlineInitTaskp;
             if (!initTaskp) {
-                varp->user3(true);  // Mark as set up in new()
-                initTaskp = VN_AS(m_memberMap.findMember(classp, "new"), NodeFTask);
-                UASSERT_OBJ(initTaskp, classp, "No new() in class");
+                if (membersel) {
+                    // Path-connected variable: add to randomize()
+                    varp->user3(true);
+                    initTaskp = VN_AS(m_memberMap.findMember(classp, "randomize"), NodeFTask);
+                    UASSERT_OBJ(initTaskp, classp, "No randomize() in class");
+                } else {
+                    // Direct member variable: add to new()
+                    varp->user3(true);
+                    initTaskp = VN_AS(m_memberMap.findMember(classp, "new"), NodeFTask);
+                    UASSERT_OBJ(initTaskp, classp, "No new() in class");
+                }
             }
             initTaskp->addStmtsp(methodp->makeStmt());
         } else {
