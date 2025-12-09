@@ -80,7 +80,8 @@ Verilator first reads all files provided on the command line and
 :vlopt:`-f` files, and parses all modules within. Each module is assigned
 to the most recent library specified with :vlopt:`-work`, thus `-work liba
 a.v -work libb b.v` will assign modules in `a.v` to `liba` and modules in
-`b.v` to `libb`.
+`b.v` to `libb`. In the absence of a `-work` mapping, each module is optionally
+assigned to a library based on mappings provided by :vlopt:`-libmap`.
 
 If a module is not defined from a file on the command-line, Verilator
 attempts to find a filename constructed from the module name using

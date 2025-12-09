@@ -11,7 +11,10 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["-libmap t/t_config_libmap/lib.map", "t/t_config_libmap/m1.v", "t/t_config_libmap/m2.sv", "t/t_config_libmap/m3.vg", "t/t_config_libmap/sub/other.sv", "--top-module cfg"])
+test.compile(verilator_flags2=[
+    "-libmap t/t_config_libmap/lib.map", "t/t_config_libmap/m1.v", "t/t_config_libmap/m2.sv",
+    "t/t_config_libmap/m3.vg", "t/t_config_libmap/sub/other.sv", "--top-module cfg"
+])
 
 test.execute()
 

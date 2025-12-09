@@ -7,4 +7,3 @@
 module m2;
   initial $display("m2 %%m=%m %%l=%l");
 endmodule
-

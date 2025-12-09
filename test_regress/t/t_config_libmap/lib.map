@@ -8,7 +8,7 @@
 //    lib.map file:
 
 library rtllib m*.v; // wildcard match
-library rtllib2 m*.sv; // wildcard match
+library rtllib2 m.*.v, m*.sv; // wildcard match
 library rtllib4 sub/; // include directory match
 library work ../t_config_libmap.v; // explicit match
 

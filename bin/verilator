@@ -419,6 +419,7 @@ detailed descriptions of these arguments.
     --l2-name <value>           Verilog scope name of the top module
     --language <lang>           Default language standard to parse
      -LDFLAGS <flags>           Linker pre-object arguments for makefile
+     -libmap                    Specify library mapping file
     --lib-create <name>         Create a DPI library
      +libext+<ext>+[ext]...     Extensions for finding modules
      +librescan                 Ignored for compatibility

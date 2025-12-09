@@ -468,7 +468,7 @@ public:
     void addCompilerIncludes(const string& filename);
     void addLdLibs(const string& filename);
     void addMakeFlags(const string& filename);
-    void addLibmapFile(const string& filename);
+    void addLibMapFile(const string& filename);
     void addLibraryFile(const string& filename, const string& libname);
     void addVFile(const string& filename, const string& libname);
     void addVltFile(const string& filename, const string& libname);

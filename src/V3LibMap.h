@@ -20,6 +20,8 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include <vector>
+
 class AstNetlist;
 class VInFilter;
 class V3ParseSym;
@@ -28,9 +30,9 @@ class V3ParseSym;
 
 // State to pass between config parsing and cell linking visitors.
 class LibMapping final {
-    const string m_pattern; // Pattern to match
-    const string m_libname; // Library name
-    const string m_base; // Relative path of the libmap file
+    const string m_pattern;  // Pattern to match
+    const string m_libname;  // Library name
+    const string m_base;  // Relative path of the libmap file
 
 public:
     LibMapping(const string& pattern_, const string& libname_, const string& base_)
@@ -46,11 +48,10 @@ class V3LibMap final {
 private:
     // STATE
     // 33.3.1.1 File path resolution
-    //   If a file name potentially matches multiple file path specifications, the path specifications shall be resolved
-    //   in the following order:
-    //   a) File path specifications that end with an explicit file name
-    //   b) File path specifications that end with a wildcarded file name
-    //   c) File path specifications that end with a directory name
+    //   If a file name potentially matches multiple file path specifications, the path
+    //   specifications shall be resolved in the following order: a) File path specifications that
+    //   end with an explicit file name b) File path specifications that end with a wildcarded file
+    //   name c) File path specifications that end with a directory name
     std::vector<LibMapping> m_explicitMappings;
     std::vector<LibMapping> m_wildcardMappings;
     std::vector<LibMapping> m_directoryMappings;

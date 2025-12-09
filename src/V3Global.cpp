@@ -87,13 +87,15 @@ void V3Global::readFiles() {
         // Parse the std waivers
         if (v3Global.opt.stdWaiver()) {
             parser.parseFile(
-                new FileLine{V3Options::getStdWaiverPath()}, V3Options::getStdWaiverPath(), false, false,
-                "work", "Cannot find verilated_std_waiver.vlt containing built-in lint waivers: ");
+                new FileLine{V3Options::getStdWaiverPath()}, V3Options::getStdWaiverPath(), false,
+                false, "work",
+                "Cannot find verilated_std_waiver.vlt containing built-in lint waivers: ");
         }
         // Read .vlt files
         for (const VFileLibName& filelib : v3Global.opt.vltFiles()) {
             parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filelib.filename(),
-                             false, false, filelib.libname(), "Cannot find file containing .vlt file: ");
+                             false, false, filelib.libname(),
+                             "Cannot find file containing .vlt file: ");
         }
 
         // Parse the std package
@@ -114,7 +116,9 @@ void V3Global::readFiles() {
 
         // Read top module
         for (const auto& filelib : v3Global.opt.vFiles()) {
-            const string& libname = filelib.libname() == "work" ? v3Global.libMapp()->matchMapping(filelib.filename()) : filelib.libname();
+            const string& libname = filelib.libname() == "work"
+                                        ? v3Global.libMapp()->matchMapping(filelib.filename())
+                                        : filelib.libname();
             parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filelib.filename(),
                              false, false, libname, "Cannot find file containing module: ");
         }

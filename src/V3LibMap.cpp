@@ -21,6 +21,7 @@
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3LibMap.h"
+
 #include "V3Graph.h"
 #include "V3Options.h"
 #include "V3Os.h"
@@ -34,8 +35,8 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class LibMapVisitor final : public VNVisitor {
     // STATE
-    string m_lib; // Library currently being mapped
-    string m_rel; // Relative path of current libmap file
+    string m_lib;  // Library currently being mapped
+    string m_rel;  // Relative path of current libmap file
 
     // VISITORS
     void visit(AstParseRef* nodep) override {
@@ -68,24 +69,18 @@ string V3LibMap::matchMapping(const string& filename) {
     // Check explicit mappings first
     for (const auto& mapping : m_explicitMappings) {
         const string& filepath = V3Os::filenameRelativePath(filename, mapping.base());
-        if (VString::wildmatch(filepath, mapping.pattern())) {
-            return mapping.libname();
-        }
+        if (VString::wildmatch(filepath, mapping.pattern())) { return mapping.libname(); }
     }
     // Then check wildcard mappings
     for (const auto& mapping : m_wildcardMappings) {
         const string& filepath = V3Os::filenameRelativePath(filename, mapping.base());
-        if (VString::wildmatch(filepath, mapping.pattern())) {
-            return mapping.libname();
-        }   
+        if (VString::wildmatch(filepath, mapping.pattern())) { return mapping.libname(); }
     }
     // Then check directory mappings
     for (const auto& mapping : m_directoryMappings) {
         const string& filepath = V3Os::filenameRelativePath(filename, mapping.base());
         const string& dirpart = V3Os::filenameDir(filepath);
-        if (VString::wildmatch(dirpart, mapping.pattern())) {
-            return mapping.libname();
-        }
+        if (VString::wildmatch(dirpart, mapping.pattern())) { return mapping.libname(); }
     }
     return "work";
 }

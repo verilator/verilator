@@ -292,13 +292,14 @@ void V3ParseImp::preprocDumps(std::ostream& os, bool forInputs) {
     }
 }
 
-void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool inLibrary, bool inLibMap,
-                           const string& libname,
+void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool inLibrary,
+                           bool inLibMap, const string& libname,
                            const string& errmsg) {  // "" for no error, make fake node
     const string nondirname = V3Os::filenameNonDir(modfilename);
     const string modname = V3Os::filenameNonDirExt(modfilename);
 
-    UINFO(2, __FUNCTION__ << ": " << modname << (inLibrary ? " [LIB]" : "") << (inLibMap ? " [LIBMAP]" : ""));
+    UINFO(2, __FUNCTION__ << ": " << modname << (inLibrary ? " [LIB]" : "")
+                          << (inLibMap ? " [LIBMAP]" : ""));
     m_lexFileline = new FileLine{fileline};
     m_lexFileline->newContent();
     m_bisonLastFileline = m_lexFileline;

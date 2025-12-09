@@ -118,7 +118,6 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <FILEPATH>{
   {ws}            { FL_FWD; FL_BRK; }
   {crnl}          { FL_FWD; FL_BRK; }
-  \"              { yy_pop_state(); yyless(0); }
   "-incdir"       { FL; return yINCDIR; }
   ";"             { yy_pop_state(); return ';'; }
   ","             { FL; return ','; }
