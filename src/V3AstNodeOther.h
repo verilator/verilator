@@ -1141,8 +1141,6 @@ public:
     }
     ASTGEN_MEMBERS_AstLibrary;
     std::string name() const override VL_MT_STABLE { return m_name; }
-    void dump(std::ostream& str) const override;
-    void dumpJson(std::ostream& str) const override;
 };
 class AstModport final : public AstNode {
     // A modport in an interface

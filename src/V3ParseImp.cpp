@@ -292,17 +292,18 @@ void V3ParseImp::preprocDumps(std::ostream& os, bool forInputs) {
     }
 }
 
-void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool inLibrary,
+void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool inLibrary, bool inLibMap,
                            const string& libname,
                            const string& errmsg) {  // "" for no error, make fake node
     const string nondirname = V3Os::filenameNonDir(modfilename);
     const string modname = V3Os::filenameNonDirExt(modfilename);
 
-    UINFO(2, __FUNCTION__ << ": " << modname << (inLibrary ? " [LIB]" : ""));
+    UINFO(2, __FUNCTION__ << ": " << modname << (inLibrary ? " [LIB]" : "") << (inLibMap ? " [LIBMAP]" : ""));
     m_lexFileline = new FileLine{fileline};
     m_lexFileline->newContent();
     m_bisonLastFileline = m_lexFileline;
     m_inLibrary = inLibrary;
+    m_inLibMap = inLibMap;
     m_libname = libname;
 
     // Preprocess into m_ppBuffer
@@ -802,9 +803,9 @@ V3Parse::V3Parse(AstNetlist* rootp, VInFilter* filterp) {
 V3Parse::~V3Parse() {  //
     VL_DO_CLEAR(delete m_impp, m_impp = nullptr);
 }
-void V3Parse::parseFile(FileLine* fileline, const string& modname, bool inLibrary,
+void V3Parse::parseFile(FileLine* fileline, const string& modname, bool inLibrary, bool inLibMap,
                         const string& libname, const string& errmsg) {
-    m_impp->parseFile(fileline, modname, inLibrary, libname, errmsg);
+    m_impp->parseFile(fileline, modname, inLibrary, inLibMap, libname, errmsg);
 }
 void V3Parse::ppPushText(V3ParseImp* impp, const string& text) {
     if (text != "") impp->ppPushText(text);

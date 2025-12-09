@@ -156,10 +156,6 @@ public:
     // ACCESSORS (general)
     AstNetlist* rootp() const VL_MT_SAFE { return m_rootp; }
     V3LibMap* libMapp() const VL_PURE { return m_libMapp; }
-    void libMapp(V3LibMap* libMapp) {
-        UASSERT(!m_libMapp, "attempted to create multiple libMap singletons");
-        m_libMapp = libMapp;
-    }
     V3ThreadPool* threadPoolp() const VL_PURE { return m_threadPoolp; }
     void threadPoolp(V3ThreadPool* threadPoolp) {
         UASSERT(!m_threadPoolp, "attempted to create multiple threadPool singletons");

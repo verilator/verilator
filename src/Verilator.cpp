@@ -689,9 +689,6 @@ static bool verilate(const string& argString) {
     // Initialize thread pool
     v3Global.threadPoolp(new V3ThreadPool{v3Global.opt.verilateJobs()});
 
-    // Initialize library mappings
-    v3Global.libMapp(new V3LibMap());
-
     // --FRONTEND------------------
 
     // Cleanup

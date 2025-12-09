@@ -5,11 +5,6 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-  m1 u_1();
-  m2 u_2();
-  m3 u_3();
-  other u_o();
-
   initial begin
     $write("*-* All Finished *-*\n");
     $finish;

@@ -27,10 +27,19 @@ class V3ParseSym;
 //============================================================================
 
 // State to pass between config parsing and cell linking visitors.
-struct LibMapping final {
-    const string pattern; // Pattern to match
-    const string libname; // Library name
-    const string base; // Relative path of the libmap file
+class LibMapping final {
+    const string m_pattern; // Pattern to match
+    const string m_libname; // Library name
+    const string m_base; // Relative path of the libmap file
+
+public:
+    LibMapping(const string& pattern_, const string& libname_, const string& base_)
+        : m_pattern{pattern_}
+        , m_libname{libname_}
+        , m_base{base_} {}
+    string pattern() const { return m_pattern; }
+    string libname() const { return m_libname; }
+    string base() const { return m_base; }
 };
 
 class V3LibMap final {

@@ -481,7 +481,18 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "design"              { FL; return yDESIGN; }
   "endconfig"           { FL; return yENDCONFIG; }
   "incdir"              { FL; yy_push_state(FILEPATH); return yINCDIR; }
-  "include"             { FL; yy_push_state(FILEPATH); return yINCLUDE; }
+  "include"             { FL;
+                          if (PARSEP->inLibMap()) {
+                                yy_push_state(FILEPATH);
+                                return yINCLUDE;
+                          } else {
+                                yylval.fl->v3warn(E_UNSUPPORTED, "Unsupported: IEEE 1800-2001-config lib.map"
+                                                                 " reserved word not implemented: 'include'\n"
+                                                                 << yylval.fl->warnMore() << "... Suggest unless in a lib.map file,"
+                                                                 " want `include instead");
+                                FL_BRK;
+                          }
+                        }
   "instance"            { FL; return yINSTANCE; }
   "liblist"             { FL; return yLIBLIST; }
   "library"             { FL; yy_push_state(FILEPATH); return yLIBRARY; }

@@ -1032,7 +1032,7 @@ description:                    // ==IEEE: description
                 module_declaration                      { }
         //                      // udp_declaration moved into module_declaration
         //                      // library_declaration and include_statement moved from library_description
-        |       library_declaration                     { if ($1) PARSEP->rootp()->addMiscsp($1); }
+        |       library_declaration                     { PARSEP->rootp()->addMiscsp($1); }
         |       include_statement                       { }
         |       interface_declaration                   { }
         |       program_declaration                     { }
@@ -8012,14 +8012,14 @@ incdirE<nodeExprp>:  // IEEE: [ '-' yINCDIR file_path_specList ';']
         |       yINCDIR file_path_specList              { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: config incdir"); }
         ;
 include_statement<nodep>:  // IEEE: include_statement
-                yINCLUDE file_path_spec ';'             { BBUNSUP($<fl>1, "Unsupported: config include"); }
+                yINCLUDE file_path_spec ';'             { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: config include"); }
         ;
 file_path_specList<nodeExprp>:  // IEEE: file_path_spec { ',' file_path_spec }
                 file_path_spec                          { $$ = $1; }
         |       file_path_specList ',' file_path_spec   { $$ = addNextNull($1, $3); }
         ;
 file_path_spec<nodeExprp>:  // IEEE: file_path_spec
-        yaSTRING { $$ = new AstParseRef{$<fl>1, *$1}; }
+                yaSTRING { $$ = new AstParseRef{$<fl>1, *$1}; }
         ;
 
 //**********************************************************************

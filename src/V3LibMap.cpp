@@ -67,24 +67,24 @@ public:
 string V3LibMap::matchMapping(const string& filename) {
     // Check explicit mappings first
     for (const auto& mapping : m_explicitMappings) {
-        const string& filepath = V3Os::filenameRelativePath(filename, mapping.base);
-        if (VString::wildmatch(filepath, mapping.pattern)) {
-            return mapping.libname;
+        const string& filepath = V3Os::filenameRelativePath(filename, mapping.base());
+        if (VString::wildmatch(filepath, mapping.pattern())) {
+            return mapping.libname();
         }
     }
     // Then check wildcard mappings
     for (const auto& mapping : m_wildcardMappings) {
-        const string& filepath = V3Os::filenameRelativePath(filename, mapping.base);
-        if (VString::wildmatch(filepath, mapping.pattern)) {
-            return mapping.libname;
+        const string& filepath = V3Os::filenameRelativePath(filename, mapping.base());
+        if (VString::wildmatch(filepath, mapping.pattern())) {
+            return mapping.libname();
         }   
     }
     // Then check directory mappings
     for (const auto& mapping : m_directoryMappings) {
-        const string& filepath = V3Os::filenameRelativePath(filename, mapping.base);
+        const string& filepath = V3Os::filenameRelativePath(filename, mapping.base());
         const string& dirpart = V3Os::filenameDir(filepath);
-        if (VString::wildmatch(dirpart, mapping.pattern)) {
-            return mapping.libname;
+        if (VString::wildmatch(dirpart, mapping.pattern())) {
+            return mapping.libname();
         }
     }
     return "work";
