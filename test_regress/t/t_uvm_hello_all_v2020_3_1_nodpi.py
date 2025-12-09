@@ -24,4 +24,8 @@ test.compile(v_flags2=[
     "t/uvm/uvm_pkg_all_v2020_3_1_nodpi.svh",
 ])
 
+test.execute()
+
+test.file_grep(test.run_log_filename, r'Hello World')
+
 test.passes()

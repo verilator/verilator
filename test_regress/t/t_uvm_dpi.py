@@ -10,7 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
-test.pli_filename = "t/uvm/dpi/uvm_dpi.cc"
+test.pli_filename = "t/uvm/dpi_v2020_3_1/uvm_dpi.cc"
 
 if re.search(r'clang', test.cxx_version):
     test.skip("uvm_regex.cc from upstream has clang warnings")
