@@ -97,12 +97,10 @@ public:
             V3Number zero{m_enVscp, m_enVscp->width()};
             zero.setAllBits0();
             AstNodeExpr* const rhsp = new AstConst{flp, zero};
-            AstNodeStmt* set0p;
+            AstNodeStmt* toInsertp = nullptr;
+            AstNodeStmt* outerStmtp = nullptr;
+            std::vector<AstNodeExpr*> loopVarRefs;
             if (VN_IS(lhsp->dtypep()->skipRefp(), UnpackArrayDType)) {
-                std::vector<AstNodeExpr*> loopVarRefs;
-
-                AstNodeStmt* toInsertp = nullptr;
-                AstNodeStmt* outerStmtp = nullptr;
                 if (AstUnpackArrayDType* const unpackedp
                     = VN_CAST(m_rdVscp->varp()->dtypep(), UnpackArrayDType)) {
                     std::vector<AstUnpackArrayDType*> dims = unpackedp->unpackDimensions();
@@ -142,15 +140,12 @@ public:
                         currWhilep->addStmtsp(currIncrp);
                     }
                 }
-                lhsp = applySelects(lhsp, loopVarRefs);
-                set0p = new AstAssign{flp, lhsp, rhsp};
-                if (toInsertp) {
-                    toInsertp->addNextHere(set0p);
-                    set0p = outerStmtp;
-                }
-
-            } else {
-                set0p = new AstAssign{flp, lhsp, rhsp};
+            }
+            lhsp = applySelects(lhsp, loopVarRefs);
+            AstNodeStmt* set0p = new AstAssign{flp, lhsp, rhsp};
+            if (toInsertp) {
+                toInsertp->addNextHere(set0p);
+                set0p = outerStmtp;
             }
             activeInitp->addStmtsp(new AstInitial{flp, set0p});
             {  // Add the combinational override
