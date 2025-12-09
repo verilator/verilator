@@ -167,6 +167,8 @@ public:
                     = new AstActive{flp, "force-update", new AstSenTree{flp, itemsp}};
                 activep->senTreeStorep(activep->sentreep());
 
+                // Reuse the statements created for __VforceEn initialization
+                // and replace var ref on the LHS and the RHS
                 AstVarRef* const rdRefp = new AstVarRef{flp, m_rdVscp, VAccess::WRITE};
                 AstNodeExpr* const rdRhsp = forcedUpdate(vscp, loopVarRefs);
                 enRefp->replaceWith(rdRefp);
