@@ -257,7 +257,7 @@ private:
     //  AstVar::user1p        -> ForceComponentsVar* instance (via m_forceComponentsVar)
     //  AstVarScope::user1p   -> ForceComponentsVarScope* instance (via m_forceComponentsVarScope)
     //  AstVarRef::user2      -> Flag indicating not to replace reference
-    //  AstAssign::user2      -> Flag indicating that assignment was created for AstRelease handling
+    //  AstAssign::user2      -> Flag indicating that assignment was created for AstRelease
     //  AstVarScope::user3p   -> AstAssign*, the assignment <lhs>__VforceVal = <rhs>
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
