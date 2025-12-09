@@ -4595,6 +4595,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 AstFunc* const randFuncp = V3Randomize::newRandomizeFunc(
                     memberMap, VN_AS(m_modp, Class), nodep->name(), true, true);
                 nodep->taskp(randFuncp);
+                nodep->classOrPackagep(VN_AS(m_modp, Class));
                 m_curSymp = m_statep->insertBlock(m_curSymp, nodep->name(), randFuncp, m_modp);
             }
             if (m_insideClassExtParam) {

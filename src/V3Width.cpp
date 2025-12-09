@@ -6727,7 +6727,7 @@ class WidthVisitor final : public VNVisitor {
                            || nodep->name() == "set_randstate"))) {
             // TODO perhaps this should move to V3LinkDot
             AstClass* const classp = VN_CAST(nodep->classOrPackagep(), Class);
-            if (nodep->classOrPackagep()->name() == "std") {
+            if (nodep->classOrPackagep() && nodep->classOrPackagep()->name() == "std") {
                 v3Global.useRandomizeMethods(true);
                 AstNodeDType* const adtypep = nodep->findBitDType();
                 withp = methodWithArgument(nodep, false, false, adtypep->findVoidDType(),
@@ -6740,7 +6740,7 @@ class WidthVisitor final : public VNVisitor {
                 nodep->didWidth(true);
                 return;
             }
-            UASSERT_OBJ(classp, nodep, "Should have failed in V3LinkDot");
+            UASSERT_OBJ(classp, nodep, "Classless rand-thing should have failed in V3LinkDot");
             if (nodep->name() == "randomize") {
                 AstClassRefDType* const adtypep
                     = new AstClassRefDType{nodep->fileline(), classp, nullptr};
