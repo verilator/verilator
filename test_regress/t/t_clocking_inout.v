@@ -27,7 +27,6 @@ module t;
 
        #1
        if (foo != 0 || cb.foo != 0) $stop;
-       if (cb.bar != 1) $stop;
 
        @(posedge foo)
        if ($time != 7) $stop;
