@@ -19,13 +19,14 @@ if test.have_dev_gcov:
 test.compile(v_flags2=[
     "--binary",
     "-j 0",
+    "--CFLAGS -O0",
     "-Wall",
     "+incdir+t/uvm",  #
     "t/uvm/uvm_pkg_all_v2020_3_1_nodpi.svh",
 ])
 
-test.execute()
+test.execute(all_run_flags=['' if test.verbose else '+UVM_NO_RELNOTES'])
 
-test.file_grep(test.run_log_filename, r'Hello World')
+test.file_grep(test.run_log_filename, r'UVM TEST PASSED')
 
 test.passes()
