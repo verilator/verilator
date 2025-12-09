@@ -2007,6 +2007,8 @@ public:
 
         resortNetlistModules(netlistp);
 
+        V3Global::dumpCheckGlobalTree("param-predel", 0, dumpTreeEitherLevel() >= 9);
+
         // Remove defaulted classes
         // Unlike modules, which we keep around and mark dead() for later V3Dead
         std::unordered_set<AstClass*> removedClassps;

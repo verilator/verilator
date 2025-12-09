@@ -1921,6 +1921,10 @@ string AstEnumDType::prettyDTypeName(bool full) const {
     result += "}" + prettyName();
     return result;
 }
+const char* AstEnumItemRef::broken() const {
+    if (v3Global.assertDTypesResolved()) BROKEN_RTN(!itemp());
+    return nullptr;
+}
 void AstEnumItemRef::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     str << " -> ";
@@ -2743,7 +2747,8 @@ void AstVarRef::dump(std::ostream& str) const {
 }
 void AstVarRef::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 const char* AstVarRef::broken() const {
-    BROKEN_RTN(!varp());
+    // Even after assertDTypesResolved(), V3Scope will set varp() to null, but name won't be ""
+    BROKEN_RTN(!varp() && name().empty());
     return nullptr;
 }
 bool AstVarRef::sameNode(const AstNode* samep) const { return sameNode(VN_DBG_AS(samep, VarRef)); }

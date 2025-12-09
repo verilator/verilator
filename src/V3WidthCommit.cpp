@@ -391,6 +391,8 @@ private:
         editDType(nodep);
         classEncapCheck(nodep, nodep->varp(), VN_CAST(nodep->classOrPackagep(), Class));
         if (nodep->access().isWriteOrRW()) varLifetimeCheck(nodep, nodep->varp());
+        if (VN_IS(nodep, VarRef))
+            nodep->name("");  // Clear to save memory; nodep->name() will work via nodep->varp()
     }
     void visit(AstAssign* nodep) override {
         iterateChildren(nodep);

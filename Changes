@@ -82,6 +82,7 @@ Verilator 5.043 devel
 * Fix `--lib-create` with multi-bit clocks (#6759). [Geza Lore]
 * Fix DFG reusing volatile variables. [Geza Lore]
 * Fix DFG assertion on out-of-bounds selects. [Geza Lore]
+* Fix class param static not found again error (#6768).
 * Fix crash when super.new() called without a base class (#6772). [Matthew Ballance]
 * Fix class-in-class extends with parameters (#6773).
 * Fix enum item references in class extends with parameters.

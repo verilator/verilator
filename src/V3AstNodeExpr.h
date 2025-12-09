@@ -1299,6 +1299,7 @@ public:
     ASTGEN_MEMBERS_AstEnumItemRef;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
+    const char* broken() const;
     string name() const override VL_MT_STABLE { return itemp() ? itemp()->name() : m_name; }
     int instrCount() const override { return 0; }
     bool sameNode(const AstNode* samep) const override {
@@ -5694,6 +5695,8 @@ public:
 // === AstNodeVarRef ===
 class AstVarRef final : public AstNodeVarRef {
     // A reference to a variable (lvalue or rvalue)
+    std::string m_name;  // Name of varref, though name() favors varp()->namep()
+                         // if non-null pointer (e.g.: 'this')
 public:
     // This form only allowed post-link because output/wire compression may
     // lead to deletion of AstVar's
@@ -5703,7 +5706,9 @@ public:
     // This form only allowed post-link (see above)
     inline AstVarRef(FileLine* fl, AstVarScope* varscp, const VAccess& access);
     ASTGEN_MEMBERS_AstVarRef;
+    std::string nameThis() const { return m_name; }
     inline string name() const override;  // * = Var name
+    void name(const string& name) override { m_name = name; }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     const char* broken() const override;
