@@ -6,27 +6,27 @@
 
 `timescale 1ms/1ns
 module t;
-    bit clk = 0;
-    bit data = 1;
-    bit cb_data;
+  bit clk = 0;
+  bit data = 1;
+  bit cb_data;
 
-    initial forever #5 clk = ~clk;
-    assign cb_data = cb.data;
-    clocking cb @(posedge clk);
-        input data;
-    endclocking
+  initial forever #5 clk = ~clk;
+  assign cb_data = cb.data;
+  clocking cb @(posedge clk);
+    input data;
+  endclocking
 
-    initial begin
-        @(posedge clk) data = 0;
-    end
+  initial begin
+    @(posedge clk) data = 0;
+  end
 
-    initial begin
-        #4
-        if(!(data == 1 && cb.data == 0)) $stop;
-        #1;
-        #1step;
-        if(!(cb.data == 1)) $stop;
-        $write("*-* All Finished *-*\n");
-        $finish;
-    end
+  initial begin
+    #4
+    if(!(data == 1 && cb.data == 0)) $stop;
+    #1;
+    #1step;
+    if(!(cb.data == 1)) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule
