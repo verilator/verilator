@@ -267,11 +267,14 @@ private:
             AstVarRef* const refp = new AstVarRef{flp, varp, VAccess::WRITE};
             refp->user1(true);
             if (skewp->num().is1Step()) {
-                // Assign the sampled expression to the clockvar (IEEE 1800-2023 14.13)
+                // #1step means the value that is sampled is always the signal's last value
+                // before the clock edge (IEEE 1800-2023 14.4)
                 AstSampled* const sampledp = new AstSampled{flp, exprp->cloneTreePure(false)};
                 sampledp->dtypeFrom(exprp);
-                AstAssignW* const ap = new AstAssignW{flp, refp, sampledp};
-                m_clockingp->addNextHere(new AstAlways{ap});
+                AstAssign* const assignp = new AstAssign{flp, refp, sampledp};
+                m_clockingp->addNextHere(new AstAlways{
+                    flp, VAlwaysKwd::ALWAYS,
+                    new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)}, assignp});
             } else if (skewp->isZero()) {
                 // #0 means the var has to be sampled in Observed (IEEE 1800-2023 14.13)
                 AstAssign* const assignp = new AstAssign{flp, refp, exprp->cloneTreePure(false)};

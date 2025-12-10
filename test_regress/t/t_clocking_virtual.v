@@ -29,8 +29,8 @@ module main;
       if (t.mod0.io != 1'b1) $stop;
       if (t.mod1.cb.io != 1'b0) $stop;
       #1
-      if (t.mod0.cb.io != 1'b1) $stop;
-      if (t.mod1.cb.io != 1'b1) $stop;
+      if (t.mod0.cb.io != 1'b0) $stop;
+      if (t.mod1.cb.io != 1'b0) $stop;
       if (t.mod1.cb.inp != 1'b1) $stop;
       #8;
       t.mod0.inp = 1'b0;
