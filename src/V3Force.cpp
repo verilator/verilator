@@ -231,8 +231,8 @@ private:
         AstNodeDType* const origDTypep = varp->dtypep()->skipRefp();
         if (VN_IS(origDTypep, UnpackArrayDType)) {
             AstNodeDType* dtp = origDTypep;
-            while (VN_IS(dtp, UnpackArrayDType) || VN_IS(dtp, PackArrayDType)) {
-                dtp = VN_AS(dtp, NodeArrayDType)->subDTypep()->skipRefp();
+            while (VN_IS(dtp, UnpackArrayDType)) {
+                dtp = VN_AS(dtp, UnpackArrayDType)->subDTypep()->skipRefp();
             }
             bool complexElem;
             if (AstBasicDType* const basicp = VN_CAST(dtp, BasicDType)) {
