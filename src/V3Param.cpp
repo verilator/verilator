@@ -806,6 +806,89 @@ class ParamProcessor final {
         }
     }
 
+    void castModuleParamVarValue(AstNode* nodep, AstVar* modvarp) {
+        // The parameter value may be of a different type than the specified parameter type
+        // In that case we must cast the value to allow comparisions
+
+        const AstNodeDType* dtypep = modvarp->subDTypep();
+        const AstBasicDType* const bdtype = VN_CAST(dtypep, BasicDType);
+
+        if (!modvarp->valuep()) return;
+
+        if (bdtype && bdtype->implicit()) {
+            // The parameter is implicitly typed, use the type from the default value
+            UINFO(9, "Implicit parameter type, no casting needed");
+            return;
+        }
+
+        AstConst* const valueConstp = VN_CAST(modvarp->valuep(), Const);
+        if (!valueConstp) return;  // Not a constant, can't cast
+
+        const int targetWidth = dtypep->width();
+        const V3Number& sourceNum = valueConstp->num();
+
+        if (valueConstp->dtypep()->skipRefp()->similarDType(dtypep->skipRefp())) {
+            UINFO(9, " No parameter casting required");
+            return;
+        }
+
+        UINFO(9, "Casting parameter " << modvarp->name() << " from " << valueConstp->dtypep()
+                                      << " to " << dtypep);
+
+        V3Number castedNum{valueConstp, bdtype};
+        castedNum.width(targetWidth, true);
+
+        if (bdtype && bdtype->isDouble()) {
+            // Target is real
+            if (sourceNum.isDouble()) {
+                castedNum.setDouble(sourceNum.toDouble());
+            } else if (sourceNum.isString()) {
+                castedNum.setDouble(0.0);  // String to real is 0.0 per spec
+            } else {
+                // Integer to real
+                if (sourceNum.isSigned()) {
+                    castedNum.opISToRD(sourceNum);
+                } else {
+                    castedNum.opIToRD(sourceNum);
+                }
+            }
+        } else if (bdtype && bdtype->isString()) {
+            // Target is string
+            //castedNum.setString(sourceNum.toString());
+            return;
+        } else {
+            // Target is integer (logic/bit/int/byte/etc.)
+            if (sourceNum.isDouble()) {
+                // Real to integer: round per SV spec
+                castedNum.opRToIRoundS(sourceNum);
+            } else if (sourceNum.isString()) {
+                // String to integer
+                castedNum.opNToI(sourceNum);
+            } else {
+                // Integer to integer: handle width/sign
+                if (targetWidth > sourceNum.width() && modvarp->isSigned()
+                    && sourceNum.isSigned()) {
+                    // Sign extend
+                    castedNum.opExtendS(sourceNum, targetWidth);
+                } else {
+                    // Zero extend or truncate
+                    castedNum.opAssign(sourceNum);
+                }
+            }
+            castedNum.isSigned(modvarp->isSigned());
+        }
+
+        // Create new constant with casted value
+        AstConst* const newConstp = new AstConst{valueConstp->fileline(), castedNum};
+        newConstp->dtypeFrom(bdtype);
+
+        UINFO(9, "New default parameter " << newConstp);
+
+        // Replace old value with casted value
+        valueConstp->replaceWith(newConstp);
+        valueConstp->deleteTree();
+    }
+
     void cellPinCleanup(AstNode* nodep, AstPin* pinp, AstNodeModule* srcModp, string& longnamer,
                         bool& any_overridesr) {
         if (!pinp->exprp()) return;  // No-connect
@@ -830,6 +913,7 @@ class ParamProcessor final {
                 V3Const::constifyParamsEdit(pinp->exprp());
                 // Default parameter value may be a cast or other non-CONST
                 if (modvarp->valuep()) V3Const::constifyParamsEdit(modvarp->valuep());
+
                 // String constants are parsed as logic arrays and converted to strings in V3Const.
                 // At this moment, some constants may have been already converted.
                 // To correctly compare constants, both should be of the same type,
@@ -838,8 +922,16 @@ class ParamProcessor final {
                     convertToStringp(pinp->exprp());
                     convertToStringp(modvarp->valuep());
                 }
+
+                // Constants need to be casted to the specificed datatype to allow comparision
+                castModuleParamVarValue(nodep, modvarp);
+
                 AstConst* const exprp = VN_CAST(pinp->exprp(), Const);
                 AstConst* const origp = VN_CAST(modvarp->valuep(), Const);
+
+                if (exprp) UINFO(9, "exprp " << exprp);
+                if (origp) UINFO(9, "origp " << origp);
+
                 if (!exprp) {
                     UINFOTREE(1, pinp, "", "errnode");
                     pinp->v3error("Can't convert defparam value to constant: Param "
@@ -848,7 +940,8 @@ class ParamProcessor final {
                     pinExprp->replaceWith(new AstConst{pinp->fileline(), AstConst::WidthedValue{},
                                                        modvarp->width(), 0});
                     VL_DO_DANGLING(pinExprp->deleteTree(), pinExprp);
-                } else if (origp && ParameterizedHierBlocks::areSame(exprp, origp)) {
+                } else if (origp && origp->sameNode(exprp)) {
+                    UINFO(1, "areSame(exprp, origp)");
                     // Setting parameter to its default value.  Just ignore it.
                     // This prevents making additional modules, and makes coverage more
                     // obvious as it won't show up under a unique module page name.
