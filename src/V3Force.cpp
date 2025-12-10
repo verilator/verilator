@@ -142,7 +142,6 @@ public:
                 }
             }
             V3Number zero{m_enVscp, m_enVscp->width()};
-            zero.setAllBits0();
             AstNodeExpr* const enRhsp = new AstConst{flp, zero};
             AstNodeExpr* enLhsp = applySelects(enRefp, loopVarRefs);
             AstNodeStmt* stmtp = new AstAssign{flp, enLhsp, enRhsp};
@@ -501,6 +500,7 @@ class ForceReplaceVisitor final : public VNVisitor {
     void visit(AstArraySel* nodep) override {
         m_selIndices.push_back(nodep->bitp());
         iterateChildren(nodep);
+        UASSERT_OBJ(m_selIndices.size(), nodep, "Underflow");
         m_selIndices.pop_back();
     }
     void visit(AstVarRef* nodep) override {
