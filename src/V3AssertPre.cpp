@@ -273,7 +273,8 @@ private:
                 sampledp->dtypeFrom(exprp);
                 AstAssign* const assignp = new AstAssign{flp, refp, sampledp};
                 m_clockingp->addNextHere(new AstAlways{
-                    flp, VAlwaysKwd::ALWAYS ,new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)}, assignp});
+                    flp, VAlwaysKwd::ALWAYS,
+                    new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)}, assignp});
             } else if (skewp->isZero()) {
                 // #0 means the var has to be sampled in Observed (IEEE 1800-2023 14.13)
                 AstAssign* const assignp = new AstAssign{flp, refp, exprp->cloneTreePure(false)};
