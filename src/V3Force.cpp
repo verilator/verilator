@@ -230,14 +230,19 @@ private:
     static AstNodeDType* getEnVarpDTypep(AstVar* const varp) {
         AstNodeDType* const origDTypep = varp->dtypep()->skipRefp();
         if (VN_IS(origDTypep, UnpackArrayDType)) {
-            const bool containsOpaque = origDTypep->exists([](const AstNodeDType* const dtypep) {
-                const AstBasicDType* const basicp = dtypep->skipRefp()->basicp();
-                return basicp && basicp->isOpaque();
-            });
-            if (containsOpaque) {
-                varp->v3warn(
-                    E_UNSUPPORTED,
-                    "Unsupported: Forced unpacked array variable with elements of opaque types");
+            AstNodeDType* dtp = origDTypep;
+            while (VN_IS(dtp, UnpackArrayDType) || VN_IS(dtp, PackArrayDType)) {
+                dtp = VN_AS(dtp, NodeArrayDType)->subDTypep()->skipRefp();
+            }
+            bool complexElem;
+            if (AstBasicDType* const basicp = VN_CAST(dtp, BasicDType)) {
+                complexElem = basicp->isOpaque();
+            } else {
+                complexElem = true;
+            }
+            if (complexElem) {
+                varp->v3warn(E_UNSUPPORTED, "Unsupported: Forced unpacked array variable with "
+                                            "elements of complex data type");
             }
             return varp->dtypep();
         } else {
