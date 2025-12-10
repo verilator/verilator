@@ -18,6 +18,7 @@ Verilator 5.043 devel
 * Add `-param`/`-port` options to `public_flat*` control directives (#6685). [Geza Lore, Fractile Ltd.]
 * Add `--top` specifying `config` name (#6710). [Dan Ruelas-Petrisko]
 * Add `sc_biguint` pragma (#6712). [Jakub Wasilewski, Antmicro Ltd.]
+* Add SUPERNFIRST error on super.new on non-first statement (#6784). [Artur Bieniek]
 * Support `std::randomize(){...}` (#4706) (#6573). [Yilou Wang]
 * Support `config` instance clauses (#5891 partial) (#6745). [Dan Ruelas-Petrisko]
 * Support unpacked struct in localparam (#6053 partial) (#6708). [Jonathan Drolet]

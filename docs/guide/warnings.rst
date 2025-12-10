@@ -2003,6 +2003,24 @@ List Of Warnings
    * Run Verilator with :vlopt:`--timing`.
 
 
+.. option:: SUPERNFIRST
+
+   An error that a `super.new` is not the first statement in a `function
+   new`.
+
+   IEEE requires this error. Ignoring this warning may cause other errors
+   or initialization ordering surprises, as described in IEEE 1800-2023
+   8.15.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_SUPERNFIRST_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_SUPERNFIRST_msg.rst
+
+
 .. option:: SYMRSVDWORD
 
    Warning that a symbol matches a C++ reserved word, and using this as a
