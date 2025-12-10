@@ -170,7 +170,7 @@ private:
     void visit(AstNodeIf* nodep) override {
         unsupportedWriteToVirtIfaceMember(nodep->condp(), "if condition");
         iterateAndNextNull(nodep->condp());
-        bool hasTimeingControl;
+        bool hasTimingControl;
         {
             VL_RESTORER(m_trigAssignp);
             VL_RESTORER(m_trigAssignIfacep);
@@ -178,7 +178,7 @@ private:
             VL_RESTORER(m_hasTimingControl);
             m_hasTimingControl = false;
             iterateAndNextNull(nodep->thensp());
-            hasTimeingControl = m_hasTimingControl;
+            hasTimingControl = m_hasTimingControl;
         }
         {
             VL_RESTORER(m_trigAssignp);
@@ -187,9 +187,9 @@ private:
             VL_RESTORER(m_hasTimingControl);
             m_hasTimingControl = false;
             iterateAndNextNull(nodep->elsesp());
-            hasTimeingControl |= m_hasTimingControl;
+            hasTimingControl |= m_hasTimingControl;
         }
-        if (hasTimeingControl) {
+        if (hasTimingControl) {
             // Clear the trigger assignment, as there could have been timing controls in either
             // branch
             m_trigAssignp = nullptr;
@@ -201,7 +201,7 @@ private:
     void visit(AstLoop* nodep) override {
         UASSERT_OBJ(!nodep->contsp(), nodep, "'contsp' only used before LinkJump");
         iterateAndNextNull(nodep->contsp());
-        bool hasTimeingControl;
+        bool hasTimingControl;
         {
             VL_RESTORER(m_trigAssignp);
             VL_RESTORER(m_trigAssignIfacep);
@@ -209,9 +209,9 @@ private:
             VL_RESTORER(m_hasTimingControl);
             m_hasTimingControl = false;
             iterateAndNextNull(nodep->stmtsp());
-            hasTimeingControl = m_hasTimingControl;
+            hasTimingControl = m_hasTimingControl;
         }
-        if (hasTimeingControl) {
+        if (hasTimingControl) {
             // Clear the trigger assignment, as there could have been timing controls in the loop
             m_trigAssignp = nullptr;
             m_trigAssignIfacep = nullptr;
