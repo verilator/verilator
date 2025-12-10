@@ -810,16 +810,16 @@ class ParamProcessor final {
         // The parameter value may be of a different type than the specified parameter type
         // In that case we must cast the value to allow comparisions
 
-        const AstNodeDType* dtypep = modvarp->subDTypep();
-        const AstBasicDType* const bdtype = VN_CAST(dtypep, BasicDType);
+        if (!modvarp->dtypep()) {
+            // The parameter is implicitly typed, use the type from the default value
+            UINFO(1, "Implicit parameter type, no casting needed");
+            return;
+        }
 
         if (!modvarp->valuep()) return;
 
-        if (bdtype && bdtype->implicit()) {
-            // The parameter is implicitly typed, use the type from the default value
-            UINFO(9, "Implicit parameter type, no casting needed");
-            return;
-        }
+        const AstNodeDType* dtypep = modvarp->dtypep()->skipRefp(); 
+
 
         AstConst* const valueConstp = VN_CAST(modvarp->valuep(), Const);
         if (!valueConstp) return;  // Not a constant, can't cast
@@ -828,17 +828,17 @@ class ParamProcessor final {
         const V3Number& sourceNum = valueConstp->num();
 
         if (valueConstp->dtypep()->skipRefp()->similarDType(dtypep->skipRefp())) {
-            UINFO(9, " No parameter casting required");
+            UINFO(5, " No parameter casting required");
             return;
         }
 
-        UINFO(9, "Casting parameter " << modvarp->name() << " from " << valueConstp->dtypep()
+        UINFO(5, "Casting parameter " << modvarp->name() << " from " << valueConstp->dtypep()
                                       << " to " << dtypep);
 
-        V3Number castedNum{valueConstp, bdtype};
+        V3Number castedNum{valueConstp, dtypep};
         castedNum.width(targetWidth, true);
 
-        if (bdtype && bdtype->isDouble()) {
+        if (dtypep && dtypep->isDouble()) {
             // Target is real
             if (sourceNum.isDouble()) {
                 castedNum.setDouble(sourceNum.toDouble());
@@ -852,9 +852,8 @@ class ParamProcessor final {
                     castedNum.opIToRD(sourceNum);
                 }
             }
-        } else if (bdtype && bdtype->isString()) {
-            // Target is string
-            //castedNum.setString(sourceNum.toString());
+        } else if (dtypep && dtypep->isString()) {
+            // Target is string, at the moment not handled
             return;
         } else {
             // Target is integer (logic/bit/int/byte/etc.)
@@ -880,9 +879,9 @@ class ParamProcessor final {
 
         // Create new constant with casted value
         AstConst* const newConstp = new AstConst{valueConstp->fileline(), castedNum};
-        newConstp->dtypeFrom(bdtype);
+        newConstp->dtypeFrom(dtypep);
 
-        UINFO(9, "New default parameter " << newConstp);
+        UINFO(5, "New default parameter " << newConstp);
 
         // Replace old value with casted value
         valueConstp->replaceWith(newConstp);
@@ -929,8 +928,8 @@ class ParamProcessor final {
                 AstConst* const exprp = VN_CAST(pinp->exprp(), Const);
                 AstConst* const origp = VN_CAST(modvarp->valuep(), Const);
 
-                if (exprp) UINFO(9, "exprp " << exprp);
-                if (origp) UINFO(9, "origp " << origp);
+                if (exprp) UINFO(1, "exprp " << exprp);
+                if (origp) UINFO(1, "origp " << origp);
 
                 if (!exprp) {
                     UINFOTREE(1, pinp, "", "errnode");
@@ -940,7 +939,7 @@ class ParamProcessor final {
                     pinExprp->replaceWith(new AstConst{pinp->fileline(), AstConst::WidthedValue{},
                                                        modvarp->width(), 0});
                     VL_DO_DANGLING(pinExprp->deleteTree(), pinExprp);
-                } else if (origp && origp->sameNode(exprp)) {
+                } else if (ParameterizedHierBlocks::areSame(exprp, origp)) {
                     UINFO(1, "areSame(exprp, origp)");
                     // Setting parameter to its default value.  Just ignore it.
                     // This prevents making additional modules, and makes coverage more
