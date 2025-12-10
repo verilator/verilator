@@ -22,10 +22,11 @@ module t;
 
   initial begin
     #4
-    if(!(data == 1 && cb.data == 0)) $stop;
+    if(data != 1 ) $stop;
+    if(cb.data != 0) $stop;
     #1;
     #1step;
-    if(!(cb.data == 1)) $stop;
+    if(cb.data != 1) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end
