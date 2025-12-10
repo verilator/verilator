@@ -145,8 +145,7 @@ private:
         if (nodep->user1SetOnce()) return;
         // By default set hasTiming to true - it may generate some false positives but it is better
         // than generating false negatives.
-        // False positive may occur when there are func F and G, G has no timing control, F calls G
-        // and G calls F, and F has first timing control after call to G
+        // False positive may occur when there are are two funcs and they both call each other
         nodep->user2(v3Global.usesTiming());
         VL_RESTORER(m_trigAssignp);
         m_trigAssignp = nullptr;
@@ -240,7 +239,6 @@ private:
     }
     void visit(AstNodeStmt* nodep) override {
         if (v3Global.usesTiming() && nodep->isTimingControl()) {
-            // Only check for expressions since statements are handled separately one at a time
             m_trigAssignp = nullptr;
             m_trigAssignIfacep = nullptr;
             m_trigAssignMemberVarp = nullptr;
