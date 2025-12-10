@@ -712,6 +712,7 @@ class VlTest:
         self.make_pli = 0  # need to compile pli
         self.make_top_shell = 1  # Make a default __top.v file
         self.rerunnable = True  # Rerun if fails
+        self.sc_time_resolution_multiplier = 1  # Time resolution multiplier
         self.sc_time_resolution = "SC_PS"  # Keep - PS is SystemC default
         self.sim_time = 1100  # simulation time units for main wrapper
         self.threads = -1  # --threads (negative means auto based on scenario)
@@ -2096,7 +2097,8 @@ class VlTest:
                         fh.write("    sc_signal<sc_dt::sc_uint<1>> clk;\n")
                     else:
                         fh.write("    sc_signal<bool> clk;\n")
-                fh.write("    sc_set_time_resolution(1, " + self.sc_time_resolution + ");\n")
+                fh.write("    sc_set_time_resolution(" + str(self.sc_time_resolution_multiplier) +
+                         ", " + self.sc_time_resolution + ");\n")
                 fh.write("    sc_time sim_time(" + str(self.sim_time) + ", " +
                          self.sc_time_resolution + ");\n")
             else:
@@ -2183,7 +2185,8 @@ class VlTest:
             if 'clk' in self._inputs:
                 fh.write("        " + setp + "clk = false;\n")
             if not timing_loop:
-                self._print_advance_time(fh, 10, None)
+                start_time = 10
+                self._print_advance_time(fh, start_time * self.sc_time_resolution_multiplier, None)
             fh.write("    }\n")
 
             timestamp = "sc_time_stamp()" if self.sc else "contextp->time()"
@@ -2240,7 +2243,7 @@ class VlTest:
                         fh.write("            topp.reset(nullptr);\n")
                         fh.write("            return 0;\n")
                         fh.write("        }\n")
-                    self._print_advance_time(fh, 1, action)
+                    self._print_advance_time(fh, self.sc_time_resolution_multiplier, action)
             if self.benchmarksim:
                 fh.write("        if (VL_UNLIKELY(!warm)) {\n")
                 fh.write("            starttime = std::chrono::steady_clock::now();\n")
