@@ -818,8 +818,7 @@ class ParamProcessor final {
 
         if (!modvarp->valuep()) return;
 
-        const AstNodeDType* dtypep = modvarp->dtypep()->skipRefp(); 
-
+        const AstNodeDType* dtypep = modvarp->dtypep()->skipRefp();
 
         AstConst* const valueConstp = VN_CAST(modvarp->valuep(), Const);
         if (!valueConstp) return;  // Not a constant, can't cast
