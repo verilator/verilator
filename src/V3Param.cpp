@@ -806,26 +806,37 @@ class ParamProcessor final {
         }
     }
 
-    void castModuleParamVarValue(AstNode* nodep, AstVar* modvarp) {
+    void castModuleParamVarValue(const AstNode* nodep, AstVar* modvarp) {
         // The parameter value may be of a different type than the specified parameter type
         // In that case we must cast the value to allow comparisions
 
-        if (!modvarp->dtypep()) {
-            // The parameter is implicitly typed, use the type from the default value
-            UINFO(1, "Implicit parameter type, no casting needed");
-            return;
-        }
-
         if (!modvarp->valuep()) return;
 
-        const AstNodeDType* dtypep = modvarp->dtypep()->skipRefp();
+        // Get the variable's dtype - prefer dtypep() but fall back to subDTypep()
+        AstNodeDType* dtypep = modvarp->dtypep();
 
-        if (!dtypep) return;
+        if (!dtypep) {
+            dtypep = modvarp->subDTypep();
+            if (!dtypep) return;  // No type information available
+        }
+
+        // ALWAYS skip any typedefs/references to get the actual concrete type
+        dtypep = dtypep->skipRefp();
+        if (!dtypep) return;  // Unresolved type reference
+
+        // Check if it's implicitly typed - if so, use the default value's type
+        const AstBasicDType* const bdtypep = dtypep->basicp();
+        if (bdtypep && bdtypep->implicit()) {
+            UINFO(5, "Implicitly typed parameter, no casting required");
+            return;
+        }
 
         AstConst* const valueConstp = VN_CAST(modvarp->valuep(), Const);
         if (!valueConstp) return;  // Not a constant, can't cast
 
-        const int targetWidth = dtypep->width();
+        V3Width::widthParamsEdit(dtypep);
+
+        int targetWidth = dtypep->width();
         const V3Number& sourceNum = valueConstp->num();
 
         if (valueConstp->dtypep()->skipRefp()->similarDType(dtypep->skipRefp())) {
@@ -882,7 +893,7 @@ class ParamProcessor final {
         AstConst* const newConstp = new AstConst{valueConstp->fileline(), castedNum};
         newConstp->dtypeFrom(dtypep);
 
-        UINFO(5, "New default parameter " << newConstp);
+        UINFO(3, "New default parameter " << newConstp);
 
         // Replace old value with casted value
         valueConstp->replaceWith(newConstp);
@@ -913,7 +924,6 @@ class ParamProcessor final {
                 V3Const::constifyParamsEdit(pinp->exprp());
                 // Default parameter value may be a cast or other non-CONST
                 if (modvarp->valuep()) V3Const::constifyParamsEdit(modvarp->valuep());
-
                 // String constants are parsed as logic arrays and converted to strings in V3Const.
                 // At this moment, some constants may have been already converted.
                 // To correctly compare constants, both should be of the same type,
