@@ -172,7 +172,9 @@ public:
                 AstVarRef* const rdRefp = new AstVarRef{flp, m_rdVscp, VAccess::WRITE};
                 AstNodeExpr* const rdRhsp = forcedUpdate(vscp, loopVarRefs);
                 enRefp->replaceWith(rdRefp);
+                enRefp->deleteTree();
                 enRhsp->replaceWith(rdRhsp);
+                enRhsp->deleteTree();
 
                 activep->addStmtsp(new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr, stmtp});
                 vscp->scopep()->addBlocksp(activep);
