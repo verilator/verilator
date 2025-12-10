@@ -16,31 +16,43 @@ module t (  /*AUTOARG*/
 
   integer cyc = 0;
 
-  real in[2];
+  typedef struct {int x;} struct_t;
+
+  struct_t s_array[3];
+  real r_array[2];
 
   // Test loop
   always @(posedge clk) begin
     cyc <= cyc + 1;
     if (cyc == 0) begin
-      in[0] <= 1;
+      r_array[0] <= 1;
+      s_array[1].x <= 1;
     end else if (cyc == 1) begin
-      `checkr(in[0], 1);
+      `checkr(r_array[0], 1);
+      `checkh(s_array[1].x, 1);
     end else if (cyc == 2) begin
-      force in[0] = 0;
+      force r_array[0] = 0;
+      force s_array[1].x = 0;
     end else if (cyc == 3) begin
-      `checkr(in[0], 0);
-      in[0] <= 1;
+      `checkr(r_array[0], 0);
+      r_array[0] <= 1;
+      `checkh(s_array[1].x, 0);
+      s_array[0].x <= 1;
     end else if (cyc == 4) begin
-      `checkr(in[0], 0);
+      `checkr(r_array[0], 0);
+      `checkh(s_array[1].x, 0);
     end else if (cyc == 5) begin
-      release in[0];
+      release r_array[0];
+      release s_array[1].x;
     end else if (cyc == 6) begin
-      `checkr(in[0], 0);
-      in[0] <= 1;
+      `checkr(r_array[0], 0);
+      r_array[0] <= 1;
+      `checkh(s_array[1].x, 0);
+      s_array[1].x <= 1;
     end else if (cyc == 7) begin
-      `checkr(in[0], 1);
-    end
-    else if (cyc == 8) begin
+      `checkr(r_array[0], 1);
+      `checkh(s_array[1].x, 1);
+    end else if (cyc == 8) begin
       $write("*-* All Finished *-*\n");
       $finish;
     end
