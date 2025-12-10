@@ -242,7 +242,7 @@ private:
                 complexElem = true;
             }
             if (complexElem) {
-                varp->v3warn(E_UNSUPPORTED, "Unsupported: Forced unpacked array variable with "
+                varp->v3warn(E_UNSUPPORTED, "Unsupported: Force of unpacked array variable with "
                                             "elements of complex data type");
             }
             return varp->dtypep();
