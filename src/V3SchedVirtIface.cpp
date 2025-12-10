@@ -156,6 +156,7 @@ private:
         VL_RESTORER(m_hasTimingControl);
         m_hasTimingControl = false;
         iterateChildren(nodep);
+        nodep->user2(m_hasTimingControl);
     }
     void visit(AstNodeCCall* nodep) override {
         iterate(nodep->funcp());
