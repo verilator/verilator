@@ -1,0 +1,8 @@
+%Error-UNSUPPORTED: t/t_config_libmap_inc.map:9:1: Unsupported: config include
+    9 | include ./t_config_libmap/lib.map;
+      | ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_config_libmap_inc.map:11:26: Unsupported: config incdir
+   11 | library rtllib1 somepath -incdir somedir;
+      |                          ^~~~~~~
+%Error: Exiting due to

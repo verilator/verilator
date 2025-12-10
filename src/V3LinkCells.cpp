@@ -310,7 +310,7 @@ class LinkCellsVisitor final : public VNVisitor {
             const string prettyName = AstNode::prettyName(modName);
             V3Parse parser{v3Global.rootp(), m_filterp};
             // true below -> other simulators treat modules in link-found files as library cells
-            parser.parseFile(nodep->fileline(), prettyName, true, m_modp->libname(), "");
+            parser.parseFile(nodep->fileline(), prettyName, true, false, m_modp->libname(), "");
             V3Error::abortIfErrors();
             // We've read new modules, grab new pointers to their names
             readModNames();

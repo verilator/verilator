@@ -84,6 +84,7 @@ static void appendDefValue(const char* t, size_t l) { LEXP->appendDefValue(t, l)
 %x QQQMODE
 %x STRIFY
 %x STRMODE
+%x LIBMODE
 
 /* drop: Drop Ctrl-Z - can't pass thru or may EOF the output too soon */
 
@@ -119,6 +120,8 @@ bom             [\357\273\277]
 <INITIAL>"`ifdef"       { FL_FWDC; return VP_IFDEF; }
 <INITIAL>"`ifndef"      { FL_FWDC; return VP_IFNDEF; }
 <INITIAL>"`include"     { FL_FWDC; return VP_INCLUDE; }
+<INITIAL>"include"      { FL_FWDC; yy_push_state(LIBMODE); return VP_TEXT; }
+<INITIAL>"library"      { FL_FWDC; yy_push_state(LIBMODE); return VP_TEXT; }
 <INITIAL>"`undef"       { FL_FWDC; return VP_UNDEF; }
 <INITIAL>"`undefineall" { FL_FWDC; return VP_UNDEFINEALL; }
 <INITIAL>"`error"       { FL_FWDC; if (!pedantic()) return VP_ERROR; else return VP_DEFREF; }
@@ -318,6 +321,14 @@ bom             [\357\273\277]
 <INCMODE>[^\>\\]        { yymore(); }
 <INCMODE>[\\].          { yymore(); }
 <INCMODE>[\>]           { FL_FWDC; yy_pop_state(); return VP_STRING; }
+
+        /* Library/config file paths */
+<LIBMODE>{crnl}         { FL_FWDC; linenoInc(); yytext=(char*)"\n"; yyleng=1; return VP_WHITE; }
+<LIBMODE>{wsn}+         { FL_FWDC; return VP_WHITE; }
+<LIBMODE>{quote}        { yy_push_state(STRMODE); yymore(); }
+<LIBMODE>"//"           { yy_push_state(CMTONEM); yymore(); }
+<LIBMODE>";"            { FL_FWDC; yy_pop_state(); return VP_TEXT; }
+<LIBMODE>.              { FL_FWDC; return VP_TEXT; }
 
         /* Reading definition formal parenthesis (or not) to begin formal arguments */
         /* Note '(' must IMMEDIATELY follow definition name */

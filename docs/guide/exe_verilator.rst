@@ -989,6 +989,11 @@ Summary:
    "+libext+" is relatively standard across Verilog tools. Defaults to
    ".v+.sv".
 
+.. option:: -libmap <lib.map>
+
+   Specifies library mapping file to sort modules into libraries. This can be
+   overridden by :vltopt:`-work`.
+
 .. option:: +librescan
 
    Ignored for compatibility with other simulators.
