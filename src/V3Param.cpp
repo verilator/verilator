@@ -820,6 +820,8 @@ class ParamProcessor final {
 
         const AstNodeDType* dtypep = modvarp->dtypep()->skipRefp();
 
+        if (!dtypep) return;
+
         AstConst* const valueConstp = VN_CAST(modvarp->valuep(), Const);
         if (!valueConstp) return;  // Not a constant, can't cast
 
@@ -837,7 +839,7 @@ class ParamProcessor final {
         V3Number castedNum{valueConstp, dtypep};
         castedNum.width(targetWidth, true);
 
-        if (dtypep && dtypep->isDouble()) {
+        if (dtypep->isDouble()) {
             // Target is real
             if (sourceNum.isDouble()) {
                 castedNum.setDouble(sourceNum.toDouble());
@@ -851,7 +853,7 @@ class ParamProcessor final {
                     castedNum.opIToRD(sourceNum);
                 }
             }
-        } else if (dtypep && dtypep->isString()) {
+        } else if (dtypep->isString()) {
             // Target is string, at the moment not handled
             return;
         } else {
