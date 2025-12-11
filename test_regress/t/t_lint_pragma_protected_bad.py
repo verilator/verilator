@@ -11,8 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-test.lint(fails=True,
-          verilator_flags2=['--lint-only -Wpedantic'],
-          expect_filename=test.golden_filename)
+test.lint(fails=True, verilator_flags2=['-Wpedantic'], expect_filename=test.golden_filename)
 
 test.passes()

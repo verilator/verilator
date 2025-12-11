@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('vlt')
 
 # --debug-check adds extra internal message, otherwise golden log would vary
-test.lint(verilator_flags2=["--lint-only --no-debug-check -Wall -Wno-DECLFILENAME"],
+test.lint(verilator_flags2=["--no-debug-check -Wall -Wno-DECLFILENAME"],
           fails=True,
           expect_filename=test.golden_filename)
 

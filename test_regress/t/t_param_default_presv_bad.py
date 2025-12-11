@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('linter')
 test.top_filename = "t/t_param_default_bad.v"
 
-test.lint(verilator_flags2=["--lint-only --language 1800-2005"],
+test.lint(verilator_flags2=["--language 1800-2005"],
           fails=True,
           expect_filename=test.golden_filename)
 

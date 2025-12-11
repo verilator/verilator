@@ -11,8 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-test.lint(verilator_flags2=["--lint-only -Wwarn-UNUSED"],
-          fails=True,
-          expect_filename=test.golden_filename)
+test.lint(verilator_flags2=["-Wwarn-UNUSED"], fails=True, expect_filename=test.golden_filename)
 
 test.passes()

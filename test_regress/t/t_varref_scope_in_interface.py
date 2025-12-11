@@ -11,6 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(verilator_flags2=["--lint-only", "--timing"])
+test.lint(verilator_flags2=["--timing"])
 
 test.passes()

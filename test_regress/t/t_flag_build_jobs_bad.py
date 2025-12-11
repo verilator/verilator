@@ -13,7 +13,7 @@ test.scenarios('vlt')
 test.top_filename = "t/t_flag_werror.v"
 
 test.lint(fails=True,
-          verilator_flags=["--build-jobs -1 --build"],
+          verilator_flags=["--cc --build-jobs -1 --build"],
           expect_filename=test.golden_filename)
 
 test.passes()

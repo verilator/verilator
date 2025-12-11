@@ -12,6 +12,6 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_std_process_self.v"
 
-test.lint(verilator_flags2=["--binary --DUSE_STD_PREFIX"])
+test.compile(verilator_flags2=["--binary --DUSE_STD_PREFIX"])
 
 test.passes()

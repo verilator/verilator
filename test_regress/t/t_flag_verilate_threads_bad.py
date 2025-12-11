@@ -12,6 +12,8 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t/t_flag_werror.v"
 
-test.lint(fails=True, verilator_flags=["--verilate-jobs -1"], expect_filename=test.golden_filename)
+test.lint(fails=True,
+          verilator_flags=["--lint-only --verilate-jobs -1"],
+          expect_filename=test.golden_filename)
 
 test.passes()

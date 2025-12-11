@@ -11,6 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-test.lint(verilator_flags2=['--lint-only -Wno-PROTECTED'])
+test.lint(verilator_flags2=['-Wno-PROTECTED'])
 
 test.passes()

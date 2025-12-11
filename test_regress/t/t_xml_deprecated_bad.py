@@ -12,8 +12,8 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = 't/t_EXAMPLE.v'
 
-test.lint(verilator_flags2=["--xml-only --xml-output /dev/null"],
-          fails=True,
-          expect_filename=test.golden_filename)
+test.compile(verilator_flags2=["--xml-only --xml-output /dev/null"],
+             fails=True,
+             expect_filename=test.golden_filename)
 
 test.passes()

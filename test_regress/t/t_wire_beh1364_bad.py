@@ -13,7 +13,7 @@ test.scenarios('vlt')
 
 waiver_filename = test.obj_dir + "/" + test.name + "_waiver.vlt"
 
-test.lint(verilator_flags2=["--lint-only --language 1364-2001 --waiver-output", waiver_filename],
+test.lint(verilator_flags2=["--language 1364-2001 --waiver-output", waiver_filename],
           fails=True,
           expect_filename=test.golden_filename)
 

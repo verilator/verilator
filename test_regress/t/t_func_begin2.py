@@ -11,6 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-test.lint(verilator_flags2=["--lint-only --inline-mult 1"])
+test.lint(verilator_flags2=["--inline-mult 1"])
 
 test.passes()

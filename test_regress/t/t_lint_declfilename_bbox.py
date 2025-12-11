@@ -11,6 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(verilator_flags2=["--lint-only -Wall"])
+test.lint(verilator_flags2=["-Wall"])
 
 test.passes()

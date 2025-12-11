@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-test.lint(verilator_flags2=["--lint-only", "--top cfg21"],
+test.lint(verilator_flags2=["--top cfg21"],
           fails=test.vlt_all,
           expect_filename=test.golden_filename)
 

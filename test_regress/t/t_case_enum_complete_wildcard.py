@@ -11,6 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-test.lint(verilator_flags2=["--lint-only -Wwarn-CASEINCOMPLETE"])
+test.lint(verilator_flags2=["-Wwarn-CASEINCOMPLETE"])
 
 test.passes()

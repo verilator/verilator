@@ -12,7 +12,8 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t/t_pipe_filter.v"
 
-test.lint(verilator_flags2=['-E --pipe-filter \'python3 t/t_pipe_exit_bad_pf.pf\' '], fails=True)
+test.compile(verilator_flags2=['-E --pipe-filter \'python3 t/t_pipe_exit_bad_pf.pf\' '],
+             fails=True)
 
 test.file_grep(test.compile_log_filename,
                r'%Error: t_pipe_exit_bad_pf.pf: Intentional bad exit status....*')

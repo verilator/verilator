@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 
 test.lint(verilator_flags2=[
-    '--binary', '--top cfg1', '--work liba', 't/t_config_work__liba.v', '--work libb',
+    '--top cfg1', '--work liba', 't/t_config_work__liba.v', '--work libb',
     't/t_config_work__libb.v'
 ],
           fails=test.vlt_all,

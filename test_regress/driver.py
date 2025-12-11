@@ -859,7 +859,7 @@ class VlTest:
         ]
         # Verilator
         self.verilator_define = 'VERILATOR'
-        self.verilator_flags = [
+        self.verilator_flags = [  # See also override (search for -lint-only)
             "-cc",
             "-Mdir",
             self.obj_dir,
@@ -1183,10 +1183,15 @@ class VlTest:
         """Run a linter. Arguments similar to run(); default arguments are from self"""
         param = {}
         param.update(vars(self))
-        param.update({  # Lint-specific default overrides
+        param.update({  # Lint-specific default overrides (search also for -cc)
             'make_main': False,
             'make_top_shell': False,
-            'verilator_flags2': ["--lint-only"],
+            'verilator_flags': [
+                "--lint-only",
+                "-Mdir",
+                self.obj_dir,
+                "--debug-check",
+            ],
             'verilator_make_gmake': False
         })
         param.update(kwargs)

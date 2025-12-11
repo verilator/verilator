@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-test.lint(verilator_flags2=["--lint-only", "t/" + test.name + ".map"],
+test.lint(verilator_flags2=["t/" + test.name + ".map"],
           fails=test.vlt_all,
           expect_filename=test.golden_filename)
 
