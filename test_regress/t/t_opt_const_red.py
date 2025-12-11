@@ -16,6 +16,6 @@ test.compile(verilator_flags2=["-Wno-UNOPTTHREADS", "--stats"])
 test.execute()
 
 if test.vlt:
-    test.file_grep(test.stats, r'Optimizations, Const bit op reduction\s+(\d+)', 158)
+    test.file_grep(test.stats, r'Optimizations, Const bit op reduction\s+(\d+)', 160)
 
 test.passes()
