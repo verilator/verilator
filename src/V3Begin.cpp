@@ -292,8 +292,6 @@ class BeginVisitor final : public VNVisitor {
             UINFO(9, "    rescope to " << nodep);
         }
     }
-
-    // EOM
     void visit(AstNodeFTaskRef* nodep) override {
         UINFO(9, "   FTASKREF " << nodep);
         if (m_namedScope != "" && nodep->inlinedDots() == "" && !m_ftaskp) {
@@ -302,7 +300,6 @@ class BeginVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
-
     void visit(AstScopeName* nodep) override {
         // If there's a %m in the display text, we add a special node that will contain the name()
         // Similar code in V3Inline
