@@ -1297,23 +1297,32 @@ class ConstVisitor final : public VNVisitor {
         if (nodep->widthMin() != 1) return false;
         if (!v3Global.opt.fConstBitOpTree()) return false;
 
-        string debugPrefix;
+        const int width = nodep->width();
+        AstNodeExpr* rootp = nodep;
+        unsigned externalOps = 0;
+        // Reach past a plain making AND
+        if (const AstAnd* const andp = VN_CAST(nodep, And)) {
+            if (isConst(andp->lhsp(), 1)) {
+                rootp = andp->rhsp();
+                externalOps = 1;
+            }
+        }
+
+        // Only optimize if rootp is in fact the root of a tree of identical
+        // operations, otherwise analysis on an eventually unoptimizable unablanced
+        // tree can go O(N^2) as we would re-analyze every time as we move up the
+        // tree, repeatedly re-discover the sub-tree is not optimizable.
+        if (rootp->type() == nodep->backp()->type()) return false;
+
+        std::string debugPrefix;
         if (debug() >= 9) {  // LCOV_EXCL_START
             static int s_c = 0;
-            debugPrefix = "-  matchBitOpTree[";
-            debugPrefix += cvtToStr(++s_c);
-            debugPrefix += "] ";
+            debugPrefix = "-  matchBitOpTree[" + std::to_string(++s_c) + "] ";
             nodep->dumpTree(debugPrefix + "INPUT: ");
         }  // LCOV_EXCL_STOP
 
-        AstNode* newp = nullptr;
-        const AstAnd* const andp = VN_CAST(nodep, And);
-        const int width = nodep->width();
-        if (andp && isConst(andp->lhsp(), 1)) {  // 1 & BitOpTree
-            newp = ConstBitOpTreeVisitor::simplify(andp->rhsp(), width, 1, m_statBitOpReduction);
-        } else {  // BitOpTree
-            newp = ConstBitOpTreeVisitor::simplify(nodep, width, 0, m_statBitOpReduction);
-        }
+        AstNodeExpr* const newp
+            = ConstBitOpTreeVisitor::simplify(rootp, width, externalOps, m_statBitOpReduction);
 
         if (newp) {
             nodep->replaceWithKeepDType(newp);
