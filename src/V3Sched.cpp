@@ -786,12 +786,12 @@ class AwaitPostSchedVisitor final : public VNVisitor {
     const VNUser1InUse m_user1InUse;
 
     /**
-     * AstCAwait::user1()       ->  bool        Whether node has been visited
-     * AstSenTree::user1p()     ->  AstCFunc*   Function that has to be called before awaiting for
+     * AstCAwait::user1()       ->  bool.       True if node has been visited
+     * AstSenTree::user1p()     ->  AstCFunc*.  Function that has to be called before awaiting for
      *                                          CAwait pointing to this SenTree
      */
 
-    // Net list - for using util::makeSubFunction()
+    // Netlist - needed for using util::makeSubFunction()
     AstNetlist* const m_netlistp;
     // Trigger kit - for accessing trigger vectors and mapping senItems to thier indexes
     const TriggerKit& m_trigKit;
@@ -806,8 +806,8 @@ class AwaitPostSchedVisitor final : public VNVisitor {
     std::map<const AstSenTree*, AstNodeExpr*> m_senTreeToSched;
 
     // For set of bits indexes (of sensitivity vector) return map from those indexes to set of
-    // scheudlers sensitive to these indexes.
-    // Indexes are split into word index and bit masking this index within given word
+    // schedulers sensitive to these indexes.
+    // Indices are split into word index and bit masking this index within given word
     std::map<size_t, std::map<size_t, std::set<AstNodeExpr*>>>
     getUsedTriggersToTrees(const std::set<size_t>& usedTriggers) {
         std::map<size_t, std::map<size_t, std::set<AstNodeExpr*>>> usedTrigsToUsingTrees;
@@ -831,7 +831,7 @@ class AwaitPostSchedVisitor final : public VNVisitor {
     }
 
     // Returns a CCall to a pre-trigger function for a given SenTree,
-    // if such function is not generated yet it will be generated
+    // Constructs such a function if it doesn't exist yet
     AstCCall* getPreTriggerStmt(AstSenTree* const senTreep) {
         FileLine* const flp = senTreep->fileline();
         if (!senTreep->user1p()) {
@@ -953,7 +953,7 @@ public:
                     const size_t bit = bitsToTrees.first;
                     const auto& schedulers = bitsToTrees.second;
 
-                    // Create `if` checking if given bit is fired - single bits are checked since
+                    // Check if given bit is fired - single bits are checked since
                     // usually there is only a few of them (only one most of the times as we await
                     // only for one event)
                     AstConst* const maskConstp = new AstConst{flp, AstConst::Unsized64{}, bit};
