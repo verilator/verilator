@@ -1,8 +1,11 @@
-%Error-UNSUPPORTED: t/t_force_unpacked_unsup.v:22:8: Unsupported: Forced unpacked array variable with elements of complex data type
+%Error-UNSUPPORTED: t/t_force_unpacked_unsup.v:22:8: Unsupported: Force of unpacked array variable with elements of complex data type
    22 |   real r_array[2];
       |        ^~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_force_unpacked_unsup.v:21:12: Unsupported: Forced unpacked array variable with elements of complex data type
+%Error-UNSUPPORTED: t/t_force_unpacked_unsup.v:21:12: Unsupported: Force of unpacked array variable with elements of complex data type
    21 |   struct_t s_array[3];
       |            ^~~~~~~
+%Error-UNSUPPORTED: t/t_force_unpacked_unsup.v:23:12: Unsupported: Force of unpacked struct / union variable
+   23 |   struct_t my_struct;
+      |            ^~~~~~~~~
 %Error: Exiting due to
