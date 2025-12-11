@@ -122,11 +122,6 @@ void VlDelayScheduler::dump() const {
 //======================================================================
 // VlTriggerScheduler:: Methods
 
-void VlTriggerScheduler::reserveSpaceFor(VlCoroutineVec& vec, size_t size) {
-    const size_t expectedSize = vec.size() + size;
-    if (vec.capacity() < expectedSize) vec.reserve(expectedSize * 2);
-}
-
 void VlTriggerScheduler::resume(const char* eventDescription) {
 #ifdef VL_DEBUG
     VL_DEBUG_IF(dump(eventDescription);
@@ -163,7 +158,8 @@ void VlTriggerScheduler::ready(const char* eventDescription) {
             });
     }
 #endif
-    reserveSpaceFor(m_ready, m_uncommitted.size());
+    const size_t expectedSize = m_ready.size() + m_uncommitted.size();
+    if (m_ready.capacity() < expectedSize) m_ready.reserve(expectedSize * 2);
     m_ready.insert(m_ready.end(), std::make_move_iterator(m_uncommitted.begin()),
                    std::make_move_iterator(m_uncommitted.end()));
     m_uncommitted.clear();

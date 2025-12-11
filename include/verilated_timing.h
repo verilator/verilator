@@ -251,7 +251,6 @@ class VlTriggerScheduler final {
                                    // - moved here in commit()
 
 public:
-    static void reserveSpaceFor(VlCoroutineVec& vec, size_t size);
     // METHODS
     // Resumes all coroutines from the 'ready' stage
     void resume(const char* eventDescription = VL_UNKNOWN);
