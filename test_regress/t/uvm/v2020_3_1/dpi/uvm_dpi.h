@@ -42,7 +42,7 @@
 #include "vpi_user.h"
 #include "veriuser.h"
 #include "svdpi.h"
-#include <malloc.h>
+//#include <malloc.h>
 #include <string.h>
 #include <stdio.h>
 #include <regex.h>
