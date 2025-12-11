@@ -27,22 +27,6 @@
                                                     : ... note: In instance 't'
    43 |   assert property (@(posedge clk) (##1 val) |-> (##1 val)) $display("[%0t] two delays implication stmt, fileline:%d", $time, 43);
       |                                             ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:45:52: Unsupported: Disable iff with sequence expression
-                                                    : ... note: In instance 't'
-   45 |   assert property (@(posedge clk) disable iff (cyc != 5) ##1 0) $display("[%0t] disable iff stmt, fileline:%d", $time, 45);
-      |                                                    ^~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:47:52: Unsupported: Disable iff with sequence expression
-                                                    : ... note: In instance 't'
-   47 |   assume property (@(posedge clk) disable iff (cyc != 5) ##1 0) $display("[%0t] disable iff stmt, fileline:%d", $time, 47);
-      |                                                    ^~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:49:51: Unsupported: Disable iff with sequence expression
-                                                    : ... note: In instance 't'
-   49 |   cover property (@(posedge clk) disable iff (cyc != 5) ##1 0) $display("[%0t] disable iff stmt, fileline:%d", $time, 49);
-      |                                                   ^~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:52:37: Unsupported: Disable iff with sequence expression
-                                                    : ... note: In instance 't'
-   52 |     @(posedge clk) disable iff (cyc != 5) ##1 0;
-      |                                     ^~
 %Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:56:18: Unsupported: Implication with sequence expression
                                                     : ... note: In instance 't'
    56 |     ##1 cyc == 4 |-> 1;
