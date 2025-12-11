@@ -2525,6 +2525,32 @@ class RandomizeVisitor final : public VNVisitor {
                         nodep, constrp, constrp->itemsp()->unlinkFrBackWithNext()));
                 }
             });
+            // For derived classes: clone write_var calls from parent's randomize()
+            if (nodep->extendsp()) {
+                AstClass* parentClassp = nodep->extendsp()->classp();
+                while (parentClassp) {
+                    AstFunc* const parentRandomizep =
+                        VN_CAST(m_memberMap.findMember(parentClassp, "randomize"), Func);
+                    if (parentRandomizep && parentRandomizep->stmtsp()) {
+                        // Clone write_var statements from parent (stop at clearConstraints)
+                        for (AstNode* stmtp = parentRandomizep->stmtsp(); stmtp;
+                             stmtp = stmtp->nextp()) {
+                            bool foundClearConstraints = false;
+                            stmtp->foreach([&](AstCMethodHard* methodp) {
+                                if (methodp->method() == VCMethod::RANDOMIZER_WRITE_VAR) {
+                                    randomizep->addStmtsp(stmtp->cloneTree(false));
+                                } else if (methodp->method()
+                                           == VCMethod::RANDOMIZER_CLEARCONSTRAINTS) {
+                                    foundClearConstraints = true;
+                                }
+                            });
+                            if (foundClearConstraints) break;
+                        }
+                    }
+                    parentClassp =
+                        parentClassp->extendsp() ? parentClassp->extendsp()->classp() : nullptr;
+                }
+            }
             randomizep->addStmtsp(implementConstraintsClear(fl, genp));
             AstTask* setupAllTaskp = getCreateConstraintSetupFunc(nodep);
             AstTaskRef* const setupTaskRefp = new AstTaskRef{fl, setupAllTaskp, nullptr};
@@ -2827,6 +2853,24 @@ class RandomizeVisitor final : public VNVisitor {
 
         // Add constraints clearing code
         if (classGenp) {
+            // Clone write_var calls from main randomize() for path-connected variables
+            AstFunc* const mainRandomizep =
+                VN_CAST(m_memberMap.findMember(classp, "randomize"), Func);
+            if (mainRandomizep && mainRandomizep->stmtsp()) {
+                for (AstNode* stmtp = mainRandomizep->stmtsp(); stmtp;
+                     stmtp = stmtp->nextp()) {
+                    bool foundClearConstraints = false;
+                    stmtp->foreach([&](AstCMethodHard* methodp) {
+                        if (methodp->method() == VCMethod::RANDOMIZER_WRITE_VAR) {
+                            randomizeFuncp->addStmtsp(stmtp->cloneTree(false));
+                        } else if (methodp->method()
+                                   == VCMethod::RANDOMIZER_CLEARCONSTRAINTS) {
+                            foundClearConstraints = true;
+                        }
+                    });
+                    if (foundClearConstraints) break;
+                }
+            }
             randomizeFuncp->addStmtsp(
                 implementConstraintsClear(randomizeFuncp->fileline(), classGenp));
         }
