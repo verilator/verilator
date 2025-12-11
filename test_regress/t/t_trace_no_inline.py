@@ -24,7 +24,7 @@ trace_chg_file = test.obj_dir + "/" + test.vm_prefix + "__Trace__0.cpp"
 
 if test.vlt_all:
     if os.path.exists(trace_full_file):
-        with open(trace_full_file, 'r') as f:
+        with open(trace_full_file, 'r', encoding="utf-8") as f:
             trace_content = f.read()
 
         # Search for inlined expressions, e.g.: bufp->fullBit(oldp+X,((1U & (~ (IData)(vlSelfRef.clk)))));
@@ -78,7 +78,7 @@ if test.vlt_all:
 
     # Check `chg` functions
     if os.path.exists(trace_chg_file):
-        with open(trace_chg_file, 'r') as f:
+        with open(trace_chg_file, 'r', encoding='utf-8') as f:
             trace_chg_content = f.read()
 
         # Search for inlined expressions, e.g.: chgBit(oldp+X,((1U & (~ ...))))
