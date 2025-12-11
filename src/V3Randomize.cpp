@@ -898,17 +898,12 @@ class ConstraintExprVisitor final : public VNVisitor {
                 AstNodeExpr* parentAccess = membersel->fromp()->cloneTree(false);
                 AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
                 AstVar* const effectiveRandModeVarp = VN_AS(varClassp->user2p(), Var);
-                if (effectiveRandModeVarp) {
-                    AstMemberSel* randModeSel
-                        = new AstMemberSel{varp->fileline(), parentAccess, effectiveRandModeVarp};
-                    randModeSel->dtypep(effectiveRandModeVarp->dtypep());
-                    randModeAccess = randModeSel;
-                } else {
-                    UASSERT_OBJ(m_randModeVarp, nodep, "No m_randModeVarp");
-                    randModeAccess = new AstVarRef{varp->fileline(),
-                                                   VN_AS(m_randModeVarp->user2p(), NodeModule),
-                                                   m_randModeVarp, VAccess::READ};
-                }
+                UASSERT_OBJ(effectiveRandModeVarp, nodep,
+                            "Member-selected variable must have randmode in its class");
+                AstMemberSel* randModeSel
+                    = new AstMemberSel{varp->fileline(), parentAccess, effectiveRandModeVarp};
+                randModeSel->dtypep(effectiveRandModeVarp->dtypep());
+                randModeAccess = randModeSel;
             } else {
                 UASSERT_OBJ(m_randModeVarp, nodep, "No m_randModeVarp");
                 randModeAccess
