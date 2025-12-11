@@ -955,9 +955,13 @@ class ConstraintExprVisitor final : public VNVisitor {
             methodp->dtypeSetVoid();
             AstNodeModule* classp;
             if (membersel) {
-                // For membersel, use the class owning the root variable (where randomize() is called)
-                if (AstNodeVarRef* fromVarRef = VN_CAST(membersel->fromp(), NodeVarRef)) {
-                    classp = VN_AS(fromVarRef->varp()->user2p(), NodeModule);
+                // For membersel, find the root varref to get the class where randomize() is called
+                AstNode* rootNode = membersel->fromp();
+                while (AstMemberSel* nestedMemberSel = VN_CAST(rootNode, MemberSel)) {
+                    rootNode = nestedMemberSel->fromp();
+                }
+                if (AstNodeVarRef* rootVarRef = VN_CAST(rootNode, NodeVarRef)) {
+                    classp = VN_AS(rootVarRef->varp()->user2p(), NodeModule);
                 } else {
                     classp = VN_AS(membersel->user2p(), NodeModule);
                 }
@@ -990,12 +994,11 @@ class ConstraintExprVisitor final : public VNVisitor {
             }
             AstNodeFTask* initTaskp = m_inlineInitTaskp;
             if (!initTaskp) {
+                varp->user3(true);
                 if (membersel) {
-                    varp->user3(true);
                     initTaskp = VN_AS(m_memberMap.findMember(classp, "randomize"), NodeFTask);
                     UASSERT_OBJ(initTaskp, classp, "No randomize() in class");
                 } else {
-                    varp->user3(true);
                     initTaskp = VN_AS(m_memberMap.findMember(classp, "new"), NodeFTask);
                     UASSERT_OBJ(initTaskp, classp, "No new() in class");
                 }
