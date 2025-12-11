@@ -953,11 +953,17 @@ class ConstraintExprVisitor final : public VNVisitor {
                 dimension = 1;
             }
             methodp->dtypeSetVoid();
-            AstNodeModule* const classp = membersel ? VN_AS(membersel->user2p(), NodeModule)
-                                                    : VN_AS(varp->user2p(), NodeModule);
+            AstNodeModule* classp;
             if (membersel) {
+                // For membersel, use the class owning the root variable (where randomize() is called)
+                if (AstNodeVarRef* fromVarRef = VN_CAST(membersel->fromp(), NodeVarRef)) {
+                    classp = VN_AS(fromVarRef->varp()->user2p(), NodeModule);
+                } else {
+                    classp = VN_AS(membersel->user2p(), NodeModule);
+                }
                 methodp->addPinsp(membersel);
             } else {
+                classp = VN_AS(varp->user2p(), NodeModule);
                 AstVarRef* const varRefp
                     = new AstVarRef{varp->fileline(), classp, varp, VAccess::WRITE};
                 varRefp->classOrPackagep(classOrPackagep);
@@ -985,12 +991,10 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstNodeFTask* initTaskp = m_inlineInitTaskp;
             if (!initTaskp) {
                 if (membersel) {
-                    // Path-connected variable: add to randomize()
                     varp->user3(true);
                     initTaskp = VN_AS(m_memberMap.findMember(classp, "randomize"), NodeFTask);
                     UASSERT_OBJ(initTaskp, classp, "No randomize() in class");
                 } else {
-                    // Direct member variable: add to new()
                     varp->user3(true);
                     initTaskp = VN_AS(m_memberMap.findMember(classp, "new"), NodeFTask);
                     UASSERT_OBJ(initTaskp, classp, "No new() in class");
