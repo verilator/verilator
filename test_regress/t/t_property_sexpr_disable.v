@@ -34,11 +34,21 @@ module t (  /*AUTOARG*/
     results[2].passs++;
   else results[2].fails++;
 
+  assert property (@(posedge clk) disable iff (1) 1 ##1 0)
+    results[3].passs++;
+  else results[3].fails++;
+
+  assert property (@(posedge clk) disable iff (0) 1 ##1 0)
+    results[4].passs++;
+  else results[4].fails++;
+
   always @(clk) begin
     ++cyc;
     if (cyc == MAX + 1) begin
        expected[1] = '{2, 2};
        expected[2] = '{2, 3};
+       // expected[3] shouldn't be initialized
+       expected[4] = '{6, 0};
       `checkh(results, expected);
       $write("*-* All Finished *-*\n");
       $finish;
