@@ -44,10 +44,6 @@
 #include <cstring>
 #include <iostream>
 
-extern "C" {
-#include <libgen.h>
-}
-
 // These require the above. Comment prevents clang-format moving them
 #include "TestCheck.h"
 #include "TestSimulator.h"
