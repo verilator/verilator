@@ -54,6 +54,7 @@ class ScopeVisitor final : public VNVisitor {
     AstScope* m_aboveScopep = nullptr;  // Scope that instantiates this scope
 
     std::unordered_map<AstNodeModule*, AstScope*> m_packageScopes;  // Scopes for each package
+    std::unordered_map<AstNodeModule*, AstScope*> m_ifaceScopes;  // Scopes for each interface instance
     VarScopeMap m_varScopes;  // Varscopes created for each scope and var
     std::set<std::pair<AstVarRef*, AstScope*>>
         m_varRefScopes;  // Varrefs-in-scopes needing fixup when done
@@ -69,6 +70,15 @@ class ScopeVisitor final : public VNVisitor {
                 UASSERT_OBJ(it2 != m_packageScopes.end(), nodep, "Can't locate package scope");
                 scopep = it2->second;
             }
+            // Check if the variable is in an interface - if so, use the interface's scope
+            AstNode* varModp = nodep->varp();
+            while (varModp && !VN_IS(varModp, NodeModule)) varModp = varModp->backp();
+            if (varModp && VN_IS(varModp, Iface)) {
+                const auto it2 = m_ifaceScopes.find(VN_AS(varModp, NodeModule));
+                if (it2 != m_ifaceScopes.end()) {
+                    scopep = it2->second;
+                }
+            }
             // Search up the scope hierarchy for the variable
             AstVarScope* varscp = nullptr;
             AstScope* searchScopep = scopep;
@@ -80,6 +90,7 @@ class ScopeVisitor final : public VNVisitor {
                 }
                 searchScopep = searchScopep->aboveScopep();
             }
+            // Debug output removed - issue was interface variable scope resolution
             UASSERT_OBJ(varscp, nodep, "Can't locate varref scope");
             nodep->varScopep(varscp);
         }
@@ -137,6 +148,8 @@ class ScopeVisitor final : public VNVisitor {
                 if (VN_IS(modp, Iface)) {
                     // Remember newly created scope
                     cellp->user2p(m_scopep);
+                    // Also record interface->scope mapping for VarRef resolution
+                    m_ifaceScopes.emplace(modp, m_scopep);
                 }
             }
         }

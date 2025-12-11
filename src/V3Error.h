@@ -115,6 +115,7 @@ public:
         IMPERFECTSCH,   // Imperfect schedule (disabled by default). Historical, never issued.
         IMPLICIT,       // Implicit wire
         IMPLICITSTATIC, // Implicit static function
+        IMPLICITSTRTOINT,  // Implicit string to integer conversion
         IMPORTSTAR,     // Import::* in $unit
         IMPURE,         // Impure function not being inlined
         INCABSPATH,     // Include has absolute path
@@ -129,6 +130,7 @@ public:
         MODMISSING,     // Error: missing module
         MULTIDRIVEN,    // Driven from multiple blocks
         MULTITOP,       // Multiple top level modules
+        NBAAUTOL,       // Automatic lifetime variable in nonblocking assignment
         NEWERSTD,       // Newer language standard required
         NOEFFECT,       // Statement has no effect
         NOLATCH,        // No latch detected in always_latch block
@@ -218,9 +220,9 @@ public:
             "CONTASSREG", "COVERIGN", "DECLFILENAME", "DEFOVERRIDE", "DEFPARAM", "DEPRECATED",
             "ENCAPSULATED", "ENDLABEL", "ENUMITEMWIDTH", "ENUMVALUE", "EOFNEWLINE", "FUNCTIMECTL",
             "GENCLK", "GENUNNAMED", "HIERBLOCK", "HIERPARAM", "IFDEPTH", "IGNOREDRETURN",
-            "IMPERFECTSCH", "IMPLICIT", "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE", "INCABSPATH",
+            "IMPERFECTSCH", "IMPLICIT", "IMPLICITSTATIC", "IMPLICITSTRTOINT", "IMPORTSTAR", "IMPURE", "INCABSPATH",
             "INFINITELOOP", "INITIALDLY", "INSECURE", "LATCH", "LITENDIAN", "MINTYPMAXDLY",
-            "MISINDENT", "MODDUP", "MODMISSING", "MULTIDRIVEN", "MULTITOP", "NEWERSTD", "NOEFFECT",
+            "MISINDENT", "MODDUP", "MODMISSING", "MULTIDRIVEN", "MULTITOP", "NBAAUTOL", "NEWERSTD", "NOEFFECT",
             "NOLATCH", "NONSTD", "NORETURN", "NULLPORT", "PARAMNODEFAULT", "PINCONNECTEMPTY",
             "PINMISSING", "PINNOCONNECT", "PINNOTFOUND", "PKGNODECL", "PREPROCZERO", "PROCASSINIT",
             "PROCASSWIRE", "PROFOUTOFDATE", "PROTECTED", "PROTOTYPEMIS", "RANDC", "REALCVT",
@@ -255,11 +257,13 @@ public:
     // Warnings we'll present to the user as errors
     // Later -Werror- options may make more of these.
     bool pretendError() const VL_MT_SAFE {
+        // ENUMVALUE removed to allow -Wno-ENUMVALUE for UVM compatibility
+        // NBAAUTOL added for UVM/testbench compatibility (automatic vars in NBA)
         return (m_e == ASSIGNIN || m_e == BADSTDPRAGMA || m_e == BADVLTPRAGMA || m_e == BLKANDNBLK
                 || m_e == BLKLOOPINIT || m_e == CONTASSREG || m_e == ENCAPSULATED
-                || m_e == ENDLABEL || m_e == ENUMITEMWIDTH || m_e == ENUMVALUE || m_e == HIERPARAM
+                || m_e == ENDLABEL || m_e == ENUMITEMWIDTH || m_e == HIERPARAM
                 || m_e == FUNCTIMECTL || m_e == IMPURE || m_e == MODMISSING
-                || m_e == PARAMNODEFAULT || m_e == PINNOTFOUND || m_e == PKGNODECL
+                || m_e == NBAAUTOL || m_e == PARAMNODEFAULT || m_e == PINNOTFOUND || m_e == PKGNODECL
                 || m_e == PROCASSWIRE || m_e == PROTOTYPEMIS || m_e == SUPERNFIRST
                 || m_e == ZEROREPL);
     }

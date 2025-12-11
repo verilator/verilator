@@ -597,8 +597,18 @@ class TristateVisitor final : public TristateBaseVisitor {
         // The best way would be to visit the tree again and find any user1p()
         // pointers that did not get picked up and expanded.
         if (m_alhs && nodep->user1p()) {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported LHS tristate construct: " << nodep->prettyTypeName());
+            // VarXRef nodes (cross-module references to interface members) can receive
+            // enable signals from tristate assignments inside interfaces. These will be
+            // resolved later when V3Inst converts VarXRef to VarRef during hierarchy
+            // flattening. Clear the enable here to avoid false "unsupported" errors.
+            if (VN_IS(nodep, VarXRef)) {
+                UINFO(9, "     Clearing tristate enable on VarXRef: " << nodep << endl);
+                nodep->user1p(nullptr);
+                // Don't delete the enable expression - it may be referenced elsewhere
+            } else {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported LHS tristate construct: " << nodep->prettyTypeName());
+            }
         }
         // Ignore Var's because they end up adjacent to statements
         if ((nodep->op1p() && nodep->op1p()->user1p() && !VN_IS(nodep->op1p(), Var))
@@ -1519,16 +1529,40 @@ class TristateVisitor final : public TristateBaseVisitor {
             iterateChildren(nodep);
         }
     }
+    // Helper to extract target variable from various expression types for pullup/pulldown
+    // Returns the AstNodeVarRef (VarRef or VarXRef) and the associated AstVar
+    std::pair<AstNodeVarRef*, AstVar*> extractPullTarget(AstNodeExpr* exprp) {
+        // Case 1: Direct VarRef or VarXRef - pullup(wire) or pullup(iface.wire)
+        if (AstNodeVarRef* const varrefp = VN_CAST(exprp, NodeVarRef)) {
+            return {varrefp, varrefp->varp()};
+        }
+        // Case 2: Sel of VarRef/VarXRef - pullup(wire[i]) or pullup(iface.wire[i])
+        if (AstSel* const selp = VN_CAST(exprp, Sel)) {
+            if (AstNodeVarRef* const varrefp = VN_CAST(selp->fromp(), NodeVarRef)) {
+                return {varrefp, varrefp->varp()};
+            }
+            // Case 3: Sel of MemberSel - pullup(class.member[i])
+            if (AstMemberSel* const memberselp = VN_CAST(selp->fromp(), MemberSel)) {
+                // Get the VarRef from the MemberSel's base
+                if (AstNodeVarRef* const varrefp = VN_CAST(memberselp->fromp(), NodeVarRef)) {
+                    // The target var is the member variable, not the base var
+                    return {varrefp, memberselp->varp()};
+                }
+            }
+        }
+        // Case 4: Direct MemberSel - pullup(class.member)
+        if (AstMemberSel* const memberselp = VN_CAST(exprp, MemberSel)) {
+            if (AstNodeVarRef* const varrefp = VN_CAST(memberselp->fromp(), NodeVarRef)) {
+                return {varrefp, memberselp->varp()};
+            }
+        }
+        return {nullptr, nullptr};
+    }
+
     void visit(AstPull* nodep) override {
         UINFO(9, dbgState() << nodep);
-        AstVarRef* varrefp = nullptr;
-        if (VN_IS(nodep->lhsp(), VarRef)) {
-            varrefp = VN_AS(nodep->lhsp(), VarRef);
-        } else if (VN_IS(nodep->lhsp(), Sel)
-                   && VN_IS(VN_AS(nodep->lhsp(), Sel)->fromp(), VarRef)) {
-            varrefp = VN_AS(VN_AS(nodep->lhsp(), Sel)->fromp(), VarRef);
-        }
-        if (!varrefp) {
+        auto [varrefp, targetVarp] = extractPullTarget(nodep->lhsp());
+        if (!targetVarp) {
             UINFOTREE(4, nodep, "", "");
             nodep->v3warn(E_UNSUPPORTED, "Unsupported pullup/down (weak driver) construct.");
         } else {
@@ -1537,7 +1571,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                 m_logicp = nodep;
                 varrefp->access(VAccess::WRITE);
                 m_tgraph.setTristate(nodep);
-                associateLogic(nodep, varrefp->varp());
+                associateLogic(nodep, targetVarp);
             } else {
                 // Replace any pullup/pulldowns with assignw logic and set the
                 // direction of the pull in the var aux data.  Given
@@ -1547,8 +1581,8 @@ class TristateVisitor final : public TristateBaseVisitor {
                 // in opposite directions on individual pins.
                 varrefp->access(VAccess::WRITE);
                 m_tgraph.didProcess(nodep);
-                m_tgraph.didProcess(varrefp->varp());
-                setPullDirection(varrefp->varp(), nodep);
+                m_tgraph.didProcess(targetVarp);
+                setPullDirection(targetVarp, nodep);
             }
         }
         if (!m_graphing) {
@@ -1802,6 +1836,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             (void)m_alhs;  // NOP; user1() already passed down from assignment
         }
     }
+
 
     void visit(AstVar* nodep) override {
         iterateChildren(nodep);

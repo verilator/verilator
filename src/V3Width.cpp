@@ -8068,6 +8068,21 @@ class WidthVisitor final : public VNVisitor {
                 = underp;  // Need FINAL on children; otherwise splice would block it
             spliceCvtString(VN_AS(underp, NodeExpr));
             underp = userIterateSubtreeReturnEdits(oldp, WidthVP{SELF, FINAL}.p());
+        } else if (!expDTypep->isString() && underp->dtypep()->isString()) {
+            // String being assigned to non-string (e.g., enum).
+            // This is illegal per IEEE but some simulators allow it, returning 0.
+            // Issue warning but generate code that returns 0 (via atoi which returns 0 for
+            // non-numeric strings).
+            if (warnOn) {
+                underp->v3warn(IMPLICITSTRTOINT,
+                               "Implicit conversion of string to "
+                                   << expDTypep->prettyDTypeNameQ()
+                                   << " is not standard; will use atoi (returns 0 for "
+                                      "non-numeric)");
+            }
+            AstNode* const oldp = underp;
+            spliceCvtStringToInt(VN_AS(underp, NodeExpr), expDTypep->width());
+            underp = userIterateSubtreeReturnEdits(oldp, WidthVP{SELF, FINAL}.p());
         } else {
             const AstBasicDType* const expBasicp = expDTypep->basicp();
             const AstBasicDType* const underBasicp = underp->dtypep()->basicp();
@@ -8324,6 +8339,25 @@ class WidthVisitor final : public VNVisitor {
             nodep->unlinkFrBack(&linker);
             AstNodeExpr* const newp = new AstCvtPackString{nodep->fileline(), nodep};
             linker.relink(newp);
+            return newp;
+        } else {
+            return nodep;
+        }
+    }
+    AstNodeExpr* spliceCvtStringToInt(AstNodeExpr* nodep, int width) {
+        // Convert string to integer via atoi (non-standard but compatible with some simulators)
+        // atoi returns 0 for non-numeric strings which is reasonable behavior
+        if (nodep && nodep->dtypep()->basicp() && nodep->dtypep()->basicp()->isString()) {
+            UINFO(6, "   spliceCvtStringToInt: " << nodep);
+            VNRelinker linker;
+            nodep->unlinkFrBack(&linker);
+            AstNodeExpr* const newp
+                = new AstAtoN{nodep->fileline(), nodep, AstAtoN::ATOI};
+            linker.relink(newp);
+            // AstAtoN sets dtypeSetSigned32() in constructor, resize if needed
+            if (width != 32) {
+                newp->dtypeSetBitSized(width, VSigning::SIGNED);
+            }
             return newp;
         } else {
             return nodep;

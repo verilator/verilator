@@ -149,19 +149,23 @@ private:
         // Skip if we are under a member select (lhs of a dot)
         // We don't care about lifetime of anything else than rhs of a dot
         if (!m_underSel && !m_contNba.empty()) {
-            std::string varType;
             const AstNodeDType* const varDtp = varp->dtypep()->skipRefp();
             if (varp->lifetime().isAutomatic() && !VN_IS(varDtp, IfaceRefDType)
-                && !(varp->isFuncLocal() && varp->isIO()))
-                varType = "Automatic lifetime";
-            else if (varp->isClassMember() && !varp->lifetime().isStatic()
-                     && !VN_IS(varDtp, IfaceRefDType))
-                varType = "Class non-static";
-            else if (varDtp->isDynamicallySized() && m_dynsizedelem)
-                varType = "Dynamically-sized";
-            if (!varType.empty()) {
+                && !(varp->isFuncLocal() && varp->isIO())) {
                 UINFO(1, "    Related var dtype: " << varDtp);
-                nodep->v3error(varType
+                // Use warning (suppressible with -Wno-NBAAUTOL) for testbench compatibility
+                nodep->v3warn(NBAAUTOL, "Automatic lifetime"
+                              << " variable not allowed in " << m_contNba
+                              << " assignment (IEEE 1800-2023 6.21): " << varp->prettyNameQ());
+            } else if (varp->isClassMember() && !varp->lifetime().isStatic()
+                     && !VN_IS(varDtp, IfaceRefDType)) {
+                UINFO(1, "    Related var dtype: " << varDtp);
+                nodep->v3error("Class non-static"
+                               << " variable not allowed in " << m_contNba
+                               << " assignment (IEEE 1800-2023 6.21): " << varp->prettyNameQ());
+            } else if (varDtp->isDynamicallySized() && m_dynsizedelem) {
+                UINFO(1, "    Related var dtype: " << varDtp);
+                nodep->v3error("Dynamically-sized"
                                << " variable not allowed in " << m_contNba
                                << " assignment (IEEE 1800-2023 6.21): " << varp->prettyNameQ());
             }
