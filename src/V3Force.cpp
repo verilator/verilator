@@ -245,9 +245,21 @@ private:
                 varp->v3warn(E_UNSUPPORTED, "Unsupported: Force of unpacked array variable with "
                                             "elements of complex data type");
             }
-            return varp->dtypep();
+            return origDTypep;
+        } else if (VN_IS(origDTypep, BasicDType)) {
+            return isRangedDType(varp) ? origDTypep : varp->findBitDType();
+        } else if (VN_IS(origDTypep, PackArrayDType)) {
+            return origDTypep;
+        } else if (const AstNodeUOrStructDType* const sdtp
+                   = VN_CAST(origDTypep, NodeUOrStructDType)) {
+            if (!sdtp->packed()) {
+                varp->v3warn(E_UNSUPPORTED,
+                             "Unsupported: Force of unpacked struct / union variable");
+            }
+            return origDTypep;
         } else {
-            return isRangedDType(varp) ? varp->dtypep() : varp->findBitDType();
+            varp->v3fatalSrc("Unsupported: Force of variable of unhandled data type");
+            return origDTypep;
         }
     }
 
