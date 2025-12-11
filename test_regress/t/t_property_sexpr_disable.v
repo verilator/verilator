@@ -44,7 +44,7 @@ module t (  /*AUTOARG*/
 
   always @(clk) begin
     ++cyc;
-    if (cyc == MAX + 1) begin
+    if (cyc == MAX) begin
        expected[1] = '{2, 2};
        expected[2] = '{2, 3};
        // expected[3] shouldn't be initialized
