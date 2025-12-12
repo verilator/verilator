@@ -1313,16 +1313,6 @@ class ClassRefUnlinkerVisitor final : public VNVisitor {
 
 public:
     explicit ClassRefUnlinkerVisitor(AstNetlist* netlistp) { iterate(netlistp); }
-
-    //EOM
-    //void visit(AstClassOrPackageRef* nodep) override {
-    //    if (nodep->paramsp()) {
-    //        if (AstClass* const classp = VN_CAST(nodep->classOrPackageSkipp(), Class)) {
-    //            if (!classp->user3p()) VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-    //        }
-    //    }
-    //}
-
     void visit(AstClassOrPackageRef* nodep) override {
         if (nodep->paramsp()) {
             if (AstClass* const classp = VN_CAST(nodep->classOrPackageSkipp(), Class)) {
@@ -1340,7 +1330,6 @@ public:
             }
         }
     }
-
     void visit(AstClass* nodep) override {}  // don't iterate inside classes
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 };
