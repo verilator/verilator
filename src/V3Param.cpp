@@ -1313,11 +1313,20 @@ class ClassRefUnlinkerVisitor final : public VNVisitor {
 
 public:
     explicit ClassRefUnlinkerVisitor(AstNetlist* netlistp) { iterate(netlistp); }
-
     void visit(AstClassOrPackageRef* nodep) override {
         if (nodep->paramsp()) {
             if (AstClass* const classp = VN_CAST(nodep->classOrPackageSkipp(), Class)) {
-                if (!classp->user3p()) VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                if (!classp->user3p()) {
+                    // Check if this ClassOrPackageRef is the lhsp of a DOT node
+                    AstDot* const dotp = VN_CAST(nodep->backp(), Dot);
+                    if (dotp && dotp->lhsp() == nodep) {
+                        // Replace DOT with just its rhsp to avoid leaving DOT with null lhsp
+                        dotp->replaceWith(dotp->rhsp()->unlinkFrBack());
+                        VL_DO_DANGLING2(pushDeletep(dotp), dotp, nodep);
+                    } else {
+                        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                    }
+                }
             }
         }
     }
