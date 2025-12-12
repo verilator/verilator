@@ -859,21 +859,14 @@ class TimingControlVisitor final : public VNVisitor {
                 nodep->addStmtsp(cstmtp);
             }
         }
-        AstNode* firstCoStmtp = nullptr;  // First co_* statement in the function
-        nodep->exists([&](AstCAwait* const awaitp) -> bool { return (firstCoStmtp = awaitp); });
-        if (!firstCoStmtp) {
-            // It's a coroutine but has no awaits (a class method that overrides/is
-            // overridden by a suspendable, but doesn't have any awaits itself). Add a
-            // co_return at the end (either that or a co_await is required in a
-            // coroutine)
-            firstCoStmtp = new AstCStmt{nodep->fileline(), "co_return;"};
-            nodep->addStmtsp(firstCoStmtp);
-        }
         if (nodep->dpiExportImpl()) {
-            // A DPI-exported coroutine won't be able to block the calling code
-            // Error on the await node; fall back to the function node
-            firstCoStmtp->v3warn(E_UNSUPPORTED,
-                                 "Unsupported: Timing controls inside DPI-exported tasks");
+            nodep->exists([](AstCAwait* const awaitp) -> bool {
+                // A DPI-exported coroutine won't be able to block the calling code
+                // Error on the await node; fall back to the function node
+                awaitp->v3warn(E_UNSUPPORTED,
+                               "Unsupported: Timing controls inside DPI-exported tasks");
+                return true;
+            });
         }
     }
     void visit(AstNodeCCall* nodep) override {
