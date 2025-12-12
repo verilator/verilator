@@ -9,14 +9,15 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios("simulator_st")
+test.top_filename = "t/t_instance_gen_loop.v"
 
-test.compile(verilator_flags2=["--trace-vcd", "--trace-structs", "--output-split-ctrace", "32"])
-
-if test.vlt_all:
-    test.file_grep_count(test.obj_dir + "/V" + test.name + "__Trace__0.cpp",
-                         r'void Vt.*trace_chg_.*sub.*{', 3 if test.vltmt else 1)
+test.compile(
+    # artificially low trace splitting for force cross-split type function usage
+    verilator_flags2=["--trace", "--trace-structs", "--output-split-ctrace 10"])
 
 test.execute()
+
+test.vcd_identical(test.trace_filename, test.golden_filename)
 
 test.passes()
