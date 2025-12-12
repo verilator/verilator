@@ -1251,8 +1251,9 @@ class ParamProcessor final {
                     if (typedefp->name() == refDTypep->name()) {
                         refDTypep->typedefp(typedefp);
                         refDTypep->classOrPackagep(newClassp);
-                        UINFO(9, "Resolved parameterized class typedef: " << refDTypep->name()
-                              << " -> " << typedefp << " in " << newClassp->name());
+                        UINFO(9, "Resolved parameterized class typedef: "
+                                     << refDTypep->name() << " -> " << typedefp << " in "
+                                     << newClassp->name());
                         break;
                     }
                 }
