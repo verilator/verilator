@@ -71,6 +71,12 @@ class InstVisitor final : public VNVisitor {
             if (nodep->modVarp()->isInout()) {
                 nodep->v3fatalSrc("Unsupported: Verilator is a 2-state simulator");
             } else if (nodep->modVarp()->isWritable()) {
+                // If the destination is a simple VarRef to a primaryIO signal,
+                // mark the source port as primaryIO too (for trace optimization)
+                if (const AstNodeVarRef* const dstRefp = VN_CAST(exprp, NodeVarRef)) {
+                    if (dstRefp->varp()->isPrimaryIO()) { nodep->modVarp()->primaryIO(true); }
+                }
+
                 AstNodeExpr* const rhsp = new AstVarXRef{exprp->fileline(), nodep->modVarp(),
                                                          m_cellp->name(), VAccess::READ};
                 AstAssignW* const assp = new AstAssignW{exprp->fileline(), exprp, rhsp};
@@ -78,6 +84,13 @@ class InstVisitor final : public VNVisitor {
             } else if (nodep->modVarp()->isNonOutput()) {
                 // Don't bother moving constants now,
                 // we'll be pushing the const down to the cell soon enough.
+
+                // If the source is a simple VarRef to a primaryIO signal,
+                // mark the target port as primaryIO too (for trace optimization)
+                if (const AstNodeVarRef* const srcRefp = VN_CAST(exprp, NodeVarRef)) {
+                    if (srcRefp->varp()->isPrimaryIO()) { nodep->modVarp()->primaryIO(true); }
+                }
+
                 AstAssignW* const assp
                     = new AstAssignW{exprp->fileline(),
                                      new AstVarXRef{exprp->fileline(), nodep->modVarp(),
