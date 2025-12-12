@@ -1301,8 +1301,39 @@ class ConstraintExprVisitor final : public VNVisitor {
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     void visit(AstConstraintUnique* nodep) override {
-        nodep->v3warn(CONSTRAINTIGN, "Constraint expression ignored (unsupported)");
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        // Expand unique { a, b, c } into pairwise != constraints:
+        // a != b, a != c, b != c
+        FileLine* const fl = nodep->fileline();
+
+        // Collect all items from rangesp into a vector
+        std::vector<AstNodeExpr*> items;
+        for (AstNode* itemp = nodep->rangesp(); itemp; itemp = itemp->nextp()) {
+            items.push_back(VN_AS(itemp, NodeExpr));
+        }
+
+        // Generate pairwise != constraints
+        AstNode* newConstraintsp = nullptr;
+        for (size_t i = 0; i < items.size(); ++i) {
+            for (size_t j = i + 1; j < items.size(); ++j) {
+                // Create: items[i] != items[j]
+                AstNeq* const neqp
+                    = new AstNeq{fl, items[i]->cloneTreePure(false), items[j]->cloneTreePure(false)};
+                // Wrap in AstConstraintExpr (hard constraint)
+                AstConstraintExpr* const constrp = new AstConstraintExpr{fl, neqp};
+                newConstraintsp = AstNode::addNext(newConstraintsp, constrp);
+            }
+        }
+
+        if (newConstraintsp) {
+            // Replace unique constraint with expanded constraints
+            nodep->replaceWith(newConstraintsp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            // Visit the new constraints
+            iterate(newConstraintsp);
+        } else {
+            // No constraints generated (0 or 1 items)
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        }
     }
     void visit(AstConstraintExpr* nodep) override {
         iterateChildren(nodep);
