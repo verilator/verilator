@@ -52,7 +52,7 @@ ccjson = [
         "file": srcs_dir + "/mt_disabled.cpp",
         "output": srcs_dir + "/mt_disabled.o",
         "arguments":
-        [*common_args, "-o", srcs_dir + "/mt_enabled.o", srcs_dir + "/mt_enabled.cpp"]
+        [*common_args, "-o", srcs_dir + "/mt_disabled.o", srcs_dir + "/mt_disabled.cpp"]
     },
 ]
 ccjson_str = json.dumps(ccjson)
