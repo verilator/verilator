@@ -1240,6 +1240,24 @@ class ParamProcessor final {
             = nodeDeparamCommon(nodep, srcModp, nodep->paramsp(), nullptr, false);
         if (!newModp) return nullptr;
         nodep->classOrPackagep(newModp);  // Might be unchanged if not cloned (newModp == srcModp)
+
+        // If this ClassOrPackageRef is a child of a RefDType (e.g., typedef class#(T)::member_t),
+        // resolve the RefDType's typedef to point to the typedef inside the specialized class
+        AstRefDType* const refDTypep = VN_CAST(nodep->backp(), RefDType);
+        AstClass* const newClassp = refDTypep ? VN_CAST(newModp, Class) : nullptr;
+        if (newClassp && !refDTypep->typedefp() && !refDTypep->subDTypep()) {
+            for (AstNode* itemp = newClassp->membersp(); itemp; itemp = itemp->nextp()) {
+                if (AstTypedef* const typedefp = VN_CAST(itemp, Typedef)) {
+                    if (typedefp->name() == refDTypep->name()) {
+                        refDTypep->typedefp(typedefp);
+                        refDTypep->classOrPackagep(newClassp);
+                        UINFO(9, "Resolved parameterized class typedef: " << refDTypep->name()
+                              << " -> " << typedefp << " in " << newClassp->name());
+                        break;
+                    }
+                }
+            }
+        }
         return newModp;
     }
     AstNodeModule* classRefDeparam(AstClassRefDType* nodep, AstNodeModule* srcModp) {
