@@ -35,10 +35,11 @@ class V3ThreadPool final {
     // MEMBERS
     std::vector<std::thread> m_workers;  // Worker threads
     std::queue<std::function<void()>> m_queue VL_GUARDED_BY(m_mutex);  // Job queue
-    std::condition_variable_any m_cv;  // Conditions to wake up workers
+    std::condition_variable_any m_cv;  // Condition variable to wake up workers
+    std::condition_variable_any m_completionCV;  // Condition variable for job completion
     std::atomic<bool> m_shutdown{false};  // Termination pending
     std::atomic<size_t> m_pendingJobs{0};  // Number of started and not yet finished jobs
-    V3Mutex m_mutex;  // Mutex for use by m_queue
+    V3Mutex m_mutex;  // Mutex for use by m_queue and condition variables
 
 public:
     // CONSTRUCTORS
