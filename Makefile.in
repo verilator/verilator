@@ -854,7 +854,7 @@ venv:
 	# Create virtual environment using the python3 picked up by configure
 	[ -e $(VENV_PATH) ] || @PYTHON3@ -m venv --system-site-packages $(VENV_PATH)
 	# Install python3 dependencies
-	$(VENV_PATH)/bin/pip3 install -r python-requirements.txt
+	$(VENV_PATH)/bin/pip3 install -r python-dev-requirements.txt
 	@echo
 	@echo "Installed Python virtual environment, in:"
 	@echo "  $(VENV_PATH)"

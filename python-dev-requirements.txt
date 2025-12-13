@@ -4,8 +4,15 @@
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-# We use specific version numbers, otherwise a Python package
-# update may add a warning and break our build
+# These packages are only required for developers who want to run the whole
+# test suite, or other development steps like code formatting or linting.
+# They are NOT required for building, running or packaging Verilator itself.
+
+# The usual use of this file is via the `make venv` target, as described in
+# docs/guide/install.rst
+
+# We use specific version numbers, otherwise a Python package update may add a
+# warning and break our builds
 
 # Keep sorted
 
