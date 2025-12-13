@@ -1,16 +1,16 @@
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:7:13: 'should_show_warning_global0' has split_var metacomment, but will not be split because it is not declared in a module.
-    7 | logic [7:0] should_show_warning_global0 /*verilator split_var*/ ;
+    7 | logic [7:0] should_show_warning_global0 /*verilator split_var*/;
       |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~
                    ... For warning description see https://verilator.org/warn/SPLITVAR?v=latest
                    ... Use "/* verilator lint_off SPLITVAR */" and lint_on around source to disable this message.
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:8:13: 'should_show_warning_global1' has split_var metacomment, but will not be split because it is not declared in a module.
-    8 | logic [7:0] should_show_warning_global1 [1:0] /*verilator split_var*/ ;
+    8 | logic [7:0] should_show_warning_global1 [1:0] /*verilator split_var*/;
       |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:11:16: 'should_show_warning_ifs0' has split_var metacomment, but will not be split because it is not declared in a module.
-   11 |    logic [7:0] should_show_warning_ifs0 /*verilator split_var*/ ;
+   11 |    logic [7:0] should_show_warning_ifs0 /*verilator split_var*/;
       |                ^~~~~~~~~~~~~~~~~~~~~~~~
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:12:16: 'should_show_warning_ifs1' has split_var metacomment, but will not be split because it is not declared in a module.
-   12 |    logic [7:0] should_show_warning_ifs1 [1:0] /*verilator split_var*/ ;
+   12 |    logic [7:0] should_show_warning_ifs1 [1:0] /*verilator split_var*/;
       |                ^~~~~~~~~~~~~~~~~~~~~~~~
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:40:14: 'cannot_split1' has split_var metacomment but will not be split because it is accessed from another module via a dot.
    40 |       i_sub0.cannot_split1[0] = 0;
@@ -42,40 +42,40 @@
       |                                  ^~
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:17:9: 'should_show_warning0' has split_var metacomment but will not be split because it is not an aggregate type of bit nor logic.
                                              : ... note: In instance 't'
-   17 |    real should_show_warning0                  /*verilator split_var*/ ;
+   17 |    real should_show_warning0                  /*verilator split_var*/;
       |         ^~~~~~~~~~~~~~~~~~~~
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:18:11: 'should_show_warning1' has split_var metacomment but will not be split because it is not an aggregate type of bit nor logic.
                                               : ... note: In instance 't'
-   18 |    string should_show_warning1                /*verilator split_var*/ ;
+   18 |    string should_show_warning1                /*verilator split_var*/;
       |           ^~~~~~~~~~~~~~~~~~~~
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:19:11: 'should_show_warning2' has split_var metacomment but will not be split because its bitwidth is 1.
                                               : ... note: In instance 't'
-   19 |    wire   should_show_warning2                /*verilator split_var*/ ;
+   19 |    wire   should_show_warning2                /*verilator split_var*/;
       |           ^~~~~~~~~~~~~~~~~~~~
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:23:16: 'public_signal' has split_var metacomment but will not be split because it is public.
                                               : ... note: In instance 't'
-   23 |    logic [1:0] public_signal /*verilator public*/  /*verilator split_var*/ ;
+   23 |    logic [1:0] public_signal /*verilator public*/ /*verilator split_var*/;
       |                ^~~~~~~~~~~~~
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:31:44: 'inout_port' has split_var metacomment but will not be split because it is an inout port.
                                               : ... note: In instance 't'
-   31 |    function int bad_func(inout logic [3:0] inout_port /*verilator split_var*/ ,
+   31 |    function int bad_func(inout logic [3:0] inout_port /*verilator split_var*/,
       |                                            ^~~~~~~~~~
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:32:42: 'ref_port' has split_var metacomment but will not be split because it is a ref argument.
                                               : ... note: In instance 't'
-   32 |                          ref logic [7:0] ref_port /*verilator split_var*/ );
+   32 |                          ref logic [7:0] ref_port /*verilator split_var*/);
       |                                          ^~~~~~~~
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:37:19: 'loop_idx' has split_var metacomment but will not be split because it is used as a loop variable.
                                               : ... note: In instance 't'
-   37 |       logic [7:0] loop_idx /*verilator split_var*/ ;
+   37 |       logic [7:0] loop_idx /*verilator split_var*/;
       |                   ^~~~~~~~
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:62:11: 'cannot_split_genvar' has split_var metacomment but will not be split because it is not an aggregate type of bit nor logic.
                                               : ... note: In instance 't.i_sub1'
-   62 |    genvar cannot_split_genvar /*verilator split_var*/ ;
+   62 |    genvar cannot_split_genvar /*verilator split_var*/;
       |           ^~~~~~~~~~~~~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:65:72: 'cannot_split' has split_var metacomment but will not be split because its bit range cannot be determined statically.
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:65:71: 'cannot_split' has split_var metacomment but will not be split because its bit range cannot be determined statically.
                                               : ... note: In instance 't.i_sub1'
-   65 |       static logic [8:0] rd_tmp /*verilator split_var*/  = cannot_split[addr];
-      |                                                                        ^
+   65 |       static logic [8:0] rd_tmp /*verilator split_var*/ = cannot_split[addr];
+      |                                                                       ^
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:66:23: 'rd_tmp' has split_var metacomment but will not be split because its bit range cannot be determined statically.
                                               : ... note: In instance 't.i_sub1'
    66 |       rd_data = rd_tmp[{3'b0, addr[0]}+:8];

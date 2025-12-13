@@ -23,6 +23,7 @@
 #include "V3Error.h"
 #include "V3LangCode.h"
 
+#include <list>
 #include <map>
 #include <set>
 #include <string>
@@ -427,8 +428,9 @@ private:
 
 private:
     // METHODS
+    void addArg(char** argv, size_t count, bool isForRerun);
+    void addArg(const std::string& arg, bool isForRerun);
     void addLineArg(const string& arg);
-    void addArg(const string& arg);
     void addDefine(const string& defline, bool allowPlus) VL_MT_DISABLED;
     void addFuture(const string& flag);
     void addFuture0(const string& flag);
@@ -758,6 +760,7 @@ public:
     static string version() VL_PURE;
     static string argString(int argc, char** argv);  ///< Return list of arguments as simple string
     string allArgsString() const VL_MT_SAFE;  ///< Return all passed arguments as simple string
+    const std::list<std::pair<std::list<std::string>, bool>>& allArgs() const;
     // Return options for child hierarchical blocks when forTop==false, otherwise returns args for
     // the top module.
     string allArgsStringForHierBlock(bool forTop) const;

@@ -1769,10 +1769,20 @@ placed into the obj_dir, .vpp, .tree and .dot files.
 Verilator creates a *{mod_prefix}*\ __inputs.vpp file containing all the
 files that were read, filtered by preprocessing. This file can be fed back
 into Verilator, replacing on the command line all of the previous input
-files, to enable simplification of test cases.
+files, to enable simplification of test cases. This file also contains most
+command line arguments Verilator was invoked as `// verilator fargs``
+metacomments, with and can be parsed by ``-f`. So to reproduce the run that
+created the file, run:
+
+::
+   verilator -f <prefix>__inputs.vpp <prefix>__inputs.vpp
+
+The first `-f <prefix>__inputs.vpp` reads the command line arguments from
+the file. The second `<prefix>__inputsl.vpp` adds the file as a normal
+source file.
 
 Verilator also creates .vpp files for each individual file passed on the
-command line.
+command line. These do not contain the command line argument metacomments.
 
 
 .dot Output
