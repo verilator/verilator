@@ -77,14 +77,18 @@ jobs:
             ${{ env.CACHE_KEY }}-
 
       - name: Install test dependencies
-        run: ./ci/ci-install.bash
+        run: |
+          ./ci/ci-install.bash
+          make venv
 
       - name: Test
         id: run-test
         continue-on-error: true
         env:
           TESTS: ${{ inputs.suite }}
-        run: ./ci/ci-script.bash
+        run: |
+          source .venv/bin/activate
+          ./ci/ci-script.bash
 
       - name: Combine code coverage data
         if: ${{ inputs.dev-gcov }}

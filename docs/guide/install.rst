@@ -153,22 +153,37 @@ need to be present to run Verilator:
 
    sudo apt-get install git autoconf flex bison
 
-Those developing Verilator itself also need these (see internals.rst):
+Those developing Verilator itself also need the following additional
+packages (see internals.rst), and a Python virtual environment:
 
 .. code-block:: bash
 
    sudo apt-get install clang clang-format-18 cmake gdb gprof graphviz lcov
-   sudo apt-get install python3-clang python3-distro pipx yapf3 bear jq
-   python3 -m venv --system-site-packages ~/.verilator_pyenv
-   source ~/.verilator_pyenv/bin/activate
-   pip3 install sphinx sphinx_rtd_theme sphinxcontrib-spelling breathe gersemi mbake mypy ruff
-   pip3 install git+https://github.com/antmicro/astsee.git
-   pipx install sarif-tools
+   sudo apt-get install python3-clang bear jq
    cpan install Pod::Perldoc
-   #
-   # Later, when building or testing Verilator, you will need
-   source ~/.verilator_pyenv/bin/activate
 
+The Python virtual environment is only required for running the whole test
+suite, and for additional development steps like linting and formatting. It is
+not required for building Verilator itself. To install the python virtual
+environment and all dependencies automatically, run the following once, after
+``configure``:
+
+.. code-block:: bash
+
+   # Create Python virutal environment in .venv:
+   make venv
+
+   # Or alternatively, to put it somewhere else:
+   make venv VENV_PATH=where_you_want_it
+
+Then activate the virtual environment in the shell using:
+
+.. code-block:: bash
+
+   source .venv/bin/activate
+
+   # Or if installed somewhere else:
+   source where_you_want_it/bin/activate
 
 Install SystemC
 ^^^^^^^^^^^^^^^
