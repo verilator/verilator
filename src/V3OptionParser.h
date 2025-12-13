@@ -94,7 +94,7 @@ public:
     virtual ~ActionIfs() = default;
     virtual bool isValueNeeded() const = 0;  // Need val of "-opt val"
     virtual bool isFOnOffAllowed() const = 0;  // true if "-fno-opt" is allowed
-    virtual bool isNotNeededForRerun() const = 0; // Will not be dumped with --dump-inputs
+    virtual bool isNotNeededForRerun() const = 0;  // Will not be dumped with --dump-inputs
     virtual bool isOnOffAllowed() const = 0;  // true if "-no-opt" is allowed
     virtual bool isPartialMatchAllowed() const = 0;  // true if "-Wno-" matches "-Wno-fatal"
     virtual bool isUndocumented() const = 0;  // Will not be suggested in typo

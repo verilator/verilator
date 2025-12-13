@@ -23,8 +23,8 @@
 #include "V3Error.h"
 #include "V3LangCode.h"
 
-#include <map>
 #include <list>
+#include <map>
 #include <set>
 #include <string>
 #include <vector>
@@ -438,8 +438,10 @@ private:
     void addIncDirUser(const string& incdir);  // User requested
     void addIncDirFallback(const string& incdir);  // Low priority if not found otherwise
     void addParameter(const string& paramline, bool allowPlus);
+
 public:
     void addRerunArg(char** beginp, char** endp);
+
 private:
     void addRerunFile(const std::string& filename);
     void addLangExt(const string& langext, const V3LangCode& lc);

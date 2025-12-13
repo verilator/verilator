@@ -39,7 +39,8 @@ struct V3OptionParser::Impl final {
     // Base class of actual action classes
     template <en N_Mode, bool N_Allow_Partial_Match = false>
     class ActionBase VL_NOT_FINAL : public ActionIfs {
-        bool m_notNeededForRerun = false;  // This option is not needed for rerun with --dump-inputs
+        bool m_notNeededForRerun
+            = false;  // This option is not needed for rerun with --dump-inputs
         bool m_undocumented = false;  // This option is not documented
     public:
         bool isValueNeeded() const override final { return N_Mode == en::VALUE; }
@@ -48,8 +49,14 @@ struct V3OptionParser::Impl final {
         bool isOnOffAllowed() const override final { return N_Mode == en::ONOFF; }
         bool isPartialMatchAllowed() const override final { return N_Allow_Partial_Match; }
         bool isUndocumented() const override { return m_undocumented; }
-        ActionIfs& undocumented() override { m_undocumented = true; return *this; }
-        ActionIfs& notNeededForRerun() override { m_notNeededForRerun = true; return *this; }
+        ActionIfs& undocumented() override {
+            m_undocumented = true;
+            return *this;
+        }
+        ActionIfs& notNeededForRerun() override {
+            m_notNeededForRerun = true;
+            return *this;
+        }
     };
 
     // Actual action classes

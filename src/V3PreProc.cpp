@@ -1546,12 +1546,8 @@ int V3PreProcImp::getStateToken() {
         }
         // Default is to do top level expansion of some tokens
         switch (tok) {
-        case VP_ARGS_BEGIN:
-            parsingOff();
-            goto next_tok;
-        case VP_ARGS_END:
-            parsingOn();
-            goto next_tok;
+        case VP_ARGS_BEGIN: parsingOff(); goto next_tok;
+        case VP_ARGS_END: parsingOn(); goto next_tok;
         case VP_INCLUDE:
             if (!m_off) {
                 statePush(ps_INCNAME);
