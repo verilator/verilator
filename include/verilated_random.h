@@ -199,7 +199,8 @@ public:
 // Object holding constraints and variable references.
 class VlRandomizer VL_NOT_FINAL {
     // MEMBERS
-    std::vector<std::string> m_constraints;  // Solver-dependent constraints
+    std::vector<std::string> m_constraints;  // Hard constraints (must be satisfied)
+    std::vector<std::string> m_softConstraints;  // Soft constraints (optional, best-effort)
     std::map<std::string, std::shared_ptr<const VlRandomVar>> m_vars;  // Solver-dependent
                                                                        // variables
     ArrayInfoMap m_arr_vars;  // Tracks each element in array structures for iteration
@@ -570,6 +571,7 @@ public:
     }
 
     void hard(std::string&& constraint);
+    void soft(std::string&& constraint);
     void clearConstraints();
     void clearAll();  // Clear both constraints and variables
     void set_randmode(const VlQueue<CData>& randmode) { m_randmodep = &randmode; }
