@@ -95,7 +95,8 @@ protected:
         if (modfilename.empty()) return false;
 
         // Set language standard up front
-        if (!v3Global.opt.preprocOnly() || v3Global.opt.preprocResolve()) {
+        if ((!v3Global.opt.preprocOnly() || v3Global.opt.preprocResolve())
+            && modfilename != v3Global.opt.rerunFile()) {
             // Letting lex parse this saves us from having to specially en/decode
             // from the V3LangCode to the various Lex BEGIN states. The language
             // of this source file is updated here, in case there have been any

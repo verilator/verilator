@@ -39,14 +39,24 @@ struct V3OptionParser::Impl final {
     // Base class of actual action classes
     template <en N_Mode, bool N_Allow_Partial_Match = false>
     class ActionBase VL_NOT_FINAL : public ActionIfs {
+        bool m_notNeededForRerun
+            = false;  // This option is not needed for rerun with --dump-inputs
         bool m_undocumented = false;  // This option is not documented
     public:
         bool isValueNeeded() const override final { return N_Mode == en::VALUE; }
         bool isFOnOffAllowed() const override final { return N_Mode == en::FONOFF; }
+        bool isNotNeededForRerun() const override final { return m_notNeededForRerun; }
         bool isOnOffAllowed() const override final { return N_Mode == en::ONOFF; }
         bool isPartialMatchAllowed() const override final { return N_Allow_Partial_Match; }
         bool isUndocumented() const override { return m_undocumented; }
-        void undocumented() override { m_undocumented = true; }
+        ActionIfs& undocumented() override {
+            m_undocumented = true;
+            return *this;
+        }
+        ActionIfs& notNeededForRerun() override {
+            m_notNeededForRerun = true;
+            return *this;
+        }
     };
 
     // Actual action classes
@@ -195,20 +205,20 @@ bool V3OptionParser::hasPrefixNo(const char* strp) {
     return VString::startsWith(strp, "-no");
 }
 
-int V3OptionParser::parse(int idx, int argc, char* argv[]) {
+std::pair<int, bool> V3OptionParser::parse(int idx, int argc, char* argv[]) {
     UASSERT(m_pimpl->m_isFinalized, "finalize() must be called before parse()");
     const char* optp = argv[idx];
     if (optp[0] == '-' && optp[1] == '-') ++optp;
     ActionIfs* const actp = find(optp);
-    if (!actp) return 0;
+    if (!actp) return {0, false};
     if (!actp->isValueNeeded()) {
         actp->exec(optp, nullptr);
-        return 1;
+        return {1, !actp->isNotNeededForRerun()};
     } else if (idx + 1 < argc) {
         actp->exec(optp, argv[idx + 1]);
-        return 2;
+        return {2, !actp->isNotNeededForRerun()};
     }
-    return 0;
+    return {0, false};
 }
 
 string V3OptionParser::getSuggestion(const char* str) const {

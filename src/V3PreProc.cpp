@@ -558,6 +558,8 @@ FileLine* V3PreProc::fileline() {
 
 const char* V3PreProcImp::tokenName(int tok) {
     switch (tok) {
+    case VP_ARGS_BEGIN: return ("ARGS_BEGIN");
+    case VP_ARGS_END: return ("ARGS_END");
     case VP_BACKQUOTE: return ("BACKQUOTE");
     case VP_COMMENT: return ("COMMENT");
     case VP_DEFARG: return ("DEFARG");
@@ -1544,6 +1546,8 @@ int V3PreProcImp::getStateToken() {
         }
         // Default is to do top level expansion of some tokens
         switch (tok) {
+        case VP_ARGS_BEGIN: parsingOff(); goto next_tok;
+        case VP_ARGS_END: parsingOn(); goto next_tok;
         case VP_INCLUDE:
             if (!m_off) {
                 statePush(ps_INCNAME);

@@ -23,6 +23,7 @@
 #include "V3Error.h"
 #include "V3LangCode.h"
 
+#include <list>
 #include <map>
 #include <set>
 #include <string>
@@ -368,6 +369,7 @@ private:
     string      m_pipeFilter;   // main switch: --pipe-filter
     string      m_prefix;       // main switch: --prefix
     string      m_protectKey;   // main switch: --protect-key
+    string      m_rerunFile;    // main switch: --rerun {filename}
     string      m_topModule;    // main switch: --top-module
     string      m_unusedRegexp; // main switch: --unused-regexp
     string      m_waiverOutput;  // main switch: --waiver-output {filename}
@@ -436,6 +438,12 @@ private:
     void addIncDirUser(const string& incdir);  // User requested
     void addIncDirFallback(const string& incdir);  // Low priority if not found otherwise
     void addParameter(const string& paramline, bool allowPlus);
+
+public:
+    void addRerunArg(char** beginp, char** endp);
+
+private:
+    void addRerunFile(const std::string& filename);
     void addLangExt(const string& langext, const V3LangCode& lc);
     void addLibExtV(const string& libext);
     void optimize(int level);
@@ -662,6 +670,7 @@ public:
     bool protectKeyProvided() const { return !m_protectKey.empty(); }
     string protectKeyDefaulted() VL_MT_SAFE;  // Set default key if not set by user
     string topModule() const { return m_topModule; }
+    string rerunFile() const { return m_rerunFile; }
     bool noTraceTop() const { return m_noTraceTop; }
     string unusedRegexp() const { return m_unusedRegexp; }
     string waiverOutput() const { return m_waiverOutput; }
@@ -799,6 +808,8 @@ public:
 
     // METHODS (other OS)
     static void throwSigsegv();
+
+    const std::list<std::list<std::string>>& rerunArgs() const;
 };
 
 //######################################################################

@@ -369,10 +369,19 @@ void V3ParseImp::dumpInputsFile() {
     if (!s_append) {
         s_append = true;
         UINFO(1, "Writing all preprocessed output to " << vppfilename);
-        *ofp << "// Dump of all post-preprocessor input\n";
+        *ofp << "// Dump of all post-preprocessor input and rerun arguments\n";
         *ofp << "// Blank lines and `line directives have been removed\n";
         *ofp << "//\n";
         V3Stats::infoHeader(*ofp, "// ");
+        *ofp << "`verilator_args_begin\n";
+        for (const std::list<std::string>& args : v3Global.opt.rerunArgs()) {
+            for (const std::string& arg : args) {
+                if (&arg != &args.front()) *ofp << " ";
+                *ofp << arg;
+            }
+            *ofp << "\n";
+        }
+        *ofp << "`verilator_args_end\n";
     }
     *ofp << "\n";
     preprocDumps(*ofp, true);

@@ -122,6 +122,9 @@ bom             [\357\273\277]
 <INITIAL>"`undef"       { FL_FWDC; return VP_UNDEF; }
 <INITIAL>"`undefineall" { FL_FWDC; return VP_UNDEFINEALL; }
 <INITIAL>"`error"       { FL_FWDC; if (!pedantic()) return VP_ERROR; else return VP_DEFREF; }
+<INITIAL>"`verilator_args_begin"      { FL_FWDC; return VP_ARGS_BEGIN; }
+<INITIAL>"`verilator_args_end"        { FL_FWDC; return VP_ARGS_END; }
+    
     /* We wanted this to be next to `protect But it must be before `pramga */
     /* we win only because we both match to the end of the line so the length */
     /* is equal and we are first*/
