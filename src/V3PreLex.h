@@ -48,6 +48,8 @@ class V3PreProcImp;
 #define VP_ELSIF        263
 #define VP_LINE         264
 #define VP_UNDEFINEALL  265
+#define VP_ARGS_BEGIN   267
+#define VP_ARGS_END     268
 
 #define VP_SYMBOL       300
 #define VP_STRING       301

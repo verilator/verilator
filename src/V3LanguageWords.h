@@ -245,6 +245,8 @@ inline void V3LanguageWords::Singleton::init() {
     addKwd("`timescale",                "Verilog preprocessor directive");
     addKwd("`undef",                    "Verilog preprocessor directive");
     addKwd("`undefineall",              "Verilog preprocessor directive");
+    addKwd("`verilator_args_begin",     "Verilator preprocessor directive");
+    addKwd("`verilator_args_end",       "Verilator preprocessor directive");
     addKwd("`verilator_config",         "Verilator preprocessor directive");
     addKwd("`verilog",                  "Verilator preprocessor directive");
     // clang-format on

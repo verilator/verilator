@@ -69,6 +69,7 @@ public:
     // STATE
     std::list<string> m_lineArgs;  // List of command line argument encountered
     std::list<string> m_allArgs;  // List of every argument encountered
+    std::list<std::list<std::string>> m_rerunArgs;  // Argument for rerunning --dump-inputs
     std::list<string> m_incDirUsers;  // Include directories (ordered)
     std::set<string> m_incDirUserSet;  // Include directories (for removing duplicates)
     std::list<string> m_incDirFallbacks;  // Include directories (ordered)
@@ -399,6 +400,22 @@ void V3Options::addForceInc(const string& filename) { m_forceIncs.push_back(file
 void V3Options::addLineArg(const string& arg) { m_impp->m_lineArgs.push_back(arg); }
 
 void V3Options::addArg(const string& arg) { m_impp->m_allArgs.push_back(arg); }
+
+void V3Options::addRerunArg(char** beginp, char** endp) {
+    m_impp->m_rerunArgs.push_back(std::list<std::string>());
+    std::list<std::string>& args = m_impp->m_rerunArgs.back();
+    for (char** p = beginp; p < endp; ++p) args.emplace_back(*p);
+}
+
+void V3Options::addRerunFile(const std::string& filename) {
+    m_impp->m_rerunArgs.push_back(std::list<std::string>());
+    std::list<std::string>& args = m_impp->m_rerunArgs.back();
+    args.emplace_back(filename);
+}
+
+const std::list<std::list<std::string>>& V3Options::rerunArgs() const {
+    return m_impp->m_rerunArgs;
+}
 
 string V3Options::allArgsString() const VL_MT_SAFE {
     string result;
@@ -1209,8 +1226,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     // (If DECL_OPTION is a macro, then lambda would be collapsed into a single line).
 
     // Plus options
-    DECL_OPTION("+define+", CbPartialMatch,
-                [this](const char* optp) VL_MT_DISABLED { addDefine(optp, true); });
+    DECL_OPTION("+define+", CbPartialMatch, [this](const char* optp) VL_MT_DISABLED {
+        addDefine(optp, true);
+    }).notNeededForRerun();
     DECL_OPTION("+incdir+", CbPartialMatch, [this, &optdir](const char* optp) {
         string dirs = optp;
         string::size_type pos;
@@ -1219,7 +1237,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
             dirs = dirs.substr(pos + 1);
         }
         addIncDirUser(parseFileArg(optdir, dirs));
-    });
+    }).notNeededForRerun();
     DECL_OPTION("+libext+", CbPartialMatch, [this](const char* optp) {
         string exts = optp;
         string::size_type pos;
@@ -1228,7 +1246,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
             exts = exts.substr(pos + 1);
         }
         addLibExtV(exts);
-    });
+    }).notNeededForRerun();
     DECL_OPTION("+librescan", CbCall, []() {});  // NOP
     DECL_OPTION("+notimingchecks", CbCall, []() {});  // NOP
     DECL_OPTION("+systemverilogext+", CbPartialMatch,
@@ -1333,8 +1351,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-coverage-underscore", OnOff, &m_coverageUnderscore);
     DECL_OPTION("-coverage-user", OnOff, &m_coverageUser);
 
-    DECL_OPTION("-D", CbPartialMatch,
-                [this](const char* valp) VL_MT_DISABLED { addDefine(valp, false); });
+    DECL_OPTION("-D", CbPartialMatch, [this](const char* valp) VL_MT_DISABLED {
+        addDefine(valp, false);
+    }).notNeededForRerun();
     DECL_OPTION("-debug", CbCall, [this]() { setDebugMode(3); });
     DECL_OPTION("-debugi", CbVal, [this](int v) { setDebugMode(v); });
     DECL_OPTION("-debugi-", CbPartialMatchVal, [this](const char* optp, const char* valp) {
@@ -1391,12 +1410,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
 
     DECL_OPTION("-F", CbVal, [this, fl, &optdir](const char* valp) VL_MT_DISABLED {
         parseOptsFile(fl, parseFileArg(optdir, valp), true);
-    });
+    }).notNeededForRerun();
     DECL_OPTION("-FI", CbVal,
                 [this, &optdir](const char* valp) { addForceInc(parseFileArg(optdir, valp)); });
     DECL_OPTION("-f", CbVal, [this, fl, &optdir](const char* valp) VL_MT_DISABLED {
         parseOptsFile(fl, parseFileArg(optdir, valp), false);
-    });
+    }).notNeededForRerun();
     DECL_OPTION("-flatten", OnOff, &m_flatten);
     DECL_OPTION("-future0", CbVal, [this](const char* valp) { addFuture0(valp); });
     DECL_OPTION("-future1", CbVal, [this](const char* valp) { addFuture1(valp); });
@@ -1485,8 +1504,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-hierarchical-params-file", CbVal,
                 [this](const char* optp) { m_hierParamsFile.push_back({optp, work()}); });
 
-    DECL_OPTION("-I", CbPartialMatch,
-                [this, &optdir](const char* optp) { addIncDirUser(parseFileArg(optdir, optp)); });
+    DECL_OPTION("-I", CbPartialMatch, [this, &optdir](const char* optp) {
+        addIncDirUser(parseFileArg(optdir, optp));
+    }).notNeededForRerun();
     DECL_OPTION("-if-depth", Set, &m_ifDepth);
     DECL_OPTION("-ignc", OnOff, &m_ignc).undocumented();
     DECL_OPTION("-inline-mult", Set, &m_inlineMult);
@@ -1538,7 +1558,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-Mdir", CbVal, [this](const char* valp) {
         m_makeDir = valp;
         addIncDirFallback(m_makeDir);  // Need to find generated files there too
-    });
+    }).notNeededForRerun();
     DECL_OPTION("-main", OnOff, &m_main);
     DECL_OPTION("-main-top-name", Set, &m_mainTopName);
     DECL_OPTION("-make", CbVal, [this, fl](const char* valp) {
@@ -1660,6 +1680,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         if (m_reloopLimit < 2) fl->v3error("--reloop-limit must be >= 2: " << valp);
     });
     DECL_OPTION("-report-unoptflat", OnOff, &m_reportUnoptflat);
+    DECL_OPTION("-rerun", CbVal, [this, fl, &optdir](const char* valp) VL_MT_DISABLED {
+        m_rerunFile = parseFileArg(optdir, valp);
+        parseOptsFile(fl, m_rerunFile, false);
+        addVFile(m_rerunFile, work());
+    }).notNeededForRerun();
     DECL_OPTION("-rr", CbCall, []() {});  // Processed only in bin/verilator shell
     DECL_OPTION("-runtime-debug", CbCall, [this, fl]() {
         decorations(fl, "node");
@@ -1943,14 +1968,17 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
 
     DECL_OPTION("-y", CbVal, [this, &optdir](const char* valp) {
         addIncDirUser(parseFileArg(optdir, string{valp}));
-    });
+    }).notNeededForRerun();
 
     parser.finalize();
+
+    const std::string cwd = V3Os::filenameRealPath(".");
 
     for (int i = 0; i < argc;) {
         UINFO(9, " Option: " << argv[i]);
         if (!std::strcmp(argv[i], "-j")
             || !std::strcmp(argv[i], "--j")) {  // Allow gnu -- switches
+            const int begin = i;
             ++i;
             int val = 0;
             if (i < argc && std::isdigit(argv[i][0])) {
@@ -1958,12 +1986,19 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
                 if (val == 0) val = VlOs::getProcessDefaultParallelism();
                 ++i;
             }
+            addRerunArg(argv + begin, argv + i);
             if (m_buildJobs == -1) m_buildJobs = val;
             if (m_verilateJobs == -1) m_verilateJobs = val;
             if (m_outputGroups == -1) m_outputGroups = val;
         } else if (argv[i][0] == '-' || argv[i][0] == '+') {
             const char* argvNoDashp = (argv[i][1] == '-') ? (argv[i] + 2) : (argv[i] + 1);
-            if (const int consumed = parser.parse(i, argc, argv)) {
+            const auto pair = parser.parse(i, argc, argv);
+            const int consumed = pair.first;
+            if (consumed) {
+                const bool isNeededForRerun = pair.second;
+                if (isNeededForRerun && std::string{argvNoDashp} != "dump-inputs") {
+                    addRerunArg(argv + i, argv + i + consumed);
+                }
                 i += consumed;
             } else if (isFuture0(argvNoDashp)) {
                 ++i;
@@ -1982,10 +2017,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
                 || suffixed(filename, ".c")  //
                 || suffixed(filename, ".sp")) {
                 V3Options::addCppFile(filename);
+                addRerunFile(parseFileArg(cwd, argv[i]));
             } else if (suffixed(filename, ".a")  //
                        || suffixed(filename, ".o")  //
                        || suffixed(filename, ".so")) {
                 V3Options::addLdLibs(filename);
+                addRerunFile(parseFileArg(cwd, argv[i]));
             } else if (suffixed(filename, ".vlt")) {
                 V3Options::addVltFile(filename, work());
             } else {
@@ -2044,6 +2081,8 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) VL
                 oline += *pos;
             }
         }
+        if (oline == "`verilator_args_begin") continue;
+        if (oline == "`verilator_args_end") break;
         whole_file += oline + " ";
     }
     whole_file += "\n";  // So string match below is simplified
