@@ -35,9 +35,11 @@ module Test (
    else $display("wrong disable");
 `endif
 
-   assert property (@(posedge clk) disable iff (1) 0);
+   assert property (@(posedge clk) disable iff (1) 0) $stop;
+   else $stop;
 
-   assert property (@(posedge clk) disable iff (1) 1);
+   assert property (@(posedge clk) disable iff (1) 1) $stop;
+   else $stop;
 
    assert property (@(posedge clk) disable iff (0) 1);
 

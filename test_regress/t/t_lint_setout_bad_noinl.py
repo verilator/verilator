@@ -12,8 +12,6 @@ import vltest_bootstrap
 test.scenarios('linter')
 test.top_filename = "t/t_lint_setout_bad.v"
 
-test.lint(verilator_flags2=["--lint-only -fno-inline"],
-          fails=True,
-          expect_filename=test.golden_filename)
+test.lint(verilator_flags2=["-fno-inline"], fails=True, expect_filename=test.golden_filename)
 
 test.passes()

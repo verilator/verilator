@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(verilator_flags2=["--lint-only --Mdir obj_lint_only"],
+test.lint(verilator_flags2=["--Mdir obj_lint_only"],
           fails=True,
           expect_filename=test.golden_filename)
 

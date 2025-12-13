@@ -111,13 +111,13 @@ module Test
 
    // Test correct handling of disable iff
    assert property (
-     @(posedge clk) disable iff (cyc < 3)
+     @(posedge clk) disable iff ($sampled(cyc) < 3)
      1 |=> cyc > 3
    );
 
    // Test correct handling of disable iff in current cycle
    assert property (
-     @(posedge clk) disable iff (cyc == 4)
+     @(posedge clk) disable iff ($sampled(cyc) == 4)
      (cyc == 4) |=> 0
    );
 

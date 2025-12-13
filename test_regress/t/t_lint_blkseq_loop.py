@@ -11,6 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(verilator_flags2=["--lint-only -Wwarn-BLKSEQ -Wwarn-COMBDLY"])
+test.lint(verilator_flags2=["-Wwarn-BLKSEQ -Wwarn-COMBDLY"])
 
 test.passes()

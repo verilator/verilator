@@ -11,6 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(verilator_flags2=["--lint-only --bbox-sys"])
+test.lint(verilator_flags2=["--bbox-sys"])
 
 test.passes()

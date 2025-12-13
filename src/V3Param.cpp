@@ -1240,6 +1240,25 @@ class ParamProcessor final {
             = nodeDeparamCommon(nodep, srcModp, nodep->paramsp(), nullptr, false);
         if (!newModp) return nullptr;
         nodep->classOrPackagep(newModp);  // Might be unchanged if not cloned (newModp == srcModp)
+
+        // If this ClassOrPackageRef is a child of a RefDType (e.g., typedef class#(T)::member_t),
+        // resolve the RefDType's typedef to point to the typedef inside the specialized class
+        AstRefDType* const refDTypep = VN_CAST(nodep->backp(), RefDType);
+        AstClass* const newClassp = refDTypep ? VN_CAST(newModp, Class) : nullptr;
+        if (newClassp && !refDTypep->typedefp() && !refDTypep->subDTypep()) {
+            for (AstNode* itemp = newClassp->membersp(); itemp; itemp = itemp->nextp()) {
+                if (AstTypedef* const typedefp = VN_CAST(itemp, Typedef)) {
+                    if (typedefp->name() == refDTypep->name()) {
+                        refDTypep->typedefp(typedefp);
+                        refDTypep->classOrPackagep(newClassp);
+                        UINFO(9, "Resolved parameterized class typedef: "
+                                     << refDTypep->name() << " -> " << typedefp << " in "
+                                     << newClassp->name());
+                        break;
+                    }
+                }
+            }
+        }
         return newModp;
     }
     AstNodeModule* classRefDeparam(AstClassRefDType* nodep, AstNodeModule* srcModp) {
@@ -1313,11 +1332,20 @@ class ClassRefUnlinkerVisitor final : public VNVisitor {
 
 public:
     explicit ClassRefUnlinkerVisitor(AstNetlist* netlistp) { iterate(netlistp); }
-
     void visit(AstClassOrPackageRef* nodep) override {
         if (nodep->paramsp()) {
             if (AstClass* const classp = VN_CAST(nodep->classOrPackageSkipp(), Class)) {
-                if (!classp->user3p()) VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                if (!classp->user3p()) {
+                    // Check if this ClassOrPackageRef is the lhsp of a DOT node
+                    AstDot* const dotp = VN_CAST(nodep->backp(), Dot);
+                    if (dotp && dotp->lhsp() == nodep) {
+                        // Replace DOT with just its rhsp to avoid leaving DOT with null lhsp
+                        dotp->replaceWith(dotp->rhsp()->unlinkFrBack());
+                        VL_DO_DANGLING2(pushDeletep(dotp), dotp, nodep);
+                    } else {
+                        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                    }
+                }
             }
         }
     }

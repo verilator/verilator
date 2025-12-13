@@ -10,13 +10,12 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
-test.pli_filename = "t/uvm/dpi/uvm_dpi.cc"
+test.top_filename = "t/t_time_sc.v"
 
-if re.search(r'clang', test.cxx_version):
-    test.skip("uvm_regex.cc from upstream has clang warnings")
+test.sc_time_resolution = 'SC_NS'
+test.sc_time_resolution_multiplier = 10
 
-test.compile(
-    verilator_flags2=["--binary", "--build-jobs 4", "--vpi", "+incdir+t/uvm", test.pli_filename])
+test.compile(verilator_flags2=['-sc', '-timescale 10ns/10ns', '+define+TEST_EXPECT=200ns'])
 
 test.execute(expect_filename=test.golden_filename)
 

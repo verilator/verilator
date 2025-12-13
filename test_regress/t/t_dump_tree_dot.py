@@ -12,6 +12,6 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t/t_EXAMPLE.v"
 
-test.lint(v_flags=["--lint-only --dump-tree-dot"])
+test.lint(v_flags=["--dump-tree-dot"])
 
 test.passes()

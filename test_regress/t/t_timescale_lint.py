@@ -11,6 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-test.lint(verilator_flags2=["--lint-only --timescale-override 1ns/1ns"])
+test.lint(verilator_flags2=["--timescale-override 1ns/1ns"])
 
 test.passes()

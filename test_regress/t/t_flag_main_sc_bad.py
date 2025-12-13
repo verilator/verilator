@@ -11,8 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(verilator_flags2=['--exe --build --main --sc'],
-          fails=True,
-          expect_filename=test.golden_filename)
+test.compile(verilator_flags2=['--exe --build --main --sc'],
+             fails=True,
+             expect_filename=test.golden_filename)
 
 test.passes()

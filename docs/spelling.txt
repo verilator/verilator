@@ -625,6 +625,7 @@ cpure
 ctor
 ctrace
 cutable
+cxx
 cygwin
 dM
 da
@@ -1159,6 +1160,7 @@ verimake
 veriuser
 vl
 vlSelf
+vla
 vlopt
 vlt
 vltstd

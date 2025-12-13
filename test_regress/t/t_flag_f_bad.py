@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(verilator_flags2=["--lint-only -f file_will_not_exist.vc"],
+test.lint(verilator_flags2=["-f file_will_not_exist.vc"],
           fails=True,
           expect_filename=test.golden_filename)
 

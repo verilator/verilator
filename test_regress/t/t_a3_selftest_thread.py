@@ -13,6 +13,6 @@ test.priority(100)
 test.scenarios('vltmt')
 test.top_filename = "t/t_EXAMPLE.v"
 
-test.lint(v_flags=["--lint-only --verilate-jobs 2 --debug-self-test"])
+test.lint(v_flags=["--verilate-jobs 2 --debug-self-test"])
 
 test.passes()

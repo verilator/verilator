@@ -13,9 +13,9 @@ C++14 compiler support
 
    Verilator will require C++20 or newer compilers for both compiling
    Verilator and compiling all Verilated models no sooner than May 2025.
-   (Likely to be removed shortly after GitHub removes Ubuntu 20.04
-   continuous-integration action runners, which are used to test the older
-   C++ standard).
+   (Although this date has expired, this change is currently on hold until
+   the Ubuntu LTS versions of GCC and clang use C++20 by default, estimated
+   May 2028.)
 
 XML output
    Verilator currently supports XML parser output (enabled with

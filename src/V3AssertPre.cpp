@@ -267,11 +267,14 @@ private:
             AstVarRef* const refp = new AstVarRef{flp, varp, VAccess::WRITE};
             refp->user1(true);
             if (skewp->num().is1Step()) {
-                // Assign the sampled expression to the clockvar (IEEE 1800-2023 14.13)
+                // #1step means the value that is sampled is always the signal's last value
+                // before the clock edge (IEEE 1800-2023 14.4)
                 AstSampled* const sampledp = new AstSampled{flp, exprp->cloneTreePure(false)};
                 sampledp->dtypeFrom(exprp);
-                AstAssignW* const ap = new AstAssignW{flp, refp, sampledp};
-                m_clockingp->addNextHere(new AstAlways{ap});
+                AstAssign* const assignp = new AstAssign{flp, refp, sampledp};
+                m_clockingp->addNextHere(new AstAlways{
+                    flp, VAlwaysKwd::ALWAYS,
+                    new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)}, assignp});
             } else if (skewp->isZero()) {
                 // #0 means the var has to be sampled in Observed (IEEE 1800-2023 14.13)
                 AstAssign* const assignp = new AstAssign{flp, refp, exprp->cloneTreePure(false)};
@@ -621,29 +624,17 @@ private:
 
     void visit(AstPropSpec* nodep) override {
         nodep = substitutePropertyCall(nodep);
-        // No need to iterate the body, once replace will get iterated
         iterateAndNextNull(nodep->sensesp());
-        if (m_senip)
+        if (m_senip && m_senip != nodep->sensesp())
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Only one PSL clock allowed per assertion");
-        // Block is the new expression to evaluate
-        AstNodeExpr* blockp = VN_AS(nodep->propp()->unlinkFrBack(), NodeExpr);
         if (!nodep->disablep() && m_defaultDisablep) {
             nodep->disablep(m_defaultDisablep->condp()->cloneTreePure(true));
         }
-        if (AstNodeExpr* const disablep = nodep->disablep()) {
-            m_disablep = disablep;
-            if (VN_IS(nodep->backp(), Cover)) {
-                blockp = new AstAnd{disablep->fileline(),
-                                    new AstNot{disablep->fileline(), disablep->unlinkFrBack()},
-                                    blockp};
-            } else {
-                blockp = new AstOr{disablep->fileline(), disablep->unlinkFrBack(), blockp};
-            }
-        }
+        m_disablep = nodep->disablep();
         // Unlink and just keep a pointer to it, convert to sentree as needed
         m_senip = nodep->sensesp();
-        nodep->replaceWith(blockp);
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        iterateNull(nodep->disablep());
+        iterate(nodep->propp());
     }
     void visit(AstPExpr* nodep) override {
         VL_RESTORER(m_inPExpr);
@@ -656,8 +647,6 @@ private:
         } else {
             iterateChildren(nodep);
         }
-
-        iterateChildren(nodep);
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_defaultClockingp);

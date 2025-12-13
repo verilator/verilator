@@ -12,6 +12,6 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t/t_lint_declfilename.v"
 
-test.lint(verilator_flags2=["--lint-only -Wall"], fails=True, expect_filename=test.golden_filename)
+test.lint(verilator_flags2=["-Wall"], fails=True, expect_filename=test.golden_filename)
 
 test.passes()

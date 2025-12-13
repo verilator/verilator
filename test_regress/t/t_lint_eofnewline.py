@@ -21,6 +21,6 @@ def gen(filename):
 
 gen(test.top_filename)
 
-test.lint(verilator_flags2=["-E -Wall -Wno-DECLFILENAME"], expect_filename=test.golden_filename)
+test.lint(verilator_flags=["-E -Wall -Wno-DECLFILENAME"], expect_filename=test.golden_filename)
 
 test.passes()

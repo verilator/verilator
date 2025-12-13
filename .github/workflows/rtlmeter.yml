@@ -77,6 +77,7 @@ jobs:
           - "BlackParrot:1x1:*"
           - "BlackParrot:2x2:*"
           - "BlackParrot:4x4:*"
+          - "Caliptra:default:*"
           - "NVDLA:*"
           - "OpenPiton:1x1:*"
           - "OpenPiton:2x2:*"
@@ -122,6 +123,7 @@ jobs:
           - "BlackParrot:1x1:*"
           - "BlackParrot:2x2:*"
           - "BlackParrot:4x4:*"
+          - "Caliptra:default:*"
           - "NVDLA:*"
           - "OpenPiton:1x1:*"
           - "OpenPiton:2x2:*"
@@ -238,7 +240,7 @@ jobs:
       # Pushing to verilator/verilator-rtlmeter-results requires elevated permissions
       - name: Generate access token
         id: generate-token
-        uses: actions/create-github-app-token@v2.2.0
+        uses: actions/create-github-app-token@v2.2.1
         with:
           app-id: ${{ vars.VERILATOR_CI_ID }}
           private-key: ${{ secrets.VERILATOR_CI_KEY }}
@@ -395,7 +397,7 @@ jobs:
       # Creating issues requires elevated privilege
       - name: Generate access token
         id: generate-token
-        uses: actions/create-github-app-token@v2.2.0
+        uses: actions/create-github-app-token@v2.2.1
         with:
           app-id: ${{ vars.VERILATOR_CI_ID }}
           private-key: ${{ secrets.VERILATOR_CI_KEY }}

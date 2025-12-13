@@ -11,6 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(verilator_flags2=["--lint-only", "-Wno-DEPRECATED"])
+test.lint(verilator_flags2=["-Wno-DEPRECATED"])
 
 test.passes()

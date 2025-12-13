@@ -14,6 +14,6 @@ test.scenarios('linter')
 if not test.have_solver:
     test.skip("No constraint solver installed")
 
-test.lint(verilator_flags2=["--lint-only"], fails=True, expect_filename=test.golden_filename)
+test.lint(fails=True, expect_filename=test.golden_filename)
 
 test.passes()

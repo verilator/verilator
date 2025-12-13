@@ -11,6 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(verilator_flags2=["--lint-only --bbox-sys --bbox-unsup -Wall -Wno-DECLFILENAME"])
+test.lint(verilator_flags2=["--bbox-sys --bbox-unsup -Wall -Wno-DECLFILENAME"])
 
 test.passes()

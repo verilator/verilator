@@ -11,6 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-test.lint(verilator_flags2=["--lint-only --Wall -Wno-DECLFILENAME"])
+test.lint(verilator_flags2=["--Wall -Wno-DECLFILENAME"])
 
 test.passes()

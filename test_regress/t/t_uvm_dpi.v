@@ -4,6 +4,16 @@
 // any use, without warranty, 2025 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+`ifdef T_V2020_3_1
+function void uvm_report_error(string a, string b);
+  $display("uvm_report_error(\"%s\", \"%s\")", a, b);
+endfunction
+
+export "DPI-C" function uvm_polling_value_change_notify;
+function void uvm_polling_value_change_notify(int sv_key);
+endfunction
+`endif
+
 // verilator lint_off WIDTH
 `include "dpi/uvm_dpi.svh"
 // verilator lint_on WIDTH

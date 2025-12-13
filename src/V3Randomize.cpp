@@ -898,17 +898,12 @@ class ConstraintExprVisitor final : public VNVisitor {
                 AstNodeExpr* parentAccess = membersel->fromp()->cloneTree(false);
                 AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
                 AstVar* const effectiveRandModeVarp = VN_AS(varClassp->user2p(), Var);
-                if (effectiveRandModeVarp) {
-                    AstMemberSel* randModeSel
-                        = new AstMemberSel{varp->fileline(), parentAccess, effectiveRandModeVarp};
-                    randModeSel->dtypep(effectiveRandModeVarp->dtypep());
-                    randModeAccess = randModeSel;
-                } else {
-                    UASSERT_OBJ(m_randModeVarp, nodep, "No m_randModeVarp");
-                    randModeAccess = new AstVarRef{varp->fileline(),
-                                                   VN_AS(m_randModeVarp->user2p(), NodeModule),
-                                                   m_randModeVarp, VAccess::READ};
-                }
+                UASSERT_OBJ(effectiveRandModeVarp, nodep,
+                            "Member-selected variable must have randmode in its class");
+                AstMemberSel* randModeSel
+                    = new AstMemberSel{varp->fileline(), parentAccess, effectiveRandModeVarp};
+                randModeSel->dtypep(effectiveRandModeVarp->dtypep());
+                randModeAccess = randModeSel;
             } else {
                 UASSERT_OBJ(m_randModeVarp, nodep, "No m_randModeVarp");
                 randModeAccess
@@ -958,11 +953,21 @@ class ConstraintExprVisitor final : public VNVisitor {
                 dimension = 1;
             }
             methodp->dtypeSetVoid();
-            AstNodeModule* const classp = membersel ? VN_AS(membersel->user2p(), NodeModule)
-                                                    : VN_AS(varp->user2p(), NodeModule);
+            AstNodeModule* classp;
             if (membersel) {
+                // For membersel, find the root varref to get the class where randomize() is called
+                AstNode* rootNode = membersel->fromp();
+                while (AstMemberSel* nestedMemberSel = VN_CAST(rootNode, MemberSel)) {
+                    rootNode = nestedMemberSel->fromp();
+                }
+                if (AstNodeVarRef* rootVarRef = VN_CAST(rootNode, NodeVarRef)) {
+                    classp = VN_AS(rootVarRef->varp()->user2p(), NodeModule);
+                } else {
+                    classp = VN_AS(membersel->user2p(), NodeModule);
+                }
                 methodp->addPinsp(membersel);
             } else {
+                classp = VN_AS(varp->user2p(), NodeModule);
                 AstVarRef* const varRefp
                     = new AstVarRef{varp->fileline(), classp, varp, VAccess::WRITE};
                 varRefp->classOrPackagep(classOrPackagep);
@@ -989,9 +994,14 @@ class ConstraintExprVisitor final : public VNVisitor {
             }
             AstNodeFTask* initTaskp = m_inlineInitTaskp;
             if (!initTaskp) {
-                varp->user3(true);  // Mark as set up in new()
-                initTaskp = VN_AS(m_memberMap.findMember(classp, "new"), NodeFTask);
-                UASSERT_OBJ(initTaskp, classp, "No new() in class");
+                varp->user3(true);
+                if (membersel) {
+                    initTaskp = VN_AS(m_memberMap.findMember(classp, "randomize"), NodeFTask);
+                    UASSERT_OBJ(initTaskp, classp, "No randomize() in class");
+                } else {
+                    initTaskp = VN_AS(m_memberMap.findMember(classp, "new"), NodeFTask);
+                    UASSERT_OBJ(initTaskp, classp, "No new() in class");
+                }
             }
             initTaskp->addStmtsp(methodp->makeStmt());
         } else {
@@ -2517,6 +2527,32 @@ class RandomizeVisitor final : public VNVisitor {
                         nodep, constrp, constrp->itemsp()->unlinkFrBackWithNext()));
                 }
             });
+            // For derived classes: clone write_var calls from parent's randomize()
+            if (nodep->extendsp()) {
+                AstClass* parentClassp = nodep->extendsp()->classp();
+                while (parentClassp) {
+                    AstFunc* const parentRandomizep
+                        = VN_CAST(m_memberMap.findMember(parentClassp, "randomize"), Func);
+                    if (parentRandomizep && parentRandomizep->stmtsp()) {
+                        // Clone write_var statements from parent (stop at clearConstraints)
+                        for (AstNode* stmtp = parentRandomizep->stmtsp(); stmtp;
+                             stmtp = stmtp->nextp()) {
+                            bool foundClearConstraints = false;
+                            stmtp->foreach([&](AstCMethodHard* methodp) {
+                                if (methodp->method() == VCMethod::RANDOMIZER_WRITE_VAR) {
+                                    randomizep->addStmtsp(stmtp->cloneTree(false));
+                                } else if (methodp->method()
+                                           == VCMethod::RANDOMIZER_CLEARCONSTRAINTS) {
+                                    foundClearConstraints = true;
+                                }
+                            });
+                            if (foundClearConstraints) break;
+                        }
+                    }
+                    parentClassp
+                        = parentClassp->extendsp() ? parentClassp->extendsp()->classp() : nullptr;
+                }
+            }
             randomizep->addStmtsp(implementConstraintsClear(fl, genp));
             AstTask* setupAllTaskp = getCreateConstraintSetupFunc(nodep);
             AstTaskRef* const setupTaskRefp = new AstTaskRef{fl, setupAllTaskp, nullptr};
@@ -2819,6 +2855,22 @@ class RandomizeVisitor final : public VNVisitor {
 
         // Add constraints clearing code
         if (classGenp) {
+            // Clone write_var calls from main randomize() for path-connected variables
+            AstFunc* const mainRandomizep
+                = VN_CAST(m_memberMap.findMember(classp, "randomize"), Func);
+            if (mainRandomizep && mainRandomizep->stmtsp()) {
+                for (AstNode* stmtp = mainRandomizep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                    bool foundClearConstraints = false;
+                    stmtp->foreach([&](AstCMethodHard* methodp) {
+                        if (methodp->method() == VCMethod::RANDOMIZER_WRITE_VAR) {
+                            randomizeFuncp->addStmtsp(stmtp->cloneTree(false));
+                        } else if (methodp->method() == VCMethod::RANDOMIZER_CLEARCONSTRAINTS) {
+                            foundClearConstraints = true;
+                        }
+                    });
+                    if (foundClearConstraints) break;
+                }
+            }
             randomizeFuncp->addStmtsp(
                 implementConstraintsClear(randomizeFuncp->fileline(), classGenp));
         }
