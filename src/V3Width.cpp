@@ -6981,7 +6981,6 @@ class WidthVisitor final : public VNVisitor {
             nodep->dtypeFrom(nodep->lhsp());
         }
 
-
         // Final processing
         userIterateAndNext(nodep->lhsp(), WidthVP{SELF, FINAL}.p());
         nodep->didWidth(true);
