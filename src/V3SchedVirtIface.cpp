@@ -69,7 +69,16 @@ private:
                     onWrite(refp, dtypep->ifacep());
                 }
             } else if (AstIface* const ifacep = refp->varp()->sensIfacep()) {
-                onWrite(refp, ifacep);
+                // Only trigger if access is through a virtual interface MemberSel (#6613)
+                // Static interface writes should not fire triggers
+                if (AstMemberSel* const memberSelp = VN_CAST(refp->firstAbovep(), MemberSel)) {
+                    if (AstIfaceRefDType* const fromDtp
+                        = VN_CAST(memberSelp->fromp()->dtypep(), IfaceRefDType)) {
+                        if (fromDtp->isVirtual()) {
+                            onWrite(refp, ifacep);
+                        }
+                    }
+                }
             }
         });
     }
@@ -87,8 +96,17 @@ private:
                     }
                 }
             } else if (AstIface* const ifacep = refp->varp()->sensIfacep()) {
-                AstVar* memberVarp = refp->varp();
-                onWrite(refp, ifacep, memberVarp);
+                // Only trigger if access is through a virtual interface MemberSel (#6613)
+                // Static interface writes should not fire triggers
+                if (AstMemberSel* const memberSelp = VN_CAST(refp->firstAbovep(), MemberSel)) {
+                    if (AstIfaceRefDType* const fromDtp
+                        = VN_CAST(memberSelp->fromp()->dtypep(), IfaceRefDType)) {
+                        if (fromDtp->isVirtual()) {
+                            AstVar* memberVarp = refp->varp();
+                            onWrite(refp, ifacep, memberVarp);
+                        }
+                    }
+                }
             }
         });
     }
@@ -99,7 +117,17 @@ private:
             AstIfaceRefDType* const dtypep = VN_CAST(refp->varp()->dtypep(), IfaceRefDType);
             const bool writesToVirtIfaceMember
                 = (dtypep && dtypep->isVirtual() && VN_IS(refp->firstAbovep(), MemberSel));
-            const bool writesToIfaceSensVar = refp->varp()->sensIfacep();
+            // Only consider sensIfacep if accessed through virtual interface (#6613)
+            bool writesToIfaceSensVar = false;
+            if (refp->varp()->sensIfacep()) {
+                if (const AstMemberSel* const memberSelp
+                    = VN_CAST(refp->firstAbovep(), MemberSel)) {
+                    if (const AstIfaceRefDType* const fromDtp
+                        = VN_CAST(memberSelp->fromp()->dtypep(), IfaceRefDType)) {
+                        writesToIfaceSensVar = fromDtp->isVirtual();
+                    }
+                }
+            }
             return writesToVirtIfaceMember || writesToIfaceSensVar;
         });
     }

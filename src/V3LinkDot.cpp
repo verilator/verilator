@@ -4036,6 +4036,20 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     replaceWithCheckBreak(nodep, refp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 }
+            } else if (AstClassRefDType* const defp = VN_CAST(foundp->nodep(), ClassRefDType)) {
+                // Issue #6814: Handle inherited type parameters from parameterized base classes.
+                // When a derived class extends a parameterized base class like
+                // "my_driver extends uvm_driver#(my_tx)", the type parameter REQ is bound
+                // to my_tx (a ClassRefDType). When the derived class uses REQ as a type,
+                // we need to resolve it to that ClassRefDType.
+                ok = (m_ds.m_dotPos == DP_NONE || m_ds.m_dotPos == DP_SCOPE);
+                if (ok) {
+                    UINFO(5, "Issue #6814: Resolved inherited type param "
+                              << nodep->name() << " -> " << defp);
+                    AstClassRefDType* const clonep = defp->cloneTree(false);
+                    replaceWithCheckBreak(nodep, clonep);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                }
             }
             if (!ok) {
                 if (m_insideClassExtParam) {
@@ -5091,6 +5105,103 @@ class LinkDotResolveVisitor final : public VNVisitor {
                             // Some links may not be resolved in the first pass.
                             m_extendsParam.insert(nodep);
                             m_insideClassExtParam = true;
+                        }
+                        // Issue #6814: When extends is parameterized, type parameters from
+                        // the parent class (like REQ/RSP in uvm_driver) need to be available
+                        // in the derived class. We build a map of parameter bindings from
+                        // the PINs, then iterate through all parent's type parameters.
+                        if (cextp->parameterized() && !cextp->isImplements()) {
+                            VSymEnt* const parentSymp = m_statep->getNodeSym(classp);
+                            UINFO(5, "Issue #6814: Processing parameterized extends "
+                                      << classp->name());
+
+                            // Build a map of pin number -> bound type from the PINs
+                            std::map<int, AstNode*> pinBindings;
+                            std::map<string, AstNode*> namedBindings;
+                            for (AstPin* pinp = classRefp->paramsp(); pinp;
+                                 pinp = VN_AS(pinp->nextp(), Pin)) {
+                                if (pinp->exprp()) {
+                                    if (!pinp->name().empty() && pinp->name()[0] != '_') {
+                                        namedBindings[pinp->name()] = pinp->exprp();
+                                    }
+                                    pinBindings[pinp->pinNum()] = pinp->exprp();
+                                }
+                            }
+
+                            // Iterate through all ParamTypeDType in parent class
+                            for (AstNode* stmtp = classp->stmtsp(); stmtp;
+                                 stmtp = stmtp->nextp()) {
+                                AstParamTypeDType* const ptp = VN_CAST(stmtp, ParamTypeDType);
+                                if (!ptp) continue;
+
+                                AstNode* boundTypep = nullptr;
+
+                                // Check for named binding first
+                                auto namedIt = namedBindings.find(ptp->name());
+                                if (namedIt != namedBindings.end()) {
+                                    boundTypep = namedIt->second;
+                                } else {
+                                    // Check for positional binding
+                                    // Find param number from symbol table
+                                    for (auto it = pinBindings.begin();
+                                         it != pinBindings.end(); ++it) {
+                                        const string numName
+                                            = "__paramNumber" + cvtToStr(it->first);
+                                        const VSymEnt* const symEntryp
+                                            = parentSymp->findIdFlat(numName);
+                                        if (symEntryp && symEntryp->nodep() == ptp) {
+                                            boundTypep = it->second;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                // If no explicit binding, check if default is a reference to
+                                // another type parameter that we already bound
+                                if (!boundTypep && ptp->subDTypep()) {
+                                    // The default may be wrapped in RequireDType
+                                    AstNodeDType* defaultDtp = ptp->subDTypep();
+                                    if (AstRequireDType* const reqp
+                                        = VN_CAST(defaultDtp, RequireDType)) {
+                                        defaultDtp = reqp->subDTypep();
+                                    }
+                                    if (defaultDtp) {
+                                        if (AstRefDType* const refp
+                                            = VN_CAST(defaultDtp, RefDType)) {
+                                            if (AstParamTypeDType* const refPtp = VN_CAST(
+                                                    refp->refDTypep(), ParamTypeDType)) {
+                                                // Default references another type param
+                                                // Look up what that param is bound to
+                                                auto refIt = namedBindings.find(refPtp->name());
+                                                if (refIt != namedBindings.end()) {
+                                                    boundTypep = refIt->second;
+                                                    UINFO(5, "Issue #6814: " << ptp->name()
+                                                              << " defaults to " << refPtp->name()
+                                                              << " -> " << boundTypep);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if (boundTypep) {
+                                    // Only insert if the name doesn't already exist in derived
+                                    // class. This handles the case where derived class has its
+                                    // own type parameter with the same name that shadows the
+                                    // parent's (e.g., "class D #(type T) extends B #(T)")
+                                    if (!m_curSymp->findIdFlat(ptp->name())) {
+                                        UINFO(5, "Issue #6814: Insert " << ptp->name() << " -> "
+                                                  << boundTypep << " into " << m_curSymp->nodep());
+                                        m_statep->insertSym(m_curSymp, ptp->name(), boundTypep,
+                                                            nullptr);
+                                    } else {
+                                        UINFO(5, "Issue #6814: Skip " << ptp->name()
+                                                  << " (already exists in derived class)");
+                                    }
+                                    // Also add to namedBindings so chained defaults work
+                                    namedBindings[ptp->name()] = boundTypep;
+                                }
+                            }
                         }
                     }
                 }

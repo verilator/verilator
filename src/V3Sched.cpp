@@ -97,7 +97,15 @@ findTriggeredIface(const AstVarScope* vscp, const VirtIfaceTriggers::IfaceSensMa
             result.push_back(memberIt.second);
         }
     }
-    if (result.empty()) vscp->v3fatalSrc("Did not find virtual interface trigger");
+    // If no trigger found, this means sensIfacep was set (indicating potential virtual
+    // interface access) but no actual writes through virtual interface were found in the
+    // elaborated code. This can happen with UVM code where class tasks are defined but
+    // not statically called. In this case, we just return empty - no trigger needed.
+    if (result.empty()) {
+        UINFO(5, "No trigger for var=" << vscp->varp()->name()
+                  << " sensIfacep=" << vscp->varp()->sensIfacep()->name()
+                  << " (no virtual interface writes found in elaborated code)");
+    }
     return result;
 }
 

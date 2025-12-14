@@ -3318,7 +3318,8 @@ class WidthVisitor final : public VNVisitor {
                 if (nodep->access().isWriteOrRW()) V3LinkLValue::linkLValueSet(nodep);
                 if (AstIfaceRefDType* const adtypep
                     = VN_CAST(nodep->fromp()->dtypep(), IfaceRefDType)) {
-                    nodep->varp()->sensIfacep(adtypep->ifacep());
+                    // Only set sensIfacep for virtual interface accesses
+                    if (adtypep->isVirtual()) nodep->varp()->sensIfacep(adtypep->ifacep());
                 }
                 UINFO(9, "     done clocking msel " << nodep);
                 nodep->didWidth(true);  // Must not visit again: will confuse scopes
@@ -3336,10 +3337,13 @@ class WidthVisitor final : public VNVisitor {
                     if (!varp->didWidth()) userIterate(varp, nullptr);
                     nodep->dtypep(foundp->dtypep());
                     nodep->varp(varp);
-                    AstIface* const ifacep = adtypep->ifacep();
-                    varp->sensIfacep(ifacep);
-                    nodep->fromp()->foreach(
-                        [ifacep](AstVarRef* const refp) { refp->varp()->sensIfacep(ifacep); });
+                    // Only set sensIfacep for virtual interface accesses, not concrete ones
+                    if (adtypep && adtypep->isVirtual()) {
+                        AstIface* const ifacep = adtypep->ifacep();
+                        varp->sensIfacep(ifacep);
+                        nodep->fromp()->foreach(
+                            [ifacep](AstVarRef* const refp) { refp->varp()->sensIfacep(ifacep); });
+                    }
                     nodep->didWidth(true);
                     return;
                 }
