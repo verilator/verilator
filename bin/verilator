@@ -408,7 +408,7 @@ detailed descriptions of these arguments.
      -I<dir>                    Directory to search for includes
     --if-depth <value>          Tune IFDEPTH warning
      +incdir+<dir>              Directory to search for includes
-    --inline-cfuncs             Inline small CFuncs into callers
+    --inline-cfuncs <value>     Inline CFuncs with <=value nodes (0=off)
     --inline-mult <value>       Tune module inlining
     --instr-count-dpi <value>   Assumed dynamic instruction count of DPI imports
      -j <jobs>                  Parallelism for --build-jobs/--verilate-jobs

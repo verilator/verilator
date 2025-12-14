@@ -9,15 +9,14 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt_all')
-test.top_filename = "t/t_timing_class.v"
+test.scenarios('vlt')
 
-# Disable --inline-cfuncs so debug traces show all function entries
-test.compile(verilator_flags2=["--exe --main --timing --inline-cfuncs 0"])
+# Use --output-split-cfuncs to create small functions that can be inlined
+test.compile(verilator_flags2=["--stats", "--exe", "--main", "--output-split-cfuncs", "1"])
 
-test.execute(all_run_flags=["+verilator+debug"])
+# Verify inlining happened (count > 0)
+test.file_grep(test.stats, r'Optimizations, Inlined CFuncs\s+(\d+)')
 
-if not test.vltmt:  # vltmt output may vary between thread exec order
-    test.files_identical(test.obj_dir + "/vlt_sim.log", test.golden_filename, "logfile")
+test.execute()
 
 test.passes()

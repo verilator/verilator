@@ -82,30 +82,8 @@ public:
         m_funcp = nullptr;
     }
 
-    // Helper to check if a function contains any $c() calls (user or internal)
-    static bool containsCStatements(AstCFunc* cfuncp) {
-        bool found = false;
-        // Check for internal C statements/expressions
-        cfuncp->foreach([&](const AstCStmt*) { found = true; });
-        if (!found) cfuncp->foreach([&](const AstCExpr*) { found = true; });
-        // Check for user $c() statements/expressions
-        if (!found) cfuncp->foreach([&](const AstCStmtUser*) { found = true; });
-        if (!found) cfuncp->foreach([&](const AstCExprUser*) { found = true; });
-        return found;
-    }
-
     // Retrieve list of statements which when executed will call the constructed functions
     AstNodeStmt* getStmts() {
-        // Threshold for inlining - functions with fewer nodes will be inlined
-        static constexpr size_t INLINE_THRESHOLD = 20;
-
-        // Check if inlining is allowed
-        // Inlining is disabled when tracing because V3Trace uses the CFunc call sites
-        // to determine where to insert trace activity setters. If we inline, those
-        // call sites are removed and trace activity flags won't be set correctly.
-        const bool allowInline
-            = v3Global.opt.inlineCFuncs() && !v3Global.opt.profCFuncs() && !v3Global.opt.trace();
-
         // The resulting list of statements we are constructing here
         AstNodeStmt* stmtsp = nullptr;
         // Current AstIf
@@ -122,47 +100,10 @@ public:
                 ifp = V3Sched::util::createIfFromSenTree(senTreep);
                 stmtsp = AstNode::addNext(stmtsp, ifp);
             }
-
-            // Check if we should inline this function
-            bool shouldInline = false;
-            if (allowInline) {
-                // Check size
-                const size_t funcSize = cfuncp->nodeCount();
-                const bool isSmall = funcSize <= INLINE_THRESHOLD;
-
-                // Check for local variables in the function body
-                bool hasNoLocals = true;
-                for (AstNode* nodep = cfuncp->stmtsp(); nodep; nodep = nodep->nextp()) {
-                    if (VN_IS(nodep, Var)) {
-                        hasNoLocals = false;
-                        break;
-                    }
-                }
-
-                // Check for $c() calls that might use 'this'
-                const bool hasNoUnsafeC = !containsCStatements(cfuncp);
-
-                // Check it's a void function (not a coroutine)
-                const bool isVoid = cfuncp->rtnTypeVoid() == "void";
-
-                shouldInline = isSmall && hasNoLocals && hasNoUnsafeC && isVoid;
-            }
-
-            if (shouldInline) {
-                // Inline: move statements directly into the if-block
-                if (AstNode* const bodyp = cfuncp->stmtsp()) {
-                    bodyp->unlinkFrBackWithNext();
-                    ifp->addThensp(bodyp);
-                }
-                // Delete the now-empty function
-                cfuncp->unlinkFrBack();
-                VL_DO_DANGLING(cfuncp->deleteTree(), cfuncp);
-            } else {
-                // Not inlining: create a call statement
-                AstCCall* const callp = new AstCCall{cfuncp->fileline(), cfuncp};
-                callp->dtypeSetVoid();
-                ifp->addThensp(callp->makeStmt());
-            }
+            // Call function when triggered
+            AstCCall* const callp = new AstCCall{cfuncp->fileline(), cfuncp};
+            callp->dtypeSetVoid();
+            ifp->addThensp(callp->makeStmt());
         }
         // Result is now spent, reset the emitter state
         m_result.clear();
