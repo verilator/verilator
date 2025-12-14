@@ -6965,7 +6965,6 @@ class WidthVisitor final : public VNVisitor {
         // RESIZELVALUE adjusts width of lvalues for assignments/function calls
         // The parent context determines the required width
         UINFO(9, "visit AstResizeLValue " << nodep << endl);
-
         if (nodep->didWidthAndSet()) return;
 
         // First, process child to know its natural width
@@ -6973,9 +6972,8 @@ class WidthVisitor final : public VNVisitor {
             userIterateAndNext(nodep->lhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
         }
 
-        // Key fix: Get the required width from parent context
-        AstNodeDType* const vdtypep = m_vup->dtypeNullp();
-        if (vdtypep) {
+        // Get the required width from parent context
+        if (AstNodeDType* const vdtypep = m_vup->dtypeNullp()) {
             // Parent specified required width - use it
             nodep->dtypeFrom(vdtypep);
         } else if (!nodep->dtypep()) {
@@ -6983,11 +6981,10 @@ class WidthVisitor final : public VNVisitor {
             nodep->dtypeFrom(nodep->lhsp());
         }
 
-        // Mark as widthed
-        nodep->didWidth(true);
 
         // Final processing
         userIterateAndNext(nodep->lhsp(), WidthVP{SELF, FINAL}.p());
+        nodep->didWidth(true);
     }
     void visitClass(AstClass* nodep) {
         if (nodep->didWidthAndSet()) return;
