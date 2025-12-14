@@ -339,7 +339,8 @@ private:
             nodep->v3error(
                 "Delay value is not an elaboration-time constant (IEEE 1800-2023 16.7)");
         } else if (constp->isZero()) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: ##0 delays");
+            // ##0 means no delay - just execute the following statements immediately
+            // Statements were already moved to siblings at line 334, so just delete the delay
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             VL_DO_DANGLING(valuep->deleteTree(), valuep);
             return;
