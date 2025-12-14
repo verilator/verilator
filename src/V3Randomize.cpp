@@ -1455,6 +1455,12 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (editFormat(nodep)) return;
         nodep->v3fatalSrc("Method not handled in constraints? " << nodep);
     }
+    // NOTE: AstDist is handled by V3Width which converts it to a LogOr of range checks.
+    // The transformation happens before V3Randomize runs, so we don't need to handle
+    // AstDist here. If we see an AstDist, it means something went wrong.
+    void visit(AstDist* nodep) override {
+        nodep->v3fatalSrc("AstDist should have been transformed by V3Width");
+    }
     void visit(AstNodeExpr* nodep) override {
         if (editFormat(nodep)) return;
         nodep->v3fatalSrc(

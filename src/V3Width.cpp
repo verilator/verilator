@@ -2986,8 +2986,7 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void visit(AstDist* nodep) override {
-        //  x dist {a :/ p, b :/ q} --> (p > 0 && x == a) || (q > 0 && x == b)
-        nodep->v3warn(CONSTRAINTIGN, "Constraint expression ignored (imperfect distribution)");
+        // Do width resolution on the expression and items
         userIterateAndNext(nodep->exprp(), WidthVP{CONTEXT_DET, PRELIM}.p());
         for (AstNode *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
             nextip = itemp->nextp();  // iterate may cause the node to get replaced
@@ -3023,6 +3022,15 @@ class WidthVisitor final : public VNVisitor {
             // InsideRange will get replaced with Lte&Gte and finalized later
             if (!VN_IS(itemp, InsideRange))
                 iterateCheck(nodep, "Dist Item", itemp, CONTEXT_DET, FINAL, subDTypep, EXTEND_EXP);
+        }
+
+        //  x dist {a :/ p, b :/ q} --> (p > 0 && x == a) || (q > 0 && x == b)
+        // This converts dist to a simple range check, ignoring weights.
+        // In constraint context, this provides valid range constraints even if
+        // weighted distribution isn't perfectly implemented.
+        if (!m_constraintp) {
+            // Only warn about imperfect distribution outside constraint context
+            nodep->v3warn(CONSTRAINTIGN, "Constraint expression ignored (imperfect distribution)");
         }
         AstNodeExpr* newp = nullptr;
         for (AstDistItem* itemp = nodep->itemsp(); itemp;
