@@ -34,13 +34,17 @@ jobs:
       - name: Install packages for build
         run: ./ci/ci-install.bash
 
-    # We use specific version numbers, otherwise a Python package
-    # update may add a warning and break our build
-      - name: Install packages for lint
-        run: sudo pip3 install mypy==1.18.2 pylint==3.0.2 ruff==0.1.3 clang sphinx sphinx_rtd_theme sphinxcontrib-spelling breathe ruff
-
       - name: Configure
-        run: autoconf && ./configure --enable-longtests --enable-ccwarn
+        run: |
+          autoconf
+          ./configure --enable-longtests --enable-ccwarn
+
+      - name: Install python dependencies
+        run: |
+          sudo apt install python3-clang
+          make venv
 
       - name: Lint
-        run: make -k lint-py
+        run: |
+          source .venv/bin/activate
+          make -k lint-py
