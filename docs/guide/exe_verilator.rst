@@ -867,6 +867,18 @@ Summary:
    compatibility and is not recommended usage as this is not supported by
    some third-party tools.
 
+.. option:: --inline-cfuncs <value>
+
+   Inline small CFunc calls directly into their callers when the function
+   has at most <value> nodes. This reduces function call overhead when
+   :vlopt:`--output-split-cfuncs` places functions in separate compilation
+   units that the C++ compiler cannot inline.
+
+   Set to 0 to disable this optimization. The default is 20.
+
+   This optimization is automatically disabled when :vlopt:`--prof-cfuncs`
+   or :vlopt:`--trace` is used.
+
 .. option:: --inline-mult <value>
 
    Tune the inlining of modules. The default value of 2000 specifies that

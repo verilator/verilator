@@ -14,7 +14,9 @@ test.top_filename = "t/t_enum_type_methods.v"
 
 out_filename = test.obj_dir + "/V" + test.name + ".tree.json"
 
-test.compile(verilator_flags2=['--no-std', '--debug-check', '--no-json-edit-nums', '--flatten'],
+test.compile(verilator_flags2=[
+    '--no-std', '--debug-check', '--no-json-edit-nums', '--flatten', '--inline-cfuncs', '0'
+],
              verilator_make_gmake=False,
              make_top_shell=False,
              make_main=False)

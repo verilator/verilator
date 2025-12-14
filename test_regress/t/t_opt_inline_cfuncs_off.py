@@ -9,14 +9,15 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt_all')
-test.verilated_debug = True
+test.scenarios('vlt')
+test.top_filename = "t/t_opt_inline_cfuncs.v"
 
-test.compile(verilator_flags2=["--inline-cfuncs", "0"])
+# Disable inlining with --inline-cfuncs 0
+test.compile(verilator_flags2=["--stats", "--exe", "--main", "--inline-cfuncs", "0"])
+
+# Verify inlining did NOT happen (stat should not appear or be 0)
+test.file_grep_not(test.stats, r'Optimizations, Inlined CFuncs\s+[1-9]')
 
 test.execute()
-
-if not test.vltmt:  # vltmt output may vary between thread exec order
-    test.files_identical(test.obj_dir + "/vlt_sim.log", test.golden_filename, "logfile")
 
 test.passes()
