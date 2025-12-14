@@ -52,19 +52,19 @@ package s_c_sequences_pkg;
     s_c_env  m_env;
     virtual task body();
       int unsigned p, rdata;
-      int 	   status;
+      int          status;
       if (m_env == null)
-	m_env = new;
+        m_env = new;
       if (m_env.r_reg_model == null)
-	m_env.r_reg_model = new;
+        m_env.r_reg_model = new;
       foreach (m_env.r_reg_model.p_s[p]) begin
         if (m_env.r_reg_model.p_s[p] == null) begin
-	  m_env.r_reg_model.p_s[p] = new(p);
+          m_env.r_reg_model.p_s[p] = new(p);
         end
         m_env.r_reg_model.p_s[p].n_doorbell.read(status, rdata, 0);
-	if (status != 1) $stop;
-	if (rdata  != p) $stop;
-       end
+        if (status != 1) $stop;
+        if (rdata  != p) $stop;
+      end
     endtask
   endclass
 endpackage // s_c_sequences_pkg
