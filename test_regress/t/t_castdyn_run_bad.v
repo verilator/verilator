@@ -32,6 +32,7 @@ module t;
     b = bb;
     i = $cast(ba1, b);
     if (i != 0) $stop;
+    void'($cast(ba1, b));  // ok as is function
     $cast(ba1, b);  // <-- Bad $cast task
 
     $write("*-* All Finished *-*\n");

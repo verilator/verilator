@@ -77,6 +77,7 @@ module t;
     i = $cast(bao, b);
     if (i != 0) $stop;
     if (bao != ba) $stop;  // Unchanged
+    void'($cast(bao, b));  // Ok as is function
 
     $write("*-* All Finished *-*\n");
     $finish;

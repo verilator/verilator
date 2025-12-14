@@ -3583,8 +3583,8 @@ statement_item<nodeStmtp>:          // IEEE: statement_item
                           newfl->warnOff(V3ErrorCode::IGNOREDRETURN, true);
                           $6->fileline(newfl);
                           $$ = exprp->makeStmt(); }
-        |       yVOID yP_TICK '(' system_t_stmt_call ')' ';'
-                        { $$ = $4;
+        |       yVOID yP_TICK '(' system_f_only_expr_call ')' ';'
+                        { $$ = new AstStmtExpr{$<fl>4, $4};
                           FileLine* const newfl = new FileLine{$$->fileline()};
                           newfl->warnOff(V3ErrorCode::IGNOREDRETURN, true);
                           $$->fileline(newfl); }
