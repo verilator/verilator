@@ -719,6 +719,30 @@ class ConstraintExprVisitor final : public VNVisitor {
                                // (used to format "%@.%@" for struct arrays)
     std::set<std::string>& m_writtenVars;  // Track which variable paths have write_var generated
                                            // (shared across all constraints)
+    std::set<std::string> m_disabledSoftVars;  // Variables with disabled soft constraints
+
+    // Collect all 'disable soft' targets before processing constraints
+    void collectDisabledSoftVars(AstNode* nodep) {
+        for (AstNode* itemp = nodep; itemp; itemp = itemp->nextp()) {
+            if (AstConstraintExpr* const constrp = VN_CAST(itemp, ConstraintExpr)) {
+                if (constrp->isDisableSoft()) {
+                    // Extract variable name from the disable soft expression
+                    if (AstVarRef* const varRefp = VN_CAST(constrp->exprp(), VarRef)) {
+                        m_disabledSoftVars.insert(varRefp->name());
+                    } else if (AstMemberSel* const memberSelp = VN_CAST(constrp->exprp(), MemberSel)) {
+                        m_disabledSoftVars.insert(buildMemberPath(memberSelp));
+                    }
+                }
+            }
+            // Recurse into nested constraint blocks
+            if (AstConstraintIf* const cifp = VN_CAST(itemp, ConstraintIf)) {
+                if (cifp->thensp()) collectDisabledSoftVars(cifp->thensp());
+                if (cifp->elsesp()) collectDisabledSoftVars(cifp->elsesp());
+            } else if (AstConstraintForeach* const foreachp = VN_CAST(itemp, ConstraintForeach)) {
+                if (foreachp->stmtsp()) collectDisabledSoftVars(foreachp->stmtsp());
+            }
+        }
+    }
 
     // Build full path for a MemberSel chain (e.g., "obj.l2.l3.l4")
     std::string buildMemberPath(const AstMemberSel* const memberSelp) {
@@ -1336,6 +1360,29 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
     }
     void visit(AstConstraintExpr* nodep) override {
+        // Handle 'disable soft' - already collected in pre-scan, just delete
+        if (nodep->isDisableSoft()) {
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            return;
+        }
+
+        // For soft constraints, check if any target variable is disabled
+        if (nodep->isSoft() && !m_disabledSoftVars.empty()) {
+            // Check if expression references a disabled variable
+            bool isDisabled = false;
+            nodep->exprp()->foreach([&](const AstVarRef* varRefp) {
+                if (m_disabledSoftVars.count(varRefp->name())) isDisabled = true;
+            });
+            nodep->exprp()->foreach([&](const AstMemberSel* memberSelp) {
+                if (m_disabledSoftVars.count(buildMemberPath(memberSelp))) isDisabled = true;
+            });
+            if (isDisabled) {
+                // Soft constraint on disabled variable - skip it
+                VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                return;
+            }
+        }
+
         iterateChildren(nodep);
         if (m_wantSingle) {
             nodep->replaceWith(nodep->exprp()->unlinkFrBack());
@@ -1428,6 +1475,9 @@ public:
         , m_randModeVarp{randModeVarp}
         , m_memberMap{memberMap}
         , m_writtenVars{writtenVars} {
+        // First pass: collect all 'disable soft' targets
+        collectDisabledSoftVars(nodep);
+        // Second pass: process constraints
         iterateAndNextNull(nodep);
     }
 };
