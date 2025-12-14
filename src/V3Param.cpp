@@ -846,12 +846,9 @@ class ParamProcessor final {
                     pinExprp->replaceWith(new AstConst{pinp->fileline(), AstConst::WidthedValue{},
                                                        modvarp->width(), 0});
                     VL_DO_DANGLING(pinExprp->deleteTree(), pinExprp);
-                    //} else if (origp && exprp->sameTree(origp)) {
-                    //} else if (origp && ParameterizedHierBlocks::areSame(exprp, origp)) {
-                } else if (origp
-                           && (exprp->sameTree(origp)
-                               || (exprp->num().width() == origp->num().width()
-                                   && ParameterizedHierBlocks::areSame(exprp, origp)))) {
+                } else if (origp && (exprp->sameTree(origp)
+                     || (exprp->num().width() == origp->num().width()
+                         && ParameterizedHierBlocks::areSame(exprp, origp)))) {
                     // Setting parameter to its default value.  Just ignore it.
                     // This prevents making additional modules, and makes coverage more
                     // obvious as it won't show up under a unique module page name.
@@ -1256,9 +1253,8 @@ class ParamProcessor final {
                     if (typedefp->name() == refDTypep->name()) {
                         refDTypep->typedefp(typedefp);
                         refDTypep->classOrPackagep(newClassp);
-                        UINFO(9, "Resolved parameterized class typedef: "
-                                     << refDTypep->name() << " -> " << typedefp << " in "
-                                     << newClassp->name());
+                        UINFO(9, "Resolved parameterized class typedef: " << refDTypep->name()
+                              << " -> " << typedefp << " in " << newClassp->name());
                         break;
                     }
                 }
