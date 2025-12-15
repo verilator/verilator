@@ -1273,10 +1273,13 @@ class ParamProcessor final {
         }
         */
         if (newClassp && !refDTypep->typedefp() && !refDTypep->subDTypep()) {
-            if (AstTypedef* const typedefp = VN_CAST(m_memberMap.findMember(newClassp, refDTypep->name()), Typedef)) {
+            if (AstTypedef* const typedefp
+                = VN_CAST(m_memberMap.findMember(newClassp, refDTypep->name()), Typedef)) {
                 refDTypep->typedefp(typedefp);
                 refDTypep->classOrPackagep(newClassp);
-                UINFO(9, "Resolved parameterized class typedef: " << refDTypep->name() << " -> " << typedefp << " in " << newClassp->name());
+                UINFO(9, "Resolved parameterized class typedef: " << refDTypep->name() << " -> "
+                                                                  << typedefp << " in "
+                                                                  << newClassp->name());
             }
         }
         return newModp;

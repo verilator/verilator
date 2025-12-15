@@ -1768,7 +1768,7 @@ void AstCellInlineScope::dumpJson(std::ostream& str) const {
 }
 bool AstClass::isCacheableChild(const AstNode* nodep) {
     return VN_IS(nodep, Var)
-          // EOM
+           // EOM
            || VN_IS(nodep, Typedef)
            || (VN_IS(nodep, Constraint) && !VN_AS(nodep, Constraint)->isExternProto())
            || VN_IS(nodep, EnumItemRef)
