@@ -55,7 +55,7 @@ jobs:
     steps:
 
       - name: Download repository archive
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: ${{ inputs.archive }}
           path: ${{ github.workspace }}
