@@ -879,6 +879,17 @@ Summary:
    This optimization is automatically disabled when :vlopt:`--prof-cfuncs`
    or :vlopt:`--trace` is used.
 
+.. option:: --inline-cfuncs-product <value>
+
+   Tune the inlining of CFunc calls for larger functions. When a function
+   is too large to always inline (exceeds :vlopt:`--inline-cfuncs` threshold),
+   it may still be inlined if the function size multiplied by the number of
+   call sites is at most <value>.
+
+   This allows functions that are called only once or twice to be inlined
+   even if they exceed the small function threshold. Set to 0 to only inline
+   functions below the :vlopt:`--inline-cfuncs` threshold. The default is 200.
+
 .. option:: --inline-mult <value>
 
    Tune the inlining of modules. The default value of 2000 specifies that
