@@ -68,7 +68,7 @@ jobs:
           fetch-depth: ${{ inputs.dev-gcov && '0' || '1' }}  # Coverage flow needs full history
 
       - name: Cache $CCACHE_DIR
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         env:
           CACHE_KEY: ${{ env.CACHE_BASE_KEY }}-ccache
         with:
@@ -93,7 +93,7 @@ jobs:
           echo "archive=$ARCHIVE" >> "$GITHUB_OUTPUT"
 
       - name: Upload repository archive
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           path: ${{ github.workspace }}/${{ steps.create-archive.outputs.archive }}
           name: ${{ steps.create-archive.outputs.archive }}

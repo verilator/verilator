@@ -62,7 +62,7 @@ jobs:
           sudo apt install ccache mold libfl-dev libgoogle-perftools-dev libsystemc-dev
 
       - name: Download Verilator installation archive
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: verilator-rtlmeter-${{ inputs.runs-on }}-${{ inputs.cc }}
 
@@ -73,7 +73,7 @@ jobs:
 
       - name: Use saved ccache
         if: ${{ env.CCACHE_DISABLE == 0 }}
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ env.CCACHE_DIR }}
           key: rtlmeter-run-ccache-${{ inputs.runs-on }}-${{ inputs.cc }}-${{ inputs.cases }}-${{ inputs.compileArgs }}-${{ github.run_id }}-${{ github.run_attempt }}
@@ -115,7 +115,7 @@ jobs:
           ./rtlmeter report --steps '*' --metrics '*' ../results-${{ steps.results.outputs.hash }}.json
 
       - name: Upload results
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           path: results-${{ steps.results.outputs.hash }}.json
           name: rtlmeter-${{ inputs.tag }}-results-${{ steps.results.outputs.hash }}

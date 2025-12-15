@@ -9,76 +9,77 @@ endclass
 class BasedA extends Base;
 endclass
 class BasedB extends Base;
-   static function BasedB getBasedB(bit getNull);
-      BasedB b = new;
-      return getNull ? null : b;
-   endfunction
+  static function BasedB getBasedB(bit getNull);
+    BasedB b = new;
+    return getNull ? null : b;
+  endfunction
 endclass
 
 module t;
-   int i;
-   int a;
-   int ao;
+  int i;
+  int a;
+  int ao;
 
-   Base b;
-   Base bo;
-   BasedA ba;
-   BasedA bao;
-   BasedB bb;
-   BasedB bbo;
+  Base b;
+  Base bo;
+  BasedA ba;
+  BasedA bao;
+  BasedB bb;
+  BasedB bbo;
 
-   // verilator lint_off CASTCONST
+  // verilator lint_off CASTCONST
 
-   initial begin
-      a = 1234;
-      i = $cast(ao, a);
-      if (i != 1) $stop;
-      if (ao != 1234) $stop;
+  initial begin
+    a = 1234;
+    i = $cast(ao, a);
+    if (i != 1) $stop;
+    if (ao != 1234) $stop;
 
-      a = 12345;
-      $cast(ao, a);
-      if (ao != 12345) $stop;
+    a = 12345;
+    $cast(ao, a);
+    if (ao != 12345) $stop;
 
-      i = $cast(ao, 2.1 * 3.7);
-      if (i != 1) $stop;
-      if (ao != 8) $stop;
+    i = $cast(ao, 2.1 * 3.7);
+    if (i != 1) $stop;
+    if (ao != 8) $stop;
 
-      i = $cast(bo, null);
-      if (i != 1) $stop;
-      if (bo != null) $stop;
+    i = $cast(bo, null);
+    if (i != 1) $stop;
+    if (bo != null) $stop;
 
-      ba = new;
-      b = ba;
-      i = $cast(bao, b);
-      if (i != 1) $stop;
-      if (b != ba) $stop;
+    ba = new;
+    b = ba;
+    i = $cast(bao, b);
+    if (i != 1) $stop;
+    if (b != ba) $stop;
 
-      bb = new;
-      b = bb;
-      i = $cast(bbo, b);
-      if (i != 1) $stop;
-      if (b != bb) $stop;
+    bb = new;
+    b = bb;
+    i = $cast(bbo, b);
+    if (i != 1) $stop;
+    if (b != bb) $stop;
 
-      bb = null;
-      b = bb;
-      i = $cast(bbo, b);
-      if (i != 1) $stop;
-      if (b != bb) $stop;
+    bb = null;
+    b = bb;
+    i = $cast(bbo, b);
+    if (i != 1) $stop;
+    if (b != bb) $stop;
 
-      bb = BasedB::getBasedB(1);
-      b = bb;
-      i = $cast(bbo, b);
-      if (i != 1) $stop;
-      if (b != bb) $stop;
+    bb = BasedB::getBasedB(1);
+    b = bb;
+    i = $cast(bbo, b);
+    if (i != 1) $stop;
+    if (b != bb) $stop;
 
-      bb = new;
-      b = bb;
-      bao = ba;
-      i = $cast(bao, b);
-      if (i != 0) $stop;
-      if (bao != ba) $stop;  // Unchanged
+    bb = new;
+    b = bb;
+    bao = ba;
+    i = $cast(bao, b);
+    if (i != 0) $stop;
+    if (bao != ba) $stop;  // Unchanged
+    void'($cast(bao, b));  // Ok as is function
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

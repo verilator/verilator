@@ -198,7 +198,7 @@ jobs:
         working-directory: rtlmeter
         run: make venv
       - name: Download all results
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           pattern: rtlmeter-${{ matrix.tag }}-results-*
           path: all-results-${{ matrix.tag }}
@@ -208,7 +208,7 @@ jobs:
         run: |
           ./rtlmeter collate ../all-results-${{ matrix.tag }}/*.json > ../all-results-${{ matrix.tag }}.json
       - name: Upload combined results
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           path: all-results-${{ matrix.tag }}.json
           name: all-results-${{ matrix.tag }}
@@ -227,13 +227,13 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Download combined results
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           pattern: all-results-*
           path: results
           merge-multiple: true
       - name: Upload published results
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           path: results/*.json
           name: published-results
@@ -289,7 +289,7 @@ jobs:
         working-directory: rtlmeter
         run: make venv
       - name: Download combined results
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           pattern: all-results-*
           path: all-results
@@ -308,7 +308,7 @@ jobs:
           DATE=$(gh run --repo ${{ github.repository }} view $ID --json createdAt --jq ".createdAt")
           echo "date=$DATE" >> $GITHUB_OUTPUT
       - name: Download scheduled run results
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: published-results
           path: nightly-results
@@ -374,14 +374,14 @@ jobs:
           done
           cat report.txt
       - name: Upload report
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           path: report.txt
           name: rtlmeter-pr-results
       - name: Save PR number
         run: echo ${{ github.event.number }} > pr-number.txt
       - name: Upload PR number
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           path: pr-number.txt
           name: pr-number

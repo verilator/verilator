@@ -1,3 +1,3 @@
-[0] %Error: t_castdyn_run_bad.v:32: Assertion failed in top.t: 'assert' failed.
-%Error: t/t_castdyn_run_bad.v:32: Verilog $stop
+[0] %Error: t_castdyn_run_bad.v:36: Assertion failed in top.t: '$cast' failed.
+%Error: t/t_castdyn_run_bad.v:36: Verilog $stop
 Aborting...
