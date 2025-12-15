@@ -60,7 +60,6 @@
 #include "V3Stats.h"
 #include "V3Unroll.h"
 #include "V3Width.h"
-// EOM
 #include "V3MemberMap.h"
 
 #include <cctype>
@@ -293,7 +292,6 @@ class ParamProcessor final {
     std::vector<std::pair<AstParamTypeDType*, int>> m_classParams;
     std::unordered_map<AstParamTypeDType*, int> m_paramIndex;
 
-    // EOM
     // member names cached for fast lookup
     VMemberMap m_memberMap;
 
