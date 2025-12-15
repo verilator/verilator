@@ -6967,6 +6967,8 @@ class WidthVisitor final : public VNVisitor {
         UINFO(9, "visit AstResizeLValue " << nodep << endl);
         if (nodep->didWidthAndSet()) return;
 
+        UASSERT_OBJ(nodep->lhsp(), nodep, "ResizeLValue missing lhs expression");
+
         // First, process child to know its natural width
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->lhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
@@ -6980,6 +6982,14 @@ class WidthVisitor final : public VNVisitor {
             // No parent context, use child's type
             nodep->dtypeFrom(nodep->lhsp());
         }
+
+        // Verify we ended up with a valid datatype
+        UASSERT_OBJ(nodep->dtypep(), nodep, "ResizeLValue still missing dtype after visiting");
+        UASSERT_OBJ(nodep->width() > 0, nodep, "ResizeLValue has invalid width");
+
+        // Log the transformation for debugging
+        UINFO(9, "  ResizeLValue: " << nodep->lhsp()->width()
+              << " bits -> " << nodep->width() << " bits" << endl);
 
         // Final processing
         userIterateAndNext(nodep->lhsp(), WidthVP{SELF, FINAL}.p());
