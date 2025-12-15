@@ -475,6 +475,12 @@ public:
 
         m_usevlSelfRef = false;
 
+        if (nodep->isCoroutine()) {
+            // Sometimes coroutines don't have co_awaits,
+            // so emit a co_return at the end to avoid compile errors.
+            puts("co_return;");
+        }
+
         puts("}\n");
         if (nodep->ifdef() != "") puts("#endif  // " + nodep->ifdef() + "\n");
     }
