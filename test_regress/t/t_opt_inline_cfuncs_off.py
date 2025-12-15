@@ -13,7 +13,7 @@ test.scenarios('vlt')
 test.top_filename = "t/t_opt_inline_cfuncs.v"
 
 # Disable inlining with --inline-cfuncs 0
-test.compile(verilator_flags2=["--stats", "--exe", "--main", "--inline-cfuncs", "0"])
+test.compile(verilator_flags2=["--stats", "--binary", "--inline-cfuncs", "0"])
 
 # Verify inlining did NOT happen (stat doesn't exist when pass is skipped)
 test.file_grep_not(test.stats, r'Optimizations, Inlined CFuncs\s+[1-9]')

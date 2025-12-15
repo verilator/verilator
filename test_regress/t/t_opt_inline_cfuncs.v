@@ -5,32 +5,54 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // Test module designed to generate multiple small CFuncs that can be inlined
-module t;
-   // Use initial block to avoid combinational loop issues
-   reg [31:0] a, b, c, d;
-   reg [7:0] local_x, local_y;
+// Uses generate to create multiple sub-module instances
+module t (/*AUTOARG*/
+   // Inputs
+   clk
+   );
+   input clk;
 
-   initial begin
-      // Initialize values
-      a = 32'd10;
-      b = 32'd20;
+   integer cyc = 0;
 
-      // Local variable usage (tests variable merging)
-      local_x = a[7:0];
-      local_y = local_x + 8'd5;
-      c = {24'b0, local_y};
+   parameter CNT = 8;
 
-      // Simple arithmetic
-      d = a + b + c;
+   wire [31:0] w [CNT:0];
+   reg [31:0] w0;
+   assign w[0] = w0;
 
-      // Verify results
-      if (d == 32'd45) begin
+   // Generate multiple sub-modules - each creates CFuncs that can be inlined
+   generate
+      for (genvar g=0; g<CNT; g++) begin : gen_sub
+         sub sub_inst (.clk(clk), .i(w[g]), .z(w[g+1]));
+      end
+   endgenerate
+
+   // Test loop
+   always @ (posedge clk) begin
+      cyc <= cyc + 1;
+      if (cyc==0) begin
+         w0 <= 32'h10;
+      end
+      else if (cyc==10) begin
+         // Each sub adds 1, so final value is 0x10 + 8 = 0x18
+         if (w[CNT] !== 32'h18) begin
+            $write("%%Error: w[CNT]=%0x, expected 0x18\n", w[CNT]);
+            $stop;
+         end
          $write("*-* All Finished *-*\n");
          $finish;
       end
-      else begin
-         $write("%%Error: d=%0d, expected 45\n", d);
-         $stop;
-      end
+   end
+endmodule
+
+// Small sub-module that generates inlineable CFuncs
+module sub (input clk, input [31:0] i, output reg [31:0] z);
+   reg [7:0] local_a;
+   reg [7:0] local_b;
+
+   always @(posedge clk) begin
+      local_a <= i[7:0];
+      local_b <= 8'd1;
+      z <= i + {24'b0, local_b};
    end
 endmodule
