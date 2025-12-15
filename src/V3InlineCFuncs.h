@@ -22,7 +22,7 @@
 
 class AstNetlist;
 
-class V3InlineCfuncs final {
+class V3InlineCFuncs final {
 public:
     static void inlineAll(AstNetlist* nodep) VL_MT_DISABLED;
 };

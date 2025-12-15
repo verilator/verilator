@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('vlt_all')
 test.top_filename = "t/t_timing_sched.v"
 
-test.compile(verilator_flags2=["--exe --main --timing --inline-cfuncs 0"])
+test.compile(verilator_flags2=["--exe", "--main", "--timing", "--inline-cfuncs", "0"])
 
 test.execute(all_run_flags=["+verilator+debug"])
 

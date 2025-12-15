@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator_st')
 
-test.compile(verilator_flags2=["--stats"])
+test.compile(verilator_flags2=["--stats", "--inline-cfuncs", "0"])
 
 test.execute(expect_filename=test.golden_filename)
 
