@@ -336,6 +336,8 @@ class DynScopeVisitor final : public VNVisitor {
     }
 
     bool needsDynScope(const AstVarRef* refp) const {
+        // Static variables don't need dynamic scope - they persist across invocations
+        if (refp->varp()->lifetime().isStatic()) return false;
         return
             // Can this variable escape the scope
             ((m_forkDepth > refp->varp()->user1()) && refp->varp()->isFuncLocal())
