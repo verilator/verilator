@@ -39,11 +39,54 @@
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
+// Helper visitor to check if a CFunc contains C statements
+// Uses clearOptimizable pattern for debugging
+
+class CFuncInlineCheckVisitor final : public VNVisitor {
+    // STATE
+    bool m_optimizable = true;  // True if function can be inlined
+    string m_whyNot;  // Reason why not optimizable
+    AstNode* m_whyNotNodep = nullptr;  // Node that caused non-optimizable
+
+    // METHODS
+    void clearOptimizable(AstNode* nodep, const string& why) {
+        if (m_optimizable) {
+            m_optimizable = false;
+            m_whyNot = why;
+            m_whyNotNodep = nodep;
+            UINFO(9, "CFunc not inlineable: " << why);
+            if (nodep) UINFO(9, ": " << nodep);
+            UINFO(9, endl);
+        }
+    }
+
+    // VISITORS
+    void visit(AstCStmt* nodep) override { clearOptimizable(nodep, "contains AstCStmt"); }
+    void visit(AstCExpr* nodep) override { clearOptimizable(nodep, "contains AstCExpr"); }
+    void visit(AstCStmtUser* nodep) override { clearOptimizable(nodep, "contains AstCStmtUser"); }
+    void visit(AstCExprUser* nodep) override { clearOptimizable(nodep, "contains AstCExprUser"); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    // CONSTRUCTORS
+    explicit CFuncInlineCheckVisitor(AstCFunc* cfuncp) { iterate(cfuncp); }
+
+    // ACCESSORS
+    bool optimizable() const { return m_optimizable; }
+    string whyNot() const { return m_whyNot; }
+    AstNode* whyNotNodep() const { return m_whyNotNodep; }
+};
+
+//######################################################################
 
 class InlineCFuncsVisitor final : public VNVisitor {
     // NODE STATE
     // AstCFunc::user1()  ->  vector of AstCCall* pointing to this function
+    // AstCFunc::user2()  ->  bool: true if checked for C statements
+    // AstCFunc::user3()  ->  bool: true if contains C statements (not inlineable)
     const VNUser1InUse m_user1InUse;
+    const VNUser2InUse m_user2InUse;
+    const VNUser3InUse m_user3InUse;
     AstUser1Allocator<AstCFunc, std::vector<AstCCall*>> m_callSites;
 
     // STATE
@@ -57,11 +100,15 @@ class InlineCFuncsVisitor final : public VNVisitor {
     // METHODS
 
     // Check if a function contains any $c() calls (user or internal)
-    static bool containsCStatements(AstCFunc* cfuncp) {
-        return cfuncp->exists([](const AstCStmt*) { return true; })
-               || cfuncp->exists([](const AstCExpr*) { return true; })
-               || cfuncp->exists([](const AstCStmtUser*) { return true; })
-               || cfuncp->exists([](const AstCExprUser*) { return true; });
+    // Results are cached in user2/user3 for efficiency
+    bool containsCStatements(AstCFunc* cfuncp) {
+        if (!cfuncp->user2()) {
+            // Not yet checked - run the check visitor
+            cfuncp->user2(true);  // Mark as checked
+            const CFuncInlineCheckVisitor checker{cfuncp};
+            cfuncp->user3(!checker.optimizable());  // Store result (true = contains C stmts)
+        }
+        return cfuncp->user3();
     }
 
     // Check if a function is eligible for inlining into caller
