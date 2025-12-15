@@ -13,8 +13,9 @@ test.scenarios('vlt')
 
 # Use --output-split-cfuncs to create small functions that can be inlined
 # Also test --inline-cfuncs-product option
-test.compile(verilator_flags2=["--stats", "--exe", "--main", "--output-split-cfuncs", "1",
-                               "--inline-cfuncs-product", "200"])
+test.compile(verilator_flags2=[
+    "--stats", "--exe", "--main", "--output-split-cfuncs", "1", "--inline-cfuncs-product", "200"
+])
 
 # Verify inlining happened (count > 0)
 test.file_grep(test.stats, r'Optimizations, Inlined CFuncs\s+(\d+)')
