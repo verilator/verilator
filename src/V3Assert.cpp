@@ -439,7 +439,9 @@ class AssertVisitor final : public VNVisitor {
             } else {
                 ++m_statAsNotImm;
             }
-            if (!passsp && !failsp) failsp = newFireAssertUnchecked(nodep, "'assert' failed.");
+            if (!passsp && !failsp)
+                failsp = newFireAssertUnchecked(
+                    nodep, VN_IS(nodep, AssertIntrinsic) ? "'$cast' failed." : "'assert' failed.");
         } else {
             nodep->v3fatalSrc("Unknown node type");
         }

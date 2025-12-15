@@ -6961,6 +6961,40 @@ class WidthVisitor final : public VNVisitor {
         }
         userIterateChildren(nodep, nullptr);
     }
+    void visit(AstResizeLValue* nodep) override {
+        // RESIZELVALUE adjusts width of lvalues for assignments/function calls
+        // The parent context determines the required width
+        UINFO(9, "visit AstResizeLValue " << nodep << endl);
+        if (nodep->didWidthAndSet()) return;
+
+        UASSERT_OBJ(nodep->lhsp(), nodep, "ResizeLValue missing lhs expression");
+
+        // First, process child to know its natural width
+        if (m_vup->prelim()) {
+            userIterateAndNext(nodep->lhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
+        }
+
+        // Get the required width from parent context
+        if (AstNodeDType* const vdtypep = m_vup->dtypeNullp()) {
+            // Parent specified required width - use it
+            nodep->dtypeFrom(vdtypep);
+        } else if (!nodep->dtypep()) {
+            // No parent context, use child's type
+            nodep->dtypeFrom(nodep->lhsp());
+        }
+
+        // Verify we ended up with a valid datatype
+        UASSERT_OBJ(nodep->dtypep(), nodep, "ResizeLValue still missing dtype after visiting");
+        UASSERT_OBJ(nodep->width() > 0, nodep, "ResizeLValue has invalid width");
+
+        // Log the transformation for debugging
+        UINFO(9, "  ResizeLValue: " << nodep->lhsp()->width() << " bits -> " << nodep->width()
+                                    << " bits" << endl);
+
+        // Final processing
+        userIterateAndNext(nodep->lhsp(), WidthVP{SELF, FINAL}.p());
+        nodep->didWidth(true);
+    }
     void visitClass(AstClass* nodep) {
         if (nodep->didWidthAndSet()) return;
 
