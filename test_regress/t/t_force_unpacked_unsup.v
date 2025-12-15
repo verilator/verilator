@@ -18,7 +18,7 @@ module t (  /*AUTOARG*/
 
   typedef struct {int x;} struct_t;
 
-  struct_t s_array[3];
+  struct_t s_array[3000];
   real r_array[2];
   struct_t my_struct;
 

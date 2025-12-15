@@ -231,6 +231,10 @@ private:
     static AstNodeDType* getEnVarpDTypep(AstVar* const varp) {
         AstNodeDType* const origDTypep = varp->dtypep()->skipRefp();
         if (VN_IS(origDTypep, UnpackArrayDType)) {
+            if (VN_AS(origDTypep, UnpackArrayDType)->elementsConst() > 1000) {
+                varp->v3warn(E_UNSUPPORTED, "Unsupported: Force of unpacked array variable with "
+                                            "size grater 1000 elements");
+            }
             AstNodeDType* dtp = origDTypep;
             while (VN_IS(dtp, UnpackArrayDType)) {
                 dtp = VN_AS(dtp, UnpackArrayDType)->subDTypep()->skipRefp();
