@@ -63,7 +63,7 @@
 #include "V3Graph.h"
 #include "V3HierBlock.h"
 #include "V3Inline.h"
-#include "V3InlineCfuncs.h"
+#include "V3InlineCFuncs.h"
 #include "V3Inst.h"
 #include "V3Interface.h"
 #include "V3Life.h"
@@ -563,9 +563,9 @@ static void process() {
                 V3Reloop::reloopAll(v3Global.rootp());
             }
 
-            if (v3Global.opt.inlineCfuncs()) {
+            if (v3Global.opt.inlineCFuncs()) {
                 // Inline small CFuncs to reduce function call overhead
-                V3InlineCfuncs::inlineAll(v3Global.rootp());
+                V3InlineCFuncs::inlineAll(v3Global.rootp());
             }
 
             // Fix very deep expressions

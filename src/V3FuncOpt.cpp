@@ -35,9 +35,6 @@
 
 #include "V3Global.h"
 #include "V3Stats.h"
-#include "V3ThreadPool.h"
-
-#include <atomic>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -173,16 +170,14 @@ public:
 };
 
 struct FuncOptStats final {
-    // STATE - Statistic tracking (atomic for thread-safe updates)
-    std::atomic<uint64_t> m_balancedConcats{0};  // Number of concatenations balanced
-    std::atomic<uint64_t> m_concatSplits{0};  // Number of splits in assignments with Concat on RHS
+    // STATE - Statistic tracking
+    VDouble0 m_balancedConcats;  // Number of concatenations balanced
+    VDouble0 m_concatSplits;  // Number of splits in assignments with Concat on RHS
 
     FuncOptStats() = default;
     ~FuncOptStats() {
-        V3Stats::addStat("Optimizations, FuncOpt concat trees balanced",
-                         static_cast<double>(m_balancedConcats.load()));
-        V3Stats::addStat("Optimizations, FuncOpt concat splits",
-                         static_cast<double>(m_concatSplits.load()));
+        V3Stats::addStat("Optimizations, FuncOpt concat trees balanced", m_balancedConcats);
+        V3Stats::addStat("Optimizations, FuncOpt concat splits", m_concatSplits);
     }
 };
 
@@ -329,9 +324,7 @@ class FuncOptVisitor final : public VNVisitor {
     }
 
 public:
-    static void apply(FuncOptStats& stats, AstCFunc* funcp) VL_MT_SAFE {
-        FuncOptVisitor{stats, funcp};
-    }
+    static void apply(FuncOptStats& stats, AstCFunc* funcp) { FuncOptVisitor{stats, funcp}; }
 };
 
 //######################################################################
@@ -341,18 +334,14 @@ void V3FuncOpt::funcOptAll(AstNetlist* nodep) {
     {
         const VNUser1InUse user1InUse;
         FuncOptStats stats;
-        {
-            V3ThreadScope threadScope;
-            for (AstNodeModule* modp = nodep->modulesp(); modp;
-                 modp = VN_AS(modp->nextp(), NodeModule)) {
-                for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                    if (AstCFunc* const cfuncp = VN_CAST(stmtp, CFunc)) {
-                        threadScope.enqueue(
-                            [cfuncp, &stats]() { FuncOptVisitor::apply(stats, cfuncp); });
-                    }
+        for (AstNodeModule* modp = nodep->modulesp(); modp;
+             modp = VN_AS(modp->nextp(), NodeModule)) {
+            for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                if (AstCFunc* const cfuncp = VN_CAST(stmtp, CFunc)) {
+                    FuncOptVisitor::apply(stats, cfuncp);
                 }
             }
-        }  // V3ThreadScope destructor waits for all jobs to complete
+        }
     }
     V3Global::dumpCheckGlobalTree("funcopt", 0, dumpTreeEitherLevel() >= 3);
 }

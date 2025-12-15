@@ -1489,7 +1489,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
                 [this, &optdir](const char* optp) { addIncDirUser(parseFileArg(optdir, optp)); });
     DECL_OPTION("-if-depth", Set, &m_ifDepth);
     DECL_OPTION("-ignc", OnOff, &m_ignc).undocumented();
-    DECL_OPTION("-inline-cfuncs", Set, &m_inlineCfuncs);
+    DECL_OPTION("-inline-cfuncs", Set, &m_inlineCFuncs);
+    DECL_OPTION("-inline-cfuncs-product", Set, &m_inlineCFuncsProduct);
     DECL_OPTION("-inline-mult", Set, &m_inlineMult);
     DECL_OPTION("-instr-count-dpi", CbVal, [this, fl](int val) {
         m_instrCountDpi = val;
