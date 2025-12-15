@@ -892,24 +892,11 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstNodeExpr* constFormatp
                 = membersel ? getConstFormat(membersel->cloneTree(false)) : getConstFormat(nodep);
 
-            // Build randmode access: for membersel, access parent object's __Vrandmode
-            AstNodeExpr* randModeAccess;
-            if (membersel) {
-                AstNodeExpr* parentAccess = membersel->fromp()->cloneTree(false);
-                AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
-                AstVar* const effectiveRandModeVarp = VN_AS(varClassp->user2p(), Var);
-                UASSERT_OBJ(effectiveRandModeVarp, nodep,
-                            "Member-selected variable must have randmode in its class");
-                AstMemberSel* randModeSel
-                    = new AstMemberSel{varp->fileline(), parentAccess, effectiveRandModeVarp};
-                randModeSel->dtypep(effectiveRandModeVarp->dtypep());
-                randModeAccess = randModeSel;
-            } else {
-                UASSERT_OBJ(m_randModeVarp, nodep, "No m_randModeVarp");
-                randModeAccess
-                    = new AstVarRef{varp->fileline(), VN_AS(m_randModeVarp->user2p(), NodeModule),
-                                    m_randModeVarp, VAccess::READ};
-            }
+            // Build randmode access using current randomize() scope's __Vrandmode
+            UASSERT_OBJ(m_randModeVarp, nodep, "No m_randModeVarp");
+            AstNodeExpr* randModeAccess
+                = new AstVarRef{varp->fileline(), VN_AS(m_randModeVarp->user2p(), NodeModule),
+                                m_randModeVarp, VAccess::READ};
 
             AstCMethodHard* const atp
                 = new AstCMethodHard{nodep->fileline(), randModeAccess, VCMethod::ARRAY_AT,
