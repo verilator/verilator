@@ -46,9 +46,9 @@ package s_c_env_pkg;
 endpackage // s_c_env_pkg
 
 package s_c_sequences_pkg;
-  import x_pkg::*;  
+  import x_pkg::*;
   import s_c_env_pkg::*;
-  class s_c_v_regs_seq;          
+  class s_c_v_regs_seq;
     s_c_env  m_env;
     virtual task body();
       int unsigned p, rdata;
