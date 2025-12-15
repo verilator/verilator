@@ -34,7 +34,6 @@ V3ThreadPool::~V3ThreadPool() {
         m_shutdown = true;
     }
     m_cv.notify_all();
-    m_completionCV.notify_all();
     wait();
 }
 
@@ -60,11 +59,12 @@ void V3ThreadPool::wait() {
     }
     // Fall back to condition variable wait to avoid wasting CPU cycles.
     // Skip if no pending jobs or shutting down (checked above in spin loop).
-    if (m_pendingJobs.load(std::memory_order_acquire) > 0 && !m_shutdown) {
+    if (m_pendingJobs.load(std::memory_order_acquire) > 0
+        && !m_shutdown.load(std::memory_order_acquire)) {
         V3LockGuard lock{m_mutex};
-        while (m_pendingJobs.load(std::memory_order_acquire) > 0 && !m_shutdown) {
-            m_completionCV.wait(m_mutex);
-        }
+        m_completionCV.wait(m_mutex, [&]() VL_REQUIRES(m_mutex) {
+            return m_pendingJobs.load(std::memory_order_acquire) == 0 || m_shutdown;
+        });
     }
     // Must join workers during shutdown to avoid destroying joinable threads
     if (m_shutdown) {
@@ -99,7 +99,7 @@ void V3ThreadPool::workerJobLoop() {
         // The lock acquisition before notify_all ensures proper synchronization with wait():
         // if wait() holds the lock while checking the condition, we block here until wait()
         // releases the lock to enter its wait state, ensuring the notification is not missed.
-        if (m_pendingJobs.fetch_sub(1, std::memory_order_acq_rel) == 1) {
+        if (m_pendingJobs.fetch_sub(1, std::memory_order_release) == 1) {
             V3LockGuard lock{m_mutex};
             m_completionCV.notify_all();
         }
