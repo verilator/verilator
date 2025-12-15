@@ -6559,9 +6559,9 @@ property_statementCaseIf<nodeExprp>:  // IEEE: property_statement - minus pexpr
                           BBUNSUP($<fl>1, "Unsupported: property case expression");
                           DEL($3); }
         |       yIF '(' expr/*expression_or_dist*/ ')' pexpr  %prec prLOWER_THAN_ELSE
-                        { $$ = $5; BBUNSUP($<fl>1, "Unsupported: property case expression"); DEL($3); }
+                        { $$ = new AstPropIf{$1, $3, $5, nullptr}; }
         |       yIF '(' expr/*expression_or_dist*/ ')' pexpr yELSE pexpr
-                        { $$ = $5; BBUNSUP($<fl>1, "Unsupported: property case expression"); DEL($3, $7); }
+                        { $$ = new AstPropIf{$1, $3, $5, $7}; }
         ;
 
 property_case_itemList<caseItemp>:  // IEEE: {property_case_item}
@@ -6738,9 +6738,11 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
                         { $$ = $1; BBUNSUP($2, "Unsupported: intersect (in sequence expression)"); DEL($3); }
         //
         |       yFIRST_MATCH '(' sexpr ')'
-                        { $$ = $3; BBUNSUP($1, "Unsupported: first_match (in sequence expression)"); }
+                        { $$ = new AstFirstMatch{$1, $3}; }
         |       yFIRST_MATCH '(' sexpr ',' sequence_match_itemList ')'
-                        { $$ = $3; BBUNSUP($1, "Unsupported: first_match (in sequence expression)"); DEL($5); }
+                        { $$ = new AstFirstMatch{$1, $3};
+                          BBUNSUP($5, "Unsupported: first_match with sequence_match_item");
+                          DEL($5); }
         |       ~p~sexpr/*sexpression_or_dist*/ yTHROUGHOUT sexpr
                         { $$ = $1; BBUNSUP($2, "Unsupported: throughout (in sequence expression)"); DEL($3); }
         //                      // Below pexpr's are really sequence_expr, but avoid conflict
@@ -6768,9 +6770,10 @@ cycle_delay_range<delayp>:  // IEEE: ==cycle_delay_range
         //                      // as ()'s mismatch between primary and the following statement
         //                      // the sv-ac committee has been asked to clarify  (Mantis 1901)
         |       yP_POUNDPOUND anyrange
-                        { $$ = new AstDelay{$1, new AstConst{$1, AstConst::BitFalse{}}, true};
-                          DEL($2);
-                          BBUNSUP($<fl>1, "Unsupported: ## range cycle delay range expression"); }
+                        { AstRange* const rangep = VN_AS($2, Range);
+                          $$ = new AstDelay{$1, rangep->leftp()->unlinkFrBack(),
+                                            rangep->rightp()->unlinkFrBack(), true};
+                          VL_DO_DANGLING(rangep->deleteTree(), rangep); }
         |       yP_POUNDPOUND yP_BRASTAR ']'
                         { $$ = new AstDelay{$1, new AstConst{$1, AstConst::BitFalse{}}, true};
                           BBUNSUP($<fl>1, "Unsupported: ## [*] cycle delay range expression"); }

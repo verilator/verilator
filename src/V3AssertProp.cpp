@@ -250,6 +250,148 @@ public:
     }
 };
 
+// Transform AstPropIf into appropriate form based on whether branches are sequences
+// Property if/else: "if (cond) prop1 else prop2"
+// - If branches are simple expressions: becomes "sampled(cond) ? prop1 : prop2"
+// - If branches are sequences (PExpr): becomes PExpr with AstIf inside
+class AssertPropIfVisitor final : public VNVisitor {
+    // VISITORS
+    void visit(AstPropIf* nodep) override {
+        // First transform any children (nested PropIf)
+        iterateChildren(nodep);
+
+        FileLine* const flp = nodep->fileline();
+        AstNodeExpr* const condp = nodep->condp()->unlinkFrBack();
+        AstNodeExpr* thenp = nodep->thenp()->unlinkFrBack();
+        AstNodeExpr* elsep = nodep->elsep();
+        if (elsep) {
+            elsep = elsep->unlinkFrBack();
+        } else {
+            // No else branch - property vacuously passes (true)
+            elsep = new AstConst{flp, AstConst::BitTrue{}};
+        }
+
+        // Create a sampled condition for proper concurrent assertion semantics
+        AstSampled* const sampledCondp = new AstSampled{flp, condp};
+        sampledCondp->dtypeFrom(condp);
+
+        // Check if either branch is a sequence (PExpr)
+        AstPExpr* const thenPExpr = VN_CAST(thenp, PExpr);
+        AstPExpr* const elsePExpr = VN_CAST(elsep, PExpr);
+
+        if (thenPExpr || elsePExpr) {
+            // At least one branch is a sequence - create PExpr with if/else inside
+            // Extract bodies from PExpr nodes or create simple checks for non-PExpr branches
+            AstNode* thenStmts = nullptr;
+            AstNode* elseStmts = nullptr;
+
+            if (thenPExpr) {
+                AstBegin* const bodyp = thenPExpr->bodyp();
+                if (bodyp->stmtsp()) thenStmts = bodyp->stmtsp()->unlinkFrBackWithNext();
+            } else {
+                // Simple expression - wrap in a check
+                thenStmts = new AstPExprClause{flp, true};
+                AstIf* const checkIf = new AstIf{flp, thenp,
+                    new AstPExprClause{flp, true},
+                    new AstPExprClause{flp, false}};
+                thenStmts = checkIf;
+            }
+
+            if (elsePExpr) {
+                AstBegin* const bodyp = elsePExpr->bodyp();
+                if (bodyp->stmtsp()) elseStmts = bodyp->stmtsp()->unlinkFrBackWithNext();
+            } else if (!VN_IS(elsep, Const)) {
+                // Simple expression (not const true) - wrap in a check
+                AstIf* const checkIf = new AstIf{flp, elsep,
+                    new AstPExprClause{flp, true},
+                    new AstPExprClause{flp, false}};
+                elseStmts = checkIf;
+            } else {
+                // else is constant true (vacuous pass)
+                elseStmts = new AstPExprClause{flp, true};
+            }
+
+            // Create if/else statement with the branches
+            AstIf* const ifStmt = new AstIf{flp, sampledCondp, thenStmts, elseStmts};
+
+            // Create new PExpr with the if/else inside
+            AstBegin* const newBody = new AstBegin{flp, "", nullptr, true};
+            newBody->addStmtsp(ifStmt);
+            AstPExpr* const newPExpr = new AstPExpr{flp, newBody, nodep->dtypep()};
+
+            // Clean up old PExpr nodes
+            if (thenPExpr) VL_DO_DANGLING(thenPExpr->deleteTree(), thenPExpr);
+            if (elsePExpr) VL_DO_DANGLING(elsePExpr->deleteTree(), elsePExpr);
+
+            nodep->replaceWith(newPExpr);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        } else {
+            // Both branches are simple expressions - use ternary
+            AstCond* const condExprp = new AstCond{flp, sampledCondp, thenp, elsep};
+            condExprp->dtypeFrom(nodep);
+
+            // Replace the PropIf with the conditional expression
+            nodep->replaceWith(condExprp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        }
+    }
+    void visit(AstFirstMatch* nodep) override {
+        // First transform any children
+        iterateChildren(nodep);
+
+        // For now, first_match(seq) is simplified to just seq
+        // This is correct for single-match sequences and range delays
+        // (which we currently treat as minimum delay, producing one match)
+        AstNodeExpr* const seqp = nodep->seqp()->unlinkFrBack();
+        nodep->replaceWith(seqp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+    }
+    void visit(AstImplication* nodep) override {
+        // First transform any children (handle nested implications, first_match, etc.)
+        iterateChildren(nodep);
+
+        // Only handle implication when RHS is a sequence (PExpr).
+        // Simple expression RHS is handled by V3AssertPre which properly handles
+        // overlapped (|->) vs non-overlapped (|=>) with $past transform.
+        if (AstPExpr* pexprp = VN_CAST(nodep->rhsp(), PExpr)) {
+            // RHS is a sequence that has been transformed to PExpr
+            // Inject LHS as guard condition: if (!sampled(lhs)) { pass } else { original body }
+            FileLine* const flp = nodep->fileline();
+            AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
+
+            // Create sampled condition for proper concurrent assertion semantics
+            AstSampled* const sampledLhsp = new AstSampled{flp, lhsp};
+            sampledLhsp->dtypeFrom(lhsp);
+
+            pexprp->unlinkFrBack();
+
+            AstBegin* const bodyp = pexprp->bodyp();
+            AstNode* origStmts = bodyp->stmtsp();
+            if (origStmts) origStmts = origStmts->unlinkFrBackWithNext();
+
+            // Create vacuous pass clause for when LHS is false (implication passes)
+            AstPExprClause* const vacuousPass = new AstPExprClause{flp, true};
+
+            // Create guard: if (!sampled(lhs)) pass else { original body }
+            AstLogNot* const notLhsp = new AstLogNot{flp, sampledLhsp};
+            notLhsp->dtypeSetBit();
+            AstIf* const guardIf = new AstIf{flp, notLhsp, vacuousPass, origStmts};
+
+            bodyp->addStmtsp(guardIf);
+
+            nodep->replaceWith(pexprp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        }
+        // else: Simple expression RHS - leave for V3AssertPre
+    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    // CONSTRUCTORS
+    explicit AssertPropIfVisitor(AstNetlist* nodep) { iterate(nodep); }
+    ~AssertPropIfVisitor() override = default;
+};
+
 //######################################################################
 // Top AssertProp class
 
@@ -260,5 +402,7 @@ void V3AssertProp::assertPropAll(AstNetlist* nodep) {
         { AssertPropBuildVisitor{nodep, graph}; }
         AssertPropTransformer{graph};
     }
+    // Transform property if/else statements
+    { AssertPropIfVisitor{nodep}; }
     V3Global::dumpCheckGlobalTree("assertproperties", 0, dumpTreeEitherLevel() >= 3);
 }

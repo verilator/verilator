@@ -99,7 +99,9 @@ class NameVisitor final : public VNVisitorConst {
             rename(nodep, false);
         }
     }
-    void visit(AstVarRef* nodep) override { iterateConst(nodep->varp()); }
+    void visit(AstVarRef* nodep) override {
+        if (nodep->varp()) iterateConst(nodep->varp());
+    }
     void visit(AstCell* nodep) override {
         if (!nodep->user1()) {
             rename(nodep, (!nodep->modp()->modPublic() && !VN_IS(nodep->modp(), ClassPackage)));

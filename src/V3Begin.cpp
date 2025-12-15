@@ -184,6 +184,13 @@ class BeginVisitor final : public VNVisitor {
         m_liftedp = nullptr;
         iterateChildren(nodep);
         nodep->foreach([&](AstInitialStatic* const initp) {
+            // Don't move if it references task-local variables (e.g., dynamic scope handles)
+            // These are created by V3Fork for capturing variables in forked processes
+            bool hasTaskLocalRefs = false;
+            initp->foreach([&](AstVarRef* const refp) {
+                if (refp->varp()->isFuncLocal()) hasTaskLocalRefs = true;
+            });
+            if (hasTaskLocalRefs) return;
             initp->unlinkFrBack();
             m_ftaskp->addHereThisAsNext(initp);
         });

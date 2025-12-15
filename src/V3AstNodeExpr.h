@@ -1555,6 +1555,22 @@ public:
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool isSystemFunc() const override { return true; }
 };
+class AstFirstMatch final : public AstNodeExpr {
+    // SVA first_match(sequence) operator (IEEE 1800-2017 16.9.4)
+    // Evaluates the sequence and terminates on the earliest match
+    // @astgen op1 := seqp : AstNodeExpr  // Inner sequence expression
+public:
+    AstFirstMatch(FileLine* fl, AstNodeExpr* seqp)
+        : ASTGEN_SUPER_FirstMatch(fl) {
+        this->seqp(seqp);
+    }
+    ASTGEN_MEMBERS_AstFirstMatch;
+    string emitVerilog() override { return "first_match(%l)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+    int instrCount() const override { return INSTR_COUNT_BRANCH; }
+    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+};
 class AstFuture final : public AstNodeExpr {
     // Verilog $future_gclk
     // @astgen op1 := exprp : AstNodeExpr
@@ -1906,6 +1922,25 @@ public:
     int instrCount() const override { return widthInstrs(); }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* subDTypep() const VL_MT_STABLE { return dtypep() ? dtypep() : childDTypep(); }
+};
+class AstPropIf final : public AstNodeExpr {
+    // Property if/else expression (IEEE 1800-2017 16.12)
+    // @astgen op1 := condp : AstNodeExpr
+    // @astgen op2 := thenp : AstNodeExpr
+    // @astgen op3 := elsep : Optional[AstNodeExpr]
+public:
+    AstPropIf(FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp, AstNodeExpr* elsep)
+        : ASTGEN_SUPER_PropIf(fl) {
+        this->condp(condp);
+        this->thenp(thenp);
+        this->elsep(elsep);
+    }
+    ASTGEN_MEMBERS_AstPropIf;
+    string emitVerilog() override { return "if (%l) %r else %t"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { V3ERROR_NA_RETURN(false); }
+    int instrCount() const override { return INSTR_COUNT_BRANCH; }
+    bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstRand final : public AstNodeExpr {
     // $random/$random(seed) or $urandom/$urandom(seed)

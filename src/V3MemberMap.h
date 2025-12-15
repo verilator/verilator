@@ -81,9 +81,11 @@ private:
             for (AstNode* itemp = anodep->stmtsp(); itemp; itemp = itemp->nextp()) {
                 if (const AstScope* const scopep = VN_CAST(itemp, Scope)) {
                     for (AstNode* blockp = scopep->blocksp(); blockp; blockp = blockp->nextp()) {
-                        memberInsert(mmapr, blockp);
+                        // Skip procedure blocks (initial, always, etc.) - they're not named members
+                        if (!VN_IS(blockp, NodeProcedure)) memberInsert(mmapr, blockp);
                     }
-                } else if (!VN_IS(itemp, Always)) {
+                } else if (!VN_IS(itemp, NodeProcedure)) {
+                    // Skip all procedure types, not just AstAlways
                     memberInsert(mmapr, itemp);
                 }
             }

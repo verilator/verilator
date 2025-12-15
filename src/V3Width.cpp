@@ -722,6 +722,9 @@ class WidthVisitor final : public VNVisitor {
         if (nodep->fileline()->timingOn()) {
             if (v3Global.opt.timing().isSetTrue()) {
                 iterateCheckDelay(nodep, "delay", nodep->lhsp(), BOTH);
+                if (nodep->rhsp()) {  // Range delay ##[min:max]
+                    iterateCheckDelay(nodep, "delay max", nodep->rhsp(), BOTH);
+                }
                 iterateAndNextNull(nodep->stmtsp());
                 return;
             } else if (v3Global.opt.timing().isSetFalse()) {
@@ -1570,6 +1573,22 @@ class WidthVisitor final : public VNVisitor {
             }
             iterate(nodep->delayp());
             iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
+            nodep->dtypeSetBit();
+        }
+    }
+    void visit(AstPropIf* nodep) override {
+        // Property if/else expression (IEEE 1800-2017 16.12)
+        if (m_vup->prelim()) {
+            iterateCheckBool(nodep, "condp", nodep->condp(), BOTH);
+            userIterateAndNext(nodep->thenp(), WidthVP{SELF, BOTH}.p());
+            if (nodep->elsep()) userIterateAndNext(nodep->elsep(), WidthVP{SELF, BOTH}.p());
+            nodep->dtypeSetBit();
+        }
+    }
+    void visit(AstFirstMatch* nodep) override {
+        // SVA first_match(sequence) operator (IEEE 1800-2017 16.9.4)
+        if (m_vup->prelim()) {
+            userIterateAndNext(nodep->seqp(), WidthVP{SELF, BOTH}.p());
             nodep->dtypeSetBit();
         }
     }
@@ -5379,20 +5398,10 @@ class WidthVisitor final : public VNVisitor {
                                  BOTH);  // it's like an if() condition.
             }
             nodep->dtypeSetBit();
-            if (m_hasSExpr) {
-                if (VN_IS(m_seqUnsupp, Implication)) {
-                    m_seqUnsupp->v3warn(E_UNSUPPORTED,
-                                        "Unsupported: Implication with sequence expression");
-                    AstConst* const newp = new AstConst{nodep->fileline(), 0};
-                    newp->dtypeFrom(nodep);
-                    nodep->replaceWith(newp);
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                } else if (nodep->disablep()) {
-                    nodep->disablep()->v3warn(E_UNSUPPORTED,
-                                              "Unsupported: Disable iff with sequence expression");
-                    VL_DO_DANGLING(pushDeletep(nodep->disablep()->unlinkFrBack()), nodep);
-                }
-            }
+            // Note: m_hasSExpr tracks if property has sequence expressions
+            // Sequence expressions are now supported via transformation in V3AssertProp
+            // disable iff is simply wrapped as if(!condition) around the body, so
+            // it works with sequences too
         }
     }
 
