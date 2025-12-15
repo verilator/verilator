@@ -31,17 +31,20 @@ module t (  /*AUTOARG*/
       big_array[1][2][3] <= 1;
       s_array[1].x <= 1;
       my_struct.x <= 1;
-    end else if (cyc == 1) begin
+    end
+    else if (cyc == 1) begin
       `checkr(r_array[0], 1);
       `checkr(big_array[1][2][3], 1);
       `checkh(s_array[1].x, 1);
       `checkh(my_struct.x, 1);
-    end else if (cyc == 2) begin
+    end
+    else if (cyc == 2) begin
       force r_array[0] = 0;
       force big_array[1][2][3] = 0;
       force s_array[1].x = 0;
       force my_struct.x = 0;
-    end else if (cyc == 3) begin
+    end
+    else if (cyc == 3) begin
       `checkr(r_array[0], 0);
       `checkr(big_array[1][2][3], 0);
       r_array[0] <= 1;
@@ -50,17 +53,20 @@ module t (  /*AUTOARG*/
       s_array[1].x <= 1;
       `checkh(my_struct.x, 0);
       my_struct.x <= 1;
-    end else if (cyc == 4) begin
+    end
+    else if (cyc == 4) begin
       `checkr(r_array[0], 0);
       `checkr(big_array[1][2][3], 0);
       `checkh(s_array[1].x, 0);
       `checkh(my_struct.x, 0);
-    end else if (cyc == 5) begin
+    end
+    else if (cyc == 5) begin
       release r_array[0];
       release big_array[1][2][3];
       release s_array[1].x;
       release my_struct.x;
-    end else if (cyc == 6) begin
+    end
+    else if (cyc == 6) begin
       `checkr(r_array[0], 0);
       `checkr(big_array[1][2][3], 0);
       r_array[0] <= 1;
@@ -69,12 +75,14 @@ module t (  /*AUTOARG*/
       s_array[1].x <= 1;
       `checkh(my_struct.x, 0);
       my_struct.x <= 1;
-    end else if (cyc == 7) begin
+    end
+    else if (cyc == 7) begin
       `checkr(r_array[0], 1);
       `checkr(big_array[1][2][3], 1);
       `checkh(s_array[1].x, 1);
       `checkh(my_struct.x, 1);
-    end else if (cyc == 8) begin
+    end
+    else if (cyc == 8) begin
       $write("*-* All Finished *-*\n");
       $finish;
     end

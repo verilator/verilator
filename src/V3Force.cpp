@@ -54,6 +54,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Convert force/release statements and signals marked 'forceable'
 
 class ForceState final {
+    constexpr static int ELEMENTS_MAX = 1000;
     // TYPES
     struct ForceComponentsVar final {
         AstVar* const m_rdVarp;  // New variable to replace read references with
@@ -237,15 +238,14 @@ private:
                 dtp = uDtp->subDTypep()->skipRefp();
                 elemNum *= uDtp->elementsConst();
             }
-            if (elemNum > 1000) {
+            if (elemNum > ELEMENTS_MAX) {
                 varp->v3warn(E_UNSUPPORTED, "Unsupported: Force of unpacked array variable with "
-                                            "size grater 1000 elements");
+                                            ">= "
+                                                << ELEMENTS_MAX << " elements");
             }
-            bool complexElem;
+            bool complexElem = true;
             if (AstBasicDType* const basicp = VN_CAST(dtp, BasicDType)) {
                 complexElem = basicp->isOpaque();
-            } else {
-                complexElem = true;
             }
             if (complexElem) {
                 varp->v3warn(E_UNSUPPORTED, "Unsupported: Force of unpacked array variable with "

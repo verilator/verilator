@@ -25,32 +25,40 @@ module t (  /*AUTOARG*/
     if (cyc == 0) begin
       logic_arr[0][2][-4] <= 1;
       int_arr[0][0][2] <= 1;
-    end else if (cyc == 1) begin
+    end
+    else if (cyc == 1) begin
       `checkh(logic_arr[0][2][-4], 1);
       `checkh(int_arr[0][0][2], 1);
-    end else if (cyc == 2) begin
+    end
+    else if (cyc == 2) begin
       force logic_arr[0][2][-4] = 0;
       force int_arr[0][0][2] = 0;
-    end else if (cyc == 3) begin
+    end
+    else if (cyc == 3) begin
       `checkh(logic_arr[0][2][-4], 0);
       logic_arr[0][2][-4] <= 1;
       `checkh(int_arr[0][0][2], 0);
       int_arr[0][0][2] <= 1;
-    end else if (cyc == 4) begin
+    end
+    else if (cyc == 4) begin
       `checkh(logic_arr[0][2][-4], 0);
       `checkh(int_arr[0][0][2], 0);
-    end else if (cyc == 5) begin
+    end
+    else if (cyc == 5) begin
       release logic_arr[0][2][-4];
       release int_arr[0][0][2];
-    end else if (cyc == 6) begin
+    end
+    else if (cyc == 6) begin
       `checkh(logic_arr[0][2][-4], 0);
       logic_arr[0][2][-4] <= 1;
       `checkh(int_arr[0][0][2], 0);
       int_arr[0][0][2] <= 1;
-    end else if (cyc == 7) begin
+    end
+    else if (cyc == 7) begin
       `checkh(logic_arr[0][2][-4], 1);
       `checkh(int_arr[0][0][2], 1);
-    end else if (cyc == 8) begin
+    end
+    else if (cyc == 8) begin
       $write("*-* All Finished *-*\n");
       $finish;
     end
