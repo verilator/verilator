@@ -54,13 +54,13 @@
 #include "V3EmitV.h"
 #include "V3Hasher.h"
 #include "V3LinkDotIfaceCapture.h"
+#include "V3MemberMap.h"
 #include "V3Os.h"
 #include "V3Parse.h"
 #include "V3Simulate.h"
 #include "V3Stats.h"
 #include "V3Unroll.h"
 #include "V3Width.h"
-#include "V3MemberMap.h"
 
 #include <cctype>
 #include <cstdlib>
