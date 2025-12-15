@@ -35,7 +35,8 @@ endmodule
 module the_top #() ();
 
   typedef logic [7:0] my_t;
-  typedef pipeline_class #(my_t)::if_id_t if_id_t;
+  typedef pipeline_class #(my_t)::if_id_t if_id2_t;
+  typedef if_id2_t if_id_t;
   pipe_reg #(if_id_t) if_id_reg();
 
   initial begin
