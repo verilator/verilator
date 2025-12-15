@@ -173,6 +173,18 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
             if (!widthOk(srcp) || !useOk(redOrp, true)) continue;
             val = 0;
             inv = true;
+        } else if (DfgSel* const selp = vtx.cast<DfgSel>()) {
+            // Special case: Sel(ShiftL(1, src),lsb,width=1)
+            if (selp->width() != 1) continue;
+            DfgShiftL* const shiftLp = selp->fromp()->cast<DfgShiftL>();
+            if (!shiftLp) continue;
+            DfgConst* const constp = shiftLp->lhsp()->cast<DfgConst>();
+            if (!constp || !useOk(selp, false)) continue;
+            if (!constp->hasValue(1)) continue;
+            srcp = shiftLp->rhsp();
+            if (!widthOk(srcp)) continue;
+            val = selp->lsb();
+            inv = false;
         } else {
             // Not a comparison-like vertex
             continue;
