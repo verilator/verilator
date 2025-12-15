@@ -6988,8 +6988,8 @@ class WidthVisitor final : public VNVisitor {
         UASSERT_OBJ(nodep->width() > 0, nodep, "ResizeLValue has invalid width");
 
         // Log the transformation for debugging
-        UINFO(9, "  ResizeLValue: " << nodep->lhsp()->width()
-              << " bits -> " << nodep->width() << " bits" << endl);
+        UINFO(9, "  ResizeLValue: " << nodep->lhsp()->width() << " bits -> " << nodep->width()
+                                    << " bits" << endl);
 
         // Final processing
         userIterateAndNext(nodep->lhsp(), WidthVP{SELF, FINAL}.p());
