@@ -67,7 +67,7 @@ jobs:
           ls -lsha
 
       - name: Cache $CCACHE_DIR
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         env:
           CACHE_KEY: ${{ env.CACHE_BASE_KEY }}-ccache2
         with:
