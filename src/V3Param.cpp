@@ -1254,24 +1254,6 @@ class ParamProcessor final {
         // resolve the RefDType's typedef to point to the typedef inside the specialized class
         AstRefDType* const refDTypep = VN_CAST(nodep->backp(), RefDType);
         AstClass* const newClassp = refDTypep ? VN_CAST(newModp, Class) : nullptr;
-
-        // EOM
-        /*
-        if (newClassp && !refDTypep->typedefp() && !refDTypep->subDTypep()) {
-            for (AstNode* itemp = newClassp->membersp(); itemp; itemp = itemp->nextp()) {
-                if (AstTypedef* const typedefp = VN_CAST(itemp, Typedef)) {
-                    if (typedefp->name() == refDTypep->name()) {
-                        refDTypep->typedefp(typedefp);
-                        refDTypep->classOrPackagep(newClassp);
-                        UINFO(9, "Resolved parameterized class typedef: "
-                                     << refDTypep->name() << " -> " << typedefp << " in "
-                                     << newClassp->name());
-                        break;
-                    }
-                }
-            }
-        }
-        */
         if (newClassp && !refDTypep->typedefp() && !refDTypep->subDTypep()) {
             if (AstTypedef* const typedefp
                 = VN_CAST(m_memberMap.findMember(newClassp, refDTypep->name()), Typedef)) {
