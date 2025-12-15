@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('vlt_all')
 test.verilated_debug = True
 
-test.compile(verilator_flags2=["--inline-cfuncs", "0"])
+test.compile(verilator_flags2=[])
 
 test.execute()
 

@@ -17,8 +17,8 @@ test.compile(verilator_flags2=[
     "--stats", "--exe", "--main", "--output-split-cfuncs", "1", "--inline-cfuncs-product", "200"
 ])
 
-# Verify inlining happened (count > 0)
-test.file_grep(test.stats, r'Optimizations, Inlined CFuncs\s+(\d+)')
+# Verify inlining happened with exact count
+test.file_grep(test.stats, r'Optimizations, Inlined CFuncs\s+(\d+)', 1)
 
 test.execute()
 
