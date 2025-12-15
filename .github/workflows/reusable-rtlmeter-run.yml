@@ -115,7 +115,7 @@ jobs:
           ./rtlmeter report --steps '*' --metrics '*' ../results-${{ steps.results.outputs.hash }}.json
 
       - name: Upload results
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           path: results-${{ steps.results.outputs.hash }}.json
           name: rtlmeter-${{ inputs.tag }}-results-${{ steps.results.outputs.hash }}
