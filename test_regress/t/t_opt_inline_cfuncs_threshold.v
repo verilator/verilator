@@ -20,13 +20,8 @@ module t;
       g = f * b;
       h = g + c + d + e + f;
 
-      if (h == 32'd32) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-      else begin
-         $write("%%Error: h=%0d, expected 32\n", h);
-         $stop;
-      end
+      if (h != 32'd32) $stop;
+      $write("*-* All Finished *-*\n");
+      $finish;
    end
 endmodule

@@ -42,7 +42,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Helper visitor to check if a CFunc contains C statements
 // Uses clearOptimizable pattern for debugging
 
-class CFuncInlineCheckVisitor final : public VNVisitor {
+class CFuncInlineCheckVisitor final : public VNVisitorConst {
     // STATE
     bool m_optimizable = true;  // True if function can be inlined
     string m_whyNot;  // Reason why not optimizable
@@ -65,11 +65,11 @@ class CFuncInlineCheckVisitor final : public VNVisitor {
     void visit(AstCExpr* nodep) override { clearOptimizable(nodep, "contains AstCExpr"); }
     void visit(AstCStmtUser* nodep) override { clearOptimizable(nodep, "contains AstCStmtUser"); }
     void visit(AstCExprUser* nodep) override { clearOptimizable(nodep, "contains AstCExprUser"); }
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit CFuncInlineCheckVisitor(AstCFunc* cfuncp) { iterate(cfuncp); }
+    explicit CFuncInlineCheckVisitor(AstCFunc* cfuncp) { iterateConst(cfuncp); }
 
     // ACCESSORS
     bool optimizable() const { return m_optimizable; }
@@ -124,6 +124,9 @@ class InlineCFuncsVisitor final : public VNVisitor {
 
         // Don't inline functions marked dontCombine (e.g. trace, entryPoint)
         if (cfuncp->dontCombine()) return false;
+
+        // Don't inline entry point functions
+        if (cfuncp->entryPoint()) return false;
 
         // Must have statements to inline
         if (!cfuncp->stmtsp()) return false;
