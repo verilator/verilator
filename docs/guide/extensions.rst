@@ -287,12 +287,12 @@ or "`ifdef`"'s may break other tools.
 
 .. option:: /*verilator&32;fargs <arguments>*/
 
-   For Verilator developers only. When a source file containing :option:`fargs`
-   metacomments is passed to Verilator on the command line via the :option:`-f`
-   or :option:`-F` option, the provided arguments will be added as if specified
+   For Verilator developers only. When a source file containing these `fargs`
+   metacomments is passed to Verilator on the command line via the :vlopt:`-f`
+   or :vlopt:`-F` option, the provided arguments will be added as if specified
    on the command line. The source file is not preprocessed before parsing for
-   arguments, and all :option:`fargs` comment will take effect, even if placed
-   undef an inactive :option:`\`ifdef`.
+   arguments, and all `fargs` comments will take effect, even if placed
+   undef an inactive `\`ifdef`.
 
 .. option:: /*verilator&32;forceable*/
 

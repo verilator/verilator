@@ -74,7 +74,7 @@ Verilator provides several mechanisms to find the source code containing a
 module, primitive, interface, or program ("module" in this section) and
 bind them to an instantiation. These capabilities are similar to the
 "Precompiling in a single-pass" use model described in IEEE 1800-2023
-33.5.1, although `config` is not yet supported.
+33.5.1.
 
 Verilator first reads all files provided on the command line and
 :vlopt:`-f` files, and parses all modules within. Each module is assigned
@@ -91,12 +91,12 @@ Verilator attempts to figure out the top module itself, and if multiple
 tops result a :option:`MULTITOP` warning is issued which may be suppressed
 (see details in :option:`MULTITOP`).
 
-Verilator will attempt to bind lower unresolved instances first in the same
-library name as the parent's instantiation library, and if not found search
-globally across all libraries in the order modules were declared. This
-allows otherwise conflicting duplicate module names between libraries to
-coexist uniquely within each library name. When IEEE `config use` is
-supported, more complicated selections will be able to be specified.
+Verilator will attempt to bind lower unresolved instances based first on
+IEEE `config` specifications, second based on using the same library name
+as the parent's instantiation library, and finally search globally across
+all libraries in the order modules were declared. This allows otherwise
+conflicting duplicate module names between libraries to coexist uniquely
+within each library name.
 
 
 .. _hierarchical verilation:
