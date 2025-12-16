@@ -464,6 +464,13 @@ class ForceConvertVisitor final : public VNVisitor {
                 return;
             }
 
+            const AstBasicDType* const bdtypep = nodep->varp()->basicp();
+            const bool strtype = bdtypep && bdtypep->keyword() == VBasicDTypeKwd::STRING;
+            if (strtype) {
+                nodep->varp()->v3error(
+                    "Forcing strings is not permitted: " << nodep->varp()->name());
+            }
+
             const ForceState::ForceComponentsVarScope& fc = m_state.getForceComponents(nodep);
             fc.m_enVscp->varp()->sigUserRWPublic(true);
             fc.m_valVscp->varp()->sigUserRWPublic(true);

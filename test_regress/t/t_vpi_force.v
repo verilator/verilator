@@ -34,7 +34,6 @@ module Test (
 `elsif USE_VPI_NOT_DPI
 `ifdef VERILATOR
 `systemc_header
-  extern "C" int tryCheckingForceableString();
   extern "C" int putString();
   extern "C" int tryInvalidPutOperations();
   extern "C" int putInertialDelay();
@@ -48,7 +47,6 @@ module Test (
 `endif
 `else
 `ifdef VERILATOR
-  import "DPI-C" context function int tryCheckingForceableString();
   import "DPI-C" context function int putString();
   import "DPI-C" context function int tryInvalidPutOperations();
   import "DPI-C" context function int putInertialDelay();
@@ -61,11 +59,8 @@ module Test (
   import "DPI-C" context function int checkValuesReleased();
 `endif
 
-  // Non-forceable signal should raise error
-  string        str1       `PUBLIC_FORCEABLE; // std::string
-
   // Verify that vpi_put_value still works for strings
-  string        str2       /*verilator public_flat_rw*/; // std::string
+  string        str1       /*verilator public_flat_rw*/; // std::string
 
   // Verify that vpi_put_value still works with vpiInertialDelay
   logic [ 31:0] delayed    `PUBLIC_FORCEABLE; // IData
@@ -255,27 +250,6 @@ module Test (
     force decStringSContinuously[7:0] = 8'h55;
     force decStringIContinuously[15:0] = 16'h5555;
     force decStringQContinuously[31:0] = 32'd1431655765;
-  endtask
-
-  task automatic vpiTryCheckingForceableString();
-    integer vpiStatus = 1;  // Default to failed status to ensure that a function *not* getting
-                            // called also causes simulation termination
-`ifdef VERILATOR
-`ifdef USE_VPI_NOT_DPI
-    vpiStatus = $c32("tryCheckingForceableString()");
-`else
-    vpiStatus = tryCheckingForceableString();
-`endif
-`else
-    $stop; // This task only makes sense with Verilator, since other simulators ignore the "verilator forceable" metacomment.
-`endif
-
-    if (vpiStatus != 0) begin
-      $write("%%Error: t_vpi_force.cpp:%0d:", vpiStatus);
-      $display(
-          "C Test failed (forcing string either succeeded even though it should have failed, or produced unexpected error message)");
-      $stop;
-    end
   endtask
 
   task automatic vpiPutString();
@@ -626,7 +600,6 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
 `endif
 
 `ifdef VERILATOR
-    vpiTryCheckingForceableString();
     vpiPutString();
     vpiTryInvalidPutOperations();
     vpiPutInertialDelay();
@@ -688,7 +661,6 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     $display("time: %0t\tclk:%b", $time, clk);
 
     $display("str1: %s", str1);
-    $display("str2: %s", str2);
     $display("delayed: %x", delayed);
 
     $display("onebit: %x", onebit);

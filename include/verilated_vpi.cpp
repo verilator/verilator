@@ -2837,14 +2837,6 @@ void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
         return;
     } else if (valuep->format == vpiStringVal) {
         if (varp->vltype() == VLVT_STRING) {
-            if (VL_UNLIKELY(varp->isForceable())) {
-                VL_VPI_ERROR_(
-                    __FILE__, __LINE__,
-                    "Attempting to retrieve value of forceable signal '%s' with data type "
-                    "VLVT_STRING, but strings cannot be forced.",
-                    vop->fullname());
-            }
-
             if (varp->isParam()) {
                 valuep->value.str = reinterpret_cast<char*>(varDatap);
                 return;
