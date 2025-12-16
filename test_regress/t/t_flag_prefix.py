@@ -13,12 +13,10 @@ test.scenarios('vlt')
 
 test.compile(
     verilator_flags2=[
+        "--binary",
         "--prefix t_flag_prefix",  # should be overridden
         "--prefix Vprefix",
-        "--exe",
-        "--main",
-        "--stats",
-        "--build"
+        "--stats"
     ],
     verilator_make_cmake=False,
     verilator_make_gmake=False)

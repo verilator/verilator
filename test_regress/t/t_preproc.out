@@ -63,10 +63,10 @@ At file "t/t_preproc_inc2.vh"  line 5
  
 
 `line 15 "t/t_preproc.v" 0
-/*verilator pass_thru comment*/ 
+/*verilator pass_thru comment*/
 
 `line 17 "t/t_preproc.v" 0
-/*verilator pass_thru_comment2*/ 
+/*verilator pass_thru_comment2*/
 
 `line 19 "t/t_preproc.v" 0
  
@@ -561,17 +561,17 @@ $display("bits %d %d", $bits(foo), 10);
 
 
 `line 366 "t/t_preproc.v" 0
-1 /*verilator NOT IN DEFINE*/  (nodef)
-2 /*verilator PART OF DEFINE*/  (hasdef)
+1 /*verilator NOT IN DEFINE*/ (nodef)
+2 /*verilator PART OF DEFINE*/ (hasdef)
 3 
 `line 368 "t/t_preproc.v" 0
 /*verilator NOT PART
- OF DEFINE*/  (nodef)
+ OF DEFINE*/ (nodef)
 `line 369 "t/t_preproc.v" 0
 4 
 `line 369 "t/t_preproc.v" 0
 /*verilator PART 
- OF DEFINE*/  (nodef)
+ OF DEFINE*/ (nodef)
 `line 370 "t/t_preproc.v" 0
 5 also in  
 `line 370 "t/t_preproc.v" 0

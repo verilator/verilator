@@ -720,6 +720,7 @@ expr
 extern
 ezchi
 fanin
+fargs
 fasttrace
 fauto
 fbranch

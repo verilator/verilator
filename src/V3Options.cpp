@@ -68,7 +68,8 @@ public:
 
     // STATE
     std::list<string> m_lineArgs;  // List of command line argument encountered
-    std::list<string> m_allArgs;  // List of every argument encountered
+    // List of arguments encounterd, and a bool in needed for rerunning --dump-inputs
+    std::list<std::pair<std::list<std::string>, bool>> m_allArgs;
     std::list<string> m_incDirUsers;  // Include directories (ordered)
     std::set<string> m_incDirUserSet;  // Include directories (for removing duplicates)
     std::list<string> m_incDirFallbacks;  // Include directories (ordered)
@@ -399,13 +400,31 @@ void V3Options::addForceInc(const string& filename) { m_forceIncs.push_back(file
 
 void V3Options::addLineArg(const string& arg) { m_impp->m_lineArgs.push_back(arg); }
 
-void V3Options::addArg(const string& arg) { m_impp->m_allArgs.push_back(arg); }
+void V3Options::addArg(char** argv, size_t count, bool isForRerun) {
+    m_impp->m_allArgs.emplace_back();
+    std::pair<std::list<std::string>, bool>& pair = m_impp->m_allArgs.back();
+    pair.second = isForRerun;
+    for (size_t n = 0; n < count; ++n) pair.first.emplace_back(argv[n]);
+}
+
+void V3Options::addArg(const std::string& arg, bool isForRerun) {
+    m_impp->m_allArgs.emplace_back();
+    std::pair<std::list<std::string>, bool>& pair = m_impp->m_allArgs.back();
+    pair.second = isForRerun;
+    pair.first.emplace_back(arg);
+}
+
+const std::list<std::pair<std::list<std::string>, bool>>& V3Options::allArgs() const {
+    return m_impp->m_allArgs;
+}
 
 string V3Options::allArgsString() const VL_MT_SAFE {
     string result;
-    for (const string& i : m_impp->m_allArgs) {
-        if (result != "") result += " ";
-        result += i;
+    for (const auto& pair : m_impp->m_allArgs) {
+        for (const string& arg : pair.first) {
+            if (!result.empty()) result += " ";
+            result += arg;
+        }
     }
     return result;
 }
@@ -1166,9 +1185,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     // Parse parameters
     // Note argc and argv DO NOT INCLUDE the filename in [0]!!!
     // May be called recursively when there are -f files.
-    for (int i = 0; i < argc; ++i) {
-        addArg(argv[i]);  // -f's really should be inserted in the middle, but this is for debug
-    }
 
     V3OptionParser parser;
     const V3OptionParser::AppendHelper DECL_OPTION{parser};
@@ -1210,8 +1226,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     // (If DECL_OPTION is a macro, then lambda would be collapsed into a single line).
 
     // Plus options
-    DECL_OPTION("+define+", CbPartialMatch,
-                [this](const char* optp) VL_MT_DISABLED { addDefine(optp, true); });
+    DECL_OPTION("+define+", CbPartialMatch, [this](const char* optp) VL_MT_DISABLED {
+        addDefine(optp, true);
+    }).notForRerun();
     DECL_OPTION("+incdir+", CbPartialMatch, [this, &optdir](const char* optp) {
         string dirs = optp;
         string::size_type pos;
@@ -1220,7 +1237,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
             dirs = dirs.substr(pos + 1);
         }
         addIncDirUser(parseFileArg(optdir, dirs));
-    });
+    }).notForRerun();
     DECL_OPTION("+libext+", CbPartialMatch, [this](const char* optp) {
         string exts = optp;
         string::size_type pos;
@@ -1229,31 +1246,42 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
             exts = exts.substr(pos + 1);
         }
         addLibExtV(exts);
-    });
-    DECL_OPTION("+librescan", CbCall, []() {});  // NOP
-    DECL_OPTION("+notimingchecks", CbCall, []() {});  // NOP
-    DECL_OPTION("+systemverilogext+", CbPartialMatch,
-                [this](const char* optp) { addLangExt(optp, V3LangCode::L1800_2017); });
-    DECL_OPTION("+verilog1995ext+", CbPartialMatch,
-                [this](const char* optp) { addLangExt(optp, V3LangCode::L1364_1995); });
-    DECL_OPTION("+verilog2001ext+", CbPartialMatch,
-                [this](const char* optp) { addLangExt(optp, V3LangCode::L1364_2001); });
-    DECL_OPTION("+1364-1995ext+", CbPartialMatch,
-                [this](const char* optp) { addLangExt(optp, V3LangCode::L1364_1995); });
-    DECL_OPTION("+1364-2001ext+", CbPartialMatch,
-                [this](const char* optp) { addLangExt(optp, V3LangCode::L1364_2001); });
-    DECL_OPTION("+1364-2005ext+", CbPartialMatch,
-                [this](const char* optp) { addLangExt(optp, V3LangCode::L1364_2005); });
-    DECL_OPTION("+1800-2005ext+", CbPartialMatch,
-                [this](const char* optp) { addLangExt(optp, V3LangCode::L1800_2005); });
-    DECL_OPTION("+1800-2009ext+", CbPartialMatch,
-                [this](const char* optp) { addLangExt(optp, V3LangCode::L1800_2009); });
-    DECL_OPTION("+1800-2012ext+", CbPartialMatch,
-                [this](const char* optp) { addLangExt(optp, V3LangCode::L1800_2012); });
-    DECL_OPTION("+1800-2017ext+", CbPartialMatch,
-                [this](const char* optp) { addLangExt(optp, V3LangCode::L1800_2017); });
-    DECL_OPTION("+1800-2023ext+", CbPartialMatch,
-                [this](const char* optp) { addLangExt(optp, V3LangCode::L1800_2023); });
+    }).notForRerun();
+    DECL_OPTION("+librescan", CbCall, []() {}).notForRerun();  // NOP
+    DECL_OPTION("+notimingchecks", CbCall, []() {}).notForRerun();  // NOP
+    DECL_OPTION("+systemverilogext+", CbPartialMatch, [this](const char* optp) {
+        addLangExt(optp, V3LangCode::L1800_2017);
+    }).notForRerun();
+    DECL_OPTION("+verilog1995ext+", CbPartialMatch, [this](const char* optp) {
+        addLangExt(optp, V3LangCode::L1364_1995);
+    }).notForRerun();
+    DECL_OPTION("+verilog2001ext+", CbPartialMatch, [this](const char* optp) {
+        addLangExt(optp, V3LangCode::L1364_2001);
+    }).notForRerun();
+    DECL_OPTION("+1364-1995ext+", CbPartialMatch, [this](const char* optp) {
+        addLangExt(optp, V3LangCode::L1364_1995);
+    }).notForRerun();
+    DECL_OPTION("+1364-2001ext+", CbPartialMatch, [this](const char* optp) {
+        addLangExt(optp, V3LangCode::L1364_2001);
+    }).notForRerun();
+    DECL_OPTION("+1364-2005ext+", CbPartialMatch, [this](const char* optp) {
+        addLangExt(optp, V3LangCode::L1364_2005);
+    }).notForRerun();
+    DECL_OPTION("+1800-2005ext+", CbPartialMatch, [this](const char* optp) {
+        addLangExt(optp, V3LangCode::L1800_2005);
+    }).notForRerun();
+    DECL_OPTION("+1800-2009ext+", CbPartialMatch, [this](const char* optp) {
+        addLangExt(optp, V3LangCode::L1800_2009);
+    }).notForRerun();
+    DECL_OPTION("+1800-2012ext+", CbPartialMatch, [this](const char* optp) {
+        addLangExt(optp, V3LangCode::L1800_2012);
+    }).notForRerun();
+    DECL_OPTION("+1800-2017ext+", CbPartialMatch, [this](const char* optp) {
+        addLangExt(optp, V3LangCode::L1800_2017);
+    }).notForRerun();
+    DECL_OPTION("+1800-2023ext+", CbPartialMatch, [this](const char* optp) {
+        addLangExt(optp, V3LangCode::L1800_2023);
+    }).notForRerun();
 
     // Minus options
     DECL_OPTION("-aslr", CbOnOff, [](bool) {});  // Processed only in bin/verilator shell
@@ -1334,10 +1362,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-coverage-underscore", OnOff, &m_coverageUnderscore);
     DECL_OPTION("-coverage-user", OnOff, &m_coverageUser);
 
-    DECL_OPTION("-D", CbPartialMatch,
-                [this](const char* valp) VL_MT_DISABLED { addDefine(valp, false); });
-    DECL_OPTION("-debug", CbCall, [this]() { setDebugMode(3); });
-    DECL_OPTION("-debugi", CbVal, [this](int v) { setDebugMode(v); });
+    DECL_OPTION("-D", CbPartialMatch, [this](const char* valp) VL_MT_DISABLED {
+        addDefine(valp, false);
+    }).notForRerun();
+    DECL_OPTION("-debug", CbCall, [this]() { setDebugMode(3); }).notForRerun();
+    DECL_OPTION("-debugi", CbVal, [this](int v) { setDebugMode(v); }).notForRerun();
     DECL_OPTION("-debugi-", CbPartialMatchVal, [this](const char* optp, const char* valp) {
         m_debugLevel[optp] = std::atoi(valp);
     });
@@ -1371,11 +1400,15 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_diagnosticsSarif = true;
     });
     DECL_OPTION("-dpi-hdr-only", OnOff, &m_dpiHdrOnly);
-    DECL_OPTION("-dump-", CbPartialMatch, [this](const char* optp) { m_dumpLevel[optp] = 3; });
-    DECL_OPTION("-no-dump-", CbPartialMatch, [this](const char* optp) { m_dumpLevel[optp] = 0; });
+    DECL_OPTION("-dump-", CbPartialMatch, [this](const char* optp) {
+        m_dumpLevel[optp] = 3;
+    }).notForRerun();
+    DECL_OPTION("-no-dump-", CbPartialMatch, [this](const char* optp) {
+        m_dumpLevel[optp] = 0;
+    }).notForRerun();
     DECL_OPTION("-dumpi-", CbPartialMatchVal, [this](const char* optp, const char* valp) {
         m_dumpLevel[optp] = std::atoi(valp);
-    });
+    }).notForRerun();
 
     DECL_OPTION("-E", CbOnOff, [this](bool flag) {
         if (flag) {
@@ -1392,12 +1425,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
 
     DECL_OPTION("-F", CbVal, [this, fl, &optdir](const char* valp) VL_MT_DISABLED {
         parseOptsFile(fl, parseFileArg(optdir, valp), true);
-    });
+    }).notForRerun();
     DECL_OPTION("-FI", CbVal,
                 [this, &optdir](const char* valp) { addForceInc(parseFileArg(optdir, valp)); });
     DECL_OPTION("-f", CbVal, [this, fl, &optdir](const char* valp) VL_MT_DISABLED {
         parseOptsFile(fl, parseFileArg(optdir, valp), false);
-    });
+    }).notForRerun();
     DECL_OPTION("-flatten", OnOff, &m_flatten);
     DECL_OPTION("-future0", CbVal, [this](const char* valp) { addFuture0(valp); });
     DECL_OPTION("-future1", CbVal, [this](const char* valp) { addFuture1(valp); });
@@ -1486,8 +1519,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-hierarchical-params-file", CbVal,
                 [this](const char* optp) { m_hierParamsFile.push_back({optp, work()}); });
 
-    DECL_OPTION("-I", CbPartialMatch,
-                [this, &optdir](const char* optp) { addIncDirUser(parseFileArg(optdir, optp)); });
+    DECL_OPTION("-I", CbPartialMatch, [this, &optdir](const char* optp) {
+        addIncDirUser(parseFileArg(optdir, optp));
+    }).notForRerun();
     DECL_OPTION("-if-depth", Set, &m_ifDepth);
     DECL_OPTION("-ignc", OnOff, &m_ignc).undocumented();
     DECL_OPTION("-inline-mult", Set, &m_inlineMult);
@@ -1524,8 +1558,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
             fl->v3error("Unknown language specified: " << valp << spell.bestCandidateMsg(valp));
         }
     };
-    DECL_OPTION("-default-language", CbVal, setLang);
-    DECL_OPTION("-language", CbVal, setLang);
+    DECL_OPTION("-default-language", CbVal, setLang).notForRerun();
+    DECL_OPTION("-language", CbVal, setLang).notForRerun();
     DECL_OPTION("-libmap", CbVal, [this](const char* valp) { addLibMapFile(valp); });
     DECL_OPTION("-lib-create", CbVal, [this, fl](const char* valp) {
         validateIdentifier(fl, valp, "--lib-create");
@@ -1540,7 +1574,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-Mdir", CbVal, [this](const char* valp) {
         m_makeDir = valp;
         addIncDirFallback(m_makeDir);  // Need to find generated files there too
-    });
+    }).notForRerun();
     DECL_OPTION("-main", OnOff, &m_main);
     DECL_OPTION("-main-top-name", Set, &m_mainTopName);
     DECL_OPTION("-make", CbVal, [this, fl](const char* valp) {
@@ -1945,56 +1979,77 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
 
     DECL_OPTION("-y", CbVal, [this, &optdir](const char* valp) {
         addIncDirUser(parseFileArg(optdir, string{valp}));
-    });
+    }).notForRerun();
 
     parser.finalize();
 
+    const std::string cwd = V3Os::filenameRealPath(".");
+
     for (int i = 0; i < argc;) {
         UINFO(9, " Option: " << argv[i]);
-        if (!std::strcmp(argv[i], "-j")
-            || !std::strcmp(argv[i], "--j")) {  // Allow gnu -- switches
-            ++i;
-            int val = 0;
-            if (i < argc && std::isdigit(argv[i][0])) {
-                val = std::atoi(argv[i]);  // Can't be negative due to isdigit above
-                if (val == 0) val = VlOs::getProcessDefaultParallelism();
-                ++i;
-            }
-            if (m_buildJobs == -1) m_buildJobs = val;
-            if (m_verilateJobs == -1) m_verilateJobs = val;
-            if (m_outputGroups == -1) m_outputGroups = val;
-        } else if (argv[i][0] == '-' || argv[i][0] == '+') {
-            const char* argvNoDashp = (argv[i][1] == '-') ? (argv[i] + 2) : (argv[i] + 1);
-            if (const int consumed = parser.parse(i, argc, argv)) {
-                i += consumed;
-            } else if (isFuture0(argvNoDashp)) {
-                ++i;
-            } else if (isFuture1(argvNoDashp)) {
-                i += 2;
+
+        // Option
+        if (argv[i][0] == '-' || argv[i][0] == '+') {
+            const std::string argName = argv[i] + (argv[i][0] == argv[i][1] ? 2 : 1);
+            int consumed = 0;
+            bool isForRerun = true;
+
+            // Special case for -j which has an optional argument
+            if (argv[i][0] == '-' && argName == "j") {
+                consumed = 1;
+                int val = 0;
+                if (i + 1 < argc && std::isdigit(argv[i + 1][0])) {
+                    val = std::atoi(argv[i + 1]);  // Can't be negative due to isdigit above
+                    if (val == 0) val = VlOs::getProcessDefaultParallelism();
+                    consumed = 2;
+                }
+                if (m_buildJobs == -1) m_buildJobs = val;
+                if (m_verilateJobs == -1) m_verilateJobs = val;
+                if (m_outputGroups == -1) m_outputGroups = val;
             } else {
-                fl->v3fatal("Invalid option: " << argv[i] << parser.getSuggestion(argv[i]));
-                ++i;  // LCOV_EXCL_LINE
+                const auto pair = parser.parse(i, argc, argv);
+                consumed = pair.first;
+                isForRerun = pair.second;
+                if (consumed) {
+                    // Already processed
+                } else if (isFuture0(argName)) {
+                    consumed = 1;
+                } else if (isFuture1(argName)) {
+                    consumed = 2;
+                } else {
+                    fl->v3fatal("Invalid option: " << argv[i] << parser.getSuggestion(argv[i]));
+                    consumed = 1;
+                }
             }
-        } else {
-            // Filename
-            const string filename = parseFileArg(optdir, argv[i]);
-            if (suffixed(filename, ".cpp")  //
-                || suffixed(filename, ".cxx")  //
-                || suffixed(filename, ".cc")  //
-                || suffixed(filename, ".c")  //
-                || suffixed(filename, ".sp")) {
-                V3Options::addCppFile(filename);
-            } else if (suffixed(filename, ".a")  //
-                       || suffixed(filename, ".o")  //
-                       || suffixed(filename, ".so")) {
-                V3Options::addLdLibs(filename);
-            } else if (suffixed(filename, ".vlt")) {
-                V3Options::addVltFile(filename, work());
-            } else {
-                V3Options::addVFile(filename, work());
-            }
-            ++i;
+            UASSERT(consumed, "Failed to consume argument: " << argv[i]);
+            // Record all arguments except for -f and -F (their contents will be recorded instead)
+            if (argName != "f" && argName != "F") addArg(argv + i, consumed, isForRerun);
+            i += consumed;
+            continue;
         }
+
+        // Filename
+        const std::string filename = parseFileArg(optdir, argv[i]);
+        bool isForRerun = true;
+        if (suffixed(filename, ".cpp")  //
+            || suffixed(filename, ".cxx")  //
+            || suffixed(filename, ".cc")  //
+            || suffixed(filename, ".c")  //
+            || suffixed(filename, ".sp")) {
+            V3Options::addCppFile(filename);
+        } else if (suffixed(filename, ".a")  //
+                   || suffixed(filename, ".o")  //
+                   || suffixed(filename, ".so")) {
+            V3Options::addLdLibs(filename);
+        } else if (suffixed(filename, ".vlt")) {
+            V3Options::addVltFile(filename, work());
+            isForRerun = false;
+        } else {
+            V3Options::addVFile(filename, work());
+            isForRerun = false;
+        }
+        addArg(filename, isForRerun);
+        ++i;
     }
 
     if (m_debugOptions) {
@@ -2015,38 +2070,73 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) VL
         return;
     }
 
-    string whole_file;
-    bool inCmt = false;
-    while (!ifp->eof()) {
-        const string line = V3Os::getline(*ifp);
-        // Strip simple comments
-        string oline;
-        // cppcheck-suppress StlMissingComparison
-        char lastch = ' ';
-        bool space_begin = true;  // At beginning or leading spaces only
-        for (string::const_iterator pos = line.begin(); pos != line.end(); lastch = *pos++) {
-            if (inCmt) {
-                if (*pos == '*' && *(pos + 1) == '/') {
-                    inCmt = false;
-                    ++pos;
+    // If we find any '// verilator fargs' line in the file, we will only use these,
+    // otherwise we will use the file contents. This enables rerunning the output
+    // produced by --dump-inptus with:
+    //   verilator -f <prefix>__inputs.vpp <prefix>__inputs.vpp
+    bool has_fargs = false;
+    std::string whole_file;
+
+    // Parses a '// verilator fargs' or '/* verilator fargs */' comment
+    const auto parse_fargs_cmt = [&](const char* p) -> void {
+        const bool blockCmt = p[1] == '*';
+        p += 2;
+        while (std::isspace(*p)) ++p;
+        if (VString::startsWith(p, "verilator")) {
+            p += std::strlen("verilator");
+            if (std::isspace(*p)) {
+                while (std::isspace(*p)) ++p;
+                if (VString::startsWith(p, "fargs")) {
+                    p += std::strlen("fargs");
+                    if (std::isspace(*p)) {
+                        while (std::isspace(*p)) ++p;
+                        if (!has_fargs) {
+                            has_fargs = true;
+                            whole_file.clear();
+                        }
+                        whole_file += p;
+                        if (blockCmt) {
+                            const std::string::size_type pos = whole_file.find("*/");
+                            if (pos == std::string::npos) {
+                                fl->v3fatal("/* verilator fargs */ must be on single line");
+                            }
+                            whole_file.resize(pos);
+                        }
+                        whole_file += ' ';
+                    }
                 }
-            } else if (*pos == '/' && *(pos + 1) == '/'
-                       && (pos == line.begin()
-                           || std::isspace(lastch))) {  // But allow /file//path
-                break;  // Ignore to EOL
-            } else if (*pos == '#' && space_begin) {  // Only # at [spaced] begin of line
-                break;  // Ignore to EOL
-            } else if (*pos == '/' && *(pos + 1) == '*') {
-                inCmt = true;
-                space_begin = false;
-                // cppcheck-suppress StlMissingComparison
-                ++pos;
-            } else {
-                if (!std::isspace(*pos)) space_begin = false;
-                oline += *pos;
             }
         }
-        whole_file += oline + " ";
+    };
+
+    bool inCmt = false;
+    while (!ifp->eof()) {
+        const std::string line = V3Os::getline(*ifp);
+        // Strip simple comments
+        char lastch = ' ';  // 'std::isspace(lastch)' is true at the start of the line
+        bool space_begin = true;  // At beginning or leading spaces only
+        for (const char* p = line.c_str(); *p; lastch = *p++) {
+            if (inCmt) {
+                if (p[0] == '*' && p[1] == '/') {
+                    inCmt = false;
+                    ++p;
+                }
+            } else if (p[0] == '/' && p[1] == '/' && std::isspace(lastch)) {  // Allow /file//path
+                parse_fargs_cmt(p);
+                break;  // Ignore to EOL
+            } else if (p[0] == '#' && space_begin) {  // Only # at [spaced] begin of line
+                break;  // Ignore to EOL
+            } else if (p[0] == '/' && p[1] == '*') {
+                parse_fargs_cmt(p);
+                inCmt = true;
+                space_begin = false;
+                ++p;
+            } else {
+                if (!std::isspace(*p)) space_begin = false;
+                if (!has_fargs) whole_file += *p;
+            }
+        }
+        if (!has_fargs) whole_file += " ";
     }
     whole_file += "\n";  // So string match below is simplified
     if (inCmt) fl->v3error("Unterminated /* comment inside -f file.");

@@ -1,5 +1,5 @@
 %Warning-DEPRECATED: t/t_clk_first_deprecated.v:12:14: sc_clock is ignored
-   12 |    input clk /*verilator sc_clock*/ ;
+   12 |    input clk /*verilator sc_clock*/;
       |              ^~~~~~~~~~~~~~~~~~~~~~
                      ... For warning description see https://verilator.org/warn/DEPRECATED?v=latest
                      ... Use "/* verilator lint_off DEPRECATED */" and lint_on around source to disable this message.

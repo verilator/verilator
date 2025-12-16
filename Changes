@@ -23,8 +23,11 @@ Verilator 5.043 devel
 * Add `-param`/`-port` options to `public_flat*` control directives (#6685). [Geza Lore, Fractile Ltd.]
 * Add `--top` specifying `config` name (#6710). [Dan Ruelas-Petrisko]
 * Add `sc_biguint` pragma (#6712). [Jakub Wasilewski, Antmicro Ltd.]
+* Add 'make venv' target (#6775). [Geza Lore]
 * Add SUPERNFIRST error on super.new on non-first statement (#6784). [Artur Bieniek]
+* Add fargs for reusability of --dump-inputs output (#6812). [Geza Lore]
 * Support `std::randomize(){...}` (#4706) (#6573). [Yilou Wang]
+* Support force assignments to unpacked array elements (partial #4735) (#6787). [Ryszard Rozak, Antmicro Ltd.]
 * Support `config` instance clauses (#5891 partial) (#6745). [Dan Ruelas-Petrisko]
 * Support unpacked struct in localparam (#6053 partial) (#6708). [Jonathan Drolet]
 * Support randsequence (#6131).
@@ -71,6 +74,7 @@ Verilator 5.043 devel
 * Fix non-deterministic output when splitting Syms file. [Geza Lore, Fractile Ltd.]
 * Fix crash on DFG driver lookup (#6649). [Geza Lore]
 * Fix ccache-report with PCH files. [Geza Lore, Fractile Ltd.]
+* Fix parameterized class function (#6659) (#6802). [em2machine]
 * Fix local interface parameter hierarchical access (#6661) (#6666). [Paul Swirhun]
 * Fix splitting of Syms constructor/destructor bodies (#6662). [Geza Lore, Fractile Ltd.]
 * Fix long C++ compilation due to VerilatedScope constructors (#6664). [Geza Lore, Fractile Ltd.]
@@ -88,11 +92,13 @@ Verilator 5.043 devel
 * Fix fork scheduling semantics (#6730). [Artur Bieniek, Antmicro Ltd.]
 * Fix internal fault when cross-class calling with DPI (#6735) (#6742). [Matthew Ballance]
 * Fix write variable placement for global constraints (#6740) (#6750) (#6797). [Yilou Wang]
+* Fix resolution of specialized typedefs (#6754) (#6808). [em2machine]
 * Fix UNSUPPORTED on force / release with complex selects (#6755). [Ryszard Rozak, Antmicro Ltd.]
 * Fix select assignment expansion (#6757). [Geza Lore]
 * Fix `--lib-create` with multi-bit clocks (#6759). [Geza Lore]
 * Fix DFG reusing volatile variables. [Geza Lore]
 * Fix DFG assertion on out-of-bounds selects. [Geza Lore]
+* Fix process reference giving no return statement error (#6767) (#6823). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix class param static not found again error (#6768).
 * Fix crash when super.new() called without a base class (#6772). [Matthew Ballance]
 * Fix class-in-class extends with parameters (#6773).
@@ -102,6 +108,7 @@ Verilator 5.043 devel
 * Fix `disable iff` in simple properties (#6783). [Ryszard Rozak, Antmicro Ltd.]
 * Fix input sampling of clocking block signals (#6788). [Pawel Kojma, Antmicro Ltd.]
 * Fix O(n*2) analysis in const-bit-op-tree (#6791). [Geza Lore]
+* Fix resized lvalues with warning suppressed (#6497) (#6816). [Alex Solomatnikov]
 
 
 Verilator 5.042 2025-11-02

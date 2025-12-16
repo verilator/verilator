@@ -528,7 +528,11 @@ void V3PreProcImp::comment(const string& text) {
             //}
             // else ignore the comment we don't recognize
         }  // else no assertions
-    } else if (vlcomment && !(v3Global.opt.publicOff() && VString::startsWith(cmd, "public"))) {
+    } else if (vlcomment
+               // Drop 'public' if disabled on the command line
+               && !(v3Global.opt.publicOff() && VString::startsWith(cmd, "public"))
+               // Drop 'fargs', they are handled separately during option parsing
+               && !VString::startsWith(cmd, "fargs")) {
         if (VString::startsWith(cmd, "public_flat_rw")) {
             // "/*verilator public_flat_rw @(foo) */" -> "/*verilator public_flat_rw*/ @(foo)"
             string::size_type endOfCmd = std::strlen("public_flat_rw");
@@ -1062,12 +1066,12 @@ int V3PreProcImp::getStateToken() {
                     string rtn;
                     rtn.assign(yyourtext(), yyourleng());
                     comment(rtn);
-                    // Need to ensure "foo/**/bar" becomes two tokens
-                    insertUnreadback(" ");
+                    // Need to ensure "foo/**/bar" becomes two tokens, not one 'foobar'
+                    if (m_lineCmt.empty()) insertUnreadback(" ");
                 } else if (m_lexp->m_keepComments) {
                     return tok;
                 } else {
-                    // Need to ensure "foo/**/bar" becomes two tokens
+                    // Need to ensure "foo/**/bar" becomes two tokens, not one 'foobar'
                     insertUnreadback(" ");
                 }
             }

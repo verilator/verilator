@@ -375,8 +375,29 @@ void V3ParseImp::dumpInputsFile() {
         *ofp << "// Blank lines and `line directives have been removed\n";
         *ofp << "//\n";
         V3Stats::infoHeader(*ofp, "// ");
+        *ofp << '\n';
+        for (const auto& pair : v3Global.opt.allArgs()) {
+            if (!pair.second) continue;
+            *ofp << "// verilator fargs";
+            for (const std::string& arg : pair.first) {
+                // Apply some quoting, pretty basic, update as needed ...
+                std::string quoted;
+                bool quoteIt = false;
+                for (const char c : arg) {
+                    if (c == '"' || c == '\\') {
+                        quoteIt = true;
+                        quoted += '\\';
+                    } else if (std::isspace(c)) {
+                        quoteIt = true;
+                    }
+                    quoted += c;
+                }
+                *ofp << " " << (quoteIt ? '"' + quoted + '"' : arg);
+            }
+            *ofp << "\n";
+        }
+        *ofp << "\n";
     }
-    *ofp << "\n";
     preprocDumps(*ofp, true);
     ofp->close();
     VL_DO_DANGLING(delete ofp, ofp);

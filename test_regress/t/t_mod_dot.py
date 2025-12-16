@@ -15,9 +15,8 @@ test.scenarios('vlt')
 # prefix properly using post-escaped identifiers
 test.run(cmd=[
     os.environ["VERILATOR_ROOT"] + "/bin/verilator",
-    "--cc",
+    "--binary",
     "--Mdir " + test.obj_dir + "/t_mod_dot",
-    "--exe --build --main",
     't/t_mod_dot.v',
 ],
          verilator_run=True)

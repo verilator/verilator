@@ -9,16 +9,10 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('simulator')
 
-# This doesn't use the general compile rule as we want to make sure we form
-# prefix properly using post-escaped identifiers
-test.run(cmd=[
-    os.environ["VERILATOR_ROOT"] + "/bin/verilator",
-    "--binary",
-    "--Mdir " + test.obj_dir + "/t_mod_dollar",
-    't/t_mod_dollar$.v',
-],
-         verilator_run=True)
+test.compile()
+
+test.execute()
 
 test.passes()
