@@ -892,11 +892,31 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstNodeExpr* constFormatp
                 = membersel ? getConstFormat(membersel->cloneTree(false)) : getConstFormat(nodep);
 
-            // Build randmode access using current randomize() scope's __Vrandmode
-            UASSERT_OBJ(m_randModeVarp, nodep, "No m_randModeVarp");
-            AstNodeExpr* randModeAccess
-                = new AstVarRef{varp->fileline(), VN_AS(m_randModeVarp->user2p(), NodeModule),
-                                m_randModeVarp, VAccess::READ};
+            // Build randmode access: for membersel, use member's class randmode if available
+            AstNodeExpr* randModeAccess;
+            if (membersel) {
+                AstNodeExpr* parentAccess = membersel->fromp()->cloneTree(false);
+                AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
+                AstVar* const effectiveRandModeVarp = VN_AS(varClassp->user2p(), Var);
+                if (effectiveRandModeVarp) {
+                    // Member's class has randmode, use it
+                    AstMemberSel* randModeSel
+                        = new AstMemberSel{varp->fileline(), parentAccess, effectiveRandModeVarp};
+                    randModeSel->dtypep(effectiveRandModeVarp->dtypep());
+                    randModeAccess = randModeSel;
+                } else {
+                    // Member's class has no randmode, use current scope's randmode
+                    UASSERT_OBJ(m_randModeVarp, nodep, "No m_randModeVarp");
+                    randModeAccess = new AstVarRef{
+                        varp->fileline(), VN_AS(m_randModeVarp->user2p(), NodeModule),
+                        m_randModeVarp, VAccess::READ};
+                }
+            } else {
+                UASSERT_OBJ(m_randModeVarp, nodep, "No m_randModeVarp");
+                randModeAccess
+                    = new AstVarRef{varp->fileline(), VN_AS(m_randModeVarp->user2p(), NodeModule),
+                                    m_randModeVarp, VAccess::READ};
+            }
 
             AstCMethodHard* const atp
                 = new AstCMethodHard{nodep->fileline(), randModeAccess, VCMethod::ARRAY_AT,
