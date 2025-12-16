@@ -261,7 +261,8 @@ class DataflowOptimize final {
                 if (AstVarScope* const vscp = VN_CAST(nodep, VarScope)) {
                     const AstVar* const varp = vscp->varp();
                     // Force and trace have already been processed
-                    const bool hasExtRd = varp->isPrimaryIO() || varp->isSigUserRdPublic();
+                    const bool hasExtRd = varp->isPrimaryIO() || varp->isSigUserRdPublic()
+                                          || vscp->tracePreserve();
                     const bool hasExtWr = varp->isPrimaryIO() || varp->isSigUserRWPublic();
                     if (hasExtRd) DfgVertexVar::setHasExtRdRefs(vscp);
                     if (hasExtWr) DfgVertexVar::setHasExtWrRefs(vscp);
