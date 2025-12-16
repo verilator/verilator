@@ -664,6 +664,16 @@ private:
                 = new AstVar{flp, VVarType::MODULETEMP, m_disableCntNames.get(""),
                              nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
             m_modp->addStmtsp(disableCntp);
+            AstVarRef* const readCntRefp = new AstVarRef{flp, disableCntp, VAccess::READ};
+            AstVarRef* const writeCntRefp = new AstVarRef{flp, disableCntp, VAccess::WRITE};
+            AstAssign* const incrStmtp = new AstAssign{
+                flp, writeCntRefp, new AstAdd{flp, readCntRefp, new AstConst{flp, 1}}};
+            AstAlways* const alwaysp
+                = new AstAlways{flp, VAlwaysKwd::ALWAYS,
+                                new AstSenTree{flp, new AstSenItem{flp, VEdgeType::ET_POSEDGE,
+                                                                   m_disablep->cloneTree(false)}},
+                                incrStmtp};
+            disableCntp->addNextHere(alwaysp);
         }
         iterateChildren(nodep);
     }
