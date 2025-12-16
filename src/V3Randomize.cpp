@@ -907,9 +907,9 @@ class ConstraintExprVisitor final : public VNVisitor {
                 } else {
                     // Member's class has no randmode, use current scope's randmode
                     UASSERT_OBJ(m_randModeVarp, nodep, "No m_randModeVarp");
-                    randModeAccess = new AstVarRef{
-                        varp->fileline(), VN_AS(m_randModeVarp->user2p(), NodeModule),
-                        m_randModeVarp, VAccess::READ};
+                    randModeAccess = new AstVarRef{varp->fileline(),
+                                                   VN_AS(m_randModeVarp->user2p(), NodeModule),
+                                                   m_randModeVarp, VAccess::READ};
                 }
             } else {
                 UASSERT_OBJ(m_randModeVarp, nodep, "No m_randModeVarp");
