@@ -129,6 +129,7 @@ public:
     // Ideally an IEEE $typename
     virtual string prettyDTypeName(bool) const { return prettyTypeName(); }
     string prettyDTypeNameQ() const { return "'" + prettyDTypeName(false) + "'"; }
+    virtual string cDTypeName() const { return ""; }
     //
     // Changing the width may confuse the data type resolution, so must clear
     // TypeTable cache after use.
@@ -220,7 +221,19 @@ public:
         return elementsConst() * subDTypep()->widthTotalBytes();
     }
     inline int left() const VL_MT_STABLE;
+    string cLeft() const {
+        std::ostringstream os;
+        if (left() < 0) os << "__02D";
+        os << abs(left());
+        return os.str();
+    }
     inline int right() const VL_MT_STABLE;
+    string cRight() const {
+        std::ostringstream os;
+        if (right() < 0) os << "__02D";
+        os << abs(right());
+        return os.str();
+    }
     inline int hi() const VL_MT_STABLE;
     inline int lo() const VL_MT_STABLE;
     inline int elementsConst() const VL_MT_STABLE;
@@ -259,6 +272,7 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     string prettyDTypeName(bool) const override;
+    string cDTypeName() const override;
     bool isCompound() const override { return !packed(); }
     // For basicp() we reuse the size to indicate a "fake" basic type of same size
     AstBasicDType* basicp() const override VL_MT_STABLE {
@@ -433,6 +447,7 @@ public:
     bool similarDTypeNode(const AstNodeDType* samep) const override;
     string name() const override VL_MT_STABLE { return m.m_keyword.ascii(); }
     string prettyDTypeName(bool full) const override;
+    string cDTypeName() const override;
     const char* broken() const override {
         BROKEN_RTN(dtypep() != this);
         BROKEN_RTN(v3Global.widthMinUsage() == VWidthMinUsage::VERILOG_WIDTH
@@ -496,7 +511,19 @@ public:
     inline int lo() const;
     inline int elements() const;
     int left() const { return ascending() ? lo() : hi(); }  // How to show a declaration
+    string cLeft() const {
+        std::ostringstream os;
+        if (left() < 0) os << "__02D";
+        os << abs(left());
+        return os.str();
+    }
     int right() const { return ascending() ? hi() : lo(); }
+    string cRight() const {
+        std::ostringstream os;
+        if (right() < 0) os << "__02D";
+        os << abs(right());
+        return os.str();
+    }
     inline bool ascending() const;
     bool implicit() const { return keyword() == VBasicDTypeKwd::LOGIC_IMPLICIT; }
     bool untyped() const { return keyword() == VBasicDTypeKwd::UNTYPED; }
@@ -1210,6 +1237,9 @@ public:
     string prettyDTypeName(bool full) const override {
         return subDTypep() ? prettyName(subDTypep()->prettyDTypeName(full)) : prettyName();
     }
+    string cDTypeName() const override {
+        return subDTypep() ? subDTypep()->cDTypeName() : cDTypeName();
+    }
     AstBasicDType* basicp() const override VL_MT_STABLE {
         return subDTypep() ? subDTypep()->basicp() : nullptr;
     }
@@ -1421,6 +1451,7 @@ public:
     inline AstPackArrayDType(FileLine* fl, AstNodeDType* dtp, AstRange* rangep);
     ASTGEN_MEMBERS_AstPackArrayDType;
     string prettyDTypeName(bool full) const override;
+    string cDTypeName() const override;
     bool isCompound() const override { return false; }
 };
 class AstUnpackArrayDType final : public AstNodeArrayDType {
@@ -1448,6 +1479,7 @@ public:
     }
     ASTGEN_MEMBERS_AstUnpackArrayDType;
     string prettyDTypeName(bool full) const override;
+    string cDTypeName() const override;
     bool sameNode(const AstNode* samep) const override {
         const AstUnpackArrayDType* const sp = VN_DBG_AS(samep, UnpackArrayDType);
         return m_isCompound == sp->m_isCompound;
