@@ -56,6 +56,7 @@ private:
     AstNodeExpr* m_disablep = nullptr;  // Last disable
     // Other:
     V3UniqueNames m_cycleDlyNames{"__VcycleDly"};  // Cycle delay counter name generator
+    V3UniqueNames m_disableCntNames{"__VdisableCnt"};  // Disable condition counter name generator
     bool m_inAssign = false;  // True if in an AssignNode
     bool m_inAssignDlyLhs = false;  // True if in AssignDly's LHS
     bool m_inSynchDrive = false;  // True if in synchronous drive
@@ -648,16 +649,23 @@ private:
         iterate(nodep->propp());
     }
     void visit(AstPExpr* nodep) override {
-        VL_RESTORER(m_inPExpr);
-        m_inPExpr = true;
-
         if (AstLogNot* const notp = VN_CAST(nodep->backp(), LogNot)) {
             notp->replaceWith(nodep->unlinkFrBack());
             VL_DO_DANGLING(pushDeletep(notp), notp);
             iterate(nodep);
-        } else {
-            iterateChildren(nodep);
+            return;
         }
+        VL_RESTORER(m_inPExpr);
+        m_inPExpr = true;
+
+        if (m_disablep) {
+            FileLine* const flp = nodep->fileline();
+            AstVar* const disableCntp
+                = new AstVar{flp, VVarType::MODULETEMP, m_disableCntNames.get(""),
+                             nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
+            m_modp->addStmtsp(disableCntp);
+        }
+        iterateChildren(nodep);
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_defaultClockingp);
