@@ -586,8 +586,9 @@ class LinkParseVisitor final : public VNVisitor {
             // AstVar, AstTypedef, AstNodeFTask, AstParamTypeDType are common containers
             AstNode* backp = nodep->backp();
             for (; backp; backp = backp->backp()) {
-                if (VN_IS(backp, Var) || VN_IS(backp, Typedef) || VN_IS(backp, NodeFTask) ||
-                    VN_IS(backp, ParamTypeDType)) break;
+                if (VN_IS(backp, Var) || VN_IS(backp, Typedef) || VN_IS(backp, NodeFTask)
+                    || VN_IS(backp, ParamTypeDType))
+                    break;
             }
             UASSERT_OBJ(backp, nodep,
                         "Implicit enum/struct type created under unexpected node type");
