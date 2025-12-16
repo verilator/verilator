@@ -285,6 +285,15 @@ or "`ifdef`"'s may break other tools.
    (if appropriate :vlopt:`--coverage` flags are passed) after being
    disabled earlier with :option:`/*verilator&32;coverage_off*/`.
 
+.. option:: /*verilator&32;fargs <arguments>*/
+
+   For Verilator developers only. When a source file containing :option:`fargs`
+   metacomments is passed to Verilator on the command line via the :option:`-f`
+   or :option:`-F` option, the provided arguments will be added as if specified
+   on the command line. The source file is not preprocessed before parsing for
+   arguments, and all :option:`fargs` comment will take effect, even if placed
+   undef an inactive :option:`\`ifdef`.
+
 .. option:: /*verilator&32;forceable*/
 
    Specifies that the signal (net or variable) should be made forceable from
