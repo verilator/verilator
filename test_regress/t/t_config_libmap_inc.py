@@ -10,15 +10,10 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.scenarios('linter')
 
-test.compile(verilator_flags2=[
-    '--binary', '--work liba', 't/t_config_work__liba.v', '--work libb', 't/t_config_work__libb.v',
-    '-libmap t_config_work.map'
-])
-
-test.execute()
-
-# Sort so that 'initial' scheduling order is not relevant
-test.files_identical_sorted(test.run_log_filename, test.golden_filename, is_logfile=True)
+test.lint(verilator_flags2=["--lint-only", "-libmap t/t_config_libmap_inc.map"],
+          fails=test.vlt_all,
+          expect_filename=test.golden_filename)
 
 test.passes()

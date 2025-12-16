@@ -65,6 +65,7 @@
 #include "V3Inline.h"
 #include "V3Inst.h"
 #include "V3Interface.h"
+#include "V3LibMap.h"
 #include "V3Life.h"
 #include "V3LifePost.h"
 #include "V3LinkDot.h"

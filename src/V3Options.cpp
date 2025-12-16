@@ -364,6 +364,7 @@ void V3Options::checkParameters() {
 
 void V3Options::addCppFile(const string& filename) { m_cppFiles.insert(filename); }
 void V3Options::addCFlags(const string& filename) { m_cFlags.push_back(filename); }
+void V3Options::addLibMapFile(const string& filename) { m_libmapFiles.insert(filename); }
 void V3Options::addCompilerIncludes(const string& filename) {
     m_compilerIncludes.insert(filename);
 }
@@ -1559,6 +1560,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     };
     DECL_OPTION("-default-language", CbVal, setLang).notForRerun();
     DECL_OPTION("-language", CbVal, setLang).notForRerun();
+    DECL_OPTION("-libmap", CbVal, [this](const char* valp) { addLibMapFile(valp); });
     DECL_OPTION("-lib-create", CbVal, [this, fl](const char* valp) {
         validateIdentifier(fl, valp, "--lib-create");
         m_libCreate = valp;

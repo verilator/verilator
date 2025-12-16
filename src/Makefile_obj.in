@@ -287,6 +287,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Inst.o \
   V3InstrCount.o \
   V3Interface.o \
+  V3LibMap.o \
   V3Life.o \
   V3LifePost.o \
   V3LinkCells.o \

@@ -6,8 +6,5 @@
 // SPDX-License-Identifier: CC0-1.0
 
 //    lib.map file:
-include ./t_config_libmap/lib.map;
 
-library rtllib1 somepath -incdir somedir;
-library rtllib2 somewild*;
-library rtllib3 someexplicit;
+library nonelib none.sv, none*.sv, none/; // no matches

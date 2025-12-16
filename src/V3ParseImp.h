@@ -151,6 +151,7 @@ class V3ParseImp final {
     FileLine* m_bisonLastFileline = nullptr;  // Filename/linenumber of last token
 
     bool m_inLibrary = false;  // Currently reading a library vs. regular file
+    bool m_inLibMap = false;  // Currently reading a libmap file
     string m_libname;  // Config library name (or --work)
     int m_lexKwdDepth = 0;  // Inside a `begin_keywords
     int m_lexKwdLast;  // Last LEX state in `begin_keywords
@@ -264,6 +265,7 @@ public:
 
     // Return next token, for bison, since bison isn't class based, use a global THIS
     AstNetlist* rootp() const { return m_rootp; }
+    bool inLibMap() const { return m_inLibMap; }
     bool inLibrary() const { return m_inLibrary; }
     string libname() const { return m_libname; }
     VOptionBool unconnectedDrive() const { return m_unconnectedDrive; }
@@ -299,7 +301,7 @@ public:
     // Preprocess and read the Verilog file specified into the netlist database
     int tokenToBison() VL_MT_DISABLED;  // Pass token to bison
 
-    void parseFile(FileLine* fileline, const string& modfilename, bool inLibrary,
+    void parseFile(FileLine* fileline, const string& modfilename, bool inLibrary, bool inLibMap,
                    const string& libname, const string& errmsg) VL_MT_DISABLED;
     void dumpInputsFile() VL_MT_DISABLED;
     void dumpTokensAhead(int line) VL_MT_DISABLED;

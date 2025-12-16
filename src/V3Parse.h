@@ -42,7 +42,7 @@ public:
 
     // METHODS
     // Preprocess and read the Verilog file specified into the netlist database
-    void parseFile(FileLine* fileline, const string& modname, bool inLibrary,
+    void parseFile(FileLine* fileline, const string& modname, bool inLibrary, bool inLibMap,
                    const string& libname, const string& errmsg) VL_MT_DISABLED;
 
     // Push preprocessed text to the lexer
