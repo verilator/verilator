@@ -583,16 +583,18 @@ class LinkParseVisitor final : public VNVisitor {
             UINFO(9, "Reused impltypedef " << nodep << "  -->  " << defp);
         } else {
             // Definition must be inserted right after the variable (etc) that needed it
-            // AstVar, AstTypedef, AstNodeFTask are common containers
+            // AstVar, AstTypedef, AstNodeFTask, AstParamTypeDType are common containers
             AstNode* backp = nodep->backp();
             for (; backp; backp = backp->backp()) {
-                if (VN_IS(backp, Var) || VN_IS(backp, Typedef) || VN_IS(backp, NodeFTask)) break;
+                if (VN_IS(backp, Var) || VN_IS(backp, Typedef) || VN_IS(backp, NodeFTask)
+                    || VN_IS(backp, ParamTypeDType))
+                    break;
             }
             UASSERT_OBJ(backp, nodep,
                         "Implicit enum/struct type created under unexpected node type");
             AstNodeDType* const dtypep = nodep->childDTypep();
             dtypep->unlinkFrBack();
-            if (VN_IS(backp, Typedef)) {
+            if (VN_IS(backp, Typedef) || VN_IS(backp, ParamTypeDType)) {
                 // A typedef doesn't need us to make yet another level of typedefing
                 // For typedefs just remove the AstRefDType level of abstraction
                 nodep->replaceWith(dtypep);
