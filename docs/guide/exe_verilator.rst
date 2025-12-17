@@ -992,7 +992,7 @@ Summary:
 .. option:: -libmap <lib.map>
 
    Specifies library mapping file to sort modules into libraries. This can be
-   overridden by :vltopt:`-work`.
+   overridden by :vlopt:`-work`.
 
 .. option:: +librescan
 
