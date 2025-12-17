@@ -54,6 +54,7 @@ private:
     AstSenItem* m_seniAlwaysp = nullptr;  // Last sensitivity in always
     // Reset each assertion:
     AstNodeExpr* m_disablep = nullptr;  // Last disable
+    AstIf* m_disableSeqIfp = nullptr;  // Used for handling disable iff in sequences
     // Other:
     V3UniqueNames m_cycleDlyNames{"__VcycleDly"};  // Cycle delay counter name generator
     V3UniqueNames m_disableCntNames{"__VdisableCnt"};  // Disable condition counter name generator
@@ -660,6 +661,7 @@ private:
 
         if (m_disablep) {
             FileLine* const flp = nodep->fileline();
+            // Add counter which counts times the condition turned true
             AstVar* const disableCntp
                 = new AstVar{flp, VVarType::MODULETEMP, m_disableCntNames.get(""),
                              nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
@@ -674,6 +676,20 @@ private:
                                                                    m_disablep->cloneTree(false)}},
                                 incrStmtp};
             disableCntp->addNextHere(alwaysp);
+
+            // Store value of that counter at the beginning of sequence evaluation 
+            AstBegin* const bodyp = nodep->bodyp();
+            AstVar* const initialCntp = new AstVar{flp, VVarType::BLOCKTEMP, "__VinitialCnt",
+                                                   nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
+            bodyp->stmtsp()->addHereThisAsNext(initialCntp);
+            AstAssign* const assignp
+                = new AstAssign{flp, new AstVarRef{flp, initialCntp, VAccess::WRITE},
+                                readCntRefp->cloneTree(false)};
+            initialCntp->addNextHere(assignp);
+
+            m_disableSeqIfp
+                = new AstIf{flp, new AstEq{flp, new AstVarRef{flp, initialCntp, VAccess::READ},
+                                           readCntRefp->cloneTree(false)}};
         }
         iterateChildren(nodep);
     }
