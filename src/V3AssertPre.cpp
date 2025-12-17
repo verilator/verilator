@@ -698,6 +698,8 @@ private:
             m_disableSeqIfp
                 = new AstIf{flp, new AstEq{flp, new AstVarRef{flp, initialCntp, VAccess::READ},
                                            readCntRefp->cloneTree(false)}};
+            // Delete it, because it is always copied before insetion to the AST
+            pushDeletep(m_disableSeqIfp);
         }
         iterateChildren(nodep);
     }
