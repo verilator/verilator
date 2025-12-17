@@ -11,7 +11,6 @@ import vltest_bootstrap
 
 test.scenarios("simulator_st")
 test.top_filename = "t/t_trace_type_dupes.v"
-test.sim_time = 2000000  # NOCOMMIT -- for benchmarking, leave in?
 
 test.compile(
     # artificially low trace splitting for force cross-split type function usage
