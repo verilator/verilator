@@ -31,9 +31,12 @@
 
 class V3LinkDotIfaceCapture final {
 public:
+    enum class CaptureType { IFACE, CLASS };
     struct CapturedIfaceTypedef final {
+        CaptureType captureType = CaptureType::IFACE;
         AstRefDType* refp = nullptr;
-        AstCell* cellp = nullptr;
+        AstCell* cellp = nullptr;  // now for IFACE captures
+        AstClass* origClassp = nullptr;  // new for CLASS captures
         // Module where the RefDType lives
         AstNodeModule* ownerModp = nullptr;
         // Typedef definition being referenced
