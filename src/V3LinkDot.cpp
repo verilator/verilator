@@ -5345,6 +5345,18 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     nodep->typedefp(defp);
                     nodep->classOrPackagep(foundp->classOrPackagep());
                     resolvedCapturedTypedef = true;
+
+                    // EOM - class capture: capture typedef references inside parameterized classes
+                    if (m_statep->forPrimary()) {
+                        AstClass* const classp = VN_CAST(nodep->classOrPackagep(), Class);
+                        if (classp && classp->hasGParam()) {
+                            UINFO(9, indent() << "class capture add typedef name=" << nodep->name()
+                                              << " class=" << classp->name()
+                                              << " typedef=" << defp);
+                            V3LinkDotIfaceCapture::addClass(nodep, classp, m_modp, defp);
+                        }
+                    }
+
                 } else if (AstParamTypeDType* const defp
                            = foundp ? VN_CAST(foundp->nodep(), ParamTypeDType) : nullptr) {
                     if (defp == nodep->backp()) {  // Where backp is typically typedef

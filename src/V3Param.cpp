@@ -896,7 +896,7 @@ class ParamProcessor final {
             // EOM
             // Handle DOT with ParseRef RHS (e.g., p_class#(8)::p_type)
             // by this point ClassOrPackageRef should be updated to point to the specialized class.
-            //resolveDotToTypedef(pinp->exprp());
+            resolveDotToTypedef(pinp->exprp());
 
             AstNodeDType* rawTypep = VN_CAST(pinp->exprp(), NodeDType);
             if (rawTypep) V3Width::widthParamsEdit(rawTypep);
