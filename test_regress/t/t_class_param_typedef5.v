@@ -16,8 +16,8 @@ class func_c #(parameter p_width=4);
 endclass
 
 module modA #(parameter p_width = 7)(
-  input func_c#(p_width)::my_type_t sig_a
-  ,output func_c#(p_width)::my_type_t sig_b
+  input func_c#(p_width)::my_type_t sig_a,
+  output func_c#(p_width)::my_type_t sig_b
 );
   assign sig_b.data = func_c#(p_width)::func(sig_a);
 endmodule
@@ -28,8 +28,8 @@ module the_top();
   func_c#(Size)::my_type_t sig_a, sig_b, sig_c;
 
   modA #(.p_width(Size)) modA(
-    .sig_a(sig_a)
-    ,.sig_b(sig_b)
+    .sig_a(sig_a),
+    .sig_b(sig_b)
   );
 
   initial begin

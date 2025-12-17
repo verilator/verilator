@@ -4,7 +4,6 @@
 // without warranty.
 // SPDX-License-Identifier: CC0-1.0
 
-
 `define stop $stop
 `define checkd(gotv,expv) \
   do if ((gotv) !== (expv)) begin \
@@ -13,38 +12,23 @@
     `stop; \
   end while(0);
 
-class pipeline_class #(
-  parameter type XWORD = logic
-);
-
-  typedef struct packed {
-    XWORD pc;
-  } if_id_t;
-
+class Class_A #(parameter int myparam = 32);
 endclass
 
-module pipe_reg #(
-  parameter type T = logic
-)();
-  initial begin
-    #1;
-    `checkd($bits(T), 8);
-  end
-endmodule
+module tb_top;
+  localparam int WIDTH_A=32;
+  localparam int WIDTH_B=2*16;
 
-module the_top #() ();
-
-  typedef logic [7:0] my_t;
-  typedef pipeline_class #(my_t)::if_id_t if_id2_t;
-  typedef if_id2_t if_id_t;
-  pipe_reg #(if_id_t) if_id_reg();
+  Class_A#(32) a;
+  Class_A#(WIDTH_A) b;
+  Class_A#(WIDTH_B) c;
 
   initial begin
     #1;
-    #1;
-    `checkd($bits(if_id_t), 8);
+
+    a = b;
+
     $write("*-* All Finished *-*\n");
     $finish;
   end
-
 endmodule

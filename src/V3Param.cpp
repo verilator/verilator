@@ -54,6 +54,7 @@
 #include "V3EmitV.h"
 #include "V3Hasher.h"
 #include "V3LinkDotIfaceCapture.h"
+#include "V3MemberMap.h"
 #include "V3Os.h"
 #include "V3Parse.h"
 #include "V3Simulate.h"
@@ -290,6 +291,9 @@ class ParamProcessor final {
     // Class default paramater dependencies
     std::vector<std::pair<AstParamTypeDType*, int>> m_classParams;
     std::unordered_map<AstParamTypeDType*, int> m_paramIndex;
+
+    // member names cached for fast lookup
+    VMemberMap m_memberMap;
 
     // METHODS
 
@@ -846,7 +850,10 @@ class ParamProcessor final {
                     pinExprp->replaceWith(new AstConst{pinp->fileline(), AstConst::WidthedValue{},
                                                        modvarp->width(), 0});
                     VL_DO_DANGLING(pinExprp->deleteTree(), pinExprp);
-                } else if (origp && exprp->sameTree(origp)) {
+                } else if (origp
+                           && (exprp->sameTree(origp)
+                               || (exprp->num().width() == origp->num().width()
+                                   && ParameterizedHierBlocks::areSame(exprp, origp)))) {
                     // Setting parameter to its default value.  Just ignore it.
                     // This prevents making additional modules, and makes coverage more
                     // obvious as it won't show up under a unique module page name.
@@ -1246,17 +1253,13 @@ class ParamProcessor final {
         AstRefDType* const refDTypep = VN_CAST(nodep->backp(), RefDType);
         AstClass* const newClassp = refDTypep ? VN_CAST(newModp, Class) : nullptr;
         if (newClassp && !refDTypep->typedefp() && !refDTypep->subDTypep()) {
-            for (AstNode* itemp = newClassp->membersp(); itemp; itemp = itemp->nextp()) {
-                if (AstTypedef* const typedefp = VN_CAST(itemp, Typedef)) {
-                    if (typedefp->name() == refDTypep->name()) {
-                        refDTypep->typedefp(typedefp);
-                        refDTypep->classOrPackagep(newClassp);
-                        UINFO(9, "Resolved parameterized class typedef: "
-                                     << refDTypep->name() << " -> " << typedefp << " in "
-                                     << newClassp->name());
-                        break;
-                    }
-                }
+            if (AstTypedef* const typedefp
+                = VN_CAST(m_memberMap.findMember(newClassp, refDTypep->name()), Typedef)) {
+                refDTypep->typedefp(typedefp);
+                refDTypep->classOrPackagep(newClassp);
+                UINFO(9, "Resolved parameterized class typedef: " << refDTypep->name() << " -> "
+                                                                  << typedefp << " in "
+                                                                  << newClassp->name());
             }
         }
         return newModp;
