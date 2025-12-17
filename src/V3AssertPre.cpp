@@ -684,7 +684,7 @@ private:
                                 incrStmtp};
             disableCntp->addNextHere(alwaysp);
 
-            // Store value of that counter at the beginning of sequence evaluation 
+            // Store value of that counter at the beginning of sequence evaluation
             AstBegin* const bodyp = nodep->bodyp();
             AstVar* const initialCntp = new AstVar{flp, VVarType::BLOCKTEMP, "__VinitialCnt",
                                                    nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
