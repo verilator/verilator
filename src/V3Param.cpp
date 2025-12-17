@@ -893,7 +893,7 @@ class ParamProcessor final {
                 }
             }
         } else if (AstParamTypeDType* const modvarp = pinp->modPTypep()) {
-// EOM
+            // EOM
             // Handle DOT with ParseRef RHS (e.g., p_class#(8)::p_type)
             // by this point ClassOrPackageRef should be updated to point to the specialized class.
             //resolveDotToTypedef(pinp->exprp());

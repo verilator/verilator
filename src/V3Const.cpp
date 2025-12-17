@@ -4140,7 +4140,8 @@ class ConstVisitor final : public VNVisitor {
         if (m_required) {
             // EOM
             //if (VN_IS(nodep, NodeDType) || VN_IS(nodep, Range) || VN_IS(nodep, SliceSel)) {
-            if (VN_IS(nodep, NodeDType) || VN_IS(nodep, Range) || VN_IS(nodep, SliceSel) || VN_IS(nodep, Dot)) {
+            if (VN_IS(nodep, NodeDType) || VN_IS(nodep, Range) || VN_IS(nodep, SliceSel)
+                || VN_IS(nodep, Dot)) {
                 // Ignore dtypes for parameter type pins
             } else {
                 nodep->v3error("Expecting expression to be constant, but can't convert a "
