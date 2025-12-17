@@ -129,7 +129,6 @@ public:
     // Ideally an IEEE $typename
     virtual string prettyDTypeName(bool) const { return prettyTypeName(); }
     string prettyDTypeNameQ() const { return "'" + prettyDTypeName(false) + "'"; }
-    virtual string cDTypeName() const { return ""; }
     //
     // Changing the width may confuse the data type resolution, so must clear
     // TypeTable cache after use.
@@ -272,7 +271,6 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     string prettyDTypeName(bool) const override;
-    string cDTypeName() const override;
     bool isCompound() const override { return !packed(); }
     // For basicp() we reuse the size to indicate a "fake" basic type of same size
     AstBasicDType* basicp() const override VL_MT_STABLE {
@@ -447,7 +445,6 @@ public:
     bool similarDTypeNode(const AstNodeDType* samep) const override;
     string name() const override VL_MT_STABLE { return m.m_keyword.ascii(); }
     string prettyDTypeName(bool full) const override;
-    string cDTypeName() const override;
     const char* broken() const override {
         BROKEN_RTN(dtypep() != this);
         BROKEN_RTN(v3Global.widthMinUsage() == VWidthMinUsage::VERILOG_WIDTH
@@ -1237,9 +1234,6 @@ public:
     string prettyDTypeName(bool full) const override {
         return subDTypep() ? prettyName(subDTypep()->prettyDTypeName(full)) : prettyName();
     }
-    string cDTypeName() const override {
-        return subDTypep() ? subDTypep()->cDTypeName() : cDTypeName();
-    }
     AstBasicDType* basicp() const override VL_MT_STABLE {
         return subDTypep() ? subDTypep()->basicp() : nullptr;
     }
@@ -1451,7 +1445,6 @@ public:
     inline AstPackArrayDType(FileLine* fl, AstNodeDType* dtp, AstRange* rangep);
     ASTGEN_MEMBERS_AstPackArrayDType;
     string prettyDTypeName(bool full) const override;
-    string cDTypeName() const override;
     bool isCompound() const override { return false; }
 };
 class AstUnpackArrayDType final : public AstNodeArrayDType {
@@ -1479,7 +1472,6 @@ public:
     }
     ASTGEN_MEMBERS_AstUnpackArrayDType;
     string prettyDTypeName(bool full) const override;
-    string cDTypeName() const override;
     bool sameNode(const AstNode* samep) const override {
         const AstUnpackArrayDType* const sp = VN_DBG_AS(samep, UnpackArrayDType);
         return m_isCompound == sp->m_isCompound;

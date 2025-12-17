@@ -271,7 +271,7 @@ class TraceDeclVisitor final : public VNVisitor {
             flp,          m_traName,  m_traVscp->varp(), valuep,
             bitRange,     arrayRange, dtypeCallp,        dtypeCallp ? m_traVscp : nullptr,
             m_offset != 0};
-        // NOCOMMIT -- m_offset and may be redundant with something else here ^
+        // NOCOMMIT  -- m_offset and may be redundant with something else here ^
         if (m_offset) {
             newp->code(m_offset);
             if (!dtypeCallp) { m_offset += newp->codeInc(); }
@@ -284,12 +284,10 @@ class TraceDeclVisitor final : public VNVisitor {
             });
         }
         if (dtypeCallp) {
-            // NOCOMMIT -- are both necessary?
+            // NOCOMMIT  -- are both necessary?
             m_traVscp->tracePreserve(true);
             m_traVscp->varp()->trace(true);
-            m_traVscp->varp()->sigPublic(true);  // NOCOMMIT -- this is a lie -- FIX
-            // NOCOMMIT -- adding this because const and non-const func param names conflict --
-            // probably a better way
+            m_traVscp->varp()->sigPublic(true);  // NOCOMMIT  -- this is a lie -- FIX
             newp->dtypeParamName(VN_AS(dtypeCallp->funcp()->user2p(), VarScope)
                                      ->varp()
                                      ->vlArgType(true, false, true, "", true, true));
@@ -581,10 +579,7 @@ class TraceDeclVisitor final : public VNVisitor {
         auto pair = m_dtypeFuncs.emplace(skipTypep, nullptr);
         AstCFunc** funcpp = &pair.first->second;
         if (pair.second) {
-            string dtypeName = skipTypep->cDTypeName();
-            const string name{"trace_init_dtype__" + dtypeName};
-            // NOCOMMIT -- should we only use V3UniqueNames instead of worrying about cDTypeName()?
-            *funcpp = newCFunc(flp, m_dtypeNames.get(name));
+            *funcpp = newCFunc(flp, m_dtypeNames.get("trace_init_dtype__"));
             (*funcpp)->user2p(m_traVscp);
         }
 
@@ -613,7 +608,6 @@ class TraceDeclVisitor final : public VNVisitor {
                 UASSERT_OBJ(false, skipTypep, "Creating a trace function for an unexpected type");
             }
             // Code 0 is a sentinel value
-            // NOCOMMIT -- handle that ^ so we don't need the -1's?'
             m_dtypeFunc->user1(m_offset - 1);
         }
 
@@ -655,13 +649,7 @@ class TraceDeclVisitor final : public VNVisitor {
 
         addToSubFunc(new AstTracePopPrefix{flp});
     }
-    // NOCOMMIT -- how to handle VL_* macro'ed types?
-    bool isBasicIO() {
-        const AstVar* varp = m_traVscp->varp();
-        const AstBasicDType* basicp = varp->basicp();
-        // NOCOMMIT -- lifted from V3EmitCBase -- AstVar method?
-        return varp->isIO() && basicp && !basicp->isOpaque();
-    }
+    bool isBasicIO() { return m_traVscp->varp()->isVLIO(); }
     void visit(AstUnpackArrayDType* nodep) override {
         // Note more specific dtypes above
         if (!m_traVscp) return;

@@ -1206,7 +1206,7 @@ class AstTraceDecl final : public AstNodeStmt {
     const VNumRange m_arrayRange;  // Property of var the trace details
     const VVarType m_varType;  // Type of variable (for localparam vs. param)
     const VDirection m_declDirection;  // Declared direction input/output etc
-    // NOCOMMIT -- pretty sure something isn't needed here
+    // NOCOMMIT  -- pretty sure something isn't needed here
     const bool m_inDtypeFunc;  // Trace decl inside type init function
     string m_dtypeParamName;  // Parameter name for type functions
     int m_codeInc{0};  // Code increment for type

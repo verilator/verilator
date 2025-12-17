@@ -2030,6 +2030,10 @@ public:
     }
     VDirection direction() const VL_MT_SAFE { return m_direction; }
     bool isIO() const VL_MT_SAFE { return m_direction != VDirection::NONE; }
+    bool isVLIO() const {
+        const AstBasicDType* const bdtypep = basicp();
+        return isIO() && bdtypep && !bdtypep->isOpaque();
+    }
     void declDirection(const VDirection& flag) { m_declDirection = flag; }
     VDirection declDirection() const { return m_declDirection; }
     void varType(VVarType type) { m_varType = type; }
@@ -2262,7 +2266,7 @@ class AstVarScope final : public AstNode {
     // @astgen ptr := m_varp : Optional[AstVar]  // [AfterLink] Pointer to variable itself
     bool m_trace : 1;  // Tracing is turned on for this scope
     bool m_optimizeLifePost : 1;  // One half of an NBA pair using ShadowVariable scheme. Optimize.
-    // NOCOMMIT -- is this the right way?
+    // NOCOMMIT  -- is this the right way?
     bool m_tracePreserve : 1;  // Preserve for trace logic
 public:
     AstVarScope(FileLine* fl, AstScope* scopep, AstVar* varp)

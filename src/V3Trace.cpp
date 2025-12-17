@@ -52,7 +52,6 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-// NOCOMMIT -- do runtime bake off
 //######################################################################
 // Graph vertexes
 
@@ -514,8 +513,7 @@ class TraceVisitor final : public VNVisitor {
             funcName += "_sub";
         }
         if (declp) {
-            funcName += "_dtype_";
-            funcName += declp->valuep()->dtypep()->cDTypeName();
+            funcName += "_dtype__";
             funcName = m_dtypeNames.get(funcName);
         } else {
             funcName += "_";
@@ -680,7 +678,6 @@ class TraceVisitor final : public VNVisitor {
 
                     declp->dtypeVscp(nullptr);
 
-                    // NOCOMMIT -- ????
                     subStmts += 1;
                 } else {
                     AstTraceInc* const incp = new AstTraceInc{flp, declp, VTraceType::CONSTANT};
@@ -771,7 +768,7 @@ class TraceVisitor final : public VNVisitor {
                     ifp = nullptr;
                 }
 
-                // NOCOMMIT -- is it OK to do this only on the aggregate signal?
+                // NOCOMMIT  -- is it OK to do this only on the aggregate signal?
                 // If required, create the conditional node checking the activity flags
                 if (!prevActSet || actSet != *prevActSet) {
                     FileLine* const flp = m_topScopep->fileline();
@@ -809,17 +806,12 @@ class TraceVisitor final : public VNVisitor {
                         argsp, new AstVarRef{flp, declp->dtypeVscp(), VAccess::READ});
                     AstCCall* const callChgp = new AstCCall{flp, funcs.chgFuncp, argsp};
                     callChgp->dtypeSetVoid();
-                    callChgp->argTypes(callChgp->argTypes()
-                                       + "bufp, "
-                                       // NOCOMMIT -- some kind of two-wrongs off-by-one error
-                                       // somewhere: really seems like it should be code() - 1 for
-                                       // the chg func (see old chg func)
+                    callChgp->argTypes(callChgp->argTypes() + "bufp, "
                                        + std::to_string(declp->code()));
                     ifp->addThensp(callChgp->makeStmt());
 
                     declp->dtypeVscp(nullptr);
 
-                    // NOCOMMIT -- ????
                     subStmts += 2;
                 } else {
                     AstTraceInc* const incFulp = new AstTraceInc{flp, declp, VTraceType::FULL};

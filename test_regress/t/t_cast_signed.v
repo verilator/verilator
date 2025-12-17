@@ -13,7 +13,6 @@ module t;
    initial begin
       smaller = 8'hfa;
       bigger = bigger_t'(signed'(smaller));
-      $display("%x", bigger); // NOCOMMIT
       if (bigger != 16'hfffa) $stop;
 
       $write("*-* All Finished *-*\n");
