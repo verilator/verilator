@@ -2630,11 +2630,6 @@ verilator_flags / verilator_flags2
    Verilator. If a flag is a standard flag, ``+incdir`` for example, pass
    it with ``v_flags2`` instead.
 
-benchmarksim
-   Output the number of model evaluations and execution time of a test to
-   ``test_output_dir>/<test_name>_benchmarksim.csv``. Multiple invocations
-   of the same test file will append to to the same .csv file.
-
 xsim_flags / xsim_flags2 / xsim_run_flags
    The equivalent of ``v_flags``, ``v_flags2`` and ``all_run_flags``, but
    only for use with the Xilinx XSim simulator.

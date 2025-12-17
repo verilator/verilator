@@ -702,7 +702,6 @@ class VlTest:
         self.name = match.group(2)  # Name of this test
 
         self.benchmark = Args.benchmark
-        self.benchmarksim = False
         self.clean_command = None
         self.context_threads = 0  # Number of threads to allocate in the context
         self.errors = None
@@ -890,16 +889,6 @@ class VlTest:
 
     def _define_opt_calc(self) -> str:
         return "--define " if self.xsim else "+define+"
-
-    def init_benchmarksim(self) -> None:
-        # Simulations with benchmarksim enabled append to the same file between runs.
-        # Test files must ensure a clean benchmark data file before executing tests.
-        filename = self.benchmarksim_filename
-        with open(filename, 'w', encoding="utf8") as fh:
-            fh.write("# Verilator simulation benchmark data\n")
-            fh.write("# Test name: " + self.name + "\n")
-            fh.write("# Top file: " + self.top_filename + "\n")
-            fh.write("evals, time[s]\n")
 
     def soprint(self, message: str) -> str:
         message = message.rstrip() + "\n"
@@ -1137,9 +1126,6 @@ class VlTest:
             self.trace_format = 'vcd-sc'  # pylint: disable=attribute-defined-outside-init
         else:
             self.trace_format = 'vcd-c'  # pylint: disable=attribute-defined-outside-init
-
-        if param.get('benchmarksim', None):
-            self.benchmarksim = True  # pylint: disable=attribute-defined-outside-init
 
         verilator_flags = [*param.get('verilator_flags', "")]
         if Args.gdb:
@@ -1688,10 +1674,6 @@ class VlTest:
         return VlTest._cached_aslr_off
 
     @property
-    def benchmarksim_filename(self) -> str:
-        return self.obj_dir + "/" + self.name + "_benchmarksim.csv"
-
-    @property
     def driver_verilator_flags(self) -> list:
         return Args.passdown_verilator_flags
 
@@ -2038,10 +2020,6 @@ class VlTest:
                      str(int(round(self.main_time_multiplier, 0))) + "\n")
 
             fh.write("#include <memory>\n")
-            if self.benchmarksim:
-                fh.write("#include <fstream>\n")
-                fh.write("#include <chrono>\n")
-                fh.write("#include <iomanip>\n")
 
             fh.write("// OS header\n")
             fh.write('#include "verilatedos.h"' + "\n")
@@ -2138,11 +2116,6 @@ class VlTest:
             else:
                 fh.write("    topp->eval();\n")
                 setp = "topp->"
-
-            if self.benchmarksim:
-                fh.write("    std::chrono::time_point<std::chrono::steady_clock> starttime;\n")
-                fh.write("    bool warm = false;\n")
-                fh.write("    uint64_t n_evals = 0;\n")
 
             if self.trace:
                 fh.write("\n")
@@ -2249,26 +2222,8 @@ class VlTest:
                         fh.write("            return 0;\n")
                         fh.write("        }\n")
                     self._print_advance_time(fh, self.sc_time_resolution_multiplier, action)
-            if self.benchmarksim:
-                fh.write("        if (VL_UNLIKELY(!warm)) {\n")
-                fh.write("            starttime = std::chrono::steady_clock::now();\n")
-                fh.write("            warm = true;\n")
-                fh.write("        } else {\n")
-                fh.write("            ++n_evals;\n")
-                fh.write("        }\n")
 
             fh.write("    }\n")
-
-            if self.benchmarksim:
-                fh.write("    {\n")
-                fh.write("        const std::chrono::duration<double> exec_s"
-                         " = std::chrono::steady_clock::now() - starttime;\n")
-                fh.write("        std::ofstream benchfile(\"" + self.benchmarksim_filename +
-                         "\", std::ofstream::out | std::ofstream::app);\n")
-                fh.write("        benchfile << std::fixed << std::setprecision(9)"
-                         " << n_evals << \",\" << exec_s.count() << std::endl;\n")
-                fh.write("        benchfile.close();\n")
-                fh.write("    }\n")
 
             fh.write("    if (!contextp->gotFinish()) {\n")
             fh.write('        vl_fatal(__FILE__, __LINE__, "main",' +
