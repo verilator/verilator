@@ -4344,7 +4344,6 @@ public:
     string selfPointerProtect(bool useSelfForThis) const {
         return selfPointer().protect(useSelfForThis, protect());
     }
-    bool maybePointedTo() const override VL_MT_SAFE { return true; }
 };
 class AstCMethodCall final : public AstNodeCCall {
     // C++ method call

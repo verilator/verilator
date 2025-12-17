@@ -49,7 +49,6 @@ Verilator 5.043 devel
 * Optimize repeated function call during symbol table initialization (#6665). [Geza Lore, Fractile Ltd.]
 * Optimize functions reading external parameters as pure (#6684). [Geza Lore, Fractile Ltd.]
 * Optimize `$past` delayed variable reuse (#6689). [Geza Lore, Fractile Ltd.]
-* Optimize trace code for faster compiles on repeated types (#6707). [Todd Strader]
 * Optimize combinational loops through sign extension (#6724). [Geza Lore]
 * Optimize trace initialization code size (#6749). [Geza Lore]
 * Optimize combinational cycles in DFG (#6744) (#6746) (#6744). [Geza Lore]

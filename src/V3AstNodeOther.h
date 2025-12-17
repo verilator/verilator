@@ -2048,7 +2048,7 @@ public:
     string dpiTmpVarType(const string& varName) const;
     // Return Verilator internal type for argument: CData, SData, IData, WData
     string vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc = "",
-                     bool asRef = false, bool constRef = false) const;
+                     bool asRef = false) const;
     string vlEnumType() const;  // Return VerilatorVarType: VLVT_UINT32, etc
     string vlEnumDir() const;  // Return VerilatorVarDir: VLVD_INOUT, etc
     string vlPropDecl(const string& propName) const;  // Return VerilatorVarProps declaration
@@ -2262,8 +2262,6 @@ class AstVarScope final : public AstNode {
     // @astgen ptr := m_varp : Optional[AstVar]  // [AfterLink] Pointer to variable itself
     bool m_trace : 1;  // Tracing is turned on for this scope
     bool m_optimizeLifePost : 1;  // One half of an NBA pair using ShadowVariable scheme. Optimize.
-    // NOCOMMIT -- is this the right way?
-    bool m_tracePreserve : 1;  // Preserve for trace logic
 public:
     AstVarScope(FileLine* fl, AstScope* scopep, AstVar* varp)
         : ASTGEN_SUPER_VarScope(fl)
@@ -2273,7 +2271,6 @@ public:
         UASSERT_OBJ(varp, fl, "Var must be non-null");
         m_trace = true;
         m_optimizeLifePost = false;
-        m_tracePreserve = false;
         dtypeFrom(varp);
     }
     ASTGEN_MEMBERS_AstVarScope;
@@ -2296,8 +2293,6 @@ public:
     void trace(bool flag) { m_trace = flag; }
     bool optimizeLifePost() const { return m_optimizeLifePost; }
     void optimizeLifePost(bool flag) { m_optimizeLifePost = flag; }
-    bool tracePreserve() const { return m_tracePreserve; }
-    void tracePreserve(bool tracePreserve) { m_tracePreserve = tracePreserve; }
 };
 
 // === AstNodeCoverDecl ===

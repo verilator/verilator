@@ -287,7 +287,7 @@ class DeadVisitor final : public VNVisitor {
         iterateChildren(nodep);
         checkAll(nodep);
         if (nodep->scopep()) nodep->scopep()->user1Inc();
-        if (!nodep->tracePreserve() && mightElimVar(nodep->varp())) m_vscsp.push_back(nodep);
+        if (mightElimVar(nodep->varp())) m_vscsp.push_back(nodep);
     }
     void visit(AstVar* nodep) override {
         iterateChildren(nodep);

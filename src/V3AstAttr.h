@@ -1035,16 +1035,6 @@ public:
     bool isWritable() const VL_MT_SAFE { return m_e == OUTPUT || m_e == INOUT || m_e == REF; }
     bool isRef() const VL_MT_SAFE { return m_e == REF; }
     bool isConstRef() const VL_MT_SAFE { return m_e == CONSTREF; }
-    string traceSigDirection() const {
-        if (isInout()) {
-            return "VerilatedTraceSigDirection::INOUT";
-        } else if (isWritable()) {
-            return "VerilatedTraceSigDirection::OUTPUT";
-        } else if (isNonOutput()) {
-            return "VerilatedTraceSigDirection::INPUT";
-        }
-        return "VerilatedTraceSigDirection::NONE";
-    }
 };
 constexpr bool operator==(const VDirection& lhs, const VDirection& rhs) VL_MT_SAFE {
     return lhs.m_e == rhs.m_e;
