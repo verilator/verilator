@@ -142,6 +142,7 @@ Verilator 5.042 2025-11-02
 * Support modports referencing clocking blocks (#4555) (#6436). [Ryszard Rozak, Antmicro Ltd.]
 * Support class package reference on pattern keys (#5653). [Todd Strader]
 * Support digits in `$sscanf` field width formats (#6083). [Iztok Jeras]
+* Support assert under assert (#6146). [Alex Solomatnikov]
 * Support pure functions in sensitivity lists (#6393). [Krzysztof Bieganski, Antmicro Ltd.]
 * Support simple alias statements (#6339) (#6501). [Ryszard Rozak, Antmicro Ltd.]
 * Support simple cycle delay sequence expressions inside properties (#6508). [Bartłomiej Chmiel, Antmicro Ltd.]

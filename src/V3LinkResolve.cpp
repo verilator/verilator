@@ -50,7 +50,6 @@ class LinkResolveVisitor final : public VNVisitor {
     string m_randcIllegalWhy;  // Why randc illegal
     AstNode* m_randcIllegalp = nullptr;  // Node causing randc illegal
     AstNodeFTask* m_ftaskp = nullptr;  // Function or task we're inside
-    AstNodeCoverOrAssert* m_assertp = nullptr;  // Current assertion
     int m_senitemCvtNum = 0;  // Temporary signal counter
     std::deque<AstGenFor*> m_underGenFors;  // Stack of GenFor underneath
     bool m_underGenerate = false;  // Under GenFor/GenIf
@@ -118,14 +117,6 @@ class LinkResolveVisitor final : public VNVisitor {
             nodep->replaceWith(nodep->stmtsp()->unlinkFrBackWithNext());
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
-    }
-    void visit(AstNodeCoverOrAssert* nodep) override {
-        if (m_assertp) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Assert not allowed under another assert");
-        }
-        VL_RESTORER(m_assertp);
-        m_assertp = nodep;
-        iterateChildren(nodep);
     }
     void visit(AstVar* nodep) override {
         iterateChildren(nodep);

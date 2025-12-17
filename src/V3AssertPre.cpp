@@ -80,10 +80,6 @@ private:
         }
         return newp;
     }
-    void clearAssertInfo() {
-        m_senip = nullptr;
-        m_disablep = nullptr;
-    }
     AstPropSpec* getPropertyExprp(const AstProperty* const propp) {
         // The only statements possible in AstProperty are AstPropSpec (body)
         // and AstVar (arguments).
@@ -476,12 +472,14 @@ private:
     void visit(AstNodeCoverOrAssert* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
 
-        clearAssertInfo();
+        VL_RESTORER(m_senip);
+        VL_RESTORER(m_disablep);
+        m_senip = nullptr;
+        m_disablep = nullptr;
 
         // Find Clocking's buried under nodep->exprsp
         iterateChildren(nodep);
         if (!nodep->immediate()) nodep->sentreep(newSenTree(nodep));
-        clearAssertInfo();
     }
     void visit(AstFalling* nodep) override {
         if (nodep->user1SetOnce()) return;
@@ -684,7 +682,6 @@ public:
     // CONSTRUCTORS
     explicit AssertPreVisitor(AstNetlist* nodep)
         : m_netlistp{nodep} {
-        clearAssertInfo();
         // Process
         iterate(nodep);
         // Fix up varref names
