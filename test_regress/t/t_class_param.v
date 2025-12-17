@@ -11,6 +11,9 @@
 
 typedef class Cls;
 
+parameter int PARAM32 = 32;
+parameter int PARAM8 = 8;
+
 class Wrap #(parameter P = 13);
    function int get_p;
       return c1.get_p();
@@ -85,6 +88,12 @@ class ClsParam #(type T);
    typedef T param_t;
 endclass
 
+class ClsParamValueInt #(parameter int P = 32);
+endclass
+
+class ClsParamValueByte #(parameter byte P = byte'(8));
+endclass
+
 class ClsWithParamField;
    int m_field = Sum#(int)::sum;
    int m_queue[$];
@@ -141,6 +150,12 @@ module t;
    Cls8_t c8;
    Cls#()::ClsInner ci;
    Cls#(8)::ClsInner ci8;
+   ClsParamValueInt#() cparam32_0;
+   ClsParamValueInt#(32) cparam32_1;
+   ClsParamValueInt#(.P(PARAM32)) cparam32_2;
+   ClsParamValueByte#() cparam8_0;
+   ClsParamValueByte#(8) cparam8_1;
+   ClsParamValueByte#(.P(PARAM8)) cparam8_2;
    Wrap #(.P(16)) w16;
    Wrap2 #(.P(32)) w32;
    SelfRefClassTypeParam src_logic;
@@ -157,6 +172,8 @@ module t;
    cls_param_string_not_def_t cps_not_def;
    int arr [1:0] = '{1, 2};
    initial begin
+      cparam32_0 = new;
+      cparam8_0 = new;
       c12 = new;
       c4 = new;
       c8 = new;
@@ -174,6 +191,11 @@ module t;
       getter1 = new;
       getter1_param_1 = new;
       getter2 = new;
+
+      cparam32_1 = cparam32_0;
+      cparam32_2 = cparam32_1;
+      cparam8_1 = cparam8_0;
+      cparam8_2 = cparam8_1;
 
       if (Cls#()::PBASE != 12) $stop;
       if (Cls#(4)::PBASE != 4) $stop;
