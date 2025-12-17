@@ -63,22 +63,25 @@ void V3LinkDotIfaceCapture::add(AstRefDType* refp, AstCell* cellp, AstNodeModule
     if (!typedefOwnerModp && typedefp) typedefOwnerModp = findOwnerModule(typedefp);
 
     // EOM
-    //s_map[refp] = CapturedIfaceTypedef{refp, cellp, ownerModp, typedefp, typedefOwnerModp, nullptr, ifacePortVarp};
+    //s_map[refp] = CapturedIfaceTypedef{refp, cellp, ownerModp, typedefp, typedefOwnerModp,
+    //nullptr, ifacePortVarp};
     s_map[refp] = CapturedIfaceTypedef{
-        CaptureType::IFACE, refp, cellp, nullptr, ownerModp, typedefp, typedefOwnerModp, nullptr, ifacePortVarp};
+        CaptureType::IFACE, refp,    cellp,        nullptr, ownerModp, typedefp,
+        typedefOwnerModp,   nullptr, ifacePortVarp};
 }
 
 void V3LinkDotIfaceCapture::addClass(AstRefDType* refp, AstClass* origClassp,
-                                      AstNodeModule* ownerModp,
-                                      AstTypedef* typedefp, AstNodeModule* typedefOwnerModp) {
+                                     AstNodeModule* ownerModp, AstTypedef* typedefp,
+                                     AstNodeModule* typedefOwnerModp) {
     if (!refp) return;
 
     if (!typedefp) typedefp = refp->typedefp();
 
     if (!typedefOwnerModp && typedefp) typedefOwnerModp = findOwnerModule(typedefp);
 
-    s_map[refp] = CapturedIfaceTypedef{
-        CaptureType::CLASS, refp, nullptr, origClassp, ownerModp, typedefp, typedefOwnerModp, nullptr, nullptr};
+    s_map[refp] = CapturedIfaceTypedef{CaptureType::CLASS, refp,      nullptr,
+                                       origClassp,         ownerModp, typedefp,
+                                       typedefOwnerModp,   nullptr,   nullptr};
 }
 
 const V3LinkDotIfaceCapture::CapturedIfaceTypedef*
@@ -122,8 +125,8 @@ bool V3LinkDotIfaceCapture::replaceTypedef(const AstRefDType* refp, AstTypedef* 
         if (AstClass* const newClassp = VN_CAST(it->second.typedefOwnerModp, Class)) {
             it->second.refp->classOrPackagep(newClassp);
         }
-        UINFO(9, "class capture updated RefDType typedefp: " << it->second.refp
-              << " -> " << newTypedefp);
+        UINFO(9, "class capture updated RefDType typedefp: " << it->second.refp << " -> "
+                                                             << newTypedefp);
     }
 
     finalizeCapturedEntry(it, "typedef clone");
