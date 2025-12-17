@@ -657,6 +657,7 @@ private:
             return;
         }
         VL_RESTORER(m_inPExpr);
+        VL_RESTORER(m_disableSeqIfp);
         m_inPExpr = true;
 
         if (m_disablep) {
