@@ -666,6 +666,7 @@ private:
             AstVar* const disableCntp
                 = new AstVar{flp, VVarType::MODULETEMP, m_disableCntNames.get(""),
                              nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
+            disableCntp->lifetime(VLifetime::STATIC_EXPLICIT);
             m_modp->addStmtsp(disableCntp);
             AstVarRef* const readCntRefp = new AstVarRef{flp, disableCntp, VAccess::READ};
             AstVarRef* const writeCntRefp = new AstVarRef{flp, disableCntp, VAccess::WRITE};
@@ -682,6 +683,7 @@ private:
             AstBegin* const bodyp = nodep->bodyp();
             AstVar* const initialCntp = new AstVar{flp, VVarType::BLOCKTEMP, "__VinitialCnt",
                                                    nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
+            initialCntp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             bodyp->stmtsp()->addHereThisAsNext(initialCntp);
             AstAssign* const assignp
                 = new AstAssign{flp, new AstVarRef{flp, initialCntp, VAccess::WRITE},
