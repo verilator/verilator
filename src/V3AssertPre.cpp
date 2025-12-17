@@ -376,6 +376,11 @@ private:
                                          new AstConst{flp, 1}}});
             beginp->addStmtsp(loopp);
         }
+        if (m_disableSeqIfp) {
+            AstIf* const disableSeqIfp = m_disableSeqIfp->cloneTree(false);
+            disableSeqIfp->addThensp(nodep->nextp()->unlinkFrBackWithNext());
+            nodep->addNextHere(disableSeqIfp);
+        }
         nodep->replaceWith(beginp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
