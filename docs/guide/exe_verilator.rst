@@ -1006,6 +1006,8 @@ Summary:
    You may also want the :vlopt:`-Wall` option to enable messages
    considered stylistic and not enabled by default.
 
+   Implies :vlopt:`--timing` unless :vlopt:`--no-timing` was used.
+
    If the design is not to be completely Verilated, see also the
    :vlopt:`--bbox-sys` and :vlopt:`--bbox-unsup` options.
 

@@ -1,3 +1,8 @@
+%Warning-RISEFALLDLY: t/t_gate_basic.v:26:12: Unsupported: rising/falling/turn-off delays. Using the first delay
+   26 |    nand  #(2,3)   ND0 (nd0, a[0], b[0], b[1]);
+      |            ^
+                      ... For warning description see https://verilator.org/warn/RISEFALLDLY?v=latest
+                      ... Use "/* verilator lint_off RISEFALLDLY */" and lint_on around source to disable this message.
 %Warning-SPECIFYIGN: t/t_gate_basic.v:50:27: Ignoring unsupported: specify block construct
    50 |       (nt0 *> nt0) = (0, 0);
       |                           ^
@@ -6,17 +11,4 @@
 %Warning-SPECIFYIGN: t/t_gate_basic.v:60:32: Ignoring unsupported: specify block construct
    60 |     (A1 *> Q) = (a$A1$Y, a$A1$Y);
       |                                ^
-%Error-NEEDTIMINGOPT: t/t_gate_basic.v:24:10: Use --timing or --no-timing to specify how timing controls should be handled
-                                            : ... note: In instance 't'
-   24 |    not   #(0.108) NT0 (nt0, a[0]);
-      |          ^
-                      ... For error description see https://verilator.org/warn/NEEDTIMINGOPT?v=latest
-%Error-NEEDTIMINGOPT: t/t_gate_basic.v:25:10: Use --timing or --no-timing to specify how timing controls should be handled
-                                            : ... note: In instance 't'
-   25 |    and   #1       AN0 (an0, a[0], b[0]);
-      |          ^
-%Error-NEEDTIMINGOPT: t/t_gate_basic.v:26:10: Use --timing or --no-timing to specify how timing controls should be handled
-                                            : ... note: In instance 't'
-   26 |    nand  #(2,3)   ND0 (nd0, a[0], b[0], b[1]);
-      |          ^
 %Error: Exiting due to

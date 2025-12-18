@@ -15,7 +15,7 @@ test.lint(
     # We also have dump-tree turned on, so hit a lot of AstNode*::dump() functions
     # Likewise XML
     v_flags=[
-        "--lint-only --timing",
+        "--lint-only",
         "--dumpi-tree 9 --dumpi-V3EmitV 9 --debug-emitv",  # Dev coverage of the V3EmitV code
         "--dump-graph --dumpi-tree-json 9 --no-json-ids"
     ])

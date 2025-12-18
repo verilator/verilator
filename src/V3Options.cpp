@@ -1039,6 +1039,10 @@ void V3Options::notify() VL_MT_DISABLED {
             && !v3Global.opt.serializeOnly());
     }
 
+    if (m_timing.isDefault()
+        && (v3Global.opt.jsonOnly() || v3Global.opt.lintOnly() || v3Global.opt.xmlOnly()))
+        v3Global.opt.m_timing.setTrueOrFalse(true);
+
     if (trace()) {
         // With --trace-vcd, --trace-threads is ignored
         if (traceEnabledVcd()) m_traceThreads = 1;

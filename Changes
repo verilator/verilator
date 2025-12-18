@@ -15,6 +15,7 @@ Verilator 5.043 devel
 
 * This is the last release supporting the deprecated `--xml-only` and
   `--make cmake` options.
+* Change `--lint-only` and `--json-only` to imply `--timing` (#6790).
 
 **Other:**
 
