@@ -195,12 +195,14 @@ private:
                     UASSERT_OBJ(nodep->dtypep(), nodep,
                                 "No dtype on node with hasDType(): " << nodep->prettyTypeName());
                 } else {
-                    // Only skip dtype check if ClassOrPackageRef has been linked to a class/package
-                    // (deferred DOT expressions for parameterized classes) (make this is narrow as possible)
+                    // Only skip dtype check if ClassOrPackageRef has been linked to a
+                    // class/package (deferred DOT expressions for parameterized classes) (make
+                    // this is narrow as possible)
                     AstClassOrPackageRef* corpRefp = VN_AS(nodep, ClassOrPackageRef);
                     if (!corpRefp->classOrPackageNodep()) {
-                        UASSERT_OBJ(nodep->dtypep(), nodep,
-                                    "No dtype on node with hasDType(): " << nodep->prettyTypeName());
+                        UASSERT_OBJ(
+                            nodep->dtypep(), nodep,
+                            "No dtype on node with hasDType(): " << nodep->prettyTypeName());
                     }
                 }
             } else {

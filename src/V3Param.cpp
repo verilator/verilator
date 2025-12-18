@@ -822,7 +822,8 @@ class ParamProcessor final {
         AstParseRef* const parseRefp = VN_CAST(dotp->rhsp(), ParseRef);
         if (!parseRefp) return;
 
-        AstTypedef* const tdefp = VN_CAST(m_memberMap.findMember(lhsClassp, parseRefp->name()), Typedef);
+        AstTypedef* const tdefp
+            = VN_CAST(m_memberMap.findMember(lhsClassp, parseRefp->name()), Typedef);
         if (tdefp) {
             AstRefDType* const refp = new AstRefDType{dotp->fileline(), tdefp->name()};
             refp->typedefp(tdefp);
