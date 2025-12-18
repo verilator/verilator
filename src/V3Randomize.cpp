@@ -895,11 +895,11 @@ class ConstraintExprVisitor final : public VNVisitor {
             // Build randmode access: for membersel, use member's class randmode if available
             AstNodeExpr* randModeAccess;
             if (membersel) {
-                AstNodeExpr* parentAccess = membersel->fromp()->cloneTree(false);
                 AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
                 AstVar* const effectiveRandModeVarp = VN_AS(varClassp->user2p(), Var);
                 if (effectiveRandModeVarp) {
                     // Member's class has randmode, use it
+                    AstNodeExpr* parentAccess = membersel->fromp()->cloneTree(false);
                     AstMemberSel* randModeSel
                         = new AstMemberSel{varp->fileline(), parentAccess, effectiveRandModeVarp};
                     randModeSel->dtypep(effectiveRandModeVarp->dtypep());
