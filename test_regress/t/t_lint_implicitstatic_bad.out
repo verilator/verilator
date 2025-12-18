@@ -5,27 +5,27 @@
       |         ^~~~~~~~~~~~~
                          ... For warning description see https://verilator.org/warn/IMPLICITSTATIC?v=latest
                          ... Use "/* verilator lint_off IMPLICITSTATIC */" and lint_on around source to disable this message.
-%Warning-IMPLICITSTATIC: t/t_lint_implicitstatic_bad.v:19:16: Function/task's lifetime implicitly set to static
+%Warning-IMPLICITSTATIC: t/t_lint_implicitstatic_bad.v:20:16: Function/task's lifetime implicitly set to static
                                                             : ... Suggest use 'function automatic' or 'function static'
-   19 |   function int f_implicit_static();
+   20 |   function int f_implicit_static();
       |                ^~~~~~~~~~~~~~~~~
-                         t/t_lint_implicitstatic_bad.v:20:9: ... Location of implicit static variable
+                         t/t_lint_implicitstatic_bad.v:21:9: ... Location of implicit static variable
                                                            : ... The initializer value will only be set once
-   20 |     int cnt = 0;   
+   21 |     int cnt = 0;   
       |         ^~~
-%Warning-IMPLICITSTATIC: t/t_lint_implicitstatic_bad.v:24:8: Function/task's lifetime implicitly set to static
+%Warning-IMPLICITSTATIC: t/t_lint_implicitstatic_bad.v:25:8: Function/task's lifetime implicitly set to static
                                                            : ... Suggest use 'task automatic' or 'task static'
-   24 |   task f_implicit_static();
+   25 |   task f_implicit_static();
       |        ^~~~~~~~~~~~~~~~~
-                         t/t_lint_implicitstatic_bad.v:25:9: ... Location of implicit static variable
+                         t/t_lint_implicitstatic_bad.v:26:9: ... Location of implicit static variable
                                                            : ... The initializer value will only be set once
-   25 |     int cnt = 0;   
+   26 |     int cnt = 0;   
       |         ^~~
-%Error: t/t_lint_implicitstatic_bad.v:24:8: Unsupported in C: Task has the same name as function: 'f_implicit_static'
-   24 |   task f_implicit_static();
+%Error: t/t_lint_implicitstatic_bad.v:25:8: Unsupported in C: Task has the same name as function: 'f_implicit_static'
+   25 |   task f_implicit_static();
       |        ^~~~~~~~~~~~~~~~~
-        t/t_lint_implicitstatic_bad.v:19:16: ... Location of original declaration
-   19 |   function int f_implicit_static();
+        t/t_lint_implicitstatic_bad.v:20:16: ... Location of original declaration
+   20 |   function int f_implicit_static();
       |                ^~~~~~~~~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to
