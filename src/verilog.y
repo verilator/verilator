@@ -1679,8 +1679,7 @@ modportPortsDeclList<nodep>:
 // We track the type as with the V2k series of defines, then create as each ID is seen.
 modportPortsDecl<nodep>:
         //                      // IEEE: modport_simple_ports_declaration
-                port_direction modportSimplePortOrTFPort { $$ = new AstModportVarRef{$<fl>2, *$2, GRAMMARP->m_varIO};
-                                                           GRAMMARP->m_modportImpExpActive = false;}
+                port_direction { GRAMMARP->m_modportImpExpActive = false; } modportSimplePortOrTFPort { $$ = $3; }
         //                      // IEEE: modport_clocking_declaration
         |       yCLOCKING idAny/*clocking_identifier*/ { $$ = new AstModportClockingRef{$1, *$2}; }
         //                      // IEEE: yIMPORT modport_tf_port
@@ -1700,19 +1699,24 @@ modportPortsDecl<nodep>:
                         { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: Modport export with prototype"); DEL($2); }
         // Continuations of above after a comma.
         //                      // IEEE: modport_simple_ports_declaration
-        |       modportSimplePortOrTFPort                { $$ = GRAMMARP->m_modportImpExpActive ?
+        |       modportSimplePortOrTFPort                { $$ = $1; }
+        ;
+
+modportSimplePortOrTFPort<nodep>:// IEEE: modport_simple_port or modport_tf_port, depending what keyword was earlier
+                idAny                                   { $$ = GRAMMARP->m_modportImpExpActive ?
                                                                 static_cast<AstNode*>(
                                                                   new AstModportFTaskRef{
                                                                     $<fl>1, *$1, GRAMMARP->m_modportImpExpLastIsExport} ) :
                                                                 static_cast<AstNode*>(
                                                                   new AstModportVarRef{
                                                                     $<fl>1, *$1, GRAMMARP->m_varIO} ); }
-        ;
-
-modportSimplePortOrTFPort<strp>:// IEEE: modport_simple_port or modport_tf_port, depending what keyword was earlier
-                idAny                                   { $$ = $1; }
-        |       '.' idAny '(' ')'                       { $$ = $2; BBUNSUP($<fl>1, "Unsupported: Modport dotted port name"); }
-        |       '.' idAny '(' expr ')'                  { $$ = $2; BBUNSUP($<fl>1, "Unsupported: Modport dotted port name"); }
+        |       '.' idAny '(' ')'                       { $$ = static_cast<AstNode*>(
+                                                                  new AstModportVarRef{
+                                                                    $<fl>2, *$2, GRAMMARP->m_varIO} );
+                                                          BBUNSUP($<fl>4, "Unsupported: Modport empty expression"); }
+        |       '.' idAny '(' expr ')'                  { $$ = static_cast<AstNode*>(
+                                                            new AstModportVarRef{
+                                                              $<fl>2, *$2, $4, GRAMMARP->m_varIO} ); }
         ;
 
 //************************************************
