@@ -323,6 +323,7 @@ class LinkParseVisitor final : public VNVisitor {
                                      "loop converted to automatic");
         } else if (nodep->valuep() && nodep->lifetime().isNone() && m_lifetime.isStatic()
                    && !nodep->isIO()
+                   && !nodep->isParam()
                    // In task, or a procedure but not Initial/Final as executed only once
                    && ((m_ftaskp && !m_ftaskp->lifetime().isStaticExplicit())
                        || (m_procedurep && !VN_IS(m_procedurep, Initial)
