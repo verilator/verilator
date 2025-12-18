@@ -190,12 +190,18 @@ private:
         }
         if (v3Global.assertDTypesResolved()) {
             if (nodep->hasDType()) {
-                // EOM - Skip dtype check for ClassOrPackageRef nodes - they may be part of
-                // deferred DOT expressions for parameterized class type references that
-                // don't require dtype resolution.  this might be too permissive?
+                // EOM
                 if (!VN_IS(nodep, ClassOrPackageRef)) {
                     UASSERT_OBJ(nodep->dtypep(), nodep,
                                 "No dtype on node with hasDType(): " << nodep->prettyTypeName());
+                } else {
+                    // Only skip dtype check if ClassOrPackageRef has been linked to a class/package
+                    // (deferred DOT expressions for parameterized classes) (make this is narrow as possible)
+                    AstClassOrPackageRef* corpRefp = VN_AS(nodep, ClassOrPackageRef);
+                    if (!corpRefp->classOrPackageNodep()) {
+                        UASSERT_OBJ(nodep->dtypep(), nodep,
+                                    "No dtype on node with hasDType(): " << nodep->prettyTypeName());
+                    }
                 }
             } else {
                 UASSERT_OBJ(!nodep->dtypep(), nodep,
