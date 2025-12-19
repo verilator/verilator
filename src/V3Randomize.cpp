@@ -1050,6 +1050,66 @@ class ConstraintExprVisitor final : public VNVisitor {
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         iterate(sump);
     }
+    // Check if any node in subtree has user1() set (depends on rand vars)
+    static bool hasRandDependency(const AstNode* nodep) {
+        if (nodep->user1()) return true;
+        for (const AstNode* childp = nodep->op1p(); childp; childp = childp->nextp()) {
+            if (hasRandDependency(childp)) return true;
+        }
+        for (const AstNode* childp = nodep->op2p(); childp; childp = childp->nextp()) {
+            if (hasRandDependency(childp)) return true;
+        }
+        for (const AstNode* childp = nodep->op3p(); childp; childp = childp->nextp()) {
+            if (hasRandDependency(childp)) return true;
+        }
+        for (const AstNode* childp = nodep->op4p(); childp; childp = childp->nextp()) {
+            if (hasRandDependency(childp)) return true;
+        }
+        return false;
+    }
+    // Helper to transform 2**n to 1<<n for any power node type
+    template <typename T>
+    bool tryTransformPow2(T* nodep) {
+        // Transform 2**n to 1<<n for SMT solver support
+        // SMT-LIB doesn't have a power operator, but bvshl (shift left) is supported
+        if (const AstConst* const lhsConstp = VN_CAST(nodep->lhsp(), Const)) {
+            if (lhsConstp->num().toUInt() == 2 && hasRandDependency(nodep->rhsp())) {
+                // Replace 2**n with 1<<n
+                FileLine* const fl = nodep->fileline();
+                AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+                AstConst* const onep
+                    = new AstConst{fl, AstConst::WidthedValue{}, nodep->width(), 1};
+                AstShiftL* const shiftp = new AstShiftL{fl, onep, rhsp, nodep->width()};
+                shiftp->dtypeFrom(nodep);
+                shiftp->user1(true);  // Mark as depending on rand vars
+                nodep->replaceWith(shiftp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                iterate(shiftp);
+                return true;  // Transformation succeeded
+            }
+        }
+        return false;  // Not transformable
+    }
+    void visit(AstPow* nodep) override {
+        if (tryTransformPow2(nodep)) return;
+        if (editFormat(nodep)) return;
+        editSMT(nodep, nodep->lhsp(), nodep->rhsp());
+    }
+    void visit(AstPowSS* nodep) override {
+        if (tryTransformPow2(nodep)) return;
+        if (editFormat(nodep)) return;
+        editSMT(nodep, nodep->lhsp(), nodep->rhsp());
+    }
+    void visit(AstPowSU* nodep) override {
+        if (tryTransformPow2(nodep)) return;
+        if (editFormat(nodep)) return;
+        editSMT(nodep, nodep->lhsp(), nodep->rhsp());
+    }
+    void visit(AstPowUS* nodep) override {
+        if (tryTransformPow2(nodep)) return;
+        if (editFormat(nodep)) return;
+        editSMT(nodep, nodep->lhsp(), nodep->rhsp());
+    }
     void visit(AstNodeBiop* nodep) override {
         if (editFormat(nodep)) return;
         editSMT(nodep, nodep->lhsp(), nodep->rhsp());
