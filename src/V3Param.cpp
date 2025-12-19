@@ -810,6 +810,27 @@ class ParamProcessor final {
         }
     }
 
+    // Helper to resolve DOT to RefDType for class type references
+    void resolveDotToTypedef(AstNode* exprp) {
+        AstDot* const dotp = VN_CAST(exprp, Dot);
+        if (!dotp) return;
+        const AstClassOrPackageRef* const classRefp = VN_CAST(dotp->lhsp(), ClassOrPackageRef);
+        if (!classRefp) return;
+        const AstClass* const lhsClassp = VN_CAST(classRefp->classOrPackageSkipp(), Class);
+        if (!lhsClassp) return;
+        AstParseRef* const parseRefp = VN_CAST(dotp->rhsp(), ParseRef);
+        if (!parseRefp) return;
+
+        AstTypedef* const tdefp
+            = VN_CAST(m_memberMap.findMember(lhsClassp, parseRefp->name()), Typedef);
+        if (tdefp) {
+            AstRefDType* const refp = new AstRefDType{dotp->fileline(), tdefp->name()};
+            refp->typedefp(tdefp);
+            dotp->replaceWith(refp);
+            VL_DO_DANGLING(dotp->deleteTree(), dotp);
+        }
+    }
+
     void cellPinCleanup(AstNode* nodep, AstPin* pinp, AstNodeModule* srcModp, string& longnamer,
                         bool& any_overridesr) {
         if (!pinp->exprp()) return;  // No-connect
@@ -869,6 +890,10 @@ class ParamProcessor final {
                 }
             }
         } else if (AstParamTypeDType* const modvarp = pinp->modPTypep()) {
+            // Handle DOT with ParseRef RHS (e.g., p_class#(8)::p_type)
+            // by this point ClassOrPackageRef should be updated to point to the specialized class.
+            resolveDotToTypedef(pinp->exprp());
+
             AstNodeDType* rawTypep = VN_CAST(pinp->exprp(), NodeDType);
             if (rawTypep) V3Width::widthParamsEdit(rawTypep);
             AstNodeDType* exprp = rawTypep ? rawTypep->skipRefToNonRefp() : nullptr;

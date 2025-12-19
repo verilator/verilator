@@ -57,13 +57,22 @@ void V3LinkDotIfaceCapture::add(AstRefDType* refp, AstCell* cellp, AstNodeModule
                                 AstTypedef* typedefp, AstNodeModule* typedefOwnerModp,
                                 AstVar* ifacePortVarp) {
     if (!refp) return;
-
     if (!typedefp) typedefp = refp->typedefp();
-
     if (!typedefOwnerModp && typedefp) typedefOwnerModp = findOwnerModule(typedefp);
-
     s_map[refp] = CapturedIfaceTypedef{
-        refp, cellp, ownerModp, typedefp, typedefOwnerModp, nullptr, ifacePortVarp};
+        CaptureType::IFACE, refp,    cellp,        nullptr, ownerModp, typedefp,
+        typedefOwnerModp,   nullptr, ifacePortVarp};
+}
+
+void V3LinkDotIfaceCapture::addClass(AstRefDType* refp, AstClass* origClassp,
+                                     AstNodeModule* ownerModp, AstTypedef* typedefp,
+                                     AstNodeModule* typedefOwnerModp) {
+    if (!refp) return;
+    if (!typedefp) typedefp = refp->typedefp();
+    if (!typedefOwnerModp && typedefp) typedefOwnerModp = findOwnerModule(typedefp);
+    s_map[refp] = CapturedIfaceTypedef{CaptureType::CLASS, refp,      nullptr,
+                                       origClassp,         ownerModp, typedefp,
+                                       typedefOwnerModp,   nullptr,   nullptr};
 }
 
 const V3LinkDotIfaceCapture::CapturedIfaceTypedef*
@@ -99,6 +108,18 @@ bool V3LinkDotIfaceCapture::replaceTypedef(const AstRefDType* refp, AstTypedef* 
     if (it == s_map.end()) return false;
     it->second.typedefp = newTypedefp;
     it->second.typedefOwnerModp = findOwnerModule(newTypedefp);
+
+    // For CLASS captures, update the RefDType node directly
+    if (it->second.captureType == CaptureType::CLASS && it->second.refp) {
+        it->second.refp->typedefp(newTypedefp);
+        // Also update classOrPackagep to point to the specialized class
+        if (AstClass* const newClassp = VN_CAST(it->second.typedefOwnerModp, Class)) {
+            it->second.refp->classOrPackagep(newClassp);
+        }
+        UINFO(9, "class capture updated RefDType typedefp: " << it->second.refp << " -> "
+                                                             << newTypedefp);
+    }
+
     finalizeCapturedEntry(it, "typedef clone");
     return true;
 }
