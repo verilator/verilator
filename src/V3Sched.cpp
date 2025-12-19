@@ -568,8 +568,8 @@ void createEval(AstNetlist* netlistp,  //
 ) {
     FileLine* const flp = netlistp->fileline();
 
-    // 'createResume' consumes the contents that 'createSetReady' needs, so do the right order
-    AstCCall* const timingSetReadyp = timingKit.createSetReady(netlistp);
+    // 'createResume' consumes the contents that 'createCommit' needs, so do the right order
+    AstCCall* const timingCommitp = timingKit.createCommit(netlistp);
     AstCCall* const timingResumep = timingKit.createResume(netlistp);
 
     // Create the active eval loop
@@ -581,8 +581,8 @@ void createEval(AstNetlist* netlistp,  //
         [&]() {
             // Compute the current 'act' triggers - the NBA triggers are the latched value
             AstNodeStmt* stmtsp = trigKit.newCompCall(nbaKit.m_vscp);
-            // Set ready for triggered awaits
-            if (timingSetReadyp) stmtsp = AstNode::addNext(stmtsp, timingSetReadyp->makeStmt());
+            // Commit for triggered awaits
+            if (timingCommitp) stmtsp = AstNode::addNext(stmtsp, timingCommitp->makeStmt());
             if (actKit.m_vscp) {
                 AstVarScope* const vscAccp = trigKit.vscAccp();
                 UASSERT_OBJ(
@@ -768,7 +768,7 @@ cloneMapWithNewTriggerReferences(const std::unordered_map<const AstSenTree*, Ast
  * shall be called before awaiting for a VCMethod::SCHED_TRIGGER) and add thier calls before
  * proper CAwaits
  */
-class AwaitPostSchedVisitor final : public VNVisitor {
+class AwaitPreTrigVisitor final : public VNVisitor {
     const VNUser1InUse m_user1InUse;
 
     /**
@@ -901,16 +901,16 @@ class AwaitPostSchedVisitor final : public VNVisitor {
     void visit(AstNode* const nodep) override { iterateChildren(nodep); }
 
 public:
-    AwaitPostSchedVisitor(AstNetlist* netlistp, SenExprBuilder& senExprBuilder,
-                          const TriggerKit& trigKit)
+    AwaitPreTrigVisitor(AstNetlist* netlistp, SenExprBuilder& senExprBuilder,
+                        const TriggerKit& trigKit)
         : m_netlistp{netlistp}
         , m_trigKit{trigKit}
         , m_senExprBuilder{senExprBuilder}
         , m_preTriggerFuncUniqueName{"__VpreTrig"} {
         iterate(netlistp);
 
-        // In each of pre-trigger functions check if anything was triggered and mark triggered
-        // schedulers as ready
+        // In each of pre-trigger functions check if anything was triggered and commit triggered
+        // schedulers
         for (const auto& funcToUsedTriggers : m_funcToUsedTriggers) {
             AstCFunc* const funcp = funcToUsedTriggers.first;
 
@@ -931,7 +931,7 @@ public:
             AstVarScope* const argpVscp = new AstVarScope{flp, funcp->scopep(), funcp->argsp()};
             funcp->scopep()->addVarsp(argpVscp);
 
-            // Mark triggered schedulers as ready
+            // Commit triggered schedulers
             for (const auto& triggersToTrees : usedTrigsToUsingTrees) {
                 const size_t word = triggersToTrees.first;
 
@@ -947,10 +947,10 @@ public:
                         = new AstAnd{flp, getIdx(vscp, VAccess::READ, word), maskConstp};
                     AstIf* const ifp = new AstIf{flp, condp};
 
-                    // Call ready() on each scheduler sensitive to `condp`
+                    // Call commit() on each scheduler sensitive to `condp`
                     for (AstNodeExpr* const schedp : schedulers) {
                         AstCMethodHard* const callp = new AstCMethodHard{
-                            flp, schedp->cloneTree(false), VCMethod::SCHED_READY};
+                            flp, schedp->cloneTree(false), VCMethod::SCHED_COMMIT};
                         callp->dtypeSetVoid();
                         callp->addPinsp(new AstVarRef{flp, argpVscp, VAccess::READ});
                         ifp->addThensp(callp->makeStmt());
@@ -976,7 +976,7 @@ public:
             }
         }
     }
-    ~AwaitPostSchedVisitor() override = default;
+    ~AwaitPreTrigVisitor() override = default;
 };
 
 //============================================================================
@@ -1225,11 +1225,11 @@ void schedule(AstNetlist* netlistp) {
                timingKit);
 
     // Step 15: Add neccessary evaluation before awaits
-    if (AstCCall* const setReadyp = timingKit.createSetReady(netlistp)) {
-        staticp->addStmtsp(setReadyp->makeStmt());
-        AwaitPostSchedVisitor{netlistp, senExprBuilder, trigKit};
+    if (AstCCall* const commitp = timingKit.createCommit(netlistp)) {
+        staticp->addStmtsp(commitp->makeStmt());
+        AwaitPreTrigVisitor{netlistp, senExprBuilder, trigKit};
     } else {
-        // AwaitPostSchedVisitor clears Sentree pointers in AstCAwaits (as these sentrees will get
+        // AwaitPreTrigVisitor clears Sentree pointers in AstCAwaits (as these sentrees will get
         // deleted later) if there was no need to call it, SenTrees have to be cleaned manually
         netlistp->foreach([](AstCAwait* const cAwaitp) { cAwaitp->clearSentreep(); });
     }
