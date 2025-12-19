@@ -1050,6 +1050,22 @@ class ConstraintExprVisitor final : public VNVisitor {
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         iterate(sump);
     }
+    void visit(AstRedOr* nodep) override {
+        // Convert to (x != 0)
+        if (!nodep->user1())
+        {
+            iterate(nodep->lhsp());
+            return;
+        }
+        FileLine* const fl = nodep->fileline();
+        AstNodeExpr* const argp = nodep->lhsp()->unlinkFrBack();
+        V3Number numZero{fl, argp->width(), 0};
+        AstNodeExpr* neqp = new AstNeq{fl, argp, new AstConst{fl, numZero}};
+        nodep->replaceWith(neqp);
+        neqp->user1(true);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        iterate(neqp);
+    }
     void visit(AstNodeBiop* nodep) override {
         if (editFormat(nodep)) return;
         editSMT(nodep, nodep->lhsp(), nodep->rhsp());
