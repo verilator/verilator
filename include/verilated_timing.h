@@ -243,23 +243,23 @@ class VlTriggerScheduler final {
     using VlCoroutineVec = std::vector<VlCoroutineHandle>;
 
     // MEMBERS
-    VlCoroutineVec m_uncommitted;  // Coroutines suspended before ready() was called
+    VlCoroutineVec m_uncommitted;  // Coroutines suspended before commit() was called
                                    // (not resumable)
-    VlCoroutineVec m_ready;  // Coroutines that were triggered (all coros from m_uncommitted are
-                             // moved here in ready())
-    VlCoroutineVec m_resumeQueue;  // Coroutines to resume in next resume()
+    VlCoroutineVec m_commited;  // Coroutines that were triggered (all coros from m_uncommitted are
+                                // moved here in commit())
+    VlCoroutineVec m_resumeQueue;  // Coroutines to resume in next resumePrep()
                                    // - moved here in commit()
 
 public:
     // METHODS
-    // Resumes all coroutines from the 'ready' stage
+    // Resumes all coroutines from the m_resumeQueue
     void resume(const char* eventDescription = VL_UNKNOWN);
-    // Moves all coroutines from m_ready to m_commited
+    // Moves all coroutines from m_commited to m_resumeQueue
+    void resumePrep(const char* eventDescription = VL_UNKNOWN);
+    // Moves all coroutines from m_uncommitted to m_commited
     void commit(const char* eventDescription = VL_UNKNOWN);
-    // Moves all coroutines from m_uncommitted to m_ready
-    void ready(const char* eventDescription = VL_UNKNOWN);
     // Are there no coroutines awaiting?
-    bool empty() const { return m_ready.empty() && m_uncommitted.empty(); }
+    bool empty() const { return m_commited.empty() && m_uncommitted.empty(); }
 #ifdef VL_DEBUG
     void dump(const char* eventDescription) const;
 #endif
@@ -279,7 +279,7 @@ public:
             }
             void await_resume() const {}
         };
-        return Awaitable{commit ? m_ready : m_uncommitted, process,
+        return Awaitable{commit ? m_commited : m_uncommitted, process,
                          VlFileLineDebug{filename, lineno}};
     }
 };
