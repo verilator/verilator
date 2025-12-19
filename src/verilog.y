@@ -6353,11 +6353,11 @@ concurrent_assertion_statement<nodeStmtp>:  // ==IEEE: concurrent_assertion_stat
         //                      // IEEE: assume_property_statement
         //                      // action_block expanded here
                 assertOrAssume yPROPERTY '(' property_spec ')' stmt %prec prLOWER_THAN_ELSE
-                        { $$ = new AstAssert{$<fl>1, new AstSampled{$<fl>1, $4}, $6, nullptr, VAssertType::CONCURRENT, $1}; }
+                        { $$ = new AstAssert{$<fl>1, $4, $6, nullptr, VAssertType::CONCURRENT, $1}; }
         |       assertOrAssume yPROPERTY '(' property_spec ')' stmt yELSE stmt
-                        { $$ = new AstAssert{$<fl>1, new AstSampled{$<fl>1, $4}, $6, $8, VAssertType::CONCURRENT, $1}; }
+                        { $$ = new AstAssert{$<fl>1, $4, $6, $8, VAssertType::CONCURRENT, $1}; }
         |       assertOrAssume yPROPERTY '(' property_spec ')' yELSE stmt
-                        { $$ = new AstAssert{$<fl>1, new AstSampled{$<fl>1, $4}, nullptr, $7, VAssertType::CONCURRENT, $1}; }
+                        { $$ = new AstAssert{$<fl>1, $4, nullptr, $7, VAssertType::CONCURRENT, $1}; }
         //                      // IEEE: cover_property_statement
         |       yCOVER yPROPERTY '(' property_spec ')' stmt
                         { $$ = new AstCover{$1, $4, $6, VAssertType::CONCURRENT}; }
