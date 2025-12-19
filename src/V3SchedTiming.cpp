@@ -79,7 +79,7 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
                     return;
                 }
                 AstCMethodHard* const commitp = new AstCMethodHard{
-                    fromp->fileline(), fromp->cloneTree(false), VCMethod::SCHED_COMMIT,
+                    fromp->fileline(), fromp->cloneTree(false), VCMethod::SCHED_RESUME_PREP,
                     exprp->pinsp() ? exprp->pinsp()->cloneTree(true) : nullptr};
                 commitp->dtypeSetVoid();
                 m_resumeFuncp->addStmtsp(commitp->makeStmt());
@@ -114,10 +114,10 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
 }
 
 //============================================================================
-// Creates a timing setReady call (if needed, else returns null)
+// Creates a timing commit call (if needed, else returns null)
 
-AstCCall* TimingKit::createSetReady(AstNetlist* const netlistp) {
-    if (!m_setReadyp) {
+AstCCall* TimingKit::createCommit(AstNetlist* const netlistp) {
+    if (!m_commitFuncp) {
         for (auto& p : m_lbs) {
             AstActive* const activep = p.second;
             auto* const resumep = VN_AS(VN_AS(activep->stmtsp(), StmtExpr)->exprp(), CMethodHard);
@@ -129,14 +129,15 @@ AstCCall* TimingKit::createSetReady(AstNetlist* const netlistp) {
                         schedulerp, "Unexpected type");
             if (!schedulerp->dtypep()->basicp()->isTriggerScheduler()) continue;
             // Create the global commit function only if we have trigger schedulers
-            if (!m_setReadyp) {
+            if (!m_commitFuncp) {
                 AstScope* const scopeTopp = netlistp->topScopep()->scopep();
-                m_setReadyp = new AstCFunc{netlistp->fileline(), "_timing_commit", scopeTopp, ""};
-                m_setReadyp->dontCombine(true);
-                m_setReadyp->isLoose(true);
-                m_setReadyp->isConst(false);
-                m_setReadyp->declPrivate(true);
-                scopeTopp->addBlocksp(m_setReadyp);
+                m_commitFuncp
+                    = new AstCFunc{netlistp->fileline(), "_timing_commit", scopeTopp, ""};
+                m_commitFuncp->dontCombine(true);
+                m_commitFuncp->isLoose(true);
+                m_commitFuncp->isConst(false);
+                m_commitFuncp->declPrivate(true);
+                scopeTopp->addBlocksp(m_commitFuncp);
             }
 
             AstSenTree* const senTreep = activep->sentreep();
@@ -144,20 +145,20 @@ AstCCall* TimingKit::createSetReady(AstNetlist* const netlistp) {
 
             // Create an 'AstIf' sensitive to the suspending triggers
             AstIf* const ifp = V3Sched::util::createIfFromSenTree(senTreep);
-            m_setReadyp->addStmtsp(ifp);
+            m_commitFuncp->addStmtsp(ifp);
 
             // Commit the processes suspended on this sensitivity expression
             //  in the **else** branch, when the event is known to be not fired.
             AstVarRef* const refp = new AstVarRef{flp, schedulerp, VAccess::READWRITE};
-            AstCMethodHard* const callp = new AstCMethodHard{flp, refp, VCMethod::SCHED_READY};
+            AstCMethodHard* const callp = new AstCMethodHard{flp, refp, VCMethod::SCHED_COMMIT};
             callp->dtypeSetVoid();
             if (resumep->pinsp()) callp->addPinsp(resumep->pinsp()->cloneTree(false));
             ifp->addThensp(callp->makeStmt());
         }
-        // We still haven't created a setReady function (no trigger schedulers), return null
-        if (!m_setReadyp) return nullptr;
+        // We still haven't created a commit function (no trigger schedulers), return null
+        if (!m_commitFuncp) return nullptr;
     }
-    AstCCall* const callp = new AstCCall{m_setReadyp->fileline(), m_setReadyp};
+    AstCCall* const callp = new AstCCall{m_commitFuncp->fileline(), m_commitFuncp};
     callp->dtypeSetVoid();
     return callp;
 }
