@@ -18,9 +18,9 @@
   </cells>
   <netlist>
     <module loc="d,7,8,7,9" name="t" origName="t" topModule="1">
-      <var loc="d,15,22,15,23" name="q" dtype_id="1" dir="output" pinIndex="1" vartype="logic" origName="q"/>
-      <var loc="d,13,10,13,13" name="clk" dtype_id="2" dir="input" pinIndex="2" vartype="logic" origName="clk"/>
-      <var loc="d,14,16,14,17" name="d" dtype_id="1" dir="input" pinIndex="3" vartype="logic" origName="d"/>
+      <var loc="d,15,22,15,23" name="q" dtype_id="1" dir="output" pinIndex="1" vartype="logic" origName="q" public="true"/>
+      <var loc="d,13,10,13,13" name="clk" dtype_id="2" dir="input" pinIndex="2" vartype="logic" origName="clk" public="true"/>
+      <var loc="d,14,16,14,17" name="d" dtype_id="1" dir="input" pinIndex="3" vartype="logic" origName="d" public="true"/>
       <var loc="d,17,22,17,29" name="between" dtype_id="1" vartype="logic" origName="between"/>
       <instance loc="d,20,4,20,9" name="cell1" defName="mod1__W4" origName="cell1">
         <port loc="d,20,12,20,13" name="q" direction="out" portIndex="1">

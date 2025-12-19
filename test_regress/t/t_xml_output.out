@@ -15,7 +15,7 @@
   </cells>
   <netlist>
     <module loc="d,7,8,7,9" name="m" origName="m" topModule="1">
-      <var loc="d,8,10,8,13" name="clk" tag="foo_op" dtype_id="1" dir="input" pinIndex="1" vartype="logic" origName="clk"/>
+      <var loc="d,8,10,8,13" name="clk" tag="foo_op" dtype_id="1" dir="input" pinIndex="1" vartype="logic" origName="clk" public="true"/>
     </module>
     <typetable loc="a,0,0,0,0">
       <basicdtype loc="d,8,10,8,13" id="1" name="logic"/>
