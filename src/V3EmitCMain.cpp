@@ -64,6 +64,7 @@ private:
         puts("Verilated::debug(0);\n");
         puts("const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};\n");
         if (v3Global.opt.trace()) puts("contextp->traceEverOn(true);\n");
+        puts("contextp->threads(" + std::to_string(v3Global.opt.threads()) + ");\n");
         puts("contextp->commandArgs(argc, argv);\n");
         puts("\n");
 
