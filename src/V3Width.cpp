@@ -741,6 +741,10 @@ class WidthVisitor final : public VNVisitor {
         if (nodep->stmtsp()) nodep->addNextHere(nodep->stmtsp()->unlinkFrBackWithNext());
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
+    void visit(AstFireEvent* nodep) override {
+        assertAtStatement(nodep);
+        iterateCheckSelf(nodep, "LHS", nodep->operandp(), SELF, BOTH);
+    }
     void visit(AstFork* nodep) override {
         if (!m_underFork && VN_IS(m_ftaskp, Func) && !nodep->joinType().joinNone()) {
             nodep->v3error("Only fork .. join_none is legal in functions. "
