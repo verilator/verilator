@@ -126,26 +126,32 @@ FileLineSingleton::msgEnSetIdx_t FileLineSingleton::addMsgEnBitSet(const MsgEnBi
 FileLineSingleton::msgEnSetIdx_t FileLineSingleton::defaultMsgEnIndex() VL_MT_SAFE {
     MsgEnBitSet msgEnBitSet;
     for (int i = V3ErrorCode::EC_MIN; i < V3ErrorCode::_ENUM_MAX; ++i) {
-        msgEnBitSet.set(i, !V3ErrorCode{i}.defaultsOff());
+        // "-Wall" and the like only adjsut the code subset, so use default enablement there
+        msgEnBitSet.set(MsgEnBitSet::Subset::CODE, i, !V3ErrorCode{i}.defaultsOff());
+        // The control file subset is only adjusted by the control files, everything enabled by
+        // default
+        msgEnBitSet.set(MsgEnBitSet::Subset::CTRL, i, true);
     }
     return addMsgEnBitSet(msgEnBitSet);
 }
 
 FileLineSingleton::msgEnSetIdx_t FileLineSingleton::msgEnSetBit(msgEnSetIdx_t setIdx,
+                                                                MsgEnBitSet::Subset subset,
                                                                 size_t bitIdx, bool value) {
-    if (msgEn(setIdx).test(bitIdx) == value) return setIdx;
+    if (msgEn(setIdx).test(subset, bitIdx) == value) return setIdx;
     MsgEnBitSet msgEnBitSet{msgEn(setIdx)};
-    msgEnBitSet.set(bitIdx, value);
+    msgEnBitSet.set(subset, bitIdx, value);
     return addMsgEnBitSet(msgEnBitSet);
 }
 
 FileLineSingleton::msgEnSetIdx_t FileLineSingleton::msgEnAnd(msgEnSetIdx_t lhsIdx,
                                                              msgEnSetIdx_t rhsIdx) {
-    MsgEnBitSet msgEnBitSet{msgEn(lhsIdx)};
-    msgEnBitSet &= msgEn(rhsIdx);
-    if (msgEnBitSet == msgEn(lhsIdx)) return lhsIdx;
-    if (msgEnBitSet == msgEn(rhsIdx)) return rhsIdx;
-    return addMsgEnBitSet(msgEnBitSet);
+    const MsgEnBitSet& lhs = msgEn(lhsIdx);
+    const MsgEnBitSet& rhs = msgEn(rhsIdx);
+    const MsgEnBitSet intersection{lhs, rhs};
+    if (intersection == lhs) return lhsIdx;
+    if (intersection == rhs) return rhsIdx;
+    return addMsgEnBitSet(intersection);
 }
 
 // ######################################################################
@@ -415,12 +421,12 @@ void FileLine::warnUnusedOff(bool flag) {
 }
 
 bool FileLine::warnIsOff(V3ErrorCode code) const {
-    if (!msgEn().test(code)) return true;
-    if (!defaultFileLine().msgEn().test(code)) return true;  // Global overrides local
-    if ((code.lintError() || code.styleError()) && !msgEn().test(V3ErrorCode::I_LINT)) {
+    if (!msgEn().enabled(code)) return true;
+    if (!defaultFileLine().msgEn().enabled(code)) return true;  // Global overrides local
+    if ((code.lintError() || code.styleError()) && !msgEn().enabled(V3ErrorCode::I_LINT)) {
         return true;
     }
-    if ((code.unusedError()) && !msgEn().test(V3ErrorCode::I_UNUSED)) return true;
+    if ((code.unusedError()) && !msgEn().enabled(V3ErrorCode::I_UNUSED)) return true;
     return false;
 }
 

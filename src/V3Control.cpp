@@ -432,7 +432,7 @@ public:
             for (; m_lastIgnore.it != m_ignLines.end(); ++m_lastIgnore.it) {
                 if (m_lastIgnore.it->m_lineno > curlineno) break;
                 // UINFO(9, "     Hit " << *m_lastIgnore.it);
-                filelinep->warnOn(m_lastIgnore.it->m_code, m_lastIgnore.it->m_on);
+                filelinep->warnOnCtrl(m_lastIgnore.it->m_code, m_lastIgnore.it->m_on);
             }
             if (false && debug() >= 9) {
                 for (IgnLines::const_iterator it = m_lastIgnore.it; it != m_ignLines.end(); ++it) {

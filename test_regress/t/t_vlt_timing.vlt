@@ -6,6 +6,10 @@
 
 `verilator_config
 
-timing_on --file "t/t_timing_off.v" --lines 23
-timing_off -file "t/t_timing_off.v" -lines 26-34
-timing_on -file "t/t_timing_off.v" -lines 35-38
+timing_off --file "t/t_vlt_timing.v"
+timing_on -file "t/t_vlt_timing.v" --lines 23
+// Bug here. This line should make no difference.
+//timing_off --file "t/t_vlt_timing.v" --lines 22-24
+timing_on --file "t/t_vlt_timing.v" --lines 23
+timing_off -file "t/t_vlt_timing.v" -lines 26-34
+timing_on -file "t/t_vlt_timing.v" -lines 35-38
