@@ -156,7 +156,7 @@ std::string VlThreadPool::numaAssign() {
     // Make a reasonable processor affinity selection
     const int num_threads = static_cast<int>(m_workers.size());
     if (num_threads < 2) return "too few threads";
-    if (static_cast<unsigned>(num_threads) > num_proc) return "too many threads";
+    if (static_cast<unsigned>(num_threads) >= num_proc - 1) return "too many threads";
 
     // Read CPU info.
     // Uncertain if any modern system has gaps in the processor id (Solaris
