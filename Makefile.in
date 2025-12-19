@@ -535,11 +535,18 @@ PY_FILES = \
 # Python files, test_regress tests
 PY_TEST_FILES = test_regress/t/*.py
 
+# YAML files
+YAML_FILES = \
+  .*.yaml \
+  .*.yml \
+  .github/*.yml \
+  .github/*/*.yml \
+
 ######################################################################
 # Format
 
 format:
-	$(MAKE) -j 5 format-c format-cmake format-exec format-py
+	$(MAKE) -j 5 format-c format-cmake format-exec format-py format-yaml
 
 BEAUTYSH = beautysh
 BEAUTYSH_FLAGS = --indent-size 2
@@ -583,10 +590,11 @@ format-py yapf:
 	$(YAPF) $(YAPF_FLAGS) $(PY_FILES)
 
 YAMLFIX = YAMLFIX_WHITELINES=1 YAMLFIX_LINE_LENGTH=200 YAMLFIX_preserve_quotes=true yamlfix
+YAMLFIX_FLAGS =
 
 format-yaml yamlfix:
 	$(YAMLFIX) --version
-	$(YAMLFIX) .
+	$(YAMLFIX) $(YAMLFIX_FLAGS) $(YAML_FILES)
 
 ######################################################################
 # Lint
