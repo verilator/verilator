@@ -5346,7 +5346,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     nodep->classOrPackagep(foundp->classOrPackagep());
                     resolvedCapturedTypedef = true;
 
-                    // EOM - class capture: capture typedef references inside parameterized classes
+                    // class capture: capture typedef references inside parameterized classes
                     // Only capture if we're referencing from OUTSIDE the class (not
                     // self-references)
                     if (m_statep->forPrimary()) {

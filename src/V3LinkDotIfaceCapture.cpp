@@ -62,9 +62,6 @@ void V3LinkDotIfaceCapture::add(AstRefDType* refp, AstCell* cellp, AstNodeModule
 
     if (!typedefOwnerModp && typedefp) typedefOwnerModp = findOwnerModule(typedefp);
 
-    // EOM
-    //s_map[refp] = CapturedIfaceTypedef{refp, cellp, ownerModp, typedefp, typedefOwnerModp,
-    //nullptr, ifacePortVarp};
     s_map[refp] = CapturedIfaceTypedef{
         CaptureType::IFACE, refp,    cellp,        nullptr, ownerModp, typedefp,
         typedefOwnerModp,   nullptr, ifacePortVarp};
@@ -118,7 +115,7 @@ bool V3LinkDotIfaceCapture::replaceTypedef(const AstRefDType* refp, AstTypedef* 
     it->second.typedefp = newTypedefp;
     it->second.typedefOwnerModp = findOwnerModule(newTypedefp);
 
-    // EOM - For CLASS captures, update the RefDType node directly
+    // For CLASS captures, update the RefDType node directly
     if (it->second.captureType == CaptureType::CLASS && it->second.refp) {
         it->second.refp->typedefp(newTypedefp);
         // Also update classOrPackagep to point to the specialized class

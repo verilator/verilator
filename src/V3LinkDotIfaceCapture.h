@@ -72,7 +72,6 @@ public:
     static void add(AstRefDType* refp, AstCell* cellp, AstNodeModule* ownerModp,
                     AstTypedef* typedefp = nullptr, AstNodeModule* typedefOwnerModp = nullptr,
                     AstVar* ifacePortVarp = nullptr);
-    // EOM
     static void addClass(AstRefDType* refp, AstClass* origClassp, AstNodeModule* ownerModp,
                          AstTypedef* typedefp = nullptr,
                          AstNodeModule* typedefOwnerModp = nullptr);

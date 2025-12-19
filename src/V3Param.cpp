@@ -810,8 +810,7 @@ class ParamProcessor final {
         }
     }
 
-    // EOM
-    // Helper to resolve DOT to RefDType for class-scoped type references
+    // Helper to resolve DOT to RefDType for class type references
     void resolveDotToTypedef(AstNode* exprp) {
         AstDot* const dotp = VN_CAST(exprp, Dot);
         if (!dotp) return;
@@ -891,7 +890,6 @@ class ParamProcessor final {
                 }
             }
         } else if (AstParamTypeDType* const modvarp = pinp->modPTypep()) {
-            // EOM
             // Handle DOT with ParseRef RHS (e.g., p_class#(8)::p_type)
             // by this point ClassOrPackageRef should be updated to point to the specialized class.
             resolveDotToTypedef(pinp->exprp());
