@@ -1056,7 +1056,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         FileLine* const fl = nodep->fileline();
         AstNodeExpr* const argp = nodep->lhsp()->unlinkFrBack();
         V3Number numZero{fl, argp->width(), 0};
-        AstNodeExpr* neqp = new AstNeq{fl, argp, new AstConst{fl, numZero}};
+        AstNodeExpr* const neqp = new AstNeq{fl, argp, new AstConst{fl, numZero}};
         neqp->user1(true);
         nodep->replaceWith(neqp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
