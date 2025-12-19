@@ -37,6 +37,7 @@ class V3LinkLevel final {
 public:
     static void modSortByLevel() VL_MT_DISABLED;
     static void wrapTop(AstNetlist* rootp) VL_MT_DISABLED;
+    static void nonWrapTop(AstNetlist* rootp) VL_MT_DISABLED;
 };
 
 #endif  // Guard

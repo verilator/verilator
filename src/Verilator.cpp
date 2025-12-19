@@ -251,6 +251,8 @@ static void process() {
             // Move packages to under new top
             // Must do this after we know parameters and dtypes (as don't clone dtype decls)
             V3LinkLevel::wrapTop(v3Global.rootp());
+        } else {
+            V3LinkLevel::nonWrapTop(v3Global.rootp());
         }
 
         // Propagate constants into expressions

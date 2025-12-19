@@ -13,7 +13,7 @@ test.scenarios('vlt')
 
 out_filename = test.obj_dir + "/V" + test.name + ".tree.json"
 
-test.compile(verilator_flags2=['--no-std', '--json-only', '--no-json-edit-nums'],
+test.compile(verilator_flags2=['--no-std', '--json-only', '--no-json-edit-nums', '--bbox-unsup'],
              verilator_make_gmake=False,
              make_top_shell=False,
              make_main=False)
