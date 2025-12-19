@@ -57,11 +57,8 @@ void V3LinkDotIfaceCapture::add(AstRefDType* refp, AstCell* cellp, AstNodeModule
                                 AstTypedef* typedefp, AstNodeModule* typedefOwnerModp,
                                 AstVar* ifacePortVarp) {
     if (!refp) return;
-
     if (!typedefp) typedefp = refp->typedefp();
-
     if (!typedefOwnerModp && typedefp) typedefOwnerModp = findOwnerModule(typedefp);
-
     s_map[refp] = CapturedIfaceTypedef{
         CaptureType::IFACE, refp,    cellp,        nullptr, ownerModp, typedefp,
         typedefOwnerModp,   nullptr, ifacePortVarp};
@@ -71,11 +68,8 @@ void V3LinkDotIfaceCapture::addClass(AstRefDType* refp, AstClass* origClassp,
                                      AstNodeModule* ownerModp, AstTypedef* typedefp,
                                      AstNodeModule* typedefOwnerModp) {
     if (!refp) return;
-
     if (!typedefp) typedefp = refp->typedefp();
-
     if (!typedefOwnerModp && typedefp) typedefOwnerModp = findOwnerModule(typedefp);
-
     s_map[refp] = CapturedIfaceTypedef{CaptureType::CLASS, refp,      nullptr,
                                        origClassp,         ownerModp, typedefp,
                                        typedefOwnerModp,   nullptr,   nullptr};
