@@ -16,26 +16,22 @@ node: VARSCOPE ... -> VAR __Vtask_wrap__1__Vfuncout [FUNC] BLOCKTEMP
 
 ## Root cause
 `AstVarScope` is a cross-link node stored under `AstScope::varsp()`.
-In this testcase, `V3Task` creates statement-expression wrappers (`AstExprStmt`) that include a
-temporary variable declaration (e.g. `__Vtask_wrap__1__Vfuncout [FUNC] BLOCKTEMP`) in the
-`AstExprStmt::stmtsp()` list.
+In this testcase, the failing node is a `VARSCOPE` pointing at a function temporary
+(`__Vtask_wrap__1__Vfuncout [FUNC] BLOCKTEMP`).
 
-Later, `V3Const` simplifies certain `AstExprStmt` nodes by replacing the whole ExprStmt with its
-`resultp()` and deleting the ExprStmt node. That deletes the `stmtsp()` subtree (including the
-temporary `AstVar`), but the corresponding `AstVarScope` under the enclosing `AstScope` is not
-removed.
+During `--debug` checking, `V3Broken::brokenAll()` builds its "linkable" set by traversing the AST
+via structural `op1-op4/nextp` links.
+However, some `AstVar` nodes that can be referenced via `AstVarScope::m_varp` are not guaranteed to
+be reachable via those structural links at the point `V3Broken` runs (they may be stored via other
+non-structural containers/lists).
 
-This leaves a dangling `AstVarScope::m_varp` pointer and `V3Broken` correctly detects it.
+As a result, `AstVarScope::brokenGen()` can incorrectly see `m_varp->brokeExists()==false` even
+though `m_varp` still points at a valid `AstVar`, and the assert fires.
 
 ## Fix
-`V3Broken` only considers nodes reachable via the structural `op1-op4/nextp` AST links as
-"linkable" targets. However, Verilator also has *member-pointer cross-links* (via `foreachLink`),
-notably `AstVarScope::m_varp`, which can refer to valid nodes that are not necessarily reachable via
-structural links.
-
-Update `V3Broken::brokenAll()` so that when building the linkable set it also adds the targets of
-`foreachLink` for every node in the main tree. This allows `brokeExists()` checks in `brokenGen()`
-(e.g. `AstVarScope::brokenGen`) to succeed for valid cross-linked nodes.
+Teach `V3Broken::brokenAll()` that for `AstVarScope` nodes, the `varp()` target must be treated as
+"linkable" too. This makes `brokeExists()` accurate for `AstVarScope::m_varp` cross-links and
+prevents the spurious `m_varp && !m_varp->brokeExists()` failure on the testcase.
 
 ## Validation
 Rebuild `bin/verilator_bin_dbg` and re-run the testcase; the internal broken-link assert should no
