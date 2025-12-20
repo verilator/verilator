@@ -1,7 +1,9 @@
-// DESCRIPTION: Regression test for scope/var lifetime issue (debug build)
+// DESCRIPTION: Verilator: Regression test for scope/var lifetime issue
 //
-// This is derived from testcase/min_uaf_repro_real.sv (from issue reproducer).
-//
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2025 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
+
 
 package p;
   typedef chandle PyObject;
