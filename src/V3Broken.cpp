@@ -388,6 +388,11 @@ void V3Broken::brokenAll(AstNetlist* nodep) {
             UASSERT_OBJ(nodep->brokenState() != brokenCntCurrent, nodep,
                         "AstNode is already in tree at another location");
             if (nodep->maybePointedTo()) s_linkableTable.addLinkable(nodep);
+            // Some cross-links point at nodes not reachable via op1-op4/nextp.
+            // AstVarScope::m_varp is one such link; ensure targets are considered linkable.
+            if (AstVarScope* const vscp = VN_CAST(nodep, VarScope)) {
+                if (AstNode* const varp = vscp->varp()) s_linkableTable.addLinkable(varp);
+            }
             nodep->brokenState(brokenCntCurrent);
         });
 
