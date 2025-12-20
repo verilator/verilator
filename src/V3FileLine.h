@@ -21,6 +21,7 @@
 #include "verilatedos.h"
 
 #include "V3Error.h"
+#include "V3Hash.h"
 #include "V3LangCode.h"
 #include "V3Mutex.h"
 
@@ -48,7 +49,58 @@ class FileLineSingleton final {
     // TYPES
     using fileNameIdx_t = uint16_t;  // Increase width if 64K input files are not enough
     using msgEnSetIdx_t = uint16_t;  // Increase width if 64K unique message sets are not enough
-    using MsgEnBitSet = std::bitset<V3ErrorCode::_ENUM_MAX>;
+    class MsgEnBitSet final {
+        std::bitset<V3ErrorCode::_ENUM_MAX> m_codeEn;  // Enabeld by code directives/metacomments
+        std::bitset<V3ErrorCode::_ENUM_MAX> m_ctrlEn;  // Enabled by control file
+
+    public:
+        enum class Subset {
+            CODE = 0,  // Selects m_codeEn, the enable bits used by in-code directives/metacomments
+            CTRL = 1,  // Selects m_ctrlEn, the enable bits used by control files
+        };
+
+        // Create empty set
+        MsgEnBitSet() = default;
+        // Create intersection set
+        MsgEnBitSet(const MsgEnBitSet& a, const MsgEnBitSet& b)
+            : m_codeEn{a.m_codeEn & b.m_codeEn}
+            , m_ctrlEn{a.m_ctrlEn & b.m_ctrlEn} {}
+
+        struct Hash final {
+            size_t operator()(const MsgEnBitSet& item) const {
+                const size_t hashCode
+                    = std::hash<std::bitset<V3ErrorCode::_ENUM_MAX>>()(item.m_codeEn);
+                const size_t hashCtrl
+                    = std::hash<std::bitset<V3ErrorCode::_ENUM_MAX>>()(item.m_ctrlEn);
+                V3Hash hash{static_cast<uint64_t>(hashCode)};
+                hash += static_cast<uint64_t>(hashCtrl);
+                return hash.value();
+            }
+        };
+
+        struct Equal final {
+            bool operator()(const MsgEnBitSet& a, const MsgEnBitSet& b) const { return a == b; }
+        };
+
+        bool operator==(const MsgEnBitSet& other) const {
+            return m_codeEn == other.m_codeEn && m_ctrlEn == other.m_ctrlEn;
+        }
+
+        bool test(Subset subset, size_t code) const {
+            return subset == Subset::CODE ? m_codeEn.test(code) : m_ctrlEn.test(code);
+        }
+
+        void set(Subset subset, size_t code, bool value) {
+            if (subset == Subset::CODE) {
+                m_codeEn.set(code, value);
+            } else {
+                m_ctrlEn.set(code, value);
+            }
+        }
+
+        // Enabled iff enabled by both in-code dierctives/metacomments and control file
+        bool enabled(V3ErrorCode code) const { return m_codeEn.test(code) && m_ctrlEn.test(code); }
+    };
 
     // MEMBERS
     V3Mutex m_mutex;  // protects members
@@ -57,7 +109,8 @@ class FileLineSingleton final {
     std::deque<V3LangCode> m_languages;  // language for each filenameno
 
     // Map from flag set to the index in m_internedMsgEns for interning
-    std::unordered_map<MsgEnBitSet, msgEnSetIdx_t> m_internedMsgEnIdxs VL_GUARDED_BY(m_mutex);
+    std::unordered_map<MsgEnBitSet, msgEnSetIdx_t, MsgEnBitSet::Hash, MsgEnBitSet::Equal>
+        m_internedMsgEnIdxs VL_GUARDED_BY(m_mutex);
     // Interned message enablement flag sets
     std::vector<MsgEnBitSet> m_internedMsgEns;
 
@@ -87,7 +140,8 @@ class FileLineSingleton final {
     // Add index of default bitset
     msgEnSetIdx_t defaultMsgEnIndex() VL_MT_SAFE;
     // Set bitIdx to value in bitset at interned index setIdx, return interned index of result
-    msgEnSetIdx_t msgEnSetBit(msgEnSetIdx_t setIdx, size_t bitIdx, bool value);
+    msgEnSetIdx_t msgEnSetBit(msgEnSetIdx_t setIdx, MsgEnBitSet::Subset subset, size_t bitIdx,
+                              bool value);
     // Return index to intersection set
     msgEnSetIdx_t msgEnAnd(msgEnSetIdx_t lhsIdx, msgEnSetIdx_t rhsIdx);
     // Retrieve interned bitset at given interned index. The returned reference is not persistent.
@@ -312,14 +366,21 @@ public:
     string lineDirectiveStrg(int enterExit) const;
 
     // Turn on/off warning messages on this line.
-    void warnOn(V3ErrorCode code, bool flag) {
+private:
+    void warnSet(MsgEnBitSet::Subset subset, V3ErrorCode code, bool flag) {
         if (code == V3ErrorCode::WIDTH) {
-            warnOn(V3ErrorCode::WIDTHTRUNC, flag);
-            warnOn(V3ErrorCode::WIDTHEXPAND, flag);
-            warnOn(V3ErrorCode::WIDTHXZEXPAND, flag);
+            warnSet(subset, V3ErrorCode::WIDTHTRUNC, flag);
+            warnSet(subset, V3ErrorCode::WIDTHEXPAND, flag);
+            warnSet(subset, V3ErrorCode::WIDTHXZEXPAND, flag);
         }
-        if (code == V3ErrorCode::E_UNSUPPORTED) warnOn(V3ErrorCode::COVERIGN, flag);
-        m_msgEnIdx = singleton().msgEnSetBit(m_msgEnIdx, code, flag);
+        if (code == V3ErrorCode::E_UNSUPPORTED) { warnSet(subset, V3ErrorCode::COVERIGN, flag); }
+        m_msgEnIdx = singleton().msgEnSetBit(m_msgEnIdx, subset, code, flag);
+    }
+
+public:
+    void warnOn(V3ErrorCode code, bool flag) { warnSet(MsgEnBitSet::Subset::CODE, code, flag); }
+    void warnOnCtrl(V3ErrorCode code, bool flag) {
+        warnSet(MsgEnBitSet::Subset::CTRL, code, flag);
     }
     void warnOff(V3ErrorCode code, bool flag) { warnOn(code, !flag); }
     string warnOffParse(const string& msgs, bool flag);  // Returns "" if ok
@@ -331,13 +392,13 @@ public:
     void warnResetDefault() { warnStateFrom(defaultFileLine()); }
 
     // Specific flag ACCESSORS/METHODS
-    bool celldefineOn() const { return msgEn().test(V3ErrorCode::I_CELLDEFINE); }
+    bool celldefineOn() const { return msgEn().enabled(V3ErrorCode::I_CELLDEFINE); }
     void celldefineOn(bool flag) { warnOn(V3ErrorCode::I_CELLDEFINE, flag); }
-    bool coverageOn() const { return msgEn().test(V3ErrorCode::I_COVERAGE); }
+    bool coverageOn() const { return msgEn().enabled(V3ErrorCode::I_COVERAGE); }
     void coverageOn(bool flag) { warnOn(V3ErrorCode::I_COVERAGE, flag); }
-    bool tracingOn() const { return msgEn().test(V3ErrorCode::I_TRACING); }
+    bool tracingOn() const { return msgEn().enabled(V3ErrorCode::I_TRACING); }
     void tracingOn(bool flag) { warnOn(V3ErrorCode::I_TRACING, flag); }
-    bool timingOn() const { return msgEn().test(V3ErrorCode::I_TIMING); }
+    bool timingOn() const { return msgEn().enabled(V3ErrorCode::I_TIMING); }
     void timingOn(bool flag) { warnOn(V3ErrorCode::I_TIMING, flag); }
 
     // METHODS - Global
@@ -413,8 +474,12 @@ public:
         if (m_lastLinenoAdder != rhs.m_lastLinenoAdder)
             return (m_lastLinenoAdder < rhs.m_lastLinenoAdder) ? -1 : 1;
         if (m_lastColumn != rhs.m_lastColumn) return (m_lastColumn < rhs.m_lastColumn) ? -1 : 1;
-        for (size_t i = 0; i < msgEn().size(); ++i) {
-            if (msgEn().test(i) != rhs.msgEn().test(i)) return rhs.msgEn().test(i) ? -1 : 1;
+        const MsgEnBitSet& lhsMsgEn = msgEn();
+        const MsgEnBitSet& rhsMsgEn = rhs.msgEn();
+        for (size_t i = 0; i < V3ErrorCode::_ENUM_MAX; ++i) {
+            V3ErrorCode code = static_cast<V3ErrorCode>(i);
+            if (lhsMsgEn.enabled(code) != rhsMsgEn.enabled(code))
+                return rhsMsgEn.enabled(code) ? -1 : 1;
         }
         // TokenNum is compared last as makes more logical sort order by file/line first
         if (m_tokenNum != rhs.m_tokenNum) return (m_tokenNum < rhs.m_tokenNum) ? -1 : 1;

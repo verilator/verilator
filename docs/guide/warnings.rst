@@ -45,6 +45,9 @@ Warnings may be disabled in multiple ways:
 
       lint_off -rule UNSIGNED -file "*/example.v" -lines 1
 
+Metacomments and control file directives do not interact. If a warning is
+disabled by either metacomments, or a directive in a control file, it will not
+be emitted.
 
 Error And Warning Format
 ========================

@@ -2382,8 +2382,10 @@ The grammar of control commands is as follows:
    (or wildcard with '\*' or '?', or all files if omitted) and range of
    line numbers (or all lines if omitted).
 
-   With lint_off using "\*" will override any lint_on directives in the
-   source, i.e. the warning will still not be printed.
+   If a warning is disabled with lint_off, it will not be printed, even if the
+   source contains a lint_on metacomment. The control file directives and
+   metacomments are interpreted separately and do not interact. A warning is
+   emitted only if not disabled either in a control file or via metacomments.
 
    If the ``-rule`` is omitted, all lint warnings (see list in
    :vlopt:`-Wno-lint`) are enabled/disabled. This will override all later
@@ -2492,9 +2494,10 @@ The grammar of control commands is as follows:
    :option:`--no-timing`, and code:`fork`/``join*`` blocks are
    converted into ``begin``/``end`` blocks.
 
-   Same as :option:`/*verilator&32;timing_on*/`,
-   :option:`/*verilator&32;timing_off*/` metacomments.
-
+   Similar to :option:`/*verilator&32;timing_on*/`,
+   :option:`/*verilator&32;timing_off*/` metacomments, but interpreted
+   independtly. If either a control file, or metacommets disable timing
+   constructs, they will be disabled.
 
    .. t_dist_docs_style ignore tracing_on
 
