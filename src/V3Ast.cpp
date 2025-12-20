@@ -962,7 +962,8 @@ void AstNode::deleteTreeIter() {
             // (via AstVarScope) and delete it properly (at which point backp will be null).
             skipDelete = true;
         }
-        
+       
+
         nodep->m_backp = nullptr;
         if (!skipDelete) {
             nodep->deleteNode();
