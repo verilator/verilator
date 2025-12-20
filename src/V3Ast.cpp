@@ -951,8 +951,22 @@ void AstNode::deleteTreeIter() {
         if (nodep->m_op3p) nodep->m_op3p->deleteTreeIter();
         if (nodep->m_op4p) nodep->m_op4p->deleteTreeIter();
         nodep->m_nextp = nullptr;
+        
+        bool skipDelete = false;
+        if (VN_IS(nodep, Var) && nodep->m_backp) {
+            // If we are deleting a Var that is still linked to a parent (or list),
+            // it implies we are deleting the parent/list.
+            // In this case, we must NOT delete the Var yet, because there might be
+            // AstVarScopes pointing to it (which are not children of the Var).
+            // We leave the Var unlinked but allocated. V3Dead will later find it
+            // (via AstVarScope) and delete it properly (at which point backp will be null).
+            skipDelete = true;
+        }
+        
         nodep->m_backp = nullptr;
-        nodep->deleteNode();
+        if (!skipDelete) {
+            nodep->deleteNode();
+        }
     }
 }
 
