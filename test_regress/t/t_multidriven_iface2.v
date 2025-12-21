@@ -4,44 +4,47 @@
 // without warranty.
 // SPDX-License-Identifier: CC0-1.0
 
-// task chain - testing nested task calls
+// interface passed through module port - direct assign + task call in same always_comb
 
 // verilog_format: off
 `define stop $stop
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
 // verilog_format: on
 
+interface my_if;
+  logic l0;
+
+  task set_l0_1(); l0 = 1'b1; endtask
+  task set_l0_0(); l0 = 1'b0; endtask
+endinterface
+
 module mod #()(
   input logic sel
   ,output logic val
+  ,my_if ifp
 );
 
-  logic l0;
-
-  task do_inner();
-    l0 = 'b1;
-  endtask
-
-  task do_outer();
-    do_inner();
-  endtask
-
   always_comb begin
-    l0 = 'b0;
-    if (sel) do_outer();
+    ifp.l0 = 1'b0;
+
+    if (sel) begin
+      ifp.set_l0_1();
+    end
   end
 
-  assign val = l0;
+  assign val = ifp.l0;
 
 endmodule
 
 module m_tb#()();
 
   logic sel, val;
+  my_if if0();
 
   mod m(
     .sel(sel)
     ,.val(val)
+    ,.ifp(if0)
   );
 
   initial begin
