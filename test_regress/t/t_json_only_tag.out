@@ -53,7 +53,7 @@
     {"type":"VAR","name":"value","addr":"(X)","loc":"d,8:12,8:17","dtypep":"(W)","origName":"value","isSc":false,"isPrimaryIO":false,"isPrimaryClock":false,"direction":"NONE","isConst":false,"isPullup":false,"isPulldown":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"isStdRandomizeArg":false,"lifetime":"VSTATICI","varType":"VAR","dtypeName":"integer","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"ignorePostWrite":false,"ignoreSchedWrite":false,"sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
     {"type":"MODPORT","name":"out_modport","addr":"(MB)","loc":"d,9:12,9:23",
      "varsp": [
-      {"type":"MODPORTVARREF","name":"value","addr":"(NB)","loc":"d,9:32,9:37","direction":"OUTPUT","varp":"(X)"}
+      {"type":"MODPORTVARREF","name":"value","addr":"(NB)","loc":"d,9:32,9:37","direction":"OUTPUT","varp":"(X)","exprp": []}
     ]}
   ]}
 ],"filesp": [],

@@ -2530,7 +2530,7 @@ class LinkDotIfaceVisitor final : public VNVisitor {
         UINFO(5, "   fiv: " << nodep);
         iterateChildren(nodep);
         VSymEnt* symp = nullptr;
-        if (nodep->m_exp()) {
+        if (nodep->exprp()) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: Modport expressions (IEEE 1800-2023 25.5.4)");
         } else {

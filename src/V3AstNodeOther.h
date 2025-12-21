@@ -1203,7 +1203,7 @@ class AstModportVarRef final : public AstNode {
     // A input/output/etc variable referenced under a modport
     // The storage for the variable itself is inside the interface, thus this is a reference
     // PARENT: AstModport
-    // @astgen op1 := m_exp : Optional[AstNodeExpr]
+    // @astgen op1 := exprp : Optional[AstNodeExpr]
     //
     // @astgen ptr := m_varp : Optional[AstVar]  // Link to the actual Var
     string m_name;  // Name of the variable referenced
@@ -1213,11 +1213,12 @@ public:
         : ASTGEN_SUPER_ModportVarRef(fl)
         , m_name{name}
         , m_direction{direction} {}
-    AstModportVarRef(FileLine* fl, const string& name, AstNodeExpr* exp, VDirection::en direction)
+    AstModportVarRef(FileLine* fl, const string& name, AstNodeExpr* exprp,
+                     VDirection::en direction)
         : ASTGEN_SUPER_ModportVarRef(fl)
         , m_name{name}
         , m_direction{direction} {
-        this->m_exp(exp);
+        this->exprp(exprp);
     };
     ASTGEN_MEMBERS_AstModportVarRef;
     void dump(std::ostream& str) const override;

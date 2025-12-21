@@ -1710,13 +1710,9 @@ modportSimplePortOrTFPort<nodep>:// IEEE: modport_simple_port or modport_tf_port
                                                                 static_cast<AstNode*>(
                                                                   new AstModportVarRef{
                                                                     $<fl>1, *$1, GRAMMARP->m_varIO} ); }
-        |       '.' idAny '(' ')'                       { $$ = static_cast<AstNode*>(
-                                                                  new AstModportVarRef{
-                                                                    $<fl>2, *$2, GRAMMARP->m_varIO} );
+        |       '.' idAny '(' ')'                       { $$ = new AstModportVarRef{$<fl>2, *$2, GRAMMARP->m_varIO};
                                                           BBUNSUP($<fl>4, "Unsupported: Modport empty expression"); }
-        |       '.' idAny '(' expr ')'                  { $$ = static_cast<AstNode*>(
-                                                            new AstModportVarRef{
-                                                              $<fl>2, *$2, $4, GRAMMARP->m_varIO} ); }
+        |       '.' idAny '(' expr ')'                  { $$ = new AstModportVarRef{$<fl>2, *$2, $4, GRAMMARP->m_varIO}; }
         ;
 
 //************************************************
