@@ -111,6 +111,7 @@ Verilator 5.043 devel
 * Fix nested struct within parameter port list (#6818) (#6824). [Luca Colagrande]
 * Fix duplicate name error with interface initial blocks (#6804) (#6805). [Thomas Dybdahl Ahle]
 * Fix firing array selects of events (#6829). [Amal Araweelo Almis]
+* Fix randcase under fork (#6843). [Amal Araweelo Almis]
 
 
 Verilator 5.042 2025-11-02
