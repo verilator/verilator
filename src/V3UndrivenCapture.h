@@ -45,6 +45,8 @@ public:
         State state = State::UNVISITED;
     };
 
+    static bool enableWriteSummary;
+
 private:
     // Per-task/function capture info keyed by resolved AstNodeFTask* identity.
     std::unordered_map<FTask, FTaskInfo> m_info;

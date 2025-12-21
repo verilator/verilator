@@ -105,6 +105,8 @@ private:
 
 }  // namespace
 
+bool V3UndrivenCapture::enableWriteSummary = false;
+
 // static
 void V3UndrivenCapture::sortUniqueVars(std::vector<Var>& vec) {
     std::sort(vec.begin(), vec.end());
