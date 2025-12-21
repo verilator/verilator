@@ -2529,7 +2529,13 @@ class LinkDotIfaceVisitor final : public VNVisitor {
     void visit(AstModportVarRef* nodep) override {  // IfaceVisitor::
         UINFO(5, "   fiv: " << nodep);
         iterateChildren(nodep);
-        VSymEnt* const symp = m_curSymp->findIdFallback(nodep->name());
+        VSymEnt* symp = nullptr;
+        if (nodep->exprp()) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Modport expressions (IEEE 1800-2023 25.5.4)");
+        } else {
+            symp = m_curSymp->findIdFallback(nodep->name());
+        }
         if (!symp) {
             nodep->v3error("Modport item not found: " << nodep->prettyNameQ());
         } else if (AstVar* const varp = VN_CAST(symp->nodep(), Var)) {

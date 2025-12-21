@@ -1,0 +1,39 @@
+%Error-UNSUPPORTED: t/t_interface_modport_expr_partsel.v:16:22: Unsupported: Modport expressions (IEEE 1800-2023 25.5.4)
+   16 |   modport mp1(input .in(a[7:0]), output .out(b));
+      |                      ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: t/t_interface_modport_expr_partsel.v:16:22: Modport item not found: 'in'
+   16 |   modport mp1(input .in(a[7:0]), output .out(b));
+      |                      ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error-UNSUPPORTED: t/t_interface_modport_expr_partsel.v:16:42: Unsupported: Modport expressions (IEEE 1800-2023 25.5.4)
+   16 |   modport mp1(input .in(a[7:0]), output .out(b));
+      |                                          ^~~
+%Error: t/t_interface_modport_expr_partsel.v:16:42: Modport item not found: 'out'
+   16 |   modport mp1(input .in(a[7:0]), output .out(b));
+      |                                          ^~~
+%Error-UNSUPPORTED: t/t_interface_modport_expr_partsel.v:17:22: Unsupported: Modport expressions (IEEE 1800-2023 25.5.4)
+   17 |   modport mp2(input .in(a[15:8]), output .out(c));
+      |                      ^~
+%Error: t/t_interface_modport_expr_partsel.v:17:22: Modport item not found: 'in'
+   17 |   modport mp2(input .in(a[15:8]), output .out(c));
+      |                      ^~
+%Error-UNSUPPORTED: t/t_interface_modport_expr_partsel.v:17:43: Unsupported: Modport expressions (IEEE 1800-2023 25.5.4)
+   17 |   modport mp2(input .in(a[15:8]), output .out(c));
+      |                                           ^~~
+%Error: t/t_interface_modport_expr_partsel.v:17:43: Modport item not found: 'out'
+   17 |   modport mp2(input .in(a[15:8]), output .out(c));
+      |                                           ^~~
+%Error: t/t_interface_modport_expr_partsel.v:29:21: Can't find definition of 'in' in dotted variable/method: 'i.in'
+   29 |   assign i.out = ~i.in;
+      |                     ^~
+%Error: t/t_interface_modport_expr_partsel.v:29:12: Can't find definition of 'out' in dotted variable/method: 'i.out'
+   29 |   assign i.out = ~i.in;
+      |            ^~~
+%Error: t/t_interface_modport_expr_partsel.v:23:20: Can't find definition of 'in' in dotted variable/method: 'i.in'
+   23 |   assign i.out = i.in;
+      |                    ^~
+%Error: t/t_interface_modport_expr_partsel.v:23:12: Can't find definition of 'out' in dotted variable/method: 'i.out'
+   23 |   assign i.out = i.in;
+      |            ^~~
+%Error: Exiting due to
