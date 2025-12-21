@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 # DESCRIPTION: Verilator: Regression test for scope/var lifetime issue
 #
-# This file ONLY is placed under the Creative Commons Public Domain, for
-# any use, without warranty, 2025 by Wilson Snyder.
-# SPDX-License-Identifier: CC0-1.0
+# Copyright 2024 by Wilson Snyder. This program is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU
+# Lesser General Public License Version 3 or the Perl Artistic License
+# Version 2.0.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
 
