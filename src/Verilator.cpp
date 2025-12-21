@@ -63,6 +63,7 @@
 #include "V3Graph.h"
 #include "V3HierBlock.h"
 #include "V3Inline.h"
+#include "V3InsertHook.h"
 #include "V3Inst.h"
 #include "V3Interface.h"
 #include "V3LibMap.h"
@@ -152,6 +153,13 @@ static void process() {
         if (v3Global.opt.debugExitParse()) {
             cout << "--debug-exit-parse: Exiting after parse\n";
             v3Global.vlExit(0);
+        }
+
+        // Hook-insert design with the configurations given in .vlt file
+        if (v3Global.opt.insertHook()) {
+            v3Global.dpi(true);
+            V3InsertHook::findTargets(v3Global.rootp());
+            V3InsertHook::insertHooks(v3Global.rootp());
         }
 
         // Convert parseref's to varrefs, and other directly post parsing fixups

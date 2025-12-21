@@ -1985,6 +1985,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         addIncDirUser(parseFileArg(optdir, string{valp}));
     }).notForRerun();
 
+    DECL_OPTION("-insert-hook", OnOff, &m_insertHook);
+
     parser.finalize();
 
     const std::string cwd = V3Os::filenameRealPath(".");

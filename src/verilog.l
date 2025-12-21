@@ -141,6 +141,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "hier_params"         { FL; return yVLT_HIER_PARAMS; }
   "hier_workers"        { FL; return yVLT_HIER_WORKERS; }
   "inline"              { FL; return yVLT_INLINE; }
+  "insert_hook"          { FL; return yVLT_INSERTHOOK; }
   "isolate_assignments" { FL; return yVLT_ISOLATE_ASSIGNMENTS; }
   "lint_off"            { FL; return yVLT_LINT_OFF; }
   "lint_on"             { FL; return yVLT_LINT_ON; }
@@ -163,11 +164,13 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "tracing_on"          { FL; return yVLT_TRACING_ON; }
 
   -?"-block"            { FL; return yVLT_D_BLOCK; }
+  -?"-callback"         { FL; return yVLT_D_CALLBACK; }
   -?"-contents"         { FL; return yVLT_D_CONTENTS; }
   -?"-cost"             { FL; return yVLT_D_COST; }
   -?"-file"             { FL; return yVLT_D_FILE; }
   -?"-function"         { FL; return yVLT_D_FUNCTION; }
   -?"-hier-dpi"         { FL; return yVLT_D_HIER_DPI; }
+  -?"-id"               { FL; return yVLT_D_ID; }
   -?"-levels"           { FL; return yVLT_D_LEVELS; }
   -?"-lines"            { FL; return yVLT_D_LINES; }
   -?"-match"            { FL; return yVLT_D_MATCH; }
@@ -178,6 +181,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   -?"-port"             { FL; return yVLT_D_PORT; }
   -?"-rule"             { FL; return yVLT_D_RULE; }
   -?"-scope"            { FL; return yVLT_D_SCOPE; }
+  -?"-target"           { FL; return yVLT_D_TARGET; }
   -?"-task"             { FL; return yVLT_D_TASK; }
   -?"-var"              { FL; return yVLT_D_VAR; }
   -?"-workers"          { FL; return yVLT_D_WORKERS; }
