@@ -91,9 +91,9 @@
       ]}
     ]},
     {"type":"BASICDTYPE","name":"logic","addr":"(Z)","loc":"d,38:17,38:18","dtypep":"(Z)","keyword":"logic","range":"5:0","generic":true,"rangep": []},
-    {"type":"BASICDTYPE","name":"logic","addr":"(U)","loc":"d,34:27,34:28","dtypep":"(U)","keyword":"logic","range":"5:0","generic":true,"rangep": []},
-    {"type":"BASICDTYPE","name":"integer","addr":"(G)","loc":"d,18:19,18:26","dtypep":"(G)","keyword":"integer","range":"31:0","generic":true,"rangep": []},
-    {"type":"BASICDTYPE","name":"logic","addr":"(VB)","loc":"d,40:37,40:38","dtypep":"(VB)","keyword":"logic","range":"31:0","generic":true,"rangep": []}
+    {"type":"BASICDTYPE","name":"logic","addr":"(U)","loc":"d,34:27,34:28","dtypep":"(U)","keyword":"logic","range":"5:0","generic":true,"signed":true,"rangep": []},
+    {"type":"BASICDTYPE","name":"integer","addr":"(G)","loc":"d,18:19,18:26","dtypep":"(G)","keyword":"integer","range":"31:0","generic":true,"signed":true,"rangep": []},
+    {"type":"BASICDTYPE","name":"logic","addr":"(VB)","loc":"d,40:37,40:38","dtypep":"(VB)","keyword":"logic","range":"31:0","generic":true,"signed":true,"rangep": []}
   ]},
   {"type":"CONSTPOOL","name":"","addr":"(D)","loc":"a,0:0,0:0",
    "modulep": [

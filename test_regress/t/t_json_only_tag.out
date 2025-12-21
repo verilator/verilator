@@ -61,7 +61,7 @@
   {"type":"TYPETABLE","name":"","addr":"(C)","loc":"a,0:0,0:0","constraintRefp":"UNLINKED","emptyQueuep":"UNLINKED","queueIndexp":"UNLINKED","streamp":"UNLINKED","voidp":"(JB)",
    "typesp": [
     {"type":"VOIDDTYPE","name":"","addr":"(JB)","loc":"d,41:7,41:8","dtypep":"(JB)","generic":false},
-    {"type":"BASICDTYPE","name":"integer","addr":"(W)","loc":"d,8:4,8:11","dtypep":"(W)","keyword":"integer","range":"31:0","generic":true,"rangep": []},
+    {"type":"BASICDTYPE","name":"integer","addr":"(W)","loc":"d,8:4,8:11","dtypep":"(W)","keyword":"integer","range":"31:0","generic":true,"signed":true,"rangep": []},
     {"type":"BASICDTYPE","name":"logic","addr":"(G)","loc":"d,14:11,14:17","dtypep":"(G)","keyword":"logic","generic":true,"rangep": []},
     {"type":"BASICDTYPE","name":"logic","addr":"(OB)","loc":"d,21:7,21:12","dtypep":"(OB)","keyword":"logic","generic":false,"rangep": []},
     {"type":"BASICDTYPE","name":"logic","addr":"(PB)","loc":"d,22:7,22:12","dtypep":"(PB)","keyword":"logic","generic":false,"rangep": []},

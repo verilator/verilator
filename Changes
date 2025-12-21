@@ -118,6 +118,7 @@ Verilator 5.043 devel
 * Fix firing array selects of events (#6829). [Amal Araweelo Almis]
 * Fix false IMPLICITSTATIC on localparam (#6835). [Geza Lore]
 * Fix randcase under fork (#6843). [Amal Araweelo Almis]
+* Fix JSON missing `signed` indication (#6845).
 
 
 Verilator 5.042 2025-11-02
