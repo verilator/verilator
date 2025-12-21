@@ -126,9 +126,12 @@ private:
         // Add post update if it does not exist yet
         if (m_hasPostUpdate.emplace(*exprp).second) {
             if (!isSupportedDType(exprp->dtypep())) {
-                exprp->v3warn(E_UNSUPPORTED,
-                              "Unsupported: Cannot detect changes on expression of complex type"
-                              " (see combinational cycles reported by UNOPTFLAT)");
+                exprp->v3warn(
+                    E_UNSUPPORTED,
+                    "Unsupported: Cannot detect changes on expression of complex type "
+                        << exprp->dtypep()->prettyDTypeNameQ() << "\n"
+                        << exprp->warnMore()
+                        << "... May be caused by combinational cycles reported with UNOPTFLAT");
                 return prevp;
             }
 
