@@ -47,6 +47,9 @@ public:
 
     static bool enableWriteSummary;
 
+    // Get (and create if needed) mutable info entry for a task/function.
+    FTaskInfo& info(FTask taskp);
+
 private:
     // Per-task/function capture info keyed by resolved AstNodeFTask* identity.
     std::unordered_map<FTask, FTaskInfo> m_info;
@@ -71,7 +74,7 @@ public:
     const std::vector<Var>& writeSummary(FTask taskp);
 
     // Ensure an entry exists for a task/function without computing its writeSummary.
-    void ensureEntry(FTask taskp);
+    //void ensureEntry(FTask taskp);
 
     // Optional: dump one task's summary (for debug bring-up). You can omit if you prefer.
     void debugDumpTask(FTask taskp, int level = 9) const;

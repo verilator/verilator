@@ -568,14 +568,7 @@ class UndrivenVisitor final : public VNVisitorConst {
         iterateChildrenConst(nodep);
         if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9, "   Done " << nodep);
     }
-    // EOM
-    /*
-    void visit(AstNodeFTaskRef* nodep) override {
-        VL_RESTORER(m_inFTaskRef);
-        m_inFTaskRef = true;
-        iterateChildrenConst(nodep);
-    }
-    */
+
     void visit(AstNodeFTaskRef* nodep) override {
         VL_RESTORER(m_inFTaskRef);
         m_inFTaskRef = true;
@@ -584,11 +577,18 @@ class UndrivenVisitor final : public VNVisitorConst {
 
         if (!m_enableWriteSummary || !m_capturep) return;
 
-        // EOM
         // If writeSummary is enabled, task/function definitions are treated as non-executed.
-        // Do not apply writeSummary at calls inside a task definition, or they will look like
-        // independent drivers (phantom MULTIDRIVEN).
-        if (m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic && !m_inBBox) {
+        // Do not apply writeSummary at calls inside a task definition, or they will look like independent drivers (phantom MULTIDRIVEN).
+        // did the lambda on purpose - lessen chance of screwup in future edits.
+        //const auto inExecutedContext = [this]() const {
+        //    return !(m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic && !m_inBBox);
+        //};
+
+        const auto inExecutedContext = [this]() {
+            return !(m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic && !m_inBBox);
+        };
+
+        if (!inExecutedContext()) {
             return;
         }
 
@@ -654,12 +654,12 @@ public:
 void V3Undriven::undrivenAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     // EOM
-    //{ UndrivenVisitor{nodep}; }
-    if (V3UndrivenCapture::enableWriteSummary) {
+    const bool enable = V3UndrivenCapture::enableWriteSummary;
+    if (enable) {
         V3UndrivenCapture capture{nodep};
-        { UndrivenVisitor{nodep, &capture, V3UndrivenCapture::enableWriteSummary}; }
+        { UndrivenVisitor{nodep, &capture, enable}; }
     } else {
-        { UndrivenVisitor{nodep, nullptr, V3UndrivenCapture::enableWriteSummary}; }
+        { UndrivenVisitor{nodep, nullptr, enable}; }
     }
     if (v3Global.opt.stats()) V3Stats::statsStage("undriven");
 }

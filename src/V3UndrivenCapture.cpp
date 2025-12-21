@@ -46,14 +46,6 @@ class CaptureVisitor final : public VNVisitorConst {
         for (AstNode* np = nodep; np; np = np->nextp()) np->accept(v);
     }
 
-    /*
-    V3UndrivenCapture::FTaskInfo& infoFor(const AstNodeFTask* taskp) {
-        // Ensure entry exists
-        return m_cap.writeSummary(taskp), const_cast<V3UndrivenCapture::FTaskInfo&>(
-                                           *m_cap.find(taskp));  // not used; see below
-    }
-    */
-
 public:
     explicit CaptureVisitor(V3UndrivenCapture& cap, AstNetlist* netlistp)
         : m_cap{cap} {
@@ -67,7 +59,8 @@ private:
         m_curTaskp = nodep;
         ++g_stats.ftasks;
         UINFO(DBG, "UndrivenCapture: enter ftask " << nodep << " " << nodep->prettyNameQ());
-        (void)m_cap.ensureEntry(nodep);  // ensure map entry exists
+        //(void)m_cap.ensureEntry(nodep);  // ensure map entry exists
+        m_cap.info(nodep);
         iterateListConst(*this, nodep->stmtsp());
     }
 
@@ -76,10 +69,11 @@ private:
             ++g_stats.varWrites;
             UINFO(DBG, "UndrivenCapture: direct write in " << taskNameQ(m_curTaskp) << " var=" << nodep->varp()->prettyNameQ() << " at " << nodep->fileline());
             // Ensure entry exists
-            (void)m_cap.ensureEntry(m_curTaskp);
+            //(void)m_cap.ensureEntry(m_curTaskp);
             // Safe: find() must succeed after writeSummary() creates entry
-            auto* const infop = const_cast<V3UndrivenCapture::FTaskInfo*>(m_cap.find(m_curTaskp));
-            if (infop) infop->directWrites.push_back(nodep->varp());
+            //auto* const infop = const_cast<V3UndrivenCapture::FTaskInfo*>(m_cap.find(m_curTaskp));
+            //if (infop) infop->directWrites.push_back(nodep->varp());
+            m_cap.info(m_curTaskp).directWrites.push_back(nodep->varp());
         }
         iterateChildrenConst(nodep);
     }
@@ -90,11 +84,14 @@ private:
             if (AstNodeFTask* const calleep = nodep->taskp()) {
                 ++g_stats.callEdges;
                 UINFO(DBG, "UndrivenCapture: call edge " << taskNameQ(m_curTaskp) << " -> " << taskNameQ(calleep));
-                (void)m_cap.ensureEntry(m_curTaskp);
-                (void)m_cap.ensureEntry(calleep);
-                auto* const infop
-                    = const_cast<V3UndrivenCapture::FTaskInfo*>(m_cap.find(m_curTaskp));
-                if (infop) infop->callees.push_back(calleep);
+                //(void)m_cap.ensureEntry(m_curTaskp);
+                //(void)m_cap.ensureEntry(calleep);
+                //auto* const infop
+                //    = const_cast<V3UndrivenCapture::FTaskInfo*>(m_cap.find(m_curTaskp));
+                //if (infop) infop->callees.push_back(calleep);
+                m_cap.info(m_curTaskp).callees.push_back(calleep);
+                m_cap.info(calleep);  // ensure entry exists for callee too (optional but keeps map complete)
+
             } else {
                 UINFO(DBG, "UndrivenCapture: unresolved call in " << taskNameQ(m_curTaskp) << " name=" << nodep->name());
             }
@@ -202,4 +199,6 @@ void V3UndrivenCapture::debugDumpTask(FTask taskp, int level) const {
         << " writeSummary=" << infop->writeSummary.size());
 }
 
-void V3UndrivenCapture::ensureEntry(FTask taskp) { (void)m_info[taskp]; }
+//void V3UndrivenCapture::ensureEntry(FTask taskp) { (void)m_info[taskp]; }
+
+V3UndrivenCapture::FTaskInfo& V3UndrivenCapture::info(FTask taskp) { return m_info[taskp]; }
