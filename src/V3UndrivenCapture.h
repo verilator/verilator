@@ -39,9 +39,9 @@ public:
         std::vector<Var> directWrites;
         // Direct resolved callees from this task/function body.
         std::vector<FTask> callees;
-        // Transitive "may write" summary: directWrites plus all callees' summaries.
+        // 'write through write' writeSummary for the given task/function.
         std::vector<Var> writeSummary;
-        // Memoization state for writeSummary computation.
+        // state for writeSummary computation.
         State state = State::UNVISITED;
     };
 
@@ -61,7 +61,7 @@ private:
 
     // Collect direct writes and call edges for all tasks/functions.
     void gather(AstNetlist* netlistp);
-    // Compute (and memoize) transitive writeSummary for the given task/function.
+    // Compute (and cache) 'write through write' writeSummary for the given task/function.
     const std::vector<Var>& computeWriteSummary(FTask taskp);
 
 public:
@@ -70,13 +70,10 @@ public:
 
     // Lookup task/function capture info (nullptr if unknown).
     const FTaskInfo* find(FTask taskp) const;
-    // Get transitive writeSummary for a task/function (creates empty entry if needed).
+    // Get write through write through write, etc (call chain) writeSummary for a task/function (creates empty entry if needed).
     const std::vector<Var>& writeSummary(FTask taskp);
 
-    // Ensure an entry exists for a task/function without computing its writeSummary.
-    //void ensureEntry(FTask taskp);
-
-    // Optional: dump one task's summary (for debug bring-up). You can omit if you prefer.
+    // Optional: dump one task's summary (for debug bring-up).
     void debugDumpTask(FTask taskp, int level = 9) const;
 };
 
