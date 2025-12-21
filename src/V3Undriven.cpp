@@ -463,14 +463,19 @@ class UndrivenVisitor final : public VNVisitorConst {
                 }
                 if (entryp->isDrivenWhole() && !m_inBBox && !VN_IS(nodep, VarXRef)
                     && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)
-                    && nodep->fileline() != entryp->getNodeFileLinep() && !entryp->isUnderGen()
+                    && nodep->fileline() != entryp->getNodeFileLinep()
+                    && !entryp->isUnderGen()
                     // EOM
                     //&& entryp->getNodep()) {
-                    && (entryp->getNodep() || (V3UndrivenCapture::enableWriteSummary && entryp->getCallNodep()))) {
+                    && (entryp->getNodep()
+                        || (V3UndrivenCapture::enableWriteSummary && entryp->getCallNodep()))) {
 
                     // EOM
-                    const AstNode* const otherWritep = entryp->getNodep() ? static_cast<const AstNode*>(entryp->getNodep())
-                         : (V3UndrivenCapture::enableWriteSummary ? entryp->getCallNodep() : nullptr);
+                    const AstNode* const otherWritep
+                        = entryp->getNodep()
+                              ? static_cast<const AstNode*>(entryp->getNodep())
+                              : (V3UndrivenCapture::enableWriteSummary ? entryp->getCallNodep()
+                                                                       : nullptr);
 
                     if (m_alwaysCombp
                         && (!entryp->isDrivenAlwaysCombWhole()
@@ -481,7 +486,8 @@ class UndrivenVisitor final : public VNVisitorConst {
                             "Variable written to in always_comb also written by other process"
                                 << " (IEEE 1800-2023 9.2.2.2): " << nodep->prettyNameQ() << '\n'
                                 << nodep->warnOther() << '\n'
-                                << nodep->warnContextPrimary() << '\n'
+                                << nodep->warnContextPrimary()
+                                << '\n'
                                 // EOM
                                 //<< entryp->getNodep()->warnOther()
                                 << otherWritep->warnOther()
@@ -495,7 +501,8 @@ class UndrivenVisitor final : public VNVisitorConst {
                                           << " (IEEE 1800-2023 9.2.2.2): " << nodep->prettyNameQ()
                                           << '\n'
                                           << nodep->warnOther() << '\n'
-                                          << nodep->warnContextPrimary() << '\n'
+                                          << nodep->warnContextPrimary()
+                                          << '\n'
                                           //EOM
                                           //<< entryp->getNodep()->warnOther()
                                           << otherWritep->warnOther()
@@ -578,19 +585,19 @@ class UndrivenVisitor final : public VNVisitorConst {
         if (!m_enableWriteSummary || !m_capturep) return;
 
         // If writeSummary is enabled, task/function definitions are treated as non-executed.
-        // Do not apply writeSummary at calls inside a task definition, or they will look like independent drivers (phantom MULTIDRIVEN).
-        // did the lambda on purpose - lessen chance of screwup in future edits.
+        // Do not apply writeSummary at calls inside a task definition, or they will look like
+        // independent drivers (phantom MULTIDRIVEN). did the lambda on purpose - lessen chance of
+        // screwup in future edits.
         //const auto inExecutedContext = [this]() const {
-        //    return !(m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic && !m_inBBox);
+        //    return !(m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic &&
+        //    !m_inBBox);
         //};
 
         const auto inExecutedContext = [this]() {
             return !(m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic && !m_inBBox);
         };
 
-        if (!inExecutedContext()) {
-            return;
-        }
+        if (!inExecutedContext()) { return; }
 
         AstNodeFTask* const calleep = nodep->taskp();
         if (!calleep) return;
@@ -635,10 +642,12 @@ public:
     // CONSTRUCTORS
     // EOM
     // explicit UndrivenVisitor(AstNetlist* nodep) { iterateConst(nodep); }
-    explicit UndrivenVisitor(AstNetlist* nodep, V3UndrivenCapture* capturep, bool enableWriteSummary) :
-        m_capturep{capturep},
-        m_enableWriteSummary{enableWriteSummary}
-    { iterateConst(nodep); }
+    explicit UndrivenVisitor(AstNetlist* nodep, V3UndrivenCapture* capturep,
+                             bool enableWriteSummary)
+        : m_capturep{capturep}
+        , m_enableWriteSummary{enableWriteSummary} {
+        iterateConst(nodep);
+    }
 
     ~UndrivenVisitor() override {
         for (UndrivenVarEntry* ip : m_entryps[1]) ip->reportViolations();

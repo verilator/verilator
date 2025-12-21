@@ -70,7 +70,8 @@ public:
 
     // Lookup task/function capture info (nullptr if unknown).
     const FTaskInfo* find(FTask taskp) const;
-    // Get write through write through write, etc (call chain) writeSummary for a task/function (creates empty entry if needed).
+    // Get write through write through write, etc (call chain) writeSummary for a task/function
+    // (creates empty entry if needed).
     const std::vector<Var>& writeSummary(FTask taskp);
 
     // Optional: dump one task's summary (for debug bring-up).

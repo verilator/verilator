@@ -66,7 +66,9 @@ private:
     void visit(AstNodeVarRef* nodep) override {
         if (m_curTaskp && nodep->access().isWriteOrRW()) {
             ++g_stats.varWrites;
-            UINFO(DBG, "UndrivenCapture: direct write in " << taskNameQ(m_curTaskp) << " var=" << nodep->varp()->prettyNameQ() << " at " << nodep->fileline());
+            UINFO(DBG, "UndrivenCapture: direct write in "
+                           << taskNameQ(m_curTaskp) << " var=" << nodep->varp()->prettyNameQ()
+                           << " at " << nodep->fileline());
             m_cap.info(m_curTaskp).directWrites.push_back(nodep->varp());
         }
         iterateChildrenConst(nodep);
@@ -77,11 +79,13 @@ private:
         if (m_curTaskp) {
             if (AstNodeFTask* const calleep = nodep->taskp()) {
                 ++g_stats.callEdges;
-                UINFO(DBG, "UndrivenCapture: call edge " << taskNameQ(m_curTaskp) << " -> " << taskNameQ(calleep));
+                UINFO(DBG, "UndrivenCapture: call edge " << taskNameQ(m_curTaskp) << " -> "
+                                                         << taskNameQ(calleep));
                 m_cap.info(m_curTaskp).callees.push_back(calleep);
                 m_cap.info(calleep);
             } else {
-                UINFO(DBG, "UndrivenCapture: unresolved call in " << taskNameQ(m_curTaskp) << " name=" << nodep->name());
+                UINFO(DBG, "UndrivenCapture: unresolved call in " << taskNameQ(m_curTaskp)
+                                                                  << " name=" << nodep->name());
             }
         }
         iterateChildrenConst(nodep);  // still scan pins/args
@@ -118,7 +122,9 @@ V3UndrivenCapture::V3UndrivenCapture(AstNetlist* netlistp) {
     // Compute summaries for all tasks
     for (const auto& kv : m_info) (void)computeWriteSummary(kv.first);
 
-    UINFO(DBG, "UndrivenCapture: stats ftasks=" << g_stats.ftasks << " varWrites=" << g_stats.varWrites << " callEdges=" << g_stats.callEdges << " uniqueTasks=" << m_info.size());
+    UINFO(DBG, "UndrivenCapture: stats ftasks="
+                   << g_stats.ftasks << " varWrites=" << g_stats.varWrites
+                   << " callEdges=" << g_stats.callEdges << " uniqueTasks=" << m_info.size());
 }
 
 void V3UndrivenCapture::gather(AstNetlist* netlistp) {
@@ -142,11 +148,14 @@ const std::vector<V3UndrivenCapture::Var>& V3UndrivenCapture::computeWriteSummar
     FTaskInfo& info = m_info[taskp];
 
     if (info.state == State::DONE) {
-        UINFO(DBG, "UndrivenCapture: writeSummary cached size=" << info.writeSummary.size() << " for " << taskNameQ(taskp));
+        UINFO(DBG, "UndrivenCapture: writeSummary cached size=" << info.writeSummary.size()
+                                                                << " for " << taskNameQ(taskp));
         return info.writeSummary;
     }
     if (info.state == State::VISITING) {
-        UINFO(DBG, "UndrivenCapture: recursion detected at " << taskNameQ(taskp) << " returning directWrites size=" << info.directWrites.size());
+        UINFO(DBG, "UndrivenCapture: recursion detected at "
+                       << taskNameQ(taskp)
+                       << " returning directWrites size=" << info.directWrites.size());
         // Cycle detected. Simple behaviour:
         // return directWrites only to guarantee termination.
         if (info.writeSummary.empty()) info.writeSummary = info.directWrites;
@@ -168,7 +177,8 @@ const std::vector<V3UndrivenCapture::Var>& V3UndrivenCapture::computeWriteSummar
 
     sortUniqueVars(info.writeSummary);
 
-    UINFO(DBG, "UndrivenCapture: writeSummary computed size=" << info.writeSummary.size() << " for " << taskNameQ(taskp));
+    UINFO(DBG, "UndrivenCapture: writeSummary computed size=" << info.writeSummary.size()
+                                                              << " for " << taskNameQ(taskp));
 
     info.state = State::DONE;
     return info.writeSummary;
@@ -180,11 +190,10 @@ void V3UndrivenCapture::debugDumpTask(FTask taskp, int level) const {
         UINFO(level, "UndrivenCapture: no entry for task " << taskp);
         return;
     }
-    UINFO(level, "UndrivenCapture: dump task "
-        << taskp << " " << taskp->prettyNameQ()
-        << " directWrites=" << infop->directWrites.size()
-        << " callees=" << infop->callees.size()
-        << " writeSummary=" << infop->writeSummary.size());
+    UINFO(level, "UndrivenCapture: dump task " << taskp << " " << taskp->prettyNameQ()
+                                               << " directWrites=" << infop->directWrites.size()
+                                               << " callees=" << infop->callees.size()
+                                               << " writeSummary=" << infop->writeSummary.size());
 }
 
 V3UndrivenCapture::FTaskInfo& V3UndrivenCapture::info(FTask taskp) { return m_info[taskp]; }
