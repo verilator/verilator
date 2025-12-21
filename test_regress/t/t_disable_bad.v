@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   initial begin
-      disable abcd;
-   end
-endmodule: t
+  initial begin
+    disable abcd;
+  end
+endmodule : t

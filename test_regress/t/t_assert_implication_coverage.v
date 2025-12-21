@@ -4,13 +4,12 @@
 // without warranty, 2025 by Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-  // Inputs
-  clk
+module t (
+    input clk
 );
 
-  input clk;
-  integer cyc; initial cyc=1;
+  integer cyc;
+  initial cyc = 1;
 
   Test test (
     /*AUTOINST*/
@@ -19,13 +18,13 @@ module t (/*AUTOARG*/
     .cyc(cyc)
   );
 
-  always @ (posedge clk) begin
-    if (cyc!=0) begin
+  always @(posedge clk) begin
+    if (cyc != 0) begin
       cyc <= cyc + 1;
 `ifdef TEST_VERBOSE
       $display("cyc=%0d", cyc);
 `endif
-      if (cyc==10) begin
+      if (cyc == 10) begin
         $write("*-* All Finished *-*\n");
         $finish;
       end
@@ -35,7 +34,9 @@ module t (/*AUTOARG*/
 endmodule
 
 // Interface for data validation with coverage
-interface data_valid_if (input logic clk);
+interface data_valid_if (
+    input logic clk
+);
   logic enable_invalid_data_checks;
   logic valid;
   logic [7:0] data;
@@ -49,16 +50,15 @@ interface data_valid_if (input logic clk);
 
 endinterface
 
-module Test
-  (
-   input clk,
-   input integer cyc
-   );
+module Test (
+    input clk,
+    input integer cyc
+);
 
   logic rst_n;
 
   // Instantiate the interface
-  data_valid_if dv_if(clk);
+  data_valid_if dv_if (clk);
 
   // Reset logic
   initial begin

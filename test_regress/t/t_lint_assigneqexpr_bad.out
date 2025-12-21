@@ -1,11 +1,11 @@
-%Warning-ASSIGNEQEXPR: t/t_lint_assigneqexpr.v:28:11: Assignment '=' inside expression
+%Warning-ASSIGNEQEXPR: t/t_lint_assigneqexpr.v:32:11: Assignment '=' inside expression
                                                     : ... Was a '==' intended, or suggest use a separate statement
-   28 |       c_o = 1   
+   32 |       c_o = 1   
       |           ^
                        ... For warning description see https://verilator.org/warn/ASSIGNEQEXPR?v=latest
                        ... Use "/* verilator lint_off ASSIGNEQEXPR */" and lint_on around source to disable this message.
-%Warning-ASSIGNEQEXPR: t/t_lint_assigneqexpr.v:30:11: Assignment '=' inside expression
+%Warning-ASSIGNEQEXPR: t/t_lint_assigneqexpr.v:34:11: Assignment '=' inside expression
                                                     : ... Was a '==' intended, or suggest use a separate statement
-   30 |       c_o = 0   
+   34 |       c_o = 0   
       |           ^
 %Error: Exiting due to

@@ -7,13 +7,13 @@
 // This module will be used as libsecret.a or libsecret.so without
 // exposing the source.
 
-module secret_impl
-  (
-   input [31:0]      a,
-   input [31:0]      b,
-   output logic [31:0] x,
-   input          clk,
-   input          reset_l);
+module secret_impl (
+    input [31:0] a,
+    input [31:0] b,
+    output logic [31:0] x,
+    input clk,
+    input reset_l
+);
 
   logic [31:0] accum_q;
   logic [31:0] secret_value;
@@ -27,10 +27,8 @@ module secret_impl
     end
     else begin
       accum_q <= accum_q + a;
-      if (accum_q > 10)
-        x <= b;
-      else
-        x <= a + b + secret_value;
+      if (accum_q > 10) x <= b;
+      else x <= a + b + secret_value;
     end
   end
 

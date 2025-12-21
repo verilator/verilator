@@ -6,34 +6,39 @@
 
 class SubClass;
   rand bit [2:0] field;
-  function new ();
+  function new();
     field = 0;
   endfunction
 endclass
 class MyClass;
   SubClass sc_inst2[2];
-  function new ();
+  function new();
     sc_inst2[1] = new;
   endfunction
-endclass;
+endclass
+;
 class Deep;
   MyClass sc_inst1;
-  function new ();
+  function new();
     sc_inst1 = new;
   endfunction
-endclass;
+endclass
+;
 class WeNeedToGoDeeper;
   Deep sc_inst;
-  function new ();
+  function new();
     sc_inst = new;
   endfunction
-endclass;
+endclass
+;
 
 module t;
   initial begin
     WeNeedToGoDeeper cl_inst[100];
     cl_inst[1] = new;
-    if (cl_inst[1].sc_inst.sc_inst2.sc_inst2[1].randomize() with {field inside {1, 2, 3};} == 0) begin
+    if (cl_inst[1].sc_inst.sc_inst2.sc_inst2[1].randomize() with {
+          field inside {1, 2, 3};
+        } == 0) begin
       $stop;
     end
   end

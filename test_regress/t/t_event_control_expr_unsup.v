@@ -5,13 +5,13 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   int x;
+  int x;
 
-   function bit foo;
-      x += 1;
-      return bit'(x % 2);
-   endfunction
+  function bit foo;
+    x += 1;
+    return bit'(x % 2);
+  endfunction
 
-   always @(posedge foo());
+  always @(posedge foo());
 
 endmodule

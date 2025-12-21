@@ -6,11 +6,11 @@
 
 /* verilator lint_off COVERIGN */
 class myClass;
-    covergroup embeddedCg;
+  covergroup embeddedCg;
 
-    endgroup
+  endgroup
 
-    covergroup embeddedCg;
+  covergroup embeddedCg;
 
-    endgroup
+  endgroup
 endclass

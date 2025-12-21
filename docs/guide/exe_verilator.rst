@@ -867,6 +867,29 @@ Summary:
    compatibility and is not recommended usage as this is not supported by
    some third-party tools.
 
+.. option:: --inline-cfuncs <value>
+
+   Inline small CFunc calls directly into their callers when the function
+   has at most <value> nodes. This reduces function call overhead when
+   :vlopt:`--output-split-cfuncs` places functions in separate compilation
+   units that the C++ compiler cannot inline.
+
+   Set to 0 to disable this optimization. The default is 20.
+
+   This optimization is automatically disabled when :vlopt:`--prof-cfuncs`
+   or :vlopt:`--trace` is used.
+
+.. option:: --inline-cfuncs-product <value>
+
+   Tune the inlining of CFunc calls for larger functions. When a function
+   is too large to always inline (exceeds :vlopt:`--inline-cfuncs` threshold),
+   it may still be inlined if the function size multiplied by the number of
+   call sites is at most <value>.
+
+   This allows functions that are called only once or twice to be inlined
+   even if they exceed the small function threshold. Set to 0 to only inline
+   functions below the :vlopt:`--inline-cfuncs` threshold. The default is 200.
+
 .. option:: --inline-mult <value>
 
    Tune the inlining of modules. The default value of 2000 specifies that
@@ -2495,8 +2518,8 @@ The grammar of control commands is as follows:
    converted into ``begin``/``end`` blocks.
 
    Similar to :option:`/*verilator&32;timing_on*/`,
-   :option:`/*verilator&32;timing_off*/` metacomments, but interpreted
-   independtly. If either a control file, or metacommets disable timing
+   :option:`/*verilator&32;timing_off*/` meta-comments, but interpreted
+   independently. If either a control file, or meta-comments disable timing
    constructs, they will be disabled.
 
    .. t_dist_docs_style ignore tracing_on

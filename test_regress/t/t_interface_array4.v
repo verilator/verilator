@@ -24,9 +24,13 @@ class Cls;
   endtask
 endclass
 
-module devA (Ifc s);
+module devA (
+    Ifc s
+);
 endmodule
-module devB (Ifc s);
+module devB (
+    Ifc s
+);
 endmodule
 
 module t;

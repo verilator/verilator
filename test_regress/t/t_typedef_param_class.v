@@ -4,7 +4,9 @@
 // any use, without warranty, 2025 by Antmicro.
 // SPDX-License-Identifier: CC0-1.0
 
-class Class1 #(type T);
+class Class1 #(
+    type T
+);
   typedef T::Some_type2 Some_type1;
 endclass
 

@@ -5,12 +5,10 @@
 // SPDX-License-Identifier: CC0-1.0
 
 
-module t (/*AUTOARG*/
-    // Inputs
-    clk
-    );
+module t (
+    input clk
+);
 
-    input clk;
     int cyc = 0;
 
     logic [31:0] uninitialized;

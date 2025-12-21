@@ -5,27 +5,17 @@
 // SPDX-License-Identifier: CC0-1.0
 //
 //     assign localparam from interface typedef, single level nesting
-//
 
+// verilog_format: off
 `define stop $stop
-`define checkd(gotv,expv) \
-  do if ((gotv) !== (expv)) begin \
-    $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", \
-            `__FILE__,`__LINE__, (gotv), (expv)); \
-    `stop; \
-  end while(0);
-
-`define checkh(gotv,expv) \
-  do if ((gotv) !== (expv)) begin \
-    $write("%%Error: %s:%0d:  got=%0h exp=%0h\n", \
-            `__FILE__,`__LINE__, (gotv), (expv)); \
-    `stop; \
-  end while(0);
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0h exp=%0h\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 interface x_if #(
-  parameter int p_awidth = 4
-  ,parameter int p_dwidth = 7
-)();
+    parameter int p_awidth = 4,
+    parameter int p_dwidth = 7
+) ();
   localparam int Bits = p_awidth + p_dwidth;
   typedef struct packed {
     logic [p_awidth-1:0] addr;
@@ -33,11 +23,11 @@ interface x_if #(
   } rq_t;
 endinterface
 
-module top();
+module top ();
   x_if #(
-    .p_awidth(16)
-    ,.p_dwidth(8)
-  ) if0 [2]();
+      .p_awidth(16),
+      .p_dwidth(8)
+  ) if0[2] ();
 
   localparam type p0_rq_t = if0[0].rq_t;
 
@@ -50,10 +40,10 @@ module top();
 
   initial begin
     #1;
-    `checkd(if0[0].Bits,24);
-    `checkd($bits(rq),24);
-    `checkh(rq.addr,16'h1234);
-    `checkh(rq.data,8'h37);
+    `checkd(if0[0].Bits, 24);
+    `checkd($bits(rq), 24);
+    `checkh(rq.addr, 16'h1234);
+    `checkh(rq.data, 8'h37);
     $write("*-* All Finished *-*\n");
     $finish;
   end

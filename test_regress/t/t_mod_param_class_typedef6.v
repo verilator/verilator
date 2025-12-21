@@ -9,16 +9,20 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
 // verilog_format: on
 
-class xxx_class #(parameter int X = 1);
-   typedef logic [X-1:0] cmd_tag_t;
+class xxx_class #(
+    parameter int X = 1
+);
+  typedef logic [X-1:0] cmd_tag_t;
 endclass
 
-module mod_a #(parameter p_width=16) ();
+module mod_a #(
+    parameter p_width = 16
+) ();
 endmodule
 
-module the_top();
+module the_top ();
   xxx_class#(16)::cmd_tag_t tag;
-  mod_a #($bits(tag)) t0();
+  mod_a #($bits(tag)) t0 ();
 
   initial begin
     #2;

@@ -10,16 +10,14 @@
 // verilog_format: on
 
 class p_class #(
-  parameter TLEN = 2,
-  localparam type T = logic [TLEN-1:0]
+    parameter TLEN = 2,
+    localparam type T = logic [TLEN-1:0]
 );
-  typedef struct packed {
-    T a, b;
-  } p_type;
+  typedef struct packed {T a, b;} p_type;
 endclass
 
 module p_mod #(
-  parameter type T = logic
+    parameter type T = logic
 );
   initial begin
     #1;
@@ -31,7 +29,7 @@ module the_top #() ();
 
   typedef p_class#(8) p_class_8;
   typedef p_class_8::p_type p_type_8;
-  p_mod #(.T(p_type_8)) p3();
+  p_mod #(.T(p_type_8)) p3 ();
 
   initial begin
     #2;

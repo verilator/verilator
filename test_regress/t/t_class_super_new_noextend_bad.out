@@ -1,5 +1,5 @@
-%Error: t/t_class_super_new_noextend_bad.v:10:12: 'super' used on non-extended class (IEEE 1800-2023 8.15)
-   10 |       super.new();   
-      |            ^
+%Error: t/t_class_super_new_noextend_bad.v:10:10: 'super' used on non-extended class (IEEE 1800-2023 8.15)
+   10 |     super.new();   
+      |          ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

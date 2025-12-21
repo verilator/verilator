@@ -284,6 +284,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Gate.o \
   V3HierBlock.o \
   V3Inline.o \
+  V3InlineCFuncs.o \
   V3Inst.o \
   V3InstrCount.o \
   V3Interface.o \

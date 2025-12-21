@@ -6,9 +6,7 @@
 
 class RandomValue;
   rand int value;
-  constraint small_int_c {
-    value < 10;
-  }
+  constraint small_int_c {value < 10;}
   task disable_val();
     value.rand_mode(0);
   endtask

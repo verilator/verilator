@@ -143,8 +143,8 @@ error, except:
 
 * delay statements - they are ignored (as they are in synthesis), though they
   do issue a :option:`STMTDLY` warning,
-* intra-assignment timing controls - they are ignored, though they do issue an
-  :option:`ASSIGNDLY` warning,
+* intra-assignment timing controls - they are ignored, though they do issue
+  an :option:`ASSIGNDLY` warning,
 * net delays - they are ignored,
 * event controls at the top of the procedure,
 

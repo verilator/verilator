@@ -4,15 +4,15 @@
 // any use, without warranty, 2030 by Stephen Henry.
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
+// verilog_format: on
+
 module t;
 
   int fdin_bin, fdout_txt, fdout_bin;
 `define STRINGIFY(x) `"x`"
-
-`define checkh(gotv,expv) \
-  do if ((gotv) !== (expv)) begin\
-      $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv));\
-   end while(0)
 
   //
   //

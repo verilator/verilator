@@ -5,12 +5,11 @@
 // SPDX-License-Identifier: CC0-1.0
 // ======================================================================
 
-module sub
-  (
-   input clk,
-   input fastclk,
-   input reset_l
-   );
+module sub (
+    input clk,
+    input fastclk,
+    input reset_l
+);
 
   // Example counter/flop
   reg [31:0] count_f;

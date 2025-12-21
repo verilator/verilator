@@ -12,7 +12,7 @@ module t;
     int x;
     // verilator timing_off
     #1
-    fork @e1; @e2; join;
+    fork @e1; @e2; join
     @e1
     wait(x == 4)
     x = #1 8;
@@ -34,6 +34,6 @@ module t;
 
   initial #2 ->e2;
 
-  initial #3 $stop; // timeout
-  initial #1 @(e1, e2) #1 $stop; // timeout
+  initial #3 $stop;  // timeout
+  initial #1 @(e1, e2) #1 $stop;  // timeout
 endmodule

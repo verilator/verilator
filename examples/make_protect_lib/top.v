@@ -6,7 +6,9 @@
 
 // See also https://verilator.org/guide/latest/examples.html"
 
-module top (input clk);
+module top (
+    input clk
+);
 
   int cyc;
   logic reset_l;
@@ -14,7 +16,13 @@ module top (input clk);
   logic [31:0] b;
   logic [31:0] x;
 
-  verilated_secret secret (.a, .b, .x, .clk, .reset_l);
+  verilated_secret secret (
+      .a,
+      .b,
+      .x,
+      .clk,
+      .reset_l
+  );
 
   always @(posedge clk) begin
     $display("[%0t] cyc=%0d a=%0d b=%0d x=%0d", $time, cyc, a, b, x);

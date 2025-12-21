@@ -4,6 +4,8 @@ Accellera
 Affe
 Aleksander
 Alexandre
+Almis
+Amal
 Ami
 Amir
 Anastasiadis
@@ -13,6 +15,7 @@ Antmicro
 Antonin
 Antwerpen
 Arasanipalai
+Araweelo
 Arjen
 Arshid
 Asciidoc
@@ -986,6 +989,7 @@ qrqiuren
 radix
 randc
 randcase
+randmode
 randsequence
 randstate
 raphmaster

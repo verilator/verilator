@@ -92,7 +92,7 @@
    "typesp": [
     {"type":"BASICDTYPE","name":"logic","addr":"(I)","loc":"d,34:24,34:27","dtypep":"(I)","keyword":"logic","generic":true,"rangep": []},
     {"type":"BASICDTYPE","name":"logic","addr":"(G)","loc":"d,15:16,15:17","dtypep":"(G)","keyword":"logic","range":"3:0","generic":true,"rangep": []},
-    {"type":"BASICDTYPE","name":"logic","addr":"(MB)","loc":"d,19:18,19:19","dtypep":"(MB)","keyword":"logic","range":"31:0","generic":true,"rangep": []},
+    {"type":"BASICDTYPE","name":"logic","addr":"(MB)","loc":"d,19:18,19:19","dtypep":"(MB)","keyword":"logic","range":"31:0","generic":true,"signed":true,"rangep": []},
     {"type":"VOIDDTYPE","name":"","addr":"(XB)","loc":"a,0:0,0:0","dtypep":"(XB)","generic":false}
   ]},
   {"type":"CONSTPOOL","name":"","addr":"(D)","loc":"a,0:0,0:0",

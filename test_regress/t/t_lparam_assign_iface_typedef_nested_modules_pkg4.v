@@ -28,9 +28,9 @@ interface tb_if #(parameter cca::cfg_t cfg=0)();
 endinterface
 
 module modA#(
-  parameter aer::cfg_t cfg=0
+  parameter aer::cfg_t cfg=0,
   //
-  ,localparam type rule_t = amb::rule_t
+  localparam type rule_t = amb::rule_t
 )();
 
   localparam cca::cfg_t cca_cfg = '{

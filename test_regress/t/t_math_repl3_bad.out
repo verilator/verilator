@@ -1,27 +1,27 @@
-%Error: t/t_math_repl3_bad.v:14:50: Replication value of < 0 or X/Z not legal (IEEE 1800-2023 11.4.12.1): '32'hfffffff8'
+%Error: t/t_math_repl3_bad.v:15:50: Replication value of < 0 or X/Z not legal (IEEE 1800-2023 11.4.12.1): '32'hfffffff8'
                                   : ... note: In instance 't'
-   14 |       link_data_reg_in = {{((NUM_LANES - 2) * 8) {1'b0}}, link_data_reg[15:8]};
+   15 |       link_data_reg_in = {{((NUM_LANES - 2) * 8) {1'b0}}, link_data_reg[15:8]};
       |                                                  ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Warning-SELRANGE: t/t_math_repl3_bad.v:14:72: Selection index out of range: 15:8 outside 7:0
+%Warning-SELRANGE: t/t_math_repl3_bad.v:15:72: Selection index out of range: 15:8 outside 7:0
                                              : ... note: In instance 't'
-   14 |       link_data_reg_in = {{((NUM_LANES - 2) * 8) {1'b0}}, link_data_reg[15:8]};
+   15 |       link_data_reg_in = {{((NUM_LANES - 2) * 8) {1'b0}}, link_data_reg[15:8]};
       |                                                                        ^
                    ... For warning description see https://verilator.org/warn/SELRANGE?v=latest
                    ... Use "/* verilator lint_off SELRANGE */" and lint_on around source to disable this message.
-%Warning-WIDTHTRUNC: t/t_math_repl3_bad.v:14:24: Operator ASSIGN expects 8 bits on the Assign RHS, but Assign RHS's REPLICATE generates 9 bits.
+%Warning-WIDTHTRUNC: t/t_math_repl3_bad.v:15:24: Operator ASSIGN expects 8 bits on the Assign RHS, but Assign RHS's REPLICATE generates 9 bits.
                                                : ... note: In instance 't'
-   14 |       link_data_reg_in = {{((NUM_LANES - 2) * 8) {1'b0}}, link_data_reg[15:8]};
+   15 |       link_data_reg_in = {{((NUM_LANES - 2) * 8) {1'b0}}, link_data_reg[15:8]};
       |                        ^
                      ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
                      ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
-%Error: t/t_math_repl3_bad.v:16:19: Replication value of < 0 or X/Z not legal (IEEE 1800-2023 11.4.12.1): '32'bzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz'
+%Error: t/t_math_repl3_bad.v:17:19: Replication value of < 0 or X/Z not legal (IEEE 1800-2023 11.4.12.1): '32'bzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz'
                                   : ... note: In instance 't'
-   16 |     other = {32'bz{1'b1}};
+   17 |     other = {32'bz{1'b1}};
       |                   ^
-%Warning-WIDTHEXPAND: t/t_math_repl3_bad.v:16:11: Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's REPLICATE generates 1 bits.
+%Warning-WIDTHEXPAND: t/t_math_repl3_bad.v:17:11: Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's REPLICATE generates 1 bits.
                                                 : ... note: In instance 't'
-   16 |     other = {32'bz{1'b1}};
+   17 |     other = {32'bz{1'b1}};
       |           ^
                       ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
                       ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.

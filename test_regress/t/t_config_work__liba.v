@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module m1;
-  m3 u_13();
+  m3 u_13 ();
   initial $display("liba:m1 %%m=%m %%l=%l");
 endmodule
 

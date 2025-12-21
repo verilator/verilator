@@ -6,7 +6,7 @@
 //
 
 class Cls;
-   function new();
-      super.new();  // Bad - no extends
-   endfunction
+  function new();
+    super.new();  // Bad - no extends
+  endfunction
 endclass
