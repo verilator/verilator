@@ -4,7 +4,7 @@
 // without warranty.
 // SPDX-License-Identifier: CC0-1.0
 
-// class task writes through ref argument (direct assignment + class task in same always_comb)
+// static class function returns value - always_comb uses class scope call
 
 // verilog_format: off
 `define stop $stop
@@ -12,12 +12,9 @@
 // verilog_format: on
 
 class C;
-  task automatic set1(ref logic q);
-    q = 1'b1;
-  endtask
-  task automatic set0(ref logic q);
-    q = 1'b0;
-  endtask
+  static function automatic logic ret1();
+    return 1'b1;
+  endfunction
 endclass
 
 module mod #()(
@@ -26,14 +23,11 @@ module mod #()(
 );
 
   logic l0;
-  C c;
-
-  initial c = new;
 
   always_comb begin
     l0 = 1'b0;
     if (sel) begin
-      c.set1(l0);
+      l0 = C::ret1();
     end
   end
 

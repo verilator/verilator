@@ -4,7 +4,7 @@
 // without warranty.
 // SPDX-License-Identifier: CC0-1.0
 
-// class task writes through ref argument (direct assignment + class task in same always_comb)
+// class handle passed through module port - class method writes through ref
 
 // verilog_format: off
 `define stop $stop
@@ -15,20 +15,15 @@ class C;
   task automatic set1(ref logic q);
     q = 1'b1;
   endtask
-  task automatic set0(ref logic q);
-    q = 1'b0;
-  endtask
 endclass
 
 module mod #()(
   input logic sel
   ,output logic val
+  ,C c
 );
 
   logic l0;
-  C c;
-
-  initial c = new;
 
   always_comb begin
     l0 = 1'b0;
@@ -44,10 +39,14 @@ endmodule
 module m_tb#()();
 
   logic sel, val;
+  C c;
+
+  initial c = new;
 
   mod m(
     .sel(sel)
     ,.val(val)
+    ,.c(c)
   );
 
   initial begin

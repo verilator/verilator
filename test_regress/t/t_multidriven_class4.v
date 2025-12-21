@@ -4,19 +4,26 @@
 // without warranty.
 // SPDX-License-Identifier: CC0-1.0
 
-// class task writes through ref argument (direct assignment + class task in same always_comb)
+// class composition - one class calls another task, ultimately writes through ref
 
 // verilog_format: off
 `define stop $stop
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
 // verilog_format: on
 
-class C;
+class CInner;
   task automatic set1(ref logic q);
     q = 1'b1;
   endtask
-  task automatic set0(ref logic q);
-    q = 1'b0;
+endclass
+
+class COuter;
+  CInner inner;
+  function new();
+    inner = new;
+  endfunction
+  task automatic set1(ref logic q);
+    inner.set1(q);
   endtask
 endclass
 
@@ -26,7 +33,7 @@ module mod #()(
 );
 
   logic l0;
-  C c;
+  COuter c;
 
   initial c = new;
 

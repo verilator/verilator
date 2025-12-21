@@ -4,7 +4,7 @@
 // without warranty.
 // SPDX-License-Identifier: CC0-1.0
 
-// class task writes through ref argument (direct assignment + class task in same always_comb)
+// class task chain - nested method calls write through ref in same always_comb
 
 // verilog_format: off
 `define stop $stop
@@ -12,11 +12,11 @@
 // verilog_format: on
 
 class C;
-  task automatic set1(ref logic q);
+  task automatic inner(inout logic q);
     q = 1'b1;
   endtask
-  task automatic set0(ref logic q);
-    q = 1'b0;
+  task automatic outer(inout logic q);
+    inner(q);
   endtask
 endclass
 
@@ -33,7 +33,7 @@ module mod #()(
   always_comb begin
     l0 = 1'b0;
     if (sel) begin
-      c.set1(l0);
+      c.outer(l0);
     end
   end
 
