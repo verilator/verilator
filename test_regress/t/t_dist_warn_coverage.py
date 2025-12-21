@@ -82,7 +82,6 @@ for s in [
         'Unsupported: 4-state numbers in this context',
         'Unsupported: Assignments with signal strength with LHS of type:',
         'Unsupported: Bind with instance list',
-        'Unsupported: Cannot detect changes on expression of complex type',
         'Unsupported: Cast to',
         'Unsupported: Concatenation to form',
         'Unsupported: Creating tristate signal not underneath a module:',

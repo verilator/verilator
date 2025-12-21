@@ -58,6 +58,7 @@ private:
         if (VN_IS(dtypep, PackArrayDType)) return true;
         if (VN_IS(dtypep, UnpackArrayDType)) return isSupportedDType(dtypep->subDTypep());
         if (VN_IS(dtypep, NodeUOrStructDType)) return true;  // All are packed at the moment
+        if (VN_IS(dtypep, ClassRefDType)) return true;  // IEEE: reference change, not contents
         return false;
     }
 
@@ -125,17 +126,17 @@ private:
 
         // Add post update if it does not exist yet
         if (m_hasPostUpdate.emplace(*exprp).second) {
-            if (!isSupportedDType(exprp->dtypep())) {
+            AstNodeDType* const exprDtp = exprp->dtypep()->skipRefp();
+            if (!isSupportedDType(exprDtp)) {
                 exprp->v3warn(
                     E_UNSUPPORTED,
                     "Unsupported: Cannot detect changes on expression of complex type "
-                        << exprp->dtypep()->prettyDTypeNameQ() << "\n"
+                        << exprDtp->prettyDTypeNameQ() << "\n"
                         << exprp->warnMore()
                         << "... May be caused by combinational cycles reported with UNOPTFLAT");
                 return prevp;
             }
-
-            if (VN_IS(exprp->dtypep()->skipRefp(), UnpackArrayDType)) {
+            if (VN_IS(exprDtp, UnpackArrayDType)) {
                 AstCMethodHard* const cmhp
                     = new AstCMethodHard{flp, wrPrev(), VCMethod::UNPACKED_ASSIGN, rdCurr()};
                 cmhp->dtypeSetVoid();
