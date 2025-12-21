@@ -319,6 +319,8 @@ private:
     int         m_hierChild = 0;      // main switch: --hierarchical-child
     int         m_hierThreads = 0;      // main switch: --hierarchical-threads
     int         m_ifDepth = 0;      // main switch: --if-depth
+    int         m_inlineCFuncs = 20;   // main switch: --inline-cfuncs
+    int         m_inlineCFuncsProduct = 200;   // main switch: --inline-cfuncs-product
     int         m_inlineMult = 2000;   // main switch: --inline-mult
     int         m_instrCountDpi = 200;   // main switch: --instr-count-dpi
     bool        m_jsonEditNums = true; // main switch: --no-json-edit-nums
@@ -595,6 +597,8 @@ public:
     int expandLimit() const { return m_expandLimit; }
     int gateStmts() const { return m_gateStmts; }
     int ifDepth() const { return m_ifDepth; }
+    int inlineCFuncs() const { return m_inlineCFuncs; }
+    int inlineCFuncsProduct() const { return m_inlineCFuncsProduct; }
     int inlineMult() const { return m_inlineMult; }
     int instrCountDpi() const { return m_instrCountDpi; }
     int localizeMaxSize() const { return m_localizeMaxSize; }

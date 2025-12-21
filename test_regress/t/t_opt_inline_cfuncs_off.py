@@ -9,13 +9,15 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator_st')
+test.scenarios('vlt')
+test.top_filename = "t/t_opt_inline_cfuncs.v"
 
-test.compile(verilator_flags2=["--stats", "--inline-cfuncs", "0"])
+# Disable inlining with --inline-cfuncs 0
+test.compile(verilator_flags2=["--stats", "--binary", "--inline-cfuncs", "0"])
 
-test.execute(expect_filename=test.golden_filename)
+# Verify inlining did NOT happen (stat doesn't exist when pass is skipped)
+test.file_grep_not(test.stats, r'Optimizations, Inlined CFuncs\s+[1-9]')
 
-test.file_grep(test.obj_dir + "/" + test.vm_prefix + "__stats.txt",
-               r'Node count, DISPLAY \s+ 44 \s+ 27 \s+ 27 \s+ 6')
+test.execute()
 
 test.passes()

@@ -10,17 +10,16 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
-test.top_filename = "t/t_enum_type_methods.v"
 
-out_filename = test.obj_dir + "/V" + test.name + ".tree.json"
-
+# Use thresholds that guarantee rejection to test the "return false" path in isInlineable()
+# --inline-cfuncs 1: pass still runs (not skipped)
+# --inline-cfuncs-product 0: guarantees all functions rejected (node_count * call_count > 0 always)
 test.compile(verilator_flags2=[
-    '--no-std', '--debug-check', '--no-json-edit-nums', '--flatten', '--inline-cfuncs', '0'
-],
-             verilator_make_gmake=False,
-             make_top_shell=False,
-             make_main=False)
+    "--stats", "--binary", "--inline-cfuncs", "1", "--inline-cfuncs-product", "0"
+])
 
-test.files_identical(out_filename, test.golden_filename, 'logfile')
+test.file_grep(test.stats, r'Optimizations, Inlined CFuncs\s+(\d+)', 0)
+
+test.execute()
 
 test.passes()

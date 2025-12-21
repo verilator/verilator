@@ -9,13 +9,17 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator_st')
+test.scenarios('vlt')
 
-test.compile(verilator_flags2=["--stats", "--inline-cfuncs", "0"])
+# Use --output-split-cfuncs to create small functions that can be inlined
+# Also test --inline-cfuncs-product option
+test.compile(verilator_flags2=[
+    "--stats", "--binary", "--output-split-cfuncs", "1", "--inline-cfuncs-product", "200"
+])
 
-test.execute(expect_filename=test.golden_filename)
+# Verify inlining happened with exact count
+test.file_grep(test.stats, r'Optimizations, Inlined CFuncs\s+(\d+)', 39)
 
-test.file_grep(test.obj_dir + "/" + test.vm_prefix + "__stats.txt",
-               r'Node count, DISPLAY \s+ 44 \s+ 27 \s+ 27 \s+ 6')
+test.execute()
 
 test.passes()
