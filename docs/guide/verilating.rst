@@ -22,8 +22,8 @@ Verilator may be used in five major ways:
   that may be used to feed into other user-designed tools.
 
 * With the :vlopt:`-E` option, Verilator will preprocess the code according
-  to IEEE preprocessing rules and write the output to standard out. This
-  is useful to feed other tools and to debug how "\`define" statements are
+  to IEEE preprocessing rules and write the output to standard out. This is
+  useful to feed other tools and to debug how "\`define" statements are
   expanded.
 
 
@@ -80,8 +80,9 @@ Verilator first reads all files provided on the command line and
 :vlopt:`-f` files, and parses all modules within. Each module is assigned
 to the most recent library specified with :vlopt:`-work`, thus `-work liba
 a.v -work libb b.v` will assign modules in `a.v` to `liba` and modules in
-`b.v` to `libb`. In the absence of a `-work` mapping, each module is optionally
-assigned to a library based on mappings provided by :vlopt:`-libmap`.
+`b.v` to `libb`. In the absence of a `-work` mapping, each module is
+optionally assigned to a library based on mappings provided by
+:vlopt:`-libmap`.
 
 If a module is not defined from a file on the command-line, Verilator
 attempts to find a filename constructed from the module name using

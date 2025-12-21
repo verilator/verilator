@@ -163,10 +163,10 @@ packages (see internals.rst), and a Python virtual environment:
    cpan install Pod::Perldoc
 
 The Python virtual environment is only required for running the whole test
-suite, and for additional development steps like linting and formatting. It is
-not required for building Verilator itself. To install the python virtual
-environment and all dependencies automatically, run the following once, after
-``configure``:
+suite, and for additional development steps like linting and formatting. It
+is not required for building Verilator itself. To install the python
+virtual environment and all dependencies automatically, run the following
+once, after ``configure``:
 
 .. code-block:: bash
 

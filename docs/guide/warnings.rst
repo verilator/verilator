@@ -1,9 +1,9 @@
 .. Copyright 2003-2025 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-=====================
- Errors and Warnings
-=====================
+===================
+Errors and Warnings
+===================
 
 .. _disabling warnings:
 
@@ -46,8 +46,8 @@ Warnings may be disabled in multiple ways:
       lint_off -rule UNSIGNED -file "*/example.v" -lines 1
 
 Metacomments and control file directives do not interact. If a warning is
-disabled by either metacomments, or a directive in a control file, it will not
-be emitted.
+disabled by either metacomments, or a directive in a control file, it will
+not be emitted.
 
 Error And Warning Format
 ========================
