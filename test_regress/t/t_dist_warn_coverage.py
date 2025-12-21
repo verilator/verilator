@@ -68,7 +68,7 @@ for s in [
         'Unsupported: 4-state numbers in this context',
         'Unsupported: Bind with instance list',
         'Unsupported: Concatenation to form ',
-        'Unsupported: Modport dotted port name',
+        'Unsupported: Modport empty expression',
         'Unsupported: Modport export with prototype',
         'Unsupported: Modport import with prototype',
         'Unsupported: Only one PSL clock allowed per assertion',

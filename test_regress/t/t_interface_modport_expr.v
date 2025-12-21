@@ -11,7 +11,7 @@
 
 interface my_if;
   logic sig_a, sig_b, sig_c, sig_d;
-  
+
   modport mp1(input .a(sig_a), output .b(sig_b));
   modport mp2(input .a(sig_c), output .b(sig_d));
 endinterface

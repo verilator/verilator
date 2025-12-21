@@ -12,7 +12,7 @@
 interface my_if;
   logic [15:0] a;
   logic [7:0] b, c;
-  
+
   modport mp1(input .in(a[7:0]), output .out(b));
   modport mp2(input .in(a[15:8]), output .out(c));
 endinterface
