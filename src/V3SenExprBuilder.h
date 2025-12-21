@@ -58,7 +58,8 @@ private:
         if (VN_IS(dtypep, PackArrayDType)) return true;
         if (VN_IS(dtypep, UnpackArrayDType)) return isSupportedDType(dtypep->subDTypep());
         if (VN_IS(dtypep, NodeUOrStructDType)) return true;  // All are packed at the moment
-        if (VN_IS(dtypep, ClassRefDType)) return true;  // IEEE: reference change, not contents
+        // Per IEEE, detects reference object pointer changes, not contents of the class changes
+        if (VN_IS(dtypep, ClassRefDType)) return true;
         return false;
     }
 
