@@ -442,6 +442,16 @@ class UndrivenVisitor final : public VNVisitorConst {
                         << " (IEEE 1800-2023 13.5): " << nodep->prettyNameQ());
             }
         }
+
+        // EOM
+        // If writeSummary is enabled, task/function definitions are treated as non-executed.
+        // Their effects are applied at call sites via writeSummary(), so don't let definition
+        // traversal create phantom "other writes" for MULTIDRIVEN.
+        if (m_enableWriteSummary && m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic
+            && !m_inBBox) {
+            return;
+        }
+
         for (int usr = 1; usr < (m_alwaysCombp ? 3 : 2); ++usr) {
             UndrivenVarEntry* const entryp = getEntryp(nodep->varp(), usr);
             const bool fdrv = nodep->access().isWriteOrRW()
@@ -573,6 +583,15 @@ class UndrivenVisitor final : public VNVisitorConst {
         iterateChildrenConst(nodep);
 
         if (!m_enableWriteSummary || !m_capturep) return;
+
+        // EOM
+        // If writeSummary is enabled, task/function definitions are treated as non-executed.
+        // Do not apply writeSummary at calls inside a task definition, or they will look like
+        // independent drivers (phantom MULTIDRIVEN).
+        if (m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic && !m_inBBox) {
+            return;
+        }
+
         AstNodeFTask* const calleep = nodep->taskp();
         if (!calleep) return;
 

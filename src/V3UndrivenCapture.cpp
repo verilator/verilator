@@ -26,11 +26,13 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 namespace {
 
 constexpr int DBG = 9;
+
 struct Stats final {
     uint64_t ftasks = 0;
     uint64_t varWrites = 0;
     uint64_t callEdges = 0;
 } g_stats;
+
 static std::string taskNameQ(const AstNodeFTask* taskp) {
     if (!taskp) return "<null>";
     return taskp->prettyNameQ();
@@ -105,7 +107,7 @@ private:
 
 }  // namespace
 
-bool V3UndrivenCapture::enableWriteSummary = false;
+bool V3UndrivenCapture::enableWriteSummary = true;
 
 // static
 void V3UndrivenCapture::sortUniqueVars(std::vector<Var>& vec) {
