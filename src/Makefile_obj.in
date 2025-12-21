@@ -340,6 +340,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Tristate.o \
   V3Udp.o \
   V3Undriven.o \
+  V3UndrivenCapture.o \
   V3Unknown.o \
   V3Unroll.o \
   V3UnrollGen.o \
