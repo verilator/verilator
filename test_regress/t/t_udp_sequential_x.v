@@ -5,14 +5,20 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t (
-          input wire clk
-          );
+    input wire clk
+);
 
   wire q1;
-  pos i_pos(q1, clk);
+  pos i_pos (
+      q1,
+      clk
+  );
 
   wire q2;
-  neg i_neg(q2, clk);
+  neg i_neg (
+      q2,
+      clk
+  );
 
   integer cycle = 0;
   always @(posedge clk) begin
@@ -31,10 +37,10 @@ module t (
 
 endmodule
 
-primitive pos (q, clk);
+primitive pos(q, clk);
   output q;
-  reg    q;
-  input  clk;
+  reg q;
+  input clk;
   table
     (01) : ? : 0;
     // Explicitly set the output to X on clk 0->X edge.
@@ -48,10 +54,10 @@ primitive pos (q, clk);
   endtable
 endprimitive
 
-primitive neg (q, clk);
+primitive neg(q, clk);
   output q;
-  reg    q;
-  input  clk;
+  reg q;
+  input clk;
   table
     (10) : ? : 0;
     // Explicitly set the output to X on clk X->0 edge.

@@ -7,7 +7,7 @@
 class base;
   function new(string name);
     $display(name);
-    if(name == "42") $finish;
+    if (name == "42") $finish;
   endfunction
 
   function string retstr();

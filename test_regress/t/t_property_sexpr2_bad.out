@@ -5,6 +5,6 @@
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_property_sexpr2_bad.v:21:35: Delay value is not an elaboration-time constant (IEEE 1800-2023 16.7)
                                        : ... note: In instance 't'
-   21 |   assert property (@(posedge clk) ##(1 + clk) val);
+   21 |   assert property (@(posedge clk) ##(1+clk) val);
       |                                   ^~
 %Error: Exiting due to

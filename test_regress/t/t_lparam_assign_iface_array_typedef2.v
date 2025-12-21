@@ -3,16 +3,11 @@
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty, 2025 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
-//
-//
 
+// verilog_format: off
 `define stop $stop
-`define checkd(gotv,expv) \
-  do if ((gotv) !== (expv)) begin \
-    $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", \
-            `__FILE__,`__LINE__, (gotv), (expv)); \
-    `stop; \
-  end while(0);
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 package a_pkg;
   typedef struct packed {
@@ -56,8 +51,8 @@ module t(
   bus_if #(.cfg(cfg1)) bus_mst_io_a [2] ();
 
   a_mod a_mod0(
-    .bus_tgt_io_a(bus_tgt_io_a)
-    ,.bus_mst_io_a(bus_mst_io_a)
+    .bus_tgt_io_a(bus_tgt_io_a),
+    .bus_mst_io_a(bus_mst_io_a)
   );
 
   initial begin

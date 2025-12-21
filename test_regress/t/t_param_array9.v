@@ -35,13 +35,11 @@ module ring #(
       .S_IS_T(s_is_t),
       .S_IS(S_IS)
   ) p (
-      .*);
+      .*
+  );
 endmodule
 
 module t;
   typedef logic [4:0] i_t;
-  ring #(
-      .I_T(i_t)
-  ) dut (
-      .*);
+  ring #(.I_T(i_t)) dut (.*);
 endmodule

@@ -4,7 +4,7 @@
 // any use, without warranty, 2025 by Antmicro.
 // SPDX-License-Identifier: CC0-1.0
 
-`timescale 1ms/1ns
+`timescale 1ms / 1ns
 module t;
   bit clk = 0;
   bit data = 1;
@@ -21,12 +21,11 @@ module t;
   end
 
   initial begin
-    #4
-    if(data != 1 ) $stop;
-    if(cb.data != 0) $stop;
+    #4 if (data != 1) $stop;
+    if (cb.data != 0) $stop;
     #1;
     #1step;
-    if(cb.data != 1) $stop;
+    if (cb.data != 1) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end

@@ -7,9 +7,11 @@
 module t;
   bit flag;
   initial begin
-    fork begin
+    fork
+      begin
         $stop;
-    end join_none
+      end
+    join_none
     $finish;
   end
 endmodule

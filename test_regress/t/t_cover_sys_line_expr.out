@@ -5,12 +5,9 @@
         // any use, without warranty, 2024 by Wilson Snyder.
         // SPDX-License-Identifier: CC0-1.0
         
-        module t (/*AUTOARG*/
-          // Inputs
-          clk
-          );
-        
-          input clk;
+        module t (
+            input clk
+        );
         
           int cyc, bump, result;
           logic foo;
@@ -326,7 +323,7 @@
 -000000  point: comment=else hier=top.t
  000010     cyc <= cyc + 1;
 +000010  point: comment=block hier=top.t
-%000009     if (cyc==9) begin
+%000009     if (cyc == 9) begin
 -000001  point: comment=if hier=top.t
 -000009  point: comment=else hier=top.t
 %000001       $write("*-* All Finished *-*\n");
@@ -334,6 +331,6 @@
 %000001       $finish;
 -000001  point: comment=if hier=top.t
             end
-           end
+          end
         endmodule
         

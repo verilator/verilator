@@ -28,12 +28,12 @@ module t (
   endtask
 
   function int f_no_implicit_static();
-    localparam int ONE = 1; // No warning here
+    localparam int ONE = 1;  // No warning here
     return ONE;
   endfunction
 
   task t_no_implicit_static();
-    localparam TWO = 2; // No warning here
+    localparam TWO = 2;  // No warning here
   endtask
 
 endmodule

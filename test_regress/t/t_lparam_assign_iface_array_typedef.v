@@ -3,33 +3,27 @@
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty, 2025 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
-//
-//
 
+// verilog_format: off
 `define stop $stop
-`define checkd(gotv,expv) \
-  do if ((gotv) !== (expv)) begin \
-    $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", \
-            `__FILE__,`__LINE__, (gotv), (expv)); \
-    `stop; \
-  end while(0);
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 package a_pkg;
-  typedef struct packed {
-    int unsigned IdBits;
-  } cfg_t;
+  typedef struct packed {int unsigned IdBits;} cfg_t;
 endpackage
 
 interface bus_if #(
-  parameter a_pkg::cfg_t cfg = 0
-)();
+    parameter a_pkg::cfg_t cfg = 0
+) ();
   typedef logic [cfg.IdBits-1:0] id_t;
   id_t id;
 endinterface
 
-module a_mod #()(
-  bus_if bus_tgt_io
-  ,bus_if bus_mst_io
+module a_mod #(
+) (
+    bus_if bus_tgt_io,
+    bus_if bus_mst_io
 );
 
   localparam type tgt_id_t = bus_tgt_io.id_t;
@@ -46,18 +40,18 @@ module a_mod #()(
 
 endmodule
 
-module t(
-  input logic clk
+module t (
+    input logic clk
 );
   localparam a_pkg::cfg_t cfg0 = '{IdBits: 5};
   localparam a_pkg::cfg_t cfg1 = '{IdBits: 10};
 
-  bus_if #(.cfg(cfg0)) bus_io0();
-  bus_if #(.cfg(cfg1)) bus_io1();
+  bus_if #(.cfg(cfg0)) bus_io0 ();
+  bus_if #(.cfg(cfg1)) bus_io1 ();
 
-  a_mod a_mod0(
-    .bus_tgt_io(bus_io0)
-    ,.bus_mst_io(bus_io1)
+  a_mod a_mod0 (
+      .bus_tgt_io(bus_io0),
+      .bus_mst_io(bus_io1)
   );
 
   initial begin

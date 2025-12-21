@@ -1,6 +1,6 @@
-%Error: t/t_func_virt_new_bad.v:9:13: Illegal to call 'new' using an abstract virtual class 'vcl' (IEEE 1800-2023 8.21)
-                                    : ... note: In instance 't'
-    9 |     T obj = new;
+%Error: t/t_func_virt_new_bad.v:11:13: Illegal to call 'new' using an abstract virtual class 'vcl' (IEEE 1800-2023 8.21)
+                                     : ... note: In instance 't'
+   11 |     T obj = new;
       |             ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

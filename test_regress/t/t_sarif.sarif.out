@@ -35,7 +35,7 @@
                     "level": "warning",
                     "message": {
                         "text": "Duplicate declaration of module: 't'\n... Location of original declaration\n... For warning description see https://verilator.org/warn/MODDUP?v=latest\n... Use \"/* verilator lint_off MODDUP */\" and lint_on around source to disable this message.",
-                        "markdown": "```\n%Warning-MODDUP: t/t_sarif.v:21:8: Duplicate declaration of module: 't'\n   21 | module t;   \n      |        ^\n                 t/t_sarif.v:7:8: ... Location of original declaration\n    7 | module t(\n      |        ^\n                 ... For warning description see https://verilator.org/warn/MODDUP?v=latest\n                 ... Use \"/* verilator lint_off MODDUP */\" and lint_on around source to disable this message.\n\n```\n"
+                        "markdown": "```\n%Warning-MODDUP: t/t_sarif.v:20:8: Duplicate declaration of module: 't'\n   20 | module t;   \n      |        ^\n                 t/t_sarif.v:7:8: ... Location of original declaration\n    7 | module t (\n      |        ^\n                 ... For warning description see https://verilator.org/warn/MODDUP?v=latest\n                 ... Use \"/* verilator lint_off MODDUP */\" and lint_on around source to disable this message.\n\n```\n"
                     },
                     "locations": [
                         {
@@ -45,12 +45,12 @@
                                 },
                                 "region": {
                                     "sourceLanguage": "systemverilog",
-                                    "startLine": 21,
+                                    "startLine": 20,
                                     "startColumn": 8,
                                     "endColumn": 9,
                                     "snippit": {
                                         "text": "module t;",
-                                        "markdown": "```\n   21 | module t;   \n      |        ^\n\n```\n"
+                                        "markdown": "```\n   20 | module t;   \n      |        ^\n\n```\n"
                                     }
                                 }
                             }
@@ -60,7 +60,7 @@
                         {
                             "message": {
                                 "text": "... Location of original declaration\n... For warning description see https://verilator.org/warn/MODDUP?v=latest\n... Use \"/* verilator lint_off MODDUP */\" and lint_on around source to disable this message.",
-                                "markdown": "```\n                 t/t_sarif.v:7:8: ... Location of original declaration\n    7 | module t(\n      |        ^\n                 ... For warning description see https://verilator.org/warn/MODDUP?v=latest\n                 ... Use \"/* verilator lint_off MODDUP */\" and lint_on around source to disable this message.\n\n```\n"
+                                "markdown": "```\n                 t/t_sarif.v:7:8: ... Location of original declaration\n    7 | module t (\n      |        ^\n                 ... For warning description see https://verilator.org/warn/MODDUP?v=latest\n                 ... Use \"/* verilator lint_off MODDUP */\" and lint_on around source to disable this message.\n\n```\n"
                             },
                             "physicalLocation": {
                                 "artifactLocation": {
@@ -72,8 +72,8 @@
                                     "startColumn": 8,
                                     "endColumn": 9,
                                     "snippit": {
-                                        "text": "module t(",
-                                        "markdown": "```\n    7 | module t(\n      |        ^\n\n```\n"
+                                        "text": "module t (",
+                                        "markdown": "```\n    7 | module t (\n      |        ^\n\n```\n"
                                     }
                                 }
                             }
@@ -86,7 +86,7 @@
                     "level": "warning",
                     "message": {
                         "text": "Operator ASSIGNW expects 2 bits on the Assign RHS, but Assign RHS's CONST '5'h1f' generates 5 bits.\n... note: In instance 't'\n... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest\n... Use \"/* verilator lint_off WIDTHTRUNC */\" and lint_on around source to disable this message.",
-                        "markdown": "```\n%Warning-WIDTHTRUNC: t/t_sarif.v:12:23: Operator ASSIGNW expects 2 bits on the Assign RHS, but Assign RHS's CONST '5'h1f' generates 5 bits.\n                                      : ... note: In instance 't'\n   12 |    wire [1:0] trunced = 5'b11111;   \n      |                       ^\n                     ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest\n                     ... Use \"/* verilator lint_off WIDTHTRUNC */\" and lint_on around source to disable this message.\n\n```\n"
+                        "markdown": "```\n%Warning-WIDTHTRUNC: t/t_sarif.v:13:22: Operator ASSIGNW expects 2 bits on the Assign RHS, but Assign RHS's CONST '5'h1f' generates 5 bits.\n                                      : ... note: In instance 't'\n   13 |   wire [1:0] trunced = 5'b11111;   \n      |                      ^\n                     ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest\n                     ... Use \"/* verilator lint_off WIDTHTRUNC */\" and lint_on around source to disable this message.\n\n```\n"
                     },
                     "locations": [
                         {
@@ -96,12 +96,12 @@
                                 },
                                 "region": {
                                     "sourceLanguage": "systemverilog",
-                                    "startLine": 12,
-                                    "startColumn": 23,
-                                    "endColumn": 24,
+                                    "startLine": 13,
+                                    "startColumn": 22,
+                                    "endColumn": 23,
                                     "snippit": {
-                                        "text": "   wire [1:0] trunced = 5'b11111;",
-                                        "markdown": "```\n   12 |    wire [1:0] trunced = 5'b11111;   \n      |                       ^\n\n```\n"
+                                        "text": "  wire [1:0] trunced = 5'b11111;",
+                                        "markdown": "```\n   13 |   wire [1:0] trunced = 5'b11111;   \n      |                      ^\n\n```\n"
                                     }
                                 }
                             }
@@ -114,7 +114,7 @@
                     "level": "warning",
                     "message": {
                         "text": "Signal has multiple driving blocks with different clocking: 'multidriven'\n... Location of first driving block\n... Location of other driving block\n... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest\n... Use \"/* verilator lint_off MULTIDRIVEN */\" and lint_on around source to disable this message.",
-                        "markdown": "```\n%Warning-MULTIDRIVEN: t/t_sarif.v:10:18: Signal has multiple driving blocks with different clocking: 'multidriven'\n                      t/t_sarif.v:15:6: ... Location of first driving block\n   15 |      multidriven <= '1;\n      |      ^~~~~~~~~~~\n                      t/t_sarif.v:17:6: ... Location of other driving block\n   17 |      multidriven <= '0;\n      |      ^~~~~~~~~~~\n                      ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest\n                      ... Use \"/* verilator lint_off MULTIDRIVEN */\" and lint_on around source to disable this message.\n\n```\n"
+                        "markdown": "```\n%Warning-MULTIDRIVEN: t/t_sarif.v:10:18: Signal has multiple driving blocks with different clocking: 'multidriven'\n                      t/t_sarif.v:15:26: ... Location of first driving block\n   15 |   always @(posedge clk1) multidriven <= '1;\n      |                          ^~~~~~~~~~~\n                      t/t_sarif.v:16:26: ... Location of other driving block\n   16 |   always @(posedge clk2) multidriven <= '0;\n      |                          ^~~~~~~~~~~\n                      ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest\n                      ... Use \"/* verilator lint_off MULTIDRIVEN */\" and lint_on around source to disable this message.\n\n```\n"
                     },
                     "locations": [
                         {
@@ -128,8 +128,8 @@
                                     "startColumn": 18,
                                     "endColumn": 29,
                                     "snippit": {
-                                        "text": "    output logic multidriven);",
-                                        "markdown": "```\n   10 |     output logic multidriven);\n      |                  ^~~~~~~~~~~\n\n```\n"
+                                        "text": "    output logic multidriven",
+                                        "markdown": "```\n   10 |     output logic multidriven\n      |                  ^~~~~~~~~~~\n\n```\n"
                                     }
                                 }
                             }
@@ -139,7 +139,7 @@
                         {
                             "message": {
                                 "text": "... Location of first driving block",
-                                "markdown": "```\n                      t/t_sarif.v:15:6: ... Location of first driving block\n   15 |      multidriven <= '1;\n      |      ^~~~~~~~~~~\n\n```\n"
+                                "markdown": "```\n                      t/t_sarif.v:15:26: ... Location of first driving block\n   15 |   always @(posedge clk1) multidriven <= '1;\n      |                          ^~~~~~~~~~~\n\n```\n"
                             },
                             "physicalLocation": {
                                 "artifactLocation": {
@@ -148,11 +148,11 @@
                                 "region": {
                                     "sourceLanguage": "systemverilog",
                                     "startLine": 15,
-                                    "startColumn": 6,
-                                    "endColumn": 17,
+                                    "startColumn": 26,
+                                    "endColumn": 37,
                                     "snippit": {
-                                        "text": "     multidriven <= '1;",
-                                        "markdown": "```\n   15 |      multidriven <= '1;\n      |      ^~~~~~~~~~~\n\n```\n"
+                                        "text": "  always @(posedge clk1) multidriven <= '1;",
+                                        "markdown": "```\n   15 |   always @(posedge clk1) multidriven <= '1;\n      |                          ^~~~~~~~~~~\n\n```\n"
                                     }
                                 }
                             }
@@ -160,7 +160,7 @@
                         {
                             "message": {
                                 "text": "... Location of other driving block\n... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest\n... Use \"/* verilator lint_off MULTIDRIVEN */\" and lint_on around source to disable this message.",
-                                "markdown": "```\n                      t/t_sarif.v:17:6: ... Location of other driving block\n   17 |      multidriven <= '0;\n      |      ^~~~~~~~~~~\n                      ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest\n                      ... Use \"/* verilator lint_off MULTIDRIVEN */\" and lint_on around source to disable this message.\n\n```\n"
+                                "markdown": "```\n                      t/t_sarif.v:16:26: ... Location of other driving block\n   16 |   always @(posedge clk2) multidriven <= '0;\n      |                          ^~~~~~~~~~~\n                      ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest\n                      ... Use \"/* verilator lint_off MULTIDRIVEN */\" and lint_on around source to disable this message.\n\n```\n"
                             },
                             "physicalLocation": {
                                 "artifactLocation": {
@@ -168,12 +168,12 @@
                                 },
                                 "region": {
                                     "sourceLanguage": "systemverilog",
-                                    "startLine": 17,
-                                    "startColumn": 6,
-                                    "endColumn": 17,
+                                    "startLine": 16,
+                                    "startColumn": 26,
+                                    "endColumn": 37,
                                     "snippit": {
-                                        "text": "     multidriven <= '0;",
-                                        "markdown": "```\n   17 |      multidriven <= '0;\n      |      ^~~~~~~~~~~\n\n```\n"
+                                        "text": "  always @(posedge clk2) multidriven <= '0;",
+                                        "markdown": "```\n   16 |   always @(posedge clk2) multidriven <= '0;\n      |                          ^~~~~~~~~~~\n\n```\n"
                                     }
                                 }
                             }

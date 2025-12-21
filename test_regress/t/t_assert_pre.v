@@ -4,15 +4,14 @@
 // any use, without warranty, 2025 by Antmicro.
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define stop $stop
-`define checkh(gotv,
-               expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
+`define checkh(gotv, expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
+// verilog_format: on
 
-module t (  /*AUTOARG*/
-    // Inputs
-    clk
+module t (
+    input clk
 );
-  input clk;
 
   bit toggle = 0;
   int inc = 0;
@@ -49,7 +48,8 @@ module t (  /*AUTOARG*/
 `endif
     if (cyc % 3 == 0) begin
       toggle <= 1;
-    end else begin
+    end
+    else begin
       toggle <= 0;
     end
 

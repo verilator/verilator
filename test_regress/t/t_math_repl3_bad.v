@@ -5,7 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t #(
-    parameter NUM_LANES  = 1);
+    parameter NUM_LANES = 1
+);
 
   reg [(NUM_LANES*8)-1:0] link_data_reg, link_data_reg_in;
   reg [1:0] other;

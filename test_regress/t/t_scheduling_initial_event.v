@@ -4,8 +4,10 @@
 // any use, without warranty, 2025 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
+// verilog_format: on
 
 module top;
   logic pEdge = 1'b0;
@@ -75,22 +77,22 @@ module top;
     `checkh(changePCnt, 3);
     `checkh(changeNCnt, 3);
 
-    `checkh(pEdgeTime[0],  0);
+    `checkh(pEdgeTime[0], 0);
     `checkh(pEdgeTime[1], 20);
     `checkh(pEdgeTime[2], -1);
-    `checkh(nEdgeTime[0],  0);
+    `checkh(nEdgeTime[0], 0);
     `checkh(nEdgeTime[1], 20);
     `checkh(nEdgeTime[2], -1);
-    `checkh(edgePTime[0],  0);
+    `checkh(edgePTime[0], 0);
     `checkh(edgePTime[1], 10);
     `checkh(edgePTime[2], 20);
-    `checkh(edgeNTime[0],  0);
+    `checkh(edgeNTime[0], 0);
     `checkh(edgeNTime[1], 10);
     `checkh(edgeNTime[2], 20);
-    `checkh(changePTime[0],  0);
+    `checkh(changePTime[0], 0);
     `checkh(changePTime[1], 10);
     `checkh(changePTime[2], 20);
-    `checkh(changeNTime[0],  0);
+    `checkh(changeNTime[0], 0);
     `checkh(changeNTime[1], 10);
     `checkh(changeNTime[2], 20);
     $write("*-* All Finished *-*\n");
@@ -104,4 +106,4 @@ module top;
   always @(changeP) changePTime[changePCnt++] = $time;
   always @(changeN) changeNTime[changeNCnt++] = $time;
 
-endmodule // test
+endmodule  // test

@@ -5,14 +5,14 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class base #(
-   type T = int
+    type T = int
 );
-   function void fbase();
-   endfunction
+  function void fbase();
+  endfunction
 endclass
 
 class ext extends base;
-   function void fext();
-      super.fbase();
-   endfunction
+  function void fext();
+    super.fbase();
+  endfunction
 endclass

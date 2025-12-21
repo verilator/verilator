@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t (
-    input  logic signed [64:0] i_x,
+    input logic signed [64:0] i_x,
     output logic signed [64:0] o_y
 );
   struct {logic signed [64:0] m_x;} s;

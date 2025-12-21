@@ -4,12 +4,9 @@
 // any use, without warranty, 2024 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-  // Inputs
-  clk
-  );
-
-  input clk;
+module t (
+    input clk
+);
 
   int cyc, bump, result;
   logic foo;
@@ -73,9 +70,9 @@ module t (/*AUTOARG*/
     if (($sformatf("abc") != "abc") && foo) bump <= bump + 1;
     if (foo && foo) bump <= bump + 1;
     cyc <= cyc + 1;
-    if (cyc==9) begin
+    if (cyc == 9) begin
       $write("*-* All Finished *-*\n");
       $finish;
     end
-   end
+  end
 endmodule

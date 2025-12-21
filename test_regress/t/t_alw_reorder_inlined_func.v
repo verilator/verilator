@@ -4,8 +4,10 @@
 // any use, without warranty, 2025 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define stop $stop
 `define check(got ,exp) do if ((got) !== (exp)) begin $write("%%Error: %s:%0d: $time=%0t got='h%x exp='h%x\n", `__FILE__,`__LINE__, $time, (got), (exp)); `stop; end while(0)
+// verilog_format: on
 
 module t;
 
@@ -18,15 +20,16 @@ module t;
   // Constant 1 set in initial block, but not known at compile time
   logic enable = 1'b0;
 
-  int array [32];
+  int array[32];
 
   function automatic int get(logic en, logic [4:0] idx);
-    if (en) begin // Always taken, but need the 'if' to show bug
+    if (en) begin  // Always taken, but need the 'if' to show bug
       int tmp;
       idx = ~idx;
       tmp = array[~idx];
       return tmp;
-    end else begin
+    end
+    else begin
       return 0;
     end
   endfunction

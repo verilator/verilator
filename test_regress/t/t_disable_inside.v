@@ -10,7 +10,7 @@ module t;
     fork : fork_blk
       begin
         #1;
-        disable fork_blk; // Disables both forked processes
+        disable fork_blk;  // Disables both forked processes
         $stop;
       end
       begin
@@ -32,7 +32,7 @@ module t;
     fork
       begin : fork_branch
         #1;
-        disable fork_branch; // Disables only this branch of the fork
+        disable fork_branch;  // Disables only this branch of the fork
         $stop;
       end
       begin

@@ -12,7 +12,11 @@ module t (
     output logic d_o
 );
   // verilator lint_off PINMISSING
-  Sub sub (.a_i({a2_i, a1_i, a0_i}), .b_i, .d_o);
+  Sub sub (
+      .a_i({a2_i, a1_i, a0_i}),
+      .b_i,
+      .d_o
+  );
   // verilator lint_on PINMISSING
 endmodule
 

@@ -34,10 +34,10 @@ module sub (
     end
 endmodule
 
-module t (/*AUTOARG*/
-    clk
-    );
-    input clk;
+module t (
+    input clk
+);
+
     int cyc = 0;
     always @ (posedge clk) begin
         cyc <= cyc + 1;

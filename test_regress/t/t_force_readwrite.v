@@ -13,7 +13,7 @@ module t;
   logic a;
   logic b = 1;
   logic c;
-  Cls   cls = new;
+  Cls cls = new;
 
   initial begin
     force a = b;

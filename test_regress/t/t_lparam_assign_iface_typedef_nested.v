@@ -16,8 +16,8 @@ interface y_if #(
 endinterface
 
 interface x_if #(
-  parameter int p_awidth = 4
-  ,parameter int p_dwidth = 7
+  parameter int p_awidth = 4,
+  parameter int p_dwidth = 7
 )();
   typedef struct packed {
     logic [p_awidth-1:0] addr;
@@ -33,8 +33,8 @@ endinterface
 
 module top();
   x_if #(
-    .p_awidth(16)
-    ,.p_dwidth(8)
+    .p_awidth(16),
+    .p_dwidth(8)
   ) if0();
 
   localparam p0_rq2_t = if0.y_if0.rq2_t;
