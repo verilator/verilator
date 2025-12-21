@@ -2495,8 +2495,8 @@ The grammar of control commands is as follows:
    converted into ``begin``/``end`` blocks.
 
    Similar to :option:`/*verilator&32;timing_on*/`,
-   :option:`/*verilator&32;timing_off*/` metacomments, but interpreted
-   independtly. If either a control file, or metacommets disable timing
+   :option:`/*verilator&32;timing_off*/` meta-comments, but interpreted
+   independently. If either a control file, or meta-comments disable timing
    constructs, they will be disabled.
 
    .. t_dist_docs_style ignore tracing_on
