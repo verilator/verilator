@@ -156,8 +156,7 @@ const std::vector<V3UndrivenCapture::Var>& V3UndrivenCapture::computeWriteSummar
         UINFO(DBG, "undriven capture recursion detected at "
                        << taskNameQ(taskp)
                        << " returning directWrites size=" << info.directWrites.size());
-        // Cycle detected. Simple behaviour:
-        // return directWrites only to guarantee termination.
+        // Cycle detected. return directWrites only to guarantee termination.
         if (info.writeSummary.empty()) info.writeSummary = info.directWrites;
         sortUniqueVars(info.writeSummary);
         return info.writeSummary;
@@ -168,18 +167,20 @@ const std::vector<V3UndrivenCapture::Var>& V3UndrivenCapture::computeWriteSummar
     // Start with direct writes
     info.writeSummary = info.directWrites;
 
-    // Union in callees
+    // Need callees
     for (FTask calleep : info.callees) {
         if (m_info.find(calleep) == m_info.end()) continue;
         const std::vector<Var>& sub = computeWriteSummary(calleep);
         info.writeSummary.insert(info.writeSummary.end(), sub.begin(), sub.end());
     }
 
+    // Remove duplicates and sort because grabbing all of the callees can result in duplicates
     sortUniqueVars(info.writeSummary);
 
     UINFO(DBG, "undriven capture writeSummary computed size=" << info.writeSummary.size()
                                                               << " for " << taskNameQ(taskp));
 
+    // We are done, so set the m_info state correctly and return the vector of variables
     info.state = State::DONE;
     return info.writeSummary;
 }
