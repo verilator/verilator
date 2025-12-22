@@ -69,7 +69,13 @@ private:
             UINFO(DBG, "UndrivenCapture: direct write in "
                            << taskNameQ(m_curTaskp) << " var=" << nodep->varp()->prettyNameQ()
                            << " at " << nodep->fileline());
-            m_cap.info(m_curTaskp).directWrites.push_back(nodep->varp());
+            //m_cap.info(m_curTaskp).directWrites.push_back(nodep->varp());
+            AstVar* const retVarp = VN_CAST(m_curTaskp->fvarp(), Var);
+            if (retVarp && nodep->varp() == retVarp) {
+                // Skip: function return variable is local, not a side-effect
+            } else {
+                m_cap.info(m_curTaskp).directWrites.push_back(nodep->varp());
+            }
         }
         iterateChildrenConst(nodep);
     }

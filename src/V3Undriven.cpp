@@ -480,13 +480,13 @@ class UndrivenVisitor final : public VNVisitorConst {
                     // EOM
                     //&& entryp->getNodep()) {
                     && (entryp->getNodep()
-                        || (V3UndrivenCapture::enableWriteSummary && entryp->getCallNodep()))) {
+                        || (m_enableWriteSummary && entryp->getCallNodep()))) {
 
                     // EOM
                     const AstNode* const otherWritep
                         = entryp->getNodep()
                               ? static_cast<const AstNode*>(entryp->getNodep())
-                              : (V3UndrivenCapture::enableWriteSummary ? entryp->getCallNodep()
+                              : (m_enableWriteSummary ? entryp->getCallNodep()
                                                                        : nullptr);
 
                     if (m_alwaysCombp
