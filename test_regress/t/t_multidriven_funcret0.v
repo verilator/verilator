@@ -1,4 +1,10 @@
-// DESCRIPTION: Verilator: MULTIDRIVEN false positive - package function return var
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed into the Public Domain, for any use,
+// without warranty.
+// SPDX-License-Identifier: CC0-1.0
+
+// MULTIDRIVEN false positive - package function return var
 //
 // Minimal reproducer for: package function with "return expr" used in always_comb expression.
 // The function return variable must not be treated as a side-effect "writeSummary" target.
