@@ -170,13 +170,21 @@ class RandomizeMarkVisitor final : public VNVisitor {
             if (VN_IS(pinp, With)) continue;
             const AstArg* const argp = VN_CAST(pinp, Arg);
             if (!argp) continue;
-            const AstNodeExpr* const exprp = argp->exprp();
-            if (const AstNodeVarRef* const varrefp = VN_CAST(exprp, NodeVarRef)) {
-                if (varrefp->varp() == varp) return true;
-            } else if (const AstMemberSel* const memberselp = VN_CAST(exprp, MemberSel)) {
-                if (memberselp->varp() == varp) return true;
-            } else if (const AstArraySel* const arrselp = VN_CAST(exprp, ArraySel)) {
-                if (VN_AS(arrselp->fromp(), VarRef)->varp() == varp) return true;
+            const AstNodeExpr* exprp = argp->exprp();
+            // Traverse through ArraySel and MemberSel to find the base variable
+            while (exprp) {
+                if (const AstNodeVarRef* const varrefp = VN_CAST(exprp, NodeVarRef)) {
+                    if (varrefp->varp() == varp) return true;
+                    break;
+                }
+                if (const AstMemberSel* const memberselp = VN_CAST(exprp, MemberSel)) {
+                    if (memberselp->varp() == varp) return true;
+                    exprp = memberselp->fromp();
+                } else if (const AstArraySel* const arrselp = VN_CAST(exprp, ArraySel)) {
+                    exprp = arrselp->fromp();
+                } else {
+                    break;
+                }
             }
         }
         return false;
@@ -535,22 +543,30 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 AstArg* const argp = VN_CAST(pinp, Arg);
                 if (!argp) continue;
                 AstNodeExpr* exprp = argp->exprp();
+                // IEEE 1800-2023 18.11: "Arguments are limited to the names of properties
+                // of the calling object; expressions are not allowed."
+                // However, for compatibility with other simulators, we support complex
+                // expressions like obj.member[idx] in std::randomize().
                 while (exprp) {
                     AstVar* randVarp = nullptr;
                     AstVarRef* varrefp = nullptr;
                     if (AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
                         randVarp = memberSelp->varp();
                         exprp = memberSelp->fromp();
+                    } else if (AstArraySel* const arraySelp = VN_CAST(exprp, ArraySel)) {
+                        // Check if child is VarRef and mark it
+                        if (AstVarRef* const childVarRefp = VN_CAST(arraySelp->fromp(), VarRef)) {
+                            childVarRefp->access(VAccess::READWRITE);
+                        }
+                        exprp = arraySelp->fromp();
+                        continue;  // Skip ArraySel, continue traversing
                     } else if ((varrefp = VN_CAST(exprp, VarRef))) {
                         randVarp = varrefp->varp();
                         varrefp->user1(true);
                         exprp = nullptr;
                     } else {
-                        varrefp = VN_AS(VN_CAST(exprp, ArraySel)->fromp(), VarRef);
-                        randVarp = varrefp->varp();
-                        varrefp->user1(true);
-                        varrefp->access(VAccess::READWRITE);
-                        exprp = nullptr;
+                        // All invalid and unsupported expressions should be caught in V3Width
+                        nodep->v3fatalSrc("Unexpected expression type in std::randomize() argument");
                     }
                     UASSERT_OBJ(randVarp, nodep, "No rand variable found");
                     AstNode* backp = randVarp;
@@ -578,15 +594,28 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     fromVarp = varrefp->varp();
                 }
             }
+            // IEEE 1800-2023 18.11: "Arguments are limited to the names of properties
+            // of the calling object; expressions are not allowed."
+            // However, for compatibility with other simulators, we support complex
+            // expressions like obj.member[idx].field in inline randomize().
             while (exprp) {
                 AstVar* randVarp = nullptr;
                 if (AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
                     randVarp = memberSelp->varp();
                     exprp = memberSelp->fromp();
-                } else {
-                    AstVarRef* const varrefp = VN_AS(exprp, VarRef);
+                } else if (AstArraySel* const arraySelp = VN_CAST(exprp, ArraySel)) {
+                    // Check if child is VarRef and mark it
+                    if (AstVarRef* const childVarRefp = VN_CAST(arraySelp->fromp(), VarRef)) {
+                        childVarRefp->access(VAccess::READWRITE);
+                    }
+                    exprp = arraySelp->fromp();
+                    continue;  // Skip ArraySel, continue traversing
+                } else if (AstVarRef* const varrefp = VN_CAST(exprp, VarRef)) {
                     randVarp = varrefp->varp();
                     exprp = nullptr;
+                } else {
+                    // All invalid and unsupported expressions should be caught in V3Width
+                    nodep->v3fatalSrc("Unexpected expression type in randomize() argument");
                 }
                 if (randVarp == fromVarp) break;
                 UASSERT_OBJ(randVarp, nodep, "No rand variable found");
