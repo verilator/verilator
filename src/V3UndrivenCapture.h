@@ -19,9 +19,9 @@
 // Capture task/function write summaries for multidriven checks.
 // Per-task/function capture info keyed by resolved AstNodeFTask* identity (FTask = function or
 // task).  This is our 'graph' of tasks/functions.  Each node has a list of direct callees and
-// a list of variables written in the function body.  There are methods to dedup after walking the tree.
-// V3Undriven then uses the writeSummary for multidriven checks - i.e. it treats writes (side effects)
-// inside subroutines as part of the caller's process.
+// a list of variables written in the function body.  There are methods to dedup after walking the
+// tree. V3Undriven then uses the writeSummary for multidriven checks - i.e. it treats writes (side
+// effects) inside subroutines as part of the caller's process.
 //
 //*************************************************************************
 

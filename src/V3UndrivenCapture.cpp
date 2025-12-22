@@ -64,9 +64,9 @@ private:
     void visit(AstNodeVarRef* nodep) override {
         if (m_curTaskp && nodep->access().isWriteOrRW()) {
             ++g_stats.varWrites;
-            UINFO(9, "undriven capture direct write in "
-                           << taskNameQ(m_curTaskp) << " var=" << nodep->varp()->prettyNameQ()
-                           << " at " << nodep->fileline());
+            UINFO(9, "undriven capture direct write in " << taskNameQ(m_curTaskp)
+                                                         << " var=" << nodep->varp()->prettyNameQ()
+                                                         << " at " << nodep->fileline());
 
             m_cap.noteDirectWrite(m_curTaskp, nodep->varp());
         }
@@ -79,11 +79,11 @@ private:
             if (AstNodeFTask* const calleep = nodep->taskp()) {
                 ++g_stats.callEdges;
                 UINFO(9, "undriven capture call edge " << taskNameQ(m_curTaskp) << " -> "
-                                                         << taskNameQ(calleep));
+                                                       << taskNameQ(calleep));
                 m_cap.noteCallEdge(m_curTaskp, calleep);
             } else {
                 UINFO(9, "undriven capture unresolved call in " << taskNameQ(m_curTaskp)
-                                                                  << " name=" << nodep->name());
+                                                                << " name=" << nodep->name());
             }
         }
         iterateChildrenConst(nodep);  // still scan pins/args
@@ -119,8 +119,8 @@ V3UndrivenCapture::V3UndrivenCapture(AstNetlist* netlistp) {
     for (const auto& kv : m_info) (void)computeWriteSummary(kv.first);
 
     UINFO(9, "undriven capture stats ftasks="
-                   << g_stats.ftasks << " varWrites=" << g_stats.varWrites
-                   << " callEdges=" << g_stats.callEdges << " uniqueTasks=" << m_info.size());
+                 << g_stats.ftasks << " varWrites=" << g_stats.varWrites
+                 << " callEdges=" << g_stats.callEdges << " uniqueTasks=" << m_info.size());
 }
 
 void V3UndrivenCapture::gather(AstNetlist* netlistp) {
@@ -145,13 +145,13 @@ const std::vector<AstVar*>& V3UndrivenCapture::computeWriteSummary(const AstNode
 
     if (info.state == State::DONE) {
         UINFO(9, "undriven capture writeSummary cached size=" << info.writeSummary.size()
-                                                                << " for " << taskNameQ(taskp));
+                                                              << " for " << taskNameQ(taskp));
         return info.writeSummary;
     }
     if (info.state == State::VISITING) {
         UINFO(9, "undriven capture recursion detected at "
-                       << taskNameQ(taskp)
-                       << " returning directWrites size=" << info.directWrites.size());
+                     << taskNameQ(taskp)
+                     << " returning directWrites size=" << info.directWrites.size());
         // Cycle detected. return directWrites only to guarantee termination.
         if (info.writeSummary.empty()) info.writeSummary = info.directWrites;
         sortUniqueVars(info.writeSummary);
@@ -173,8 +173,8 @@ const std::vector<AstVar*>& V3UndrivenCapture::computeWriteSummary(const AstNode
     // Remove duplicates and sort because grabbing all of the callees can result in duplicates
     sortUniqueVars(info.writeSummary);
 
-    UINFO(9, "undriven capture writeSummary computed size=" << info.writeSummary.size()
-                                                              << " for " << taskNameQ(taskp));
+    UINFO(9, "undriven capture writeSummary computed size=" << info.writeSummary.size() << " for "
+                                                            << taskNameQ(taskp));
 
     // We are done, so set the m_info state correctly and return the vector of variables
     info.state = State::DONE;

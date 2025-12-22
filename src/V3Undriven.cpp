@@ -52,7 +52,8 @@ class UndrivenVarEntry final {
     const FileLine* m_nodeFileLinep = nullptr;  // File line of varref if driven, else nullptr
     bool m_underGen = false;  // Under a generate
 
-    const AstNodeFTaskRef* m_callNodep = nullptr;  // Call node if driven via writeSummary, else nullptr
+    const AstNodeFTaskRef* m_callNodep
+        = nullptr;  // Call node if driven via writeSummary, else nullptr
 
     enum : uint8_t { FLAG_USED = 0, FLAG_DRIVEN = 1, FLAG_DRIVEN_ALWCOMB = 2, FLAGS_PER_BIT = 3 };
 
@@ -284,9 +285,7 @@ public:
 
     void drivenViaCall(const AstNodeFTaskRef* nodep) {
         drivenWhole();
-        if (!m_callNodep) {
-            m_callNodep = nodep;
-        }
+        if (!m_callNodep) { m_callNodep = nodep; }
     }
     const AstNodeFTaskRef* callNodep() const { return m_callNodep; }
 };
@@ -315,8 +314,8 @@ class UndrivenVisitor final : public VNVisitorConst {
     const AstAlways* m_alwaysp = nullptr;  // Current always of either type
     const AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
 
-    V3UndrivenCapture* const m_capturep = nullptr; // Capture object.  'nullptr' if disabled.
-    const bool m_enableWriteSummary = false; // Enable writeSummary computation plumbing
+    V3UndrivenCapture* const m_capturep = nullptr;  // Capture object.  'nullptr' if disabled.
+    const bool m_enableWriteSummary = false;  // Enable writeSummary computation plumbing
 
     // METHODS
 
