@@ -104,12 +104,13 @@ private:
         });
     }
     // Error on write across a virtual interface boundary
-    static void unsupportedWriteToVirtIface(AstNode* nodep, const char* locationp) {
+    static void unsupportedWriteToVirtIfaceMember(AstNode* nodep, const char* locationp) {
         if (!nodep) return;
-        foreachWrittenVirtIface(nodep, [locationp](AstVarRef* const selp, AstIface*) {
-            selp->v3warn(E_UNSUPPORTED,
-                         "Unsupported: Write to virtual interface in " << locationp);
-        });
+        foreachWrittenVirtIfaceMember(
+            nodep, [locationp](AstVarRef* const selp, AstIface*, AstVar* varp) {
+                selp->v3warn(E_UNSUPPORTED,
+                             "Unsupported: Write to virtual interface in " << locationp);
+            });
     }
     // Create trigger var for the given interface if it doesn't exist; return a write ref to it
     AstVarRef* createVirtIfaceTriggerRefp(FileLine* const flp, AstIface* ifacep) {
@@ -164,7 +165,7 @@ private:
         iterateChildren(nodep);
     }
     void visit(AstNodeIf* nodep) override {
-        unsupportedWriteToVirtIface(nodep->condp(), "if condition");
+        unsupportedWriteToVirtIfaceMember(nodep->condp(), "if condition");
         {
             VL_RESTORER(m_trigAssignp);
             VL_RESTORER(m_trigAssignIfacep);
@@ -201,7 +202,7 @@ private:
         }
     }
     void visit(AstLoopTest* nodep) override {
-        unsupportedWriteToVirtIface(nodep->condp(), "loop condition");
+        unsupportedWriteToVirtIfaceMember(nodep->condp(), "loop condition");
     }
     void visit(AstJumpBlock* nodep) override {
         {

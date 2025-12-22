@@ -156,8 +156,8 @@ public:
             UINFO(6, "New vertex " << vscp);
             vVtxp = new GateVarVertex{this, vscp};
             vscp->user1p(vVtxp);
-            if (vscp->varp()->sensIfacep()) {
-                // Can be used in a class method, which cannot be tracked statically
+            if (vscp->varp()->sensIfacep() || vscp->varp()->isVirtIface()) {
+                // Can be read/written to via the referenced actual interface
                 vVtxp->clearReducibleAndDedupable("VirtIface");
                 vVtxp->setConsumed("VirtIface");
             }
