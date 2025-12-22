@@ -53,7 +53,6 @@ class UndrivenVarEntry final {
     bool m_underGen = false;  // Under a generate
 
     const AstNode* m_callNodep = nullptr;  // Call node if driven via writeSummary, else nullptr
-    const FileLine* m_callFileLinep = nullptr;  // File line of call node if driven via summary
 
     enum : uint8_t { FLAG_USED = 0, FLAG_DRIVEN = 1, FLAG_DRIVEN_ALWCOMB = 2, FLAGS_PER_BIT = 3 };
 
@@ -283,15 +282,13 @@ public:
         }
     }
 
-    void drivenViaCall(const AstNode* nodep, const FileLine* fileLinep) {
+    void drivenViaCall(const AstNode* nodep) {
         drivenWhole();
         if (!m_callNodep) {
             m_callNodep = nodep;
-            m_callFileLinep = fileLinep;
         }
     }
-    const AstNode* getCallNodep() const { return m_callNodep; }
-    const FileLine* getCallFileLinep() const { return m_callFileLinep; }
+    const AstNode* callNodep() const { return m_callNodep; }
 };
 
 //######################################################################
@@ -459,12 +456,12 @@ class UndrivenVisitor final : public VNVisitorConst {
                 if (entryp->isDrivenWhole() && !m_inBBox && !VN_IS(nodep, VarXRef)
                     && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)
                     && nodep->fileline() != entryp->getNodeFileLinep() && !entryp->isUnderGen()
-                    && (entryp->getNodep() || (m_enableWriteSummary && entryp->getCallNodep()))) {
+                    && (entryp->getNodep() || (m_enableWriteSummary && entryp->callNodep()))) {
 
                     const AstNode* const otherWritep
                         = entryp->getNodep()
                               ? static_cast<const AstNode*>(entryp->getNodep())
-                              : (m_enableWriteSummary ? entryp->getCallNodep() : nullptr);
+                              : (m_enableWriteSummary ? entryp->callNodep() : nullptr);
 
                     if (m_alwaysCombp
                         && (!entryp->isDrivenAlwaysCombWhole()
@@ -582,7 +579,7 @@ class UndrivenVisitor final : public VNVisitorConst {
         for (AstVar* const varp : vars) {
             for (int usr = 1; usr < (m_alwaysCombp ? 3 : 2); ++usr) {
                 UndrivenVarEntry* const entryp = getEntryp(varp, usr);
-                entryp->drivenViaCall(nodep, nodep->fileline());
+                entryp->drivenViaCall(nodep);
                 if (m_alwaysCombp)
                     entryp->drivenAlwaysCombWhole(m_alwaysCombp, m_alwaysCombp->fileline());
             }
