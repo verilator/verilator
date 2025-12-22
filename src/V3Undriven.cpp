@@ -449,7 +449,8 @@ class UndrivenVisitor final : public VNVisitorConst {
         // traversal create phantom "other writes" for MULTIDRIVEN.
 
         //const auto inExecutedContext = [this, nodep]() {
-        //  return !(m_enableWriteSummary && m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic
+        //  return !(m_enableWriteSummary && m_taskp && !m_alwaysp && !m_inContAssign &&
+        //  !m_inInitialStatic
         //    && !m_inBBox && !m_taskp->dpiExport() && !nodep->varp()->isFuncLocal());
         //};
 
@@ -605,7 +606,8 @@ class UndrivenVisitor final : public VNVisitorConst {
         //};
 
         const auto inExecutedContext = [this]() {
-            return !(m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic && !m_inBBox && !m_taskp->dpiExport());
+            return !(m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic && !m_inBBox
+                     && !m_taskp->dpiExport());
         };
 
         if (!inExecutedContext()) { return; }
