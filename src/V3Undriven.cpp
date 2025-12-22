@@ -52,8 +52,8 @@ class UndrivenVarEntry final {
     const FileLine* m_nodeFileLinep = nullptr;  // File line of varref if driven, else nullptr
     bool m_underGen = false;  // Under a generate
 
-    const AstNode* m_callNodep = nullptr;  // call node if driven via writeSummary, else nullptr
-    const FileLine* m_callFileLinep = nullptr;  // file line of call node if driven via summary
+    const AstNode* m_callNodep = nullptr;  // Call node if driven via writeSummary, else nullptr
+    const FileLine* m_callFileLinep = nullptr;  // File line of call node if driven via summary
 
     enum : uint8_t { FLAG_USED = 0, FLAG_DRIVEN = 1, FLAG_DRIVEN_ALWCOMB = 2, FLAGS_PER_BIT = 3 };
 
@@ -318,8 +318,8 @@ class UndrivenVisitor final : public VNVisitorConst {
     const AstAlways* m_alwaysp = nullptr;  // Current always of either type
     const AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
 
-    V3UndrivenCapture* const m_capturep = nullptr;
-    const bool m_enableWriteSummary = false;
+    V3UndrivenCapture* const m_capturep = nullptr; // Capture object.  'nullptr' if disabled.
+    const bool m_enableWriteSummary = false; // Enable writeSummary computation plumbing
 
     // METHODS
 
@@ -565,19 +565,15 @@ class UndrivenVisitor final : public VNVisitorConst {
 
         // If writeSummary is enabled, task/function definitions are treated as non-executed.
         // Do not apply writeSummary at calls inside a task definition, or they will look like
-        // independent drivers (phantom MULTIDRIVEN). did the lambda on purpose - lessen chance of
+        // independent drivers (phantom MULTIDRIVEN). Did the lambda on purpose - lessen chance of
         // screwup in future edits.
-        //const auto inExecutedContext = [this]() const {
-        //    return !(m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic &&
-        //    !m_inBBox);
-        //};
 
         const auto inExecutedContext = [this]() {
             return !(m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic && !m_inBBox
                      && !m_taskp->dpiExport());
         };
 
-        if (!inExecutedContext()) { return; }
+        if (!inExecutedContext()) return;
 
         AstNodeFTask* const calleep = nodep->taskp();
         if (!calleep) return;

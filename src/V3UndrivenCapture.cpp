@@ -96,14 +96,12 @@ private:
 
 bool V3UndrivenCapture::enableWriteSummary = true;
 
-// static
-void V3UndrivenCapture::sortUniqueVars(std::vector<Var>& vec) {
+void V3UndrivenCapture::sortUniqueVars(std::vector<AstVar*>& vec) {
     std::sort(vec.begin(), vec.end());
     vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
 }
 
-// static
-void V3UndrivenCapture::sortUniqueFTasks(std::vector<FTask>& vec) {
+void V3UndrivenCapture::sortUniqueFTasks(std::vector<const AstNodeFTask*>& vec) {
     std::sort(vec.begin(), vec.end());
     vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
 }
@@ -130,19 +128,19 @@ void V3UndrivenCapture::gather(AstNetlist* netlistp) {
     CaptureVisitor{*this, netlistp};
 }
 
-const V3UndrivenCapture::FTaskInfo* V3UndrivenCapture::find(FTask taskp) const {
+const V3UndrivenCapture::FTaskInfo* V3UndrivenCapture::find(const AstNodeFTask* taskp) const {
     const auto it = m_info.find(taskp);
     if (it == m_info.end()) return nullptr;
     return &it->second;
 }
 
-const std::vector<V3UndrivenCapture::Var>& V3UndrivenCapture::writeSummary(FTask taskp) {
+const std::vector<AstVar*>& V3UndrivenCapture::writeSummary(const AstNodeFTask* taskp) {
     // Ensure entry exists even if empty
     (void)m_info[taskp];
     return computeWriteSummary(taskp);
 }
 
-const std::vector<V3UndrivenCapture::Var>& V3UndrivenCapture::computeWriteSummary(FTask taskp) {
+const std::vector<AstVar*>& V3UndrivenCapture::computeWriteSummary(const AstNodeFTask* taskp) {
     FTaskInfo& info = m_info[taskp];
 
     if (info.state == State::DONE) {
@@ -166,9 +164,9 @@ const std::vector<V3UndrivenCapture::Var>& V3UndrivenCapture::computeWriteSummar
     info.writeSummary = info.directWrites;
 
     // Need callees
-    for (FTask calleep : info.callees) {
+    for (const AstNodeFTask* calleep : info.callees) {
         if (m_info.find(calleep) == m_info.end()) continue;
-        const std::vector<Var>& sub = computeWriteSummary(calleep);
+        const std::vector<AstVar*>& sub = computeWriteSummary(calleep);
         info.writeSummary.insert(info.writeSummary.end(), sub.begin(), sub.end());
     }
 
@@ -183,9 +181,9 @@ const std::vector<V3UndrivenCapture::Var>& V3UndrivenCapture::computeWriteSummar
     return info.writeSummary;
 }
 
-void V3UndrivenCapture::noteTask(FTask taskp) { (void)m_info[taskp]; }
+void V3UndrivenCapture::noteTask(const AstNodeFTask* taskp) { (void)m_info[taskp]; }
 
-void V3UndrivenCapture::noteDirectWrite(FTask taskp, Var varp) {
+void V3UndrivenCapture::noteDirectWrite(const AstNodeFTask* taskp, AstVar* varp) {
     FTaskInfo& info = m_info[taskp];
 
     // Exclude function return variable (not an externally visible side-effect)
@@ -195,12 +193,12 @@ void V3UndrivenCapture::noteDirectWrite(FTask taskp, Var varp) {
     info.directWrites.push_back(varp);
 }
 
-void V3UndrivenCapture::noteCallEdge(FTask callerp, FTask calleep) {
+void V3UndrivenCapture::noteCallEdge(const AstNodeFTask* callerp, const AstNodeFTask* calleep) {
     m_info[callerp].callees.push_back(calleep);
     (void)m_info[calleep];  // ensure callee entry exists
 }
 
-void V3UndrivenCapture::debugDumpTask(FTask taskp, int level) const {
+void V3UndrivenCapture::debugDumpTask(const AstNodeFTask* taskp, int level) const {
     const auto* const infop = find(taskp);
     if (!infop) {
         UINFO(level, "undriven capture no entry for task " << taskp);
