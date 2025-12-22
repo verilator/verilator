@@ -58,24 +58,20 @@ private:
         VL_RESTORER(m_curTaskp);
         m_curTaskp = nodep;
         ++g_stats.ftasks;
-        UINFO(DBG, "UndrivenCapture: enter ftask " << nodep << " " << nodep->prettyNameQ());
-        m_cap.info(nodep);
+        UINFO(DBG, "undriven capture enter ftask " << nodep << " " << nodep->prettyNameQ());
+        m_cap.noteTask(nodep);
         iterateListConst(*this, nodep->stmtsp());
     }
 
     void visit(AstNodeVarRef* nodep) override {
         if (m_curTaskp && nodep->access().isWriteOrRW()) {
             ++g_stats.varWrites;
-            UINFO(DBG, "UndrivenCapture: direct write in "
+            UINFO(DBG, "undriven capture direct write in "
                            << taskNameQ(m_curTaskp) << " var=" << nodep->varp()->prettyNameQ()
                            << " at " << nodep->fileline());
-            //m_cap.info(m_curTaskp).directWrites.push_back(nodep->varp());
-            AstVar* const retVarp = VN_CAST(m_curTaskp->fvarp(), Var);
-            if (retVarp && nodep->varp() == retVarp) {
-                // Skip: function return variable is local, not a side-effect
-            } else {
-                m_cap.info(m_curTaskp).directWrites.push_back(nodep->varp());
-            }
+
+            m_cap.noteDirectWrite(m_curTaskp, nodep->varp());
+
         }
         iterateChildrenConst(nodep);
     }
@@ -85,12 +81,11 @@ private:
         if (m_curTaskp) {
             if (AstNodeFTask* const calleep = nodep->taskp()) {
                 ++g_stats.callEdges;
-                UINFO(DBG, "UndrivenCapture: call edge " << taskNameQ(m_curTaskp) << " -> "
+                UINFO(DBG, "undriven capture call edge " << taskNameQ(m_curTaskp) << " -> "
                                                          << taskNameQ(calleep));
-                m_cap.info(m_curTaskp).callees.push_back(calleep);
-                m_cap.info(calleep);
+                m_cap.noteCallEdge(m_curTaskp, calleep);
             } else {
-                UINFO(DBG, "UndrivenCapture: unresolved call in " << taskNameQ(m_curTaskp)
+                UINFO(DBG, "undriven capture unresolved call in " << taskNameQ(m_curTaskp)
                                                                   << " name=" << nodep->name());
             }
         }
@@ -128,7 +123,7 @@ V3UndrivenCapture::V3UndrivenCapture(AstNetlist* netlistp) {
     // Compute summaries for all tasks
     for (const auto& kv : m_info) (void)computeWriteSummary(kv.first);
 
-    UINFO(DBG, "UndrivenCapture: stats ftasks="
+    UINFO(DBG, "undriven capture stats ftasks="
                    << g_stats.ftasks << " varWrites=" << g_stats.varWrites
                    << " callEdges=" << g_stats.callEdges << " uniqueTasks=" << m_info.size());
 }
@@ -154,12 +149,12 @@ const std::vector<V3UndrivenCapture::Var>& V3UndrivenCapture::computeWriteSummar
     FTaskInfo& info = m_info[taskp];
 
     if (info.state == State::DONE) {
-        UINFO(DBG, "UndrivenCapture: writeSummary cached size=" << info.writeSummary.size()
+        UINFO(DBG, "undriven capture writeSummary cached size=" << info.writeSummary.size()
                                                                 << " for " << taskNameQ(taskp));
         return info.writeSummary;
     }
     if (info.state == State::VISITING) {
-        UINFO(DBG, "UndrivenCapture: recursion detected at "
+        UINFO(DBG, "undriven capture recursion detected at "
                        << taskNameQ(taskp)
                        << " returning directWrites size=" << info.directWrites.size());
         // Cycle detected. Simple behaviour:
@@ -183,23 +178,38 @@ const std::vector<V3UndrivenCapture::Var>& V3UndrivenCapture::computeWriteSummar
 
     sortUniqueVars(info.writeSummary);
 
-    UINFO(DBG, "UndrivenCapture: writeSummary computed size=" << info.writeSummary.size()
+    UINFO(DBG, "undriven capture writeSummary computed size=" << info.writeSummary.size()
                                                               << " for " << taskNameQ(taskp));
 
     info.state = State::DONE;
     return info.writeSummary;
 }
 
+void V3UndrivenCapture::noteTask(FTask taskp) { (void)m_info[taskp]; }
+
+void V3UndrivenCapture::noteDirectWrite(FTask taskp, Var varp) {
+    FTaskInfo& info = m_info[taskp];
+
+    // Exclude function return variable (not an externally visible side-effect)
+    AstVar* const retVarp = VN_CAST(taskp->fvarp(), Var);
+    if (retVarp && varp == retVarp) return;
+
+    info.directWrites.push_back(varp);
+}
+
+void V3UndrivenCapture::noteCallEdge(FTask callerp, FTask calleep) {
+    m_info[callerp].callees.push_back(calleep);
+    (void)m_info[calleep];  // ensure callee entry exists
+}
+
 void V3UndrivenCapture::debugDumpTask(FTask taskp, int level) const {
     const auto* const infop = find(taskp);
     if (!infop) {
-        UINFO(level, "UndrivenCapture: no entry for task " << taskp);
+        UINFO(level, "undriven capture no entry for task " << taskp);
         return;
     }
-    UINFO(level, "UndrivenCapture: dump task " << taskp << " " << taskp->prettyNameQ()
+    UINFO(level, "undriven capture dump task " << taskp << " " << taskp->prettyNameQ()
                                                << " directWrites=" << infop->directWrites.size()
                                                << " callees=" << infop->callees.size()
                                                << " writeSummary=" << infop->writeSummary.size());
 }
-
-V3UndrivenCapture::FTaskInfo& V3UndrivenCapture::info(FTask taskp) { return m_info[taskp]; }

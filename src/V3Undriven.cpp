@@ -29,7 +29,6 @@
 
 #include "V3Stats.h"
 
-// EOM
 #include "V3UndrivenCapture.h"
 
 #include <vector>
@@ -54,7 +53,6 @@ class UndrivenVarEntry final {
     const FileLine* m_nodeFileLinep = nullptr;  // File line of varref if driven, else nullptr
     bool m_underGen = false;  // Under a generate
 
-    // EOM
     const AstNode* m_callNodep = nullptr;  // call node if driven via writeSummary, else nullptr
     const FileLine* m_callFileLinep = nullptr;  // file line of call node if driven via summary
 
@@ -286,7 +284,6 @@ public:
         }
     }
 
-    // EOM
     void drivenViaCall(const AstNode* nodep, const FileLine* fileLinep) {
         drivenWhole();
         if (!m_callNodep) {
@@ -322,7 +319,6 @@ class UndrivenVisitor final : public VNVisitorConst {
     const AstAlways* m_alwaysp = nullptr;  // Current always of either type
     const AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
 
-    // EOM
     V3UndrivenCapture* const m_capturep = nullptr;
     const bool m_enableWriteSummary = false;
 
@@ -443,21 +439,9 @@ class UndrivenVisitor final : public VNVisitorConst {
             }
         }
 
-        // EOM
         // If writeSummary is enabled, task/function definitions are treated as non-executed.
         // Their effects are applied at call sites via writeSummary(), so don't let definition
         // traversal create phantom "other writes" for MULTIDRIVEN.
-
-        //const auto inExecutedContext = [this, nodep]() {
-        //  return !(m_enableWriteSummary && m_taskp && !m_alwaysp && !m_inContAssign &&
-        //  !m_inInitialStatic
-        //    && !m_inBBox && !m_taskp->dpiExport() && !nodep->varp()->isFuncLocal());
-        //};
-
-        //if (!inExecutedContext()) {
-        //    return;
-        //}
-
         if (m_enableWriteSummary && m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic
             && !m_inBBox && !m_taskp->dpiExport()) {
             AstVar* const retVarp = VN_CAST(m_taskp->fvarp(), Var);
@@ -477,11 +461,8 @@ class UndrivenVisitor final : public VNVisitorConst {
                     && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)
                     && nodep->fileline() != entryp->getNodeFileLinep()
                     && !entryp->isUnderGen()
-                    // EOM
-                    //&& entryp->getNodep()) {
                     && (entryp->getNodep() || (m_enableWriteSummary && entryp->getCallNodep()))) {
 
-                    // EOM
                     const AstNode* const otherWritep
                         = entryp->getNodep()
                               ? static_cast<const AstNode*>(entryp->getNodep())
@@ -498,11 +479,8 @@ class UndrivenVisitor final : public VNVisitorConst {
                                 << nodep->warnOther() << '\n'
                                 << nodep->warnContextPrimary()
                                 << '\n'
-                                // EOM
-                                //<< entryp->getNodep()->warnOther()
                                 << otherWritep->warnOther()
                                 << "... Location of other write\n"
-                                //<< entryp->getNodep()->warnContextSecondary());
                                 << otherWritep->warnContextSecondary());
                     }
                     if (!m_alwaysCombp && entryp->isDrivenAlwaysCombWhole()) {
@@ -513,11 +491,8 @@ class UndrivenVisitor final : public VNVisitorConst {
                                           << nodep->warnOther() << '\n'
                                           << nodep->warnContextPrimary()
                                           << '\n'
-                                          //EOM
-                                          //<< entryp->getNodep()->warnOther()
                                           << otherWritep->warnOther()
                                           << "... Location of always_comb write\n"
-                                          //<< entryp->getNodep()->warnContextSecondary());
                                           << otherWritep->warnContextSecondary());
                     }
                 }
@@ -651,8 +626,6 @@ class UndrivenVisitor final : public VNVisitorConst {
 
 public:
     // CONSTRUCTORS
-    // EOM
-    // explicit UndrivenVisitor(AstNetlist* nodep) { iterateConst(nodep); }
     explicit UndrivenVisitor(AstNetlist* nodep, V3UndrivenCapture* capturep,
                              bool enableWriteSummary)
         : m_capturep{capturep}
@@ -673,7 +646,6 @@ public:
 
 void V3Undriven::undrivenAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    // EOM
     const bool enable = V3UndrivenCapture::enableWriteSummary;
     if (enable) {
         V3UndrivenCapture capture{nodep};
