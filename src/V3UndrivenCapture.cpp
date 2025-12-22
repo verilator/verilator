@@ -71,7 +71,6 @@ private:
                            << " at " << nodep->fileline());
 
             m_cap.noteDirectWrite(m_curTaskp, nodep->varp());
-
         }
         iterateChildrenConst(nodep);
     }

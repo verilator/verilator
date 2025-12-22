@@ -28,7 +28,6 @@
 #include "V3Undriven.h"
 
 #include "V3Stats.h"
-
 #include "V3UndrivenCapture.h"
 
 #include <vector>
@@ -459,8 +458,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                 }
                 if (entryp->isDrivenWhole() && !m_inBBox && !VN_IS(nodep, VarXRef)
                     && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)
-                    && nodep->fileline() != entryp->getNodeFileLinep()
-                    && !entryp->isUnderGen()
+                    && nodep->fileline() != entryp->getNodeFileLinep() && !entryp->isUnderGen()
                     && (entryp->getNodep() || (m_enableWriteSummary && entryp->getCallNodep()))) {
 
                     const AstNode* const otherWritep
@@ -477,23 +475,19 @@ class UndrivenVisitor final : public VNVisitorConst {
                             "Variable written to in always_comb also written by other process"
                                 << " (IEEE 1800-2023 9.2.2.2): " << nodep->prettyNameQ() << '\n'
                                 << nodep->warnOther() << '\n'
-                                << nodep->warnContextPrimary()
-                                << '\n'
-                                << otherWritep->warnOther()
-                                << "... Location of other write\n"
+                                << nodep->warnContextPrimary() << '\n'
+                                << otherWritep->warnOther() << "... Location of other write\n"
                                 << otherWritep->warnContextSecondary());
                     }
                     if (!m_alwaysCombp && entryp->isDrivenAlwaysCombWhole()) {
-                        nodep->v3warn(MULTIDRIVEN,
-                                      "Variable also written to in always_comb"
-                                          << " (IEEE 1800-2023 9.2.2.2): " << nodep->prettyNameQ()
-                                          << '\n'
-                                          << nodep->warnOther() << '\n'
-                                          << nodep->warnContextPrimary()
-                                          << '\n'
-                                          << otherWritep->warnOther()
-                                          << "... Location of always_comb write\n"
-                                          << otherWritep->warnContextSecondary());
+                        nodep->v3warn(MULTIDRIVEN, "Variable also written to in always_comb"
+                                                       << " (IEEE 1800-2023 9.2.2.2): "
+                                                       << nodep->prettyNameQ() << '\n'
+                                                       << nodep->warnOther() << '\n'
+                                                       << nodep->warnContextPrimary() << '\n'
+                                                       << otherWritep->warnOther()
+                                                       << "... Location of always_comb write\n"
+                                                       << otherWritep->warnContextSecondary());
                     }
                 }
                 entryp->drivenWhole(nodep, nodep->fileline());
