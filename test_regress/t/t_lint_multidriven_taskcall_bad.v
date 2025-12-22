@@ -5,10 +5,10 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t (
-    input  logic sel
-  , input  logic sel2
-  , input  logic d
-  , output logic out
+  input  logic sel,
+  input  logic sel2,
+  input  logic d,
+  output logic out
 );
 
   task automatic do_stuff(input logic din);
