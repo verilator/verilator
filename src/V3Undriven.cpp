@@ -447,9 +447,20 @@ class UndrivenVisitor final : public VNVisitorConst {
         // If writeSummary is enabled, task/function definitions are treated as non-executed.
         // Their effects are applied at call sites via writeSummary(), so don't let definition
         // traversal create phantom "other writes" for MULTIDRIVEN.
+
+        //const auto inExecutedContext = [this, nodep]() {
+        //  return !(m_enableWriteSummary && m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic
+        //    && !m_inBBox && !m_taskp->dpiExport() && !nodep->varp()->isFuncLocal());
+        //};
+
+        //if (!inExecutedContext()) {
+        //    return;
+        //}
+
         if (m_enableWriteSummary && m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic
-            && !m_inBBox) {
-            return;
+            && !m_inBBox && !m_taskp->dpiExport()) {
+            AstVar* const retVarp = VN_CAST(m_taskp->fvarp(), Var);
+            if (!retVarp || nodep->varp() != retVarp) return;
         }
 
         for (int usr = 1; usr < (m_alwaysCombp ? 3 : 2); ++usr) {
@@ -594,7 +605,7 @@ class UndrivenVisitor final : public VNVisitorConst {
         //};
 
         const auto inExecutedContext = [this]() {
-            return !(m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic && !m_inBBox);
+            return !(m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic && !m_inBBox && !m_taskp->dpiExport());
         };
 
         if (!inExecutedContext()) { return; }
