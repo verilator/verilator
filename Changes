@@ -120,6 +120,7 @@ Verilator 5.043 devel
 * Fix randcase under fork (#6843). [Amal Araweelo Almis]
 * Fix JSON missing `signed` indication (#6845).
 * Fix class reference throwing cannot detect changes error (#6851).
+* Fix `randc` on extended class (#6852).
 
 
 Verilator 5.042 2025-11-02

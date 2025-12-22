@@ -126,7 +126,7 @@ bool V3LinkDotIfaceCapture::replaceTypedef(const AstRefDType* refp, AstTypedef* 
 
 void V3LinkDotIfaceCapture::propagateClone(const AstRefDType* origRefp, AstRefDType* newRefp) {
     if (!origRefp || !newRefp) return;
-    auto it = s_map.find(origRefp);
+    const auto it = s_map.find(origRefp);
     UASSERT_OBJ(it != s_map.end(), origRefp,
                 "iface capture propagateClone missing entry for orig=" << cvtToStr(origRefp));
     CapturedIfaceTypedef& entry = it->second;

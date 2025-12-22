@@ -14,12 +14,9 @@ package uvm_pkg;
   class uvm_sequence_library #(
       type REQ = int
   ) extends uvm_sequence #(REQ);
-    rand bit [15:0] m_rand;
-    randc bit [15:0] m_randc;
+    randc bit [15:0] select_randc;  // Passes without randc here
     task body();
-      if (0 == randomize(m_rand)) begin
-      end
-      if (0 == randomize(m_randc)) begin
+      if (0 == randomize(select_randc)) begin
       end
     endtask
   endclass
@@ -34,6 +31,7 @@ module t;
   initial begin
     t1 c;
     c = new;
+    c.body;
     $finish;
   end
 
