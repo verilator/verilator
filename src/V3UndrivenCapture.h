@@ -42,25 +42,34 @@ public:
         std::vector<Var> directWrites;
         // Direct resolved callees from this task/function body.
         std::vector<FTask> callees;
-        // 'write through write' writeSummary for the given task/function.  Meaning ultimately everything that this function/task writes to.
+        // 'write through write' writeSummary for the given task/function.  Meaning ultimately
+        // everything that this function/task writes to.
         std::vector<Var> writeSummary;
         // state for writeSummary computation.
         State state = State::UNVISITED;
     };
 
-    // Enable writeSummary computation.  If disabled, then the existing V3Undriven behaviour is used.
+    // Enable writeSummary computation.  If disabled, then the existing V3Undriven behaviour is
+    // used.
     static bool enableWriteSummary;
 
 private:
-    // Per-task/function capture info keyed by resolved AstNodeFTask* identity (FTask = function or task).  This is our 'graph' of tasks/functions.  Each node has a list of direct callees and a list of variables written in the function body.  There are methods to remove duplicates otherwise this could explode.
+    // Per-task/function capture info keyed by resolved AstNodeFTask* identity (FTask = function or
+    // task).  This is our 'graph' of tasks/functions.  Each node has a list of direct callees and
+    // a list of variables written in the function body.  There are methods to remove duplicates
+    // otherwise this could explode.
     std::unordered_map<FTask, FTaskInfo> m_info;
 
-    // Sort and remove duplicates from a vector of variables.  This is called after a task/function write summary is computed.  writeSummary can accumulate duplicates if a variable is written in multiple tasks/functions.
+    // Sort and remove duplicates from a vector of variables.  This is called after a task/function
+    // write summary is computed.  writeSummary can accumulate duplicates if a variable is written
+    // in multiple tasks/functions.
     static void sortUniqueVars(std::vector<Var>& vec);
-    // Sort and remove duplicates from a vector of callees.  The visitor can record the same callee multiple times (multiple call sites, branches, etc).
+    // Sort and remove duplicates from a vector of callees.  The visitor can record the same callee
+    // multiple times (multiple call sites, branches, etc).
     static void sortUniqueFTasks(std::vector<FTask>& vec);
 
-    // Collect direct writes and call edges for all tasks/functions.  Run one time when UndrivenCapture is created.  This runs the visitor over the tree.
+    // Collect direct writes and call edges for all tasks/functions.  Run one time when
+    // UndrivenCapture is created.  This runs the visitor over the tree.
     void gather(AstNetlist* netlistp);
     // Compute (and cache) 'write through write' writeSummary for the given task/function.
     const std::vector<Var>& computeWriteSummary(FTask taskp);
@@ -69,20 +78,27 @@ public:
     // Build capture database and precompute writeSummary for all discovered tasks/functions.
     explicit V3UndrivenCapture(AstNetlist* netlistp);
 
-    // Lookup task/function capture info (nullptr if unknown).  This is currently only used for the debug helper.
+    // Lookup task/function capture info (nullptr if unknown).  This is currently only used for the
+    // debug helper.
     const FTaskInfo* find(FTask taskp) const;
-    // Get write through write through write, etc (call chain) writeSummary for a task/function (creates empty entry if needed).  This returns a vector of variables that a particular task/function writes to, including all variables written by functions called by this task/function, and so on.
+    // Get write through write through write, etc (call chain) writeSummary for a task/function
+    // (creates empty entry if needed).  This returns a vector of variables that a particular
+    // task/function writes to, including all variables written by functions called by this
+    // task/function, and so on.
     const std::vector<Var>& writeSummary(FTask taskp);
 
-    // used by the capture visitor to record information about tasks/functions and their statements and callees.
-    // noteTask() makes sure there is an entry for the given taskp.
+    // used by the capture visitor to record information about tasks/functions and their statements
+    // and callees. noteTask() makes sure there is an entry for the given taskp.
     void noteTask(FTask taskp);
     // inside the body of taskp there is a write to variable varp
     void noteDirectWrite(FTask taskp, Var varp);
-    // inside the body of callerp there is a call to calleep, this is needed so we can create a summary that includes all variables written by functions called by this task/function, and so on.
+    // inside the body of callerp there is a call to calleep, this is needed so we can create a
+    // summary that includes all variables written by functions called by this task/function, and
+    // so on.
     void noteCallEdge(FTask callerp, FTask calleep);
 
-    // dump one task's summary for debugging.  leaving this in, in case need to debug future functionality.
+    // dump one task's summary for debugging.  leaving this in, in case need to debug future
+    // functionality.
     void debugDumpTask(FTask taskp, int level = 9) const;
 };
 
