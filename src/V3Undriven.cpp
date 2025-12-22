@@ -52,7 +52,7 @@ class UndrivenVarEntry final {
     const FileLine* m_nodeFileLinep = nullptr;  // File line of varref if driven, else nullptr
     bool m_underGen = false;  // Under a generate
 
-    const AstNode* m_callNodep = nullptr;  // Call node if driven via writeSummary, else nullptr
+    const AstNodeFTaskRef* m_callNodep = nullptr;  // Call node if driven via writeSummary, else nullptr
 
     enum : uint8_t { FLAG_USED = 0, FLAG_DRIVEN = 1, FLAG_DRIVEN_ALWCOMB = 2, FLAGS_PER_BIT = 3 };
 
@@ -282,13 +282,13 @@ public:
         }
     }
 
-    void drivenViaCall(const AstNode* nodep) {
+    void drivenViaCall(const AstNodeFTaskRef* nodep) {
         drivenWhole();
         if (!m_callNodep) {
             m_callNodep = nodep;
         }
     }
-    const AstNode* callNodep() const { return m_callNodep; }
+    const AstNodeFTaskRef* callNodep() const { return m_callNodep; }
 };
 
 //######################################################################
