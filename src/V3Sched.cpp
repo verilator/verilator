@@ -582,8 +582,8 @@ void createEval(AstNetlist* netlistp,  //
 ) {
     FileLine* const flp = netlistp->fileline();
 
-    // 'createResume' consumes the contents that 'createCommit' needs, so do the right order
-    AstCCall* const timingCommitp = timingKit.createCommit(netlistp);
+    // 'createResume' consumes the contents that 'createReady' needs, so do the right order
+    AstCCall* const timingReadyp = timingKit.createReady(netlistp);
     AstCCall* const timingResumep = timingKit.createResume(netlistp);
 
     // Create the active eval loop
@@ -595,8 +595,8 @@ void createEval(AstNetlist* netlistp,  //
         [&]() {
             // Compute the current 'act' triggers - the NBA triggers are the latched value
             AstNodeStmt* stmtsp = trigKit.newCompCall(nbaKit.m_vscp);
-            // Commit for triggered awaits
-            if (timingCommitp) stmtsp = AstNode::addNext(stmtsp, timingCommitp->makeStmt());
+            // Mark as ready for triggered awaits
+            if (timingReadyp) stmtsp = AstNode::addNext(stmtsp, timingReadyp->makeStmt());
             if (actKit.m_vscp) {
                 AstVarScope* const vscAccp = trigKit.vscAccp();
                 UASSERT_OBJ(
@@ -660,7 +660,7 @@ void createEval(AstNetlist* netlistp,  //
             netlistp->nbaEventp(nullptr);
             netlistp->nbaEventTriggerp(nullptr);
 
-            // If a dynamic NBA is pending, clear the pending flag and fire the commit event
+            // If a dynamic NBA is pending, clear the pending flag and fire the ready event
             AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, nbaEventTriggerp, VAccess::READ}};
             ifp->addThensp(util::setVar(continuep, 1));
             ifp->addThensp(util::setVar(nbaEventTriggerp, 0));
@@ -923,8 +923,8 @@ public:
         , m_preTriggerFuncUniqueName{"__VpreTrig"} {
         iterate(netlistp);
 
-        // In each of pre-trigger functions check if anything was triggered and commit triggered
-        // schedulers
+        // In each of pre-trigger functions check if anything was triggered and mark as ready
+        // triggered schedulers
         for (const auto& funcToUsedTriggers : m_funcToUsedTriggers) {
             AstCFunc* const funcp = funcToUsedTriggers.first;
 
@@ -945,7 +945,7 @@ public:
             AstVarScope* const argpVscp = new AstVarScope{flp, funcp->scopep(), funcp->argsp()};
             funcp->scopep()->addVarsp(argpVscp);
 
-            // Commit triggered schedulers
+            // Mark as ready triggered schedulers
             for (const auto& triggersToTrees : usedTrigsToUsingTrees) {
                 const size_t word = triggersToTrees.first;
 
@@ -961,10 +961,10 @@ public:
                         = new AstAnd{flp, getIdx(vscp, VAccess::READ, word), maskConstp};
                     AstIf* const ifp = new AstIf{flp, condp};
 
-                    // Call commit() on each scheduler sensitive to `condp`
+                    // Call ready() on each scheduler sensitive to `condp`
                     for (AstNodeExpr* const schedp : schedulers) {
                         AstCMethodHard* const callp = new AstCMethodHard{
-                            flp, schedp->cloneTree(false), VCMethod::SCHED_COMMIT};
+                            flp, schedp->cloneTree(false), VCMethod::SCHED_READY};
                         callp->dtypeSetVoid();
                         callp->addPinsp(new AstVarRef{flp, argpVscp, VAccess::READ});
                         ifp->addThensp(callp->makeStmt());
@@ -1239,8 +1239,8 @@ void schedule(AstNetlist* netlistp) {
                timingKit);
 
     // Step 15: Add neccessary evaluation before awaits
-    if (AstCCall* const commitp = timingKit.createCommit(netlistp)) {
-        staticp->addStmtsp(commitp->makeStmt());
+    if (AstCCall* const readyp = timingKit.createReady(netlistp)) {
+        staticp->addStmtsp(readyp->makeStmt());
         AwaitPreTrigVisitor{netlistp, senExprBuilder, trigKit};
     } else {
         // AwaitPreTrigVisitor clears Sentree pointers in AstCAwaits (as these sentrees will get

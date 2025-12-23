@@ -39,11 +39,6 @@ module t;
     #1;
     ->a;
     clk = 0;
-    #2 $stop;   // If tests fails due to this $stop it is because
-                // order of resumption is not correct in the scheduler.
-                // Order of resumption is crucial in this test so,
-                // it has to be provided somehow.
-                // This shall never happen since regex is checking
-                // whether order is right.
+    #2 $stop;
   end
 endmodule
