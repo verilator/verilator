@@ -820,8 +820,9 @@ public:
         RNG_SET_RANDSTATE,
         SCHED_ANY_TRIGGERED,
         SCHED_AWAITING_CURRENT_TIME,
+        SCHED_READY,
         SCHED_COMMIT,
-        SCHED_RESUME_PREP,
+        SCHED_MOVE_TO_RESUME_QUEUE,
         SCHED_DELAY,
         SCHED_DO_POST_UPDATES,
         SCHED_ENQUEUE,
@@ -951,8 +952,9 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {RNG_SET_RANDSTATE, "__Vm_rng.set_randstate", false}, \
            {SCHED_ANY_TRIGGERED, "anyTriggered", false}, \
            {SCHED_AWAITING_CURRENT_TIME, "awaitingCurrentTime", true}, \
+           {SCHED_READY, "ready", false}, \
            {SCHED_COMMIT, "commit", false}, \
-           {SCHED_RESUME_PREP, "resumePrep", false}, \
+           {SCHED_MOVE_TO_RESUME_QUEUE, "moveToResumeQueue", false}, \
            {SCHED_DELAY, "delay", false}, \
            {SCHED_DO_POST_UPDATES, "doPostUpdates", false}, \
            {SCHED_ENQUEUE, "enqueue", false}, \

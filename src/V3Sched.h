@@ -320,7 +320,7 @@ public:
 // Everything needed for combining timing with static scheduling.
 class TimingKit final {
     AstCFunc* m_resumeFuncp = nullptr;  // Global timing resume function
-    AstCFunc* m_commitFuncp = nullptr;  // Global timing commit function
+    AstCFunc* m_readyFuncp = nullptr;  // Global timing ready function
 
     // Additional var sensitivities for V3Order
     std::map<const AstVarScope*, std::set<AstSenTree*>> m_externalDomains;
@@ -334,8 +334,8 @@ public:
         const std::unordered_map<const AstSenTree*, AstSenTree*>& trigMap) const VL_MT_DISABLED;
     // Creates a timing resume call (if needed, else returns null)
     AstCCall* createResume(AstNetlist* const netlistp) VL_MT_DISABLED;
-    // Creates a timing commit call (if needed, else returns null)
-    AstCCall* createCommit(AstNetlist* const netlistp) VL_MT_DISABLED;
+    // Creates a timing ready call (if needed, else returns null)
+    AstCCall* createReady(AstNetlist* const netlistp) VL_MT_DISABLED;
 
     TimingKit() = default;
     TimingKit(LogicByScope&& lbs, AstNodeStmt* postUpdates,
