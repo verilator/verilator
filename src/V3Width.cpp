@@ -3371,8 +3371,6 @@ class WidthVisitor final : public VNVisitor {
                     nodep->varp(varp);
                     AstIface* const ifacep = adtypep->ifacep();
                     varp->sensIfacep(ifacep);
-                    nodep->fromp()->foreach(
-                        [ifacep](AstVarRef* const refp) { refp->varp()->sensIfacep(ifacep); });
                     nodep->didWidth(true);
                     return;
                 }

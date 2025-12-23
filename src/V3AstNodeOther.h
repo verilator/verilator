@@ -2185,6 +2185,12 @@ public:
                 && !isSc() && !isPrimaryIO() && !isConst() && !isDouble() && !isString());
     }
     bool isClassMember() const { return varType() == VVarType::MEMBER; }
+    bool isVirtIface() const {
+        if (AstIfaceRefDType* const dtp = VN_CAST(dtypep(), IfaceRefDType)) {
+            return dtp->isVirtual();
+        }
+        return false;
+    }
     bool isStatementTemp() const { return varType() == VVarType::STMTTEMP; }
     bool isXTemp() const { return varType() == VVarType::XTEMP; }
     bool isParam() const { return varType().isParam(); }

@@ -4,6 +4,8 @@
 // any use, without warranty, 2023 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+// NOTE: Once this is supported, t_interface_virtual_cond is no longer needed
+
 interface Bus;
    logic [15:0] data;
 endinterface
