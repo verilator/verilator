@@ -593,15 +593,17 @@ object.
 
 This class manages processes that await events (triggers). There is one
 such object per each trigger awaited by coroutines. Coroutines ``co_await``
-this object's ``trigger`` function. They are stored in two stages -
-`uncommitted` and `ready`. First, they land in the `uncommitted` stage, and
-cannot be resumed. The ``resume`` function resumes all coroutines from the
-`ready` stage and moves `uncommitted` coroutines into `ready`. The
-``commit`` function only moves `uncommitted` coroutines into `ready`.
+this object's ``trigger`` function. They are stored in three stages -
+`unready`, `ready` and `resumeQueue`. First, they land in the `unready` stage, and
+cannot be resumed. The ``ready`` function moves all coroutines from the
+`unready` stage into the `ready` stage. The ``moveToResumeQueue`` function moves
+`ready` coroutines into `resumeQueue`. Finally, function `resume` resumes
+all coroutines from the `resumeQueue` stage.
 
-This split is done to avoid self-triggering and triggering coroutines
-multiple times. See the `Scheduling with timing` section for details on how
-this is used.
+This split is done to avoid self-triggering, triggering coroutines
+multiple times and triggering coroutines in the same iteration
+they wre suspended. See the `Scheduling with timing` section
+for details on how this is used.
 
 ``VlDynamicTriggerScheduler``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -719,9 +721,13 @@ in that process. When ordering code using ``V3Order``, these triggers are
 provided as external domains of these variables. This ensures that the
 necessary combinational logic is triggered after a coroutine resumption.
 
+Every call to a `VlTriggerScheduler`'s `trigger()` method is preempt by
+a call to a proper `__VpreTrig` function which evaluates all the necessary
+triggers so, the information about order of suspension/resumption is not lost.
+
 There are two functions for managing timing logic called by ``_eval()``:
 
-* ``_timing_commit()``, which commits all coroutines whose triggers were
+* ``_timing_ready()``, which commits all coroutines whose triggers were
   not set in the current iteration,
 * ``_timing_resume()``, which calls `resume()` on all trigger and delay
   schedulers whose triggers were set in the current iteration.
