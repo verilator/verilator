@@ -242,10 +242,10 @@ class VlTriggerScheduler final {
     using VlCoroutineVec = std::vector<VlCoroutineHandle>;
 
     // MEMBERS
-    VlCoroutineVec m_uncommitted;  // Coroutines suspended before commit() was called
-                                   // (not resumable)
-    VlCoroutineVec m_commited;  // Coroutines that were triggered (all coros from m_uncommitted are
-                                // moved here in commit())
+    VlCoroutineVec m_unready;  // Coroutines suspended before ready() was called
+                               // (not resumable)
+    VlCoroutineVec m_ready;  // Coroutines that were triggered (all coros from m_unready are moved
+                             // here in ready())
     VlCoroutineVec m_resumeQueue;  // Coroutines to resume in next resumePrep()
                                    // - moved here in commit()
 
@@ -253,17 +253,17 @@ public:
     // METHODS
     // Resumes all coroutines from the m_resumeQueue
     void resume(const char* eventDescription = VL_UNKNOWN);
-    // Moves all coroutines from m_commited to m_resumeQueue
-    void resumePrep(const char* eventDescription = VL_UNKNOWN);
-    // Moves all coroutines from m_uncommitted to m_commited
-    void commit(const char* eventDescription = VL_UNKNOWN);
+    // Moves all coroutines from m_ready to m_resumeQueue
+    void moveToResumeQueue(const char* eventDescription = VL_UNKNOWN);
+    // Moves all coroutines from m_unready to m_ready
+    void ready(const char* eventDescription = VL_UNKNOWN);
     // Are there no coroutines awaiting?
-    bool empty() const { return m_commited.empty() && m_uncommitted.empty(); }
+    bool empty() const { return m_ready.empty() && m_unready.empty(); }
 #ifdef VL_DEBUG
     void dump(const char* eventDescription) const;
 #endif
     // Used by coroutines for co_awaiting a certain trigger
-    auto trigger(bool commit, VlProcessRef process, const char* eventDescription = VL_UNKNOWN,
+    auto trigger(bool ready, VlProcessRef process, const char* eventDescription = VL_UNKNOWN,
                  const char* filename = VL_UNKNOWN, int lineno = 0) {
         VL_DEBUG_IF(VL_DBG_MSGF("         Suspending process waiting for %s at %s:%d\n",
                                 eventDescription, filename, lineno););
@@ -278,8 +278,7 @@ public:
             }
             void await_resume() const {}
         };
-        return Awaitable{commit ? m_commited : m_uncommitted, process,
-                         VlFileLineDebug{filename, lineno}};
+        return Awaitable{ready ? m_ready : m_unready, process, VlFileLineDebug{filename, lineno}};
     }
 };
 
