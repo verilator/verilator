@@ -566,7 +566,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
                         exprp = nullptr;
                     } else {
                         // All invalid and unsupported expressions should be caught in V3Width
-                        nodep->v3fatalSrc("Unexpected expression type in std::randomize() argument");
+                        nodep->v3fatalSrc(
+                            "Unexpected expression type in std::randomize() argument");
                     }
                     UASSERT_OBJ(randVarp, nodep, "No rand variable found");
                     AstNode* backp = randVarp;
