@@ -957,7 +957,7 @@ class AstMemberDType final : public AstNodeDType {
     //
     // @astgen ptr := m_refDTypep : Optional[AstNodeDType]  // Elements of this type (post-width)
     string m_name;  // Name of variable
-    string m_tag;  // Holds the string of the verilator tag -- used in XML output.
+    string m_tag;  // Holds the string of the verilator tag -- used in JSON output.
     int m_lsb = -1;  // Within this level's packed struct, the LSB of the first bit of the member
     bool m_constrainedRand = false;
     // UNSUP: int m_randType;    // Randomization type (IEEE)

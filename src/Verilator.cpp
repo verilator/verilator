@@ -138,7 +138,7 @@ static void emitJson() VL_MT_DISABLED {
     v3Global.rootp()->dumpTreeJsonFile(filename);
 }
 
-static void emitXmlOrJson() VL_MT_DISABLED {
+static void emitSerialized() VL_MT_DISABLED {
     if (v3Global.opt.xmlOnly()) V3EmitXml::emitxml();
     if (v3Global.opt.jsonOnly()) emitJson();
 }
@@ -216,7 +216,7 @@ static void process() {
         VlOs::DeltaWallTime cvtWallTime{true};
         if (v3Global.opt.debugExitElab()) {
             V3Error::abortIfErrors();
-            if (v3Global.opt.serializeOnly()) emitXmlOrJson();
+            if (v3Global.opt.serializeOnly()) emitSerialized();
             cout << "--debug-exit-elab: Exiting after elaboration pass\n";
             v3Global.vlExit(0);
         }
@@ -634,7 +634,7 @@ static void process() {
         V3EmitC::emitcImp();
     }
     if (v3Global.opt.serializeOnly()) {
-        emitXmlOrJson();
+        emitSerialized();
     } else if (v3Global.opt.debugCheck() && !v3Global.opt.lintOnly()
                && !v3Global.opt.dpiHdrOnly()) {
         // Check XML/JSON when debugging to make sure no missing node types

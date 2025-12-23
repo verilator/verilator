@@ -47,7 +47,7 @@
 //      ResolveVisitor:
 //          #9: Resolve general variables, which may point into the interface or modport (after #8)
 //      LinkResolve:
-//          #10: Unlink modports, not needed later except for XML/Lint
+//          #10: Unlink modports, not needed later except for JSON/Lint
 //*************************************************************************
 // TOP
 //      {name-of-top-modulename}
@@ -2205,7 +2205,7 @@ class LinkDotParamVisitor final : public VNVisitor {
             symp->exported(false);
             refp->pinNum(nodep->pinNum());
             // Put the variable where the port is, so that variables stay
-            // in pin number sorted order. Otherwise hierarchical or XML
+            // in pin number sorted order. Otherwise hierarchical or JSON
             // may botch by-position instances.
             nodep->addHereThisAsNext(refp->unlinkFrBack());
         }

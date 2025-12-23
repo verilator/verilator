@@ -1737,7 +1737,7 @@ class AstTypedef final : public AstNode {
     // @astgen op4 := attrsp : List[AstNode] // Attributes during early parse
 
     string m_name;
-    string m_tag;  // Holds the string of the verilator tag -- used in XML output.
+    string m_tag;  // Holds the string of the verilator tag -- used in JSON output.
     uint32_t m_declTokenNum;  // Declaration token number
     bool m_attrPublic = false;
     bool m_isHideLocal : 1;  // Verilog local
@@ -1866,13 +1866,13 @@ class AstVar final : public AstNode {
 
     string m_name;  // Name of variable
     string m_origName;  // Original name before dot addition
-    string m_tag;  // Holds the string of the verilator tag -- used in XML output.
+    string m_tag;  // Holds the string of the verilator tag -- used in JSON output.
     VVarType m_varType;  // Type of variable
     VDirection m_direction;  // Direction input/output etc
     VDirection m_declDirection;  // Declared direction input/output etc
     VLifetime m_lifetime;  // Lifetime
     VRandAttr m_rand;  // Randomizability of this variable (rand, randc, etc)
-    int m_pinNum = 0;  // For XML, if non-zero the connection pin number
+    int m_pinNum = 0;  // For JSON, if non-zero the connection pin number
     bool m_ansi : 1;  // Params or pins declared in the module header, rather than the body
     bool m_declTyped : 1;  // Declared as type (for dedup check)
     bool m_tristate : 1;  // Inout or triwire or trireg

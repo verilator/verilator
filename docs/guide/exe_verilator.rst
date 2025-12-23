@@ -155,7 +155,7 @@ Summary:
    requires GNU Make to be available on the platform.
 
    :vlopt:`--build` cannot be specified when using :vlopt:`-E`,
-   :vlopt:`--dpi-hdr-only`, :vlopt:`--lint-only`, or :vlopt:`--xml-only`.
+   :vlopt:`--dpi-hdr-only`, :vlopt:`--json-only` or :vlopt:`--lint-only`.
 
 .. option:: --build-dep-bin <filename>
 
@@ -606,7 +606,7 @@ Summary:
 .. option:: --flatten
 
    Force flattening of the design's hierarchy, with all modules, tasks, and
-   functions inlined. Typically used with :vlopt:`--xml-only`.
+   functions inlined. Typically used with :vlopt:`--json-only`.
    Flattening large designs may require significant CPU time, memory and
    storage.
 

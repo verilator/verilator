@@ -484,7 +484,7 @@ class LinkResolveVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     //  void visit(AstModport* nodep) override { ... }
-    // We keep Modport's themselves around for XML dump purposes
+    // We keep Modport's themselves around for JSON dump purposes
 
     void visit(AstGenFor* nodep) override {
         VL_RESTORER(m_underGenerate);
