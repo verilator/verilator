@@ -818,6 +818,7 @@ static string buildMakeCmd(const string& makefile, const string& target) {
     cmd << " -C " << v3Global.opt.makeDir();
     cmd << " -f " << makefile;
     // Unless using make's jobserver, do a -j
+    if (v3Global.opt.quietBuild()) cmd << " -s --no-print-directory";
     if (v3Global.opt.getenvMAKEFLAGS().find("-jobserver-auth") == string::npos) {
         if (jobs > 0) cmd << " -j " << jobs;
     }
@@ -841,7 +842,7 @@ static void execBuildJob() {
     V3Stats::addStatPerf(V3Stats::STAT_WALLTIME_BUILD, buildWallTime.deltaTime());
 
     if (exit_code != 0) {
-        v3error(cmdStr << " exited with " << exit_code << std::endl);
+        v3error("'" << cmdStr << "' exited with " << exit_code << std::endl);
         v3Global.vlExit(exit_code);
     }
 }

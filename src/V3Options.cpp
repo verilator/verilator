@@ -1690,9 +1690,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
                 [this](const char* varp) { addParameter(varp, false); });
 
     DECL_OPTION("-quiet", CbOnOff, [this](bool flag) {
+        m_quietBuild = flag;
         m_quietExit = flag;
         m_quietStats = flag;
     });
+    DECL_OPTION("-quiet-build", OnOff, &m_quietBuild);
     DECL_OPTION("-quiet-exit", OnOff, &m_quietExit);
     DECL_OPTION("-quiet-stats", OnOff, &m_quietStats);
 

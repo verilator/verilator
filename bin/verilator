@@ -476,6 +476,7 @@ detailed descriptions of these arguments.
     --public-params             Mark all parameters as public_flat
      -pvalue+<name>=<value>     Overwrite toplevel parameter
     --quiet                     Minimize additional printing
+    --quiet-build               Don't print build progress
     --quiet-exit                Don't print the command on failure
     --quiet-stats               Don't print statistics
     --relative-includes         Resolve includes relative to current file

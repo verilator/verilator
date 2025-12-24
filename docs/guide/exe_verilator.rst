@@ -1475,7 +1475,13 @@ Summary:
 
 .. option:: --quiet
 
-   Alias for :vlopt:`--quiet-exit` :vlopt:`--quiet-stats`.
+   Alias for :vlopt:`--quiet-build` :vlopt:`--quiet-exit`
+   :vlopt:`--quiet-stats`.
+
+.. option:: --quiet-build
+
+   Disable printing build progress such as compiler command lines, when
+   using :vlopt:`--build`.
 
 .. option:: --quiet-exit
 

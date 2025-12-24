@@ -24,9 +24,10 @@ Verilator 5.043 devel
 * Add `-param`/`-port` options to `public_flat*` control directives (#6685). [Geza Lore, Fractile Ltd.]
 * Add `--top` specifying `config` name (#6710). [Dan Ruelas-Petrisko]
 * Add `sc_biguint` pragma (#6712). [Jakub Wasilewski, Antmicro Ltd.]
-* Add 'make venv' target (#6775). [Geza Lore]
+* Add `make venv` target (#6775). [Geza Lore]
 * Add SUPERNFIRST error on super.new on non-first statement (#6784). [Artur Bieniek]
 * Add fargs for reusability of `--dump-inputs` output (#6812). [Geza Lore]
+* Add `--quiet-build` to suppress make/compiler informationals.
 * Support `std::randomize(){...}` (#4706) (#6573). [Yilou Wang]
 * Support force assignments to unpacked array elements (partial #4735) (#6787). [Ryszard Rozak, Antmicro Ltd.]
 * Support `config' (#5891) (#6714) (#6717) (#6745) (#6764). [Dan Ruelas-Petrisko]

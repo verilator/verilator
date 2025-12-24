@@ -279,6 +279,7 @@ private:
     bool m_publicFlatRW = false;    // main switch: --public-flat-rw
     bool m_publicIgnore = false;    // main switch: --public-ignore
     bool m_publicParams = false;    // main switch: --public-params
+    bool m_quietBuild = false;      // main switch: --quiet-build
     bool m_quietExit = false;       // main switch: --quiet-exit
     bool m_quietStats = false;      // main switch: --quiet-stats
     bool m_relativeIncludes = false;  // main switch: --relative-includes
@@ -578,6 +579,7 @@ public:
     bool anyPublicFlat() const { return m_publicParams || m_publicFlatRW || m_publicDepth; }
     bool lintOnly() const VL_MT_SAFE { return m_lintOnly; }
     bool ignc() const { return m_ignc; }
+    bool quietBuild() const VL_MT_SAFE { return m_quietBuild; }
     bool quietExit() const VL_MT_SAFE { return m_quietExit; }
     bool quietStats() const VL_MT_SAFE { return m_quietStats; }
     bool reportUnoptflat() const { return m_reportUnoptflat; }
