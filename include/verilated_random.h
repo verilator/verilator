@@ -200,6 +200,7 @@ public:
 class VlRandomizer VL_NOT_FINAL {
     // MEMBERS
     std::vector<std::string> m_constraints;  // Solver-dependent constraints
+    std::vector<std::string> m_constraints_line;  // fileline content of the constraint for unsat constraints
     std::map<std::string, std::shared_ptr<const VlRandomVar>> m_vars;  // Solver-dependent
                                                                        // variables
     ArrayInfoMap m_arr_vars;  // Tracks each element in array structures for iteration
@@ -208,7 +209,7 @@ class VlRandomizer VL_NOT_FINAL {
 
     // PRIVATE METHODS
     void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
-    bool parseSolution(std::iostream& file);
+    bool parseSolution(std::iostream& file, bool log = 0);
 
 public:
     // CONSTRUCTORS
@@ -569,7 +570,7 @@ public:
                + std::to_string(idx);
     }
 
-    void hard(std::string&& constraint);
+    void hard(std::string&& constraint, std::string&& line ="");
     void clearConstraints();
     void clearAll();  // Clear both constraints and variables
     void set_randmode(const VlQueue<CData>& randmode) { m_randmodep = &randmode; }

@@ -372,6 +372,7 @@ bool VlRandomizer::next(VlRNG& rngr) {
     if (!os) return false;
 
     os << "(set-option :produce-models true)\n";
+    os << "(set-option :produce-unsat-cores true)\n";
     os << "(set-logic QF_ABV)\n";
     os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
     os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
@@ -384,12 +385,14 @@ bool VlRandomizer::next(VlRNG& rngr) {
         var.second->emitType(os);
         os << ")\n";
     }
+    int i=0;
     for (const std::string& constraint : m_constraints) {
-        os << "(assert (= #b1 " << constraint << "))\n";
+        os << "(assert (!(= #b1 " << constraint << ") :named "<<"cons"<<std::to_string(i)<<"))\n";
+        i++;
     }
     os << "(check-sat)\n";
 
-    bool sat = parseSolution(os);
+    bool sat = parseSolution(os, true);
     if (!sat) {
         os << "(reset)\n";
         return false;
@@ -406,11 +409,29 @@ bool VlRandomizer::next(VlRNG& rngr) {
     return true;
 }
 
-bool VlRandomizer::parseSolution(std::iostream& os) {
+bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
     std::string sat;
     do { std::getline(os, sat); } while (sat == "");
-
-    if (sat == "unsat") return false;
+    if(sat == "unsat") {
+        if(!log) return false;
+        os << "(get-unsat-core) \n";
+        sat.clear();
+        std::getline(os, sat);
+        std::vector<int> numbers;
+        std::string currentNum;
+        for (char c : sat) {
+            if (std::isdigit(c)) {
+                currentNum += c;
+                numbers.push_back(std::stoi(currentNum));
+                currentNum.clear();
+            }
+        }
+        for (int n : numbers) {
+            VL_PRINTF("%%Warning: Unsatisfied constraints \n \t\t%s \n", m_constraints_line[n].c_str());
+            // VL_WARN_MT(__FILE__, __LINE__, "randomize", m_constraints_line[n].c_str());
+        }
+        return false;
+    }
     if (sat != "sat") {
         std::stringstream msg;
         msg << "Internal: Solver error: " << sat;
@@ -501,12 +522,14 @@ bool VlRandomizer::parseSolution(std::iostream& os) {
     return true;
 }
 
-void VlRandomizer::hard(std::string&& constraint) {
+void VlRandomizer::hard(std::string&& constraint, std::string&& line) {
     m_constraints.emplace_back(std::move(constraint));
+    if(!line.empty()) m_constraints_line.emplace_back(std::move(line));
 }
 
 void VlRandomizer::clearConstraints() {
     m_constraints.clear();
+    m_constraints_line.clear();
     // Keep m_vars for class member randomization
 }
 
