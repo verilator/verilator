@@ -9,7 +9,7 @@ interface Bus;
 endinterface
 
 module t;
-  Bus intf();
+  Bus intf ();
   virtual Bus vif;
 
   function logic get_vif(inout virtual Bus vif);

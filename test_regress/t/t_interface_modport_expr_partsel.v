@@ -18,13 +18,13 @@ interface my_if;
 endinterface
 
 module mod1 (
-  my_if.mp1 i
+    my_if.mp1 i
 );
   assign i.out = i.in;
 endmodule
 
 module mod2 (
-  my_if.mp2 i
+    my_if.mp2 i
 );
   assign i.out = ~i.in;
 endmodule
