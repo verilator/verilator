@@ -101,10 +101,10 @@ void V3UndrivenCapture::sortUniqueVars(std::vector<AstVar*>& vec) {
     vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
 }
 
-void V3UndrivenCapture::sortUniqueFTasks(std::vector<const AstNodeFTask*>& vec) {
-    std::sort(vec.begin(), vec.end());
-    vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
-}
+//void V3UndrivenCapture::sortUniqueFTasks(std::vector<const AstNodeFTask*>& vec) {
+//    std::sort(vec.begin(), vec.end());
+//    vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
+//}
 
 V3UndrivenCapture::V3UndrivenCapture(AstNetlist* netlistp) {
     gather(netlistp);
@@ -112,7 +112,7 @@ V3UndrivenCapture::V3UndrivenCapture(AstNetlist* netlistp) {
     // Normalize direct lists
     for (auto& kv : m_info) {
         sortUniqueVars(kv.second.directWrites);
-        sortUniqueFTasks(kv.second.callees);
+        //sortUniqueFTasks(kv.second.callees);
     }
 
     // Compute summaries for all tasks
@@ -194,8 +194,13 @@ void V3UndrivenCapture::noteDirectWrite(const AstNodeFTask* taskp, AstVar* varp)
 }
 
 void V3UndrivenCapture::noteCallEdge(const AstNodeFTask* callerp, const AstNodeFTask* calleep) {
-    m_info[callerp].callees.push_back(calleep);
-    (void)m_info[calleep];  // ensure callee entry exists
+    //m_info[callerp].callees.push_back(calleep);
+    //(void)m_info[calleep];  // ensure callee entry exists
+    FTaskInfo& callerInfo = m_info[callerp];
+    if (callerInfo.calleesSet.insert(calleep).second) {
+        callerInfo.callees.push_back(calleep);
+    }
+    (void)m_info[calleep];
 }
 
 void V3UndrivenCapture::debugDumpTask(const AstNodeFTask* taskp, int level) const {

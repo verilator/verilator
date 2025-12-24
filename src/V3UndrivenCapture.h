@@ -55,6 +55,9 @@ public:
         std::vector<AstVar*> writeSummary;
         // State for writeSummary computation.
         State state = State::UNVISITED;
+        // This is used to test whether weve already recorded a callee.  Used to 'filter' on insert
+        // versus sorting at the end.
+        std::unordered_set<const AstNodeFTask*> calleesSet;
     };
 
     // Enable writeSummary computation.  If disabled, then the existing V3Undriven behaviour is
@@ -74,7 +77,7 @@ private:
     static void sortUniqueVars(std::vector<AstVar*>& vec);
     // Sort and remove duplicates from a vector of callees.  The visitor can record the same callee
     // multiple times (multiple call sites, branches, etc).
-    static void sortUniqueFTasks(std::vector<const AstNodeFTask*>& vec);
+    //static void sortUniqueFTasks(std::vector<const AstNodeFTask*>& vec);
 
     // Collect direct writes and call edges for all tasks/functions.  Run one time when
     // UndrivenCapture is created.  This runs the visitor over the tree.
