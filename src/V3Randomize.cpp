@@ -1322,7 +1322,13 @@ class ConstraintExprVisitor final : public VNVisitor {
         cexprp->dtypeSetString();
         std::stringstream msg;
         msg << nodep->fileline() << "   ";
-        msg << nodep->fileline()->prettySource();
+        std::string prettyText = nodep->fileline()->prettySource();
+        size_t pos = 0;
+        while ((pos = prettyText.find('"', pos)) != std::string::npos) {
+            prettyText.insert(pos, "\\");
+            pos += 2; // Skip the backslash AND the quote
+        }
+        msg <<prettyText ;
         cexprp->add("\"" + msg.str() + "\"");
         callp->addPinsp(cexprp);
         nodep->replaceWith(callp->makeStmt());
