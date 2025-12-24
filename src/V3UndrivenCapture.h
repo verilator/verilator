@@ -75,11 +75,6 @@ private:
     // otherwise this could explode.
     std::unordered_map<const AstNodeFTask*, FTaskInfo> m_info;
 
-    // Sort and remove duplicates from a vector of variables.  This is called after a task/function
-    // write summary is computed.  writeSummary can accumulate duplicates if a variable is written
-    // in multiple tasks/functions.
-    //static void sortUniqueVars(std::vector<AstVar*>& vec);
-
     // Collect direct writes and call edges for all tasks/functions.  Run one time when
     // UndrivenCapture is created.  This runs the visitor over the tree.
     void gather(AstNetlist* netlistp);

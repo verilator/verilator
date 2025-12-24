@@ -96,18 +96,8 @@ private:
 
 bool V3UndrivenCapture::enableWriteSummary = true;
 
-//void V3UndrivenCapture::sortUniqueVars(std::vector<AstVar*>& vec) {
-//    std::sort(vec.begin(), vec.end());
-//    vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
-//}
-
 V3UndrivenCapture::V3UndrivenCapture(AstNetlist* netlistp) {
     gather(netlistp);
-
-    // Normalize direct lists
-    //for (auto& kv : m_info) {
-    //    sortUniqueVars(kv.second.directWrites);
-    //}
 
     // Compute summaries for all tasks
     for (const auto& kv : m_info) (void)computeWriteSummary(kv.first);
@@ -156,28 +146,17 @@ const std::vector<AstVar*>& V3UndrivenCapture::computeWriteSummary(const AstNode
                      << " returning directWrites size=" << info.directWrites.size());
         // Cycle detected. return directWrites only to guarantee termination.
         if (info.writeSummary.empty()) info.writeSummary = info.directWrites;
-        //sortUniqueVars(info.writeSummary);
         return info.writeSummary;
     }
 
     info.state = State::VISITING;
 
-    // Start with direct writes
-    //info.writeSummary = info.directWrites;
-
-    // Need callees
-    //for (const AstNodeFTask* calleep : info.callees) {
-    //    if (m_info.find(calleep) == m_info.end()) continue;
-    //    const std::vector<AstVar*>& sub = computeWriteSummary(calleep);
-    //    info.writeSummary.insert(info.writeSummary.end(), sub.begin(), sub.end());
-    //}
-
-    // Remove duplicates and sort because grabbing all of the callees can result in duplicates
-    //sortUniqueVars(info.writeSummary);
-
     info.writeSummary.clear();
+
+    // Prevent duplicates across all sources that can contribute to a write summary (direct writes and call chains)
     std::unordered_set<AstVar*> seen;
 
+    // Simple lambda for filtering duplicates
     auto addVar = [&](AstVar* v) {
         if (seen.insert(v).second) info.writeSummary.push_back(v);
     };
