@@ -19,8 +19,6 @@
 #include "V3Error.h"
 #include "V3Global.h"
 
-//#include <algorithm>
-
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 namespace {
@@ -93,8 +91,6 @@ private:
 };
 
 }  // namespace
-
-bool V3UndrivenCapture::enableWriteSummary = true;
 
 V3UndrivenCapture::V3UndrivenCapture(AstNetlist* netlistp) {
     gather(netlistp);
@@ -188,8 +184,7 @@ void V3UndrivenCapture::noteDirectWrite(const AstNodeFTask* taskp, AstVar* varp)
     AstVar* const retVarp = VN_CAST(taskp->fvarp(), Var);
     if (retVarp && varp == retVarp) return;
 
-    //info.directWrites.push_back(varp);
-    // filter out duplicates.
+    // Filter out duplicates.
     if (info.directWritesSet.insert(varp).second) {
         info.directWrites.push_back(varp);
     }
@@ -197,11 +192,11 @@ void V3UndrivenCapture::noteDirectWrite(const AstNodeFTask* taskp, AstVar* varp)
 
 void V3UndrivenCapture::noteCallEdge(const AstNodeFTask* callerp, const AstNodeFTask* calleep) {
     FTaskInfo& callerInfo = m_info[callerp];
-    // prevents duplicate entries from being appended, if calleep already exists then insert will return false, and then is not inserted into the callees vector.
+    // Prevents duplicate entries from being appended, if calleep already exists then insert will return false, and then is not inserted into the callees vector.
     if (callerInfo.calleesSet.insert(calleep).second) {
         callerInfo.callees.push_back(calleep);
     }
-    // ensure callee entry exists, if already exists then this is a no-op.  unordered_map<> so cheap.
+    // Ensure callee entry exists, if already exists then this is a no-op.  unordered_map<> so cheap.
     (void)m_info[calleep];
 }
 

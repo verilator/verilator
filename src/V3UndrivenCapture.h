@@ -64,10 +64,6 @@ public:
         std::unordered_set<AstVar*> directWritesSet;
     };
 
-    // Enable writeSummary computation.  If disabled, then the existing V3Undriven behaviour is
-    // used.
-    static bool enableWriteSummary;
-
 private:
     // Per-task/function capture info keyed by resolved AstNodeFTask* identity (FTask = function or
     // task).  This is our 'graph' of tasks/functions.  Each node has a list of direct callees and

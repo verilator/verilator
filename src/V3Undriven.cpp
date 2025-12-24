@@ -315,7 +315,6 @@ class UndrivenVisitor final : public VNVisitorConst {
     const AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
 
     V3UndrivenCapture* const m_capturep = nullptr;  // Capture object.  'nullptr' if disabled.
-    const bool m_enableWriteSummary = false;  // Enable writeSummary computation plumbing
 
     // METHODS
 
@@ -437,7 +436,7 @@ class UndrivenVisitor final : public VNVisitorConst {
         // If writeSummary is enabled, task/function definitions are treated as non-executed.
         // Their effects are applied at call sites via writeSummary(), so don't let definition
         // traversal create phantom "other writes" for MULTIDRIVEN.
-        if (m_enableWriteSummary && m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic
+        if (m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic
             && !m_inBBox && !m_taskp->dpiExport()) {
             AstVar* const retVarp = VN_CAST(m_taskp->fvarp(), Var);
             if (!retVarp || nodep->varp() != retVarp) return;
@@ -455,12 +454,13 @@ class UndrivenVisitor final : public VNVisitorConst {
                 if (entryp->isDrivenWhole() && !m_inBBox && !VN_IS(nodep, VarXRef)
                     && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)
                     && nodep->fileline() != entryp->getNodeFileLinep() && !entryp->isUnderGen()
-                    && (entryp->getNodep() || (m_enableWriteSummary && entryp->callNodep()))) {
+                    && (entryp->getNodep() ||
+                    entryp->callNodep())) {
 
                     const AstNode* const otherWritep
-                        = entryp->getNodep()
-                              ? static_cast<const AstNode*>(entryp->getNodep())
-                              : (m_enableWriteSummary ? entryp->callNodep() : nullptr);
+                        = entryp->getNodep() ?
+                            static_cast<const AstNode*>(entryp->getNodep()) :
+                                entryp->callNodep();
 
                     if (m_alwaysCombp
                         && (!entryp->isDrivenAlwaysCombWhole()
@@ -557,7 +557,7 @@ class UndrivenVisitor final : public VNVisitorConst {
 
         iterateChildrenConst(nodep);
 
-        if (!m_enableWriteSummary || !m_capturep) return;
+        if (!m_capturep) return;
 
         // If writeSummary is enabled, task/function definitions are treated as non-executed.
         // Do not apply writeSummary at calls inside a task definition, or they will look like
@@ -612,10 +612,9 @@ class UndrivenVisitor final : public VNVisitorConst {
 
 public:
     // CONSTRUCTORS
-    explicit UndrivenVisitor(AstNetlist* nodep, V3UndrivenCapture* capturep,
-                             bool enableWriteSummary)
+    explicit UndrivenVisitor(AstNetlist* nodep, V3UndrivenCapture* capturep)
         : m_capturep{capturep}
-        , m_enableWriteSummary{enableWriteSummary} {
+    {
         iterateConst(nodep);
     }
 
@@ -632,12 +631,9 @@ public:
 
 void V3Undriven::undrivenAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    const bool enable = V3UndrivenCapture::enableWriteSummary;
-    if (enable) {
-        V3UndrivenCapture capture{nodep};
-        { UndrivenVisitor{nodep, &capture, enable}; }
-    } else {
-        { UndrivenVisitor{nodep, nullptr, enable}; }
-    }
+
+    V3UndrivenCapture capture{nodep};
+    UndrivenVisitor{nodep, &capture};
+
     if (v3Global.opt.stats()) V3Stats::statsStage("undriven");
 }
