@@ -436,8 +436,8 @@ class UndrivenVisitor final : public VNVisitorConst {
         // If writeSummary is enabled, task/function definitions are treated as non-executed.
         // Their effects are applied at call sites via writeSummary(), so don't let definition
         // traversal create phantom "other writes" for MULTIDRIVEN.
-        if (m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic
-            && !m_inBBox && !m_taskp->dpiExport()) {
+        if (m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic && !m_inBBox
+            && !m_taskp->dpiExport()) {
             AstVar* const retVarp = VN_CAST(m_taskp->fvarp(), Var);
             if (!retVarp || nodep->varp() != retVarp) return;
         }
@@ -454,13 +454,11 @@ class UndrivenVisitor final : public VNVisitorConst {
                 if (entryp->isDrivenWhole() && !m_inBBox && !VN_IS(nodep, VarXRef)
                     && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)
                     && nodep->fileline() != entryp->getNodeFileLinep() && !entryp->isUnderGen()
-                    && (entryp->getNodep() ||
-                    entryp->callNodep())) {
+                    && (entryp->getNodep() || entryp->callNodep())) {
 
                     const AstNode* const otherWritep
-                        = entryp->getNodep() ?
-                            static_cast<const AstNode*>(entryp->getNodep()) :
-                                entryp->callNodep();
+                        = entryp->getNodep() ? static_cast<const AstNode*>(entryp->getNodep())
+                                             : entryp->callNodep();
 
                     if (m_alwaysCombp
                         && (!entryp->isDrivenAlwaysCombWhole()
@@ -613,8 +611,7 @@ class UndrivenVisitor final : public VNVisitorConst {
 public:
     // CONSTRUCTORS
     explicit UndrivenVisitor(AstNetlist* nodep, V3UndrivenCapture* capturep)
-        : m_capturep{capturep}
-    {
+        : m_capturep{capturep} {
         iterateConst(nodep);
     }
 

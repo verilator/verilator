@@ -59,8 +59,8 @@ public:
         // This is used to test whether weve already recorded a callee.  Used to 'filter' on insert
         // versus sorting at the end.
         std::unordered_set<const AstNodeFTask*> calleesSet;
-        // This is used to test whether weve already recorded a direct write.  Used to 'filter' on insert
-        // versus sorting at the end.
+        // This is used to test whether weve already recorded a direct write.  Used to 'filter' on
+        // insert versus sorting at the end.
         std::unordered_set<AstVar*> directWritesSet;
     };
 

@@ -149,7 +149,8 @@ const std::vector<AstVar*>& V3UndrivenCapture::computeWriteSummary(const AstNode
 
     info.writeSummary.clear();
 
-    // Prevent duplicates across all sources that can contribute to a write summary (direct writes and call chains)
+    // Prevent duplicates across all sources that can contribute to a write summary (direct writes
+    // and call chains)
     std::unordered_set<AstVar*> seen;
 
     // Simple lambda for filtering duplicates
@@ -185,18 +186,16 @@ void V3UndrivenCapture::noteDirectWrite(const AstNodeFTask* taskp, AstVar* varp)
     if (retVarp && varp == retVarp) return;
 
     // Filter out duplicates.
-    if (info.directWritesSet.insert(varp).second) {
-        info.directWrites.push_back(varp);
-    }
+    if (info.directWritesSet.insert(varp).second) { info.directWrites.push_back(varp); }
 }
 
 void V3UndrivenCapture::noteCallEdge(const AstNodeFTask* callerp, const AstNodeFTask* calleep) {
     FTaskInfo& callerInfo = m_info[callerp];
-    // Prevents duplicate entries from being appended, if calleep already exists then insert will return false, and then is not inserted into the callees vector.
-    if (callerInfo.calleesSet.insert(calleep).second) {
-        callerInfo.callees.push_back(calleep);
-    }
-    // Ensure callee entry exists, if already exists then this is a no-op.  unordered_map<> so cheap.
+    // Prevents duplicate entries from being appended, if calleep already exists then insert will
+    // return false, and then is not inserted into the callees vector.
+    if (callerInfo.calleesSet.insert(calleep).second) { callerInfo.callees.push_back(calleep); }
+    // Ensure callee entry exists, if already exists then this is a no-op.  unordered_map<> so
+    // cheap.
     (void)m_info[calleep];
 }
 
