@@ -19,7 +19,7 @@
 #include "V3Error.h"
 #include "V3Global.h"
 
-#include <algorithm>
+//#include <algorithm>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -96,12 +96,7 @@ private:
 
 bool V3UndrivenCapture::enableWriteSummary = true;
 
-void V3UndrivenCapture::sortUniqueVars(std::vector<AstVar*>& vec) {
-    std::sort(vec.begin(), vec.end());
-    vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
-}
-
-//void V3UndrivenCapture::sortUniqueFTasks(std::vector<const AstNodeFTask*>& vec) {
+//void V3UndrivenCapture::sortUniqueVars(std::vector<AstVar*>& vec) {
 //    std::sort(vec.begin(), vec.end());
 //    vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
 //}
@@ -110,13 +105,20 @@ V3UndrivenCapture::V3UndrivenCapture(AstNetlist* netlistp) {
     gather(netlistp);
 
     // Normalize direct lists
-    for (auto& kv : m_info) {
-        sortUniqueVars(kv.second.directWrites);
-        //sortUniqueFTasks(kv.second.callees);
-    }
+    //for (auto& kv : m_info) {
+    //    sortUniqueVars(kv.second.directWrites);
+    //}
 
     // Compute summaries for all tasks
     for (const auto& kv : m_info) (void)computeWriteSummary(kv.first);
+
+    // Release the filter memory
+    for (auto& kv : m_info) {
+        kv.second.calleesSet.clear();
+        kv.second.calleesSet.rehash(0);
+        kv.second.directWritesSet.clear();
+        kv.second.directWritesSet.rehash(0);
+    }
 
     UINFO(9, "undriven capture stats ftasks="
                  << g_stats.ftasks << " varWrites=" << g_stats.varWrites
@@ -154,24 +156,41 @@ const std::vector<AstVar*>& V3UndrivenCapture::computeWriteSummary(const AstNode
                      << " returning directWrites size=" << info.directWrites.size());
         // Cycle detected. return directWrites only to guarantee termination.
         if (info.writeSummary.empty()) info.writeSummary = info.directWrites;
-        sortUniqueVars(info.writeSummary);
+        //sortUniqueVars(info.writeSummary);
         return info.writeSummary;
     }
 
     info.state = State::VISITING;
 
     // Start with direct writes
-    info.writeSummary = info.directWrites;
+    //info.writeSummary = info.directWrites;
 
     // Need callees
+    //for (const AstNodeFTask* calleep : info.callees) {
+    //    if (m_info.find(calleep) == m_info.end()) continue;
+    //    const std::vector<AstVar*>& sub = computeWriteSummary(calleep);
+    //    info.writeSummary.insert(info.writeSummary.end(), sub.begin(), sub.end());
+    //}
+
+    // Remove duplicates and sort because grabbing all of the callees can result in duplicates
+    //sortUniqueVars(info.writeSummary);
+
+    info.writeSummary.clear();
+    std::unordered_set<AstVar*> seen;
+
+    auto addVar = [&](AstVar* v) {
+        if (seen.insert(v).second) info.writeSummary.push_back(v);
+    };
+
+    // Start with direct writes
+    for (AstVar* v : info.directWrites) addVar(v);
+
+    // Add callee summaries
     for (const AstNodeFTask* calleep : info.callees) {
         if (m_info.find(calleep) == m_info.end()) continue;
         const std::vector<AstVar*>& sub = computeWriteSummary(calleep);
-        info.writeSummary.insert(info.writeSummary.end(), sub.begin(), sub.end());
+        for (AstVar* v : sub) addVar(v);
     }
-
-    // Remove duplicates and sort because grabbing all of the callees can result in duplicates
-    sortUniqueVars(info.writeSummary);
 
     UINFO(9, "undriven capture writeSummary computed size=" << info.writeSummary.size() << " for "
                                                             << taskNameQ(taskp));
@@ -190,16 +209,20 @@ void V3UndrivenCapture::noteDirectWrite(const AstNodeFTask* taskp, AstVar* varp)
     AstVar* const retVarp = VN_CAST(taskp->fvarp(), Var);
     if (retVarp && varp == retVarp) return;
 
-    info.directWrites.push_back(varp);
+    //info.directWrites.push_back(varp);
+    // filter out duplicates.
+    if (info.directWritesSet.insert(varp).second) {
+        info.directWrites.push_back(varp);
+    }
 }
 
 void V3UndrivenCapture::noteCallEdge(const AstNodeFTask* callerp, const AstNodeFTask* calleep) {
-    //m_info[callerp].callees.push_back(calleep);
-    //(void)m_info[calleep];  // ensure callee entry exists
     FTaskInfo& callerInfo = m_info[callerp];
+    // prevents duplicate entries from being appended, if calleep already exists then insert will return false, and then is not inserted into the callees vector.
     if (callerInfo.calleesSet.insert(calleep).second) {
         callerInfo.callees.push_back(calleep);
     }
+    // ensure callee entry exists, if already exists then this is a no-op.  unordered_map<> so cheap.
     (void)m_info[calleep];
 }
 

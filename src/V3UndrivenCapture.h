@@ -33,6 +33,7 @@
 #include "V3Ast.h"
 
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 class AstNetlist;
@@ -46,9 +47,9 @@ public:
     enum class State : uint8_t { UNVISITED, VISITING, DONE };
 
     struct FTaskInfo final {
-        // Variables written directly in this task/function body.
+        // Variables written directly in this task/function body (iteration order)
         std::vector<AstVar*> directWrites;
-        // Direct resolved callees from this task/function body.
+        // Direct resolved callees from this task/function body (iteration order)
         std::vector<const AstNodeFTask*> callees;
         // 'Write through write' writeSummary for the given task/function.  Meaning ultimately
         // everything that this function/task writes to.
@@ -58,6 +59,9 @@ public:
         // This is used to test whether weve already recorded a callee.  Used to 'filter' on insert
         // versus sorting at the end.
         std::unordered_set<const AstNodeFTask*> calleesSet;
+        // This is used to test whether weve already recorded a direct write.  Used to 'filter' on insert
+        // versus sorting at the end.
+        std::unordered_set<AstVar*> directWritesSet;
     };
 
     // Enable writeSummary computation.  If disabled, then the existing V3Undriven behaviour is
@@ -74,10 +78,7 @@ private:
     // Sort and remove duplicates from a vector of variables.  This is called after a task/function
     // write summary is computed.  writeSummary can accumulate duplicates if a variable is written
     // in multiple tasks/functions.
-    static void sortUniqueVars(std::vector<AstVar*>& vec);
-    // Sort and remove duplicates from a vector of callees.  The visitor can record the same callee
-    // multiple times (multiple call sites, branches, etc).
-    //static void sortUniqueFTasks(std::vector<const AstNodeFTask*>& vec);
+    //static void sortUniqueVars(std::vector<AstVar*>& vec);
 
     // Collect direct writes and call edges for all tasks/functions.  Run one time when
     // UndrivenCapture is created.  This runs the visitor over the tree.
