@@ -869,10 +869,11 @@ Summary:
 
 .. option:: --inline-cfuncs <value>
 
-   Inline small CFunc calls directly into their callers when the function
-   has at most <value> nodes. This reduces function call overhead when
-   :vlopt:`--output-split-cfuncs` places functions in separate compilation
-   units that the C++ compiler cannot inline.
+   Inline small C++ function (internal AstCFunc) calls directly into their
+   callers when the function has at most <value> nodes. This reduces
+   function call overhead when :vlopt:`--output-split-cfuncs` places
+   functions in separate compilation units that the C++ compiler cannot
+   inline.
 
    Set to 0 to disable this optimization. The default is 20.
 
@@ -881,10 +882,10 @@ Summary:
 
 .. option:: --inline-cfuncs-product <value>
 
-   Tune the inlining of CFunc calls for larger functions. When a function
-   is too large to always inline (exceeds :vlopt:`--inline-cfuncs` threshold),
-   it may still be inlined if the function size multiplied by the number of
-   call sites is at most <value>.
+   Tune the inlining of C++ function (internal AstCFunc) calls for larger
+   functions. When a function is too large to always inline (exceeds
+   :vlopt:`--inline-cfuncs` threshold), it may still be inlined if the
+   function size multiplied by the number of call sites is at most <value>.
 
    This allows functions that are called only once or twice to be inlined
    even if they exceed the small function threshold. Set to 0 to only inline
