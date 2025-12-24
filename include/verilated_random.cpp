@@ -385,9 +385,10 @@ bool VlRandomizer::next(VlRNG& rngr) {
         var.second->emitType(os);
         os << ")\n";
     }
-    int i=0;
+    int i = 0;
     for (const std::string& constraint : m_constraints) {
-        os << "(assert (!(= #b1 " << constraint << ") :named "<<"cons"<<std::to_string(i)<<"))\n";
+        os << "(assert (!(= #b1 " << constraint << ") :named " << "cons" << std::to_string(i)
+           << "))\n";
         i++;
     }
     os << "(check-sat)\n";
@@ -412,8 +413,8 @@ bool VlRandomizer::next(VlRNG& rngr) {
 bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
     std::string sat;
     do { std::getline(os, sat); } while (sat == "");
-    if(sat == "unsat") {
-        if(!log) return false;
+    if (sat == "unsat") {
+        if (!log) return false;
         os << "(get-unsat-core) \n";
         sat.clear();
         std::getline(os, sat);
@@ -427,7 +428,8 @@ bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
             }
         }
         for (int n : numbers) {
-            VL_PRINTF("%%Warning: Unsatisfied constraints \n \t\t%s \n", m_constraints_line[n].c_str());
+            VL_PRINTF("%%Warning: Unsatisfied constraints \n \t\t%s \n",
+                      m_constraints_line[n].c_str());
             // VL_WARN_MT(__FILE__, __LINE__, "randomize", m_constraints_line[n].c_str());
         }
         return false;
@@ -524,7 +526,7 @@ bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
 
 void VlRandomizer::hard(std::string&& constraint, std::string&& line) {
     m_constraints.emplace_back(std::move(constraint));
-    if(!line.empty()) m_constraints_line.emplace_back(std::move(line));
+    if (!line.empty()) m_constraints_line.emplace_back(std::move(line));
 }
 
 void VlRandomizer::clearConstraints() {

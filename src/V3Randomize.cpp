@@ -1321,9 +1321,9 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstCExpr* const cexprp = new AstCExpr{nodep->fileline()};
         cexprp->dtypeSetString();
         std::stringstream msg;
-        msg<<nodep->fileline()<<"   ";
-        msg<<nodep->fileline()->prettySource();
-        cexprp->add("\""+msg.str()+"\"");
+        msg << nodep->fileline() << "   ";
+        msg << nodep->fileline()->prettySource();
+        cexprp->add("\"" + msg.str() + "\"");
         callp->addPinsp(cexprp);
         nodep->replaceWith(callp->makeStmt());
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
