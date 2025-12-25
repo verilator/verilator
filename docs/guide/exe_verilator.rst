@@ -1737,7 +1737,7 @@ Summary:
 
 .. option:: --trace-coverage
 
-   With `--trace-*` and ``--coverage-*``, enable tracing to include a
+   With ``--trace-*`` and ``--coverage-*``, enable tracing to include a
    traced signal for every :vlopt:`--coverage-line` or
    :vlopt:`--coverage-user`\ -inserted coverage point, to assist in
    debugging coverage items. Note :vlopt:`--coverage-toggle` does not get
