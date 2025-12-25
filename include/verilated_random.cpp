@@ -27,7 +27,7 @@
 #include <sstream>
 #include <streambuf>
 
-#define _VL_SOLVER_HASH_LEN 1
+#define _VL_SOLVER_HASH_LEN 4
 #define _VL_SOLVER_HASH_LEN_TOTAL 4
 
 // clang-format off
