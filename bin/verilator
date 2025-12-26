@@ -42,6 +42,7 @@ if ($#ARGV < 0) {
 }
 
 # Insert debugging options up front
+# (VERILATOR_TEST_FLAGS is not a documented nor official supported feature)
 push @ARGV, (split ' ', $ENV{VERILATOR_TEST_FLAGS} || "");
 
 # We sneak a look at the flags so we can do some pre-environment checks
