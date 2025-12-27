@@ -3031,6 +3031,21 @@ class ConstVisitor final : public VNVisitor {
     void visit(AstExprStmt* nodep) override {
         iterateChildren(nodep);
         if (!AstNode::afterCommentp(nodep->stmtsp())) {
+            if (nodep->stmtsp()) {
+                AstScope* const scopep = VN_CAST(const_cast<AstNode*>(m_scopep), Scope);
+                if (scopep) {
+                    std::unordered_set<AstVar*> varps;
+                    nodep->stmtsp()->foreachAndNext([&](AstVar* varp) { varps.insert(varp); });
+                    if (!varps.empty()) {
+                        for (AstVarScope *vscp = scopep->varsp(), *nextp; vscp; vscp = nextp) {
+                            nextp = VN_AS(vscp->nextp(), VarScope);
+                            if (varps.find(vscp->varp()) != varps.end()) {
+                                VL_DO_DANGLING(pushDeletep(vscp->unlinkFrBack()), vscp);
+                            }
+                        }
+                    }
+                }
+            }
             UINFO(8, "ExprStmt(...) " << nodep << " " << nodep->resultp());
             nodep->replaceWith(nodep->resultp()->unlinkFrBack());
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -3394,22 +3409,47 @@ class ConstVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (m_doNConst) {
             if (const AstConst* const constp = VN_CAST(nodep->condp(), Const)) {
+                auto deleteVarScopesUnder = [&](AstNode* subtreep) {
+                    if (!subtreep) return;
+                    AstScope* const scopep = VN_CAST(const_cast<AstNode*>(m_scopep), Scope);
+                    if (!scopep) return;
+                    std::unordered_set<AstVar*> varps;
+                    subtreep->foreachAndNext([&](AstVar* varp) { varps.insert(varp); });
+                    if (varps.empty()) return;
+                    for (AstVarScope *vscp = scopep->varsp(), *nextp; vscp; vscp = nextp) {
+                        nextp = VN_AS(vscp->nextp(), VarScope);
+                        if (varps.find(vscp->varp()) != varps.end()) {
+                            VL_DO_DANGLING(pushDeletep(vscp->unlinkFrBack()), vscp);
+                        }
+                    }
+                };
+
                 AstNode* keepp = nullptr;
+                AstNode* delp = nullptr;
                 if (constp->isZero()) {
                     UINFO(4, "IF(0,{any},{x}) => {x}: " << nodep);
                     keepp = nodep->elsesp();
+                    delp = nodep->thensp();
                 } else if (!m_doV || constp->isNeqZero()) {  // Might be X in Verilog
                     UINFO(4, "IF(!0,{x},{any}) => {x}: " << nodep);
                     keepp = nodep->thensp();
+                    delp = nodep->elsesp();
                 } else {
                     UINFO(4, "IF condition is X, retaining: " << nodep);
                     return;
                 }
+
+                // If we delete a branch that contains variable declarations, also delete the
+                // corresponding varscopes so we don't leave dangling AstVarScope::m_varp pointers.
+                deleteVarScopesUnder(delp);
+
                 if (keepp) {
                     keepp->unlinkFrBackWithNext();
                     nodep->replaceWith(keepp);
                 } else {
                     nodep->unlinkFrBack();
+                    deleteVarScopesUnder(nodep->thensp());
+                    deleteVarScopesUnder(nodep->elsesp());
                 }
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
 
