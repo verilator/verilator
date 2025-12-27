@@ -381,6 +381,8 @@ public:
         addItemsp(itemsp);
     }
     ASTGEN_MEMBERS_AstCase;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
     string verilogKwd() const override { return casez() ? "casez" : casex() ? "casex" : "case"; }
     bool sameNode(const AstNode* samep) const override {

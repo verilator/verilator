@@ -95,6 +95,7 @@ Verilator 5.043 devel
 * Fix X handling in UDPs (#6722) (#6723). [Michael Bikovitsky]
 * Fix `--prof-exec` using `--lib-create`. [Geza Lore]
 * Fix fork scheduling semantics (#6730). [Artur Bieniek, Antmicro Ltd.]
+* Fix JSON output case statements (#6733).
 * Fix internal fault when cross-class calling with DPI (#6735) (#6742). [Matthew Ballance]
 * Fix write variable placement for global constraints (#6740) (#6750) (#6797). [Yilou Wang]
 * Fix JSON dump missing output ports (#6751) (#6831). [Oleh Maksymenko]

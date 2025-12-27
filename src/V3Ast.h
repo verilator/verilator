@@ -949,6 +949,7 @@ protected:
 
     static void dumpJsonNum(std::ostream& os, const std::string& name, int64_t val);
     static void dumpJsonBool(std::ostream& os, const std::string& name, bool val);
+    static void dumpJsonBoolIf(std::ostream& os, const std::string& name, bool val);
     static void dumpJsonStr(std::ostream& os, const std::string& name, const std::string& val);
     static void dumpJsonPtr(std::ostream& os, const std::string& name, const AstNode* const valp);
 
