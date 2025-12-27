@@ -197,6 +197,7 @@ class GateBuildVisitor final : public VNVisitorConst {
     AstActive* m_activep = nullptr;  // Current active
     bool m_inClockedActive = false;  // Underneath clocked active
     bool m_inSenItem = false;  // Underneath AstSenItem; any varrefs are clocks
+    bool m_inTraceDecl = false;  // Underneath AstTraceDecl
 
     // METHODS
     void checkNode(AstNode* nodep) {
@@ -269,6 +270,11 @@ class GateBuildVisitor final : public VNVisitorConst {
             iterateLogic(nodep, false, nullptr, "senItem");
         }
     }
+    void visit(AstTraceDecl* nodep) override {
+        VL_RESTORER(m_inTraceDecl);
+        m_inTraceDecl = true;
+        iterateChildrenConst(nodep);
+    }
     void visit(AstNodeVarRef* nodep) override {
         if (!m_logicVertexp) return;
 
@@ -286,6 +292,9 @@ class GateBuildVisitor final : public VNVisitorConst {
                 if (!vVtxp->rstSyncNodep()) vVtxp->rstSyncNodep(nodep);
             }
         }
+
+        // To reduce code size, clear reducible for non-primaryIO signals in trace
+        if (m_inTraceDecl && !vscp->varp()->isPrimaryIO()) vVtxp->clearReducible("TraceDecl");
 
         // We use weight of one; if we ref the var more than once, when we simplify,
         // the weight will increase
