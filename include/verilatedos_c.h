@@ -41,6 +41,9 @@
 #if defined(__APPLE__) && !defined(__arm64__) && !defined(__POWERPC__)
 # include <cpuid.h>  // For __cpuid_count()
 #endif
+#if defined(__FreeBSD__)
+# include <pthread_np.h>  // For pthread_getaffinity_np()
+#endif
 
 #if defined(__APPLE__) && defined(__MACH__)
 # include <mach/mach.h>  // For task_info()
