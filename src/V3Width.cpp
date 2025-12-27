@@ -5896,7 +5896,7 @@ class WidthVisitor final : public VNVisitor {
                         if (fmt == "%0") {
                             newFormat += "'h%0h";  // IEEE our choice
                         } else {
-                            newFormat += "%d";
+                            newFormat += "%0d";  // UVM tests require %0d
                         }
                     }
                     if (argp) argp = VN_AS(argp->nextp(), NodeExpr);
