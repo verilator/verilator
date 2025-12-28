@@ -4839,6 +4839,14 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstPattern* nodep) override {
         if (nodep->didWidthAndSet()) return;
         UINFO(9, "PATTERN " << nodep);
+        // Handle patterns used in case matches (pattern matching context)
+        // These are for matching, not assignment, so skip normal processing
+        if (VN_IS(nodep->backp(), PatTagged)) {
+            nodep->dtypeSetVoid();
+            // Just iterate all children for pattern matching patterns
+            userIterateChildren(nodep, m_vup);
+            return;
+        }
         if (nodep->childDTypep()) {  // data_type '{ pattern }
             nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         }
@@ -5363,7 +5371,13 @@ class WidthVisitor final : public VNVisitor {
 
     void visit(AstPatMember* nodep) override {
         AstNodeDType* const vdtypep = m_vup->dtypeNullp();
-        UASSERT_OBJ(vdtypep, nodep, "Pattern member type not assigned by AstPattern visitor");
+        // For case matches patterns (under PatTagged), dtype may be null
+        // Just iterate children and skip normal assignment pattern processing
+        if (!vdtypep) {
+            nodep->dtypeSetVoid();
+            userIterateChildren(nodep, m_vup);
+            return;
+        }
         nodep->dtypep(vdtypep);
         UINFO(9, "   PATMEMBER " << nodep);
         UASSERT_OBJ(!nodep->lhssp()->nextp(), nodep,
@@ -5393,6 +5407,23 @@ class WidthVisitor final : public VNVisitor {
                 ->deleteTree();  // Done with replicate before cloning
         }
         return times;
+    }
+
+    // Pattern matching expressions for case matches statements
+    void visit(AstPatTagged* nodep) override {
+        // Tagged patterns like "tagged member pattern"
+        // For now, just iterate children and set a void type
+        if (nodep->patternp()) userIterate(nodep->patternp(), m_vup);
+        nodep->dtypeSetVoid();
+    }
+    void visit(AstPatVarBind* nodep) override {
+        // Variable binding patterns like ".varname"
+        // These bind matched values to variables; type comes from context
+        nodep->dtypeSetVoid();
+    }
+    void visit(AstPatWild* nodep) override {
+        // Wildcard pattern ".*"
+        nodep->dtypeSetVoid();
     }
 
     void visit(AstPropSpec* nodep) override {

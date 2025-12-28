@@ -2561,6 +2561,16 @@ void AstPatMember::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isDefault);
     dumpJsonGen(str);
 }
+void AstPatVarBind::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    str << " ." << name();
+}
+void AstPatVarBind::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
+void AstPatTagged::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    str << " tagged " << member();
+}
+void AstPatTagged::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstNodeTriop::dump(std::ostream& str) const { this->AstNodeExpr::dump(str); }
 void AstNodeTriop::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstSel::dump(std::ostream& str) const {

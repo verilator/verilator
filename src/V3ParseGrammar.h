@@ -68,6 +68,32 @@ public:
     bool allTracingOn(const FileLine* fl) const {
         return v3Global.opt.trace() && m_tracingParse && fl->tracingOn();
     }
+    // Create local variable declarations for pattern bindings in case matches
+    AstNode* createPatternVarDecls(AstNodeExpr* patternp) VL_MT_DISABLED {
+        if (!patternp) return nullptr;
+        AstNode* declsp = nullptr;
+        // Walk pattern tree to find AstPatVarBind nodes
+        patternp->foreach([&](AstPatVarBind* bindp) {
+            // Create a local variable for each pattern binding
+            // Using logic type for now - proper type would require more analysis
+            AstVar* const varp = new AstVar{
+                bindp->fileline(), VVarType::BLOCKTEMP, bindp->name(), VFlagChildDType{},
+                new AstBasicDType{bindp->fileline(), VBasicDTypeKwd::LOGIC}};
+            varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+            declsp = AstNode::addNext(declsp, varp);
+        });
+        return declsp;
+    }
+    // Wrap statement with pattern variable declarations for case matches
+    AstNode* wrapStmtWithPatternVars(FileLine* fl, AstNodeExpr* patternp, AstNode* stmtp) {
+        AstNode* declsp = createPatternVarDecls(patternp);
+        if (!declsp) return stmtp;  // No pattern bindings
+        // Create a begin block with the declarations and statement
+        AstBegin* const blockp = new AstBegin{fl, "", nullptr, true /*implied*/};
+        blockp->addStmtsp(declsp);
+        blockp->addStmtsp(stmtp);
+        return blockp;
+    }
     AstRange* scrubRange(AstNodeRange* rangep) VL_MT_DISABLED;
     AstNodePreSel* scrubSel(AstNodeExpr* fromp, AstNodePreSel* selp) VL_MT_DISABLED;
     AstNodeDType* createArray(AstNodeDType* basep, AstNodeRange* rangep,

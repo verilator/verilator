@@ -1878,7 +1878,7 @@ public:
     string emitVerilog() override { return lhssp() ? "%f{%r{%k%l}}" : "%l"; }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
     int instrCount() const override { return widthInstrs() * 2; }
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
@@ -1886,6 +1886,61 @@ public:
     void isConcat(bool flag) { m_isConcat = flag; }
     bool isDefault() const { return m_isDefault; }
     void isDefault(bool flag) { m_isDefault = flag; }
+};
+class AstPatTagged final : public AstNodeExpr {
+    // Tagged pattern: tagged member_id [pattern]
+    // For pattern matching in case statements
+    // @astgen op1 := patternp : Optional[AstNodeExpr]  // Optional nested pattern
+    const string m_member;  // Tagged union member name
+
+public:
+    AstPatTagged(FileLine* fl, const string& member, AstNodeExpr* patternp)
+        : ASTGEN_SUPER_PatTagged(fl)
+        , m_member{member} {
+        this->patternp(patternp);
+    }
+    ASTGEN_MEMBERS_AstPatTagged;
+    string emitVerilog() override { return "tagged " + m_member; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+    int instrCount() const override { return 0; }
+    const string& member() const { return m_member; }
+    void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
+};
+class AstPatVarBind final : public AstNodeExpr {
+    // Pattern variable binding: .identifier in pattern matching
+    // Binds matched value to a local variable
+    const string m_name;  // Variable name to bind
+
+public:
+    AstPatVarBind(FileLine* fl, const string& name)
+        : ASTGEN_SUPER_PatVarBind(fl)
+        , m_name{name} {}
+    ASTGEN_MEMBERS_AstPatVarBind;
+    string emitVerilog() override { return "." + m_name; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+    int instrCount() const override { return 0; }
+    string name() const override VL_MT_STABLE { return m_name; }
+    void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
+};
+class AstPatWild final : public AstNodeExpr {
+    // Pattern wildcard: .* in pattern matching
+    // Matches any value
+
+public:
+    explicit AstPatWild(FileLine* fl)
+        : ASTGEN_SUPER_PatWild(fl) {}
+    ASTGEN_MEMBERS_AstPatWild;
+    string emitVerilog() override { return ".*"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+    int instrCount() const override { return 0; }
 };
 class AstPattern final : public AstNodeExpr {
     // Verilog '{a,b,c,d...}
@@ -1902,7 +1957,7 @@ public:
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
     int instrCount() const override { return widthInstrs(); }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* subDTypep() const VL_MT_STABLE { return dtypep() ? dtypep() : childDTypep(); }

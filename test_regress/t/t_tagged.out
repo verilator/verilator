@@ -1,41 +1,23 @@
-%Error-UNSUPPORTED: t/t_tagged.v:9:18: Unsupported: tagged union
-    9 |    typedef union tagged {
-      |                  ^~~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error-UNSUPPORTED: t/t_tagged.v:10:6: Unsupported: void (for tagged unions)
    10 |      void m_invalid;
       |      ^~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: t/t_tagged.v:19:14: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
    19 |          u = tagged m_invalid;
       |              ^~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error-UNSUPPORTED: t/t_tagged.v:24:16: Unsupported: matches (for tagged union)
-   24 |       case (u) matches
-      |                ^~~~~~~
-%Error: t/t_tagged.v:29:9: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
-   29 |         tagged m_invalid: ;
-      |         ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged.v:34:34: Unsupported: '{} tagged patterns
-   34 |       if (u matches tagged m_int .n) $stop;
-      |                                  ^
-%Error-UNSUPPORTED: t/t_tagged.v:34:21: Unsupported: '{} tagged patterns
-   34 |       if (u matches tagged m_int .n) $stop;
-      |                     ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged.v:33:13: Unsupported: matches operator
+   33 |       if (u matches tagged m_invalid) ;
+      |             ^~~~~~~
 %Error-UNSUPPORTED: t/t_tagged.v:34:13: Unsupported: matches operator
    34 |       if (u matches tagged m_int .n) $stop;
       |             ^~~~~~~
 %Error: t/t_tagged.v:36:11: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
    36 |       u = tagged m_int (123);
       |           ^~~~~~
-%Error: t/t_tagged.v:40:9: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
-   40 |         tagged m_invalid: $stop;
-      |         ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged.v:45:34: Unsupported: '{} tagged patterns
-   45 |       if (u matches tagged m_int .n) if (n != 123) $stop;
-      |                                  ^
-%Error-UNSUPPORTED: t/t_tagged.v:45:21: Unsupported: '{} tagged patterns
-   45 |       if (u matches tagged m_int .n) if (n != 123) $stop;
-      |                     ^~~~~~
+%Error: t/t_tagged.v:41:22: syntax error, unexpected '.', expecting ':' or :-then-begin or :-then-fork
+   41 |         tagged m_int .n: if (n !== 123) $stop;
+      |                      ^
 %Error-UNSUPPORTED: t/t_tagged.v:45:13: Unsupported: matches operator
    45 |       if (u matches tagged m_int .n) if (n != 123) $stop;
       |             ^~~~~~~
