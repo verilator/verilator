@@ -2339,6 +2339,11 @@ PLI_INT32 vpi_get(PLI_INT32 property, vpiHandle object) {
         if (VL_UNLIKELY(!vop)) return vpiUndefined;
         return vop->size();
     }
+    case vpiSigned: {
+        const VerilatedVpioVarBase* const vop = VerilatedVpioVarBase::castp(object);
+        if (VL_UNLIKELY(!vop)) return vpiUndefined;
+        return vop->varp()->isSigned();
+    }
     default:
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported property %s, nothing will be returned",
                       __func__, VerilatedVpiError::strFromVpiProp(property));
