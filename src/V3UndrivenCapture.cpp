@@ -23,12 +23,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 namespace {
 
-struct Stats final {
-    uint64_t ftasks = 0;
-    uint64_t varWrites = 0;
-    uint64_t callEdges = 0;
-} g_stats;
-
 static std::string taskNameQ(const AstNodeFTask* taskp) {
     if (!taskp) return "<null>";
     return taskp->prettyNameQ();
@@ -36,7 +30,7 @@ static std::string taskNameQ(const AstNodeFTask* taskp) {
 
 class CaptureVisitor final : public VNVisitorConst {
     V3UndrivenCapture& m_cap;
-    const AstNodeFTask* m_curTaskp = nullptr;
+    const AstNodeFTask* m_curTaskp = nullptr;  // Current task
 
     static void iterateListConst(VNVisitorConst& v, AstNode* nodep) {
         for (AstNode* np = nodep; np; np = np->nextp()) np->accept(v);
@@ -53,7 +47,6 @@ private:
     void visit(AstNodeFTask* nodep) override {
         VL_RESTORER(m_curTaskp);
         m_curTaskp = nodep;
-        ++g_stats.ftasks;
         UINFO(9, "undriven capture enter ftask " << nodep << " " << nodep->prettyNameQ());
         m_cap.noteTask(nodep);
         iterateListConst(*this, nodep->stmtsp());
@@ -61,7 +54,6 @@ private:
 
     void visit(AstNodeVarRef* nodep) override {
         if (m_curTaskp && nodep->access().isWriteOrRW()) {
-            ++g_stats.varWrites;
             UINFO(9, "undriven capture direct write in " << taskNameQ(m_curTaskp)
                                                          << " var=" << nodep->varp()->prettyNameQ()
                                                          << " at " << nodep->fileline());
@@ -75,7 +67,6 @@ private:
         // Record the call edge if resolved
         if (m_curTaskp) {
             if (AstNodeFTask* const calleep = nodep->taskp()) {
-                ++g_stats.callEdges;
                 UINFO(9, "undriven capture call edge " << taskNameQ(m_curTaskp) << " -> "
                                                        << taskNameQ(calleep));
                 m_cap.noteCallEdge(m_curTaskp, calleep);
@@ -105,10 +96,6 @@ V3UndrivenCapture::V3UndrivenCapture(AstNetlist* netlistp) {
         kv.second.directWritesSet.clear();
         kv.second.directWritesSet.rehash(0);
     }
-
-    UINFO(9, "undriven capture stats ftasks="
-                 << g_stats.ftasks << " varWrites=" << g_stats.varWrites
-                 << " callEdges=" << g_stats.callEdges << " uniqueTasks=" << m_info.size());
 }
 
 void V3UndrivenCapture::gather(AstNetlist* netlistp) {
