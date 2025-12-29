@@ -23,10 +23,13 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 namespace {
 
-static std::string taskNameQ(const AstNodeFTask* taskp) {
-    if (!taskp) return "<null>";
-    return taskp->prettyNameQ();
-}
+class CaptureUtil final {
+public:
+    static std::string taskNameQ(const AstNodeFTask* taskp) {
+        if (!taskp) return "<null>";
+        return taskp->prettyNameQ();
+    }
+};
 
 class CaptureVisitor final : public VNVisitorConst {
     V3UndrivenCapture& m_cap;
@@ -50,7 +53,7 @@ private:
 
     void visit(AstNodeVarRef* nodep) override {
         if (m_curTaskp && nodep->access().isWriteOrRW()) {
-            UINFO(9, "undriven capture direct write in " << taskNameQ(m_curTaskp)
+            UINFO(9, "undriven capture direct write in " << CaptureUtil::taskNameQ(m_curTaskp)
                                                          << " var=" << nodep->varp()->prettyNameQ()
                                                          << " at " << nodep->fileline());
 
@@ -63,11 +66,11 @@ private:
         // Record the call edge if resolved
         if (m_curTaskp) {
             if (AstNodeFTask* const calleep = nodep->taskp()) {
-                UINFO(9, "undriven capture call edge " << taskNameQ(m_curTaskp) << " -> "
-                                                       << taskNameQ(calleep));
+                UINFO(9, "undriven capture call edge " << CaptureUtil::taskNameQ(m_curTaskp) << " -> "
+                                                       << CaptureUtil::taskNameQ(calleep));
                 m_cap.noteCallEdge(m_curTaskp, calleep);
             } else {
-                UINFO(9, "undriven capture unresolved call in " << taskNameQ(m_curTaskp)
+                UINFO(9, "undriven capture unresolved call in " << CaptureUtil::taskNameQ(m_curTaskp)
                                                                 << " name=" << nodep->name());
             }
         }
@@ -116,12 +119,12 @@ const std::vector<AstVar*>& V3UndrivenCapture::computeWriteSummary(const AstNode
 
     if (info.state == State::DONE) {
         UINFO(9, "undriven capture writeSummary cached size=" << info.writeSummary.size()
-                                                              << " for " << taskNameQ(taskp));
+                                                              << " for " << CaptureUtil::taskNameQ(taskp));
         return info.writeSummary;
     }
     if (info.state == State::VISITING) {
         UINFO(9, "undriven capture recursion detected at "
-                     << taskNameQ(taskp)
+                     << CaptureUtil::taskNameQ(taskp)
                      << " returning directWrites size=" << info.directWrites.size());
         // Cycle detected. return directWrites only to guarantee termination.
         if (info.writeSummary.empty()) info.writeSummary = info.directWrites;
@@ -152,7 +155,7 @@ const std::vector<AstVar*>& V3UndrivenCapture::computeWriteSummary(const AstNode
     }
 
     UINFO(9, "undriven capture writeSummary computed size=" << info.writeSummary.size() << " for "
-                                                            << taskNameQ(taskp));
+                                                            << CaptureUtil::taskNameQ(taskp));
 
     // We are done, so set the m_info state correctly and return the vector of variables
     info.state = State::DONE;
