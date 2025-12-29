@@ -559,15 +559,12 @@ class UndrivenVisitor final : public VNVisitorConst {
 
         // If writeSummary is enabled, task/function definitions are treated as non-executed.
         // Do not apply writeSummary at calls inside a task definition, or they will look like
-        // independent drivers (phantom MULTIDRIVEN). Did the lambda on purpose - lessen chance of
-        // screwup in future edits.
-
-        const auto inExecutedContext = [this]() {
-            return !(m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic && !m_inBBox
+        // independent drivers (phantom MULTIDRIVEN).
+        const bool inExecutedContext =
+             !(m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic && !m_inBBox
                      && !m_taskp->dpiExport());
-        };
 
-        if (!inExecutedContext()) return;
+        if (!inExecutedContext) return;
 
         AstNodeFTask* const calleep = nodep->taskp();
         if (!calleep) return;
