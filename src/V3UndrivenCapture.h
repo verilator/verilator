@@ -17,12 +17,13 @@
 //*************************************************************************
 //
 // Capture task/function write summaries for multidriven checks.
-// Per-task/function capture info keyed by resolved AstNodeFTask* identity (FTask = function or
-// task).  This is our 'graph' of tasks/functions.  Each node has a list of direct callees and
-// a list of variables written in the function body.  There are methods to dedup after walking the
-// tree. V3Undriven then uses the writeSummary for multidriven checks - i.e. it treats writes (side
+// Per-task/function capture info keyed by resolved AstNodeFTask*
+// identity (FTask = function or task).  This is a 'graph' of
+// tasks/functions.  Each node has a list of direct callees and
+// a list of variables written in the function body.  There
+// are methods to dedup after walking the tree. V3Undriven then uses
+// the writeSummary for multidriven checks - i.e. it treats writes (side
 // effects) inside subroutines as part of the caller's process.
-//
 //*************************************************************************
 
 #ifndef VERILATOR_V3UNDRIVENCAPTURE_H_
@@ -41,10 +42,11 @@ class AstNetlist;
 class V3UndrivenCapture final {
 public:
     // DFS computation state for writeSummary propagation.
-    // UNVISITED: write summary not computed yet
-    // VISITING: currently computing on the call stack - used to detect cycles
-    // DONE: write summary computed
-    enum class State : uint8_t { UNVISITED, VISITING, DONE };
+    enum class State : uint8_t {
+        UNVISITED, // Write summary not computed yet
+        VISITING, // Currently computing on the call stack - used to detect cycles
+        DONE // Write summary computed
+    };
 
     struct FTaskInfo final {
         // Variables written directly in this task/function body (iteration order)
@@ -56,17 +58,17 @@ public:
         std::vector<AstVar*> writeSummary;
         // State for writeSummary computation.
         State state = State::UNVISITED;
-        // This is used to test whether weve already recorded a callee.  Used to 'filter' on insert
+        // Test if already recorded a callee.  Used to 'filter' on insert
         // versus sorting at the end.
         std::unordered_set<const AstNodeFTask*> calleesSet;
-        // This is used to test whether weve already recorded a direct write.  Used to 'filter' on
+        // Test if already recorded a direct write.  Used to 'filter' on
         // insert versus sorting at the end.
         std::unordered_set<AstVar*> directWritesSet;
     };
 
 private:
     // Per-task/function capture info keyed by resolved AstNodeFTask* identity (FTask = function or
-    // task).  This is our 'graph' of tasks/functions.  Each node has a list of direct callees and
+    // task).  The 'graph' of tasks/functions.  Each node has a list of direct callees and
     // a list of variables written in the function body.  There are methods to remove duplicates
     // otherwise this could explode.
     std::unordered_map<const AstNodeFTask*, FTaskInfo> m_info;
