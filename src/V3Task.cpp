@@ -534,8 +534,7 @@ class TaskVisitor final : public VNVisitor {
                         refArgOk = cMethodp->method() == VCMethod::DYN_AT_WRITE_APPEND
                                    || cMethodp->method() == VCMethod::DYN_AT_WRITE_APPEND_BACK;
                     } else {
-                        refArgOk = cMethodp->method() == VCMethod::ARRAY_AT
-                                   || cMethodp->method() == VCMethod::ARRAY_AT_BACK;
+                        refArgOk = cMethodp->method() == VCMethod::ARRAY_AT_WRITE;
                     }
                 }
                 if (refArgOk) {
