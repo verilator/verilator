@@ -1,0 +1,21 @@
+%Error-UNSUPPORTED: t/t_tagged_case.v:13:18: Unsupported: tagged union
+   13 |    typedef union tagged {
+      |                  ^~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_tagged_case.v:14:7: Unsupported: void (for tagged unions)
+   14 |       void Invalid;
+      |       ^~~~
+%Error: t/t_tagged_case.v:23:11: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+   23 |       v = tagged Invalid;
+      |           ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_tagged_case.v:26:10: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+   26 |          tagged Invalid : result = 1;
+      |          ^~~~~~
+%Error: t/t_tagged_case.v:32:11: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+   32 |       v = tagged Valid (123);
+      |           ^~~~~~
+%Error: t/t_tagged_case.v:35:10: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+   35 |          tagged Invalid : result = -1;
+      |          ^~~~~~
+%Error: Exiting due to
