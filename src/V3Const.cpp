@@ -3032,8 +3032,7 @@ class ConstVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (!AstNode::afterCommentp(nodep->stmtsp())) {
             if (nodep->stmtsp()) {
-                AstScope* const scopep = VN_CAST(const_cast<AstNode*>(m_scopep), Scope);
-                if (scopep) {
+                if (AstScope* const scopep = VN_CAST(const_cast<AstNode*>(m_scopep), Scope)) {
                     std::unordered_set<AstVar*> varps;
                     nodep->stmtsp()->foreachAndNext([&](AstVar* varp) { varps.insert(varp); });
                     if (!varps.empty()) {
