@@ -945,6 +945,21 @@ class ConstVisitor final : public VNVisitor {
 
     // METHODS
 
+    void deleteVarScopesUnder(AstNode* subtreep) {
+        if (!subtreep) return;
+        AstScope* const scopep = VN_CAST(const_cast<AstNode*>(m_scopep), Scope);
+        if (!scopep) return;
+        std::unordered_set<AstVar*> varps;
+        subtreep->foreachAndNext([&](AstVar* varp) { varps.insert(varp); });
+        if (varps.empty()) return;
+        for (AstVarScope *vscp = scopep->varsp(), *nextp; vscp; vscp = nextp) {
+            nextp = VN_AS(vscp->nextp(), VarScope);
+            if (varps.find(vscp->varp()) != varps.end()) {
+                VL_DO_DANGLING(pushDeletep(vscp->unlinkFrBack()), vscp);
+            }
+        }
+    }
+
     V3Number constNumV(AstNode* nodep) {
         // Contract C width to V width (if needed, else just direct copy)
         // The upper zeros in the C representation can otherwise cause
@@ -3409,21 +3424,6 @@ class ConstVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (m_doNConst) {
             if (const AstConst* const constp = VN_CAST(nodep->condp(), Const)) {
-                auto deleteVarScopesUnder = [&](AstNode* subtreep) {
-                    if (!subtreep) return;
-                    AstScope* const scopep = VN_CAST(const_cast<AstNode*>(m_scopep), Scope);
-                    if (!scopep) return;
-                    std::unordered_set<AstVar*> varps;
-                    subtreep->foreachAndNext([&](AstVar* varp) { varps.insert(varp); });
-                    if (varps.empty()) return;
-                    for (AstVarScope *vscp = scopep->varsp(), *nextp; vscp; vscp = nextp) {
-                        nextp = VN_AS(vscp->nextp(), VarScope);
-                        if (varps.find(vscp->varp()) != varps.end()) {
-                            VL_DO_DANGLING(pushDeletep(vscp->unlinkFrBack()), vscp);
-                        }
-                    }
-                };
-
                 AstNode* keepp = nullptr;
                 AstNode* delp = nullptr;
                 if (constp->isZero()) {
