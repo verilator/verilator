@@ -93,6 +93,7 @@ module t;
    // verilator lint_off SPLITVAR
    // verilator lint_off STATICVAR
    // verilator lint_off STMTDLY
+   // verilator lint_off SUPERNFIRST
    // verilator lint_off SYMRSVDWORD
    // verilator lint_off SYNCASYNCNET
    // verilator lint_off TICKCOUNT
@@ -103,6 +104,7 @@ module t;
    // verilator lint_off UNOPTTHREADS
    // verilator lint_off UNPACKED
    // verilator lint_off UNSIGNED
+   // verilator lint_off UNUSED
    // verilator lint_off UNUSEDGENVAR
    // verilator lint_off UNUSEDLOOP
    // verilator lint_off UNUSEDPARAM

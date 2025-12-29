@@ -373,7 +373,7 @@ private:
             warnSet(subset, V3ErrorCode::WIDTHEXPAND, flag);
             warnSet(subset, V3ErrorCode::WIDTHXZEXPAND, flag);
         }
-        if (code == V3ErrorCode::E_UNSUPPORTED) { warnSet(subset, V3ErrorCode::COVERIGN, flag); }
+        if (code == V3ErrorCode::E_UNSUPPORTED) warnSet(subset, V3ErrorCode::COVERIGN, flag);
         m_msgEnIdx = singleton().msgEnSetBit(m_msgEnIdx, subset, code, flag);
     }
 
@@ -382,12 +382,12 @@ public:
     void warnOnCtrl(V3ErrorCode code, bool flag) {
         warnSet(MsgEnBitSet::Subset::CTRL, code, flag);
     }
-    void warnOff(V3ErrorCode code, bool flag) { warnOn(code, !flag); }
-    string warnOffParse(const string& msgs, bool flag);  // Returns "" if ok
+    void warnOff(V3ErrorCode code, bool turnOff) { warnOn(code, !turnOff); }
+    string warnOffParse(const string& msgs, bool turnOff);  // Returns "" if ok
     bool warnIsOff(V3ErrorCode code) const VL_MT_SAFE;
-    void warnLintOff(bool flag);
-    void warnStyleOff(bool flag);
-    void warnUnusedOff(bool flag);
+    void warnLintOff(bool turnOff);
+    void warnStyleOff(bool turnOff);
+    void warnUnusedOff(bool turnOff);
     void warnStateFrom(const FileLine& from) { m_msgEnIdx = from.m_msgEnIdx; }
     void warnResetDefault() { warnStateFrom(defaultFileLine()); }
 
@@ -405,14 +405,14 @@ public:
     // <command-line> and <built-in> match what GCC outputs
     static string commandLineFilename() VL_MT_SAFE { return "<command-line>"; }
     static string builtInFilename() VL_MT_SAFE { return "<built-in>"; }
-    static void globalWarnLintOff(bool flag) { defaultFileLine().warnLintOff(flag); }
-    static void globalWarnStyleOff(bool flag) { defaultFileLine().warnStyleOff(flag); }
-    static void globalWarnUnusedOff(bool flag) { defaultFileLine().warnUnusedOff(flag); }
-    static void globalWarnOff(V3ErrorCode code, bool flag) {
-        defaultFileLine().warnOff(code, flag);
+    static void globalWarnLintOff(bool turnOff) { defaultFileLine().warnLintOff(turnOff); }
+    static void globalWarnStyleOff(bool turnOff) { defaultFileLine().warnStyleOff(turnOff); }
+    static void globalWarnUnusedOff(bool turnOff) { defaultFileLine().warnUnusedOff(turnOff); }
+    static void globalWarnOff(V3ErrorCode code, bool turnOff) {
+        defaultFileLine().warnOff(code, turnOff);
     }
-    static string globalWarnOffParse(const string& msgs, bool flag) {
-        return defaultFileLine().warnOffParse(msgs, flag);
+    static string globalWarnOffParse(const string& msgs, bool turnOff) {
+        return defaultFileLine().warnOffParse(msgs, turnOff);
     }
     static void fileNameNumMapDumpXml(std::ostream& os) { singleton().fileNameNumMapDumpXml(os); }
     static void fileNameNumMapDumpJson(std::ostream& os) {
@@ -427,7 +427,7 @@ public:
     // Change the current fileline due to actions discovered after parsing
     // and may have side effects on other nodes sharing this FileLine.
     // Use only when this is intended
-    void modifyWarnOff(V3ErrorCode code, bool flag) { warnOff(code, flag); }
+    void modifyWarnOff(V3ErrorCode code, bool turnOff) { warnOff(code, turnOff); }
 
     // OPERATORS
     void v3errorEnd(std::ostringstream& str, const string& extra = "")

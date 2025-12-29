@@ -161,7 +161,7 @@ void V3ParseImp::lexVerilatorCmtLintRestore(FileLine* fl) {
     m_lexLintState.pop_back();
 }
 
-void V3ParseImp::lexVerilatorCmtLint(FileLine* fl, const char* textp, bool warnOff) {
+void V3ParseImp::lexVerilatorCmtLint(FileLine* fl, const char* textp, bool turnOff) {
     const char* sp = textp;
     while (*sp && !std::isspace(*sp)) ++sp;
     while (*sp && std::isspace(*sp)) ++sp;
@@ -171,7 +171,7 @@ void V3ParseImp::lexVerilatorCmtLint(FileLine* fl, const char* textp, bool warnO
     string::size_type pos;
     if ((pos = msg.find('*')) != string::npos) msg.erase(pos);
     // Use parsep()->lexFileline() as want to affect later FileLine's warnings
-    const string err = parsep()->lexFileline()->warnOffParse(msg, warnOff);
+    const string err = parsep()->lexFileline()->warnOffParse(msg, turnOff);
     if (!err.empty())
         fl->v3error("Unknown verilator lint message code: '" << err << "', in '" << textp << "'");
 }

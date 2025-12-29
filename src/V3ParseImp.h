@@ -196,7 +196,7 @@ public:
     static string lexParseTag(const char* textp) VL_MT_DISABLED;
     static double lexParseTimenum(const char* text) VL_MT_DISABLED;
     void lexPpline(const char* textp) VL_MT_DISABLED;
-    void lexVerilatorCmtLint(FileLine* fl, const char* textp, bool warnOff) VL_MT_DISABLED;
+    void lexVerilatorCmtLint(FileLine* fl, const char* textp, bool turnOff) VL_MT_DISABLED;
     void lexVerilatorCmtLintSave(const FileLine* fl) VL_MT_DISABLED;
     void lexVerilatorCmtLintRestore(FileLine* fl) VL_MT_DISABLED;
     static void lexVerilatorCmtBad(FileLine* fl, const char* textp) VL_MT_DISABLED;

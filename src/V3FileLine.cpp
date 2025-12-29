@@ -126,7 +126,7 @@ FileLineSingleton::msgEnSetIdx_t FileLineSingleton::addMsgEnBitSet(const MsgEnBi
 FileLineSingleton::msgEnSetIdx_t FileLineSingleton::defaultMsgEnIndex() VL_MT_SAFE {
     MsgEnBitSet msgEnBitSet;
     for (int i = V3ErrorCode::EC_MIN; i < V3ErrorCode::_ENUM_MAX; ++i) {
-        // "-Wall" and the like only adjsut the code subset, so use default enablement there
+        // "-Wall" and the like only adjust the code subset, so use default enablement there
         msgEnBitSet.set(MsgEnBitSet::Subset::CODE, i, !V3ErrorCode{i}.defaultsOff());
         // The control file subset is only adjusted by the control files, everything enabled by
         // default
@@ -374,22 +374,22 @@ std::ostream& operator<<(std::ostream& os, FileLine* fileline) {
     return (os);
 }
 
-string FileLine::warnOffParse(const string& msgs, bool flag) {
+string FileLine::warnOffParse(const string& msgs, bool turnOff) {
     string result;
     for (const string& msg : VString::split(msgs, ',')) {
         const char* cmsg = msg.c_str();
         // Backward compatibility with msg="UNUSED"
         if (V3ErrorCode::unusedMsg(cmsg)) {
-            warnOff(V3ErrorCode::UNUSEDGENVAR, flag);
-            warnOff(V3ErrorCode::UNUSEDLOOP, flag);
-            warnOff(V3ErrorCode::UNUSEDPARAM, flag);
-            warnOff(V3ErrorCode::UNUSEDSIGNAL, flag);
+            warnOff(V3ErrorCode::UNUSEDGENVAR, turnOff);
+            warnOff(V3ErrorCode::UNUSEDLOOP, turnOff);
+            warnOff(V3ErrorCode::UNUSEDPARAM, turnOff);
+            warnOff(V3ErrorCode::UNUSEDSIGNAL, turnOff);
             continue;
         }
 
-        const V3ErrorCode code{cmsg};
+        const V3ErrorCode code{msg};
         if (!code.hardError()) {
-            warnOff(code, flag);
+            warnOff(code, turnOff);
             continue;
         }
 
@@ -399,25 +399,25 @@ string FileLine::warnOffParse(const string& msgs, bool flag) {
     return result;
 }
 
-void FileLine::warnLintOff(bool flag) {
+void FileLine::warnLintOff(bool turnOff) {
     for (int codei = V3ErrorCode::EC_MIN; codei < V3ErrorCode::_ENUM_MAX; codei++) {
         const V3ErrorCode code{codei};
-        if (code.lintError()) warnOff(code, flag);
+        if (code.lintError()) warnOff(code, turnOff);
     }
 }
 
-void FileLine::warnStyleOff(bool flag) {
+void FileLine::warnStyleOff(bool turnOff) {
     for (int codei = V3ErrorCode::EC_MIN; codei < V3ErrorCode::_ENUM_MAX; codei++) {
         const V3ErrorCode code{codei};
-        if (code.styleError()) warnOff(code, flag);
+        if (code.styleError()) warnOff(code, turnOff);
     }
 }
 
-void FileLine::warnUnusedOff(bool flag) {
-    warnOff(V3ErrorCode::UNUSEDGENVAR, flag);
-    warnOff(V3ErrorCode::UNUSEDLOOP, flag);
-    warnOff(V3ErrorCode::UNUSEDPARAM, flag);
-    warnOff(V3ErrorCode::UNUSEDSIGNAL, flag);
+void FileLine::warnUnusedOff(bool turnOff) {
+    warnOff(V3ErrorCode::UNUSEDGENVAR, turnOff);
+    warnOff(V3ErrorCode::UNUSEDLOOP, turnOff);
+    warnOff(V3ErrorCode::UNUSEDPARAM, turnOff);
+    warnOff(V3ErrorCode::UNUSEDSIGNAL, turnOff);
 }
 
 bool FileLine::warnIsOff(V3ErrorCode code) const {

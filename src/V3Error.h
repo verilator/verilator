@@ -197,6 +197,8 @@ public:
     constexpr V3ErrorCode(en _e)
         : m_e{_e} {}
     explicit V3ErrorCode(const char* msgp);  // Matching code or ERROR
+    explicit V3ErrorCode(const std::string& msg)
+        : V3ErrorCode{msg.c_str()} {}
     explicit V3ErrorCode(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const VL_MT_SAFE { return m_e; }
@@ -427,7 +429,7 @@ public:
     bool isErrorOrWarn() VL_REQUIRES(m_mutex) {
         return errorCount() || (warnFatal() && warnCount());
     }
-    bool pretendError(int errorCode) VL_REQUIRES(m_mutex) { return m_pretendError[errorCode]; }
+    bool pretendError(V3ErrorCode code) VL_REQUIRES(m_mutex) { return m_pretendError[code]; }
     void pretendError(V3ErrorCode code, bool flag) VL_REQUIRES(m_mutex) {
         if (code == V3ErrorCode::WIDTH) {
             m_pretendError[V3ErrorCode::WIDTHTRUNC] = flag;
@@ -504,9 +506,9 @@ public:
         const V3RecursiveLockGuard guard{s().m_mutex};
         return s().errorCount();
     }
-    static bool pretendError(int errorCode) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
+    static bool pretendError(V3ErrorCode code) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
         const V3RecursiveLockGuard guard{s().m_mutex};
-        return s().pretendError(errorCode);
+        return s().pretendError(code);
     }
     static int warnCount() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
         const V3RecursiveLockGuard guard{s().m_mutex};

@@ -10,10 +10,10 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
-test.top_filename = "t/t_flag_werror.v"
+test.top_filename = "t/t_covergroup_unsup.v"
 
-test.lint(fails=True,
-          verilator_flags=["-cc -Wno-fatal -Werror-WIDTH"],
-          expect_filename=test.golden_filename)
+test.lint(verilator_flags2=[
+    '--assert --coverage --Wwarn-UNSUPPORTED -Wno-fatal +define+T_COVERGROUP_UNSUP_IGN'
+])
 
 test.passes()

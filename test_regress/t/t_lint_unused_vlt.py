@@ -9,11 +9,11 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
-test.top_filename = "t/t_flag_werror.v"
+test.scenarios('linter')
+test.top_filename = 't/t_lint_unused_bad.v'
 
-test.lint(fails=True,
-          verilator_flags=["-cc -Wno-fatal -Werror-WIDTH"],
-          expect_filename=test.golden_filename)
+test.lint(verilator_flags2=[
+    "--lint-only --bbox-sys --bbox-unsup -Wall -Wno-DECLFILENAME", "t/t_lint_unused_vlt.vlt"
+])
 
 test.passes()

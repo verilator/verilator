@@ -301,8 +301,9 @@ void V3ErrorGuarded::v3errorEndGuts(const std::ostringstream& sstr, const string
 
 void V3Error::init() {
     for (int i = 0; i < V3ErrorCode::_ENUM_MAX; i++) {
-        describedEachWarn(static_cast<V3ErrorCode>(i), false);
-        pretendError(static_cast<V3ErrorCode>(i), V3ErrorCode{i}.pretendError());
+        const V3ErrorCode code{i};
+        describedEachWarn(code, false);
+        pretendError(code, code.pretendError());
     }
     // Not an UASSERT as failure would call V3Error and it's broken due to this
     assert(std::string{V3ErrorCode{V3ErrorCode::_ENUM_MAX}.ascii()} == " MAX");

@@ -211,7 +211,7 @@ public:  // Used only by V3PreLex.cpp and V3PreProc.cpp
         }
     }
     void warnBackslashSpace();
-    void verilatorCmtLint(const char* textp, bool warnOff);
+    void verilatorCmtLint(const char* textp, bool turnOff);
     void verilatorCmtLintRestore();
     void verilatorCmtLintSave();
     // Called by V3PreProc.cpp to inform lexer

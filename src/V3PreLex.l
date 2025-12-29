@@ -799,7 +799,7 @@ void V3PreLex::verilatorCmtLintRestore() {
     curFilelinep()->warnStateFrom(m_lexLintState.back());
     m_lexLintState.pop_back();
 }
-void V3PreLex::verilatorCmtLint(const char* textp, bool warnOff) {
+void V3PreLex::verilatorCmtLint(const char* textp, bool turnOff) {
     const char* sp = textp;
     while (*sp && std::isspace(*sp)) ++sp;
     while (*sp && !std::isspace(*sp)) ++sp;  // "verilator"
@@ -814,7 +814,7 @@ void V3PreLex::verilatorCmtLint(const char* textp, bool warnOff) {
         }
     }
     // No warnings on bad warning codes - the verilog.y parse will report as appropriate
-    curFilelinep()->warnOffParse(msg, warnOff);
+    curFilelinep()->warnOffParse(msg, turnOff);
 }
 
 /*###################################################################
