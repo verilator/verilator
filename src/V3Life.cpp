@@ -81,26 +81,26 @@ public:
     }
 
     void simpleAssign(AstNodeAssign* nodep) {  // New simple A=.... assignment
-        UASSERT_OBJ(!m_isNew, nodep, "Uninitialzized new entry");
+        UASSERT_OBJ(!m_isNew, nodep, "Uninitialized new entry");
         m_assignp = nodep;
         m_constp = nullptr;
         m_everSet = true;
         if (VN_IS(nodep->rhsp(), Const)) m_constp = VN_AS(nodep->rhsp(), Const);
     }
     void resetStatement(AstCReset* nodep) {  // New CReset(A) assignment
-        UASSERT_OBJ(!m_isNew, nodep, "Uninitialzized new entry");
+        UASSERT_OBJ(!m_isNew, nodep, "Uninitialized new entry");
         m_assignp = nodep;
         m_constp = nullptr;
         m_everSet = true;
     }
     void complexAssign() {  // A[x]=... or some complicated assignment
-        UASSERT(!m_isNew, "Uninitialzized new entry");
+        UASSERT(!m_isNew, "Uninitialized new entry");
         m_assignp = nullptr;
         m_constp = nullptr;
         m_everSet = true;
     }
     void consumed() {  // Rvalue read of A
-        UASSERT(!m_isNew, "Uninitialzized new entry");
+        UASSERT(!m_isNew, "Uninitialized new entry");
         m_assignp = nullptr;
     }
     AstNodeStmt* assignp() const { return m_assignp; }

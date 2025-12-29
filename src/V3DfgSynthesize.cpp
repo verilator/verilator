@@ -136,7 +136,7 @@ class AstToDfgConverter final : public VNVisitor {
 
         // Traversal set user2p to the equivalent vertex
         DfgVertex* const vtxp = nodep->user2u().to<DfgVertex*>();
-        UASSERT_OBJ(vtxp, nodep, "Missing Dfg vertex after covnersion");
+        UASSERT_OBJ(vtxp, nodep, "Missing Dfg vertex after conversion");
         return vtxp;
     }
 

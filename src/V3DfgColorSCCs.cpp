@@ -27,7 +27,7 @@
 #include <vector>
 
 class ColorStronglyConnectedComponents final {
-    static_assert(sizeof(uint32_t[2]) == sizeof(uint64_t), "Incorrect ovverlay size");
+    static_assert(sizeof(uint32_t[2]) == sizeof(uint64_t), "Incorrect overlay size");
 
     // CONSTANTS
     static constexpr uint32_t UNASSIGNED = std::numeric_limits<uint32_t>::max();

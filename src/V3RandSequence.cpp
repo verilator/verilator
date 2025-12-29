@@ -315,7 +315,7 @@ class RandSequenceVisitor final : public VNVisitor {
                                              new AstConst{fl, AstConst::BitFalse{}}});
             }
 
-            // "// Number of eligible lists left before hit _Vjoin_pciked one"
+            // "// Number of eligible lists left before hit _Vjoin_picked one"
             // "int _Vjoin_sel_elist = _Vjoin_picked_elist;"
             AstVar* const selVarp
                 = new AstVar{fl, VVarType::VAR, "_Vjoin_sel_elist", VFlagBitPacked{}, 32};

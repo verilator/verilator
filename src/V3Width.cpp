@@ -6569,7 +6569,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstFuncRef* nodep) override {
         visit(static_cast<AstNodeFTaskRef*>(nodep));
         if (nodep->taskp() && VN_IS(nodep->taskp(), Task)) {
-            UASSERT_OBJ(m_vup, nodep, "Function reference where widthed expression expection");
+            UASSERT_OBJ(m_vup, nodep, "Function reference where widthed expression expectation");
             if (m_vup->prelim() && !VN_IS(nodep->backp(), StmtExpr))
                 nodep->v3error(
                     "Cannot call a task/void-function as a function: " << nodep->prettyNameQ());

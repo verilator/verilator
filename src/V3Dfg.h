@@ -589,7 +589,7 @@ protected:
     explicit DfgUserMapBase(const DfgGraph* dfgp)
         : m_dfgp{dfgp}
         , m_currentGeneration{++m_dfgp->m_vertexUserGeneration} {
-        UASSERT(m_currentGeneration, "DfgGraph user data genartion number overflow");
+        UASSERT(m_currentGeneration, "DfgGraph user data generation number overflow");
         UASSERT(!m_dfgp->m_vertexUserInUse, "DfgUserMap already in use for this DfgGraph");
         m_dfgp->m_vertexUserInUse = true;
     }

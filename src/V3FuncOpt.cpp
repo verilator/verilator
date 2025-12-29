@@ -158,7 +158,7 @@ class BalanceConcatTree final {
             // Sentinel term
             terms2.emplace_back(nullptr, offset);
             // should have ended up with the same number of bits at least...
-            UASSERT(terms2.back().offset == terms.back().offset, "Inconsitent terms");
+            UASSERT(terms2.back().offset == terms.back().offset, "Inconsistent terms");
         }
 
         // Round 2: Combine the partial terms
