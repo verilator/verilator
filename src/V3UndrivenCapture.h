@@ -83,9 +83,6 @@ public:
     // Build capture database and precompute writeSummary for all discovered tasks/functions.
     explicit V3UndrivenCapture(AstNetlist* netlistp);
 
-    // Lookup task/function capture info (nullptr if unknown).  This is currently only used for the
-    // debug helper.
-    const FTaskInfo* find(const AstNodeFTask* taskp) const;
     // Get write through write through write, etc (call chain) writeSummary for a task/function
     // (creates empty entry if needed).  This returns a vector of variables that a particular
     // task/function writes to, including all variables written by functions called by this
@@ -102,9 +99,6 @@ public:
     // so on.
     void noteCallEdge(const AstNodeFTask* callerp, const AstNodeFTask* calleep);
 
-    // Dump one task's summary for debugging.  leaving this in, in case need to debug future
-    // functionality.
-    void debugDumpTask(const AstNodeFTask* taskp, int level = 9) const;
 };
 
 #endif  // VERILATOR_V3UNDRIVENCAPTURE_H_

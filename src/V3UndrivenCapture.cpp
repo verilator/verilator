@@ -69,9 +69,6 @@ private:
                 UINFO(9, "undriven capture call edge " << CaptureUtil::taskNameQ(m_curTaskp) << " -> "
                                                        << CaptureUtil::taskNameQ(calleep));
                 m_cap.noteCallEdge(m_curTaskp, calleep);
-            } else {
-                UINFO(9, "undriven capture unresolved call in " << CaptureUtil::taskNameQ(m_curTaskp)
-                                                                << " name=" << nodep->name());
             }
         }
         iterateChildrenConst(nodep);  // still scan pins/args
@@ -100,12 +97,6 @@ V3UndrivenCapture::V3UndrivenCapture(AstNetlist* netlistp) {
 void V3UndrivenCapture::gather(AstNetlist* netlistp) {
     // Walk netlist and populate m_info with direct writes + call edges
     CaptureVisitor{*this, netlistp};
-}
-
-const V3UndrivenCapture::FTaskInfo* V3UndrivenCapture::find(const AstNodeFTask* taskp) const {
-    const auto it = m_info.find(taskp);
-    if (it == m_info.end()) return nullptr;
-    return &it->second;
 }
 
 const std::vector<AstVar*>& V3UndrivenCapture::writeSummary(const AstNodeFTask* taskp) {
@@ -183,16 +174,4 @@ void V3UndrivenCapture::noteCallEdge(const AstNodeFTask* callerp, const AstNodeF
     // Ensure callee entry exists, if already exists then this is a no-op.  unordered_map<> so
     // cheap.
     (void)m_info[calleep];
-}
-
-void V3UndrivenCapture::debugDumpTask(const AstNodeFTask* taskp, int level) const {
-    const auto* const infop = find(taskp);
-    if (!infop) {
-        UINFO(level, "undriven capture no entry for task " << taskp);
-        return;
-    }
-    UINFO(level, "undriven capture dump task " << taskp << " " << taskp->prettyNameQ()
-                                               << " directWrites=" << infop->directWrites.size()
-                                               << " callees=" << infop->callees.size()
-                                               << " writeSummary=" << infop->writeSummary.size());
 }
