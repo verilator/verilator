@@ -31,6 +31,7 @@ endclass
 module t;
    int a, b;
    int arr[1];
+   int dyn_arr[];
    Cls cls;
    MyInt mi;
    initial begin
@@ -52,6 +53,12 @@ module t;
       arr[0] = 10;
       b = cls.get_val_set_2(arr[0]);
       `checkh(arr[0], 2);
+      `checkh(b, 10);
+
+      dyn_arr = new[3];
+      dyn_arr[1] = 10;
+      b = get_val_set_5(dyn_arr[1]);
+      `checkh(dyn_arr[1], 5);
       `checkh(b, 10);
 
       $write("*-* All Finished *-*\n");
