@@ -66,8 +66,8 @@ private:
         // Record the call edge if resolved
         if (m_curTaskp) {
             if (AstNodeFTask* const calleep = nodep->taskp()) {
-                UINFO(9, "undriven capture call edge " << CaptureUtil::taskNameQ(m_curTaskp) << " -> "
-                                                       << CaptureUtil::taskNameQ(calleep));
+                UINFO(9, "undriven capture call edge " << CaptureUtil::taskNameQ(
+                             m_curTaskp) << " -> " << CaptureUtil::taskNameQ(calleep));
                 m_cap.noteCallEdge(m_curTaskp, calleep);
             }
         }
@@ -109,8 +109,8 @@ const std::vector<AstVar*>& V3UndrivenCapture::computeWriteSummary(const AstNode
     FTaskInfo& info = m_info[taskp];
 
     if (info.state == State::DONE) {
-        UINFO(9, "undriven capture writeSummary cached size=" << info.writeSummary.size()
-                                                              << " for " << CaptureUtil::taskNameQ(taskp));
+        UINFO(9, "undriven capture writeSummary cached size="
+                     << info.writeSummary.size() << " for " << CaptureUtil::taskNameQ(taskp));
         return info.writeSummary;
     }
     if (info.state == State::VISITING) {

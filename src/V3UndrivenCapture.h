@@ -43,9 +43,9 @@ class V3UndrivenCapture final {
 public:
     // DFS computation state for writeSummary propagation.
     enum class State : uint8_t {
-        UNVISITED, // Write summary not computed yet
-        VISITING, // Currently computing on the call stack - used to detect cycles
-        DONE // Write summary computed
+        UNVISITED,  // Write summary not computed yet
+        VISITING,  // Currently computing on the call stack - used to detect cycles
+        DONE  // Write summary computed
     };
 
     struct FTaskInfo final {
@@ -98,7 +98,6 @@ public:
     // summary that includes all variables written by functions called by this task/function, and
     // so on.
     void noteCallEdge(const AstNodeFTask* callerp, const AstNodeFTask* calleep);
-
 };
 
 #endif  // VERILATOR_V3UNDRIVENCAPTURE_H_
