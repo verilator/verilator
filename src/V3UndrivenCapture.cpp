@@ -32,10 +32,6 @@ class CaptureVisitor final : public VNVisitorConst {
     V3UndrivenCapture& m_cap;
     const AstNodeFTask* m_curTaskp = nullptr;  // Current task
 
-    static void iterateListConst(VNVisitorConst& v, AstNode* nodep) {
-        for (AstNode* np = nodep; np; np = np->nextp()) np->accept(v);
-    }
-
 public:
     explicit CaptureVisitor(V3UndrivenCapture& cap, AstNetlist* netlistp)
         : m_cap{cap} {
@@ -49,7 +45,7 @@ private:
         m_curTaskp = nodep;
         UINFO(9, "undriven capture enter ftask " << nodep << " " << nodep->prettyNameQ());
         m_cap.noteTask(nodep);
-        iterateListConst(*this, nodep->stmtsp());
+        iterateAndNextConstNull(nodep->stmtsp());
     }
 
     void visit(AstNodeVarRef* nodep) override {

@@ -52,8 +52,7 @@ class UndrivenVarEntry final {
     const FileLine* m_nodeFileLinep = nullptr;  // File line of varref if driven, else nullptr
     bool m_underGen = false;  // Under a generate
 
-    const AstNodeFTaskRef* m_callNodep
-        = nullptr;  // Call node if driven via writeSummary, else nullptr
+    const AstNodeFTaskRef* m_callNodep = nullptr;  // Call node if driven via writeSummary
 
     enum : uint8_t { FLAG_USED = 0, FLAG_DRIVEN = 1, FLAG_DRIVEN_ALWCOMB = 2, FLAGS_PER_BIT = 3 };
 
@@ -285,7 +284,7 @@ public:
 
     void drivenViaCall(const AstNodeFTaskRef* nodep) {
         drivenWhole();
-        if (!m_callNodep) { m_callNodep = nodep; }
+        if (!m_callNodep) m_callNodep = nodep;
     }
     const AstNodeFTaskRef* callNodep() const { return m_callNodep; }
 };
@@ -561,8 +560,8 @@ class UndrivenVisitor final : public VNVisitorConst {
         // Do not apply writeSummary at calls inside a task definition, or they will look like
         // independent drivers (phantom MULTIDRIVEN).
         const bool inExecutedContext =
-             !(m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic && !m_inBBox
-                     && !m_taskp->dpiExport());
+            !(m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic && !m_inBBox
+                    && !m_taskp->dpiExport());
 
         if (!inExecutedContext) return;
 
