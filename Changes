@@ -46,6 +46,7 @@ Verilator 5.043 devel
 * Support complex std::randomize patterns (#6736) (#6737). [Yilou Wang]
 * Support `rand_mode` in global constraint gathering (#6740) (#6752). [Yilou Wang]
 * Support reduction or in constraints (#6840). [Pawel Kojma, Antmicro Ltd.]
+* Support vpiSigned (#6868) (#6870). [Kaleb Barrett]
 * Optimize away calls to empty functions (#6626). [Geza Lore]
 * Optimize redundant headers in Syms implementation files. [Geza Lore, Fractile Ltd.]
 * Optimize constructor/destructor VerilatedModules (#6660). [Geza Lore, Fractile Ltd.]
@@ -126,6 +127,7 @@ Verilator 5.043 devel
 * Fix class reference throwing cannot detect changes error (#6851).
 * Fix `randc` on extended class (#6852).
 * Fix typedef `::` class reference error (#6862).
+* Fix missing include on FreeBSD (#6864).
 
 
 Verilator 5.042 2025-11-02

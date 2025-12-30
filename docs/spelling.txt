@@ -1230,6 +1230,7 @@ vpiInertialDelay
 vpiInstance
 vpiLeftRange
 vpiModule
+vpiSigned
 vpiSize
 vpiSuppressVal
 vpiTimeUnit
