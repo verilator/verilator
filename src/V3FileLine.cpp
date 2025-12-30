@@ -126,21 +126,28 @@ FileLineSingleton::msgEnSetIdx_t FileLineSingleton::addMsgEnBitSet(const MsgEnBi
 FileLineSingleton::msgEnSetIdx_t FileLineSingleton::defaultMsgEnIndex() VL_MT_SAFE {
     MsgEnBitSet msgEnBitSet;
     for (int i = V3ErrorCode::EC_MIN; i < V3ErrorCode::_ENUM_MAX; ++i) {
+        const V3ErrorCode code{i};
         // "-Wall" and the like only adjust the code subset, so use default enablement there
-        msgEnBitSet.set(MsgEnBitSet::Subset::CODE, i, !V3ErrorCode{i}.defaultsOff());
+        msgEnBitSet.set(MsgEnBitSet::Subset::CODE, code, !code.defaultsOff());
         // The control file subset is only adjusted by the control files, everything enabled by
         // default
-        msgEnBitSet.set(MsgEnBitSet::Subset::CTRL, i, true);
+        msgEnBitSet.set(MsgEnBitSet::Subset::CTRL, code, true);
     }
     return addMsgEnBitSet(msgEnBitSet);
 }
 
 FileLineSingleton::msgEnSetIdx_t FileLineSingleton::msgEnSetBit(msgEnSetIdx_t setIdx,
                                                                 MsgEnBitSet::Subset subset,
-                                                                size_t bitIdx, bool value) {
-    if (msgEn(setIdx).test(subset, bitIdx) == value) return setIdx;
+                                                                V3ErrorCode code, bool value) {
+    // See if state matches existing
+    bool same = true;
+    code.forDelegateCodes([&](V3ErrorCode subcode) {
+        if (msgEn(setIdx).test(subset, subcode) != value) same = false;
+    });
+    if (same) return setIdx;
+    // Make new mask of all delegated codes at once (to avoid extra indicies if looped above this)
     MsgEnBitSet msgEnBitSet{msgEn(setIdx)};
-    msgEnBitSet.set(subset, bitIdx, value);
+    code.forDelegateCodes([&](V3ErrorCode subcode) { msgEnBitSet.set(subset, subcode, value); });
     return addMsgEnBitSet(msgEnBitSet);
 }
 
@@ -377,24 +384,13 @@ std::ostream& operator<<(std::ostream& os, FileLine* fileline) {
 string FileLine::warnOffParse(const string& msgs, bool turnOff) {
     string result;
     for (const string& msg : VString::split(msgs, ',')) {
-        const char* cmsg = msg.c_str();
-        // Backward compatibility with msg="UNUSED"
-        if (V3ErrorCode::unusedMsg(cmsg)) {
-            warnOff(V3ErrorCode::UNUSEDGENVAR, turnOff);
-            warnOff(V3ErrorCode::UNUSEDLOOP, turnOff);
-            warnOff(V3ErrorCode::UNUSEDPARAM, turnOff);
-            warnOff(V3ErrorCode::UNUSEDSIGNAL, turnOff);
-            continue;
-        }
-
         const V3ErrorCode code{msg};
         if (!code.hardError()) {
             warnOff(code, turnOff);
             continue;
         }
-
         // Error if not suppressed
-        if (!v3Global.opt.isFuture(msg)) result = VString::dot(result, ",", cmsg);
+        if (!v3Global.opt.isFuture(msg)) result = VString::dot(result, ",", msg);
     }
     return result;
 }
@@ -413,20 +409,12 @@ void FileLine::warnStyleOff(bool turnOff) {
     }
 }
 
-void FileLine::warnUnusedOff(bool turnOff) {
-    warnOff(V3ErrorCode::UNUSEDGENVAR, turnOff);
-    warnOff(V3ErrorCode::UNUSEDLOOP, turnOff);
-    warnOff(V3ErrorCode::UNUSEDPARAM, turnOff);
-    warnOff(V3ErrorCode::UNUSEDSIGNAL, turnOff);
-}
-
 bool FileLine::warnIsOff(V3ErrorCode code) const {
     if (!msgEn().enabled(code)) return true;
     if (!defaultFileLine().msgEn().enabled(code)) return true;  // Global overrides local
     if ((code.lintError() || code.styleError()) && !msgEn().enabled(V3ErrorCode::I_LINT)) {
         return true;
     }
-    if ((code.unusedError()) && !msgEn().enabled(V3ErrorCode::I_UNUSED)) return true;
     return false;
 }
 

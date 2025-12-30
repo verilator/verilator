@@ -14,7 +14,6 @@
 
 
 
-
 module t;
    reg width_warn_var_line18 = 2'b11;  // Width warning - must be line 18
    reg width_warn2_var_line19 = 2'b11;  // Width warning - must be line 19

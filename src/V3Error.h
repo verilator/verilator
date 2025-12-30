@@ -20,6 +20,7 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3Hash.h"
 #include "V3Mutex.h"
 
 // Limited V3 headers here - this is a base class for Vlc etc
@@ -56,9 +57,9 @@ public:
         I_COVERAGE,     // Coverage is on/off from /*verilator coverage_on/off*/
         I_DEF_NETTYPE_WIRE,  // `default_nettype is WIRE (false=NONE)
         I_LINT,         // All lint messages
+        I_STYLE,        // All style messages
         I_TIMING,       // Enable timing from /*verilator timing_on/off*/
         I_TRACING,      // Tracing is on/off from /*verilator tracing_on/off*/
-        I_UNUSED,       // Unused genvar, parameter or signal message (Backward Compatibility)
         // Error codes:
         E_CONSTWRITTEN, // Error: Const variable being written.
         E_LIFETIME,     // Error: Reference to a variable might outlive the variable.
@@ -169,6 +170,7 @@ public:
         UNOPTTHREADS,   // Thread partitioner unable to fill all requested threads
         UNPACKED,       // Unsupported unpacked
         UNSIGNED,       // Comparison is constant due to unsigned arithmetic
+        UNUSED,         // Unused genvar, parameter or signal message (Backward Compatibility)
         UNUSEDGENVAR,   // No receivers for genvar
         UNUSEDLOOP,     // Loop is unused
         UNUSEDPARAM,    // No receivers for parameters
@@ -207,8 +209,8 @@ public:
             // Leading spaces indicate it can't be disabled.
             " MIN", " INFO", " FATAL", " FATALMANY", " FATALSRC", " ERROR", " FIRST_NAMED",
             // Boolean
-            " I_CELLDEFINE", " I_COVERAGE", " I_DEF_NETTYPE_WIRE", " I_LINT", " I_TIMING",
-            " I_TRACING", " I_UNUSED",
+            " I_CELLDEFINE", " I_COVERAGE", " I_DEF_NETTYPE_WIRE", " I_LINT", " I_STYLE",
+            " I_TIMING", " I_TRACING",
             // Errors
             "CONSTWRITTEN", "LIFETIME", "NEEDTIMINGOPT", "NOTIMING", "PORTSHORT", "TASKNSVAR",
             "UNSUPPORTED",
@@ -229,10 +231,10 @@ public:
             "REDEFMACRO", "RISEFALLDLY", "SELRANGE", "SHORTREAL", "SIDEEFFECT", "SPECIFYIGN",
             "SPLITVAR", "STATICVAR", "STMTDLY", "SUPERNFIRST", "SYMRSVDWORD", "SYNCASYNCNET",
             "TICKCOUNT", "TIMESCALEMOD", "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
-            "UNPACKED", "UNSIGNED", "UNUSEDGENVAR", "UNUSEDLOOP", "UNUSEDPARAM", "UNUSEDSIGNAL",
-            "USERERROR", "USERFATAL", "USERINFO", "USERWARN", "VARHIDDEN", "WAITCONST", "WIDTH",
-            "WIDTHCONCAT", "WIDTHEXPAND", "WIDTHTRUNC", "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL",
-            " MAX"};
+            "UNPACKED", "UNSIGNED", "UNUSED", "UNUSEDGENVAR", "UNUSEDLOOP", "UNUSEDPARAM",
+            "UNUSEDSIGNAL", "USERERROR", "USERFATAL", "USERINFO", "USERWARN", "VARHIDDEN",
+            "WAITCONST", "WIDTH", "WIDTHCONCAT", "WIDTHEXPAND", "WIDTHTRUNC", "WIDTHXZEXPAND",
+            "ZERODLY", "ZEROREPL", " MAX"};
         return names[m_e];
     }
     // Warnings that default to off
@@ -267,8 +269,8 @@ public:
     }
     // Warnings to mention manual
     bool mentionManual() const VL_MT_SAFE {
-        return (m_e == EC_FATALSRC || m_e == SIDEEFFECT || m_e == SYMRSVDWORD || m_e == ZERODLY
-                || pretendError());
+        return (pretendError() || m_e == EC_FATALSRC || m_e == SIDEEFFECT || m_e == SYMRSVDWORD
+                || m_e == ZERODLY);
     }
     // Warnings that are lint only
     bool lintError() const VL_MT_SAFE {
@@ -290,33 +292,56 @@ public:
                 || m_e == UNUSEDLOOP || m_e == UNUSEDPARAM || m_e == UNUSEDSIGNAL
                 || m_e == VARHIDDEN);
     }
-    // Warnings that are unused only
-    bool unusedError() const VL_MT_SAFE {
-        return (m_e == UNUSEDGENVAR || m_e == UNUSEDLOOP || m_e == UNUSEDPARAM
-                || m_e == UNUSEDSIGNAL);
-    }
+    bool isNamed() const { return m_e >= EC_FIRST_NAMED; }
 
+private:
     V3ErrorCode renamedTo() const {
         // Return a new error this error has been renamed to
         if (m_e == LITENDIAN) return V3ErrorCode{ASCRANGE};
         return V3ErrorCode{EC_MIN};  // Not renamed; see isRenamed()
     }
-    bool isNamed() const { return m_e >= EC_FIRST_NAMED; }
     bool isRenamed() const { return renamedTo() != V3ErrorCode{EC_MIN}; }
-    bool isUnder(V3ErrorCode other) {
-        // backwards compatibility inheritance-like warnings
-        if (m_e == other) return true;
-        if (other == V3ErrorCode::WIDTH) {
-            return (m_e == WIDTHEXPAND || m_e == WIDTHTRUNC || m_e == WIDTHXZEXPAND);
+
+public:
+    // Call given callable on all error codes that result from given code.
+    // Deals with codes which imply disabling multiple other codes.
+    void forDelegateCodes(std::function<void(V3ErrorCode code)> action) const {
+        // If add to this switch, also update isUnder()
+        switch (m_e) {
+        case V3ErrorCode::E_UNSUPPORTED:
+            action(V3ErrorCode{E_UNSUPPORTED});
+            action(V3ErrorCode{COVERIGN});
+            action(V3ErrorCode{SPECIFYIGN});
+            return;
+        case V3ErrorCode::UNUSED:
+            action(V3ErrorCode{UNUSEDGENVAR});
+            action(V3ErrorCode{UNUSEDLOOP});
+            action(V3ErrorCode{UNUSEDPARAM});
+            action(V3ErrorCode{UNUSEDSIGNAL});
+            return;
+        case V3ErrorCode::WIDTH:
+            action(V3ErrorCode{WIDTHEXPAND});
+            action(V3ErrorCode{WIDTHTRUNC});
+            action(V3ErrorCode{WIDTHXZEXPAND});
+            return;
+        default: action(*this);
         }
-        if (other == V3ErrorCode::I_UNUSED) {
-            return (m_e == UNUSEDGENVAR || m_e == UNUSEDLOOP || m_e == UNUSEDPARAM
-                    || m_e == UNUSEDSIGNAL);
+    }
+    bool isUnder(V3ErrorCode other) const {
+        // Reverse of forDelegateCodes, return true if this' code is under another
+        if (VL_LIKELY(other == m_e)) return true;
+        switch (other) {
+        case V3ErrorCode::E_UNSUPPORTED:
+            return m_e == E_UNSUPPORTED || m_e == COVERIGN || m_e == SPECIFYIGN;
+        case V3ErrorCode::UNUSED:
+            return m_e == UNUSEDGENVAR || m_e == UNUSEDLOOP || m_e == UNUSEDPARAM
+                   || m_e == UNUSEDSIGNAL;
+        case V3ErrorCode::WIDTH:
+            return m_e == WIDTHEXPAND || m_e == WIDTHTRUNC || m_e == WIDTHXZEXPAND;
+        default: return false;
         }
-        return false;
     }
     string url() const;
-    static bool unusedMsg(const char* msgp) { return 0 == VL_STRCASECMP(msgp, "UNUSED"); }
 };
 constexpr bool operator==(const V3ErrorCode& lhs, const V3ErrorCode& rhs) {
     return lhs.m_e == rhs.m_e;
@@ -326,6 +351,27 @@ constexpr bool operator==(V3ErrorCode::en lhs, const V3ErrorCode& rhs) { return 
 inline std::ostream& operator<<(std::ostream& os, const V3ErrorCode& rhs) {
     return os << rhs.ascii();
 }
+
+// ######################################################################
+
+// Store a single bit for each error code
+class VErrorBitSet final {
+    std::bitset<V3ErrorCode::_ENUM_MAX> m_bitset;  // Enable for each code
+    VErrorBitSet(const VErrorBitSet& lhs, const VErrorBitSet& rhs)
+        : m_bitset{lhs.m_bitset & rhs.m_bitset} {}
+
+public:
+    VErrorBitSet() {}
+    ~VErrorBitSet() = default;
+    bool test(V3ErrorCode code) const { return m_bitset[code]; }
+    void set(V3ErrorCode code, bool flag) { m_bitset[code] = flag; }
+    V3Hash hash() const {
+        const size_t hashCode = std::hash<std::bitset<V3ErrorCode::_ENUM_MAX>>()(m_bitset);
+        return V3Hash{static_cast<uint64_t>(hashCode)};
+    }
+    VErrorBitSet operator&(const VErrorBitSet& rhs) const { return VErrorBitSet{*this, rhs}; }
+    bool operator==(const VErrorBitSet& rhs) const { return m_bitset == rhs.m_bitset; }
+};
 
 // ######################################################################
 
@@ -391,11 +437,11 @@ private:
     int m_warnCount VL_GUARDED_BY(m_mutex) = 0;  // Warning count
     int m_errCount VL_GUARDED_BY(m_mutex) = 0;  // Error count
     // Pretend this warning is an error
-    std::array<bool, V3ErrorCode::_ENUM_MAX> m_pretendError VL_GUARDED_BY(m_mutex);
+    VErrorBitSet m_pretendError VL_GUARDED_BY(m_mutex);
     // Told user specifics about this warning
-    std::array<bool, V3ErrorCode::_ENUM_MAX> m_describedEachWarn VL_GUARDED_BY(m_mutex);
+    VErrorBitSet m_describedEachWarn VL_GUARDED_BY(m_mutex);
     // Debug about suppressed this warning
-    std::array<bool, V3ErrorCode::_ENUM_MAX> m_showedSuppressed VL_GUARDED_BY(m_mutex);
+    VErrorBitSet m_showedSuppressed VL_GUARDED_BY(m_mutex);
     int m_debugDefault = 0;  // Option: --debugi Default debugging level
     int m_errorLimit VL_GUARDED_BY(m_mutex)
         = MAX_ERRORS;  // Option: --error-limit Number of errors before exit
@@ -429,14 +475,10 @@ public:
     bool isErrorOrWarn() VL_REQUIRES(m_mutex) {
         return errorCount() || (warnFatal() && warnCount());
     }
-    bool pretendError(V3ErrorCode code) VL_REQUIRES(m_mutex) { return m_pretendError[code]; }
+    bool pretendError(V3ErrorCode code) VL_REQUIRES(m_mutex) { return m_pretendError.test(code); }
     void pretendError(V3ErrorCode code, bool flag) VL_REQUIRES(m_mutex) {
-        if (code == V3ErrorCode::WIDTH) {
-            m_pretendError[V3ErrorCode::WIDTHTRUNC] = flag;
-            m_pretendError[V3ErrorCode::WIDTHEXPAND] = flag;
-            m_pretendError[V3ErrorCode::WIDTHXZEXPAND] = flag;
-        }
-        m_pretendError[code] = flag;
+        code.forDelegateCodes([this, flag](V3ErrorCode subcode)
+                                  VL_REQUIRES(m_mutex) { m_pretendError.set(subcode, flag); });
     }
     int debugDefault() VL_MT_SAFE { return m_debugDefault; }
     void debugDefault(int level) VL_MT_UNSAFE { m_debugDefault = level; }
@@ -450,10 +492,10 @@ public:
     bool errorSuppressed() VL_REQUIRES(m_mutex) { return m_errorSuppressed; }
     void errorSuppressed(bool flag) VL_REQUIRES(m_mutex) { m_errorSuppressed = flag; }
     bool describedEachWarn(V3ErrorCode code) VL_REQUIRES(m_mutex) {
-        return m_describedEachWarn[code];
+        return m_describedEachWarn.test(code);
     }
     void describedEachWarn(V3ErrorCode code, bool flag) VL_REQUIRES(m_mutex) {
-        m_describedEachWarn[code] = flag;
+        m_describedEachWarn.set(code, flag);
     }
     void suppressThisWarning() VL_REQUIRES(m_mutex);
     string warnRelated(const FileLine* fl) VL_REQUIRES(m_mutex) {
