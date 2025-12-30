@@ -697,7 +697,11 @@ class AssertVisitor final : public VNVisitor {
             m_inSampled = true;
             iterateChildren(nodep);
         }
-        nodep->replaceWith(nodep->exprp()->unlinkFrBack());
+        if (nodep->exprp()) {
+            nodep->replaceWith(nodep->exprp()->unlinkFrBack());
+        } else {
+            nodep->unlinkFrBack();
+        }
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstVarRef* nodep) override {
