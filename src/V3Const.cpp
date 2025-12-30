@@ -931,7 +931,7 @@ class ConstVisitor final : public VNVisitor {
     bool m_underRecFunc = false;  // Under a recursive function
     AstNodeModule* m_modp = nullptr;  // Current module
     const AstArraySel* m_selp = nullptr;  // Current select
-    const AstNode* m_scopep = nullptr;  // Current scope
+    const AstScope* m_scopep = nullptr;  // Current scope
     const AstAttrOf* m_attrp = nullptr;  // Current attribute
     VDouble0 m_statBitOpReduction;  // Ops reduced in ConstBitOpTreeVisitor
     VDouble0 m_statConcatMerge;  // Concat merges
@@ -947,12 +947,11 @@ class ConstVisitor final : public VNVisitor {
 
     void deleteVarScopesUnder(AstNode* subtreep) {
         if (!subtreep) return;
-        AstScope* const scopep = VN_CAST(const_cast<AstNode*>(m_scopep), Scope);
-        if (!scopep) return;
+        if (!m_scopep) return;
         std::unordered_set<AstVar*> varps;
         subtreep->foreachAndNext([&](AstVar* varp) { varps.insert(varp); });
         if (varps.empty()) return;
-        for (AstVarScope *vscp = scopep->varsp(), *nextp; vscp; vscp = nextp) {
+        for (AstVarScope *vscp = m_scopep->varsp(), *nextp; vscp; vscp = nextp) {
             nextp = VN_AS(vscp->nextp(), VarScope);
             if (varps.find(vscp->varp()) != varps.end()) {
                 VL_DO_DANGLING(pushDeletep(vscp->unlinkFrBack()), vscp);
