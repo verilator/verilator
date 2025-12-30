@@ -2301,6 +2301,8 @@ List Of Warnings
    make the design simulate incorrectly and is only intended for lint
    usage; see the details under :vlopt:`--bbox-unsup`.
 
+   Disabling this error also disables :option:`COVERIGN` and
+   :option:`SPECIFYIGN`.
 
 .. option:: UNUSED
 

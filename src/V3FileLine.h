@@ -26,7 +26,6 @@
 #include "V3Mutex.h"
 
 #include <atomic>
-#include <bitset>
 #include <deque>
 #include <map>
 #include <memory>
@@ -50,8 +49,8 @@ class FileLineSingleton final {
     using fileNameIdx_t = uint16_t;  // Increase width if 64K input files are not enough
     using msgEnSetIdx_t = uint16_t;  // Increase width if 64K unique message sets are not enough
     class MsgEnBitSet final {
-        std::bitset<V3ErrorCode::_ENUM_MAX> m_codeEn;  // Enabeld by code directives/metacomments
-        std::bitset<V3ErrorCode::_ENUM_MAX> m_ctrlEn;  // Enabled by control file
+        VErrorBitSet m_codeEn;  // Enabled by code directives/metacomments
+        VErrorBitSet m_ctrlEn;  // Enabled by control file
 
     public:
         enum class Subset {
@@ -68,12 +67,8 @@ class FileLineSingleton final {
 
         struct Hash final {
             size_t operator()(const MsgEnBitSet& item) const {
-                const size_t hashCode
-                    = std::hash<std::bitset<V3ErrorCode::_ENUM_MAX>>()(item.m_codeEn);
-                const size_t hashCtrl
-                    = std::hash<std::bitset<V3ErrorCode::_ENUM_MAX>>()(item.m_ctrlEn);
-                V3Hash hash{static_cast<uint64_t>(hashCode)};
-                hash += static_cast<uint64_t>(hashCtrl);
+                V3Hash hash{item.m_codeEn.hash()};
+                hash += item.m_ctrlEn.hash();
                 return hash.value();
             }
         };
@@ -86,11 +81,10 @@ class FileLineSingleton final {
             return m_codeEn == other.m_codeEn && m_ctrlEn == other.m_ctrlEn;
         }
 
-        bool test(Subset subset, size_t code) const {
+        bool test(Subset subset, V3ErrorCode code) const {
             return subset == Subset::CODE ? m_codeEn.test(code) : m_ctrlEn.test(code);
         }
-
-        void set(Subset subset, size_t code, bool value) {
+        void set(Subset subset, V3ErrorCode code, bool value) {
             if (subset == Subset::CODE) {
                 m_codeEn.set(code, value);
             } else {
@@ -139,8 +133,8 @@ class FileLineSingleton final {
     msgEnSetIdx_t addMsgEnBitSet(const MsgEnBitSet& bitSet) VL_MT_SAFE_EXCLUDES(m_mutex);
     // Add index of default bitset
     msgEnSetIdx_t defaultMsgEnIndex() VL_MT_SAFE;
-    // Set bitIdx to value in bitset at interned index setIdx, return interned index of result
-    msgEnSetIdx_t msgEnSetBit(msgEnSetIdx_t setIdx, MsgEnBitSet::Subset subset, size_t bitIdx,
+    // Set code to value in bitset at interned index setIdx, return interned index of result
+    msgEnSetIdx_t msgEnSetBit(msgEnSetIdx_t setIdx, MsgEnBitSet::Subset subset, V3ErrorCode code,
                               bool value);
     // Return index to intersection set
     msgEnSetIdx_t msgEnAnd(msgEnSetIdx_t lhsIdx, msgEnSetIdx_t rhsIdx);
@@ -368,12 +362,6 @@ public:
     // Turn on/off warning messages on this line.
 private:
     void warnSet(MsgEnBitSet::Subset subset, V3ErrorCode code, bool flag) {
-        if (code == V3ErrorCode::WIDTH) {
-            warnSet(subset, V3ErrorCode::WIDTHTRUNC, flag);
-            warnSet(subset, V3ErrorCode::WIDTHEXPAND, flag);
-            warnSet(subset, V3ErrorCode::WIDTHXZEXPAND, flag);
-        }
-        if (code == V3ErrorCode::E_UNSUPPORTED) warnSet(subset, V3ErrorCode::COVERIGN, flag);
         m_msgEnIdx = singleton().msgEnSetBit(m_msgEnIdx, subset, code, flag);
     }
 
@@ -387,7 +375,6 @@ public:
     bool warnIsOff(V3ErrorCode code) const VL_MT_SAFE;
     void warnLintOff(bool turnOff);
     void warnStyleOff(bool turnOff);
-    void warnUnusedOff(bool turnOff);
     void warnStateFrom(const FileLine& from) { m_msgEnIdx = from.m_msgEnIdx; }
     void warnResetDefault() { warnStateFrom(defaultFileLine()); }
 
@@ -407,7 +394,6 @@ public:
     static string builtInFilename() VL_MT_SAFE { return "<built-in>"; }
     static void globalWarnLintOff(bool turnOff) { defaultFileLine().warnLintOff(turnOff); }
     static void globalWarnStyleOff(bool turnOff) { defaultFileLine().warnStyleOff(turnOff); }
-    static void globalWarnUnusedOff(bool turnOff) { defaultFileLine().warnUnusedOff(turnOff); }
     static void globalWarnOff(V3ErrorCode code, bool turnOff) {
         defaultFileLine().warnOff(code, turnOff);
     }
