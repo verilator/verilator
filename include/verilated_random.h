@@ -196,7 +196,8 @@ public:
 
 //=============================================================================
 // Trait to detect VlUnpacked types
-template <typename T> struct IsVlUnpacked : std::false_type {};
+template <typename T>
+struct IsVlUnpacked : std::false_type {};
 template <typename T, std::size_t N>
 struct IsVlUnpacked<VlUnpacked<T, N>> : std::true_type {};
 
@@ -324,8 +325,8 @@ public:
 
     // Register scalar variable (non-struct, basic type)
     template <typename T>
-    typename std::enable_if<!VlContainsCustomStruct<T>::value 
-                        && !IsVlUnpacked<T>::value, void>::type
+    typename std::enable_if<!VlContainsCustomStruct<T>::value && !IsVlUnpacked<T>::value,
+                            void>::type
     write_var(T& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) != m_vars.end()) return;
