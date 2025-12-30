@@ -3046,20 +3046,7 @@ class ConstVisitor final : public VNVisitor {
     void visit(AstExprStmt* nodep) override {
         iterateChildren(nodep);
         if (!AstNode::afterCommentp(nodep->stmtsp())) {
-            if (nodep->stmtsp()) {
-                if (AstScope* const scopep = VN_CAST(const_cast<AstNode*>(m_scopep), Scope)) {
-                    std::unordered_set<AstVar*> varps;
-                    nodep->stmtsp()->foreachAndNext([&](AstVar* varp) { varps.insert(varp); });
-                    if (!varps.empty()) {
-                        for (AstVarScope *vscp = scopep->varsp(), *nextp; vscp; vscp = nextp) {
-                            nextp = VN_AS(vscp->nextp(), VarScope);
-                            if (varps.find(vscp->varp()) != varps.end()) {
-                                VL_DO_DANGLING(pushDeletep(vscp->unlinkFrBack()), vscp);
-                            }
-                        }
-                    }
-                }
-            }
+            deleteVarScopesUnder(nodep->stmtsp());
             UINFO(8, "ExprStmt(...) " << nodep << " " << nodep->resultp());
             nodep->replaceWith(nodep->resultp()->unlinkFrBack());
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
