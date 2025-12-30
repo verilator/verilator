@@ -1320,8 +1320,67 @@ class ConstraintExprVisitor final : public VNVisitor {
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     void visit(AstConstraintUnique* nodep) override {
-        nodep->v3warn(CONSTRAINTIGN, "Constraint expression ignored (unsupported)");
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        FileLine* fl = nodep->fileline();
+
+        AstClass* classp = nullptr;
+        for (AstNode* p = nodep->backp(); p; p = p->backp()) {
+            if ((classp = VN_CAST(p, Class))) break;
+        }
+        if (!classp) return;
+
+        AstNodeFTask* initTaskp = VN_AS(m_memberMap.findMember(classp, "new"), NodeFTask);
+        if (!initTaskp) return;
+
+        AstVar* genVarp = VN_AS(classp->user3p(), Var);
+        if (!genVarp) return;
+
+        for (AstNode* itemp = nodep->rangesp(); itemp; itemp = itemp->nextp()) {
+            if (AstVarRef* varRefp = VN_CAST(itemp, VarRef)) {
+                AstVar* varp = varRefp->varp();
+
+                AstNodeDType* dtypep = varp->dtypep()->skipRefp();
+                if (AstUnpackArrayDType* up = VN_CAST(dtypep, UnpackArrayDType)) {
+                    // It's an Unpacked Array. Now check if it's static.
+                    AstRange* rangep = up->rangep();
+                    if (!rangep || !VN_IS(rangep->leftp(), Const)
+                        || !VN_IS(rangep->rightp(), Const)) {
+                        nodep->v3warn(CONSTRAINTIGN,
+                                      "Unique Constraint supported only for static arrays");
+                        continue;
+                    }
+                } else {
+                    nodep->v3warn(CONSTRAINTIGN,
+                                  "Unique Constraint supported only for static arrays");
+                    continue;
+                }
+                AstCMethodHard* wCallp = new AstCMethodHard{
+                    fl, new AstVarRef{fl, genVarp, VAccess::READ}, VCMethod::RANDOMIZER_WRITE_VAR};
+                wCallp->addPinsp(new AstVarRef{fl, varp, VAccess::READ});
+                wCallp->addPinsp(new AstConst{fl, AstConst::Unsized64{},
+                                              static_cast<uint64_t>(varp->dtypep()->width())});
+                wCallp->addPinsp(new AstConst{fl, AstConst::String{}, varp->name()});
+                wCallp->addPinsp(new AstConst{fl, 1});  // Dimension
+
+                wCallp->dtypeSetVoid();
+                initTaskp->addStmtsp(new AstStmtExpr{fl, wCallp});
+
+                uint32_t arraySize = 0;
+                if (AstUnpackArrayDType* adtypep = VN_CAST(varp->dtypep(), UnpackArrayDType)) {
+                    arraySize = adtypep->elementsConst();
+                }
+
+                AstNodeExpr* uPins = new AstConst{fl, AstConst::String{}, varp->name()};
+                uPins->addNext(new AstConst{fl, arraySize});
+
+                AstCMethodHard* uCallp
+                    = new AstCMethodHard{fl, new AstVarRef{fl, genVarp, VAccess::READ},
+                                         VCMethod::RANDOMIZER_UNIQUE, uPins};
+                uCallp->dtypep(nodep->findVoidDType());
+                initTaskp->addStmtsp(new AstStmtExpr{fl, uCallp});
+            }
+        }
+        nodep->unlinkFrBack();
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstConstraintExpr* nodep) override {
         iterateChildren(nodep);
