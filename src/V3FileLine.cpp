@@ -130,7 +130,7 @@ FileLineSingleton::msgEnSetIdx_t FileLineSingleton::defaultMsgEnIndex() VL_MT_SA
         // "-Wall" and the like only adjust the code subset, so use default enablement there
         msgEnBitSet.set(MsgEnBitSet::Subset::CODE, code, !code.defaultsOff());
         // The control file subset is only adjusted by the control files, everything enabled by
-        // default
+        // default.  (V3Control also likewise creates with this)
         msgEnBitSet.set(MsgEnBitSet::Subset::CTRL, code, true);
     }
     return addMsgEnBitSet(msgEnBitSet);
@@ -145,9 +145,20 @@ FileLineSingleton::msgEnSetIdx_t FileLineSingleton::msgEnSetBit(msgEnSetIdx_t se
         if (msgEn(setIdx).test(subset, subcode) != value) same = false;
     });
     if (same) return setIdx;
-    // Make new mask of all delegated codes at once (to avoid extra indicies if looped above this)
+    // Make new mask of all delegated codes at once (to avoid extra indices if looped above this)
     MsgEnBitSet msgEnBitSet{msgEn(setIdx)};
     code.forDelegateCodes([&](V3ErrorCode subcode) { msgEnBitSet.set(subset, subcode, value); });
+    return addMsgEnBitSet(msgEnBitSet);
+}
+
+FileLineSingleton::msgEnSetIdx_t FileLineSingleton::msgSetCtrlBitSet(msgEnSetIdx_t setIdx,
+                                                                     const VErrorBitSet& bitset) {
+    const MsgEnBitSet::Subset subset = MsgEnBitSet::Subset::CTRL;
+    // See if state matches existing
+    if (msgEn(setIdx).getAll(subset) == bitset) return setIdx;
+    // Make new mask of all delegated codes at once (to avoid extra indices if looped above this)
+    MsgEnBitSet msgEnBitSet{msgEn(setIdx)};
+    msgEnBitSet.setAll(subset, bitset);
     return addMsgEnBitSet(msgEnBitSet);
 }
 
@@ -395,26 +406,9 @@ string FileLine::warnOffParse(const string& msgs, bool turnOff) {
     return result;
 }
 
-void FileLine::warnLintOff(bool turnOff) {
-    for (int codei = V3ErrorCode::EC_MIN; codei < V3ErrorCode::_ENUM_MAX; codei++) {
-        const V3ErrorCode code{codei};
-        if (code.lintError()) warnOff(code, turnOff);
-    }
-}
-
-void FileLine::warnStyleOff(bool turnOff) {
-    for (int codei = V3ErrorCode::EC_MIN; codei < V3ErrorCode::_ENUM_MAX; codei++) {
-        const V3ErrorCode code{codei};
-        if (code.styleError()) warnOff(code, turnOff);
-    }
-}
-
 bool FileLine::warnIsOff(V3ErrorCode code) const {
     if (!msgEn().enabled(code)) return true;
     if (!defaultFileLine().msgEn().enabled(code)) return true;  // Global overrides local
-    if ((code.lintError() || code.styleError()) && !msgEn().enabled(V3ErrorCode::I_LINT)) {
-        return true;
-    }
     return false;
 }
 

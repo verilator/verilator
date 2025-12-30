@@ -272,15 +272,15 @@ public:
         return (pretendError() || m_e == EC_FATALSRC || m_e == SIDEEFFECT || m_e == SYMRSVDWORD
                 || m_e == ZERODLY);
     }
-    // Warnings that are lint only
+    // Warnings that are lint only; includes all style warnings
     bool lintError() const VL_MT_SAFE {
-        return (m_e == ALWCOMBORDER || m_e == ASCRANGE || m_e == ASSIGNEQEXPR || m_e == BSSPACE
-                || m_e == CASEINCOMPLETE || m_e == CASEOVERLAP || m_e == CASEWITHX || m_e == CASEX
-                || m_e == CASTCONST || m_e == CMPCONST || m_e == COLONPLUS || m_e == IMPLICIT
-                || m_e == IMPLICITSTATIC || m_e == LATCH || m_e == MISINDENT || m_e == NEWERSTD
-                || m_e == PREPROCZERO || m_e == PINMISSING || m_e == REALCVT || m_e == STATICVAR
-                || m_e == UNSIGNED || m_e == WIDTH || m_e == WIDTHTRUNC || m_e == WIDTHEXPAND
-                || m_e == WIDTHXZEXPAND);
+        return (styleError() || m_e == ALWCOMBORDER || m_e == ASCRANGE || m_e == ASSIGNEQEXPR
+                || m_e == BSSPACE || m_e == CASEINCOMPLETE || m_e == CASEOVERLAP
+                || m_e == CASEWITHX || m_e == CASEX || m_e == CASTCONST || m_e == CMPCONST
+                || m_e == COLONPLUS || m_e == IMPLICIT || m_e == IMPLICITSTATIC || m_e == LATCH
+                || m_e == MISINDENT || m_e == NEWERSTD || m_e == PREPROCZERO || m_e == PINMISSING
+                || m_e == REALCVT || m_e == STATICVAR || m_e == UNSIGNED || m_e == WIDTH
+                || m_e == WIDTHTRUNC || m_e == WIDTHEXPAND || m_e == WIDTHXZEXPAND);
     }
     // Warnings that are style only
     bool styleError() const VL_MT_SAFE {
@@ -313,6 +313,18 @@ public:
             action(V3ErrorCode{COVERIGN});
             action(V3ErrorCode{SPECIFYIGN});
             return;
+        case V3ErrorCode::I_LINT:
+            for (int i = V3ErrorCode::EC_MIN; i < V3ErrorCode::_ENUM_MAX; ++i) {
+                const V3ErrorCode subcode{i};
+                if (subcode.lintError()) action(subcode);
+            }
+            return;
+        case V3ErrorCode::I_STYLE:
+            for (int i = V3ErrorCode::EC_MIN; i < V3ErrorCode::_ENUM_MAX; ++i) {
+                const V3ErrorCode subcode{i};
+                if (subcode.styleError()) action(subcode);
+            }
+            return;
         case V3ErrorCode::UNUSED:
             action(V3ErrorCode{UNUSEDGENVAR});
             action(V3ErrorCode{UNUSEDLOOP});
@@ -333,6 +345,8 @@ public:
         switch (other) {
         case V3ErrorCode::E_UNSUPPORTED:
             return m_e == E_UNSUPPORTED || m_e == COVERIGN || m_e == SPECIFYIGN;
+        case V3ErrorCode::I_LINT: return lintError();
+        case V3ErrorCode::I_STYLE: return styleError();
         case V3ErrorCode::UNUSED:
             return m_e == UNUSEDGENVAR || m_e == UNUSEDLOOP || m_e == UNUSEDPARAM
                    || m_e == UNUSEDSIGNAL;
@@ -361,7 +375,9 @@ class VErrorBitSet final {
         : m_bitset{lhs.m_bitset & rhs.m_bitset} {}
 
 public:
+    class AllOnes {};
     VErrorBitSet() {}
+    explicit VErrorBitSet(AllOnes) { m_bitset.set(); }
     ~VErrorBitSet() = default;
     bool test(V3ErrorCode code) const { return m_bitset[code]; }
     void set(V3ErrorCode code, bool flag) { m_bitset[code] = flag; }
@@ -371,6 +387,13 @@ public:
     }
     VErrorBitSet operator&(const VErrorBitSet& rhs) const { return VErrorBitSet{*this, rhs}; }
     bool operator==(const VErrorBitSet& rhs) const { return m_bitset == rhs.m_bitset; }
+    string ascii() const {  // LCOV_EXCL_START
+        string result;
+        for (int i = V3ErrorCode::EC_MIN; i < V3ErrorCode::_ENUM_MAX; ++i) {
+            if (!test(V3ErrorCode{i})) result += " !"s + V3ErrorCode{i}.ascii();
+        }
+        return result;
+    }  // LCOV_EXCL_STOP
 };
 
 // ######################################################################
