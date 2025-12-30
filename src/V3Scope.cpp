@@ -64,7 +64,10 @@ class ScopeVisitor final : public VNVisitor {
         for (const auto& itr : m_varRefScopes) {
             AstVarRef* const nodep = itr.first;
             AstScope* scopep = itr.second;
-            if (nodep->classOrPackagep() && !VN_IS(nodep->classOrPackagep(),Module)) { // No need to check for the Module as it has not been emplaced
+            if (nodep->classOrPackagep()
+                && !VN_IS(
+                    nodep->classOrPackagep(),
+                    Module)) {  // No need to check for the Module as it has not been emplaced
                 const auto it2 = m_packageScopes.find(nodep->classOrPackagep());
                 UASSERT_OBJ(it2 != m_packageScopes.end(), nodep, "Can't locate package scope");
                 scopep = it2->second;
