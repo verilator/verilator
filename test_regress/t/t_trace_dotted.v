@@ -15,4 +15,3 @@ endmodule
 module sub;
         bit z;
 endmodule
-

@@ -262,15 +262,17 @@ class TraceDeclVisitor final : public VNVisitor {
         // Find the scope for the path. As we are working based on cell names,
         // it is possible there is no corresponding scope (e.g.: for an empty
         // module).
-        const auto it = m_pathToScopep.find(path);
+        const auto it = m_pathToScopep.find(AstNode::prettyName(path));
         if (it != m_pathToScopep.end()) {
             const AstScope* const scopep = it->second;
             FileLine* const flp = placeholderp->fileline();
 
             // Pick up the last path element. The prefixes have already been pushed
-            // when building the initialization functions
-            const size_t pos = path.rfind('.');
-            const std::string name = path.substr(pos == string::npos ? 0 : pos + 1);
+            // when building the initialization.
+            // We still need to find __DOT__ as cell names may have such.
+            const string dot = "__DOT__";
+            const size_t pos = path.rfind(dot);
+            const std::string name = path.substr(pos == string::npos ? 0 : pos + dot.size());
 
             // Compute the type of the scope being fixed up
             const AstCell* const cellp = scopep->aboveCellp();
@@ -280,7 +282,8 @@ class TraceDeclVisitor final : public VNVisitor {
                         : VTracePrefixType::SCOPE_MODULE;
 
             // Push the scope prefix
-            AstNodeStmt* const pushp = new AstTracePushPrefix{flp, name, scopeType};
+            AstNodeStmt* const pushp
+                = new AstTracePushPrefix{flp, AstNode::prettyName(name), scopeType};
 
             // Call the initialization functions for the scope
             for (AstCFunc* const subFuncp : m_scopeInitFuncps.at(scopep)) {
@@ -308,7 +311,7 @@ class TraceDeclVisitor final : public VNVisitor {
             const AstScope* const parentp = std::get<0>(item);
             const AstCell* const cellp = std::get<1>(item);
             AstNodeStmt* const placeholderp = std::get<2>(item);
-            const std::string path = AstNode::prettyName(parentp->name() + "." + cellp->name());
+            const std::string path = parentp->name() + "__DOT__" + cellp->name();
             fixupPlaceholder(path, placeholderp);
         }
 
@@ -316,7 +319,7 @@ class TraceDeclVisitor final : public VNVisitor {
         for (const auto& item : m_ifaceRefInitPlaceholders) {
             const AstVarScope* const vscp = std::get<0>(item);
             AstNodeStmt* const placeholderp = std::get<1>(item);
-            const std::string path = vscp->prettyName();
+            const std::string path = vscp->scopep()->name() + "__DOT__" + vscp->varp()->name();
             fixupPlaceholder(path, placeholderp);
         }
     }
