@@ -129,7 +129,7 @@ Verilator 5.043 devel
 * Fix typedef `::` class reference error (#6862).
 * Fix missing include on FreeBSD (#6864).
 * Fix `--Wwarn-lint` to be inverse of `--Wno-lint`.
-* Fix warning lint directive ordering and consistency (#4185) (#5368) (#5610).
+* Fix warning lint directive ordering and consistency (#4185) (#5368) (#5610) (#6876).
 
 
 Verilator 5.042 2025-11-02
