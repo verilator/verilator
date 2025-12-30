@@ -2485,7 +2485,11 @@ List Of Warnings
    and will suppress the warning when the minimum width is appropriate to
    fit the required size.
 
-   Ignoring this warning will only suppress the lint check; it will
+   Disabling/enabling WIDTH is equivalent to disabling/enabling the
+   :option:`WIDTHEXPAND`, :option:`WIDTHTRUNC`, and :option:`WIDTHXZEXPAND`
+   warnings.
+
+   Ignoring these warnings will only suppress the lint check; it will
    simulate correctly.
 
    The recommendation is to fix these issues by:

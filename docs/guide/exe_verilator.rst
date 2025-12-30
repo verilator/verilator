@@ -2056,15 +2056,13 @@ Summary:
 .. option:: -Wwarn-lint
 
    Enable all lint-related warning messages (note that by default, they are
-   already enabled), but do not affect style messages. This is equivalent
-   to ``-Wwarn-ALWCOMBORDER`` ``-Wwarn-ASCRANGE`` ``-Wno-ASSIGNEQEXPR``
-   ``-Wwarn-BSSPACE`` ``-Wwarn-CASEINCOMPLETE`` ``-Wwarn-CASEOVERLAP``
-   ``-Wwarn-CASEWITHX`` ``-Wwarn-CASEX`` ``-Wwarn-CASTCONST``
-   ``-Wwarn-CMPCONST`` ``-Wwarn-COLONPLUS`` ``-Wwarn-IMPLICIT``
-   ``-Wwarn-IMPLICITSTATIC`` ``-Wwarn-LATCH`` ``-Wwarn-MISINDENT``
-   ``-Wwarn-NEWERSTD`` ``-Wwarn-PREPROCZERO`` ``-Wwarn-PINMISSING``
-   ``-Wwarn-REALCVT`` ``-Wwarn-STATICVAR`` ``-Wwarn-UNSIGNED``
-   ``-Wwarn-WIDTHTRUNC`` ``-Wwarn-WIDTHEXPAND`` ``-Wwarn-WIDTHXZEXPAND``.
+   already enabled), and also style messages. This is equivalent to
+   :vlopt:`-Wall`.
+
+   In versions before 5.044 this enabled only lint, but not
+   :vlopt:`-Wwarn-style` messages; for similar behavior use `-Wwarn-lint
+   -Wno-style`. The current behavior is consistent with the inverse of
+   :vlopt:`-Wno-lint`.
 
 .. option:: -Wwarn-style
 
@@ -2542,21 +2540,24 @@ The grammar of control commands is as follows:
    Enable/disable waveform tracing for all future signals declared in
    all files.
 
-   With -file, enable/disable waveform tracing in the specified
-   filename (or wildcard with '\*' or '?'), and -line range of line
+   With ``-file``, enable/disable waveform tracing in the specified
+   filename (or wildcard with '\*' or '?'), and ``-line`` range of line
    numbers (or all lines if omitted).
 
-   For tracing_off with -file, instances below any module in the
+   For tracing_off with ``-file``, instances below any module in the
    files/ranges specified will also not be traced. To overcome this
    feature, use tracing_on on the upper module declaration and on any
-   cells, or use the -scope flavor of the command.
+   cells, or use the ``-scope`` flavor of the command.
 
-   With -scope enable/disable waveform tracing for the specified scope (or
-   wildcard with '\*' or '?'), and optional --levels number of levels
-   below. These controls only operate after other file/line/module-based
-   controls have indicated the signal should be traced.
+   With ``-scope`` enable/disable waveform tracing for the specified scope
+   (or wildcard with '\*' or '?'), and optional ``--levels`` number of
+   levels below. These controls only operate after other
+   file/line/module-based controls have indicated the signal should be
+   traced. Matching is performed on the shortest prefix first, such that
+   ``tracing_on -scope "a.b" tracing_off -scope "a"`` will turn it on for
+   "a.b" and off for everything else "a.*".
 
-   With -levels (used with -scope), the number of levels below that
-   scope which the rule is to match, where 0 means all levels below, 1
-   the exact level as the provided scope, and 2 means an additional
-   level of children below the provided scope, etc.
+   With ``-levels`` (used with ``-scope``), the number of levels below that
+   scope which the rule is to match, where 0 means all levels below, 1 the
+   exact level as the provided scope, and 2 means an additional level of
+   children below the provided scope, etc.
