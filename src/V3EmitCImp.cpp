@@ -135,6 +135,8 @@ class EmitCImp final : public EmitCFunc {
             ofp()->indentDec();
             puts(" {\n");
         } else {
+            putns(modp, modName + "::" + modName + "() = default;\n");
+            putns(modp, modName + "::~" + modName + "() = default;\n\n");
             putns(modp, "void " + modName + "::ctor(" + ctorArgs + ") {\n");
         }
 
