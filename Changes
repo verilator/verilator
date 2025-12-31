@@ -59,6 +59,7 @@ Verilator 5.043 devel
 * Optimize inlining small C functions and add `-inline-cfuncs` (#6815). [Jose Drowne]
 * Fix generate function(s) inside of generate blocks (#1011) (#6789). [em2machine]
 * Fix typedef derived from type defined inside interface (#3441) (#6776). [em2machine]
+* Fix warning lint directive ordering and consistency (#4185) (#5368) (#5610) (#6876).
 * Fix extern function that returns parameterized class (#4924).
 * Fix type deduction for variable parameterized classes (#6281) (#6813). [em2machine]
 * Fix randomize called within func/task (#6144) (#6753). [Yilou Wang]
@@ -128,6 +129,7 @@ Verilator 5.043 devel
 * Fix `randc` on extended class (#6852).
 * Fix typedef `::` class reference error (#6862).
 * Fix missing include on FreeBSD (#6864).
+* Fix `--Wwarn-lint` to be inverse of `--Wno-lint`.
 
 
 Verilator 5.042 2025-11-02

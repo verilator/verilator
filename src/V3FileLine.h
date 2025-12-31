@@ -81,8 +81,18 @@ class FileLineSingleton final {
             return m_codeEn == other.m_codeEn && m_ctrlEn == other.m_ctrlEn;
         }
 
+        const VErrorBitSet& getAll(Subset subset) const {
+            return subset == Subset::CODE ? m_codeEn : m_ctrlEn;
+        }
         bool test(Subset subset, V3ErrorCode code) const {
             return subset == Subset::CODE ? m_codeEn.test(code) : m_ctrlEn.test(code);
+        }
+        void setAll(Subset subset, const VErrorBitSet& bitset) {
+            if (subset == Subset::CODE) {  // LCOV_EXCL_BR_LINE
+                m_codeEn = bitset;  // LCOV_EXCL_LINE
+            } else {
+                m_ctrlEn = bitset;
+            }
         }
         void set(Subset subset, V3ErrorCode code, bool value) {
             if (subset == Subset::CODE) {
@@ -136,6 +146,8 @@ class FileLineSingleton final {
     // Set code to value in bitset at interned index setIdx, return interned index of result
     msgEnSetIdx_t msgEnSetBit(msgEnSetIdx_t setIdx, MsgEnBitSet::Subset subset, V3ErrorCode code,
                               bool value);
+    // Bulk-set all control codes to given bitset
+    msgEnSetIdx_t msgSetCtrlBitSet(msgEnSetIdx_t setIdx, const VErrorBitSet& bitset);
     // Return index to intersection set
     msgEnSetIdx_t msgEnAnd(msgEnSetIdx_t lhsIdx, msgEnSetIdx_t rhsIdx);
     // Retrieve interned bitset at given interned index. The returned reference is not persistent.
@@ -367,8 +379,8 @@ private:
 
 public:
     void warnOn(V3ErrorCode code, bool flag) { warnSet(MsgEnBitSet::Subset::CODE, code, flag); }
-    void warnOnCtrl(V3ErrorCode code, bool flag) {
-        warnSet(MsgEnBitSet::Subset::CTRL, code, flag);
+    void warnSetCtrlBitSet(const VErrorBitSet& bitset) {
+        m_msgEnIdx = singleton().msgSetCtrlBitSet(m_msgEnIdx, bitset);
     }
     void warnOff(V3ErrorCode code, bool turnOff) { warnOn(code, !turnOff); }
     string warnOffParse(const string& msgs, bool turnOff);  // Returns "" if ok
@@ -392,8 +404,6 @@ public:
     // <command-line> and <built-in> match what GCC outputs
     static string commandLineFilename() VL_MT_SAFE { return "<command-line>"; }
     static string builtInFilename() VL_MT_SAFE { return "<built-in>"; }
-    static void globalWarnLintOff(bool turnOff) { defaultFileLine().warnLintOff(turnOff); }
-    static void globalWarnStyleOff(bool turnOff) { defaultFileLine().warnStyleOff(turnOff); }
     static void globalWarnOff(V3ErrorCode code, bool turnOff) {
         defaultFileLine().warnOff(code, turnOff);
     }

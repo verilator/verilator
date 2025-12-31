@@ -1,0 +1,7 @@
+%Warning-UNUSEDSIGNAL: t/t_vlt_warn_file2_bad.v:20:7: Signal is not driven, nor used: 'unuse_warn_var_line20'
+                                                    : ... note: In instance 't'
+   20 |   reg unuse_warn_var_line20;   
+      |       ^~~~~~~~~~~~~~~~~~~~~
+                       ... For warning description see https://verilator.org/warn/UNUSEDSIGNAL?v=latest
+                       ... Use "/* verilator lint_off UNUSEDSIGNAL */" and lint_on around source to disable this message.
+%Error: Exiting due to

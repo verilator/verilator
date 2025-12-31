@@ -1859,10 +1859,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
     DECL_OPTION("-vpi", OnOff, &m_vpi);
 
-    DECL_OPTION("-Wall", CbCall, []() {
-        FileLine::globalWarnLintOff(false);
-        FileLine::globalWarnStyleOff(false);
-    });
+    DECL_OPTION("-Wall", CbCall, []() { FileLine::globalWarnOff(V3ErrorCode::I_LINT, false); });
     DECL_OPTION("-Werror-", CbPartialMatch, [this, fl](const char* optp) {
         const V3ErrorCode code{optp};
         if (code == V3ErrorCode::EC_ERROR) {
@@ -1890,11 +1887,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     }
     DECL_OPTION("-Wno-context", CbCall, [this]() { m_context = false; });
     DECL_OPTION("-Wno-fatal", CbCall, []() { V3Error::warnFatal(false); });
-    DECL_OPTION("-Wno-lint", CbCall, []() {
-        FileLine::globalWarnLintOff(true);
-        FileLine::globalWarnStyleOff(true);
-    });
-    DECL_OPTION("-Wno-style", CbCall, []() { FileLine::globalWarnStyleOff(true); });
+    DECL_OPTION("-Wno-lint", CbCall, []() { FileLine::globalWarnOff(V3ErrorCode::I_LINT, true); });
+    DECL_OPTION("-Wno-style", CbCall,
+                []() { FileLine::globalWarnOff(V3ErrorCode::I_STYLE, true); });
     DECL_OPTION("-work", Set, &m_work);
     DECL_OPTION("-Wpedantic", CbCall, [this]() {
         m_pedantic = true;
@@ -1913,8 +1908,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
             V3Error::pretendError(code, false);
         }
     });
-    DECL_OPTION("-Wwarn-lint", CbCall, []() { FileLine::globalWarnLintOff(false); });
-    DECL_OPTION("-Wwarn-style", CbCall, []() { FileLine::globalWarnStyleOff(false); });
+    DECL_OPTION("-Wwarn-lint", CbCall,
+                []() { FileLine::globalWarnOff(V3ErrorCode::I_LINT, false); });
+    DECL_OPTION("-Wwarn-style", CbCall,
+                []() { FileLine::globalWarnOff(V3ErrorCode::I_STYLE, false); });
     DECL_OPTION("-waiver-multiline", OnOff, &m_waiverMultiline);
     DECL_OPTION("-waiver-output", Set, &m_waiverOutput);
 

@@ -2410,14 +2410,8 @@ The grammar of control commands is as follows:
    (or wildcard with '\*' or '?', or all files if omitted) and range of
    line numbers (or all lines if omitted).
 
-   If a warning is disabled with lint_off, it will not be printed, even if the
-   source contains a lint_on metacomment. The control file directives and
-   metacomments are interpreted separately and do not interact. A warning is
-   emitted only if not disabled either in a control file or via metacomments.
-
    If the ``-rule`` is omitted, all lint warnings (see list in
-   :vlopt:`-Wno-lint`) are enabled/disabled. This will override all later
-   lint warning enables for the specified region.
+   :vlopt:`-Wno-lint`) are enabled/disabled.
 
    If ``-contents`` is provided, the input files must contain the given
    wildcard (with '\*' or '?'), and are waived in case they match, provided
@@ -2434,6 +2428,21 @@ The grammar of control commands is as follows:
    provided the ``-rule``, ``-file``, and ``-contents`` also match. The
    wildcard is compared across the entire multi-line message; see
    :vlopt:`--waiver-multiline`.
+
+   When there are overlapping conflicting lint_on/lint_off directives, they
+   are resolved in the following priority order:
+
+   * All lint_on/lint_off without a ``-file``, or with a ``-file "\*"``,
+     are processed in order of parsing.
+   * All lint_on/lint_off with ``-file "non-\*"`` are processed in order of
+     parsing.
+   * All lint_off with ``--match`` in order of parsing.
+
+   If a warning is disabled with lint_off, it will not be printed, even if
+   the source contains a lint_on metacomment. The control file directives
+   and metacomments are interpreted separately and do not interact. A
+   warning is emitted only if not disabled either in a control file or via
+   metacomments.
 
    Before version 4.026, ``-rule`` was named ``-msg``, and
    ``-msg`` remained a deprecated alias until Version 5.000.

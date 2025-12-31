@@ -75,6 +75,8 @@ public:
     static uint64_t getCurrentHierBlockCost();
 
     static bool waive(const FileLine* filelinep, V3ErrorCode code, const string& message);
+
+    static void selfTest();
 };
 
 #endif  // Guard
