@@ -1,14 +1,16 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2025 by Antmicro.
+// any use, without warranty, 2025 by AsFigo.
 // SPDX-License-Identifier: CC0-1.0
 class UniqueMultipleArray;
-  rand bit [15:0] uniq_val_arr[4]; 
-  rand bit [15:0] uniq_val_darr[]; 
-  rand bit [15:0] uniq_val_hash[int]; 
-  rand bit [15:0] uniq_val_queue[$]; 
+  rand bit [15:0] uniq_val_arr[4];
+  rand bit [15:0] uniq_val_arr_mda[4][];
+  rand bit [15:0] uniq_val_darr[];
+  rand bit [15:0] uniq_val_hash[int];
+  rand bit [15:0] uniq_val_queue[$];
   rand bit b1;
+  rand int array[2];  // 2,4,6  // TODO: add rand when supported
 
   // Constraint to ensure the elements in the array are unique
   constraint unique_c {
@@ -18,6 +20,8 @@ class UniqueMultipleArray;
     unique {uniq_val_darr};  // Ensure unique values in the array
     unique {uniq_val_hash};  // Ensure unique values in the array
     unique {uniq_val_queue};  // Ensure unique values in the array
+    unique {uniq_val_arr_mda};  // Ensure unique values in the array
+    unique { array[0], array[1] };
   }
   // --------------------------------------------------
   // Explicit uniqueness checker (post-solve validation)
@@ -58,4 +62,3 @@ module t;
     else $error("Randomization failed!");
   end
 endmodule : t
-

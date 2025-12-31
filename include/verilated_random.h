@@ -195,12 +195,6 @@ public:
 };
 
 //=============================================================================
-// Trait to detect VlUnpacked types
-template <typename T>
-struct IsVlUnpacked : std::false_type {};
-template <typename T, std::size_t N>
-struct IsVlUnpacked<VlUnpacked<T, N>> : std::true_type {};
-
 // Object holding constraints and variable references.
 class VlRandomizer VL_NOT_FINAL {
     // MEMBERS
@@ -322,11 +316,9 @@ public:
     }
 
     // ---  write_var to register variables  ---
-
     // Register scalar variable (non-struct, basic type)
     template <typename T>
-    typename std::enable_if<!VlContainsCustomStruct<T>::value && !IsVlUnpacked<T>::value,
-                            void>::type
+    typename std::enable_if<!VlContainsCustomStruct<T>::value && !IsVlUnpacked<T>::value, void>::type
     write_var(T& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) != m_vars.end()) return;
@@ -367,8 +359,8 @@ public:
     // Register unpacked array of non-struct types
     template <typename T, std::size_t N_Depth>
     typename std::enable_if<!VlContainsCustomStruct<T>::value, void>::type
-    write_var(VlUnpacked<T, N_Depth>& var, uint64_t width, const std::string& name,
-              uint64_t dimension,
+    write_var(VlUnpacked<T, N_Depth>& var, uint32_t width, const std::string& name,
+              uint32_t dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
 
         if (m_vars.find(name) != m_vars.end()) return;
