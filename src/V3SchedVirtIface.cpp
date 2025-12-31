@@ -55,7 +55,6 @@ private:
     V3UniqueNames m_vifTriggerNames{"__VvifTrigger"};  // Unique names for virt iface
                                                        // triggers
     VirtIfaceTriggers m_triggers;  // Interfaces and corresponding trigger vars
-    AstNodeStmt* m_curStmt = nullptr;  // Current statement
 
     // METHODS
     // For each write across a virtual interface boundary
