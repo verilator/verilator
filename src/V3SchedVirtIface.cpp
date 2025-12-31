@@ -41,8 +41,8 @@ namespace {
 class VirtIfaceVisitor final : public VNVisitor {
 private:
     // NODE STATE
-    // AstIface::user1() -> AstVarScope*. Trigger var for this interface
-    // AstVar::user1() -> AstIface*. Interface under which variable is
+    // AstVar::user1() -> AstIface*. Interface which var is a member of
+    // AstVarRef::user1() -> bool. Whether it has been visited
     const VNUser1InUse m_user1InUse;
 
     // TYPES
@@ -118,25 +118,9 @@ private:
         }
         iterateChildren(nodep);
     }
-    void visit(AstNodeIf* const nodep) override {
-        unsupportedWriteToVirtIface(nodep->condp(), "if condition");
-        iterateChildren(nodep);
-    }
-    void visit(AstLoop* const nodep) override {
-        UASSERT_OBJ(!nodep->contsp(), nodep, "'contsp' only used before LinkJump");
-        iterateChildren(nodep);
-    }
-    void visit(AstLoopTest* nodep) override {
-        unsupportedWriteToVirtIfaceMember(nodep->condp(), "loop condition");
-    }
-    void visit(AstNodeStmt* nodep) override {
-        VL_RESTORER(m_curStmt);
-        m_curStmt = nodep;
-        iterateChildren(nodep);
-    }
     void visit(AstVarRef* const nodep) override {
-        if (!m_curStmt) return;
         if (nodep->access().isReadOnly()) return;
+        if (nodep->user1SetOnce()) return;
         AstIface* ifacep = nullptr;
         AstVar* memberVarp = nullptr;
         if (AstIfaceRefDType* const dtypep = VN_CAST(nodep->varp()->dtypep(), IfaceRefDType)) {
@@ -151,14 +135,18 @@ private:
             memberVarp = nodep->varp();
         } else if (VN_IS(nodep->backp(), AssignW)) {
             memberVarp = nodep->varScopep()->varp();
-            ifacep = VN_CAST(memberVarp->backp(), Iface);
+            ifacep = VN_AS(memberVarp->user1p(), Iface);
         }
 
         if (ifacep && memberVarp) {
             FileLine* const flp = nodep->fileline();
-            m_curStmt->addNextHere(
+            VNRelinker relinker;
+            nodep->unlinkFrBack(&relinker);
+            relinker.relink(new AstExprStmt{
+                flp,
                 new AstAssign{flp, createVirtIfaceMemberTriggerRefp(flp, ifacep, memberVarp),
-                              new AstConst{flp, AstConst::BitTrue{}}});
+                              new AstConst{flp, AstConst::BitTrue{}}},
+                nodep});
         }
     }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }

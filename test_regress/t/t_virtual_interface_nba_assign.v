@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 interface clk_if;
+  bit a;
   bit clk;
 endinterface
 
