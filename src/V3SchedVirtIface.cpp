@@ -58,18 +58,6 @@ private:
 
     // METHODS
     // For each write across a virtual interface boundary
-    static void foreachWrittenVirtIface(AstNode* const nodep, const OnWriteToVirtIface& onWrite) {
-        nodep->foreach([&](AstVarRef* const refp) {
-            if (refp->access().isReadOnly()) return;
-            if (AstIfaceRefDType* const dtypep = VN_CAST(refp->varp()->dtypep(), IfaceRefDType)) {
-                if (dtypep->isVirtual() && VN_IS(refp->firstAbovep(), MemberSel)) {
-                    onWrite(refp, dtypep->ifacep());
-                }
-            } else if (AstIface* const ifacep = refp->varp()->sensIfacep()) {
-                onWrite(refp, ifacep);
-            }
-        });
-    }
     // Returns true if there is a write across a virtual interface boundary
     static bool writesToVirtIface(const AstNode* const nodep) {
         return nodep->exists([](const AstVarRef* const refp) {
@@ -80,15 +68,6 @@ private:
             const bool writesToIfaceSensVar = refp->varp()->sensIfacep();
             return writesToVirtIfaceMember || writesToIfaceSensVar;
         });
-    }
-    // Error on write across a virtual interface boundary
-    static void unsupportedWriteToVirtIfaceMember(AstNode* nodep, const char* locationp) {
-        if (!nodep) return;
-        foreachWrittenVirtIfaceMember(
-            nodep, [locationp](AstVarRef* const selp, AstIface*, AstVar* varp) {
-                selp->v3warn(E_UNSUPPORTED,
-                             "Unsupported: Write to virtual interface in " << locationp);
-            });
     }
 
     // Create trigger reference for a specific interface member
