@@ -41,7 +41,6 @@ namespace {
 class VirtIfaceVisitor final : public VNVisitor {
 private:
     // NODE STATE
-    // AstVar::user1() -> AstIface*. Interface which var is a member of
     // AstVarRef::user1() -> bool. Whether it has been visited
     const VNUser1InUse m_user1InUse;
 
@@ -111,9 +110,6 @@ private:
             }
         } else if ((ifacep = nodep->varp()->sensIfacep())) {
             memberVarp = nodep->varp();
-        } else if (VN_IS(nodep->backp(), AssignW)) {
-            memberVarp = nodep->varScopep()->varp();
-            ifacep = VN_AS(memberVarp->user1p(), Iface);
         }
 
         if (ifacep && memberVarp) {
@@ -133,11 +129,6 @@ public:
     // CONSTRUCTORS
     explicit VirtIfaceVisitor(AstNetlist* nodep)
         : m_netlistp{nodep} {
-        nodep->foreach([](AstIface* const ifacep) {
-            for (AstNode* nodep = ifacep->stmtsp(); nodep; nodep = nodep->nextp()) {
-                if (AstVar* const varp = VN_CAST(nodep, Var)) varp->user1p(ifacep);
-            }
-        });
         iterate(nodep);
     }
     ~VirtIfaceVisitor() override = default;
