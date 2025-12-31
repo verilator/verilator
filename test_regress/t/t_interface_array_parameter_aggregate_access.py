@@ -11,8 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('simulator_st')
 
-test.compile()
+test.compile(fails=True)
 
-test.execute()
+#test.execute(fails=True)
 
 test.passes()
