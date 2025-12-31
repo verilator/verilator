@@ -60,6 +60,9 @@ module t;
       b = get_val_set_5(dyn_arr[1]);
       `checkh(dyn_arr[1], 5);
       `checkh(b, 10);
+      b = cls.get_val_set_2(dyn_arr[1]);
+      `checkh(dyn_arr[1], 2);
+      `checkh(b, 5);
 
       $write("*-* All Finished *-*\n");
       $finish;
