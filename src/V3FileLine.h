@@ -88,8 +88,8 @@ class FileLineSingleton final {
             return subset == Subset::CODE ? m_codeEn.test(code) : m_ctrlEn.test(code);
         }
         void setAll(Subset subset, const VErrorBitSet& bitset) {
-            if (subset == Subset::CODE) {
-                m_codeEn = bitset;
+            if (subset == Subset::CODE) {  // LCOV_EXCL_BR_LINE
+                m_codeEn = bitset;  // LCOV_EXCL_LINE
             } else {
                 m_ctrlEn = bitset;
             }
