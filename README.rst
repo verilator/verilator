@@ -28,7 +28,7 @@ Welcome to Verilator
         * Accepts Verilog or SystemVerilog
         * Performs lint code-quality checks
         * Compiles into multithreaded C++, or SystemC
-        * Creates XML to front-end your own tools
+        * Creates JSON to front-end your own tools
      - |Logo|
    * - |verilator multithreaded performance|
      - **Fast**
