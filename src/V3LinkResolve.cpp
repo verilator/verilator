@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -50,7 +50,6 @@ class LinkResolveVisitor final : public VNVisitor {
     string m_randcIllegalWhy;  // Why randc illegal
     AstNode* m_randcIllegalp = nullptr;  // Node causing randc illegal
     AstNodeFTask* m_ftaskp = nullptr;  // Function or task we're inside
-    AstNodeCoverOrAssert* m_assertp = nullptr;  // Current assertion
     int m_senitemCvtNum = 0;  // Temporary signal counter
     std::deque<AstGenFor*> m_underGenFors;  // Stack of GenFor underneath
     bool m_underGenerate = false;  // Under GenFor/GenIf
@@ -119,14 +118,6 @@ class LinkResolveVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
-    void visit(AstNodeCoverOrAssert* nodep) override {
-        if (m_assertp) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Assert not allowed under another assert");
-        }
-        VL_RESTORER(m_assertp);
-        m_assertp = nodep;
-        iterateChildren(nodep);
-    }
     void visit(AstVar* nodep) override {
         iterateChildren(nodep);
         if (m_classp && !nodep->isParam()) nodep->varType(VVarType::MEMBER);
@@ -188,6 +179,10 @@ class LinkResolveVisitor final : public VNVisitor {
     }
     void visit(AstNodeFTaskRef* nodep) override {
         VL_RESTORER(m_currentRandomizeSelectp);
+        if (nodep->taskp()) {
+            if (AstSequence* const seqp = VN_CAST(nodep->taskp(), Sequence))
+                seqp->isReferenced(true);
+        }
 
         if (nodep->name() == "randomize") {
             if (const AstMethodCall* const methodcallp = VN_CAST(nodep, MethodCall)) {
@@ -244,10 +239,6 @@ class LinkResolveVisitor final : public VNVisitor {
             visit(newp);
             letp->user2(false);
             return;
-        }
-        if (nodep->taskp() && !nodep->scopeNamep()
-            && (nodep->taskp()->dpiContext() || nodep->taskp()->dpiExport())) {
-            nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
         }
     }
 
@@ -493,7 +484,7 @@ class LinkResolveVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     //  void visit(AstModport* nodep) override { ... }
-    // We keep Modport's themselves around for XML dump purposes
+    // We keep Modport's themselves around for JSON dump purposes
 
     void visit(AstGenFor* nodep) override {
         VL_RESTORER(m_underGenerate);

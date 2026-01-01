@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -234,7 +234,7 @@ class ExpandVisitor final : public VNVisitor {
     static AstNodeExpr* newWordIndex(AstNodeExpr* lsbp, uint32_t wordOffset = 0) {
         // This is indexing a WordSel, so a 32 bit constants are fine
         FileLine* const flp = lsbp->fileline();
-        if (AstConst* constp = VN_CAST(lsbp, Const)) {
+        if (const AstConst* constp = VN_CAST(lsbp, Const)) {
             return new AstConst{flp, wordOffset + VL_BITWORD_E(constp->toUInt())};
         }
 
@@ -250,7 +250,7 @@ class ExpandVisitor final : public VNVisitor {
                                        uint32_t wordOffset = 0) {
         UASSERT_OBJ(fromp->isWide(), fromp, "Only need AstWordSel on wide from's");
 
-        if (AstConst* const constp = VN_CAST(indexp, Const)) {
+        if (const AstConst* const constp = VN_CAST(indexp, Const)) {
             indexp = nullptr;
             wordOffset += constp->toUInt();
         }
@@ -545,7 +545,7 @@ class ExpandVisitor final : public VNVisitor {
         V3Const::constifyEditCpp(rhsp->lsbp());
 
         // If it's a constant select and aligned, we can just copy the words
-        if (AstConst* const lsbConstp = VN_CAST(rhsp->lsbp(), Const)) {
+        if (const AstConst* const lsbConstp = VN_CAST(rhsp->lsbp(), Const)) {
             const uint32_t lsb = lsbConstp->toUInt();
             if (VL_BITBIT_E(lsb) == 0) {
                 UINFO(8, "    Wordize ASSIGN(SEL,align) " << nodep);
@@ -577,7 +577,7 @@ class ExpandVisitor final : public VNVisitor {
         AstNodeExpr* loShftp = nullptr;
         AstNodeExpr* hiShftp = nullptr;
         AstNodeExpr* hiMaskp = nullptr;
-        if (AstConst* const lsbConstp = VN_CAST(rhsp->lsbp(), Const)) {
+        if (const AstConst* const lsbConstp = VN_CAST(rhsp->lsbp(), Const)) {
             const uint32_t bitOffset = VL_BITBIT_E(lsbConstp->toUInt());
             // Must be unaligned, otherwise we would have handled it above
             UASSERT_OBJ(bitOffset, nodep, "Missed aligned wide select");
@@ -728,7 +728,8 @@ class ExpandVisitor final : public VNVisitor {
                 UINFO(8, "    ASSIGNSEL(varlsb,wide,1bit) " << nodep);
                 AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
                 AstNodeExpr* const destp = lhsp->fromp()->unlinkFrBack();
-                AstNodeExpr* oldvalp = newWordSelBit(lfl, destp, lhsp->lsbp());
+                AstNodeExpr* oldvalp
+                    = newWordSelBit(lfl, destp->cloneTreePure(false), lhsp->lsbp());
                 fixCloneLvalue(oldvalp);
                 if (!ones) {
                     oldvalp = new AstAnd{
@@ -907,6 +908,8 @@ class ExpandVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (nodep->lhsp()->isWide()) {
             if (isImpure(nodep)) return;
+            if (!doExpandWide(nodep->lhsp())) return;
+            if (!doExpandWide(nodep->rhsp())) return;
             UINFO(8, "    Wordize EQ/NEQ " << nodep);
             // -> (0=={or{for each_word{WORDSEL(lhs,#)^WORDSEL(rhs,#)}}}
             FileLine* const fl = nodep->fileline();
@@ -933,6 +936,7 @@ class ExpandVisitor final : public VNVisitor {
         FileLine* const fl = nodep->fileline();
         if (nodep->lhsp()->isWide()) {
             if (isImpure(nodep)) return;
+            if (!doExpandWide(nodep->lhsp())) return;
             UINFO(8, "    Wordize REDOR " << nodep);
             // -> (0!={or{for each_word{WORDSEL(lhs,#)}}}
             AstNodeExpr* newp = nullptr;
@@ -957,6 +961,7 @@ class ExpandVisitor final : public VNVisitor {
         FileLine* const fl = nodep->fileline();
         if (nodep->lhsp()->isWide()) {
             if (isImpure(nodep)) return;
+            if (!doExpandWide(nodep->lhsp())) return;
             UINFO(8, "    Wordize REDAND " << nodep);
             // -> (0!={and{for each_word{WORDSEL(lhs,#)}}}
             AstNodeExpr* newp = nullptr;
@@ -988,6 +993,7 @@ class ExpandVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (nodep->lhsp()->isWide()) {
             if (isImpure(nodep)) return;
+            if (!doExpandWide(nodep->lhsp())) return;
             UINFO(8, "    Wordize REDXOR " << nodep);
             // -> (0!={redxor{for each_word{XOR(WORDSEL(lhs,#))}}}
             FileLine* const fl = nodep->fileline();

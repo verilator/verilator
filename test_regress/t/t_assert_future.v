@@ -10,11 +10,8 @@
 // verilog_format: on
 
 module t (
-    /*AUTOARG*/
-  // Inputs
-  clk
-  );
-  input clk;
+    input clk
+);
 
   global clocking @(posedge clk);
   endclocking

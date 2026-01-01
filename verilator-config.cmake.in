@@ -11,7 +11,7 @@
 #     add_executable(simulator <your-c-sources>)
 #     verilate(simulator SOURCES <your-hdl-sources>)
 #
-# Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -478,8 +478,7 @@ function(verilate TARGET)
         json_get_list(JSOURCES_DEPS "${MANIFEST}" sources deps)
 
         file(
-            WRITE
-            ${VDIR}/${VERILATE_PREFIX}.cmake
+            WRITE ${VDIR}/${VERILATE_PREFIX}.cmake
             "# Verilated -*- CMake -*-\n"
             "# DESCRIPTION: Verilator output: CMake include script with class lists\n"
             "#\n"
@@ -532,8 +531,7 @@ function(verilate TARGET)
 
         if(JNSUBMODULES)
             file(
-                APPEND
-                ${VDIR}/${VERILATE_PREFIX}.cmake
+                APPEND ${VDIR}/${VERILATE_PREFIX}.cmake
                 "# Verilate hierarchical blocks\n"
                 "get_target_property(TOP_TARGET_NAME \"\${TARGET}\" NAME)\n"
             )
@@ -552,57 +550,49 @@ function(verilate TARGET)
 
                 if(NOT ${I} STREQUAL ${JNSUBMODULES})
                     string(
-                        APPEND
-                        SUBMODULE_CMAKE
+                        APPEND SUBMODULE_CMAKE
                         "add_library(${JSUBMODULE_PREFIX} STATIC)\n"
                         "target_link_libraries(\${TOP_TARGET_NAME} PRIVATE ${JSUBMODULE_PREFIX})\n"
                     )
 
                     if(JSUBMODULE_DEPS)
                         string(
-                            APPEND
-                            SUBMODULE_CMAKE
+                            APPEND SUBMODULE_CMAKE
                             "target_link_libraries(${JSUBMODULE_PREFIX} INTERFACE ${JSUBMODULE_DEPS})\n"
                         )
                     endif()
 
                     string(
-                        APPEND
-                        SUBMODULE_VERILATE_ARGS
+                        APPEND SUBMODULE_VERILATE_ARGS
                         "${JSUBMODULE_PREFIX} PREFIX ${JSUBMODULE_PREFIX} TOP_MODULE ${JSUBMODULE_TOP} DIRECTORY ${JSUBMODULE_DIRECTORY} SOURCES ${JSUBMODULE_SOURCES}"
                     )
                 else()
                     string(
-                        APPEND
-                        SUBMODULE_CMAKE
+                        APPEND SUBMODULE_CMAKE
                         "# Verilate the top module that refers to lib-create wrappers of above\n"
                     )
                     string(
-                        APPEND
-                        SUBMODULE_VERILATE_ARGS
+                        APPEND SUBMODULE_VERILATE_ARGS
                         "\${TOP_TARGET_NAME} PREFIX ${JSUBMODULE_PREFIX} TOP_MODULE ${JSUBMODULE_TOP} DIRECTORY ${JSUBMODULE_DIRECTORY} SOURCES ${JSUBMODULE_SOURCES}"
                     )
                 endif()
 
                 if(JSUBMODILE_VERILATOR_ARGS)
                     string(
-                        APPEND
-                        SUBMODULE_VERILATE_ARGS
+                        APPEND SUBMODULE_VERILATE_ARGS
                         " VERILATOR_ARGS -f ${JSUBMODILE_VERILATOR_ARGS}"
                     )
                 endif()
 
                 if(JSUBMODULE_CFLAGS)
                     string(
-                        APPEND
-                        SUBMODULE_VERILATE_ARGS
+                        APPEND SUBMODULE_VERILATE_ARGS
                         " -CFLAGS ${JSUBMODULE_CFLAGS}"
                     )
                 endif()
 
                 file(
-                    APPEND
-                    ${VDIR}/${VERILATE_PREFIX}.cmake
+                    APPEND ${VDIR}/${VERILATE_PREFIX}.cmake
                     "${SUBMODULE_CMAKE}"
                     "verilate(${SUBMODULE_VERILATE_ARGS})\n"
                 )

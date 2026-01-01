@@ -55,7 +55,7 @@ jobs:
     steps:
 
       - name: Download repository archive
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: ${{ inputs.archive }}
           path: ${{ github.workspace }}
@@ -67,7 +67,7 @@ jobs:
           ls -lsha
 
       - name: Cache $CCACHE_DIR
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         env:
           CACHE_KEY: ${{ env.CACHE_BASE_KEY }}-ccache2
         with:
@@ -77,14 +77,18 @@ jobs:
             ${{ env.CACHE_KEY }}-
 
       - name: Install test dependencies
-        run: ./ci/ci-install.bash
+        run: |
+          ./ci/ci-install.bash
+          make venv
 
       - name: Test
         id: run-test
         continue-on-error: true
         env:
           TESTS: ${{ inputs.suite }}
-        run: ./ci/ci-script.bash
+        run: |
+          source .venv/bin/activate
+          ./ci/ci-script.bash
 
       - name: Combine code coverage data
         if: ${{ inputs.dev-gcov }}
@@ -95,7 +99,7 @@ jobs:
 
       - name: Upload code coverage data
         if: ${{ inputs.dev-gcov }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           path: ${{ github.workspace }}/repo/obj_coverage/verilator-${{ inputs.suite }}.info
           name: code-coverage-${{ inputs.suite }}

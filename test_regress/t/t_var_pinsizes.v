@@ -8,9 +8,13 @@
 
 module t (/*AUTOARG*/
    // Outputs
-   o1, o8, o16, o32, o64, o65, o128, o513, o1a2, o94a3, obv1, obv16, obv1_vlt, obv16_vlt,
+   o1, o8, o16, o32, o64, o65, o128, o513, o1a2, o94a3,
+   obv1, obv16, obv1_vlt, obv16_vlt,
+   obu1, obu8, obu16, obu64, obu512, obu1_vlt, obu16_vlt, obu601,
    // Inputs
-   clk, i1, i8, i16, i32, i64, i65, i128, i513, i1a2, i94a3, ibv1, ibv16, ibv1_vlt, ibv16_vlt
+   clk, i1, i8, i16, i32, i64, i65, i128, i513, i1a2, i94a3,
+   ibv1, ibv16, ibv1_vlt, ibv16_vlt,
+   ibu1, ibu8, ibu16, ibu64, ibu512, ibu1_vlt, ibu16_vlt, ibu601
    );
 
    input clk;
@@ -47,6 +51,24 @@ module t (/*AUTOARG*/
    output logic [0:0]   obv1_vlt;
    output logic [15:0]  obv16_vlt;
 
+   input         ibu1 /*verilator sc_biguint*/;
+   input [7:0]   ibu8 /*verilator sc_biguint*/;
+   input [15:0]  ibu16 /*verilator sc_biguint*/;
+   input [63:0]  ibu64 /*verilator sc_biguint*/;
+   input [511:0] ibu512 /*verilator sc_biguint*/;
+   input         ibu1_vlt;
+   input [15:0]  ibu16_vlt;
+   input [600:0] ibu601 /*verilator sc_biguint*/;
+
+   output logic         obu1 /*verilator sc_biguint*/;
+   output logic [7:0]   obu8 /*verilator sc_biguint*/;
+   output logic [15:0]  obu16 /*verilator sc_biguint*/;
+   output logic [63:0]  obu64 /*verilator sc_biguint*/;
+   output logic [511:0] obu512 /*verilator sc_biguint*/;
+   output logic         obu1_vlt;
+   output logic [15:0]  obu16_vlt;
+   output logic [600:0] obu601 /*verilator sc_biguint*/;
+
    always @ (posedge clk) begin
       o1 <= i1;
       o8 <= i8;
@@ -62,6 +84,14 @@ module t (/*AUTOARG*/
       obv16_vlt <= ibv16_vlt;
       o1a2 <= i1a2;
       o94a3 <= i94a3;
+      obu1 <= ibu1;
+      obu8 <= ibu8;
+      obu16 <= ibu16;
+      obu64 <= ibu64;
+      obu512 <= ibu512;
+      obu1_vlt <= ibu1_vlt;
+      obu16_vlt <= ibu16_vlt;
+      obu601 <= ibu601;
    end
 
 endmodule

@@ -1,18 +1,18 @@
-.. Copyright 2003-2025 by Wilson Snyder.
+.. Copyright 2003-2026 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-.. _Simulating:
+.. _simulating:
 
 ************************************
 Simulating (Verilated-Model Runtime)
 ************************************
 
 This section describes items related to simulating, that is, using a
-Verilated model's executable.  For the runtime arguments to a simulated
+Verilated model's executable. For the runtime arguments to a simulated
 model, see :ref:`Simulation Runtime Arguments`.
 
 
-.. _Simulation Summary Report:
+.. _simulation summary report:
 
 Simulation Summary Report
 =========================
@@ -49,9 +49,9 @@ The information in this report is:
 
    Simulated time (if non-zero) divided by wall time. e.g. `123 ns/s` means
    123 simulated nanoseconds took 1 second of wall time; for a model with
-   only a 1 GHz clock that would be equivalent to 123.1 cycles per
-   second. The units are automatically selected to give a number between 1
-   and 1000.  The wall time includes initialization, initial and final
+   only a 1 GHz clock that would be equivalent to 123.1 cycles per second.
+   The units are automatically selected to give a number between 1
+   and 1000. The wall time includes initialization, initial and final
    process blocks, so indicates a slower speed than if the model had a
    longer runtime.
 
@@ -68,30 +68,28 @@ The information in this report is:
    Total memory used during simulation in megabytes.
 
 
-.. _Benchmarking & Optimization:
+.. _benchmarking & optimization:
 
 Benchmarking & Optimization
 ===========================
 
 For best performance, run Verilator with the :vlopt:`-O3`
-:vlopt:`--x-assign fast <--x-assign>`
-:vlopt:`--x-initial fast <--x-initial>`
-:vlopt:`--no-assert` options.  The :vlopt:`-O3`
-option will require a longer time to run Verilator, and
-:vlopt:`--x-assign fast <--x-assign>`
-:vlopt:`--x-initial fast <--x-assign>`
-may increase the risk of reset bugs in trade for performance.  The
-:vlopt:`--no-assert` will suppress checking assertions, which is faster and
-appropriate for known-good models running software, but may hide design
-errors.  See the above documentation for these options.
+:vlopt:`--x-assign fast <--x-assign>` :vlopt:`--x-initial fast
+<--x-initial>` :vlopt:`--no-assert` options. The :vlopt:`-O3` option will
+require a longer time to run Verilator, and :vlopt:`--x-assign fast
+<--x-assign>` :vlopt:`--x-initial fast <--x-assign>` may increase the risk
+of reset bugs in trade for performance. The :vlopt:`--no-assert` will
+suppress checking assertions, which is faster and appropriate for
+known-good models running software, but may hide design errors. See the
+above documentation for these options.
 
 If using Verilated multithreaded, consider overriding Verilator's default
 thread-to-processor assignment by using ``numactl``; see
 :ref:`Multithreading`. Also, consider using profile-guided optimization;
 see :ref:`Thread PGO`.
 
-Minor Verilog code changes can also give big wins.  You should not have any
-:option:`UNOPTFLAT` warnings from Verilator.  Fixing these warnings can
+Minor Verilog code changes can also give big wins. You should not have any
+:option:`UNOPTFLAT` warnings from Verilator. Fixing these warnings can
 result in huge improvements; one user fixed their one UNOPTFLAT warning by
 making a simple change to a clocked latch used to gate clocks and gained a
 60% performance improvement.
@@ -108,14 +106,14 @@ example:
 
 .. code-block:: bash
 
-     make OPT_FAST="-Os -march=native" -f Vour.mk Vour__ALL.a
+   make OPT_FAST="-Os -march=native" -f Vour.mk Vour__ALL.a
 
-OPT_FAST specifies optimization options for those parts of the model
-on the fast path. This is mostly code that is executed every
-cycle. OPT_SLOW applies to slow-path code, which rarely executes, often
-only once at the beginning or end of the simulation. OPT_SLOW is
-ignored if VM_PARALLEL_BUILDS is not 1, in which case all generated code
-will be compiled in a single compilation unit using OPT_FAST. See also the
+OPT_FAST specifies optimization options for those parts of the model on the
+fast path. This is mostly code that is executed every cycle. OPT_SLOW
+applies to slow-path code, which rarely executes, often only once at the
+beginning or end of the simulation. OPT_SLOW is ignored if
+VM_PARALLEL_BUILDS is not 1, in which case all generated code will be
+compiled in a single compilation unit using OPT_FAST. See also the
 Verilator :vlopt:`--output-split` option. The OPT_GLOBAL variable applies
 to common code in the runtime library used by Verilated models (shipped in
 $VERILATOR_ROOT/include). Additional C++ files passed on the verilator
@@ -134,10 +132,10 @@ benefit), but compile times may be excessively large even with medium-sized
 designs. Compilation times can be improved at the expense of simulation
 speed by reducing optimization, for example, with OPT_FAST="-O0". Often
 good simulation speed can be achieved with OPT_FAST="-O1 -fstrict-aliasing"
-but with improved compilation times.  Files controlled by OPT_SLOW have
+but with improved compilation times. Files controlled by OPT_SLOW have
 little effect on performance, and therefore OPT_SLOW is empty by default
 (equivalent to "-O0") for improved compilation speed. In common use cases,
-there should be little benefit in changing OPT_SLOW.  OPT_GLOBAL is set to
+there should be little benefit in changing OPT_SLOW. OPT_GLOBAL is set to
 "-Os" by default, and there should rarely be a need to change it. As the
 runtime library is small compared to many Verilated models, disabling
 optimization on the runtime library should not seriously affect overall
@@ -169,29 +167,29 @@ inlined functions that drive the compiler nuts.)
 You may uncover further tuning possibilities by profiling the Verilog code.
 See :ref:`profiling`.
 
-When done optimizing, please let the author know the results.  We like to
+When done optimizing, please let the author know the results. We like to
 keep tabs on how Verilator compares and may be able to suggest additional
 improvements.
 
 
-.. _Coverage Analysis:
+.. _coverage analysis:
 
 Coverage Analysis
 =================
 
 Verilator supports adding code to the Verilated model to support
-SystemVerilog code coverage.  With :vlopt:`--coverage`, Verilator enables
+SystemVerilog code coverage. With :vlopt:`--coverage`, Verilator enables
 all forms of coverage:
 
-* :ref:`User Coverage`
-* :ref:`Line Coverage`
-* :ref:`Toggle Coverage`
+- :ref:`User Coverage`
+- :ref:`Line Coverage`
+- :ref:`Toggle Coverage`
 
 When a model with coverage is executed, it will create a coverage file for
 collection and later analysis, see :ref:`Coverage Collection`.
 
 
-.. _User Coverage:
+.. _user coverage:
 
 Functional Coverage
 -------------------
@@ -205,18 +203,18 @@ point under the coverage name "DefaultClock":
 
 .. code-block:: sv
 
-    DefaultClock: cover property (@(posedge clk) cyc==3);
+   DefaultClock: cover property (@(posedge clk) cyc==3);
 
 
-.. _Line Coverage:
+.. _line coverage:
 
 Line Coverage
 -------------
 
 With :vlopt:`--coverage` or :vlopt:`--coverage-line`, Verilator will
 automatically add coverage analysis at each code flow change point (e.g.,
-at branches).  At each such branch, a counter is incremented.  At the end
-of a test, the counters, filename, and line number corresponding to each
+at branches). At each such branch, a counter is incremented. At the end of
+a test, the counters, filename, and line number corresponding to each
 counter are written into the coverage file.
 
 Verilator may over-count combinatorial (non-clocked) blocks when those
@@ -225,38 +223,38 @@ disabled; for the most accurate results, do not disable this warning when
 using coverage.
 
 
-.. _Toggle Coverage:
+.. _toggle coverage:
 
 Toggle Coverage
 ---------------
 
 With :vlopt:`--coverage` or :vlopt:`--coverage-toggle`, Verilator will
-automatically add toggle coverage analysis  into the Verilated model.
+automatically add toggle coverage analysis into the Verilated model.
 
 Every bit of every signal in a module has a counter inserted, and the
 counter will increment on every edge change of the corresponding bit.
 
 Signals that are part of tasks or begin/end blocks are considered local
-variables and are not covered.  Signals that begin with underscores (see
+variables and are not covered. Signals that begin with underscores (see
 :vlopt:`--coverage-underscore`), are integers, or are very wide (>256 bits
 total storage across all dimensions, see :vlopt:`--coverage-max-width`) are
 also not covered.
 
 Hierarchy is compressed, so if a module is instantiated multiple times,
 coverage will be summed for that bit across **all** instantiations of that
-module with the same parameter set.  A module instantiated with different
+module with the same parameter set. A module instantiated with different
 parameter values is considered a different module and will get counted
 separately.
 
 Verilator makes a minimally-intelligent decision about what clock domain
-the signal goes to, and only looks for edges in that clock domain.  This
+the signal goes to, and only looks for edges in that clock domain. This
 means that edges may be ignored if it is known that the receiving logic
-could never see the edge.  This algorithm may improve in the future. The
-net result is that coverage may be lower than what would be seen by looking
-at traces, but the coverage is a more accurate representation of the
-quality of stimulus into the design.
+could never see the edge. This algorithm may improve in the future. The net
+result is that coverage may be lower than what would be seen by looking at
+traces, but the coverage is a more accurate representation of the quality
+of stimulus into the design.
 
-There may be edges counted near time zero while the model stabilizes.  It's
+There may be edges counted near time zero while the model stabilizes. It's
 a good practice to zero all coverage just before releasing reset to prevent
 counting such behavior.
 
@@ -265,7 +263,7 @@ A :option:`/*verilator&32;coverage_off*/`
 signals that do not need toggle analysis, such as RAMs and register files.
 
 
-.. _Expression Coverage:
+.. _expression coverage:
 
 Expression Coverage
 -------------------
@@ -276,20 +274,20 @@ truth table how every Boolean truth-table possibility in the expression
 occurred.
 
 Multi-bit expressions are ignored, but sub-expressions with are entirely
-Boolean are analyzed.  Expression coverage does not fully explore the truth
-table of an expression, rather is looks at each term's contribution.  E.g.
+Boolean are analyzed. Expression coverage does not fully explore the truth
+table of an expression, rather is looks at each term's contribution. E.g.
 an AND operation will check coverage for TT, XF and FX.
 
-Some expressions may produce too many cover points.  Verilator limits the
+Some expressions may produce too many cover points. Verilator limits the
 maximum number of cover points per expression to 32, but this may be
 controlled with :vlopt:`--coverage-expr-max`.
 
-Below is an example showing expression coverage produced from `verilator_coverage`
-as applied to the condition expression inside an if statement.  Each line
-shows the minimum number of terms and their values (e.g. `(t1==0 && t2==1)`) needed
-to reach a result for the overall expression (e.g. `=> 1`).  Each line also
-shows the number of times this combination was hit.  Note that individual lines
-are not mutually exclusive.
+Below is an example showing expression coverage produced from
+`verilator_coverage` as applied to the condition expression inside an if
+statement. Each line shows the minimum number of terms and their values
+(e.g. `(t1==0 && t2==1)`) needed to reach a result for the overall
+expression (e.g. `=> 1`). Each line also shows the number of times this
+combination was hit. Note that individual lines are not mutually exclusive.
 
 .. code-block::
 
@@ -301,7 +299,7 @@ are not mutually exclusive.
    -000003  point: comment=(t2==0 && t4==0) => 0 hier=top.t
    -000002  point: comment=(t3==0 && t4==1) => 1 hier=top.t
 
-.. _Suppressing Coverage:
+.. _suppressing coverage:
 
 Suppressing Coverage
 --------------------
@@ -313,11 +311,11 @@ and enable coverage respectively around that block. Or, use the
 
 Verilator automatically disables coverage of lines and branches with a
 $stop in them, as it is assumed that $stop branches contain an error check
-that should not occur.  A :option:`/*verilator&32;coverage_block_off*/`
+that should not occur. A :option:`/*verilator&32;coverage_block_off*/`
 metacomment will perform a similar function on any code in that block or
 below.
 
-.. _Coverage Collection:
+.. _coverage collection:
 
 Coverage Collection
 -------------------
@@ -332,17 +330,17 @@ To get the coverage data from the model, write the coverage with either:
    :vlopt:`+verilator+coverage+file+\<filename\>`.
 
 2. In the user wrapper code, typically at the end once a test passes, call
-   :code:`Verilated::threadContextp()->coveragep()->write` with an argument
-   of the filename for the coverage data file to write coverage data to
+   ``Verilated::threadContextp()->coveragep()->write`` with an argument of
+   the filename for the coverage data file to write coverage data to
    (typically "logs/coverage.dat").
 
 Run each of your tests in different directories, potentially in parallel.
-Each test will create the file specified above,
-e.g. :file:`logs/coverage.dat`.
+Each test will create the file specified above, e.g.
+:file:`logs/coverage.dat`.
 
 After running all of the tests, execute the :command:`verilator_coverage`
-command, passing arguments pointing to the filenames of all the
-individual coverage files.  :command:`verilator_coverage` will read the
+command, passing arguments pointing to the filenames of all the individual
+coverage files. :command:`verilator_coverage` will read the
 :file:`logs/coverage.dat` file(s), and create an annotated source code
 listing showing code coverage details.
 
@@ -357,18 +355,17 @@ Additional options of :command:`verilator_coverage` allow for the merging
 of coverage data files or other transformations.
 
 Info files can be written by verilator_coverage for import to
-:command:`lcov`.  This enables using :command:`genhtml` for HTML reports
-and importing reports to sites such as `https://codecov.io
-<https://codecov.io>`_.
+:command:`lcov`. This enables using :command:`genhtml` for HTML reports and
+importing reports to sites such as https://codecov.io.
 
 
-.. _Profiling:
+.. _profiling:
 
 Code Profiling
 ==============
 
 The Verilated model may be code-profiled using GCC or Clang's C++ profiling
-mechanism.  Verilator provides additional flags to help map the resulting
+mechanism. Verilator provides additional flags to help map the resulting
 C++ profiling results back to the original Verilog code responsible for the
 profiled C++ code functions.
 
@@ -387,13 +384,13 @@ To use profiling:
    on which most of the time is being spent.
 
 
-.. _Execution Profiling:
+.. _execution profiling:
 
 Execution Profiling
 ===================
 
-For performance optimization, it is helpful to see statistics and visualize how
-execution time is distributed in a verilated model.
+For performance optimization, it is helpful to see statistics and visualize
+how execution time is distributed in a verilated model.
 
 With the :vlopt:`--prof-exec` option, Verilator will:
 
@@ -403,7 +400,7 @@ With the :vlopt:`--prof-exec` option, Verilator will:
   specified with :vlopt:`+verilator+prof+exec+file+\<filename\>`.
 
 * In multithreaded models, add code to record each macro-task's start and
-  end time across several calls to eval. (What is a macro-task?  See the
+  end time across several calls to eval. (What is a macro-task? See the
   Verilator internals document (:file:`docs/internals.rst` in the
   distribution.)
 
@@ -414,16 +411,19 @@ saved profiling file into a visual format and produce related statistics.
 
    Example verilator_gantt output, as viewed with GTKWave.
 
-   The measured_parallelism shows the number of CPUs being used at a given moment.
+   The measured_parallelism shows the number of CPUs being used at a given
+   moment.
 
-   The cpu_thread section shows which thread is executing on each physical CPU.
+   The cpu_thread section shows which thread is executing on each physical
+   CPU.
 
-   The thread_mtask section shows which macro-task is running on a given thread.
+   The thread_mtask section shows which macro-task is running on a given
+   thread.
 
 For more information, see :command:`verilator_gantt`.
 
 
-.. _Profiling ccache efficiency:
+.. _profiling ccache efficiency:
 
 Profiling ccache efficiency
 ===========================
@@ -431,27 +431,28 @@ Profiling ccache efficiency
 The Verilator-generated Makefile supports basic profiling of ccache
 behavior during the build. This can be used to track down files that might
 be unnecessarily rebuilt, though as of today, even minor code changes will
-usually require rebuilding a large number of files. Improving ccache
-efficiency during the edit/compile/test loop is an active development area.
+usually require rebuilding a large number of files.
 
 To get a basic report of how well ccache is doing, add the `ccache-report`
 target when invoking the generated Makefile:
 
 .. code-block:: bash
 
-     make -C obj_dir -f Vout.mk Vout ccache-report
+   make -C obj_dir -f Vout.mk Vout ccache-report
 
 This will print a report based on all executions of ccache during this
 invocation of Make. The report is also written to a file, in this example
 `obj_dir/Vout__cache_report.txt`.
 
-To use the `ccache-report` target, at least one other explicit build target
-must be specified, and OBJCACHE must be set to 'ccache'.
+To use the `ccache-report` target, OBJCACHE must be set to 'ccache' (this
+is done by `configure` if 'ccache' is installed). If no other explicit
+build targets are specified, `cchache-report` will build the `default`
+target.
 
 This feature is currently experimental and might change in subsequent
 releases.
 
-.. _Save/Restore:
+.. _save/restore:
 
 Save/Restore
 ============
@@ -459,32 +460,32 @@ Save/Restore
 The intermediate state of a Verilated model may be saved so that it may
 later be restored.
 
-To enable this feature, use :vlopt:`--savable`.  There are limitations in
+To enable this feature, use :vlopt:`--savable`. There are limitations in
 what language features are supported along with :vlopt:`--savable`; if you
 attempt to use an unsupported feature, Verilator will throw an error.
 
 To use save/restore, the user wrapper code must create a VerilatedSerialize
-or VerilatedDeserialze object and then call the :code:`<<` or :code:`>>`
-operators on the generated model and any other data the process needs to be
-saved/restored.  These functions are not thread-safe and are typically
+or VerilatedDeserialze object and then call the ``<<`` or ``>>`` operators
+on the generated model and any other data the process needs to be
+saved/restored. These functions are not thread-safe and are typically
 called only by a main thread.
 
 For example:
 
 .. code-block:: C++
 
-     void save_model(const char* filenamep) {
-         VerilatedSave os;
-         os.open(filenamep);
-         os << main_time;  // user code must save the timestamp
-         os << *topp;
-     }
-     void restore_model(const char* filenamep) {
-         VerilatedRestore os;
-         os.open(filenamep);
-         os >> main_time;
-         os >> *topp;
-     }
+   void save_model(const char* filenamep) {
+       VerilatedSave os;
+       os.open(filenamep);
+       os << main_time;  // user code must save the timestamp
+       os << *topp;
+   }
+   void restore_model(const char* filenamep) {
+       VerilatedRestore os;
+       os.open(filenamep);
+       os >> main_time;
+       os >> *topp;
+   }
 
 
 Profile-Guided Optimization
@@ -494,9 +495,9 @@ Profile-guided optimization is the technique where profiling data is
 collected by running your simulation executable; then this information is
 used to guide the next Verilation or compilation.
 
-There are two forms of profile-guided optimizations.  Unfortunately, for
-best results, they must each be performed from the highest level code to the
-lowest, which means performing them separately and in this order:
+There are two forms of profile-guided optimizations. Unfortunately, for
+best results, they must each be performed from the highest level code to
+the lowest, which means performing them separately and in this order:
 
 * :ref:`Thread PGO`
 * :ref:`Compiler PGO`
@@ -506,25 +507,25 @@ toggle rate PGO, branch prediction PGO, statement execution time PGO, or
 others, as they prove beneficial.
 
 
-.. _Thread PGO:
+.. _thread pgo:
 
 Thread Profile-Guided Optimization
 ----------------------------------
 
-Verilator supports profile-guided optimization (Verilation) of multithreaded
-models (Thread PGO) to improve performance.
+Verilator supports profile-guided optimization (Verilation) of
+multithreaded models (Thread PGO) to improve performance.
 
 When using multithreading, Verilator computes how long macro tasks take and
-tries to balance those across threads.  (What is a macro-task?  See the
+tries to balance those across threads. (What is a macro-task? See the
 Verilator internals document (:file:`docs/internals.rst` in the
-distribution.)  If the estimations are incorrect, the threads will not be
-balanced, leading to decreased performance.  Thread PGO allows collecting
+distribution.) If the estimations are incorrect, the threads will not be
+balanced, leading to decreased performance. Thread PGO allows collecting
 profiling data to replace the estimates and better optimize these
 decisions.
 
-To use Thread PGO, Verilate the model with the :vlopt:`--prof-pgo` option. This
-will code to the verilated model to save profiling data for profile-guided
-optimization.
+To use Thread PGO, Verilate the model with the :vlopt:`--prof-pgo` option.
+This will code to the verilated model to save profiling data for
+profile-guided optimization.
 
 Run the model executable. When the executable exits, it will create a
 profile.vlt file.
@@ -532,38 +533,38 @@ profile.vlt file.
 Rerun Verilator, optionally omitting the :vlopt:`--prof-pgo` option and
 adding the :file:`profile.vlt` generated earlier to the command line.
 
-Note there is no Verilator equivalent to GCC's --fprofile-use.  Verilator's
+Note there is no Verilator equivalent to GCC's --fprofile-use. Verilator's
 profile data file (:file:`profile.vlt`) can be placed directly on the
 verilator command line without any option prefix.
 
 If results from multiple simulations are to be used in generating the
 optimization, multiple simulation's profile.vlt may be concatenated
 externally, or each file may be fed as separate command line options into
-Verilator.  Verilator will sum the profile results, so a long-running test
+Verilator. Verilator will sum the profile results, so a long-running test
 will have more weight for optimization proportionally than a
 shorter-running test.
 
-If you provide any profile feedback data to Verilator and it cannot use
-it, it will issue the :option:`PROFOUTOFDATE` warning that threads were
-scheduled using estimated costs.  This usually indicates that the profile
+If you provide any profile feedback data to Verilator and it cannot use it,
+it will issue the :option:`PROFOUTOFDATE` warning that threads were
+scheduled using estimated costs. This usually indicates that the profile
 data was generated from a different Verilog source code than Verilator is
 currently running against. Therefore, repeat the data collection phase to
 create new profiling data, then rerun Verilator with the same input source
 files and that new profiling data.
 
 
-.. _Compiler PGO:
+.. _compiler pgo:
 
 Compiler Profile-Guided Optimization
 ------------------------------------
 
 GCC and Clang support compiler profile-guided optimization (PGO). This
-optimizes any C/C++ program, including Verilated code.  Using compiler PGO
+optimizes any C/C++ program, including Verilated code. Using compiler PGO
 typically yields improvements of 5-15% on both single-threaded and
 multithreaded models.
 
 Please see the appropriate compiler documentation to use PGO with GCC or
-Clang.  The process in GCC 10 was as follows:
+Clang. The process in GCC 10 was as follows:
 
 1. Compile the Verilated model with the compiler's "-fprofile-generate"
    flag:
@@ -573,8 +574,8 @@ Clang.  The process in GCC 10 was as follows:
       verilator [whatever_flags] --make \
           -CFLAGS -fprofile-generate -LDFLAGS -fprofile-generate
 
-   Or, if calling make yourself, add -fprofile-generate appropriately to your
-   Makefile.
+   Or, if calling make yourself, add -fprofile-generate appropriately to
+   your Makefile.
 
 2. Run your simulation. This will create \*.gcda file(s) in the same
    directory as the source files.
@@ -601,19 +602,18 @@ Clang.  The process in GCC 10 was as follows:
    your Makefile.
 
 Clang and GCC also support -fauto-profile, which uses sample-based
-feedback-directed optimization.  See the appropriate compiler
-documentation.
+feedback-directed optimization. See the appropriate compiler documentation.
 
 
-.. _Runtime Debugging:
+.. _runtime debugging:
 
 Runtime Debugging
 =================
 
 To debug a Verilated executable, Verilate with :vlopt:`--runtime-debug`.
 This will instruct the compiler to insert debugger, and enable various
-library assertions. These options slow down the executable, so do this
-only when debugging.
+library assertions. These options slow down the executable, so do this only
+when debugging.
 
 If you are using your own Makefiles, adapt appropriately to pass the
 options documented under :vlopt:`--runtime-debug` to the compiler and
@@ -622,18 +622,18 @@ linker.
 Once you have a debugging-enabled executable, run it using the the standard
 GNU debugger ``gdb`` or a similar tool, and create a backtrace; e.g.:
 
-   .. code-block:: bash
+.. code-block:: bash
 
-      gdb obj_dir/Vtop
-        run {Vtop_command_arguments}
-        {Vtop prints output, perhaps a segmentation faults}
-        bt
+   gdb obj_dir/Vtop
+     run {Vtop_command_arguments}
+     {Vtop prints output, perhaps a segmentation faults}
+     bt
 
 Rarely the bug may disappear with :vlopt:`--runtime-debug`; if so, try
 instead using the sub-options that :vlopt:`--runtime-debug` documents, to
-find the maximum subset that still shows the issue.  E.g. it is likely that
+find the maximum subset that still shows the issue. E.g. it is likely that
 using `-CFLAGS -D_GLIBCXX_DEBUG` will not hide any bug, so may be used.
 
 Using :vlopt:`--runtime-debug` or `-CFLAGS -DVL_DEBUG=1` will only print a
-message if something goes wrong.  To enable debug print messages at
-runtime, additionally use the :vlopt:`+verilator+debug` runtime option.
+message if something goes wrong. To enable debug print messages at runtime,
+additionally use the :vlopt:`+verilator+debug` runtime option.

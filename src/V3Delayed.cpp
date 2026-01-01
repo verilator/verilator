@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -1229,7 +1229,7 @@ class DelayedVisitor final : public VNVisitor {
                 // Replace with result
                 currp->replaceWith(exprp->resultp()->unlinkFrBack());
                 // Get rid of the AstExprStmt
-                VL_DO_DANGLING(pushDeletep(currp), currp);
+                VL_DO_DANGLING2(pushDeletep(currp), currp, exprp);
             } else if (AstVarRef* const refp = VN_CAST(currp, VarRef)) {
                 // Ignore reads (e.g.: '_[*here*] <= _')
                 if (refp->access().isReadOnly()) return;

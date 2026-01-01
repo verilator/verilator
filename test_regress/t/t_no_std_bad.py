@@ -11,8 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-test.lint(fails=True,
-          verilator_flags2=["--no-std", "--binary -Wall"],
-          expect_filename=test.golden_filename)
+test.lint(fails=True, verilator_flags2=["--no-std", "-Wall"], expect_filename=test.golden_filename)
 
 test.passes()

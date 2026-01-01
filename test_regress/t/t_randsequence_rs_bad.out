@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_randsequence_rs_bad.v:14:10: Unsupported: randsequence under randsequence
+                                                   : ... note: In instance 't'
+   14 |          randsequence()
+      |          ^~~~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

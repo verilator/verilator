@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -38,6 +38,7 @@
 
 class AstNetlist;
 class V3HierGraph;
+class V3LibMap;
 class V3ThreadPool;
 
 //======================================================================
@@ -103,6 +104,8 @@ class V3Global final {
     V3HierGraph* m_hierGraphp = nullptr;
     // Thread Pool, nullptr unless 'verilatedJobs' is known, set via threadPoolp(V3ThreadPool*)
     V3ThreadPool* m_threadPoolp = nullptr;
+    // Library Mapping, nullptr unless --libmap is used
+    V3LibMap* m_libMapp = nullptr;
     VWidthMinUsage m_widthMinUsage
         = VWidthMinUsage::LINT_WIDTH;  // What AstNode::widthMin() is used for
 
@@ -125,6 +128,7 @@ class V3Global final {
     bool m_hasForceableSignals = false;  // Need to apply V3Force pass
     bool m_hasSystemCSections = false;  // Has AstSystemCSection that need to be emitted
     bool m_useParallelBuild = false;  // Use parallel build for model
+    bool m_useRandSequence = false;  // Has `randsequence`
     bool m_useRandomizeMethods = false;  // Need to define randomize() class methods
     uint64_t m_currentHierBlockCost = 0;  // Total cost of this hier block, used for scheduling
 
@@ -151,6 +155,7 @@ public:
 
     // ACCESSORS (general)
     AstNetlist* rootp() const VL_MT_SAFE { return m_rootp; }
+    V3LibMap* libMapp() const VL_PURE { return m_libMapp; }
     V3ThreadPool* threadPoolp() const VL_PURE { return m_threadPoolp; }
     void threadPoolp(V3ThreadPool* threadPoolp) {
         UASSERT(!m_threadPoolp, "attempted to create multiple threadPool singletons");
@@ -203,6 +208,8 @@ public:
     void hierGraphp(V3HierGraph* graphp) { m_hierGraphp = graphp; }
     bool useParallelBuild() const { return m_useParallelBuild; }
     void useParallelBuild(bool flag) { m_useParallelBuild = flag; }
+    bool useRandSequence() const { return m_useRandSequence; }
+    void useRandSequence(bool flag) { m_useRandSequence = flag; }
     bool useRandomizeMethods() const { return m_useRandomizeMethods; }
     void useRandomizeMethods(bool flag) { m_useRandomizeMethods = flag; }
     void saveJsonPtrFieldName(const std::string& fieldName);

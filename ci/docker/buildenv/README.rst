@@ -1,7 +1,7 @@
-.. Copyright 2003-2025 by Wilson Snyder.
+.. Copyright 2003-2026 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-.. _Verilator Build Docker Container:
+.. _verilator build docker container:
 
 Verilator Build Docker Container
 ================================
@@ -9,11 +9,11 @@ Verilator Build Docker Container
 This Verilator Build Docker Container is set up to compile and test a
 Verilator build. It uses the following parameters:
 
--  Source repository (default: https://github.com/verilator/verilator)
+- Source repository (default: https://github.com/verilator/verilator)
 
--  Source revision (default: master)
+- Source revision (default: master)
 
--  Compiler (GCC 13.3.0, clang 18.1.3, default: 13.3.0)
+- Compiler (GCC 13.3.0, clang 18.1.3, default: 13.3.0)
 
 The container is published as ``verilator/verilator-buildenv`` on `docker
 hub
@@ -37,8 +37,9 @@ To change the compiler use the `-e` switch to pass environment variables:
 
    docker run -ti -e CXX=clang++-18 verilator/verilator-buildenv test
 
-The tests, that involve numactl are not working due to security restrictions.
-To run those too, add the CAP_SYS_NICE capability during the start of the container:
+The tests, that involve numactl are not working due to security
+restrictions. To run those too, add the CAP_SYS_NICE capability during the
+start of the container:
 
 ::
 

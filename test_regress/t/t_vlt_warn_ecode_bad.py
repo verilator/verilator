@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t/t_vlt_warn.v"
 
-test.lint(verilator_flags2=["--lint-only t/t_vlt_warn_ecode_bad.vlt"],
+test.lint(verilator_flags2=["t/t_vlt_warn_ecode_bad.vlt"],
           fails=True,
           expect_filename=test.golden_filename)
 

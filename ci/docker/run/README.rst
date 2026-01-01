@@ -1,4 +1,4 @@
-.. Copyright 2003-2025 by Wilson Snyder.
+.. Copyright 2003-2026 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 Verilator Executable Docker Container
@@ -11,12 +11,12 @@ easily as a docker image, e.g.:
 
    docker run -ti verilator/verilator:latest --version
 
-This will pull the container from `docker hub
-<https://hub.docker.com/r/verilator/verilator>`_, run the latest Verilator and print
-Verilator's version.
+This will pull the container from `Docker Hub
+<https://hub.docker.com/r/verilator/verilator>`_, run the latest Verilator
+and print Verilator's version.
 
-Containers are automatically built and pushed to docker hub for all released versions, so you may
-easily compare results across versions, e.g.:
+Containers are automatically built and pushed to docker hub for all
+released versions, so you may easily compare results across versions, e.g.:
 
 ::
 
@@ -38,7 +38,7 @@ or
    ./verilator-docker 4.030 --cc test.v
 
 If you prefer not to use ``verilator-docker`` you must give the container
-access to your files as a volume with appropriate user rights.  For example
+access to your files as a volume with appropriate user rights. For example
 to Verilate test.v:
 
 ::
@@ -68,9 +68,9 @@ Internals
 The Dockerfile builds Verilator and removes the tree when completed to
 reduce the image size. The entrypoint is a wrapper script
 (``verilator-wrap.sh``). That script 1. calls Verilator, and 2. copies the
-Verilated runtime files to the ``obj_dir`` or the ``-Mdir``
-respectively. This allows the user to have the files to they may later
-build the C++ output with the matching runtime files. The wrapper also
-patches the Verilated Makefile accordingly.
+Verilated runtime files to the ``obj_dir`` or the ``-Mdir`` respectively.
+This allows the user to have the files to they may later build the C++
+output with the matching runtime files. The wrapper also patches the
+Verilated Makefile accordingly.
 
 A hook is also defined and run by Docker Hub via automated builds.

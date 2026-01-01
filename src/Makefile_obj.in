@@ -7,7 +7,7 @@
 #
 #*****************************************************************************
 #
-# Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -232,6 +232,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3ActiveTop.o \
   V3Assert.o \
   V3AssertPre.o \
+  V3AssertProp.o \
   V3Begin.o \
   V3Branch.o \
   V3CCtors.o \
@@ -283,13 +284,16 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Gate.o \
   V3HierBlock.o \
   V3Inline.o \
+  V3InlineCFuncs.o \
   V3Inst.o \
   V3InstrCount.o \
   V3Interface.o \
+  V3LibMap.o \
   V3Life.o \
   V3LifePost.o \
   V3LinkCells.o \
   V3LinkDot.o \
+  V3LinkDotIfaceCapture.o \
   V3LinkInc.o \
   V3LinkJump.o \
   V3LinkLValue.o \
@@ -308,6 +312,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Param.o \
   V3Premit.o \
   V3ProtectLib.o \
+  V3RandSequence.o \
   V3Randomize.o \
   V3Reloop.o \
   V3Sampled.o \

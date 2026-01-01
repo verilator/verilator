@@ -14,7 +14,7 @@ test.top_filename = "t/t_no_std_bad.v"
 test.golden_filename = "t/t_no_std_bad.out"
 
 test.lint(fails=True,
-          verilator_flags2=["--no-std-package", "--binary -Wall"],
+          verilator_flags2=["--no-std-package", "-Wall"],
           expect_filename=test.golden_filename)
 
 test.passes()

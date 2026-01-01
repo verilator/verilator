@@ -1,11 +1,11 @@
-.. Copyright 2003-2025 by Wilson Snyder.
+.. Copyright 2003-2026 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 *****
 Files
 *****
 
-.. _Files in the Distribution:
+.. _files in the distribution:
 
 Files in the Git Tree
 =====================
@@ -28,7 +28,7 @@ Verilator:
    test_regress                => Internal tests
 
 
-.. _Files Read/Written:
+.. _files read/written:
 
 Files Read/Written
 ==================
@@ -42,33 +42,33 @@ For --cc/--sc, it creates:
 
 .. list-table::
 
-   * - *{prefix}*\ .json
+   * - *{prefix}*.json
      - JSON build definition compiling (from --make json)
-   * - *{prefix}*\ .mk
+   * - *{prefix}*.mk
      - Make include file for compiling (from --make gmake)
    * - *{prefix}*\ _classes.mk
      - Make include file with class names (from --make gmake)
-   * - *{prefix}*\ .h
+   * - *{prefix}*.h
      - Model header
-   * - *{prefix}*\ .cpp
+   * - *{prefix}*.cpp
      - Model C++ file
    * - *{prefix}*\ ___024root.h
      - Top-level internal header file (from SystemVerilog $root)
    * - *{prefix}*\ ___024root.cpp
      - Top-level internal C++ file (from SystemVerilog $root)
-   * - *{prefix}*\ ___024root\ *{__n}*\ .cpp
+   * - *{prefix}*\ ___024root\ *{__n}*.cpp
      - Additional top-level internal C++ files
-   * - *{prefix}*\ ___024root__Slow\ *{__n}*\ .cpp
+   * - *{prefix}*\ ___024root__Slow\ *{__n}*.cpp
      - Infrequent cold routines
-   * - *{prefix}*\ ___024root__Trace\ *{__n}*\ .cpp
+   * - *{prefix}*\ ___024root__Trace\ *{__n}*.cpp
      - Wave file generation code (from --trace-\*)
-   * - *{prefix}*\ ___024root__Trace__Slow\ *{__n}*\ .cpp
+   * - *{prefix}*\ ___024root__Trace__Slow\ *{__n}*.cpp
      - Wave file generation code (from --trace-\*)
    * - *{prefix}*\ __Dpi.h
      - DPI import and export declarations (from --dpi)
    * - *{prefix}*\ __Dpi.cpp
      - Global DPI export wrappers (from --dpi)
-   * - *{prefix}*\ __Dpi_Export\ *{__n}*\ .cpp
+   * - *{prefix}*\ __Dpi_Export\ *{__n}*.cpp
      - DPI export wrappers scoped to this particular model (from --dpi)
    * - *{prefix}*\ __Inlines.h
      - Inline support functions
@@ -76,11 +76,11 @@ For --cc/--sc, it creates:
      - Global symbol table header
    * - *{prefix}*\ __Syms.cpp
      - Global symbol table C++
-   * - *{prefix}{each_verilog_module}*\ .h
+   * - *{prefix}{each_verilog_module}*.h
      - Lower level internal header files
-   * - *{prefix}{each_verilog_module}*\ .cpp
+   * - *{prefix}{each_verilog_module}*.cpp
      - Lower level internal C++ files
-   * - *{prefix}{each_verilog_module}{__n}*\ .cpp
+   * - *{prefix}{each_verilog_module}{__n}*.cpp
      - Additional lower C++ files
 
 For --hierarchical mode, it creates:
@@ -106,13 +106,13 @@ In specific debug and other modes, it also creates:
 
 .. list-table::
 
-   * - *{prefix}*\ .sarif
+   * - *{prefix}*.sarif
      - SARIF diagnostics (from --diagnostics-sarif)
-   * - *{prefix}*\ .tree.json
+   * - *{prefix}*.tree.json
      - JSON tree information (from --json-only)
-   * - *{prefix}*\ .tree.meta.json
+   * - *{prefix}*.tree.meta.json
      - JSON tree metadata (from --json-only)
-   * - *{prefix}*\ .xml
+   * - *{prefix}*.xml
      - XML tree information (from --xml)
    * - *{prefix}*\ __cdc.txt
      - Clock Domain Crossing checks (from --cdc)
@@ -124,30 +124,30 @@ In specific debug and other modes, it also creates:
      - Make dependencies (from -MMD)
    * - *{prefix}*\ __verFiles.dat
      - Timestamps (from --skip-identical)
-   * - *{prefix}{misc}*\ .dot
+   * - *{prefix}{misc}*.dot
      - Debugging graph files (from --debug)
-   * - *{prefix}{misc}*\ .tree
+   * - *{prefix}{misc}*.tree
      - Debugging files (from --debug)
-   * - *{prefix}*\ __inputs\ .vpp
+   * - *{prefix}*\ __inputs.vpp
      - Pre-processed verilog for all files (from --debug)
-   * - *{prefix}*\ _ *{each_verilog_base_filename}*\ .vpp
+   * - *{prefix}*\ _ *{each_verilog_base_filename}*.vpp
      - Pre-processed verilog for each file (from --debug)
 
 After running Make, the C++ compiler may produce the following:
 
 .. list-table::
 
-   * - verilated{misc}*\ .d
+   * - verilated{misc}*.d
      - Intermediate dependencies
-   * - verilated{misc}*\ .o
+   * - verilated{misc}*.o
      - Intermediate objects
-   * - {mod_prefix}{misc}*\ .d
+   * - {mod_prefix}{misc}*.d
      - Intermediate dependencies
-   * - {mod_prefix}{misc}*\ .o
+   * - {mod_prefix}{misc}*.o
      - Intermediate objects
    * - *{prefix}*\
      - Final executable (from --exe)
-   * - lib\ *{prefix}*\ .a
+   * - lib\ *{prefix}*.a
      - Final archive (default lib mode)
    * - libverilated.a
      - Runtime for verilated model (default lib mode)
@@ -155,9 +155,9 @@ After running Make, the C++ compiler may produce the following:
      - Library of all Verilated objects
    * - *{prefix}*\ __ALL.cpp
      - Include of all code for single compile
-   * - *{prefix}{misc}*\ .d
+   * - *{prefix}{misc}*.d
      - Intermediate dependencies
-   * - *{prefix}{misc}*\ .o
+   * - *{prefix}{misc}*.o
      - Intermediate objects
 
 The Verilated executable may produce the following:

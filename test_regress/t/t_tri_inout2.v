@@ -43,7 +43,7 @@ module t (/*AUTOARG*/
       end else begin
         // not driving b
         // a should be 1 (pullup)
-        // y and yfix shold be 1
+        // y and yfix should be 1
         if (a!=1 || y != 1 || y_fixed != 1) begin
             $display( "Expected a,y,yfix == 1");
             $stop;

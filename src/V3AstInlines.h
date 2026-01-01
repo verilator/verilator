@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -160,7 +160,13 @@ bool AstVar::sameNode(const AstNode* samep) const {
 }
 
 AstVarRef::AstVarRef(FileLine* fl, AstVar* varp, const VAccess& access)
-    : ASTGEN_SUPER_VarRef(fl, varp, access) {}
+    : ASTGEN_SUPER_VarRef(fl, varp, access) {
+    if (v3Global.assertDTypesResolved()) {
+        UASSERT_OBJ(varp, this, "Require non-null varp post resolution");
+    } else if (varp) {
+        m_name = varp->name();
+    }
+}
 AstVarRef::AstVarRef(FileLine* fl, AstNodeModule* pkgp, AstVar* varp, const VAccess& access)
     : AstVarRef{fl, varp, access} {
     classOrPackagep(pkgp);
@@ -171,7 +177,7 @@ AstVarRef::AstVarRef(FileLine* fl, AstVarScope* varscp, const VAccess& access)
     varScopep(varscp);
 }
 
-string AstVarRef::name() const { return varp() ? varp()->name() : "<null>"; }
+string AstVarRef::name() const { return varp() ? varp()->name() : nameThis(); }
 
 bool AstVarRef::sameNode(const AstVarRef* samep) const {
     if (varScopep()) {

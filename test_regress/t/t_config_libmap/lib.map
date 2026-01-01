@@ -1,0 +1,20 @@
+// -*- Verilog -*-
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2025 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
+
+//    lib.map file:
+
+library rtllib m?.v, m*.sv; // wildcard match (?, *)
+library rtllib2 sub/; // include directory match
+library rtllib5 m5.v; // explicit match
+
+// Note this does not start a comment
+library gatelib ./*.vg;
+// */
+
+config cfg;
+   design t;
+endconfig

@@ -4,7 +4,7 @@
 #
 #*****************************************************************************
 #
-# Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -43,6 +43,7 @@ set(HEADERS
     V3ActiveTop.h
     V3Assert.h
     V3AssertPre.h
+    V3AssertProp.h
     V3Ast.h
     V3AstAttr.h
     V3AstInlines.h
@@ -113,6 +114,7 @@ set(HEADERS
     V3Hasher.h
     V3HierBlock.h
     V3Inline.h
+    V3InlineCFuncs.h
     V3Inst.h
     V3InstrCount.h
     V3Interface.h
@@ -122,6 +124,7 @@ set(HEADERS
     V3LifePost.h
     V3LinkCells.h
     V3LinkDot.h
+    V3LinkDotIfaceCapture.h
     V3LinkInc.h
     V3LinkJump.h
     V3LinkLValue.h
@@ -155,6 +158,7 @@ set(HEADERS
     V3PreShell.h
     V3Premit.h
     V3ProtectLib.h
+    V3RandSequence.h
     V3Randomize.h
     V3Reloop.h
     V3Rtti.h
@@ -207,6 +211,7 @@ set(COMMON_SOURCES
     V3ActiveTop.cpp
     V3Assert.cpp
     V3AssertPre.cpp
+    V3AssertProp.cpp
     V3Ast.cpp
     V3AstNodes.cpp
     V3Begin.cpp
@@ -283,13 +288,16 @@ set(COMMON_SOURCES
     V3Hasher.cpp
     V3HierBlock.cpp
     V3Inline.cpp
+    V3InlineCFuncs.cpp
     V3Inst.cpp
     V3InstrCount.cpp
     V3Interface.cpp
+    V3LibMap.cpp
     V3Life.cpp
     V3LifePost.cpp
     V3LinkCells.cpp
     V3LinkDot.cpp
+    V3LinkDotIfaceCapture.cpp
     V3LinkInc.cpp
     V3LinkJump.cpp
     V3LinkLValue.cpp
@@ -317,6 +325,7 @@ set(COMMON_SOURCES
     V3PreShell.cpp
     V3Premit.cpp
     V3ProtectLib.cpp
+    V3RandSequence.cpp
     V3Randomize.cpp
     V3Reloop.cpp
     V3Sampled.cpp
@@ -389,8 +398,7 @@ add_custom_command(
         --dfgdef V3DfgVertices.h --classes
 )
 list(
-    APPEND
-    GENERATED_FILES
+    APPEND GENERATED_FILES
     V3Ast__gen_forward_class_decls.h
     V3Dfg__gen_forward_class_decls.h
 )

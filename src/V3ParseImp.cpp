@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -161,7 +161,7 @@ void V3ParseImp::lexVerilatorCmtLintRestore(FileLine* fl) {
     m_lexLintState.pop_back();
 }
 
-void V3ParseImp::lexVerilatorCmtLint(FileLine* fl, const char* textp, bool warnOff) {
+void V3ParseImp::lexVerilatorCmtLint(FileLine* fl, const char* textp, bool turnOff) {
     const char* sp = textp;
     while (*sp && !std::isspace(*sp)) ++sp;
     while (*sp && std::isspace(*sp)) ++sp;
@@ -171,7 +171,7 @@ void V3ParseImp::lexVerilatorCmtLint(FileLine* fl, const char* textp, bool warnO
     string::size_type pos;
     if ((pos = msg.find('*')) != string::npos) msg.erase(pos);
     // Use parsep()->lexFileline() as want to affect later FileLine's warnings
-    const string err = parsep()->lexFileline()->warnOffParse(msg, warnOff);
+    const string err = parsep()->lexFileline()->warnOffParse(msg, turnOff);
     if (!err.empty())
         fl->v3error("Unknown verilator lint message code: '" << err << "', in '" << textp << "'");
 }
@@ -293,16 +293,18 @@ void V3ParseImp::preprocDumps(std::ostream& os, bool forInputs) {
 }
 
 void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool inLibrary,
-                           const string& libname,
+                           bool inLibMap, const string& libname,
                            const string& errmsg) {  // "" for no error, make fake node
     const string nondirname = V3Os::filenameNonDir(modfilename);
     const string modname = V3Os::filenameNonDirExt(modfilename);
 
-    UINFO(2, __FUNCTION__ << ": " << modname << (inLibrary ? " [LIB]" : ""));
+    UINFO(2, __FUNCTION__ << ": " << modname << (inLibrary ? " [LIB]" : "")
+                          << (inLibMap ? " [LIBMAP]" : ""));
     m_lexFileline = new FileLine{fileline};
     m_lexFileline->newContent();
     m_bisonLastFileline = m_lexFileline;
     m_inLibrary = inLibrary;
+    m_inLibMap = inLibMap;
     m_libname = libname;
 
     // Preprocess into m_ppBuffer
@@ -373,8 +375,29 @@ void V3ParseImp::dumpInputsFile() {
         *ofp << "// Blank lines and `line directives have been removed\n";
         *ofp << "//\n";
         V3Stats::infoHeader(*ofp, "// ");
+        *ofp << '\n';
+        for (const auto& pair : v3Global.opt.allArgs()) {
+            if (!pair.second) continue;
+            *ofp << "// verilator fargs";
+            for (const std::string& arg : pair.first) {
+                // Apply some quoting, pretty basic, update as needed ...
+                std::string quoted;
+                bool quoteIt = false;
+                for (const char c : arg) {
+                    if (c == '"' || c == '\\') {
+                        quoteIt = true;
+                        quoted += '\\';
+                    } else if (std::isspace(c)) {
+                        quoteIt = true;
+                    }
+                    quoted += c;
+                }
+                *ofp << " " << (quoteIt ? '"' + quoted + '"' : arg);
+            }
+            *ofp << "\n";
+        }
+        *ofp << "\n";
     }
-    *ofp << "\n";
     preprocDumps(*ofp, true);
     ofp->close();
     VL_DO_DANGLING(delete ofp, ofp);
@@ -802,9 +825,9 @@ V3Parse::V3Parse(AstNetlist* rootp, VInFilter* filterp) {
 V3Parse::~V3Parse() {  //
     VL_DO_CLEAR(delete m_impp, m_impp = nullptr);
 }
-void V3Parse::parseFile(FileLine* fileline, const string& modname, bool inLibrary,
+void V3Parse::parseFile(FileLine* fileline, const string& modname, bool inLibrary, bool inLibMap,
                         const string& libname, const string& errmsg) {
-    m_impp->parseFile(fileline, modname, inLibrary, libname, errmsg);
+    m_impp->parseFile(fileline, modname, inLibrary, inLibMap, libname, errmsg);
 }
 void V3Parse::ppPushText(V3ParseImp* impp, const string& text) {
     if (text != "") impp->ppPushText(text);

@@ -94,18 +94,18 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
 
   TEST_REGRESS=test_regress
   if [ "$CI_RELOC" == 1 ]; then
-     # Testing that the installation is relocatable.
-     "$MAKE" install
-     mkdir -p "$RELOC_DIR"
-     mv "$INSTALL_DIR" "$RELOC_DIR/relocated-install"
-     export VERILATOR_ROOT="$RELOC_DIR/relocated-install/share/verilator"
-     TEST_REGRESS="$RELOC_DIR/test_regress"
-     mv test_regress "$TEST_REGRESS"
-     NODIST="$RELOC_DIR/nodist"
-     mv nodist "$NODIST"
-     # Feeling brave?
-     find . -delete
-     ls -la .
+    # Testing that the installation is relocatable.
+    "$MAKE" install
+    mkdir -p "$RELOC_DIR"
+    mv "$INSTALL_DIR" "$RELOC_DIR/relocated-install"
+    export VERILATOR_ROOT="$RELOC_DIR/relocated-install/share/verilator"
+    TEST_REGRESS="$RELOC_DIR/test_regress"
+    mv test_regress "$TEST_REGRESS"
+    NODIST="$RELOC_DIR/nodist"
+    mv nodist "$NODIST"
+    # Feeling brave?
+    find . -delete
+    ls -la .
   fi
 
   # Run the specified test

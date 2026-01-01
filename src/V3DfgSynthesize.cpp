@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -136,7 +136,7 @@ class AstToDfgConverter final : public VNVisitor {
 
         // Traversal set user2p to the equivalent vertex
         DfgVertex* const vtxp = nodep->user2u().to<DfgVertex*>();
-        UASSERT_OBJ(vtxp, nodep, "Missing Dfg vertex after covnersion");
+        UASSERT_OBJ(vtxp, nodep, "Missing Dfg vertex after conversion");
         return vtxp;
     }
 
@@ -414,11 +414,17 @@ class AstToDfgConverter final : public VNVisitor {
         if (const AstConst* const constp = VN_CAST(nodep->lsbp(), Const)) {
             const uint32_t lsb = constp->toUInt();
             const uint32_t msb = lsb + nodep->widthConst() - 1;
+            DfgVertex* const fromp = nodep->fromp()->user2u().to<DfgVertex*>();
+            // Unfortunately we can still have out of bounds selects due to how
+            // indices are truncated for speed reasons in V3Width/V3Unknown.
+            if (msb >= fromp->size()) {
+                m_foundUnhandled = true;
+                ++m_ctx.m_conv.nonRepOOBSel;
+                return;
+            }
             DfgSel* const selp = make<DfgSel>(flp, *dtypep);
-            selp->fromp(nodep->fromp()->user2u().to<DfgVertex*>());
+            selp->fromp(fromp);
             selp->lsb(lsb);
-            UASSERT_OBJ(msb < selp->fromp()->size(), nodep,
-                        "OOB AstSel should have been fixed up by earlier passes");
             vtxp = selp;
         } else {
             iterate(nodep->lsbp());

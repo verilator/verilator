@@ -11,6 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(verilator_flags2=["--lint-only -Wall t/t_vlt_warn.vlt"])
+test.lint(verilator_flags2=["-Wall t/t_vlt_warn.vlt"])
 
 test.passes()

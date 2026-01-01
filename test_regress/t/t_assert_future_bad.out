@@ -1,22 +1,22 @@
-%Error: t/t_assert_future_bad.v:18:31: Future sampled value function called outside property or sequence expression (IEEE 16.9.4)
+%Error: t/t_assert_future_bad.v:16:31: Future sampled value function called outside property or sequence expression (IEEE 16.9.4)
                                      : ... note: In instance 't'
-   18 |   else $display("Future=%0d", $future_gclk(a));
+   16 |   else $display("Future=%0d", $future_gclk(a));
       |                               ^~~~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_assert_future_bad.v:21:31: Future sampled value function called outside property or sequence expression (IEEE 16.9.4)
+%Error: t/t_assert_future_bad.v:19:31: Future sampled value function called outside property or sequence expression (IEEE 16.9.4)
                                      : ... note: In instance 't'
-   21 |   else $display("Future=%0d", $rising_gclk(a));
+   19 |   else $display("Future=%0d", $rising_gclk(a));
       |                               ^~~~~~~~~~~~
-%Error: t/t_assert_future_bad.v:24:31: Future sampled value function called outside property or sequence expression (IEEE 16.9.4)
+%Error: t/t_assert_future_bad.v:22:31: Future sampled value function called outside property or sequence expression (IEEE 16.9.4)
                                      : ... note: In instance 't'
-   24 |   else $display("Future=%0d", $falling_gclk(a));
+   22 |   else $display("Future=%0d", $falling_gclk(a));
       |                               ^~~~~~~~~~~~~
-%Error: t/t_assert_future_bad.v:27:31: Future sampled value function called outside property or sequence expression (IEEE 16.9.4)
+%Error: t/t_assert_future_bad.v:25:31: Future sampled value function called outside property or sequence expression (IEEE 16.9.4)
                                      : ... note: In instance 't'
-   27 |   else $display("Future=%0d", $steady_gclk(a));
+   25 |   else $display("Future=%0d", $steady_gclk(a));
       |                               ^~~~~~~~~~~~
-%Error: t/t_assert_future_bad.v:30:31: Future sampled value function called outside property or sequence expression (IEEE 16.9.4)
+%Error: t/t_assert_future_bad.v:28:31: Future sampled value function called outside property or sequence expression (IEEE 16.9.4)
                                      : ... note: In instance 't'
-   30 |   else $display("Future=%0d", $changing_gclk(a));
+   28 |   else $display("Future=%0d", $changing_gclk(a));
       |                               ^~~~~~~~~~~~~~
 %Error: Exiting due to

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU Lesser
 // General Public License Version 3 or the Perl Artistic License Version 2.0.
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
@@ -316,6 +316,7 @@ public:
         VAR_PUBLIC_FLAT_RD,             // V3LinkParse moves to AstVar::sigPublic
         VAR_PUBLIC_FLAT_RW,             // V3LinkParse moves to AstVar::sigPublic
         VAR_ISOLATE_ASSIGNMENTS,        // V3LinkParse moves to AstVar::attrIsolateAssign
+        VAR_SC_BIGUINT,                 // V3LinkParse moves to AstVar::attrScBigUint
         VAR_SC_BV,                      // V3LinkParse moves to AstVar::attrScBv
         VAR_SFORMAT,                    // V3LinkParse moves to AstVar::attrSFormat
         VAR_SPLIT_VAR                   // V3LinkParse moves to AstVar::attrSplitVar
@@ -336,7 +337,7 @@ public:
             "TYPEID", "TYPENAME",
             "VAR_BASE", "VAR_FORCEABLE", "VAR_PORT_DTYPE", "VAR_PUBLIC",
             "VAR_PUBLIC_FLAT", "VAR_PUBLIC_FLAT_RD", "VAR_PUBLIC_FLAT_RW",
-            "VAR_ISOLATE_ASSIGNMENTS", "VAR_SC_BV", "VAR_SFORMAT",
+            "VAR_ISOLATE_ASSIGNMENTS", "VAR_SC_BIGUINT", "VAR_SC_BV", "VAR_SFORMAT",
             "VAR_SPLIT_VAR"
         };
         // clang-format on
@@ -783,7 +784,8 @@ public:
         FORK_INIT,
         FORK_JOIN,
         RANDOMIZER_BASIC_STD_RANDOMIZATION,
-        RANDOMIZER_CLEAR,
+        RANDOMIZER_CLEARCONSTRAINTS,
+        RANDOMIZER_CLEARALL,
         RANDOMIZER_HARD,
         RANDOMIZER_WRITE_VAR,
         RNG_GET_RANDSTATE,
@@ -911,7 +913,8 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {FORK_INIT, "init", false}, \
            {FORK_JOIN, "join", false}, \
            {RANDOMIZER_BASIC_STD_RANDOMIZATION, "basicStdRandomization", false}, \
-           {RANDOMIZER_CLEAR, "clear", false}, \
+           {RANDOMIZER_CLEARCONSTRAINTS, "clearConstraints", false}, \
+           {RANDOMIZER_CLEARALL, "clearAll", false}, \
            {RANDOMIZER_HARD, "hard", false}, \
            {RANDOMIZER_WRITE_VAR, "write_var", false}, \
            {RNG_GET_RANDSTATE, "__Vm_rng.get_randstate", true}, \
@@ -937,7 +940,7 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
 
 class VCaseType final {
 public:
-    enum en : uint8_t { CT_CASE, CT_CASEX, CT_CASEZ, CT_CASEINSIDE };
+    enum en : uint8_t { CT_CASE, CT_CASEX, CT_CASEZ, CT_CASEINSIDE, CT_RANDSEQUENCE };
     enum en m_e;
     VCaseType()
         : m_e{CT_CASE} {}

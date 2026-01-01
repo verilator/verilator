@@ -176,6 +176,7 @@
             super.new(name); \
           endfunction \
         endclass \
+
 `define m_uvm_topdown_phase(PHASE,COMP,PREFIX) \
         class PREFIX``PHASE``_phase extends uvm_topdown_phase; \
           virtual function void exec_func(uvm_component comp, uvm_phase phase); \
@@ -195,6 +196,7 @@
             super.new(name); \
           endfunction \
         endclass \
+
 `define m_uvm_bottomup_phase(PHASE,COMP,PREFIX) \
         class PREFIX``PHASE``_phase extends uvm_bottomup_phase; \
           virtual function void exec_func(uvm_component comp, uvm_phase phase); \
@@ -214,6 +216,7 @@
             super.new(name); \
           endfunction \
         endclass \
+
 `define uvm_builtin_task_phase(PHASE) \
         `m_uvm_task_phase(PHASE,uvm_component,uvm_)
 `define uvm_builtin_topdown_phase(PHASE) \
@@ -749,11 +752,13 @@ end
 `define m_uvm_compare_threshold_begin(COMPARER) \
   if ((!COMPARER.get_threshold() || \
        (COMPARER.get_result() < COMPARER.get_threshold()))) begin \
+
 `define m_uvm_compare_threshold_end \
   end
 `define m_uvm_compare_begin(LVALUE, RVALUE, COMPARER=comparer) \
   `m_uvm_compare_threshold_begin(COMPARER) \
     if ((LVALUE) !== (RVALUE)) begin \
+
 `define m_uvm_compare_end \
     end \
   `m_uvm_compare_threshold_end
@@ -1802,6 +1807,7 @@ local function void __m_uvm_execute_field_op( uvm_field_op __local_op__ );      
      default:                                                                   \
        return; /* unknown op, just return */                                    \
    endcase                                                                      \
+
 `define uvm_field_utils_end \
 endfunction : __m_uvm_execute_field_op
 `define uvm_object_utils(T) \
@@ -1833,8 +1839,10 @@ endfunction : __m_uvm_execute_field_op
 `define uvm_component_utils(T) \
    `m_uvm_component_registry_internal(T,T) \
    `uvm_type_name_decl(`"T`") \
+
 `define uvm_component_param_utils(T) \
    `m_uvm_component_registry_param(T) \
+
 `define uvm_component_utils_begin(T) \
    `uvm_component_utils(T) \
    `uvm_field_utils_begin(T)
@@ -1844,8 +1852,10 @@ endfunction : __m_uvm_execute_field_op
 `define uvm_component_abstract_utils(T) \
    `m_uvm_component_abstract_registry_internal(T,T) \
    `uvm_type_name_decl(`"T`") \
+
 `define uvm_component_abstract_param_utils(T) \
    `m_uvm_component_abstract_registry_param(T) \
+
 `define uvm_component_abstract_utils_begin(T) \
    `uvm_component_abstract_utils(T) \
    `uvm_field_utils_begin(T)
@@ -2938,6 +2948,7 @@ UVM_``OP: \
   `m_uvm_field_end(ARG)
 `define uvm_field_aa_int_int(ARG,FLAG=UVM_DEFAULT) \
   `uvm_field_aa_int_key(int, ARG, FLAG) \
+
 `define uvm_field_aa_int_int_unsigned(ARG,FLAG=UVM_DEFAULT) \
   `uvm_field_aa_int_key(int unsigned, ARG, FLAG)
 `define uvm_field_aa_int_integer(ARG,FLAG=UVM_DEFAULT) \
@@ -3660,6 +3671,7 @@ endclass
    end
 `define uvm_do_callbacks_exit_on(T,CB,METHOD,VAL) \
   `uvm_do_obj_callbacks_exit_on(T,CB,this,METHOD,VAL) \
+
 `define uvm_do_obj_callbacks_exit_on(T,CB,OBJ,METHOD,VAL) \
    begin \
      uvm_callback_iter#(T,CB) iter = new(OBJ); \

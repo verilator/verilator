@@ -218,6 +218,7 @@ module t (/*AUTOARG*/
 
       str = $sformatf("cyc=%d", cyc);
       $display("str = %s", str);
+      $display("struct = %p", ps);
       $display("%% [%t] [%t] to=%o td=%d", $time, $realtime, $time, $time);
       $sscanf("foo=5", "foo=%d", i);
       $printtimescale;
@@ -275,9 +276,6 @@ module t (/*AUTOARG*/
    endproperty
    property p1;
       @(clk) sum[0]
-   endproperty
-   property p2;
-      @(posedge clk) disable iff (cyc == 1) ##1 sum[0]
    endproperty
 
    assert property (@(clk) not ##1 in);

@@ -1,35 +1,35 @@
-.. Copyright 2003-2025 by Wilson Snyder.
+.. Copyright 2003-2026 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-=====================
- Language Extensions
-=====================
+===================
+Language Extensions
+===================
 
 The following additional constructs are the extensions Verilator supports
-on top of standard Verilog code.  Using these features outside of comments
+on top of standard Verilog code. Using these features outside of comments
 or "`ifdef`"'s may break other tools.
 
 .. option:: """ [string] """
 
    A triple-quoted block specifies a string that may include newlines and
-   single quotes.  This extension was standardized in IEEE 1800-2023.
+   single quotes. This extension was standardized in IEEE 1800-2023.
 
 .. option:: `__FILE__
 
    The :option:`\`__FILE__` define expands to the current filename as a
-   string, like C++'s __FILE__.  This Verilator feature, added in 2006, was
+   string, like C++'s __FILE__. This Verilator feature, added in 2006, was
    incorporated into IEEE 1800-2009.
 
 .. option:: `__LINE__
 
    The :option:`\`__LINE__` define expands to the current line number like
-   C++'s __LINE__.  This Verilator feature added in 2006 was incorporated
+   C++'s __LINE__. This Verilator feature added in 2006 was incorporated
    into IEEE 1800-2009.
 
 .. option:: `coverage_block_off
 
    Specifies the entire begin/end block should be ignored for coverage
-   analysis.  Must be inside a code block, e.g., within a begin/end pair.
+   analysis. Must be inside a code block, e.g., within a begin/end pair.
    Same as :option:`coverage_block_off` in :ref:`Verilator Control Files`.
 
 .. option:: `error [string]
@@ -50,14 +50,14 @@ or "`ifdef`"'s may break other tools.
    blocks, replaced with the C++ class name generated for the given
    containing SystemVerilog class or module. Currently this is replaced
    blindly, ignoring quoting or other escapes; this behavior may change in
-   the future.  This attribute is indented only to be used internally in
+   the future. This attribute is indented only to be used internally in
    `verilated_std.sv`.
 
 .. option:: `systemc_ctor
 
    Take the remaining text up to the next :option:`\`verilog` or
    :option:`\`systemc_... <\`systemc_header>` mode switch and place it
-   verbatim into the C++ class constructor.  Must be placed as a module or
+   verbatim into the C++ class constructor. Must be placed as a module or
    class item, e.g., directly inside a module/endmodule or class/endclass
    pair. Despite the name of this macro, this also works in pure C++ code.
 
@@ -65,7 +65,7 @@ or "`ifdef`"'s may break other tools.
 
    Take the remaining text up to the next :option:`\`verilog` or
    :option:`\`systemc_... <\`systemc_header>` mode switch and place it
-   verbatim into the C++ class destructor.  Must be placed as a module or
+   verbatim into the C++ class destructor. Must be placed as a module or
    class item, e.g., directly inside a module/endmodule or class/endclass
    pair. Despite the name of this macro, this also works in pure C++ code.
 
@@ -73,10 +73,9 @@ or "`ifdef`"'s may break other tools.
 
    Take the remaining text up to the next :option:`\`verilog` or
    :option:`\`systemc_... <\`systemc_header>` mode switch and place it
-   verbatim into the output .h file's header.  Must be placed as a module
-   or class item, e.g., directly inside a module/endmodule or
-   class/endclass pair. Despite the name of this macro, this also works in
-   pure C++ code.
+   verbatim into the output .h file's header. Must be placed as a module or
+   class item, e.g., directly inside a module/endmodule or class/endclass
+   pair. Despite the name of this macro, this also works in pure C++ code.
 
 .. option:: `systemc_header_post
 
@@ -100,21 +99,21 @@ or "`ifdef`"'s may break other tools.
 
    Take the remaining text up to the next :option:`\`verilog` or
    :option:`\`systemc_... <\`systemc_header>` mode switch and place it
-   verbatim into a single file of the C++ class implementation.  Must be
+   verbatim into a single file of the C++ class implementation. Must be
    placed as a module or class item, e.g., directly inside a
    module/endmodule or class/endclass pair. Despite the name of this macro,
    this also works in pure C++ code.
 
    If you will be reading or writing any Verilog variables in the C++
    functions, the Verilog signals must be declared with a
-   :option:`/*verilator&32;public*/` metacomment.  See also the public task
+   :option:`/*verilator&32;public*/` metacomment. See also the public task
    feature; writing an accessor may result in cleaner code.
 
 .. option:: `systemc_interface
 
    Take the remaining text up to the next :option:`\`verilog` or
    :option:`\`systemc_... <\`systemc_header>` mode switch and place it
-   verbatim into the C++ class interface.  Must be placed as a module or
+   verbatim into the C++ class interface. Must be placed as a module or
    class item, e.g., directly inside a module/endmodule or class/endclass
    pair. Despite the name of this macro, this also works in pure C++ code.
 
@@ -136,22 +135,22 @@ or "`ifdef`"'s may break other tools.
 .. option:: `verilator_config
 
    Take the remaining text up to the next :option:`\`verilog` mode switch
-   and treat it as Verilator Control File commands.  See :ref:`Verilator
+   and treat it as Verilator Control File commands. See :ref:`Verilator
    Control Files`.
 
 .. option:: `VERILATOR_TIMING
 
    The VERILATOR_TIMING define is set when :vlopt:`--timing` is used to
-   allow an "\`ifdef" of code dependent on this feature.  Note that this define
-   is not affected by the :option:`timing_off` control file option
+   allow an "\`ifdef" of code dependent on this feature. Note that this
+   define is not affected by the :option:`timing_off` control file option
    nor timing metacomments.
 
 .. option:: `verilog
 
-   Switch back to processing Verilog code after a
-   :option:`\`systemc_... <\`systemc_header>` mode switch.  The Verilog
-   code returns to the last language mode specified with
-   "\`begin_keywords", or SystemVerilog if none was specified.
+   Switch back to processing Verilog code after a :option:`\`systemc_...
+   <\`systemc_header>` mode switch. The Verilog code returns to the last
+   language mode specified with "\`begin_keywords", or SystemVerilog if
+   none was specified.
 
 
    .. t_dist_docs_style restart_sort
@@ -159,7 +158,7 @@ or "`ifdef`"'s may break other tools.
 .. option:: $c([string], ...);, $cpure([string], ...);
 
    The string will be embedded directly in the output C++ code at the point
-   where the surrounding Verilog code is compiled.  It may either be a
+   where the surrounding Verilog code is compiled. It may either be a
    standalone statement (with a trailing ; in the string), or a function
    that returns up to a 32-bit number (without a trailing ;). This can be
    used to call C++ functions from your Verilog code.
@@ -171,28 +170,27 @@ or "`ifdef`"'s may break other tools.
    via an explicit 'this->' pointer dereference.
 
    Expression arguments will have the code to evaluate the expression
-   inserted.  Thus to call a C++ function, :code:`$c("func(",a,")")` will
-   result in :code:`func(a)` in the output C++ code.  For input arguments,
-   rather than hard-coding variable names in the string
-   :code:`$c("func(a)")`, instead pass the variable as an expression
-   ::code:`$c("func(",a,")")`.  This will allow the call to work inside
-   Verilog functions where the variable is flattened out and enable other
-   optimizations.
+   inserted. Thus to call a C++ function, ``$c("func(",a,")")`` will result
+   in ``func(a)`` in the output C++ code. For input arguments, rather than
+   hard-coding variable names in the string ``$c("func(a)")``, instead pass
+   the variable as an expression :``$c("func(",a,")")``. This will allow
+   the call to work inside Verilog functions where the variable is
+   flattened out and enable other optimizations.
 
    Verilator does not use any text inside the quotes for
-   ordering/scheduling.  If you need the $c to be called at a specific
-   time, e.g., when a variable changes, then the $c must be under an
-   appropriate sensitivity statement, e.g.,
-   :code:`always @(posedge clk) $c("func()")` to call it on every edge, or,
-   e.g., :code:`always @* c("func(",a,")")` to call it when :code:`a`
-   changes (the latter working because :code:`a` is outside the quotes).
+   ordering/scheduling. If you need the $c to be called at a specific time,
+   e.g., when a variable changes, then the $c must be under an appropriate
+   sensitivity statement, e.g., ``always @(posedge clk) $c("func()")`` to
+   call it on every edge, or, e.g., ``always @* c("func(",a,")")`` to call
+   it when ``a`` changes (the latter working because ``a`` is outside the
+   quotes).
 
    If you will be reading or writing any Verilog variables inside the C++
    functions, the Verilog signals must be declared with
    :option:`/*verilator&32;public*/` metacomments.
 
-   You may also append a number to $c, which specifies the bit width of
-   the output, e.g., :code:`signal_32_bits = $c32("...");`.  This allows for
+   You may also append a number to $c, which specifies the bit width of the
+   output, e.g., ``signal_32_bits = $c32("...");``. This allows for
    compatibility with other simulators, which require a differently named
    PLI function name for each different output width.
 
@@ -203,31 +201,31 @@ or "`ifdef`"'s may break other tools.
 
 .. option:: $display, $write, $fdisplay, $fwrite, $sformat, $swrite
 
-   Format arguments may use C fprintf sizes after the % escape.  Per the
+   Format arguments may use C fprintf sizes after the % escape. Per the
    Verilog standard, %x prints a number with the natural width, and %0x
-   prints a number with minimum width.  Verilator extends this so %5x
-   prints 5 digits per the C standard. This extension was standardized into
+   prints a number with minimum width. Verilator extends this so %5x prints
+   5 digits per the C standard. This extension was standardized into
    1800-2009.
 
 .. option:: $stacktrace
 
-   Called as a task, print a stack trace.  Called as a function, return a
-   string with a stack trace.  This relies on the C++ system trace, which
+   Called as a task, print a stack trace. Called as a function, return a
+   string with a stack trace. This relies on the C++ system trace, which
    may give less meaningful results if the model is not compiled with debug
-   symbols.  Also, the data represents the C++ stack; the SystemVerilog
+   symbols. Also, the data represents the C++ stack; the SystemVerilog
    functions/tasks involved may be renamed and/or inlined before becoming
-   the C++ functions that may be visible in the stack trace.  This
-   extension was standardized in IEEE 1800-2023.
+   the C++ functions that may be visible in the stack trace. This extension
+   was standardized in IEEE 1800-2023.
 
 .. option:: $timeprecision
 
-   Returns the timeprecision of the model as an integer.  This extension is
+   Returns the timeprecision of the model as an integer. This extension is
    experimental and may be removed without deprecation.
 
 .. option:: $timeunit
 
-   Returns the timeunit of the current module as an integer.  This
-   extension is experimental and may be removed without deprecation.
+   Returns the timeunit of the current module as an integer. This extension
+   is experimental and may be removed without deprecation.
 
 .. option:: /*verilator&32;clock_enable*/
 
@@ -242,10 +240,10 @@ or "`ifdef`"'s may break other tools.
 
    .. code-block:: sv
 
-         reg enable_r /*verilator clock_enable*/;
-         wire gated_clk = clk & enable_r;
-         always_ff @(posedge clk)
-           enable_r <= enable_early;
+      reg enable_r /*verilator clock_enable*/;
+      wire gated_clk = clk & enable_r;
+      always_ff @(posedge clk)
+        enable_r <= enable_early;
 
    The clock_enable attribute will cause the clock gate to be ignored in
    the scheduling algorithm, sometimes required for correct clock behavior,
@@ -287,6 +285,15 @@ or "`ifdef`"'s may break other tools.
    (if appropriate :vlopt:`--coverage` flags are passed) after being
    disabled earlier with :option:`/*verilator&32;coverage_off*/`.
 
+.. option:: /*verilator&32;fargs <arguments>*/
+
+   For Verilator developers only. When a source file containing these `fargs`
+   metacomments is passed to Verilator on the command line via the :vlopt:`-f`
+   or :vlopt:`-F` option, the provided arguments will be added as if specified
+   on the command line. The source file is not preprocessed before parsing for
+   arguments, and all `fargs` comments will take effect, even if placed
+   undef an inactive `\`ifdef`.
+
 .. option:: /*verilator&32;forceable*/
 
    Specifies that the signal (net or variable) should be made forceable from
@@ -306,10 +313,10 @@ or "`ifdef`"'s may break other tools.
 
 .. option:: /*verilator&32;hier_block*/
 
-   Specifies that the module is a unit of hierarchical Verilation.  This
-   metacomment must be between :code:`module module_name(...);` and
-   :code:`endmodule`.  The module will not be inlined nor uniquified for
-   each instance in hierarchical Verilation.  Note that the metacomment is
+   Specifies that the module is a unit of hierarchical Verilation. This
+   metacomment must be between ``module module_name(...);`` and
+   ``endmodule``. The module will not be inlined nor uniquified for each
+   instance in hierarchical Verilation. Note that the metacomment is
    ignored unless the :vlopt:`--hierarchical` option is specified.
 
    See :ref:`Hierarchical Verilation`.
@@ -317,17 +324,17 @@ or "`ifdef`"'s may break other tools.
 .. option:: /*verilator&32;inline_module*/
 
    Specifies the module the comment appears in may be inlined into any
-   modules that use this module.  This is useful to speed up simulation
-   runtime.  Note if using :vlopt:`--public` that signals under inlined
-   submodules will be named :code:`{submodule}__DOT__{subsignal}` as C++
-   does not allow "." in signal names.
+   modules that use this module. This is useful to speed up simulation
+   runtime. Note if using :vlopt:`--public` that signals under inlined
+   submodules will be named ``{submodule}__DOT__{subsignal}`` as C++ does
+   not allow "." in signal names.
 
    Same as :option:`inline` control file option.
 
 .. option:: /*verilator&32;isolate_assignments*/
 
    Used after a signal declaration to indicate the assignments to this
-   signal in any blocks should be isolated into new blocks.  When large
+   signal in any blocks should be isolated into new blocks. When large
    combinatorial block results in a :option:`UNOPTFLAT` warning, attaching
    this to the signal that was causing a false loop may work around the
    warning.
@@ -336,14 +343,14 @@ or "`ifdef`"'s may break other tools.
 
    .. code-block:: sv
 
-         reg splitme /* verilator isolate_assignments*/;
-         // Note the placement of the semicolon above
-         always_comb begin
-           if (....) begin
-             splitme = ....;
-             other assignments
-           end
-         end
+      reg splitme /* verilator isolate_assignments*/;
+      // Note the placement of the semicolon above
+      always_comb begin
+        if (....) begin
+          splitme = ....;
+          other assignments
+        end
+      end
 
    Verilator will internally split the block that assigns to "splitme" into
    two blocks:
@@ -370,36 +377,36 @@ or "`ifdef`"'s may break other tools.
 .. option:: /*verilator&32;lint_off <msgs>*/
 
    Disable the specified warning message(s) for any warnings following the
-   comment.  Multiple messages may be specified, separated with commas.
+   comment. Multiple messages may be specified, separated with commas.
 
    If a one-line slash-slash-format comment is used, then the metacomment
    ends at the newline or at an earlier next slash-slash. This allow
-   commenting the reason for the disable, e.g. :code:`// verilator lint_off
-   MSG // Because...`.
+   commenting the reason for the disable, e.g. ``// verilator lint_off
+   MSG // Because...``.
 
 .. option:: /*verilator&32;lint_on <msgs>*/
 
    Re-enable the specified warning message(s) for any warnings following
-   the comment.  Multiple messages may be specified, separated with commas.
+   the comment. Multiple messages may be specified, separated with commas.
 
 .. option:: /*verilator&32;lint_restore*/
 
-   After a :code:`/*verilator&32;lint_save*/`, pop the stack containing lint
-   message state.  Often this is useful at the bottom of include files.
+   After a ``/*verilator&32;lint_save*/``, pop the stack containing lint
+   message state. Often this is useful at the bottom of include files.
 
 .. option:: /*verilator&32;lint_save*/
 
-   Push the current state of what lint messages are turned on or off
-   to a stack.  Later meta-comments may then lint_on or lint_off specific
+   Push the current state of what lint messages are turned on or off to a
+   stack. Later meta-comments may then lint_on or lint_off specific
    messages, then return to the earlier message state by using
-   :code:`/*verilator&32;lint_restore*/`.  For example:
+   ``/*verilator&32;lint_restore*/``. For example:
 
    .. code-block:: sv
 
-         // verilator lint_save
-         // verilator lint_off WIDTH
-         ...  // code needing WIDTH turned off
-         // verilator lint_restore
+      // verilator lint_save
+      // verilator lint_off WIDTH
+      ...  // code needing WIDTH turned off
+      // verilator lint_restore
 
    If WIDTH was on before the lint_off, it would now be restored to on, and
    if it was off before the lint_off it would remain off.
@@ -414,11 +421,10 @@ or "`ifdef`"'s may break other tools.
 .. option:: /*verilator&32;no_inline_task*/
 
    Used in a function or task variable definition section to specify the
-   function or task should not be inlined into where it is used.  This may
+   function or task should not be inlined into where it is used. This may
    reduce the size of the final executable when a task is used a very large
-   number of times.  For this flag to work, the task and tasks below it
-   must be pure; they cannot reference any variables outside the task
-   itself.
+   number of times. For this flag to work, the task and tasks below it must
+   be pure; they cannot reference any variables outside the task itself.
 
    Same as :option:`no_inline` control file option.
 
@@ -430,21 +436,21 @@ or "`ifdef`"'s may break other tools.
 
    .. code-block:: sv
 
-         parameter [2:0] PARAM /*verilator public*/ = 2'b0;
+      parameter [2:0] PARAM /*verilator public*/ = 2'b0;
 
 .. option:: /*verilator&32;public*/ (on task/function)
 
    Used inside the declaration section of a function or task declaration to
    indicate the function or task should be made into a C++ function, public
-   to outside callers.  Public tasks will be declared as a void C++
+   to outside callers. Public tasks will be declared as a void C++
    function, public functions will get the appropriate non-void (bool,
-   uint32_t, etc.) return type.  Any input arguments will become C++
-   arguments to the function.  Any output arguments will become C++
-   reference arguments.  Any local registers/integers will become function
+   uint32_t, etc.) return type. Any input arguments will become C++
+   arguments to the function. Any output arguments will become C++
+   reference arguments. Any local registers/integers will become function
    automatic variables on the stack.
 
    Wide variables over 64 bits cannot be function returns, to avoid
-   exposing complexities.  However, wide variables can be input/outputs;
+   exposing complexities. However, wide variables can be input/outputs;
    they will be passed as references to an array of 32-bit numbers.
 
    Generally, only the values of stored state (flops) should be written, as
@@ -464,17 +470,17 @@ or "`ifdef`"'s may break other tools.
 
    .. code-block:: sv
 
-         typedef enum logic [2:0] { ZERO = 3'b0 } pub_t /*verilator public*/;
+      typedef enum logic [2:0] { ZERO = 3'b0 } pub_t /*verilator public*/;
 
 .. option:: /*verilator&32;public*/ (on variable)
 
    Used after an input, output, register, or wire declaration to indicate
    the signal should be declared so that C code may read or write the value
-   of the signal.  This will also declare this module public; otherwise, use
-   :code:`/*verilator&32;public_flat*/`.
+   of the signal. This will also declare this module public; otherwise, use
+   ``/*verilator&32;public_flat*/``.
 
    Instead of using public variables, consider making a DPI or public
-   function that accesses the variable.  This is nicer as it provides an
+   function that accesses the variable. This is nicer as it provides an
    obvious entry point compatible across simulators.
 
    Same as :option:`public` control file option.
@@ -484,30 +490,30 @@ or "`ifdef`"'s may break other tools.
    Used to wrap multiple signals and parameters with the respective public attribute.
    See attribute above for their respective behavior. Cannot be nested. e.g:
 
-      .. code-block:: sv
+   .. code-block:: sv
 
-         /*verilator public_flat_rw_on*/
-         logic clk;
-         logic rst;
-         parameter width = 8;
-         /* verilator public_off*/
-         logic data;
+      /*verilator public_flat_rw_on*/
+      logic clk;
+      logic rst;
+      parameter width = 8;
+      /* verilator public_off*/
+      logic data;
 
    Is equivalent to:
 
-      .. code-block:: sv
+   .. code-block:: sv
 
-         logic clk /*verilator public_flat_rw*/;
-         logic rst /*verilator public_flat_rw*/;
-         parameter width /*verilator public_flat_rw*/ = 8;
-         logic data;
+      logic clk /*verilator public_flat_rw*/;
+      logic rst /*verilator public_flat_rw*/;
+      parameter width /*verilator public_flat_rw*/ = 8;
+      logic data;
 
 .. option:: /*verilator&32;public_flat*/ (on variable)
 
    Used after an input, output, register, or wire declaration to indicate
    the signal should be declared so that C code may read or write the value
-   of the signal.  This will not declare this module public, which means
-   the name of the signal or path to it may change based upon the module
+   of the signal. This will not declare this module public, which means the
+   name of the signal or path to it may change based upon the module
    inlining which takes place.
 
    Same as :option:`public_flat` control file option.
@@ -536,9 +542,9 @@ or "`ifdef`"'s may break other tools.
 
    Used after a module statement to indicate the module should not be
    inlined (unless specifically requested) so that C code may access the
-   module.  Verilator automatically sets this attribute when the module
-   contains public signals or \`systemc_ directives.  Use of this is
-   implied when using the :vlopt:`--public` option.
+   module. Verilator automatically sets this attribute when the module
+   contains public signals or \`systemc_ directives. Use of this is implied
+   when using the :vlopt:`--public` option.
 
    Same as :option:`public` control file option.
 
@@ -546,31 +552,40 @@ or "`ifdef`"'s may break other tools.
 
    Terminates the previous `/*verilator public*_on*/` directive; see above.
 
+.. option:: /*verilator&32;sc_biguint*/
+
+   Used after a port declaration. It sets the port to be of
+   ``sc_biguint<{width}>`` type, for signals of any width. This may be
+   useful if the port width is parameterized and the instantiating C++ code
+   always wants to have a sc_biguint accept any width. In general, you
+   should avoid using this attribute when unnecessary, as the performance
+   decreases significantly with increasing usage of sc_biguint.
+
 .. option:: /*verilator&32;sc_bv*/
 
-   Used after a port declaration.  It sets the port to be of
-   :code:`sc_bv<{width}>` type, instead of bool, uint32_t, or uint64_t.
-   This may be useful if the port width is parameterized and the
-   instantiating C++ code always wants to have a sc_bv accept any width.
-   In general, you should avoid using this attribute when unnecessary, as
-   the performance decreases significantly with increasing usage of sc_bv.
+   Used after a port declaration. It sets the port to be of
+   ``sc_bv<{width}>`` type, instead of bool, uint32_t, or uint64_t. This
+   may be useful if the port width is parameterized and the instantiating
+   C++ code always wants to have a sc_bv accept any width. In general, you
+   should avoid using this attribute when unnecessary, as the performance
+   decreases significantly with increasing usage of sc_bv.
 
    Same as :option:`sc_bv` control file option.
 
 .. option:: /*verilator&32;sc_clock*/
 
-   Deprecated and ignored.  Previously used after an input declaration to
+   Deprecated and ignored. Previously used after an input declaration to
    indicate the signal should be declared in SystemC as a sc_clock instead
-   of a bool.  This was needed in SystemC 1.1 and 1.2 only; versions 2.0
-   and later do not require clock pins to be sc_clocks, and this is no
-   longer needed and is ignored.
+   of a bool. This was needed in SystemC 1.1 and 1.2 only; versions 2.0 and
+   later do not require clock pins to be sc_clocks, and this is no longer
+   needed and is ignored.
 
 .. option:: /*verilator&32;sformat*/
 
    Attached to the final argument of type "input string" of a function or
    task to indicate that the function or task should pass all remaining
-   arguments through $sformatf.  This allows creation of DPI functions with
-   $display-like behavior.  See the :file:`test_regress/t/t_dpi_display.v`
+   arguments through $sformatf. This allows creation of DPI functions with
+   $display-like behavior. See the :file:`test_regress/t/t_dpi_display.v`
    file for an example.
 
    Same as :option:`sformat` control file option.
@@ -587,14 +602,14 @@ or "`ifdef`"'s may break other tools.
 
    .. code-block:: sv
 
-         logic [7:0] x [0:1]  /*verilator split_var*/;
+      logic [7:0] x [0:1]  /*verilator split_var*/;
 
    To:
 
    .. code-block:: sv
 
-         logic [7:0] x__BRA__0__KET__ /*verilator split_var*/;
-         logic [7:0] x__BRA__1__KET__ /*verilator split_var*/;
+      logic [7:0] x__BRA__0__KET__ /*verilator split_var*/;
+      logic [7:0] x__BRA__1__KET__ /*verilator split_var*/;
 
    Note that the generated packed variables retain the split_var
    metacomment because they may be split into smaller pieces according to
@@ -602,7 +617,7 @@ or "`ifdef`"'s may break other tools.
 
    This only supports unpacked arrays, packed arrays, and packed structs of
    integer types (reg, logic, bit, byte, int...); otherwise, if a split was
-   requested but cannot occur, a SPLITVAR warning is issued.  Splitting
+   requested but cannot occur, a SPLITVAR warning is issued. Splitting
    large arrays may slow down the Verilation speed, so use this only on
    variables that require it.
 
@@ -613,12 +628,11 @@ or "`ifdef`"'s may break other tools.
 
    .. code-block:: sv
 
-         logic [1:0][31:0] tmp;
+      logic [1:0][31:0] tmp;
 
-         assign tmp[0] = foo    + a;
-         assign tmp[1] = tmp[1] + b;
-         assign bar    = tmp[1] + c;
-
+      assign tmp[0] = foo    + a;
+      assign tmp[1] = tmp[1] + b;
+      assign bar    = tmp[1] + c;
 
    Same as :option:`split_var` control file option.
 
@@ -632,8 +646,8 @@ or "`ifdef`"'s may break other tools.
 
    Ignore all timing constructs after this metacomment. All timing controls
    behave as if they were not there (the same way as with
-   :option:`--no-timing`), and :code:`fork`/:code:`join*` blocks are
-   converted into :code:`begin`/:code:`end` blocks.
+   :option:`--no-timing`), and ``fork``/``join*`` blocks are
+   converted into ``begin``/``end`` blocks.
 
    Same as :option:`timing_off` control file option.
 
@@ -658,7 +672,7 @@ or "`ifdef`"'s may break other tools.
 .. option:: /*verilator&32;tracing_off*/
 
    Disable waveform tracing for all future signals declared in this module,
-   or instances below this module.  Often this is placed just after a
+   or instances below this module. Often this is placed just after a
    primitive's module statement, so that the entire module and instances
    below it are not traced.
 
@@ -671,7 +685,7 @@ or "`ifdef`"'s may break other tools.
 
    Used in a statement position to indicate the immediately following loop
    at the same statement level should not be unrolled by Verilator,
-   ignoring :vlopt:`--unroll-count`.  This is similar to clang's ``#pragma
+   ignoring :vlopt:`--unroll-count`. This is similar to clang's ``#pragma
    clang loop unroll(disable)``.
 
    This option does not currently disable the C++ compiler's unrolling (or
@@ -681,5 +695,5 @@ or "`ifdef`"'s may break other tools.
 
    Rarely needed. Used in a statement position to indicate the immediately
    following loop at the same statement level should always be fully
-   unrolled by Verilator, ignoring :vlopt:`--unroll-count`.  This is
-   similar to clang's ``#pragma clang loop unroll(full)``.
+   unrolled by Verilator, ignoring :vlopt:`--unroll-count`. This is similar
+   to clang's ``#pragma clang loop unroll(full)``.

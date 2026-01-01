@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -367,7 +367,7 @@ class ScopeCleanupVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstModportFTaskRef* nodep) override {
-        // The modport persists only for xml dump
+        // The modport persists only for JSON dump
         // The crossrefs are dealt with in V3LinkDot
         nodep->ftaskp(nullptr);
         iterateChildren(nodep);

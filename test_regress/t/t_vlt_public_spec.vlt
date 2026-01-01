@@ -1,0 +1,17 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2025 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+
+public_flat_rd -module "top" -param "*"
+public_flat_rw -module "top" -port "*"
+
+public_flat_rd -module "mid" -param "*"
+public_flat_rw -module "mid" -function "*" -port "top_f_port_o"
+public_flat    -module "mid" -var "mid_tmp_b"
+
+public_flat    -module "sub" -port "*"
+public_flat_rd -module "sub" -function "*" -param "SUB_F_LOCALPARAM"

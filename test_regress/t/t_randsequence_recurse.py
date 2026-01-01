@@ -11,9 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(fails=test.vlt_all, expect_filename=test.golden_filename)
+# -fno-inline-funcs due to Issue #4698 ref arguments
+test.compile(verilator_flags2=['-fno-inline-funcs'])
 
-if not test.vlt_all:
-    test.execute()
+test.execute()
 
 test.passes()

@@ -6,7 +6,7 @@
 
 typedef struct packed {
   logic [149:0] hdr;
-  logic [1:0]   vc;
+  logic [1:0] vc;
 } packet_t;
 
 module t;

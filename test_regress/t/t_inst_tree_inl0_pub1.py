@@ -14,7 +14,8 @@ test.top_filename = "t/t_inst_tree.v"
 
 default_vltmt_threads = test.get_default_vltmt_threads
 test.compile(
-    verilator_flags2=['--stats', test.t_dir + "/" + test.name + ".vlt"],
+    # Disable --inline-cfuncs so functions exist to be combined
+    verilator_flags2=['--stats', '--inline-cfuncs', '0', test.t_dir + "/" + test.name + ".vlt"],
     # Force 3 threads even if we have fewer cores
     threads=(default_vltmt_threads if test.vltmt else 1))
 
@@ -42,7 +43,7 @@ if test.vlt_all:
     # We expect to combine sequent functions across multiple instances of
     # l2, l3, l4, l5. If this number drops, please confirm this has not broken.
     test.file_grep(test.stats, r'Optimizations, Combined CFuncs\s+(\d+)',
-                   (99 if test.vltmt else 82))
+                   (85 if test.vltmt else 67))
 
     # Everything should use relative references
     check_relative_refs("t", True)

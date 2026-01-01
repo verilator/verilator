@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -23,6 +23,7 @@
 #include "V3Error.h"
 #include "V3LangCode.h"
 
+#include <list>
 #include <map>
 #include <set>
 #include <string>
@@ -206,6 +207,7 @@ private:
     VFileLibSet m_libraryFiles; // argument: Verilog -v files
     VFileLibList m_vFiles;      // argument: Verilog files to read
     VFileLibSet m_vltFiles;     // argument: Verilator config files to read
+    VStringSet m_libmapFiles;  // argument: --libmap files to read
     VStringList m_forceIncs;   // argument: -FI
     DebugLevelMap m_debugLevel; // argument: --debugi-<srcfile/tag> <level>
     DebugLevelMap m_dumpLevel;  // argument: --dumpi-<srcfile/tag> <level>
@@ -234,9 +236,8 @@ private:
     bool m_debugCheck = false;      // main switch: --debug-check
     bool m_debugCollision = false;  // main switch: --debug-collision
     bool m_debugEmitV = false;      // main switch: --debug-emitv
+    bool m_debugExitElab = false;   // main switch: --debug-exit-elab
     bool m_debugExitParse = false;  // main switch: --debug-exit-parse
-    bool m_debugExitUvm = false;    // main switch: --debug-exit-uvm
-    bool m_debugExitUvm23 = false;  // main switch: --debug-exit-uvm23
     bool m_debugLeak = true;        // main switch: --debug-leak
     bool m_debugNondeterminism = false;  // main switch: --debug-nondeterminism
     bool m_debugOptions = false;    // main switch: --debug-options
@@ -245,6 +246,7 @@ private:
     bool m_debugProtect = false;    // main switch: --debug-protect
     bool m_debugSelfTest = false;   // main switch: --debug-self-test
     bool m_debugStackCheck = false;  // main switch: --debug-stack-check
+    int m_debugRuntimeTimeout = 0;  // main switch: --debug-runtime-timeout <n>
     bool m_debugWidth = false;      // main switch: --debug-width
     bool m_decoration = true;       // main switch: --decoration
     bool m_decorationNodes = false;  // main switch: --decoration=nodes
@@ -278,6 +280,7 @@ private:
     bool m_publicFlatRW = false;    // main switch: --public-flat-rw
     bool m_publicIgnore = false;    // main switch: --public-ignore
     bool m_publicParams = false;    // main switch: --public-params
+    bool m_quietBuild = false;      // main switch: --quiet-build
     bool m_quietExit = false;       // main switch: --quiet-exit
     bool m_quietStats = false;      // main switch: --quiet-stats
     bool m_relativeIncludes = false;  // main switch: --relative-includes
@@ -318,6 +321,8 @@ private:
     int         m_hierChild = 0;      // main switch: --hierarchical-child
     int         m_hierThreads = 0;      // main switch: --hierarchical-threads
     int         m_ifDepth = 0;      // main switch: --if-depth
+    int         m_inlineCFuncs = 20;   // main switch: --inline-cfuncs
+    int         m_inlineCFuncsProduct = 200;   // main switch: --inline-cfuncs-product
     int         m_inlineMult = 2000;   // main switch: --inline-mult
     int         m_instrCountDpi = 200;   // main switch: --instr-count-dpi
     bool        m_jsonEditNums = true; // main switch: --no-json-edit-nums
@@ -347,6 +352,7 @@ private:
     int         m_traceMaxWidth = 4096; // main switch: --trace-max-width
     int         m_traceThreads = 0; // main switch: --trace-threads
     int         m_unrollCount = 64;  // main switch: --unroll-count
+    int         m_unrollLimit = 16384;  // main switch: --unroll-limit
     int         m_unrollStmts = 30000;  // main switch: --unroll-stmts
     int         m_verilateJobs = -1;  // main switch: --verilate-jobs
 
@@ -404,6 +410,7 @@ private:
     bool m_fGate;        // main switch: -fno-gate: gate wire elimination
     bool m_fInline;      // main switch: -fno-inline: module inlining
     bool m_fInlineFuncs = true;  // main switch: -fno-inline-funcs: function inlining
+    bool m_fInlineFuncsEager = true;  // main switch: -fno-inline-funcs-eager: don't inline eagerly
     bool m_fLife;        // main switch: -fno-life: variable lifetime
     bool m_fLifePost;    // main switch: -fno-life-post: delayed assignment elimination
     bool m_fLocalize;    // main switch: -fno-localize: convert temps to local variables
@@ -413,6 +420,7 @@ private:
     bool m_fReloop;      // main switch: -fno-reloop: reform loops
     bool m_fReorder;     // main switch: -fno-reorder: reorder assignments in blocks
     bool m_fSlice = true;  // main switch: -fno-slice: array assignment slicing
+    int  m_fSliceElementLimit = 256;  // main switch: --fslice-element-limit
     bool m_fSplit;       // main switch: -fno-split: always assignment splitting
     bool m_fSubst;       // main switch: -fno-subst: substitute expression temp values
     bool m_fSubstConst;  // main switch: -fno-subst-const: final constant substitution
@@ -425,8 +433,9 @@ private:
 
 private:
     // METHODS
+    void addArg(char** argv, size_t count, bool isForRerun);
+    void addArg(const std::string& arg, bool isForRerun);
     void addLineArg(const string& arg);
-    void addArg(const string& arg);
     void addDefine(const string& defline, bool allowPlus) VL_MT_DISABLED;
     void addFuture(const string& flag);
     void addFuture0(const string& flag);
@@ -465,6 +474,7 @@ public:
     void addCompilerIncludes(const string& filename);
     void addLdLibs(const string& filename);
     void addMakeFlags(const string& filename);
+    void addLibMapFile(const string& filename);
     void addLibraryFile(const string& filename, const string& libname);
     void addVFile(const string& filename, const string& libname);
     void addVltFile(const string& filename, const string& libname);
@@ -509,14 +519,14 @@ public:
     bool debugCheck() const VL_MT_SAFE { return m_debugCheck; }
     bool debugCollision() const { return m_debugCollision; }
     bool debugEmitV() const VL_MT_SAFE { return m_debugEmitV; }
+    bool debugExitElab() const { return m_debugExitElab; }
     bool debugExitParse() const { return m_debugExitParse; }
-    bool debugExitUvm() const { return m_debugExitUvm; }
-    bool debugExitUvm23() const { return m_debugExitUvm23; }
     bool debugLeak() const { return m_debugLeak; }
     bool debugNondeterminism() const { return m_debugNondeterminism; }
     bool debugPartition() const { return m_debugPartition; }
     bool debugPreprocPassthru() const VL_MT_SAFE { return m_debugPreprocPassthru; }
     bool debugProtect() const VL_MT_SAFE { return m_debugProtect; }
+    int debugRuntimeTimeout() const { return m_debugRuntimeTimeout; }
     bool debugSelfTest() const { return m_debugSelfTest; }
     bool debugStackCheck() const { return m_debugStackCheck; }
     bool debugWidth() const VL_PURE { return m_debugWidth; }
@@ -571,6 +581,7 @@ public:
     bool anyPublicFlat() const { return m_publicParams || m_publicFlatRW || m_publicDepth; }
     bool lintOnly() const VL_MT_SAFE { return m_lintOnly; }
     bool ignc() const { return m_ignc; }
+    bool quietBuild() const VL_MT_SAFE { return m_quietBuild; }
     bool quietExit() const VL_MT_SAFE { return m_quietExit; }
     bool quietStats() const VL_MT_SAFE { return m_quietStats; }
     bool reportUnoptflat() const { return m_reportUnoptflat; }
@@ -590,6 +601,8 @@ public:
     int expandLimit() const { return m_expandLimit; }
     int gateStmts() const { return m_gateStmts; }
     int ifDepth() const { return m_ifDepth; }
+    int inlineCFuncs() const { return m_inlineCFuncs; }
+    int inlineCFuncsProduct() const { return m_inlineCFuncsProduct; }
     int inlineMult() const { return m_inlineMult; }
     int instrCountDpi() const { return m_instrCountDpi; }
     int localizeMaxSize() const { return m_localizeMaxSize; }
@@ -625,7 +638,7 @@ public:
     }
     bool useFstWriterThread() const { return traceThreads() && traceEnabledFst(); }
     int unrollCount() const { return m_unrollCount; }
-    int unrollCountAdjusted(const VOptionBool& full, bool generate, bool simulate);
+    int unrollLimit() const { return m_unrollLimit; }
     int unrollStmts() const { return m_unrollStmts; }
     int verilateJobs() const { return m_verilateJobs; }
 
@@ -676,6 +689,7 @@ public:
     const VStringList& ldLibs() const { return m_ldLibs; }
     const VStringList& makeFlags() const { return m_makeFlags; }
     const VFileLibSet& libraryFiles() const { return m_libraryFiles; }
+    const VStringSet& libmapFiles() const { return m_libmapFiles; }
     const VFileLibList& vFiles() const { return m_vFiles; }
     const VFileLibSet& vltFiles() const { return m_vltFiles; }
     const VStringList& forceIncs() const { return m_forceIncs; }
@@ -717,6 +731,7 @@ public:
     bool fGate() const { return m_fGate; }
     bool fInline() const { return m_fInline; }
     bool fInlineFuncs() const { return m_fInlineFuncs; }
+    bool fInlineFuncsEager() const { return m_fInlineFuncsEager; }
     bool fLife() const { return m_fLife; }
     bool fLifePost() const { return m_fLifePost; }
     bool fLocalize() const { return m_fLocalize; }
@@ -726,6 +741,7 @@ public:
     bool fReloop() const { return m_fReloop; }
     bool fReorder() const { return m_fReorder; }
     bool fSlice() const { return m_fSlice; }
+    int fSliceElementLimit() const { return m_fSliceElementLimit; }
     bool fSplit() const { return m_fSplit; }
     bool fSubst() const { return m_fSubst; }
     bool fSubstConst() const { return m_fSubstConst; }
@@ -755,6 +771,7 @@ public:
     static string version() VL_PURE;
     static string argString(int argc, char** argv);  ///< Return list of arguments as simple string
     string allArgsString() const VL_MT_SAFE;  ///< Return all passed arguments as simple string
+    const std::list<std::pair<std::list<std::string>, bool>>& allArgs() const;
     // Return options for child hierarchical blocks when forTop==false, otherwise returns args for
     // the top module.
     string allArgsStringForHierBlock(bool forTop) const;

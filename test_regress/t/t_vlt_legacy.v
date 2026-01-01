@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t (
-    input clk /*verilator clock_enable*/
+    input clk  /*verilator clock_enable*/
 );
   initial $finish;
 endmodule

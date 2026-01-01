@@ -9,10 +9,10 @@ endpackage
 
 module t;
   IOBUF iocell (
-      .O (in),
+      .O(in),
       .IO(pad),
-      .I ('0),
-      .T (~oe)
+      .I('0),
+      .T(~oe)
   );
 endmodule
 

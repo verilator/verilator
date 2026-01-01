@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2005-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -56,15 +56,11 @@ private:
     AstNodeExpr* m_disablep = nullptr;  // Last disable
     // Other:
     V3UniqueNames m_cycleDlyNames{"__VcycleDly"};  // Cycle delay counter name generator
-    V3UniqueNames m_propPrecondNames{"__VpropPrecond"};  // Cycle delay temporaries name generator
     bool m_inAssign = false;  // True if in an AssignNode
     bool m_inAssignDlyLhs = false;  // True if in AssignDly's LHS
     bool m_inSynchDrive = false;  // True if in synchronous drive
     std::vector<AstVarXRef*> m_xrefsp;  // list of xrefs that need name fixup
-    AstNodeExpr* m_hasUnsupp = nullptr;  // True if assert has unsupported construct inside
-    AstPExpr* m_pExpr = nullptr;  // Current AstPExpr
-    bool m_hasSExpr = false;  // True if assert has AstSExpr inside
-    bool m_inSExpr = false;  // True if in AstSExpr
+    bool m_inPExpr = false;  // True if in AstPExpr
 
     // METHODS
 
@@ -83,10 +79,6 @@ private:
             newp = new AstSenTree{nodep->fileline(), senip->cloneTree(true)};
         }
         return newp;
-    }
-    void clearAssertInfo() {
-        m_senip = nullptr;
-        m_disablep = nullptr;
     }
     AstPropSpec* getPropertyExprp(const AstProperty* const propp) {
         // The only statements possible in AstProperty are AstPropSpec (body)
@@ -165,14 +157,15 @@ private:
     void visit(AstModportClockingRef* const nodep) override {
         // It has to be converted to a list of ModportClockingVarRefs,
         // because clocking blocks are removed in this pass
-        for (AstClockingItem* itemp = nodep->clockingp()->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), ClockingItem)) {
-            AstVar* const varp = itemp->varp() ? itemp->varp() : VN_AS(itemp->user1p(), Var);
-            if (varp) {
-                AstModportVarRef* const modVarp
-                    = new AstModportVarRef{nodep->fileline(), varp->name(), itemp->direction()};
-                modVarp->varp(varp);
-                nodep->addNextHere(modVarp);
+        for (AstNode* itemp = nodep->clockingp()->itemsp(); itemp; itemp = itemp->nextp()) {
+            if (AstClockingItem* citemp = VN_CAST(itemp, ClockingItem)) {
+                if (AstVar* const varp
+                    = citemp->varp() ? citemp->varp() : VN_AS(citemp->user1p(), Var)) {
+                    AstModportVarRef* const modVarp = new AstModportVarRef{
+                        nodep->fileline(), varp->name(), citemp->direction()};
+                    modVarp->varp(varp);
+                    nodep->addNextHere(modVarp);
+                }
             }
         }
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
@@ -270,11 +263,14 @@ private:
             AstVarRef* const refp = new AstVarRef{flp, varp, VAccess::WRITE};
             refp->user1(true);
             if (skewp->num().is1Step()) {
-                // Assign the sampled expression to the clockvar (IEEE 1800-2023 14.13)
+                // #1step means the value that is sampled is always the signal's last value
+                // before the clock edge (IEEE 1800-2023 14.4)
                 AstSampled* const sampledp = new AstSampled{flp, exprp->cloneTreePure(false)};
                 sampledp->dtypeFrom(exprp);
-                AstAssignW* const ap = new AstAssignW{flp, refp, sampledp};
-                m_clockingp->addNextHere(new AstAlways{ap});
+                AstAssign* const assignp = new AstAssign{flp, refp, sampledp};
+                m_clockingp->addNextHere(new AstAlways{
+                    flp, VAlwaysKwd::ALWAYS,
+                    new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)}, assignp});
             } else if (skewp->isZero()) {
                 // #0 means the var has to be sampled in Observed (IEEE 1800-2023 14.13)
                 AstAssign* const assignp = new AstAssign{flp, refp, exprp->cloneTreePure(false)};
@@ -335,7 +331,10 @@ private:
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* valuep = V3Const::constifyEdit(nodep->lhsp()->unlinkFrBack());
         const AstConst* const constp = VN_CAST(valuep, Const);
-        if (constp->isZero()) {
+        if (!constp) {
+            nodep->v3error(
+                "Delay value is not an elaboration-time constant (IEEE 1800-2023 16.7)");
+        } else if (constp->isZero()) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: ##0 delays");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             VL_DO_DANGLING(valuep->deleteTree(), valuep);
@@ -343,7 +342,7 @@ private:
         }
         AstSenItem* sensesp = nullptr;
         if (!m_defaultClockingp) {
-            if (!m_pExpr && !m_inSExpr) {
+            if (!m_inPExpr) {
                 nodep->v3error("Usage of cycle delays requires default clocking"
                                " (IEEE 1800-2023 14.11)");
                 VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
@@ -419,33 +418,6 @@ private:
                 }
             }
             nodep->user1(true);
-        } else if (m_inSExpr && !nodep->user1()) {
-            AstVar* const preVarp
-                = new AstVar{nodep->varp()->fileline(), VVarType::BLOCKTEMP,
-                             m_propPrecondNames.get(nodep->varp()) + "__" + nodep->varp()->name(),
-                             nodep->varp()->dtypep()};
-            preVarp->lifetime(VLifetime::STATIC_EXPLICIT);
-            m_modp->addStmtsp(preVarp);
-            AstVarRef* const origp
-                = new AstVarRef{nodep->fileline(), nodep->varp(), VAccess::READ};
-            origp->user1(true);
-            AstVarRef* const precondp
-                = new AstVarRef{preVarp->fileline(), preVarp, VAccess::WRITE};
-            precondp->user1(true);
-
-            // Pack assignments in sampled as in concurrent assertions they are needed.
-            // Then, in assert's propp, sample only non-precondition variables.
-            AstSampled* const sampledp = new AstSampled{origp->fileline(), origp};
-            sampledp->dtypeFrom(origp);
-            UASSERT(m_pExpr, "Should be under assertion");
-            AstAssign* const assignp = new AstAssign{m_pExpr->fileline(), precondp, sampledp};
-            m_pExpr->addPrecondp(assignp);
-
-            AstVarRef* const precondReadp
-                = new AstVarRef{preVarp->fileline(), preVarp, VAccess::READ};
-            precondReadp->user1(true);
-            nodep->replaceWith(precondReadp);
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
     void visit(AstMemberSel* nodep) override {
@@ -500,33 +472,14 @@ private:
     void visit(AstNodeCoverOrAssert* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
 
-        VL_RESTORER(m_hasSExpr);
-        VL_RESTORER(m_hasUnsupp);
-
-        clearAssertInfo();
-        m_pExpr = new AstPExpr{nodep->propp()->fileline()};
-        m_pExpr->dtypeFrom(nodep->propp());
+        VL_RESTORER(m_senip);
+        VL_RESTORER(m_disablep);
+        m_senip = nullptr;
+        m_disablep = nullptr;
 
         // Find Clocking's buried under nodep->exprsp
         iterateChildren(nodep);
         if (!nodep->immediate()) nodep->sentreep(newSenTree(nodep));
-        if (m_hasSExpr && m_hasUnsupp) {
-            if (VN_IS(m_hasUnsupp, Implication)) {
-                m_hasUnsupp->v3warn(E_UNSUPPORTED,
-                                    "Unsupported: Implication with sequence expression");
-            } else {
-                m_hasUnsupp->v3warn(E_UNSUPPORTED,
-                                    "Unsupported: Disable iff with sequence expression");
-            }
-            if (m_pExpr) VL_DO_DANGLING(pushDeletep(m_pExpr), m_pExpr);
-        } else if (m_pExpr && m_pExpr->precondp()) {
-            m_pExpr->condp(VN_AS(nodep->propp()->unlinkFrBackWithNext(), NodeExpr));
-            nodep->propp(m_pExpr);
-            iterateAndNextNull(m_pExpr->precondp());
-        } else if (m_pExpr) {
-            VL_DO_DANGLING(pushDeletep(m_pExpr), m_pExpr);
-        }
-        clearAssertInfo();
     }
     void visit(AstFalling* nodep) override {
         if (nodep->user1SetOnce()) return;
@@ -563,10 +516,6 @@ private:
         AstSenTree* const sentreep = nodep->sentreep();
         if (sentreep) VL_DO_DANGLING(pushDeletep(sentreep->unlinkFrBack()), sentreep);
         nodep->sentreep(newSenTree(nodep));
-    }
-    void visit(AstLogNot* nodep) override {
-        if (m_inSExpr) nodep->v3error("Syntax error: unexpected 'not' in sequence expression");
-        iterateChildren(nodep);
     }
     void visit(AstPast* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
@@ -633,7 +582,6 @@ private:
 
     void visit(AstImplication* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
-        m_hasUnsupp = nodep;
 
         iterateChildren(nodep);
 
@@ -674,42 +622,29 @@ private:
 
     void visit(AstPropSpec* nodep) override {
         nodep = substitutePropertyCall(nodep);
-        // No need to iterate the body, once replace will get iterated
         iterateAndNextNull(nodep->sensesp());
-        if (m_senip)
+        if (m_senip && m_senip != nodep->sensesp())
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Only one PSL clock allowed per assertion");
-        // Block is the new expression to evaluate
-        AstNodeExpr* blockp = VN_AS(nodep->propp()->unlinkFrBack(), NodeExpr);
         if (!nodep->disablep() && m_defaultDisablep) {
             nodep->disablep(m_defaultDisablep->condp()->cloneTreePure(true));
         }
-        if (AstNodeExpr* const disablep = nodep->disablep()) {
-            m_disablep = disablep;
-            m_hasUnsupp = disablep;
-            if (VN_IS(nodep->backp(), Cover)) {
-                blockp = new AstAnd{disablep->fileline(),
-                                    new AstNot{disablep->fileline(), disablep->unlinkFrBack()},
-                                    blockp};
-            } else {
-                blockp = new AstOr{disablep->fileline(), disablep->unlinkFrBack(), blockp};
-            }
-        }
+        m_disablep = nodep->disablep();
         // Unlink and just keep a pointer to it, convert to sentree as needed
         m_senip = nodep->sensesp();
-        nodep->replaceWith(blockp);
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        iterateNull(nodep->disablep());
+        iterate(nodep->propp());
     }
-    void visit(AstSExpr* nodep) override {
-        VL_RESTORER(m_inSExpr);
-        m_inSExpr = true;
-        m_hasSExpr = true;
+    void visit(AstPExpr* nodep) override {
+        VL_RESTORER(m_inPExpr);
+        m_inPExpr = true;
 
-        UASSERT_OBJ(m_pExpr, nodep, "Should be under assertion");
-        m_pExpr->addPrecondp(nodep->delayp()->unlinkFrBack());
-
-        iterateChildren(nodep);
-        nodep->replaceWith(nodep->exprp()->unlinkFrBack());
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        if (AstLogNot* const notp = VN_CAST(nodep->backp(), LogNot)) {
+            notp->replaceWith(nodep->unlinkFrBack());
+            VL_DO_DANGLING(pushDeletep(notp), notp);
+            iterate(nodep);
+        } else {
+            iterateChildren(nodep);
+        }
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_defaultClockingp);
@@ -747,7 +682,6 @@ public:
     // CONSTRUCTORS
     explicit AssertPreVisitor(AstNetlist* nodep)
         : m_netlistp{nodep} {
-        clearAssertInfo();
         // Process
         iterate(nodep);
         // Fix up varref names

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -124,7 +124,7 @@ class UnrollGenVisitor final : public VNVisitor {
         return true;
     }
 
-    bool simulateTree(AstNodeExpr* nodep, const V3Number* loopValue, AstNode* dtypep,
+    bool simulateTree(AstNodeExpr* nodep, const V3Number* loopValue, const AstNode* dtypep,
                       V3Number& outNum) {
         AstNode* clonep = nodep->cloneTree(true);
         UASSERT_OBJ(clonep, nodep, "Failed to clone tree");
@@ -146,7 +146,7 @@ class UnrollGenVisitor final : public VNVisitor {
             return false;
         }
         // Fetch the result
-        V3Number* resp = simvis.fetchNumberNull(clonep);
+        const V3Number* resp = simvis.fetchNumberNull(clonep);
         if (!resp) {
             UINFO(3, "No number returned from simulation");
             VL_DO_DANGLING(clonep->deleteTree(), clonep);
@@ -190,7 +190,8 @@ class UnrollGenVisitor final : public VNVisitor {
         AstNode* newbodysp = nullptr;
         if (stmtsp) {
             pushDeletep(stmtsp);  // Always cloned below.
-            int times = 0;
+            size_t iterCount = 0;
+            const size_t iterLimit = v3Global.opt.unrollLimit();
             while (true) {
                 UINFO(8, "      Looping " << loopValue);
                 V3Number res{nodep};
@@ -201,6 +202,13 @@ class UnrollGenVisitor final : public VNVisitor {
                 if (!res.isEqOne()) {
                     break;  // Done with the loop
                 } else {
+                    if (++iterCount > iterLimit) {
+                        nodep->v3error("Unrolling generate loop took too long; probably this is "
+                                       "an infinite loop, otherwise set '--unroll-limit' above "
+                                       << iterLimit);
+                        break;
+                    }
+
                     // Replace iterator values with constant
                     AstNode* oneloopp = stmtsp->cloneTree(true);
                     AstConst* varValuep = new AstConst{nodep->fileline(), loopValue};
@@ -222,18 +230,8 @@ class UnrollGenVisitor final : public VNVisitor {
                         newbodysp = oneloopp;
                     }
 
-                    const int limit = v3Global.opt.unrollCountAdjusted(VOptionBool{}, true, false);
-                    if (++times / 3 > limit) {
-                        nodep->v3error(
-                            "Loop unrolling took too long;"
-                            " probably this is an infinite loop, "
-                            " or use /*verilator unroll_full*/, or set --unroll-count above "
-                            << times);
-                        break;
-                    }
-
                     // loopValue += valInc
-                    AstAssign* const incpass = VN_AS(incp, Assign);
+                    const AstAssign* const incpass = VN_AS(incp, Assign);
                     V3Number newLoopValue{nodep};
                     if (!simulateTree(incpass->rhsp(), &loopValue, incpass, newLoopValue)) {
                         nodep->v3error("Loop unrolling failed");

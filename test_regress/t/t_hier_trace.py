@@ -13,7 +13,7 @@ test.scenarios('simulator')
 
 test.compile(verilator_flags2=[
     '--trace-vcd', '-j 4', 't/t_hier_trace_sub/t_hier_trace.vlt', '--top-module t',
-    '--hierarchical', '-F t/t_hier_trace_sub/top.F'
+    '--hierarchical', '-F t/t_hier_trace_sub/top.vc'
 ])
 
 test.execute(all_run_flags=['-j 4'])

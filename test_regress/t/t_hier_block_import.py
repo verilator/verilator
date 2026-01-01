@@ -9,6 +9,7 @@
 
 import vltest_bootstrap
 
+test.priority(30)
 test.scenarios('vlt_all')
 
 # stats will be deleted but generation will be skipped if libs of hierarchical blocks exist.
@@ -21,7 +22,7 @@ test.setenv('TEST_ROOT', test.t_dir + "/t_hier_block_import")
 # So use 6 threads here though it's not optimal in performance, but ok.
 
 test.compile(verilator_flags2=[
-    '$TEST_ROOT/t_hier_block_import_def.vh', '-f $TEST_ROOT/t_hier_block_import_args.f',
+    '$TEST_ROOT/t_hier_block_import_def.vh', '-f $TEST_ROOT/t_hier_block_import_args.vc',
     '-I$TEST_ROOT'
 ],
              threads=(6 if test.vltmt else 1))

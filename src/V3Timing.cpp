@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -469,6 +469,7 @@ class TimingControlVisitor final : public VNVisitor {
     AstScope* m_scopep = nullptr;  // Current scope
     AstActive* m_activep = nullptr;  // Current active
     AstNode* m_procp = nullptr;  // NodeProcedure/CFunc/Begin we're under
+    bool m_hasProcess = false;  // True if current scope has a VlProcess handle available
     int m_forkCnt = 0;  // Number of forks inside a module
     bool m_underJumpBlock = false;  // True if we are inside of a jump-block
     bool m_underProcedure = false;  // True if we are under an always or initial
@@ -654,26 +655,34 @@ class TimingControlVisitor final : public VNVisitor {
     }
     // Adds debug info to a hardcoded method call
     void addDebugInfo(AstCMethodHard* const methodp) const {
-        if (v3Global.opt.protectIds()) return;
         FileLine* const flp = methodp->fileline();
-        AstCExpr* const ap = new AstCExpr{flp, '"' + flp->filenameEsc() + '"'};
+        const bool protectIds = v3Global.opt.protectIds();
+        AstCExpr* const ap
+            = new AstCExpr{flp, protectIds ? "VL_UNKNOWN" : '"' + flp->filenameEsc() + '"'};
         ap->dtypeSetString();
         methodp->addPinsp(ap);
-        AstCExpr* const bp = new AstCExpr{flp, cvtToStr(flp->lineno())};
+        AstCExpr* const bp = new AstCExpr{flp, protectIds ? "0" : cvtToStr(flp->lineno())};
         bp->dtypeSetString();
         methodp->addPinsp(bp);
     }
     // Adds debug info to a trigSched.trigger() call
     void addEventDebugInfo(AstCMethodHard* const methodp, AstSenTree* const sentreep) const {
-        if (v3Global.opt.protectIds()) return;
+        if (v3Global.opt.protectIds()) {
+            FileLine* const flp = sentreep->fileline();
+            AstCExpr* const descp = new AstCExpr{flp, "VL_UNKNOWN"};
+            descp->dtypeSetString();
+            methodp->addPinsp(descp);
+            addDebugInfo(methodp);
+            return;
+        }
         methodp->addPinsp(createEventDescription(sentreep));
         addDebugInfo(methodp);
     }
     // Adds process pointer to a hardcoded method call
     void addProcessInfo(AstCMethodHard* const methodp) const {
         FileLine* const flp = methodp->fileline();
-        AstCExpr* const ap = new AstCExpr{
-            flp, m_procp && (hasFlags(m_procp, T_HAS_PROC)) ? "vlProcess" : "nullptr"};
+        AstCExpr* const ap
+            = new AstCExpr{flp, (m_procp && m_hasProcess) ? "vlProcess" : "nullptr"};
         methodp->addPinsp(ap);
     }
     // Creates the fork handle type and returns it
@@ -779,7 +788,9 @@ class TimingControlVisitor final : public VNVisitor {
     }
     void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_procp);
+        VL_RESTORER(m_hasProcess);
         m_procp = nodep;
+        m_hasProcess = hasFlags(nodep, T_HAS_PROC);
         VL_RESTORER(m_underProcedure);
         m_underProcedure = true;
         iterateChildren(nodep);
@@ -801,7 +812,9 @@ class TimingControlVisitor final : public VNVisitor {
     void visit(AstAlways* nodep) override {
         if (nodep->user1SetOnce()) return;
         VL_RESTORER(m_procp);
+        VL_RESTORER(m_hasProcess);
         m_procp = nodep;
+        m_hasProcess = hasFlags(nodep, T_HAS_PROC);
         VL_RESTORER(m_underProcedure);
         m_underProcedure = true;
         // Workaround for killing `always` processes (doing that is pretty much UB)
@@ -829,7 +842,9 @@ class TimingControlVisitor final : public VNVisitor {
     }
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_procp);
+        VL_RESTORER(m_hasProcess);
         m_procp = nodep;
+        m_hasProcess = hasFlags(nodep, T_HAS_PROC);
         iterateChildren(nodep);
         if (hasFlags(nodep, T_HAS_PROC)) nodep->setNeedProcess();
         if (!(hasFlags(nodep, T_SUSPENDEE))) return;
@@ -844,24 +859,18 @@ class TimingControlVisitor final : public VNVisitor {
                 nodep->addStmtsp(cstmtp);
             }
         }
-        AstNode* firstCoStmtp = nullptr;  // First co_* statement in the function
-        nodep->exists([&](AstCAwait* const awaitp) -> bool { return (firstCoStmtp = awaitp); });
-        if (!firstCoStmtp) {
-            // It's a coroutine but has no awaits (a class method that overrides/is
-            // overridden by a suspendable, but doesn't have any awaits itself). Add a
-            // co_return at the end (either that or a co_await is required in a
-            // coroutine)
-            firstCoStmtp = new AstCStmt{nodep->fileline(), "co_return;"};
-            nodep->addStmtsp(firstCoStmtp);
-        }
         if (nodep->dpiExportImpl()) {
-            // A DPI-exported coroutine won't be able to block the calling code
-            // Error on the await node; fall back to the function node
-            firstCoStmtp->v3warn(E_UNSUPPORTED,
-                                 "Unsupported: Timing controls inside DPI-exported tasks");
+            nodep->exists([](AstCAwait* const awaitp) -> bool {
+                // A DPI-exported coroutine won't be able to block the calling code
+                // Error on the await node; fall back to the function node
+                awaitp->v3warn(E_UNSUPPORTED,
+                               "Unsupported: Timing controls inside DPI-exported tasks");
+                return true;
+            });
         }
     }
     void visit(AstNodeCCall* nodep) override {
+        if (nodep->funcp()->needProcess()) m_hasProcess = true;
         if (hasFlags(nodep->funcp(), T_SUSPENDEE) && !nodep->user1SetOnce()) {  // If suspendable
             VNRelinker relinker;
             nodep->unlinkFrBack(&relinker);
@@ -891,6 +900,10 @@ class TimingControlVisitor final : public VNVisitor {
                                     new AstConst{flp, AstConst::Unsized64{},
                                                  static_cast<uint64_t>(timescaleFactor)}};
             }
+        } else if (constp->num().is1Step()) {
+            VL_DO_DANGLING(valuep->deleteTree(), valuep);
+            valuep = new AstConst{flp, AstConst::Unsized64{}, 1};
+            valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
         }
         // Replace self with a 'co_await dlySched.delay(<valuep>)'
         AstCMethodHard* const delayMethodp = new AstCMethodHard{
@@ -1161,12 +1174,12 @@ class TimingControlVisitor final : public VNVisitor {
                                      forkp->unlinkFrBack()});
     }
     void visit(AstDisableFork* nodep) override {
-        if (hasFlags(m_procp, T_HAS_PROC)) return;
+        if (m_hasProcess) return;
         // never reached by any process; remove to avoid compilation error
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     void visit(AstWaitFork* nodep) override {
-        if (hasFlags(m_procp, T_HAS_PROC)) {
+        if (m_hasProcess) {
             FileLine* const flp = nodep->fileline();
             AstCExpr* const exprp = new AstCExpr{flp, "vlProcess->completedFork()", 1};
             AstWait* const waitp = new AstWait{flp, exprp, nullptr};
@@ -1229,8 +1242,10 @@ class TimingControlVisitor final : public VNVisitor {
     }
     void visit(AstBegin* nodep) override {
         VL_RESTORER(m_procp);
+        VL_RESTORER(m_hasProcess);
+        m_hasProcess |= hasFlags(nodep, T_HAS_PROC);
         m_procp = nodep;
-        if (hasFlags(nodep, T_HAS_PROC)) nodep->setNeedProcess();
+        if (m_hasProcess) nodep->setNeedProcess();
         iterateChildren(nodep);
     }
     void visit(AstFork* nodep) override {

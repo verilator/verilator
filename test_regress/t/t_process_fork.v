@@ -8,12 +8,15 @@ module t;
    process job[] = new [8];
 
    initial begin
-      foreach (job[j]) fork
-         begin
-            $write("job started\n");
-            job[j] = process::self();
-         end
-      join_none
+      foreach (job[j]) begin
+         fork
+            begin
+               $write("job started\n");
+               job[j] = process::self();
+            end
+         join_none
+         #0;
+      end
       foreach (job[j]) begin
          wait (job[j]);
       end

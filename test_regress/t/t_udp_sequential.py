@@ -9,7 +9,8 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+# TODO add back multithreaded, see issue #6056
+test.scenarios('simulator_st')
 
 test.compile()
 

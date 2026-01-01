@@ -11,9 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-test.lint(verilator_flags2=["--lint-only"],
-          fails=test.vlt_all,
-          expect_filename=test.golden_filename)
+test.lint(fails=test.vlt_all, expect_filename=test.golden_filename)
 
 # Sort so that 'initial' scheduling order is not relevant
 # test.files_identical_sorted(test.run_log_filename, test.golden_filename, is_logfile=True)

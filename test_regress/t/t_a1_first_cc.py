@@ -13,6 +13,7 @@
 
 import vltest_bootstrap
 
+test.priority(100)
 test.scenarios('vlt')
 
 test.leak_check_disable()

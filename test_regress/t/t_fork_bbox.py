@@ -11,6 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(verilator_flags2=['--lint-only --no-timing --bbox-unsup'])
+test.lint(verilator_flags2=['--no-timing --bbox-unsup'])
 
 test.passes()

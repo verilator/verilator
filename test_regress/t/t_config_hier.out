@@ -1,0 +1,14 @@
+%Error-UNSUPPORTED: t/t_config_hier.v:36:18: Unsupported: hierarchical config rule
+   36 |   instance t.u_1 use work.cfg2 :config;
+      |                  ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_config_hier.v:41:18: Unsupported: hierarchical config rule
+   41 |   instance t.u_1 use cfg2 :config;
+      |                  ^~~
+%Error-UNSUPPORTED: t/t_config_hier.v:46:16: Unsupported: hierarchical config rule
+   46 |   cell work.m1 use work.cfg2 :config;
+      |                ^~~
+%Error-UNSUPPORTED: t/t_config_hier.v:51:11: Unsupported: hierarchical config rule
+   51 |   cell m1 use cfg2 :config;
+      |           ^~~
+%Error: Exiting due to

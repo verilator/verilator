@@ -35,10 +35,6 @@
 #include <iostream>
 #include <random>
 
-extern "C" {
-#include <libgen.h>
-}
-
 // These require the above. Comment prevents clang-format moving them
 #include "TestCheck.h"
 #include "TestSimulator.h"
@@ -259,13 +255,13 @@ void _arr_access_format_check(TestVpiHandle& reg_h, int wordSize, const int* low
             strVal_s[spanSize] = '\0';
             value_in.value.str = strVal_s;
         } else if (format == vpiDecStrVal) {
-            sprintf(strVal_s, "%" PRIu64, intVal);
+            snprintf(strVal_s, MAX_SPANSIZE + 1, "%" PRIu64, intVal);
             value_in.value.str = strVal_s;
         } else if (format == vpiHexStrVal) {
-            sprintf(strVal_s, "%0*" PRIx64, (spanSize + 3) / 4, intVal);
+            snprintf(strVal_s, MAX_SPANSIZE + 1, "%0*" PRIx64, (spanSize + 3) / 4, intVal);
             value_in.value.str = strVal_s;
         } else if (format == vpiOctStrVal) {
-            sprintf(strVal_s, "%0*" PRIo64, (spanSize + 2) / 3, intVal);
+            snprintf(strVal_s, MAX_SPANSIZE + 1, "%0*" PRIo64, (spanSize + 2) / 3, intVal);
             value_in.value.str = strVal_s;
         } else if (format == vpiStringVal) {
             const int byteCount = (spanSize + 7) / 8;

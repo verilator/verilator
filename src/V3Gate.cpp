@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -156,8 +156,8 @@ public:
             UINFO(6, "New vertex " << vscp);
             vVtxp = new GateVarVertex{this, vscp};
             vscp->user1p(vVtxp);
-            if (vscp->varp()->sensIfacep()) {
-                // Can be used in a class method, which cannot be tracked statically
+            if (vscp->varp()->sensIfacep() || vscp->varp()->isVirtIface()) {
+                // Can be read/written to via the referenced actual interface
                 vVtxp->clearReducibleAndDedupable("VirtIface");
                 vVtxp->setConsumed("VirtIface");
             }
@@ -1097,6 +1097,7 @@ public:
 class GateMergeAssignments final {
     GateGraph& m_graph;
     size_t m_statAssignMerged = 0;  // Statistic tracking
+    std::vector<GateLogicVertex*> m_toRemove;  // Logic vertices to delete
 
     // assemble two Sel into one if possible
     AstSel* merge(AstSel* prevSelp, AstSel* currSelp) {
@@ -1146,18 +1147,16 @@ class GateMergeAssignments final {
                 // replace preSel with newSel
                 prevSelp->replaceWith(newSelp);
                 VL_DO_DANGLING(prevSelp->deleteTree(), prevSelp);
-                // create new rhs for pre assignment
-                AstNode* const newRhsp = new AstConcat{prevAssignp->rhsp()->fileline(),
-                                                       prevAssignp->rhsp()->cloneTreePure(false),
-                                                       assignp->rhsp()->cloneTreePure(false)};
-                AstNode* const prevRhsp = prevAssignp->rhsp();
-                prevRhsp->replaceWith(newRhsp);
-                VL_DO_DANGLING(prevRhsp->deleteTree(), prevRhsp);
+                // Update RHS of the prev assignment, reusing existing parts (might be impure).
+                prevAssignp->rhsp(new AstConcat{prevAssignp->rhsp()->fileline(),
+                                                prevAssignp->rhsp()->unlinkFrBack(),
+                                                assignp->rhsp()->unlinkFrBack()});
                 // Why do we care about the type of an assignment?
                 prevAssignp->dtypeChgWidthSigned(prevAssignp->width() + assignp->width(),
                                                  prevAssignp->width() + assignp->width(),
                                                  VSigning::SIGNED);
-                // Don't need to delete assignp, will be handled
+                // We will delete the current assignment
+                m_toRemove.emplace_back(lVtxp);
 
                 // Update the graph
                 while (V3GraphEdge* const iedgep = lVtxp->inEdges().frontp()) {
@@ -1181,6 +1180,12 @@ class GateMergeAssignments final {
         UINFO(6, "mergeAssigns");
         for (V3GraphVertex& vtx : graph.vertices()) {
             if (GateVarVertex* const vVtxp = vtx.cast<GateVarVertex>()) process(vVtxp);
+        }
+        // Delete merged assignments
+        for (GateLogicVertex* const lVtxp : m_toRemove) {
+            AstNode* const nodep = lVtxp->nodep();
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            VL_DO_DANGLING(lVtxp->unlinkDelete(&m_graph), lVtxp);
         }
     }
 

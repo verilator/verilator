@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -199,7 +199,7 @@ public:
 
 // === AstNode ===
 class AstCaseItem final : public AstNode {
-    // Single item of AstCase/AstRandCase/AstRSCase
+    // Single item of AstCase/AstRandCase
     // @astgen op1 := condsp : List[AstNodeExpr]
     // @astgen op2 := stmtsp : List[AstNode]
 public:
@@ -288,8 +288,33 @@ public:
 class AstCStmt final : public AstNodeStmt {
     // C statement emitted into output, with some arbitrary nodes interspersed
     // @astgen op1 := nodesp : List[AstNode<AstNodeStmt|AstNodeExpr|AstText>]
+
+    static AstCStmt* profExecSection(FileLine* flp, const std::string& section, bool push) {
+        // Compute the label
+        std::string label;
+        if (v3Global.opt.hierChild()) {
+            label += v3Global.opt.topModule() + ":";
+        } else if (!v3Global.opt.libCreate().empty()) {
+            label += v3Global.opt.libCreate() + ":";
+        }
+        label += section;
+        // The profiler statement
+        std::string pStmt = "VL_EXEC_TRACE_ADD_RECORD(vlSymsp)";
+        pStmt += push ? ".sectionPush" : ".sectionPop";
+        pStmt += "(";
+        if (push) pStmt += "\"" + label + "\"";
+        pStmt += ");";
+        // The debug statement
+        std::string dStmt = "VL_DEBUG_IF(VL_DBG_MSGF(\"+    --prof-exec ";
+        dStmt += push ? "sectionPush " : "sectionPop ";
+        dStmt += label;
+        dStmt += "\\n\"););";
+        // Concatenate
+        return new AstCStmt{flp, push ? pStmt + "\n" + dStmt : dStmt + "\n" + pStmt};
+    }
+
 public:
-    AstCStmt(FileLine* fl, const std::string& text = "")
+    explicit AstCStmt(FileLine* fl, const std::string& text = "")
         : ASTGEN_SUPER_CStmt(fl) {
         if (!text.empty()) add(text);
     }
@@ -302,6 +327,13 @@ public:
     // Add some text, or a node to this statement
     void add(const std::string& text) { addNodesp(new AstText{fileline(), text}); }
     void add(AstNode* nodep) { addNodesp(nodep); }
+    // Static factory methods for specific cases
+    static AstCStmt* profExecSectionPush(FileLine* flp, const std::string& section) {
+        return profExecSection(flp, section, true);
+    }
+    static AstCStmt* profExecSectionPop(FileLine* flp, const std::string& section) {
+        return profExecSection(flp, section, false);
+    }
 };
 class AstCStmtUser final : public AstNodeStmt {
     // User '$c' statement, also used for handling some AstSystemCSection.
@@ -315,7 +347,7 @@ class AstCStmtUser final : public AstNodeStmt {
     // @astgen op1 := nodesp : List[AstNode<AstNodeExpr|AstText>]
     const bool m_fromDollarC;  // Is from source '$c', emit decoration
 public:
-    AstCStmtUser(FileLine* fl, bool fromDollarC = false)
+    explicit AstCStmtUser(FileLine* fl, bool fromDollarC = false)
         : ASTGEN_SUPER_CStmtUser(fl)
         , m_fromDollarC{fromDollarC} {}
     ASTGEN_MEMBERS_AstCStmtUser;
@@ -349,6 +381,8 @@ public:
         addItemsp(itemsp);
     }
     ASTGEN_MEMBERS_AstCase;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
     string verilogKwd() const override { return casez() ? "casez" : casex() ? "casex" : "case"; }
     bool sameNode(const AstNode* samep) const override {
@@ -601,20 +635,21 @@ public:
     int instrCount() const override { return 0; }
 };
 class AstExecGraph final : public AstNodeStmt {
-    // For parallel execution, this node contains a dependency graph.  Each
-    // vertex in the graph is an ExecMTask, which contains a body for the
-    // mtask (an AstMTaskBody), which contains sequentially executed statements.
-    //
-    // The AstMTaskBody nodes are also children of this node, so we can visit
-    // them without traversing the graph.
+    // For parallel execution, this node contains a dependency graph. Each
+    // vertex in the graph is an ExecMTask, which includes a function that
+    // holds the sequential body of the mtask.
     //
     // The location where AstExecGraph appears as a procedural statement is
     // where the parallel graph will be executed. Execution proceeds after
     // the AstExecGraph when all threads have joined.
     //
-    // @astgen op1 := mTaskBodiesp : List[AstMTaskBody]
-    // In later phases, the statements that start the parallel execution
-    // @astgen op2 := stmtsp : List[AstNode]
+    // For code analysis purposes after scheduling, we keep a call to each
+    // MTask function as children of the AstExecGraph in 'stmtsp'. These
+    // are in a topological order so they represent a valid sequential
+    // execution of the graph. In `V3ExecGraph::implement`, we replace these
+    // statements with statements that dispatch to the thread pool for
+    // parallel execution.
+    // @astgen op1 := stmtsp : List[AstNode]
     V3Graph* const m_depGraphp;  // contains ExecMTask vertices
     const string m_name;  // Name of this AstExecGraph (for uniqueness at code generation)
 
@@ -623,10 +658,7 @@ public:
     ~AstExecGraph() override;
     ASTGEN_MEMBERS_AstExecGraph;
     void cloneRelink() override { V3ERROR_NA; }  // Not cloneable
-    const char* broken() const override {
-        BROKEN_RTN(!m_depGraphp);
-        return nullptr;
-    }
+    const char* broken() const override;
     string name() const override VL_MT_STABLE { return m_name; }
     V3Graph* depGraphp() { return m_depGraphp; }
     const V3Graph* depGraphp() const { return m_depGraphp; }
@@ -765,8 +797,10 @@ class AstLoop final : public AstNodeStmt {
     // @astgen op2 := contsp : List[AstNode] // Empty after LinkJump
     VOptionBool m_unroll;  // Full, none, or default unrolling
 public:
-    AstLoop(FileLine* fl)
-        : ASTGEN_SUPER_Loop(fl) {}
+    explicit AstLoop(FileLine* fl, AstNode* stmtsp = nullptr)
+        : ASTGEN_SUPER_Loop(fl) {
+        addStmtsp(stmtsp);
+    }
     ASTGEN_MEMBERS_AstLoop;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
@@ -823,6 +857,17 @@ public:
     }
     bool off() const { return m_off; }
 };
+class AstPExprClause final : public AstNodeStmt {
+    const bool m_pass;  // True if will be replaced by passing assertion clause, false for
+                        // assertion failure clause
+
+public:
+    ASTGEN_MEMBERS_AstPExprClause;
+    explicit AstPExprClause(FileLine* fl, bool pass = true)
+        : ASTGEN_SUPER_PExprClause(fl)
+        , m_pass{pass} {}
+    bool pass() const { return m_pass; }
+};
 class AstPrintTimeScale final : public AstNodeStmt {
     // Parents: stmtlist
     string m_name;  // Parent module name
@@ -844,42 +889,17 @@ public:
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }
     VTimescale timeunit() const { return m_timeunit; }
 };
-class AstRSCase final : public AstNodeStmt {
-    // Randsequence case statement
-    // @astgen op1 := exprp : AstNodeExpr // Condition (scurtinee) expression
-    // @astgen op2 := itemsp : List[AstCaseItem]
+class AstRSBreak final : public AstNodeStmt {
+    // randsequence break
 public:
-    AstRSCase(FileLine* fl, AstNodeExpr* exprp, AstCaseItem* itemsp)
-        : ASTGEN_SUPER_Case(fl) {
-        this->exprp(exprp);
-        addItemsp(itemsp);
-    }
-    ASTGEN_MEMBERS_AstRSCase;
-    int instrCount() const override { return INSTR_COUNT_BRANCH; }
-    bool sameNode(const AstNode* samep) const override { return true; }
-};
-class AstRSIf final : public AstNodeStmt {
-    // Randsequence if
-    // @astgen op1 := condp : AstNodeExpr
-    // @astgen op2 := thensp : List[AstNode]
-    // @astgen op3 := elsesp : List[AstNode]
-public:
-    AstRSIf(FileLine* fl, AstNodeExpr* condp, AstNode* thensp, AstNode* elsesp)
-        : ASTGEN_SUPER_RSIf(fl) {
-        this->condp(condp);
-        addThensp(thensp);
-        addElsesp(elsesp);
-    }
-
-public:
-    ASTGEN_MEMBERS_AstRSIf;
-    bool isGateOptimizable() const override { return false; }
-    bool isGateDedupable() const override { return false; }
-    int instrCount() const override { return INSTR_COUNT_BRANCH; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    explicit AstRSBreak(FileLine* fl)
+        : ASTGEN_SUPER_RSBreak(fl) {}
+    ASTGEN_MEMBERS_AstRSBreak;
+    string verilogKwd() const override { return "break"; }
+    bool isBrancher() const override { V3ERROR_NA_RETURN(true); }  // Node removed early
 };
 class AstRSProd final : public AstNodeStmt {
-    // randomsquence production, under a AstRandSequence
+    // randomsequence production, under a AstRandSequence
     // @astgen op1 := fvarp : Optional[AstVar]
     // @astgen op2 := portsp : List[AstNode]
     // @astgen op3 := rulesp : List[AstRSRule]
@@ -892,12 +912,14 @@ public:
         addRulesp(rulesp);
     }
     ASTGEN_MEMBERS_AstRSProd;
+    bool maybePointedTo() const override VL_MT_SAFE { return true; }
     string name() const override VL_MT_STABLE { return m_name; }
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
 };
 class AstRSProdItem final : public AstNodeStmt {
     // randomsquence production item
     // @astgen op1 := argsp : List[AstNodeExpr]
+    // @astgen ptr := m_prodp : Optional[AstRSProd]  // Pointer to production
     string m_name;  // Name of block, or "" to use first production
 public:
     AstRSProdItem(FileLine* fl, const string& name, AstNodeExpr* argsp)
@@ -908,6 +930,8 @@ public:
     ASTGEN_MEMBERS_AstRSProdItem;
     string name() const override VL_MT_STABLE { return m_name; }
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
+    AstRSProd* prodp() const { return m_prodp; }
+    void prodp(AstRSProd* nodep) { m_prodp = nodep; }
 };
 class AstRSProdList final : public AstNodeStmt {
     // randomsquence production list
@@ -927,32 +951,26 @@ public:
     bool randJoin() const { return m_randJoin; }
     void randJoin(bool flag) { m_randJoin = flag; }
 };
-class AstRSRepeat final : public AstNodeStmt {
-    // randsequence repeat
-    // @astgen op1 := countp : AstNodeExpr
-    // @astgen op2 := stmtsp : List[AstNode]
+class AstRSReturn final : public AstNodeStmt {
+    // randsequence return
 public:
-    AstRSRepeat(FileLine* fl, AstNodeExpr* countp, AstNode* stmtsp)
-        : ASTGEN_SUPER_RSRepeat(fl) {
-        this->countp(countp);
-        addStmtsp(stmtsp);
-    }
-    ASTGEN_MEMBERS_AstRSRepeat;
-    bool isGateOptimizable() const override { return false; }
-    int instrCount() const override { return INSTR_COUNT_BRANCH; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    explicit AstRSReturn(FileLine* fl)
+        : ASTGEN_SUPER_RSReturn(fl) {}
+    ASTGEN_MEMBERS_AstRSReturn;
+    string verilogKwd() const override { return "return"; }
+    bool isBrancher() const override { V3ERROR_NA_RETURN(true); }  // Node removed early
 };
 class AstRSRule final : public AstNodeStmt {
     // randomsquence rule
     // @astgen op1 := weightp : Optional[AstNodeExpr]
     // @astgen op2 := prodlistsp : List[AstRSProdList]
-    // @astgen op3 := stmtsp : List[AstNode]
+    // @astgen op3 := weightStmtsp : List[AstNode]
 public:
-    AstRSRule(FileLine* fl, AstNodeExpr* weightp, AstRSProdList* prodlistsp, AstNode* stmtsp)
+    AstRSRule(FileLine* fl, AstNodeExpr* weightp, AstRSProdList* prodlistsp, AstNode* weightStmtsp)
         : ASTGEN_SUPER_RSRule(fl) {
         this->weightp(weightp);
         addProdlistsp(prodlistsp);
-        addStmtsp(stmtsp);
+        addWeightStmtsp(weightStmtsp);
     }
     ASTGEN_MEMBERS_AstRSRule;
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
@@ -963,22 +981,31 @@ public:
     AstRandCase(FileLine* fl, AstCaseItem* itemsp)
         : ASTGEN_SUPER_RandCase(fl) {
         addItemsp(itemsp);
+        v3Global.useRandomizeMethods(true);
     }
     ASTGEN_MEMBERS_AstRandCase;
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
 };
 class AstRandSequence final : public AstNodeStmt {
     // @astgen op2 := prodsp : List[AstRSProd]
-    string m_name;  // Name of block, or "" to use first production
+    // @astgen ptr := m_prodp : Optional[AstRSProd]  // Pointer to start production (if any)
+    string m_name;  // Created unique name
+    string m_start;  // Name of start production, or "" to use first production
 public:
-    AstRandSequence(FileLine* fl, const string& name, AstRSProd* prodsp)
+    AstRandSequence(FileLine* fl, const string& start, AstRSProd* prodsp)
         : ASTGEN_SUPER_RandSequence(fl)
-        , m_name{name} {
+        , m_start{start} {
         addProdsp(prodsp);
     }
     ASTGEN_MEMBERS_AstRandSequence;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }  // * = Block name
+    void name(const string& name) override { m_name = name; }
+    string start() const VL_MT_STABLE { return m_start; }
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
+    AstRSProd* prodp() const { return m_prodp; }
+    void prodp(AstRSProd* nodep) { m_prodp = nodep; }
 };
 class AstRelease final : public AstNodeStmt {
     // Procedural 'release' statement
@@ -1374,9 +1401,10 @@ class AstFork final : public AstNodeBlock {
     // spawned. This is necessary to implement things like local variable
     // initializers properly. The parallel statements inside the fork must all
     // be AstBegin, as lowering stages will introduce additional statements to
-    // be executed sequentially within eaach fork branch.
+    // be executed sequentially within each fork branch.
     //
     // @astgen op3 := forksp : List[AstBegin]
+    // @astgen op4 := parentProcessp : Optional[AstVarRef]
     const VJoinType m_joinType;  // Join keyword type
 public:
     AstFork(FileLine* fl, VJoinType joinType, const string& name = "")

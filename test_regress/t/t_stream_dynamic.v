@@ -194,7 +194,7 @@ module t;
       `checkh(rbits, 64'hefbeaddefecadefa);
    endtask
 
-   initial begin;
+   initial begin
       test1();
       test2();
       test3();

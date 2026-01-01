@@ -12,9 +12,9 @@ module t(/*AUTOARG*/
 
    logic in, out;
    clocking cb @(posedge clk);
-       default input #1 output #1step;
+       default input #1 output #1step;  // Now allowed
        default input #2 output #2;
-       output #1step out;
+       output #1step out;  // Now allowed
        output out;
    endclocking
 endmodule

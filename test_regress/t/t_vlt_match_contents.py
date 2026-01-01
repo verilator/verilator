@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(verilator_flags2=["--lint-only -Wall t/t_vlt_match_contents.vlt"],
+test.lint(verilator_flags2=["-Wall t/t_vlt_match_contents.vlt"],
           fails=True,
           expect_filename=test.golden_filename)
 

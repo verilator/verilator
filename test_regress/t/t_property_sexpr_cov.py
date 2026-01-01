@@ -14,5 +14,6 @@ test.scenarios('simulator')
 test.compile(timing_loop=True, verilator_flags2=['--assert', '--timing', '--coverage-user'])
 
 test.execute(expect_filename=test.golden_filename)
+test.files_identical(test.obj_dir + "/coverage.dat", "t/t_property_sexpr_cov.dat.out")
 
 test.passes()

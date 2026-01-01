@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -41,6 +41,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Graph subclasses
 
 class TaskBaseVertex VL_NOT_FINAL : public V3GraphVertex {
+    VL_RTTI_IMPL(TaskBaseVertex, V3GraphVertex);
     AstNode* m_impurep = nullptr;  // Node causing impure function w/ outside references
     bool m_noInline = false;  // Marked with pragma
 public:
@@ -55,6 +56,7 @@ public:
 };
 
 class TaskFTaskVertex final : public TaskBaseVertex {
+    VL_RTTI_IMPL(TaskFTaskVertex, TaskBaseVertex);
     // Every task gets a vertex, and we link tasks together based on funcrefs.
     AstNodeFTask* const m_nodep;
     AstCFunc* m_cFuncp = nullptr;
@@ -72,6 +74,7 @@ public:
 };
 
 class TaskCodeVertex final : public TaskBaseVertex {
+    VL_RTTI_IMPL(TaskCodeVertex, TaskBaseVertex);
     // Top vertex for all calls not under another task
 public:
     explicit TaskCodeVertex(V3Graph* graphp)
@@ -133,36 +136,69 @@ public:
     void remapFuncClassp(AstNodeFTask* nodep, AstNodeFTask* newp) {
         m_funcToClassMap[newp] = getClassp(nodep);
     }
-    bool ftaskNoInline(AstNodeFTask* nodep) {
-        return !v3Global.opt.fInlineFuncs() || getFTaskVertex(nodep)->noInline();
-    }
+    bool ftaskNoInline(AstNodeFTask* nodep) { return getFTaskVertex(nodep)->noInline(); }
     AstCFunc* ftaskCFuncp(AstNodeFTask* nodep) { return getFTaskVertex(nodep)->cFuncp(); }
     void ftaskCFuncp(AstNodeFTask* nodep, AstCFunc* cfuncp) {
         getFTaskVertex(nodep)->cFuncp(cfuncp);
     }
-    void checkPurity(AstNodeFTask* nodep) { checkPurity(nodep, getFTaskVertex(nodep)); }
+    // Returns pointer to node that makes the given FTask impure
+    AstNode* checkImpure(AstNodeFTask* nodep) { return getFTaskVertex(nodep)->impureNode(); }
 
 private:
-    void checkPurity(AstNodeFTask* nodep, TaskBaseVertex* vxp) {
-        if (nodep->recursive()) return;  // Impure, but no warning
-        if (!vxp->pure()) {
-            nodep->v3warn(
-                IMPURE, "Unsupported: External variable referenced by non-inlined function/task: "
-                            << nodep->prettyNameQ() << '\n'
-                            << nodep->warnContextPrimary() << '\n'
-                            << vxp->impureNode()->warnOther()
-                            << "... Location of the external reference: "
-                            << vxp->impureNode()->prettyNameQ() << '\n'
-                            << vxp->impureNode()->warnContextSecondary());
-        }
-        // And, we need to check all tasks this task calls
-        for (V3GraphEdge& edge : vxp->outEdges()) {
-            checkPurity(nodep, static_cast<TaskBaseVertex*>(edge.top()));
-        }
-    }
     TaskFTaskVertex* getFTaskVertex(AstNodeFTask* nodep) {
         if (!nodep->user4p()) nodep->user4p(new TaskFTaskVertex{&m_callGraph, nodep});
         return static_cast<TaskFTaskVertex*>(nodep->user4u().toGraphVertex());
+    }
+
+    void propagateImpureReason() {
+        std::vector<TaskFTaskVertex*> workList;
+        // Gather all impure FTask vertices
+        for (V3GraphVertex& vtx : m_callGraph.vertices()) {
+            if (TaskFTaskVertex* const ftVtxp = vtx.cast<TaskFTaskVertex>()) {
+                if (!ftVtxp->pure()) workList.emplace_back(ftVtxp);
+            }
+        }
+        // Mark every pure caller as impure and enqueue them - this propagates impureness
+        while (!workList.empty()) {
+            TaskFTaskVertex* const calleep = workList.back();
+            workList.pop_back();
+            UASSERT_OBJ(!calleep->pure(), calleep->nodep(), "Should not enqueue pure vertex");
+            for (V3GraphEdge& edge : calleep->inEdges()) {
+                if (TaskFTaskVertex* const callerp = edge.fromp()->cast<TaskFTaskVertex>()) {
+                    if (!callerp->pure()) continue;  // Already processed or on workList
+                    callerp->impure(calleep->impureNode());
+                    workList.emplace_back(callerp);
+                }
+            }
+        }
+    }
+
+    void decideInlining() {
+        for (V3GraphVertex& vtx : m_callGraph.vertices()) {
+            TaskFTaskVertex* const ftVtxp = vtx.cast<TaskFTaskVertex>();
+            if (!ftVtxp) continue;
+            // Move on if already decided not to inline
+            if (ftVtxp->noInline()) continue;
+            // If inlining blanked disabled, don't do it. Note this usually
+            // results in large amounts of breakage so is mostly for testing.
+            if (!v3Global.opt.fInlineFuncs()) {
+                ftVtxp->noInline(true);
+                continue;
+            }
+
+            // If eagerly inlining (historic - and still default - behaviour) then nothing to do
+            if (v3Global.opt.fInlineFuncsEager()) continue;
+
+            AstNodeFTask* const ftaskp = ftVtxp->nodep();
+            // We are relying on inlining of some internal functions for
+            // functional corretness. Probably that's not a good thing?
+            if (!ftaskp->verilogFunction()) continue;
+            // Non-inlned public functions are a bit broken right now, so keep
+            // inlining them (internal calls are inlined + keep public version)
+            if (ftaskp->taskPublic()) continue;
+            // If the function is pure, it's OK not to inline, so don't do it
+            if (ftVtxp->pure()) ftVtxp->noInline(true);
+        }
     }
 
     // VISITORS
@@ -235,8 +271,9 @@ private:
     }
     void visit(AstVarRef* nodep) override {
         iterateChildren(nodep);
-        if (nodep->varp()->user4u().toGraphVertex() != m_curVxp) {
-            if (m_curVxp->pure() && !nodep->varp()->isXTemp()) m_curVxp->impure(nodep);
+        AstVar* const varp = nodep->varp();
+        if (varp->user4u().toGraphVertex() != m_curVxp) {
+            if (m_curVxp->pure() && !varp->isXTemp() && !varp->isParam()) m_curVxp->impure(nodep);
         }
     }
     void visit(AstClass* nodep) override {
@@ -279,6 +316,8 @@ public:
         iterate(nodep);
         //
         m_callGraph.removeRedundantEdgesSum(&TaskEdge::followAlwaysTrue);
+        propagateImpureReason();
+        decideInlining();
         if (dumpGraphLevel()) m_callGraph.dumpDotFilePrefixed("task_call");
     }
     ~TaskStateVisitor() override = default;
@@ -672,8 +711,9 @@ class TaskVisitor final : public VNVisitor {
         if (needSyms) ccallp->argTypes("vlSymsp");
 
         if (refp->taskp()->dpiContext()) {
-            AstScopeName* const snp = refp->scopeNamep()->unlinkFrBack();
+            AstScopeName* const snp = refp->scopeNamep();
             UASSERT_OBJ(snp, refp, "Missing scoping context");
+            snp->unlinkFrBack();
             FileLine* const flp = refp->fileline();
             // __Vscopep
             ccallp->addArgsp(snp);
@@ -1025,10 +1065,9 @@ class TaskVisitor final : public VNVisitor {
                            AstCFunc* dpiFuncp) {
         const char* const tmpSuffixp = V3Task::dpiTemporaryVarSuffix();
 
-        if (v3Global.opt.profExec())
-            cfuncp->addStmtsp(
-                new AstCStmt{nodep->fileline(),
-                             "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPush(\"dpiimports\");"});
+        if (v3Global.opt.profExec()) {
+            cfuncp->addStmtsp(AstCStmt::profExecSectionPush(nodep->fileline(), "dpiimports"));
+        }
 
         // Convert input/inout arguments to DPI types
         string args;
@@ -1122,9 +1161,9 @@ class TaskVisitor final : public VNVisitor {
             }
         }
 
-        if (v3Global.opt.profExec())
-            cfuncp->addStmtsp(new AstCStmt{nodep->fileline(),
-                                           "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPop();"});
+        if (v3Global.opt.profExec()) {
+            cfuncp->addStmtsp(AstCStmt::profExecSectionPop(nodep->fileline(), "dpiimports"));
+        }
     }
 
     AstVarScope* getDpiExporTrigger() {
@@ -1482,14 +1521,22 @@ class TaskVisitor final : public VNVisitor {
 
             if (m_inNew) {
                 AstVar* varp = outvscp->varp();
-                varp->funcLocal(true);
 
                 // Create a new var that will be inside the lambda
                 AstVar* newvarp = varp->cloneTree(false);
+                newvarp->funcLocal(true);
 
-                // Replace all references so they point to the new var
-                lambdap->stmtsp()->foreachAndNext([varp, newvarp](AstVarRef* refp) {
-                    if (refp->varp() == varp) refp->varp(newvarp);
+                // Create a new VarScope for the new variable
+                AstVarScope* const newvscp
+                    = new AstVarScope{newvarp->fileline(), m_scopep, newvarp};
+                m_scopep->addVarsp(newvscp);
+
+                // Replace all references so they point to the new var and varscope
+                lambdap->stmtsp()->foreachAndNext([outvscp, newvscp](AstVarRef* refp) {
+                    if (refp->varScopep() == outvscp) {
+                        refp->varScopep(newvscp);
+                        refp->varp(newvscp->varp());
+                    }
                 });
 
                 // Add variable initialization
@@ -1520,7 +1567,7 @@ class TaskVisitor final : public VNVisitor {
         }
         UINFO(4, "  FTask REF Done.");
     }
-    void visit(AstNodeFTask* nodep) override {
+    void visit(AstNodeFTask* const nodep) override {
         UINFO(4, " visitFTask   " << nodep);
         VL_RESTORER(m_insStmtp);
         m_insStmtp = nodep->stmtsp();  // Might be null if no statements, but we won't use it
@@ -1543,22 +1590,31 @@ class TaskVisitor final : public VNVisitor {
                                << nodep->prettyNameQ());
             }
 
-            if (nodep->dpiImport() || nodep->dpiExport() || nodep->taskPublic()
-                || m_statep->ftaskNoInline(nodep)) {
+            const bool noInline = m_statep->ftaskNoInline(nodep);
+            // Warn if not inlining an impure ftask (unless method or recursvie).
+            // Will likely not schedule correctly.
+            // TODO: Why not if recursive? It will not work ...
+            if (noInline && !nodep->classMethod() && !nodep->recursive()) {
+                if (AstNode* const impurep = m_statep->checkImpure(nodep)) {
+                    nodep->v3warn(
+                        IMPURE,
+                        "Unsupported: External variable referenced by non-inlined function/task: "
+                            << nodep->prettyNameQ() << '\n'
+                            << nodep->warnContextPrimary() << '\n'
+                            << impurep->warnOther() << "... Location of the external reference: "
+                            << impurep->prettyNameQ() << '\n'
+                            << impurep->warnContextSecondary());
+                }
+            }
+
+            if (noInline || nodep->dpiImport() || nodep->dpiExport() || nodep->taskPublic()) {
                 // Clone it first, because we may have later FTaskRef's that still need
                 // the original version.
-                if (m_statep->ftaskNoInline(nodep) && !nodep->classMethod()) {
-                    m_statep->checkPurity(nodep);
-                }
                 AstNodeFTask* const clonedFuncp = nodep->cloneTree(false);
                 if (nodep->isConstructor()) m_statep->remapFuncClassp(nodep, clonedFuncp);
-
-                AstCFunc* const cfuncp = makeUserFunc(clonedFuncp, m_statep->ftaskNoInline(nodep));
-                if (cfuncp) {
+                if (AstCFunc* const cfuncp = makeUserFunc(clonedFuncp, noInline)) {
                     nodep->addNextHere(cfuncp);
-                    if (nodep->dpiImport() || m_statep->ftaskNoInline(nodep)) {
-                        m_statep->ftaskCFuncp(nodep, cfuncp);
-                    }
+                    if (nodep->dpiImport() || noInline) m_statep->ftaskCFuncp(nodep, cfuncp);
                     iterateIntoFTask(clonedFuncp);  // Do the clone too
                 }
             }

@@ -1,5 +1,5 @@
-%Error-UNSUPPORTED: t/t_interface_typedef.v:46:4: Unsupported: SystemVerilog 2005 typedef in this context
-   46 |    typedef ifc_if.struct_t struct_t;
-      |    ^~~~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: t/t_interface_typedef.v:49:11: Unsupported: SystemVerilog 2005 interface typedef
+   49 |   typedef ifc_if.struct_t struct_t;
+      |           ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

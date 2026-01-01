@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -1122,7 +1122,7 @@ class ConstVisitor final : public VNVisitor {
         return true;
     }
 
-    bool matchCondCond(AstCond* nodep) {
+    bool matchCondCond(const AstCond* nodep) {
         // Same condition on either leg of a condition means that
         // expression is either always true or always false
         if (VN_IS(nodep->backp(), Cond)) return false;  // Was checked when visited parent
@@ -1133,14 +1133,14 @@ class ConstVisitor final : public VNVisitor {
         matchCondCondRecurse(nodep, truesp /*ref*/, falsesp /*ref*/);
         return false;  // Can optimize further
     }
-    void matchCondCondRecurse(AstCond* nodep, std::vector<AstNodeExpr*>& truesp,
+    void matchCondCondRecurse(const AstCond* nodep, std::vector<AstNodeExpr*>& truesp,
                               std::vector<AstNodeExpr*>& falsesp) {
         // Avoid O(n^2) compares
         // Could reduce cost with hash table, but seems unlikely to be worth cost
         if (truesp.size() > 4 || falsesp.size() > 4) return;
         if (!nodep->condp()->isPure()) return;
         bool replaced = false;
-        for (AstNodeExpr* condp : truesp) {
+        for (const AstNodeExpr* condp : truesp) {
             if (replaced) break;
             if (!operandsSame(nodep->condp(), condp)) continue;
             UINFO(9, "COND(c, CONDb(c, tt, tf), f) -> CONDb(1, tt, tf) " << nodep);
@@ -1148,7 +1148,7 @@ class ConstVisitor final : public VNVisitor {
             replaced = true;
             ++m_statCondExprRedundant;
         }
-        for (AstNodeExpr* condp : falsesp) {
+        for (const AstNodeExpr* condp : falsesp) {
             if (replaced) break;
             if (!operandsSame(nodep->condp(), condp)) continue;
             UINFO(9, "COND(c, t, CONDb(c, ft, ff)) -> CONDb(0, ft, ff) " << nodep);
@@ -1156,18 +1156,18 @@ class ConstVisitor final : public VNVisitor {
             replaced = true;
             ++m_statCondExprRedundant;
         }
-        if (AstCond* subCondp = VN_CAST(nodep->thenp(), Cond)) {
+        if (const AstCond* subCondp = VN_CAST(nodep->thenp(), Cond)) {
             if (!replaced) truesp.emplace_back(nodep->condp());
             matchCondCondRecurse(subCondp, truesp /*ref*/, falsesp /*ref*/);
             if (!replaced) truesp.pop_back();
         }
-        if (AstCond* subCondp = VN_CAST(nodep->elsep(), Cond)) {
+        if (const AstCond* subCondp = VN_CAST(nodep->elsep(), Cond)) {
             if (!replaced) falsesp.emplace_back(nodep->condp());
             matchCondCondRecurse(subCondp, truesp /*ref*/, falsesp /*ref*/);
             if (!replaced) falsesp.pop_back();
         }
     }
-    void matchIfCondCond(AstNodeIf* nodep) {
+    void matchIfCondCond(const AstNodeIf* nodep) {
         // Same condition on either leg of a condition means that
         // expression is either always true or always false
         if (VN_IS(nodep->backp(), If)) return;  // Was checked when visited parent
@@ -1176,14 +1176,14 @@ class ConstVisitor final : public VNVisitor {
         std::vector<AstNodeExpr*> falsesp;
         matchIfCondCondRecurse(nodep, truesp /*ref*/, falsesp /*ref*/);
     }
-    void matchIfCondCondRecurse(AstNodeIf* nodep, std::vector<AstNodeExpr*>& truesp,
+    void matchIfCondCondRecurse(const AstNodeIf* nodep, std::vector<AstNodeExpr*>& truesp,
                                 std::vector<AstNodeExpr*>& falsesp) {
         // Avoid O(n^2) compares
         // Could reduce cost with hash table, but seems unlikely to be worth cost
         if (truesp.size() > 4 || falsesp.size() > 4) return;
         if (!nodep->condp()->isPure()) return;
         bool replaced = false;
-        for (AstNodeExpr* condp : truesp) {
+        for (const AstNodeExpr* condp : truesp) {
             if (replaced) break;
             if (!operandsSame(nodep->condp(), condp)) continue;
             UINFO(9, "COND(c, CONDb(c, tt, tf), f) -> CONDb(1, tt, tf) " << nodep);
@@ -1191,7 +1191,7 @@ class ConstVisitor final : public VNVisitor {
             replaced = true;
             ++m_statIfCondExprRedundant;
         }
-        for (AstNodeExpr* condp : falsesp) {
+        for (const AstNodeExpr* condp : falsesp) {
             if (replaced) break;
             if (!operandsSame(nodep->condp(), condp)) continue;
             UINFO(9, "COND(c, t, CONDb(c, ft, ff)) -> CONDb(0, ft, ff) " << nodep);
@@ -1202,12 +1202,12 @@ class ConstVisitor final : public VNVisitor {
         // We only check the first statement of parent IF is an If
         // So we don't need to check for effects in the executing thensp/elsesp
         // altering the child't condition.  e.g. 'if (x) begin x=1; if (x) end'
-        if (AstNodeIf* subIfp = VN_CAST(nodep->thensp(), NodeIf)) {
+        if (const AstNodeIf* subIfp = VN_CAST(nodep->thensp(), NodeIf)) {
             if (!replaced) truesp.emplace_back(nodep->condp());
             matchIfCondCondRecurse(subIfp, truesp /*ref*/, falsesp /*ref*/);
             if (!replaced) truesp.pop_back();
         }
-        if (AstNodeIf* subIfp = VN_CAST(nodep->elsesp(), NodeIf)) {
+        if (const AstNodeIf* subIfp = VN_CAST(nodep->elsesp(), NodeIf)) {
             if (!replaced) falsesp.emplace_back(nodep->condp());
             matchIfCondCondRecurse(subIfp, truesp /*ref*/, falsesp /*ref*/);
             if (!replaced) falsesp.pop_back();
@@ -1297,23 +1297,32 @@ class ConstVisitor final : public VNVisitor {
         if (nodep->widthMin() != 1) return false;
         if (!v3Global.opt.fConstBitOpTree()) return false;
 
-        string debugPrefix;
+        const int width = nodep->width();
+        AstNodeExpr* rootp = nodep;
+        unsigned externalOps = 0;
+        // Reach past a plain making AND
+        if (const AstAnd* const andp = VN_CAST(nodep, And)) {
+            if (isConst(andp->lhsp(), 1)) {
+                rootp = andp->rhsp();
+                externalOps = 1;
+            }
+        }
+
+        // Only optimize if rootp is in fact the root of a tree of identical
+        // operations, otherwise analysis on an eventually unoptimizable unablanced
+        // tree can go O(N^2) as we would re-analyze every time as we move up the
+        // tree, repeatedly re-discover the sub-tree is not optimizable.
+        if (rootp->type() == nodep->backp()->type()) return false;
+
+        std::string debugPrefix;
         if (debug() >= 9) {  // LCOV_EXCL_START
             static int s_c = 0;
-            debugPrefix = "-  matchBitOpTree[";
-            debugPrefix += cvtToStr(++s_c);
-            debugPrefix += "] ";
+            debugPrefix = "-  matchBitOpTree[" + std::to_string(++s_c) + "] ";
             nodep->dumpTree(debugPrefix + "INPUT: ");
         }  // LCOV_EXCL_STOP
 
-        AstNode* newp = nullptr;
-        const AstAnd* const andp = VN_CAST(nodep, And);
-        const int width = nodep->width();
-        if (andp && isConst(andp->lhsp(), 1)) {  // 1 & BitOpTree
-            newp = ConstBitOpTreeVisitor::simplify(andp->rhsp(), width, 1, m_statBitOpReduction);
-        } else {  // BitOpTree
-            newp = ConstBitOpTreeVisitor::simplify(nodep, width, 0, m_statBitOpReduction);
-        }
+        AstNodeExpr* const newp
+            = ConstBitOpTreeVisitor::simplify(rootp, width, externalOps, m_statBitOpReduction);
 
         if (newp) {
             nodep->replaceWithKeepDType(newp);
@@ -2635,7 +2644,7 @@ class ConstVisitor final : public VNVisitor {
     }
     bool matchToStringNConst(AstToStringN* nodep) {
         iterateChildren(nodep);
-        if (AstInitArray* const initp = VN_CAST(nodep->lhsp(), InitArray)) {
+        if (const AstInitArray* const initp = VN_CAST(nodep->lhsp(), InitArray)) {
             if (!(m_doExpensive || m_params)) return false;
             // At present only support 1D unpacked arrays
             const auto initOfConst = [](const AstNode* const nodep) -> bool {  //
@@ -2823,9 +2832,9 @@ class ConstVisitor final : public VNVisitor {
         // cppcheck-suppress constVariablePointer // children unlinked below
         AstReplicate* const rep2p = VN_AS(nodep->srcp(), Replicate);
         AstNodeExpr* const from2p = rep2p->srcp();
-        AstConst* const cnt1p = VN_CAST(nodep->countp(), Const);
+        const AstConst* const cnt1p = VN_CAST(nodep->countp(), Const);
         if (!cnt1p) return false;
-        AstConst* const cnt2p = VN_CAST(rep2p->countp(), Const);
+        const AstConst* const cnt2p = VN_CAST(rep2p->countp(), Const);
         if (!cnt2p) return false;
         //
         from2p->unlinkFrBack();
@@ -2931,6 +2940,31 @@ class ConstVisitor final : public VNVisitor {
         replaceWithSimulation(nodep);
     }
 
+    void visit(AstStructSel* nodep) override {
+        iterateChildren(nodep);
+
+        if (VN_IS(nodep->fromp(), ConsPackUOrStruct)) {
+            const AstConsPackUOrStruct* const consp = VN_AS(nodep->fromp(), ConsPackUOrStruct);
+            for (AstConsPackMember* memberp = consp->membersp(); memberp;
+                 memberp = VN_AS(memberp->nextp(), ConsPackMember)) {
+
+                if (memberp->dtypep() && memberp->dtypep()->name() == nodep->name()) {
+                    AstNode* const valuep = memberp->rhsp();
+
+                    if (VN_IS(valuep, Const)) {
+                        const V3Number& num = VN_AS(valuep, Const)->num();
+                        VL_DO_DANGLING(replaceNum(nodep, num), nodep);
+                    } else {
+                        AstNode* const newp = valuep->cloneTree(false);
+                        nodep->replaceWith(newp);
+                        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
     void visit(AstCAwait* nodep) override {
         m_hasJumpDelay = true;
         iterateChildren(nodep);
@@ -2972,6 +3006,11 @@ class ConstVisitor final : public VNVisitor {
                     // Earlier recursion of InitArray made sure each array value is constant
                     // This exception is fairly fragile, i.e. doesn't
                     // support arrays of arrays or other stuff
+                    AstNode* const newp = valuep->cloneTree(false);
+                    nodep->replaceWithKeepDType(newp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    did = true;
+                } else if (m_params && VN_IS(valuep, ConsPackUOrStruct)) {
                     AstNode* const newp = valuep->cloneTree(false);
                     nodep->replaceWithKeepDType(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -3606,7 +3645,7 @@ class ConstVisitor final : public VNVisitor {
         bool thisLoopHasJumpDelay = m_hasJumpDelay;
         m_hasJumpDelay = thisLoopHasJumpDelay || oldHasJumpDelay;
         // If the first statement always break, the loop is useless
-        if (AstLoopTest* const testp = VN_CAST(nodep->stmtsp(), LoopTest)) {
+        if (const AstLoopTest* const testp = VN_CAST(nodep->stmtsp(), LoopTest)) {
             if (testp->condp()->isZero()) {
                 nodep->v3warn(UNUSEDLOOP, "Loop condition is always false");
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
@@ -3618,7 +3657,7 @@ class ConstVisitor final : public VNVisitor {
             while (AstNode* const nextp = lastp->nextp()) lastp = nextp;
             if (AstLoopTest* const testp = VN_CAST(lastp, LoopTest)) {
                 if (testp->condp()->isZero()) {
-                    VL_DO_DANGLING(pushDeletep(testp->unlinkFrBack()), testp);
+                    VL_DO_DANGLING2(pushDeletep(testp->unlinkFrBack()), testp, lastp);
                     nodep->replaceWith(nodep->stmtsp()->unlinkFrBackWithNext());
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return;
@@ -3654,6 +3693,8 @@ class ConstVisitor final : public VNVisitor {
     }
 
     void visit(AstInitArray* nodep) override { iterateChildren(nodep); }
+    void visit(AstConsPackUOrStruct* nodep) override { iterateChildren(nodep); }
+    void visit(AstConsPackMember* nodep) override { iterateChildren(nodep); }
     void visit(AstInitItem* nodep) override { iterateChildren(nodep); }
     void visit(AstUnbounded* nodep) override { iterateChildren(nodep); }
     // These are converted by V3Param.  Don't constify as we don't want the
@@ -3669,10 +3710,25 @@ class ConstVisitor final : public VNVisitor {
 
     void visit(AstStmtExpr* nodep) override {
         iterateChildren(nodep);
-        if (!nodep->exprp() || VN_IS(nodep->exprp(), Const)) {
+        // Malformed due to child being deleted, remove here
+        if (!nodep->exprp()) {
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
+        // Remove if expression is trivially pure
+        if (VN_IS(nodep->exprp(), Const) || VN_IS(nodep->exprp(), VarRef)) {
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
+        // Remove calls to empty functions
+        if (const AstCCall* const callp = VN_CAST(nodep->exprp(), CCall)) {
+            const AstCFunc* const funcp = callp->funcp();
+            if (!callp->argsp() && funcp->emptyBody()) {
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                return;
+            }
+        }
+
         // TODO if there's an ExprStmt underneath just keep lower statements
         // (No current test case needs this)
         // TODO if non-pure, can remove. First need to clean up that many expressions used
@@ -4082,7 +4138,8 @@ class ConstVisitor final : public VNVisitor {
     void visit(AstNode* nodep) override {
         // Default: Just iterate
         if (m_required) {
-            if (VN_IS(nodep, NodeDType) || VN_IS(nodep, Range) || VN_IS(nodep, SliceSel)) {
+            if (VN_IS(nodep, NodeDType) || VN_IS(nodep, Range) || VN_IS(nodep, SliceSel)
+                || VN_IS(nodep, Dot)) {
                 // Ignore dtypes for parameter type pins
             } else {
                 nodep->v3error("Expecting expression to be constant, but can't convert a "

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -57,6 +57,7 @@ class LinkJumpVisitor final : public VNVisitor {
     AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstNode* m_loopp = nullptr;  // Current loop
+    AstRandSequence* m_randsequencep = nullptr;  // Current randsequence
     bool m_loopInc = false;  // In loop increment
     bool m_inFork = false;  // Under fork
     int m_modRepeatNum = 0;  // Repeat counter
@@ -289,6 +290,11 @@ class LinkJumpVisitor final : public VNVisitor {
             iterateChildren(nodep);
         }
     }
+    void visit(AstRandSequence* nodep) override {
+        VL_RESTORER(m_randsequencep);
+        m_randsequencep = nodep;
+        iterateChildren(nodep);
+    }
     void visit(AstRepeat* nodep) override {
         // So later optimizations don't need to deal with them,
         //    REPEAT(count,body) -> loop=count,WHILE(loop>0) { body, loop-- }
@@ -350,7 +356,11 @@ class LinkJumpVisitor final : public VNVisitor {
     void visit(AstReturn* nodep) override {
         iterateChildren(nodep);
         const AstFunc* const funcp = VN_CAST(m_ftaskp, Func);
-        if (m_inFork) {
+        if (m_randsequencep) {
+            nodep->replaceWith(new AstRSReturn{nodep->fileline()});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        } else if (m_inFork) {
             nodep->v3error("Return isn't legal under fork (IEEE 1800-2023 9.2.3)");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
@@ -377,7 +387,11 @@ class LinkJumpVisitor final : public VNVisitor {
     }
     void visit(AstBreak* nodep) override {
         iterateChildren(nodep);
-        if (!m_loopp) {
+        if (!m_loopp && m_randsequencep) {
+            nodep->replaceWith(new AstRSBreak{nodep->fileline()});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        } else if (!m_loopp) {
             nodep->v3error("break isn't underneath a loop");
         } else {
             // Jump to the end of the loop

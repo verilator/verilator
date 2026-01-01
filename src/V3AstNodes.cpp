@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -41,6 +41,9 @@ void AstNode::dumpJsonNum(std::ostream& os, const std::string& name, int64_t val
 void AstNode::dumpJsonBool(std::ostream& os, const std::string& name, bool val) {
     os << ",\"" << name << "\":" << (val ? "true" : "false");
 }
+void AstNode::dumpJsonBoolIf(std::ostream& os, const std::string& name, bool val) {
+    if (val) dumpJsonBool(os, name, val);
+}
 void AstNode::dumpJsonStr(std::ostream& os, const std::string& name, const std::string& val) {
     os << ",\"" << name << "\":\"" << V3OutFormatter::quoteNameControls(val) << '"';
 }
@@ -54,6 +57,7 @@ void AstNode::dumpJsonPtr(std::ostream& os, const std::string& name, const AstNo
 // Shorthands for dumping fields that use func name as key
 #define dumpJsonNumFunc(os, func) dumpJsonNum(os, #func, func())
 #define dumpJsonBoolFunc(os, func) dumpJsonBool(os, #func, func())
+#define dumpJsonBoolFuncIf(os, func) dumpJsonBoolIf(os, #func, func())
 #define dumpJsonStrFunc(os, func) dumpJsonStr(os, #func, func())
 #define dumpJsonPtrFunc(os, func) dumpJsonPtr(os, #func, func())
 
@@ -340,6 +344,16 @@ AstExecGraph::AstExecGraph(FileLine* fileline, const string& name) VL_MT_DISABLE
 
 AstExecGraph::~AstExecGraph() { VL_DO_DANGLING(delete m_depGraphp, m_depGraphp); }
 
+const char* AstExecGraph::broken() const {
+    BROKEN_RTN(!m_depGraphp);
+    for (const V3GraphVertex& vtx : m_depGraphp->vertices()) {
+        const ExecMTask* const mtaskp = vtx.as<ExecMTask>();
+        AstCFunc* const funcp = mtaskp->funcp();
+        BROKEN_RTN(!funcp || !funcp->brokeExists());
+    }
+    return nullptr;
+}
+
 AstNodeExpr* AstInsideRange::newAndFromInside(AstNodeExpr* exprp, AstNodeExpr* lhsp,
                                               AstNodeExpr* rhsp) {
     AstNodeExpr* const ap = new AstGte{fileline(), exprp, lhsp};
@@ -361,6 +375,20 @@ void AstCReset::dump(std::ostream& str) const {
 }
 void AstCReset::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, constructing);
+    dumpJsonGen(str);
+}
+
+void AstCase::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " " << verilogKwd();
+}
+void AstCase::dumpJson(std::ostream& str) const {
+    dumpJsonStr(str, "kwd", verilogKwd());
+    dumpJsonBoolIf(str, "full", fullPragma());
+    dumpJsonBoolIf(str, "parallel", parallelPragma());
+    dumpJsonBoolIf(str, "unique", uniquePragma());
+    dumpJsonBoolIf(str, "unique0", unique0Pragma());
+    dumpJsonBoolIf(str, "priority", priorityPragma());
     dumpJsonGen(str);
 }
 
@@ -508,6 +536,8 @@ bool AstVar::isScUintBool() const {
     return (isSc() && v3Global.opt.pinsScUintBool() && width() == 1);
 }
 bool AstVar::isScBigUint() const {
+    // Pragma has the highest priority
+    if (m_attrScBigUint) return true;
     return ((isSc() && v3Global.opt.pinsScBigUint() && width() >= 65 && width() <= 512)
             && !isScBv());
 }
@@ -1755,7 +1785,7 @@ void AstCellInlineScope::dumpJson(std::ostream& str) const {
     dumpJsonGen(str);
 }
 bool AstClass::isCacheableChild(const AstNode* nodep) {
-    return VN_IS(nodep, Var)
+    return VN_IS(nodep, Var) || VN_IS(nodep, Typedef)
            || (VN_IS(nodep, Constraint) && !VN_AS(nodep, Constraint)->isExternProto())
            || VN_IS(nodep, EnumItemRef)
            || (VN_IS(nodep, NodeFTask) && !VN_AS(nodep, NodeFTask)->isExternProto())
@@ -1777,6 +1807,7 @@ bool AstClass::isClassExtendedFrom(const AstClass* refClassp, const AstClass* ba
 }
 void AstClass::dump(std::ostream& str) const {
     this->AstNodeModule::dump(str);
+    if (isCovergroup()) str << " [CG]";
     if (isExtended()) str << " [EXT]";
     if (isInterfaceClass()) str << " [IFCCLS]";
     if (isVirtual()) str << " [VIRT]";
@@ -1784,6 +1815,7 @@ void AstClass::dump(std::ostream& str) const {
 }
 void AstClass::dumpJson(std::ostream& str) const {
     // dumpJsonNumFunc(str, declTokenNum);  // Not dumped as adding token changes whole file
+    dumpJsonBoolFuncIf(str, isCovergroup);
     dumpJsonBoolFunc(str, isExtended);
     dumpJsonBoolFunc(str, isInterfaceClass);
     dumpJsonBoolFunc(str, isVirtual);
@@ -1848,6 +1880,16 @@ void AstClocking::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, isGlobal);
     dumpJsonGen(str);
 }
+void AstConfig::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " configname=" << configname();
+    if (libname() != "work") str << " libname=" << libname();
+}
+void AstConfig::dumpJson(std::ostream& str) const {
+    dumpJsonStrFunc(str, configname);
+    if (libname() != "work") dumpJsonStr(str, "libname=", libname());
+    dumpJsonGen(str);
+}
 void AstConfigRule::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isCell()) str << " [CELL]";
@@ -1896,6 +1938,10 @@ string AstEnumDType::prettyDTypeName(bool full) const {
     }
     result += "}" + prettyName();
     return result;
+}
+const char* AstEnumItemRef::broken() const {
+    if (v3Global.assertDTypesResolved()) BROKEN_RTN(!itemp());
+    return nullptr;
 }
 void AstEnumItemRef::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
@@ -2249,6 +2295,14 @@ void AstTypedefFwd::dumpJson(std::ostream& str) const {
 }
 void AstNodeRange::dump(std::ostream& str) const { this->AstNode::dump(str); }
 void AstNodeRange::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
+void AstRandSequence::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " start=" << start();
+}
+void AstRandSequence::dumpJson(std::ostream& str) const {
+    if (!start().empty()) dumpJsonStr(str, "start", start());
+    dumpJsonGen(str);
+}
 void AstRange::dump(std::ostream& str) const {
     this->AstNodeRange::dump(str);
     if (fromBracket()) str << " [FB]";
@@ -2300,6 +2354,7 @@ void AstRefDType::dump(std::ostream& str) const {
     }
 }
 void AstRefDType::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
+
 void AstRefDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "ref";
@@ -2341,6 +2396,7 @@ void AstNodeDType::dump(std::ostream& str) const {
 }
 void AstNodeDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, generic);
+    if (isSigned() && !isDouble()) dumpJsonBool(str, "signed", 1);
     dumpJsonGen(str);
 }
 void AstNodeDType::dumpSmall(std::ostream& str) const VL_MT_STABLE {
@@ -2433,6 +2489,7 @@ AstPackage* AstNetlist::dollarUnitPkgAddp() {
     if (!m_dollarUnitPkgp) {
         m_dollarUnitPkgp = new AstPackage{fileline(), AstPackage::dollarUnitName(), "work"};
         // packages are always libraries; don't want to make them a "top"
+        m_dollarUnitPkgp->level(1);
         m_dollarUnitPkgp->inLibrary(true);
         m_dollarUnitPkgp->modTrace(false);  // may reconsider later
         m_dollarUnitPkgp->internal(true);
@@ -2500,8 +2557,8 @@ void AstPatMember::dump(std::ostream& str) const {
     if (isDefault()) str << " [DEFAULT]";
 }
 void AstPatMember::dumpJson(std::ostream& str) const {
-    if (isConcat()) dumpJsonBoolFunc(str, isConcat);
-    if (isDefault()) dumpJsonBoolFunc(str, isDefault);
+    dumpJsonBoolFuncIf(str, isConcat);
+    dumpJsonBoolFuncIf(str, isDefault);
     dumpJsonGen(str);
 }
 void AstNodeTriop::dump(std::ostream& str) const { this->AstNodeExpr::dump(str); }
@@ -2536,17 +2593,6 @@ void AstSystemCSection::dump(std::ostream& str) const {
 }
 void AstSystemCSection::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "sectionType", sectionType().ascii());
-    dumpJsonGen(str);
-}
-void AstMTaskBody::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
-    str << " ";
-    m_execMTaskp->dump(str);
-}
-void AstMTaskBody::dumpJson(std::ostream& str) const {
-    str << ',' << '"' << "execMTask" << '"' << ':' << '"';
-    m_execMTaskp->dump(str);  // TODO: Consider dumping it as json object
-    str << '"';
     dumpJsonGen(str);
 }
 void AstTypeTable::dump(std::ostream& str) const {
@@ -2720,7 +2766,8 @@ void AstVarRef::dump(std::ostream& str) const {
 }
 void AstVarRef::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 const char* AstVarRef::broken() const {
-    BROKEN_RTN(!varp());
+    // Even after assertDTypesResolved(), V3Scope will set varp() to null, but name won't be ""
+    BROKEN_RTN(!varp() && name().empty());
     return nullptr;
 }
 bool AstVarRef::sameNode(const AstNode* samep) const { return sameNode(VN_DBG_AS(samep, VarRef)); }
@@ -2747,7 +2794,7 @@ void AstVar::dump(std::ostream& str) const {
     if (isInternal()) str << " [INTERNAL]";
     if (isLatched()) str << " [LATCHED]";
     if (isUsedLoopIdx()) str << " [LOOPIDX]";
-    if (rand().isRandomizable()) str << rand();
+    if (rand().isRandomizable()) str << " [" << rand() << "]";
     if (noReset()) str << " [!RST]";
     if (attrIsolateAssign()) str << " [aISO]";
     if (attrFileDescr()) str << " [aFD]";
@@ -2759,6 +2806,7 @@ void AstVar::dump(std::ostream& str) const {
     if (isDpiOpenArray()) str << " [DPIOPENA]";
     if (ignorePostWrite()) str << " [IGNPWR]";
     if (ignoreSchedWrite()) str << " [IGNWR]";
+    if (isStdRandomizeArg()) str << " [STDRANDARG]";
     if (!lifetime().isNone()) str << " [" << lifetime().ascii() << "] ";
     str << " " << varType();
 }
@@ -2780,6 +2828,7 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, isDpiOpenArray);
     dumpJsonBoolFunc(str, isFuncReturn);
     dumpJsonBoolFunc(str, isFuncLocal);
+    dumpJsonBoolFunc(str, isStdRandomizeArg);
     dumpJsonStr(str, "lifetime", lifetime().ascii());
     dumpJsonStr(str, "varType", varType().ascii());
     if (dtypep()) dumpJsonStr(str, "dtypeName", dtypep()->name());
@@ -2917,6 +2966,7 @@ void AstNodeFTask::dump(std::ostream& str) const {
     if (dpiOpenParent()) str << " [DPIOPENPARENT]";
     if (isExternDef()) str << " [EXTDEF]";
     if (isExternProto()) str << " [EXTPROTO]";
+    if (isVirtual()) str << " [VIRT]";
     if (prototype()) str << " [PROTOTYPE]";
     if (pureVirtual()) str << " [PUREVIRTUAL]";
     if (recursive()) str << " [RECURSIVE]";
@@ -2924,6 +2974,7 @@ void AstNodeFTask::dump(std::ostream& str) const {
     if (isStatic()) str << " [STATIC]";
     if (verilogTask()) str << " [VTASK]";
     if (verilogFunction()) str << " [VFUNC]";
+    if (needProcess()) str << " [NPRC]";
     if ((dpiImport() || dpiExport()) && cname() != name()) str << " [c=" << cname() << "]";
 }
 bool AstNodeFTask::isPure() {
@@ -2943,9 +2994,13 @@ bool AstNodeFTask::getPurityRecurse() const {
             if (varp->isInoutOrRef()) return false;
         }
         if (!stmtp->isPure()) return false;
-        if (stmtp->exists([](const AstNodeVarRef* const varrefp) {
-                return (!varrefp->varp()->isFuncLocal() || varrefp->varp()->lifetime().isStatic())
-                       && varrefp->access().isWriteOrRW();
+        if (stmtp->exists([](AstNode* const nodep) {
+                if (AstNodeVarRef* const varrefp = VN_CAST(nodep, VarRef)) {
+                    return (!varrefp->varp()->isFuncLocal()
+                            || varrefp->varp()->lifetime().isStatic())
+                           && varrefp->access().isWriteOrRW();
+                }
+                return !nodep->isPure();
             }))
             return false;
     }
@@ -2959,6 +3014,8 @@ void AstNodeFTask::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, dpiOpenParent);
     dumpJsonBoolFunc(str, isExternDef);
     dumpJsonBoolFunc(str, isExternProto);
+    dumpJsonBoolFuncIf(str, isVirtual);
+    dumpJsonBoolFuncIf(str, needProcess);
     dumpJsonBoolFunc(str, prototype);
     dumpJsonBoolFunc(str, recursive);
     dumpJsonBoolFunc(str, taskPublic);
@@ -3208,6 +3265,14 @@ string AstCase::pragmaString() const {
     return "";
 }
 
+void AstCgOptionAssign::dump(std::ostream& str) const {
+    if (typeOption()) str << " [TYPEOPT]";
+    this->AstNode::dump(str);
+}
+void AstCgOptionAssign::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, typeOption);
+    dumpJsonGen(str);
+}
 void AstDelay::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     if (isCycleDelay()) str << " [CYCLE]";

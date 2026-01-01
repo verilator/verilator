@@ -1,0 +1,8 @@
+%Error: t/t_vlt_var_sc_biguint_bad.vlt:9:1: 'VAR_SC_BIGUINT' attribute does not accept -param/-port
+    9 | sc_biguint -module "top" -param "*"
+      | ^~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_vlt_var_sc_biguint_bad.vlt:10:1: 'VAR_SC_BIGUINT' attribute does not accept -param/-port
+   10 | sc_biguint -module "top" -port "*"
+      | ^~~~~~~~~~
+%Error: Exiting due to

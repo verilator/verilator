@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -20,6 +20,7 @@
 #include "V3ActiveTop.h"
 #include "V3Assert.h"
 #include "V3AssertPre.h"
+#include "V3AssertProp.h"
 #include "V3Ast.h"
 #include "V3Begin.h"
 #include "V3Branch.h"
@@ -62,8 +63,10 @@
 #include "V3Graph.h"
 #include "V3HierBlock.h"
 #include "V3Inline.h"
+#include "V3InlineCFuncs.h"
 #include "V3Inst.h"
 #include "V3Interface.h"
+#include "V3LibMap.h"
 #include "V3Life.h"
 #include "V3LifePost.h"
 #include "V3LinkDot.h"
@@ -82,6 +85,7 @@
 #include "V3PreShell.h"
 #include "V3Premit.h"
 #include "V3ProtectLib.h"
+#include "V3RandSequence.h"
 #include "V3Randomize.h"
 #include "V3Reloop.h"
 #include "V3Sampled.h"
@@ -134,7 +138,7 @@ static void emitJson() VL_MT_DISABLED {
     v3Global.rootp()->dumpTreeJsonFile(filename);
 }
 
-static void emitXmlOrJson() VL_MT_DISABLED {
+static void emitSerialized() VL_MT_DISABLED {
     if (v3Global.opt.xmlOnly()) V3EmitXml::emitxml();
     if (v3Global.opt.jsonOnly()) emitJson();
 }
@@ -170,12 +174,6 @@ static void process() {
         V3Error::abortIfErrors();
 
         if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "Link");
-        if (v3Global.opt.debugExitUvm23()) {
-            V3Error::abortIfErrors();
-            if (v3Global.opt.serializeOnly()) emitXmlOrJson();
-            cout << "--debug-exit-uvm23: Exiting after UVM-supported pass\n";
-            v3Global.vlExit(0);
-        }
 
         // Remove parameters by cloning modules to de-parameterized versions
         //   This requires some width calculations and constant propagation
@@ -202,12 +200,6 @@ static void process() {
                 return;
             }
         }
-        if (v3Global.opt.debugExitUvm()) {
-            V3Error::abortIfErrors();
-            if (v3Global.opt.serializeOnly()) emitXmlOrJson();
-            cout << "--debug-exit-uvm: Exiting after UVM-supported pass\n";
-            v3Global.vlExit(0);
-        }
 
         // Calculate and check widths, edit tree to TRUNC/EXTRACT any width mismatches
         V3Width::width(v3Global.rootp());
@@ -222,10 +214,19 @@ static void process() {
         // End of elaboration
         V3Stats::addStatPerf(V3Stats::STAT_WALLTIME_ELAB, elabWallTime.deltaTime());
         VlOs::DeltaWallTime cvtWallTime{true};
+        if (v3Global.opt.debugExitElab()) {
+            V3Error::abortIfErrors();
+            if (v3Global.opt.serializeOnly()) emitSerialized();
+            cout << "--debug-exit-elab: Exiting after elaboration pass\n";
+            v3Global.vlExit(0);
+        }
 
         // Coverage insertion
         //    Before we do dead code elimination and inlining, or we'll lose it.
         if (v3Global.opt.coverage()) V3Coverage::coverage(v3Global.rootp());
+
+        // Resolve randsequence if they are used by the design
+        if (v3Global.useRandSequence()) V3RandSequence::randSequenceNetlist(v3Global.rootp());
 
         // Add randomize() class methods if they are used by the design
         if (v3Global.useRandomizeMethods()) V3Randomize::randomizeNetlist(v3Global.rootp());
@@ -240,6 +241,8 @@ static void process() {
 
         // Assertion insertion
         //    After we've added block coverage, but before other nasty transforms
+        V3AssertProp::assertPropAll(v3Global.rootp());
+        //
         V3AssertPre::assertPreAll(v3Global.rootp());
         //
         V3Assert::assertAll(v3Global.rootp());
@@ -249,6 +252,8 @@ static void process() {
             // Move packages to under new top
             // Must do this after we know parameters and dtypes (as don't clone dtype decls)
             V3LinkLevel::wrapTop(v3Global.rootp());
+        } else {
+            V3LinkLevel::nonWrapTop(v3Global.rootp());
         }
 
         // Propagate constants into expressions
@@ -561,6 +566,11 @@ static void process() {
                 V3Reloop::reloopAll(v3Global.rootp());
             }
 
+            if (v3Global.opt.inlineCFuncs()) {
+                // Inline small CFuncs to reduce function call overhead
+                V3InlineCFuncs::inlineAll(v3Global.rootp());
+            }
+
             // Fix very deep expressions
             // Mark evaluation functions as member functions, if needed.
             V3Depth::depthAll(v3Global.rootp());
@@ -624,7 +634,7 @@ static void process() {
         V3EmitC::emitcImp();
     }
     if (v3Global.opt.serializeOnly()) {
-        emitXmlOrJson();
+        emitSerialized();
     } else if (v3Global.opt.debugCheck() && !v3Global.opt.lintOnly()
                && !v3Global.opt.dpiHdrOnly()) {
         // Check XML/JSON when debugging to make sure no missing node types
@@ -713,6 +723,7 @@ static bool verilate(const string& argString) {
         V3ExecGraph::selfTest();
         V3PreShell::selfTest();
         V3Broken::selfTest();
+        V3Control::selfTest();
         V3ThreadPool::selfTest();
         UINFO(2, "selfTest done");
     }
@@ -745,7 +756,7 @@ static bool verilate(const string& argString) {
 
     V3Error::abortIfWarnings();
 
-    if (V3HierGraph* const hierGraphp
+    if (const V3HierGraph* const hierGraphp
         = v3Global.hierGraphp()) {  // This run is for just write a makefile
         UASSERT(v3Global.opt.hierarchical(), "hierarchical must be set");
         UASSERT(!v3Global.opt.hierChild(), "This must not be a hierarchical-child run");
@@ -808,6 +819,7 @@ static string buildMakeCmd(const string& makefile, const string& target) {
     cmd << " -C " << v3Global.opt.makeDir();
     cmd << " -f " << makefile;
     // Unless using make's jobserver, do a -j
+    if (v3Global.opt.quietBuild()) cmd << " -s --no-print-directory";
     if (v3Global.opt.getenvMAKEFLAGS().find("-jobserver-auth") == string::npos) {
         if (jobs > 0) cmd << " -j " << jobs;
     }
@@ -831,7 +843,7 @@ static void execBuildJob() {
     V3Stats::addStatPerf(V3Stats::STAT_WALLTIME_BUILD, buildWallTime.deltaTime());
 
     if (exit_code != 0) {
-        v3error(cmdStr << " exited with " << exit_code << std::endl);
+        v3error("'" << cmdStr << "' exited with " << exit_code << std::endl);
         v3Global.vlExit(exit_code);
     }
 }

@@ -8,23 +8,23 @@
 
 module t;
 
-   initial begin;
-      randsequence(no_such_production)  // Bad
-         such_production: { };
-      endsequence
+  initial begin;
+    randsequence(no_such_production)  // Bad
+      such_production: { };
+    endsequence
 
-      randsequence(main)
-         main: production_bad;  // Bad
-         production_baa: {};
-      endsequence
+    randsequence(main)
+      main: production_bad;  // Bad
+      production_baa: {};
+    endsequence
 
-      randsequence()
-         duplicated_bad: { $display("dup1"); };
-         duplicated_bad: { $display("dup2"); };  // Bad
-      endsequence
+    randsequence()
+      duplicated_bad: { $display("dup1"); };
+      duplicated_bad: { $display("dup2"); };  // Bad
+    endsequence
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

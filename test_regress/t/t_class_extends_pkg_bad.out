@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_class_extends_pkg_bad.v:22:21: Unsupported: PACKAGE 'pkg' in 'class extends'
+   22 |   class bar extends pkg;
+      |                     ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

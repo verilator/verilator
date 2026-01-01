@@ -12,6 +12,9 @@ module t (/*AUTOARG*/
    input clk;
    integer cyc; initial cyc=1;
 
+   logic hugemem [257];
+   initial hugemem = '{default:1'b0};
+
    // [16] is SV syntax for [0:15]
    reg [7:0] memory8_16 [16];
 
@@ -41,6 +44,7 @@ module t (/*AUTOARG*/
       if (cyc!=0) begin
          cyc <= cyc + 1;
          if (cyc==1) begin
+            $display(hugemem);
             m_we <= 1'b1;
             m_addr <= 3'd2;
             m_data <= 16'h55_44;

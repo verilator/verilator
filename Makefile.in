@@ -7,7 +7,7 @@
 #
 #*****************************************************************************
 #
-# Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -460,23 +460,19 @@ analyzer-include:
 	-rm -rf examples/*/obj*
 	scan-build $(MAKE) -k examples
 
-format:
-	$(MAKE) -j 5 format-c format-cmake format-exec format-py
-
-CLANGFORMAT = clang-format-18
-CLANGFORMAT_FLAGS = -i
-CLANGFORMAT_FILES = $(CHECK_CPP) $(CHECK_H) $(CHECK_YL) test_regress/t/*.c* test_regress/t/*.h
-
-format-c clang-format:
-	$(CLANGFORMAT) --version
-	@$(CLANGFORMAT) --version | fgrep 'version 18' > /dev/null \
-	|| echo "*** You are not using clang-format-18, indents may differ from master's ***"
-	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CLANGFORMAT_FILES)
-
-YAMLFIX = YAMLFIX_WHITELINES=1 YAMLFIX_LINE_LENGTH=200 YAMLFIX_preserve_quotes=true yamlfix
-
-yamlfix:
-	$(YAMLFIX) .
+# Bash/sh files
+BASH_FILES = \
+  ci/ci-install.bash \
+  ci/ci-pages-notify.bash \
+  ci/ci-pages.bash \
+  ci/ci-script.bash \
+  ci/docker/run/hooks/post_push \
+  ci/docker/run/verilator-docker \
+  ci/docker/run/verilator-wrap.sh \
+  nodist/fuzzer/all \
+  nodist/fuzzer/run \
+  nodist/fuzzer/setup_root \
+  nodist/fuzzer/setup_user \
 
 # CMake files
 CMAKE_FILES = \
@@ -495,6 +491,12 @@ MAKE_FILES = \
   src/Makefile*.in \
   test_regress/Makefile* \
 
+# Perl programs
+PERL_PROGRAMS = \
+  bin/redirect \
+  bin/verilator \
+  bin/verilator_coverage \
+
 # Python programs, subject to format and lint
 PY_PROGRAMS = \
   bin/verilator_ccache_report \
@@ -502,25 +504,28 @@ PY_PROGRAMS = \
   bin/verilator_gantt \
   bin/verilator_includer \
   bin/verilator_profcfunc \
-  examples/json_py/vl_file_copy \
-  examples/json_py/vl_hier_graph \
-  docs/guide/conf.py \
   docs/bin/vl_sphinx_extract \
   docs/bin/vl_sphinx_fix \
-  src/astgen \
-  src/bisonpre \
-  src/config_rev \
-  src/flexfix \
-  src/vlcovgen \
-  src/.gdbinit.py \
-  test_regress/*.py \
-  test_regress/t/*.pf \
+  docs/guide/conf.py \
+  examples/json_py/vl_file_copy \
+  examples/json_py/vl_hier_graph \
   nodist/clang_check_attributes \
   nodist/dot_importer \
   nodist/fuzzer/actual_fail \
   nodist/fuzzer/generate_dictionary \
   nodist/install_test \
+  nodist/lint_py_test_filter \
   nodist/log_changes \
+  nodist/uvm_pkg_packer \
+  nodist/verilator_saif_diff \
+  src/.gdbinit.py \
+  src/astgen \
+  src/bisonpre \
+  src/config_rev \
+  src/flexfix \
+  src/vlcovgen \
+  test_regress/*.py \
+  test_regress/t/*.pf \
 
 # Python files, subject to format but not lint
 PY_FILES = \
@@ -530,26 +535,70 @@ PY_FILES = \
 # Python files, test_regress tests
 PY_TEST_FILES = test_regress/t/*.py
 
-YAPF = yapf3
+# YAML files
+YAML_FILES = \
+  .*.yaml \
+  .*.yml \
+  .github/*.yml \
+  .github/*/*.yml \
+  CITATION.cff \
+
+######################################################################
+# Format
+
+format:
+	$(MAKE) -j 5 format-c format-cmake format-exec format-py format-yaml
+
+BEAUTYSH = beautysh
+BEAUTYSH_FLAGS = --indent-size 2
+
+format-bash:
+	$(BEAUTYSH) --version
+	$(BEAUTYSH) $(BEAUTYSH_FLAGS) $(BASH_FILES)
+
+CLANGFORMAT = clang-format-18
+CLANGFORMAT_FLAGS = -i
+CLANGFORMAT_FILES = $(CHECK_CPP) $(CHECK_H) $(CHECK_YL) test_regress/t/*.c* test_regress/t/*.h
+
+format-c clang-format:
+	$(CLANGFORMAT) --version
+	@$(CLANGFORMAT) --version | fgrep 'version 18' > /dev/null \
+	|| echo "*** You are not using clang-format-18, indents may differ from master's ***"
+	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CLANGFORMAT_FILES)
+
+GERSEMI = gersemi
+GERSEMI_FLAGS = -i --no-warn-about-unknown-commands
+
+format-cmake:
+	$(GERSEMI) --version
+	$(GERSEMI) $(GERSEMI_FLAGS) $(CMAKE_FILES)
+
+MBAKE = mbake
+MBAKE_FLAGS = format --config ./.bake.toml
+
+format-exec:
+	-chmod a+x test_regress/t/*.py
+
+format-make mbake:
+	$(MBAKE) --version
+	$(MBAKE) $(MBAKE_FLAGS) $(MAKE_FILES)
+
+YAPF = yapf
 YAPF_FLAGS = -i --parallel
 
 format-py yapf:
 	$(YAPF) --version
 	$(YAPF) $(YAPF_FLAGS) $(PY_FILES)
 
-GERSEMI = gersemi
-GERSEMI_FLAGS = -i --no-warn-about-unknown-commands
+YAMLFIX = YAMLFIX_WHITELINES=1 YAMLFIX_LINE_LENGTH=200 YAMLFIX_preserve_quotes=true yamlfix
+YAMLFIX_FLAGS =
 
-format-cmake:
-	$(GERSEMI) $(GERSEMI_FLAGS) $(CMAKE_FILES)
+format-yaml yamlfix:
+	$(YAMLFIX) --version
+	$(YAMLFIX) $(YAMLFIX_FLAGS) $(YAML_FILES)
 
-MBAKE = mbake
-MBAKE_FLAGS = format --config ./.bake.toml
-
-format-make:
-	$(MBAKE) $(MBAKE_FLAGS) $(MAKE_FILES)
-
-format-yaml: yamlfix
+######################################################################
+# Lint
 
 MYPY = mypy
 MYPY_FLAGS = --strict --no-error-summary
@@ -582,9 +631,6 @@ lint-py-pylint-tests:
 
 lint-py-ruff:
 	$(RUFF) $(RUFF_FLAGS) $(PY_PROGRAMS)
-
-format-exec:
-	-chmod a+x test_regress/t/*.py
 
 ######################################################################
 # Configure
@@ -781,7 +827,7 @@ clean mostlyclean distclean maintainer-clean::
 
 distclean maintainer-clean::
 	rm -f *.info* *.1 $(INFOS) $(INFOS_OLD) $(VL_INST_MAN_FILES)
-	rm -f Makefile config.status config.cache config.log TAGS
+	rm -f Makefile config.status config.cache config.log configure~ TAGS
 	rm -f verilator_bin* verilator_coverage_bin*
 	rm -f bin/verilator_bin* bin/verilator_coverage_bin*
 	rm -f include/verilated.mk include/verilated_config.h
@@ -806,3 +852,20 @@ preexist:
 
 maintainer-dist: preexist tag
 	svnorcvs release $(DISTTAGNAME)
+
+######################################################################
+# Python venv
+
+VENV_PATH ?= .venv
+
+.PHONY: venv
+venv:
+	# Create virtual environment using the python3 picked up by configure
+	[ -e $(VENV_PATH) ] || @PYTHON3@ -m venv --system-site-packages $(VENV_PATH)
+	# Install python3 dependencies
+	$(VENV_PATH)/bin/pip3 install -r python-dev-requirements.txt
+	@echo
+	@echo "Installed Python virtual environment, in:"
+	@echo "  $(VENV_PATH)"
+	@echo "To activate, run:"
+	@echo "  source $(VENV_PATH)/bin/activate"

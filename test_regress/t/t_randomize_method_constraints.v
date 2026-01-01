@@ -15,6 +15,10 @@ class Cls;
    constraint A { v inside {ONE, THREE}; }
    constraint B { w == 5; x inside {1,2} || x inside {4,5}; }
    constraint C { z < 3 * 7; z > 5 + 8; u > 0; }
+   constraint D {
+      |redor == 1'b1;
+      redor[31:1] == 31'b0;
+   }
 
    rand logic[79:0] u;
    rand Enum v;
@@ -22,6 +26,7 @@ class Cls;
    rand logic[47:0] x;
    rand logic[31:0] y;
    rand logic[22:0] z;
+   rand logic[31:0] redor;
 
    function new;
       u = 0;
@@ -50,12 +55,14 @@ module t;
          $display("obj.x == %0d", obj.x);
          $display("obj.y == %0d", obj.y);
          $display("obj.z == %0d", obj.z);
+         $display("obj.redor == %0d", obj.redor);
          $display("rand_result == %0d", rand_result);
          $display("-------------------");
          if (!(obj.v inside {ONE, THREE})) $stop;
          if (obj.w != 5) $stop;
          if (!(obj.x inside {1,2,4,5})) $stop;
          if (obj.z <= 13 || obj.z >= 21) $stop;
+         if (obj.redor != 1) $stop;
       end
       //$display("===================\nUnsatisfiable constraints for obj.y:");
       //rand_result = obj.randomize() with { 256 < y && y < 256; };

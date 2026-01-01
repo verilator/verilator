@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -269,8 +269,9 @@ class DataflowOptimize final {
                 }
                 // TODO: remove once Actives can tolerate NEVER SenItems
                 if (AstSenItem* senItemp = VN_CAST(nodep, SenItem)) {
-                    senItemp->foreach(
-                        [](AstVarRef* refp) { DfgVertexVar::setHasExtRdRefs(refp->varScopep()); });
+                    senItemp->foreach([](const AstVarRef* refp) {
+                        DfgVertexVar::setHasExtRdRefs(refp->varScopep());
+                    });
                 }
             } else {
                 if (AstVar* const varp = VN_CAST(nodep, Var)) {

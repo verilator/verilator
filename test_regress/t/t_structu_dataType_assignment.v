@@ -65,7 +65,7 @@ module top();
   // struct HIJ
   HIJ_struct HIJ;
 
-  initial begin;
+  initial begin
    // struct ab
    ab = '{0, 0}; //constant member by position
    if (ab.a != 0) $stop;

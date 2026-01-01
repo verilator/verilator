@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=C0114,C0115,C0116,R0902,R0903,R0912,R0915,W0719,W0718
+# pylint: disable=C0114,C0115,C0116,C0301,R0902,R0903,R0912,R0915,W0719,W0718
 ######################################################################
 #
 # Copyright 2025 by Wilson Snyder. This program is free software; you
@@ -19,12 +19,12 @@ SIGNAL_TYPE = "SIGNAL"
 EOF_ERROR = "Unexpected EOF"
 
 
-def saif_assert(expression : bool, message : str) -> None:
+def saif_assert(expression: bool, message: str) -> None:
     if not expression:
         raise Exception(message)
 
 
-def saif_error(message : str) -> None:
+def saif_error(message: str) -> None:
     raise Exception(message)
 
 
@@ -34,7 +34,7 @@ class SAIFSignalBit:
     low_time: int
     transitions: int
 
-    def __init__(self, name : str):
+    def __init__(self, name: str):
         self.name = name
         self.high_time = 0
         self.low_time = 0
@@ -43,7 +43,7 @@ class SAIFSignalBit:
 
 class SAIFInstance:
 
-    def __init__(self, scope_name : str):
+    def __init__(self, scope_name: str):
         self.scope_name = scope_name
         self.parent_instance = None
         self.nets = {}
@@ -52,7 +52,7 @@ class SAIFInstance:
 
 class SAIFToken:
 
-    def __init__(self, token : str):
+    def __init__(self, token: str):
         self.token = token
         self.type = ''
         self.value = ''
@@ -73,7 +73,7 @@ class SAIFParser:
         self.divider = ''
         self.timescale = ''
 
-    def parse(self, saif_filename : str) -> None:
+    def parse(self, saif_filename: str) -> None:
         file_contents = ''
         with open(saif_filename, 'r', encoding="utf8") as saif_file:
             content = saif_file.readlines()
@@ -225,9 +225,11 @@ def compare_saif_contents(first_file: str, second_file: str) -> int:
     return SUCCESS_CODE
 
 
-parser = argparse.ArgumentParser(allow_abbrev=False,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                                 description="""verilator_saif_diff checks if two SAIF files are logically-identical. It returns first encountered difference as output.
+parser = argparse.ArgumentParser(
+    allow_abbrev=False,
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    description=
+    """verilator_saif_diff checks if two SAIF files are logically-identical. It returns first encountered difference as output.
 Run as:
   cd $VERILATOR_ROOT
   nodist/code_coverage --first example.saif --second other.saif""")

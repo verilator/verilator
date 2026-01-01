@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -427,7 +427,7 @@ class AstNode VL_NOT_FINAL {
 #endif
 
     AstNodeDType* m_dtypep = nullptr;  // Data type of output or assignment (etc)
-    AstNode* m_headtailp;  // When at begin/end of list, the opposite end of the list
+    AstNode* m_headtailp;  // When at begin/end of list, the opposite end of the list, else nullptr
     FileLine* m_fileline;  // Where it was declared
 #ifdef VL_DEBUG
     // Only keep track of the edit count in the node in the debug build.
@@ -578,6 +578,7 @@ public:
     static constexpr int INSTR_COUNT_STR = 100;  // String ops
     static constexpr int INSTR_COUNT_TIME = INSTR_COUNT_CALL + 5;  // Determine simulation time
     static constexpr int INSTR_COUNT_PLI = 20;  // PLI routines
+    static constexpr int INSTR_COUNT_SYM = 5;  // Syms ctor/dtor statements
 
     // ACCESSORS
     virtual string name() const VL_MT_STABLE { return ""; }
@@ -902,6 +903,8 @@ public:
     // isUnlikely handles $stop or similar statement which means an above IF
     // statement is unlikely to be taken
     virtual bool isUnlikely() const { return false; }
+    // Is an IEEE system function (versus internally-generated)
+    virtual bool isSystemFunc() const { return false; }
     virtual int instrCount() const { return 0; }
     // Iff node is identical to another node
     virtual bool isSame(const AstNode* samep) const {
@@ -946,6 +949,7 @@ protected:
 
     static void dumpJsonNum(std::ostream& os, const std::string& name, int64_t val);
     static void dumpJsonBool(std::ostream& os, const std::string& name, bool val);
+    static void dumpJsonBoolIf(std::ostream& os, const std::string& name, bool val);
     static void dumpJsonStr(std::ostream& os, const std::string& name, const std::string& val);
     static void dumpJsonPtr(std::ostream& os, const std::string& name, const AstNode* const valp);
 

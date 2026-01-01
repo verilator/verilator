@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -589,7 +589,7 @@ protected:
     explicit DfgUserMapBase(const DfgGraph* dfgp)
         : m_dfgp{dfgp}
         , m_currentGeneration{++m_dfgp->m_vertexUserGeneration} {
-        UASSERT(m_currentGeneration, "DfgGraph user data genartion number overflow");
+        UASSERT(m_currentGeneration, "DfgGraph user data generation number overflow");
         UASSERT(!m_dfgp->m_vertexUserInUse, "DfgUserMap already in use for this DfgGraph");
         m_dfgp->m_vertexUserInUse = true;
     }

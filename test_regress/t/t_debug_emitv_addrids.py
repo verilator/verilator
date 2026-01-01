@@ -15,6 +15,6 @@ test.top_filename = "t/t_debug_emitv.v"
 test.lint(
     # We also have dump-tree turned on, so hit a lot of AstNode*::dump() functions
     # Likewise XML
-    v_flags=["--lint-only --dumpi-tree 9 --dump-tree-addrids --timing"])
+    v_flags=["--lint-only --dumpi-tree 9 --dump-tree-addrids"])
 
 test.passes()

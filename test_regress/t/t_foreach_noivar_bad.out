@@ -1,11 +1,11 @@
-%Warning-NOEFFECT: t/t_foreach_noivar.v:17:5: foreach with no loop variable has no effect
+%Warning-NOEFFECT: t/t_foreach_noivar.v:19:5: foreach with no loop variable has no effect
                                             : ... note: In instance 't'
-   17 |     foreach (array[]) begin   
+   19 |     foreach (array[]) begin   
       |     ^~~~~~~
                    ... For warning description see https://verilator.org/warn/NOEFFECT?v=latest
                    ... Use "/* verilator lint_off NOEFFECT */" and lint_on around source to disable this message.
-%Warning-NOEFFECT: t/t_foreach_noivar.v:23:5: foreach with no loop variable has no effect
+%Warning-NOEFFECT: t/t_foreach_noivar.v:25:5: foreach with no loop variable has no effect
                                             : ... note: In instance 't'
-   23 |     foreach (array[,,]) begin   
+   25 |     foreach (array[,,]) begin   
       |     ^~~~~~~
 %Error: Exiting due to

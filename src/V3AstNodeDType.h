@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -957,7 +957,7 @@ class AstMemberDType final : public AstNodeDType {
     //
     // @astgen ptr := m_refDTypep : Optional[AstNodeDType]  // Elements of this type (post-width)
     string m_name;  // Name of variable
-    string m_tag;  // Holds the string of the verilator tag -- used in XML output.
+    string m_tag;  // Holds the string of the verilator tag -- used in JSON output.
     int m_lsb = -1;  // Within this level's packed struct, the LSB of the first bit of the member
     bool m_constrainedRand = false;
     // UNSUP: int m_randType;    // Randomization type (IEEE)
@@ -1171,6 +1171,7 @@ class AstRefDType final : public AstNodeDType {
     //
     // Pre-Width must reference the Typeref, not what it points to, as some child
     // types like AstBracketArrayType will disappear and can't lose the handle
+    //
     // @astgen ptr := m_typedefp : Optional[AstTypedef]  // Referenced type
     // Post-width typedefs are removed and point to type directly
     // @astgen ptr := m_refDTypep : Optional[AstNodeDType]  // Data type references

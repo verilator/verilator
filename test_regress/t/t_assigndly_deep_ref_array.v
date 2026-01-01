@@ -5,13 +5,13 @@
 // SPDX-License-Identifier: CC0-1.0
 
 interface Iface;
-   bit clk;
-   int x[2:0];
+  bit clk;
+  int x[2:0];
 
-   clocking cb @(posedge clk);
-      default input #0 output #0;
-      inout x;
-   endclocking
+  clocking cb @(posedge clk);
+    default input #0 output #0;
+    inout x;
+  endclocking
 endinterface
 
 class Foo;
@@ -42,8 +42,8 @@ class Bar;
 endclass
 
 module t;
-  Iface iface();
-  Iface iface2();
+  Iface iface ();
+  Iface iface2 ();
 
   task clockSome();
     #2;

@@ -1,0 +1,3 @@
+%Error: Can't find top-level module for instance path: 't2.u_2.u_23'
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

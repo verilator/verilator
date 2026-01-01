@@ -38,21 +38,11 @@ test.compile(
         "t_flag_ldflags_a.a", "t_flag_ldflags_so.so"
     ])
 
-# On OS X, LD_LIBRARY_PATH is ignored, so set rpath of the exe to find the .so
 if sys.platform == "darwin":
-    test.run(cmd=[
-        "cd " + test.obj_dir + " && install_name_tool -add_rpath @executable_path/.",
-        test.vm_prefix
-    ],
-             check_finished=False)
-
-    test.run(cmd=[
-        "cd " + test.obj_dir + " && install_name_tool -change t_flag_ldflags_so.so" +
-        " @rpath/t_flag_ldflags_so.so", test.vm_prefix
-    ],
-             check_finished=False)
-
-test.execute(run_env="LD_LIBRARY_PATH=" + test.obj_dir + ":" +
-             test.getenv_def("LD_LIBRARY_PATH", ""))
+    test.execute(run_env="DYLD_LIBRARY_PATH=" + test.obj_dir + ":" +
+                 test.getenv_def("DYLD_LIBRARY_PATH", ""))
+else:
+    test.execute(run_env="LD_LIBRARY_PATH=" + test.obj_dir + ":" +
+                 test.getenv_def("LD_LIBRARY_PATH", ""))
 
 test.passes()

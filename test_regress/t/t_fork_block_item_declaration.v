@@ -17,6 +17,7 @@ class Foo;
             $stop;
         end
       join_none : frk
+      #1;
   endtask
 endclass
 

@@ -7,9 +7,6 @@
                                                                : ... note: In instance 't'
    27 |       q.size < 5;
       |         ^~~~
-%Warning-CONSTRAINTIGN: t/t_randomize_method_types_unsup.v:31:10: Global constraints ignored (unsupported)
-   31 |      foo.x < y;
-      |          ^
 %Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:15:13: Unsupported: random member variable with the type of the containing class
                                                             : ... note: In instance 't'
    15 |    rand Cls cls;

@@ -1,4 +1,4 @@
-.. Copyright 2003-2025 by Wilson Snyder.
+.. Copyright 2003-2026 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 ===================
@@ -21,18 +21,18 @@ Summary:
    the appropriate directory to your makefile's VPATH to find the file.
 
    If any files are specified in this way, Verilator will include a make
-   rule that uses these files when linking the module's executable.  This
+   rule that uses these files when linking the module's executable. This
    generally is only useful when used with the :vlopt:`--exe` option.
 
 .. option:: <file.c/.cc/.cpp/.cxx>
 
    Used with :vlopt:`--exe` to specify optional C++ files to be linked in
-   with the Verilog code.  The file path should either be absolute, or
+   with the Verilog code. The file path should either be absolute, or
    relative to where the make will be executed from, or add to your
    makefile's VPATH the appropriate directory to find the file.
 
    See also :vlopt:`-CFLAGS` and :vlopt:`-LDFLAGS` options, which are
-   useful when the C++ files need special compiler flags.  The compiler
+   useful when the C++ files need special compiler flags. The compiler
    flags add by default `-DVERILATOR=1`, so an `#ifdef VERILATOR` may be
    used to conditionally preprocess .cpp code for different simulators.
 
@@ -83,7 +83,7 @@ Summary:
 
       ```begin_keywords`` is a SystemVerilog construct, which specifies
       *only* the set of keywords to be recognized. This also controls some
-      error messages that vary between language standards.  At present,
+      error messages that vary between language standards. At present,
       Verilator tends to be overly permissive, e.g., it will accept many
       grammar and other semantic extensions which might not be legal when
       set to an older standard.
@@ -94,8 +94,8 @@ Summary:
 
    Rarely needed - for developer use. With `--aslr`, do not change the
    system default as to using Linux address space layout randomization
-   (ASLR).  With `--no-aslr` attempt to disable ASLR. If not specified,
-   ASLR will be disabled only when using :vlopt:`--debug` (or similar
+   (ASLR). With `--no-aslr` attempt to disable ASLR. If not specified, ASLR
+   will be disabled only when using :vlopt:`--debug` (or similar
    debug-related options), so that pointers have more deterministic values,
    aiding repeatability.
 
@@ -115,18 +115,18 @@ Summary:
 
 .. option:: --autoflush
 
-   After every $display or $fdisplay, flush the output stream.  This
-   ensures that messages will appear immediately but may reduce
-   performance. For best performance, call :code:`fflush(stdout)`
-   occasionally in the C++ main loop.  Defaults to off, which will buffer
-   output as provided by the normal C/C++ standard library IO.
+   After every $display or $fdisplay, flush the output stream. This ensures
+   that messages will appear immediately but may reduce performance. For
+   best performance, call ``fflush(stdout)`` occasionally in the C++ main
+   loop. Defaults to off, which will buffer output as provided by the
+   normal C/C++ standard library IO.
 
 .. option:: --bbox-sys
 
-   Black box any unknown $system task or function calls.  System tasks will
+   Black box any unknown $system task or function calls. System tasks will
    become no-operations, and system functions will be replaced with unsized
-   zero.  Arguments to such functions will be parsed, but not otherwise
-   checked.  This prevents errors when linting in the presence of
+   zero. Arguments to such functions will be parsed, but not otherwise
+   checked. This prevents errors when linting in the presence of
    company-specific PLI calls.
 
    Using this argument will likely cause incorrect simulation.
@@ -135,14 +135,14 @@ Summary:
 
    Black box some unsupported language features, currently UDP tables, the
    cmos and tran gate primitives, deassign statements, and mixed edge
-   errors.  This may enable linting of the rest of the design even when
+   errors. This may enable linting of the rest of the design even when
    unsupported constructs are present.
 
    Using this argument will likely cause incorrect simulation.
 
 .. option:: --binary
 
-   Create a Verilated simulator binary.  Alias for :vlopt:`--main`
+   Create a Verilated simulator binary. Alias for :vlopt:`--main`
    :vlopt:`--exe` :vlopt:`--build` :vlopt:`--timing`.
 
    See also :vlopt:`-j`.
@@ -151,28 +151,29 @@ Summary:
 
    After generating the SystemC/C++ code, Verilator will invoke the
    toolchain to build the model library (and executable when :vlopt:`--exe`
-   is also used).  Verilator manages the build itself, and for this --build
+   is also used). Verilator manages the build itself, and for this --build
    requires GNU Make to be available on the platform.
 
    :vlopt:`--build` cannot be specified when using :vlopt:`-E`,
-   :vlopt:`--dpi-hdr-only`, :vlopt:`--lint-only`, or :vlopt:`--xml-only`.
+   :vlopt:`--dpi-hdr-only`, :vlopt:`--json-only` or :vlopt:`--lint-only`.
 
 .. option:: --build-dep-bin <filename>
 
-   Rarely needed.  When a dependency (.d) file is created, this filename
+   Rarely needed. When a dependency (.d) file is created, this filename
    will become a source dependency, such that a change in this binary will
-   have ``make`` rebuild the output files.  Defaults to the full path to
-   the Verilator binary.
+   have ``make`` rebuild the output files. Defaults to the full path to the
+   Verilator binary.
 
    This option was named `--bin` before version 4.228.
 
 .. option:: --build-jobs <value>
 
-   Specify the level of parallelism for :vlopt:`--build`.  If zero, uses the
-   number of threads available to the process, which is the number of threads
-   assigned by processor affinity (e.g. using `numactl`), or the number of
-   threads in the host hardware if unspecified.  Otherwise, the <value> must be
-   a positive integer specifying the maximum number of parallel build jobs.
+   Specify the level of parallelism for :vlopt:`--build`. If zero, uses the
+   number of threads available to the process, which is the number of
+   threads assigned by processor affinity (e.g. using `numactl`), or the
+   number of threads in the host hardware if unspecified. Otherwise, the
+   <value> must be a positive integer specifying the maximum number of
+   parallel build jobs.
 
    If not provided, and :vlopt:`-j` is provided, the :vlopt:`-j` value is
    used.
@@ -207,7 +208,7 @@ Summary:
    With :vlopt:`--clk`, the specified signal is marked as a clock signal.
 
    The provided signal name is specified using a RTL hierarchy path. For
-   example, v.foo.bar.  If the signal is the input to the top-module, then
+   example, v.foo.bar. If the signal is the input to the top-module, then
    directly provide the signal name. Alternatively, use a
    :option:`/*verilator&32;clocker*/` metacomment in RTL file to mark the
    signal directly.
@@ -233,26 +234,26 @@ Summary:
 
 .. option:: --compiler <compiler-name>
 
-   Enables workarounds for the specified C++ compiler (list below).  This
+   Enables workarounds for the specified C++ compiler (list below). This
    does not change any performance tuning options, but it may in the
-   future.  This also does not change default compiler flags; these are
+   future. This also does not change default compiler flags; these are
    determined when Verilator was configured.
 
    clang
-     Tune for clang.  This may reduce execution speed as it enables several
-     workarounds to avoid silly hard-coded limits in clang.  This includes
+     Tune for clang. This may reduce execution speed as it enables several
+     workarounds to avoid silly hard-coded limits in clang. This includes
      breaking deep structures as for msvc, as described below.
 
    gcc
      Tune for GNU C++, although generated code should work on almost any
-     compliant C++ compiler.  Currently, the default.
+     compliant C++ compiler. Currently, the default.
 
    msvc
-     Tune for Microsoft Visual C++.  This may reduce execution speed as it
+     Tune for Microsoft Visual C++. This may reduce execution speed as it
      enables several workarounds to avoid silly hard-coded limits in
-     MSVC++.  This includes breaking deeply nested parenthesized
-     expressions into sub-expressions to avoid error C1009, and breaking
-     deep blocks into functions to avoid error C1061.
+     MSVC++. This includes breaking deeply nested parenthesized expressions
+     into sub-expressions to avoid error C1009, and breaking deep blocks
+     into functions to avoid error C1061.
 
 .. option:: --compiler-include <header-path>
 
@@ -263,8 +264,8 @@ Summary:
 
 .. option:: --converge-limit <loops>
 
-   Rarely needed.  Specifies the maximum number of runtime iterations
-   before creating a model failed to converge error.  Defaults to 100.
+   Rarely needed. Specifies the maximum number of runtime iterations before
+   creating a model failed to converge error. Defaults to 100.
 
 .. option:: --coverage
 
@@ -277,8 +278,8 @@ Summary:
 
 .. option:: --coverage-expr-max <value>
 
-   Rarely needed.  Specifies the maximum number of permutations able to be
-   covered for a given expression.  Defaults to 32.  Increasing may slow
+   Rarely needed. Specifies the maximum number of permutations able to be
+   covered for a given expression. Defaults to 32. Increasing may slow
    coverage simulations and make analyzing the results unwieldy.
 
 .. option:: --coverage-line
@@ -287,38 +288,40 @@ Summary:
 
 .. option:: --coverage-max-width <width>
 
-   Rarely needed.  Specify the maximum bit width of a signal
-   subject to toggle coverage.  Defaults to 256, as covering large vectors
-   may greatly slow coverage simulations.
+   Rarely needed. Specify the maximum bit width of a signal subject to
+   toggle coverage. Defaults to 256, as covering large vectors may greatly
+   slow coverage simulations.
 
 .. option:: --coverage-toggle
 
-   Enables adding signal toggle coverage.  See :ref:`Toggle Coverage`.
+   Enables adding signal toggle coverage. See :ref:`Toggle Coverage`.
 
 .. option:: --coverage-underscore
 
    Enable coverage of signals that start with an underscore. Normally,
-   these signals are not covered.  See also :vlopt:`--trace-underscore`
+   these signals are not covered. See also :vlopt:`--trace-underscore`
    option.
 
 .. option:: --coverage-user
 
-   Enables adding user-inserted functional coverage.  See :ref:`User Coverage`.
+   Enables adding user-inserted functional coverage. See :ref:`User
+   Coverage`.
 
 .. option:: -D<var>=<value>
 
-   Defines the given preprocessor symbol.  Similar to
+   Defines the given preprocessor symbol. Similar to
    :vlopt:`+define <+define+<var>>`, but does not allow multiple
-   definitions with a single option using plus signs. "+define" is relatively
-   standard across Verilog tools, while "-D" is similar to
+   definitions with a single option using plus signs. ``+define`` is
+   relatively standard across Verilog tools, while ``-D`` is similar to
    :command:`gcc -D`.
 
 .. option:: --debug
 
    Run under debug.
 
-   * Select the debug executable of Verilator (if available).  This
-     generally is a less-optimized binary with symbols present (so GDB can be used on it).
+   * Select the debug executable of Verilator (if available). This
+     generally is a less-optimized binary with symbols present (so GDB can
+     be used on it).
    * Enable debugging messages (equivalent to :vlopt:`--debugi 3 <--debugi>`).
    * Enable internal assertions (equivalent to :vlopt:`--debug-check`).
    * Enable intermediate form dump files (equivalent to
@@ -330,8 +333,8 @@ Summary:
 
 .. option:: --debug-check
 
-   Rarely needed.  Enable internal debugging assertion checks, without
-   changing debug verbosity.  Enabled automatically with :vlopt:`--debug`
+   Rarely needed. Enable internal debugging assertion checks, without
+   changing debug verbosity. Enabled automatically with :vlopt:`--debug`
    option.
 
 .. option:: --no-debug-leak
@@ -348,16 +351,16 @@ Summary:
 
 .. option:: --debugi <level>
 
-   Rarely needed - for developer use.  Set the internal debugging level
+   Rarely needed - for developer use. Set the internal debugging level
    globally to the specified debug level (1-10). Higher levels produce more
    detailed messages.
 
 .. option:: --debugi-<srcfile> <level>
 
-   Rarely needed - for developer use.  Set the specified Verilator source
+   Rarely needed - for developer use. Set the specified Verilator source
    file to the specified level (e.g.,
    :vlopt:`--debugi-V3Width 9 <--debugi>`). Higher levels produce more
-   detailed messages.  See :vlopt:`--debug` for other implications of
+   detailed messages. See :vlopt:`--debug` for other implications of
    enabling debug.
 
 .. option:: --no-decoration
@@ -373,7 +376,7 @@ Summary:
      Minimize comments, white space, symbol names, and other decorative
      items, at the cost of reduced readability. This may assist C++ compile
      times. This will not typically change the ultimate model's
-     performance, but may in some cases.  See also :vlopt:`--no-decoration`
+     performance, but may in some cases. See also :vlopt:`--no-decoration`
      option.
 
    With "--decorations medium",
@@ -384,19 +387,19 @@ Summary:
      Include comments indicating what caused generation of the following
      text, including what node pointer (corresponding to
      :vlopt:`--dump-tree` .tree printed data), and the source Verilog
-     filename and line number.  If subsequent following statements etc have
-     the same filename/line number these comments are omitted.  This
-     enables easy debug when looking at the C++ code to determine what
-     Verilog source may be related.  As node pointers are not stable
-     between different Verilator runs, this may harm compile caching and
-     should only be used for debug.
+     filename and line number. If subsequent following statements etc have
+     the same filename/line number these comments are omitted. This enables
+     easy debug when looking at the C++ code to determine what Verilog
+     source may be related. As node pointers are not stable between
+     different Verilator runs, this may harm compile caching and should
+     only be used for debug.
 
 .. option:: --default-language <value>
 
-   Select the language used by default when first processing each
-   Verilog file.  The language value must be "VAMS", "1364-1995",
-   "1364-2001", "1364-2001-noconfig", "1364-2005", "1800-2005",
-   "1800-2009", "1800-2012", "1800-2017", "1800-2023", or "1800+VAMS".
+   Select the language used by default when first processing each Verilog
+   file. The language value must be "VAMS", "1364-1995", "1364-2001",
+   "1364-2001-noconfig", "1364-2005", "1800-2005", "1800-2009",
+   "1800-2012", "1800-2017", "1800-2023", or "1800+VAMS".
 
    Any language associated with a particular file extension (see the
    various +<lang>*\ ext+ options) will be used in preference to the
@@ -405,7 +408,7 @@ Summary:
    The :vlopt:`--default-language` is only recommended for legacy code
    using the same language in all source files, as the preferable option is
    to edit the code to repair new keywords, or add appropriate
-   :code:`\`begin_keywords`. For legacy mixed-language designs, the various
+   ``\`begin_keywords``. For legacy mixed-language designs, the various
    ``+<lang>ext+`` options should be used.
 
    If no language is specified, either by this option or ``+<lang>ext+``
@@ -417,7 +420,7 @@ Summary:
 .. option:: +define+<var>=<value>[+<var2>=<value2>][...]
 
    Defines the given preprocessor symbol, or multiple symbols if separated
-   by plus signs.  Similar to :vlopt:`-D <-D<var>>`; +define is relatively
+   by plus signs. Similar to :vlopt:`-D <-D<var>>`; +define is relatively
    standard across Verilog tools while :vlopt:`-D <-D<var>>` is similar to
    :command:`gcc -D`.
 
@@ -425,7 +428,7 @@ Summary:
 
    Enables diagnostics output into a Static Analysis Results Interchange
    Format (SARIF) file, a standard, JSON-based format for the output of
-   static analysis tools such as linters.  See
+   static analysis tools such as linters. See
    [SARIF](https://sarifweb.azurewebsites.net/),
    [sarif-tools](https://github.com/microsoft/sarif-tools), and the [SARIF
    web-based viewer](https://microsoft.github.io/sarif-web-component/).
@@ -433,13 +436,13 @@ Summary:
 .. option:: --diagnostics-sarif-output <filename>
 
    Specifies the filename for the SARIF output file (`.sarif`) of
-   :vlopt:`--diagnostics-sarif`.  Using this option automatically sets
-   :vlopt:`--diagnostics-sarif`.  If not specified, output defaults to
+   :vlopt:`--diagnostics-sarif`. Using this option automatically sets
+   :vlopt:`--diagnostics-sarif`. If not specified, output defaults to
    :file:`<prefix>.sarif`.
 
 .. option:: --dpi-hdr-only
 
-   Only generate the DPI header file.  This option does not affect on the
+   Only generate the DPI header file. This option does not affect on the
    name or location of the emitted DPI header file, it is output in
    :vlopt:`--Mdir` as it would be without this option.
 
@@ -461,82 +464,82 @@ Summary:
 
 .. option:: --dump-dfg
 
-   Rarely needed.  Enable dumping DfgGraph .dot debug files with dumping
+   Rarely needed. Enable dumping DfgGraph .dot debug files with dumping
    level 3.
 
 .. option:: --dump-graph
 
-   Rarely needed.  Enable dumping V3Graph .dot debug files with dumping
-   level 3. Before Verilator 4.228, :vlopt:`--dump-tree` used
-   to include this option.
+   Rarely needed. Enable dumping V3Graph .dot debug files with dumping
+   level 3. Before Verilator 4.228, :vlopt:`--dump-tree` used to include
+   this option.
 
 .. option:: --dump-inputs
 
-   Rarely needed.  Enable dumping a *{prefix}*\ __inputs\ .vpp file which
+   Rarely needed. Enable dumping a *{prefix}*\ __inputs\ .vpp file which
    has all of the individual input files combined and pre-processed
 
 .. option:: --dump-tree
 
-   Rarely needed.  Enable dumping Ast .tree debug files with dumping level 3,
-   which dumps the standard critical stages.  For details on the format, see
-   the Verilator Internals manual.  :vlopt:`--dump-tree` is enabled
-   automatically with :vlopt:`--debug`, so
-   :vlopt:`--debug --no-dump-tree <--dump-tree>` may be useful if the dump
-   files are large and not desired.
+   Rarely needed. Enable dumping Ast .tree debug files with dumping level
+   3, which dumps the standard critical stages. For details on the format,
+   see the Verilator Internals manual. :vlopt:`--dump-tree` is enabled
+   automatically with :vlopt:`--debug`, so :vlopt:`--debug --no-dump-tree
+   <--dump-tree>` may be useful if the dump files are large and not
+   desired.
 
 .. option:: --dump-tree-addrids
 
-   Rarely needed - for developer use.  Replace AST node addresses with
-   short identifiers in tree dumps to enhance readability.  Each unique
-   pointer value is mapped to a unique identifier, but note that this is
-   not necessarily unique per node instance as an address might get reused
-   by a newly allocated node after a node with the same address has been
-   dumped and then freed.
+   Rarely needed - for developer use. Replace AST node addresses with short
+   identifiers in tree dumps to enhance readability. Each unique pointer
+   value is mapped to a unique identifier, but note that this is not
+   necessarily unique per node instance as an address might get reused by a
+   newly allocated node after a node with the same address has been dumped
+   and then freed.
 
 .. option:: --dump-tree-dot
 
-   Rarely needed - for developer use.  Enable dumping Ast .tree.dot debug
+   Rarely needed - for developer use. Enable dumping Ast .tree.dot debug
    files in Graphviz Dot format. This option implies :vlopt:`--dump-tree`,
    unless :vlopt:`--dumpi-tree` was passed explicitly.
 
 .. option:: --dump-tree-json
 
-   Rarely needed.  Enable dumping Ast .json.tree debug files with dumping level 3,
-   which dumps the standard critical stages.  For details on the format, see
-   the Verilator Internals manual.
+   Rarely needed. Enable dumping Ast .json.tree debug files with dumping
+   level 3, which dumps the standard critical stages. For details on the
+   format, see the Verilator Internals manual.
 
 .. option:: --dumpi-<srcfile> <level>
 
    Rarely needed - for developer use. Set the dumping level in the
    specified Verilator source file to the specified value (e.g.,
-   `--dumpi-V3Order 9`).  Level 0 disables dumps and is equivalent to
-   `--no-dump-<srcfile>`.  Level 9 enables the dumping of everything.
+   `--dumpi-V3Order 9`). Level 0 disables dumps and is equivalent to
+   `--no-dump-<srcfile>`. Level 9 enables the dumping of everything.
 
 .. option:: --dumpi-dfg <level>
 
-   Rarely needed - for developer use.  Set the internal DfgGraph dumping level
-   globally to the specified value.
+   Rarely needed - for developer use. Set the internal DfgGraph dumping
+   level globally to the specified value.
 
 .. option:: --dumpi-graph <level>
 
-   Rarely needed - for developer use.  Set internal V3Graph dumping level
+   Rarely needed - for developer use. Set internal V3Graph dumping level
    globally to the specified value.
 
 .. option:: --dumpi-tree <level>
 
-   Rarely needed - for developer use.  Set internal Ast dumping level
+   Rarely needed - for developer use. Set internal Ast dumping level
    globally to the specified value.
 
 .. option:: --dumpi-tree-json <level>
 
-   Rarely needed - for developer use.  Set internal Ast JSON dumping level
+   Rarely needed - for developer use. Set internal Ast JSON dumping level
    globally to the specified value.
 
 .. option:: -E
 
    Preprocess the source code, but do not compile, similar to C++
-   preprocessing using :command:`gcc -E`.  Output is written to standard
-   out.  Beware of enabling debugging messages, as they will also go to
+   preprocessing using :command:`gcc -E`. Output is written to standard
+   out. Beware of enabling debugging messages, as they will also go to
    standard out. See :vlopt:`--no-std`, which is implied by this.
 
    See also :vlopt:`--dump-defines`, :vlopt:`-P`,
@@ -551,43 +554,42 @@ Summary:
 .. option:: --error-limit <value>
 
    After this number of errors are encountered during Verilator run, exit.
-   Warnings are not counted in this limit.  Defaults to 50.
+   Warnings are not counted in this limit. Defaults to 50.
 
    It does not affect simulation runtime errors, for those, see
    :vlopt:`+verilator+error+limit+\<value\>`.
 
 .. option:: --exe
 
-   Generate an executable.  You will also need to pass additional .cpp
-   files on the command line that implement the main loop for your
-   simulation.
+   Generate an executable. You will also need to pass additional .cpp files
+   on the command line that implement the main loop for your simulation.
 
 .. option:: --expand-limit <value>
 
-   Rarely needed.  Fine-tune optimizations to set the maximum size of an
+   Rarely needed. Fine-tune optimizations to set the maximum size of an
    expression in 32-bit words to expand into separate word-based
    statements.
 
 .. option:: -F <file>
 
    Read the specified file, and act as if all text inside it was specified
-   as command line arguments.  Any relative paths are relative to the
-   directory containing the specified file.  See also :vlopt:`-f`
-   option. Note :option:`-F` is relatively standard across Verilog tools.
+   as command line arguments. Any relative paths are relative to the
+   directory containing the specified file. See also :vlopt:`-f` option.
+   Note :option:`-F` is relatively standard across Verilog tools.
 
 .. option:: -f <file>
 
    Read the specified file, and act as if all text inside it was specified
-   as command line arguments.  Any relative paths are relative to the
-   current directory.  See also :vlopt:`-F` option. Note :option:`-f` is
+   as command line arguments. Any relative paths are relative to the
+   current directory. See also :vlopt:`-F` option. Note :option:`-f` is
    relatively standard across Verilog tools.
 
-   The file may contain :code:`//` comments which are ignored until the end of
-   the line.  It may also contain :code:`/* .. */` comments which are
-   ignored, be cautious that wildcards are not handled in -f files, and
-   that :code:`directory/*` is the beginning of a comment, not a wildcard.
-   Any :code:`$VAR`, :code:`$(VAR)`, or :code:`${VAR}` will be replaced
-   with the specified environment variable.
+   The file may contain ``//`` comments which are ignored until the end of
+   the line. It may also contain ``/* .. */`` comments which are ignored,
+   be cautious that wildcards are not handled in -f files, and that
+   ``directory/*`` is the beginning of a comment, not a wildcard. Any
+   ``$VAR``, ``$(VAR)``, or ``${VAR}`` will be replaced with the specified
+   environment variable.
 
 .. option:: -fdfg-synthesize-all
 
@@ -595,17 +597,16 @@ Summary:
 
 .. option:: -FI <file>
 
-   Force include of the specified C++ header file.  All generated C++ files
-   will insert a #include of the specified file before any other
-   includes. The specified file might be used to contain define prototypes
-   of custom :code:`VL_VPRINTF` functions, and may need to include
-   :file:`verilatedos.h` as this file is included before any other standard
-   includes.
+   Force include of the specified C++ header file. All generated C++ files
+   will insert a #include of the specified file before any other includes.
+   The specified file might be used to contain define prototypes of custom
+   ``VL_VPRINTF`` functions, and may need to include :file:`verilatedos.h`
+   as this file is included before any other standard includes.
 
 .. option:: --flatten
 
    Force flattening of the design's hierarchy, with all modules, tasks, and
-   functions inlined. Typically used with :vlopt:`--xml-only`.
+   functions inlined. Typically used with :vlopt:`--json-only`.
    Flattening large designs may require significant CPU time, memory and
    storage.
 
@@ -638,7 +639,7 @@ Summary:
 .. option:: -fno-dfg
 
    Rarely needed. Disable all use of the DFG-based combinational logic
-   optimizer.  Alias for :vlopt:`-fno-dfg-pre-inline`,
+   optimizer. Alias for :vlopt:`-fno-dfg-pre-inline`,
    :vlopt:`-fno-dfg-post-inline` and :vlopt:`-fno-dfg-scoped`.
 
 .. option:: -fno-dfg-break-cycles
@@ -683,6 +684,8 @@ Summary:
 
 .. option:: -fno-inline-funcs
 
+.. option:: -fno-inline-funcs-eager
+
 .. option:: -fno-life
 
 .. option:: -fno-life-post
@@ -719,29 +722,32 @@ Summary:
    automatically. Variables explicitly annotated with
    :option:`/*verilator&32;split_var*/` are still split.
 
+.. option:: --fslice-element-limit
+
+   Rarely needed. Set the maximum array size (number of elements) for slice
+   optimization to avoid excessive memory usage.
+
 .. option:: -future0 <option>
 
-   Rarely needed.  Suppress an unknown Verilator option for an option that
-   takes no additional arguments.  This allows scripts written
-   with pragmas for a later version of Verilator to run under an older
-   version.  e.g. :code:`-future0 option --option` would on older versions
-   that do not understand :code:`--option` or :code:`+option` suppress what
-   would otherwise be an invalid option error, and on newer versions that
-   implement :code:`--option`, :code:`-future0 option --option` would have
-   the :code:`-future0 option` ignored and the :code:`--option` would
-   function appropriately.
+   Rarely needed. Suppress an unknown Verilator option for an option that
+   takes no additional arguments. This allows scripts written with pragmas
+   for a later version of Verilator to run under an older version. e.g.
+   ``-future0 option --option`` would on older versions that do not
+   understand ``--option`` or ``+option`` suppress what would otherwise be
+   an invalid option error, and on newer versions that implement
+   ``--option``, ``-future0 option --option`` would have the ``-future0
+   option`` ignored and the ``--option`` would function appropriately.
 
 .. option:: -future1 <option>
 
-   Rarely needed.  Suppress an unknown Verilator option for an option that
-   takes an additional argument.  This allows scripts written
-   with pragmas for a later version of Verilator to run under an older
-   version.  e.g. :code:`-future1 option --option arg` would on older
-   versions that do not understand :code:`--option arg` or
-   :code:`+option arg` suppress what would otherwise be an invalid option
-   error, and on newer versions that implement :code:`--option arg`,
-   :code:`-future1 option --option arg` would have the
-   :code:`-future1 option` ignored and the :code:`--option arg` would function
+   Rarely needed. Suppress an unknown Verilator option for an option that
+   takes an additional argument. This allows scripts written with pragmas
+   for a later version of Verilator to run under an older version. e.g.
+   ``-future1 option --option arg`` would on older versions that do not
+   understand ``--option arg`` or ``+option arg`` suppress what would
+   otherwise be an invalid option error, and on newer versions that
+   implement ``--option arg``, ``-future1 option --option arg`` would have
+   the ``-future1 option`` ignored and the ``--option arg`` would function
    appropriately.
 
 .. option:: -G<name>=<value>
@@ -753,7 +759,7 @@ Summary:
      The standard Verilog integer literals are supported, so values like
      32'h8, 2'b00, 4, etc., are allowed. Care must be taken that the single
      quote (I') is appropriately escaped in an interactive shell, e.g.,
-     as :code:`-GWIDTH=8'hx`.
+     as ``-GWIDTH=8'hx``.
 
    C integer literals
      It is also possible to use C integer notation, including hexadecimal
@@ -761,33 +767,32 @@ Summary:
 
    Double literals
      Double literals must be one of the following styles:
-      - contains a dot (.) (e.g., :code:`1.23`)
-      - contains an exponent (e/E) (e.g. :code:`12e3`)
-      - contains p/P for hexadecimal floating point in C99 (e.g. :code:`0x123.ABCp1`)
+      - contains a dot (.) (e.g., ``1.23``)
+      - contains an exponent (e/E) (e.g. ``12e3``)
+      - contains p/P for hexadecimal floating point in C99 (e.g. ``0x123.ABCp1``)
 
    Strings
      Strings must be in double quotes (""). They must be escaped properly
-     on the command line, e.g., as :code:`-GSTR="\"My String\""` or
-     :code:`-GSTR='"My String"'`.
+     on the command line, e.g., as ``-GSTR="\"My String\""`` or
+     ``-GSTR='"My String"'``.
 
 .. option:: --gate-stmts <value>
 
-   Rarely needed.  Set the maximum number of statements present
-   in an equation for the gate substitution optimization to inline that
-   equation.
+   Rarely needed. Set the maximum number of statements present in an
+   equation for the gate substitution optimization to inline that equation.
 
 .. option:: --gdb
 
    Run Verilator underneath an interactive GDB (or VERILATOR_GDB
-   environment variable value) session.  See also :vlopt:`--gdbbt` option.
+   environment variable value) session. See also :vlopt:`--gdbbt` option.
 
 .. option:: --gdbbt
 
-   If :vlopt:`--debug` is specified, run Verilator underneath a GDB process,
-   print a backtrace on exit, and then exit GDB immediately.  Without
-   :vlopt:`--debug` or if GDB doesn't seem to work, this flag is ignored.
-   Intended for easy creation of backtraces by users; otherwise see the
-   :vlopt:`--gdb` option.
+   If :vlopt:`--debug` is specified, run Verilator underneath a GDB
+   process, print a backtrace on exit, and then exit GDB immediately.
+   Without :vlopt:`--debug` or if GDB doesn't seem to work, this flag is
+   ignored. Intended for easy creation of backtraces by users; otherwise
+   see the :vlopt:`--gdb` option.
 
 .. option:: --generate-key
 
@@ -819,7 +824,7 @@ Summary:
 .. option:: --hierarchical
 
    Enable hierarchical Verilation; otherwise, the
-   :option:`/*verilator&32;hier_block*/` metacomment is ignored.  See
+   :option:`/*verilator&32;hier_block*/` metacomment is ignored. See
    :ref:`Hierarchical Verilation`.
 
 .. option:: --hierarchical-block <block>
@@ -852,23 +857,47 @@ Summary:
 
 .. option:: --if-depth <value>
 
-   Rarely needed.  Set the depth at which the IFDEPTH warning will fire,
+   Rarely needed. Set the depth at which the IFDEPTH warning will fire,
    defaults to 0, which disables this warning.
 
 .. option:: +incdir+<dir>
 
-   See :vlopt:`-y`.  Unlike with :vlopt:`-y`, multiple directories may be
+   See :vlopt:`-y`. Unlike with :vlopt:`-y`, multiple directories may be
    specified separated with a `+` symbol; this is for Verilog-XL
    compatibility and is not recommended usage as this is not supported by
    some third-party tools.
 
+.. option:: --inline-cfuncs <value>
+
+   Inline small C++ function (internal AstCFunc) calls directly into their
+   callers when the function has at most <value> nodes. This reduces
+   function call overhead when :vlopt:`--output-split-cfuncs` places
+   functions in separate compilation units that the C++ compiler cannot
+   inline.
+
+   Set to 0 to disable this optimization. The default is 20.
+
+   This optimization is automatically disabled when :vlopt:`--prof-cfuncs`
+   or :vlopt:`--trace` is used.
+
+.. option:: --inline-cfuncs-product <value>
+
+   Tune the inlining of C++ function (internal AstCFunc) calls for larger
+   functions. When a function is too large to always inline (exceeds
+   :vlopt:`--inline-cfuncs` threshold), it may still be inlined if the
+   function size multiplied by the number of call sites is at most <value>.
+
+   This allows functions that are called only once or twice to be inlined
+   even if they exceed the small function threshold. Set to 0 to only inline
+   functions below the :vlopt:`--inline-cfuncs` threshold. The default is 200.
+
 .. option:: --inline-mult <value>
 
-   Tune the inlining of modules.  The default value of 2000 specifies that
+   Tune the inlining of modules. The default value of 2000 specifies that
    up to 2000 new operations may be added to the model by inlining. If more
    than this number of operations would result, the module is not inlined.
    Larger values, or a value < 1 which will inline everything, leads to
-   longer compile times, but potentially faster simulation speed.  This
+   longer compile times, but potentially faster simulation speed. This
    setting is ignored for very small modules; they will always be inlined,
    if allowed.
 
@@ -887,14 +916,15 @@ Summary:
    of Verilator if :vlopt:`--verilate-jobs` isn't provided. Also sets
    :vlopt:`--output-groups` if isn't provided.
 
-   If zero, uses the number of threads available to the process, which is the
-   number of threads assigned by processor affinity (e.g. using `numactl`), or
-   the number of threads in the host hardware if unspecified.  Otherwise, must
-   be a positive integer specifying the maximum number of parallel build jobs.
+   If zero, uses the number of threads available to the process, which is
+   the number of threads assigned by processor affinity (e.g. using
+   `numactl`), or the number of threads in the host hardware if
+   unspecified. Otherwise, must be a positive integer specifying the
+   maximum number of parallel build jobs.
 
 .. option:: --no-json-edit-nums
 
-   Don't dump edit number in .tree.json files.  This may make the file more
+   Don't dump edit number in .tree.json files. This may make the file more
    run-to-run stable for easier comparison.
 
 .. option:: --no-json-ids
@@ -917,13 +947,13 @@ Summary:
 .. option:: --json-only-meta-output <filename>
 
    Specifies the filename for the metadata output file (`.tree.meta.json`)
-   of :vlopt:`--json-only`.  Using this option automatically sets
+   of :vlopt:`--json-only`. Using this option automatically sets
    :vlopt:`--json-only`.
 
 .. option:: --json-only-output <filename>
 
    Specifies the filename for the main output file (`.tree.json`) of
-   :vlopt:`--json-only`.  Using this option automatically sets
+   :vlopt:`--json-only`. Using this option automatically sets
    :vlopt:`--json-only`.
 
 .. option:: --l2-name <value>
@@ -934,7 +964,7 @@ Summary:
    default before Verilator 3.884 was ``--l2-name v``.
 
    For example, the program
-   :code:`module t; initial $display("%m"); endmodule` will show by default
+   ``module t; initial $display("%m"); endmodule`` will show by default
    "t". With ``--l2-name v`` it will print "v".
 
 .. option:: --language <value>
@@ -944,28 +974,28 @@ Summary:
 
 .. option:: -LDFLAGS <flags>
 
-   Add specified C linker arguments to the generated makefiles.  For multiple
-   flags, either pass them as a single argument with space separators quoted
-   in the shell (``-LDFLAGS "-a -b"``), or use multiple -LDFLAGS arguments
-   (``-LDFLAGS -a -LDFLAGS -b``).
+   Add specified C linker arguments to the generated makefiles. For
+   multiple flags, either pass them as a single argument with space
+   separators quoted in the shell (``-LDFLAGS "-a -b"``), or use
+   multiple -LDFLAGS arguments (``-LDFLAGS -a -LDFLAGS -b``).
 
    When make is run on the generated makefile, these will be passed to the
-   C++ linker (ld) **after** the primary file being linked.  This flag is
+   C++ linker (ld) **after** the primary file being linked. This flag is
    called :vlopt:`-LDFLAGS` as that's the traditional name in simulators;
    it's would have been better called LDLIBS as that's the Makefile
-   variable it controls.  (In Make, LDFLAGS is before the first object,
-   LDLIBS after.  -L libraries need to be in the Make variable LDLIBS, not
+   variable it controls. (In Make, LDFLAGS is before the first object,
+   LDLIBS after. -L libraries need to be in the Make variable LDLIBS, not
    LDFLAGS.)
 
 .. option:: --lib-create <name>
 
-   Produces C++, Verilog wrappers, and a Makefile which can produce
-   a DPI library that can be used by Verilator or other simulators along
-   with the corresponding Verilog wrapper.  The Makefile will build both a
-   static and dynamic version of the library named :file:`lib<name>.a` and
-   :file:`lib<name>.so` respectively.  This is done because some simulators
+   Produces C++, Verilog wrappers, and a Makefile which can produce a DPI
+   library that can be used by Verilator or other simulators along with the
+   corresponding Verilog wrapper. The Makefile will build both a static and
+   dynamic version of the library named :file:`lib<name>.a` and
+   :file:`lib<name>.so` respectively. This is done because some simulators
    require a dynamic library, but the static library is arguably easier to
-   use if possible.  :vlopt:`--protect-lib` implies :vlopt:`--protect-ids`.
+   use if possible. :vlopt:`--protect-lib` implies :vlopt:`--protect-ids`.
 
    When using :vlopt:`--lib-create`, it is advised to also use
    :vlopt:`--timescale-override /1fs <--timescale-override>` to ensure the
@@ -978,10 +1008,15 @@ Summary:
 
 .. option:: +libext+<ext>[+<ext>][...]
 
-   Specify the extensions that should be used for finding modules.  If for
-   example, module "my" is referenced, look in :file:`my.<ext>`.  Note
-   "+libext+" is relatively standard across Verilog tools.  Defaults to
+   Specify the extensions that should be used for finding modules. If for
+   example, module "my" is referenced, look in :file:`my.<ext>`. Note
+   "+libext+" is relatively standard across Verilog tools. Defaults to
    ".v+.sv".
+
+.. option:: -libmap <lib.map>
+
+   Specifies library mapping file to sort modules into libraries. This can be
+   overridden by :vlopt:`-work`.
 
 .. option:: +librescan
 
@@ -995,22 +1030,24 @@ Summary:
    You may also want the :vlopt:`-Wall` option to enable messages
    considered stylistic and not enabled by default.
 
+   Implies :vlopt:`--timing` unless :vlopt:`--no-timing` was used.
+
    If the design is not to be completely Verilated, see also the
    :vlopt:`--bbox-sys` and :vlopt:`--bbox-unsup` options.
 
 .. option:: --localize-max-size <value>
 
-   Rarely needed.  Set the maximum variable size in bytes for it to be
-   subject to localizing-to-stack optimization.  Defaults to 1024.
+   Rarely needed. Set the maximum variable size in bytes for it to be
+   subject to localizing-to-stack optimization. Defaults to 1024.
 
 .. option:: --main
 
    Generates a top-level C++ main() file that supports parsing arguments,
-   but does not drive any inputs.  This is sufficient to use for top-level
+   but does not drive any inputs. This is sufficient to use for top-level
    SystemVerilog designs that have no inputs.
 
    This option can also be used once to generate the main .cpp file as a
-   starting point for editing.  Copy it outside the obj directory, manually
+   starting point for editing. Copy it outside the obj directory, manually
    edit, and then pass the filename on later Verilator command line
    invocations.
 
@@ -1035,32 +1072,32 @@ Summary:
    Supported values are ``gmake`` for GNU Make, or ``cmake`` for CMake, or
    ``json`` to create a JSON file to feed other build tools.
 
-   Multiple options can be specified together.  If no build tool is
-   specified, gmake is assumed.  The executable of gmake can be configured
+   Multiple options can be specified together. If no build tool is
+   specified, gmake is assumed. The executable of gmake can be configured
    via the environment variable :option:`MAKE`.
 
    When using :vlopt:`--build`, Verilator takes over the responsibility of
-   building the model library/executable.  For this reason :option:`--make`
+   building the model library/executable. For this reason :option:`--make`
    cannot be specified when using :vlopt:`--build`.
 
 .. option:: -MAKEFLAGS <string>
 
    When using :vlopt:`--build`, add the specified argument to the invoked
-   make command line.  For multiple flags, either pass them as a single
-   argument with space separators quoted in the shell (e.g.  ``-MAKEFLAGS
-   "-a -b"``), or use multiple -MAKEFLAGS arguments
-   (e.g. ``-MAKEFLAGS -l -MAKEFLAGS -k``). Use of this option should not be
+   make command line. For multiple flags, either pass them as a single
+   argument with space separators quoted in the shell (e.g. ``-MAKEFLAGS
+   "-a -b"``), or use multiple -MAKEFLAGS arguments (e.g.
+   ``-MAKEFLAGS -l -MAKEFLAGS -k``). Use of this option should not be
    required for simple builds using the host toolchain.
 
 .. option:: --max-num-width <value>
 
-   Set the maximum number literal width (e.g., in 1024'd22 the
-   1024).  Defaults to 64K.
+   Set the maximum number literal width (e.g., in 1024'd22 the 1024).
+   Defaults to 64K.
 
 .. option:: --Mdir <directory>
 
-   Specifies the name of the Make object directory.  All generated files
-   will be placed in this directory.  If not specified, "obj_dir" is used.
+   Specifies the name of the Make object directory. All generated files
+   will be placed in this directory. If not specified, "obj_dir" is used.
    The directory is created if it does not exist and the parent directories
    exist; otherwise, manually create the Mdir before calling Verilator.
 
@@ -1068,19 +1105,19 @@ Summary:
 
 .. option:: --no-MMD
 
-   Enable/disable the creation of .d dependency files, used for make dependency
-   detection, similar to gcc -MMD option.  By default this option is
-   enabled for :vlopt:`--cc` or :vlopt:`--sc` modes.
+   Enable/disable the creation of .d dependency files, used for make
+   dependency detection, similar to gcc -MMD option. By default this option
+   is enabled for :vlopt:`--cc` or :vlopt:`--sc` modes.
 
 .. option:: --mod-prefix <topname>
 
-   Specifies the name to prepend to all lower-level classes.  Defaults to
+   Specifies the name to prepend to all lower-level classes. Defaults to
    the same as :vlopt:`--prefix`.
 
 .. option:: --MP
 
    When creating .d dependency files with :vlopt:`--MMD` option, make phony
-   targets.  Similar to :command:`gcc -MP` option.
+   targets. Similar to :command:`gcc -MP` option.
 
 .. option:: +notimingchecks
 
@@ -1097,7 +1134,7 @@ Summary:
 
 .. option:: -O1
 
-   Enables default optimization of the model.  This is the default
+   Enables default optimization of the model. This is the default
    optimization level.
 
 .. option:: -O2
@@ -1108,17 +1145,17 @@ Summary:
 
    Enables slow optimizations for the code Verilator itself generates (as
    opposed to :vlopt:`-CFLAGS -O3 <-CFLAGS>` which affects the C compiler's
-   optimization.  :vlopt:`-O3` may improve simulation performance at the
-   cost of compile time.  This currently sets
-   :vlopt:`--inline-mult -1 <--inline-mult>`.
+   optimization. :vlopt:`-O3` may improve simulation performance at the
+   cost of compile time. This currently sets :vlopt:`--inline-mult -1
+   <--inline-mult>`.
 
 .. option:: -O<optimization-letter>
 
-   Rarely needed.  Enables or disables specific optimizations, with the
-   optimization selected based on the letter passed.  A lowercase letter
-   disables an optimization, an uppercase letter enables it.  This option
-   is deprecated and the various `-f<optimization>` arguments should be
-   used instead.
+   Rarely needed. Enables or disables specific optimizations, with the
+   optimization selected based on the letter passed. A lowercase letter
+   disables an optimization, an uppercase letter enables it. This option is
+   deprecated and the various `-f<optimization>` arguments should be used
+   instead.
 
 .. option:: --no-order-clock-delay
 
@@ -1126,37 +1163,38 @@ Summary:
 
    In versions before 5.000:
 
-   Rarely needed.  Disables a bug fix for ordering of clock enables with
-   delayed assignments.  This option should only be used when suggested by
+   Rarely needed. Disables a bug fix for ordering of clock enables with
+   delayed assignments. This option should only be used when suggested by
    the developers.
 
 .. option:: --output-groups <numfiles>
 
    Enables concatenating the output .cpp files into the given number of
-   effective output .cpp files.  This minimizes the compiler startup
+   effective output .cpp files. This minimizes the compiler startup
    overhead from compiling many small files, which can happen in designs
    making extensive use of SystemVerilog classes, templates or generate
    blocks.
 
-   Using :vlopt:`--output-groups` can adversely impact caching and stability
-   (as in reproducibility) of compiled code.  Compilation of larger .cpp
-   files also has higher memory requirements.  Too low values might result in
-   swap thrashing with large designs, high values give no benefits.
+   Using :vlopt:`--output-groups` can adversely impact caching and
+   stability (as in reproducibility) of compiled code. Compilation of
+   larger .cpp files also has higher memory requirements. Too low values
+   might result in swap thrashing with large designs, high values give no
+   benefits.
 
    Typically setting the number of files to the hardware thread count,
    corresponding to number of compiler jobs that can run in parallel, will
    lead to fastest build times. (e.g. for small to medium designs the value
    should range from 2 to 20.)
 
-   Zero disables this feature.  Negative one, the default, sets the groups
+   Zero disables this feature. Negative one, the default, sets the groups
    to the value from :vlopt:`--build-jobs`, or from :vlopt:`-j`, or zero in
    that priority.
 
 .. option:: --output-split <statements>
 
-   Enables splitting the output .cpp files into multiple outputs.  When a
+   Enables splitting the output .cpp files into multiple outputs. When a
    C++ file exceeds the specified number of operations, a new file will be
-   created at the next function boundary.  In addition, if the total output
+   created at the next function boundary. In addition, if the total output
    code size exceeds the specified value, VM_PARALLEL_BUILDS will be set to
    1 by default in the generated makefiles, making parallel compilation
    possible. Using :vlopt:`--output-split` should have only a trivial
@@ -1170,11 +1208,11 @@ Summary:
 .. option:: --output-split-cfuncs <statements>
 
    Enables splitting functions in the output .cpp files into multiple
-   functions.  When a generated function exceeds the specified number of
-   operations, a new function will be created.  With
+   functions. When a generated function exceeds the specified number of
+   operations, a new function will be created. With
    :vlopt:`--output-split`, this will enable the C++ compiler to compile
    faster, at a small loss in performance that gets worse with decreasing
-   split values.  Note that this option is stronger than
+   split values. Note that this option is stronger than
    :vlopt:`--output-split` in the sense that :vlopt:`--output-split` will
    not split inside a function.
 
@@ -1191,16 +1229,16 @@ Summary:
 
 .. option:: -P
 
-   With :vlopt:`-E`, disable generation of :code:`&96;line` markers and
+   With :vlopt:`-E`, disable generation of ``&96;line`` markers and
    blank lines, similar to :command:`gcc -P`.
 
 .. option:: --pins-bv <width>
 
-   Specifies SystemC inputs/outputs greater than or equal to <width>
-   bits wide should use sc_bv's instead of uint32/uint64_t's.  The
-   default is "--pins-bv 65", and the value must be less than or equal
-   to 65.  Versions before Verilator 3.671 defaulted to "--pins-bv 33".
-   The more sc_bv is used, the worse for performance.  Use the
+   Specifies SystemC inputs/outputs greater than or equal to <width> bits
+   wide should use sc_bv's instead of uint32/uint64_t's. The default is
+   "--pins-bv 65", and the value must be less than or equal to 65. Versions
+   before Verilator 3.671 defaulted to "--pins-bv 33". The more sc_bv is
+   used, the worse for performance. Use the
    :option:`/*verilator&32;sc_bv*/` metacomment to select specific ports to
    be sc_bv.
 
@@ -1214,15 +1252,16 @@ Summary:
 .. option:: --pins-sc-biguint
 
    Specifies SystemC inputs/outputs greater than 65 bits wide should use
-   sc_biguint between 65 and 512, and sc_bv from 513 upwards.  When
-   combined with the :vlopt:`--pins-sc-uint` combination, it results in
-   sc_uint being used between 2 and 64 and sc_biguint being used between 65
-   and 512.
+   sc_biguint between 65 and 512, and sc_bv from 513 upwards. When combined
+   with the :vlopt:`--pins-sc-uint` combination, it results in sc_uint
+   being used between 2 and 64 and sc_biguint being used between 65
+   and 512. Use the :option:`/*verilator&32;sc_biguint*/` metacomment to
+   selectively set specific signals to `sc_biguint` for any width.
 
 .. option:: --pins-sc-uint
 
    Specifies SystemC inputs/outputs greater than 2 bits wide should use
-   sc_uint between 2 and 64.  When combined with the
+   sc_uint between 2 and 64. When combined with the
    :vlopt:`--pins-sc-biguint` combination, it results in sc_uint being used
    between 2 and 64 and sc_biguint being used between 65 and 512.
 
@@ -1232,14 +1271,13 @@ Summary:
 
 .. option:: --pins-uint8
 
-   Specifies SystemC inputs/outputs smaller than the
-   :vlopt:`--pins-bv` setting and 8 bits or less should use uint8_t instead
-   of uint32_t.  Likewise pins of width 9-16 will use uint16_t instead of
-   uint32_t.
+   Specifies SystemC inputs/outputs smaller than the :vlopt:`--pins-bv`
+   setting and 8 bits or less should use uint8_t instead of uint32_t.
+   Likewise pins of width 9-16 will use uint16_t instead of uint32_t.
 
 .. option:: --pins64
 
-   Backward compatible alias for :vlopt:`--pins-bv 65 <--pins-bv>`.  Note
+   Backward compatible alias for :vlopt:`--pins-bv 65 <--pins-bv>`. Note
    that's a 65, not a 64.
 
 .. option:: --no-pins64
@@ -1248,19 +1286,19 @@ Summary:
 
 .. option:: --pipe-filter <command>
 
-   Rarely needed.  Verilator will spawn the specified command as a
+   Rarely needed. Verilator will spawn the specified command as a
    subprocess pipe, to allow the command to perform custom edits on the
    Verilog code before it reaches Verilator.
 
    Before reading each Verilog file, Verilator will pass the file name to
-   the subprocess' stdin with :code:`read "<filename>"`.  The filter may
-   then read the file and perform any filtering it desires, and feeds the
-   new file contents back to Verilator on stdout by first emitting a line
-   defining the length in bytes of the filtered output
-   :code:`Content-Length: <bytes>`, followed by the new filtered
-   contents. Output to stderr from the filter feeds through to Verilator's
-   stdout and if the filter exits with non-zero status Verilator
-   terminates.  See the file:`t/t_pipe_filter` test for an example.
+   the subprocess' stdin with ``read "<filename>"``. The filter may then
+   read the file and perform any filtering it desires, and feeds the new
+   file contents back to Verilator on stdout by first emitting a line
+   defining the length in bytes of the filtered output ``Content-Length:
+   <bytes>``, followed by the new filtered contents. Output to stderr from
+   the filter feeds through to Verilator's stdout and if the filter exits
+   with non-zero status Verilator terminates. See the
+   file:`t/t_pipe_filter` test for an example.
 
    To debug the output of the filter, try using the :vlopt:`-E` option to
    see the preprocessed output.
@@ -1272,7 +1310,7 @@ Summary:
 
 .. option:: --prefix <topname>
 
-   Specifies the name of the top-level class and makefile.  Defaults to V
+   Specifies the name of the top-level class and makefile. Defaults to V
    prepended to the name of the :vlopt:`--top` option, or V prepended to
    the first Verilog filename passed on the command line.
 
@@ -1287,7 +1325,7 @@ Summary:
 .. option:: --preproc-resolve
 
    With :vlopt:`-E`, resolve referenced instance modules, to include
-   preprocessed output of submodules.  Used to convert a multi-file design
+   preprocessed output of submodules. Used to convert a multi-file design
    into a single output file.
 
    See :vlopt:`-E`.
@@ -1300,25 +1338,25 @@ Summary:
 
 .. option:: --private
 
-   Rarely needed. Opposite of :vlopt:`--public`.  This is the default; this
+   Rarely needed. Opposite of :vlopt:`--public`. This is the default; this
    option exists for backwards compatibility.
 
 .. option:: --prof-c
 
    When compiling the C++ code, enable the compiler's profiling flag
-   (e.g., :code:`g++ -pg`). See :ref:`Profiling`.
+   (e.g., ``g++ -pg``). See :ref:`Profiling`.
 
    Using :vlopt:`--prof-cfuncs` also enables :vlopt:`--prof-c`.
 
 .. option:: --prof-cfuncs
 
-   Modify the created C++ functions to support profiling.  The functions
+   Modify the created C++ functions to support profiling. The functions
    will be minimized to contain one "basic" statement, generally a single
-   always block or wire statement.  (This may slow down the
-   executable by ~5%.)  Furthermore, the function name will be suffixed
-   with the basename of the Verilog module and the line number the statement
-   came from.  This allows gprof or oprofile reports to be correlated with
-   the original Verilog source statements. See :ref:`Profiling`.
+   always block or wire statement. (This may slow down the executable by
+   ~5%.) Furthermore, the function name will be suffixed with the basename
+   of the Verilog module and the line number the statement came from. This
+   allows gprof or oprofile reports to be correlated with the original
+   Verilog source statements. See :ref:`Profiling`.
 
    Using :vlopt:`--prof-cfuncs` also enables :vlopt:`--prof-c`.
 
@@ -1342,7 +1380,7 @@ Summary:
    Hash any private identifiers (variable, module, and assertion block
    names that are not on the top-level) into hashed random-looking
    identifiers, resulting after compilation in protected library binaries
-   that expose less design information.  This hashing uses the provided or
+   that expose less design information. This hashing uses the provided or
    default :vlopt:`--protect-key`; see important details there.
 
    Verilator will also create a :file:`<prefix>__idmap.xml` file which
@@ -1354,8 +1392,8 @@ Summary:
 
    Using DPI imports/exports are allowed and generally relatively safe in
    terms of information disclosed, which is limited to the DPI function
-   prototypes.  Use of the VPI is not recommended as many design details
-   may be exposed, and an INSECURE warning will be issued.
+   prototypes. Use of the VPI is not recommended as many design details may
+   be exposed, and an INSECURE warning will be issued.
 
 .. option:: --protect-key <key>
 
@@ -1377,11 +1415,11 @@ Summary:
 .. option:: --protect-lib <name>
 
    Produces a DPI library similar to :vlopt:`--lib-create`, but hides
-   internal design details.  :vlopt:`--protect-lib` implies
+   internal design details. :vlopt:`--protect-lib` implies
    :vlopt:`--protect-ids`, and :vlopt:`--lib-create`.
 
    This allows for the secure delivery of sensitive IP without the need for
-   encrypted RTL (i.e. IEEE P1735).  See :file:`examples/make_protect_lib`
+   encrypted RTL (i.e. IEEE P1735). See :file:`examples/make_protect_lib`
    in the distribution for a demonstration of how to build and use the DPI
    library.
 
@@ -1392,9 +1430,9 @@ Summary:
    Rarely needed. This is only for historical debugging use and using it
    may result in mis-simulation of generated clocks.
 
-   Declares all signals and modules public.  This will turn off signal
+   Declares all signals and modules public. This will turn off signal
    optimizations as if all signals had a :option:`/*verilator&32;public*/`
-   metacomments and inlining.  This will also turn off inlining as if all
+   metacomments and inlining. This will also turn off inlining as if all
    modules had a :option:`/*verilator&32;public_module*/`, unless the
    module specifically enabled it with
    :option:`/*verilator&32;inline_module*/`.
@@ -1409,24 +1447,24 @@ Summary:
 .. option:: --public-flat-rw
 
    Declares all variables, ports, and wires public as if they had
-   :code:`/*verilator public_flat_rw*/` metacomments.  This will make them VPI
-   accessible by their flat name, but not turn off module inlining.  This is
+   ``/*verilator public_flat_rw*/`` metacomments. This will make them VPI
+   accessible by their flat name, but not turn off module inlining. This is
    particularly useful in combination with :vlopt:`--vpi`. This may also in
-   some rare cases result in mis-simulation of generated clocks.  Instead of
-   this global option, marking only those signals that need public_flat_rw is
-   typically significantly better performing.
+   some rare cases result in mis-simulation of generated clocks. Instead of
+   this global option, marking only those signals that need public_flat_rw
+   is typically significantly better performing.
 
 .. option:: --public-ignore
 
-   Ignore all :code:`/*verilator public* */` metacomments. This is useful
-   for speed-optimizing VPI builds where VPI is not being used.  This only
+   Ignore all ``/*verilator public* */`` metacomments. This is useful for
+   speed-optimizing VPI builds where VPI is not being used. This only
    affects metacomments; options such as :vlopt:`--public`,
    :vlopt:`--public-depth`, etc. work normally.
 
 .. option:: --public-params
 
    Declares all parameters public as if they had
-   :code:`/*verilator public_flat_rd*/`
+   ``/*verilator public_flat_rd*/``
    metacomments.
 
 
@@ -1437,7 +1475,13 @@ Summary:
 
 .. option:: --quiet
 
-   Alias for :vlopt:`--quiet-exit` :vlopt:`--quiet-stats`.
+   Alias for :vlopt:`--quiet-build` :vlopt:`--quiet-exit`
+   :vlopt:`--quiet-stats`.
+
+.. option:: --quiet-build
+
+   Disable printing build progress such as compiler command lines, when
+   using :vlopt:`--build`.
 
 .. option:: --quiet-exit
 
@@ -1496,7 +1540,7 @@ Summary:
 
 .. option:: --rr
 
-   Run Verilator and record with the :command:`rr` command.  See
+   Run Verilator and record with the :command:`rr` command. See
    `https://rr-project.org <https://rr-project.org>`_.
 
 .. option:: --runtime-debug
@@ -1525,17 +1569,17 @@ Summary:
 
    ``-CFLAGS -DVL_DEBUG=1``
      Instructs the compiler to enable Verilator's runtime assertions and
-     debug capabilities.  To enable debug print messages at runtime, see
+     debug capabilities. To enable debug print messages at runtime, see
      :vlopt:`+verilator+debug`.
 
    The :vlopt:`-CFLAGS` and/or :vlopt:`-LDFLAGS` options used here pass the
    following argument into the generated Makefile for use as compiler or
-   linker options respectively.  If you are using your own Makefiles, adapt
+   linker options respectively. If you are using your own Makefiles, adapt
    appropriately to pass the suggested flags to the compiler and linker.
 
 .. option:: --savable
 
-   Enable including save and restore functions in the generated model.  See
+   Enable including save and restore functions in the generated model. See
    :ref:`Save/Restore`.
 
 .. option:: --sc
@@ -1546,9 +1590,9 @@ Summary:
 
 .. option:: --no-skip-identical
 
-   Rarely needed.  Disables or enables skipping execution of Verilator if
+   Rarely needed. Disables or enables skipping execution of Verilator if
    all source files are identical, and all output files exist with newer
-   dates.  By default, this option is enabled for :vlopt:`--cc` or
+   dates. By default, this option is enabled for :vlopt:`--cc` or
    :vlopt:`--sc` modes only.
 
 .. option:: --stats
@@ -1561,14 +1605,14 @@ Summary:
 .. option:: --stats-vars
 
    Creates more detailed statistics, including a list of all the variables
-   by size (plain :vlopt:`--stats` just gives a count).  See
+   by size (plain :vlopt:`--stats` just gives a count). See
    :vlopt:`--stats`, which is implied by this.
 
 .. option:: --no-std
 
    Prevents parsing standard input files, alias for
-   :vlopt:`--no-std-package`, :vlopt:`--no-std-waiver`.  This may be extended
-   to prevent reading other standardized files in future versions.
+   :vlopt:`--no-std-package`, :vlopt:`--no-std-waiver`. This may be
+   extended to prevent reading other standardized files in future versions.
 
 .. option:: --no-std-package
 
@@ -1592,7 +1636,7 @@ Summary:
 .. option:: -sv
 
    Specifies SystemVerilog language features should be enabled; equivalent
-   to :vlopt:`--language 1800-2023 <--language>`.  This option is selected
+   to :vlopt:`--language 1800-2023 <--language>`. This option is selected
    by default; it exists for compatibility with other simulators.
 
 .. option:: +systemverilogext+<ext>
@@ -1637,15 +1681,15 @@ Summary:
 
 .. option:: --threads-max-mtasks <value>
 
-   Rarely needed.  When using :vlopt:`--threads`, specify the number of
+   Rarely needed. When using :vlopt:`--threads`, specify the number of
    mtasks the model is to be partitioned into. If unspecified, Verilator
    approximates a good value.
 
 .. option:: --timescale <timeunit>/<timeprecision>
 
-   Sets default timeunit and timeprecision when "`timescale"
-   does not occur before a given module.  Default is "1ps/1ps" (to match
-   SystemC).  This is overridden by :vlopt:`--timescale-override`.
+   Sets default timeunit and timeprecision when "`timescale" does not occur
+   before a given module. Default is "1ps/1ps" (to match SystemC). This is
+   overridden by :vlopt:`--timescale-override`.
 
 .. option:: --timescale-override /<timeprecision>
 
@@ -1656,7 +1700,7 @@ Summary:
 
    The time precision must be consistent with SystemC's
    "sc_set_time_resolution()", or the C++ code instantiating the Verilated
-   module.  As "1fs" is the finest time precision, it may be desirable
+   module. As "1fs" is the finest time precision, it may be desirable
    always to use a precision of "1fs".
 
 .. option:: --timing
@@ -1693,10 +1737,10 @@ Summary:
 
 .. option:: --trace-coverage
 
-   With `--trace-*`  and ``--coverage-*``, enable tracing to include a
+   With ``--trace-*`` and ``--coverage-*``, enable tracing to include a
    traced signal for every :vlopt:`--coverage-line` or
    :vlopt:`--coverage-user`\ -inserted coverage point, to assist in
-   debugging coverage items.  Note :vlopt:`--coverage-toggle` does not get
+   debugging coverage items. Note :vlopt:`--coverage-toggle` does not get
    additional signals added, as the original signals being toggle-analyzed
    are already visible.
 
@@ -1708,25 +1752,25 @@ Summary:
 
    Specify the number of levels deep to enable tracing, for example,
    :vlopt:`--trace-depth 1 <--trace-depth>` to only see the top-level
-   signals.  Defaults to the entire model.  Using a small number will
+   signals. Defaults to the entire model. Using a small number will
    decrease visibility, but significantly improve simulation performance
    and trace file size.
 
 .. option:: --trace-fst
 
    Enable FST waveform tracing in the model. This overrides
-   :vlopt:`--trace`.  See also :vlopt:`--trace-threads` option.
+   :vlopt:`--trace`. See also :vlopt:`--trace-threads` option.
 
 .. option:: --trace-max-array <depth>
 
-   Rarely needed.  Specify the maximum array depth of a signal that may be
-   traced.  Zero allows any width. Defaults to 32, as tracing large arrays
+   Rarely needed. Specify the maximum array depth of a signal that may be
+   traced. Zero allows any width. Defaults to 32, as tracing large arrays
    may greatly slow traced simulations.
 
 .. option:: --trace-max-width <width>
 
-   Rarely needed.  Specify the maximum total bit width of a signal, across
-   all elements if an array, that may be traced.  Zero allows any width.
+   Rarely needed. Specify the maximum total bit width of a signal, across
+   all elements if an array, that may be traced. Zero allows any width.
    Defaults to 4096, as tracing large vectors may greatly slow traced
    simulations.
 
@@ -1743,7 +1787,7 @@ Summary:
 .. option:: --trace-structs
 
    Enable tracing to show the name of packed structure, union, and packed
-   array fields, rather than a single combined packed bus.  Due to VCD file
+   array fields, rather than a single combined packed bus. Due to VCD file
    format constraints, this may result in significantly slower trace times
    and larger trace files.
 
@@ -1770,21 +1814,21 @@ Summary:
 
 .. option:: --trace-underscore
 
-   Enable tracing of signals or modules that start with an
-   underscore. Otherwise, these signals are not output during tracing.  See
-   also :vlopt:`--coverage-underscore` option.
+   Enable tracing of signals or modules that start with an underscore.
+   Otherwise, these signals are not output during tracing. See also
+   :vlopt:`--coverage-underscore` option.
 
 .. option:: --trace-vcd
 
    Adds waveform tracing code to the model using VCD format.
 
    Verilator will generate additional :file:`<prefix>__Trace*.cpp` files
-   must be compiled.  In addition :file:`verilated_vcd_sc.cpp`
-   (for SystemC traces) or :file:`verilated_vcd_c.cpp` (for both) must be
-   compiled and linked in.  If using the Verilator-generated Makefiles,
-   these files will be added to the source file lists for you.  If you are
-   not using the Verilator Makefiles, you will need to add these to your
-   Makefile manually.
+   must be compiled. In addition :file:`verilated_vcd_sc.cpp` (for SystemC
+   traces) or :file:`verilated_vcd_c.cpp` (for both) must be compiled and
+   linked in. If using the Verilator-generated Makefiles, these files will
+   be added to the source file lists for you. If you are not using the
+   Verilator Makefiles, you will need to add these to your Makefile
+   manually.
 
    Having tracing compiled in may result in small performance losses,
    even when tracing is not turned on during model execution.
@@ -1803,35 +1847,53 @@ Summary:
 
 .. option:: --unroll-count <loops>
 
-   Rarely needed.  Specifies the maximum number of loop iterations that may
-   be unrolled.  See also :option:`BLKLOOPINIT` warning, and
+   Rarely needed. Specifies the maximum number of iterations for procedural
+   loops that may be unrolled. If the loop has more iterations, it will not
+   be unrolled at all. Does not effect generate loops. See also
+   :option:`BLKLOOPINIT` warning, and
    :option:`/*verilator&32;unroll_disable*/` and
    :option:`/*verilator&32;unroll_full*/` metacomments.
+
+   Defaults to 64. Setting to 0 disables all unrolling of procedural loops
+   except those marked with :option:`/*verilator&32;unroll_full*/`.
+
+.. option:: --unroll-limit <loops>
+
+   Rarely needed. Specifies the maximum number of unrolled loop iterations
+   before assuming the loop is infinite and subsequently issuing an error.
+   This is a safety limit to make sure Verilator terminates even in the of
+   a true infinite loop in the input (e.g.: due to a generate for loop
+   missing the increment statement)
+
+   Defaults to 16K, can be increased if the input has larger finite loops.
 
 .. option:: --unroll-stmts <statements>
 
-   Rarely needed.  Specifies the maximum number of statements in a loop for
-   that loop to be unrolled.  See also :option:`BLKLOOPINIT` warning, and
+   Rarely needed. Specifies the maximum number of statements in the
+   unrolling of a loop for that loop to be unrolled. See also
+   :option:`BLKLOOPINIT` warning, and
    :option:`/*verilator&32;unroll_disable*/` and
    :option:`/*verilator&32;unroll_full*/` metacomments.
 
+   Defaults to 30000.
+
 .. option:: --unused-regexp <regexp>
 
-   Rarely needed.  Specifies a simple regexp with \* and ? that, if a signal
-   name matches, will suppress the :option:`UNUSED` warning.  Defaults to
-   "\*unused\*".  Setting it to "" disables matching.
+   Rarely needed. Specifies a simple regexp with \* and ? that, if a signal
+   name matches, will suppress the :option:`UNUSED` warning. Defaults to
+   "\*unused\*". Setting it to "" disables matching.
 
 .. option:: -V
 
    Shows the verbose version, including configuration information compiled
-   into Verilator.  (Similar to :command:`perl -V`.)  See also
+   into Verilator. (Similar to :command:`perl -V`.) See also
    :vlopt:`--getenv` option.
 
 .. option:: -v <filename>
 
-   Read the filename as a Verilog library.  Any modules in the file may be
+   Read the filename as a Verilog library. Any modules in the file may be
    used to resolve instances in the top-level module, otherwise, they are
-   ignored.  Note "-v" is relatively standard across Verilog tools.
+   ignored. Note "-v" is relatively standard across Verilog tools.
 
 .. option:: --valgrind
 
@@ -1847,11 +1909,11 @@ Summary:
 .. option:: --verilate-jobs <value>
 
    Specify the level of parallelism for the internal compilation steps of
-   Verilator.  If zero, uses the number of threads available to the process,
-   which is the number of threads assigned by processor affinity (e.g. using
-   `numactl`), or the number of threads in the host hardware if unspecified.
-   Otherwise, must be a positive integer specifying the maximum number of
-   parallel build jobs.
+   Verilator. If zero, uses the number of threads available to the process,
+   which is the number of threads assigned by processor affinity (e.g.
+   using `numactl`), or the number of threads in the host hardware if
+   unspecified. Otherwise, must be a positive integer specifying the
+   maximum number of parallel build jobs.
 
    If not provided, and :vlopt:`-j` is provided, the :vlopt:`-j` value is
    used.
@@ -1879,7 +1941,7 @@ Summary:
    When using :vlopt:`--waiver-output \<filename\> <--waiver-output>`,
    include a match expression that includes the entire multiline error
    message as a match regular expression, as opposed to the default of only
-   matching the first line of the error message.  This provides a starting
+   matching the first line of the error message. This provides a starting
    point for creating complex waivers, but such generated waivers will
    likely require editing for brevity before being reused.
 
@@ -1901,32 +1963,32 @@ Summary:
 
    Enable all code-style warnings, including style warnings that are
    typically disabled by default. Equivalent to :vlopt:`-Wwarn-lint`
-   :vlopt:`-Wwarn-style`.  Excludes some specialty warnings.
+   :vlopt:`-Wwarn-style`. Excludes some specialty warnings.
 
 .. option:: -Werror-<message>
 
-   Promote the specified warning message into an error message.  This is
+   Promote the specified warning message into an error message. This is
    generally to discourage users from violating important site-wide rules,
    for example, "-Werror-NOUNOPTFLAT".
 
 .. option:: -Wfuture-<message>
 
-   Rarely needed.  Suppress unknown Verilator comments or warning messages
-   with the given message code.  This is used to allow code written with
+   Rarely needed. Suppress unknown Verilator comments or warning messages
+   with the given message code. This is used to allow code written with
    pragmas for a later version of Verilator to run under an older version;
    add "-Wfuture-" arguments for each message code or comment that the new
    version supports, which the older version does not support.
 
 .. option:: -Wno-<message>
 
-   Disable the specified warning/error message.  This will override any
+   Disable the specified warning/error message. This will override any
    lint_on directives in the source, i.e., the warning will still not be
    printed.
 
 .. option:: -Wno-context
 
    Disable showing the suspected context of the warning message by quoting
-   the source text at the suspected location.  This can be used to appease
+   the source text at the suspected location. This can be used to appease
    tools that process the warning messages but may get confused by lines
    quoted from the source.
 
@@ -1934,21 +1996,22 @@ Summary:
 
    When warnings are detected, print them, but do not terminate Verilator.
 
-   Having warning messages in builds can be sloppy.  You should cleanup
-   your code, use inline lint_off, or use ``-Wno-...`` options rather than
-   using this option.
+   Having warning messages in builds can be sloppy. You should cleanup your
+   code, use inline lint_off, or use ``-Wno-...`` options rather than using
+   this option.
 
 .. option:: -Wno-lint
 
-   Disable all lint-related warning messages, and all style warnings.  This
-   is equivalent to ``-Wno-ALWCOMBORDER`` ``-Wno-ASCRANGE`` ``-Wno-ASSIGNEQEXPR``
-   ``-Wno-BSSPACE`` ``-Wno-CASEINCOMPLETE`` ``-Wno-CASEOVERLAP``
-   ``-Wno-CASEX`` ``-Wno-CASTCONST`` ``-Wno-CASEWITHX`` ``-Wno-CMPCONST``
-   ``-Wno-COLONPLUS`` ``-Wno-IMPLICIT`` ``-Wno-IMPLICITSTATIC``
-   ``-Wno-PINCONNECTEMPTY`` ``-Wno-PINMISSING`` ``-Wno-STATICVAR``
-   ``-Wno-SYNCASYNCNET`` ``-Wno-UNDRIVEN`` ``-Wno-UNSIGNED``
-   ``-Wno-UNUSEDGENVAR`` ``-Wno-UNUSEDPARAM`` ``-Wno-UNUSEDSIGNAL``
-   ``-Wno-WIDTH``, plus the list shown for :vlopt:`-Wno-style`.
+   Disable all lint-related warning messages, and all style warnings. This
+   is equivalent to ``-Wno-ALWCOMBORDER`` ``-Wno-ASCRANGE``
+   ``-Wno-ASSIGNEQEXPR`` ``-Wno-BSSPACE`` ``-Wno-CASEINCOMPLETE``
+   ``-Wno-CASEOVERLAP`` ``-Wno-CASEX`` ``-Wno-CASTCONST``
+   ``-Wno-CASEWITHX`` ``-Wno-CMPCONST`` ``-Wno-COLONPLUS``
+   ``-Wno-IMPLICIT`` ``-Wno-IMPLICITSTATIC`` ``-Wno-PINCONNECTEMPTY``
+   ``-Wno-PINMISSING`` ``-Wno-STATICVAR`` ``-Wno-SYNCASYNCNET``
+   ``-Wno-UNDRIVEN`` ``-Wno-UNSIGNED`` ``-Wno-UNUSEDGENVAR``
+   ``-Wno-UNUSEDPARAM`` ``-Wno-UNUSEDSIGNAL`` ``-Wno-WIDTH``, plus the list
+   shown for :vlopt:`-Wno-style`.
 
    It is strongly recommended that you clean up your code rather than using this
    option; it is only intended to be used when running test-cases of code
@@ -1957,7 +2020,7 @@ Summary:
 .. option:: -Wno-style
 
    Disable all code style related warning messages (note that by default,
-   they are already disabled).  This is equivalent to ``-Wno-DECLFILENAME``
+   they are already disabled). This is equivalent to ``-Wno-DECLFILENAME``
    ``-Wno-DEFPARAM`` ``-Wno-EOFNEWLINE`` ``-Wno-GENUNNAMED``
    ``-Wno-IMPORTSTAR`` ``-Wno-INCABSPATH`` ``-Wno-PINCONNECTEMPTY``
    ``-Wno-PINNOCONNECT`` ``-Wno-SYNCASYNCNET`` ``-Wno-UNDRIVEN``
@@ -1967,8 +2030,8 @@ Summary:
 .. option:: -work <libname>
 
    Use the specified Verilog config library name for all cells read after
-   this argument.  May be specified multiple times, it will apply to cells
-   read between the given arguments.  E.g. `-work liba a.v -work libb b.v`
+   this argument. May be specified multiple times, it will apply to cells
+   read between the given arguments. E.g. `-work liba a.v -work libb b.v`
    will use `liba` for modules inside `a.v` or in cells resolved
    hierarchically under those modules, and will use `libb` for modules
    inside `b.v` or hierarchically under.
@@ -1981,9 +2044,8 @@ Summary:
 
    Warn on any construct demanded by IEEE, and disable all Verilator
    extensions that may interfere with IEEE compliance to the standard
-   defined with :vlopt:`--default-language`, etc.  Similar to
-   :command:`gcc -Wpedantic`.  Rarely used, and intended only for strict
-   compliance tests.
+   defined with :vlopt:`--default-language`, etc. Similar to :command:`gcc
+   -Wpedantic`. Rarely used, and intended only for strict compliance tests.
 
    This option changes :option:`ASSIGNIN` from an error to a warning.
 
@@ -1994,19 +2056,17 @@ Summary:
 .. option:: -Wwarn-lint
 
    Enable all lint-related warning messages (note that by default, they are
-   already enabled), but do not affect style messages.  This is equivalent
-   to ``-Wwarn-ALWCOMBORDER`` ``-Wwarn-ASCRANGE`` ``-Wno-ASSIGNEQEXPR``
-   ``-Wwarn-BSSPACE`` ``-Wwarn-CASEINCOMPLETE`` ``-Wwarn-CASEOVERLAP``
-   ``-Wwarn-CASEWITHX`` ``-Wwarn-CASEX`` ``-Wwarn-CASTCONST``
-   ``-Wwarn-CMPCONST`` ``-Wwarn-COLONPLUS`` ``-Wwarn-IMPLICIT``
-   ``-Wwarn-IMPLICITSTATIC`` ``-Wwarn-LATCH`` ``-Wwarn-MISINDENT``
-   ``-Wwarn-NEWERSTD`` ``-Wwarn-PREPROCZERO`` ``-Wwarn-PINMISSING``
-   ``-Wwarn-REALCVT`` ``-Wwarn-STATICVAR`` ``-Wwarn-UNSIGNED``
-   ``-Wwarn-WIDTHTRUNC`` ``-Wwarn-WIDTHEXPAND`` ``-Wwarn-WIDTHXZEXPAND``.
+   already enabled), and also style messages. This is equivalent to
+   :vlopt:`-Wall`.
+
+   In versions before 5.044 this enabled only lint, but not
+   :vlopt:`-Wwarn-style` messages; for similar behavior use `-Wwarn-lint
+   -Wno-style`. The current behavior is consistent with the inverse of
+   :vlopt:`-Wno-lint`.
 
 .. option:: -Wwarn-style
 
-   Enable all code style-related warning messages.  This is equivalent to
+   Enable all code style-related warning messages. This is equivalent to
    ``-Wwarn-ASSIGNDLY`` ``-Wwarn-BLKSEQ`` ``-Wwarn-DECLFILENAME``
    ``-Wwarn-DEFPARAM`` ``-Wwarn-EOFNEWLINE`` ``-Wwarn-GENUNNAMED``
    ``-Wwarn-IMPORTSTAR`` ``-Wwarn-INCABSPATH`` ``-Wwarn-PINCONNECTEMPTY``
@@ -2040,9 +2100,9 @@ Summary:
      :vlopt:`+verilator+rand+reset+2 <+verilator+rand+reset+\<value\>>`
      runtime option, and seed the runtime random number generator such that
      each regression run gets a different randomization sequence with
-     :vlopt:`+verilator+seed+\<value\>`.  You'll probably also want to
-     print any seeds selected, and code to enable rerunning with that same
-     seed, so you can reproduce bugs.
+     :vlopt:`+verilator+seed+\<value\>`. You'll probably also want to print
+     any seeds selected, and code to enable rerunning with that same seed,
+     so you can reproduce bugs.
 
    .. note::
 
@@ -2060,24 +2120,23 @@ Summary:
    With "--x-initial 0",
      initializes all otherwise uninitialized variables to zero.
 
-   With "--x-initial unique", the default,
-     initializes variables using a function, which determines the value to
-     use for each initialization. This gives the greatest flexibility and
-     allows for finding reset bugs.  See :ref:`Unknown states`.
+   With "--x-initial unique", the default, initializes variables using a
+     function, which determines the value to use for each initialization.
+     This gives the greatest flexibility and allows for finding reset bugs.
+     See :ref:`Unknown states`.
 
      If using `--x-initial unique`, use the
      :vlopt:`+verilator+rand+reset+2 <+verilator+rand+reset+\<value\>>`
      runtime option, and seed the runtime random number generator such that
      each regression run gets a different randomization sequence with
-     :vlopt:`+verilator+seed+\<value\>`.  You'll probably also want to
-     print any seeds selected, and code to enable rerunning with that same
-     seed, so you can reproduce bugs.
+     :vlopt:`+verilator+seed+\<value\>`. You'll probably also want to print
+     any seeds selected, and code to enable rerunning with that same seed,
+     so you can reproduce bugs.
 
-   With "--x-initial fast",
-     is best for performance, and initializes all variables to a state
-     Verilator determines is optimal.  This may allow further code
-     optimizations, but will likely hide any code bugs relating to missing
-     resets.
+   With "--x-initial fast", is best for performance, and initializes all
+     variables to a state Verilator determines is optimal. This may allow
+     further code optimizations, but will likely hide any code bugs
+     relating to missing resets.
 
    .. note::
 
@@ -2089,8 +2148,8 @@ Summary:
 
    Enables emulation of event-driven simulators, which generally trigger an
    edge on a transition from X to 1 (posedge) or X to 0 (negedge). Thus the
-   following code, where :code:`rst_n` is uninitialized would set
-   :code:`res_n` to :code:`1'b1` when :code:`rst_n` is first set to zero:
+   following code, where ``rst_n`` is uninitialized would set
+   ``res_n`` to ``1'b1`` when ``rst_n`` is first set to zero:
 
    .. code-block:: sv
 
@@ -2103,7 +2162,7 @@ Summary:
         end
 
    In Verilator, by default, uninitialized clocks are given a value of
-   zero, so the above :code:`always` block would not trigger.
+   zero, so the above ``always`` block would not trigger.
 
    While it is not good practice, some designs rely on X->0 triggering a
    negedge, particularly in reset sequences. Using
@@ -2159,20 +2218,20 @@ Summary:
 
 .. option:: -y <dir>
 
-   Add the directory to the list of directories that should be searched to find
-   include files or libraries.  The three flags :vlopt:`-y`,
+   Add the directory to the list of directories that should be searched to
+   find include files or libraries. The three flags :vlopt:`-y`,
    :vlopt:`+incdir+\<dir\>` and :vlopt:`-I\<dir\>` have a similar effect;
    :vlopt:`+incdir+\<dir\>` and :vlopt:`-y` are relatively standard across
    Verilog tools while :vlopt:`-I\<dir\>` is used by many C++ compilers.
 
    Verilator defaults to the current directory "-y ." and any specified
    :vlopt:`--Mdir`, though these default paths are used after any
-   user-specified directories.  This allows '-y "$(pwd)"' to be used if
+   user-specified directories. This allows '-y "$(pwd)"' to be used if
    absolute filenames are desired for error messages instead of relative
    filenames.
 
 
-.. _Verilator Control Files:
+.. _verilator control files:
 
 =======================
 Verilator Control Files
@@ -2181,9 +2240,9 @@ Verilator Control Files
 In addition to the command line, warnings and other features for the
 :command:`verilator` command may be controlled with Verilator Control
 Files, not to be confused with IEEE Configurations blocks
-(`config...endconfig`).  Typically named with the `.vlt` extension, what
+(`config...endconfig`). Typically named with the `.vlt` extension, what
 makes it a Verilator Control File is the :option:`\`verilator_config`
-directive.  These files, when named `.vlt`, are read before source code
+directive. These files, when named `.vlt`, are read before source code
 files; if this behavior is undesired, name the control file with a `.v` or
 other suffix.
 
@@ -2191,19 +2250,19 @@ An example:
 
 .. code-block:: sv
 
-     `verilator_config
-     lint_off -rule WIDTH
-     lint_off -rule CASEX  -file "silly_vendor_code.v"
+   `verilator_config
+   lint_off -rule WIDTH
+   lint_off -rule CASEX  -file "silly_vendor_code.v"
 
 This disables WIDTH warnings globally, and CASEX for a specific file.
 
-Verilator control files are fed through the normal Verilog
-preprocessor prior to parsing, so "\`ifdef", "\`define", and comments may
-be used as if the control file was standard Verilog code.
+Verilator control files are fed through the normal Verilog preprocessor
+prior to parsing, so "\`ifdef", "\`define", and comments may be used as if
+the control file was standard Verilog code.
 
-Note that file or line-specific control only applies to files read
-after the control file. It is therefore recommended to pass the
-control file to Verilator as the first file.
+Note that file or line-specific control only applies to files read after
+the control file. It is therefore recommended to pass the control file to
+Verilator as the first file.
 
 The grammar of control commands is as follows:
 
@@ -2249,7 +2308,7 @@ The grammar of control commands is as follows:
 .. option:: coverage_block_off -module "<modulename>" -block "<blockname>"
 
    Specifies the entire begin/end block should be ignored for coverage
-   analysis purposes.  It can either be specified as a named block or as a
+   analysis purposes. It can either be specified as a named block or as a
    filename and line number.
 
    Same as :option:`/*verilator&32;coverage_block_off*/` metacomment.
@@ -2260,7 +2319,7 @@ The grammar of control commands is as follows:
 
    Enable/disable coverage for the specified filename (or wildcard with
    '\*' or '?', or all files if omitted) and range of line numbers (or all
-   lines if omitted).  Often used to ignore an entire module for coverage
+   lines if omitted). Often used to ignore an entire module for coverage
    analysis purposes.
 
 .. option:: forceable -module "<modulename>" -var "<signame>"
@@ -2273,7 +2332,7 @@ The grammar of control commands is as follows:
 
 .. option:: full_case -file "<filename>" -lines <lineno>
 
-   Same as :code:`//synthesis full_case`. When these synthesis directives
+   Same as ``//synthesis full_case``. When these synthesis directives
    are discovered, Verilator will either formally prove the directive to be
    true, or, failing that, will insert the appropriate code to detect
    failing cases at simulation runtime and print an "Assertion failed"
@@ -2281,9 +2340,9 @@ The grammar of control commands is as follows:
 
 .. option:: hier_block -module "<modulename>"
 
-   Specifies that the module is an unit of hierarchical Verilation.  Note
+   Specifies that the module is an unit of hierarchical Verilation. Note
    that the setting is ignored unless the :vlopt:`--hierarchical` option is
-   specified.  See :ref:`Hierarchical Verilation`.
+   specified. See :ref:`Hierarchical Verilation`.
 
 .. option:: hier_params -module "<modulename>"
 
@@ -2309,15 +2368,14 @@ The grammar of control commands is as follows:
 .. option:: inline -module "<modulename>"
 
    Specifies the module may be inlined into any modules that use this
-   module.  Same as :option:`/*verilator&32;inline_module*/` metacomment.
-
+   module. Same as :option:`/*verilator&32;inline_module*/` metacomment.
 
    .. t_dist_docs_style ignore no_inline
 
 .. option:: no_inline -module "<modulename>"
 
    Specifies the module should not be inlined into any modules that use
-   this module.  Same as :option:`/*verilator&32;no_inline_module*/`
+   this module. Same as :option:`/*verilator&32;no_inline_module*/`
    metacomment.
 
 .. option:: no_inline [-module "<modulename>"] -function "<funcname>"
@@ -2325,8 +2383,8 @@ The grammar of control commands is as follows:
 .. option:: no_inline [-module "<modulename>"] -task "<taskname>"
 
    Specify the function or task should not be inlined into where it is
-   used.  This may reduce the size of the final executable when a task is
-   used a very large number of times.  For this flag to work, the task and
+   used. This may reduce the size of the final executable when a task is
+   used a very large number of times. For this flag to work, the task and
    tasks below it must be pure; they cannot reference any variables outside
    the task itself.
 
@@ -2339,7 +2397,7 @@ The grammar of control commands is as follows:
 .. option:: isolate_assignments -module "<modulename>" [-task "<taskname>"] -var "<signame>"
 
    Used to indicate that the assignments to this signal in any blocks
-   should be isolated into new blocks.  Same as
+   should be isolated into new blocks. Same as
    :option:`/*verilator&32;isolate_assignments*/` metacomment.
 
 .. option:: lint_off [-rule <message>] [-file "<filename>" [-lines <line> [ - <line>]]]
@@ -2352,35 +2410,46 @@ The grammar of control commands is as follows:
    (or wildcard with '\*' or '?', or all files if omitted) and range of
    line numbers (or all lines if omitted).
 
-   With lint_off using "\*" will override any lint_on directives in the
-   source, i.e. the warning will still not be printed.
+   If the ``-rule`` is omitted, all lint warnings (see list in
+   :vlopt:`-Wno-lint`) are enabled/disabled.
 
-   If the :code:`-rule` is omitted, all lint warnings (see list in
-   :vlopt:`-Wno-lint`) are enabled/disabled.  This will override all later
-   lint warning enables for the specified region.
-
-   If :code:`-contents` is provided, the input files must contain the given
+   If ``-contents`` is provided, the input files must contain the given
    wildcard (with '\*' or '?'), and are waived in case they match, provided
-   the :code:`-rule`, :code:`-file`, and :code:`-contents` also match.  The
-   wildcard should be designed to match a single line; it is unspecified if
-   the wildcard is allowed to match across multiple lines. The input
-   contents does not include :vlopt:`--std <--no-std>` standard files, nor
-   control files (with :code:`verilator_config`). Typical use for
-   this is to match a version number present in the Verilog sources, so
-   that the waiver will only apply to that version of the sources.
+   the ``-rule``, ``-file``, and ``-contents`` also match. The wildcard
+   should be designed to match a single line; it is unspecified if the
+   wildcard is allowed to match across multiple lines. The input contents
+   does not include :vlopt:`--std <--no-std>` standard files, nor control
+   files (with ``verilator_config``). Typical use for this is to match a
+   version number present in the Verilog sources, so that the waiver will
+   only apply to that version of the sources.
 
-   If :code:`-match` is provided, the linter warnings are matched against
-   the given wildcard (with '\*' or '?'), and are waived in case they
-   match, provided the :code:`-rule`, :code:`-file`, and :code:`-contents`
-   also match.  The wildcard is compared across the entire multi-line
-   message; see :vlopt:`--waiver-multiline`.
+   If ``-match`` is provided, the linter warnings are matched against the
+   given wildcard (with '\*' or '?'), and are waived in case they match,
+   provided the ``-rule``, ``-file``, and ``-contents`` also match. The
+   wildcard is compared across the entire multi-line message; see
+   :vlopt:`--waiver-multiline`.
 
-   Before version 4.026, :code:`-rule` was named :code:`-msg`, and
-   :code:`-msg` remained a deprecated alias until Version 5.000.
+   When there are overlapping conflicting lint_on/lint_off directives, they
+   are resolved in the following priority order:
+
+   * All lint_on/lint_off without a ``-file``, or with a ``-file "\*"``,
+     are processed in order of parsing.
+   * All lint_on/lint_off with ``-file "non-\*"`` are processed in order of
+     parsing.
+   * All lint_off with ``--match`` in order of parsing.
+
+   If a warning is disabled with lint_off, it will not be printed, even if
+   the source contains a lint_on metacomment. The control file directives
+   and metacomments are interpreted separately and do not interact. A
+   warning is emitted only if not disabled either in a control file or via
+   metacomments.
+
+   Before version 4.026, ``-rule`` was named ``-msg``, and
+   ``-msg`` remained a deprecated alias until Version 5.000.
 
 .. option:: parallel_case -file "<filename>" -lines <lineno>
 
-   Same as :code:`//synthesis parallel_case`. When these synthesis
+   Same as ``//synthesis parallel_case``. When these synthesis
    directives are discovered, Verilator will either formally prove the
    directive to be true, or, failing that, will insert the appropriate code
    to detect failing cases at simulation runtime and print an "Assertion
@@ -2396,38 +2465,48 @@ The grammar of control commands is as follows:
 .. option:: profile_data -mtask "<mtask_hash>" -cost <cost_value>
 
    Feeds profile-guided optimization data into the Verilator algorithms in
-   order to improve model runtime performance.  This option is not expected
-   to be used by users directly.  See :ref:`Thread PGO`.
+   order to improve model runtime performance. This option is not expected
+   to be used by users directly. See :ref:`Thread PGO`.
 
 .. option:: public [-module "<modulename>"] [-task/-function "<taskname>"] [-var "<signame>"]
 
-.. option:: public_flat [-module "<modulename>"] [-task/-function "<taskname>"] [-var "<signame>"]
+.. option:: public_flat [-module "<modulename>"] [-task/-function "<taskname>"] [(-param | -port | -var) "<signame>"]
 
-.. option:: public_flat_rd [-module "<modulename>"] [-task/-function "<taskname>"] [-var "<signame>"]
+.. option:: public_flat_rd [-module "<modulename>"] [-task/-function "<taskname>"] [(-param | -port | -var) "<signame>"]
 
-.. option:: public_flat_rw [-module "<modulename>"] [-task/-function "<taskname>"] [-var "<signame>"] ["@(edge)"]
+.. option:: public_flat_rw [-module "<modulename>"] [-task/-function "<taskname>"] [(-param | -port | -var) "<signame>"] ["@(edge)"]
 
-   Sets the variable to be public.  Same as
+   Sets the specified signal to be public. Same as
    :option:`/*verilator&32;public*/` or
-   :option:`/*verilator&32;public_flat*/`, etc., metacomments. See
-   also :ref:`VPI Example`.
+   :option:`/*verilator&32;public_flat*/`, etc., metacomments. See also
+   :ref:`VPI Example`.
 
-.. option:: sc_bv -module "<modulename>" [-function "<funcname>"] -var "<signame>"
+   Using ``-port`` only selects matching ports, ``-param`` matches
+   parameters and localparams, and ``-var`` matches any signal (including
+   ports, parameters, and regular variables or nets). In all three, the
+   following ``<signame>`` can contain ``*`` and ``?`` wildcard
+   characters that match any substring or any single character respectively.
 
-.. option:: sc_bv -module "<modulename>" [-task "<taskname>"] -var "<signame>"
+.. option:: sc_biguint -module "<modulename>" -var "<signame>"
 
-   Sets the port to be of :code:`sc_bv<{width}>` type, instead of bool,
-   uint32_t, or uint64_t.  Same as :option:`/*verilator&32;sc_bv*/`
+   Sets the input/output signal to be of ``sc_biguint<{width}>`` type.
+   This metacomment works for signals of any width.
+   Same as :option:`/*verilator&32;sc_biguint*/` metacomment.
+
+.. option:: sc_bv -module "<modulename>" -var "<signame>"
+
+   Sets the port to be of ``sc_bv<{width}>`` type, instead of bool,
+   uint32_t, or uint64_t. Same as :option:`/*verilator&32;sc_bv*/`
    metacomment.
 
 .. option:: sformat [-module "<modulename>"] [-function "<funcname>"] -var "<signame>"
 
 .. option:: sformat [-module "<modulename>"] [-task "<taskname>"] -var "<signame>"
 
-   Must be applied to the final argument of type :code:`input string` of a
+   Must be applied to the final argument of type ``input string`` of a
    function or task to indicate that the function or task should pass all
-   remaining arguments through $sformatf.  This allows the creation of DPI
-   functions with $display-like behavior.  See the
+   remaining arguments through $sformatf. This allows the creation of DPI
+   functions with $display-like behavior. See the
    :file:`test_regress/t/t_dpi_display.v` file for an example.
 
    Same as :option:`/*verilator&32;sformat*/` metacomment.
@@ -2449,12 +2528,13 @@ The grammar of control commands is as follows:
    Enables/disables timing constructs for the specified file and lines.
    When disabled, all timing control constructs in the specified source
    code locations are ignored the same way as with the
-   :option:`--no-timing`, and code:`fork`/:code:`join*` blocks are
-   converted into :code:`begin`/:code:`end` blocks.
+   :option:`--no-timing`, and code:`fork`/``join*`` blocks are
+   converted into ``begin``/``end`` blocks.
 
-   Same as :option:`/*verilator&32;timing_on*/`,
-   :option:`/*verilator&32;timing_off*/` metacomments.
-
+   Similar to :option:`/*verilator&32;timing_on*/`,
+   :option:`/*verilator&32;timing_off*/` meta-comments, but interpreted
+   independently. If either a control file, or meta-comments disable timing
+   constructs, they will be disabled.
 
    .. t_dist_docs_style ignore tracing_on
 
@@ -2469,21 +2549,24 @@ The grammar of control commands is as follows:
    Enable/disable waveform tracing for all future signals declared in
    all files.
 
-   With -file, enable/disable waveform tracing in the specified
-   filename (or wildcard with '\*' or '?'), and -line range of line
+   With ``-file``, enable/disable waveform tracing in the specified
+   filename (or wildcard with '\*' or '?'), and ``-line`` range of line
    numbers (or all lines if omitted).
 
-   For tracing_off with -file, instances below any module in the
-   files/ranges specified will also not be traced.  To overcome this
+   For tracing_off with ``-file``, instances below any module in the
+   files/ranges specified will also not be traced. To overcome this
    feature, use tracing_on on the upper module declaration and on any
-   cells, or use the -scope flavor of the command.
+   cells, or use the ``-scope`` flavor of the command.
 
-   With -scope enable/disable waveform tracing for the specified scope (or
-   wildcard with '\*' or '?'), and optional --levels number of levels
-   below.  These controls only operate after other file/line/module-based
-   controls have indicated the signal should be traced.
+   With ``-scope`` enable/disable waveform tracing for the specified scope
+   (or wildcard with '\*' or '?'), and optional ``--levels`` number of
+   levels below. These controls only operate after other
+   file/line/module-based controls have indicated the signal should be
+   traced. Matching is performed on the shortest prefix first, such that
+   ``tracing_on -scope "a.b" tracing_off -scope "a"`` will turn it on for
+   "a.b" and off for everything else "a.*".
 
-   With -levels (used with -scope), the number of levels below that
-   scope which the rule is to match, where 0 means all levels below, 1
-   the exact level as the provided scope, and 2 means an additional
-   level of children below the provided scope, etc.
+   With ``-levels`` (used with ``-scope``), the number of levels below that
+   scope which the rule is to match, where 0 means all levels below, 1 the
+   exact level as the provided scope, and 2 means an additional level of
+   children below the provided scope, etc.

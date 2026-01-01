@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -54,6 +54,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Convert force/release statements and signals marked 'forceable'
 
 class ForceState final {
+    constexpr static int ELEMENTS_MAX = 1000;
     // TYPES
     struct ForceComponentsVar final {
         AstVar* const m_rdVarp;  // New variable to replace read references with
@@ -64,9 +65,8 @@ class ForceState final {
                                   varp->dtypep()}}
             , m_valVarp{new AstVar{varp->fileline(), VVarType::VAR, varp->name() + "__VforceVal",
                                    varp->dtypep()}}
-            , m_enVarp{new AstVar{
-                  varp->fileline(), VVarType::VAR, varp->name() + "__VforceEn",
-                  (ForceState::isRangedDType(varp) ? varp->dtypep() : varp->findBitDType())}} {
+            , m_enVarp{new AstVar{varp->fileline(), VVarType::VAR, varp->name() + "__VforceEn",
+                                  getEnVarpDTypep(varp)}} {
             m_rdVarp->addNext(m_enVarp);
             m_rdVarp->addNext(m_valVarp);
             varp->addNextHere(m_rdVarp);
@@ -88,24 +88,70 @@ public:
 
             FileLine* const flp = vscp->fileline();
 
-            {  // Add initialization of the enable signal
-                AstVarRef* const lhsp = new AstVarRef{flp, m_enVscp, VAccess::WRITE};
-                V3Number zero{m_enVscp, m_enVscp->width()};
-                zero.setAllBits0();
-                AstNodeExpr* const rhsp = new AstConst{flp, zero};
-                AstAssign* const assignp = new AstAssign{flp, lhsp, rhsp};
-                AstActive* const activep = new AstActive{
-                    flp, "force-init",
-                    new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Static{}}}};
-                activep->senTreeStorep(activep->sentreep());
+            // Add initialization of the enable signal
+            AstActive* const activeInitp = new AstActive{
+                flp, "force-init", new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Static{}}}};
+            activeInitp->senTreeStorep(activeInitp->sentreep());
+            vscp->scopep()->addBlocksp(activeInitp);
 
-                activep->addStmtsp(new AstInitial{flp, assignp});
-                vscp->scopep()->addBlocksp(activep);
+            AstVarRef* const enRefp = new AstVarRef{flp, m_enVscp, VAccess::WRITE};
+
+            AstNodeStmt* toInsertp = nullptr;
+            AstNodeStmt* outerStmtp = nullptr;
+            std::vector<AstNodeExpr*> loopVarRefs;
+            if (VN_IS(enRefp->dtypep()->skipRefp(), UnpackArrayDType)) {
+                // Create a loop to set all elements of __VforceEn array to 0.
+                // That loop node is then copied and used for updating elements of __VforceRd array
+                if (AstUnpackArrayDType* const unpackedp
+                    = VN_CAST(m_rdVscp->varp()->dtypep(), UnpackArrayDType)) {
+                    std::vector<AstUnpackArrayDType*> dims = unpackedp->unpackDimensions();
+                    loopVarRefs.reserve(dims.size());
+                    for (size_t i = 0; i < dims.size(); i++) {
+                        AstVar* const loopVarp = new AstVar{
+                            flp, VVarType::MODULETEMP,
+                            m_rdVscp->varp()->name() + "__VwhileIter" + std::to_string(i),
+                            VFlagBitPacked{}, 32};
+                        m_rdVscp->varp()->addNext(loopVarp);
+                        AstVarScope* const loopVarScopep
+                            = new AstVarScope{flp, m_rdVscp->scopep(), loopVarp};
+                        m_rdVscp->addNext(loopVarScopep);
+                        AstVarRef* const readRefp
+                            = new AstVarRef{flp, loopVarScopep, VAccess::READ};
+                        loopVarRefs.push_back(readRefp);
+                        AstNodeStmt* const currInitp
+                            = new AstAssign{flp, new AstVarRef{flp, loopVarScopep, VAccess::WRITE},
+                                            new AstConst{flp, 0}};
+                        if (toInsertp) {
+                            toInsertp->addNextHere(currInitp);
+                        } else {
+                            outerStmtp = currInitp;
+                        }
+                        AstLoop* const currWhilep = new AstLoop{flp};
+                        currInitp->addNextHere(currWhilep);
+                        AstLoopTest* const loopTestp = new AstLoopTest{
+                            flp, currWhilep,
+                            new AstNeq{flp, readRefp,
+                                       new AstConst{
+                                           flp, static_cast<uint32_t>(dims[i]->elementsConst())}}};
+                        currWhilep->addStmtsp(loopTestp);
+                        toInsertp = loopTestp;
+                        AstAssign* const currIncrp = new AstAssign{
+                            flp, new AstVarRef{flp, loopVarScopep, VAccess::WRITE},
+                            new AstAdd{flp, readRefp->cloneTree(false), new AstConst{flp, 1}}};
+                        currWhilep->addStmtsp(currIncrp);
+                    }
+                }
             }
+            V3Number zero{m_enVscp, m_enVscp->width()};
+            AstNodeExpr* const enRhsp = new AstConst{flp, zero};
+            AstNodeExpr* enLhsp = applySelects(enRefp, loopVarRefs);
+            AstNodeStmt* stmtp = new AstAssign{flp, enLhsp, enRhsp};
+            if (toInsertp) {
+                toInsertp->addNextHere(stmtp);
+                stmtp = outerStmtp;
+            }
+            activeInitp->addStmtsp(new AstInitial{flp, stmtp->cloneTree(true)});
             {  // Add the combinational override
-                AstVarRef* const lhsp = new AstVarRef{flp, m_rdVscp, VAccess::WRITE};
-                AstNodeExpr* const rhsp = forcedUpdate(vscp);
-
                 // Explicitly list dependencies for update.
                 // Note: rdVscp is also needed to retrigger assignment for the first time.
                 AstSenItem* const itemsp = new AstSenItem{
@@ -120,25 +166,49 @@ public:
                 AstActive* const activep
                     = new AstActive{flp, "force-update", new AstSenTree{flp, itemsp}};
                 activep->senTreeStorep(activep->sentreep());
-                activep->addStmtsp(new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr,
-                                                 new AstAssign{flp, lhsp, rhsp}});
+
+                // Reuse the statements created for __VforceEn initialization
+                // and replace var ref on the LHS and the RHS
+                AstVarRef* const rdRefp = new AstVarRef{flp, m_rdVscp, VAccess::WRITE};
+                AstNodeExpr* const rdRhsp = forcedUpdate(vscp, loopVarRefs);
+                enRefp->replaceWith(rdRefp);
+                VL_DO_DANGLING(enRefp->deleteTree(), enRefp);
+                enRhsp->replaceWith(rdRhsp);
+                VL_DO_DANGLING(enRhsp->deleteTree(), enRhsp);
+
+                activep->addStmtsp(new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr, stmtp});
                 vscp->scopep()->addBlocksp(activep);
             }
         }
-        AstNodeExpr* forcedUpdate(AstVarScope* const vscp) const {
+        static AstNodeExpr* applySelects(AstNodeExpr* exprp,
+                                         const std::vector<AstNodeExpr*>& selectExprs) {
+            for (AstNodeExpr* const sp : selectExprs) {
+                exprp = new AstArraySel{exprp->fileline(), exprp, sp->cloneTreePure(false)};
+            }
+            return exprp;
+        }
+        AstNodeExpr* forcedUpdate(AstVarScope* const vscp,
+                                  const std::vector<AstNodeExpr*>& selectExprs) const {
             FileLine* const flp = vscp->fileline();
-            AstVarRef* const origp = new AstVarRef{flp, vscp, VAccess::READ};
-            ForceState::markNonReplaceable(origp);
+            AstVarRef* origRefp = new AstVarRef{flp, vscp, VAccess::READ};
+            ForceState::markNonReplaceable(origRefp);
+            AstNodeExpr* const origp = applySelects(origRefp, selectExprs);
             if (ForceState::isRangedDType(vscp)) {
                 return new AstOr{
                     flp,
-                    new AstAnd{flp, new AstVarRef{flp, m_enVscp, VAccess::READ},
-                               new AstVarRef{flp, m_valVscp, VAccess::READ}},
-                    new AstAnd{flp, new AstNot{flp, new AstVarRef{flp, m_enVscp, VAccess::READ}},
-                               origp}};
+                    new AstAnd{
+                        flp,
+                        applySelects(new AstVarRef{flp, m_enVscp, VAccess::READ}, selectExprs),
+                        applySelects(new AstVarRef{flp, m_valVscp, VAccess::READ}, selectExprs)},
+                    new AstAnd{
+                        flp,
+                        new AstNot{flp, applySelects(new AstVarRef{flp, m_enVscp, VAccess::READ},
+                                                     selectExprs)},
+                        origp}};
             }
-            return new AstCond{flp, new AstVarRef{flp, m_enVscp, VAccess::READ},
-                               new AstVarRef{flp, m_valVscp, VAccess::READ}, origp};
+            return new AstCond{
+                flp, applySelects(new AstVarRef{flp, m_enVscp, VAccess::READ}, selectExprs),
+                applySelects(new AstVarRef{flp, m_valVscp, VAccess::READ}, selectExprs), origp};
         }
     };
 
@@ -147,6 +217,7 @@ private:
     //  AstVar::user1p        -> ForceComponentsVar* instance (via m_forceComponentsVar)
     //  AstVarScope::user1p   -> ForceComponentsVarScope* instance (via m_forceComponentsVarScope)
     //  AstVarRef::user2      -> Flag indicating not to replace reference
+    //  AstAssign::user2      -> Flag indicating that assignment was created for AstRelease
     //  AstVarScope::user3p   -> AstAssign*, the assignment <lhs>__VforceVal = <rhs>
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
@@ -157,6 +228,46 @@ private:
                        std::pair<std::unordered_set<AstVarScope*>, std::vector<AstVarScope*>>>
         m_valVscps;
     // `valVscp` force components of a forced RHS
+
+    static AstNodeDType* getEnVarpDTypep(AstVar* const varp) {
+        AstNodeDType* const origDTypep = varp->dtypep()->skipRefp();
+        if (VN_IS(origDTypep, UnpackArrayDType)) {
+            size_t elemNum = 1;
+            AstNodeDType* dtp = origDTypep;
+            while (AstUnpackArrayDType* const uDtp = VN_CAST(dtp, UnpackArrayDType)) {
+                dtp = uDtp->subDTypep()->skipRefp();
+                elemNum *= uDtp->elementsConst();
+            }
+            if (elemNum > ELEMENTS_MAX) {
+                varp->v3warn(E_UNSUPPORTED, "Unsupported: Force of unpacked array variable with "
+                                            ">= "
+                                                << ELEMENTS_MAX << " elements");
+            }
+            bool complexElem = true;
+            if (AstBasicDType* const basicp = VN_CAST(dtp, BasicDType)) {
+                complexElem = basicp->isOpaque();
+            }
+            if (complexElem) {
+                varp->v3warn(E_UNSUPPORTED, "Unsupported: Force of unpacked array variable with "
+                                            "elements of complex data type");
+            }
+            return origDTypep;
+        } else if (VN_IS(origDTypep, BasicDType)) {
+            return isRangedDType(varp) ? origDTypep : varp->findBitDType();
+        } else if (VN_IS(origDTypep, PackArrayDType)) {
+            return origDTypep;
+        } else if (const AstNodeUOrStructDType* const sdtp
+                   = VN_CAST(origDTypep, NodeUOrStructDType)) {
+            if (!sdtp->packed()) {
+                varp->v3warn(E_UNSUPPORTED,
+                             "Unsupported: Force of unpacked struct / union variable");
+            }
+            return origDTypep;
+        } else {
+            varp->v3fatalSrc("Unsupported: Force of variable of unhandled data type");
+            return origDTypep;
+        }
+    }
 
 public:
     // CONSTRUCTORS
@@ -292,31 +403,52 @@ class ForceConvertVisitor final : public VNVisitor {
         // the continuous assignment's scheduling region.
         AstAssign* const resetRdp
             = new AstAssign{flp, lhsp->cloneTreePure(false), lhsp->unlinkFrBack()};
+        resetRdp->user2(true);
         // Replace write refs on the LHS
-        resetRdp->lhsp()->foreach([this](AstNodeVarRef* refp) {
-            if (refp->access() != VAccess::WRITE) return;
-            AstVarScope* const vscp = refp->varScopep();
-            AstVarScope* const newVscp = vscp->varp()->isContinuously()
-                                             ? m_state.getForceComponents(vscp).m_rdVscp
-                                             : vscp;
-            AstVarRef* const newpRefp = new AstVarRef{refp->fileline(), newVscp, VAccess::WRITE};
-            refp->replaceWith(newpRefp);
-            VL_DO_DANGLING(refp->deleteTree(), refp);
-        });
-        // Replace write refs on RHS
-        resetRdp->rhsp()->foreach([this](AstNodeVarRef* refp) {
+        resetRdp->lhsp()->foreach([this](AstVarRef* refp) {
             if (refp->access() != VAccess::WRITE) return;
             AstVarScope* const vscp = refp->varScopep();
             if (vscp->varp()->isContinuously()) {
-                AstVarRef* const newpRefp = new AstVarRef{refp->fileline(), vscp, VAccess::READ};
-                ForceState::markNonReplaceable(newpRefp);
+                AstVarRef* const newpRefp = new AstVarRef{
+                    refp->fileline(), m_state.getForceComponents(vscp).m_rdVscp, VAccess::WRITE};
                 refp->replaceWith(newpRefp);
-            } else {
-                refp->replaceWith(m_state.getForceComponents(vscp).forcedUpdate(vscp));
+                VL_DO_DANGLING(refp->deleteTree(), refp);
             }
-
-            VL_DO_DANGLING(refp->deleteTree(), refp);
         });
+        // Replace write refs on RHS
+        if (VN_IS(resetRdp->rhsp(), ArraySel)) {
+            std::vector<AstNodeExpr*> selIndices;
+            AstNodeExpr* exprp = resetRdp->rhsp();
+            while (AstArraySel* const selp = VN_CAST(exprp, ArraySel)) {
+                selIndices.push_back(selp->bitp());
+                exprp = selp->fromp();
+            }
+            if (AstVarRef* const refp = VN_CAST(exprp, VarRef)) {
+                AstVarScope* const vscp = refp->varScopep();
+                std::vector<AstNodeExpr*> reversedIndices(selIndices.size());
+                std::reverse_copy(selIndices.begin(), selIndices.end(), reversedIndices.begin());
+                AstNodeExpr* const origRhsp = resetRdp->rhsp();
+                origRhsp->replaceWith(
+                    m_state.getForceComponents(vscp).forcedUpdate(vscp, reversedIndices));
+                VL_DO_DANGLING(origRhsp->deleteTree(), origRhsp);
+            } else {
+                exprp->v3warn(
+                    E_UNSUPPORTED,
+                    "Unsupported: Release statement argument is too complex array select");
+            }
+        } else {
+            resetRdp->rhsp()->foreach([this](AstVarRef* refp) {
+                if (refp->access() != VAccess::WRITE) return;
+                AstVarScope* const vscp = refp->varScopep();
+                if (vscp->varp()->isContinuously()) {
+                    refp->access(VAccess::READ);
+                    ForceState::markNonReplaceable(refp);
+                } else {
+                    refp->replaceWith(m_state.getForceComponents(vscp).forcedUpdate(vscp, {}));
+                    VL_DO_DANGLING(refp->deleteTree(), refp);
+                }
+            });
+        }
 
         resetRdp->addNext(resetEnp);
         relinker.relink(resetRdp);
@@ -346,6 +478,8 @@ class ForceReplaceVisitor final : public VNVisitor {
     const ForceState& m_state;
     AstNodeStmt* m_stmtp = nullptr;
     bool m_inLogic = false;
+    bool m_releaseRhs = false;  // Inside RHS of assignment created for release statement
+    std::vector<AstNodeExpr*> m_selIndices;  // Indices of array select expressions above
 
     // METHODS
     void iterateLogic(AstNode* logicp) {
@@ -360,6 +494,14 @@ class ForceReplaceVisitor final : public VNVisitor {
         m_stmtp = nodep;
         iterateChildren(nodep);
     }
+    void visit(AstAssign* nodep) override {
+        VL_RESTORER(m_stmtp);
+        VL_RESTORER(m_releaseRhs);
+        m_stmtp = nodep;
+        iterate(nodep->lhsp());
+        m_releaseRhs = nodep->user2();
+        iterate(nodep->rhsp());
+    }
     void visit(AstCFunc* nodep) override { iterateLogic(nodep); }
     void visit(AstCoverToggle* nodep) override { iterateLogic(nodep); }
     void visit(AstNodeProcedure* nodep) override { iterateLogic(nodep); }
@@ -373,6 +515,12 @@ class ForceReplaceVisitor final : public VNVisitor {
         iterateLogic(nodep);
     }
     void visit(AstSenItem* nodep) override { iterateLogic(nodep); }
+    void visit(AstArraySel* nodep) override {
+        m_selIndices.push_back(nodep->bitp());
+        iterateChildren(nodep);
+        UASSERT_OBJ(m_selIndices.size(), nodep, "Underflow");
+        m_selIndices.pop_back();
+    }
     void visit(AstVarRef* nodep) override {
         if (ForceState::isNotReplaceable(nodep)) return;
 
@@ -392,8 +540,12 @@ class ForceReplaceVisitor final : public VNVisitor {
             if (ForceState::ForceComponentsVarScope* const fcp
                 = m_state.tryGetForceComponents(nodep)) {
                 FileLine* const flp = nodep->fileline();
-                AstVarRef* const lhsp = new AstVarRef{flp, fcp->m_rdVscp, VAccess::WRITE};
-                AstNodeExpr* const rhsp = fcp->forcedUpdate(nodep->varScopep());
+                std::vector<AstNodeExpr*> reversedIndices(m_selIndices.size());
+                std::reverse_copy(m_selIndices.begin(), m_selIndices.end(),
+                                  reversedIndices.begin());
+                AstNodeExpr* const lhsp = ForceState::ForceComponentsVarScope::applySelects(
+                    new AstVarRef{flp, fcp->m_rdVscp, VAccess::WRITE}, reversedIndices);
+                AstNodeExpr* const rhsp = fcp->forcedUpdate(nodep->varScopep(), reversedIndices);
                 m_stmtp->addNextHere(new AstAssign{flp, lhsp, rhsp});
             }
             // Emit valVscp update after each write to any VarRef on forced RHS.

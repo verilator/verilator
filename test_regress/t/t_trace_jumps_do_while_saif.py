@@ -10,7 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
-test.top_filename = "t/t_jumps_do_while.v"
+test.top_filename = "t/t_do_while_jumps.v"
 
 test.compile(verilator_flags2=['--trace-saif'])
 

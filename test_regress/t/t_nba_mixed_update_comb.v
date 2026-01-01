@@ -4,15 +4,14 @@
 // any use, without warranty, 2025 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define stop $stop
-`define check(got ,exp) do if ((got) !== (exp)) begin $write("%%Error: %s:%0d: cyc=%0d got='h%x exp='h%x\n", `__FILE__,`__LINE__, cyc, (got), (exp)); `stop; end while(0)
+`define check(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d: cyc=%0d got='h%x exp='h%x\n", `__FILE__,`__LINE__, cyc, (gotv), (expv)); `stop; end while(0)
+// verilog_format: on
 
-module t (/*AUTOARG*/
-  // Inputs
-  clk
-  );
-  input clk;
-
+module t (
+    input clk
+);
 
   reg [31:0] cyc = 0;
   reg [31:0] sameAsCycButCantBeOptimized_0 = '0;

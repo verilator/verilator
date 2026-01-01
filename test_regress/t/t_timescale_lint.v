@@ -7,11 +7,11 @@
 module pre_no_ts;
 endmodule
 
-`timescale 1ns/1ns
+`timescale 1ns / 1ns
 
 module t;
-   pre_no_ts pre_no_ts();
-   post_no_ts pst_no_ts();
+  pre_no_ts pre_no_ts ();
+  post_no_ts pst_no_ts ();
 endmodule
 
 module post_no_ts;

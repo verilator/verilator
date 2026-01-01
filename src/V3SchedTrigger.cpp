@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -462,7 +462,7 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
 
     // List of unique SenItems used by all 'senTreeps'
     std::vector<const AstSenItem*> senItemps;
-    // Map from SenItem to tigger bit standing for that SenItem. There might
+    // Map from SenItem to trigger bit standing for that SenItem. There might
     // be duplicate SenItems, we map all of them to the same index.
     std::unordered_map<VNRef<const AstSenItem>, size_t> senItem2TrigIdx;
 
@@ -607,8 +607,8 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
         for (uint32_t level = 0; level < WORD_SIZE_LOG2; ++level) {
             const uint32_t stride = 1 << level;
             for (uint32_t j = 0; j < WORD_SIZE; j += 2 * stride) {
-                FileLine* const flp = trigps[i + j]->fileline();
-                trigps[i + j] = new AstConcat{flp, trigps[i + j + stride], trigps[i + j]};
+                trigps[i + j] = new AstConcat{trigps[i + j]->fileline(), trigps[i + j + stride],
+                                              trigps[i + j]};
                 trigps[i + j + stride] = nullptr;
             }
         }
@@ -661,18 +661,20 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
         AstCFunc* const fp = kit.m_compp;
         AstScope* const scopep = netlistp->topScopep()->scopep();
         // Profiling push
-        if (v3Global.opt.profExec()) fp->addStmtsp(util::profExecSectionPush(flp, "trig " + name));
+        if (v3Global.opt.profExec()) {
+            fp->addStmtsp(AstCStmt::profExecSectionPush(flp, "trig " + name));
+        }
         // Trigger computation
         for (AstNodeStmt* const nodep : senResults.m_preUpdates) fp->addStmtsp(nodep);
         fp->addStmtsp(trigStmtsp);
         for (AstNodeStmt* const nodep : senResults.m_postUpdates) fp->addStmtsp(nodep);
         // Add the initialization time triggers
         if (initialTrigsp) {
-            AstVarScope* const vscp = scopep->createTemp("__V" + name + "DidInit", 1);
-            AstIf* const ifp = new AstIf{flp, new AstNot{flp, rd(vscp)}};
+            AstVarScope* const initVscp = scopep->createTemp("__V" + name + "DidInit", 1);
+            AstIf* const ifp = new AstIf{flp, new AstNot{flp, rd(initVscp)}};
             fp->addStmtsp(ifp);
             ifp->branchPred(VBranchPred::BP_UNLIKELY);
-            ifp->addThensp(util::setVar(vscp, 1));
+            ifp->addThensp(util::setVar(initVscp, 1));
             ifp->addThensp(initialTrigsp);
         }
         // If there are 'pre' triggers, compute them
@@ -702,7 +704,9 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
         // Add a call to the dumping function if debug is enabled
         fp->addStmtsp(kit.newDumpCall(kit.m_vscp, name, true));
         // Profiling pop
-        if (v3Global.opt.profExec()) fp->addStmtsp(util::profExecSectionPop(flp));
+        if (v3Global.opt.profExec()) {
+            fp->addStmtsp(AstCStmt::profExecSectionPop(flp, "trig " + name));
+        }
         // Done with the trigger computation function, split as might be large
         util::splitCheck(fp);
     };

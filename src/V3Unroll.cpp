@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -36,7 +36,7 @@ struct UnrollStats final {
         const char* const m_name;  // Name for stats file and UDEBUG
 
     public:
-        Stat(const char* const name)
+        explicit Stat(const char* const name)
             : m_name{name} {}
         ~Stat() { V3Stats::addStat("Optimizations, Loop unrolling, "s + m_name, m_value); }
         const char* name() const { return m_name; }
@@ -116,7 +116,7 @@ class UnrollOneVisitor final : VNVisitor {
             // Add statements to unrolled body
             while (AstNode* const nodep = m_wrapp->stmtsp()) {
                 // Check if we reached the size limit, unless full unrolling is requested
-                if (!m_loopp->unroll().isSetTrue()) {
+                if (!m_unrollFull) {
                     m_unrolledSize += nodep->nodeCount();
                     if (m_unrolledSize > static_cast<size_t>(v3Global.opt.unrollStmts())) {
                         cantUnroll(m_loopp, m_stats.m_nFailUnrollStmts);
@@ -256,14 +256,18 @@ class UnrollOneVisitor final : VNVisitor {
             lhsp->varScopep()->user1p(valp);
         }
         // Attempt to unroll the loop
-        const size_t iterLimit = v3Global.opt.unrollCountAdjusted(loopp->unroll(), false, false);
+        const size_t iterLimit
+            = m_unrollFull ? v3Global.opt.unrollLimit() : v3Global.opt.unrollCount();
         size_t iterCount = 0;
         do {
-            // Allow iterLimit + 1 iterations, which is consistent with the old behaviour
-            // where 'do' loops used to be unrolled at least once, and while/for loops are
-            // tested at the front on the last entry to the loop body
             if (iterCount > iterLimit) {
                 cantUnroll(m_loopp, m_stats.m_nFailUnrollCount);
+                if (m_unrollFull) {
+                    loopp->v3error("Unrolling procedural loop with '/* verilator unroll_full */' "
+                                   "took too long; probably this is an infinite loop, otherwise "
+                                   "set '--unroll-limit' above "
+                                   << iterLimit);
+                }
                 return;
             }
             ++iterCount;
@@ -380,7 +384,7 @@ class UnrollAllVisitor final : VNVisitor {
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     // CONSTRUCTOR
-    UnrollAllVisitor(AstNetlist* netlistp) { iterate(netlistp); }
+    explicit UnrollAllVisitor(AstNetlist* netlistp) { iterate(netlistp); }
 
 public:
     static void apply(AstNetlist* netlistp) { UnrollAllVisitor{netlistp}; }

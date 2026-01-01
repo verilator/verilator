@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -670,6 +670,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                || varp->isFuncLocal()  // Randomization too slow
                || (basicp && basicp->isZeroInit())
                || (v3Global.opt.underlineZero() && !varp->name().empty() && varp->name()[0] == '_')
+               || (varp->varType().isTemp() && !varp->isXTemp())
                || (varp->isXTemp()
                        ? (v3Global.opt.xAssign() != "unique")
                        : (v3Global.opt.xInitial() == "fast" || v3Global.opt.xInitial() == "0")));
@@ -731,7 +732,7 @@ void EmitCFunc::emitVarResetScopeHash() {
             = std::to_string(VString::hashMurmur(m_classOrPackage->name())) + "ULL";
     } else {
         puts(string("const uint64_t __VscopeHash = VL_MURMUR64_HASH(")
-             + (m_useSelfForThis ? "vlSelf" : "this") + "->name());\n");
+             + (m_useSelfForThis ? "vlSelf" : "this") + "->vlNamep);\n");
     }
     m_createdScopeHash = true;
 }

@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('vlt')
 
 test.lint(fails=True,
-          verilator_flags2=["--lint-only -Wall -Wno-DECLFILENAME"],
+          verilator_flags2=["-Wall -Wno-DECLFILENAME"],
           expect_filename=test.golden_filename)
 
 test.passes()

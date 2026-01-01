@@ -12,6 +12,6 @@ import vltest_bootstrap
 test.scenarios('linter')
 test.top_filename = "t/t_timescale_lint.v"
 
-test.lint(verilator_flags2=["--lint-only --timescale 1ns/1ns"])
+test.lint(verilator_flags2=["--timescale 1ns/1ns"])
 
 test.passes()

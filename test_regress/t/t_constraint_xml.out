@@ -14,7 +14,7 @@
     <cell loc="d,67,8,67,9" name="t" submodname="t" hier="t"/>
   </cells>
   <netlist>
-    <module loc="d,67,8,67,9" name="t" origName="t">
+    <module loc="d,67,8,67,9" name="t" origName="t" topModule="1">
       <var loc="d,69,11,69,12" name="p" dtype_id="1" vartype="Packet" origName="p"/>
       <initial loc="d,71,4,71,11">
         <begin loc="d,71,12,71,17">

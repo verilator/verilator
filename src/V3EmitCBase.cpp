@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -90,21 +90,6 @@ string EmitCBaseVisitorConst::funcNameProtect(const AstCFunc* nodep, const AstNo
         name += nodep->nameProtect();
     }
     return name;
-}
-
-AstCFile* EmitCBaseVisitorConst::newCFile(const string& filename, bool slow, bool source) {
-    AstCFile* const cfilep = createCFile(filename, slow, source);
-    v3Global.rootp()->addFilesp(cfilep);
-    return cfilep;
-}
-
-AstCFile* EmitCBaseVisitorConst::createCFile(const string& filename, bool slow,
-                                             bool source) VL_MT_SAFE {
-    AstCFile* const cfilep = new AstCFile{v3Global.rootp()->fileline(), filename};
-    cfilep->slow(slow);
-    cfilep->source(source);
-    if (source) V3Stats::addStatSum(V3Stats::STAT_CPP_FILES, 1);
-    return cfilep;
 }
 
 string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep) {
@@ -288,7 +273,7 @@ std::pair<string, FileLine*> EmitCBaseVisitorConst::scSection(const AstNodeModul
     FileLine* fl = nullptr;
     int last_line = -999;
     for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-        AstSystemCSection* const ssp = VN_CAST(nodep, SystemCSection);
+        const AstSystemCSection* const ssp = VN_CAST(nodep, SystemCSection);
         if (!ssp) continue;
         if (ssp->sectionType() != type) continue;
         if (text.empty()) {

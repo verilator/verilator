@@ -4,7 +4,9 @@
 // any use, without warranty, 2025 by Antmicro.
 // SPDX-License-Identifier: CC0-1.0
 
-class factory #(type T);
+class factory #(
+    type T
+);
   static function T create;
     T obj = new;
     return obj;
@@ -24,10 +26,9 @@ endclass
 module t;
   initial begin
     foo f;
-    if (bit'($random))
-      f = bar::create;
-    else
-      f = factory#(foo)::create();
+    if (bit'($random)) f = bar::create;
+    else f = factory#(foo)::create();
     $finish;
   end
-endmodule;
+endmodule
+;

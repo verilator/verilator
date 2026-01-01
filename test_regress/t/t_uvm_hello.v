@@ -13,6 +13,6 @@ module t;
   import uvm_pkg::*;
   initial begin
     // verilator lint_off WIDTHTRUNC
-    `uvm_info("TOP", "Hello World!", UVM_MEDIUM);
+    `uvm_info("TOP", "UVM TEST PASSED", UVM_MEDIUM);
   end
 endmodule

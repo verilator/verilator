@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -141,7 +141,7 @@ class CoverageVisitor final : public VNVisitor {
     const VNUser2InUse m_inuser2;
     V3UniqueNames m_exprTempNames;  // For generating unique temporary variable names used by
                                     // expression coverage
-    std::unordered_map<VNRef<AstFuncRef>, AstVar*> m_funcTemps;
+    std::unordered_map<AstNodeExpr*, AstVar*> m_funcTemps;
 
     // STATE - across all visitors
     int m_nextHandle = 0;
@@ -277,10 +277,10 @@ class CoverageVisitor final : public VNVisitor {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_state);
         VL_RESTORER(m_exprTempNames);
+        VL_RESTORER(m_funcTemps);
         createHandle(nodep);
         m_modp = nodep;
-        m_state.m_inModOff
-            = nodep->isTop();  // Ignore coverage on top module; it's a shell we created
+        m_state.m_inModOff = false;  // Haven't made top shell, so tops are real tops
         if (!origModp) {
             // No blocks cross (non-nested) modules, so save some memory
             m_varnames.clear();
@@ -333,6 +333,7 @@ class CoverageVisitor final : public VNVisitor {
     void visit(AstNodeFTask* nodep) override {
         VL_RESTORER(m_ftaskp);
         VL_RESTORER(m_exprTempNames);
+        VL_RESTORER(m_funcTemps);
         m_ftaskp = nodep;
         if (!nodep->dpiImport()) iterateProcedure(nodep);
     }
@@ -358,7 +359,8 @@ class CoverageVisitor final : public VNVisitor {
         VL_RESTORER(m_state);
         VL_RESTORER(m_exprStmtsp);
         VL_RESTORER(m_inToggleOff);
-        m_exprStmtsp = nodep;
+        // skip properties for expresison coverage
+        if (!VN_IS(nodep, Property)) m_exprStmtsp = nodep;
         m_inToggleOff = true;
         createHandle(nodep);
         iterateChildren(nodep);
@@ -784,9 +786,10 @@ class CoverageVisitor final : public VNVisitor {
                 comment += (first ? "" : " && ") + term.m_emitV
                            + "==" + (term.m_objective ? "1" : "0");
                 AstNodeExpr* covExprp = nullptr;
-                if (AstFuncRef* const frefp = VN_CAST(term.m_exprp, FuncRef)) {
-                    AstNodeDType* const dtypep = frefp->taskp()->fvarp()->dtypep();
-                    const auto pair = m_funcTemps.emplace(*frefp, nullptr);
+                if (VN_IS(term.m_exprp, FuncRef) || term.m_exprp->isSystemFunc()) {
+                    AstNodeExpr* const frefp = term.m_exprp;
+                    AstNodeDType* const dtypep = frefp->dtypep();
+                    const auto pair = m_funcTemps.emplace(frefp, nullptr);
                     AstVar* varp = pair.first->second;
                     if (pair.second) {
                         varp = new AstVar{fl, VVarType::MODULETEMP, m_exprTempNames.get(frefp),

@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -259,6 +259,16 @@
             stmt; \
         } while (false); \
         VL_DANGLING(var); \
+    } while (false)
+
+/// As with VL_DO_DANGLING, but two variables dangle.
+#define VL_DO_DANGLING2(stmt, var, var2) \
+    do { \
+        do { \
+            stmt; \
+        } while (false); \
+        VL_DANGLING(var); \
+        VL_DANGLING(var2); \
     } while (false)
 
 /// Perform an e.g. delete, then set variable to nullptr as a requirement

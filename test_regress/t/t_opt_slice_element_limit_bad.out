@@ -1,0 +1,2 @@
+%Error: --fslice-element-limit must be >= 0: -100
+        ... See the manual at https://verilator.org/verilator_doc.html?v=5.043 for more assistance.

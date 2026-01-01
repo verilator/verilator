@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -3415,18 +3415,6 @@ VerilatedModel::VerilatedModel(VerilatedContext& context)
 
 std::unique_ptr<VerilatedTraceConfig> VerilatedModel::traceConfig() const { return nullptr; }
 
-//===========================================================================
-// VerilatedModule:: Methods
-
-VerilatedModule::VerilatedModule(const char* namep)
-    : m_namep{strdup(namep)} {}
-
-VerilatedModule::~VerilatedModule() {
-    // Memory cleanup - not called during normal operation
-    // cppcheck-suppress cstyleCast  // NOLINTNEXTLINE(google-readability-casting)
-    if (m_namep) VL_DO_CLEAR(free((void*)(m_namep)), m_namep = nullptr);
-}
-
 //======================================================================
 // VerilatedVar:: Methods
 
@@ -3466,35 +3454,34 @@ void* VerilatedVarProps::datapAdjustIndex(void* datap, int dim, int indx) const 
 //======================================================================
 // VerilatedScope:: Methods
 
-VerilatedScope::~VerilatedScope() {
-    // Memory cleanup - not called during normal operation
-    Verilated::threadContextp()->impp()->scopeErase(this);
-    if (m_namep) VL_DO_CLEAR(delete[] m_namep, m_namep = nullptr);
-    if (m_callbacksp) VL_DO_CLEAR(delete[] m_callbacksp, m_callbacksp = nullptr);
-    if (m_varsp) VL_DO_CLEAR(delete m_varsp, m_varsp = nullptr);
-    m_funcnumMax = 0;  // Force callback table to empty
-}
-
-void VerilatedScope::configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
-                               const char* identifier, const char* defnamep, int8_t timeunit,
-                               const Type& type) VL_MT_UNSAFE {
-    // Slowpath - called once/scope at construction
-    // We don't want the space and reference-count access overhead of strings.
-    m_symsp = symsp;
-    m_type = type;
-    m_timeunit = timeunit;
-    {
+VerilatedScope::VerilatedScope(VerilatedSyms* symsp, const char* suffixp, const char* identifier,
+                               const char* defnamep, int8_t timeunit, Type type)
+    : m_symsp{symsp}
+    , m_namep{[symsp, suffixp]() {
+        // We don't want the space and reference-count access overhead of strings.
+        const char* prefixp = symsp->name();
         char* const namep = new char[std::strlen(prefixp) + std::strlen(suffixp) + 2];
         char* dp = namep;
         for (const char* sp = prefixp; *sp;) *dp++ = *sp++;
         if (*prefixp && *suffixp) *dp++ = '.';
         for (const char* sp = suffixp; *sp;) *dp++ = *sp++;
         *dp++ = '\0';
-        m_namep = namep;
-    }
-    m_identifierp = identifier;
-    m_defnamep = defnamep;
+        return namep;
+    }()}
+    , m_identifierp{identifier}
+    , m_defnamep{defnamep}
+    , m_timeunit{timeunit}
+    , m_type{type} {
     Verilated::threadContextp()->impp()->scopeInsert(this);
+}
+
+VerilatedScope::~VerilatedScope() {
+    // Memory cleanup - not called during normal operation
+    Verilated::threadContextp()->impp()->scopeErase(this);
+    VL_DO_DANGLING(delete[] m_namep, m_namep);
+    VL_DO_DANGLING(delete[] m_callbacksp, m_callbacksp);
+    VL_DO_DANGLING(delete m_varsp, m_varsp);
+    VL_DEBUG_IFDEF(m_funcnumMax = 0;);
 }
 
 void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE {
@@ -3518,13 +3505,12 @@ void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) VL_
     }
 }
 
-void VerilatedScope::varInsert(int finalize, const char* namep, void* datap, bool isParam,
+void VerilatedScope::varInsert(const char* namep, void* datap, bool isParam,
                                VerilatedVarType vltype, int vlflags, int udims,
                                int pdims...) VL_MT_UNSAFE {
     // Grab dimensions
     // In the future we may just create a large table at emit time and
     // statically construct from that.
-    if (!finalize) return;
 
     if (!m_varsp) m_varsp = new VerilatedVarNameMap;
     VerilatedVar var(namep, datap, vltype, static_cast<VerilatedVarFlags>(vlflags), udims, pdims,
@@ -3597,6 +3583,8 @@ void VerilatedHierarchy::add(const VerilatedScope* fromp, const VerilatedScope* 
 void VerilatedHierarchy::remove(const VerilatedScope* fromp, const VerilatedScope* top) {
     VerilatedImp::hierarchyRemove(fromp, top);
 }
+
+void VerilatedHierarchy::clear() { VerilatedImp::hierarchyClear(); }
 
 //===========================================================================
 // VerilatedOneThreaded:: Methods

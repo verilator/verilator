@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -73,6 +73,21 @@ public:
     string name() const override VL_MT_STABLE { return "*LIBRARY*"; }
 };
 
+class CellEdge final : public V3GraphEdge {
+    VL_RTTI_IMPL(CellEdge, V3GraphEdge)
+    AstCell* const m_cellp;
+
+public:
+    CellEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, int weight, bool cutable,
+             AstCell* cellp)
+        : V3GraphEdge{graphp, fromp, top, weight, cutable}
+        , m_cellp{cellp} {}
+    AstCell* cellp() const { return m_cellp; }
+    string name() const override VL_MT_STABLE {
+        return cellp() ? cvtToHex(cellp()) + ' ' + cellp()->name() : "";
+    }
+};
+
 void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp, V3EdgeFuncP edgeFuncp) {
     if (const LinkCellsVertex* const vvertexp = vertexp->cast<LinkCellsVertex>()) {
         vvertexp->modp()->v3warn(E_UNSUPPORTED,
@@ -91,6 +106,111 @@ void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp, V3EdgeFuncP edgeFunc
 //######################################################################
 // Link state, as a visitor of each AstNode
 
+// State to pass between config parsing and cell linking visitors.
+struct LinkCellsState final {
+    // Set of possible top module names from command line and configs
+    std::vector<std::pair<std::string, std::string>> m_designs;
+    // Default library lists to search
+    std::vector<std::string> m_liblistDefault;
+    // Library lists for specific cells
+    std::unordered_map<std::string, std::vector<std::string>> m_liblistCell;
+    // Use list for specific cells (libname, cellname)
+    std::unordered_map<std::string, std::vector<std::pair<std::string, std::string>>>
+        m_uselistCell;
+    // Library lists for specific insts
+    std::unordered_map<std::string, std::vector<std::string>> m_liblistInst;
+    // Use list for specific insts (libname, cellname)
+    std::unordered_map<std::string, std::vector<std::pair<std::string, std::string>>>
+        m_uselistInst;
+};
+
+class LinkConfigsVisitor final : public VNVisitor {
+    // STATE
+    LinkCellsState& m_state;  // Context for linking cells
+    bool m_isTop = false;  // Whether we're in the top-level config
+    bool m_isDefault = false;  // Whether we're currently in a default clause
+    string m_cell;  // Current cell being processed
+    string m_hierInst;  // Current hierarchical instance being processed
+    AstDot* m_dotp = nullptr;  // Current dot being processed
+
+    // VISITORS
+    void visit(AstConfig* nodep) override {
+        VL_RESTORER(m_isTop);
+        const auto& fullName
+            = std::pair<std::string, std::string>{nodep->libname(), nodep->configname()};
+        m_isTop = std::find(m_state.m_designs.begin(), m_state.m_designs.end(), fullName)
+                  != m_state.m_designs.end();
+        m_state.m_designs.erase(
+            std::remove(m_state.m_designs.begin(), m_state.m_designs.end(), fullName),
+            m_state.m_designs.end());
+        iterateChildren(nodep);
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+    }
+
+    void visit(AstConfigCell* nodep) override {
+        if (m_isTop) m_state.m_designs.emplace_back(nodep->libname(), nodep->cellname());
+    }
+
+    void visit(AstConfigRule* nodep) override {
+        if (!nodep->cellp()) {
+            VL_RESTORER(m_isDefault);
+            m_isDefault = true;
+            iterateAndNextNull(nodep->usep());
+        } else if (nodep->isCell()) {
+            VL_RESTORER(m_cell);
+            m_cell = nodep->cellp()->name();
+            iterateAndNextNull(nodep->usep());
+        } else {
+            VL_RESTORER(m_hierInst);
+            {
+                VL_RESTORER(m_dotp);
+                m_dotp = VN_AS(nodep->cellp(), Dot);
+                iterateAndNextNull(nodep->cellp());
+            }
+            iterateAndNextNull(nodep->usep());
+        }
+    }
+
+    void visit(AstDot* nodep) override { iterateChildren(nodep); }
+
+    void visit(AstParseRef* nodep) override {
+        if (m_isDefault) {
+            m_state.m_liblistDefault.emplace_back(nodep->name());
+        } else if (!m_cell.empty()) {
+            m_state.m_liblistCell[m_cell].emplace_back(nodep->name());
+        } else if (m_dotp) {
+            m_hierInst += m_hierInst.empty() ? nodep->name() : '.' + nodep->name();
+        } else if (!m_hierInst.empty()) {
+            m_state.m_liblistInst[m_hierInst].emplace_back(nodep->name());
+        }
+    }
+
+    void visit(AstConfigUse* nodep) override {
+        if (nodep->isConfig()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: hierarchical config rule");
+        } else if (!m_cell.empty()) {
+            m_state.m_uselistCell[m_cell].emplace_back(nodep->libname(), nodep->cellname());
+        } else if (m_dotp) {
+            m_hierInst += m_hierInst.empty() ? nodep->name() : '.' + nodep->name();
+        } else if (!m_hierInst.empty()) {
+            m_state.m_uselistInst[m_hierInst].emplace_back(nodep->libname(), nodep->cellname());
+        }
+    }
+
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    // CONSTRUCTORS
+    LinkConfigsVisitor(AstNetlist* nodep, LinkCellsState& state)
+        : m_state{state} {
+        // Initialize top module from command line option
+        if (!m_state.m_designs.size() && !v3Global.opt.topModule().empty()) {
+            m_state.m_designs.emplace_back(v3Global.opt.work(), v3Global.opt.topModule());
+        }
+        iterate(nodep);
+    }
+};
+
 class LinkCellsVisitor final : public VNVisitor {
     // NODE STATE
     //  Entire netlist:
@@ -105,6 +225,7 @@ class LinkCellsVisitor final : public VNVisitor {
 
     // STATE
     VInFilter* const m_filterp;  // Parser filter
+    LinkCellsState& m_state;  // State for linking cells
 
     // Below state needs to be preserved between each module call.
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -126,6 +247,12 @@ class LinkCellsVisitor final : public VNVisitor {
         const V3GraphEdge* const edgep = new V3GraphEdge{&m_graph, fromp, top, weight, cuttable};
         UINFO(9, "    newEdge " << edgep << " " << fromp->name() << " -> " << top->name());
     }
+    void cellEdge(V3GraphVertex* fromp, V3GraphVertex* top, int weight, bool cuttable,
+                  AstCell* cellp) {
+        const V3GraphEdge* const edgep
+            = new CellEdge{&m_graph, fromp, top, weight, cuttable, cellp};
+        UINFO(9, "    cellEdge " << edgep << " " << fromp->name() << " -> " << top->name());
+    }
     void insertModInLib(const string& name, const string& libname, AstNodeModule* nodep) {
         // Be able to find the module under it's library using the name it was given
         VSymEnt* libSymp = m_mods.rootp()->findIdFlat(libname);
@@ -143,11 +270,33 @@ class LinkCellsVisitor final : public VNVisitor {
     }
     AstNodeModule* findModuleSym(const string& modName, const string& libname) {
         // Given module and library to start search in, resolve using config library choices
-        // TODO support IEEE config library search order
-        // First search local library
-        AstNodeModule* foundp = findModuleLibSym(modName, libname);
+        AstNodeModule* foundp;
+        string fullName = libname + "." + modName;
+        // First search cell-specific use list
+        const auto itCellUseList = m_state.m_uselistCell.find(fullName);
+        if (itCellUseList != m_state.m_uselistCell.end()) {
+            for (auto const& u : itCellUseList->second) {
+                foundp = findModuleLibSym(u.second, u.first);
+                if (foundp) return foundp;
+            }
+        }
+        // Then search cell-specific library list
+        const auto itCellLibList = m_state.m_liblistCell.find(fullName);
+        if (itCellLibList != m_state.m_liblistCell.end()) {
+            for (auto const& l : itCellLibList->second) {
+                foundp = findModuleLibSym(modName, l);
+                if (foundp) return foundp;
+            }
+        }
+        // Then search IEEE config default liblist
+        for (auto const& l : m_state.m_liblistDefault) {
+            foundp = findModuleLibSym(modName, l);
+            if (foundp) return foundp;
+        }
+        // Then search local library
+        foundp = findModuleLibSym(modName, libname);
         if (foundp) return foundp;
-        // THen search global
+        // Then search global
         foundp = findModuleLibSym(modName, "__GLOBAL");
         return foundp;
     }
@@ -161,7 +310,7 @@ class LinkCellsVisitor final : public VNVisitor {
             const string prettyName = AstNode::prettyName(modName);
             V3Parse parser{v3Global.rootp(), m_filterp};
             // true below -> other simulators treat modules in link-found files as library cells
-            parser.parseFile(nodep->fileline(), prettyName, true, m_modp->libname(), "");
+            parser.parseFile(nodep->fileline(), prettyName, true, false, m_modp->libname(), "");
             V3Error::abortIfErrors();
             // We've read new modules, grab new pointers to their names
             readModNames();
@@ -190,25 +339,91 @@ class LinkCellsVisitor final : public VNVisitor {
         }
     }
 
+    AstCell* findCellByHier(AstNetlist* nodep, const std::string& hierPath) {
+        std::stringstream ss(hierPath);
+        std::string top;
+        bool topFound = false;
+        std::getline(ss, top, '.');
+        for (auto const& pair : m_state.m_designs) {
+            if (top == pair.second) {
+                topFound = true;
+                break;
+            }
+        }
+        if (!topFound) {
+            nodep->v3error("Can't find top-level module for instance path: '" << hierPath << "'");
+            V3Error::abortIfErrors();
+            return nullptr;
+        }
+
+        const V3GraphVertex* vtx = m_topVertexp;
+        const CellEdge* finalEdgep = nullptr;
+        std::string seg;
+        while (std::getline(ss, seg, '.')) {
+            finalEdgep = nullptr;
+            for (const V3GraphEdge& edge : vtx->outEdges()) {
+                if (const CellEdge* const cedgep = edge.cast<CellEdge>()) {
+                    if (cedgep->cellp()->name() == seg) {
+                        vtx = cedgep->top();
+                        finalEdgep = cedgep;
+                        break;
+                    }
+                }
+            }
+            if (!finalEdgep) return nullptr;
+        }
+
+        return finalEdgep->cellp();
+    }
+
     // VISITORS
     void visit(AstNetlist* nodep) override {
         readModNames();
         iterateChildren(nodep);
+
+        // Replace instance module pointers based on config
+        AstNodeModule* modp = nullptr;
+        AstCell* cellp = nullptr;
+
+        // Search liblists for each instance
+        for (auto const& pair : m_state.m_liblistInst) {
+            cellp = findCellByHier(nodep, pair.first);
+            if (!cellp) continue;
+            for (auto const& libname : pair.second) {
+                modp = findModuleLibSym(cellp->modName(), libname);
+                if (modp) {
+                    cellp->modp(modp);
+                    break;
+                }
+            }
+        }
+
+        // Search uselists for each instance
+        for (auto const& pair : m_state.m_uselistInst) {
+            cellp = findCellByHier(nodep, pair.first);
+            for (auto const& u : pair.second) {
+                modp = findModuleLibSym(u.second, u.first);
+                if (modp) {
+                    cellp->modp(modp);
+                    break;
+                }
+            }
+        }
+
         // Find levels in graph
         m_graph.removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
         if (dumpGraphLevel()) m_graph.dumpDotFilePrefixed("linkcells");
         m_graph.rank();
         for (V3GraphVertex& vtx : m_graph.vertices()) {
             if (const LinkCellsVertex* const vvertexp = vtx.cast<LinkCellsVertex>()) {
-                // +1 so we leave level 1  for the new wrapper we'll make in a moment
                 AstNodeModule* const modp = vvertexp->modp();
-                modp->level(vvertexp->rank() + 1);
+                modp->level(vvertexp->rank());
             }
         }
         m_graph.rankMin();
         for (V3GraphVertex& vtx : m_graph.vertices()) {
             if (const LinkCellsVertex* const vvertexp = vtx.cast<LinkCellsVertex>()) {
-                // +1 so we leave level 1  for the new wrapper we'll make in a moment
+                // +1 so we leave level 1 for the new wrapper we'll make in a moment
                 AstNodeModule* const modp = vvertexp->modp();
                 modp->depth(vvertexp->rank() + 1);
             }
@@ -227,6 +442,8 @@ class LinkCellsVisitor final : public VNVisitor {
             if (m_modp) newEdge(vertex(m_modp), vertex(nodep), 1, false);
             //
             m_modp = nodep;
+            vertex(m_modp);  // Need vertex to levelize even if no edges
+
             UINFO(4, "Link Module: " << nodep);
             if (nodep->fileline()->filebasenameNoExt() != nodep->prettyName()
                 && !v3Global.opt.isLibraryFile(nodep->fileline()->filename(), nodep->libname())
@@ -245,7 +462,12 @@ class LinkCellsVisitor final : public VNVisitor {
             if (VN_IS(nodep, Iface) || VN_IS(nodep, Package)) {
                 nodep->inLibrary(true);  // Interfaces can't be at top, unless asked
             }
-            const bool topMatch = (v3Global.opt.topModule() == nodep->prettyName());
+
+            auto const& fullName
+                = std::pair<std::string, std::string>(nodep->libname(), nodep->name());
+            const bool topMatch
+                = std::find(m_state.m_designs.begin(), m_state.m_designs.end(), fullName)
+                  != m_state.m_designs.end();
             if (topMatch) {
                 m_topVertexp = vertex(nodep);
                 UINFO(2, "Link --top-module: " << nodep);
@@ -403,7 +625,7 @@ class LinkCellsVisitor final : public VNVisitor {
                 } else {  // Non-recursive
                     // Track module depths, so can sort list from parent down to children
                     nodep->modp(cellmodp);
-                    newEdge(vertex(m_modp), vertex(cellmodp), 1, false);
+                    cellEdge(vertex(m_modp), vertex(cellmodp), 1, false, nodep);
                 }
             }
         }
@@ -603,23 +825,6 @@ class LinkCellsVisitor final : public VNVisitor {
         iterateAndNextNull(nodep->attrsp());
     }
 
-    void visit(AstConfig* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: config");
-        iterateChildren(nodep);
-    }
-    void visit(AstConfigCell* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: config cell");
-        iterateChildren(nodep);
-    }
-    void visit(AstConfigRule* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: config rule");
-        iterateChildren(nodep);
-    }
-    void visit(AstConfigUse* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: config use");
-        iterateChildren(nodep);
-    }
-
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     // METHODS
@@ -676,8 +881,9 @@ class LinkCellsVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    LinkCellsVisitor(AstNetlist* nodep, VInFilter* filterp)
+    LinkCellsVisitor(AstNetlist* nodep, VInFilter* filterp, LinkCellsState& state)
         : m_filterp{filterp}
+        , m_state{state}
         , m_mods{nodep} {
         if (v3Global.opt.hierChild()) {
             const V3HierBlockOptSet& hierBlocks = v3Global.opt.hierBlocks();
@@ -704,5 +910,8 @@ public:
 
 void V3LinkCells::link(AstNetlist* nodep, VInFilter* filterp) {
     UINFO(4, __FUNCTION__ << ": ");
-    { LinkCellsVisitor{nodep, filterp}; }
+    // Configs must be parsed first because they determine the library search order for linking
+    LinkCellsState state;
+    { LinkConfigsVisitor{nodep, state}; }
+    { LinkCellsVisitor{nodep, filterp, state}; }
 }

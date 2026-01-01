@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -58,6 +58,7 @@ class SliceVisitor final : public VNVisitor {
 
     // STATE - across all visitors
     VDouble0 m_statAssigns;  // Statistic tracking
+    VDouble0 m_statSliceElementSkips;  // Statistic tracking
 
     // STATE - for current visit position (use VL_RESTORER)
     AstNode* m_assignp = nullptr;  // Assignment we are under
@@ -248,6 +249,15 @@ class SliceVisitor final : public VNVisitor {
             return false;
         }
 
+        // Skip optimization if array is too large
+        const int elements = arrayp->rangep()->elementsConst();
+        const int elementLimit = v3Global.opt.fSliceElementLimit();
+        if (elements > elementLimit && elementLimit > 0) {
+            ++m_statSliceElementSkips;
+            m_okInitArray = true;  // VL_RESTORER in visit(AstNodeAssign)
+            return false;
+        }
+
         UINFO(4, "Slice optimizing " << nodep);
         ++m_statAssigns;
 
@@ -256,7 +266,6 @@ class SliceVisitor final : public VNVisitor {
         // Assign of an ascending range slice to a descending range one must reverse
         // the elements
         AstNodeAssign* newlistp = nullptr;
-        const int elements = arrayp->rangep()->elementsConst();
         for (int elemIdx = 0; elemIdx < elements; ++elemIdx) {
             // Original node is replaced, so it is safe to copy it one time even if it is impure.
             AstNodeAssign* const newp
@@ -383,6 +392,8 @@ public:
     explicit SliceVisitor(AstNetlist* nodep) { iterate(nodep); }
     ~SliceVisitor() override {
         V3Stats::addStat("Optimizations, Slice array assignments", m_statAssigns);
+        V3Stats::addStat("Optimizations, Slice array skips due to size limit",
+                         m_statSliceElementSkips);
     }
 };
 

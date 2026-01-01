@@ -16,7 +16,7 @@ class B;
     i = 7;
   endfunction
   task r();
-    if (a.randomize() with { j == i; } == 0) $stop;
+    if (a.randomize() with {j == i;} == 0) $stop;
   endtask
 endclass
 

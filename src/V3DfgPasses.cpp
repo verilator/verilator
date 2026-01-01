@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -173,6 +173,18 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
             if (!widthOk(srcp) || !useOk(redOrp, true)) continue;
             val = 0;
             inv = true;
+        } else if (DfgSel* const selp = vtx.cast<DfgSel>()) {
+            // Special case: Sel(ShiftL(1, src),lsb,width=1)
+            if (selp->width() != 1) continue;
+            DfgShiftL* const shiftLp = selp->fromp()->cast<DfgShiftL>();
+            if (!shiftLp) continue;
+            DfgConst* const constp = shiftLp->lhsp()->cast<DfgConst>();
+            if (!constp || !useOk(selp, false)) continue;
+            if (!constp->hasValue(1)) continue;
+            srcp = shiftLp->rhsp();
+            if (!widthOk(srcp)) continue;
+            val = selp->lsb();
+            inv = false;
         } else {
             // Not a comparison-like vertex
             continue;

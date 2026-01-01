@@ -197,7 +197,7 @@ public:
 //=============================================================================
 
 // Object holding constraints and variable references.
-class VlRandomizer final {
+class VlRandomizer VL_NOT_FINAL {
     // MEMBERS
     std::vector<std::string> m_constraints;  // Solver-dependent constraints
     std::map<std::string, std::shared_ptr<const VlRandomVar>> m_vars;  // Solver-dependent
@@ -570,7 +570,8 @@ public:
     }
 
     void hard(std::string&& constraint);
-    void clear();
+    void clearConstraints();
+    void clearAll();  // Clear both constraints and variables
     void set_randmode(const VlQueue<CData>& randmode) { m_randmodep = &randmode; }
 #ifdef VL_DEBUG
     void dump() const;
@@ -580,7 +581,7 @@ public:
 //=============================================================================
 
 // Light wrapper for RNG used by std::randomize() to support scope-level randomization.
-class VlStdRandomizer final {
+class VlStdRandomizer final : public VlRandomizer {
     // MEMBERS
     VlRNG m_rng;  // Random number generator
 
@@ -589,11 +590,45 @@ public:
     VlStdRandomizer() = default;
     ~VlStdRandomizer() = default;
 
+private:
+    // Wide type specialization (>64 bits)
     template <typename T>
-    bool basicStdRandomization(T& value, size_t width) {
-        value = VL_MASK_I(width) & VL_RANDOM_RNG_I(m_rng);
+    typename std::enable_if<VlIsVlWide<T>::value, bool>::type
+    basicStdRandomizationImpl(T& value, size_t width) {
+        VL_RANDOM_RNG_W(m_rng, width, value);
+        // Mask off garbage bits in last word
+        const int words = VL_WORDS_I(width);
+        const int bitsInLastWord = width & VL_SIZEBITS_I;
+        if (bitsInLastWord) value.at(words - 1) &= VL_MASK_I(bitsInLastWord);
         return true;
     }
+
+    // Scalar type specialization (<=64 bits)
+    template <typename T>
+    typename std::enable_if<!VlIsVlWide<T>::value, bool>::type
+    basicStdRandomizationImpl(T& value, size_t width) {
+        if (width <= 32) {
+            value = VL_MASK_I(width) & VL_RANDOM_RNG_I(m_rng);
+        } else {
+            value = VL_MASK_Q(width) & VL_RANDOM_RNG_Q(m_rng);
+        }
+        return true;
+    }
+
+public:
+    // Scalar/wide randomization
+    template <typename T>
+    bool basicStdRandomization(T& value, size_t width) {
+        return basicStdRandomizationImpl(value, width);
+    }
+
+    // Unpacked array randomization
+    template <typename T_Unpacked, std::size_t N_Depth>
+    bool basicStdRandomization(VlUnpacked<T_Unpacked, N_Depth>& value, size_t width) {
+        for (size_t i = 0; i < N_Depth; ++i) { basicStdRandomization(value.operator[](i), width); }
+        return true;
+    }
+    bool next() { return VlRandomizer::next(m_rng); }
 };
 
 #endif  // Guard

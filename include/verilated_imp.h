@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2009-2025 by Wilson Snyder. This program is free software; you can
+// Copyright 2009-2026 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -523,6 +523,11 @@ public:
         auto& scopes = map[fromp];
         const auto it = find(scopes.begin(), scopes.end(), top);
         if (it != scopes.end()) scopes.erase(it);
+    }
+    static void hierarchyClear() VL_MT_SAFE {
+        const VerilatedLockGuard lock{s().m_hierMapMutex};
+        VerilatedHierarchyMap& map = s().m_hierMap;
+        map.clear();
     }
     static const VerilatedHierarchyMap* hierarchyMap() VL_MT_SAFE_POSTINIT {
         // Thread save only assuming this is called only after model construction completed

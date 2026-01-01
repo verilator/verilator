@@ -77,6 +77,7 @@ jobs:
           - "BlackParrot:1x1:*"
           - "BlackParrot:2x2:*"
           - "BlackParrot:4x4:*"
+          - "Caliptra:default:*"
           - "NVDLA:*"
           - "OpenPiton:1x1:*"
           - "OpenPiton:2x2:*"
@@ -122,6 +123,7 @@ jobs:
           - "BlackParrot:1x1:*"
           - "BlackParrot:2x2:*"
           - "BlackParrot:4x4:*"
+          - "Caliptra:default:*"
           - "NVDLA:*"
           - "OpenPiton:1x1:*"
           - "OpenPiton:2x2:*"
@@ -188,7 +190,7 @@ jobs:
         tag: [gcc, clang, gcc-hier]
     steps:
       - name: Checkout RTLMeter
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: "verilator/rtlmeter"
           path: rtlmeter
@@ -196,7 +198,7 @@ jobs:
         working-directory: rtlmeter
         run: make venv
       - name: Download all results
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           pattern: rtlmeter-${{ matrix.tag }}-results-*
           path: all-results-${{ matrix.tag }}
@@ -206,7 +208,7 @@ jobs:
         run: |
           ./rtlmeter collate ../all-results-${{ matrix.tag }}/*.json > ../all-results-${{ matrix.tag }}.json
       - name: Upload combined results
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           path: all-results-${{ matrix.tag }}.json
           name: all-results-${{ matrix.tag }}
@@ -225,20 +227,20 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Download combined results
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           pattern: all-results-*
           path: results
           merge-multiple: true
       - name: Upload published results
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           path: results/*.json
           name: published-results
       # Pushing to verilator/verilator-rtlmeter-results requires elevated permissions
       - name: Generate access token
         id: generate-token
-        uses: actions/create-github-app-token@v2.1.4
+        uses: actions/create-github-app-token@v2.2.1
         with:
           app-id: ${{ vars.VERILATOR_CI_ID }}
           private-key: ${{ secrets.VERILATOR_CI_KEY }}
@@ -246,7 +248,7 @@ jobs:
           repositories: verilator-rtlmeter-results
           permission-contents: write
       - name: Checkout verilator-rtlmeter-results
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: "verilator/verilator-rtlmeter-results"
           token: ${{ steps.generate-token.outputs.token }}
@@ -279,7 +281,7 @@ jobs:
       actions: read
     steps:
       - name: Checkout RTLMeter
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: "verilator/rtlmeter"
           path: rtlmeter
@@ -287,7 +289,7 @@ jobs:
         working-directory: rtlmeter
         run: make venv
       - name: Download combined results
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           pattern: all-results-*
           path: all-results
@@ -306,7 +308,7 @@ jobs:
           DATE=$(gh run --repo ${{ github.repository }} view $ID --json createdAt --jq ".createdAt")
           echo "date=$DATE" >> $GITHUB_OUTPUT
       - name: Download scheduled run results
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: published-results
           path: nightly-results
@@ -372,14 +374,14 @@ jobs:
           done
           cat report.txt
       - name: Upload report
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           path: report.txt
           name: rtlmeter-pr-results
       - name: Save PR number
         run: echo ${{ github.event.number }} > pr-number.txt
       - name: Upload PR number
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           path: pr-number.txt
           name: pr-number
@@ -395,7 +397,7 @@ jobs:
       # Creating issues requires elevated privilege
       - name: Generate access token
         id: generate-token
-        uses: actions/create-github-app-token@v2.1.4
+        uses: actions/create-github-app-token@v2.2.1
         with:
           app-id: ${{ vars.VERILATOR_CI_ID }}
           private-key: ${{ secrets.VERILATOR_CI_KEY }}

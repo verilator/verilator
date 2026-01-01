@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -154,7 +154,8 @@ enum VerilatedVarFlags {
     // Flags
     VLVF_PUB_RD = (1 << 8),  // Public readable
     VLVF_PUB_RW = (1 << 9),  // Public writable
-    VLVF_DPI_CLAY = (1 << 10)  // DPI compatible C standard layout
+    VLVF_DPI_CLAY = (1 << 10),  // DPI compatible C standard layout
+    VLVF_SIGNED = (1 << 11)  // Signed integer
 };
 
 // IEEE 1800-2023 Table 20-6
@@ -306,20 +307,6 @@ private:
     friend class VerilatedTrace;
     // Run-time trace configuration requested by this model
     virtual std::unique_ptr<VerilatedTraceConfig> traceConfig() const;
-};
-
-//=========================================================================
-/// Base class for all Verilated module classes.
-
-class VerilatedModule VL_NOT_FINAL {
-    VL_UNCOPYABLE(VerilatedModule);
-
-private:
-    const char* m_namep;  // Module name
-public:
-    explicit VerilatedModule(const char* namep);  // Create module with given hierarchy name
-    ~VerilatedModule();
-    const char* name() const VL_MT_SAFE_POSTINIT { return m_namep; }  ///< Return name of module
 };
 
 //=========================================================================
@@ -694,6 +681,8 @@ public:  // But for internal use only
     explicit VerilatedSyms(VerilatedContext* contextp);  // Pass null for default context
     ~VerilatedSyms();
     VL_UNCOPYABLE(VerilatedSyms);
+
+    virtual const char* name() const = 0;
 };
 
 //===========================================================================
@@ -709,26 +698,25 @@ public:
     };  // Type of a scope, currently only module and package are interesting
 private:
     // Fastpath:
-    VerilatedSyms* m_symsp = nullptr;  // Symbol table
+    VerilatedSyms* const m_symsp;  // Symbol table
     void** m_callbacksp = nullptr;  // Callback table pointer (Fastpath)
     int m_funcnumMax = 0;  // Maximum function number stored (Fastpath)
     // 4 bytes padding (on -m64), for rent.
     VerilatedVarNameMap* m_varsp = nullptr;  // Variable map
-    const char* m_namep = nullptr;  // Scope name (Slowpath)
-    const char* m_identifierp = nullptr;  // Identifier of scope (with escapes removed)
-    const char* m_defnamep = nullptr;  // Definition name (SCOPE_MODULE only)
-    int8_t m_timeunit = 0;  // Timeunit in negative power-of-10
-    Type m_type = SCOPE_OTHER;  // Type of the scope
+    const char* const m_namep;  // Scope name (Slowpath)
+    const char* const m_identifierp;  // Identifier of scope (with escapes removed)
+    const char* const m_defnamep;  // Definition name (SCOPE_MODULE only)
+    const int8_t m_timeunit;  // Timeunit in negative power-of-10
+    const Type m_type;  // Type of the scope
 
-public:  // But internals only - called from VerilatedModule's
-    VerilatedScope() = default;
+public:  // But internals only - called from verilated modules, VerilatedSyms
+    VerilatedScope(VerilatedSyms* symsp, const char* suffixp, const char* identifier,
+                   const char* defnamep, int8_t timeunit, Type type);
     ~VerilatedScope();
-    void configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
-                   const char* identifier, const char* defnamep, int8_t timeunit,
-                   const Type& type) VL_MT_UNSAFE;
+
     void exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE;
-    void varInsert(int finalize, const char* namep, void* datap, bool isParam,
-                   VerilatedVarType vltype, int vlflags, int udims, int pdims, ...) VL_MT_UNSAFE;
+    void varInsert(const char* namep, void* datap, bool isParam, VerilatedVarType vltype,
+                   int vlflags, int udims, int pdims, ...) VL_MT_UNSAFE;
     // ACCESSORS
     const char* name() const VL_MT_SAFE_POSTINIT { return m_namep; }
     const char* identifier() const VL_MT_SAFE_POSTINIT { return m_identifierp; }
@@ -756,6 +744,7 @@ class VerilatedHierarchy final {
 public:
     static void add(const VerilatedScope* fromp, const VerilatedScope* top);
     static void remove(const VerilatedScope* fromp, const VerilatedScope* top);
+    static void clear();
 };
 
 //===========================================================================
@@ -1039,18 +1028,13 @@ void VerilatedContext::timeprecision(int value) VL_MT_SAFE {
         m_s.m_timeprecision = value;
 #if VM_SC
         const sc_core::sc_time sc_res = sc_core::sc_get_time_resolution();
-        if (sc_res == sc_core::sc_time(1, sc_core::SC_SEC)) {
-            sc_prec = 0;
-        } else if (sc_res == sc_core::sc_time(1, sc_core::SC_MS)) {
-            sc_prec = 3;
-        } else if (sc_res == sc_core::sc_time(1, sc_core::SC_US)) {
-            sc_prec = 6;
-        } else if (sc_res == sc_core::sc_time(1, sc_core::SC_NS)) {
-            sc_prec = 9;
-        } else if (sc_res == sc_core::sc_time(1, sc_core::SC_PS)) {
-            sc_prec = 12;
-        } else if (sc_res == sc_core::sc_time(1, sc_core::SC_FS)) {
-            sc_prec = 15;
+        double mult = 1.0;
+        for (int i = 0; i < 16; i++) {
+            if (sc_res == sc_core::sc_time(mult, sc_core::SC_FS)) {
+                sc_prec = 15 - i;
+                break;
+            }
+            mult *= 10.0;
         }
         // SC_AS, SC_ZS, SC_YS not supported as no Verilog equivalent; will error below
 #endif

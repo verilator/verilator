@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -181,7 +181,7 @@ class AstToDfgVisitor final : public VNVisitor {
         const VAlwaysKwd kwd = nodep->keyword();
         if (kwd == VAlwaysKwd::CONT_ASSIGN) {
             // TODO: simplify once CFG analysis can handle arrays
-            if (AstAssignW* const ap = VN_CAST(nodep->stmtsp(), AssignW)) {
+            if (const AstAssignW* const ap = VN_CAST(nodep->stmtsp(), AssignW)) {
                 if (ap->nextp()) return false;
                 // Cannot handle assignment with timing control
                 if (ap->timingControlp()) return false;

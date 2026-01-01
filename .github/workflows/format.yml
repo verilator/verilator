@@ -21,23 +21,23 @@ jobs:
       CI_COMMIT: ${{ github.sha }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install packages for build
         env:
           CI_BUILD_STAGE_NAME: build
         run: |
-          bash ci/ci-install.bash &&
-          sudo apt-get install clang-format-18 yapf3 &&
-          sudo pip3 install gersemi mbake &&
-          git config --global user.email "action@example.com" &&
+          sudo apt install clang-format-18
+          git config --global user.email "action@example.com"
           git config --global user.name "github action"
       - name: Format code
         run: |
-          autoconf &&
-          ./configure &&
-          make -j 2 format CLANGFORMAT=clang-format-18 &&
+          autoconf
+          ./configure
+          make venv
+          source .venv/bin/activate
+          make -j 2 format CLANGFORMAT=clang-format-18
           git status
       - name: Push
         run: |-

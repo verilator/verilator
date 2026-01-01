@@ -18,14 +18,14 @@ def check_splits():
     got1 = False
     gotSyms1 = False
     for filename in test.glob_some(test.obj_dir + "/*.cpp"):
-        if re.search(r'Syms__1', filename):
+        if re.search(r'Syms__.*__1', filename):
             gotSyms1 = True
         elif re.search(r'__1', filename):
             got1 = True
     if not got1:
         test.error("No __1 split file found")
     if not gotSyms1:
-        test.error("No Syms__1 split file found")
+        test.error("No Syms__*__1 split file found")
 
 
 def check_no_all_file():
@@ -125,7 +125,7 @@ test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + "_classes.mk", "vm_clas
 test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + "_classes.mk", "vm_classes_2")
 
 # Check combine count
-test.file_grep(test.stats, r'Node count, CFILE + (\d+)', (219 if test.vltmt else 205))
+test.file_grep(test.stats, r'Node count, CFILE + (\d+)', (272 if test.vltmt else 255))
 test.file_grep(test.stats, r'Makefile targets, VM_CLASSES_FAST + (\d+)', 2)
 test.file_grep(test.stats, r'Makefile targets, VM_CLASSES_SLOW + (\d+)', 2)
 

@@ -11,6 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-test.lint(verilator_flags2=["-E -Wpedantic"], fails=True, expect_filename=test.golden_filename)
+test.compile(verilator_flags2=["-E -Wpedantic"], fails=True, expect_filename=test.golden_filename)
 
 test.passes()

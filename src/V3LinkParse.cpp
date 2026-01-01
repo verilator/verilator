@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -23,6 +23,7 @@
 #include "V3LinkParse.h"
 
 #include "V3Control.h"
+#include "V3MemberMap.h"
 #include "V3Stats.h"
 
 #include <set>
@@ -46,6 +47,7 @@ class LinkParseVisitor final : public VNVisitor {
 
     // STATE - across all visitors
     std::unordered_set<FileLine*> m_filelines;  // Filelines that have been seen
+    VMemberMap m_memberMap;  // for lookup of process class methods
 
     // STATE - for current visit position (use VL_RESTORER)
     // If set, move AstVar->valuep() initial values to this module
@@ -64,6 +66,7 @@ class LinkParseVisitor final : public VNVisitor {
     int m_genblkAbove = 0;  // Begin block number of if/case/for above
     int m_genblkNum = 0;  // Begin block number, 0=none seen
     int m_beginDepth = 0;  // How many begin blocks above current node within current AstNodeModule
+    int m_randSequenceNum = 0;  // RandSequence uniqify number
     VLifetime m_lifetime = VLifetime::STATIC_IMPLICIT;  // Propagating lifetime
     bool m_insideLoop = false;  // True if the node is inside a loop
     bool m_lifetimeAllowed = false;  // True to allow lifetime settings
@@ -71,6 +74,9 @@ class LinkParseVisitor final : public VNVisitor {
 
     // STATE - Statistic tracking
     VDouble0 m_statModules;  // Number of modules seen
+
+    bool m_unprotectedStdProcess
+        = false;  // Set when std::process internals were unprotected, we only need to do this once
 
     // METHODS
     void cleanFileline(AstNode* nodep) {
@@ -103,6 +109,21 @@ class LinkParseVisitor final : public VNVisitor {
             return above + typedefp->name();
         }
         return "";
+    }
+
+    void unprotectStdProcessHandle() {
+        if (m_unprotectedStdProcess) return;
+        m_unprotectedStdProcess = true;
+        if (!v3Global.opt.protectIds()) return;
+        if (AstPackage* const stdp = v3Global.rootp()->stdPackagep()) {
+            if (AstClass* const processp
+                = VN_CAST(m_memberMap.findMember(stdp, "process"), Class)) {
+                if (AstVar* const handlep
+                    = VN_CAST(m_memberMap.findMember(processp, "m_process"), Var)) {
+                    handlep->protect(false);
+                }
+            }
+        }
     }
 
     void visitIterateNodeDType(AstNodeDType* nodep) {
@@ -178,6 +199,38 @@ class LinkParseVisitor final : public VNVisitor {
                           << nodep->warnOther()
                           << "... Expected indentation matching this earlier statement's line:\n"
                           << nodep->warnContextSecondary());
+    }
+
+    void addForkParentProcess(AstFork* forkp) {
+        FileLine* const fl = forkp->fileline();
+
+        const std::string parentName = "__VforkParent";
+        AstRefDType* const dtypep = new AstRefDType{fl, "process"};
+        AstVar* const parentVar
+            = new AstVar{fl, VVarType::BLOCKTEMP, parentName, VFlagChildDType{}, dtypep};
+        parentVar->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+
+        AstParseRef* const lhsp = new AstParseRef{fl, parentName, nullptr, nullptr};
+        AstClassOrPackageRef* const processRefp
+            = new AstClassOrPackageRef{fl, "process", nullptr, nullptr};
+        AstParseRef* const selfRefp = new AstParseRef{fl, "self", nullptr, nullptr};
+        AstDot* const processSelfp = new AstDot{fl, true, processRefp, selfRefp};
+        AstMethodCall* const callp = new AstMethodCall{fl, processSelfp, "self", nullptr};
+        AstAssign* const initp = new AstAssign{fl, lhsp, callp};
+
+        AstVarRef* const parentRefp = new AstVarRef{fl, parentVar, VAccess::READ};
+        forkp->parentProcessp(parentRefp);
+
+        VNRelinker relinker;
+        forkp->unlinkFrBack(&relinker);
+
+        parentVar->addNextHere(initp);
+        initp->addNextHere(forkp);
+
+        AstBegin* const beginp = new AstBegin{
+            fl, forkp->name() == "" ? "" : forkp->name() + "__VgetForkParent", parentVar, true};
+
+        relinker.relink(beginp);
     }
 
     // VISITORS
@@ -270,6 +323,7 @@ class LinkParseVisitor final : public VNVisitor {
                                      "loop converted to automatic");
         } else if (nodep->valuep() && nodep->lifetime().isNone() && m_lifetime.isStatic()
                    && !nodep->isIO()
+                   && !nodep->isParam()
                    // In task, or a procedure but not Initial/Final as executed only once
                    && ((m_ftaskp && !m_ftaskp->lifetime().isStaticExplicit())
                        || (m_procedurep && !VN_IS(m_procedurep, Initial)
@@ -337,9 +391,36 @@ class LinkParseVisitor final : public VNVisitor {
             AstNode* dtypep = nodep->valuep();
             if (dtypep) {
                 dtypep->unlinkFrBack();
+                // Transform right-associative Dot tree to left-associative
+                // This handles typedef with arrayed interface on first component:
+                //   typedef if0[0].x_if0.rq_t my_t;
+                // Grammar produces: DOT(SELBIT, DOT(x_if0, rq_t))
+                // We need:          DOT(DOT(SELBIT, x_if0), rq_t)
+                if (AstNodeExpr* exprp = VN_CAST(dtypep, NodeExpr)) {
+                    AstDot* dotp = VN_CAST(exprp, Dot);
+                    while (dotp) {
+                        AstDot* rhsDotp = VN_CAST(dotp->rhsp(), Dot);
+                        if (!rhsDotp) break;
+                        FileLine* const fl = dotp->fileline();
+                        const bool colon = dotp->colon();
+                        AstNodeExpr* const lhs = VN_AS(dotp->lhsp()->unlinkFrBack(), NodeExpr);
+                        AstNodeExpr* const rhsLhs
+                            = VN_AS(rhsDotp->lhsp()->unlinkFrBack(), NodeExpr);
+                        AstNodeExpr* const rhsRhs
+                            = VN_AS(rhsDotp->rhsp()->unlinkFrBack(), NodeExpr);
+                        FileLine* const rhsFl = rhsDotp->fileline();
+                        const bool rhsColon = rhsDotp->colon();
+                        AstDot* const newLhs = new AstDot{fl, colon, lhs, rhsLhs};
+                        exprp = new AstDot{rhsFl, rhsColon, newLhs, rhsRhs};
+                        VL_DO_DANGLING(dotp->deleteTree(), dotp);
+                        dotp = VN_CAST(exprp, Dot);
+                    }
+                    dtypep = exprp;
+                }
             } else {
                 dtypep = new AstVoidDType{nodep->fileline()};
             }
+
             AstNode* const newp = new AstParamTypeDType{
                 nodep->fileline(), nodep->varType(),
                 ptypep->fwdType(), nodep->name(),
@@ -478,6 +559,10 @@ class LinkParseVisitor final : public VNVisitor {
                 m_varp->attrSplitVar(true);
             }
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        } else if (nodep->attrType() == VAttrType::VAR_SC_BIGUINT) {
+            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
+            m_varp->attrScBigUint(true);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (nodep->attrType() == VAttrType::VAR_SC_BV) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrScBv(true);
@@ -499,16 +584,18 @@ class LinkParseVisitor final : public VNVisitor {
             UINFO(9, "Reused impltypedef " << nodep << "  -->  " << defp);
         } else {
             // Definition must be inserted right after the variable (etc) that needed it
-            // AstVar, AstTypedef, AstNodeFTask are common containers
+            // AstVar, AstTypedef, AstNodeFTask, AstParamTypeDType are common containers
             AstNode* backp = nodep->backp();
             for (; backp; backp = backp->backp()) {
-                if (VN_IS(backp, Var) || VN_IS(backp, Typedef) || VN_IS(backp, NodeFTask)) break;
+                if (VN_IS(backp, Var) || VN_IS(backp, Typedef) || VN_IS(backp, NodeFTask)
+                    || VN_IS(backp, ParamTypeDType))
+                    break;
             }
             UASSERT_OBJ(backp, nodep,
                         "Implicit enum/struct type created under unexpected node type");
             AstNodeDType* const dtypep = nodep->childDTypep();
             dtypep->unlinkFrBack();
-            if (VN_IS(backp, Typedef)) {
+            if (VN_IS(backp, Typedef) || VN_IS(backp, ParamTypeDType)) {
                 // A typedef doesn't need us to make yet another level of typedefing
                 // For typedefs just remove the AstRefDType level of abstraction
                 nodep->replaceWith(dtypep);
@@ -562,7 +649,7 @@ class LinkParseVisitor final : public VNVisitor {
                 = new AstSelLoopVars{selp->fileline(), selp->fromp()->unlinkFrBack(),
                                      selp->bitp()->unlinkFrBackWithNext()};
             selp->replaceWith(newp);
-            VL_DO_DANGLING(selp->deleteTree(), selp);
+            VL_DO_DANGLING2(selp->deleteTree(), selp, bracketp);
         } else if (VN_IS(bracketp, SelLoopVars)) {
             // Ok
         } else {
@@ -590,30 +677,6 @@ class LinkParseVisitor final : public VNVisitor {
             checkIndent(nodep, nodep->stmtsp());
         }
         iterateChildren(nodep);
-    }
-    void visit(AstRandSequence* nodep) override {
-        cleanFileline(nodep);
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: randsequence");
-        iterateChildren(nodep);
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-    }
-    void visit(AstRSCase* nodep) override {
-        cleanFileline(nodep);
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: randsequence case");
-        iterateChildren(nodep);
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-    }
-    void visit(AstRSIf* nodep) override {
-        cleanFileline(nodep);
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: randsequence if");
-        iterateChildren(nodep);
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-    }
-    void visit(AstRSRepeat* nodep) override {
-        cleanFileline(nodep);
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: randsequence repeat");
-        iterateChildren(nodep);
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     void visit(AstWait* nodep) override {
         cleanFileline(nodep);
@@ -645,6 +708,7 @@ class LinkParseVisitor final : public VNVisitor {
         VL_RESTORER(m_lifetime);
         VL_RESTORER(m_lifetimeAllowed);
         VL_RESTORER(m_moduleWithGenericIface);
+        VL_RESTORER(m_randSequenceNum);
         VL_RESTORER(m_valueModp);
 
         // Module: Create sim table for entire module and iterate
@@ -662,6 +726,8 @@ class LinkParseVisitor final : public VNVisitor {
         m_lifetime = nodep->lifetime().makeImplicit();
         m_lifetimeAllowed = VN_IS(nodep, Class);
         m_moduleWithGenericIface = false;
+        m_randSequenceNum = 0;
+
         if (m_lifetime.isNone()) {
             m_lifetime
                 = VN_IS(nodep, Class) ? VLifetime::AUTOMATIC_IMPLICIT : VLifetime::STATIC_IMPLICIT;
@@ -787,7 +853,11 @@ class LinkParseVisitor final : public VNVisitor {
         }
         cleanFileline(nodep);
         iterateAndNextNull(nodep->stmtsp());
-        if (AstFork* const forkp = VN_CAST(nodep, Fork)) iterateAndNextNull(forkp->forksp());
+        if (AstFork* const forkp = VN_CAST(nodep, Fork)) {
+            iterateAndNextNull(forkp->forksp());
+            if (!forkp->parentProcessp() && forkp->joinType().joinNone() && forkp->forksp())
+                addForkParentProcess(forkp);
+        }
     }
     void visit(AstCase* nodep) override {
         V3Control::applyCase(nodep);
@@ -831,6 +901,11 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
         nodep->name(m_modp->name());
         nodep->timeunit(m_modp->timeunit());
+    }
+    void visit(AstRandSequence* nodep) override {
+        cleanFileline(nodep);
+        nodep->name("__Vrs" + std::to_string(m_randSequenceNum++));
+        iterateChildren(nodep);
     }
     void visit(AstSFormatF* nodep) override {
         cleanFileline(nodep);
@@ -886,33 +961,29 @@ class LinkParseVisitor final : public VNVisitor {
         VL_RESTORER(m_defaultInSkewp);
         VL_RESTORER(m_defaultOutSkewp);
         // Find default input and output skews
-        AstClockingItem* nextItemp = nodep->itemsp();
-        for (AstClockingItem* itemp = nextItemp; itemp; itemp = nextItemp) {
-            nextItemp = VN_AS(itemp->nextp(), ClockingItem);
-            if (itemp->exprp() || itemp->assignp()) continue;
-            if (itemp->skewp()) {
-                if (itemp->direction() == VDirection::INPUT) {
-                    // Disallow default redefinition; note some simulators allow this
-                    if (m_defaultInSkewp) {
-                        itemp->skewp()->v3error("Multiple default input skews not allowed");
-                    }
-                    m_defaultInSkewp = itemp->skewp();
-                } else if (itemp->direction() == VDirection::OUTPUT) {
-                    if (AstConst* const constp = VN_CAST(itemp->skewp(), Const)) {
-                        if (constp->num().is1Step()) {
-                            itemp->skewp()->v3error("1step not allowed as output skew");
+        for (AstNode *nextp, *itemp = nodep->itemsp(); itemp; itemp = nextp) {
+            nextp = itemp->nextp();
+            if (AstClockingItem* citemp = VN_CAST(itemp, ClockingItem)) {
+                if (citemp->exprp() || citemp->assignp()) continue;
+                if (citemp->skewp()) {
+                    if (citemp->direction() == VDirection::INPUT) {
+                        // Disallow default redefinition; note some simulators allow this
+                        if (m_defaultInSkewp) {
+                            citemp->skewp()->v3error("Multiple default input skews not allowed");
                         }
+                        m_defaultInSkewp = citemp->skewp();
+                    } else if (citemp->direction() == VDirection::OUTPUT) {
+                        // Disallow default redefinition; note some simulators allow this
+                        if (m_defaultOutSkewp) {
+                            citemp->skewp()->v3error("Multiple default output skews not allowed");
+                        }
+                        m_defaultOutSkewp = citemp->skewp();
+                    } else {
+                        citemp->v3fatalSrc("Incorrect direction");
                     }
-                    // Disallow default redefinition; note some simulators allow this
-                    if (m_defaultOutSkewp) {
-                        itemp->skewp()->v3error("Multiple default output skews not allowed");
-                    }
-                    m_defaultOutSkewp = itemp->skewp();
-                } else {
-                    itemp->v3fatalSrc("Incorrect direction");
                 }
+                VL_DO_DANGLING2(pushDeletep(citemp->unlinkFrBack()), citemp, itemp);
             }
-            VL_DO_DANGLING(pushDeletep(itemp->unlinkFrBack()), itemp);
         }
         iterateChildren(nodep);
     }
@@ -925,10 +996,6 @@ class LinkParseVisitor final : public VNVisitor {
                 } else {
                     // Default is 0 (IEEE 1800-2023 14.3)
                     nodep->skewp(new AstConst{nodep->fileline(), 0});
-                }
-            } else if (AstConst* const constp = VN_CAST(nodep->skewp(), Const)) {
-                if (constp->num().is1Step()) {
-                    nodep->skewp()->v3error("1step not allowed as output skew");
                 }
             }
         } else if (nodep->direction() == VDirection::INPUT) {
@@ -959,7 +1026,10 @@ class LinkParseVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit LinkParseVisitor(AstNetlist* rootp) { iterate(rootp); }
+    explicit LinkParseVisitor(AstNetlist* rootp) {
+        unprotectStdProcessHandle();
+        iterate(rootp);
+    }
     ~LinkParseVisitor() override {
         V3Stats::addStatSum(V3Stats::STAT_SOURCE_MODULES, m_statModules);
     }

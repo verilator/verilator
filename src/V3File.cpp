@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -752,7 +752,7 @@ void V3OutFormatter::putns(const AstNode* nodep, const char* strg) {
     }
 
     if (putNodeDecoration) {
-        FileLine* const flp = nodep->fileline();
+        const FileLine* const flp = nodep->fileline();
         m_sourceLastLineno = flp->firstLineno();
         m_sourceLastFilenameno = flp->filenameno();
         const std::string lineno = std::to_string(flp->lineno());

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -130,7 +130,8 @@ class EmitCHeader final : public EmitCConstInit {
             }
         } else {  // not class
             putsDecoration(nullptr, "\n// INTERNAL VARIABLES\n");
-            puts(EmitCUtil::symClassName() + "* const vlSymsp;\n");
+            puts(EmitCUtil::symClassName() + "* vlSymsp;\n");
+            puts("const char* vlNamep;\n");
         }
     }
     void emitParamDecls(const AstNodeModule* modp) {
@@ -155,14 +156,25 @@ class EmitCHeader final : public EmitCConstInit {
         }
     }
     void emitCtorDtorDecls(const AstNodeModule* modp) {
-        if (!VN_IS(modp, Class)) {  // Classes use CFuncs with isConstructor/isDestructor
-            const string& name = EmitCUtil::prefixNameProtect(modp);
-            putsDecoration(nullptr, "\n// CONSTRUCTORS\n");
-            putns(modp,
-                  name + "(" + EmitCUtil::symClassName() + "* symsp, const char* v__name);\n");
+        // Classes use CFuncs with isConstructor/isDestructor
+        if (VN_IS(modp, Class)) return;
+
+        // The root module needs a proper constuctor/destructor, everything
+        // else uses a 'ctor'/'dtor' function in order to be able to split up
+        // construction/destruction code
+        const std::string name = EmitCUtil::prefixNameProtect(modp);
+        putsDecoration(nullptr, "\n// CONSTRUCTORS\n");
+        const std::string ctorArgs = EmitCUtil::symClassName() + "* symsp, const char* namep";
+        if (modp->isTop()) {
+            putns(modp, name + "(" + ctorArgs + ");\n");
             putns(modp, "~" + name + "();\n");
-            putns(modp, "VL_UNCOPYABLE(" + name + ");\n");
+        } else {
+            putns(modp, name + "() = default;\n");
+            putns(modp, "~" + name + "() = default;\n");
+            putns(modp, "void ctor(" + ctorArgs + ");\n");
+            putns(modp, "void dtor();\n");
         }
+        putns(modp, "VL_UNCOPYABLE(" + name + ");\n");
     }
     void emitInternalMethodDecls(const AstNodeModule* modp) {
         bool first = true;
@@ -590,7 +602,7 @@ class EmitCHeader final : public EmitCConstInit {
                 puts("public virtual VlClass");
             }
         } else {
-            puts(" final : public VerilatedModule");
+            puts(" final");
         }
         puts(" {\n");
         ofp()->resetPrivate();
@@ -623,16 +635,7 @@ class EmitCHeader final : public EmitCConstInit {
         UINFO(5, "  Emitting header for " << EmitCUtil::prefixNameProtect(modp));
 
         // Open output file
-        const string filename
-            = v3Global.opt.makeDir() + "/" + EmitCUtil::prefixNameProtect(modp) + ".h";
-        AstCFile* const cfilep = newCFile(filename, /* slow: */ false, /* source: */ false);
-        V3OutCFile* const ofilep
-            = v3Global.opt.systemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
-
-        setOutputFile(ofilep, cfilep);
-
-        ofp()->putsHeader();
-        puts("// DESCRIPTION: Verilator output: Design internal header\n");
+        openNewOutputHeaderFile(EmitCUtil::prefixNameProtect(modp), "Design internal header");
         puts("// See " + EmitCUtil::topClassName() + ".h for the primary calling header\n");
 
         ofp()->putsGuard();
@@ -641,6 +644,7 @@ class EmitCHeader final : public EmitCConstInit {
         puts("\n");
         ofp()->putsIntTopInclude();
         puts("#include \"verilated.h\"\n");
+        if (modp->isTop() && optSystemC()) puts("#include \"verilated_sc.h\"\n");
         if (v3Global.opt.mtasks()) puts("#include \"verilated_threads.h\"\n");
         if (v3Global.opt.savable()) puts("#include \"verilated_save.h\"\n");
         if (v3Global.opt.coverage()) puts("#include \"verilated_cov.h\"\n");

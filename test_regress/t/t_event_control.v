@@ -10,7 +10,7 @@ module t(/*AUTOARG*/
    );
    input clk;
 
-   initial begin;
+   initial begin
       @(clk);
       $write("[%0t] Got\n", $time);
       @(clk);

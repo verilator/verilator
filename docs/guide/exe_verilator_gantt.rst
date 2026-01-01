@@ -1,4 +1,4 @@
-.. Copyright 2003-2025 by Wilson Snyder.
+.. Copyright 2003-2026 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 verilator_gantt
@@ -31,50 +31,50 @@ In waveforms, there are the following signals. In GTKWave, use "decimal"
 data format to remove the leading zeros and make the traces easier to read.
 
 trace/section
-  Shows the name of the current top of the execution section stack.
-  Set GTKWave data format to "ASCII".
+   Shows the name of the current top of the execution section stack. Set
+   GTKWave data format to "ASCII".
 
 trace/depth
-  Shows the depth of the execution section stack.
-  Set GTKWave data format to "Analog".
+   Shows the depth of the execution section stack. Set GTKWave data format
+   to "Analog".
 
 measured_parallelism
-  The number of mtasks active at this time, for best performance, this will
-  match the thread count. In GTKWave, use a data format of "analog step" to
-  view this signal.
+   The number of mtasks active at this time, for best performance, this
+   will match the thread count. In GTKWave, use a data format of "analog
+   step" to view this signal.
 
 predicted_parallelism
-  The number of mtasks Verilator predicted would be active at this time,
-  for best performance this will match the thread count. In GTKWave, use a
-  data format of "analog step" to view this signal.
+   The number of mtasks Verilator predicted would be active at this time,
+   for best performance this will match the thread count. In GTKWave, use a
+   data format of "analog step" to view this signal.
 
 cpu#_thread
-  For the given CPU number, the thread number measured to be executing.
+   For the given CPU number, the thread number measured to be executing.
 
 cpu#_waiting
-  For the given CPU number, aggregated waiting time for mtask dependencies.
-  Visualized as `X` values.
+   For the given CPU number, aggregated waiting time for mtask
+   dependencies. Visualized as `X` values.
 
 mtask#_cpu
-  For the given mtask id, the CPU it was measured to execute on.
+   For the given mtask id, the CPU it was measured to execute on.
 
 thread#_mtask
-  For the given thread number, the mtask id it was executing.
+   For the given thread number, the mtask id it was executing.
 
 predicted_thread#_mtask
-  For the given thread number, the mtask id Verilator predicted would be
-  executing.
+   For the given thread number, the mtask id Verilator predicted would be
+   executing.
 
 
 verilator_gantt Example Usage
 -----------------------------
 
-..
+.. code-block:: bash
 
-    verilator_gantt --help
-    verilator_gantt --version
+   verilator_gantt --help
+   verilator_gantt --version
 
-    verilator_gantt profile_exec.dat
+   verilator_gantt profile_exec.dat
 
 
 verilator_gantt Arguments

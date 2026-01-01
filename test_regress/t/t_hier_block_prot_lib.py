@@ -9,6 +9,7 @@
 
 import vltest_bootstrap
 
+test.priority(30)
 test.scenarios('vlt_all', 'xsim')
 test.top_filename = "t/t_hier_block.v"
 

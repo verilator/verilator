@@ -1,11 +1,15 @@
-%Error-UNSUPPORTED: t/t_randsequence_bad.v:12:7: Unsupported: randsequence
-   12 |       randsequence(no_such_production)   
-      |       ^~~~~~~~~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_randsequence_bad.v:16:7: Unsupported: randsequence
-   16 |       randsequence(main)
-      |       ^~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_randsequence_bad.v:21:7: Unsupported: randsequence
-   21 |       randsequence()
-      |       ^~~~~~~~~~~~
+%Error: t/t_randsequence_bad.v:23:7: Duplicate declaration of randsequence production: 'duplicated_bad'
+   23 |       duplicated_bad: { $display("dup2"); };   
+      |       ^~~~~~~~~~~~~~
+        t/t_randsequence_bad.v:22:7: ... Location of original declaration
+   22 |       duplicated_bad: { $display("dup1"); };
+      |       ^~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_randsequence_bad.v:12:5: Production 'no_such_production' not found
+                                   : ... Suggested alternative: 'such_production'
+   12 |     randsequence(no_such_production)   
+      |     ^~~~~~~~~~~~
+%Error: t/t_randsequence_bad.v:17:13: Production 'production_bad' not found
+   17 |       main: production_bad;   
+      |             ^~~~~~~~~~~~~~
 %Error: Exiting due to

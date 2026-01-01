@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(verilator_flags2=["--lint-only -Wno-NOSUCHERRORASTHIS"],
+test.lint(verilator_flags2=["-Wno-NOSUCHERRORASTHIS"],
           fails=True,
           expect_filename=test.golden_filename)
 

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -42,7 +42,7 @@ public:
 
     // METHODS
     // Preprocess and read the Verilog file specified into the netlist database
-    void parseFile(FileLine* fileline, const string& modname, bool inLibrary,
+    void parseFile(FileLine* fileline, const string& modname, bool inLibrary, bool inLibMap,
                    const string& libname, const string& errmsg) VL_MT_DISABLED;
 
     // Push preprocessed text to the lexer

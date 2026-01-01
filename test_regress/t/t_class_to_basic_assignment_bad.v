@@ -12,21 +12,21 @@ class Foo;
     return ans;
   endfunction
 
-  static function int create ();
+  static function int create();
     return 3;
   endfunction
 
-  function string get_name ();
+  function string get_name();
     return "bar";
   endfunction
 
   function void add(Foo phase);
     Foo new_node;
     if (new_node.get_name() == "run") begin
-        new_node.phase_done = get();
+      new_node.phase_done = get();
     end
     else begin
-        new_node.phase_done = create();
+      new_node.phase_done = create();
     end
   endfunction
 endclass

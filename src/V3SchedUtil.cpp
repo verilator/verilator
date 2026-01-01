@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -92,23 +92,13 @@ AstNodeStmt* checkIterationLimit(AstNetlist* netlistp, const string& name, AstVa
     ifp->addThensp(dumpCallp);
     AstCStmt* const stmtp = new AstCStmt{flp};
     ifp->addThensp(stmtp);
-    FileLine* const locp = netlistp->topModulep()->fileline();
+    const FileLine* const locp = netlistp->topModulep()->fileline();
     const std::string& file = VIdProtect::protect(locp->filename());
     const std::string& line = std::to_string(locp->lineno());
     stmtp->add("VL_FATAL_MT(\"" + V3OutFormatter::quoteNameControls(file) + "\", " + line
                + ", \"\", \"" + name + " region did not converge after " + std::to_string(limit)
                + " tries\");");
     return ifp;
-}
-
-AstNodeStmt* profExecSectionPush(FileLine* flp, const string& section) {
-    const string name
-        = (v3Global.opt.hierChild() ? (v3Global.opt.topModule() + " ") : "") + section;
-    return new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPush(\"" + name + "\");"};
-}
-
-AstNodeStmt* profExecSectionPop(FileLine* flp) {
-    return new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPop();"};
 }
 
 static AstCFunc* splitCheckCreateNewSubFunc(AstCFunc* ofuncp) {

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -1086,20 +1086,20 @@ private:
         }
         if (!optimizable()) return;
 
-        int loops = 0;
+        size_t iterCount = 0;
+        const size_t iterLimit = v3Global.opt.unrollLimit();
         while (true) {
+            if (iterCount > iterLimit) {
+                clearOptimizable(nodep, "Loop simulation took too long; probably this is an "
+                                        "infinite loop, otherwise set '--unroll-limit' above "
+                                            + std::to_string(iterLimit));
+                break;
+            }
+            ++iterCount;
+
             UINFO(5, "    LOOP-ITER " << nodep);
             iterateAndNextConstNull(nodep->stmtsp());
             if (jumpingOver()) break;
-
-            // Prep for next loop
-            if (loops++ > v3Global.opt.unrollCountAdjusted(nodep->unroll(), m_params, true)) {
-                clearOptimizable(nodep, "Loop unrolling took too long; probably this is an"
-                                        "infinite loop, or use /*verilator unroll_full*/, or "
-                                        "set --unroll-count above "
-                                            + cvtToStr(loops));
-                break;
-            }
         }
 
         if (m_jumptargetp == nodep) {
@@ -1204,7 +1204,7 @@ private:
         }
         // Apply value to the function
         if (!m_checkOnly && optimizable())
-            for (auto& it : portValues) {
+            for (const auto& it : portValues) {
                 if (!m_checkOnly && optimizable()) newValue(it.first, it.second);
             }
         SimStackNode stackNode{nodep, &tconnects};
@@ -1222,7 +1222,7 @@ private:
         // Evaluate the function
         iterateConst(funcp);
         m_callStack.pop_back();
-        AstNodeExpr* returnp = nullptr;
+        const AstNodeExpr* returnp = nullptr;
         if (!m_checkOnly && optimizable()) {
             // Grab return value from output variable
             UASSERT_OBJ(funcp->fvarp(), nodep, "Function reference points at non-function");

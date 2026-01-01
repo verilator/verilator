@@ -1,6 +1,6 @@
 %Error-FUNCTIMECTL: t/t_lint_functimectl_bad.v:12:5: Functions cannot contain time-controlling statements (IEEE 1800-2023 13.4)
                                                    : ... note: In instance 't'
-   12 |     @e;  
+   12 |     @e;   
       |     ^
                                                    : ... Suggest make caller 'function calls_timing_ctl' a task
    11 |   function void calls_timing_ctl;
@@ -8,7 +8,7 @@
                     ... For error description see https://verilator.org/warn/FUNCTIMECTL?v=latest
 %Error-FUNCTIMECTL: t/t_lint_functimectl_bad.v:17:5: Functions cannot contain time-controlling statements (IEEE 1800-2023 13.4)
                                                    : ... note: In instance 't'
-   17 |     wait (s);  
+   17 |     wait (s);   
       |     ^~~~
                                                    : ... Suggest make caller 'function calls_timing_ctl' a task
    11 |   function void calls_timing_ctl;

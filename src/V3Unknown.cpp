@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -65,6 +65,16 @@ class UnknownVisitor final : public VNVisitor {
 
     // METHODS
 
+    void addVar(AstVar* varp) {
+        if (m_ftaskp) {
+            varp->funcLocal(true);
+            varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+            m_ftaskp->stmtsp()->addHereThisAsNext(varp);
+        } else {
+            m_modp->stmtsp()->addHereThisAsNext(varp);
+        }
+    }
+
     void replaceBoundLvalue(AstNodeExpr* nodep, AstNodeExpr* condp) {
         // Spec says a out-of-range LHS SEL results in a NOP.
         // This is a PITA.  We could:
@@ -98,6 +108,13 @@ class UnknownVisitor final : public VNVisitor {
                || VN_IS(prep->backp(), MemberSel) || VN_IS(prep->backp(), StructSel)) {
             prep = VN_AS(prep->backp(), NodeExpr);
         }
+        if (VN_IS(prep->backp(), AssignForce) || VN_IS(prep->backp(), Release)) {
+            // The conversion done in this function breaks force and release statements
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Force / release statement with complex select expression");
+            VL_DO_DANGLING(condp->deleteTree(), condp);
+            return;
+        }
         FileLine* const fl = nodep->fileline();
         VL_DANGLING(nodep);  // Zap it so we don't use it by mistake - use prep
 
@@ -113,7 +130,7 @@ class UnknownVisitor final : public VNVisitor {
         } else {
             AstVar* const varp
                 = new AstVar{fl, VVarType::MODULETEMP, m_lvboundNames.get(prep), prep->dtypep()};
-            m_modp->addStmtsp(varp);
+            addVar(varp);
             AstNode* stmtp = prep->backp();  // Grab above point before we replace 'prep'
             while (!VN_IS(stmtp, NodeStmt)) stmtp = stmtp->backp();
 
@@ -137,13 +154,7 @@ class UnknownVisitor final : public VNVisitor {
     AstVar* createAddTemp(const AstNodeExpr* const nodep) {
         AstVar* const varp = new AstVar{nodep->fileline(), VVarType::XTEMP,
                                         m_xrandNames->get(nodep), nodep->dtypep()};
-        if (m_ftaskp) {
-            varp->funcLocal(true);
-            varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            m_ftaskp->stmtsp()->addHereThisAsNext(varp);
-        } else {
-            m_modp->stmtsp()->addHereThisAsNext(varp);
-        }
+        addVar(varp);
         return varp;
     }
 
@@ -547,10 +558,11 @@ class UnknownVisitor final : public VNVisitor {
             } else if (!lvalue) {  // Mid-multidimension read, just use zero
                 // ARRAYSEL(...) -> ARRAYSEL(COND(LT(bit<maxbit), bit, 0))
                 VNRelinker replaceHandle;
-                AstNodeExpr* const bitp = nodep->bitp()->unlinkFrBack(&replaceHandle);
-                AstNodeExpr* const newp = new AstCond{
-                    bitp->fileline(), condp, bitp,
-                    new AstConst{bitp->fileline(), AstConst::WidthedValue{}, bitp->width(), 0}};
+                AstNodeExpr* const asBitp = nodep->bitp()->unlinkFrBack(&replaceHandle);
+                AstNodeExpr* const newp
+                    = new AstCond{asBitp->fileline(), condp, asBitp,
+                                  new AstConst{asBitp->fileline(), AstConst::WidthedValue{},
+                                               asBitp->width(), 0}};
                 // Added X's, tristate them too
                 UINFOTREE(9, newp, "", "_new");
                 replaceHandle.relink(newp);

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -27,7 +27,7 @@
 #include <vector>
 
 class ColorStronglyConnectedComponents final {
-    static_assert(sizeof(uint32_t[2]) == sizeof(uint64_t), "Incorrect ovverlay size");
+    static_assert(sizeof(uint32_t[2]) == sizeof(uint64_t), "Incorrect overlay size");
 
     // CONSTANTS
     static constexpr uint32_t UNASSIGNED = std::numeric_limits<uint32_t>::max();

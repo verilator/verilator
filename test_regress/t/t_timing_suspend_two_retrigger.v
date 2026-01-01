@@ -13,7 +13,7 @@ module top;
     #10;
     ->b;
     $display("Sleeping at %0t", $time);
-    @(a or b); // This must wake at due to 'a' from the other block
+    @(a or b);  // This must wake at due to 'a' from the other block
     $display("Waking   at %0t", $time);
     if ($time != 20) $stop;
 
@@ -21,7 +21,7 @@ module top;
     ->a;
     ->b;
     $display("Sleeping at %0t", $time);
-    @(a or b); // This must wake at due to 'a' from the other block
+    @(a or b);  // This must wake at due to 'a' from the other block
     $display("Waking   at %0t", $time);
     if ($time != 40) $stop;
 

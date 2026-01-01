@@ -38,14 +38,14 @@ jobs:
           sudo apt install ccache mold help2man libfl-dev libgoogle-perftools-dev libsystemc-dev
 
       - name: Use saved ccache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ccache
           key: rtlmeter-build-ccache-${{ inputs.runs-on }}-${{ inputs.cc }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: rtlmeter-build-ccache-${{ inputs.runs-on }}-${{ inputs.cc }}
 
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           path: repo
           fetch-depth: 0 # Required for 'git describe' used for 'verilator --version'
@@ -68,7 +68,7 @@ jobs:
         run: tar --posix -c -z -f verilator-rtlmeter.tar.gz install
 
       - name: Upload Verilator installation archive
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           path: verilator-rtlmeter.tar.gz
           name: verilator-rtlmeter-${{ inputs.runs-on }}-${{ inputs.cc }}

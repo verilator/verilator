@@ -383,7 +383,13 @@ class Forker:
 
 class Runner:
 
-    def __init__(self, driver_log_filename, quiet, ok_cnt=0, fail1_cnt=0, skip_cnt=0):
+    def __init__(self,
+                 driver_log_filename,
+                 quiet,
+                 ok_cnt=0,
+                 pass_tests=None,
+                 fail1_cnt=0,
+                 skip_cnt=0):
         self.driver_log_filename = driver_log_filename
         self.quiet = quiet
         # Counts
@@ -396,6 +402,10 @@ class Runner:
         self.skip_msgs = []
         self.fail_msgs = []
         self.fail_tests = []
+        if pass_tests:
+            self.pass_tests = pass_tests
+        else:
+            self.pass_tests = []
         self._last_proc_finish_time = 0
         self._last_summary_time = 0
         self._last_summary_left = 0
@@ -448,6 +458,7 @@ class Runner:
         test = VlTest(py_filename=process.name,
                       scenario=process.scenario,
                       running_id=process.running_id)
+
         test.oprint("=" * 50)
         test._prep()
         if process.rerun_skipping:
@@ -475,8 +486,10 @@ class Runner:
                       running_id=process.running_id)
         test._quit = Quitting
         test._read_status()
+
         if test.ok:
             self.ok_cnt += 1
+            self.pass_tests.append(test)
             if Args.driver_clean:
                 test.clean()
         elif test._quit:
@@ -525,17 +538,22 @@ class Runner:
     def report(self, filename: str) -> None:
         if filename:
             with open(filename, "w", encoding="utf8") as fh:
-                self._report_fh(fh)
+                # Time report is only in logfile to reduce user confusion
+                self._report_fh(fh, True)
         else:
-            self._report_fh(sys.stdout)
+            self._report_fh(sys.stdout, False)
 
-    def _report_fh(self, fh) -> None:
+    def _report_fh(self, fh, show_times: bool) -> None:
         fh.write("\n")
         fh.write('=' * 70 + "\n")
         for f in sorted(self.fail_msgs):
             fh.write(f.strip() + "\n")
         for f in sorted(self.skip_msgs):
             fh.write(f.strip() + "\n")
+
+        if show_times:
+            self._report_times(fh)
+
         if self.fail_cnt:
             sumtxt = 'FAILED'
         elif self.skip_cnt:
@@ -543,6 +561,30 @@ class Runner:
         else:
             sumtxt = 'PASSED'
         fh.write("==TESTS DONE, " + sumtxt + ": " + self.sprint_summary() + "\n")
+
+    def _report_times(self, fh) -> None:
+        if forker.is_any_left():
+            return
+        if len(self.pass_tests) < 10:
+            return
+        # PY file may be used for both vlt and vltmt, so take max
+        py_times = {}
+        for ftest in self.pass_tests:
+            if (ftest.py_filename not in py_times) or (py_times[ftest.py_filename]._wall_time
+                                                       < ftest._wall_time):
+                py_times[ftest.py_filename] = ftest
+        n = 0
+        top_n = 6
+        for py_filename in sorted(py_times, key=lambda key: py_times[key]._wall_time,
+                                  reverse=True):
+            if n > top_n:
+                break
+            n += 1
+            ftest = py_times[py_filename]
+            if ftest._priority == 1:
+                fh.write(py_filename +
+                         ": walltime=%0.3f is in top %d, add a test.priority() for it?\n" %
+                         (ftest._wall_time, top_n))
 
     def print_summary(self, force=False):
         change = self._last_summary_left != self.left_cnt
@@ -648,15 +690,18 @@ class VlTest:
         self._have_solver_called = False
         self._inputs = {}
         self._ok = False
+        self._priority = 1
         self._quit = False
+        self._scenario_parsed = False
         self._scenario_off = False  # scenarios() didn't match running scenario
         self._skips = None
+        self._start_time = time.time()
+        self._wall_time = 0
 
         match = re.match(r'^(.*/)?([^/]*)\.py', self.py_filename)
         self.name = match.group(2)  # Name of this test
 
         self.benchmark = Args.benchmark
-        self.benchmarksim = False
         self.clean_command = None
         self.context_threads = 0  # Number of threads to allocate in the context
         self.errors = None
@@ -666,6 +711,7 @@ class VlTest:
         self.make_pli = 0  # need to compile pli
         self.make_top_shell = 1  # Make a default __top.v file
         self.rerunnable = True  # Rerun if fails
+        self.sc_time_resolution_multiplier = 1  # Time resolution multiplier
         self.sc_time_resolution = "SC_PS"  # Keep - PS is SystemC default
         self.sim_time = 1100  # simulation time units for main wrapper
         self.threads = -1  # --threads (negative means auto based on scenario)
@@ -807,12 +853,12 @@ class VlTest:
         self.xrun_flags = []  # Doesn't really have a compile step
         self.xrun_flags2 = []  # Overridden in some sim files
         self.xrun_run_flags = [
-            "-64", "-access", "+rwc", "-newsv", "-sv", "-xmlibdirname", self.obj_dir + "/work",
-            "-l", self.obj_dir + "/history", "-quiet", "-plinowarn"
+            "+define+XRUN", "-64", "-access", "+rwc", "-newsv", "-sv", "-xmlibdirname",
+            self.obj_dir + "/work", "-l", self.obj_dir + "/history", "-quiet", "-plinowarn"
         ]
         # Verilator
         self.verilator_define = 'VERILATOR'
-        self.verilator_flags = [
+        self.verilator_flags = [  # See also override (search for -lint-only)
             "-cc",
             "-Mdir",
             self.obj_dir,
@@ -843,16 +889,6 @@ class VlTest:
 
     def _define_opt_calc(self) -> str:
         return "--define " if self.xsim else "+define+"
-
-    def init_benchmarksim(self) -> None:
-        # Simulations with benchmarksim enabled append to the same file between runs.
-        # Test files must ensure a clean benchmark data file before executing tests.
-        filename = self.benchmarksim_filename
-        with open(filename, 'w', encoding="utf8") as fh:
-            fh.write("# Verilator simulation benchmark data\n")
-            fh.write("# Test name: " + self.name + "\n")
-            fh.write("# Top file: " + self.top_filename + "\n")
-            fh.write("evals, time[s]\n")
 
     def soprint(self, message: str) -> str:
         message = message.rstrip() + "\n"
@@ -904,11 +940,23 @@ class VlTest:
             self._skips = message
             raise VtSkipException
 
+    def priority(self, level: int) -> None:
+        """Called from tests as: priority(<constant_number>) to
+        specify what priority order the test should run at.
+        Higher numbers run first; in numeric tiers very roughly
+        corresponding to the wall time runtimes in seconds.
+        One is default. Tests with same priories run in name-sorted order.
+        priority() must be on one line; line is parsed outside Python."""
+        self._priority = level
+        if self._scenario_parsed:
+            self.error("priority() must be called before scenarios()")
+
     def scenarios(self, *scenario_list) -> None:
         """Called from tests as: scenarios(<list_of_scenarios>) to
         specify which scenarios this test runs under.  Where ... is
         one cases listed in  All_Scenarios.
-        All scenarios must be on one line; this is parsed outside Python."""
+        All scenarios must be on one line; line is parsed outside Python."""
+        self._scenario_parsed = True
         enabled_scenarios = {}
         for param in scenario_list:
             hit = False
@@ -926,19 +974,24 @@ class VlTest:
             # self._exit() implied by skip's exception
 
     @staticmethod
-    def _prefilter_scenario(py_filename: str, scenario: str) -> bool:
+    def _prefilter_scenario(py_filename: str) -> dict:
         """Read a python file to see if scenarios require it to be run.
-        Much faster than parsing the file for a runtime check."""
+        Much faster than parsing the file for a runtime check.
+        Return dict information on scenarios and priority."""
         (py_filename, _) = Runner._py_filename_adjust(py_filename, ".")
+        result = {'priority': 1}  # Also all secenarios enabled
         with open(py_filename, 'r', encoding="utf-8") as fh:
             for line in fh:
+                # Required that test.priority be earlier in file,
+                # the priority() function checks for this
+                m = re.search(r'^\s*test.priority\((.*?)\)', line)
+                if m:
+                    result['priority'] = int(m.group(1))
                 m = re.search(r'^\s*test.scenarios\((.*?)\)', line)
                 if m:
                     for param in re.findall(r"""["']([^,]*)["']""", m.group(1)):
-                        for allscarg in All_Scenarios[scenario]:
-                            if param == allscarg:
-                                return True
-        return False
+                        result[param] = True
+        return result
 
     def _prep(self) -> None:
         VtOs.mkdir_ok(self.obj_dir)  # Ok if already exists
@@ -977,10 +1030,13 @@ class VlTest:
 
     def _write_status(self) -> None:
         with open(self._status_filename, "wb") as fh:
+            # Vtest/self values to propagate up to driver's Vtest object
             pass_to_driver = {
                 '_ok': self._ok,
+                '_priority': self._priority,
                 '_scenario_off': self._scenario_off,
                 '_skips': self._skips,
+                '_wall_time': time.time() - self._start_time,
                 'errors': self.errors,
             }
             pickle.dump(pass_to_driver, fh)
@@ -1071,9 +1127,6 @@ class VlTest:
         else:
             self.trace_format = 'vcd-c'  # pylint: disable=attribute-defined-outside-init
 
-        if param.get('benchmarksim', None):
-            self.benchmarksim = True  # pylint: disable=attribute-defined-outside-init
-
         verilator_flags = [*param.get('verilator_flags', "")]
         if Args.gdb:
             verilator_flags += ["--gdb"]
@@ -1116,10 +1169,15 @@ class VlTest:
         """Run a linter. Arguments similar to run(); default arguments are from self"""
         param = {}
         param.update(vars(self))
-        param.update({  # Lint-specific default overrides
+        param.update({  # Lint-specific default overrides (search also for -cc)
             'make_main': False,
             'make_top_shell': False,
-            'verilator_flags2': ["--lint-only"],
+            'verilator_flags': [
+                "--lint-only",
+                "-Mdir",
+                self.obj_dir,
+                "--debug-check",
+            ],
             'verilator_make_gmake': False
         })
         param.update(kwargs)
@@ -1390,6 +1448,7 @@ class VlTest:
                 self.oprint("Compile vpi")
             cmd = [
                 os.environ['CXX'], *param['pli_flags'], "-D" + tool_define, "-DIS_VPI",
+                ("-ggdb" if Args.gdbsim else ""),
                 VtOs.getenv_def('CFLAGS', ''), self.pli_filename
             ]
             self.run(logfile=self.obj_dir + "/pli_compile.log", fails=param['fails'], cmd=cmd)
@@ -1475,13 +1534,23 @@ class VlTest:
                      logfile=param.get('logfile', self.obj_dir + "/ghdl_sim.log"),
                      tee=param['tee'])
         elif param['iv']:
+            debugger = ""
+            debugger_exec_cmd_start = ""
+            debugger_exec_cmd_end = ""
+            if Args.gdbsim:
+                debugger = VtOs.getenv_def('VERILATOR_GDB', "gdb") + " "
+                debugger_exec_cmd_start = " -ex 'run "
+                debugger_exec_cmd_end = "'"
             cmd = [
-                run_env + self.obj_dir + "/simiv", ' '.join(param['iv_run_flags']),
-                ' '.join(param['all_run_flags'])
+                run_env + debugger + 'vvp', debugger_exec_cmd_start,
+                ' '.join(param['iv_run_flags']), ' '.join(param['all_run_flags'])
             ]
             if param['use_libvpi']:
-                # Don't enter command line on $stop, include vpi
-                cmd += ["vvp -n -m " + self.obj_dir + "/libvpi.so"]
+                # Don't enter command line on $stop
+                cmd += ["-n"]
+                # include vpi
+                cmd += ["-m", self.obj_dir + "/libvpi.so"]
+            cmd += [self.obj_dir + "/simiv", debugger_exec_cmd_end]
             self.run(cmd=cmd,
                      check_finished=param['check_finished'],
                      entering=param['entering'],
@@ -1538,6 +1607,7 @@ class VlTest:
                 "echo q | " + run_env + VtOs.getenv_def('VERILATOR_XRUN', "xrun"),
                 ' '.join(param['xrun_run_flags']),
                 ' '.join(param['xrun_flags2']),
+                ' '.join(param['v_flags']),
                 ' '.join(param['all_run_flags']),
                 pli_opt,
                 param['top_filename'],
@@ -1602,10 +1672,6 @@ class VlTest:
             else:
                 VlTest._cached_aslr_off = ""
         return VlTest._cached_aslr_off
-
-    @property
-    def benchmarksim_filename(self) -> str:
-        return self.obj_dir + "/" + self.name + "_benchmarksim.csv"
 
     @property
     def driver_verilator_flags(self) -> list:
@@ -1882,7 +1948,7 @@ class VlTest:
         return True
 
     def _run_output(self, data, logfh, tee):
-        if re.search(r'--debug-exit-uvm23: Exiting', str(data)):
+        if re.search(r'--debug-exit-.*: Exiting', str(data)):
             self._force_pass = True
             print("EXIT: " + str(data))
         if tee:
@@ -1954,10 +2020,6 @@ class VlTest:
                      str(int(round(self.main_time_multiplier, 0))) + "\n")
 
             fh.write("#include <memory>\n")
-            if self.benchmarksim:
-                fh.write("#include <fstream>\n")
-                fh.write("#include <chrono>\n")
-                fh.write("#include <iomanip>\n")
 
             fh.write("// OS header\n")
             fh.write('#include "verilatedos.h"' + "\n")
@@ -2018,7 +2080,8 @@ class VlTest:
                         fh.write("    sc_signal<sc_dt::sc_uint<1>> clk;\n")
                     else:
                         fh.write("    sc_signal<bool> clk;\n")
-                fh.write("    sc_set_time_resolution(1, " + self.sc_time_resolution + ");\n")
+                fh.write("    sc_set_time_resolution(" + str(self.sc_time_resolution_multiplier) +
+                         ", " + self.sc_time_resolution + ");\n")
                 fh.write("    sc_time sim_time(" + str(self.sim_time) + ", " +
                          self.sc_time_resolution + ");\n")
             else:
@@ -2027,6 +2090,13 @@ class VlTest:
 
             fh.write(
                 "    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};\n")
+
+            if self.trace:
+                fh.write("\n")
+                fh.write("#if VM_TRACE\n")
+                fh.write("    contextp->traceEverOn(true);\n")
+                fh.write("#endif\n")
+
             fh.write("    contextp->threads(" + str(self.context_threads) + ");\n")
             fh.write("    contextp->commandArgs(argc, argv);\n")
             fh.write("    contextp->debug(" + ('1' if self.verilated_debug else '0') + ");\n")
@@ -2047,15 +2117,9 @@ class VlTest:
                 fh.write("    topp->eval();\n")
                 setp = "topp->"
 
-            if self.benchmarksim:
-                fh.write("    std::chrono::time_point<std::chrono::steady_clock> starttime;\n")
-                fh.write("    bool warm = false;\n")
-                fh.write("    uint64_t n_evals = 0;\n")
-
             if self.trace:
                 fh.write("\n")
                 fh.write("#if VM_TRACE\n")
-                fh.write("    contextp->traceEverOn(true);\n")
                 if self.trace_format == 'fst-c':
                     fh.write("    std::unique_ptr<VerilatedFstC> tfp{new VerilatedFstC};\n")
                 if self.trace_format == 'fst-sc':
@@ -2099,7 +2163,8 @@ class VlTest:
             if 'clk' in self._inputs:
                 fh.write("        " + setp + "clk = false;\n")
             if not timing_loop:
-                self._print_advance_time(fh, 10, None)
+                start_time = 10
+                self._print_advance_time(fh, start_time * self.sc_time_resolution_multiplier, None)
             fh.write("    }\n")
 
             timestamp = "sc_time_stamp()" if self.sc else "contextp->time()"
@@ -2156,27 +2221,9 @@ class VlTest:
                         fh.write("            topp.reset(nullptr);\n")
                         fh.write("            return 0;\n")
                         fh.write("        }\n")
-                    self._print_advance_time(fh, 1, action)
-            if self.benchmarksim:
-                fh.write("        if (VL_UNLIKELY(!warm)) {\n")
-                fh.write("            starttime = std::chrono::steady_clock::now();\n")
-                fh.write("            warm = true;\n")
-                fh.write("        } else {\n")
-                fh.write("            ++n_evals;\n")
-                fh.write("        }\n")
+                    self._print_advance_time(fh, self.sc_time_resolution_multiplier, action)
 
             fh.write("    }\n")
-
-            if self.benchmarksim:
-                fh.write("    {\n")
-                fh.write("        const std::chrono::duration<double> exec_s"
-                         " = std::chrono::steady_clock::now() - starttime;\n")
-                fh.write("        std::ofstream benchfile(\"" + self.benchmarksim_filename +
-                         "\", std::ofstream::out | std::ofstream::app);\n")
-                fh.write("        benchfile << std::fixed << std::setprecision(9)"
-                         " << n_evals << \",\" << exec_s.count() << std::endl;\n")
-                fh.write("        benchfile.close();\n")
-                fh.write("    }\n")
 
             fh.write("    if (!contextp->gotFinish()) {\n")
             fh.write('        vl_fatal(__FILE__, __LINE__, "main",' +
@@ -2808,10 +2855,19 @@ def run_them() -> None:
     timestart = time.strftime("%Y%m%d_%H%M%S")
 
     runner = Runner(driver_log_filename="obj_dist/driver_" + timestart + ".log", quiet=Args.quiet)
+
+    test_data = {}
     for test_py in Arg_Tests:
+        test_data[test_py] = VlTest._prefilter_scenario(test_py)
+    for test_py in sorted(Arg_Tests, key=lambda key: test_data[key]['priority'], reverse=True):
         for scenario in sorted(set(Args.scenarios)):
-            if VlTest._prefilter_scenario(test_py, scenario):
+            run_it = False
+            for allscarg in All_Scenarios[scenario]:
+                if allscarg in test_data[test_py]:
+                    run_it = True
+            if run_it:
                 runner.one_test(py_filename=test_py, scenario=scenario)
+
     runner.wait_and_report()
 
     if Args.rerun and runner.fail_cnt and not Quitting:
@@ -2827,6 +2883,7 @@ def run_them() -> None:
         orig_runner = runner
         runner = Runner(driver_log_filename="obj_dist/driver_" + timestart + "_rerun.log",
                         quiet=False,
+                        pass_tests=orig_runner.pass_tests,
                         fail1_cnt=orig_runner.fail_cnt,
                         ok_cnt=orig_runner.ok_cnt,
                         skip_cnt=orig_runner.skip_cnt)
@@ -2850,6 +2907,10 @@ def run_them() -> None:
 
 if __name__ == '__main__':
     os.environ['PYTHONUNBUFFERED'] = "1"
+
+    # GDB is broken on macOS
+    if platform.system() == "Darwin":
+        os.environ['VERILATOR_TEST_NO_GDB'] = "1"
 
     if ('VERILATOR_ROOT' not in os.environ) and os.path.isfile('../bin/verilator'):
         os.environ['VERILATOR_ROOT'] = os.getcwd() + "/.."
@@ -2884,7 +2945,7 @@ if __name__ == '__main__':
         epilog="""driver.py invokes Verilator or another simulator on each test file.
     See docs/internals.rst in the distribution for more information.
 
-    Copyright 2024-2025 by Wilson Snyder. This program is free software; you
+    Copyright 2024-2026 by Wilson Snyder. This program is free software; you
     can redistribute it and/or modify it under the terms of either the GNU
     Lesser General Public License Version 3 or the Perl Artistic License
     Version 2.0.

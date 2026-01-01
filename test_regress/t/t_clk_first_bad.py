@@ -12,6 +12,6 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t/t_clk_first_deprecated.v"
 
-test.lint(verilator_flags2=["--lint-only"], fails=True, expect_filename=test.golden_filename)
+test.lint(fails=True, expect_filename=test.golden_filename)
 
 test.passes()

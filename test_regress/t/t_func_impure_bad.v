@@ -13,8 +13,18 @@ module t;
       sig = '1;
    endtask
 
+   task bar;
+      sig = '1;
+   endtask
+
+   task baz;
+     // verilator no_inline_task
+     bar();
+   endtask
+
    initial begin
       foo();
+      baz();
    end
 
 endmodule

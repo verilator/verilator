@@ -11,6 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-test.lint(verilator_flags2=["--lint-only -Wno-SELRANGE"])
+test.lint(verilator_flags2=["-Wno-SELRANGE"])
 
 test.passes()

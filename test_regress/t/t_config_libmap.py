@@ -9,10 +9,17 @@
 
 import vltest_bootstrap
 
-test.scenarios('linter')
+test.scenarios('simulator')
 
-test.lint(verilator_flags2=["--lint-only", "t/" + test.name + ".map"],
-          fails=test.vlt_all,
-          expect_filename=test.golden_filename)
+test.compile(verilator_flags2=[
+    "-libmap t/t_config_libmap/lib.map", "t/t_config_libmap/m1.v", "t/t_config_libmap/m2.sv",
+    "t/t_config_libmap/m3.vg", "t/t_config_libmap/m5.v", "t/t_config_libmap/x4.v",
+    "t/t_config_libmap/sub/other.sv", "--top-module cfg"
+])
+
+test.execute()
+
+# Sort so that 'initial' scheduling order is not relevant
+test.files_identical_sorted(test.run_log_filename, test.golden_filename, is_logfile=True)
 
 test.passes()

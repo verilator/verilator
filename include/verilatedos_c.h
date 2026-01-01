@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -40,6 +40,13 @@
 #endif
 #if defined(__APPLE__) && !defined(__arm64__) && !defined(__POWERPC__)
 # include <cpuid.h>  // For __cpuid_count()
+#endif
+#if defined(__FreeBSD__)
+# include <pthread_np.h>  // For pthread_getaffinity_np()
+#endif
+
+#if defined(__APPLE__) && defined(__MACH__)
+# include <mach/mach.h>  // For task_info()
 #endif
 // clang-format on
 
@@ -129,6 +136,7 @@ unsigned getProcessAvailableParallelism() VL_MT_SAFE {
 
 unsigned getProcessDefaultParallelism() VL_MT_SAFE {
     const unsigned n = getProcessAvailableParallelism();
+    // cppcheck-suppress knownConditionTrueFalse
     return n ? n : std::thread::hardware_concurrency();
 }
 
@@ -145,6 +153,15 @@ void memUsageBytes(uint64_t& peakr, uint64_t& currentr) VL_MT_SAFE {
         // The best we can do using simple Windows APIs is to get the size of the working set.
         peakr = pmc.PeakWorkingSetSize;
         currentr = pmc.WorkingSetSize;
+    }
+#elif defined(__APPLE__) && defined(__MACH__)
+    mach_task_basic_info_data_t info;
+    mach_msg_type_number_t count = MACH_TASK_BASIC_INFO_COUNT;
+    const kern_return_t ret
+        = task_info(mach_task_self(), MACH_TASK_BASIC_INFO, (task_info_t)&info, &count);
+    if (ret == KERN_SUCCESS && count == MACH_TASK_BASIC_INFO_COUNT) {
+        peakr = info.resident_size_max;
+        currentr = info.resident_size;
     }
 #else
     // Highly unportable. Sorry

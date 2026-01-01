@@ -44,10 +44,6 @@
 #include <cstring>
 #include <iostream>
 
-extern "C" {
-#include <libgen.h>
-}
-
 // These require the above. Comment prevents clang-format moving them
 #include "TestCheck.h"
 #include "TestSimulator.h"
@@ -411,6 +407,41 @@ int _mon_check_var() {
         CHECK_RESULT_CSTR(p, "vpiParameter");
     }
 
+    // test properties on bad handle
+    {
+        TestVpiHandle vh999 = VPI_HANDLE("nonexistent");
+        CHECK_RESULT_Z(vh999);
+        d = vpi_get(vpiType, vh999);
+        CHECK_RESULT(d, vpiUndefined);
+        d = vpi_get(vpiSigned, vh999);
+        CHECK_RESULT(d, vpiUndefined);
+        d = vpi_get(vpiSize, vh999);
+        CHECK_RESULT(d, vpiUndefined);
+    }
+
+    // other integer types
+    tmpValue.format = vpiIntVal;
+    constexpr struct {
+        const char* name;
+        PLI_INT32 exp_sz;
+    } int_vars[] = {
+        {"integer1", 32}, {"byte1", 8}, {"short1", 16}, {"int1", 32}, {"long1", 64},
+    };
+    for (const auto& s : int_vars) {
+        TestVpiHandle vh101 = VPI_HANDLE(s.name);
+        CHECK_RESULT_NZ(vh101);
+        d = vpi_get(vpiType, vh101);
+        CHECK_RESULT(d, vpiReg);
+        auto sz = vpi_get(vpiSize, vh101);
+        CHECK_RESULT(sz, s.exp_sz);
+        auto sn = vpi_get(vpiSigned, vh101);
+        CHECK_RESULT(sn, 1);
+        vpi_get_value(vh101, &tmpValue);
+        TEST_CHECK_EQ(tmpValue.value.integer, 123);
+        p = vpi_get_str(vpiType, vh101);
+        CHECK_RESULT_CSTR(p, "vpiReg");
+    }
+
     // non-integer variables
     tmpValue.format = vpiRealVal;
     {
@@ -418,6 +449,8 @@ int _mon_check_var() {
         CHECK_RESULT_NZ(vh101);
         d = vpi_get(vpiType, vh101);
         CHECK_RESULT(d, vpiRealVar);
+        auto sn = vpi_get(vpiSigned, vh101);
+        CHECK_RESULT(sn, 1);
         vpi_get_value(vh101, &tmpValue);
         TEST_CHECK_REAL_EQ(tmpValue.value.real, 1.0, 0.0005);
         p = vpi_get_str(vpiType, vh101);
@@ -431,6 +464,8 @@ int _mon_check_var() {
         CHECK_RESULT_NZ(vh101);
         d = vpi_get(vpiType, vh101);
         CHECK_RESULT(d, vpiStringVar);
+        auto sn = vpi_get(vpiSigned, vh101);
+        CHECK_RESULT(sn, 0);
         vpi_get_value(vh101, &tmpValue);
         CHECK_RESULT_CSTR(tmpValue.value.str, "hello");
         p = vpi_get_str(vpiType, vh101);

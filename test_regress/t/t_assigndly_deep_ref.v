@@ -38,8 +38,8 @@ class Bar;
 endclass
 
 module t;
-  Iface iface();
-  Iface iface2();
+  Iface iface ();
+  Iface iface2 ();
 
   task clockSome();
     #2;

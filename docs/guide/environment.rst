@@ -1,4 +1,4 @@
-.. Copyright 2003-2025 by Wilson Snyder.
+.. Copyright 2003-2026 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 Environment
@@ -10,14 +10,14 @@ associated programs.
 .. option:: LD_LIBRARY_PATH
 
    A generic Linux/OS variable specifying what directories have shared
-   object (.so) files.  This path should include SystemC and other
-   shared objects needed at simulation runtime.
+   object (.so) files. This path should include SystemC and other shared
+   objects needed at simulation runtime.
 
 .. option:: MAKE
 
    Names the executable of the make command invoked when using the
-   :vlopt:`--build` option.  Some operating systems may require "gmake" to
-   this variable to launch GNU make.  If this variable is not specified,
+   :vlopt:`--build` option. Some operating systems may require "gmake" to
+   this variable to launch GNU make. If this variable is not specified,
    "make" is used.
 
 .. option:: MAKEFLAGS
@@ -29,33 +29,33 @@ associated programs.
 .. option:: OBJCACHE
 
    Optionally specifies a caching or distribution program to place in front
-   of all runs of the C++ compiler.  For example, "ccache" or "sccache".  If using
-   :command:`distcc` or :command:`icecc`/:command:`icecream`, they would
-   generally be run under :command:`ccache`; see the documentation for
-   those programs.  If OBJCACHE is not set, and at configure time ccache
+   of all runs of the C++ compiler. For example, "ccache" or "sccache". If
+   using :command:`distcc` or :command:`icecc`/:command:`icecream`, they
+   would generally be run under :command:`ccache`; see the documentation
+   for those programs. If OBJCACHE is not set, and at configure time ccache
    was present, ccache will be used as a default.
 
 .. option:: SYSTEMC
 
-   Deprecated.  Used only if :option:`SYSTEMC_INCLUDE` or
-   :option:`SYSTEMC_LIBDIR` is not set.  If set, specifies the directory
-   containing the SystemC distribution.  If not specified, it will come
-   from a default optionally specified at configure time (before Verilator
-   was compiled).
+   Deprecated. Used only if :option:`SYSTEMC_INCLUDE` or
+   :option:`SYSTEMC_LIBDIR` is not set. If set, specifies the directory
+   containing the SystemC distribution. If not specified, it will come from
+   a default optionally specified at configure time (before Verilator was
+   compiled).
 
 .. option:: SYSTEMC_ARCH
 
-   Deprecated.  Used only if :option:`SYSTEMC_LIBDIR` is not set.
-   Specifies the architecture name used by the SystemC kit.  This is the
-   part after the dash in the "lib-{...}" directory name created by a
-   :command:`make` in the SystemC distribution.  If not set, Verilator will
-   try to intuit the proper setting, or use the default optionally
-   specified at configure time (before Verilator was compiled).
+   Deprecated. Used only if :option:`SYSTEMC_LIBDIR` is not set. Specifies
+   the architecture name used by the SystemC kit. This is the part after
+   the dash in the "lib-{...}" directory name created by a :command:`make`
+   in the SystemC distribution. If not set, Verilator will try to intuit
+   the proper setting, or use the default optionally specified at configure
+   time (before Verilator was compiled).
 
 .. option:: SYSTEMC_CXX_FLAGS
 
    Specifies additional flags that are required to be passed to GCC when
-   building the SystemC model.  System 2.3.0 may need this set to
+   building the SystemC model. System 2.3.0 may need this set to
    "-pthread".
 
 .. option:: SYSTEMC_INCLUDE
@@ -67,27 +67,27 @@ associated programs.
 
 .. option:: SYSTEMC_LIBDIR
 
-   If set, specifies the directory containing the libsystemc.a library.  If
+   If set, specifies the directory containing the libsystemc.a library. If
    not specified, it will come from a default optionally specified at
    configure time (before Verilator was compiled), or computed from
    SYSTEMC/lib-SYSTEMC_ARCH.
 
 .. option:: VERILATOR_BIN
 
-   If set, specifies an alternative name of the ``verilator`` binary.  May
+   If set, specifies an alternative name of the ``verilator`` binary. May
    be used for debugging and selecting between multiple operating system
    builds.
 
 .. option:: VERILATOR_COVERAGE_BIN
 
    If set, specifies an alternative name of the ``verilator_coverage``
-   binary.  May be used for debugging and selecting between multiple
+   binary. May be used for debugging and selecting between multiple
    operating system builds.
 
 .. option:: VERILATOR_GDB
 
    If set, the command to run when using the :vlopt:`--gdb` option, such as
-   "ddd".  If not specified, it will use "gdb".
+   "ddd". If not specified, it will use "gdb".
 
 .. option:: VERILATOR_ROOT
 
@@ -110,7 +110,7 @@ associated programs.
 
    If you are using a pre-compiled Verilator package, you should not need
    to set ``VERILATOR_ROOT`` - the value embedded in the binary should be
-   correct.  In fact this option *does not work* with Verilator packages
+   correct. In fact this option *does not work* with Verilator packages
    that have been installed with ``make install``. If a Verilator package
    has been installed using ``./configure --prefix=/some/path && make
    install`` and then moved to another location, you cannot use
@@ -121,13 +121,15 @@ associated programs.
 .. option:: VERILATOR_SOLVER
 
    If set, the command to run as a constrained randomization backend, such
-   as :command:`cvc4 --lang=smt2 --incremental`.  If not specified, it will use
-   the one supplied or found during configure, or :command:`z3 --in` if empty.
+   as :command:`cvc4 --lang=smt2 --incremental`. If not specified, it will
+   use the one supplied or found during configure, or :command:`z3 --in` if
+   empty.
 
 .. option:: VERILATOR_VALGRIND
 
-   If set, the command to run when using the :vlopt:`--valgrind` option, such as
-   "valgrind --tool=callgrind".  If not specified, it will use "valgrind".
+   If set, the command to run when using the :vlopt:`--valgrind` option,
+   such as "valgrind --tool=callgrind". If not specified, it will use
+   "valgrind".
 
 
 Make Variables
@@ -146,7 +148,7 @@ set by passing them to make e.g. ``make CXX=my-gcc ...``.
 
    Optionally overrides the default compiler binary used by the Verilated
    makefiles. If CXX is not set, the version found at configure time is
-   used.  Note the default flags passed to the compiler are determined at
+   used. Note the default flags passed to the compiler are determined at
    configuration time, so changing the CXX compiler version using this
    variable, as opposed to passing it at configuration time, may not give
    desired results.
@@ -155,7 +157,7 @@ set by passing them to make e.g. ``make CXX=my-gcc ...``.
 
    Optionally overrides the default linker binary used by the Verilated
    makefiles. If LINK is not set, the version found at configure time is
-   used.  Note the default flags passed to the linker are determined at
+   used. Note the default flags passed to the linker are determined at
    configuration time, so changing the LINK version using this variable, as
    opposed to passing it at configuration time, may not give desired
    results.

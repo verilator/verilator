@@ -9,8 +9,9 @@
 
 import vltest_bootstrap
 
+test.priority(30)
 test.scenarios('vlt_all')
-test.init_benchmarksim()
+
 test.cycles = (int(test.benchmark) if test.benchmark else 100000)
 test.sim_time = test.cycles * 10 + 1000
 
@@ -20,15 +21,13 @@ HIER_THREADS = 4
 
 config_file = test.t_dir + "/" + test.name + ".vlt"
 
-test.compile(
-    benchmarksim=1,
-    v_flags2=[
-        config_file, "+define+SIM_CYCLES=" + str(test.cycles), "--hierarchical", "--stats",
-        (f"-DWORKERS={HIER_BLOCK_THREADS}" if test.vltmt and HIER_BLOCK_THREADS > 1 else ""),
-        (f"--hierarchical-threads {HIER_THREADS}" if test.vltmt and HIER_THREADS > 1 else "")
-    ],
-    threads=(THREADS if test.vltmt else 1),
-    context_threads=(max(HIER_THREADS, THREADS) if test.vltmt else 1))
+test.compile(v_flags2=[
+    config_file, "+define+SIM_CYCLES=" + str(test.cycles), "--hierarchical", "--stats",
+    (f"-DWORKERS={HIER_BLOCK_THREADS}" if test.vltmt and HIER_BLOCK_THREADS > 1 else ""),
+    (f"--hierarchical-threads {HIER_THREADS}" if test.vltmt and HIER_THREADS > 1 else "")
+],
+             threads=(THREADS if test.vltmt else 1),
+             context_threads=(max(HIER_THREADS, THREADS) if test.vltmt else 1))
 
 if test.vltmt:
     test.file_grep(test.obj_dir + "/V" + test.name + "__hier.dir/V" + test.name + "__stats.txt",

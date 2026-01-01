@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -37,6 +37,7 @@ public:
     VVarType m_varDecl = VVarType::UNKNOWN;  // Type for next signal declaration (reg/wire/etc)
     VDirection m_varIO = VDirection::NONE;  // Direction for next signal declaration (reg/wire/etc)
     VLifetime m_varLifetime;  // Static/Automatic for next signal
+    V3Control::VarSpecKind m_vltVarSpecKind = V3Control::VarSpecKind::VAR;
     bool m_impliedDecl = false;  // Allow implied wire declarations
     bool m_varDeclTyped = false;  // Var got reg/wire for dedup check
     bool m_pinAnsi = false;  // In ANSI parameter or port list
@@ -64,7 +65,7 @@ public:
 
     // METHODS
     AstArg* argWrapList(AstNodeExpr* nodep) VL_MT_DISABLED;
-    bool allTracingOn(FileLine* fl) {
+    bool allTracingOn(const FileLine* fl) const {
         return v3Global.opt.trace() && m_tracingParse && fl->tracingOn();
     }
     AstRange* scrubRange(AstNodeRange* rangep) VL_MT_DISABLED;
@@ -98,12 +99,38 @@ public:
         defaultVarp->lifetime(VLifetime::STATIC_EXPLICIT);
         nodep->addStmtsp(defaultVarp);
 
+        // IEEE: option
+        {
+            v3Global.setUsesStdPackage();
+            AstVar* const varp
+                = new AstVar{nodep->fileline(), VVarType::MEMBER, "option", VFlagChildDType{},
+                             new AstRefDType{nodep->fileline(), "vl_covergroup_options_t",
+                                             new AstClassOrPackageRef{nodep->fileline(), "std",
+                                                                      nullptr, nullptr},
+                                             nullptr}};
+            nodep->addMembersp(varp);
+        }
+
+        // IEEE: type_option
+        {
+            v3Global.setUsesStdPackage();
+            AstVar* const varp
+                = new AstVar{nodep->fileline(), VVarType::MEMBER, "type_option", VFlagChildDType{},
+                             new AstRefDType{nodep->fileline(), "vl_covergroup_type_options_t",
+                                             new AstClassOrPackageRef{nodep->fileline(), "std",
+                                                                      nullptr, nullptr},
+                                             nullptr}};
+            nodep->addMembersp(varp);
+        }
+
         // IEEE: function void sample()
-        AstFunc* const funcp = new AstFunc{nodep->fileline(), "sample", nullptr, nullptr};
-        funcp->addStmtsp(sampleArgs);
-        funcp->classMethod(true);
-        funcp->dtypep(funcp->findVoidDType());
-        nodep->addMembersp(funcp);
+        {
+            AstFunc* const funcp = new AstFunc{nodep->fileline(), "sample", nullptr, nullptr};
+            funcp->addStmtsp(sampleArgs);
+            funcp->classMethod(true);
+            funcp->dtypep(funcp->findVoidDType());
+            nodep->addMembersp(funcp);
+        }
 
         // IEEE: function void start(), void stop()
         for (const string& name : {"start"s, "stop"s}) {
@@ -200,10 +227,10 @@ public:
         V3ParseImp::parsep()->tagNodep(nodep);
         return nodep;
     }
-    void endLabel(FileLine* fl, AstNode* nodep, string* endnamep) {
+    void endLabel(FileLine* fl, const AstNode* nodep, const string* endnamep) {
         endLabel(fl, nodep->prettyName(), endnamep);
     }
-    void endLabel(FileLine* fl, const string& name, string* endnamep) {
+    void endLabel(FileLine* fl, const string& name, const string* endnamep) {
         if (fl && endnamep && *endnamep != "" && name != *endnamep
             && name != AstNode::prettyName(*endnamep)) {
             fl->v3warn(ENDLABEL, "End label '" << *endnamep << "' does not match begin label '"
@@ -336,5 +363,13 @@ public:
             resp = AstNode::addNext(resp, beginp);
         }
         return resp;
+    }
+
+    // Wrap fork statements in AstBegin, ensure fork...join_none have process
+    static AstNodeStmt* wrapFork(V3ParseImp* parsep, AstFork* forkp, AstNodeStmt* stmtsp) {
+        if (forkp->joinType() == VJoinType::JOIN_NONE && stmtsp)
+            parsep->importIfInStd(forkp->fileline(), "process", true);
+        forkp->addForksp(wrapInBegin(stmtsp));
+        return forkp;
     }
 };

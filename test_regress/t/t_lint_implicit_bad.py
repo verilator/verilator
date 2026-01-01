@@ -12,8 +12,6 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t/t_lint_implicit.v"
 
-test.lint(verilator_flags2=["--lint-only -Wwarn-IMPLICIT"],
-          fails=True,
-          expect_filename=test.golden_filename)
+test.lint(verilator_flags2=["-Wwarn-IMPLICIT"], fails=True, expect_filename=test.golden_filename)
 
 test.passes()

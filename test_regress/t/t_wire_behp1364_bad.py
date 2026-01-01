@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(verilator_flags2=["--lint-only --language 1364-2001"],
+test.lint(verilator_flags2=["--language 1364-2001"],
           fails=True,
           expect_filename=test.golden_filename)
 

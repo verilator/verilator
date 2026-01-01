@@ -18,7 +18,7 @@ threads = 2
 config_file = test.t_dir + "/" + test.name + ".vlt"
 flags = [config_file, "--hierarchical", "-Wno-UNOPTFLAT", "-DSIM_CYCLES=" + str(cycles)]
 
-test.compile(benchmarksim=1, v_flags2=["--prof-pgo"] + flags, threads=threads)
+test.compile(v_flags2=["--prof-pgo"] + flags, threads=threads)
 
 test.execute(all_run_flags=[
     "+verilator+prof+exec+start+0",
@@ -33,10 +33,9 @@ test.file_grep(test.obj_dir + "/profile.vlt", r'profile_data -model "V' + test.n
 # Check for cost rollovers
 test.file_grep_not(test.obj_dir + "/profile.vlt", r'.*cost 64\'d\d{18}.*')
 
-# Differentiate benchmarksim results
+# Differentiate results
 test.name = test.name + "_optimized"
 test.compile(
-    benchmarksim=1,
     # Intentionally no --prof-pgo here to make sure profile data can be read in
     # without it (that is: --prof-pgo has no effect on profile_data hash names)
     v_flags2=[test.obj_dir + "/profile.vlt"] + flags,

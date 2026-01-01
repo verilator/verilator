@@ -38,6 +38,10 @@ int main(int argc, char** argv) {
     // May be overridden by commandArgs argument parsing
     contextp->debug(0);
 
+    // Peak number of threads the model will use
+    // (e.g. match the --threads setting of the Verilation)
+    contextp->threads(1);
+
     // Randomization reset policy
     // May be overridden by commandArgs argument parsing
     contextp->randReset(2);

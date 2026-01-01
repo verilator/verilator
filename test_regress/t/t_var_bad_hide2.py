@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-test.lint(verilator_flags2=["--lint-only -Wwarn-VARHIDDEN"],
+test.lint(verilator_flags2=["-Wwarn-VARHIDDEN"],
           fails=test.vlt_all,
           expect_filename=test.golden_filename)
 

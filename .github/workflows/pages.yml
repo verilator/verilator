@@ -6,11 +6,8 @@ name: Pages
 
 on:
   push:
-    branches:
-      - master
-    paths:
-      - "ci/**"
-      - ".github/workflows"
+    branches: [master]
+    paths: ["ci/**", ".github/workflows"]
   workflow_dispatch:
   workflow_run:
     workflows: ["Code coverage"]
@@ -41,7 +38,7 @@ jobs:
       coverage-pr-run-ids: ${{ steps.build.outputs.coverage-pr-run-ids }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Build pages
         id: build
         env:
@@ -73,11 +70,11 @@ jobs:
     if: ${{ github.repository == 'verilator/verilator' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       # Use the Verilator CI app to post the comment
       - name: Generate access token
         id: generate-token
-        uses: actions/create-github-app-token@v2.1.4
+        uses: actions/create-github-app-token@v2.2.1
         with:
           app-id: ${{ vars.VERILATOR_CI_ID }}
           private-key: ${{ secrets.VERILATOR_CI_KEY }}

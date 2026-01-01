@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -316,7 +316,6 @@ class TransformForksVisitor final : public VNVisitor {
     // STATE
     bool m_inClass = false;  // Are we in a class?
     bool m_beginHasAwaits = false;  // Does the current begin have awaits?
-    bool m_awaitMoved = false;  // Has the current function lost awaits?
     AstFork* m_forkp = nullptr;  // Current fork
     AstCFunc* m_funcp = nullptr;  // Current function
 
@@ -373,14 +372,7 @@ class TransformForksVisitor final : public VNVisitor {
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_funcp);
         m_funcp = nodep;
-        m_awaitMoved = false;
         iterateChildren(nodep);
-        // cppcheck-suppress knownConditionTrueFalse
-        if (nodep->isCoroutine() && m_awaitMoved
-            && !nodep->stmtsp()->exists([](AstCAwait*) { return true; })) {
-            // co_return at the end (either that or a co_await is required in a coroutine
-            nodep->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;"});
-        }
     }
     void visit(AstVar* nodep) override {
         if (!m_forkp) nodep->user1(true);
@@ -458,12 +450,6 @@ class TransformForksVisitor final : public VNVisitor {
         if (nodep->needProcess()) {
             newfuncp->setNeedProcess();
             newfuncp->addStmtsp(new AstCStmt{flp, "vlProcess->state(VlProcess::FINISHED);"});
-        }
-        if (!m_beginHasAwaits) {
-            // co_return at the end (either that or a co_await is required in a coroutine
-            newfuncp->addStmtsp(new AstCStmt{flp, "co_return;"});
-        } else {
-            m_awaitMoved = true;
         }
         remapLocals(newfuncp, callp);
     }

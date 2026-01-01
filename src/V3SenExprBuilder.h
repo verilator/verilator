@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -58,6 +58,8 @@ private:
         if (VN_IS(dtypep, PackArrayDType)) return true;
         if (VN_IS(dtypep, UnpackArrayDType)) return isSupportedDType(dtypep->subDTypep());
         if (VN_IS(dtypep, NodeUOrStructDType)) return true;  // All are packed at the moment
+        // Per IEEE, detects reference object pointer changes, not contents of the class changes
+        if (VN_IS(dtypep, ClassRefDType)) return true;
         return false;
     }
 
@@ -125,14 +127,17 @@ private:
 
         // Add post update if it does not exist yet
         if (m_hasPostUpdate.emplace(*exprp).second) {
-            if (!isSupportedDType(exprp->dtypep())) {
-                exprp->v3warn(E_UNSUPPORTED,
-                              "Unsupported: Cannot detect changes on expression of complex type"
-                              " (see combinational cycles reported by UNOPTFLAT)");
+            AstNodeDType* const exprDtp = exprp->dtypep()->skipRefp();
+            if (!isSupportedDType(exprDtp)) {
+                exprp->v3warn(
+                    E_UNSUPPORTED,
+                    "Unsupported: Cannot detect changes on expression of complex type "
+                        << exprDtp->prettyDTypeNameQ() << "\n"
+                        << exprp->warnMore()
+                        << "... May be caused by combinational cycles reported with UNOPTFLAT");
                 return prevp;
             }
-
-            if (VN_IS(exprp->dtypep()->skipRefp(), UnpackArrayDType)) {
+            if (VN_IS(exprDtp, UnpackArrayDType)) {
                 AstCMethodHard* const cmhp
                     = new AstCMethodHard{flp, wrPrev(), VCMethod::UNPACKED_ASSIGN, rdCurr()};
                 cmhp->dtypeSetVoid();

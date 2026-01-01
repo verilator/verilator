@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -88,6 +88,7 @@ public:
     }
 
 private:  // for V3Broken only
+    // cppcheck-suppress unusedPrivateFunction
     bool isAllocated(const AstNode* nodep) const VL_REQUIRES(m_mutex) {
         return m_allocated.count(nodep) != 0;
     }
@@ -157,6 +158,10 @@ class BrokenCheckVisitor final : public VNVisitorConst {
     std::map<const AstVar*, const AstNodeVarRef*> m_suspectRefs;
     // Local variables declared in the scope of the current statement
     std::vector<std::unordered_set<const AstVar*>> m_localsStack;
+    // Number of write references encountered
+    size_t m_nWriteRefs = 0;
+    // Number of function calls encountered
+    size_t m_nCalls = 0;
 
     // STATE - for current visit position (use VL_RESTORER)
     const AstCFunc* m_cfuncp = nullptr;  // Current CFunc, if any
@@ -224,7 +229,17 @@ private:
     }
     // VISITORS
     void visit(AstNodeAssign* nodep) override {
-        processAndIterate(nodep);
+        processEnter(nodep);
+        iterateConst(nodep->rhsp());
+        const size_t nWriteRefs = m_nWriteRefs;
+        const size_t nCalls = m_nCalls;
+        iterateConst(nodep->lhsp());
+        // TODO: Enable this when #6756 is fixed
+        // Only check if there are no calls on the LHS, as calls might return an LValue
+        if (false && v3Global.assertDTypesResolved() && m_nCalls == nCalls) {
+            UASSERT_OBJ(m_nWriteRefs > nWriteRefs, nodep, "No write refs on LHS of assignment");
+        }
+        processExit(nodep);
         UASSERT_OBJ(!(v3Global.assertDTypesResolved() && VN_IS(nodep->lhsp(), NodeVarRef)
                       && !VN_AS(nodep->lhsp(), NodeVarRef)->access().isWriteOrRW()),
                     nodep, "Assignment LHS is not an lvalue");
@@ -269,6 +284,19 @@ private:
                 }
             }
         }
+        if (nodep->access().isWriteOrRW()) ++m_nWriteRefs;
+    }
+    void visit(AstNodeCCall* nodep) override {
+        ++m_nCalls;
+        processAndIterate(nodep);
+    }
+    void visit(AstCMethodHard* nodep) override {
+        ++m_nCalls;
+        processAndIterate(nodep);
+    }
+    void visit(AstNodeFTaskRef* nodep) override {
+        ++m_nCalls;
+        processAndIterate(nodep);
     }
     void visit(AstCFunc* nodep) override {
         UASSERT_OBJ(!m_cfuncp, nodep, "Nested AstCFunc");

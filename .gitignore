@@ -17,6 +17,7 @@
 *.pdf
 /Makefile
 /.ccache
+/.venv/
 /artifact/
 README
 TAGS

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2005-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -50,8 +50,8 @@ class StatsReport final {
         V3Statistic* lastp = nullptr;
         for (const auto& itr : byName) {
             V3Statistic* repp = itr.second;
-            if (lastp && lastp->sumit() && lastp->printit() && lastp->name() == repp->name()
-                && lastp->stage() == repp->stage()) {
+            if (lastp && lastp->sumit() && lastp->printit() && repp->printit()
+                && lastp->name() == repp->name() && lastp->stage() == repp->stage()) {
                 lastp->combineWith(repp);
             } else {
                 lastp = repp;

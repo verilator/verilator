@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -144,7 +144,7 @@ class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
     } m_emitDispState;
 
 protected:
-    EmitCLazyDecls m_lazyDecls;  // Visitor for emitting lazy declarations
+    EmitCLazyDecls m_lazyDecls{*this};  // Visitor for emitting lazy declarations
     bool m_useSelfForThis = false;  // Replace "this" with "vlSelf"
     bool m_usevlSelfRef = false;  // Use vlSelfRef reference instead of vlSelf pointer
     const AstNodeModule* m_modp = nullptr;  // Current module being emitted
@@ -169,16 +169,6 @@ protected:
     }
 
 public:
-    // METHODS
-
-    // ACCESSORS
-    void splitSizeInc(int count) { m_splitSize += count; }
-    void splitSizeInc(const AstNode* nodep) { splitSizeInc(nodep->nodeCount()); }
-    void splitSizeReset() { m_splitSize = 0; }
-    bool splitNeeded() const {
-        return v3Global.opt.outputSplit() && m_splitSize >= v3Global.opt.outputSplit();
-    }
-
     // METHODS
     void displayNode(AstNode* nodep, AstScopeName* scopenamep, const string& vformat,
                      AstNode* exprsp, bool isScan);
@@ -484,6 +474,12 @@ public:
         }
 
         m_usevlSelfRef = false;
+
+        if (nodep->isCoroutine()) {
+            // Sometimes coroutines don't have co_awaits,
+            // so emit a co_return at the end to avoid compile errors.
+            puts("co_return;");
+        }
 
         puts("}\n");
         if (nodep->ifdef() != "") puts("#endif  // " + nodep->ifdef() + "\n");
@@ -919,7 +915,7 @@ public:
         if (!nodep->dpiExport()) {
             // this is where the DPI import context scope is set
             const string scope = nodep->scopeDpiName();
-            putnbs(nodep, "(&(vlSymsp->" + protect("__Vscope_" + scope) + "))");
+            putnbs(nodep, "(vlSymsp->" + protect("__Vscopep_" + scope) + ")");
         }
     }
     void visit(AstSFormat* nodep) override {
@@ -1261,6 +1257,8 @@ public:
         puts(");\n");
     }
     void visit(AstFinish* nodep) override {
+        // Disable all the forks so they don't operate after simulation is finished.
+        if (m_cfuncp && m_cfuncp->needProcess()) putns(nodep, "vlProcess->disableFork();\n");
         putns(nodep, "VL_FINISH_MT(");
         putsQuoted(protect(nodep->fileline()->filename()));
         puts(", ");
@@ -1268,6 +1266,8 @@ public:
         puts(", \"\");\n");
     }
     void visit(AstFinishFork* nodep) override {
+        // Disable all the forks so they don't operate after simulation is finished.
+        if (m_cfuncp && m_cfuncp->needProcess()) putns(nodep, "vlProcess->disableFork();\n");
         putns(nodep, "VL_FINISH_MT(");
         putsQuoted(protect(nodep->fileline()->filename()));
         puts(", ");
@@ -1623,11 +1623,6 @@ public:
     }
 
     //
-    void visit(AstMTaskBody* nodep) override {
-        VL_RESTORER(m_useSelfForThis);
-        m_useSelfForThis = true;
-        iterateChildrenConst(nodep);
-    }
     void visit(AstConsAssoc* nodep) override {
         putnbs(nodep, nodep->dtypep()->cType("", false, false));
         puts("()");
@@ -1723,7 +1718,6 @@ public:
     void visit(AstExecGraph* nodep) override {
         // The location of the AstExecGraph within the containing AstCFunc is where we want to
         // invoke the graph and wait for it to complete. Emitting the children does just that.
-        UASSERT_OBJ(!nodep->mTaskBodiesp(), nodep, "These should have been lowered");
         iterateChildrenConst(nodep);
     }
 
@@ -1736,13 +1730,8 @@ public:
         }
     }  // LCOV_EXCL_STOP
 
-    EmitCFunc()
-        : m_lazyDecls{*this} {}
-    EmitCFunc(AstNode* nodep, V3OutCFile* ofp, AstCFile* cfilep)
-        : EmitCFunc{} {
-        setOutputFile(ofp, cfilep);
-        iterateConst(nodep);
-    }
+protected:
+    EmitCFunc() = default;
     ~EmitCFunc() override = default;
 };
 

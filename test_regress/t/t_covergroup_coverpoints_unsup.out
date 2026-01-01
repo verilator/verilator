@@ -15,7 +15,7 @@
 %Warning-COVERIGN: t/t_covergroup_coverpoints_unsup.v:21:5: Ignoring unsupported: covergroup
    21 |     covergroup cg @(posedge clk);
       |     ^~~~~~~~~~
-%Error: t/t_covergroup_coverpoints_unsup.v:35:48: Member 'a' not found in class 'cg'
+%Error: t/t_covergroup_coverpoints_unsup.v:35:48: Member 'a' not found in covergroup 'cg'
                                                 : ... note: In instance 't'
    35 |             $display("coverage a = %f", the_cg.a.get_inst_coverage());
       |                                                ^
@@ -25,7 +25,7 @@
    35 |             $display("coverage a = %f", the_cg.a.get_inst_coverage());
       |                                                  ^~~~~~~~~~~~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: t/t_covergroup_coverpoints_unsup.v:36:48: Member 'b' not found in class 'cg'
+%Error: t/t_covergroup_coverpoints_unsup.v:36:48: Member 'b' not found in covergroup 'cg'
                                                 : ... note: In instance 't'
    36 |             $display("coverage b = %f", the_cg.b.get_inst_coverage());
       |                                                ^
@@ -33,7 +33,7 @@
                                                             : ... note: In instance 't'
    36 |             $display("coverage b = %f", the_cg.b.get_inst_coverage());
       |                                                  ^~~~~~~~~~~~~~~~~
-%Error: t/t_covergroup_coverpoints_unsup.v:37:24: Member 'a' not found in class 'cg'
+%Error: t/t_covergroup_coverpoints_unsup.v:37:24: Member 'a' not found in covergroup 'cg'
                                                 : ... note: In instance 't'
    37 |             if (the_cg.a.get_inst_coverage() != 15/16.0) $stop();
       |                        ^
@@ -41,7 +41,7 @@
                                                             : ... note: In instance 't'
    37 |             if (the_cg.a.get_inst_coverage() != 15/16.0) $stop();
       |                          ^~~~~~~~~~~~~~~~~
-%Error: t/t_covergroup_coverpoints_unsup.v:38:24: Member 'b' not found in class 'cg'
+%Error: t/t_covergroup_coverpoints_unsup.v:38:24: Member 'b' not found in covergroup 'cg'
                                                 : ... note: In instance 't'
    38 |             if (the_cg.b.get_inst_coverage() != 4/5.0) $stop();
       |                        ^

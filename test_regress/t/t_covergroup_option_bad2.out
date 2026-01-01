@@ -1,0 +1,12 @@
+%Error: t/t_covergroup_option_bad2.v:18:10: Member 'not_an_option' not found in covergroup 'cg'
+                                          : ... note: In instance 't'
+                                          : ... Suggested alternative: 'type_option'
+   18 |     cov1.not_an_option.name = "new_cov1_name";   
+      |          ^~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error-UNSUPPORTED: t/t_covergroup_option_bad2.v:18:24: Unsupported: Member call on object 'CONST '1'h0'' which is a 'BASICDTYPE 'logic''
+                                                      : ... note: In instance 't'
+   18 |     cov1.not_an_option.name = "new_cov1_name";   
+      |                        ^~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

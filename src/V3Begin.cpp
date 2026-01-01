@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -291,6 +291,14 @@ class BeginVisitor final : public VNVisitor {
             nodep->inlinedDots(m_namedScope);
             UINFO(9, "    rescope to " << nodep);
         }
+    }
+    void visit(AstNodeFTaskRef* nodep) override {
+        UINFO(9, "   FTASKREF " << nodep);
+        if (m_namedScope != "" && nodep->inlinedDots() == "" && !m_ftaskp) {
+            nodep->inlinedDots(m_namedScope);
+            UINFO(9, "    rescope to " << nodep);
+        }
+        iterateChildren(nodep);
     }
     void visit(AstScopeName* nodep) override {
         // If there's a %m in the display text, we add a special node that will contain the name()

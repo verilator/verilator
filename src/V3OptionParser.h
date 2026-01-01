@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -74,8 +74,9 @@ private:
 
 public:
     // METHODS
-    // Returns how many args are consumed. 0 means not match
-    int parse(int idx, int argc, char* argv[]) VL_MT_DISABLED;
+    // Returns how many args are consumed. 0 means not match.
+    // Also bool, true iff option is needed for rerun with --dump-inputs
+    std::pair<int, bool> parse(int idx, int argc, char* argv[]) VL_MT_DISABLED;
     // Find the most similar option
     string getSuggestion(const char* str) const VL_MT_DISABLED;
     void addSuggestionCandidate(const string& s) VL_MT_DISABLED;
@@ -93,13 +94,16 @@ public:
     virtual ~ActionIfs() = default;
     virtual bool isValueNeeded() const = 0;  // Need val of "-opt val"
     virtual bool isFOnOffAllowed() const = 0;  // true if "-fno-opt" is allowed
+    virtual bool isNotForRerun() const = 0;  // Will not be dumped with --dump-inputs
     virtual bool isOnOffAllowed() const = 0;  // true if "-no-opt" is allowed
     virtual bool isPartialMatchAllowed() const = 0;  // true if "-Wno-" matches "-Wno-fatal"
     virtual bool isUndocumented() const = 0;  // Will not be suggested in typo
     // Set a value or run callback
     virtual void exec(const char* optp, const char* valp) = 0;
     // Mark this option undocumented. (Exclude this option from suggestion list).
-    virtual void undocumented() = 0;
+    virtual ActionIfs& undocumented() = 0;
+    // Mark this as not needed for rerunning with preprocessed sources
+    virtual ActionIfs& notForRerun() = 0;
 };
 
 // A helper class to register options

@@ -24,7 +24,7 @@ module t;
       return i;
    endfunction
 
-   initial begin;
+   initial begin
       if (randfunc() != 100) $stop;
 
       //

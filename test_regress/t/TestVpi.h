@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
-// Copyright 2013-2025 by Wilson Snyder. This program is free software; you can
+// Copyright 2013-2026 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -13,6 +13,10 @@
 #include "vpi_user.h"
 
 #include <iostream>
+
+extern "C" {
+#include <libgen.h>
+}
 
 // Avoid C++11 in this file as not all simulators allow it
 

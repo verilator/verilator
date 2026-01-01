@@ -6,18 +6,18 @@
 
 `timescale 1ns/1ns
 module t;
-   p p ();
+  p p ();
 
-   // Also check not-found modules
-   localparam NOT = 0;
-   if (NOT) begin
-      NotFound not_found(.*);
-   end
+  // Also check not-found modules
+  localparam NOT = 0;
+  if (NOT) begin
+    NotFound not_found(.*);
+  end
 
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule
 
@@ -34,10 +34,10 @@ input in;
 reg out;
 
 table
-0       :   1;
-1       :   0;
-?       :   ?;
-x       :   x;
+0     :  1;
+1     :  0;
+?     :  ?;
+x     :  x;
 endtable
 endprimitive
 `endcelldefine

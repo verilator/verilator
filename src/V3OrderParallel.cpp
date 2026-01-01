@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -1763,7 +1763,7 @@ class DpiThreadsVisitor final : public VNVisitorConst {
 
 public:
     // CONSTRUCTORS
-    explicit DpiThreadsVisitor(AstMTaskBody* nodep) { iterateConst(nodep); }
+    explicit DpiThreadsVisitor(AstCFunc* nodep) { iterateConst(nodep); }
     int threads() const { return m_threads; }
     ~DpiThreadsVisitor() override = default;
 
@@ -2394,7 +2394,7 @@ struct MTaskVxIdLessThan final {
     }
 };
 
-AstNodeStmt* V3Order::createParallel(OrderGraph& orderGraph, OrderMoveGraph& moveGraph,
+AstNodeStmt* V3Order::createParallel(const OrderGraph& orderGraph, OrderMoveGraph& moveGraph,
                                      const std::string& tag, bool slow) {
     UINFO(2, "  Constructing parallel code for '" + tag + "'");
 
@@ -2431,8 +2431,9 @@ AstNodeStmt* V3Order::createParallel(OrderGraph& orderGraph, OrderMoveGraph& mov
     if (dumpGraphLevel() >= 9) moveGraph.dumpDotFilePrefixed(tag + "_ordermv_pruned");
 
     // Create the AstExecGraph node which represents the execution of the MTask graph.
-    FileLine* const rootFlp = v3Global.rootp()->fileline();
-    AstExecGraph* const execGraphp = new AstExecGraph{rootFlp, tag};
+    FileLine* const flp = v3Global.rootp()->fileline();
+    AstScope* const scopep = v3Global.rootp()->topScopep()->scopep();
+    AstExecGraph* const execGraphp = new AstExecGraph{flp, tag};
     V3Graph* const depGraphp = execGraphp->depGraphp();
 
     // Translate the LogicMTask graph into the corresponding ExecMTask graph,
@@ -2468,23 +2469,22 @@ AstNodeStmt* V3Order::createParallel(OrderGraph& orderGraph, OrderMoveGraph& mov
             VL_DO_DANGLING(mVtxp->unlinkDelete(&moveGraph), mVtxp);
         }
 
-        // We have 2 objects, because AstMTaskBody is an AstNode, and ExecMTask is a GraphVertex.
-        // To combine them would involve multiple inheritance.
-
-        // Construct the actual MTaskBody
-        AstMTaskBody* const bodyp = new AstMTaskBody{rootFlp};
-        execGraphp->addMTaskBodiesp(bodyp);
-        bodyp->addStmtsp(emitter.getStmts());
-        UASSERT_OBJ(bodyp->stmtsp(), bodyp, "Should not try to create empty MTask");
-
         // Create the ExecMTask
-        ExecMTask* const execMTaskp = new ExecMTask{depGraphp, bodyp};
-        if (!v3Global.opt.hierBlocks().empty())
-            execMTaskp->threads(DpiThreadsVisitor{bodyp}.threads());
+        ExecMTask* const execMTaskp = new ExecMTask{execGraphp, scopep, emitter.getStmts()};
+        if (!v3Global.opt.hierBlocks().empty()) {
+            execMTaskp->threads(DpiThreadsVisitor{execMTaskp->funcp()}.threads());
+        }
         const bool newEntry = logicMTaskToExecMTask.emplace(mTaskp, execMTaskp).second;
         UASSERT_OBJ(newEntry, mTaskp, "LogicMTasks should be processed in dependencyorder");
         UINFO(3, "Final '" << tag << "' LogicMTask " << mTaskp->id() << " maps to ExecMTask"
                            << execMTaskp->id());
+
+        // For code analysis purposes, we can pretend the AstExecGraph runs the
+        // MTasks sequentially, in some topological order that respects edges.
+        // The order they are created here happens to be just such an order.
+        AstCCall* const callp = new AstCCall{flp, execMTaskp->funcp()};
+        callp->dtypeSetVoid();
+        execGraphp->addStmtsp(callp->makeStmt());
 
         // Add the dependency edges between ExecMTasks
         for (const V3GraphEdge& edge : mTaskp->inEdges()) {

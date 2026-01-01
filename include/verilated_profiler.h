@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2012-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2012-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -120,7 +120,7 @@ public:
         m_type = Type::SECTION_PUSH;
     }
     void sectionPop() { m_type = Type::SECTION_POP; }
-    void mtaskBegin(uint32_t id, uint32_t predictStart, const char* hierBlock = "") {
+    void mtaskBegin(uint32_t id, uint32_t predictStart, const char* hierBlock) {
         m_payload.mtaskBegin.m_id = id;
         m_payload.mtaskBegin.m_predictStart = predictStart;
         m_payload.mtaskBegin.m_cpu = VlOs::getcpu();
@@ -290,7 +290,7 @@ void VlPgoProfiler<N_Entries>::write(const char* modelp, const std::string& file
     VL_DEBUG_IF(VL_DBG_MSGF("+prof+vlt+file writing to '%s'\n", filename.c_str()););
 
     if (m_currentHierBlockCost) {
-        fprintf(fp, "profile_data -hier-dpi \"%s\" -cost 64'd%lu\n", modelp,
+        fprintf(fp, "profile_data -hier-dpi \"%s\" -cost 64'd%" PRIu64 "\n", modelp,
                 m_currentHierBlockCost);
     }
 

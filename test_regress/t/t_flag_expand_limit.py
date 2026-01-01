@@ -13,6 +13,6 @@ test.scenarios('vlt')
 
 test.compile(verilator_flags2=['--expand-limit 1 --stats -fno-dfg'])
 
-test.file_grep(test.stats, r'Optimizations, expand limited\s+(\d+)', 3)
+test.file_grep(test.stats, r'Optimizations, expand limited\s+(\d+)', 8)
 
 test.passes()

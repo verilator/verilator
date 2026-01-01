@@ -1,7 +1,7 @@
-.. Copyright 2003-2025 by Wilson Snyder.
+.. Copyright 2003-2026 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-.. _Installation:
+.. _installation:
 
 ************
 Installation
@@ -9,15 +9,15 @@ Installation
 
 This section discusses how to install Verilator.
 
-.. _Package Manager Quick Install:
+.. _package manager quick install:
 
 Package Manager Quick Install
 =============================
 
-Using a distribution's package manager is the easiest way to get
-started. (Note distribution packages almost never have the most recent
-Verilator version, so we recommend following :ref:`Git Install` below,
-instead.) To install as a package:
+Using a distribution's package manager is the easiest way to get started.
+(Note distribution packages almost never have the most recent Verilator
+version, so we recommend following :ref:`Git Install` below, instead.) To
+install as a package:
 
 .. code-block:: bash
 
@@ -26,17 +26,18 @@ instead.) To install as a package:
 For other distributions, refer to `Repology Verilator Distro Packages
 <https://repology.org/project/verilator>`__.
 
-.. _pre-commit Quick Install:
+.. _pre-commit quick install:
 
-pre-commit Quick Install
-=============================
+Pre-commit Quick Install
+========================
 
 You can use Verilator's `pre-commit <https://pre-commit.com/>`__ hook to
-lint your code before committing it.  It encapsulates the :ref:`Verilator
-Build Docker Container`, so you need docker on your system to use it.  The
+lint your code before committing it. It encapsulates the :ref:`Verilator
+Build Docker Container`, so you need docker on your system to use it. The
 verilator image will be downloaded automatically.
 
-To use the hook, add the following entry to your :code:`.pre-commit-config.yaml`:
+To use the hook, add the following entry to your
+``.pre-commit-config.yaml``:
 
 .. code-block:: yaml
 
@@ -46,7 +47,7 @@ To use the hook, add the following entry to your :code:`.pre-commit-config.yaml`
        hooks:
          - id: verilator
 
-.. _Git Install:
+.. _git install:
 
 Git Quick Install
 =================
@@ -83,7 +84,7 @@ In brief, to install from git:
    sudo make install
 
 
-.. _Detailed Build Instructions:
+.. _detailed build instructions:
 
 Detailed Build Instructions
 ===========================
@@ -129,15 +130,15 @@ For constraints:
 
    sudo apt-get install z3  # Optional solver
 
-The following is optional but is recommended for nicely rendered command line
-help when running Verilator:
+The following is optional but is recommended for nicely rendered command
+line help when running Verilator:
 
 .. code-block:: bash
 
    sudo apt-get install perl-doc
 
-To build or run Verilator, the following are optional but should be installed
-for good performance:
+To build or run Verilator, the following are optional but should be
+installed for good performance:
 
 .. code-block:: bash
 
@@ -152,22 +153,37 @@ need to be present to run Verilator:
 
    sudo apt-get install git autoconf flex bison
 
-Those developing Verilator itself also need these (see internals.rst):
+Those developing Verilator itself also need the following additional
+packages (see internals.rst), and a Python virtual environment:
 
 .. code-block:: bash
 
    sudo apt-get install clang clang-format-18 cmake gdb gprof graphviz lcov
-   sudo apt-get install python3-clang python3-distro pipx yapf3 bear jq
-   python3 -m venv --system-site-packages ~/.verilator_pyenv
-   source ~/.verilator_pyenv/bin/activate
-   pip3 install sphinx sphinx_rtd_theme sphinxcontrib-spelling breathe gersemi mbake mypy ruff
-   pip3 install git+https://github.com/antmicro/astsee.git
-   pipx install sarif-tools
+   sudo apt-get install python3-clang bear jq
    cpan install Pod::Perldoc
-   #
-   # Later, when building or testing Verilator, you will need
-   source ~/.verilator_pyenv/bin/activate
 
+The Python virtual environment is only required for running the whole test
+suite, and for additional development steps like linting and formatting. It
+is not required for building Verilator itself. To install the python
+virtual environment and all dependencies automatically, run the following
+once, after ``configure``:
+
+.. code-block:: bash
+
+   # Create Python virutal environment in .venv:
+   make venv
+
+   # Or alternatively, to put it somewhere else:
+   make venv VENV_PATH=where_you_want_it
+
+Then activate the virtual environment in the shell using:
+
+.. code-block:: bash
+
+   source .venv/bin/activate
+
+   # Or if installed somewhere else:
+   source where_you_want_it/bin/activate
 
 Install SystemC
 ^^^^^^^^^^^^^^^
@@ -176,7 +192,7 @@ SystemC code can be generated from Verilator (with :vlopt:`--sc`) if it is
 installed as a package (see above).
 
 Alternatively, from their sources, download `SystemC
-<https://www.accellera.org/downloads/standards/systemc>`__.  Follow their
+<https://www.accellera.org/downloads/standards/systemc>`__. Follow their
 installation instructions. You will need to set the
 :option:`SYSTEMC_INCLUDE` environment variable to point to the include
 directory with ``systemc.h`` in it, and set the :option:`SYSTEMC_LIBDIR`
@@ -192,21 +208,21 @@ required at Verilator build time.
 
 .. code-block:: bash
 
-    sudo apt-get install gtkwave  # Optional Waveform viewer
+   sudo apt-get install gtkwave  # Optional Waveform viewer
 
 
 Install Z3
 ^^^^^^^^^^
 
 In order to use constrained randomization the `Z3 Theorem Prover
-<https://github.com/z3prover/z3>`__ must be installed, however this is
-not required at Verilator build time. There are other compatible SMT solvers,
-like CVC5/CVC4, but they are not guaranteed to work. Since different solvers are
-faster for different scenarios, the solver to use at run-time can be specified
-by the environment variable :option:`VERILATOR_SOLVER`.
+<https://github.com/z3prover/z3>`__ must be installed, however this is not
+required at Verilator build time. There are other compatible SMT solvers,
+like CVC5/CVC4, but they are not guaranteed to work. Since different
+solvers are faster for different scenarios, the solver to use at run-time
+can be specified by the environment variable :option:`VERILATOR_SOLVER`.
 
 
-.. _Obtain Sources:
+.. _obtain sources:
 
 Obtain Sources
 --------------
@@ -269,7 +285,7 @@ co-exist on a system.
    ./configure
    # Running will use files from $VERILATOR_ROOT, so no install needed
 
-Note after installing (see `Installation`_), a calling program or shell
+Note after installing (see ref:`Installation`), a calling program or shell
 must set the environment variable :option:`VERILATOR_ROOT` to point to this
 Git directory, then execute ``$VERILATOR_ROOT/bin/verilator``, which will
 find the path to all needed files.
@@ -281,7 +297,7 @@ find the path to all needed files.
 You may be an OS package maintainer building a Verilator package, or you
 may eventually be installing onto a project/company-wide "CAD" tools disk
 that may support multiple versions of every tool. Tell configure the
-eventual destination directory name.  We recommend that the destination
+eventual destination directory name. We recommend that the destination
 location include the Verilator version name:
 
 .. code-block:: bash
@@ -291,7 +307,7 @@ location include the Verilator version name:
    # For the tarball, use the version number instead of git describe
    ./configure --prefix /CAD_DISK/verilator/`git describe | sed "s/verilator_//"`
 
-Note after installing (see `Installation`_), you need to add the path to
+Note after installing (see ref:`Installation`), you need to add the path to
 the ``bin`` directory to your ``PATH``. Or, if you use `modulecmd
 <https://modules.sourceforge.net/>`__, you'll want a module file like the
 following:
@@ -317,7 +333,7 @@ configure's default system paths:
    unsetenv VERILATOR_ROOT   # if your shell is csh
    ./configure
 
-Then after installing (see `Installation`_), the binaries should be in a
+Then after installing (see ref:`Installation`), the binaries should be in a
 location already in your ``$PATH`` environment variable.
 
 

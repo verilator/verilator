@@ -268,6 +268,8 @@ module sub4 #(
       end
    end
 
+   int driven_from_bind = 0;
+
    always @(posedge clk) begin
       count <= count + 1;
       if (count > 0) begin
@@ -283,6 +285,11 @@ module sub4 #(
                    $stop;
                 end
             end
+         end
+
+         if (driven_from_bind != int'(2*P1)) begin
+           $display("%m driven_from_bind: %0d != %0d", driven_from_bind, int'(2*P1));
+           $stop;
          end
       end
    end
@@ -361,3 +368,14 @@ module delay #(
       assign out = tmp;
    end
 endmodule
+
+// Module bound into parametrized hier_block that undergoes name mangling
+module sub4_bound #(
+  parameter P1 = 1
+) (
+  output int driven_from_bind
+);
+  assign driven_from_bind = int'(P1*2);
+endmodule
+
+bind sub4 sub4_bound #(.P1(P1)) i_sub4_bound (.*);

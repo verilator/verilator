@@ -6,8 +6,8 @@
 
 module sub;
   /* verilator hier_block */
-  parametrized #(.ARG(1)) parametrized1();
-  parametrized #(.ARG(2)) parametrized2();
+  parametrized #(.ARG(1)) parametrized1 ();
+  parametrized #(.ARG(2)) parametrized2 ();
 
   initial begin
     if (parametrized1.ARG != 1) $stop;
@@ -17,10 +17,12 @@ module sub;
   end
 endmodule
 
-module parametrized #(parameter ARG=0);
+module parametrized #(
+    parameter ARG = 0
+);
   // This is a parametrized non-hier block under a hier block
 endmodule
 
 module t;
-  sub sub();
+  sub sub ();
 endmodule

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -175,7 +175,9 @@ EvalLoop createEvalLoop(
     AstNodeStmt* stmtps = nullptr;
 
     // Prof-exec section push
-    if (v3Global.opt.profExec()) stmtps = util::profExecSectionPush(flp, "loop " + tag);
+    if (v3Global.opt.profExec()) {  //
+        stmtps = AstCStmt::profExecSectionPush(flp, "loop " + tag);
+    }
 
     const auto addVar = [&](const std::string& name, int width, uint32_t initVal) {
         AstVarScope* const vscp = scopeTopp->createTemp("__V" + tag + name, width);
@@ -215,7 +217,9 @@ EvalLoop createEvalLoop(
     }
 
     // Prof-exec section pop
-    if (v3Global.opt.profExec()) stmtps->addNext(util::profExecSectionPop(flp));
+    if (v3Global.opt.profExec()) {
+        stmtps->addNext(AstCStmt::profExecSectionPop(flp, "loop " + tag));
+    }
 
     return {firstIterFlagp, stmtps};
 }
@@ -684,7 +688,7 @@ void createEval(AstNetlist* netlistp,  //
     AstCFunc* const funcp = util::makeTopFunction(netlistp, "_eval", false);
     netlistp->evalp(funcp);
 
-    if (v3Global.opt.profExec()) funcp->addStmtsp(util::profExecSectionPush(flp, "eval"));
+    if (v3Global.opt.profExec()) funcp->addStmtsp(AstCStmt::profExecSectionPush(flp, "eval"));
 
     // Start with the ico loop, if any
     if (icoLoop) funcp->addStmtsp(icoLoop);
@@ -695,7 +699,7 @@ void createEval(AstNetlist* netlistp,  //
     // Add the Postponed eval call
     if (postponedFuncp) funcp->addStmtsp(util::callVoidFunc(postponedFuncp));
 
-    if (v3Global.opt.profExec()) funcp->addStmtsp(util::profExecSectionPop(flp));
+    if (v3Global.opt.profExec()) funcp->addStmtsp(AstCStmt::profExecSectionPop(flp, "eval"));
 }
 
 }  // namespace

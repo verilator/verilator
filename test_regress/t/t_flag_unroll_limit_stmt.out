@@ -1,0 +1,5 @@
+%Error: t/t_flag_unroll_limit_stmt.v:16:5: Unrolling procedural loop with '/* verilator unroll_full */' took too long; probably this is an infinite loop, otherwise set '--unroll-limit' above 4
+   16 |     for (int i = 0; i < 5; ++i) begin
+      |     ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

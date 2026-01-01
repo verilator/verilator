@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(verilator_flags2=["--lint-only -Wall -Wno-DECLFILENAME --if-depth 10"],
+test.lint(verilator_flags2=["-Wall -Wno-DECLFILENAME --if-depth 10"],
           fails=True,
           expect_filename=test.golden_filename)
 

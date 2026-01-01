@@ -1,0 +1,8 @@
+%Error: t/t_covergroup_option_bad.v:14:5: Syntax error; expected 'option' or 'type_option': 'bad_cg_non_option'
+   14 |     bad_cg_non_option.name = "xx";   
+      |     ^~~~~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_covergroup_option_bad.v:20:7: Syntax error; expected 'option' or 'type_option': 'bad_cross_non_option'
+   20 |       bad_cross_non_option.name = "xx";   
+      |       ^~~~~~~~~~~~~~~~~~~~
+%Error: Exiting due to

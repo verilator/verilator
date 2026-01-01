@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -118,11 +118,11 @@ class V3EmitMkJsonEmitter final {
             // really have to, but verilator-config.cmake.in depends on order.
             for (const V3GraphVertex& vtx : vlstd::reverse_view(graphp->vertices())) {
                 const V3HierBlock* const hblockp = vtx.as<V3HierBlock>();
-                std::vector<std::string> deps;
+                std::vector<std::string> hierDeps;
                 std::vector<std::string> sources;
                 for (const V3GraphEdge& edge : hblockp->outEdges()) {
                     const V3HierBlock* const dependencyp = edge.top()->as<V3HierBlock>();
-                    deps.emplace_back(dependencyp->hierPrefix());
+                    hierDeps.emplace_back(dependencyp->hierPrefix());
                     sources.emplace_back(makeDir + "/" + dependencyp->hierWrapperFilename(true));
                 }
 
@@ -137,7 +137,7 @@ class V3EmitMkJsonEmitter final {
                 of.begin()
                     .put("prefix", hblockp->hierPrefix())
                     .put("top", hblockp->modp()->name())
-                    .putList("deps", deps)
+                    .putList("deps", hierDeps)
                     .put("directory", makeDir + "/" + hblockp->hierPrefix())
                     .putList("sources", sources)
                     .putList("cflags", {"-fPIC"})

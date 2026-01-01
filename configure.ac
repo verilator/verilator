@@ -1,6 +1,6 @@
 # DESCRIPTION: Process this file with autoconf to produce a configure script.
 #
-# Copyright 2003-2025 by Wilson Snyder. Verilator is free software; you
+# Copyright 2003-2026 by Wilson Snyder. Verilator is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU Lesser
 # General Public License Version 3 or the Perl Artistic License Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
@@ -11,7 +11,7 @@
 # Then 'make maintainer-dist'
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[5.042 2025-11-02],
+AC_INIT([Verilator],[5.044 2026-01-01],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 
@@ -475,6 +475,7 @@ _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-shadow)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-unused-parameter)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Xclang -fno-pch-timestamp)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-faligned-new)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-exceptions)
 AC_SUBST(CFG_CXXFLAGS_SRC)
 
 # Flags for compiling Verilator parser always (in addition to above CFG_CXXFLAGS_SRC)
@@ -533,7 +534,8 @@ m4_foreach([cflag],[
         [-Wno-unused-but-set-parameter],
         [-Wno-unused-but-set-variable],
         [-Wno-unused-parameter],
-        [-Wno-unused-variable]],[
+        [-Wno-unused-variable],
+        [-Wno-vla-cxx-extension]],[
     _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,cflag)
     # CMake will test what flags work itself, so pass all flags through to it
     CFG_CXX_FLAGS_CMAKE="$CFG_CXX_FLAGS_CMAKE cflag"

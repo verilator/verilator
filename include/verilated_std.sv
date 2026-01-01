@@ -4,7 +4,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2022-2025 by Wilson Snyder. This program is free software; you can
+// Copyright 2022-2026 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU Lesser
 // General Public License Version 3 or the Perl Artistic License Version 2.0.
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
@@ -29,6 +29,7 @@
 // verilator lint_off TIMESCALEMOD
 // verilator lint_off UNUSEDSIGNAL
 package std;
+  // IEEE 1800-specified standard "mailbox"
   class mailbox #(
       type T
   );
@@ -94,6 +95,7 @@ package std;
     endfunction
   endclass
 
+  // IEEE 1800-specified standard "semaphore"
   class semaphore;
     protected int m_keyCount;
 
@@ -123,6 +125,7 @@ package std;
     endfunction
   endclass
 
+  // IEEE 1800-specified standard "process"
   class process;
     typedef enum {
       FINISHED = 0,
@@ -235,7 +238,67 @@ inline bool VlClassRef<`systemc_class_name>::operator<(const VlClassRef<`systemc
     endfunction
   endclass
 
+  // IEEE 1800-specified standard "std::randomize"
   function int randomize();
     randomize = 0;
   endfunction
+
+  // IEEE 1800-2023 19.10 coverage option and type_options
+  // IEEE does not define these as std:: structures but Verilator uses
+  // them as such currently, so named with a unique prefix
+  typedef struct {
+    string name;
+    int weight;
+    int goal;
+    string comment;
+    int at_least;
+    int auto_bin_max;
+    int cross_num_print_missing;
+    bit cross_retain_auto_bins;
+    bit detect_overlap;
+    bit per_instance;
+    bit get_inst_coverage;
+  } vl_covergroup_options_t;
+
+  typedef struct {
+    int weight;
+    int goal;
+    string comment;
+    int at_least;
+    int auto_bin_max;
+    bit detect_overlap;
+  } vl_coverpoint_options_t;
+
+  typedef struct {
+    int weight;
+    int goal;
+    string comment;
+    int at_least;
+    int cross_num_print_missing;
+    bit cross_retain_auto_bins;
+  } vl_cross_options_t;
+
+  typedef struct {
+    int weight;
+    int goal;
+    string comment;
+    bit strobe;
+    bit merge_instances;
+    bit distribute_first;
+    real real_interval;
+  } vl_covergroup_type_options_t;
+
+  typedef struct {
+    int weight;
+    int goal;
+    string comment;
+    real real_interval;
+  } vl_coverpoint_type_options_t;
+
+  typedef struct {
+    int weight;
+    int goal;
+    string comment;
+  } vl_cross_type_options_t;
+
 endpackage

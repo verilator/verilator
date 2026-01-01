@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -175,9 +175,7 @@ class EmitXmlFileVisitor final : public VNVisitorConst {
         outputTag(nodep, "");
         puts(" origName=");
         putsQuoted(nodep->origName());
-        if (nodep->level() == 1
-            || nodep->level() == 2)  // ==2 because we don't add wrapper when in XML mode
-            puts(" topModule=\"1\"");  // IEEE vpiTopModule
+        if (nodep->isTop()) puts(" topModule=\"1\"");  // IEEE vpiTopModule
         if (nodep->modPublic()) puts(" public=\"true\"");
         outputChildrenEnd(nodep, "");
     }
@@ -376,8 +374,7 @@ class HierCellsXmlVisitor final : public VNVisitorConst {
     void visit(AstConstPool*) override {}
 
     void visit(AstNodeModule* nodep) override {
-        if (nodep->level() >= 0
-            && nodep->level() <= 2) {  // ==2 because we don't add wrapper when in XML mode
+        if (nodep->level() >= 0 && nodep->isTop()) {
             m_os << "<cells>\n";
             m_os << "<cell " << nodep->fileline()->xmlDetailedLocation()  //
                  << " name=\"" << nodep->prettyName() << "\"" << " submodname=\""

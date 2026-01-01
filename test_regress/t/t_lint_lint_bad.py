@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-test.lint(verilator_flags2=["--lint-only -Wwarn-lint"],
+test.lint(verilator_flags2=["-Wwarn-lint -Wno-style"],
           fails=True,
           expect_filename=test.golden_filename)
 

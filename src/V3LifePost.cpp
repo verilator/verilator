@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -290,7 +290,7 @@ class LifePostDlyVisitor final : public VNVisitorConst {
             const ExecMTask* const mtaskp = mtaskVtx.as<ExecMTask>();
             VL_RESTORER(m_execMTaskp);
             m_execMTaskp = mtaskp;
-            iterateConst(mtaskp->bodyp());
+            trace(mtaskp->funcp());
         }
     }
     void visit(AstCFunc* nodep) override {

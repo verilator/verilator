@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2001-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2001-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -149,8 +149,9 @@ static std::pair<bool, fstScopeType> toFstScopeType(VerilatedTracePrefixType typ
     }
 }
 
-void VerilatedFst::pushPrefix(const std::string& name, VerilatedTracePrefixType type) {
+void VerilatedFst::pushPrefix(const char* namep, VerilatedTracePrefixType type) {
     assert(!m_prefixStack.empty());  // Constructor makes an empty entry
+    const std::string name{namep};
     // An empty name means this is the root of a model created with
     // name()=="".  The tools get upset if we try to pass this as empty, so
     // we put the signals under a new $rootio scope, but the signals

@@ -12,6 +12,6 @@ import vltest_bootstrap
 test.scenarios('linter')
 test.top_filename = 't/t_lint_lint_bad.v'
 
-test.lint(verilator_flags2=["--lint-only -Wwarn-lint -Wno-lint"])
+test.lint(verilator_flags2=["-Wwarn-lint -Wno-lint"])
 
 test.passes()

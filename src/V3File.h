@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -397,19 +397,6 @@ public:
     // Put VARIABLE ?= VALUE
     void putSetQ(const string& var, const string& value) {
         puts(VString::dot(var + " ?=", " ", value) + "\n");
-    }
-};
-
-class V3OutScFile final : public V3OutCFile {
-public:
-    explicit V3OutScFile(const string& filename)
-        : V3OutCFile{filename} {}
-    ~V3OutScFile() override = default;
-    void putsHeader() override { puts("// Verilated -*- SystemC -*-\n"); }
-    void putsIntTopInclude() override {
-        putsForceIncs();
-        puts("#include \"systemc\"\n");
-        puts("#include \"verilated_sc.h\"\n");
     }
 };
 

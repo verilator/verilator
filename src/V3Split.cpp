@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -340,11 +340,17 @@ protected:
 
     // We don't do AstLoop, due to the standard question of what is before vs. after
 
+    void visit(AstExprStmt* nodep) override {
+        VL_RESTORER(m_inDly);
+        m_inDly = false;
+        iterateChildren(nodep);
+    }
     void visit(AstAssignDly* nodep) override {
+        UINFO(4, "    ASSIGNDLY " << nodep);
+        iterate(nodep->rhsp());
         VL_RESTORER(m_inDly);
         m_inDly = true;
-        UINFO(4, "    ASSIGNDLY " << nodep);
-        iterateChildren(nodep);
+        iterate(nodep->lhsp());
     }
     void visit(AstVarRef* nodep) override {
         if (!m_stmtStackps.empty()) {

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -24,6 +24,7 @@
 #include "V3Clock.h"
 
 #include "V3Const.h"
+#include "V3Sched.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -62,7 +63,7 @@ class ClockVisitor final : public VNVisitor {
     // NODE STATE
 
     // STATE
-    AstCFunc* const m_evalp = nullptr;  // The '_eval' function
+    AstCFunc* m_sampleCFuncp = nullptr;  // The CFunc to populate with sampled value assignments
 
     // VISITORS
     void visit(AstCoverToggle* nodep) override {
@@ -98,19 +99,20 @@ class ClockVisitor final : public VNVisitor {
     //========== Move sampled assignments
     void visit(AstVarScope* nodep) override {
         AstVar* const varp = nodep->varp();
-        if (varp->valuep() && varp->name().substr(0, strlen("__Vsampled")) == "__Vsampled") {
-            FileLine* const flp = nodep->fileline();
-            AstNodeExpr* const rhsp = VN_AS(varp->valuep()->unlinkFrBack(), NodeExpr);
-            AstVarRef* const lhsp = new AstVarRef{flp, nodep, VAccess::WRITE};
-            AstAssign* const assignp = new AstAssign{flp, lhsp, rhsp};
-            if (AstNode* const stmtsp = m_evalp->stmtsp()) {
-                stmtsp->addHereThisAsNext(assignp);
-            } else {
-                m_evalp->addStmtsp(assignp);
-            }
-            varp->direction(VDirection::NONE);  // Restore defaults
-            varp->primaryIO(false);
+        if (!varp->valuep()) return;
+        if (!VString::startsWith(varp->name(), "__Vsampled")) return;
+
+        // Create the containing function on first encounter
+        if (!m_sampleCFuncp) {
+            m_sampleCFuncp = V3Sched::util::makeSubFunction(v3Global.rootp(), "_sample", false);
         }
+
+        FileLine* const flp = nodep->fileline();
+        AstNodeExpr* const rhsp = VN_AS(varp->valuep()->unlinkFrBack(), NodeExpr);
+        AstVarRef* const lhsp = new AstVarRef{flp, nodep, VAccess::WRITE};
+        m_sampleCFuncp->addStmtsp(new AstAssign{flp, lhsp, rhsp});
+        varp->direction(VDirection::NONE);  // Restore defaults
+        varp->primaryIO(false);
     }
 
     //--------------------
@@ -118,9 +120,15 @@ class ClockVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit ClockVisitor(AstNetlist* netlistp)
-        : m_evalp{netlistp->evalp()} {
+    explicit ClockVisitor(AstNetlist* netlistp) {
         iterate(netlistp);
+        // If we need a sample function, call it at the begining of eval
+        if (m_sampleCFuncp) {
+            V3Sched::util::splitCheck(m_sampleCFuncp);
+            AstCCall* const callp = new AstCCall{m_sampleCFuncp->fileline(), m_sampleCFuncp};
+            callp->dtypeSetVoid();
+            netlistp->evalp()->stmtsp()->addHereThisAsNext(callp->makeStmt());
+        }
     }
     ~ClockVisitor() override = default;
 };
