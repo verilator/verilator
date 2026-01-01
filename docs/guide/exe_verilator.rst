@@ -1069,8 +1069,12 @@ Summary:
 
    Generates a script for the specified build tool.
 
-   Supported values are ``gmake`` for GNU Make, or ``cmake`` for CMake, or
-   ``json`` to create a JSON file to feed other build tools.
+   Supported values are ``gmake`` for GNU Make, or ``json`` to create a
+   JSON file to feed other build tools.
+
+   Verilator also supports building with CMake, but CMakeLists.txt
+   under-the-covers uses the ``--make json`` output format. There was a
+   native ``--make cmake`` but it was removed in Version 5.046.
 
    Multiple options can be specified together. If no build tool is
    specified, gmake is assumed. The executable of gmake can be configured

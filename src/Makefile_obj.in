@@ -271,7 +271,6 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3DiagSarif.o \
   V3DupFinder.o \
   V3EmitCMain.o \
-  V3EmitCMake.o \
   V3EmitCModel.o \
   V3EmitCSyms.o \
   V3EmitMk.o \

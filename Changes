@@ -13,7 +13,8 @@ Verilator 5.045 devel
 
 **Other:**
 
-* Remove `--xml-only`.
+* Remove deprecated `--xml-only`.
+* Remove deprecated `--make cmake`.
 
 
 Verilator 5.044 2026-01-01
