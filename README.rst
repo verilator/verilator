@@ -67,11 +67,10 @@ executable performs the design simulation. Verilator also supports linking
 Verilated generated libraries, optionally encrypted, into other simulators.
 
 Verilator may not be the best choice if you are expecting a full-featured
-replacement for a closed-source Verilog simulator, need SDF annotation,
-mixed-signal simulation, or are doing a quick class project (we recommend
-`Icarus Verilog`_ for classwork). However, if you are looking for a path to
-migrate SystemVerilog to C++/SystemC, or want high-speed simulation of
-designs, Verilator is the tool for you.
+replacement for a closed-source Verilog simulator, need SDF annotation, or
+mixed-signal simulation. However, if you are looking for a path to migrate
+SystemVerilog to C++/SystemC, or want high-speed simulation of designs,
+Verilator is the tool for you.
 
 
 Performance
