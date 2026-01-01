@@ -1019,10 +1019,6 @@ public:
         static const char* const names[] = {"", "input", "output", "inout", "ref", "const ref"};
         return names[m_e];
     }
-    string xmlKwd() const {  // For historical reasons no "put" suffix
-        static const char* const names[] = {"", "in", "out", "inout", "ref", "const ref"};
-        return names[m_e];
-    }
     string prettyName() const { return verilogKwd(); }
     bool isAny() const { return m_e != NONE; }
     bool isInout() const { return m_e == INOUT; }

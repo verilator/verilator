@@ -552,8 +552,6 @@ detailed descriptions of these arguments.
     --x-assign <mode>           Assign non-initial Xs to this value
     --x-initial <mode>          Assign initial Xs to this value
     --x-initial-edge            Enable initial X->0 and X->1 edge triggers
-    --xml-only                  Create XML parser output
-    --xml-output                XML output filename
      -y <dir>                   Directory to search for modules
 
 This is a short summary of the simulation runtime arguments, i.e. for the

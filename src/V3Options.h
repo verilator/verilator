@@ -310,7 +310,6 @@ private:
     bool m_vpi = false;             // main switch: --vpi
     bool m_waiverMultiline = false;  // main switch: --waiver-multiline
     bool m_xInitialEdge = false;    // main switch: --x-initial-edge
-    bool m_xmlOnly = false;         // main switch: --xml-only
 
     int         m_buildJobs = -1;    // main switch: --build-jobs, -j
     int         m_coverageExprMax = 32;    // main switch: --coverage-expr-max
@@ -380,7 +379,6 @@ private:
     string      m_work = "work";  // main switch: --work {libname}
     string      m_xAssign;      // main switch: --x-assign
     string      m_xInitial;     // main switch: --x-initial
-    string      m_xmlOutput;    // main switch: --xml-output
 
     // Language is now held in FileLine, on a per-node basis. However we still
     // have a concept of the default language at a global level.
@@ -589,8 +587,7 @@ public:
     bool vpi() const { return m_vpi; }
     bool waiverMultiline() const { return m_waiverMultiline; }
     bool xInitialEdge() const { return m_xInitialEdge; }
-    bool xmlOnly() const { return m_xmlOnly; }
-    bool serializeOnly() const { return m_xmlOnly || m_jsonOnly; }
+    bool serializeOnly() const { return m_jsonOnly; }
     bool topIfacesSupported() const { return lintOnly() && !hierarchical(); }
 
     int buildJobs() const VL_MT_SAFE { return m_buildJobs; }
@@ -681,7 +678,6 @@ public:
     bool isWaiverOutput() const { return !m_waiverOutput.empty(); }
     string xAssign() const { return m_xAssign; }
     string xInitial() const { return m_xInitial; }
-    string xmlOutput() const { return m_xmlOutput; }
 
     const VStringSet& cppFiles() const { return m_cppFiles; }
     const VStringList& cFlags() const { return m_cFlags; }

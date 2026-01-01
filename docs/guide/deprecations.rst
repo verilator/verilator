@@ -17,11 +17,6 @@ C++14 compiler support
    the Ubuntu LTS versions of GCC and clang use C++20 by default, estimated
    May 2028.)
 
-XML output
-   Verilator currently supports XML parser output (enabled with
-   `--xml-only`). Support for `--xml-*` options will be deprecated no
-   sooner than January 2026.
-
 `--make cmake`
    The `--make cmake` options is deprecated and will be removed no sooner
    than January 2026. Use `--make json` instead. Note that the CMake

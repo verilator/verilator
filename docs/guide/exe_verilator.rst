@@ -2198,23 +2198,16 @@ Summary:
 
 .. option:: --xml-only
 
-   Create XML output only, do not create any other output.
+   Removed in 5.046.
 
-   The XML format is intended to be used to leverage Verilator's parser and
-   elaboration to feed to other downstream tools.
-
-   .. note::
-
-      This feature is deprecated in favor of :vlopt:`--json-only`.
+   Created XML output only, did not create any other output.
 
 .. option:: --xml-output <filename>
 
-   Specifies the filename for the XML output file. Using this option
-   automatically sets :vlopt:`--xml-only`.
+   Removed in 5.046.
 
-   .. note::
-
-      This feature is deprecated in favor of :vlopt:`--json-only`.
+   Specified the filename for the XML output file. Using this option
+   automatically set :vlopt:`--xml-only`.
 
 .. option:: -y <dir>
 

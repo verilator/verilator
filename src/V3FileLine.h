@@ -135,7 +135,6 @@ class FileLineSingleton final {
         m_names.clear();
         m_languages.clear();
     }
-    void fileNameNumMapDumpXml(std::ostream& os);
     void fileNameNumMapDumpJson(std::ostream& os);
     static string filenameLetters(fileNameIdx_t fileno) VL_PURE;
 
@@ -368,7 +367,6 @@ public:
     string filebasenameNoExt() const;
     string firstColumnLetters() const VL_MT_SAFE;
     string profileFuncname() const;
-    string xmlDetailedLocation() const;
     string lineDirectiveStrg(int enterExit) const;
 
     // Turn on/off warning messages on this line.
@@ -410,7 +408,6 @@ public:
     static string globalWarnOffParse(const string& msgs, bool turnOff) {
         return defaultFileLine().warnOffParse(msgs, turnOff);
     }
-    static void fileNameNumMapDumpXml(std::ostream& os) { singleton().fileNameNumMapDumpXml(os); }
     static void fileNameNumMapDumpJson(std::ostream& os) {
         singleton().fileNameNumMapDumpJson(os);
     }

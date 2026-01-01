@@ -51,7 +51,6 @@
 #include "V3EmitMk.h"
 #include "V3EmitMkJson.h"
 #include "V3EmitV.h"
-#include "V3EmitXml.h"
 #include "V3ExecGraph.h"
 #include "V3Expand.h"
 #include "V3File.h"
@@ -139,7 +138,6 @@ static void emitJson() VL_MT_DISABLED {
 }
 
 static void emitSerialized() VL_MT_DISABLED {
-    if (v3Global.opt.xmlOnly()) V3EmitXml::emitxml();
     if (v3Global.opt.jsonOnly()) emitJson();
 }
 
@@ -637,8 +635,7 @@ static void process() {
         emitSerialized();
     } else if (v3Global.opt.debugCheck() && !v3Global.opt.lintOnly()
                && !v3Global.opt.dpiHdrOnly()) {
-        // Check XML/JSON when debugging to make sure no missing node types
-        V3EmitXml::emitxml();
+        // Check JSON when debugging to make sure no missing node types
         emitJson();
     }
 

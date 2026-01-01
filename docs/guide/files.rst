@@ -112,8 +112,6 @@ In specific debug and other modes, it also creates:
      - JSON tree information (from --json-only)
    * - *{prefix}*.tree.meta.json
      - JSON tree metadata (from --json-only)
-   * - *{prefix}*.xml
-     - XML tree information (from --xml)
    * - *{prefix}*\ __cdc.txt
      - Clock Domain Crossing checks (from --cdc)
    * - *{prefix}*\ __stats.txt

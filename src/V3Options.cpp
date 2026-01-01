@@ -948,14 +948,14 @@ void V3Options::notify() VL_MT_DISABLED {
     if (!outFormatOk() && v3Global.opt.main()) ccSet();  // --main implies --cc if not provided
     if (!outFormatOk() && !dpiHdrOnly() && !lintOnly() && !preprocOnly() && !serializeOnly()) {
         v3fatal("verilator: Need --binary, --cc, --sc, --dpi-hdr-only, --lint-only, "
-                "--xml-only, --json-only or --E option");
+                "--json-only or --E option");
     }
 
     if (m_build && (m_gmake || m_cmake || m_makeJson)) {
         cmdfl->v3error("--make cannot be used together with --build. Suggest see manual");
     }
 
-    // m_build, m_preprocOnly, m_dpiHdrOnly, m_lintOnly, m_jsonOnly and m_xmlOnly are mutually
+    // m_build, m_preprocOnly, m_dpiHdrOnly, m_lintOnly, and m_jsonOnly are mutually
     // exclusive
     std::vector<std::string> backendFlags;
     if (m_build) {
@@ -967,7 +967,6 @@ void V3Options::notify() VL_MT_DISABLED {
     if (m_preprocOnly) backendFlags.push_back("-E");
     if (m_dpiHdrOnly) backendFlags.push_back("--dpi-hdr-only");
     if (m_lintOnly) backendFlags.push_back("--lint-only");
-    if (m_xmlOnly) backendFlags.push_back("--xml-only");
     if (m_jsonOnly) backendFlags.push_back("--json-only");
     if (backendFlags.size() > 1) {
         std::string backendFlagsString = backendFlags.front();
@@ -1039,8 +1038,7 @@ void V3Options::notify() VL_MT_DISABLED {
             && !v3Global.opt.serializeOnly());
     }
 
-    if (m_timing.isDefault()
-        && (v3Global.opt.jsonOnly() || v3Global.opt.lintOnly() || v3Global.opt.xmlOnly()))
+    if (m_timing.isDefault() && (v3Global.opt.jsonOnly() || v3Global.opt.lintOnly()))
         v3Global.opt.m_timing.setTrueOrFalse(true);
 
     if (trace()) {
@@ -1944,17 +1942,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         }
     });
     DECL_OPTION("-x-initial-edge", OnOff, &m_xInitialEdge);
-    DECL_OPTION("-xml-only", CbOnOff, [this, fl](bool flag) {
-        if (!m_xmlOnly && flag)
-            fl->v3warn(DEPRECATED, "Option --xml-only is deprecated, move to --json-only");
-        m_xmlOnly = flag;
-    });
-    DECL_OPTION("-xml-output", CbVal, [this, fl](const char* valp) {
-        if (!m_xmlOnly)
-            fl->v3warn(DEPRECATED, "Option --xml-only is deprecated, move to --json-only");
-        m_xmlOutput = valp;
-        m_xmlOnly = true;
-    });
 
     DECL_OPTION("-y", CbVal, [this, &optdir](const char* valp) {
         addIncDirUser(parseFileArg(optdir, string{valp}));

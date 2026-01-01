@@ -77,18 +77,6 @@ FileLineSingleton::fileNameIdx_t FileLineSingleton::nameToNumber(const string& f
     return idx;
 }
 
-//! Support XML output
-//! Experimental. Updated to also put out the language.
-void FileLineSingleton::fileNameNumMapDumpXml(std::ostream& os) {
-    os << "<files>\n";
-    for (const auto& itr : m_namemap) {
-        os << "<file id=\"" << filenameLetters(itr.second) << "\" filename=\""
-           << V3OutFormatter::quoteNameControls(itr.first, V3OutFormatter::LA_XML)
-           << "\" language=\"" << numberToLang(itr.second).ascii() << "\"/>\n";
-    }
-    os << "</files>\n";
-}
-
 void FileLineSingleton::fileNameNumMapDumpJson(std::ostream& os) {
     std::string sep = "\n  ";
     os << "\"files\": {";
@@ -239,12 +227,6 @@ void FileLine::newContent() {
     m_contentp = new VFileContent;
     m_contentp->refInc();
     m_contentLineno = 1;
-}
-
-string FileLine::xmlDetailedLocation() const {
-    return "loc=\"" + cvtToStr(filenameLetters()) + "," + cvtToStr(firstLineno()) + ","
-           + cvtToStr(firstColumn()) + "," + cvtToStr(lastLineno()) + "," + cvtToStr(lastColumn())
-           + "\"";
 }
 
 string FileLine::lineDirectiveStrg(int enterExit) const {

@@ -11,6 +11,9 @@ contributors that suggested or implemented a given issue are shown in []. Thanks
 Verilator 5.045 devel
 ==========================
 
+**Other:**
+
+* Remove `--xml-only`.
 
 
 Verilator 5.044 2026-01-01
