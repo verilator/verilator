@@ -17,15 +17,20 @@
 
 interface my_if0;
   logic l0;
-  task set_l0_1(); l0 = 1'b1; endtask
-  task set_l0_0(); l0 = 1'b0; endtask
+  task set_l0_1();
+    l0 = 1'b1;
+  endtask
+  task set_l0_0();
+    l0 = 1'b0;
+  endtask
 endinterface
 
-module iface0 #()(
-  input logic sel,
-  output logic val
+module iface0 #(
+) (
+    input logic sel,
+    output logic val
 );
-  my_if0 if0();
+  my_if0 if0 ();
   always_comb begin
     if0.l0 = 1'b0;
     if (sel) begin
@@ -40,15 +45,20 @@ endmodule
 
 interface my_if1;
   logic l0;
-  task set_l0_1_inner(); l0 = 1'b1; endtask
-  task set_l0_1_outer(); set_l0_1_inner(); endtask
+  task set_l0_1_inner();
+    l0 = 1'b1;
+  endtask
+  task set_l0_1_outer();
+    set_l0_1_inner();
+  endtask
 endinterface
 
-module iface1 #()(
-  input logic sel,
-  output logic val
+module iface1 #(
+) (
+    input logic sel,
+    output logic val
 );
-  my_if1 if0();
+  my_if1 if0 ();
   always_comb begin
     if0.l0 = 1'b0;
     if (sel) begin
@@ -63,14 +73,19 @@ endmodule
 
 interface my_if2;
   logic l0;
-  task set_l0_1(); l0 = 1'b1; endtask
-  task set_l0_0(); l0 = 1'b0; endtask
+  task set_l0_1();
+    l0 = 1'b1;
+  endtask
+  task set_l0_0();
+    l0 = 1'b0;
+  endtask
 endinterface
 
-module iface2 #()(
-  input logic sel,
-  output logic val,
-  my_if2 ifp
+module iface2 #(
+) (
+    input logic sel,
+    output logic val,
+    my_if2 ifp
 );
   always_comb begin
     ifp.l0 = 1'b0;
@@ -86,17 +101,17 @@ endmodule
 
 interface my_if3;
   logic l0;
-  task set_l0_1(); l0 = 1'b1; endtask
-  modport mp (
-    output l0,
-    import set_l0_1
-  );
+  task set_l0_1();
+    l0 = 1'b1;
+  endtask
+  modport mp(output l0, import set_l0_1);
 endinterface
 
-module iface3 #()(
-  input logic sel,
-  output logic val,
-  my_if3.mp ifp
+module iface3 #(
+) (
+    input logic sel,
+    output logic val,
+    my_if3.mp ifp
 );
   always_comb begin
     ifp.l0 = 1'b0;
@@ -117,11 +132,12 @@ interface my_if4;
   endtask
 endinterface
 
-module iface4 #()(
-  input logic sel,
-  output logic val
+module iface4 #(
+) (
+    input logic sel,
+    output logic val
 );
-  my_if4 if0();
+  my_if4 if0 ();
   always_comb begin
     if0.l0 = 1'b0;
     if (sel) begin
@@ -136,18 +152,21 @@ endmodule
 
 interface leaf_if5;
   logic l0;
-  task set1(); l0 = 1'b1; endtask
+  task set1();
+    l0 = 1'b1;
+  endtask
 endinterface
 
 interface top_if5;
-  leaf_if5 sub();
+  leaf_if5 sub ();
 endinterface
 
-module iface5 #()(
-  input logic sel,
-  output logic val
+module iface5 #(
+) (
+    input logic sel,
+    output logic val
 );
-  top_if5 if0();
+  top_if5 if0 ();
   always_comb begin
     if0.sub.l0 = 1'b0;
     if (sel) begin
@@ -162,19 +181,22 @@ endmodule
 
 interface chan_if6;
   logic b0;
-  task set1(); b0 = 1'b1; endtask
+  task set1();
+    b0 = 1'b1;
+  endtask
 endinterface
 
 interface agg_if6;
-  chan_if6 tlb();
-  chan_if6 ic();
+  chan_if6 tlb ();
+  chan_if6 ic ();
 endinterface
 
-module iface6 #()(
-  input logic sel,
-  output logic val
+module iface6 #(
+) (
+    input logic sel,
+    output logic val
 );
-  agg_if6 a();
+  agg_if6 a ();
   always_comb begin
     a.tlb.b0 = 1'b0;
     if (sel) a.tlb.set1();
@@ -185,21 +207,44 @@ endmodule
 //----------------------------------------------------------------------
 // Shared TB
 
-module m_tb#()();
+module m_tb #() ();
 
   logic sel;
   logic val0, val1, val2, val3, val4, val5, val6;
 
-  my_if2 if2();
-  my_if3 if3();
+  my_if2 if2 ();
+  my_if3 if3 ();
 
-  iface0 u0(.sel(sel), .val(val0));
-  iface1 u1(.sel(sel), .val(val1));
-  iface2 u2(.sel(sel), .val(val2), .ifp(if2));
-  iface3 u3(.sel(sel), .val(val3), .ifp(if3));
-  iface4 u4(.sel(sel), .val(val4));
-  iface5 u5(.sel(sel), .val(val5));
-  iface6 u6(.sel(sel), .val(val6));
+  iface0 u0 (
+      .sel(sel),
+      .val(val0)
+  );
+  iface1 u1 (
+      .sel(sel),
+      .val(val1)
+  );
+  iface2 u2 (
+      .sel(sel),
+      .val(val2),
+      .ifp(if2)
+  );
+  iface3 u3 (
+      .sel(sel),
+      .val(val3),
+      .ifp(if3)
+  );
+  iface4 u4 (
+      .sel(sel),
+      .val(val4)
+  );
+  iface5 u5 (
+      .sel(sel),
+      .val(val5)
+  );
+  iface6 u6 (
+      .sel(sel),
+      .val(val6)
+  );
 
   task automatic check_all(input logic exp);
     `checkd(val0, exp);

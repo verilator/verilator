@@ -24,9 +24,10 @@ class C0;
   endtask
 endclass
 
-module class0 #()(
-  input logic sel
-  ,output logic val
+module class0 #(
+) (
+    input logic sel,
+    output logic val
 );
 
   logic l0;
@@ -57,9 +58,10 @@ class C1;
   endtask
 endclass
 
-module class1 #()(
-  input logic sel
-  ,output logic val
+module class1 #(
+) (
+    input logic sel,
+    output logic val
 );
 
   logic l0;
@@ -87,10 +89,11 @@ class C2;
   endtask
 endclass
 
-module class2 #()(
-  input logic sel
-  ,output logic val
-  ,C2 c
+module class2 #(
+) (
+    input logic sel,
+    output logic val,
+    C2 c
 );
 
   logic l0;
@@ -115,9 +118,10 @@ class C3;
   endtask
 endclass
 
-module class3 #()(
-  input logic sel
-  ,output logic val
+module class3 #(
+) (
+    input logic sel,
+    output logic val
 );
 
   logic l0;
@@ -152,9 +156,10 @@ class C4Outer;
   endtask
 endclass
 
-module class4 #()(
-  input logic sel
-  ,output logic val
+module class4 #(
+) (
+    input logic sel,
+    output logic val
 );
 
   logic l0;
@@ -182,9 +187,10 @@ class Cf0;
   endfunction
 endclass
 
-module classf0 #()(
-  input logic sel
-  ,output logic val
+module classf0 #(
+) (
+    input logic sel,
+    output logic val
 );
 
   logic l0;
@@ -212,9 +218,10 @@ class Cf1;
   endfunction
 endclass
 
-module classf1 #()(
-  input logic sel
-  ,output logic val
+module classf1 #(
+) (
+    input logic sel,
+    output logic val
 );
 
   logic l0;
@@ -233,7 +240,7 @@ endmodule
 //----------------------------------------------------------------------
 // Shared TB
 
-module m_tb#()();
+module m_tb #() ();
 
   logic sel;
 
@@ -242,13 +249,35 @@ module m_tb#()();
   C2 c2;
   initial c2 = new;
 
-  class0 u0(.sel(sel), .val(val0));
-  class1 u1(.sel(sel), .val(val1));
-  class2 u2(.sel(sel), .val(val2), .c(c2));
-  class3 u3(.sel(sel), .val(val3));
-  class4 u4(.sel(sel), .val(val4));
-  classf0 uf0(.sel(sel), .val(valf0));
-  classf1 uf1(.sel(sel), .val(valf1));
+  class0 u0 (
+      .sel(sel),
+      .val(val0)
+  );
+  class1 u1 (
+      .sel(sel),
+      .val(val1)
+  );
+  class2 u2 (
+      .sel(sel),
+      .val(val2),
+      .c(c2)
+  );
+  class3 u3 (
+      .sel(sel),
+      .val(val3)
+  );
+  class4 u4 (
+      .sel(sel),
+      .val(val4)
+  );
+  classf0 uf0 (
+      .sel(sel),
+      .val(valf0)
+  );
+  classf1 uf1 (
+      .sel(sel),
+      .val(valf1)
+  );
 
   task automatic check_all(input logic exp);
     `checkd(val0, exp);

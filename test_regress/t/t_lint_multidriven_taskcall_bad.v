@@ -5,10 +5,10 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t (
-  input  logic sel,
-  input  logic sel2,
-  input  logic d,
-  output logic out
+    input logic sel,
+    input logic sel2,
+    input logic d,
+    output logic out
 );
 
   task automatic do_stuff(input logic din);
@@ -23,10 +23,10 @@ module t (
 
   // Driver #2 (separate process)
   // I only want the MULTIDRIVEN.
-/* verilator lint_off LATCH */
+  /* verilator lint_off LATCH */
   always_comb begin
     if (sel2) out = 1'b1;
   end
-/* verilator lint_on LATCH */
+  /* verilator lint_on LATCH */
 
 endmodule

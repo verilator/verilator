@@ -9,8 +9,10 @@
 // Minimal reproducer for: package function with "return expr" used in always_comb expression.
 // The function return variable must not be treated as a side-effect "writeSummary" target.
 
+// verilog_format: off
 `define stop $stop
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
+// verilog_format: on
 
 package p;
   function automatic int num_bytes(input int size);
@@ -21,7 +23,7 @@ endpackage
 module t;
   typedef struct packed {
     logic [31:0] addr;
-    logic [2:0]  size;
+    logic [2:0] size;
   } meta_t;
 
   meta_t rd_meta_q;

@@ -11,9 +11,10 @@
 // verilog_format: on
 
 // direct task call
-module mod0 #()(
-  input logic sel,
-  output logic val
+module mod0 #(
+) (
+    input logic sel,
+    output logic val
 );
   logic l0;
   task do_stuff();
@@ -21,7 +22,7 @@ module mod0 #()(
   endtask
   always_comb begin
     l0 = 'b0;
-    if(sel) begin
+    if (sel) begin
       do_stuff();
     end
   end
@@ -29,9 +30,10 @@ module mod0 #()(
 endmodule
 
 // nested task call chain
-module mod1 #()(
-  input logic sel,
-  output logic val
+module mod1 #(
+) (
+    input logic sel,
+    output logic val
 );
   logic l0;
   task do_inner();
@@ -48,9 +50,10 @@ module mod1 #()(
 endmodule
 
 // task writes through an output arguement
-module mod2 #()(
-  input logic sel,
-  output logic val
+module mod2 #(
+) (
+    input logic sel,
+    output logic val
 );
   logic l0;
   task automatic do_stuff(output logic q);
@@ -64,9 +67,10 @@ module mod2 #()(
 endmodule
 
 // function call that writes
-module mod3 #()(
-  input logic sel,
-  output logic val
+module mod3 #(
+) (
+    input logic sel,
+    output logic val
 );
   logic l0;
   function automatic void do_func();
@@ -80,13 +84,18 @@ module mod3 #()(
 endmodule
 
 // two tasks set0/set1
-module mod4 #()(
-  input logic sel,
-  output logic val
+module mod4 #(
+) (
+    input logic sel,
+    output logic val
 );
   logic l0;
-  task automatic set1(); l0 = 1'b1; endtask
-  task automatic set0(); l0 = 1'b0; endtask
+  task automatic set1();
+    l0 = 1'b1;
+  endtask
+  task automatic set0();
+    l0 = 1'b0;
+  endtask
   always_comb begin
     set0();
     if (sel) begin
@@ -100,19 +109,49 @@ module m_tb;
   logic sel;
   logic v0, v1, v2, v3, v4;
 
-  mod0 u0(.sel(sel), .val(v0));
-  mod1 u1(.sel(sel), .val(v1));
-  mod2 u2(.sel(sel), .val(v2));
-  mod3 u3(.sel(sel), .val(v3));
-  mod4 u4(.sel(sel), .val(v4));
+  mod0 u0 (
+      .sel(sel),
+      .val(v0)
+  );
+  mod1 u1 (
+      .sel(sel),
+      .val(v1)
+  );
+  mod2 u2 (
+      .sel(sel),
+      .val(v2)
+  );
+  mod3 u3 (
+      .sel(sel),
+      .val(v3)
+  );
+  mod4 u4 (
+      .sel(sel),
+      .val(v4)
+  );
 
   initial begin
-    #1; sel = 0;
-    `checkd(v0, 0); `checkd(v1, 0); `checkd(v2, 0); `checkd(v3, 0); `checkd(v4, 0);
-    #1; sel = 1;
-    `checkd(v0, 1); `checkd(v1, 1); `checkd(v2, 1); `checkd(v3, 1); `checkd(v4, 1);
-    #1; sel = 0;
-    `checkd(v0, 0); `checkd(v1, 0); `checkd(v2, 0); `checkd(v3, 0); `checkd(v4, 0);
+    #1;
+    sel = 0;
+    `checkd(v0, 0);
+    `checkd(v1, 0);
+    `checkd(v2, 0);
+    `checkd(v3, 0);
+    `checkd(v4, 0);
+    #1;
+    sel = 1;
+    `checkd(v0, 1);
+    `checkd(v1, 1);
+    `checkd(v2, 1);
+    `checkd(v3, 1);
+    `checkd(v4, 1);
+    #1;
+    sel = 0;
+    `checkd(v0, 0);
+    `checkd(v1, 0);
+    `checkd(v2, 0);
+    `checkd(v3, 0);
+    `checkd(v4, 0);
     #1;
     $write("*-* All Finished *-*\n");
     $finish;
