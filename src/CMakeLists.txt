@@ -187,6 +187,7 @@ set(HEADERS
     V3Tristate.h
     V3Udp.h
     V3Undriven.h
+    V3UndrivenCapture.h
     V3UniqueNames.h
     V3Unknown.h
     V3Unroll.h
@@ -354,6 +355,7 @@ set(COMMON_SOURCES
     V3Tristate.cpp
     V3Udp.cpp
     V3Undriven.cpp
+    V3UndrivenCapture.cpp
     V3Unknown.cpp
     V3Unroll.cpp
     V3UnrollGen.cpp
