@@ -71,7 +71,7 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter,
     description="""uvm_pkg_packer is used to create the test_regress
 uvm_pkg libraries from sources in verilator_ext_test repository's tests.""",
-    epilog="""Copyright 2025-2025 by Wilson Snyder. This program is free software; you
+    epilog="""Copyright 2025-2026 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

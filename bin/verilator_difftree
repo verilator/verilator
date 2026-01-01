@@ -110,7 +110,7 @@ It performs a diff between two files, or all files common between two
 directories, ignoring irrelevant pointer differences.
 
 Exit status is 0 if inputs are the same, 1 if different, 2 if trouble.""",
-    epilog="""Copyright 2005-2025 by Wilson Snyder. This program is free software; you
+    epilog="""Copyright 2005-2026 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

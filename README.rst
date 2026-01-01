@@ -145,7 +145,7 @@ Related Projects
 Open License
 ============
 
-Verilator is Copyright 2003-2025 by Wilson Snyder. (Report bugs to
+Verilator is Copyright 2003-2026 by Wilson Snyder. (Report bugs to
 `Verilator Issues <https://verilator.org/issues>`_.)
 
 Verilator is free software; you can redistribute it and/or modify it under
