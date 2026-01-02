@@ -53,7 +53,8 @@ class ScopeVisitor final : public VNVisitor {
     AstCell* m_aboveCellp = nullptr;  // Cell that instantiates this module
     AstScope* m_aboveScopep = nullptr;  // Scope that instantiates this scope
 
-    std::unordered_map<AstNodeModule*, AstScope*> m_packageScopes;  // Scopes for each package
+    std::unordered_map<AstNodeModule*, AstScope*>
+        m_classOrPackageScopes;  // Scopes for each class or package
     VarScopeMap m_varScopes;  // Varscopes created for each scope and var
     std::set<std::pair<AstVarRef*, AstScope*>>
         m_varRefScopes;  // Varrefs-in-scopes needing fixup when done
@@ -65,11 +66,11 @@ class ScopeVisitor final : public VNVisitor {
             AstVarRef* const nodep = itr.first;
             AstScope* scopep = itr.second;
             if (nodep->classOrPackagep()
-                && !VN_IS(
-                    nodep->classOrPackagep(),
-                    Module)) {  // No need to check for the Module as it has not been emplaced
-                const auto it2 = m_packageScopes.find(nodep->classOrPackagep());
-                UASSERT_OBJ(it2 != m_packageScopes.end(), nodep, "Can't locate package scope");
+                && !VN_IS(nodep->classOrPackagep(),
+                          Module)) {  // Module scopes are not in m_classOrPackageScopes
+                const auto it2 = m_classOrPackageScopes.find(nodep->classOrPackagep());
+                UASSERT_OBJ(it2 != m_classOrPackageScopes.end(), nodep,
+                            "Can't locate class or package scope");
                 scopep = it2->second;
             }
             // Search up the scope hierarchy for the variable
@@ -117,7 +118,7 @@ class ScopeVisitor final : public VNVisitor {
             (m_aboveCellp ? static_cast<AstNode*>(m_aboveCellp) : static_cast<AstNode*>(nodep))
                 ->fileline(),
             nodep, scopename, m_aboveScopep, m_aboveCellp};
-        if (VN_IS(nodep, Package)) m_packageScopes.emplace(nodep, m_scopep);
+        if (VN_IS(nodep, Package)) m_classOrPackageScopes.emplace(nodep, m_scopep);
 
         // Get list of cells before we edit, to avoid excess visits (issue #6059)
         std::deque<AstCell*> cells;
@@ -183,7 +184,7 @@ class ScopeVisitor final : public VNVisitor {
             = (m_aboveCellp ? static_cast<AstNode*>(m_aboveCellp) : static_cast<AstNode*>(nodep));
         m_scopep
             = new AstScope{abovep->fileline(), m_modp, scopename, m_aboveScopep, m_aboveCellp};
-        m_packageScopes.emplace(nodep, m_scopep);
+        m_classOrPackageScopes.emplace(nodep, m_scopep);
 
         // Create scope for the current usage of this cell
         AstNode::user1ClearTree();
