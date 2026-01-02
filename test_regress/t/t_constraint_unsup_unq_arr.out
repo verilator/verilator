@@ -1,18 +1,18 @@
-%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:20:5: Unique Constraint supported only for static arrays
+%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:20:5: Unsupported: Unique constraint on other than static arrays
                                                            : ... note: In instance 't'
    20 |     unique {uniq_val_darr};   
       |     ^~~~~~
                         ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
                         ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
-%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:21:5: Unique Constraint supported only for static arrays
+%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:21:5: Unsupported: Unique constraint on other than static arrays
                                                            : ... note: In instance 't'
    21 |     unique {uniq_val_hash};   
       |     ^~~~~~
-%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:22:5: Unique Constraint supported only for static arrays
+%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:22:5: Unsupported: Unique constraint on other than static arrays
                                                            : ... note: In instance 't'
    22 |     unique {uniq_val_queue};   
       |     ^~~~~~
-%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:23:5: Unique Constraint supported only for 1D static arrays
+%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:23:5: Unsupported: Unique constraint on other than static arrays
                                                            : ... note: In instance 't'
    23 |     unique {uniq_val_arr_mda};   
       |     ^~~~~~
