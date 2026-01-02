@@ -317,7 +317,8 @@ class TraceVisitor final : public VNVisitor {
                         = edge.fromp()->cast<const TraceActivityVertex>();
                     UASSERT_OBJ(cfvertexp, vtxp->nodep(),
                                 "Should have been function pointing to this trace");
-                    UINFO(9, "   Activity: " << cfvertexp);
+                    UINFO(9, "   Activity: " << cfvertexp << " " << cfvertexp->name() << " : "
+                                             << cfvertexp->activityCode());
                     if (cfvertexp->activityAlways()) {
                         // If code 0, we always trace; ignore other codes
                         actSet.insert(TraceActivityVertex::ACTIVITY_ALWAYS);
