@@ -921,10 +921,12 @@ class TraceVisitor final : public VNVisitor {
             }
             V3GraphVertex* const traceVtxp = m_tracep->user1u().toGraphVertex();
             new V3GraphEdge{&m_graph, varVtxp, traceVtxp, 1};
-            UINFO(1, "EDGE: " << varVtxp << " -> " << traceVtxp);
+            UINFO(1, "EDGE: " << varVtxp << " (" << nodep << ") -> " << traceVtxp << " ("
+                              << m_tracep << ")");
             if (nodep->varp()->isPrimaryInish()  // Always need to trace primary inputs
                 || nodep->varp()->isSigPublic()) {  // Or ones user can change
                 new V3GraphEdge{&m_graph, m_alwaysVtxp, traceVtxp, 1};
+                UINFO(1, "ALWAYS_EDGE: " << varVtxp << " (" << nodep << ") -> " << m_alwaysVtxp);
             }
         } else if (m_cfuncp && m_finding && nodep->access().isWriteOrRW()) {
             UASSERT_OBJ(nodep->varScopep(), nodep, "No var scope?");
@@ -932,6 +934,8 @@ class TraceVisitor final : public VNVisitor {
             V3GraphVertex* const varVtxp = nodep->varScopep()->user1u().toGraphVertex();
             if (varVtxp) {  // else we're not tracing this signal
                 new V3GraphEdge{&m_graph, funcVtxp, varVtxp, 1};
+                UINFO(1, "SOME_EDGE: " << varVtxp << " (" << nodep << ") -> " << funcVtxp << " ("
+                                       << m_cfuncp << ")");
             }
         }
     }
