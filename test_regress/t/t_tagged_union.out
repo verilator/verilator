@@ -1,72 +1,135 @@
-%Error-UNSUPPORTED: t/t_tagged_union.v:13:18: Unsupported: tagged union
-   13 |    typedef union tagged {
+%Error-UNSUPPORTED: t/t_tagged_union.v:24:18: Unsupported: tagged union
+   24 |    typedef union tagged {
       |                  ^~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_tagged_union.v:14:7: Unsupported: void (for tagged unions)
-   14 |       void Invalid;
+%Error-UNSUPPORTED: t/t_tagged_union.v:25:7: Unsupported: void (for tagged unions)
+   25 |       void Invalid;
       |       ^~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:19:18: Unsupported: tagged union
-   19 |    typedef union tagged packed {
+%Error-UNSUPPORTED: t/t_tagged_union.v:31:18: Unsupported: tagged union
+   31 |    typedef union tagged packed {
       |                  ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:20:7: Unsupported: void (for tagged unions)
-   20 |       void      Invalid;
+%Error-UNSUPPORTED: t/t_tagged_union.v:32:7: Unsupported: void (for tagged unions)
+   32 |       void          Invalid;
       |       ^~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:33:18: Unsupported: tagged union
-   33 |    typedef union tagged {
+%Error-UNSUPPORTED: t/t_tagged_union.v:52:18: Unsupported: tagged union
+   52 |    typedef union tagged {
       |                  ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:37:13: Unsupported: tagged union
-   37 |       union tagged {
+%Error-UNSUPPORTED: t/t_tagged_union.v:53:7: Unsupported: void (for tagged unions)
+   53 |       void           Invalid;
+      |       ^~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:60:18: Unsupported: tagged union
+   60 |    typedef union tagged {
+      |                  ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:64:13: Unsupported: tagged union
+   64 |       union tagged {
       |             ^~~~~~
-%Error: t/t_tagged_union.v:52:13: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
-   52 |       vi1 = tagged Invalid;
+%Error-UNSUPPORTED: t/t_tagged_union.v:74:18: Unsupported: tagged union
+   74 |    typedef union tagged {
+      |                  ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:75:7: Unsupported: void (for tagged unions)
+   75 |       void    Invalid;
+      |       ^~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:80:18: Unsupported: tagged union
+   80 |    typedef union tagged {
+      |                  ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:81:7: Unsupported: void (for tagged unions)
+   81 |       void      Invalid;
+      |       ^~~~
+%Error: t/t_tagged_union.v:95:13: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+   95 |       vi1 = tagged Invalid;
       |             ^~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_tagged_union.v:53:13: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
-   53 |       vi2 = tagged Invalid;
+%Error: t/t_tagged_union.v:96:13: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+   96 |       vi2 = tagged Invalid;
       |             ^~~~~~
-%Error: t/t_tagged_union.v:56:13: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
-   56 |       vi1 = tagged Valid (42);
+%Error: t/t_tagged_union.v:99:13: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+   99 |       vi1 = tagged Valid (42);
       |             ^~~~~~
-%Error: t/t_tagged_union.v:59:13: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
-   59 |       vi2 = tagged Valid (23 + 34);
+%Error: t/t_tagged_union.v:102:13: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  102 |       vi2 = tagged Valid (23 + 34);
       |             ^~~~~~
-%Error: t/t_tagged_union.v:63:12: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
-   63 |       mt = tagged Invalid;
+%Error: t/t_tagged_union.v:106:12: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  106 |       mt = tagged Invalid;
       |            ^~~~~~
-%Error: t/t_tagged_union.v:65:12: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
-   65 |       mt = tagged IntVal (32'h12345678);
+%Error: t/t_tagged_union.v:108:12: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  108 |       mt = tagged IntVal (32'h12345678);
       |            ^~~~~~
-%Error: t/t_tagged_union.v:68:12: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
-   68 |       mt = tagged ShortVal (16'hABCD);
+%Error: t/t_tagged_union.v:111:12: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  111 |       mt = tagged ShortVal (16'hABCD);
       |            ^~~~~~
-%Error: t/t_tagged_union.v:71:12: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
-   71 |       mt = tagged ByteVal (8'h5A);
+%Error: t/t_tagged_union.v:114:12: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  114 |       mt = tagged ByteVal (8'h5A);
       |            ^~~~~~
-%Error: t/t_tagged_union.v:74:12: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
-   74 |       mt = tagged BitVal (1'b1);
+%Error: t/t_tagged_union.v:117:12: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  117 |       mt = tagged BitVal (1'b1);
       |            ^~~~~~
-%Error: t/t_tagged_union.v:77:12: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
-   77 |       mt = tagged Byte8 (8'hFF);
+%Error: t/t_tagged_union.v:121:12: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  121 |       mt = tagged Byte8NonZeroLSB (8'hA5);
       |            ^~~~~~
-%Error: t/t_tagged_union.v:80:12: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
-   80 |       mt = tagged Word16 (16'h1234);
+%Error: t/t_tagged_union.v:124:12: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  124 |       mt = tagged Word16NonZeroLSB (16'h1234);
       |            ^~~~~~
-%Error: t/t_tagged_union.v:83:12: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
-   83 |       mt = tagged Word32 (32'hDEADBEEF);
+%Error: t/t_tagged_union.v:128:12: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  128 |       mt = tagged Word32LittleEndian (32'hDEADBEEF);
       |            ^~~~~~
-%Error: t/t_tagged_union.v:88:15: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
-   88 |       instr = tagged Add '{5'd1, 5'd2, 5'd3};
+%Error: t/t_tagged_union.v:131:12: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  131 |       mt = tagged Word16LittleEndian (16'hCAFE);
+      |            ^~~~~~
+%Error: t/t_tagged_union.v:135:12: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  135 |       mt = tagged Wide60 (60'hFEDCBA987654321);
+      |            ^~~~~~
+%Error: t/t_tagged_union.v:138:12: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  138 |       mt = tagged Wide60NonZeroLSB (60'h123456789ABCDEF);
+      |            ^~~~~~
+%Error: t/t_tagged_union.v:141:12: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  141 |       mt = tagged Wide60LittleEndian (60'hABCDEF012345678);
+      |            ^~~~~~
+%Error: t/t_tagged_union.v:145:12: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  145 |       mt = tagged Wide90 (90'hFF_FFFFFFFF_FFFFFFFF_FFFF);
+      |            ^~~~~~
+%Error: t/t_tagged_union.v:148:12: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  148 |       mt = tagged Wide90NonZeroLSB (90'hDE_ADBEEFCA_FEBABE12_3456);
+      |            ^~~~~~
+%Error: t/t_tagged_union.v:151:12: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  151 |       mt = tagged Wide90LittleEndian (90'h11_11111122_22222233_3333);
+      |            ^~~~~~
+%Error: t/t_tagged_union.v:155:12: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  155 |       at = tagged Invalid;
+      |            ^~~~~~
+%Error: t/t_tagged_union.v:157:12: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  157 |       at = tagged Scalar (999);
+      |            ^~~~~~
+%Error: t/t_tagged_union.v:160:12: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  160 |       at = tagged UnpackedArr '{100, 200, 300, 400};
+      |            ^~~~~~
+%Error: t/t_tagged_union.v:166:12: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  166 |       at = tagged UnpackedArr2D '{'{32'hA, 32'hB, 32'hC}, '{32'hD, 32'hE, 32'hF}};
+      |            ^~~~~~
+%Error: t/t_tagged_union.v:175:15: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  175 |       instr = tagged Add '{5'd1, 5'd2, 5'd3};
       |               ^~~~~~
-%Error: t/t_tagged_union.v:94:15: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
-   94 |       instr = tagged Add '{reg2:5'd10, regd:5'd20, reg1:5'd5};
+%Error: t/t_tagged_union.v:181:15: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  181 |       instr = tagged Add '{reg2:5'd10, regd:5'd20, reg1:5'd5};
       |               ^~~~~~
-%Error: t/t_tagged_union.v:100:15: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
-  100 |       instr = tagged Jmp (tagged JmpU 10'd512);
+%Error: t/t_tagged_union.v:187:15: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  187 |       instr = tagged Jmp (tagged JmpU 10'd512);
       |               ^~~~~~
-%Error: t/t_tagged_union.v:104:15: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
-  104 |       instr = tagged Jmp (tagged JmpC '{2'd1, 10'd256});
+%Error: t/t_tagged_union.v:191:15: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  191 |       instr = tagged Jmp (tagged JmpC '{2'd1, 10'd256});
       |               ^~~~~~
-%Error: t/t_tagged_union.v:109:15: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
-  109 |       instr = tagged Jmp (tagged JmpC '{cc:2'd3, addr:10'd100});
+%Error: t/t_tagged_union.v:196:15: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  196 |       instr = tagged Jmp (tagged JmpC '{cc:2'd3, addr:10'd100});
       |               ^~~~~~
+%Error: t/t_tagged_union.v:201:13: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  201 |       cht = tagged Invalid;
+      |             ^~~~~~
+%Error: t/t_tagged_union.v:202:13: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  202 |       cht = tagged Handle (null);
+      |             ^~~~~~
+%Error: t/t_tagged_union.v:206:13: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  206 |       clt = tagged Invalid;
+      |             ^~~~~~
+%Error: t/t_tagged_union.v:207:13: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  207 |       clt = tagged Obj (obj);
+      |             ^~~~~~
 %Error: Exiting due to
