@@ -1,158 +1,157 @@
-%Error-UNSUPPORTED: t/t_tagged_union.v:24:17: Unsupported: tagged union
-   24 |   typedef union tagged {
-      |                 ^~~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_tagged_union.v:25:5: Unsupported: void (for tagged unions)
-   25 |     void Invalid;
-      |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:31:17: Unsupported: tagged union
-   31 |   typedef union tagged packed {
-      |                 ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:32:5: Unsupported: void (for tagged unions)
-   32 |     void          Invalid;
-      |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:52:17: Unsupported: tagged union
-   52 |   typedef union tagged {
-      |                 ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:53:5: Unsupported: void (for tagged unions)
-   53 |     void           Invalid;
-      |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:60:17: Unsupported: tagged union
-   60 |   typedef union tagged {
-      |                 ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:64:11: Unsupported: tagged union
-   64 |     union tagged {
-      |           ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:74:17: Unsupported: tagged union
-   74 |   typedef union tagged {
-      |                 ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:75:5: Unsupported: void (for tagged unions)
-   75 |     void    Invalid;
-      |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:80:17: Unsupported: tagged union
-   80 |   typedef union tagged {
-      |                 ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:81:5: Unsupported: void (for tagged unions)
-   81 |     void      Invalid;
-      |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:89:17: Unsupported: tagged union
-   89 |   typedef union tagged {
-      |                 ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:90:5: Unsupported: void (for tagged unions)
-   90 |     void      Invalid;
-      |     ^~~~
 %Warning-SHORTREAL: t/t_tagged_union.v:92:5: Unsupported: shortreal being promoted to real (suggest use real instead)
    92 |     shortreal ShortRealVal;
       |     ^~~~~~~~~
                     ... For warning description see https://verilator.org/warn/SHORTREAL?v=latest
                     ... Use "/* verilator lint_off SHORTREAL */" and lint_on around source to disable this message.
-%Error-UNSUPPORTED: t/t_tagged_union.v:96:17: Unsupported: tagged union
-   96 |   typedef union tagged {
-      |                 ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:25:5: Unsupported: void (for tagged unions)
+   25 |     void Invalid;
+      |     ^~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_tagged_union.v:32:5: Unsupported: void (for tagged unions)
+   32 |     void          Invalid;
+      |     ^~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:53:5: Unsupported: void (for tagged unions)
+   53 |     void           Invalid;
+      |     ^~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:75:5: Unsupported: void (for tagged unions)
+   75 |     void    Invalid;
+      |     ^~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:81:5: Unsupported: void (for tagged unions)
+   81 |     void      Invalid;
+      |     ^~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:90:5: Unsupported: void (for tagged unions)
+   90 |     void      Invalid;
+      |     ^~~~
 %Error-UNSUPPORTED: t/t_tagged_union.v:97:5: Unsupported: void (for tagged unions)
    97 |     void   Invalid;
       |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:102:17: Unsupported: tagged union
-  102 |   typedef union tagged {
-      |                 ^~~~~~
 %Error-UNSUPPORTED: t/t_tagged_union.v:103:5: Unsupported: void (for tagged unions)
   103 |     void  Invalid;
       |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_union.v:111:17: Unsupported: tagged union
-  111 |   typedef union tagged {
-      |                 ^~~~~~
 %Error-UNSUPPORTED: t/t_tagged_union.v:112:5: Unsupported: void (for tagged unions)
   112 |     void  Invalid;
       |     ^~~~
-%Error: t/t_tagged_union.v:133:11: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:133:11: Unsupported: tagged union
   133 |     vi1 = tagged Invalid;
       |           ^~~~~~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_tagged_union.v:134:11: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:134:11: Unsupported: tagged union
   134 |     vi2 = tagged Invalid;
       |           ^~~~~~
-%Error: t/t_tagged_union.v:137:11: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:137:11: Unsupported: tagged union
   137 |     vi1 = tagged Valid (42);
       |           ^~~~~~
-%Error: t/t_tagged_union.v:140:11: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:140:11: Unsupported: tagged union
   140 |     vi2 = tagged Valid (23 + 34);
       |           ^~~~~~
-%Error: t/t_tagged_union.v:144:10: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:144:10: Unsupported: tagged union
   144 |     mt = tagged Invalid;
       |          ^~~~~~
-%Error: t/t_tagged_union.v:146:10: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:146:10: Unsupported: tagged union
   146 |     mt = tagged IntVal (32'h12345678);
       |          ^~~~~~
-%Error: t/t_tagged_union.v:149:10: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:149:10: Unsupported: tagged union
   149 |     mt = tagged ShortVal (16'hABCD);
       |          ^~~~~~
-%Error: t/t_tagged_union.v:152:10: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:152:10: Unsupported: tagged union
   152 |     mt = tagged ByteVal (8'h5A);
       |          ^~~~~~
-%Error: t/t_tagged_union.v:155:10: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:155:10: Unsupported: tagged union
   155 |     mt = tagged BitVal (1'b1);
       |          ^~~~~~
-%Error: t/t_tagged_union.v:159:10: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:159:10: Unsupported: tagged union
   159 |     mt = tagged Byte8NonZeroLSB (8'hA5);
       |          ^~~~~~
-%Error: t/t_tagged_union.v:162:10: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:162:10: Unsupported: tagged union
   162 |     mt = tagged Word16NonZeroLSB (16'h1234);
       |          ^~~~~~
-%Error: t/t_tagged_union.v:166:10: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:166:10: Unsupported: tagged union
   166 |     mt = tagged Word32LittleEndian (32'hDEADBEEF);
       |          ^~~~~~
-%Error: t/t_tagged_union.v:169:10: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:169:10: Unsupported: tagged union
   169 |     mt = tagged Word16LittleEndian (16'hCAFE);
       |          ^~~~~~
-%Error: t/t_tagged_union.v:173:10: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:173:10: Unsupported: tagged union
   173 |     mt = tagged Wide60 (60'hFEDCBA987654321);
       |          ^~~~~~
-%Error: t/t_tagged_union.v:176:10: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:176:10: Unsupported: tagged union
   176 |     mt = tagged Wide60NonZeroLSB (60'h123456789ABCDEF);
       |          ^~~~~~
-%Error: t/t_tagged_union.v:179:10: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:179:10: Unsupported: tagged union
   179 |     mt = tagged Wide60LittleEndian (60'hABCDEF012345678);
       |          ^~~~~~
-%Error: t/t_tagged_union.v:183:10: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:183:10: Unsupported: tagged union
   183 |     mt = tagged Wide90 (90'hFF_FFFFFFFF_FFFFFFFF_FFFF);
       |          ^~~~~~
-%Error: t/t_tagged_union.v:186:10: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:186:10: Unsupported: tagged union
   186 |     mt = tagged Wide90NonZeroLSB (90'hDE_ADBEEFCA_FEBABE12_3456);
       |          ^~~~~~
-%Error: t/t_tagged_union.v:189:10: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:189:10: Unsupported: tagged union
   189 |     mt = tagged Wide90LittleEndian (90'h11_11111122_22222233_3333);
       |          ^~~~~~
-%Error: t/t_tagged_union.v:193:10: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:193:10: Unsupported: tagged union
   193 |     at = tagged Invalid;
       |          ^~~~~~
-%Error: t/t_tagged_union.v:195:10: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:195:10: Unsupported: tagged union
   195 |     at = tagged Scalar (999);
       |          ^~~~~~
-%Error: t/t_tagged_union.v:198:10: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:198:10: Unsupported: tagged union
   198 |     at = tagged UnpackedArr '{100, 200, 300, 400};
       |          ^~~~~~
-%Error: t/t_tagged_union.v:204:10: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:204:10: Unsupported: tagged union
   204 |     at = tagged UnpackedArr2D '{'{32'hA, 32'hB, 32'hC}, '{32'hD, 32'hE, 32'hF}};
       |          ^~~~~~
-%Error: t/t_tagged_union.v:213:13: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:213:13: Unsupported: tagged union
   213 |     instr = tagged Add '{5'd1, 5'd2, 5'd3};
       |             ^~~~~~
-%Error: t/t_tagged_union.v:219:13: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:219:13: Unsupported: tagged union
   219 |     instr = tagged Add '{reg2:5'd10, regd:5'd20, reg1:5'd5};
       |             ^~~~~~
-%Error: t/t_tagged_union.v:225:13: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:225:13: Unsupported: tagged union
   225 |     instr = tagged Jmp (tagged JmpU 10'd512);
       |             ^~~~~~
-%Error: t/t_tagged_union.v:229:13: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:225:25: Unsupported: tagged union
+  225 |     instr = tagged Jmp (tagged JmpU 10'd512);
+      |                         ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:229:13: Unsupported: tagged union
   229 |     instr = tagged Jmp (tagged JmpC '{2'd1, 10'd256});
       |             ^~~~~~
-%Error: t/t_tagged_union.v:234:13: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:229:25: Unsupported: tagged union
+  229 |     instr = tagged Jmp (tagged JmpC '{2'd1, 10'd256});
+      |                         ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:234:13: Unsupported: tagged union
   234 |     instr = tagged Jmp (tagged JmpC '{cc:2'd3, addr:10'd100});
       |             ^~~~~~
-%Error: t/t_tagged_union.v:239:11: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:234:25: Unsupported: tagged union
+  234 |     instr = tagged Jmp (tagged JmpC '{cc:2'd3, addr:10'd100});
+      |                         ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:239:11: Unsupported: tagged union
   239 |     cht = tagged Invalid;
       |           ^~~~~~
-%Error: t/t_tagged_union.v:240:11: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+%Error-UNSUPPORTED: t/t_tagged_union.v:240:11: Unsupported: tagged union
   240 |     cht = tagged Handle (null);
       |           ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:244:11: Unsupported: tagged union
+  244 |     clt = tagged Invalid;
+      |           ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:245:11: Unsupported: tagged union
+  245 |     clt = tagged Obj (obj);
+      |           ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:249:10: Unsupported: tagged union
+  249 |     rt = tagged Invalid;
+      |          ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:250:10: Unsupported: tagged union
+  250 |     rt = tagged RealVal (3.14159);
+      |          ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:254:10: Unsupported: tagged union
+  254 |     rt = tagged ShortRealVal (2.5);
+      |          ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:258:10: Unsupported: tagged union
+  258 |     st = tagged Invalid;
+      |          ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:259:10: Unsupported: tagged union
+  259 |     st = tagged StrVal ("hello");
+      |          ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_union.v:263:10: Unsupported: tagged union
+  263 |     et = tagged Invalid;
+      |          ^~~~~~
 %Error: Exiting due to

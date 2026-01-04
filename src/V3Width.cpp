@@ -5565,10 +5565,6 @@ class WidthVisitor final : public VNVisitor {
 
     void visit(AstCase* nodep) override {
         assertAtStatement(nodep);
-        // Check for unsupported case matches
-        if (nodep->caseMatches()) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: matches (for tagged union)");
-        }
         // Type check expression case item conditions and bodies
         userIterateAndNext(nodep->exprp(), WidthVP{CONTEXT_DET, PRELIM}.p());
         for (AstCaseItem *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
