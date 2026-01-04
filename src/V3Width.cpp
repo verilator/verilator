@@ -4842,25 +4842,25 @@ class WidthVisitor final : public VNVisitor {
 
     void visit(AstTaggedExpr* nodep) override {
         // Tagged union expressions are currently unsupported
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: tagged union expression");
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: tagged union");
         // Set a placeholder type to allow further processing
         nodep->dtypeSetBit();
         userIterateChildren(nodep, m_vup);
     }
     void visit(AstTaggedPattern* nodep) override {
         // Tagged patterns are currently unsupported
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: tagged pattern");
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: '{} tagged patterns");
         nodep->dtypeSetBit();
         userIterateChildren(nodep, m_vup);
     }
     void visit(AstPatternVar* nodep) override {
         // Pattern variable bindings are currently unsupported
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: pattern variable binding");
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: '{} tagged patterns");
         nodep->dtypeSetBit();
     }
     void visit(AstPatternStar* nodep) override {
         // Pattern wildcards are currently unsupported
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: pattern wildcard (.*)");
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: '{} tagged patterns");
         nodep->dtypeSetBit();
     }
     void visit(AstMatches* nodep) override {
@@ -5567,7 +5567,7 @@ class WidthVisitor final : public VNVisitor {
         assertAtStatement(nodep);
         // Check for unsupported case matches
         if (nodep->caseMatches()) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: case matches (for tagged union)");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: matches (for tagged union)");
         }
         // Type check expression case item conditions and bodies
         userIterateAndNext(nodep->exprp(), WidthVP{CONTEXT_DET, PRELIM}.p());
