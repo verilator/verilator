@@ -2103,7 +2103,7 @@ data_typeVirtual<nodeDTypep>:           // ==IEEE: data_type after yVIRTUAL [ yI
 data_type_or_void<nodeDTypep>:  // ==IEEE: data_type_or_void
                 data_typeAny                            { $$ = $1; }
         |       yVOID
-                        { $$ = new AstBasicDType{$1, VBasicDTypeKwd::VOID};
+                        { $$ = new AstBasicDType{$1, VBasicDTypeKwd::CVOID};
                           BBUNSUP($1, "Unsupported: void (for tagged unions)"); }
         ;
 

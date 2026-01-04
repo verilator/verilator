@@ -422,8 +422,8 @@ public:
         TIME,
         // Closer to a class type, but limited usage
         STRING,
-        // Void type for tagged union members
-        VOID,
+        // Void type for tagged union members (CVOID to avoid Windows VOID macro)
+        CVOID,
         // Property / Sequence argument type
         UNTYPED,
         // Internal types for mid-steps
