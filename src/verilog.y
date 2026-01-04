@@ -2103,7 +2103,7 @@ data_typeVirtual<nodeDTypep>:           // ==IEEE: data_type after yVIRTUAL [ yI
 data_type_or_void<nodeDTypep>:  // ==IEEE: data_type_or_void
                 data_typeAny                            { $$ = $1; }
         |       yVOID
-                        { $$ = new AstBasicDType{$1, LOGIC_IMPLICIT};
+                        { $$ = new AstBasicDType{$1, VBasicDTypeKwd::VOID};
                           BBUNSUP($1, "Unsupported: void (for tagged unions)"); }
         ;
 
@@ -2135,7 +2135,7 @@ struct_unionDecl<nodeUOrStructDTypep>:  // IEEE: part of data_type
         /*cont*/    struct_union_memberListEnd
                         { $$ = $<nodeUOrStructDTypep>4; $$->addMembersp($5); }
         |       yUNION taggedSoftE packedSigningE '{'
-        /*mid*/         { $<nodeUOrStructDTypep>$ = new AstUnionDType{$1, $2, $3}; }
+        /*mid*/         { $<nodeUOrStructDTypep>$ = new AstUnionDType{$1, $2 == tagged_SOFT, $2 == tagged_TAGGED, $3}; }
         /*cont*/    struct_union_memberListEnd
                         { $$ = $<nodeUOrStructDTypep>5; $$->addMembersp($6); }
         ;
@@ -2273,10 +2273,11 @@ random_qualifier<qualifiers>:   // ==IEEE: random_qualifier
         |       yRANDC                                  { $$ = VMemberQualifiers::none(); $$.m_randc = true; }
         ;
 
-taggedSoftE<cbool>:
-                /*empty*/                               { $$ = false; }
-        |       ySOFT                                   { $$ = true; }
-        |       yTAGGED                                 { $$ = false; BBUNSUP($<fl>1, "Unsupported: tagged union"); }
+taggedSoftE<taggedstate>:
+                /*empty*/                               { $$ = tagged_NONE; }
+        |       ySOFT                                   { $$ = tagged_SOFT; }
+        |       yTAGGED                                 { $$ = tagged_TAGGED;
+                                                          BBUNSUP($<fl>1, "Unsupported: tagged union"); }
         ;
 
 packedSigningE<signstate>:
@@ -3543,7 +3544,12 @@ statement_item<nodeStmtp>:          // IEEE: statement_item
                           if ($1 == uniq_PRIORITY) $2->priorityPragma(true); }
         // &&& is part of expr so case_patternList aliases to case_itemList
         |       unique_priorityE caseStart caseAttrE yMATCHES case_itemList yENDCASE
-                        { $$ = nullptr; BBUNSUP($4, "Unsupported: matches (for tagged union)"); DEL($2, $5); }
+                        { $$ = $2; if ($5) $2->addItemsp($5);
+                          $2->caseMatchesSet();
+                          BBUNSUP($4, "Unsupported: matches (for tagged union)");
+                          if ($1 == uniq_UNIQUE) $2->uniquePragma(true);
+                          if ($1 == uniq_UNIQUE0) $2->unique0Pragma(true);
+                          if ($1 == uniq_PRIORITY) $2->priorityPragma(true); }
         |       unique_priorityE caseStart caseAttrE yINSIDE case_inside_itemList yENDCASE
                         { $$ = $2; if ($5) $2->addItemsp($5);
                           if (!$2->caseSimple()) $4->v3error("Illegal to have inside on a casex/casez");
@@ -3895,13 +3901,16 @@ caseCondList<nodeExprp>:        // IEEE: part of case_item
 
 patternNoExpr<nodep>:           // IEEE: pattern **Excluding Expr*
                 '.' idAny/*variable*/
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: '{} tagged patterns"); }
+                        { $$ = new AstPatternVar{$1, *$2};
+                          BBUNSUP($1, "Unsupported: '{} tagged patterns"); }
         |       yP_DOTSTAR
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: '{} tagged patterns"); }
+                        { $$ = new AstPatternStar{$1};
+                          BBUNSUP($1, "Unsupported: '{} tagged patterns"); }
         //                      // IEEE: "expr" excluded; expand in callers
         //                      // "yTAGGED idAny [expr]" Already part of expr
         |       yTAGGED idAny/*member_identifier*/ patternNoExpr
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: '{} tagged patterns"); DEL($3); }
+                        { $$ = new AstTaggedPattern{$1, *$2, $3};
+                          BBUNSUP($1, "Unsupported: '{} tagged patterns"); }
         //                      // "yP_TICKBRA patternList '}'" part of expr under assignment_pattern
         ;
 
@@ -3924,10 +3933,10 @@ patternMemberList<nodep>:       // IEEE: part of pattern and assignment_pattern
 
 patternMemberOne<patMemberp>:   // IEEE: part of pattern and assignment_pattern
                 patternKey ':' expr                     { $$ = new AstPatMember{$1->fileline(), $3, $1, nullptr}; }
-        |       patternKey ':' patternNoExpr            { $$ = nullptr; BBUNSUP($2, "Unsupported: '{} .* patterns"); DEL($1, $3); }
+        |       patternKey ':' patternNoExpr            { $$ = new AstPatMember{$1->fileline(), VN_AS($3, NodeExpr), $1, nullptr}; }
         //                      // From assignment_pattern_key
         |       yDEFAULT ':' expr                       { $$ = new AstPatMember{$1, $3, nullptr, nullptr}; $$->isDefault(true); }
-        |       yDEFAULT ':' patternNoExpr              { $$ = nullptr; BBUNSUP($2, "Unsupported: '{} .* patterns"); DEL($3); }
+        |       yDEFAULT ':' patternNoExpr              { AstPatMember* const patp = new AstPatMember{$1, VN_AS($3, NodeExpr), nullptr, nullptr}; patp->isDefault(true); $$ = patp; }
         ;
 
 patternKey<nodep>:              // IEEE: merge structure_pattern_key, array_pattern_key, assignment_pattern_key
@@ -5109,9 +5118,9 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         //                      // IEEE: cond_pattern - here to avoid reduce problems
         //                      // "expr yMATCHES pattern"
         //                      // IEEE: pattern - expanded here to avoid conflicts
-        |       ~l~expr yMATCHES patternNoExpr          { $$ = new AstConst{$2, AstConst::BitFalse{}};
+        |       ~l~expr yMATCHES patternNoExpr          { $$ = new AstMatches{$2, $1, $3};
                                                           BBUNSUP($<fl>2, "Unsupported: matches operator"); }
-        |       ~l~expr yMATCHES ~r~expr                { $$ = new AstConst{$2, AstConst::BitFalse{}};
+        |       ~l~expr yMATCHES ~r~expr                { $$ = new AstMatches{$2, $1, $3};
                                                           BBUNSUP($<fl>2, "Unsupported: matches operator"); }
         //
         //                      // IEEE: expression_or_dist - here to avoid reduce problems

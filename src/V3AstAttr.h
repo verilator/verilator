@@ -422,6 +422,8 @@ public:
         TIME,
         // Closer to a class type, but limited usage
         STRING,
+        // Void type for tagged union members
+        VOID,
         // Property / Sequence argument type
         UNTYPED,
         // Internal types for mid-steps
@@ -458,6 +460,7 @@ public:
                                             "shortint",
                                             "time",
                                             "string",
+                                            "void",
                                             "untyped",
                                             "VerilatedScope*",
                                             "char*",
@@ -479,7 +482,7 @@ public:
         static const char* const names[]
             = {"%E-unk",      "svBit",           "char",         "void*",          "char",
                "int",         "%E-integer",      "svLogic",      "long long",      "double",
-               "short",       "%E-time",         "const char*",  "%E-untyped",     "dpiScope",
+               "short",       "%E-time",         "const char*",  "void",           "%E-untyped",     "dpiScope",
                "const char*", "%E-mtaskstate",   "%E-dly-sched", "%E-trig-sched",  "%E-dyn-sched",
                "%E-fork",     "%E-proc-ref",     "%E-rand-gen",  "%E-stdrand-gen", "IData",
                "QData",       "%E-logic-implct", " MAX"};
@@ -940,7 +943,7 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
 
 class VCaseType final {
 public:
-    enum en : uint8_t { CT_CASE, CT_CASEX, CT_CASEZ, CT_CASEINSIDE, CT_RANDSEQUENCE };
+    enum en : uint8_t { CT_CASE, CT_CASEX, CT_CASEZ, CT_CASEINSIDE, CT_CASEMATCHES, CT_RANDSEQUENCE };
     enum en m_e;
     VCaseType()
         : m_e{CT_CASE} {}

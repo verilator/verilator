@@ -1714,6 +1714,23 @@ public:
     bool index() const { return m_index; }
     bool isExprCoverageEligible() const override { return false; }
 };
+class AstMatches final : public AstNodeExpr {
+    // "matches" operator: "expr matches pattern"
+    // Currently unsupported, used as placeholder for error reporting in V3Width
+    // @astgen op1 := lhsp : AstNodeExpr  // Expression to match
+    // @astgen op2 := patternp : AstNode  // Pattern to match against
+public:
+    AstMatches(FileLine* fl, AstNodeExpr* lhsp, AstNode* patternp)
+        : ASTGEN_SUPER_Matches(fl) {
+        this->lhsp(lhsp);
+        this->patternp(patternp);
+    }
+    ASTGEN_MEMBERS_AstMatches;
+    string emitVerilog() override { return "%l matches %r"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return false; }
+    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+};
 class AstMemberSel final : public AstNodeExpr {
     // @astgen op1 := fromp : AstNodeExpr
     //
@@ -1906,6 +1923,35 @@ public:
     int instrCount() const override { return widthInstrs(); }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* subDTypep() const VL_MT_STABLE { return dtypep() ? dtypep() : childDTypep(); }
+};
+class AstPatternStar final : public AstNodeExpr {
+    // Pattern wildcard: ".*"
+    // Currently unsupported, used as placeholder for error reporting in V3Width
+public:
+    explicit AstPatternStar(FileLine* fl)
+        : ASTGEN_SUPER_PatternStar(fl) {}
+    ASTGEN_MEMBERS_AstPatternStar;
+    string emitVerilog() override { return ".*"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return false; }
+    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+};
+class AstPatternVar final : public AstNodeExpr {
+    // Pattern variable binding: ".variable"
+    // Currently unsupported, used as placeholder for error reporting in V3Width
+    string m_name;  // Variable name
+public:
+    AstPatternVar(FileLine* fl, const string& name)
+        : ASTGEN_SUPER_PatternVar(fl)
+        , m_name{name} {}
+    ASTGEN_MEMBERS_AstPatternVar;
+    string emitVerilog() override { return ".%k"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return false; }
+    bool sameNode(const AstNode* samep) const override {
+        return m_name == VN_DBG_AS(samep, PatternVar)->m_name;
+    }
+    string name() const override VL_MT_STABLE { return m_name; }
 };
 class AstRand final : public AstNodeExpr {
     // $random/$random(seed) or $urandom/$urandom(seed)
@@ -2373,6 +2419,46 @@ public:
     bool cleanOut() const override { return true; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool isSystemFunc() const override { return true; }
+};
+class AstTaggedExpr final : public AstNodeExpr {
+    // Tagged union expression: "tagged MemberName [expr]"
+    // Currently unsupported, used as placeholder for error reporting in V3Width
+    // @astgen op1 := exprp : Optional[AstNodeExpr] // Optional value expression
+    string m_name;  // Member identifier name
+public:
+    AstTaggedExpr(FileLine* fl, const string& name, AstNodeExpr* exprp)
+        : ASTGEN_SUPER_TaggedExpr(fl)
+        , m_name{name} {
+        this->exprp(exprp);
+    }
+    ASTGEN_MEMBERS_AstTaggedExpr;
+    string emitVerilog() override { return "tagged %k"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return false; }
+    bool sameNode(const AstNode* samep) const override {
+        return m_name == VN_DBG_AS(samep, TaggedExpr)->m_name;
+    }
+    string name() const override VL_MT_STABLE { return m_name; }
+};
+class AstTaggedPattern final : public AstNodeExpr {
+    // Tagged pattern for matches: "tagged MemberName [pattern]"
+    // Currently unsupported, used as placeholder for error reporting in V3Width
+    // @astgen op1 := patternp : Optional[AstNode]  // Optional nested pattern
+    string m_name;  // Member identifier name
+public:
+    AstTaggedPattern(FileLine* fl, const string& name, AstNode* patternp)
+        : ASTGEN_SUPER_TaggedPattern(fl)
+        , m_name{name} {
+        this->patternp(patternp);
+    }
+    ASTGEN_MEMBERS_AstTaggedPattern;
+    string emitVerilog() override { return "tagged %k"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return false; }
+    bool sameNode(const AstNode* samep) const override {
+        return m_name == VN_DBG_AS(samep, TaggedPattern)->m_name;
+    }
+    string name() const override VL_MT_STABLE { return m_name; }
 };
 class AstTestPlusArgs final : public AstNodeExpr {
     // Search expression. If nullptr then this is a $test$plusargs instead of $value$plusargs.

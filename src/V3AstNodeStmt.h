@@ -391,8 +391,10 @@ public:
     bool casex() const { return m_casex == VCaseType::CT_CASEX; }
     bool casez() const { return m_casex == VCaseType::CT_CASEZ; }
     bool caseInside() const { return m_casex == VCaseType::CT_CASEINSIDE; }
+    bool caseMatches() const { return m_casex == VCaseType::CT_CASEMATCHES; }
     bool caseSimple() const { return m_casex == VCaseType::CT_CASE; }
     void caseInsideSet() { m_casex = VCaseType::CT_CASEINSIDE; }
+    void caseMatchesSet() { m_casex = VCaseType::CT_CASEMATCHES; }
     bool fullPragma() const { return m_fullPragma; }
     void fullPragma(bool flag) { m_fullPragma = flag; }
     bool parallelPragma() const { return m_parallelPragma; }

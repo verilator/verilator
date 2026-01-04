@@ -39,6 +39,8 @@ class V3Lexer;
 
 enum V3UniqState : uint8_t { uniq_NONE, uniq_UNIQUE, uniq_UNIQUE0, uniq_PRIORITY };
 
+enum V3TaggedState : uint8_t { tagged_NONE, tagged_SOFT, tagged_TAGGED };
+
 enum V3ImportProperty : uint8_t { iprop_NONE, iprop_CONTEXT, iprop_PURE };
 
 //============================================================================
@@ -119,6 +121,7 @@ struct V3ParseBisonYYSType final {
         bool cbool;
         VMemberQualifiers qualifiers;
         V3UniqState uniqstate;
+        V3TaggedState taggedstate;
         V3ImportProperty iprop;
         VSigning::en signstate;
         V3ErrorCode::en errcodeen;
