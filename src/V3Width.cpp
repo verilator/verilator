@@ -3223,9 +3223,7 @@ class WidthVisitor final : public VNVisitor {
         UINFO(5, "   NODEUORS " << nodep);
         // Check for tagged unions
         if (const AstUnionDType* const unionp = VN_CAST(nodep, UnionDType)) {
-            if (unionp->isTagged()) {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: tagged union");
-            }
+            if (unionp->isTagged()) { nodep->v3warn(E_UNSUPPORTED, "Unsupported: tagged union"); }
         }
         // UINFOTREE(9, nodep, "", "class-in");
         if (!nodep->packed() && v3Global.opt.structsPacked()) nodep->packed(true);
