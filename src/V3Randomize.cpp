@@ -549,14 +549,13 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 // expressions like obj.member[idx] in std::randomize().
                 while (exprp) {
                     AstVar* randVarp = nullptr;
-                    AstVarRef* varrefp = nullptr;
                     if (AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
                         randVarp = memberSelp->varp();
                         exprp = memberSelp->fromp();
                     } else if (AstArraySel* const arraySelp = VN_CAST(exprp, ArraySel)) {
                         exprp = arraySelp->fromp();
                         continue;  // Skip ArraySel, continue traversing
-                    } else if ((varrefp = VN_CAST(exprp, VarRef))) {
+                    } else if (AstVarRef* const varrefp = VN_CAST(exprp, VarRef)) {
                         randVarp = varrefp->varp();
                         varrefp->user1(true);
                         varrefp->access(VAccess::READWRITE);
@@ -568,10 +567,10 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     }
                     UASSERT_OBJ(randVarp, nodep, "No rand variable found");
                     AstNode* backp = randVarp;
-                    while (backp && (!VN_IS(backp, Class) && !VN_IS(backp, NodeModule))) {
+                    while (backp && !VN_IS(backp, NodeModule)) {
                         backp = backp->backp();
                     }
-                    UASSERT_OBJ(VN_IS(backp, NodeModule), randVarp,
+                    UASSERT_OBJ(backp, randVarp,
                                 "No class or module found for rand variable");
                     backp->user1(IS_STD_RANDOMIZED);
                 }
@@ -602,14 +601,12 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     randVarp = memberSelp->varp();
                     exprp = memberSelp->fromp();
                 } else if (AstArraySel* const arraySelp = VN_CAST(exprp, ArraySel)) {
-                    // Check if child is VarRef and mark it
-                    if (AstVarRef* const childVarRefp = VN_CAST(arraySelp->fromp(), VarRef)) {
-                        childVarRefp->access(VAccess::READWRITE);
-                    }
                     exprp = arraySelp->fromp();
                     continue;  // Skip ArraySel, continue traversing
                 } else if (AstVarRef* const varrefp = VN_CAST(exprp, VarRef)) {
                     randVarp = varrefp->varp();
+                    varrefp->user1(true);
+                    varrefp->access(VAccess::READWRITE);
                     exprp = nullptr;
                 } else {
                     // All invalid and unsupported expressions should be caught in V3Width
@@ -622,7 +619,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 RandomizeMode randMode = {};
                 randMode.usesMode = true;
                 randVarp->user1(randMode.asInt);
-                VN_AS(backp, Class)->user1(IS_RANDOMIZED_INLINE);
+                backp->user1(IS_RANDOMIZED_INLINE);
             }
         }
     }
