@@ -4,9 +4,12 @@
 // any use, without warranty, 2025 by Antmicro.
 // SPDX-License-Identifier: CC0-1.0
 
+typedef struct {int x;} struct_t;
+
 class inner_class;
   logic [3:0] c;
-  logic [3:0] d [2];
+  logic [3:0] d[2];
+  struct_t s;
 endclass
 
 class test_class;
@@ -78,6 +81,12 @@ module t;
     repeat (5) begin
       if (std::randomize(example.b.d[1]) with {example.b.d[1] inside {[2 : 6]};} == 0) $stop;
       if (example.b.d[1] < 2 || example.b.d[1] > 6) $stop;
+    end
+
+    // Nested object with struct: obj.b.s.x
+    repeat (5) begin
+      if (std::randomize(example.b.s.x) with {example.b.s.x inside {[7 : 9]};} == 0) $stop;
+      if (example.b.s.x < 7 || example.b.s.x > 9) $stop;
     end
 
     // Inline randomization of object with array
