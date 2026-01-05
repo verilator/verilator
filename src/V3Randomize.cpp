@@ -170,13 +170,23 @@ class RandomizeMarkVisitor final : public VNVisitor {
             if (VN_IS(pinp, With)) continue;
             const AstArg* const argp = VN_CAST(pinp, Arg);
             if (!argp) continue;
-            const AstNodeExpr* const exprp = argp->exprp();
-            if (const AstNodeVarRef* const varrefp = VN_CAST(exprp, NodeVarRef)) {
-                if (varrefp->varp() == varp) return true;
-            } else if (const AstMemberSel* const memberselp = VN_CAST(exprp, MemberSel)) {
-                if (memberselp->varp() == varp) return true;
-            } else if (const AstArraySel* const arrselp = VN_CAST(exprp, ArraySel)) {
-                if (VN_AS(arrselp->fromp(), VarRef)->varp() == varp) return true;
+            const AstNodeExpr* exprp = argp->exprp();
+            // Traverse through expression to find the base variable
+            while (exprp) {
+                if (const AstNodeVarRef* const varrefp = VN_CAST(exprp, NodeVarRef)) {
+                    if (varrefp->varp() == varp) return true;
+                    break;
+                }
+                if (const AstMemberSel* const memberselp = VN_CAST(exprp, MemberSel)) {
+                    if (memberselp->varp() == varp) return true;
+                    exprp = memberselp->fromp();
+                } else if (const AstArraySel* const arrselp = VN_CAST(exprp, ArraySel)) {
+                    exprp = arrselp->fromp();
+                } else if (const AstStructSel* const strselp = VN_CAST(exprp, StructSel)) {
+                    exprp = strselp->fromp();
+                } else {
+                    break;
+                }
             }
         }
         return false;
@@ -328,6 +338,52 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     processNestedConstraint(constrp, rootVarRefp, newPath, targetClassp);
                 });
             cloneNestedConstraintsRecurse(rootVarRefp, nestedClassp, newPath, targetClassp);
+        }
+    }
+
+    // Get randomized variables from (std::)randomize() arguments
+    // and mark AstNodeModule nodes in which they are defined
+    void handleRandomizeArgument(AstNodeExpr* exprp, AstVar* const varp, const bool stdRandomize) {
+        // IEEE 1800-2023 18.11: "Arguments are limited to the names of properties
+        // of the calling object; expressions are not allowed."
+        // However, for compatibility with other simulators, we support complex
+        // expressions like obj.member[idx].field in inline randomize().
+        while (exprp) {
+            AstVar* randVarp = nullptr;
+            if (AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
+                randVarp = memberSelp->varp();
+                exprp = memberSelp->fromp();
+            } else if (AstArraySel* const arraySelp = VN_CAST(exprp, ArraySel)) {
+                exprp = arraySelp->fromp();
+                continue;  // Skip ArraySel, continue traversing
+            } else if (AstStructSel* const structSelp = VN_CAST(exprp, StructSel)) {
+                exprp = structSelp->fromp();
+                continue;  // Skip StructSel, continue traversing
+            } else if (AstVarRef* const varrefp = VN_CAST(exprp, VarRef)) {
+                randVarp = varrefp->varp();
+                varrefp->user1(true);
+                varrefp->access(VAccess::READWRITE);
+                exprp = nullptr;
+            } else {
+                // All invalid and unsupported expressions should be caught in V3Width
+                exprp->v3fatalSrc("Unexpected expression type in randomize() argument");
+            }
+            UASSERT_OBJ(randVarp, exprp, "No rand variable found");
+            if (randVarp == varp) return;
+            AstNode* backp = randVarp;
+            while (backp && !VN_IS(backp, NodeModule)) backp = backp->backp();
+            if (stdRandomize) {
+                UASSERT_OBJ(backp, randVarp, "No class or module found for rand variable");
+                backp->user1(IS_STD_RANDOMIZED);
+            } else {
+                // Inline randomized then
+                UASSERT_OBJ(VN_IS(backp, Class), randVarp,
+                            "No class found for inline randomized variable");
+                RandomizeMode randMode = {};
+                randMode.usesMode = true;
+                randVarp->user1(randMode.asInt);
+                backp->user1(IS_RANDOMIZED_INLINE);
+            }
         }
     }
 
@@ -534,33 +590,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
             for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
                 AstArg* const argp = VN_CAST(pinp, Arg);
                 if (!argp) continue;
-                AstNodeExpr* exprp = argp->exprp();
-                while (exprp) {
-                    AstVar* randVarp = nullptr;
-                    AstVarRef* varrefp = nullptr;
-                    if (AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
-                        randVarp = memberSelp->varp();
-                        exprp = memberSelp->fromp();
-                    } else if ((varrefp = VN_CAST(exprp, VarRef))) {
-                        randVarp = varrefp->varp();
-                        varrefp->user1(true);
-                        exprp = nullptr;
-                    } else {
-                        varrefp = VN_AS(VN_CAST(exprp, ArraySel)->fromp(), VarRef);
-                        randVarp = varrefp->varp();
-                        varrefp->user1(true);
-                        varrefp->access(VAccess::READWRITE);
-                        exprp = nullptr;
-                    }
-                    UASSERT_OBJ(randVarp, nodep, "No rand variable found");
-                    AstNode* backp = randVarp;
-                    while (backp && (!VN_IS(backp, Class) && !VN_IS(backp, NodeModule))) {
-                        backp = backp->backp();
-                    }
-                    UASSERT_OBJ(VN_IS(backp, NodeModule), randVarp,
-                                "No class or module found for rand variable");
-                    backp->user1(IS_STD_RANDOMIZED);
-                }
+                handleRandomizeArgument(argp->exprp(), nullptr, true);
             }
             return;
         }
@@ -568,7 +598,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
             AstArg* const argp = VN_CAST(pinp, Arg);
             if (!argp) continue;
             classp->user1(IS_RANDOMIZED_INLINE);
-            AstNodeExpr* exprp = argp->exprp();
             AstVar* fromVarp = nullptr;  // If nodep is a method call, this is its receiver
             if (AstMethodCall* methodCallp = VN_CAST(nodep, MethodCall)) {
                 if (AstMemberSel* const memberSelp = VN_CAST(methodCallp->fromp(), MemberSel)) {
@@ -578,25 +607,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     fromVarp = varrefp->varp();
                 }
             }
-            while (exprp) {
-                AstVar* randVarp = nullptr;
-                if (AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
-                    randVarp = memberSelp->varp();
-                    exprp = memberSelp->fromp();
-                } else {
-                    AstVarRef* const varrefp = VN_AS(exprp, VarRef);
-                    randVarp = varrefp->varp();
-                    exprp = nullptr;
-                }
-                if (randVarp == fromVarp) break;
-                UASSERT_OBJ(randVarp, nodep, "No rand variable found");
-                AstNode* backp = randVarp;
-                while (backp && !VN_IS(backp, Class)) backp = backp->backp();
-                RandomizeMode randMode = {};
-                randMode.usesMode = true;
-                randVarp->user1(randMode.asInt);
-                VN_AS(backp, Class)->user1(IS_RANDOMIZED_INLINE);
-            }
+            handleRandomizeArgument(argp->exprp(), fromVarp, false);
         }
     }
     void visit(AstConstraintExpr* nodep) override {
