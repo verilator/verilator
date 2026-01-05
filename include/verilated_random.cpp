@@ -27,7 +27,7 @@
 #include <sstream>
 #include <streambuf>
 
-#define _VL_SOLVER_HASH_LEN 4
+#define _VL_SOLVER_HASH_LEN 1
 #define _VL_SOLVER_HASH_LEN_TOTAL 4
 
 // clang-format off
@@ -385,16 +385,36 @@ bool VlRandomizer::next(VlRNG& rngr) {
         var.second->emitType(os);
         os << ")\n";
     }
-    int i = 0;
     for (const std::string& constraint : m_constraints) {
-        os << "(assert (!(= #b1 " << constraint << ") :named " << "cons" << std::to_string(i)
-           << "))\n";
-        i++;
+        // Normal assertion without naming
+        os << "(assert (= #b1 " << constraint << "))\n";
     }
     os << "(check-sat)\n";
 
     bool sat = parseSolution(os, true);
     if (!sat) {
+        // If unsat, use named assertions to get unsat-core
+        os << "(reset)\n";
+        os << "(set-option :produce-unsat-cores true)\n";
+        os << "(set-logic QF_ABV)\n";
+        os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
+        os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
+        for (const auto& var : m_vars) {
+            if (var.second->dimension() > 0) {
+                auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
+                var.second->setArrayInfo(arrVarsp);
+            }
+            os << "(declare-fun " << var.first << " () ";
+            var.second->emitType(os);
+            os << ")\n";
+        }
+        int j = 0;
+        for (const std::string& constraint : m_constraints) {
+            os << "(assert (! (= #b1 " << constraint << ") :named cons" << j << "))\n";
+            j++;
+        }
+        os << "(check-sat)\n";
+        sat = parseSolution(os, true);  // This should still be unsat, but now with named assertions
         os << "(reset)\n";
         return false;
     }
@@ -428,9 +448,10 @@ bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
             }
         }
         for (int n : numbers) {
-            VL_PRINTF("%%Warning: Unsatisfied constraints \n \t\t%s \n",
-                      m_constraints_line[n].c_str());
-            // VL_WARN_MT(__FILE__, __LINE__, "randomize", m_constraints_line[n].c_str());
+            if (n < m_constraints_line.size()) {
+                VL_PRINTF("%%Warning: Unsatisfied constraints \n \t\t%s \n",
+                          m_constraints_line[n].c_str());
+            }
         }
         return false;
     }
