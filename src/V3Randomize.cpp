@@ -339,6 +339,47 @@ class RandomizeMarkVisitor final : public VNVisitor {
         }
     }
 
+    void handleRandomizeArgument(AstNodeExpr* exprp, AstVar* const varp, const bool stdRandomize) {
+        // IEEE 1800-2023 18.11: "Arguments are limited to the names of properties
+        // of the calling object; expressions are not allowed."
+        // However, for compatibility with other simulators, we support complex
+        // expressions like obj.member[idx].field in inline randomize().
+        while (exprp) {
+            AstVar* randVarp = nullptr;
+            if (AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
+                randVarp = memberSelp->varp();
+                exprp = memberSelp->fromp();
+            } else if (AstArraySel* const arraySelp = VN_CAST(exprp, ArraySel)) {
+                exprp = arraySelp->fromp();
+                continue;  // Skip ArraySel, continue traversing
+            } else if (AstVarRef* const varrefp = VN_CAST(exprp, VarRef)) {
+                randVarp = varrefp->varp();
+                varrefp->user1(true);
+                varrefp->access(VAccess::READWRITE);
+                exprp = nullptr;
+            } else {
+                // All invalid and unsupported expressions should be caught in V3Width
+                exprp->v3fatalSrc("Unexpected expression type in randomize() argument");
+            }
+            if (randVarp == varp) return;
+            UASSERT_OBJ(randVarp, exprp, "No rand variable found");
+            AstNode* backp = randVarp;
+            while (backp && !VN_IS(backp, NodeModule)) backp = backp->backp();
+            if (stdRandomize) {
+                UASSERT_OBJ(backp, randVarp, "No class or module found for rand variable");
+                backp->user1(IS_STD_RANDOMIZED);
+            } else {
+                // Inline randomized then
+                UASSERT_OBJ(VN_IS(backp, Class), randVarp,
+                            "No class found for inline randomized variable");
+                RandomizeMode randMode = {};
+                randMode.usesMode = true;
+                randVarp->user1(randMode.asInt);
+                backp->user1(IS_RANDOMIZED_INLINE);
+            }
+        }
+    }
+
     // VISITORS
     void visit(AstClass* nodep) override {
         VL_RESTORER(m_classp);
@@ -542,38 +583,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
             for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
                 AstArg* const argp = VN_CAST(pinp, Arg);
                 if (!argp) continue;
-                AstNodeExpr* exprp = argp->exprp();
-                // IEEE 1800-2023 18.11: "Arguments are limited to the names of properties
-                // of the calling object; expressions are not allowed."
-                // However, for compatibility with other simulators, we support complex
-                // expressions like obj.member[idx] in std::randomize().
-                while (exprp) {
-                    AstVar* randVarp = nullptr;
-                    if (AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
-                        randVarp = memberSelp->varp();
-                        exprp = memberSelp->fromp();
-                    } else if (AstArraySel* const arraySelp = VN_CAST(exprp, ArraySel)) {
-                        exprp = arraySelp->fromp();
-                        continue;  // Skip ArraySel, continue traversing
-                    } else if (AstVarRef* const varrefp = VN_CAST(exprp, VarRef)) {
-                        randVarp = varrefp->varp();
-                        varrefp->user1(true);
-                        varrefp->access(VAccess::READWRITE);
-                        exprp = nullptr;
-                    } else {
-                        // All invalid and unsupported expressions should be caught in V3Width
-                        nodep->v3fatalSrc(
-                            "Unexpected expression type in std::randomize() argument");
-                    }
-                    UASSERT_OBJ(randVarp, nodep, "No rand variable found");
-                    AstNode* backp = randVarp;
-                    while (backp && !VN_IS(backp, NodeModule)) {
-                        backp = backp->backp();
-                    }
-                    UASSERT_OBJ(backp, randVarp,
-                                "No class or module found for rand variable");
-                    backp->user1(IS_STD_RANDOMIZED);
-                }
+                handleRandomizeArgument(argp->exprp(), nullptr, true);
             }
             return;
         }
@@ -581,7 +591,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
             AstArg* const argp = VN_CAST(pinp, Arg);
             if (!argp) continue;
             classp->user1(IS_RANDOMIZED_INLINE);
-            AstNodeExpr* exprp = argp->exprp();
             AstVar* fromVarp = nullptr;  // If nodep is a method call, this is its receiver
             if (AstMethodCall* methodCallp = VN_CAST(nodep, MethodCall)) {
                 if (AstMemberSel* const memberSelp = VN_CAST(methodCallp->fromp(), MemberSel)) {
@@ -591,36 +600,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     fromVarp = varrefp->varp();
                 }
             }
-            // IEEE 1800-2023 18.11: "Arguments are limited to the names of properties
-            // of the calling object; expressions are not allowed."
-            // However, for compatibility with other simulators, we support complex
-            // expressions like obj.member[idx].field in inline randomize().
-            while (exprp) {
-                AstVar* randVarp = nullptr;
-                if (AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
-                    randVarp = memberSelp->varp();
-                    exprp = memberSelp->fromp();
-                } else if (AstArraySel* const arraySelp = VN_CAST(exprp, ArraySel)) {
-                    exprp = arraySelp->fromp();
-                    continue;  // Skip ArraySel, continue traversing
-                } else if (AstVarRef* const varrefp = VN_CAST(exprp, VarRef)) {
-                    randVarp = varrefp->varp();
-                    varrefp->user1(true);
-                    varrefp->access(VAccess::READWRITE);
-                    exprp = nullptr;
-                } else {
-                    // All invalid and unsupported expressions should be caught in V3Width
-                    nodep->v3fatalSrc("Unexpected expression type in randomize() argument");
-                }
-                if (randVarp == fromVarp) break;
-                UASSERT_OBJ(randVarp, nodep, "No rand variable found");
-                AstNode* backp = randVarp;
-                while (backp && !VN_IS(backp, Class)) backp = backp->backp();
-                RandomizeMode randMode = {};
-                randMode.usesMode = true;
-                randVarp->user1(randMode.asInt);
-                backp->user1(IS_RANDOMIZED_INLINE);
-            }
+            handleRandomizeArgument(argp->exprp(), fromVarp, false);
         }
     }
     void visit(AstConstraintExpr* nodep) override {
