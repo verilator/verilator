@@ -414,7 +414,8 @@ bool VlRandomizer::next(VlRNG& rngr) {
             j++;
         }
         os << "(check-sat)\n";
-        sat = parseSolution(os, true);  // This should still be unsat, but now with named assertions
+        sat = parseSolution(os,
+                            true);  // This should still be unsat, but now with named assertions
         os << "(reset)\n";
         return false;
     }
