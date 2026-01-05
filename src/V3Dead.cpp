@@ -409,7 +409,7 @@ class DeadVisitor final : public VNVisitor {
         }
     }
     bool mightElimVar(const AstVar* nodep) const {
-        if (nodep->isSigPublic()) return false;  // Can't elim publics!
+        if (nodep->isSigPublic() || nodep->tracePreserve()) return false;  // Can't elim publics!
         if (nodep->isIO() || nodep->isClassMember() || nodep->sensIfacep()) return false;
         if (nodep->isTemp() && !nodep->isTrace()) return true;
         return m_elimUserVars;  // Post-Trace can kill most anything

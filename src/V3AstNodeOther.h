@@ -1916,6 +1916,7 @@ class AstVar final : public AstNode {
     bool m_dfgMultidriven : 1;  // Singal is multidriven, used by DFG to avoid repeat processing
     bool m_globalConstrained : 1;  // Global constraint per IEEE 1800-2023 18.5.8
     bool m_isStdRandomizeArg : 1;  // Argument variable created for std::randomize (__Varg*)
+    bool m_tracePreserve : 1;  // Preserve var for trace funcs
     void init() {
         m_ansi = false;
         m_declTyped = false;
@@ -1968,6 +1969,7 @@ class AstVar final : public AstNode {
         m_dfgMultidriven = false;
         m_globalConstrained = false;
         m_isStdRandomizeArg = false;
+        m_tracePreserve = false;
     }
 
 public:
@@ -2141,6 +2143,8 @@ public:
     bool globalConstrained() const { return m_globalConstrained; }
     bool isStdRandomizeArg() const { return m_isStdRandomizeArg; }
     void setStdRandomizeArg() { m_isStdRandomizeArg = true; }
+    bool tracePreserve() const { return m_tracePreserve; }
+    void setTracePreserve() { m_tracePreserve = true; }
     // METHODS
     void name(const string& name) override { m_name = name; }
     void tag(const string& text) override { m_tag = text; }

@@ -284,10 +284,10 @@ class TraceDeclVisitor final : public VNVisitor {
             });
         }
         if (dtypeCallp) {
-            // NOCOMMIT  -- are both necessary?
+            // NOCOMMIT  -- are all necessary?
             m_traVscp->tracePreserve(true);
             m_traVscp->varp()->trace(true);
-            m_traVscp->varp()->sigPublic(true);  // NOCOMMIT  -- this is a lie -- FIX
+            m_traVscp->varp()->setTracePreserve();
             newp->dtypeParamName(VN_AS(dtypeCallp->funcp()->user2p(), VarScope)
                                      ->varp()
                                      ->vlArgType(true, false, true, "", true, true));
