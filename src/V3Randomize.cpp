@@ -578,21 +578,20 @@ class RandomizeMarkVisitor final : public VNVisitor {
             }
             return;
         }
-        if (!nodep->pinsp()) return;  // Nothing to do in this case
-        classp->user1(IS_RANDOMIZED_INLINE);
-        const AstVar* fromVarp = nullptr;  // If nodep is a method call, this is its receiver
-        if (AstMethodCall* methodCallp = VN_CAST(nodep, MethodCall)) {
-            if (AstMemberSel* const memberSelp = VN_CAST(methodCallp->fromp(), MemberSel)) {
-                fromVarp = memberSelp->varp();
-            } else {
-                AstVarRef* const varrefp = VN_AS(methodCallp->fromp(), VarRef);
-                fromVarp = varrefp->varp();
-            }
-        }
         for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
             AstArg* const argp = VN_CAST(pinp, Arg);
             if (!argp) continue;
+            classp->user1(IS_RANDOMIZED_INLINE);
             AstNodeExpr* exprp = argp->exprp();
+            AstVar* fromVarp = nullptr;  // If nodep is a method call, this is its receiver
+            if (AstMethodCall* methodCallp = VN_CAST(nodep, MethodCall)) {
+                if (AstMemberSel* const memberSelp = VN_CAST(methodCallp->fromp(), MemberSel)) {
+                    fromVarp = memberSelp->varp();
+                } else {
+                    AstVarRef* const varrefp = VN_AS(methodCallp->fromp(), VarRef);
+                    fromVarp = varrefp->varp();
+                }
+            }
             // IEEE 1800-2023 18.11: "Arguments are limited to the names of properties
             // of the calling object; expressions are not allowed."
             // However, for compatibility with other simulators, we support complex
