@@ -171,7 +171,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
             const AstArg* const argp = VN_CAST(pinp, Arg);
             if (!argp) continue;
             const AstNodeExpr* exprp = argp->exprp();
-            // Traverse through ArraySel and MemberSel to find the base variable
+            // Traverse through expression to find the base variable
             while (exprp) {
                 if (const AstNodeVarRef* const varrefp = VN_CAST(exprp, NodeVarRef)) {
                     if (varrefp->varp() == varp) return true;
@@ -182,6 +182,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     exprp = memberselp->fromp();
                 } else if (const AstArraySel* const arrselp = VN_CAST(exprp, ArraySel)) {
                     exprp = arrselp->fromp();
+                } else if (const AstStructSel* const strselp = VN_CAST(exprp, StructSel)) {
+                    exprp = strselp->fromp();
                 } else {
                     break;
                 }
@@ -354,6 +356,9 @@ class RandomizeMarkVisitor final : public VNVisitor {
             } else if (AstArraySel* const arraySelp = VN_CAST(exprp, ArraySel)) {
                 exprp = arraySelp->fromp();
                 continue;  // Skip ArraySel, continue traversing
+            } else if (AstStructSel* const structSelp = VN_CAST(exprp, StructSel)) {
+                exprp = structSelp->fromp();
+                continue;  // Skip StructSel, continue traversing
             } else if (AstVarRef* const varrefp = VN_CAST(exprp, VarRef)) {
                 randVarp = varrefp->varp();
                 varrefp->user1(true);

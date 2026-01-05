@@ -6781,7 +6781,7 @@ class WidthVisitor final : public VNVisitor {
                 // IEEE 1800-2023 (18.12) limits args to current scope variables.
                 // Verilator accepts this for compatibility with other simulators.
                 continue;
-            } else if (VN_IS(exprp, VarRef) || VN_IS(exprp, ArraySel)) {
+            } else if (VN_IS(exprp, VarRef) || VN_IS(exprp, ArraySel) || VN_IS(exprp, StructSel)) {
                 // Valid usage
                 continue;
             } else {
