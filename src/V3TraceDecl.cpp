@@ -108,7 +108,8 @@ class TraceDeclVisitor final : public VNVisitor {
     std::vector<AstCFunc*> m_subFuncps;  // Trace sub functions for this scope
     std::set<const AstTraceDecl*> m_declUncalledps;  // Declarations not called
     std::unordered_map<const AstNodeDType*, AstCFunc*> m_dtypeFuncs;  // Functions per type
-    AstCFunc* m_dtypeFunc = nullptr;  // Current type func
+    AstCFunc* m_dtypeFuncp = nullptr;  // Current type func
+    AstTraceDecl* m_dtypeDeclp = nullptr;  // Current type func decl
     V3UniqueNames m_dtypeNames{""};  // Unique names for dtype funcs
     bool m_skipDtypeFunc = false;  // Don't create a type func
     int m_offset = 0;  // Offset for types
@@ -237,8 +238,8 @@ class TraceDeclVisitor final : public VNVisitor {
 
     void addToSubFunc(AstNodeStmt* stmtp) {
         // TODO -- sub funcs for dtype components
-        if (m_dtypeFunc) {
-            m_dtypeFunc->addStmtsp(stmtp);
+        if (m_dtypeFuncp) {
+            m_dtypeFuncp->addStmtsp(stmtp);
             return;
         }
         if (m_subFuncSize > m_funcSizeLimit || m_subFuncps.empty()) {
@@ -282,6 +283,8 @@ class TraceDeclVisitor final : public VNVisitor {
                                                m_traVscp->width()});
                 VL_DO_DANGLING(refp->deleteTree(), refp);
             });
+        } else {
+            newp->dtypeDeclp(m_dtypeDeclp);
         }
         if (dtypeCallp) {
             // NOCOMMIT  -- are all necessary?
@@ -467,7 +470,6 @@ class TraceDeclVisitor final : public VNVisitor {
                             = new AstVarRef{m_traVscp->fileline(), m_traVscp, VAccess::READ};
                         // Recurse into data type of the signal. The visit methods will add
                         // AstTraceDecls.
-                        VL_RESTORER(m_offset);
                         iterate(m_traVscp->varp()->dtypep()->skipRefToEnump());
                         // Delete reference created above. Traversal cloned it as required.
                         if (m_traValuep) {
@@ -586,18 +588,18 @@ class TraceDeclVisitor final : public VNVisitor {
         AstCCall* const callp = new AstCCall{flp, *funcpp};
         callp->dtypeSetVoid();
         callp->argTypes(callArgs);
-        AstTraceDecl* const declp = addTraceDecl(VNumRange{}, skipTypep->width(), callp);
+        m_dtypeDeclp = addTraceDecl(VNumRange{}, skipTypep->width(), callp);
         addToSubFunc(callp->makeStmt());
 
         if (pair.second) {
             VL_RESTORER(m_offset);
             m_offset = 1;
 
-            VL_RESTORER(m_dtypeFunc);
-            m_dtypeFunc = *funcpp;
-            m_dtypeFunc->argTypes(m_dtypeFunc->argTypes()
-                                  + ", const char* name, uint32_t fidx, uint32_t c, "
-                                    "VerilatedTraceSigDirection direction");
+            VL_RESTORER(m_dtypeFuncp);
+            m_dtypeFuncp = *funcpp;
+            m_dtypeFuncp->argTypes(m_dtypeFuncp->argTypes()
+                                   + ", const char* name, uint32_t fidx, uint32_t c, "
+                                     "VerilatedTraceSigDirection direction");
             if (AstStructDType* const dtypep = VN_CAST(skipTypep, StructDType)) {
                 declStruct(dtypep, true);
             } else if (AstUnpackArrayDType* const dtypep = VN_CAST(skipTypep, UnpackArrayDType)) {
@@ -608,11 +610,11 @@ class TraceDeclVisitor final : public VNVisitor {
                 UASSERT_OBJ(false, skipTypep, "Creating a trace function for an unexpected type");
             }
             // Code 0 is a sentinel value
-            m_dtypeFunc->user1(m_offset - 1);
+            m_dtypeFuncp->user1(m_offset - 1);
         }
 
-        declp->codeInc((*funcpp)->user1());
-        m_offset += declp->codeInc();
+        m_dtypeDeclp->codeInc((*funcpp)->user1());
+        m_offset += m_dtypeDeclp->codeInc();
     }
     void declUnpackedArray(AstUnpackArrayDType* const nodep, bool newFunc) {
         string prefixName(newFunc ? "name" : m_traName);
@@ -661,13 +663,14 @@ class TraceDeclVisitor final : public VNVisitor {
         }
 
         VL_RESTORER(m_skipDtypeFunc);
+        VL_RESTORER(m_dtypeDeclp);
         if (isBasicIO()) m_skipDtypeFunc = true;
 
-        if (m_skipDtypeFunc || m_dtypeFunc) {
-            declUnpackedArray(nodep, false);
-        } else {
+        if (!(m_skipDtypeFunc || m_dtypeFuncp)) {
+            VL_RESTORER(m_offset);
             newDeclFunc(nodep);
         }
+        declUnpackedArray(nodep, false);
     }
     void declPackedArray(AstPackArrayDType* const nodep, bool newFunc) {
         string prefixName(newFunc ? "name" : m_traName);
@@ -703,13 +706,14 @@ class TraceDeclVisitor final : public VNVisitor {
         }
 
         VL_RESTORER(m_skipDtypeFunc);
+        VL_RESTORER(m_dtypeDeclp);
         if (isBasicIO()) m_skipDtypeFunc = true;
 
-        if (m_skipDtypeFunc || m_dtypeFunc) {
-            declPackedArray(nodep, false);
-        } else {
+        if (!(m_skipDtypeFunc || m_dtypeFuncp)) {
+            VL_RESTORER(m_offset);
             newDeclFunc(nodep);
         }
+        declPackedArray(nodep, false);
     }
     void declStruct(AstStructDType* const nodep, bool newFunc) {
         FileLine* const flp = nodep->fileline();
@@ -758,17 +762,18 @@ class TraceDeclVisitor final : public VNVisitor {
         }
 
         VL_RESTORER(m_skipDtypeFunc);
+        VL_RESTORER(m_dtypeDeclp);
         if (isBasicIO()) m_skipDtypeFunc = true;
 
         // Only create sub functions for top-level structs, i.e. don't have struct funcs
         // call other struct funcs for child types.  This could easily be done for decl funcs
         // but full / chg funcs would require copying / aligning data for child types or more
         // complicated / wonky / generalized data access.
-        if (m_skipDtypeFunc || m_dtypeFunc) {
-            declStruct(nodep, false);
-        } else {
+        if (!(m_skipDtypeFunc || m_dtypeFuncp)) {
+            VL_RESTORER(m_offset);
             newDeclFunc(nodep);
         }
+        declStruct(nodep, false);
     }
     void visit(AstUnionDType* nodep) override {
         if (!m_traVscp) return;

@@ -1199,6 +1199,7 @@ class AstTraceDecl final : public AstNodeStmt {
     //
     // @astgen ptr := m_dtypeVscp: Optional[AstVarScope] // Var scope for type tracing
     // @astgen ptr := m_dtypeCallp: Optional[AstCCall] // Type init function call
+    // @astgen ptr := m_dtypeDeclp: Optional[AstTraceDecl] // CCall TraceDecl which replaces this
     uint32_t m_code{0};  // Trace identifier code
     uint32_t m_fidx{0};  // Trace function index
     const string m_showname;  // Name of variable
@@ -1254,6 +1255,8 @@ public:
     VDirection declDirection() const { return m_declDirection; }
     AstCCall* dtypeCallp() const { return m_dtypeCallp; }
     void dtypeCallp(AstCCall* const callp) { m_dtypeCallp = callp; }
+    AstTraceDecl* dtypeDeclp() const { return m_dtypeDeclp; }
+    void dtypeDeclp(AstTraceDecl* const declp) { m_dtypeDeclp = declp; }
     AstVarScope* dtypeVscp() const { return m_dtypeVscp; }
     void dtypeVscp(AstVarScope* const dtypeVscp) { m_dtypeVscp = dtypeVscp; }
     bool inDtypeFunc() const { return m_inDtypeFunc; }

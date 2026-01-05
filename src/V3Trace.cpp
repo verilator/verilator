@@ -165,8 +165,10 @@ class TraceVisitor final : public VNVisitor {
     // Cleared entire netlist
     //  AstCFunc::user1()               // V3GraphVertex* for this node
     //  AstTraceDecl::user1()           // V3GraphVertex* for this node
+    //  AstTraceDecl::user2()           // dtype decl cannot be used for _chg
     //  AstVarScope::user1()            // V3GraphVertex* for this node
     //  AstStmtExpr::user2()            // bool; walked next list for other ccalls
+    //  AstVarRef::user2()              // dtype V3TraceDecl* for this node
     //  Ast*::user3()                   // TraceActivityVertex* for this node
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
@@ -239,6 +241,35 @@ class TraceVisitor final : public VNVisitor {
         }
         if (dumpLevel() || debug() >= 9)
             dupFinder.dumpFile(v3Global.debugFilename("trace") + ".hash", false);
+    }
+
+    void graphDtypePrune() {
+        for (V3GraphVertex* const vtxp : m_graph.vertices().unlinkable()) {
+            if (TraceTraceVertex* const vvertexp = vtxp->cast<TraceTraceVertex>()) {
+                // NOCOMMIT -- this will still leave the prefix push and popping -- FIX
+                AstTraceDecl* const declp = vvertexp->nodep();
+                // This skips the dtype sub-func optimization if a var is affected by multiple
+                // activities.  We really only need to do this for _chg funcs (and not decls,
+                // _const and _full) but it's simpiler to do it all one way or the other.
+                if (declp) {
+                    UINFO(1, "SIMPLIFY_DECL: " << declp);
+                    if (declp->user2() || (declp->dtypeDeclp() && !declp->dtypeDeclp()->user2())) {
+                        AstCCall* const callp = declp->dtypeCallp();
+                        if (callp) {
+                            // NOCOMMIT -- this may leave dtype func which are not called --
+                            // problem?
+                            AstNode* stmtexprp = callp->backp();
+                            VL_DO_DANGLING(pushDeletep(stmtexprp->unlinkFrBack()), stmtexprp);
+                        }
+                        // Can't purge until we finish this pass
+                        pushDeletep(declp->unlinkFrBack());
+                        vvertexp->rerouteEdges(&m_graph);
+                        vvertexp->unlinkDelete(&m_graph);
+                    }
+                    declp->dtypeDeclp(nullptr);
+                }
+            }
+        }
     }
 
     void graphSimplify(bool initial) {
@@ -880,6 +911,7 @@ class TraceVisitor final : public VNVisitor {
     void createTraceFunctions() {
         // NOCOMMIT
         if (dumpGraphLevel() >= 6) m_graph.dumpDotFilePrefixed("trace_more_pre");
+        graphDtypePrune();
 
         // Detect and remove duplicate values
         detectDuplicates();
@@ -993,6 +1025,7 @@ class TraceVisitor final : public VNVisitor {
                             UINFO(8, "       Activity Edge: " << activityVtxp->name() << " -- "
                                                               << (void*)(activityVtxp));
                             new V3GraphEdge{&m_graph, activityVtxp, ccallFuncVtxp, 1};
+                            ccallp->funcp()->user3p(activityVtxp);
                         }
                     }
                 }
@@ -1032,10 +1065,11 @@ class TraceVisitor final : public VNVisitor {
         }
     }
     void visit(AstVarRef* nodep) override {
+        UASSERT_OBJ(nodep->varScopep(), nodep, "No var scope?");
+        AstVarScope* const varscopep = nodep->varScopep();
+        V3GraphVertex* varVtxp = varscopep->user1u().toGraphVertex();
         if (m_tracep) {
-            UASSERT_OBJ(nodep->varScopep(), nodep, "No var scope?");
             UASSERT_OBJ(nodep->access().isReadOnly(), nodep, "Lvalue in trace?  Should be const.");
-            V3GraphVertex* varVtxp = nodep->varScopep()->user1u().toGraphVertex();
             if (!varVtxp) {
                 varVtxp = new TraceVarVertex{&m_graph, nodep->varScopep()};
                 nodep->varScopep()->user1p(varVtxp);
@@ -1049,14 +1083,23 @@ class TraceVisitor final : public VNVisitor {
                 new V3GraphEdge{&m_graph, m_alwaysVtxp, traceVtxp, 1};
                 UINFO(1, "ALWAYS_EDGE: " << varVtxp << " (" << nodep << ") -> " << m_alwaysVtxp);
             }
+            if (m_tracep->dtypeVscp()) varscopep->user2p(m_tracep);
         } else if (m_cfuncp && m_finding && nodep->access().isWriteOrRW()) {
-            UASSERT_OBJ(nodep->varScopep(), nodep, "No var scope?");
             V3GraphVertex* const funcVtxp = getCFuncVertexp(m_cfuncp);
-            V3GraphVertex* const varVtxp = nodep->varScopep()->user1u().toGraphVertex();
             if (varVtxp) {  // else we're not tracing this signal
                 new V3GraphEdge{&m_graph, funcVtxp, varVtxp, 1};
                 UINFO(1, "SOME_EDGE: " << varVtxp << " (" << nodep << ") -> " << funcVtxp << " ("
                                        << m_cfuncp << ")");
+                AstTraceDecl* const declp = VN_AS(varscopep->user2p(), TraceDecl);
+                if (declp) {
+                    AstNode* const activityp = m_cfuncp->user3p();
+                    if (!declp->user3p()) {
+                        declp->user3p(activityp);
+                    } else if (declp->user3p() != activityp) {
+                        UINFO(1, "MULTIPLE_ACTIVITIES: " << nodep);
+                        declp->user2(true);
+                    }
+                }
             }
         }
     }
@@ -1067,6 +1110,9 @@ public:
     // CONSTRUCTORS
     explicit TraceVisitor(AstNetlist* nodep)
         : m_alwaysVtxp{new TraceActivityVertex{&m_graph, TraceActivityVertex::ACTIVITY_ALWAYS}} {
+        // NOCOMMIT -- necessary?
+        nodep->user2ClearTree();  // TraceDecl multiple activities flag
+        nodep->user3ClearTree();  // TraceDecl TraceActivityVertex (assumes we start at nullptr)
         iterate(nodep);
         nodep->foreach([](AstTraceDecl* const declp) {
             if (declp->inDtypeFunc()) {
