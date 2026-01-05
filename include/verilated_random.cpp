@@ -386,7 +386,6 @@ bool VlRandomizer::next(VlRNG& rngr) {
         os << ")\n";
     }
     for (const std::string& constraint : m_constraints) {
-        // Normal assertion without naming
         os << "(assert (= #b1 " << constraint << "))\n";
     }
     os << "(check-sat)\n";
@@ -414,8 +413,7 @@ bool VlRandomizer::next(VlRNG& rngr) {
             j++;
         }
         os << "(check-sat)\n";
-        sat = parseSolution(os,
-                            true);  // This should still be unsat, but now with named assertions
+        sat = parseSolution(os, true);
         os << "(reset)\n";
         return false;
     }
