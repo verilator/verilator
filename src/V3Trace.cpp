@@ -387,7 +387,8 @@ class TraceVisitor final : public VNVisitor {
             // If the value comparisons are cheaper to perform than checking the
             // activity flags make the signals always traced. Note this cost
             // equation is heuristic.
-            if (complexity <= actSet.size() * 2) {
+            // NOCOMMIT
+            if (complexity <= actSet.size() * 2 && 0) {
                 for (; head != it; ++head) {
                     new V3GraphEdge{&m_graph, m_alwaysVtxp, head->second, 1};
                 }
