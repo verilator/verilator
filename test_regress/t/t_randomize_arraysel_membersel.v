@@ -80,6 +80,12 @@ module t;
       if (example.b.d[1] < 2 || example.b.d[1] > 6) $stop;
     end
 
+    // Inline randomization of object with array:
+    repeat (5) begin
+      if (example.randomize(b) with {b.d[1] inside {[2 : 6]};} == 0) $stop;
+      if (example.b.d[1] < 2 || example.b.d[1] > 6) $stop;
+    end
+
     $write("*-* All Finished *-*\n");
     $finish;
   end
