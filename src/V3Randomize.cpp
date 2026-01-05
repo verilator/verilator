@@ -339,6 +339,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
         }
     }
 
+    // Get randomized variables from (std::)randomize() arguments
+    // and mark AstNodeModule nodes in which they are defined
     void handleRandomizeArgument(AstNodeExpr* exprp, AstVar* const varp, const bool stdRandomize) {
         // IEEE 1800-2023 18.11: "Arguments are limited to the names of properties
         // of the calling object; expressions are not allowed."
@@ -361,8 +363,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 // All invalid and unsupported expressions should be caught in V3Width
                 exprp->v3fatalSrc("Unexpected expression type in randomize() argument");
             }
-            if (randVarp == varp) return;
             UASSERT_OBJ(randVarp, exprp, "No rand variable found");
+            if (randVarp == varp) return;
             AstNode* backp = randVarp;
             while (backp && !VN_IS(backp, NodeModule)) backp = backp->backp();
             if (stdRandomize) {
