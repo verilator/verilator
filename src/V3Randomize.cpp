@@ -554,15 +554,12 @@ class RandomizeMarkVisitor final : public VNVisitor {
                         randVarp = memberSelp->varp();
                         exprp = memberSelp->fromp();
                     } else if (AstArraySel* const arraySelp = VN_CAST(exprp, ArraySel)) {
-                        // Check if child is VarRef and mark it
-                        if (AstVarRef* const childVarRefp = VN_CAST(arraySelp->fromp(), VarRef)) {
-                            childVarRefp->access(VAccess::READWRITE);
-                        }
                         exprp = arraySelp->fromp();
                         continue;  // Skip ArraySel, continue traversing
                     } else if ((varrefp = VN_CAST(exprp, VarRef))) {
                         randVarp = varrefp->varp();
                         varrefp->user1(true);
+                        varrefp->access(VAccess::READWRITE);
                         exprp = nullptr;
                     } else {
                         // All invalid and unsupported expressions should be caught in V3Width
