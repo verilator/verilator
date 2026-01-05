@@ -1486,6 +1486,9 @@ public:
     string verilogKwd() const override { return "union"; }
     bool isSoft() const { return m_isSoft; }
     bool isTagged() const { return m_isTagged; }
+    bool sameNode(const AstNode* samep) const override;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
 };
 
 #endif  // Guard

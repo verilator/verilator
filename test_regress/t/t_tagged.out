@@ -26,10 +26,10 @@
 %Error-UNSUPPORTED: t/t_tagged.v:34:13: Unsupported: matches operator
    34 |       if (u matches tagged m_int .n) $stop;
       |             ^~~~~~~
-%Error-UNSUPPORTED: t/t_tagged.v:34:21: Unsupported: '{} tagged patterns
+%Error-UNSUPPORTED: t/t_tagged.v:34:21: Unsupported: tagged pattern
    34 |       if (u matches tagged m_int .n) $stop;
       |                     ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged.v:34:34: Unsupported: '{} tagged patterns
+%Error-UNSUPPORTED: t/t_tagged.v:34:34: Unsupported: pattern variable
    34 |       if (u matches tagged m_int .n) $stop;
       |                                  ^
 %Error-UNSUPPORTED: t/t_tagged.v:36:11: Unsupported: tagged union
@@ -41,10 +41,10 @@
 %Error-UNSUPPORTED: t/t_tagged.v:40:9: Unsupported: tagged union
    40 |         tagged m_invalid: $stop;
       |         ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged.v:41:9: Unsupported: '{} tagged patterns
+%Error-UNSUPPORTED: t/t_tagged.v:41:9: Unsupported: tagged pattern
    41 |         tagged m_int .n: if (n !== 123) $stop;
       |         ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged.v:41:22: Unsupported: '{} tagged patterns
+%Error-UNSUPPORTED: t/t_tagged.v:41:22: Unsupported: pattern variable
    41 |         tagged m_int .n: if (n !== 123) $stop;
       |                      ^
 %Error-UNSUPPORTED: t/t_tagged.v:44:13: Unsupported: matches operator
@@ -56,10 +56,10 @@
 %Error-UNSUPPORTED: t/t_tagged.v:45:13: Unsupported: matches operator
    45 |       if (u matches tagged m_int .n) if (n != 123) $stop;
       |             ^~~~~~~
-%Error-UNSUPPORTED: t/t_tagged.v:45:21: Unsupported: '{} tagged patterns
+%Error-UNSUPPORTED: t/t_tagged.v:45:21: Unsupported: tagged pattern
    45 |       if (u matches tagged m_int .n) if (n != 123) $stop;
       |                     ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged.v:45:34: Unsupported: '{} tagged patterns
+%Error-UNSUPPORTED: t/t_tagged.v:45:34: Unsupported: pattern variable
    45 |       if (u matches tagged m_int .n) if (n != 123) $stop;
       |                                  ^
 %Error: t/t_tagged.v:41:30: Can't find definition of variable: 'n'

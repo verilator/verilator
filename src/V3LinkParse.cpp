@@ -1029,17 +1029,17 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstTaggedPattern* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: '{} tagged patterns");
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: tagged pattern");
         cleanFileline(nodep);
         iterateChildren(nodep);
     }
     void visit(AstPatternVar* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: '{} tagged patterns");
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: pattern variable");
         cleanFileline(nodep);
         iterateChildren(nodep);
     }
     void visit(AstPatternStar* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: '{} tagged patterns");
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: pattern wildcard");
         cleanFileline(nodep);
         iterateChildren(nodep);
     }

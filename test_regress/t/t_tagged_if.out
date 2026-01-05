@@ -1,19 +1,14 @@
-%Warning-SHORTREAL: t/t_tagged_if.v:78:5: Unsupported: shortreal being promoted to real (suggest use real instead)
-   78 |     shortreal ShortRealVal;
-      |     ^~~~~~~~~
-                    ... For warning description see https://verilator.org/warn/SHORTREAL?v=latest
-                    ... Use "/* verilator lint_off SHORTREAL */" and lint_on around source to disable this message.
-%Error-UNSUPPORTED: t/t_tagged_if.v:214:37: Unsupported: &&& expression
-  214 |     if (instr matches tagged Jmp .j &&&
+%Error-UNSUPPORTED: t/t_tagged_if.v:216:37: Unsupported: &&& expression
+  216 |     if (instr matches tagged Jmp .j &&&
       |                                     ^~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_tagged_if.v:224:35: Unsupported: &&& expression
-  224 |     if (v matches tagged Valid .n &&& (n > 50))
+%Error-UNSUPPORTED: t/t_tagged_if.v:226:35: Unsupported: &&& expression
+  226 |     if (v matches tagged Valid .n &&& (n > 50))
       |                                   ^~~
-%Error-UNSUPPORTED: t/t_tagged_if.v:233:35: Unsupported: &&& expression
-  233 |     if (v matches tagged Valid .n &&& (n > 50))
+%Error-UNSUPPORTED: t/t_tagged_if.v:235:35: Unsupported: &&& expression
+  235 |     if (v matches tagged Valid .n &&& (n > 50))
       |                                   ^~~
-%Error-UNSUPPORTED: t/t_tagged_if.v:262:37: Unsupported: &&& expression
-  262 |     if (instr matches tagged Jmp .j &&&
+%Error-UNSUPPORTED: t/t_tagged_if.v:264:37: Unsupported: &&& expression
+  264 |     if (instr matches tagged Jmp .j &&&
       |                                     ^~~
 %Error: Exiting due to

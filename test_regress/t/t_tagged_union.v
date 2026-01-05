@@ -4,6 +4,8 @@
 // any use, without warranty, 2024 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+// verilator lint_off SHORTREAL
+
 // Test tagged union declaration, expressions, and member access
 // IEEE 1800-2023 Sections 7.3.2, 11.9
 

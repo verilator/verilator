@@ -1716,7 +1716,6 @@ public:
 };
 class AstMatches final : public AstNodeExpr {
     // "matches" operator: "expr matches pattern"
-    // Currently unsupported, used as placeholder for error reporting in V3Width
     // @astgen op1 := lhsp : AstNodeExpr  // Expression to match
     // @astgen op2 := patternp : AstNode  // Pattern to match against
 public:
@@ -1926,7 +1925,6 @@ public:
 };
 class AstPatternStar final : public AstNodeExpr {
     // Pattern wildcard: ".*"
-    // Currently unsupported, used as placeholder for error reporting in V3Width
 public:
     explicit AstPatternStar(FileLine* fl)
         : ASTGEN_SUPER_PatternStar(fl) {}
@@ -1938,7 +1936,6 @@ public:
 };
 class AstPatternVar final : public AstNodeExpr {
     // Pattern variable binding: ".variable"
-    // Currently unsupported, used as placeholder for error reporting in V3Width
     string m_name;  // Variable name
 public:
     AstPatternVar(FileLine* fl, const string& name)

@@ -4849,18 +4849,18 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstTaggedPattern* nodep) override {
         // Tagged patterns are currently unsupported
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: '{} tagged patterns");
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: tagged pattern");
         nodep->dtypeSetBit();
         userIterateChildren(nodep, m_vup);
     }
     void visit(AstPatternVar* nodep) override {
         // Pattern variable bindings are currently unsupported
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: '{} tagged patterns");
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: pattern variable");
         nodep->dtypeSetBit();
     }
     void visit(AstPatternStar* nodep) override {
         // Pattern wildcards are currently unsupported
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: '{} tagged patterns");
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: pattern wildcard");
         nodep->dtypeSetBit();
     }
     void visit(AstMatches* nodep) override {
