@@ -24,11 +24,11 @@
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
-// AssertDeFuture
+// AssertDeFutureVisitor
 // If any AstFuture, then move all non-future varrefs to be one cycle behind,
 // see IEEE 1800-2023 16.9.4.
 
-class AssertDeFuture final : public VNVisitor {
+class AssertDeFutureVisitor final : public VNVisitor {
     // STATE - across all visitors
     AstNodeModule* const m_modp;  // Module future is underneath
     const AstFuture* m_futurep;  // First AstFuture found
@@ -99,7 +99,7 @@ class AssertDeFuture final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit AssertDeFuture(AstNode* nodep, AstNodeModule* modp, unsigned pastNum)
+    explicit AssertDeFutureVisitor(AstNode* nodep, AstNodeModule* modp, unsigned pastNum)
         : m_modp{modp}
         , m_pastNum{pastNum} {
         // See if any Future before we process
@@ -112,7 +112,7 @@ public:
         visit(nodep);  // Nodep may get deleted
         // UINFOTREE(9, nodep, "", "defuture-ou");
     }
-    ~AssertDeFuture() = default;
+    ~AssertDeFutureVisitor() = default;
 };
 
 //######################################################################
@@ -394,7 +394,7 @@ class AssertVisitor final : public VNVisitor {
     void visitAssertionIterate(AstNodeCoverOrAssert* nodep, AstNode* failsp) {
         if (m_beginp && nodep->name() == "") nodep->name(m_beginp->name());
 
-        { AssertDeFuture{nodep->propp(), m_modp, m_modPastNum++}; }
+        { AssertDeFutureVisitor{nodep->propp(), m_modp, m_modPastNum++}; }
         iterateChildren(nodep);
 
         AstSenTree* const sentreep = nodep->sentreep();
