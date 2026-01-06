@@ -244,9 +244,13 @@ class CaseVisitor final : public VNVisitor {
                                 caseItemMap[icondp] = itemp;
                                 foundHit = true;
                             } else if (!overlappedCondp) {
-                                firstOverlap = i;
-                                overlappedCondp = m_valueItem[i];
-                                m_caseNoOverlapsAllCovered = false;
+                                // Overlapping case item expressions in the
+                                // same case item are legal
+                                if (caseItemMap[m_valueItem[i]] != itemp) {
+                                    firstOverlap = i;
+                                    overlappedCondp = m_valueItem[i];
+                                    m_caseNoOverlapsAllCovered = false;
+                                }
                             }
                         }
                     }

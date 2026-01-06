@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["-Wno-fatal", "--no-assert-case"])
+test.compile(verilator_flags2=["--no-assert-case"])
 
 test.execute()
 
