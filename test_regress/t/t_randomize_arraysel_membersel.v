@@ -21,7 +21,7 @@ endclass
 module t;
   initial begin
     test_class example;
-    example   = new;
+    example = new;
     example.b = new;
 
     // Simple array element access
