@@ -539,6 +539,8 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yS_UNTIL_WITH   "s_until_with"
 %token<fl>              yTABLE          "table"
 %token<fl>              yTAGGED         "tagged"
+%token<fl>              yTAGGED__LEX    "tagged-in-lex"
+%token<fl>              yTAGGED__VOID   "tagged-void-member"
 %token<fl>              yTASK           "task"
 %token<fl>              yTHIS           "this"
 %token<fl>              yTHROUGHOUT     "throughout"
@@ -3917,9 +3919,12 @@ patternNoExpr<nodeExprp>:       // IEEE: pattern **Excluding Expr*
         |       yP_DOTSTAR
                         { $$ = new AstPatternStar{$1}; }
         //                      // IEEE: "expr" excluded; expand in callers
-        //                      // Note: "yTAGGED idAny" (void member pattern) conflicts with tagged expression
-        //                      // rule, so it's handled via expr in case_matches_itemList
+        //                      // IEEE: tagged member_identifier [ pattern ]
+        //                      // These rules are for tagged patterns with nested patternNoExpr (like .var)
+        //                      // Standalone "yTAGGED__VOID idAny" is handled via expr in patternOne
         |       yTAGGED idAny/*member_identifier*/ patternNoExpr
+                        { $$ = new AstTaggedPattern{$1, *$2, $3}; }
+        |       yTAGGED__VOID idAny/*member_identifier*/ patternNoExpr
                         { $$ = new AstTaggedPattern{$1, *$2, $3}; }
         //                      // "yP_TICKBRA patternList '}'" part of expr under assignment_pattern
         ;
@@ -5020,17 +5025,34 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         |       ~l~expr yINSIDE '{' range_list '}'      { $$ = new AstInside{$2, $1, $4}; }
         //
         //                      // IEEE: tagged_union_expression
-        |       yTAGGED idAny/*member*/ %prec prTAGGED
+        //                      // yTAGGED__VOID = void member (tokenPipeline determined no primary follows)
+        |       yTAGGED__VOID idAny/*member*/ %prec prTAGGED
                         { $$ = new AstTaggedExpr{$1, *$2, nullptr}; }
-        //                      // Spec only allows primary, using '(' expr ')' to avoid conflicts
+        //                      // yTAGGED = primary follows; handle specific primary types
+        //                      // Parenthesized expression
         |       yTAGGED idAny/*member*/ '(' expr ')' %prec prTAGGED
                         { $$ = new AstTaggedExpr{$1, *$2, $4}; }
-        //                      // For assignment patterns like tagged Add '{a, b, c}
+        //                      // Assignment patterns like tagged Add '{a, b, c}
         |       yTAGGED idAny/*member*/ assignment_pattern %prec prTAGGED
                         { $$ = new AstTaggedExpr{$1, *$2, $3}; }
-        //                      // For numeric literals like tagged IntVal 123
+        //                      // Integer literal
         |       yTAGGED idAny/*member*/ yaINTNUM %prec prTAGGED
                         { $$ = new AstTaggedExpr{$1, *$2, new AstConst{$<fl>3, *$3}}; }
+        //                      // Float literal
+        |       yTAGGED idAny/*member*/ yaFLOATNUM %prec prTAGGED
+                        { $$ = new AstTaggedExpr{$1, *$2, new AstConst{$<fl>3, AstConst::RealDouble{}, $3}}; }
+        //                      // String literal
+        |       yTAGGED idAny/*member*/ yaSTRING %prec prTAGGED
+                        { $$ = new AstTaggedExpr{$1, *$2, new AstConst{$<fl>3, AstConst::VerilogStringLiteral{}, *$3}}; }
+        //                      // null literal
+        |       yTAGGED idAny/*member*/ yNULL %prec prTAGGED
+                        { $$ = new AstTaggedExpr{$1, *$2, new AstConst{$3, AstConst::Null{}}}; }
+        //                      // Identifier as value
+        |       yTAGGED idAny/*member*/ idAny %prec prTAGGED
+                        { $$ = new AstTaggedExpr{$1, *$2, new AstParseRef{$<fl>3, *$3, nullptr, nullptr}}; }
+        //                      // Concatenation
+        |       yTAGGED idAny/*member*/ '{' cateList '}' %prec prTAGGED
+                        { $$ = new AstTaggedExpr{$1, *$2, $4}; }
         //
         //======================// IEEE: primary/constant_primary
         //
