@@ -20,8 +20,6 @@ for s in [
         # Instead of adding here, consider adding a LCOV_EXCL_LINE/START/STOP to the sources on the message
         'exited with',  # Is hit; driver.py filters out
         'loading non-variable',  # Instead 'storing to parameter' or syntax error
-        'does not allow '
-        ' in the middle of literal',  # Is covered, this parser misses it due to quote
         'Assigned pin is neither input nor output',  # Instead earlier error
         'Define missing argument \'',  # Instead get Define passed too many arguments
         'Define or directive not defined: `',  # Instead V3ParseImp will warn
@@ -131,7 +129,8 @@ for s in [
 
 
 def read_messages():
-    for filename in test.glob_some(test.root + "/src/*"):
+    for filename in (test.glob_some(test.root + "/src/*") +
+                     test.glob_some(test.root + "/include/*")):
         if not os.path.isfile(filename):
             continue
         if '#' in filename:
