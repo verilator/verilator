@@ -2419,7 +2419,6 @@ public:
 };
 class AstTaggedExpr final : public AstNodeExpr {
     // Tagged union expression: "tagged MemberName [expr]"
-    // Currently unsupported, used as placeholder for error reporting in V3Width
     // @astgen op1 := exprp : Optional[AstNodeExpr] // Optional value expression
     string m_name;  // Member identifier name
 public:
@@ -2439,7 +2438,6 @@ public:
 };
 class AstTaggedPattern final : public AstNodeExpr {
     // Tagged pattern for matches: "tagged MemberName [pattern]"
-    // Currently unsupported, used as placeholder for error reporting in V3Width
     // @astgen op1 := patternp : Optional[AstNode]  // Optional nested pattern
     string m_name;  // Member identifier name
 public:
