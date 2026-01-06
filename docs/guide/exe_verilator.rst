@@ -1733,7 +1733,7 @@ Summary:
    :vlopt:`--trace-vcd` instead.
 
    Using :vlopt:`--trace` without :vlopt:`--trace-fst` nor
-   :vlopt:`--trace-fst` requests VCD traces.
+   :vlopt:`--trace-saif` requests VCD traces.
 
    Using :vlopt:`--trace` :vlopt:`--trace-fst` requests FST traces.
 
