@@ -7,7 +7,11 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-module t_lint_unused_func_param(
+module t;
+   foo foo_inst();
+endmodule
+
+module foo(
   input  wire i,
   output wire o
 );

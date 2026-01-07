@@ -10,7 +10,7 @@ test.scenarios('linter')
 
 # This test should NOT produce a UNUSEDSIGNAL warning for parameter 'n' in unused function
 test.lint(verilator_flags2=[
-    "--lint-only --assert --quiet-stats --top-module t_lint_unused_func_param --default-language 1364-1995 -Wall -Wno-fatal"
+    "--lint-only --assert --quiet-stats --top-module foo --default-language 1364-1995 -Wall -Wno-fatal"
 ],
           fails=False)
 
