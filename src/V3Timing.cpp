@@ -616,9 +616,10 @@ class TimingControlVisitor final : public VNVisitor {
     // Returns true if the given trigger expression needs a destructive post update after trigger
     // evaluation. Currently this only applies to named events.
     bool destructivePostUpdate(AstNode* const exprp) const {
-        return exprp->exists([](const AstNodeVarRef* const refp) {
-            AstBasicDType* const dtypep = refp->dtypep()->basicp();
-            return dtypep && dtypep->isEvent();
+        return exprp->exists([](const AstNode* const nodep) {
+            const AstNodeDType* const dtypep = nodep->dtypep();
+            const AstBasicDType* const basicp = dtypep ? dtypep->skipRefp()->basicp() : nullptr;
+            return basicp && basicp->isEvent();
         });
     }
     // Creates a trigger scheduler variable
@@ -912,6 +913,11 @@ class TimingControlVisitor final : public VNVisitor {
         delayMethodp->dtypeSetVoid();
         addProcessInfo(delayMethodp);
         addDebugInfo(delayMethodp);
+        if (nodep->isFork()) {
+            // isFork parameter
+            delayMethodp->addPinsp(nodep->isFork() ? new AstConst{flp, AstConst::BitTrue{}}
+                                                   : new AstConst{flp, AstConst::BitFalse{}});
+        }
         // Create the co_await
         AstCAwait* const awaitp = new AstCAwait{flp, delayMethodp, getCreateDelaySenTree()};
         awaitp->dtypeSetVoid();

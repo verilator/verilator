@@ -65,7 +65,18 @@ void VlDelayScheduler::resume() {
         handle.resume();
         resumed = true;
     }
+    while (!m_forkDelayed.empty()) {
+        // First, We need to move the coroutines out of the queue, as a resumed coroutine can
+        // suspend on fork delay again, adding itself to the queue, which can result in
+        // reallocating the queue mid-iteration.
+        // We swap with the m_zeroDlyResumed field to keep the allocated buffer.
+        m_zeroDlyResumed.swap(m_forkDelayed);
+        for (auto&& handle : m_zeroDlyResumed) handle.resume();
+        m_zeroDlyResumed.clear();
+        resumed = true;
+    }
 
+    // Then resume #0 delayed coroutines.
     if (!m_zeroDelayed.empty()) {
         // First, we need to move the coroutines out of the queue, as a resumed coroutine can
         // suspend on #0 again, adding itself to the queue, which can result in reallocating the
@@ -93,17 +104,23 @@ void VlDelayScheduler::resume() {
 
 uint64_t VlDelayScheduler::nextTimeSlot() const {
     if (!m_queue.empty()) return m_queue.cbegin()->first;
-    if (m_zeroDelayed.empty())
+    if (m_forkDelayed.empty() && m_zeroDelayed.empty())
         VL_FATAL_MT(__FILE__, __LINE__, "", "There is no next time slot scheduled");
     return m_context.time();
 }
 
 #ifdef VL_DEBUG
 void VlDelayScheduler::dump() const {
-    if (m_queue.empty()) {
+    if (m_queue.empty() && m_forkDelayed.empty() && m_zeroDelayed.empty()) {
         VL_DBG_MSGF("         No delayed processes:\n");
     } else {
         VL_DBG_MSGF("         Delayed processes:\n");
+        for (const auto& susp : m_forkDelayed) {
+            VL_DBG_MSGF("             Awaiting fork-delayed resumption, "
+                        "time () %" PRIu64 ": ",
+                        m_context.time());
+            susp.dump();
+        }
         for (const auto& susp : m_zeroDelayed) {
             VL_DBG_MSGF("             Awaiting #0-delayed resumption, "
                         "time () %" PRIu64 ": ",
