@@ -1025,7 +1025,6 @@ class TraceVisitor final : public VNVisitor {
                             UINFO(8, "       Activity Edge: " << activityVtxp->name() << " -- "
                                                               << (void*)(activityVtxp));
                             new V3GraphEdge{&m_graph, activityVtxp, ccallFuncVtxp, 1};
-                            ccallp->funcp()->user3p(activityVtxp);
                         }
                     }
                 }
@@ -1092,12 +1091,15 @@ class TraceVisitor final : public VNVisitor {
                                        << m_cfuncp << ")");
                 AstTraceDecl* const declp = VN_AS(varscopep->user2p(), TraceDecl);
                 if (declp) {
-                    AstNode* const activityp = m_cfuncp->user3p();
-                    if (!declp->user3p()) {
-                        declp->user3p(activityp);
-                    } else if (declp->user3p() != activityp) {
-                        UINFO(1, "MULTIPLE_ACTIVITIES: " << nodep);
-                        declp->user2(true);
+                    V3GraphVertex* const cFuncVtxp = getCFuncVertexp(m_cfuncp);
+                    for (const V3GraphEdge& edge : cFuncVtxp->inEdges()) {
+                        V3GraphVertex* const activityp = edge.fromp();
+                        if (!declp->user3p()) {
+                            declp->user3p(activityp);
+                        } else if (declp->user3u().toGraphVertex() != activityp) {
+                            UINFO(1, "MULTIPLE_ACTIVITIES: " << nodep << " -- " << m_cfuncp);
+                            declp->user2(true);
+                        }
                     }
                 }
             }
