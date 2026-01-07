@@ -208,11 +208,9 @@ public:
                                                  true);  // Warn only once
             }
         } else {  // Signal
-            // Skip warnings for function locals/parameters if the containing function is unused
-            if (nodep->isFuncLocal() && m_containingTaskp && !m_containingTaskp->user2()) {
-                // Function is unused, so don't warn about unused signals within it
-                return;
-            }
+            // Check if this is a function local/parameter in an unused function
+            const bool isUnusedFuncLocal = nodep->isFuncLocal() && m_containingTaskp
+                                           && !m_containingTaskp->user2();
             bool allU = true;
             bool allD = true;
             bool anyU = m_wholeFlags[FLAG_USED];
@@ -243,37 +241,41 @@ public:
             } else if (!anyD && !anyU) {
                 // UNDRIVEN is considered more serious - as is more likely a bug,
                 // thus undriven+unused bits get UNUSED warnings, as they're not as buggy.
-                if (!unusedMatch(nodep)) {
+                // Skip UNUSEDSIGNAL for unused function locals, but still report UNDRIVEN if needed
+                if (!isUnusedFuncLocal && !unusedMatch(nodep)) {
                     nodep->v3warn(UNUSEDSIGNAL,
                                   "Signal is not driven, nor used: " << nodep->prettyNameQ());
                     nodep->fileline()->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL,
                                                      true);  // Warn only once
                 }
             } else if (allD && !anyU) {
-                if (!unusedMatch(nodep)) {
+                // Signal is driven but not used - skip UNUSEDSIGNAL for unused function locals
+                if (!isUnusedFuncLocal && !unusedMatch(nodep)) {
                     nodep->v3warn(UNUSEDSIGNAL, "Signal is not used: " << nodep->prettyNameQ());
                     nodep->fileline()->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL,
                                                      true);  // Warn only once
                 }
             } else if (!anyD && allU) {
+                // Signal is used but not driven - always report UNDRIVEN (even for unused functions)
                 nodep->v3warn(UNDRIVEN, "Signal is not driven: " << nodep->prettyNameQ());
                 nodep->fileline()->modifyWarnOff(V3ErrorCode::UNDRIVEN, true);  // Warn only once
             } else {
                 // Bits have different dispositions
                 bool setU = false;
                 bool setD = false;
-                if (anynotDU && !unusedMatch(nodep)) {
+                if (anynotDU && !isUnusedFuncLocal && !unusedMatch(nodep)) {
                     nodep->v3warn(UNUSEDSIGNAL, "Bits of signal are not driven, nor used: "
                                                     << nodep->prettyNameQ() << bitNames(BN_BOTH));
                     setU = true;
                 }
-                if (anyDnotU && !unusedMatch(nodep)) {
+                if (anyDnotU && !isUnusedFuncLocal && !unusedMatch(nodep)) {
                     nodep->v3warn(UNUSEDSIGNAL,
                                   "Bits of signal are not used: " << nodep->prettyNameQ()
                                                                   << bitNames(BN_UNUSED));
                     setU = true;
                 }
                 if (anyUnotD) {
+                    // Always report UNDRIVEN (even for unused functions)
                     nodep->v3warn(UNDRIVEN, "Bits of signal are not driven: "
                                                 << nodep->prettyNameQ() << bitNames(BN_UNDRIVEN));
                     setD = true;
