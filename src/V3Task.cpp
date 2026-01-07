@@ -27,6 +27,7 @@
 
 #include "V3Task.h"
 
+#include "V3Ast.h"
 #include "V3Const.h"
 #include "V3Control.h"
 #include "V3EmitCBase.h"
@@ -1497,6 +1498,26 @@ class TaskVisitor final : public VNVisitor {
         AstNode* beginp;
         AstCNew* cnewp = nullptr;
         if (m_statep->ftaskNoInline(nodep->taskp())) {
+            // Create a fresh variable for each concat array present in pins list
+            if (nodep->pinsp()) {
+                nodep->pinsp()->foreach([this](AstArg* arg) {
+                    if (AstInitArray* array = VN_CAST(arg->exprp(), InitArray)) {
+                        AstVar* substp = new AstVar{array->fileline(), VVarType::VAR,
+                                                    arg->name() + "__Vconcat", array->dtypep()};
+
+                        AstAssign* assignp = new AstAssign{
+                            array->fileline(),
+                            new AstVarRef{array->fileline(), substp, VAccess::WRITE},
+                            array->unlinkFrBack()};
+
+                        AstExprStmt* exprstmtp = new AstExprStmt{
+                            array->fileline(), substp,
+                            new AstVarRef{array->fileline(), substp, VAccess::READ}};
+                        exprstmtp->stmtsp()->addNext(assignp);
+                        arg->exprp(exprstmtp);
+                    }
+                });
+            }
             // This may share VarScope's with a public task, if any.  Yuk.
             beginp = createNonInlinedFTask(nodep, namePrefix, outvscp, cnewp /*ref*/);
         } else {
