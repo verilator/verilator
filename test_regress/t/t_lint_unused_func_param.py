@@ -15,4 +15,3 @@ test.lint(verilator_flags2=[
           fails=False)
 
 test.passes()
-
