@@ -765,6 +765,9 @@ class TraceVisitor final : public VNVisitor {
     }
 
     void createTraceFunctions() {
+        // NOCOMMIT
+        if (dumpGraphLevel() >= 6) m_graph.dumpDotFilePrefixed("trace_more_pre");
+
         // Detect and remove duplicate values
         detectDuplicates();
         m_graph.removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
@@ -874,6 +877,8 @@ class TraceVisitor final : public VNVisitor {
                             UINFO(8, "     SubCCALL " << ccallp);
                             V3GraphVertex* const ccallFuncVtxp = getCFuncVertexp(ccallp->funcp());
                             activityVtxp->slow(ccallp->funcp()->slow());
+                            UINFO(8, "       Activity Edge: " << activityVtxp->name() << " -- "
+                                                              << (void*)(activityVtxp));
                             new V3GraphEdge{&m_graph, activityVtxp, ccallFuncVtxp, 1};
                         }
                     }
@@ -891,7 +896,9 @@ class TraceVisitor final : public VNVisitor {
                 || nodep->isCoroutine()) {
                 // Cannot treat a coroutine as slow, it may be resumed later
                 const bool slow = nodep->slow() && !nodep->isCoroutine();
-                V3GraphVertex* const activityVtxp = getActivityVertexp(nodep, slow);
+                TraceActivityVertex* const activityVtxp = getActivityVertexp(nodep, slow);
+                UINFO(8, "       Activity Edge: " << activityVtxp->name() << " -- "
+                                                  << (void*)(activityVtxp));
                 new V3GraphEdge{&m_graph, activityVtxp, funcVtxp, 1};
             }
         }
