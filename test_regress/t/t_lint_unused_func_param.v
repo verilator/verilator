@@ -23,4 +23,3 @@ module foo(
   endfunction
   assign o = i;
 endmodule
-
