@@ -169,8 +169,8 @@ class EmitCHeader final : public EmitCConstInit {
             putns(modp, name + "(" + ctorArgs + ");\n");
             putns(modp, "~" + name + "();\n");
         } else {
-            putns(modp, name + "() = default;\n");
-            putns(modp, "~" + name + "() = default;\n");
+            putns(modp, name + "();\n");
+            putns(modp, "~" + name + "();\n");
             putns(modp, "void ctor(" + ctorArgs + ");\n");
             putns(modp, "void dtor();\n");
         }
