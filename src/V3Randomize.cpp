@@ -184,6 +184,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     exprp = arrselp->fromp();
                 } else if (const AstStructSel* const strselp = VN_CAST(exprp, StructSel)) {
                     exprp = strselp->fromp();
+                } else if (const AstCMethodHard* const methodp = VN_CAST(exprp, CMethodHard)) {
+                    exprp = methodp->fromp();
                 } else {
                     break;
                 }
@@ -358,6 +360,9 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 continue;  // Skip ArraySel, continue traversing
             } else if (AstStructSel* const structSelp = VN_CAST(exprp, StructSel)) {
                 exprp = structSelp->fromp();
+                continue;  // Skip StructSel, continue traversing
+            } else if (AstCMethodHard* const methodp = VN_CAST(exprp, CMethodHard)) {
+                exprp = methodp->fromp();
                 continue;  // Skip StructSel, continue traversing
             } else if (AstVarRef* const varrefp = VN_CAST(exprp, VarRef)) {
                 randVarp = varrefp->varp();
