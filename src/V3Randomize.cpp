@@ -1318,19 +1318,20 @@ class ConstraintExprVisitor final : public VNVisitor {
                           VAccess::READWRITE},
             VCMethod::RANDOMIZER_HARD, nodep->exprp()->unlinkFrBack()};
         callp->dtypeSetVoid();
-        AstCExpr* const cexprp = new AstCExpr{nodep->fileline()};
-        cexprp->dtypeSetString();
-        std::stringstream msg;
-        msg << nodep->fileline() << "   ";
+        // Pass filename, lineno, and source as separate arguments
+        // This allows EmitC to call protect() on filename, similar to VL_STOP
+        // Add filename parameter
+        callp->addPinsp(new AstCExpr{nodep->fileline(), "\"" + nodep->fileline()->filename() + "\""});
+        // Add line number parameter
+        callp->addPinsp(new AstCExpr{nodep->fileline(), cvtToStr(nodep->fileline()->lineno())});
+        // Add source text parameter (with escaped quotes)
         std::string prettyText = nodep->fileline()->prettySource();
         size_t pos = 0;
         while ((pos = prettyText.find('"', pos)) != std::string::npos) {
             prettyText.insert(pos, "\\");
-            pos += 2;  // Skip the backslash AND the quote
+            pos += std::strlen("\\\"");
         }
-        msg << prettyText;
-        cexprp->add("\"" + msg.str() + "\"");
-        callp->addPinsp(cexprp);
+        callp->addPinsp(new AstCExpr{nodep->fileline(), "\"" + prettyText + "\""});
         nodep->replaceWith(callp->makeStmt());
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }

@@ -720,15 +720,39 @@ public:
         putns(nodep, nodep->name());
         puts("(");
         bool comma = false;
+        int argNum = 0;
         for (AstNode* subnodep = nodep->pinsp(); subnodep; subnodep = subnodep->nextp()) {
             if (comma) puts(", ");
             // handle wide arguments to the queues
             if (VN_IS(nodep->fromp()->dtypep(), QueueDType) && subnodep->dtypep()->isWide()) {
                 emitCvtWideArray(subnodep, nodep->fromp());
+            } else if (nodep->method() == VCMethod::RANDOMIZER_HARD && argNum == 1) {
+                // For RANDOMIZER_HARD's filename argument (2nd arg after constraint),
+                // apply protect() similar to VL_STOP to handle --protected flag
+                if (const AstCExpr* const cexprp = VN_CAST(subnodep, CExpr)) {
+                    // Extract filename from the CExpr (which contains "filename")
+                    std::string filename;
+                    for (const AstNode* textnodep = cexprp->nodesp(); textnodep;
+                         textnodep = textnodep->nextp()) {
+                        if (const AstText* const textp = VN_CAST(textnodep, Text)) {
+                            filename = textp->text();
+                            break;
+                        }
+                    }
+                    // Remove surrounding quotes if present
+                    if (filename.size() >= 2 && filename.front() == '"' && filename.back() == '"') {
+                        filename = filename.substr(1, filename.size() - 2);
+                    }
+                    // Emit with protect()
+                    putsQuoted(protect(filename));
+                } else {
+                    iterateConst(subnodep);
+                }
             } else {
                 iterateConst(subnodep);
             }
             comma = true;
+            argNum++;
         }
         puts(")");
     }

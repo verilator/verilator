@@ -1,0 +1,48 @@
+
+=== Test 1: Valid constraints ===
+Randomization succeeded for addr=50, data=100 -> addr=50, data=100
+
+=== Test 2: addr out of range ===
+%Warning: Unsatisfied constraints 
+ 		t/t_constraint_unsat.v:16       if (!randomize() with { addr == a; data == d; }) begin 
+%Warning: Unsatisfied constraints 
+ 		t/t_constraint_unsat.v:12     constraint data_range { data > 10 && data < 200; } 
+%Warning: Unsatisfied constraints 
+ 		t/t_constraint_unsat.v:12     constraint data_range { data > 10 && data < 200; } 
+%Warning: Unsatisfied constraints 
+ 		t/t_constraint_unsat.v:11     constraint addr_range { addr < 127; } 
+%Warning: Unsatisfied constraints 
+ 		t/t_constraint_unsat.v:16       if (!randomize() with { addr == a; data == d; }) begin 
+Randomization failed for addr=128, data=18
+
+=== Test 3: data out of range (too small) ===
+%Warning: Unsatisfied constraints 
+ 		t/t_constraint_unsat.v:12     constraint data_range { data > 10 && data < 200; } 
+%Warning: Unsatisfied constraints 
+ 		t/t_constraint_unsat.v:16       if (!randomize() with { addr == a; data == d; }) begin 
+Randomization failed for addr=100, data=5
+
+=== Test 4: data out of range (too large) ===
+%Warning: Unsatisfied constraints 
+ 		t/t_constraint_unsat.v:12     constraint data_range { data > 10 && data < 200; } 
+%Warning: Unsatisfied constraints 
+ 		t/t_constraint_unsat.v:16       if (!randomize() with { addr == a; data == d; }) begin 
+Randomization failed for addr=100, data=250
+
+=== Test 5: Both constraints violated ===
+%Warning: Unsatisfied constraints 
+ 		t/t_constraint_unsat.v:11     constraint addr_range { addr < 127; } 
+%Warning: Unsatisfied constraints 
+ 		t/t_constraint_unsat.v:16       if (!randomize() with { addr == a; data == d; }) begin 
+Randomization failed for addr=200, data=5
+
+=== Test 6: Conflicting constraints (x > 100 && x < 50) ===
+%Warning: Unsatisfied constraints 
+ 		t/t_constraint_unsat.v:29     constraint c1 { x > 100; } 
+%Warning: Unsatisfied constraints 
+ 		t/t_constraint_unsat.v:30     constraint c2 { x < 50; } 
+Expected failure: conflicting constraints detected
+
+=== Test 7: Constraint with quotes in comment ===
+Quote test passed, value=52
+*-* All Finished *-*

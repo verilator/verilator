@@ -210,7 +210,7 @@ class VlRandomizer VL_NOT_FINAL {
 
     // PRIVATE METHODS
     void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
-    bool parseSolution(std::iostream& file, bool log = 0);
+    bool parseSolution(std::iostream& file, bool log = false);
 
 public:
     // CONSTRUCTORS
@@ -571,7 +571,8 @@ public:
                + std::to_string(idx);
     }
 
-    void hard(std::string&& constraint, std::string&& line = "");
+    void hard(std::string&& constraint, const char* filename = "", int linenum = 0,
+              const char* source = "");
     void clearConstraints();
     void clearAll();  // Clear both constraints and variables
     void set_randmode(const VlQueue<CData>& randmode) { m_randmodep = &randmode; }

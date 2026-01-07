@@ -372,7 +372,6 @@ bool VlRandomizer::next(VlRNG& rngr) {
     if (!os) return false;
 
     os << "(set-option :produce-models true)\n";
-    os << "(set-option :produce-unsat-cores true)\n";
     os << "(set-logic QF_ABV)\n";
     os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
     os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
@@ -422,7 +421,7 @@ bool VlRandomizer::next(VlRNG& rngr) {
         randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
         os << ")\n";
         os << "\n(check-sat)\n";
-        sat = parseSolution(os);
+        sat = parseSolution(os, false);
     }
 
     os << "(reset)\n";
@@ -544,9 +543,20 @@ bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
     return true;
 }
 
-void VlRandomizer::hard(std::string&& constraint, std::string&& line) {
+void VlRandomizer::hard(std::string&& constraint, const char* filename, int linenum,
+                        const char* source) {
     m_constraints.emplace_back(std::move(constraint));
-    if (!line.empty()) m_constraints_line.emplace_back(std::move(line));
+    // Format constraint location: "filename:linenum   source"
+    if (filename[0] != '\0' || source[0] != '\0') {
+        std::string line;
+        if (filename[0] != '\0') {
+            line = std::string(filename) + ":" + std::to_string(linenum);
+            if (source[0] != '\0') line += "   " + std::string(source);
+        } else {
+            line = source;
+        }
+        m_constraints_line.emplace_back(std::move(line));
+    }
 }
 
 void VlRandomizer::clearConstraints() {

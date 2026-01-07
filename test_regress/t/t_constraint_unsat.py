@@ -16,6 +16,6 @@ if not test.have_solver:
 
 test.compile()
 
-test.execute()
+test.execute(expect_filename=test.golden_filename)
 
 test.passes()
