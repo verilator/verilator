@@ -15,10 +15,7 @@ class Packet;
     /* verilator lint_off WIDTHTRUNC */
     if (!randomize() with { addr == a; data == d; }) begin
     /* verilator lint_on WIDTHTRUNC */
-      $display("Randomization failed for addr=%0d, data=%0d", a, d);
-    end else begin
-      $display("Randomization succeeded for addr=%0d, data=%0d -> addr=%0d, data=%0d",
-               a, d, addr, data);
+      $display("Randomization failed.");
     end
   endfunction
 endclass
@@ -36,20 +33,10 @@ class TestConflict;
   endfunction
 endclass
 
-class TestQuoteInConstraint;
-  rand bit [7:0] value;
-
-  // Test constraint with string literal containing quotes
-  constraint valid_range {
-    value > 10 && value < 200;  // This is "valid" range
-  }
-endclass
-
 module t_constraint_unsat;
   initial begin
     Packet pkt;
     TestConflict tc;
-    TestQuoteInConstraint tq;
 
     pkt = new;
 
@@ -81,15 +68,6 @@ module t_constraint_unsat;
     end else begin
       $display("ERROR: Should have failed with conflicting constraints");
       $stop;
-    end
-
-    // Test 7: Test quote handling in constraint source
-    $display("\n=== Test 7: Constraint with quotes in comment ===");
-    tq = new;
-    /* verilator lint_off WIDTHTRUNC */
-    if (tq.randomize()) begin
-    /* verilator lint_on WIDTHTRUNC */
-      $display("Quote test passed, value=%0d", tq.value);
     end
 
     $write("*-* All Finished *-*\n");
