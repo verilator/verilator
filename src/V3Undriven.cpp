@@ -53,6 +53,7 @@ class UndrivenVarEntry final {
     bool m_underGen = false;  // Under a generate
 
     const AstNodeFTaskRef* m_callNodep = nullptr;  // Call node if driven via writeSummary
+    const AstNodeFTask* m_containingTaskp = nullptr;  // Function/task containing this variable if it's a function local/parameter
 
     enum : uint8_t { FLAG_USED = 0, FLAG_DRIVEN = 1, FLAG_DRIVEN_ALWCOMB = 2, FLAGS_PER_BIT = 3 };
 
@@ -207,6 +208,11 @@ public:
                                                  true);  // Warn only once
             }
         } else {  // Signal
+            // Skip warnings for function locals/parameters if the containing function is unused
+            if (nodep->isFuncLocal() && m_containingTaskp && !m_containingTaskp->user2()) {
+                // Function is unused, so don't warn about unused signals within it
+                return;
+            }
             bool allU = true;
             bool allD = true;
             bool anyU = m_wholeFlags[FLAG_USED];
@@ -287,6 +293,8 @@ public:
         if (!m_callNodep) m_callNodep = nodep;
     }
     const AstNodeFTaskRef* callNodep() const { return m_callNodep; }
+    void containingTaskp(const AstNodeFTask* taskp) { m_containingTaskp = taskp; }
+    const AstNodeFTask* containingTaskp() const { return m_containingTaskp; }
 };
 
 //######################################################################
@@ -360,6 +368,10 @@ class UndrivenVisitor final : public VNVisitorConst {
             // For combo always, run both usr==1 for above, and also
             // usr==2 for always-only checks.
             UndrivenVarEntry* const entryp = getEntryp(nodep, usr);
+            // Store the containing function if this is a function local/parameter
+            if (nodep->isFuncLocal() && m_taskp) {
+                entryp->containingTaskp(m_taskp);
+            }
             if (nodep->isNonOutput() || nodep->isSigPublic() || nodep->isSigUserRWPublic()
                 || (m_taskp && (m_taskp->dpiImport() || m_taskp->dpiExport()))) {
                 entryp->drivenWhole();
