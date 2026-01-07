@@ -740,7 +740,8 @@ public:
                         }
                     }
                     // Remove surrounding quotes if present
-                    if (filename.size() >= 2 && filename.front() == '"' && filename.back() == '"') {
+                    if (filename.size() >= 2 && filename.front() == '"'
+                        && filename.back() == '"') {
                         filename = filename.substr(1, filename.size() - 2);
                     }
                     // Emit with protect()

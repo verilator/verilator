@@ -1321,7 +1321,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Pass filename, lineno, and source as separate arguments
         // This allows EmitC to call protect() on filename, similar to VL_STOP
         // Add filename parameter
-        callp->addPinsp(new AstCExpr{nodep->fileline(), "\"" + nodep->fileline()->filename() + "\""});
+        callp->addPinsp(
+            new AstCExpr{nodep->fileline(), "\"" + nodep->fileline()->filename() + "\""});
         // Add line number parameter
         callp->addPinsp(new AstCExpr{nodep->fileline(), cvtToStr(nodep->fileline()->lineno())});
         // Add source text parameter (with escaped quotes)
