@@ -2217,10 +2217,11 @@ class RandomizeVisitor final : public VNVisitor {
     AstNodeExpr* makeSiblingRefp(AstNodeExpr* const exprp, AstVar* const varp,
                                  const VAccess access) {
         if (AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
-            // TODO: this ignored 'access' and will create a read reference in
-            // t_randomize_inline_var_ctl, see issue #6756
-            return new AstMemberSel{exprp->fileline(), memberSelp->fromp()->cloneTree(false),
-                                    varp};
+            AstMemberSel* const newMemberSelp
+                = new AstMemberSel{exprp->fileline(), memberSelp->fromp()->cloneTree(false), varp};
+            // Set access on all VarRef nodes in the cloned subtree
+            newMemberSelp->foreach([access](AstVarRef* varrefp) { varrefp->access(access); });
+            return newMemberSelp;
         }
         UASSERT_OBJ(VN_IS(exprp, VarRef), exprp, "Should be a VarRef");
         return new AstVarRef{exprp->fileline(), VN_AS(varp->user2p(), Class), varp, access};
