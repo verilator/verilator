@@ -1502,7 +1502,7 @@ class TaskVisitor final : public VNVisitor {
         if (m_statep->ftaskNoInline(nodep->taskp())) {
             // Create a fresh variable for each concat array present in pins list
             if (nodep->pinsp()) {
-                nodep->pinsp()->foreach([this](AstArg* arg) {
+                nodep->pinsp()->foreachAndNext([this](AstArg* arg) {
                     AstInitArray* array;
                     array = VN_CAST(arg->exprp(), InitArray);
                     if (!array) return;
