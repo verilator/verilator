@@ -41,7 +41,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 class PathAdjustor final {
     FileLine* const m_flp;  // FileLine used for created nodes
     std::function<void(AstNodeStmt*)> m_emit;  // Function called with adjustment statements
-    std::vector<string> m_stack{""};  // Stack of current paths
+    std::vector<std::string> m_stack{""};  // Stack of current paths
 
     static constexpr char SEPARATOR = ' ';
 
@@ -107,7 +107,7 @@ class TraceDeclVisitor final : public VNVisitor {
     std::unordered_map<const AstScope*, std::vector<AstCFunc*>> m_scopeInitFuncps;
     // Map from hierarchical scope name to the corresponding AstScope. Note that
     // this is a many-to-one mapping for interfaces, due to interface refs.
-    std::unordered_map<string, const AstScope*> m_pathToScopep;
+    std::unordered_map<std::string, const AstScope*> m_pathToScopep;
     // Cell initialization placeholders:
     // (parent scope, cell under parent scope, statement)
     std::vector<std::tuple<AstScope*, AstCell*, AstNodeStmt*>> m_cellInitPlaceholders;
@@ -122,15 +122,15 @@ class TraceDeclVisitor final : public VNVisitor {
     class TraceEntry final {
         AstVarScope* m_vscp = nullptr;  // AstVarScope under scope being traced
         AstCell* m_cellp = nullptr;  // Sub scope (as AstCell) under scope being traced
-        string m_path;  // Path to enclosing module in original hierarchy
-        string m_name;  // Name of signal/subscope
+        std::string m_path;  // Path to enclosing module in original hierarchy
+        std::string m_name;  // Name of signal/subscope
         bool m_rootio = false;  // Is part of $rootio, if model at runtime uses name()=""
 
-        void init(const string& name) {
+        void init(const std::string& name) {
             // Compute path in hierarchy and item name
-            const string& vcdName = AstNode::vcdName(name);
+            const std::string& vcdName = AstNode::vcdName(name);
             const size_t pos = vcdName.rfind(' ');
-            const size_t pathLen = pos == string::npos ? 0 : pos + 1;
+            const size_t pathLen = pos == std::string::npos ? 0 : pos + 1;
             m_path = vcdName.substr(0, pathLen);
             m_name = vcdName.substr(pathLen);
         }
@@ -153,9 +153,9 @@ class TraceDeclVisitor final : public VNVisitor {
         }
         AstVarScope* vscp() const { return m_vscp; }
         AstCell* cellp() const { return m_cellp; }
-        const string& path() const { return m_path; }
-        void path(const string& path) { m_path = path; }
-        const string& name() const { return m_name; }
+        const std::string& path() const { return m_path; }
+        void path(const std::string& path) { m_path = path; }
+        const std::string& name() const { return m_name; }
         FileLine& fileline() const { return m_vscp ? *m_vscp->fileline() : *m_cellp->fileline(); }
         bool rootio() const { return m_rootio; }
         void rootio(bool flag) { m_rootio = flag; }
@@ -254,11 +254,11 @@ class TraceDeclVisitor final : public VNVisitor {
 
     void addIgnore(const string& why) {
         ++m_statIgnSigs;
-        string cmt = "Tracing: "s + m_traName + " // Ignored: " + why;
+        std::string cmt = "Tracing: "s + m_traName + " // Ignored: " + why;
         if (debug() > 3 && m_traVscp) std::cout << "- " << m_traVscp->fileline() << cmt << endl;
     }
 
-    void fixupPlaceholder(const string& path, AstNodeStmt* placeholderp) {
+    void fixupPlaceholder(const std::string& path, AstNodeStmt* placeholderp) {
         // Find the scope for the path. As we are working based on cell names,
         // it is possible there is no corresponding scope (e.g.: for an empty
         // module).
@@ -270,9 +270,9 @@ class TraceDeclVisitor final : public VNVisitor {
             // Pick up the last path element. The prefixes have already been pushed
             // when building the initialization.
             // We still need to find __DOT__ as cell names may have such.
-            const string dot = "__DOT__";
+            const std::string dot = "__DOT__";
             const size_t pos = path.rfind(dot);
-            const string name = path.substr(pos == string::npos ? 0 : pos + dot.size());
+            const std::string name = path.substr(pos == string::npos ? 0 : pos + dot.size());
 
             // Compute the type of the scope being fixed up
             const AstCell* const cellp = scopep->aboveCellp();
@@ -311,7 +311,7 @@ class TraceDeclVisitor final : public VNVisitor {
             const AstScope* const parentp = std::get<0>(item);
             const AstCell* const cellp = std::get<1>(item);
             AstNodeStmt* const placeholderp = std::get<2>(item);
-            const string path = parentp->name() + "__DOT__" + cellp->name();
+            const std::string path = parentp->name() + "__DOT__" + cellp->name();
             fixupPlaceholder(path, placeholderp);
         }
 
@@ -319,7 +319,7 @@ class TraceDeclVisitor final : public VNVisitor {
         for (const auto& item : m_ifaceRefInitPlaceholders) {
             const AstVarScope* const vscp = std::get<0>(item);
             AstNodeStmt* const placeholderp = std::get<1>(item);
-            const string path = vscp->scopep()->name() + "__DOT__" + vscp->varp()->name();
+            const std::string path = vscp->scopep()->name() + "__DOT__" + vscp->varp()->name();
             fixupPlaceholder(path, placeholderp);
         }
     }
@@ -453,7 +453,7 @@ class TraceDeclVisitor final : public VNVisitor {
         m_scopeInitFuncps.emplace(nodep, std::move(m_subFuncps));
 
         // Save the hierarchical name of this scope
-        const string path = nodep->prettyName();
+        const std::string path = nodep->prettyName();
         m_pathToScopep.emplace(path, nodep);
 
         // Save the hierarchical names of interface references that reference this scope
@@ -466,12 +466,12 @@ class TraceDeclVisitor final : public VNVisitor {
             const size_t lastDot = path.find_last_of('.');
             UASSERT_OBJ(lastDot != string::npos, nodep,
                         "Expected an interface scope name to have at least one dot: " << path);
-            const string parentPath = path.substr(0, lastDot + 1);
+            const std::string parentPath = path.substr(0, lastDot + 1);
 
             for (AstIntfRef *intfRefp = cellp->intfRefsp(), *nextp; intfRefp; intfRefp = nextp) {
                 nextp = VN_AS(intfRefp->nextp(), IntfRef);
 
-                const string refName = intfRefp->prettyName();
+                const std::string refName = intfRefp->prettyName();
 
                 // Assume only references under the same parent scope reference
                 // the same interface.
