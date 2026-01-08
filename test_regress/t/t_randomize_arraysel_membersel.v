@@ -9,6 +9,7 @@ typedef struct {int x;} struct_t;
 class inner_class;
   logic [3:0] c;
   logic [3:0] d[2];
+  logic [3:0] dyn[];
   struct_t s;
 endclass
 
@@ -20,9 +21,11 @@ endclass
 
 module t;
   initial begin
+    int x = 2;
     test_class example;
     example = new;
     example.b = new;
+    example.b.dyn = new[3];
 
     // Simple array element access
     repeat (5) begin
@@ -81,6 +84,12 @@ module t;
     repeat (5) begin
       if (std::randomize(example.b.d[1]) with {example.b.d[1] inside {[2 : 6]};} == 0) $stop;
       if (example.b.d[1] < 2 || example.b.d[1] > 6) $stop;
+    end
+
+    // Nested object with dynamic array: obj.b.dyn[x]
+    repeat (5) begin
+      if (std::randomize(example.b.dyn[x]) with {example.b.dyn[x] inside {[1 : 3]};} == 0) $stop;
+      if (example.b.dyn[x] < 1 || example.b.dyn[x] > 3) $stop;
     end
 
     // Nested object with struct: obj.b.s.x
