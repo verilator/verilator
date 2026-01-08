@@ -96,8 +96,8 @@ AstNodeStmt* checkIterationLimit(AstNetlist* netlistp, const string& name, AstVa
     const std::string& file = VIdProtect::protect(locp->filename());
     const std::string& line = std::to_string(locp->lineno());
     stmtp->add("VL_FATAL_MT(\"" + V3OutFormatter::quoteNameControls(file) + "\", " + line
-               + ", \"\", \"" + name + " region did not converge after " + std::to_string(limit)
-               + " tries\");");
+               + ", \"\", \"DIDNOTCONVERGE: " + name + " region did not converge after "
+               + std::to_string(limit) + " tries\");");
     return ifp;
 }
 
