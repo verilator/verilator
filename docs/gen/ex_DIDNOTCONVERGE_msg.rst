@@ -2,4 +2,4 @@
 .. code-block::
 
    -V{t#,#}         'stl' region trigger index 0 is active: @([hybrid] a)
-   %Error: t/t_lint_didnotconverge_bad.v:7: Settle region did not converge after 100 tries
+   %Error-DIDNOTCONVERGE: t/t_lint_didnotconverge_bad.v:7: Settle region did not converge after 100 tries
