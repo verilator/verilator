@@ -363,7 +363,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 continue;  // Skip StructSel, continue traversing
             } else if (AstCMethodHard* const methodp = VN_CAST(exprp, CMethodHard)) {
                 exprp = methodp->fromp();
-                continue;  // Skip StructSel, continue traversing
+                continue;
             } else if (AstVarRef* const varrefp = VN_CAST(exprp, VarRef)) {
                 randVarp = varrefp->varp();
                 varrefp->user1(true);
