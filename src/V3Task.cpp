@@ -1506,10 +1506,10 @@ class TaskVisitor final : public VNVisitor {
                     if (!arrayp) return;
 
                     FileLine* const flp = arrayp->fileline();
-                    std::string temp_name = m_tempUnpackedArrayNames.get(arg);
-                    AstVar* substp = new AstVar{flp, VVarType::VAR, temp_name, arrayp->dtypep()};
+                    std::string tempName = m_tempUnpackedArrayNames.get(arg);
+                    AstVar* substp = new AstVar{flp, VVarType::VAR, tempName, arrayp->dtypep()};
                     substp->funcLocal(true);
-                    AstVarScope* const substvscp = createVarScope(substp, temp_name);
+                    AstVarScope* const substvscp = createVarScope(substp, tempName);
 
                     AstAssign* const assignp = new AstAssign{
                         flp, new AstVarRef{arrayp->fileline(), substvscp, VAccess::WRITE},

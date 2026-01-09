@@ -1,4 +1,4 @@
-// DESCRIPTION: Verilator: Verilog Test module for SystemVerilog 'alias'
+// DESCRIPTION: Verilator: Verilog Test module
 //
 // Simple test for unpacked concatenation arrays used as function arguments.
 //
