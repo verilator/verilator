@@ -701,9 +701,9 @@ class TraceVisitor final : public VNVisitor {
                 FileLine* const flp = declp->fileline();
                 if (declp->dtypeCallp()) {
                     AstCFunc* const funcp = createConstDtypeTraceFunctions(declp);
-                    AstVarRef* argsp = nullptr;
-                    argsp = AstNode::addNext(
-                        argsp, new AstVarRef{flp, declp->dtypeVscp(), VAccess::READ});
+                    AstNodeExpr* argsp = nullptr;
+                    // NOCOMMIT -- if this works do we even need dtypeVscp?
+                    argsp = AstNode::addNext(argsp, declp->valuep()->cloneTree(false));
                     AstCCall* const callp = new AstCCall{flp, funcp, argsp};
                     callp->dtypeSetVoid();
                     callp->argTypes(callp->argTypes() + "bufp, " + std::to_string(declp->code()));
@@ -826,17 +826,15 @@ class TraceVisitor final : public VNVisitor {
                 FileLine* const flp = declp->fileline();
                 if (declp->dtypeCallp()) {
                     DtypeFuncs funcs = createNonConstDtypeTraceFunctions(declp);
-                    AstVarRef* argsp = nullptr;
-                    argsp = AstNode::addNext(
-                        argsp, new AstVarRef{flp, declp->dtypeVscp(), VAccess::READ});
+                    AstNodeExpr* argsp = nullptr;
+                    argsp = AstNode::addNext(argsp, declp->valuep()->cloneTree(false));
                     AstCCall* const callFullp = new AstCCall{flp, funcs.fullFuncp, argsp};
                     callFullp->dtypeSetVoid();
                     callFullp->argTypes(callFullp->argTypes() + "bufp, "
                                         + std::to_string(declp->code()));
                     subFulFuncp->addStmtsp(callFullp->makeStmt());
                     argsp = nullptr;
-                    argsp = AstNode::addNext(
-                        argsp, new AstVarRef{flp, declp->dtypeVscp(), VAccess::READ});
+                    argsp = AstNode::addNext(argsp, declp->valuep()->cloneTree(false));
                     AstCCall* const callChgp = new AstCCall{flp, funcs.chgFuncp, argsp};
                     callChgp->dtypeSetVoid();
                     callChgp->argTypes(callChgp->argTypes() + "bufp, "
