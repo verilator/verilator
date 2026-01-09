@@ -1,4 +1,4 @@
-// DESCRIPTION: Verilator: Verilog Test module for SystemVerilog 'alias'
+// DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty, 2026 by Antmicro.
