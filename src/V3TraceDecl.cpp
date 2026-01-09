@@ -291,9 +291,10 @@ class TraceDeclVisitor final : public VNVisitor {
             // m_traVscp->tracePreserve(true);
             m_traVscp->varp()->trace(true);
             m_traVscp->varp()->setTracePreserve();
-            newp->dtypeParamName(VN_AS(dtypeCallp->funcp()->user2p(), VarScope)
-                                     ->varp()
-                                     ->vlArgType(true, false, true, "", true, true));
+            string dtypeParamName{VN_AS(dtypeCallp->funcp()->user2p(), VarScope)
+                                      ->varp()
+                                      ->vlArgType(true, false, true, "", true, true)};
+            newp->dtypeParamName(dtypeParamName);
         }
         m_declUncalledps.emplace(newp);
         addToSubFunc(newp);
@@ -666,7 +667,7 @@ class TraceDeclVisitor final : public VNVisitor {
         VL_RESTORER(m_dtypeDeclp);
         if (isBasicIO()) m_skipDtypeFunc = true;
 
-        if (!(m_skipDtypeFunc || m_dtypeFuncp)) {
+        if (!(m_skipDtypeFunc || m_dtypeDeclp)) {
             VL_RESTORER(m_offset);
             newDeclFunc(nodep);
         }
@@ -709,7 +710,7 @@ class TraceDeclVisitor final : public VNVisitor {
         VL_RESTORER(m_dtypeDeclp);
         if (isBasicIO()) m_skipDtypeFunc = true;
 
-        if (!(m_skipDtypeFunc || m_dtypeFuncp)) {
+        if (!(m_skipDtypeFunc || m_dtypeDeclp)) {
             VL_RESTORER(m_offset);
             newDeclFunc(nodep);
         }
@@ -769,7 +770,7 @@ class TraceDeclVisitor final : public VNVisitor {
         // call other struct funcs for child types.  This could easily be done for decl funcs
         // but full / chg funcs would require copying / aligning data for child types or more
         // complicated / wonky / generalized data access.
-        if (!(m_skipDtypeFunc || m_dtypeFuncp)) {
+        if (!(m_skipDtypeFunc || m_dtypeDeclp)) {
             VL_RESTORER(m_offset);
             newDeclFunc(nodep);
         }

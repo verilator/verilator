@@ -1260,7 +1260,7 @@ public:
     AstVarScope* dtypeVscp() const { return m_dtypeVscp; }
     void dtypeVscp(AstVarScope* const dtypeVscp) { m_dtypeVscp = dtypeVscp; }
     bool inDtypeFunc() const { return m_inDtypeFunc; }
-    void dtypeParamName(string dtypeParamName) { m_dtypeParamName = dtypeParamName; }
+    void dtypeParamName(const string& dtypeParamName) { m_dtypeParamName = dtypeParamName; }
     string dtypeParamName() const { return m_dtypeParamName; }
 };
 class AstTraceInc final : public AstNodeStmt {
