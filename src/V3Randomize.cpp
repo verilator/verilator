@@ -1361,11 +1361,15 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Add line number parameter
         callp->addPinsp(new AstCExpr{nodep->fileline(), cvtToStr(nodep->fileline()->lineno())});
         // Add source text parameter (with escaped quotes)
-        std::string prettyText = nodep->fileline()->prettySource();
-        size_t pos = 0;
-        while ((pos = prettyText.find('"', pos)) != std::string::npos) {
-            prettyText.insert(pos, "\\");
-            pos += std::strlen("\\\"");
+        // If --protect-ids is enabled, pass empty string to avoid leaking source code
+        std::string prettyText;
+        if (!v3Global.opt.protectIds()) {
+            prettyText = nodep->fileline()->prettySource();
+            size_t pos = 0;
+            while ((pos = prettyText.find('"', pos)) != std::string::npos) {
+                prettyText.insert(pos, "\\");
+                pos += std::strlen("\\\"");
+            }
         }
         callp->addPinsp(new AstCExpr{nodep->fileline(), "\"" + prettyText + "\""});
         nodep->replaceWith(callp->makeStmt());

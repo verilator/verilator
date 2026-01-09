@@ -2,43 +2,30 @@
 === Test 1: Valid constraints ===
 
 === Test 2: addr out of range ===
-%Warning: Unsatisfied constraints 
- 		t/t_constraint_unsat.v:16       if (!randomize() with { addr == a; data == d; }) begin 
-%Warning: Unsatisfied constraints 
- 		t/t_constraint_unsat.v:12     constraint data_range { data > 10 && data < 200; } 
-%Warning: Unsatisfied constraints 
- 		t/t_constraint_unsat.v:12     constraint data_range { data > 10 && data < 200; } 
-%Warning: Unsatisfied constraints 
- 		t/t_constraint_unsat.v:11     constraint addr_range { addr < 127; } 
-%Warning: Unsatisfied constraints 
- 		t/t_constraint_unsat.v:16       if (!randomize() with { addr == a; data == d; }) begin 
+%Warning-UNSATCONSTR: t/t_constraint_unsat.v:16: Unsatisfied constraint:     if (!randomize() with { addr == a; data == d; }) begin
+%Warning-UNSATCONSTR: t/t_constraint_unsat.v:12: Unsatisfied constraint:   constraint data_range { data > 10 && data < 200; }
+%Warning-UNSATCONSTR: t/t_constraint_unsat.v:12: Unsatisfied constraint:   constraint data_range { data > 10 && data < 200; }
+%Warning-UNSATCONSTR: t/t_constraint_unsat.v:11: Unsatisfied constraint:   constraint addr_range { addr < 127; }
+%Warning-UNSATCONSTR: t/t_constraint_unsat.v:16: Unsatisfied constraint:     if (!randomize() with { addr == a; data == d; }) begin
 Randomization failed.
 
 === Test 3: data out of range (too small) ===
-%Warning: Unsatisfied constraints 
- 		t/t_constraint_unsat.v:12     constraint data_range { data > 10 && data < 200; } 
-%Warning: Unsatisfied constraints 
- 		t/t_constraint_unsat.v:16       if (!randomize() with { addr == a; data == d; }) begin 
+%Warning-UNSATCONSTR: t/t_constraint_unsat.v:12: Unsatisfied constraint:   constraint data_range { data > 10 && data < 200; }
+%Warning-UNSATCONSTR: t/t_constraint_unsat.v:16: Unsatisfied constraint:     if (!randomize() with { addr == a; data == d; }) begin
 Randomization failed.
 
 === Test 4: data out of range (too large) ===
-%Warning: Unsatisfied constraints 
- 		t/t_constraint_unsat.v:12     constraint data_range { data > 10 && data < 200; } 
-%Warning: Unsatisfied constraints 
- 		t/t_constraint_unsat.v:16       if (!randomize() with { addr == a; data == d; }) begin 
+%Warning-UNSATCONSTR: t/t_constraint_unsat.v:12: Unsatisfied constraint:   constraint data_range { data > 10 && data < 200; }
+%Warning-UNSATCONSTR: t/t_constraint_unsat.v:16: Unsatisfied constraint:     if (!randomize() with { addr == a; data == d; }) begin
 Randomization failed.
 
 === Test 5: Both constraints violated ===
-%Warning: Unsatisfied constraints 
- 		t/t_constraint_unsat.v:11     constraint addr_range { addr < 127; } 
-%Warning: Unsatisfied constraints 
- 		t/t_constraint_unsat.v:16       if (!randomize() with { addr == a; data == d; }) begin 
+%Warning-UNSATCONSTR: t/t_constraint_unsat.v:11: Unsatisfied constraint:   constraint addr_range { addr < 127; }
+%Warning-UNSATCONSTR: t/t_constraint_unsat.v:16: Unsatisfied constraint:     if (!randomize() with { addr == a; data == d; }) begin
 Randomization failed.
 
 === Test 6: Conflicting constraints (x > 100 && x < 50) ===
-%Warning: Unsatisfied constraints 
- 		t/t_constraint_unsat.v:26     constraint c1 { x > 100; } 
-%Warning: Unsatisfied constraints 
- 		t/t_constraint_unsat.v:27     constraint c2 { x < 50; } 
+%Warning-UNSATCONSTR: t/t_constraint_unsat.v:26: Unsatisfied constraint:   constraint c1 { x > 100; }
+%Warning-UNSATCONSTR: t/t_constraint_unsat.v:27: Unsatisfied constraint:   constraint c2 { x < 50; }
 Expected failure: conflicting constraints detected
 *-* All Finished *-*

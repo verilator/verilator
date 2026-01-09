@@ -445,10 +445,37 @@ bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
                 currentNum.clear();
             }
         }
-        for (int n : numbers) {
-            if (n < m_constraints_line.size()) {
-                VL_PRINTF("%%Warning: Unsatisfied constraints \n \t\t%s \n",
-                          m_constraints_line[n].c_str());
+        // Only print unsatisfied constraints if enabled
+        if (Verilated::threadContextp()->randShowUnsatConstr()) {
+            for (int n : numbers) {
+                if (n < m_constraints_line.size()) {
+                    const std::string& constraint_info = m_constraints_line[n];
+                    // Parse filename:linenum from constraint_info (format: "filename:linenum   source")
+                    size_t colon_pos = constraint_info.find(':');
+                    if (colon_pos != std::string::npos) {
+                        std::string filename = constraint_info.substr(0, colon_pos);
+                        size_t space_pos = constraint_info.find("   ", colon_pos);
+                        std::string linenum_str;
+                        std::string source;
+                        if (space_pos != std::string::npos) {
+                            linenum_str
+                                = constraint_info.substr(colon_pos + 1, space_pos - colon_pos - 1);
+                            source = constraint_info.substr(space_pos + 3);  // Skip "   "
+                        } else {
+                            linenum_str = constraint_info.substr(colon_pos + 1);
+                        }
+                        const int linenum = std::stoi(linenum_str);
+                        // Use VL_WARN_MT for proper formatting
+                        // Message format "UNSATCONSTR: ..." triggers %Warning-UNSATCONSTR: output
+                        std::string msg = "UNSATCONSTR: Unsatisfied constraint";
+                        if (!source.empty()) msg += ": " + source;
+                        VL_WARN_MT(filename.c_str(), linenum, "", msg.c_str());
+                    } else {
+                        // Fallback: no location info
+                        VL_PRINTF("%%Warning-UNSATCONSTR: Unsatisfied constraint: %s\n",
+                                  constraint_info.c_str());
+                    }
+                }
             }
         }
         return false;
