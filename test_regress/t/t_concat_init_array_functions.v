@@ -1,9 +1,9 @@
 // DESCRIPTION: Verilator: Verilog Test module for SystemVerilog 'alias'
 //
-// Simple bi-directional transitive alias test.
+// Simple test for unpacked concatenation arrays used as function arguments.
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2025 by Antmicro.
+// any use, without warranty, 2026 by Antmicro.
 // SPDX-License-Identifier: CC0-1.0
 //
 
@@ -43,6 +43,7 @@ module t;
 
     s = b.B_virt_func({a.r1, a.r2}, {a.r1, a.r1});
     if (s != 14) $stop;
+
     $write("*-* All finished *-*\n");
     $finish;
   end

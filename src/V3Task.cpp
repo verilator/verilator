@@ -394,7 +394,7 @@ class TaskVisitor final : public VNVisitor {
 
     // STATE
     TaskStateVisitor* const m_statep;  // Common state between visitors
-    V3UniqueNames m_tempNames;  // For generating unique temporary variable names
+    V3UniqueNames m_tempUnpackedArrayNames;  // For generating unique temporary variable for array arguments
     AstNodeModule* m_modp = nullptr;  // Current module
     AstTopScope* const m_topScopep = v3Global.rootp()->topScopep();  // The AstTopScope
     AstScope* m_scopep = nullptr;  // Current scope
@@ -1502,22 +1502,21 @@ class TaskVisitor final : public VNVisitor {
             // Create a fresh variable for each concat array present in pins list
             if (nodep->pinsp()) {
                 nodep->pinsp()->foreachAndNext([this](AstArg* arg) {
-                    AstInitArray* array;
-                    array = VN_CAST(arg->exprp(), InitArray);
-                    if (!array) return;
+                    AstInitArray* const arrayp = VN_CAST(arg->exprp(), InitArray);
+                    if (!arrayp) return;
 
-                    FileLine* const flp = array->fileline();
-                    auto temp_name = m_tempNames.get(arg);
-                    AstVar* substp = new AstVar{flp, VVarType::VAR, temp_name, array->dtypep()};
+                    FileLine* const flp = arrayp->fileline();
+                    std::string temp_name = m_tempUnpackedArrayNames.get(arg);
+                    AstVar* substp = new AstVar{flp, VVarType::VAR, temp_name, arrayp->dtypep()};
                     substp->funcLocal(true);
                     AstVarScope* const substvscp = createVarScope(substp, temp_name);
 
-                    AstAssign* assignp = new AstAssign{
-                        flp, new AstVarRef{array->fileline(), substvscp, VAccess::WRITE},
-                        array->unlinkFrBack()};
+                    AstAssign* const assignp = new AstAssign{
+                        flp, new AstVarRef{arrayp->fileline(), substvscp, VAccess::WRITE},
+                        arrayp->unlinkFrBack()};
 
                     AstExprStmt* exprstmtp = new AstExprStmt{
-                        flp, substp, new AstVarRef{array->fileline(), substvscp, VAccess::READ}};
+                        flp, substp, new AstVarRef{arrayp->fileline(), substvscp, VAccess::READ}};
                     exprstmtp->stmtsp()->addNext(assignp);
                     exprstmtp->hasResult(false);
 
@@ -1703,7 +1702,7 @@ public:
     // CONSTRUCTORS
     TaskVisitor(AstNetlist* nodep, TaskStateVisitor* statep)
         : m_statep{statep}
-        , m_tempNames{"__Vtasktemp"} {
+        , m_tempUnpackedArrayNames{"__Vtasktemp"} {
         iterate(nodep);
     }
     ~TaskVisitor() {
