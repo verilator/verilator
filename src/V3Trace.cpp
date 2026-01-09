@@ -676,7 +676,6 @@ class TraceVisitor final : public VNVisitor {
                 UASSERT_OBJ(canonDeclp->code() != 0, canonDeclp,
                             "Canonical node should have code assigned already");
                 declp->code(canonDeclp->code());
-                declp->dtypeVscp(nullptr);
                 continue;
             }
 
@@ -702,14 +701,11 @@ class TraceVisitor final : public VNVisitor {
                 if (declp->dtypeCallp()) {
                     AstCFunc* const funcp = createConstDtypeTraceFunctions(declp);
                     AstNodeExpr* argsp = nullptr;
-                    // NOCOMMIT -- if this works do we even need dtypeVscp?
                     argsp = AstNode::addNext(argsp, declp->valuep()->cloneTree(false));
                     AstCCall* const callp = new AstCCall{flp, funcp, argsp};
                     callp->dtypeSetVoid();
                     callp->argTypes(callp->argTypes() + "bufp, " + std::to_string(declp->code()));
                     subFuncp->addStmtsp(callp->makeStmt());
-
-                    declp->dtypeVscp(nullptr);
 
                     subStmts += 1;
                 } else {
@@ -779,7 +775,6 @@ class TraceVisitor final : public VNVisitor {
                 // function index to the same as the canonical node.
                 if (const TraceTraceVertex* const canonVtxp = vtxp->duplicatep()) {
                     declp->fidx(canonVtxp->nodep()->fidx());
-                    declp->dtypeVscp(nullptr);
                     continue;
                 }
 
@@ -840,8 +835,6 @@ class TraceVisitor final : public VNVisitor {
                     callChgp->argTypes(callChgp->argTypes() + "bufp, "
                                        + std::to_string(declp->code()));
                     ifp->addThensp(callChgp->makeStmt());
-
-                    declp->dtypeVscp(nullptr);
 
                     subStmts += 2;
                 } else {
@@ -1080,7 +1073,7 @@ class TraceVisitor final : public VNVisitor {
                 new V3GraphEdge{&m_graph, m_alwaysVtxp, traceVtxp, 1};
                 UINFO(1, "ALWAYS_EDGE: " << varVtxp << " (" << nodep << ") -> " << m_alwaysVtxp);
             }
-            if (m_tracep->dtypeVscp()) varscopep->user2p(m_tracep);
+            if (m_tracep->dtypeCallp()) varscopep->user2p(m_tracep);
         } else if (m_cfuncp && m_finding && nodep->access().isWriteOrRW()) {
             V3GraphVertex* const funcVtxp = getCFuncVertexp(m_cfuncp);
             if (varVtxp) {  // else we're not tracing this signal

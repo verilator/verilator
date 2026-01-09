@@ -268,10 +268,9 @@ class TraceDeclVisitor final : public VNVisitor {
         }
         FileLine* const flp = m_traVscp->fileline();
         AstNodeExpr* valuep = m_traValuep->cloneTree(false);
-        AstTraceDecl* const newp = new AstTraceDecl{
-            flp,          m_traName,  m_traVscp->varp(), valuep,
-            bitRange,     arrayRange, dtypeCallp,        dtypeCallp ? m_traVscp : nullptr,
-            m_offset != 0};
+        AstTraceDecl* const newp
+            = new AstTraceDecl{flp,      m_traName,  m_traVscp->varp(), valuep,
+                               bitRange, arrayRange, dtypeCallp,        m_offset != 0};
         // NOCOMMIT  -- m_offset and may be redundant with something else here ^
         if (m_offset) {
             newp->code(m_offset);

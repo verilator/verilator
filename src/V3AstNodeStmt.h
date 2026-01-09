@@ -1197,7 +1197,6 @@ class AstTraceDecl final : public AstNodeStmt {
     // Expression being traced - Moved to AstTraceInc by V3Trace
     // @astgen op1 := valuep : Optional[AstNodeExpr]
     //
-    // @astgen ptr := m_dtypeVscp: Optional[AstVarScope] // Var scope for type tracing
     // @astgen ptr := m_dtypeCallp: Optional[AstCCall] // Type init function call
     // @astgen ptr := m_dtypeDeclp: Optional[AstTraceDecl] // CCall TraceDecl which replaces this
     uint32_t m_code{0};  // Trace identifier code
@@ -1215,7 +1214,7 @@ public:
     AstTraceDecl(FileLine* fl, const string& showname,
                  AstVar* varp,  // For input/output state etc
                  AstNodeExpr* valuep, const VNumRange& bitRange, const VNumRange& arrayRange,
-                 AstCCall* const dtypeCallp, AstVarScope* const dtypeVscp, const bool inDtypeFunc)
+                 AstCCall* const dtypeCallp, const bool inDtypeFunc)
         : ASTGEN_SUPER_TraceDecl(fl)
         , m_showname{showname}
         , m_bitRange{bitRange}
@@ -1226,7 +1225,6 @@ public:
         dtypeFrom(valuep);
         this->valuep(valuep);
         this->dtypeCallp(dtypeCallp);
-        this->dtypeVscp(dtypeVscp);
     }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
@@ -1257,8 +1255,6 @@ public:
     void dtypeCallp(AstCCall* const callp) { m_dtypeCallp = callp; }
     AstTraceDecl* dtypeDeclp() const { return m_dtypeDeclp; }
     void dtypeDeclp(AstTraceDecl* const declp) { m_dtypeDeclp = declp; }
-    AstVarScope* dtypeVscp() const { return m_dtypeVscp; }
-    void dtypeVscp(AstVarScope* const dtypeVscp) { m_dtypeVscp = dtypeVscp; }
     bool inDtypeFunc() const { return m_inDtypeFunc; }
     void dtypeParamName(const string& dtypeParamName) { m_dtypeParamName = dtypeParamName; }
     string dtypeParamName() const { return m_dtypeParamName; }
