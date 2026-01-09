@@ -1,8 +1,8 @@
 |Logo|
 
-=====================
- Verilator Internals
-=====================
+===================
+Verilator Internals
+===================
 
 .. contents::
    :depth: 3
@@ -1771,8 +1771,8 @@ files that were read, filtered by preprocessing. This file can be fed back
 into Verilator, replacing on the command line all of the previous input
 files, to enable simplification of test cases. This file also contains most
 command line arguments Verilator was invoked as `// verilator fargs``
-metacomments, with and can be parsed by ``-f`. So to reproduce the run that
-created the file, run:
+metacomments, with and can be parsed by `\`-f`. So to reproduce the run
+that created the file, run:
 
 ::
    verilator -f <prefix>__inputs.vpp <prefix>__inputs.vpp
@@ -2095,11 +2095,18 @@ To print a node:
 ``src/.gdbinit`` and ``src/.gdbinit.py`` define handy utilities for working
 with JSON AST dumps. For example:
 
-* ``jstash nodep`` - Perform a JSON AST dump and save it into GDB value history (e.g. ``$1``)
-* ``jtree nodep`` - Perform a JSON AST dump and pretty print it using ``astsee_verilator``.
-* ``jtree $1`` - Pretty print a dump that was previously saved by ``jstash``.
-* ``jtree nodep -d '.file, .timeunit'`` - Perform a JSON AST dump, filter out some fields and pretty print it.
-* ``jtree 0x55555613dca0`` - Pretty print using address literal (rather than actual pointer).
+* ``jstash nodep`` - Perform a JSON AST dump and save it into GDB value
+  history (e.g. ``$1``)
+
+* ``jtree nodep`` - Perform a JSON AST dump and pretty print it using
+  ``astsee_verilator``.
+* ``jtree $1`` - Pretty print a dump that was previously saved by
+  ``jstash``.
+* ``jtree nodep -d '.file, .timeunit'`` - Perform a JSON AST dump, filter
+  out some fields and pretty print it.
+
+* ``jtree 0x55555613dca0`` - Pretty print using address literal (rather
+  than actual pointer).
 * ``jtree $1 nodep`` - Diff ``nodep`` against an older dump.
 
 A detailed description of ``jstash`` and ``jtree`` can be displayed using
@@ -2638,7 +2645,7 @@ xsim_flags / xsim_flags2 / xsim_run_flags
 Distribution
 ============
 
-Copyright 2008-2025 by Wilson Snyder. Verilator is free software; you can
+Copyright 2008-2026 by Wilson Snyder. Verilator is free software; you can
 redistribute it and/or modify it under the terms of either the GNU Lesser
 General Public License Version 3 or the Perl Artistic License Version 2.0.
 

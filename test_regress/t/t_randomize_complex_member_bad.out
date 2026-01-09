@@ -1,12 +1,12 @@
-%Error: t/t_randomize_complex_member_bad.v:36:28: Class 'Deep' does not contain field 'sc_inst2'
-   36 |     if (cl_inst[1].sc_inst.sc_inst2.sc_inst2[1].randomize() with {field inside {1, 2, 3};} == 0) begin
+%Error: t/t_randomize_complex_member_bad.v:39:28: Class 'Deep' does not contain field 'sc_inst2'
+   39 |     if (cl_inst[1].sc_inst.sc_inst2.sc_inst2[1].randomize() with {
       |                            ^~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error-UNSUPPORTED: t/t_randomize_complex_member_bad.v:36:49: Unsupported: 'randomize() with' on complex expressions
-   36 |     if (cl_inst[1].sc_inst.sc_inst2.sc_inst2[1].randomize() with {field inside {1, 2, 3};} == 0) begin
+%Error-UNSUPPORTED: t/t_randomize_complex_member_bad.v:39:49: Unsupported: 'randomize() with' on complex expressions
+   39 |     if (cl_inst[1].sc_inst.sc_inst2.sc_inst2[1].randomize() with {
       |                                                 ^~~~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: t/t_randomize_complex_member_bad.v:36:67: Can't find definition of variable: 'field'
-   36 |     if (cl_inst[1].sc_inst.sc_inst2.sc_inst2[1].randomize() with {field inside {1, 2, 3};} == 0) begin
-      |                                                                   ^~~~~
+%Error: t/t_randomize_complex_member_bad.v:40:11: Can't find definition of variable: 'field'
+   40 |           field inside {1, 2, 3};
+      |           ^~~~~
 %Error: Exiting due to

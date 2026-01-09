@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module m2;
-  m3 u_23();
+  m3 u_23 ();
   initial $display("libb:m2 %%m=%m %%l=%l");
 endmodule
 

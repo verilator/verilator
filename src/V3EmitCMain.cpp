@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -56,16 +56,36 @@ private:
 
         puts("#include \"verilated.h\"\n");
         puts("#include \"" + EmitCUtil::topClassName() + ".h\"\n");
+        if (v3Global.opt.debugRuntimeTimeout()) {
+            puts("\n");
+            puts("#include <csignal>\n");
+        }
 
         puts("\n//======================\n\n");
+
+        if (v3Global.opt.debugRuntimeTimeout()) {
+            puts("void alarmHandler(int signum) {\n");
+            puts("    VL_FATAL_MT(\"\", 0, \"\", \"Alarm signal received,"s
+                 + " '--debug-runtime-timeout "s
+                 + std::to_string(v3Global.opt.debugRuntimeTimeout()) + "' exceeded\\n\");\n");
+            puts("}\n");
+            puts("\n");
+        }
 
         puts("int main(int argc, char** argv, char**) {\n");
         puts("// Setup context, defaults, and parse command line\n");
         puts("Verilated::debug(0);\n");
         puts("const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};\n");
         if (v3Global.opt.trace()) puts("contextp->traceEverOn(true);\n");
+        puts("contextp->threads(" + std::to_string(v3Global.opt.threads()) + ");\n");
         puts("contextp->commandArgs(argc, argv);\n");
         puts("\n");
+
+        if (v3Global.opt.debugRuntimeTimeout()) {
+            puts("signal(SIGALRM, alarmHandler);\n");
+            puts("alarm("s + std::to_string(v3Global.opt.debugRuntimeTimeout()) + ");\n");
+            puts("\n");
+        }
 
         puts("// Construct the Verilated model, from Vtop.h generated from Verilating\n");
         puts("const std::unique_ptr<" + EmitCUtil::topClassName() + "> topp{new "

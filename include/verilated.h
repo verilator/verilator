@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -154,7 +154,8 @@ enum VerilatedVarFlags {
     // Flags
     VLVF_PUB_RD = (1 << 8),  // Public readable
     VLVF_PUB_RW = (1 << 9),  // Public writable
-    VLVF_DPI_CLAY = (1 << 10)  // DPI compatible C standard layout
+    VLVF_DPI_CLAY = (1 << 10),  // DPI compatible C standard layout
+    VLVF_SIGNED = (1 << 11)  // Signed integer
 };
 
 // IEEE 1800-2023 Table 20-6

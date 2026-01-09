@@ -26,10 +26,10 @@ module t;
   end
 
   initial begin
-      #1;
-      ia = 4'd2;
-      #10;
-      $write("*-* All Finished *-*\n");
-      $finish;
+    #1;
+    ia = 4'd2;
+    #10;
+    $write("*-* All Finished *-*\n");
+    $finish;
   end
 endmodule

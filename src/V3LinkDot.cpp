@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -47,7 +47,7 @@
 //      ResolveVisitor:
 //          #9: Resolve general variables, which may point into the interface or modport (after #8)
 //      LinkResolve:
-//          #10: Unlink modports, not needed later except for XML/Lint
+//          #10: Unlink modports, not needed later except for JSON/Lint
 //*************************************************************************
 // TOP
 //      {name-of-top-modulename}
@@ -2205,7 +2205,7 @@ class LinkDotParamVisitor final : public VNVisitor {
             symp->exported(false);
             refp->pinNum(nodep->pinNum());
             // Put the variable where the port is, so that variables stay
-            // in pin number sorted order. Otherwise hierarchical or XML
+            // in pin number sorted order. Otherwise hierarchical or JSON
             // may botch by-position instances.
             nodep->addHereThisAsNext(refp->unlinkFrBack());
         }
@@ -2529,7 +2529,13 @@ class LinkDotIfaceVisitor final : public VNVisitor {
     void visit(AstModportVarRef* nodep) override {  // IfaceVisitor::
         UINFO(5, "   fiv: " << nodep);
         iterateChildren(nodep);
-        VSymEnt* const symp = m_curSymp->findIdFallback(nodep->name());
+        VSymEnt* symp = nullptr;
+        if (nodep->exprp()) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Modport expressions (IEEE 1800-2023 25.5.4)");
+        } else {
+            symp = m_curSymp->findIdFallback(nodep->name());
+        }
         if (!symp) {
             nodep->v3error("Modport item not found: " << nodep->prettyNameQ());
         } else if (AstVar* const varp = VN_CAST(symp->nodep(), Var)) {
@@ -3275,7 +3281,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // Cell: Recurse inside or cleanup not founds
         LINKDOT_VISIT_START();
         UINFO(5, indent() << "visit " << nodep);
-        checkNoDot(nodep);
+        // Can be under dot if called as package::class and that class resolves, so no checkNoDot
         VL_RESTORER(m_usedPins);
         m_usedPins.clear();
         UASSERT_OBJ(nodep->classp(), nodep, "ClassRef has unlinked class");
@@ -5345,6 +5351,20 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     nodep->typedefp(defp);
                     nodep->classOrPackagep(foundp->classOrPackagep());
                     resolvedCapturedTypedef = true;
+
+                    // class capture: capture typedef references inside parameterized classes
+                    // Only capture if we're referencing from OUTSIDE the class (not
+                    // self-references)
+                    if (m_statep->forPrimary()) {
+                        AstClass* const classp = VN_CAST(nodep->classOrPackagep(), Class);
+                        if (classp && classp->hasGParam() && classp != m_modp) {
+                            UINFO(9, indent()
+                                         << "class capture add typedef name=" << nodep->name()
+                                         << " class=" << classp->name() << " typedef=" << defp);
+                            V3LinkDotIfaceCapture::addClass(nodep, classp, m_modp, defp);
+                        }
+                    }
+
                 } else if (AstParamTypeDType* const defp
                            = foundp ? VN_CAST(foundp->nodep(), ParamTypeDType) : nullptr) {
                     if (defp == nodep->backp()) {  // Where backp is typically typedef

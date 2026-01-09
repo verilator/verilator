@@ -8,7 +8,8 @@ module t;
   for (genvar k = 0; k < 1; k++) begin : gen_empty
     // empty
   end
-  initial for (int i = 0; i < 1; i++) begin : gen_i
-    // empty
-  end
+  initial
+    for (int i = 0; i < 1; i++) begin : gen_i
+      // empty
+    end
 endmodule

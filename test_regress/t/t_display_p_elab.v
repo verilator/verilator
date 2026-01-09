@@ -21,7 +21,7 @@ module t;
 
   parameter int I = 234;
   parameter string IS = $sformatf(">%p<", I);
-  initial `checks(IS, ">       234<");
+  initial `checks(IS, ">234<");
 
   parameter real R = 1.234;
   parameter string RS = $sformatf(">%p<", R);

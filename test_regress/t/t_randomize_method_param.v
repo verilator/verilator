@@ -15,12 +15,12 @@ package uvm_pkg;
       type REQ = int
   ) extends uvm_sequence #(REQ);
     rand bit [15:0] m_rand;
-    // TODO: randc bit [15:0] m_randc;
+    randc bit [15:0] m_randc;
     task body();
       if (0 == randomize(m_rand)) begin
       end
-      // TODO: if (0 == randomize(m_randc)) begin
-      // TODO: end
+      if (0 == randomize(m_randc)) begin
+      end
     endtask
   endclass
 endpackage

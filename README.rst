@@ -28,7 +28,7 @@ Welcome to Verilator
         * Accepts Verilog or SystemVerilog
         * Performs lint code-quality checks
         * Compiles into multithreaded C++, or SystemC
-        * Creates XML to front-end your own tools
+        * Creates JSON to front-end your own tools
      - |Logo|
    * - |verilator multithreaded performance|
      - **Fast**
@@ -67,11 +67,10 @@ executable performs the design simulation. Verilator also supports linking
 Verilated generated libraries, optionally encrypted, into other simulators.
 
 Verilator may not be the best choice if you are expecting a full-featured
-replacement for a closed-source Verilog simulator, need SDF annotation,
-mixed-signal simulation, or are doing a quick class project (we recommend
-`Icarus Verilog`_ for classwork). However, if you are looking for a path to
-migrate SystemVerilog to C++/SystemC, or want high-speed simulation of
-designs, Verilator is the tool for you.
+replacement for a closed-source Verilog simulator, need SDF annotation, or
+mixed-signal simulation. However, if you are looking for a path to migrate
+SystemVerilog to C++/SystemC, or want high-speed simulation of designs,
+Verilator is the tool for you.
 
 
 Performance
@@ -145,7 +144,7 @@ Related Projects
 Open License
 ============
 
-Verilator is Copyright 2003-2025 by Wilson Snyder. (Report bugs to
+Verilator is Copyright 2003-2026 by Wilson Snyder. (Report bugs to
 `Verilator Issues <https://verilator.org/issues>`_.)
 
 Verilator is free software; you can redistribute it and/or modify it under

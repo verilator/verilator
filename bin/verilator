@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 ######################################################################
 #
-# Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -42,6 +42,7 @@ if ($#ARGV < 0) {
 }
 
 # Insert debugging options up front
+# (VERILATOR_TEST_FLAGS is not a documented nor official supported feature)
 push @ARGV, (split ' ', $ENV{VERILATOR_TEST_FLAGS} || "");
 
 # We sneak a look at the flags so we can do some pre-environment checks
@@ -408,6 +409,8 @@ detailed descriptions of these arguments.
      -I<dir>                    Directory to search for includes
     --if-depth <value>          Tune IFDEPTH warning
      +incdir+<dir>              Directory to search for includes
+    --inline-cfuncs <value>     Inline CFuncs with <=value nodes (0=off)
+    --inline-cfuncs-product <value>  Inline CFuncs if size*calls <= value
     --inline-mult <value>       Tune module inlining
     --instr-count-dpi <value>   Assumed dynamic instruction count of DPI imports
      -j <jobs>                  Parallelism for --build-jobs/--verilate-jobs
@@ -474,6 +477,7 @@ detailed descriptions of these arguments.
     --public-params             Mark all parameters as public_flat
      -pvalue+<name>=<value>     Overwrite toplevel parameter
     --quiet                     Minimize additional printing
+    --quiet-build               Don't print build progress
     --quiet-exit                Don't print the command on failure
     --quiet-stats               Don't print statistics
     --relative-includes         Resolve includes relative to current file
@@ -548,8 +552,6 @@ detailed descriptions of these arguments.
     --x-assign <mode>           Assign non-initial Xs to this value
     --x-initial <mode>          Assign initial Xs to this value
     --x-initial-edge            Enable initial X->0 and X->1 edge triggers
-    --xml-only                  Create XML parser output
-    --xml-output                XML output filename
      -y <dir>                   Directory to search for modules
 
 This is a short summary of the simulation runtime arguments, i.e. for the
@@ -580,7 +582,7 @@ description of these arguments.
 
 The latest version is available from L<https://verilator.org>.
 
-Copyright 2003-2025 by Wilson Snyder. This program is free software; you can
+Copyright 2003-2026 by Wilson Snyder. This program is free software; you can
 redistribute it and/or modify the Verilator internals under the terms of
 either the GNU Lesser General Public License Version 3 or the Perl Artistic
 License Version 2.0.

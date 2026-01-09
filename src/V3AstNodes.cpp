@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -41,6 +41,9 @@ void AstNode::dumpJsonNum(std::ostream& os, const std::string& name, int64_t val
 void AstNode::dumpJsonBool(std::ostream& os, const std::string& name, bool val) {
     os << ",\"" << name << "\":" << (val ? "true" : "false");
 }
+void AstNode::dumpJsonBoolIf(std::ostream& os, const std::string& name, bool val) {
+    if (val) dumpJsonBool(os, name, val);
+}
 void AstNode::dumpJsonStr(std::ostream& os, const std::string& name, const std::string& val) {
     os << ",\"" << name << "\":\"" << V3OutFormatter::quoteNameControls(val) << '"';
 }
@@ -54,6 +57,7 @@ void AstNode::dumpJsonPtr(std::ostream& os, const std::string& name, const AstNo
 // Shorthands for dumping fields that use func name as key
 #define dumpJsonNumFunc(os, func) dumpJsonNum(os, #func, func())
 #define dumpJsonBoolFunc(os, func) dumpJsonBool(os, #func, func())
+#define dumpJsonBoolFuncIf(os, func) dumpJsonBoolIf(os, #func, func())
 #define dumpJsonStrFunc(os, func) dumpJsonStr(os, #func, func())
 #define dumpJsonPtrFunc(os, func) dumpJsonPtr(os, #func, func())
 
@@ -371,6 +375,20 @@ void AstCReset::dump(std::ostream& str) const {
 }
 void AstCReset::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, constructing);
+    dumpJsonGen(str);
+}
+
+void AstCase::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " " << verilogKwd();
+}
+void AstCase::dumpJson(std::ostream& str) const {
+    dumpJsonStr(str, "kwd", verilogKwd());
+    dumpJsonBoolIf(str, "full", fullPragma());
+    dumpJsonBoolIf(str, "parallel", parallelPragma());
+    dumpJsonBoolIf(str, "unique", uniquePragma());
+    dumpJsonBoolIf(str, "unique0", unique0Pragma());
+    dumpJsonBoolIf(str, "priority", priorityPragma());
     dumpJsonGen(str);
 }
 
@@ -1797,7 +1815,7 @@ void AstClass::dump(std::ostream& str) const {
 }
 void AstClass::dumpJson(std::ostream& str) const {
     // dumpJsonNumFunc(str, declTokenNum);  // Not dumped as adding token changes whole file
-    if (isCovergroup()) dumpJsonBoolFunc(str, isCovergroup);
+    dumpJsonBoolFuncIf(str, isCovergroup);
     dumpJsonBoolFunc(str, isExtended);
     dumpJsonBoolFunc(str, isInterfaceClass);
     dumpJsonBoolFunc(str, isVirtual);
@@ -2378,6 +2396,7 @@ void AstNodeDType::dump(std::ostream& str) const {
 }
 void AstNodeDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, generic);
+    if (isSigned() && !isDouble()) dumpJsonBool(str, "signed", 1);
     dumpJsonGen(str);
 }
 void AstNodeDType::dumpSmall(std::ostream& str) const VL_MT_STABLE {
@@ -2538,8 +2557,8 @@ void AstPatMember::dump(std::ostream& str) const {
     if (isDefault()) str << " [DEFAULT]";
 }
 void AstPatMember::dumpJson(std::ostream& str) const {
-    if (isConcat()) dumpJsonBoolFunc(str, isConcat);
-    if (isDefault()) dumpJsonBoolFunc(str, isDefault);
+    dumpJsonBoolFuncIf(str, isConcat);
+    dumpJsonBoolFuncIf(str, isDefault);
     dumpJsonGen(str);
 }
 void AstNodeTriop::dump(std::ostream& str) const { this->AstNodeExpr::dump(str); }
@@ -2995,8 +3014,8 @@ void AstNodeFTask::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, dpiOpenParent);
     dumpJsonBoolFunc(str, isExternDef);
     dumpJsonBoolFunc(str, isExternProto);
-    if (isVirtual()) dumpJsonBoolFunc(str, isVirtual);
-    if (needProcess()) dumpJsonBoolFunc(str, needProcess);
+    dumpJsonBoolFuncIf(str, isVirtual);
+    dumpJsonBoolFuncIf(str, needProcess);
     dumpJsonBoolFunc(str, prototype);
     dumpJsonBoolFunc(str, recursive);
     dumpJsonBoolFunc(str, taskPublic);

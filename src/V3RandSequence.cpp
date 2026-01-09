@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -315,7 +315,7 @@ class RandSequenceVisitor final : public VNVisitor {
                                              new AstConst{fl, AstConst::BitFalse{}}});
             }
 
-            // "// Number of eligible lists left before hit _Vjoin_pciked one"
+            // "// Number of eligible lists left before hit _Vjoin_picked one"
             // "int _Vjoin_sel_elist = _Vjoin_picked_elist;"
             AstVar* const selVarp
                 = new AstVar{fl, VVarType::VAR, "_Vjoin_sel_elist", VFlagBitPacked{}, 32};

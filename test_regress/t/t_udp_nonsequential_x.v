@@ -28,9 +28,9 @@ module t ();
 
 endmodule
 
-primitive not1 (q, d);
+primitive not1(q, d);
   output q;
-  input  d;
+  input d;
   table
     0 : 1;
     1 : 0;
@@ -38,9 +38,9 @@ primitive not1 (q, d);
   endtable
 endprimitive
 
-primitive not2 (q, d);
+primitive not2(q, d);
   output q;
-  input  d;
+  input d;
   table
     0 : 1;
     1 : 0;

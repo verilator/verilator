@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -827,6 +827,7 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
             stmt += varp->vlEnumType();  // VLVT_UINT32 etc
             stmt += ", ";
             stmt += varp->vlEnumDir();  // VLVD_IN etc
+            if (varp->dtypep()->skipRefp()->isSigned()) stmt += "|VLVF_SIGNED";
             stmt += ", ";
             stmt += std::to_string(udim);
             stmt += ", ";

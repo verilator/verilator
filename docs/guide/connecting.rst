@@ -1,4 +1,4 @@
-.. Copyright 2003-2025 by Wilson Snyder.
+.. Copyright 2003-2026 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 .. _connecting:
@@ -502,16 +502,16 @@ described above is just a wrapper which calls these two functions.
 3. If using delays and :vlopt:`--timing`, there are two additional methods
 the user should call:
 
-   * ``designp->eventsPending()``, which returns ``true`` if there are
-     any delayed events pending,
+   * ``designp->eventsPending()``, which returns ``true`` if there are any
+     delayed events pending,
    * ``designp->nextTimeSlot()``, which returns the simulation time of the
      next delayed event. This method can only be called if
      ``designp->eventsPending()`` returned ``true``.
 
 Call ``eventsPending()`` to check if you should continue with the
 simulation, and then ``nextTimeSlot()`` to move simulation time forward.
-:vlopt:`--main` can be used with :vlopt:`--timing` to generate a basic example
-of a timing-enabled eval loop.
+:vlopt:`--main` can be used with :vlopt:`--timing` to generate a basic
+example of a timing-enabled eval loop.
 
 When ``eval()`` (or ``eval_step()``) is called Verilator looks for changes
 in clock signals and evaluates related sequential always blocks, such as

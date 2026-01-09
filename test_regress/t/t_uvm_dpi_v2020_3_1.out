@@ -1,13 +1,8 @@
-UVM Report t/t_uvm_dpi.v:52: id message
+UVM Report t/t_uvm_dpi.v:54: id message
 uvm_dpi_get_tool_name_c() = Verilator
 = uvm_re
 = uvm_hdl_check_path
 = uvm_hdl_read simple variable
-= uvm_hdl_read not found (bad)
-===
-UVM Report expected on next line:
-UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/HDL_SET set: unable to locate hdl path (t.__DEPOSIT_NOT_FOUND)
- Either the name is incorrect, or you may not have PLI/ACC visibility to that name
 = uvm_hdl_deposit simple variable
 = uvm_hdl_read single bit
 = uvm_hdl_deposit single bit
@@ -22,6 +17,16 @@ UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/HDL_SET set
 UVM Report expected on next line:
 UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/HDL_SET set: unable to locate hdl path (t.exposed[99:15])
  Either the name is incorrect, or you may not have PLI/ACC visibility to that name
+= uvm_hdl_deposit not found (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/HDL_SET set: unable to locate hdl path (t.__DEPOSIT_NOT_FOUND)
+ Either the name is incorrect, or you may not have PLI/ACC visibility to that name
+= uvm_hdl_deposit to not exposed (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/HDL_SET set: unable to locate hdl path (t.not_exposed)
+ Either the name is incorrect, or you may not have PLI/ACC visibility to that name
 = uvm_hdl_force
 ===
 UVM Report expected on next line:
@@ -34,4 +39,12 @@ UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_GET Un
 ===
 UVM Report expected on next line:
 UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_GET Unsupported: uvh_hdl_force/uvm_hdl_release on hdl path 't.exposed'
+= uvm_hdl_force to not exposed (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_GET Unsupported: uvh_hdl_force/uvm_hdl_release on hdl path 't.not_exposed'
+= uvm_hdl_force to not forcable (bad)
+===
+UVM Report expected on next line:
+UVM Report ../../t/uvm/v2020_3_1/dpi/uvm_hdl_verilator.c:54: UVM/DPI/VLOG_GET Unsupported: uvh_hdl_force/uvm_hdl_release on hdl path 't.exposed_not_forceable'
 *-* All Finished *-*

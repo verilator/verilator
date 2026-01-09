@@ -1,5 +1,5 @@
-%Error-UNSUPPORTED: t/t_event_control_expr_unsup.v:15:21: Unsupported: Impure function calls in sensitivity lists
-   15 |    always @(posedge foo());
-      |                     ^~~
+%Error-UNSUPPORTED: t/t_event_control_expr_unsup.v:15:20: Unsupported: Impure function calls in sensitivity lists
+   15 |   always @(posedge foo());
+      |                    ^~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

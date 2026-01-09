@@ -1,9 +1,9 @@
-%Error: t/t_flag_unroll_limit_const.v:17:16: Expecting expression to be constant, but can't determine constant for FUNCREF 'f'
+%Error: t/t_flag_unroll_limit_const.v:17:19: Expecting expression to be constant, but can't determine constant for FUNCREF 'f'
                                            : ... note: In instance 't'
         t/t_flag_unroll_limit_const.v:9:3: ... Location of non-constant LOOP: Loop simulation took too long; probably this is an infinite loop, otherwise set '--unroll-limit' above 4
-        t/t_flag_unroll_limit_const.v:17:16: ... Called from 'f()' with parameters:
+        t/t_flag_unroll_limit_const.v:17:19: ... Called from 'f()' with parameters:
            x = ?32?h5
-   17 |   output logic[f(5):0] o5    
-      |                ^
+   17 |     output logic [f(5):0] o5   
+      |                   ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

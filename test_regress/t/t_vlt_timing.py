@@ -10,7 +10,6 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
-test.top_filename = "t/t_timing_off.v"
 
 test.compile(verilator_flags2=["--binary t/t_vlt_timing.vlt"])
 

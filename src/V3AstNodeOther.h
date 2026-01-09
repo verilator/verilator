@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -1203,6 +1203,7 @@ class AstModportVarRef final : public AstNode {
     // A input/output/etc variable referenced under a modport
     // The storage for the variable itself is inside the interface, thus this is a reference
     // PARENT: AstModport
+    // @astgen op1 := exprp : Optional[AstNodeExpr]
     //
     // @astgen ptr := m_varp : Optional[AstVar]  // Link to the actual Var
     string m_name;  // Name of the variable referenced
@@ -1212,6 +1213,13 @@ public:
         : ASTGEN_SUPER_ModportVarRef(fl)
         , m_name{name}
         , m_direction{direction} {}
+    AstModportVarRef(FileLine* fl, const string& name, AstNodeExpr* exprp,
+                     VDirection::en direction)
+        : ASTGEN_SUPER_ModportVarRef(fl)
+        , m_name{name}
+        , m_direction{direction} {
+        this->exprp(exprp);
+    };
     ASTGEN_MEMBERS_AstModportVarRef;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
@@ -1729,7 +1737,7 @@ class AstTypedef final : public AstNode {
     // @astgen op4 := attrsp : List[AstNode] // Attributes during early parse
 
     string m_name;
-    string m_tag;  // Holds the string of the verilator tag -- used in XML output.
+    string m_tag;  // Holds the string of the verilator tag -- used in JSON output.
     uint32_t m_declTokenNum;  // Declaration token number
     bool m_attrPublic = false;
     bool m_isHideLocal : 1;  // Verilog local
@@ -1858,13 +1866,13 @@ class AstVar final : public AstNode {
 
     string m_name;  // Name of variable
     string m_origName;  // Original name before dot addition
-    string m_tag;  // Holds the string of the verilator tag -- used in XML output.
+    string m_tag;  // Holds the string of the verilator tag -- used in JSON output.
     VVarType m_varType;  // Type of variable
     VDirection m_direction;  // Direction input/output etc
     VDirection m_declDirection;  // Declared direction input/output etc
     VLifetime m_lifetime;  // Lifetime
     VRandAttr m_rand;  // Randomizability of this variable (rand, randc, etc)
-    int m_pinNum = 0;  // For XML, if non-zero the connection pin number
+    int m_pinNum = 0;  // For JSON, if non-zero the connection pin number
     bool m_ansi : 1;  // Params or pins declared in the module header, rather than the body
     bool m_declTyped : 1;  // Declared as type (for dedup check)
     bool m_tristate : 1;  // Inout or triwire or trireg
@@ -2177,6 +2185,12 @@ public:
                 && !isSc() && !isPrimaryIO() && !isConst() && !isDouble() && !isString());
     }
     bool isClassMember() const { return varType() == VVarType::MEMBER; }
+    bool isVirtIface() const {
+        if (AstIfaceRefDType* const dtp = VN_CAST(dtypep(), IfaceRefDType)) {
+            return dtp->isVirtual();
+        }
+        return false;
+    }
     bool isStatementTemp() const { return varType() == VVarType::STMTTEMP; }
     bool isXTemp() const { return varType() == VVarType::XTEMP; }
     bool isParam() const { return varType().isParam(); }

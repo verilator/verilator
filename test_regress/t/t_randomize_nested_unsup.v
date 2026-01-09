@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class A;
-  rand logic[31:0] rdata;
+  rand logic [31:0] rdata;
 endclass
 
 module t;

@@ -1,0 +1,11 @@
+%Warning-MULTIDRIVEN: t/t_lint_multidriven_taskcall_bad.v:28:15: Variable written to in always_comb also written by other process (IEEE 1800-2023 9.2.2.2): 'out'
+                                                               : ... note: In instance 't'
+                      t/t_lint_multidriven_taskcall_bad.v:28:15: 
+   28 |     if (sel2) out = 1'b1;
+      |               ^~~
+                      t/t_lint_multidriven_taskcall_bad.v:20:5: ... Location of other write
+   20 |     out = 1'b0;
+      |     ^~~
+                      ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest
+                      ... Use "/* verilator lint_off MULTIDRIVEN */" and lint_on around source to disable this message.
+%Error: Exiting due to

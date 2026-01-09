@@ -5,12 +5,12 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-  integer i=0;
+  integer i = 0;
   initial begin
     fork
-      i=1;
+      i = 1;
     join_none
-    if(i==1) $stop;
+    if (i == 1) $stop;
     $finish;
   end
 endmodule

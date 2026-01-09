@@ -12,7 +12,7 @@ module t (  /*AUTOARG*/
 );
   input clk;
 
-  reg  [15:0] out;
+  reg [15:0] out;
   wire [15:0] a;
 
   alias a = sub_i.btw;
@@ -29,7 +29,7 @@ module sub (
     output wire [15:0] out
 );
 
-  reg  [31:0] counter = 32'h0;
+  reg [31:0] counter = 32'h0;
   wire [15:0] btw;
 
   assign btw = {counter[15:0]};

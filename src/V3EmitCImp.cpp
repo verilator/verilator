@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -135,6 +135,8 @@ class EmitCImp final : public EmitCFunc {
             ofp()->indentDec();
             puts(" {\n");
         } else {
+            putns(modp, modName + "::" + modName + "() = default;\n");
+            putns(modp, modName + "::~" + modName + "() = default;\n\n");
             putns(modp, "void " + modName + "::ctor(" + ctorArgs + ") {\n");
         }
 

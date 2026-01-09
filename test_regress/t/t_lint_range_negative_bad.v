@@ -9,9 +9,11 @@ module t;
   int array2_bad[-1];  // <--- Error: Must be positive size
   localparam X = 32'bz;
   logic [X:0] x;  // <--- Error: X range
-  sub #(1) u_sub();
+  sub #(1) u_sub ();
 endmodule
 
-module sub #(parameter SIZE=0);
+module sub #(
+    parameter SIZE = 0
+);
   int ignore[SIZE];
 endmodule

@@ -22,11 +22,13 @@ module t (  /*AUTOARG*/
       force a = 16'h1234;
       if (a != 16'h1234 || a != b) $stop;
       release a;
-    end else if (cyc == 2) begin
+    end
+    else if (cyc == 2) begin
       force b = 16'h5678;
       if (a != 16'h5678 || a != b) $stop;
       release b;
-    end else if (cyc == 3) begin
+    end
+    else if (cyc == 3) begin
       $write("*-* All Finished *-*\n");
       $finish;
     end

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -409,6 +409,41 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+void V3LinkLevel::nonWrapTop(AstNetlist* rootp) {
+    // Perform variable setting step for top modules to prevent
+    // optimizing away primary ports when only serializing input
+    if (!rootp->modulesp()) {  // Later V3LinkDot will warn
+        UINFO(1, "No module found");
+        return;
+    }
+
+    // For all top modules
+    for (AstNodeModule* modp = rootp->modulesp(); modp && modp->isTop();
+         modp = VN_AS(modp->nextp(), NodeModule)) {
+        if (VN_IS(modp, Package)) continue;
+
+        UINFO(5, "LOOP " << modp);
+
+        for (AstNode* subnodep = modp->stmtsp(); subnodep; subnodep = subnodep->nextp()) {
+            if (AstVar* const varp = VN_CAST(subnodep, Var)) {
+                UINFO(8, "VARWRAP " << varp);
+                if (varp->isIO()) {
+                    varp->protect(false);
+                    varp->sigPublic(true);
+                    varp->primaryIO(true);
+                    if (varp->isRef() || varp->isConstRef()) {
+                        varp->v3warn(E_UNSUPPORTED,
+                                     "Unsupported: ref/const ref as primary input/output: "
+                                         << varp->prettyNameQ());
+                    }
+                    if (v3Global.opt.systemC()) varp->sc(true);
+                    if (v3Global.opt.noTraceTop()) varp->trace(false);
                 }
             }
         }

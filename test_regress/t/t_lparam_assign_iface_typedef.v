@@ -5,19 +5,15 @@
 // SPDX-License-Identifier: CC0-1.0
 //
 //     assign localparam from interface typedef, single level nesting
-//
 
+// verilog_format: off
 `define stop $stop
-`define checkh(gotv,expv) \
-  do if ((gotv) !== (expv)) begin \
-    $write("%%Error: %s:%0d:  got=%0h exp=%0h\n", \
-            `__FILE__,`__LINE__, (gotv), (expv)); \
-    `stop; \
-  end while(0);
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0h exp=%0h\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 interface x_if #(
-  parameter int p_awidth = 4
-  ,parameter int p_dwidth = 7
+  parameter int p_awidth = 4,
+  parameter int p_dwidth = 7
 )();
   typedef struct packed {
     logic [p_awidth-1:0] addr;
@@ -31,8 +27,8 @@ endinterface
 
 module top();
   x_if #(
-    .p_awidth(16)
-    ,.p_dwidth(8)
+    .p_awidth(16),
+    .p_dwidth(8)
   ) if0();
 
   localparam p0_rq_t = if0.rq_t;

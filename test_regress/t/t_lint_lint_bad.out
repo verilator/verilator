@@ -1,6 +1,6 @@
-%Warning-IMPLICIT: t/t_lint_lint_bad.v:9:7: Signal definition not found, creating implicitly: 'implicit_out'
-    9 |   not(implicit_out, i);
-      |       ^~~~~~~~~~~~
+%Warning-IMPLICIT: t/t_lint_lint_bad.v:9:8: Signal definition not found, creating implicitly: 'implicit_out'
+    9 |   not (implicit_out, i);
+      |        ^~~~~~~~~~~~
                    ... For warning description see https://verilator.org/warn/IMPLICIT?v=latest
                    ... Use "/* verilator lint_off IMPLICIT */" and lint_on around source to disable this message.
 %Error: Exiting due to

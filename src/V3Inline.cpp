@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -492,7 +492,7 @@ void connectPort(AstNodeModule* modp, AstVar* nodep, AstNodeExpr* pinExprp) {
 
     // If it is being inlined, create the alias for it
     if (inlineIt) {
-        UINFO(6, "Inlning port variable: " << nodep);
+        UINFO(6, "Inlining port variable: " << nodep);
         if (nodep->isIfaceRef()) {
             modp->addStmtsp(
                 new AstAliasScope{flp, portRef(VAccess::WRITE), pinRef(VAccess::READ)});
@@ -510,7 +510,7 @@ void connectPort(AstNodeModule* modp, AstVar* nodep, AstNodeExpr* pinExprp) {
     }
 
     // Otherwise create the continuous assignment between the port var and the pin expression
-    UINFO(6, "Not inlning port variable: " << nodep);
+    UINFO(6, "Not inlining port variable: " << nodep);
     if (nodep->direction() == VDirection::INPUT) {
         AstAssignW* const ap = new AstAssignW{flp, portRef(VAccess::WRITE), pinRef(VAccess::READ)};
         modp->addStmtsp(new AstAlways{ap});

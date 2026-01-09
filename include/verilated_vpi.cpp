@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2009-2025 by Wilson Snyder. This program is free software; you can
+// Copyright 2009-2026 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -2338,6 +2338,11 @@ PLI_INT32 vpi_get(PLI_INT32 property, vpiHandle object) {
         const VerilatedVpioVarBase* const vop = VerilatedVpioVarBase::castp(object);
         if (VL_UNLIKELY(!vop)) return vpiUndefined;
         return vop->size();
+    }
+    case vpiSigned: {
+        const VerilatedVpioVarBase* const vop = VerilatedVpioVarBase::castp(object);
+        if (VL_UNLIKELY(!vop)) return vpiUndefined;
+        return vop->varp()->isSigned();
     }
     default:
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported property %s, nothing will be returned",

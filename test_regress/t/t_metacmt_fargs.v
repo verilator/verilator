@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // verilator fargs --binary -Wno-WIDTHEXPAND
-/* verilator fargs -Wno-WIDTHTRUNC *//* verilator fargs --trace-vcd --stats */
+/* verilator fargs -Wno-WIDTHTRUNC */  /* verilator fargs --trace-vcd --stats */
 
 module top;
 
@@ -14,7 +14,7 @@ module top;
   reg [3:0] cyc = 0;
 
   always @(posedge clk) begin
-    cyc <= cyc + 10'd1; // Intentional width warning
+    cyc <= cyc + 10'd1;  // Intentional width warning
     $display("%8t %1d", $time, cyc);
     if (cyc == 3'd7) begin  // Intentional width warning
       $write("*-* All Finished *-*\n");

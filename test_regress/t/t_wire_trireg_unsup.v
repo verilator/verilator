@@ -8,9 +8,9 @@
 
 module t;
 
-   trireg unsup;
-   trireg (small) unsup_s;
-   trireg (medium) unsup_m;
-   trireg (large) unsup_l;
+  trireg unsup;
+  trireg (small) unsup_s;
+  trireg (medium) unsup_m;
+  trireg (large) unsup_l;
 
 endmodule

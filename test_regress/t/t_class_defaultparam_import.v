@@ -5,8 +5,11 @@
 // SPDX-License-Identifier: CC0-1.0
 
 package foo;
-   class bar#(type T=int);
-   endclass
-endpackage;
+  class bar #(
+      type T = int
+  );
+  endclass
+endpackage
+;
 
 import foo::bar;

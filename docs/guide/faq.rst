@@ -1,4 +1,4 @@
-.. Copyright 2003-2025 by Wilson Snyder.
+.. Copyright 2003-2026 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 ******************************
@@ -403,8 +403,8 @@ How do I get faster build times?
   environment variable to override this. Also see the
   :vlopt:`--output-split` option and :ref: `Profiling ccache efficiency`.
 
-* To reduce the compile time of classes that use a Verilated module (e.g., a
-  top CPP file) you may wish to add a
+* To reduce the compile time of classes that use a Verilated module (e.g.,
+  a top CPP file) you may wish to add a
   :option:`/*verilator&32;no_inline_module*/` metacomment to your top-level
   module. This will decrease the amount of code in the model's Verilated
   class, improving compile times of any instantiating top-level C++ code,

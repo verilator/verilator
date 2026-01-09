@@ -24,7 +24,7 @@ module t;
     // While loop with non-trivial init
     begin
       automatic int i = 0;
-      automatic int j = 5; // Not a variable
+      automatic int j = 5;  // Not a variable
       while (i < j) begin : loop_2
         $display("loop_2 %0d %0d", i++, j);
       end
@@ -32,15 +32,15 @@ module t;
     // Do loop with non-trivial init
     begin
       automatic int i = 5;
-      automatic int j = 0; // Not a variable
+      automatic int j = 0;  // Not a variable
       do begin : loop_3
         $display("loop_3 %0d %0d", --i, j);
       end while (i > j);
     end
     // Do loop that executes once - replaced by V3Const, not unrolled
-    do begin: loop_4
+    do begin : loop_4
       $display("loop_4");
-    end while(0);
+    end while (0);
     // Loop with inlined function as condition
     static_loop_cond = 0;
     while (f_loop_cond()) begin : loop_5
@@ -52,8 +52,8 @@ module t;
       for (int i = 0; i < 10; ++i) begin : loop_6
         if (!found) begin
           $display("loop_6 %0d", i);
-          if (i == $c32("5")) begin // Unknown condition
-            $display("stopping loop_6"); // This line is important
+          if (i == $c32("5")) begin  // Unknown condition
+            $display("stopping loop_6");  // This line is important
             found = 1;
           end
         end

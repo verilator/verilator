@@ -8,8 +8,8 @@ package pkg;
 endpackage
 
 class genericClass;
-   import pkg::*;
+  import pkg::*;
 endclass
 
-module tb_top();
+module tb_top ();
 endmodule

@@ -37,7 +37,12 @@ module t;
   // Only localparams are supported, returning constant unpacked structure
   // from function or passing unpacked structure as parameters is not
   // (yet) supported
-  localparam struct_t MY_STRUCT = '{a: 10, b: 5, c: 20, sub: '{a: 100, b: 200, c: 150, subsub: '{default: 10}}};
+  localparam struct_t MY_STRUCT = '{
+      a: 10,
+      b: 5,
+      c: 20,
+      sub: '{a: 100, b: 200, c: 150, subsub: '{default: 10}}
+  };
 
   // Make standalone localparam to ensure MY_STRUCT is const
   localparam int C = MY_STRUCT.c;

@@ -1,4 +1,4 @@
-.. Copyright 2003-2025 by Wilson Snyder.
+.. Copyright 2003-2026 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 .. _simulating:
@@ -85,8 +85,11 @@ above documentation for these options.
 
 If using Verilated multithreaded, consider overriding Verilator's default
 thread-to-processor assignment by using ``numactl``; see
-:ref:`Multithreading`. Also, consider using profile-guided optimization;
-see :ref:`Thread PGO`.
+:ref:`Multithreading`. If your OS can handle thread assignment for your
+design and hardware well, consider disabling Verilator's NUMA assignment by
+setting the :vlopt:`VERILATOR_NUMA_STRATEGY` environment variable to
+``none``; see :ref:`Environment`. Also, consider using profile-guided
+optimization; see :ref:`Thread PGO`.
 
 Minor Verilog code changes can also give big wins. You should not have any
 :option:`UNOPTFLAT` warnings from Verilator. Fixing these warnings can

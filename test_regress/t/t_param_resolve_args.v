@@ -16,7 +16,10 @@ class Bar;
   endfunction
 endclass
 
-class Qux #(type Tfoo, type Tbar);
+class Qux #(
+    type Tfoo,
+    type Tbar
+);
   static function int get();
     return Tfoo::get(Tbar::get());
   endfunction

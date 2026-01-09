@@ -4,7 +4,7 @@
 #
 #*****************************************************************************
 #
-# Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -90,11 +90,9 @@ set(HEADERS
     V3EmitCConstInit.h
     V3EmitCFunc.h
     V3EmitCMain.h
-    V3EmitCMake.h
     V3EmitMk.h
     V3EmitMkJson.h
     V3EmitV.h
-    V3EmitXml.h
     V3Error.h
     V3ExecGraph.h
     V3Expand.h
@@ -114,6 +112,7 @@ set(HEADERS
     V3Hasher.h
     V3HierBlock.h
     V3Inline.h
+    V3InlineCFuncs.h
     V3Inst.h
     V3InstrCount.h
     V3Interface.h
@@ -188,6 +187,7 @@ set(HEADERS
     V3Tristate.h
     V3Udp.h
     V3Undriven.h
+    V3UndrivenCapture.h
     V3UniqueNames.h
     V3Unknown.h
     V3Unroll.h
@@ -260,14 +260,12 @@ set(COMMON_SOURCES
     V3EmitCImp.cpp
     V3EmitCInlines.cpp
     V3EmitCMain.cpp
-    V3EmitCMake.cpp
     V3EmitCModel.cpp
     V3EmitCPch.cpp
     V3EmitCSyms.cpp
     V3EmitMk.cpp
     V3EmitMkJson.cpp
     V3EmitV.cpp
-    V3EmitXml.cpp
     V3Error.cpp
     V3ExecGraph.cpp
     V3Expand.cpp
@@ -287,6 +285,7 @@ set(COMMON_SOURCES
     V3Hasher.cpp
     V3HierBlock.cpp
     V3Inline.cpp
+    V3InlineCFuncs.cpp
     V3Inst.cpp
     V3InstrCount.cpp
     V3Interface.cpp
@@ -356,6 +355,7 @@ set(COMMON_SOURCES
     V3Tristate.cpp
     V3Udp.cpp
     V3Undriven.cpp
+    V3UndrivenCapture.cpp
     V3Unknown.cpp
     V3Unroll.cpp
     V3UnrollGen.cpp

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -192,6 +192,7 @@ class LocalizeVisitor final : public VNVisitor {
             && !nodep->varp()->isStatic()  // Not a static variable
             && !nodep->varp()->isClassMember()  // Statically exists in design hierarchy
             && !nodep->varp()->sensIfacep()  // Not sensitive to an interface
+            && !nodep->varp()->isVirtIface()  // Not interface pointer
             && !nodep->varp()->valuep()  // Does not have an initializer
         ) {
             UINFO(4, "Consider for localization: " << nodep);

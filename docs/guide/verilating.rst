@@ -1,4 +1,4 @@
-.. Copyright 2003-2025 by Wilson Snyder.
+.. Copyright 2003-2026 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 **********
@@ -22,8 +22,8 @@ Verilator may be used in five major ways:
   that may be used to feed into other user-designed tools.
 
 * With the :vlopt:`-E` option, Verilator will preprocess the code according
-  to IEEE preprocessing rules and write the output to standard out. This
-  is useful to feed other tools and to debug how "\`define" statements are
+  to IEEE preprocessing rules and write the output to standard out. This is
+  useful to feed other tools and to debug how "\`define" statements are
   expanded.
 
 
@@ -80,8 +80,9 @@ Verilator first reads all files provided on the command line and
 :vlopt:`-f` files, and parses all modules within. Each module is assigned
 to the most recent library specified with :vlopt:`-work`, thus `-work liba
 a.v -work libb b.v` will assign modules in `a.v` to `liba` and modules in
-`b.v` to `libb`. In the absence of a `-work` mapping, each module is optionally
-assigned to a library based on mappings provided by :vlopt:`-libmap`.
+`b.v` to `libb`. In the absence of a `-work` mapping, each module is
+optionally assigned to a library based on mappings provided by
+:vlopt:`-libmap`.
 
 If a module is not defined from a file on the command-line, Verilator
 attempts to find a filename constructed from the module name using
@@ -284,6 +285,13 @@ schedules threads using multiple hyperthreads within the same physical
 core. If there is no affinity already set, on Linux only, Verilator
 attempts to set thread-to-processor affinity in a reasonable way.
 
+Some newer Linux kernels handle thread assignment well. If running
+Verilator on such a system, automatic thread affinity may not be
+beneficial and may even reduce performance. In this case, environment
+variable :vlopt:`VERILATOR_NUMA_STRATEGY` may be set to ``none`` to
+disable automatic thread affinity. For more information, refer to
+:ref:`Environment`.
+
 For best performance, use the :command:`numactl` program to (when the
 threading count fits) select unique physical cores on the same socket. The
 same applies for :vlopt:`--trace-threads` as well.
@@ -310,6 +318,15 @@ adjusted if you want another simulator to use, e.g., socket 1, or if you
 Verilated with a different number of threads. To see what CPUs are actually
 used, use :vlopt:`--prof-exec`.
 
+On Systems with multiple L3 clusters per socket (e.g., AMD EPYC or Ryzen),
+consider using :command:`lstopo` to determine the L3 cluster topology of
+the current system and :command:`numactl` to bind CPUs within a single L3
+cluster. This can improve performance for minimal communication latency
+between threads. Sometimes, for model's thread counts that are more than
+the core count per L3 cluster, using SMTs (hyperthreads) within a single L3
+cluster can have better performance than spreading across multiple L3
+clusters using physical cores only. Experimentation is recommended to find
+the best settings for underlying hardware and model characteristics.
 
 Multithreaded Verilog and Library Support
 -----------------------------------------

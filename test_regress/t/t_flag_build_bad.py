@@ -15,10 +15,6 @@ test.compile(verilator_flags2=["--build --make gmake"],
              fails=True,
              expect_filename=test.golden_filename)
 
-test.compile(verilator_flags2=["--build --make cmake -Wno-fatal"],
-             fails=True,
-             expect_filename="t/t_flag_build_bad_cmake.out")
-
 test.compile(verilator_flags2=["--build --make json"],
              fails=True,
              expect_filename=test.golden_filename)

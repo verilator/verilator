@@ -1,0 +1,158 @@
+%Error-UNSUPPORTED: t/t_tagged_case.v:24:17: Unsupported: tagged union
+   24 |   typedef union tagged {
+      |                 ^~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_tagged_case.v:25:5: Unsupported: void (for tagged unions)
+   25 |     void Invalid;
+      |     ^~~~
+%Error-UNSUPPORTED: t/t_tagged_case.v:30:17: Unsupported: tagged union
+   30 |   typedef union tagged packed {
+      |                 ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_case.v:31:5: Unsupported: void (for tagged unions)
+   31 |     void          Invalid;
+      |     ^~~~
+%Error-UNSUPPORTED: t/t_tagged_case.v:39:17: Unsupported: tagged union
+   39 |   typedef union tagged {
+      |                 ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_case.v:40:5: Unsupported: void (for tagged unions)
+   40 |     void        Invalid;
+      |     ^~~~
+%Error-UNSUPPORTED: t/t_tagged_case.v:46:17: Unsupported: tagged union
+   46 |   typedef union tagged {
+      |                 ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_case.v:50:11: Unsupported: tagged union
+   50 |     union tagged {
+      |           ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_case.v:60:17: Unsupported: tagged union
+   60 |   typedef union tagged {
+      |                 ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_case.v:61:5: Unsupported: void (for tagged unions)
+   61 |     void    Invalid;
+      |     ^~~~
+%Error-UNSUPPORTED: t/t_tagged_case.v:66:17: Unsupported: tagged union
+   66 |   typedef union tagged {
+      |                 ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_case.v:67:5: Unsupported: void (for tagged unions)
+   67 |     void      Invalid;
+      |     ^~~~
+%Error-UNSUPPORTED: t/t_tagged_case.v:75:17: Unsupported: tagged union
+   75 |   typedef union tagged {
+      |                 ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_case.v:76:5: Unsupported: void (for tagged unions)
+   76 |     void      Invalid;
+      |     ^~~~
+%Warning-SHORTREAL: t/t_tagged_case.v:78:5: Unsupported: shortreal being promoted to real (suggest use real instead)
+   78 |     shortreal ShortRealVal;
+      |     ^~~~~~~~~
+                    ... For warning description see https://verilator.org/warn/SHORTREAL?v=latest
+                    ... Use "/* verilator lint_off SHORTREAL */" and lint_on around source to disable this message.
+%Error-UNSUPPORTED: t/t_tagged_case.v:82:17: Unsupported: tagged union
+   82 |   typedef union tagged {
+      |                 ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_case.v:83:5: Unsupported: void (for tagged unions)
+   83 |     void   Invalid;
+      |     ^~~~
+%Error-UNSUPPORTED: t/t_tagged_case.v:88:17: Unsupported: tagged union
+   88 |   typedef union tagged {
+      |                 ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_case.v:89:5: Unsupported: void (for tagged unions)
+   89 |     void  Invalid;
+      |     ^~~~
+%Error-UNSUPPORTED: t/t_tagged_case.v:97:17: Unsupported: tagged union
+   97 |   typedef union tagged {
+      |                 ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_case.v:98:5: Unsupported: void (for tagged unions)
+   98 |     void  Invalid;
+      |     ^~~~
+%Error: t/t_tagged_case.v:122:9: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  122 |     v = tagged Invalid;
+      |         ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_tagged_case.v:125:7: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  125 |       tagged Invalid : result = 1;
+      |       ^~~~~~
+%Error: t/t_tagged_case.v:128:161: syntax error, unexpected while
+  128 |     do if ((result) !== (1)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", "t/t_tagged_case.v",128, (result), (1), "result", "1"); $stop; end while(0);;
+      |                                                                                                                                                                 ^~~~~
+%Error: t/t_tagged_case.v:131:7: syntax error, unexpected '=', expecting '('
+  131 |     v = tagged Valid (123);
+      |       ^
+%Error: t/t_tagged_case.v:133:14: syntax error, unexpected matches, expecting IDENTIFIER-for-type
+  133 |     case (v) matches
+      |              ^~~~~~~
+%Error: t/t_tagged_case.v:140:8: syntax error, unexpected '=', expecting '('
+  140 |     wt = tagged Wide60 (60'hFEDCBA987654321);
+      |        ^
+%Error: t/t_tagged_case.v:142:15: syntax error, unexpected matches, expecting IDENTIFIER-for-type
+  142 |     case (wt) matches
+      |               ^~~~~~~
+%Error: t/t_tagged_case.v:150:8: syntax error, unexpected '=', expecting '('
+  150 |     wt = tagged Wide90 (90'hDE_ADBEEFCA_FEBABE12_3456);
+      |        ^
+%Error: t/t_tagged_case.v:152:15: syntax error, unexpected matches, expecting IDENTIFIER-for-type
+  152 |     case (wt) matches
+      |               ^~~~~~~
+%Error: t/t_tagged_case.v:160:8: syntax error, unexpected '=', expecting '('
+  160 |     wt = tagged Byte8NonZeroLSB (8'hA5);
+      |        ^
+%Error: t/t_tagged_case.v:162:15: syntax error, unexpected matches, expecting IDENTIFIER-for-type
+  162 |     case (wt) matches
+      |               ^~~~~~~
+%Error: t/t_tagged_case.v:169:8: syntax error, unexpected '=', expecting '('
+  169 |     wt = tagged Word32LittleEndian (32'hDEADBEEF);
+      |        ^
+%Error: t/t_tagged_case.v:171:15: syntax error, unexpected matches, expecting IDENTIFIER-for-type
+  171 |     case (wt) matches
+      |               ^~~~~~~
+%Error: t/t_tagged_case.v:178:8: syntax error, unexpected '=', expecting '('
+  178 |     at = tagged Arr '{10, 20, 30, 40};
+      |        ^
+%Error: t/t_tagged_case.v:180:15: syntax error, unexpected matches, expecting IDENTIFIER-for-type
+  180 |     case (at) matches
+      |               ^~~~~~~
+%Error: t/t_tagged_case.v:188:11: syntax error, unexpected '=', expecting '('
+  188 |     instr = tagged Jmp (tagged JmpC '{2'd1, 10'd256});
+      |           ^
+%Error: t/t_tagged_case.v:190:18: syntax error, unexpected matches, expecting IDENTIFIER-for-type
+  190 |     case (instr) matches
+      |                  ^~~~~~~
+%Error: t/t_tagged_case.v:198:9: syntax error, unexpected '=', expecting '('
+  198 |     cht = tagged Invalid;
+      |         ^
+%Error: t/t_tagged_case.v:200:16: syntax error, unexpected matches, expecting IDENTIFIER-for-type
+  200 |     case (cht) matches
+      |                ^~~~~~~
+%Error: t/t_tagged_case.v:207:9: syntax error, unexpected =-then-new, expecting '('
+  207 |     obj = new(42);
+      |         ^
+%Error: t/t_tagged_case.v:210:16: syntax error, unexpected matches, expecting IDENTIFIER-for-type
+  210 |     case (clt) matches
+      |                ^~~~~~~
+%Error: t/t_tagged_case.v:217:8: syntax error, unexpected '=', expecting '('
+  217 |     rt = tagged Invalid;
+      |        ^
+%Error: t/t_tagged_case.v:219:15: syntax error, unexpected matches, expecting IDENTIFIER-for-type
+  219 |     case (rt) matches
+      |               ^~~~~~~
+%Error: t/t_tagged_case.v:226:8: syntax error, unexpected '=', expecting '('
+  226 |     rt = tagged RealVal (3.14159);
+      |        ^
+%Error: t/t_tagged_case.v:228:15: syntax error, unexpected matches, expecting IDENTIFIER-for-type
+  228 |     case (rt) matches
+      |               ^~~~~~~
+%Error: t/t_tagged_case.v:239:8: syntax error, unexpected '=', expecting '('
+  239 |     rt = tagged ShortRealVal (2.5);
+      |        ^
+%Error: t/t_tagged_case.v:241:15: syntax error, unexpected matches, expecting IDENTIFIER-for-type
+  241 |     case (rt) matches
+      |               ^~~~~~~
+%Error: t/t_tagged_case.v:252:8: syntax error, unexpected '=', expecting '('
+  252 |     st = tagged Invalid;
+      |        ^
+%Error: t/t_tagged_case.v:254:15: syntax error, unexpected matches, expecting IDENTIFIER-for-type
+  254 |     case (st) matches
+      |               ^~~~~~~
+%Error: t/t_tagged_case.v:260:8: syntax error, unexpected '=', expecting '('
+  260 |     st = tagged StrVal ("hello");
+      |        ^
+%Error: Exiting due to

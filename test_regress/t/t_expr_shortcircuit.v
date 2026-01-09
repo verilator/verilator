@@ -4,12 +4,9 @@
 // any use, without warranty, 2025 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-
-  input clk;
+module t (
+    input clk
+);
 
   int cyc = 0;
 
@@ -20,8 +17,7 @@ module t (/*AUTOARG*/
   endfunction
 
   always_ff @(posedge clk) begin
-    if (cyc[0] == 1'b0 || is_odd(cyc))
-      cyc <= cyc + 1;
+    if (cyc[0] == 1'b0 || is_odd(cyc)) cyc <= cyc + 1;
     if (cyc == 10) begin
       $write("*-* All Finished *-*\n");
       $finish;

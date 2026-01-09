@@ -41,7 +41,7 @@
  "miscsp": [
   {"type":"TYPETABLE","name":"","addr":"(C)","loc":"a,0:0,0:0","constraintRefp":"UNLINKED","emptyQueuep":"UNLINKED","queueIndexp":"UNLINKED","streamp":"UNLINKED","voidp":"UNLINKED",
    "typesp": [
-    {"type":"BASICDTYPE","name":"integer","addr":"(G)","loc":"d,24:12,24:13","dtypep":"(G)","keyword":"integer","range":"31:0","generic":true,"rangep": []},
+    {"type":"BASICDTYPE","name":"integer","addr":"(G)","loc":"d,24:12,24:13","dtypep":"(G)","keyword":"integer","range":"31:0","generic":true,"signed":true,"rangep": []},
     {"type":"BASICDTYPE","name":"logic","addr":"(V)","loc":"d,13:14,13:20","dtypep":"(V)","keyword":"logic","generic":true,"rangep": []}
   ]},
   {"type":"CONSTPOOL","name":"","addr":"(D)","loc":"a,0:0,0:0",

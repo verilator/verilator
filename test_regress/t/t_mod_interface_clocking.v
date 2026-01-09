@@ -6,8 +6,8 @@
 
 interface axi_if;
   logic clk;
-  wire  rlast;
-  wire  rvalid;
+  wire rlast;
+  wire rvalid;
   clocking cb @(posedge clk);
     inout rlast, rvalid;
   endclocking
@@ -47,5 +47,8 @@ endmodule
 
 module t;
   axi_if axi_vi ();
-  sub i_sub (.axi1(axi_vi), .axi2(axi_vi));
+  sub i_sub (
+      .axi1(axi_vi),
+      .axi2(axi_vi)
+  );
 endmodule

@@ -7,7 +7,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -673,8 +673,8 @@ class ForkVisitor final : public VNVisitor {
         if (nodep->access().isWriteOrRW() && (!nodep->isClassHandleValue() || nodep->user2())) {
             nodep->v3warn(
                 E_LIFETIME,
-                "Invalid reference: Process might outlive variable `"
-                    << varp->name() << "`.\n"
+                "Invalid reference: Process might outlive variable "
+                    << varp->prettyNameQ() << ".\n"
                     << varp->warnMore()
                     << "... Suggest use it as read-only to initialize a local copy at the "
                        "beginning of the process, or declare it as static. It is also "

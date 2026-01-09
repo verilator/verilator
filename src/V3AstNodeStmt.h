@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -381,6 +381,8 @@ public:
         addItemsp(itemsp);
     }
     ASTGEN_MEMBERS_AstCase;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
     string verilogKwd() const override { return casez() ? "casez" : casex() ? "casex" : "case"; }
     bool sameNode(const AstNode* samep) const override {

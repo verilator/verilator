@@ -1,0 +1,158 @@
+%Error-UNSUPPORTED: t/t_tagged_if.v:24:17: Unsupported: tagged union
+   24 |   typedef union tagged {
+      |                 ^~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_tagged_if.v:25:5: Unsupported: void (for tagged unions)
+   25 |     void Invalid;
+      |     ^~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:30:17: Unsupported: tagged union
+   30 |   typedef union tagged packed {
+      |                 ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:31:5: Unsupported: void (for tagged unions)
+   31 |     void          Invalid;
+      |     ^~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:39:17: Unsupported: tagged union
+   39 |   typedef union tagged {
+      |                 ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:40:5: Unsupported: void (for tagged unions)
+   40 |     void        Invalid;
+      |     ^~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:46:17: Unsupported: tagged union
+   46 |   typedef union tagged {
+      |                 ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:50:11: Unsupported: tagged union
+   50 |     union tagged {
+      |           ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:60:17: Unsupported: tagged union
+   60 |   typedef union tagged {
+      |                 ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:61:5: Unsupported: void (for tagged unions)
+   61 |     void    Invalid;
+      |     ^~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:66:17: Unsupported: tagged union
+   66 |   typedef union tagged {
+      |                 ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:67:5: Unsupported: void (for tagged unions)
+   67 |     void      Invalid;
+      |     ^~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:75:17: Unsupported: tagged union
+   75 |   typedef union tagged {
+      |                 ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:76:5: Unsupported: void (for tagged unions)
+   76 |     void      Invalid;
+      |     ^~~~
+%Warning-SHORTREAL: t/t_tagged_if.v:78:5: Unsupported: shortreal being promoted to real (suggest use real instead)
+   78 |     shortreal ShortRealVal;
+      |     ^~~~~~~~~
+                    ... For warning description see https://verilator.org/warn/SHORTREAL?v=latest
+                    ... Use "/* verilator lint_off SHORTREAL */" and lint_on around source to disable this message.
+%Error-UNSUPPORTED: t/t_tagged_if.v:82:17: Unsupported: tagged union
+   82 |   typedef union tagged {
+      |                 ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:83:5: Unsupported: void (for tagged unions)
+   83 |     void   Invalid;
+      |     ^~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:88:17: Unsupported: tagged union
+   88 |   typedef union tagged {
+      |                 ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:89:5: Unsupported: void (for tagged unions)
+   89 |     void  Invalid;
+      |     ^~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:97:17: Unsupported: tagged union
+   97 |   typedef union tagged {
+      |                 ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:98:5: Unsupported: void (for tagged unions)
+   98 |     void  Invalid;
+      |     ^~~~
+%Error: t/t_tagged_if.v:122:9: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  122 |     v = tagged Invalid;
+      |         ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_tagged_if.v:124:33: syntax error, unexpected ')', expecting '.' or tagged or .*
+  124 |     if (v matches tagged Invalid)
+      |                                 ^
+%Error: t/t_tagged_if.v:131:9: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  131 |     v = tagged Valid (42);
+      |         ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:133:32: Unsupported: '{} tagged patterns
+  133 |     if (v matches tagged Valid .n)
+      |                                ^
+%Error-UNSUPPORTED: t/t_tagged_if.v:133:19: Unsupported: '{} tagged patterns
+  133 |     if (v matches tagged Valid .n)
+      |                   ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:133:11: Unsupported: matches operator
+  133 |     if (v matches tagged Valid .n)
+      |           ^~~~~~~
+%Error: t/t_tagged_if.v:140:9: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  140 |     v = tagged Valid (100);
+      |         ^~~~~~
+%Error: t/t_tagged_if.v:142:33: syntax error, unexpected ')', expecting '.' or tagged or .*
+  142 |     if (v matches tagged Invalid)
+      |                                 ^
+%Error: t/t_tagged_if.v:149:10: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  149 |     wt = tagged Wide60 (60'hFEDCBA987654321);
+      |          ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:151:34: Unsupported: '{} tagged patterns
+  151 |     if (wt matches tagged Wide60 .w)
+      |                                  ^
+%Error-UNSUPPORTED: t/t_tagged_if.v:151:20: Unsupported: '{} tagged patterns
+  151 |     if (wt matches tagged Wide60 .w)
+      |                    ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:151:12: Unsupported: matches operator
+  151 |     if (wt matches tagged Wide60 .w)
+      |            ^~~~~~~
+%Error: t/t_tagged_if.v:158:10: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  158 |     wt = tagged Wide90 (90'hDE_ADBEEFCA_FEBABE12_3456);
+      |          ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:160:34: Unsupported: '{} tagged patterns
+  160 |     if (wt matches tagged Wide90 .w)
+      |                                  ^
+%Error-UNSUPPORTED: t/t_tagged_if.v:160:20: Unsupported: '{} tagged patterns
+  160 |     if (wt matches tagged Wide90 .w)
+      |                    ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:160:12: Unsupported: matches operator
+  160 |     if (wt matches tagged Wide90 .w)
+      |            ^~~~~~~
+%Error: t/t_tagged_if.v:167:10: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  167 |     wt = tagged Byte8NonZeroLSB (8'hA5);
+      |          ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:169:43: Unsupported: '{} tagged patterns
+  169 |     if (wt matches tagged Byte8NonZeroLSB .b)
+      |                                           ^
+%Error-UNSUPPORTED: t/t_tagged_if.v:169:20: Unsupported: '{} tagged patterns
+  169 |     if (wt matches tagged Byte8NonZeroLSB .b)
+      |                    ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:169:12: Unsupported: matches operator
+  169 |     if (wt matches tagged Byte8NonZeroLSB .b)
+      |            ^~~~~~~
+%Error: t/t_tagged_if.v:176:10: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  176 |     wt = tagged Word32LittleEndian (32'hDEADBEEF);
+      |          ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:178:46: Unsupported: '{} tagged patterns
+  178 |     if (wt matches tagged Word32LittleEndian .w)
+      |                                              ^
+%Error-UNSUPPORTED: t/t_tagged_if.v:178:20: Unsupported: '{} tagged patterns
+  178 |     if (wt matches tagged Word32LittleEndian .w)
+      |                    ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:178:12: Unsupported: matches operator
+  178 |     if (wt matches tagged Word32LittleEndian .w)
+      |            ^~~~~~~
+%Error: t/t_tagged_if.v:185:10: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  185 |     at = tagged Arr '{10, 20, 30, 40};
+      |          ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:187:31: Unsupported: '{} tagged patterns
+  187 |     if (at matches tagged Arr .a)
+      |                               ^
+%Error-UNSUPPORTED: t/t_tagged_if.v:187:20: Unsupported: '{} tagged patterns
+  187 |     if (at matches tagged Arr .a)
+      |                    ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:187:12: Unsupported: matches operator
+  187 |     if (at matches tagged Arr .a)
+      |            ^~~~~~~
+%Error: t/t_tagged_if.v:194:10: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+  194 |     at = tagged Scalar (999);
+      |          ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:196:34: Unsupported: '{} tagged patterns
+  196 |     if (at matches tagged Scalar .s)
+      |                                  ^
+%Error: Exiting due to

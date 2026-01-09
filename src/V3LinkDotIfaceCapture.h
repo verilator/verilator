@@ -9,7 +9,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -31,9 +31,12 @@
 
 class V3LinkDotIfaceCapture final {
 public:
+    enum class CaptureType { IFACE, CLASS };
     struct CapturedIfaceTypedef final {
+        CaptureType captureType = CaptureType::IFACE;
         AstRefDType* refp = nullptr;
-        AstCell* cellp = nullptr;
+        AstCell* cellp = nullptr;  // now for IFACE captures
+        AstClass* origClassp = nullptr;  // new for CLASS captures
         // Module where the RefDType lives
         AstNodeModule* ownerModp = nullptr;
         // Typedef definition being referenced
@@ -69,6 +72,9 @@ public:
     static void add(AstRefDType* refp, AstCell* cellp, AstNodeModule* ownerModp,
                     AstTypedef* typedefp = nullptr, AstNodeModule* typedefOwnerModp = nullptr,
                     AstVar* ifacePortVarp = nullptr);
+    static void addClass(AstRefDType* refp, AstClass* origClassp, AstNodeModule* ownerModp,
+                         AstTypedef* typedefp = nullptr,
+                         AstNodeModule* typedefOwnerModp = nullptr);
     static const CapturedIfaceTypedef* find(const AstRefDType* refp);
     static void forEach(const std::function<void(const CapturedIfaceTypedef&)>& fn);
     static void forEachOwned(const AstNodeModule* ownerModp,

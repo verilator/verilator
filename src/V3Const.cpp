@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -931,7 +931,7 @@ class ConstVisitor final : public VNVisitor {
     bool m_underRecFunc = false;  // Under a recursive function
     AstNodeModule* m_modp = nullptr;  // Current module
     const AstArraySel* m_selp = nullptr;  // Current select
-    const AstNode* m_scopep = nullptr;  // Current scope
+    const AstScope* m_scopep = nullptr;  // Current scope
     const AstAttrOf* m_attrp = nullptr;  // Current attribute
     VDouble0 m_statBitOpReduction;  // Ops reduced in ConstBitOpTreeVisitor
     VDouble0 m_statConcatMerge;  // Concat merges
@@ -944,6 +944,20 @@ class ConstVisitor final : public VNVisitor {
     std::unordered_set<AstJumpBlock*> m_usedJumpBlocks;  // JumpBlocks used by some JumpGo
 
     // METHODS
+
+    void deleteVarScopesUnder(AstNode* subtreep) {
+        if (!subtreep) return;
+        if (!m_scopep) return;
+        std::unordered_set<AstVar*> varps;
+        subtreep->foreachAndNext([&](AstVar* varp) { varps.insert(varp); });
+        if (varps.empty()) return;
+        for (AstVarScope *vscp = m_scopep->varsp(), *nextp; vscp; vscp = nextp) {
+            nextp = VN_AS(vscp->nextp(), VarScope);
+            if (varps.find(vscp->varp()) != varps.end()) {
+                VL_DO_DANGLING(pushDeletep(vscp->unlinkFrBack()), vscp);
+            }
+        }
+    }
 
     V3Number constNumV(AstNode* nodep) {
         // Contract C width to V width (if needed, else just direct copy)
@@ -3031,6 +3045,7 @@ class ConstVisitor final : public VNVisitor {
     void visit(AstExprStmt* nodep) override {
         iterateChildren(nodep);
         if (!AstNode::afterCommentp(nodep->stmtsp())) {
+            deleteVarScopesUnder(nodep->stmtsp());
             UINFO(8, "ExprStmt(...) " << nodep << " " << nodep->resultp());
             nodep->replaceWith(nodep->resultp()->unlinkFrBack());
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -3395,21 +3410,31 @@ class ConstVisitor final : public VNVisitor {
         if (m_doNConst) {
             if (const AstConst* const constp = VN_CAST(nodep->condp(), Const)) {
                 AstNode* keepp = nullptr;
+                AstNode* delp = nullptr;
                 if (constp->isZero()) {
                     UINFO(4, "IF(0,{any},{x}) => {x}: " << nodep);
                     keepp = nodep->elsesp();
+                    delp = nodep->thensp();
                 } else if (!m_doV || constp->isNeqZero()) {  // Might be X in Verilog
                     UINFO(4, "IF(!0,{x},{any}) => {x}: " << nodep);
                     keepp = nodep->thensp();
+                    delp = nodep->elsesp();
                 } else {
                     UINFO(4, "IF condition is X, retaining: " << nodep);
                     return;
                 }
+
+                // If we delete a branch that contains variable declarations, also delete the
+                // corresponding varscopes so we don't leave dangling AstVarScope::m_varp pointers.
+                deleteVarScopesUnder(delp);
+
                 if (keepp) {
                     keepp->unlinkFrBackWithNext();
                     nodep->replaceWith(keepp);
                 } else {
                     nodep->unlinkFrBack();
+                    deleteVarScopesUnder(nodep->thensp());
+                    deleteVarScopesUnder(nodep->elsesp());
                 }
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
 
@@ -4138,7 +4163,8 @@ class ConstVisitor final : public VNVisitor {
     void visit(AstNode* nodep) override {
         // Default: Just iterate
         if (m_required) {
-            if (VN_IS(nodep, NodeDType) || VN_IS(nodep, Range) || VN_IS(nodep, SliceSel)) {
+            if (VN_IS(nodep, NodeDType) || VN_IS(nodep, Range) || VN_IS(nodep, SliceSel)
+                || VN_IS(nodep, Dot)) {
                 // Ignore dtypes for parameter type pins
             } else {
                 nodep->v3error("Expecting expression to be constant, but can't convert a "

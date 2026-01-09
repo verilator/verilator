@@ -12,7 +12,8 @@ import vltest_bootstrap
 test.scenarios('vlt_all')
 test.top_filename = "t/t_timing_class.v"
 
-test.compile(verilator_flags2=["--exe --main --timing"])
+# Disable --inline-cfuncs so debug traces show all function entries
+test.compile(verilator_flags2=["--exe --main --timing --inline-cfuncs 0"])
 
 test.execute(all_run_flags=["+verilator+debug"])
 

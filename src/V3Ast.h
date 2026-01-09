@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -949,6 +949,7 @@ protected:
 
     static void dumpJsonNum(std::ostream& os, const std::string& name, int64_t val);
     static void dumpJsonBool(std::ostream& os, const std::string& name, bool val);
+    static void dumpJsonBoolIf(std::ostream& os, const std::string& name, bool val);
     static void dumpJsonStr(std::ostream& os, const std::string& name, const std::string& val);
     static void dumpJsonPtr(std::ostream& os, const std::string& name, const AstNode* const valp);
 

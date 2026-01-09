@@ -36,8 +36,8 @@ module t (
       $finish;
     end
 
-    if (direction == UP) ++ups;
-    else if (direction == UP) ++ups;
+    if (direction == UP)++ups;
+    else if (direction == UP)++ups;
     else ups += 1000;
 
     case (direction)

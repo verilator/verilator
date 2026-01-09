@@ -2435,6 +2435,9 @@ class VlTest:
                 if n:
                     l1o.append(line)
                     break  # Trunc rest
+                if re.search(r'This fatal error may be caused', line):
+                    l1o.append(line)
+                    break  # Trunc after "This fatal error" line
                 l1o.append(line)
             #
             l1s = l1o
@@ -2945,7 +2948,7 @@ if __name__ == '__main__':
         epilog="""driver.py invokes Verilator or another simulator on each test file.
     See docs/internals.rst in the distribution for more information.
 
-    Copyright 2024-2025 by Wilson Snyder. This program is free software; you
+    Copyright 2024-2026 by Wilson Snyder. This program is free software; you
     can redistribute it and/or modify it under the terms of either the GNU
     Lesser General Public License Version 3 or the Perl Artistic License
     Version 2.0.

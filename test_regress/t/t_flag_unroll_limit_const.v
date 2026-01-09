@@ -12,9 +12,9 @@ function automatic int f(int x);
   return n;
 endfunction
 
-module t(
-  output logic[f(4):0] o4,  // Should simulate
-  output logic[f(5):0] o5   // Should NOT simulate
+module t (
+    output logic [f(4):0] o4,  // Should simulate
+    output logic [f(5):0] o5  // Should NOT simulate
 );
 
 endmodule

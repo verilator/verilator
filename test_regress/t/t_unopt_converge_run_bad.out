@@ -1,3 +1,3 @@
 -V{t#,#}         'stl' region trigger index 0 is active: @([hybrid] x)
-%Error: t/t_unopt_converge.v:7: Settle region did not converge after 5 tries
+%Error-DIDNOTCONVERGE: t/t_unopt_converge.v:7: Settle region did not converge after 5 tries
 Aborting...

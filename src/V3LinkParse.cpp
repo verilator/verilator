@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -323,6 +323,7 @@ class LinkParseVisitor final : public VNVisitor {
                                      "loop converted to automatic");
         } else if (nodep->valuep() && nodep->lifetime().isNone() && m_lifetime.isStatic()
                    && !nodep->isIO()
+                   && !nodep->isParam()
                    // In task, or a procedure but not Initial/Final as executed only once
                    && ((m_ftaskp && !m_ftaskp->lifetime().isStaticExplicit())
                        || (m_procedurep && !VN_IS(m_procedurep, Initial)
