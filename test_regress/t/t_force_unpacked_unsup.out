@@ -11,7 +11,4 @@
 %Error-UNSUPPORTED: t/t_force_unpacked_unsup.v:21:12: Unsupported: Force of unpacked array variable with elements of complex data type
    21 |   struct_t s_array[3000];
       |            ^~~~~~~
-%Error-UNSUPPORTED: t/t_force_unpacked_unsup.v:24:12: Unsupported: Force of unpacked struct / union variable
-   24 |   struct_t my_struct;
-      |            ^~~~~~~~~
 %Error: Exiting due to
