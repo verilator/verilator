@@ -1501,12 +1501,12 @@ class TaskVisitor final : public VNVisitor {
         if (m_statep->ftaskNoInline(nodep->taskp())) {
             // Create a fresh variable for each concat array present in pins list
             if (nodep->pinsp()) {
-                nodep->pinsp()->foreachAndNext([this](AstArg* arg) {
-                    AstInitArray* const arrayp = VN_CAST(arg->exprp(), InitArray);
+                nodep->pinsp()->foreachAndNext([this](AstArg* const argp) {
+                    AstInitArray* const arrayp = VN_CAST(argp->exprp(), InitArray);
                     if (!arrayp) return;
 
                     FileLine* const flp = arrayp->fileline();
-                    std::string tempName = m_initArrayTmpNames.get(arg);
+                    const std::string tempName = m_initArrayTmpNames.get(argp);
                     AstVar* const substp = new AstVar{flp, VVarType::VAR, tempName, arrayp->dtypep()};
                     substp->funcLocal(true);
                     AstVarScope* const substvscp = createVarScope(substp, tempName);
@@ -1515,7 +1515,7 @@ class TaskVisitor final : public VNVisitor {
                         flp, new AstVarRef{arrayp->fileline(), substvscp, VAccess::WRITE},
                         arrayp->unlinkFrBack()};
 
-                    AstExprStmt* exprstmtp = new AstExprStmt{
+                    AstExprStmt* const exprstmtp = new AstExprStmt{
                         flp, substp, new AstVarRef{arrayp->fileline(), substvscp, VAccess::READ}};
                     exprstmtp->stmtsp()->addNext(assignp);
                     exprstmtp->hasResult(false);
@@ -1523,7 +1523,7 @@ class TaskVisitor final : public VNVisitor {
                     AstCExpr* const exprp = new AstCExpr{flp, substp->name()};
                     exprp->dtypeSetString();
                     exprstmtp->addStmtsp(new AstCReturn{flp, exprp});
-                    arg->exprp(exprstmtp);
+                    argp->exprp(exprstmtp);
                 });
             }
             // This may share VarScope's with a public task, if any.  Yuk.
