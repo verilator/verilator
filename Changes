@@ -20,6 +20,7 @@ Verilator 5.045 devel
 * Fix MULTIDRIVEN with task and default driver (#4045) (#6858). [em2machine]
 * Fix use-after-free error (#6846). [Matthew Ballance]
 * Fix dynamic array elements passed to ref argument (#6877). [Ryszard Rozak, Antmicro Ltd.]
+* Fix WIDTHEXTEND suppression on add/sub with single-bit signal. [Dan Katz]
 
 
 Verilator 5.044 2026-01-01

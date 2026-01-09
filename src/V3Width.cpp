@@ -7694,6 +7694,11 @@ class WidthVisitor final : public VNVisitor {
                 // Warn if user wants extra bit from carry
                 if (subDTypep->widthMin() == (nodep->lhsp()->widthMin() + 1)) lhsWarn = false;
                 if (subDTypep->widthMin() == (nodep->rhsp()->widthMin() + 1)) rhsWarn = false;
+                if (VN_IS(nodep, Add) && nodep->lhsp()->width() == 1
+                    && nodep->rhsp()->width() != 1)
+                    lhsWarn = false;  // do_increment + ...
+                if (nodep->rhsp()->width() == 1 && nodep->lhsp()->width() != 1)
+                    rhsWarn = false;  // ... + do_increment
             } else if (VN_IS(nodep, Mul) || VN_IS(nodep, MulS)) {
                 if (subDTypep->widthMin() >= (nodep->lhsp()->widthMin())) lhsWarn = false;
                 if (subDTypep->widthMin() >= (nodep->rhsp()->widthMin())) rhsWarn = false;

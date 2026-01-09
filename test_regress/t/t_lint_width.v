@@ -16,6 +16,11 @@ module t ();
    wire [4:0] neg5 = - five;
    wire [5:0] neg6 = - five;
 
+   wire inc = 1'b1;
+   wire [4:0] sumd = inc + five;
+   wire [4:0] sume = five + inc;
+   wire [4:0] nege = five - inc;
+
    // Relatively harmless < or <= compared with something less wide
    localparam [1:0] THREE = 3;
    int        a;
