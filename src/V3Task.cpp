@@ -394,7 +394,8 @@ class TaskVisitor final : public VNVisitor {
 
     // STATE
     TaskStateVisitor* const m_statep;  // Common state between visitors
-    V3UniqueNames m_initArrayTmpNames;  // For generating unique temporary variable names for arguments being AstInitArray
+    V3UniqueNames m_initArrayTmpNames;  // For generating unique temporary variable names for
+                                        // arguments being AstInitArray
     AstNodeModule* m_modp = nullptr;  // Current module
     AstTopScope* const m_topScopep = v3Global.rootp()->topScopep();  // The AstTopScope
     AstScope* m_scopep = nullptr;  // Current scope
@@ -1507,7 +1508,8 @@ class TaskVisitor final : public VNVisitor {
 
                     FileLine* const flp = arrayp->fileline();
                     const std::string tempName = m_initArrayTmpNames.get(argp);
-                    AstVar* const substp = new AstVar{flp, VVarType::VAR, tempName, arrayp->dtypep()};
+                    AstVar* const substp
+                        = new AstVar{flp, VVarType::VAR, tempName, arrayp->dtypep()};
                     substp->funcLocal(true);
                     AstVarScope* const substvscp = createVarScope(substp, tempName);
 
