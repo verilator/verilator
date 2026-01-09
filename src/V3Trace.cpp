@@ -261,6 +261,18 @@ class TraceVisitor final : public VNVisitor {
                             AstNode* stmtexprp = callp->backp();
                             VL_DO_DANGLING(pushDeletep(stmtexprp->unlinkFrBack()), stmtexprp);
                         }
+                        bool emptyScope;
+                        do {
+                            emptyScope = false;
+                            AstNode* const declBackp = declp->backp();
+                            AstNode* const declNextp = declp->nextp();
+                            if (VN_IS(declBackp, TracePushPrefix)
+                                && VN_IS(declNextp, TracePopPrefix)) {
+                                VL_DO_DANGLING(pushDeletep(declBackp->unlinkFrBack()), declBackp);
+                                VL_DO_DANGLING(pushDeletep(declNextp->unlinkFrBack()), declNextp);
+                                emptyScope = true;
+                            }
+                        } while (emptyScope);
                         // Can't purge until we finish this pass
                         pushDeletep(declp->unlinkFrBack());
                         vvertexp->rerouteEdges(&m_graph);
