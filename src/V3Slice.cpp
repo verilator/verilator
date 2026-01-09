@@ -125,6 +125,7 @@ class SliceVisitor final : public VNVisitor {
                     nodep->v3error("Array initialization has too few elements, need element "
                                    << elemIdx);
                     m_assignError = true;
+                    break;
                 }
                 const AstNodeDType* itemRawDTypep = itemp->dtypep()->skipRefp();
                 const VCastable castable
