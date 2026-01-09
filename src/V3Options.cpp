@@ -1160,8 +1160,8 @@ void V3Options::parseOpts(FileLine* fl, int argc, char** argv) VL_MT_DISABLED {
     // Default certain options and error check
     // Detailed error, since this is what we often get when run with minimal arguments
     if (vFiles().empty()) {
-        v3fatal("verilator: No Input Verilog file specified on command line, "
-                "see verilator --help for more information\n");
+        v3fatal("verilator: No input Verilog file specified on command line, "
+                "see 'verilator --help' for more information\n");
     }
 
     // Default prefix to the filename
