@@ -450,7 +450,8 @@ bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
             for (int n : numbers) {
                 if (n < m_constraints_line.size()) {
                     const std::string& constraint_info = m_constraints_line[n];
-                    // Parse filename:linenum from constraint_info (format: "filename:linenum   source")
+                    // Parse filename:linenum from constraint_info (format: "filename:linenum
+                    // source")
                     size_t colon_pos = constraint_info.find(':');
                     if (colon_pos != std::string::npos) {
                         std::string filename = constraint_info.substr(0, colon_pos);
