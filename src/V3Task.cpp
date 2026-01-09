@@ -1507,13 +1507,10 @@ class TaskVisitor final : public VNVisitor {
                     if (!array) return;
 
                     FileLine* const flp = array->fileline();
-
-                    AstVar* substp
-                        = new AstVar{flp, VVarType::VAR, m_tempNames.get(arg), array->dtypep()};
+                    auto temp_name = m_tempNames.get(arg);
+                    AstVar* substp = new AstVar{flp, VVarType::VAR, temp_name, array->dtypep()};
                     substp->funcLocal(true);
-                    AstVarScope* const substvscp
-                        = new AstVarScope{substp->fileline(), m_scopep, substp};
-                    m_scopep->addVarsp(substvscp);
+                    AstVarScope* const substvscp = createVarScope(substp, temp_name);
 
                     AstAssign* assignp = new AstAssign{
                         flp, new AstVarRef{array->fileline(), substvscp, VAccess::WRITE},
