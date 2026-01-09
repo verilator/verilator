@@ -3013,6 +3013,8 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
             quiet(true);
         } else if (commandArgVlUint64(arg, "+verilator+rand+reset+", u64, 0, 2)) {
             randReset(static_cast<int>(u64));
+        } else if (commandArgVlUint64(arg, "+verilator+rand+show_unsat_constr+", u64, 0, 1)) {
+            randShowUnsatConstr(u64 != 0);
         } else if (commandArgVlUint64(arg, "+verilator+seed+", u64, 1,
                                       std::numeric_limits<int>::max())) {
             randSeed(static_cast<int>(u64));
