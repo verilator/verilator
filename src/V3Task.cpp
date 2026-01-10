@@ -32,6 +32,7 @@
 #include "V3EmitCBase.h"
 #include "V3Graph.h"
 #include "V3Stats.h"
+#include "V3UniqueNames.h"
 
 #include <tuple>
 
@@ -393,6 +394,8 @@ class TaskVisitor final : public VNVisitor {
 
     // STATE
     TaskStateVisitor* const m_statep;  // Common state between visitors
+    V3UniqueNames m_initArrayTmpNames;  // For generating unique temporary variable names for
+                                        // arguments being AstInitArray
     AstNodeModule* m_modp = nullptr;  // Current module
     AstTopScope* const m_topScopep = v3Global.rootp()->topScopep();  // The AstTopScope
     AstScope* m_scopep = nullptr;  // Current scope
@@ -1497,6 +1500,34 @@ class TaskVisitor final : public VNVisitor {
         AstNode* beginp;
         AstCNew* cnewp = nullptr;
         if (m_statep->ftaskNoInline(nodep->taskp())) {
+            // Create a fresh variable for each concat array present in pins list
+            if (nodep->pinsp()) {
+                nodep->pinsp()->foreachAndNext([this](AstArg* const argp) {
+                    AstInitArray* const arrayp = VN_CAST(argp->exprp(), InitArray);
+                    if (!arrayp) return;
+
+                    FileLine* const flp = arrayp->fileline();
+                    const std::string tempName = m_initArrayTmpNames.get(argp);
+                    AstVar* const substp
+                        = new AstVar{flp, VVarType::VAR, tempName, arrayp->dtypep()};
+                    substp->funcLocal(true);
+                    AstVarScope* const substvscp = createVarScope(substp, tempName);
+
+                    AstAssign* const assignp = new AstAssign{
+                        flp, new AstVarRef{arrayp->fileline(), substvscp, VAccess::WRITE},
+                        arrayp->unlinkFrBack()};
+
+                    AstExprStmt* const exprstmtp = new AstExprStmt{
+                        flp, substp, new AstVarRef{arrayp->fileline(), substvscp, VAccess::READ}};
+                    exprstmtp->stmtsp()->addNext(assignp);
+                    exprstmtp->hasResult(false);
+
+                    AstCExpr* const exprp = new AstCExpr{flp, substp->name()};
+                    exprp->dtypeSetString();
+                    exprstmtp->addStmtsp(new AstCReturn{flp, exprp});
+                    argp->exprp(exprstmtp);
+                });
+            }
             // This may share VarScope's with a public task, if any.  Yuk.
             beginp = createNonInlinedFTask(nodep, namePrefix, outvscp, cnewp /*ref*/);
         } else {
@@ -1672,7 +1703,8 @@ class TaskVisitor final : public VNVisitor {
 public:
     // CONSTRUCTORS
     TaskVisitor(AstNetlist* nodep, TaskStateVisitor* statep)
-        : m_statep{statep} {
+        : m_statep{statep}
+        , m_initArrayTmpNames{"__VInitArrayTemp"} {
         iterate(nodep);
     }
     ~TaskVisitor() {
