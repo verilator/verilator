@@ -1,0 +1,5 @@
+%Error: t/t_forceable_string_bad.v:8:10: Forcing strings is not permitted: t__DOT__str
+    8 |   string str  /*verilator forceable*/;
+      |          ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

@@ -13,6 +13,7 @@ Verilator 5.045 devel
 
 **Other:**
 
+* Support vpi_put/vpi_get forcing of signals (#5933) (#6704). [Christian Hecken]
 * Support complex expressions as std::randomize arguments (#6860). [Jakub Wasilewski, Antmicro Ltd.]
 * Remove deprecated `--xml-only`.
 * Remove deprecated `--make cmake`.
