@@ -4,10 +4,6 @@
       |              ^~~~
                         ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
                         ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
-%Warning-CONSTRAINTIGN: t/t_randomize.v:40:7: Constraint expression ignored (unsupported)
-                                            : ... note: In instance 't'
-   40 |       unique { array[0], array[1] };
-      |       ^~~~~~
 %Warning-CONSTRAINTIGN: t/t_randomize.v:43:23: Constraint expression ignored (imperfect distribution)
                                              : ... note: In instance 't'
    43 |    constraint order { solve length before header; }
