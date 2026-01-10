@@ -184,13 +184,6 @@ static int uvm_hdl_set_vlog(char *path, p_vpi_vecval value, PLI_INT32 flag) {
   int size;
   static int s_maxsize = -1;
 
-  if (flag == vpiForceFlag || flag == vpiReleaseFlag) {
-    // It appears other simulator interfaces likewise don't support this
-    m_uvm_error("UVM/DPI/VLOG_GET", "Unsupported: uvh_hdl_force/uvm_hdl_release on hdl path '%s'",
-                path);
-    return 0;
-  }
-
   r = uvm_hdl_handle_by_name_partsel(path, &is_partsel, &hi, &lo);
   if (r == 0) {
     m_uvm_error("UVM/DPI/HDL_SET",

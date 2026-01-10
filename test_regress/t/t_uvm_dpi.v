@@ -163,23 +163,19 @@ module t;
     i = uvm_hdl_read("t.exposed", lval);
     `checkh(i, 1);
     `checkh(lval[31:0], exposed);
-`ifdef VERILATOR
     // UNSUPPORTED: force/release via VPI
     // If support, validate or throw unsupported on force/release part-selects
     $display("= uvm_hdl_force");
-    $display("===\nUVM Report expected on next line:");
     i = uvm_hdl_force("t.exposed", 62);
-    `checkh(i, 0);
+    `checkh(i, 1);
 
     $display("= uvm_hdl_release");
-    $display("===\nUVM Report expected on next line:");
     i = uvm_hdl_release("t.exposed");
-    `checkh(i, 0);
+    `checkh(i, 1);
 
     $display("= uvm_hdl_release_and_read");
-    $display("===\nUVM Report expected on next line:");
     i = uvm_hdl_release_and_read("t.exposed", lval);
-    `checkh(i, 0);
+    `checkh(i, 1);
 
     $display("= uvm_hdl_force to not exposed (bad)");
     $display("===\nUVM Report expected on next line:");
@@ -190,7 +186,6 @@ module t;
     $display("===\nUVM Report expected on next line:");
     i = uvm_hdl_force("t.exposed_not_forceable", 12);
     `checkh(i, 0);
-`endif
 
     $write("*-* All Finished *-*\n");
     $finish;
