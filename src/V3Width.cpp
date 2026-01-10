@@ -216,6 +216,8 @@ class WidthVisitor final : public VNVisitor {
     WidthVP* m_vup = nullptr;  // Current node state
     bool m_underFork = false;  // Visiting under a fork
     bool m_underSExpr = false;  // Visiting under a sequence expression
+    bool m_underPackedArray = false;  // Visiting under a AstPackArrayDType
+    bool m_hasNamedType = false;  // Packed array is defined using named type
     AstNode* m_seqUnsupp = nullptr;  // Property has unsupported node
     bool m_hasSExpr = false;  // Property has a sequence expression
     const AstCell* m_cellp = nullptr;  // Current cell for arrayed instantiations
@@ -2044,8 +2046,13 @@ class WidthVisitor final : public VNVisitor {
                 VL_DO_DANGLING(pushDeletep(basicp), basicp);
             }
         }
+        if (!m_underPackedArray) m_hasNamedType = false;  // Outermost dimension
+        VL_RESTORER(m_hasNamedType);
+        VL_RESTORER(m_underPackedArray);
+        if (VN_IS(nodep, PackArrayDType)) m_underPackedArray = true;
         // Iterate into subDTypep() to resolve that type and update pointer.
         nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
+
         // Cleanup array size
         userIterateAndNext(nodep->rangep(), WidthVP{SELF, BOTH}.p());
         nodep->dtypep(nodep);  // The array itself, not subDtype
@@ -2056,6 +2063,14 @@ class WidthVisitor final : public VNVisitor {
         } else {
             const int width = nodep->subDTypep()->width() * nodep->rangep()->elementsConst();
             nodep->widthForce(width, width);
+            if (!VL_RESTORER_PREV(m_underPackedArray)) {  // Outermost dimension
+                // IEEE 1800-2023 7.4.1 "Packed arrays" says
+                //   If a packed array is declared as signed,
+                //   then the array viewed as a single vector shall be signed.
+                if (!m_hasNamedType && nodep->basicp()->isSigned()) {
+                    nodep->numeric(VSigning::fromBool(true));
+                }
+            }
         }
         UINFO(4, "dtWidthed " << nodep);
     }
@@ -2177,6 +2192,7 @@ class WidthVisitor final : public VNVisitor {
         UINFO(4, "dtWidthed " << nodep);
     }
     void visit(AstRefDType* nodep) override {
+        m_hasNamedType = m_underPackedArray;
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         nodep->doingWidth(true);
         if (nodep->typeofp()) {  // type(typeofp_expression)
