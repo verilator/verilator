@@ -1924,6 +1924,7 @@ class AstVar final : public AstNode {
     bool m_dfgMultidriven : 1;  // Singal is multidriven, used by DFG to avoid repeat processing
     bool m_globalConstrained : 1;  // Global constraint per IEEE 1800-2023 18.5.8
     bool m_isStdRandomizeArg : 1;  // Argument variable created for std::randomize (__Varg*)
+    bool m_tracePreserve : 1;  // Preserve var for trace funcs
     void init() {
         m_ansi = false;
         m_declTyped = false;
@@ -1976,6 +1977,7 @@ class AstVar final : public AstNode {
         m_dfgMultidriven = false;
         m_globalConstrained = false;
         m_isStdRandomizeArg = false;
+        m_tracePreserve = false;
     }
 
 public:
@@ -2038,6 +2040,10 @@ public:
     }
     VDirection direction() const VL_MT_SAFE { return m_direction; }
     bool isIO() const VL_MT_SAFE { return m_direction != VDirection::NONE; }
+    bool isVLIO() const {
+        const AstBasicDType* const bdtypep = basicp();
+        return isIO() && bdtypep && !bdtypep->isOpaque();
+    }
     void declDirection(const VDirection& flag) { m_declDirection = flag; }
     VDirection declDirection() const { return m_declDirection; }
     void varType(VVarType type) { m_varType = type; }
@@ -2056,7 +2062,7 @@ public:
     string dpiTmpVarType(const string& varName) const;
     // Return Verilator internal type for argument: CData, SData, IData, WData
     string vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc = "",
-                     bool asRef = false) const;
+                     bool asRef = false, bool constRef = false) const;
     string vlEnumType() const;  // Return VerilatorVarType: VLVT_UINT32, etc
     string vlEnumDir() const;  // Return VerilatorVarDir: VLVD_INOUT, etc
     string vlPropDecl(const string& propName) const;  // Return VerilatorVarProps declaration
@@ -2145,6 +2151,8 @@ public:
     bool globalConstrained() const { return m_globalConstrained; }
     bool isStdRandomizeArg() const { return m_isStdRandomizeArg; }
     void setStdRandomizeArg() { m_isStdRandomizeArg = true; }
+    bool tracePreserve() const { return m_tracePreserve; }
+    void setTracePreserve() { m_tracePreserve = true; }
     // METHODS
     void name(const string& name) override { m_name = name; }
     void tag(const string& text) override { m_tag = text; }
@@ -2276,6 +2284,8 @@ class AstVarScope final : public AstNode {
     // @astgen ptr := m_varp : Optional[AstVar]  // [AfterLink] Pointer to variable itself
     bool m_trace : 1;  // Tracing is turned on for this scope
     bool m_optimizeLifePost : 1;  // One half of an NBA pair using ShadowVariable scheme. Optimize.
+    // NOCOMMIT  -- is this the right way?
+    bool m_tracePreserve : 1;  // Preserve for trace logic
 public:
     AstVarScope(FileLine* fl, AstScope* scopep, AstVar* varp)
         : ASTGEN_SUPER_VarScope(fl)
@@ -2285,6 +2295,7 @@ public:
         UASSERT_OBJ(varp, fl, "Var must be non-null");
         m_trace = true;
         m_optimizeLifePost = false;
+        m_tracePreserve = false;
         dtypeFrom(varp);
     }
     ASTGEN_MEMBERS_AstVarScope;
@@ -2307,6 +2318,8 @@ public:
     void trace(bool flag) { m_trace = flag; }
     bool optimizeLifePost() const { return m_optimizeLifePost; }
     void optimizeLifePost(bool flag) { m_optimizeLifePost = flag; }
+    bool tracePreserve() const { return m_tracePreserve; }
+    void tracePreserve(bool tracePreserve) { m_tracePreserve = tracePreserve; }
 };
 
 // === AstNodeCoverDecl ===

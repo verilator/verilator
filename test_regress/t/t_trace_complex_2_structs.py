@@ -10,13 +10,14 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.top_filename = "t/t_trace_complex_2.v"
 
-test.compile(verilator_flags2=["--trace-vcd", "--trace-structs", "--output-split-ctrace", "32"])
-
-if test.vlt_all:
-    test.file_grep_count(test.obj_dir + "/V" + test.name + "__Trace__0.cpp",
-                         r'void Vt.*trace_chg_.*sub.*{', 3 if test.vltmt else 1)
+test.compile(verilator_flags2=['--cc --trace-vcd --trace-structs --no-trace-params'])
+test.file_grep(test.obj_dir + "/" + test.vm_prefix + "___024root.h",
+               r"VlUnpacked.*, 4.* __Vm_traceActivity")
 
 test.execute()
+
+test.vcd_identical(test.trace_filename, test.golden_filename)
 
 test.passes()
