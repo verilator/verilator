@@ -13,15 +13,24 @@ Verilator 5.045 devel
 
 **Other:**
 
+* Add VERILATOR_NUMA_STRATEGY environment variable (#6826) (#6880). [Yangyu Chen]
 * Support vpi_put/vpi_get forcing of signals (#5933) (#6704). [Christian Hecken]
 * Support complex expressions as std::randomize arguments (#6860). [Jakub Wasilewski, Antmicro Ltd.]
+* Support dynamic array elements in std::randomize (#6896). [Ryszard Rozak, Antmicro Ltd.]
 * Remove deprecated `--xml-only`.
 * Remove deprecated `--make cmake`.
 * Fix variable reference lookup for module-level variables (#6741) (#6882). [Yilou Wang]
 * Fix MULTIDRIVEN with task and default driver (#4045) (#6858). [em2machine]
+* Fix false CASEOVERLAP case item expression lint (#6825) (#6886). [Luca Colagrande]
+* Fix virtual interface triggers (#6844). [Igor Zaworski, Antmicro Ltd.]
 * Fix use-after-free error (#6846). [Matthew Ballance]
 * Fix dynamic array elements passed to ref argument (#6877). [Ryszard Rozak, Antmicro Ltd.]
+* Fix large debug_str for emitted Syms headers (#6889). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix `disable iff` in simple properties (#6890). [Ryszard Rozak, Antmicro Ltd.]
+* Fix member-selected randomization assignments (#6892). [Yilou Wang]
 * Fix WIDTHEXTEND suppression on add/sub with single-bit signal. [Dan Katz]
+* Fix segfault in V3Slice (#6899). [Pawel Kojma, Antmicro Ltd.]
+* Fix signedness of packed array (#6901) (#6902). [Yutetsu TAKATSUKASA]
 
 
 Verilator 5.044 2026-01-01

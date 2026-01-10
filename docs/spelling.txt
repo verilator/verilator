@@ -413,6 +413,7 @@ Rufer
 Runtime
 Ruud
 Rystsov
+Ryzen
 Rémi
 STandarD
 Salman
@@ -1089,6 +1090,7 @@ shareefj
 shortint
 shortreal
 signame
+signedness
 sp
 specparam
 splitme
