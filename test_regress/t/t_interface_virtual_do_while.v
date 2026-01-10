@@ -11,7 +11,7 @@ interface Bus;
 endinterface
 
 module t;
-  Bus intf();
+  Bus intf ();
   virtual Bus vif = intf;
   bit ok = 0;
 
@@ -28,8 +28,11 @@ module t;
     do begin
       if (!first) $stop;
       first = 0;
-    end while(!write_data(vif.data));
-    #1 if (ok != 1) $stop;
+    end while (!write_data(
+        vif.data
+    ));
+    #1;
+    if (ok != 1) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end

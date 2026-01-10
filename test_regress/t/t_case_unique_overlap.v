@@ -4,12 +4,9 @@
 // any use, without warranty, 2025 by Luca Colagrande.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-  // Inputs
-  clk
-  );
-
-  input clk;
+module t (
+    input clk
+);
 
   localparam logic [1:0] INST1 = 2'b0?;
   localparam logic [1:0] INST2 = 2'b0?;
@@ -32,7 +29,7 @@ module t (/*AUTOARG*/
     endcase
   end
 
-  always @ (posedge clk) begin
+  always @(posedge clk) begin
 `ifdef TEST_VERBOSE
     $write("[%0t] in=%x out=%x\n", $time, in, out);
 `endif

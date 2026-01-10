@@ -11,7 +11,7 @@ interface Bus;
 endinterface
 
 module t;
-  Bus intf();
+  Bus intf ();
   virtual Bus vif = intf;
   bit ok = 0;
 

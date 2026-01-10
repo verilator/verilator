@@ -5,6 +5,6 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-    bit [7:0] r[3] = {{8'h1, 8'h2}, 8'h5};
-    initial $finish;
+  bit [7:0] r[3] = {{8'h1, 8'h2}, 8'h5};
+  initial $finish;
 endmodule
