@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -282,7 +282,7 @@ void V3VariableOrder::orderAll(AstNetlist* netlistp) {
     if (v3Global.opt.stats()) V3Stats::statsStage("variableorder-sort");
 
     // Insert them back under the module, in the new order, but at
-    // the front of the list so they come out first in dumps/XML.
+    // the front of the list so they come out first in dumps/JSON.
     for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
          modp = VN_AS(modp->nextp(), NodeModule)) {
         const std::vector<AstVar*>& varps = sortedVars[modp];

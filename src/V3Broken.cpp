@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -234,9 +234,8 @@ private:
         const size_t nWriteRefs = m_nWriteRefs;
         const size_t nCalls = m_nCalls;
         iterateConst(nodep->lhsp());
-        // TODO: Enable this when #6756 is fixed
         // Only check if there are no calls on the LHS, as calls might return an LValue
-        if (false && v3Global.assertDTypesResolved() && m_nCalls == nCalls) {
+        if (v3Global.assertDTypesResolved() && m_nCalls == nCalls) {
             UASSERT_OBJ(m_nWriteRefs > nWriteRefs, nodep, "No write refs on LHS of assignment");
         }
         processExit(nodep);

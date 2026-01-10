@@ -9,8 +9,10 @@
 package pyhdl_if;
 
   typedef chandle PyObject;
-  import "DPI-C" context function PyObject _pyhdl_if_PyTuple_GetItem(input PyObject p0,
-                                    input longint unsigned p1);
+  import "DPI-C" context function PyObject _pyhdl_if_PyTuple_GetItem(
+    input PyObject p0,
+    input longint unsigned p1
+  );
 
   function PyObject PyTuple_GetItem(input PyObject p0, input longint unsigned p1);
     return _pyhdl_if_PyTuple_GetItem(p0, p1);
@@ -32,11 +34,9 @@ package pyhdl_if;
 
 endpackage
 
-module t (/*AUTOARG*/
-  // Inputs
-  clk
-  );
-  input clk;
+module t (
+    input clk
+);
 
   import pyhdl_if::*;
 

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -261,8 +261,7 @@ class DataflowOptimize final {
                 if (AstVarScope* const vscp = VN_CAST(nodep, VarScope)) {
                     const AstVar* const varp = vscp->varp();
                     // Force and trace have already been processed
-                    const bool hasExtRd = varp->isPrimaryIO() || varp->isSigUserRdPublic()
-                                          || vscp->tracePreserve();
+                    const bool hasExtRd = varp->isPrimaryIO() || varp->isSigUserRdPublic();
                     const bool hasExtWr = varp->isPrimaryIO() || varp->isSigUserRWPublic();
                     if (hasExtRd) DfgVertexVar::setHasExtRdRefs(vscp);
                     if (hasExtWr) DfgVertexVar::setHasExtWrRefs(vscp);

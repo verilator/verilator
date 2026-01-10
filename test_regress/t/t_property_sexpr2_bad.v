@@ -18,5 +18,5 @@ module t (  /*AUTOARG*/
   end
 
   assert property (@(posedge clk) ##clk val);
-  assert property (@(posedge clk) ##(1 + clk) val);
+  assert property (@(posedge clk) ##(1+clk) val);
 endmodule

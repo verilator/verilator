@@ -20,7 +20,7 @@ package SubPkg;
   class p_mem_seq extends uvm_sequence #(s_trgt_txn);
     rand bit m_wr_flag;
     virtual task body();
-      if (0 !== (m_req.randomize() with {local::m_wr_flag;})) begin
+      if (0 !== (m_req.randomize() with {local:: m_wr_flag;})) begin
       end
     endtask
   endclass

@@ -1,10 +1,10 @@
-%Error-UNSUPPORTED: t/t_force_complex_sel_unsup.v:37:22: Unsupported: Force / release statement with complex select expression
+%Error-UNSUPPORTED: t/t_force_complex_sel_unsup.v:41:22: Unsupported: Force / release statement with complex select expression
                                                        : ... note: In instance 't'
-   37 |       force logic_arr[($c(1))] = 0;
+   41 |       force logic_arr[($c(1))] = 0;
       |                      ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_force_complex_sel_unsup.v:44:24: Unsupported: Force / release statement with complex select expression
+%Error-UNSUPPORTED: t/t_force_complex_sel_unsup.v:51:24: Unsupported: Force / release statement with complex select expression
                                                        : ... note: In instance 't'
-   44 |       release logic_arr[($c(1))];
+   51 |       release logic_arr[($c(1))];
       |                        ^
 %Error: Exiting due to

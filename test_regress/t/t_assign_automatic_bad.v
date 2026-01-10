@@ -18,8 +18,9 @@ class Cls;
   int m_bad2;
 endclass
 
-module t(clk);
-  input clk;
+module t (
+    input clk
+);
 
   Cls c;
 
@@ -46,16 +47,20 @@ module t(clk);
   always @(posedge clk) begin
     bad_dyn6[0] <= 2;  // <--- Error: nonblocking dynarray element
     bad_dyn6 <= empty_dyn;  // <--- OK: nonblocking dynarray assignment, not to its element
-    bad_queue[0] <= 2; // Error: nonblocking queue element assignment
-    bad_queue <= empty_queue; // OK: nonblocking assignment to queue itself, not to its element
-    bad_assoc[0] <= 2; // Error: nonblocking associative array element assignment
+    bad_queue[0] <= 2;  // Error: nonblocking queue element assignment
+    bad_queue <= empty_queue;  // OK: nonblocking assignment to queue itself, not to its element
+    bad_assoc[0] <= 2;  // Error: nonblocking associative array element assignment
     bad_assoc <= empty_assoc; // OK: nonblocking assignment to associative array itself, not to its element
     Cls::s_ok2 <= 2;  // OK: nonblocking class static
     c.m_bad2 <= 2;  // <--- Error: nonblocking class automatic
     Cls::s_dyn <= 2;  // OK: nonblocking class static dynarray assignment, not to its element
     Cls::s_dyn[0] <= 2;  // Error: nonblocking class static dynarray element
-    clist[bad_dyn6[0]++].s_dyn <= '1; // OK: direct nonblocking assignment to dynamically-sized array
-    clist[bad_dyn6[0]++].s_dyn[0] <= '1; // Error: nonblocking assigment to dynamically-sized array element
+    clist[
+    bad_dyn6[0]++
+    ].s_dyn <= '1;  // OK: direct nonblocking assignment to dynamically-sized array
+    clist[
+    bad_dyn6[0]++
+    ].s_dyn[0] <= '1;  // Error: nonblocking assigment to dynamically-sized array element
     mt(ok_7);
     $stop;
   end

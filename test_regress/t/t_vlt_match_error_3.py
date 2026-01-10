@@ -12,9 +12,10 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t/t_vlt_match_error.v"
 
-test.lint(
-    verilator_flags2=["-DT_VLT_MATCH_ERROR_3 -Wall t/t_vlt_match_error.v t/t_vlt_match_error.vlt"],
-    fails=True,
-    expect_filename=test.golden_filename)
+test.compile(verilator_flags2=[
+    "-DT_VLT_MATCH_ERROR_3 --cc -Wall t/t_vlt_match_error.v t/t_vlt_match_error.vlt"
+],
+             fails=True,
+             expect_filename=test.golden_filename)
 
 test.passes()

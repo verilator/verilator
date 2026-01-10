@@ -6,24 +6,19 @@
 //
 //     Chained typedef aliases from an interface typedef
 
+// verilog_format: off
 `define stop $stop
-`define checkh(gotv,expv) \
-  do if ((gotv) !== (expv)) begin \
-    $write("%%Error: %s:%0d:  got=%0h exp=%0h\n", \
-            `__FILE__,`__LINE__, (gotv), (expv)); \
-    `stop; \
-  end while(0);
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0h exp=%0h\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 interface x_if #(
-  parameter int p_awidth = 4
-)();
-  typedef struct packed {
-    logic [p_awidth-1:0] addr;
-  } rq_t;
+    parameter int p_awidth = 4
+) ();
+  typedef struct packed {logic [p_awidth-1:0] addr;} rq_t;
 endinterface
 
-module top();
-  x_if #(.p_awidth(16)) if0();
+module top ();
+  x_if #(.p_awidth(16)) if0 ();
 
   // First alias of interface typedef
   typedef if0.rq_t my_rq_t;
@@ -38,7 +33,7 @@ module top();
 
   initial begin
     #1;
-    `checkh(rq.addr,16'h1234);
+    `checkh(rq.addr, 16'h1234);
     $write("*-* All Finished *-*\n");
     $finish;
   end

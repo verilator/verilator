@@ -11,9 +11,9 @@ localparam int N = 5;
 `ifdef LIB_CREATE
 // This is built with --lib-create
 
-module sub(
-  input logic [N-1:0] clkvec,
-  output logic [7:0] cnt[N]
+module sub (
+    input logic [N-1:0] clkvec,
+    output logic [7:0] cnt[N]
 );
 
   for (genvar i = 0; i < N; ++i) begin : GEN
@@ -30,17 +30,20 @@ endmodule
 module top;
 
   logic [N-1:0] clkvec = N'(0);
-  logic [7:0] cnt [N];
+  logic [7:0] cnt[N];
 
   // Generate clocks by rotation
   always #5 clkvec = {clkvec[N-2:0], clkvec[N-1] | ~|clkvec};
 
-  sub sub_i(clkvec, cnt);
+  sub sub_i (
+      clkvec,
+      cnt
+  );
 
   always @(clkvec) begin
     #1;
     $write("%10t %05b", $time, clkvec);
-    for (int i = N-1; i >= 0; --i) begin
+    for (int i = N - 1; i >= 0; --i) begin
       $write(" cnt[%0d]=%02d", i, cnt[i]);
     end
     $write("\n");

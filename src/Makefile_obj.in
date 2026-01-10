@@ -7,7 +7,7 @@
 #
 #*****************************************************************************
 #
-# Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -271,12 +271,10 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3DiagSarif.o \
   V3DupFinder.o \
   V3EmitCMain.o \
-  V3EmitCMake.o \
   V3EmitCModel.o \
   V3EmitCSyms.o \
   V3EmitMk.o \
   V3EmitMkJson.o \
-  V3EmitXml.o \
   V3ExecGraph.o \
   V3Expand.o \
   V3Force.o \
@@ -284,6 +282,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Gate.o \
   V3HierBlock.o \
   V3Inline.o \
+  V3InlineCFuncs.o \
   V3Inst.o \
   V3InstrCount.o \
   V3Interface.o \
@@ -340,6 +339,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Tristate.o \
   V3Udp.o \
   V3Undriven.o \
+  V3UndrivenCapture.o \
   V3Unknown.o \
   V3Unroll.o \
   V3UnrollGen.o \

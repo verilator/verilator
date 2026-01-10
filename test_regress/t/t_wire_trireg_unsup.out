@@ -1,24 +1,24 @@
-%Error-UNSUPPORTED: t/t_wire_trireg_unsup.v:11:4: Unsupported: trireg
-   11 |    trireg unsup;
-      |    ^~~~~~
+%Error-UNSUPPORTED: t/t_wire_trireg_unsup.v:11:3: Unsupported: trireg
+   11 |   trireg unsup;
+      |   ^~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_wire_trireg_unsup.v:12:4: Unsupported: trireg
-   12 |    trireg (small) unsup_s;
-      |    ^~~~~~
-%Error: t/t_wire_trireg_unsup.v:12:12: syntax error, unexpected STRENGTH keyword (strong1/etc)
-   12 |    trireg (small) unsup_s;
-      |            ^~~~~
+%Error-UNSUPPORTED: t/t_wire_trireg_unsup.v:12:3: Unsupported: trireg
+   12 |   trireg (small) unsup_s;
+      |   ^~~~~~
+%Error: t/t_wire_trireg_unsup.v:12:11: syntax error, unexpected STRENGTH keyword (strong1/etc)
+   12 |   trireg (small) unsup_s;
+      |           ^~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error-UNSUPPORTED: t/t_wire_trireg_unsup.v:13:4: Unsupported: trireg
-   13 |    trireg (medium) unsup_m;
-      |    ^~~~~~
-%Error: t/t_wire_trireg_unsup.v:13:12: syntax error, unexpected STRENGTH keyword (strong1/etc)
-   13 |    trireg (medium) unsup_m;
-      |            ^~~~~~
-%Error-UNSUPPORTED: t/t_wire_trireg_unsup.v:14:4: Unsupported: trireg
-   14 |    trireg (large) unsup_l;
-      |    ^~~~~~
-%Error: t/t_wire_trireg_unsup.v:14:12: syntax error, unexpected STRENGTH keyword (strong1/etc)
-   14 |    trireg (large) unsup_l;
-      |            ^~~~~
+%Error-UNSUPPORTED: t/t_wire_trireg_unsup.v:13:3: Unsupported: trireg
+   13 |   trireg (medium) unsup_m;
+      |   ^~~~~~
+%Error: t/t_wire_trireg_unsup.v:13:11: syntax error, unexpected STRENGTH keyword (strong1/etc)
+   13 |   trireg (medium) unsup_m;
+      |           ^~~~~~
+%Error-UNSUPPORTED: t/t_wire_trireg_unsup.v:14:3: Unsupported: trireg
+   14 |   trireg (large) unsup_l;
+      |   ^~~~~~
+%Error: t/t_wire_trireg_unsup.v:14:11: syntax error, unexpected STRENGTH keyword (strong1/etc)
+   14 |   trireg (large) unsup_l;
+      |           ^~~~~
 %Error: Exiting due to

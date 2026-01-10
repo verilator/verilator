@@ -18,7 +18,7 @@ endclass
 module t;
   logic a;
   logic b = 1;
-  Cls   cls = new;
+  Cls cls = new;
 
   initial begin
     force a = b;

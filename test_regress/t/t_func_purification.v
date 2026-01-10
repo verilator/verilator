@@ -14,7 +14,8 @@ module t;
     if (x) begin
       if (x) begin
         return 1;
-      end else begin
+      end
+      else begin
         $c("");
       end
       return 0;

@@ -1,4 +1,4 @@
-.. Copyright 2003-2025 by Wilson Snyder.
+.. Copyright 2003-2026 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 ***************
@@ -143,8 +143,8 @@ error, except:
 
 * delay statements - they are ignored (as they are in synthesis), though they
   do issue a :option:`STMTDLY` warning,
-* intra-assignment timing controls - they are ignored, though they do issue an
-  :option:`ASSIGNDLY` warning,
+* intra-assignment timing controls - they are ignored, though they do issue
+  an :option:`ASSIGNDLY` warning,
 * net delays - they are ignored,
 * event controls at the top of the procedure,
 

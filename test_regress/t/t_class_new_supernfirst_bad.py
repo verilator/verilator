@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-test.lint(verilator_flags2=['--timing'], fails=True, expect_filename=test.golden_filename)
+test.lint(fails=True, expect_filename=test.golden_filename)
 
 test.extract(in_filename=test.top_filename,
              out_filename=test.root + "/docs/gen/ex_SUPERNFIRST_faulty.rst",

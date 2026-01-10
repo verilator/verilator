@@ -7,9 +7,10 @@
 // without warranty, 2025 by Paul Swirhun
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define stop $stop
-`define checkd(gotv,
-               expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 interface TEST_IF #(
     parameter int FOO = 1,
@@ -66,7 +67,7 @@ module submod_assert #(
 
   // Test mixed parameters: constant + interface port reference
   TEST_IF #(
-      .FOO(7),         // Constant parameter
+      .FOO(7),  // Constant parameter
       .BAR(iface.FOO)  // References interface port
   ) iface_mixed ();
 
@@ -108,7 +109,7 @@ module submod_assert #(
 
   // Test BAR-only interface
   submod_assert2 #(
-      .EXPECTED_FOO(1),            // FOO = default
+      .EXPECTED_FOO(1),  // FOO = default
       .EXPECTED_BAR(EXPECTED_BAR)  // BAR = specified value
   ) u_bar_only_assert (
       .iface(iface_bar_only)
@@ -184,7 +185,7 @@ module param_chain #(
   // Submodule uses interface (FOO=3, BAR should be 30)
   submod_iface chain_sub (
       .result(result),
-      .iface (chain_iface)
+      .iface(chain_iface)
   );
 
   // Assert the chain works correctly
@@ -218,19 +219,19 @@ module t;
   // Test interface as port parameter
   submod_iface u0 (
       .result(result[0]),
-      .iface (tif_1)
+      .iface(tif_1)
   );
   submod_iface u1 (
       .result(result[1]),
-      .iface (tif_2)
+      .iface(tif_2)
   );
   submod_iface u2 (
       .result(result[2]),
-      .iface (tif_3)
+      .iface(tif_3)
   );
   submod_iface u3 (
       .result(result[3]),
-      .iface (tif_4)
+      .iface(tif_4)
   );
 
   // Test modport as port parameter

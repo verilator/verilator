@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-test.lint(verilator_flags2=['--timing'], fails=test.vlt_all, expect_filename=test.golden_filename)
+test.lint(fails=test.vlt_all, expect_filename=test.golden_filename)
 
 test.extract(in_filename=test.top_filename,
              out_filename=test.root + "/docs/gen/ex_FUNCTIMECTL_faulty.rst",

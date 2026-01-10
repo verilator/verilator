@@ -4,25 +4,27 @@
 // any use, without warranty, 2025 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define stop $stop
-`define check(got ,exp) do if ((got) !== (exp)) begin $write("%%Error: %s:%0d: cyc=%0d got='h%x exp='h%x\n", `__FILE__,`__LINE__, cyc, (got), (exp)); `stop; end while(0)
+`define check(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d: cyc=%0d got='h%x exp='h%x\n", `__FILE__,`__LINE__, cyc, (gotv), (expv)); `stop; end while(0)
+// verilog_format: on
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (
+    input clk
+);
 
    reg [31:0] cyc = 0;
    reg [6:0] cntA = 0;
    reg [6:0] cntB = 0;
    reg [6:0] cntC = 0;
+   reg [6:0] cntD = 0;
 
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc[0])  cntA <= cntA + 7'd1;
       if (cntA[0]) cntB <= cntB + 7'd1;
       if (cntB[0]) cntC <= cntC + 7'd1;
+      if (cntC[0]) cntD <= cntD + 7'd1;
 
       if (cyc == 99) begin
          $write("*-* All Finished *-*\n");
@@ -538,6 +540,139 @@ module t (/*AUTOARG*/
      cntC == 7'd2 ? (7'd2 * 7'd2) :
      cntC == 7'd1 ? (7'd1 * 7'd2) : 7'd0;
 
+
+   // Should create decoder
+   wire [127:0] cntD_OH = 128'h1 << cntD;
+   wire [6:0] cntD_sel =
+      (cntD_OH[127] ? 7'd127 : 0) |
+      (cntD_OH[126] ? 7'd126 : 0) |
+      (cntD_OH[125] ? 7'd125 : 0) |
+      (cntD_OH[124] ? 7'd124 : 0) |
+      (cntD_OH[123] ? 7'd123 : 0) |
+      (cntD_OH[122] ? 7'd122 : 0) |
+      (cntD_OH[121] ? 7'd121 : 0) |
+      (cntD_OH[120] ? 7'd120 : 0) |
+      (cntD_OH[119] ? 7'd119 : 0) |
+      (cntD_OH[118] ? 7'd118 : 0) |
+      (cntD_OH[117] ? 7'd117 : 0) |
+      (cntD_OH[116] ? 7'd116 : 0) |
+      (cntD_OH[115] ? 7'd115 : 0) |
+      (cntD_OH[114] ? 7'd114 : 0) |
+      (cntD_OH[113] ? 7'd113 : 0) |
+      (cntD_OH[112] ? 7'd112 : 0) |
+      (cntD_OH[111] ? 7'd111 : 0) |
+      (cntD_OH[110] ? 7'd110 : 0) |
+      (cntD_OH[109] ? 7'd109 : 0) |
+      (cntD_OH[108] ? 7'd108 : 0) |
+      (cntD_OH[107] ? 7'd107 : 0) |
+      (cntD_OH[106] ? 7'd106 : 0) |
+      (cntD_OH[105] ? 7'd105 : 0) |
+      (cntD_OH[104] ? 7'd104 : 0) |
+      (cntD_OH[103] ? 7'd103 : 0) |
+      (cntD_OH[102] ? 7'd102 : 0) |
+      (cntD_OH[101] ? 7'd101 : 0) |
+      (cntD_OH[100] ? 7'd100 : 0) |
+      (cntD_OH[99] ? 7'd99 : 0) |
+      (cntD_OH[98] ? 7'd98 : 0) |
+      (cntD_OH[97] ? 7'd97 : 0) |
+      (cntD_OH[96] ? 7'd96 : 0) |
+      (cntD_OH[95] ? 7'd95 : 0) |
+      (cntD_OH[94] ? 7'd94 : 0) |
+      (cntD_OH[93] ? 7'd93 : 0) |
+      (cntD_OH[92] ? 7'd92 : 0) |
+      (cntD_OH[91] ? 7'd91 : 0) |
+      (cntD_OH[90] ? 7'd90 : 0) |
+      (cntD_OH[89] ? 7'd89 : 0) |
+      (cntD_OH[88] ? 7'd88 : 0) |
+      (cntD_OH[87] ? 7'd87 : 0) |
+      (cntD_OH[86] ? 7'd86 : 0) |
+      (cntD_OH[85] ? 7'd85 : 0) |
+      (cntD_OH[84] ? 7'd84 : 0) |
+      (cntD_OH[83] ? 7'd83 : 0) |
+      (cntD_OH[82] ? 7'd82 : 0) |
+      (cntD_OH[81] ? 7'd81 : 0) |
+      (cntD_OH[80] ? 7'd80 : 0) |
+      (cntD_OH[79] ? 7'd79 : 0) |
+      (cntD_OH[78] ? 7'd78 : 0) |
+      (cntD_OH[77] ? 7'd77 : 0) |
+      (cntD_OH[76] ? 7'd76 : 0) |
+      (cntD_OH[75] ? 7'd75 : 0) |
+      (cntD_OH[74] ? 7'd74 : 0) |
+      (cntD_OH[73] ? 7'd73 : 0) |
+      (cntD_OH[72] ? 7'd72 : 0) |
+      (cntD_OH[71] ? 7'd71 : 0) |
+      (cntD_OH[70] ? 7'd70 : 0) |
+      (cntD_OH[69] ? 7'd69 : 0) |
+      (cntD_OH[68] ? 7'd68 : 0) |
+      (cntD_OH[67] ? 7'd67 : 0) |
+      (cntD_OH[66] ? 7'd66 : 0) |
+      (cntD_OH[65] ? 7'd65 : 0) |
+      (cntD_OH[64] ? 7'd64 : 0) |
+      (cntD_OH[63] ? 7'd63 : 0) |
+      (cntD_OH[62] ? 7'd62 : 0) |
+      (cntD_OH[61] ? 7'd61 : 0) |
+      (cntD_OH[60] ? 7'd60 : 0) |
+      (cntD_OH[59] ? 7'd59 : 0) |
+      (cntD_OH[58] ? 7'd58 : 0) |
+      (cntD_OH[57] ? 7'd57 : 0) |
+      (cntD_OH[56] ? 7'd56 : 0) |
+      (cntD_OH[55] ? 7'd55 : 0) |
+      (cntD_OH[54] ? 7'd54 : 0) |
+      (cntD_OH[53] ? 7'd53 : 0) |
+      (cntD_OH[52] ? 7'd52 : 0) |
+      (cntD_OH[51] ? 7'd51 : 0) |
+      (cntD_OH[50] ? 7'd50 : 0) |
+      (cntD_OH[49] ? 7'd49 : 0) |
+      (cntD_OH[48] ? 7'd48 : 0) |
+      (cntD_OH[47] ? 7'd47 : 0) |
+      (cntD_OH[46] ? 7'd46 : 0) |
+      (cntD_OH[45] ? 7'd45 : 0) |
+      (cntD_OH[44] ? 7'd44 : 0) |
+      (cntD_OH[43] ? 7'd43 : 0) |
+      (cntD_OH[42] ? 7'd42 : 0) |
+      (cntD_OH[41] ? 7'd41 : 0) |
+      (cntD_OH[40] ? 7'd40 : 0) |
+      (cntD_OH[39] ? 7'd39 : 0) |
+      (cntD_OH[38] ? 7'd38 : 0) |
+      (cntD_OH[37] ? 7'd37 : 0) |
+      (cntD_OH[36] ? 7'd36 : 0) |
+      (cntD_OH[35] ? 7'd35 : 0) |
+      (cntD_OH[34] ? 7'd34 : 0) |
+      (cntD_OH[33] ? 7'd33 : 0) |
+      (cntD_OH[32] ? 7'd32 : 0) |
+      (cntD_OH[31] ? 7'd31 : 0) |
+      (cntD_OH[30] ? 7'd30 : 0) |
+      (cntD_OH[29] ? 7'd29 : 0) |
+      (cntD_OH[28] ? 7'd28 : 0) |
+      (cntD_OH[27] ? 7'd27 : 0) |
+      (cntD_OH[26] ? 7'd26 : 0) |
+      (cntD_OH[25] ? 7'd25 : 0) |
+      (cntD_OH[24] ? 7'd24 : 0) |
+      (cntD_OH[23] ? 7'd23 : 0) |
+      (cntD_OH[22] ? 7'd22 : 0) |
+      (cntD_OH[21] ? 7'd21 : 0) |
+      (cntD_OH[20] ? 7'd20 : 0) |
+      (cntD_OH[19] ? 7'd19 : 0) |
+      (cntD_OH[18] ? 7'd18 : 0) |
+      (cntD_OH[17] ? 7'd17 : 0) |
+      (cntD_OH[16] ? 7'd16 : 0) |
+      (cntD_OH[15] ? 7'd15 : 0) |
+      (cntD_OH[14] ? 7'd14 : 0) |
+      (cntD_OH[13] ? 7'd13 : 0) |
+      (cntD_OH[12] ? 7'd12 : 0) |
+      (cntD_OH[11] ? 7'd11 : 0) |
+      (cntD_OH[10] ? 7'd10 : 0) |
+      (cntD_OH[9] ? 7'd9 : 0) |
+      (cntD_OH[8] ? 7'd8 : 0) |
+      (cntD_OH[7] ? 7'd7 : 0) |
+      (cntD_OH[6] ? 7'd6 : 0) |
+      (cntD_OH[5] ? 7'd5 : 0) |
+      (cntD_OH[4] ? 7'd4 : 0) |
+      (cntD_OH[3] ? 7'd3 : 0) |
+      (cntD_OH[2] ? 7'd2 : 0) |
+      (cntD_OH[1] ? 7'd1 : 0) |
+      (cntD_OH[0] ? 7'd0 : 0);
+
    always @(posedge clk) begin
       `check(cntAOneHot[cntA], 1'b1);
       for (int i = 0; i < $bits(cntAOneHot); i = i + 1) begin
@@ -554,6 +689,8 @@ module t (/*AUTOARG*/
       `check(stupidWayToWriteConstOne, 1'b1);
 
       `check(twiceCntC, cntC * 7'd2);
+
+      `check(cntD_sel, cntD);
    end
 
 endmodule

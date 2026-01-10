@@ -15,7 +15,7 @@ test.compile(verilator_flags2=["--trace-vcd", "--trace-structs", "--output-split
 
 if test.vlt_all:
     test.file_grep_count(test.obj_dir + "/V" + test.name + "__Trace__0.cpp",
-                         r'void Vt.*trace_chg_.*sub.*{', 3 if test.vltmt else 1)
+                         r'void Vt.*trace_chg_.*sub.*{', 3)
 
 test.execute()
 

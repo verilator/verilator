@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -135,6 +135,8 @@ class EmitCImp final : public EmitCFunc {
             ofp()->indentDec();
             puts(" {\n");
         } else {
+            putns(modp, modName + "::" + modName + "() = default;\n");
+            putns(modp, modName + "::~" + modName + "() = default;\n\n");
             putns(modp, "void " + modName + "::ctor(" + ctorArgs + ") {\n");
         }
 
@@ -624,16 +626,6 @@ class EmitCTrace final : public EmitCFunc {
     }
 
     void emitTraceInitOne(const AstTraceDecl* nodep, int enumNum) {
-        std::string direction;
-        direction = nodep->declDirection().traceSigDirection();
-
-        AstCCall* const callp = nodep->dtypeCallp();
-        if (callp) {
-            callp->argTypes(callp->argTypes() + ", " + cvtToStr(nodep->fidx()) + ", c+"
-                            + cvtToStr(nodep->code()) + "-1, " + direction);
-            return;
-        }
-
         if (nodep->dtypep()->basicp()->isDouble()) {
             puts("tracep->declDouble(");
         } else if (nodep->isWide()) {
@@ -654,11 +646,7 @@ class EmitCTrace final : public EmitCFunc {
 
         // Function index
         puts(",");
-        if (nodep->inDtypeFunc()) {
-            puts("fidx");
-        } else {
-            puts(cvtToStr(nodep->fidx()));
-        }
+        puts(cvtToStr(nodep->fidx()));
 
         // Name
         puts(",");
@@ -668,10 +656,14 @@ class EmitCTrace final : public EmitCFunc {
         puts("," + cvtToStr(enumNum));
 
         // Direction
-        if (nodep->inDtypeFunc()) {
-            puts(", direction");
+        if (nodep->declDirection().isInout()) {
+            puts(", VerilatedTraceSigDirection::INOUT");
+        } else if (nodep->declDirection().isWritable()) {
+            puts(", VerilatedTraceSigDirection::OUTPUT");
+        } else if (nodep->declDirection().isNonOutput()) {
+            puts(", VerilatedTraceSigDirection::INPUT");
         } else {
-            puts(", " + direction);
+            puts(", VerilatedTraceSigDirection::NONE");
         }
 
         // Kind
@@ -762,7 +754,16 @@ class EmitCTrace final : public EmitCFunc {
                 puts("VL_SC_BV_DATAP(");
             }
             iterateConst(varrefp);  // Put var name out
-            emitTraceIndex(nodep, arrayindex);
+            // Tracing only supports 1D arrays
+            if (nodep->declp()->arrayRange().ranged()) {
+                if (arrayindex == -2) {
+                    puts("[i]");
+                } else if (arrayindex == -1) {
+                    puts("[0]");
+                } else {
+                    puts("[" + cvtToStr(arrayindex) + "]");
+                }
+            }
             if (varp->isSc()) puts(".read()");
             if (emitTraceIsScUint(nodep)) {
                 puts(nodep->isQuad() ? ".to_uint64()" : ".to_uint()");
@@ -775,21 +776,7 @@ class EmitCTrace final : public EmitCFunc {
         } else {
             puts("(");
             iterateConst(nodep->valuep());
-            emitTraceIndex(nodep, arrayindex);
             puts(")");
-        }
-    }
-
-    void emitTraceIndex(const AstTraceInc* const nodep, int arrayindex) {
-        // Tracing only supports 1D arrays
-        if (nodep->declp()->arrayRange().ranged()) {
-            if (arrayindex == -2) {
-                puts("[i]");
-            } else if (arrayindex == -1) {
-                puts("[0]");
-            } else {
-                puts("[" + cvtToStr(arrayindex) + "]");
-            }
         }
     }
 
@@ -812,11 +799,7 @@ class EmitCTrace final : public EmitCFunc {
     }
     void visit(AstTracePushPrefix* nodep) override {
         putns(nodep, "tracep->pushPrefix(");
-        if (nodep->quotedPrefix()) {
-            putsQuoted(VIdProtect::protectWordsIf(nodep->prefix(), nodep->protect()));
-        } else {
-            puts(nodep->prefix());
-        }
+        putsQuoted(VIdProtect::protectWordsIf(nodep->prefix(), nodep->protect()));
         puts(", VerilatedTracePrefixType::");
         puts(nodep->prefixType().ascii());
         puts(");\n");

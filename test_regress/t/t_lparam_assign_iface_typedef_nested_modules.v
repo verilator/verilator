@@ -9,8 +9,8 @@
 //
 
 interface bus_if #(
-  parameter int p_awidth = 4
-  ,parameter int p_dwidth = 7
+  parameter int p_awidth = 4,
+  parameter int p_dwidth = 7
 );
   typedef struct packed {
     logic [p_awidth-1:0] addr;

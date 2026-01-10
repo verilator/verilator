@@ -1,9 +1,9 @@
-%Error-UNSUPPORTED: t/t_randsequence_func.v:31:23: Unsupported: randsequence production function ports
-   31 |         void func(int n) : { counts[1] += n; };
+%Error-UNSUPPORTED: t/t_randsequence_func.v:33:23: Unsupported: randsequence production function ports
+   33 |         void func(int n) : { counts[1] += n; };
       |                       ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: t/t_randsequence_func.v:31:23: Input/output/inout does not appear in port list: 'n'
-   31 |         void func(int n) : { counts[1] += n; };
+%Error: t/t_randsequence_func.v:33:23: Input/output/inout does not appear in port list: 'n'
+   33 |         void func(int n) : { counts[1] += n; };
       |                       ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

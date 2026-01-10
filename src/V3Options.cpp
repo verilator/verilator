@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -948,14 +948,14 @@ void V3Options::notify() VL_MT_DISABLED {
     if (!outFormatOk() && v3Global.opt.main()) ccSet();  // --main implies --cc if not provided
     if (!outFormatOk() && !dpiHdrOnly() && !lintOnly() && !preprocOnly() && !serializeOnly()) {
         v3fatal("verilator: Need --binary, --cc, --sc, --dpi-hdr-only, --lint-only, "
-                "--xml-only, --json-only or --E option");
+                "--json-only or --E option");
     }
 
-    if (m_build && (m_gmake || m_cmake || m_makeJson)) {
+    if (m_build && (m_gmake || m_makeJson)) {
         cmdfl->v3error("--make cannot be used together with --build. Suggest see manual");
     }
 
-    // m_build, m_preprocOnly, m_dpiHdrOnly, m_lintOnly, m_jsonOnly and m_xmlOnly are mutually
+    // m_build, m_preprocOnly, m_dpiHdrOnly, m_lintOnly, and m_jsonOnly are mutually
     // exclusive
     std::vector<std::string> backendFlags;
     if (m_build) {
@@ -967,7 +967,6 @@ void V3Options::notify() VL_MT_DISABLED {
     if (m_preprocOnly) backendFlags.push_back("-E");
     if (m_dpiHdrOnly) backendFlags.push_back("--dpi-hdr-only");
     if (m_lintOnly) backendFlags.push_back("--lint-only");
-    if (m_xmlOnly) backendFlags.push_back("--xml-only");
     if (m_jsonOnly) backendFlags.push_back("--json-only");
     if (backendFlags.size() > 1) {
         std::string backendFlagsString = backendFlags.front();
@@ -983,7 +982,7 @@ void V3Options::notify() VL_MT_DISABLED {
     }
 
     // Make sure at least one make system is enabled
-    if (!m_gmake && !m_cmake && !m_makeJson) m_gmake = true;
+    if (!m_gmake && !m_makeJson) m_gmake = true;
 
     if (m_hierarchical && (m_hierChild || !m_hierBlocks.empty())) {
         cmdfl->v3error(
@@ -1038,6 +1037,9 @@ void V3Options::notify() VL_MT_DISABLED {
             && !v3Global.opt.preprocOnly()  //
             && !v3Global.opt.serializeOnly());
     }
+
+    if (m_timing.isDefault() && (v3Global.opt.jsonOnly() || v3Global.opt.lintOnly()))
+        v3Global.opt.m_timing.setTrueOrFalse(true);
 
     if (trace()) {
         // With --trace-vcd, --trace-threads is ignored
@@ -1158,8 +1160,8 @@ void V3Options::parseOpts(FileLine* fl, int argc, char** argv) VL_MT_DISABLED {
     // Default certain options and error check
     // Detailed error, since this is what we often get when run with minimal arguments
     if (vFiles().empty()) {
-        v3fatal("verilator: No Input Verilog file specified on command line, "
-                "see verilator --help for more information\n");
+        v3fatal("verilator: No input Verilog file specified on command line, "
+                "see 'verilator --help' for more information\n");
     }
 
     // Default prefix to the filename
@@ -1387,6 +1389,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-debug-partition", OnOff, &m_debugPartition).undocumented();
     DECL_OPTION("-debug-preproc-passthru", OnOff, &m_debugPreprocPassthru).undocumented();
     DECL_OPTION("-debug-protect", OnOff, &m_debugProtect).undocumented();
+    DECL_OPTION("-debug-runtime-timeout", Set, &m_debugRuntimeTimeout).undocumented();
     DECL_OPTION("-debug-self-test", OnOff, &m_debugSelfTest).undocumented();
     DECL_OPTION("-debug-sigsegv", CbCall, throwSigsegv).undocumented();  // See also --debug-abort
     DECL_OPTION("-debug-stack-check", OnOff, &m_debugStackCheck).undocumented();
@@ -1524,6 +1527,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     }).notForRerun();
     DECL_OPTION("-if-depth", Set, &m_ifDepth);
     DECL_OPTION("-ignc", OnOff, &m_ignc).undocumented();
+    DECL_OPTION("-inline-cfuncs", Set, &m_inlineCFuncs);
+    DECL_OPTION("-inline-cfuncs-product", Set, &m_inlineCFuncsProduct);
     DECL_OPTION("-inline-mult", Set, &m_inlineMult);
     DECL_OPTION("-instr-count-dpi", CbVal, [this, fl](int val) {
         m_instrCountDpi = val;
@@ -1578,11 +1583,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-main", OnOff, &m_main);
     DECL_OPTION("-main-top-name", Set, &m_mainTopName);
     DECL_OPTION("-make", CbVal, [this, fl](const char* valp) {
-        if (!std::strcmp(valp, "cmake")) {
-            m_cmake = true;
-            fl->v3warn(DEPRECATED,
-                       "Option '--make cmake' is deprecated, use '--make json' instead");
-        } else if (!std::strcmp(valp, "gmake")) {
+        if (!std::strcmp(valp, "gmake")) {
             m_gmake = true;
         } else if (!std::strcmp(valp, "json")) {
             m_makeJson = true;
@@ -1684,9 +1685,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
                 [this](const char* varp) { addParameter(varp, false); });
 
     DECL_OPTION("-quiet", CbOnOff, [this](bool flag) {
+        m_quietBuild = flag;
         m_quietExit = flag;
         m_quietStats = flag;
     });
+    DECL_OPTION("-quiet-build", OnOff, &m_quietBuild);
     DECL_OPTION("-quiet-exit", OnOff, &m_quietExit);
     DECL_OPTION("-quiet-stats", OnOff, &m_quietStats);
 
@@ -1830,7 +1833,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
     DECL_OPTION("-v", CbVal, [this, &optdir](const char* valp) {
         V3Options::addLibraryFile(parseFileArg(optdir, valp), work());
-    });
+    }).notForRerun();
     DECL_OPTION("-valgrind", CbCall, []() {});  // Processed only in bin/verilator shell
     DECL_OPTION("-verilate", OnOff, &m_verilate);
     DECL_OPTION("-verilate-jobs", CbVal, [this, fl](const char* valp) {
@@ -1850,16 +1853,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
     DECL_OPTION("-vpi", OnOff, &m_vpi);
 
-    DECL_OPTION("-Wall", CbCall, []() {
-        FileLine::globalWarnLintOff(false);
-        FileLine::globalWarnStyleOff(false);
-    });
-    DECL_OPTION("-Werror-UNUSED", CbCall, []() {
-        V3Error::pretendError(V3ErrorCode::UNUSEDGENVAR, true);
-        V3Error::pretendError(V3ErrorCode::UNUSEDLOOP, true);
-        V3Error::pretendError(V3ErrorCode::UNUSEDPARAM, true);
-        V3Error::pretendError(V3ErrorCode::UNUSEDSIGNAL, true);
-    });
+    DECL_OPTION("-Wall", CbCall, []() { FileLine::globalWarnOff(V3ErrorCode::I_LINT, false); });
     DECL_OPTION("-Werror-", CbPartialMatch, [this, fl](const char* optp) {
         const V3ErrorCode code{optp};
         if (code == V3ErrorCode::EC_ERROR) {
@@ -1887,13 +1881,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     }
     DECL_OPTION("-Wno-context", CbCall, [this]() { m_context = false; });
     DECL_OPTION("-Wno-fatal", CbCall, []() { V3Error::warnFatal(false); });
-    DECL_OPTION("-Wno-lint", CbCall, []() {
-        FileLine::globalWarnLintOff(true);
-        FileLine::globalWarnStyleOff(true);
-    });
-    DECL_OPTION("-Wno-style", CbCall, []() { FileLine::globalWarnStyleOff(true); });
-    DECL_OPTION("-Wno-UNUSED", CbCall, []() { FileLine::globalWarnUnusedOff(true); });
-    DECL_OPTION("-Wno-WIDTH", CbCall, []() { FileLine::globalWarnOff(V3ErrorCode::WIDTH, true); });
+    DECL_OPTION("-Wno-lint", CbCall, []() { FileLine::globalWarnOff(V3ErrorCode::I_LINT, true); });
+    DECL_OPTION("-Wno-style", CbCall,
+                []() { FileLine::globalWarnOff(V3ErrorCode::I_STYLE, true); });
     DECL_OPTION("-work", Set, &m_work);
     DECL_OPTION("-Wpedantic", CbCall, [this]() {
         m_pedantic = true;
@@ -1912,27 +1902,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
             V3Error::pretendError(code, false);
         }
     });
-    DECL_OPTION("-Wwarn-lint", CbCall, []() { FileLine::globalWarnLintOff(false); });
-    DECL_OPTION("-Wwarn-style", CbCall, []() { FileLine::globalWarnStyleOff(false); });
-    DECL_OPTION("-Wwarn-UNUSED", CbCall, []() {
-        FileLine::globalWarnUnusedOff(false);
-        V3Error::pretendError(V3ErrorCode::UNUSEDGENVAR, false);
-        V3Error::pretendError(V3ErrorCode::UNUSEDLOOP, false);
-        V3Error::pretendError(V3ErrorCode::UNUSEDSIGNAL, false);
-        V3Error::pretendError(V3ErrorCode::UNUSEDPARAM, false);
-    });
-    DECL_OPTION("-Wwarn-UNSUPPORTED", CbCall, []() {
-        FileLine::globalWarnOff(V3ErrorCode::E_UNSUPPORTED, false);
-        FileLine::globalWarnOff(V3ErrorCode::COVERIGN, false);
-        FileLine::globalWarnOff(V3ErrorCode::SPECIFYIGN, false);
-        V3Error::pretendError(V3ErrorCode::E_UNSUPPORTED, false);
-        V3Error::pretendError(V3ErrorCode::COVERIGN, false);
-        V3Error::pretendError(V3ErrorCode::SPECIFYIGN, false);
-    });
-    DECL_OPTION("-Wwarn-WIDTH", CbCall, []() {
-        FileLine::globalWarnOff(V3ErrorCode::WIDTH, false);
-        V3Error::pretendError(V3ErrorCode::WIDTH, false);
-    });
+    DECL_OPTION("-Wwarn-lint", CbCall,
+                []() { FileLine::globalWarnOff(V3ErrorCode::I_LINT, false); });
+    DECL_OPTION("-Wwarn-style", CbCall,
+                []() { FileLine::globalWarnOff(V3ErrorCode::I_STYLE, false); });
     DECL_OPTION("-waiver-multiline", OnOff, &m_waiverMultiline);
     DECL_OPTION("-waiver-output", Set, &m_waiverOutput);
 
@@ -1965,17 +1938,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         }
     });
     DECL_OPTION("-x-initial-edge", OnOff, &m_xInitialEdge);
-    DECL_OPTION("-xml-only", CbOnOff, [this, fl](bool flag) {
-        if (!m_xmlOnly && flag)
-            fl->v3warn(DEPRECATED, "Option --xml-only is deprecated, move to --json-only");
-        m_xmlOnly = flag;
-    });
-    DECL_OPTION("-xml-output", CbVal, [this, fl](const char* valp) {
-        if (!m_xmlOnly)
-            fl->v3warn(DEPRECATED, "Option --xml-only is deprecated, move to --json-only");
-        m_xmlOutput = valp;
-        m_xmlOnly = true;
-    });
 
     DECL_OPTION("-y", CbVal, [this, &optdir](const char* valp) {
         addIncDirUser(parseFileArg(optdir, string{valp}));
@@ -2254,7 +2216,7 @@ void V3Options::showVersion(bool verbose) {
     if (!verbose) return;
 
     cout << "\n";
-    cout << "Copyright 2003-2025 by Wilson Snyder.  Verilator is free software; you can\n";
+    cout << "Copyright 2003-2026 by Wilson Snyder.  Verilator is free software; you can\n";
     cout << "redistribute it and/or modify the Verilator internals under the terms of\n";
     cout << "either the GNU Lesser General Public License Version 3 or the Perl Artistic\n";
     cout << "License Version 2.0.\n";

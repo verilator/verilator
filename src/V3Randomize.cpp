@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -170,13 +170,25 @@ class RandomizeMarkVisitor final : public VNVisitor {
             if (VN_IS(pinp, With)) continue;
             const AstArg* const argp = VN_CAST(pinp, Arg);
             if (!argp) continue;
-            const AstNodeExpr* const exprp = argp->exprp();
-            if (const AstNodeVarRef* const varrefp = VN_CAST(exprp, NodeVarRef)) {
-                if (varrefp->varp() == varp) return true;
-            } else if (const AstMemberSel* const memberselp = VN_CAST(exprp, MemberSel)) {
-                if (memberselp->varp() == varp) return true;
-            } else if (const AstArraySel* const arrselp = VN_CAST(exprp, ArraySel)) {
-                if (VN_AS(arrselp->fromp(), VarRef)->varp() == varp) return true;
+            const AstNodeExpr* exprp = argp->exprp();
+            // Traverse through expression to find the base variable
+            while (exprp) {
+                if (const AstNodeVarRef* const varrefp = VN_CAST(exprp, NodeVarRef)) {
+                    if (varrefp->varp() == varp) return true;
+                    break;
+                }
+                if (const AstMemberSel* const memberselp = VN_CAST(exprp, MemberSel)) {
+                    if (memberselp->varp() == varp) return true;
+                    exprp = memberselp->fromp();
+                } else if (const AstArraySel* const arrselp = VN_CAST(exprp, ArraySel)) {
+                    exprp = arrselp->fromp();
+                } else if (const AstStructSel* const strselp = VN_CAST(exprp, StructSel)) {
+                    exprp = strselp->fromp();
+                } else if (const AstCMethodHard* const methodp = VN_CAST(exprp, CMethodHard)) {
+                    exprp = methodp->fromp();
+                } else {
+                    break;
+                }
             }
         }
         return false;
@@ -328,6 +340,55 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     processNestedConstraint(constrp, rootVarRefp, newPath, targetClassp);
                 });
             cloneNestedConstraintsRecurse(rootVarRefp, nestedClassp, newPath, targetClassp);
+        }
+    }
+
+    // Get randomized variables from (std::)randomize() arguments
+    // and mark AstNodeModule nodes in which they are defined
+    void handleRandomizeArgument(AstNodeExpr* exprp, AstVar* const varp, const bool stdRandomize) {
+        // IEEE 1800-2023 18.11: "Arguments are limited to the names of properties
+        // of the calling object; expressions are not allowed."
+        // However, for compatibility with other simulators, we support complex
+        // expressions like obj.member[idx].field in inline randomize().
+        while (exprp) {
+            AstVar* randVarp = nullptr;
+            if (AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
+                randVarp = memberSelp->varp();
+                exprp = memberSelp->fromp();
+            } else if (AstArraySel* const arraySelp = VN_CAST(exprp, ArraySel)) {
+                exprp = arraySelp->fromp();
+                continue;  // Skip ArraySel, continue traversing
+            } else if (AstStructSel* const structSelp = VN_CAST(exprp, StructSel)) {
+                exprp = structSelp->fromp();
+                continue;  // Skip StructSel, continue traversing
+            } else if (AstCMethodHard* const methodp = VN_CAST(exprp, CMethodHard)) {
+                exprp = methodp->fromp();
+                continue;
+            } else if (AstVarRef* const varrefp = VN_CAST(exprp, VarRef)) {
+                randVarp = varrefp->varp();
+                varrefp->user1(true);
+                varrefp->access(VAccess::READWRITE);
+                exprp = nullptr;
+            } else {
+                // All invalid and unsupported expressions should be caught in V3Width
+                exprp->v3fatalSrc("Unexpected expression type in randomize() argument");
+            }
+            UASSERT_OBJ(randVarp, exprp, "No rand variable found");
+            if (randVarp == varp) return;
+            AstNode* backp = randVarp;
+            while (backp && !VN_IS(backp, NodeModule)) backp = backp->backp();
+            if (stdRandomize) {
+                UASSERT_OBJ(backp, randVarp, "No class or module found for rand variable");
+                backp->user1(IS_STD_RANDOMIZED);
+            } else {
+                // Inline randomized then
+                UASSERT_OBJ(VN_IS(backp, Class), randVarp,
+                            "No class found for inline randomized variable");
+                RandomizeMode randMode = {};
+                randMode.usesMode = true;
+                randVarp->user1(randMode.asInt);
+                backp->user1(IS_RANDOMIZED_INLINE);
+            }
         }
     }
 
@@ -534,33 +595,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
             for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
                 AstArg* const argp = VN_CAST(pinp, Arg);
                 if (!argp) continue;
-                AstNodeExpr* exprp = argp->exprp();
-                while (exprp) {
-                    AstVar* randVarp = nullptr;
-                    AstVarRef* varrefp = nullptr;
-                    if (AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
-                        randVarp = memberSelp->varp();
-                        exprp = memberSelp->fromp();
-                    } else if ((varrefp = VN_CAST(exprp, VarRef))) {
-                        randVarp = varrefp->varp();
-                        varrefp->user1(true);
-                        exprp = nullptr;
-                    } else {
-                        varrefp = VN_AS(VN_CAST(exprp, ArraySel)->fromp(), VarRef);
-                        randVarp = varrefp->varp();
-                        varrefp->user1(true);
-                        varrefp->access(VAccess::READWRITE);
-                        exprp = nullptr;
-                    }
-                    UASSERT_OBJ(randVarp, nodep, "No rand variable found");
-                    AstNode* backp = randVarp;
-                    while (backp && (!VN_IS(backp, Class) && !VN_IS(backp, NodeModule))) {
-                        backp = backp->backp();
-                    }
-                    UASSERT_OBJ(VN_IS(backp, NodeModule), randVarp,
-                                "No class or module found for rand variable");
-                    backp->user1(IS_STD_RANDOMIZED);
-                }
+                handleRandomizeArgument(argp->exprp(), nullptr, true);
             }
             return;
         }
@@ -568,7 +603,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
             AstArg* const argp = VN_CAST(pinp, Arg);
             if (!argp) continue;
             classp->user1(IS_RANDOMIZED_INLINE);
-            AstNodeExpr* exprp = argp->exprp();
             AstVar* fromVarp = nullptr;  // If nodep is a method call, this is its receiver
             if (AstMethodCall* methodCallp = VN_CAST(nodep, MethodCall)) {
                 if (AstMemberSel* const memberSelp = VN_CAST(methodCallp->fromp(), MemberSel)) {
@@ -578,25 +612,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     fromVarp = varrefp->varp();
                 }
             }
-            while (exprp) {
-                AstVar* randVarp = nullptr;
-                if (AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
-                    randVarp = memberSelp->varp();
-                    exprp = memberSelp->fromp();
-                } else {
-                    AstVarRef* const varrefp = VN_AS(exprp, VarRef);
-                    randVarp = varrefp->varp();
-                    exprp = nullptr;
-                }
-                if (randVarp == fromVarp) break;
-                UASSERT_OBJ(randVarp, nodep, "No rand variable found");
-                AstNode* backp = randVarp;
-                while (backp && !VN_IS(backp, Class)) backp = backp->backp();
-                RandomizeMode randMode = {};
-                randMode.usesMode = true;
-                randVarp->user1(randMode.asInt);
-                VN_AS(backp, Class)->user1(IS_RANDOMIZED_INLINE);
-            }
+            handleRandomizeArgument(argp->exprp(), fromVarp, false);
         }
     }
     void visit(AstConstraintExpr* nodep) override {
@@ -892,18 +908,25 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstNodeExpr* constFormatp
                 = membersel ? getConstFormat(membersel->cloneTree(false)) : getConstFormat(nodep);
 
-            // Build randmode access: for membersel, access parent object's __Vrandmode
+            // Build randmode access: for membersel, use member's class randmode if available
             AstNodeExpr* randModeAccess;
             if (membersel) {
-                AstNodeExpr* parentAccess = membersel->fromp()->cloneTree(false);
                 AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
                 AstVar* const effectiveRandModeVarp = VN_AS(varClassp->user2p(), Var);
-                UASSERT_OBJ(effectiveRandModeVarp, nodep,
-                            "Member-selected variable must have randmode in its class");
-                AstMemberSel* randModeSel
-                    = new AstMemberSel{varp->fileline(), parentAccess, effectiveRandModeVarp};
-                randModeSel->dtypep(effectiveRandModeVarp->dtypep());
-                randModeAccess = randModeSel;
+                if (effectiveRandModeVarp) {
+                    // Member's class has randmode, use it
+                    AstNodeExpr* parentAccess = membersel->fromp()->cloneTree(false);
+                    AstMemberSel* randModeSel
+                        = new AstMemberSel{varp->fileline(), parentAccess, effectiveRandModeVarp};
+                    randModeSel->dtypep(effectiveRandModeVarp->dtypep());
+                    randModeAccess = randModeSel;
+                } else {
+                    // Member's class has no randmode, use current scope's randmode
+                    UASSERT_OBJ(m_randModeVarp, nodep, "No m_randModeVarp");
+                    randModeAccess = new AstVarRef{varp->fileline(),
+                                                   VN_AS(m_randModeVarp->user2p(), NodeModule),
+                                                   m_randModeVarp, VAccess::READ};
+                }
             } else {
                 UASSERT_OBJ(m_randModeVarp, nodep, "No m_randModeVarp");
                 randModeAccess
@@ -1042,6 +1065,18 @@ class ConstraintExprVisitor final : public VNVisitor {
         nodep->replaceWith(sump);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         iterate(sump);
+    }
+    void visit(AstRedOr* nodep) override {
+        if (editFormat(nodep)) return;
+        // Convert to (x != 0)
+        FileLine* const fl = nodep->fileline();
+        AstNodeExpr* const argp = nodep->lhsp()->unlinkFrBack();
+        V3Number numZero{fl, argp->width(), 0};
+        AstNodeExpr* const neqp = new AstNeq{fl, argp, new AstConst{fl, numZero}};
+        neqp->user1(true);
+        nodep->replaceWith(neqp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        iterate(neqp);
     }
     void visit(AstNodeBiop* nodep) override {
         if (editFormat(nodep)) return;
@@ -1960,11 +1995,14 @@ class RandomizeVisitor final : public VNVisitor {
         return pair.first->second;
     }
 
-    AstVar* newRandcVarsp(AstVar* const varp) {
+    AstVar* newRandcVarsp(AstVar* const varp, AstClass* const classp) {
+        // Might be called multiple times on same var, if var is referenced in class extends,
+        // If so, each is randomized separately, so the select lands in the extending class
+
         // If a randc, make a VlRandC object to hold the state
         if (!varp->isRandC()) return nullptr;
-        uint64_t items = 0;
 
+        uint64_t items = 0;
         if (AstEnumDType* const enumDtp = VN_CAST(varp->dtypep()->skipRefToEnump(), EnumDType)) {
             items = static_cast<uint64_t>(enumDtp->itemCount());
         } else if (AstBasicDType* const basicp = varp->dtypep()->skipRefp()->basicp()) {
@@ -1983,11 +2021,11 @@ class RandomizeVisitor final : public VNVisitor {
         } else {
             varp->v3fatalSrc("Unexpected randc variable dtype");
         }
-        AstCDType* newdtp = findVlRandCDType(varp->fileline(), items);
-        AstVar* newp
+        AstCDType* const newdtp = findVlRandCDType(varp->fileline(), items);
+        AstVar* const newp
             = new AstVar{varp->fileline(), VVarType::MEMBER, varp->name() + "__Vrandc", newdtp};
         newp->isInternal(true);
-        varp->addNextHere(newp);
+        classp->addStmtsp(newp);
         UINFO(9, "created " << varp);
         return newp;
     }
@@ -2184,10 +2222,11 @@ class RandomizeVisitor final : public VNVisitor {
     AstNodeExpr* makeSiblingRefp(AstNodeExpr* const exprp, AstVar* const varp,
                                  const VAccess access) {
         if (AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
-            // TODO: this ignored 'access' and will create a read reference in
-            // t_randomize_inline_var_ctl, see issue #6756
-            return new AstMemberSel{exprp->fileline(), memberSelp->fromp()->cloneTree(false),
-                                    varp};
+            AstMemberSel* const newMemberSelp
+                = new AstMemberSel{exprp->fileline(), memberSelp->fromp()->cloneTree(false), varp};
+            // Set access on all VarRef nodes in the cloned subtree
+            newMemberSelp->foreach([access](AstVarRef* varrefp) { varrefp->access(access); });
+            return newMemberSelp;
         }
         UASSERT_OBJ(VN_IS(exprp, VarRef), exprp, "Should be a VarRef");
         return new AstVarRef{exprp->fileline(), VN_AS(varp->user2p(), Class), varp, access};
@@ -2266,6 +2305,7 @@ class RandomizeVisitor final : public VNVisitor {
 
     void addBasicRandomizeBody(AstFunc* const basicRandomizep, AstClass* const nodep,
                                AstVar* randModeVarp) {
+        UINFO(9, "addBasicRTB " << nodep);
         FileLine* const fl = nodep->fileline();
         AstVar* const basicFvarp = VN_AS(basicRandomizep->fvarp(), Var);
         AstVarRef* const basicFvarRefp = new AstVarRef{fl, basicFvarp, VAccess::WRITE};
@@ -2321,8 +2361,9 @@ class RandomizeVisitor final : public VNVisitor {
                                   new AstAnd{fl, basicFvarRefReadp, callp}}};
                 basicRandomizep->addStmtsp(wrapIfRandMode(nodep, memberVarp, assignIfNotNullp));
             } else {
-                AstVar* const randcVarp = newRandcVarsp(memberVarp);
-                AstVarRef* const refp = new AstVarRef{fl, classp, memberVarp, VAccess::WRITE};
+                AstVar* const randcVarp = newRandcVarsp(memberVarp, nodep);
+                AstVarRef* const refp
+                    = new AstVarRef{memberVarp->fileline(), classp, memberVarp, VAccess::WRITE};
                 AstNodeStmt* const stmtp = newRandStmtsp(fl, refp, randcVarp, basicFvarp);
                 if (!refp->backp()) VL_DO_DANGLING(refp->deleteTree(), refp);
                 basicRandomizep->addStmtsp(new AstBegin{fl, "", stmtp, false});
@@ -2615,6 +2656,7 @@ class RandomizeVisitor final : public VNVisitor {
         const std::string name = "__Vrandcase" + cvtToStr(m_randCaseNum++);
         AstVar* const randVarp = new AstVar{fl, VVarType::BLOCKTEMP, name, sumDTypep};
         randVarp->noSubst(true);
+        randVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         if (m_ftaskp) randVarp->funcLocal(true);
         AstNodeExpr* sump = new AstConst{fl, AstConst::WidthedValue{}, 64, 0};
         AstNodeIf* const firstIfsp

@@ -12,6 +12,6 @@ import vltest_bootstrap
 test.scenarios('linter')
 test.top_filename = "t/t_timing_clkgen1.v"
 
-test.lint(verilator_flags2=["--timing"], fails=True, expect_filename=test.golden_filename)
+test.lint(fails=True, expect_filename=test.golden_filename)
 
 test.passes()

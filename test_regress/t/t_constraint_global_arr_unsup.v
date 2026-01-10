@@ -73,11 +73,13 @@ module t_constraint_global_arr_unsup;
           o.m_mid_arr[1].m_arr[2].m_y == 400) begin
         $display("*-* All Finished *-*");
         $finish;
-      end else begin
+      end
+      else begin
         $display("*-* FAILED *-*");
         $stop;
       end
-    end else begin
+    end
+    else begin
       $display("*-* FAILED: randomize() returned 0 *-*");
       $stop;
     end

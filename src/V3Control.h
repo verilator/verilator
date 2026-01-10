@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2010-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2010-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -75,6 +75,8 @@ public:
     static uint64_t getCurrentHierBlockCost();
 
     static bool waive(const FileLine* filelinep, V3ErrorCode code, const string& message);
+
+    static void selfTest();
 };
 
 #endif  // Guard

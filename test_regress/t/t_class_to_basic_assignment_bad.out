@@ -1,5 +1,5 @@
-%Error: t/t_class_to_basic_assignment_bad.v:26:29: Assign RHS 'class{}Foo' cannot be assigned to non-class 'int'
-   26 |         new_node.phase_done = get();
-      |                             ^
+%Error: t/t_class_to_basic_assignment_bad.v:26:27: Assign RHS 'class{}Foo' cannot be assigned to non-class 'int'
+   26 |       new_node.phase_done = get();
+      |                           ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

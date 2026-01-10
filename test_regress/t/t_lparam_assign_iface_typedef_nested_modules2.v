@@ -9,31 +9,24 @@
 //     parameter
 //
 
+// verilog_format: off
 `define stop $stop
-`define checkh(gotv,expv) \
-  do if ((gotv) !== (expv)) begin \
-    $write("%%Error: %s:%0d:  got=%0h exp=%0h\n", \
-            `__FILE__,`__LINE__, (gotv), (expv)); \
-    `stop; \
-  end while(0);
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0h exp=%0h\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 interface bus_if #(
-  parameter int p_awidth = 4
-  ,parameter int p_dwidth = 7
+    parameter int p_awidth = 4,
+    parameter int p_dwidth = 7
 );
-  typedef struct packed {
-    logic [p_awidth-1:0] addr;
-  } rq_t;
-  typedef struct packed {
-    logic [p_dwidth-1:0] data;
-  } rs_t;
+  typedef struct packed {logic [p_awidth-1:0] addr;} rq_t;
+  typedef struct packed {logic [p_dwidth-1:0] data;} rs_t;
 
   rq_t rq;
   rs_t rs;
 endinterface
 
-module a_mod(
-  bus_if bus_io
+module a_mod (
+    bus_if bus_io
 );
   localparam bus_rq_t = bus_io.rq_t;
   localparam bus_rs_t = bus_io.rs_t;
@@ -47,12 +40,13 @@ module a_mod(
   assign bus_io.rs = rs;
 endmodule
 
-module top();
-  bus_if #(.p_awidth(16), .p_dwidth(8)) bus_io();
+module top ();
+  bus_if #(
+      .p_awidth(16),
+      .p_dwidth(8)
+  ) bus_io ();
 
-  a_mod a_mod_inst(
-    .bus_io(bus_io)
-  );
+  a_mod a_mod_inst (.bus_io(bus_io));
 
   initial begin
     #1;

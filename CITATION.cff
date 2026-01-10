@@ -1,3 +1,4 @@
+---
 # See https://citation-file-format.github.io/
 cff-version: 1.2.0
 title: Verilator
@@ -14,14 +15,14 @@ authors:
     family-names: Wasson
   - given-names: Duane
     family-names: Galbi
+  - given-names: Geza
+    family-names: Lore
   - name: 'et al'
 repository-code: 'https://github.com/verilator/verilator'
 url: 'https://verilator.org'
 abstract: >-
   The Verilator package converts Verilog and SystemVerilog hardware
   description language (HDL) designs into a fast C++ or SystemC model
-  that, after compiling, can be executed.  Verilator is not a
+  that, after compiling, can be executed.  Verilator is not only a
   traditional simulator but a compiler.
-license:
-  - LGPL-3.0-only
-  - Artistic-2.0
+license: [LGPL-3.0-only, Artistic-2.0]

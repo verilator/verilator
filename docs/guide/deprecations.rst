@@ -1,4 +1,4 @@
-.. Copyright 2003-2025 by Wilson Snyder.
+.. Copyright 2003-2026 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 Deprecations
@@ -16,14 +16,3 @@ C++14 compiler support
    (Although this date has expired, this change is currently on hold until
    the Ubuntu LTS versions of GCC and clang use C++20 by default, estimated
    May 2028.)
-
-XML output
-   Verilator currently supports XML parser output (enabled with
-   `--xml-only`). Support for `--xml-*` options will be deprecated no
-   sooner than January 2026.
-
-`--make cmake`
-   The `--make cmake` options is deprecated and will be removed no sooner
-   than January 2026. Use `--make json` instead. Note that the CMake
-   integration shipping with Verilator (verilator-config.mk) already uses
-   `--make json` so no changes are necessary if using that.

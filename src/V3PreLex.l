@@ -5,7 +5,7 @@
  *
  **************************************************************************
  *
- * Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+ * Copyright 2003-2026 by Wilson Snyder. This program is free software; you
  * can redistribute it and/or modify it under the terms of either the
  * GNU Lesser General Public License Version 3 or the Perl Artistic License
  * Version 2.0.
@@ -799,7 +799,7 @@ void V3PreLex::verilatorCmtLintRestore() {
     curFilelinep()->warnStateFrom(m_lexLintState.back());
     m_lexLintState.pop_back();
 }
-void V3PreLex::verilatorCmtLint(const char* textp, bool warnOff) {
+void V3PreLex::verilatorCmtLint(const char* textp, bool turnOff) {
     const char* sp = textp;
     while (*sp && std::isspace(*sp)) ++sp;
     while (*sp && !std::isspace(*sp)) ++sp;  // "verilator"
@@ -814,7 +814,7 @@ void V3PreLex::verilatorCmtLint(const char* textp, bool warnOff) {
         }
     }
     // No warnings on bad warning codes - the verilog.y parse will report as appropriate
-    curFilelinep()->warnOffParse(msg, warnOff);
+    curFilelinep()->warnOffParse(msg, turnOff);
 }
 
 /*###################################################################

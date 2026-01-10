@@ -4,12 +4,10 @@
 // any use, without warranty, 2025 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (  /*AUTOARG*/
-  // Inputs
-  a, clk
-  );
-  input a;
-  input clk;
+module t (
+    input a,
+    input clk
+);
 
   global clocking @(posedge clk);
   endclocking

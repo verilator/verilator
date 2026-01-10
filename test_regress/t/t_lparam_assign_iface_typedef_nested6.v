@@ -24,8 +24,8 @@ interface y_if #(
 endinterface
 
 interface z_if #(
-  parameter int p_awidth = 3
-  ,parameter int p_dwidth = 9
+  parameter int p_awidth = 3,
+  parameter int p_dwidth = 9
 );
   x_if #(p_awidth) x_if0();
   y_if #(p_dwidth) y_if0();

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -156,8 +156,8 @@ public:
             UINFO(6, "New vertex " << vscp);
             vVtxp = new GateVarVertex{this, vscp};
             vscp->user1p(vVtxp);
-            if (vscp->varp()->sensIfacep()) {
-                // Can be used in a class method, which cannot be tracked statically
+            if (vscp->varp()->sensIfacep() || vscp->varp()->isVirtIface()) {
+                // Can be read/written to via the referenced actual interface
                 vVtxp->clearReducibleAndDedupable("VirtIface");
                 vVtxp->setConsumed("VirtIface");
             }
@@ -429,12 +429,11 @@ class GateOkVisitor final : public VNVisitorConst {
 
         // We only allow a LHS ref for the var being set, and a RHS ref for
         // something else being read.
-        AstVarScope* const vscp = nodep->varScopep();
         if (nodep->access().isWriteOnly()) {
-            if (vscp->tracePreserve()) clearSimple("Needed for tracing");
             if (m_lhsVarRef) clearSimple(">1 write refs");
             m_lhsVarRef = nodep;
         } else {
+            AstVarScope* const vscp = nodep->varScopep();
             // TODO: possible bug, should it be >= 1 as add is below?
             if (m_readVscps.size() > 1) {
                 if (m_buffersOnly) clearSimple(">1 rhs varRefs");

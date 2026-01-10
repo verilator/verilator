@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -96,8 +96,8 @@ AstNodeStmt* checkIterationLimit(AstNetlist* netlistp, const string& name, AstVa
     const std::string& file = VIdProtect::protect(locp->filename());
     const std::string& line = std::to_string(locp->lineno());
     stmtp->add("VL_FATAL_MT(\"" + V3OutFormatter::quoteNameControls(file) + "\", " + line
-               + ", \"\", \"" + name + " region did not converge after " + std::to_string(limit)
-               + " tries\");");
+               + ", \"\", \"DIDNOTCONVERGE: " + name + " region did not converge after "
+               + std::to_string(limit) + " tries\");");
     return ifp;
 }
 

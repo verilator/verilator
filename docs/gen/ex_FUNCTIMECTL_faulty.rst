@@ -4,4 +4,4 @@
    :emphasize-lines: 2
 
      function void calls_timing_ctl;
-       @e; // <--- Bad IEEE 1800-2023 13.4 time-controlling
+       @e;  // <--- Bad IEEE 1800-2023 13.4 time-controlling

@@ -1,0 +1,12 @@
+%Error-UNSUPPORTED: t/t_timing_at_dtype_bad.v:20:12: Unsupported: Cannot detect changes on expression of complex type 'int$[$]'
+                                                   : ... note: In instance 't::any_monitor__Tz1_TBz1'
+                                                   : ... May be caused by combinational cycles reported with UNOPTFLAT
+   20 |           @req;
+      |            ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_timing_at_dtype_bad.v:23:12: Unsupported: Cannot detect changes on expression of complex type 'int$[$]'
+                                                   : ... note: In instance 't::any_monitor__Tz1_TBz1'
+                                                   : ... May be caused by combinational cycles reported with UNOPTFLAT
+   23 |           @rsp;
+      |            ^~~
+%Error: Exiting due to

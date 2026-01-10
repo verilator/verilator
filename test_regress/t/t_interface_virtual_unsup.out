@@ -1,11 +1,11 @@
-%Error-UNSUPPORTED: t/t_interface_virtual_unsup.v:22:22: Unsupported: Write to virtual interface in if condition
-   22 |       if (write_data(vif.data)) $write("dummy op");
+%Error-UNSUPPORTED: t/t_interface_virtual_unsup.v:24:22: Unsupported: Write to virtual interface in if condition
+   24 |       if (write_data(vif.data)) $write("dummy op");
       |                      ^~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_interface_virtual_unsup.v:23:25: Unsupported: Write to virtual interface in loop condition
-   23 |       while (write_data(vif.data));
+%Error-UNSUPPORTED: t/t_interface_virtual_unsup.v:25:25: Unsupported: Write to virtual interface in loop condition
+   25 |       while (write_data(vif.data));
       |                         ^~~
-%Error-UNSUPPORTED: t/t_interface_virtual_unsup.v:24:30: Unsupported: Write to virtual interface in loop condition
-   24 |       do ; while (write_data(vif.data));
+%Error-UNSUPPORTED: t/t_interface_virtual_unsup.v:26:30: Unsupported: Write to virtual interface in loop condition
+   26 |       do ; while (write_data(vif.data));
       |                              ^~~
 %Error: Exiting due to

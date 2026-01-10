@@ -25,9 +25,9 @@ endinterface
 
 module t (
     input clk
-  );
+);
 
-  apb_if ifc(clk);
+  apb_if ifc (clk);
 
   initial $finish;
 

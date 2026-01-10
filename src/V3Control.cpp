@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2010-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2010-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -46,7 +46,7 @@ public:
     V3ControlWildcardResolver() = default;
     ~V3ControlWildcardResolver() = default;
 
-    /// Update into maps from other
+    // Update this resolved file's item map by inserting other's (wildcarded filename's) items
     void update(const V3ControlWildcardResolver& other) VL_MT_SAFE_EXCLUDES(m_mutex)
         VL_EXCLUDES(other.m_mutex) {
         V3LockGuard lock{m_mutex};
@@ -72,13 +72,15 @@ public:
         std::unique_ptr<T>& entryr = pair.first->second;
         // Resolve entry when first requested, cache the result
         if (pair.second) {
-            // Update the entity with all matches in the patterns
+            // Inserted: update the entity with all matches in the patterns
             for (const auto& patEnt : m_mapPatterns) {
                 if (VString::wildmatch(name, patEnt.first)) {
                     if (!entryr) entryr.reset(new T{});
                     entryr->update(patEnt.second);
                 }
             }
+            // Perform final actions that needed all updates completed
+            if (entryr) entryr->updateFinalize();
         }
         return entryr.get();
     }
@@ -95,6 +97,7 @@ public:
         m_attrs.reserve(m_attrs.size() + other.m_attrs.size());
         m_attrs.insert(m_attrs.end(), other.m_attrs.begin(), other.m_attrs.end());
     }
+    void updateFinalize() {}
     // Apply all attributes to the variable
     void apply(AstVar* varp) const {
         for (const VAttrType attr : m_attrs) {
@@ -194,6 +197,7 @@ public:
         m_ports.update(f.m_ports);
         m_vars.update(f.m_vars);
     }
+    void updateFinalize() {}
 
     V3ControlVarResolver& params() { return m_params; }
     V3ControlVarResolver& ports() { return m_ports; }
@@ -245,6 +249,7 @@ public:
             m_modPragmas.insert(*it);
         }
     }
+    void updateFinalize() {}
 
     V3ControlFTaskResolver& ftasks() { return m_tasks; }
     V3ControlVarResolver& params() { return m_params; }
@@ -308,27 +313,219 @@ using V3ControlModuleResolver = V3ControlWildcardResolver<V3ControlModule>;
 // lint/coverage/tracing on/off
 class V3ControlIgnoresLine final {
 public:
-    const int m_lineno;  // Line number to make change at
+    const int m_lineMin;  // Minimum line number to make change at
+    const int m_lineMax;  // Maximum line number to make change at (inclusive)
     const V3ErrorCode m_code;  // Error code
     const bool m_on;  // True to enable message
-    V3ControlIgnoresLine(V3ErrorCode code, int lineno, bool on)
-        : m_lineno{lineno}
+    V3ControlIgnoresLine(V3ErrorCode code, int linemin, int linemax, bool on)
+        : m_lineMin{linemin}
+        , m_lineMax{linemax}
         , m_code{code}
         , m_on{on} {}
     ~V3ControlIgnoresLine() = default;
-    bool operator<(const V3ControlIgnoresLine& rh) const {
-        if (m_lineno < rh.m_lineno) return true;
-        if (m_lineno > rh.m_lineno) return false;
-        if (m_code < rh.m_code) return true;
-        if (m_code > rh.m_code) return false;
-        // Always turn "on" before "off" so that overlapping lines will end
-        // up finally with the error "off"
-        return (m_on > rh.m_on);
+    bool everyLine() const { return m_lineMin == 0 && m_lineMax == 0; }
+    bool inRange(int lineno) const {
+        return (lineno >= m_lineMin && lineno <= m_lineMax) || everyLine();
     }
 };
 std::ostream& operator<<(std::ostream& os, const V3ControlIgnoresLine& rhs) {
-    return os << rhs.m_lineno << ", " << rhs.m_code << ", " << rhs.m_on;
+    return os << rhs.m_lineMin << "-" << rhs.m_lineMax << ", " << rhs.m_code << ", " << rhs.m_on;
 }
+
+// Ignore line settings, index is parse order
+// Single global deque to avoid copying when update()
+static std::vector<V3ControlIgnoresLine> controlIgnLines;
+
+using IgnIndices = std::vector<uint32_t>;  // List of {s_ignLines indces}
+
+class VIntervalTree final {
+    struct Entry final {
+        // Classic centered interval tree, referencing an index to controlIgnLines
+        int m_center;  // Line number of central point
+        std::unique_ptr<Entry> m_leftp;  // Entry with all its rules/entries < this center
+        std::unique_ptr<Entry> m_rightp;  // Entry with all its rules/entries > this center
+        IgnIndices m_byMin;  // Rules overlapping center sorted by min line number
+        IgnIndices m_byMax;  // Rules overlapping center sorted by max line number
+        explicit Entry(int center)
+            : m_center{center} {}
+    };
+
+    std::unique_ptr<Entry> m_rootp;  // Root of interval tree
+    IgnIndices m_everyLines;  // All-line disables
+
+private:
+    std::unique_ptr<Entry> buildTree(const IgnIndices& points) {
+        if (points.empty()) return nullptr;
+
+        int minval = std::numeric_limits<int>::max();
+        int maxval = std::numeric_limits<int>::min();
+        for (const auto& it : points) {
+            const V3ControlIgnoresLine& cign = controlIgnLines[it];
+            if (cign.everyLine()) {
+                m_everyLines.emplace_back(it);
+                continue;
+            }
+            minval = std::min(minval, cign.m_lineMin);
+            maxval = std::max(maxval, cign.m_lineMax);
+        }
+
+        int center = minval + (maxval - minval) / 2;
+        auto entp = std::unique_ptr<Entry>(new Entry{center});
+
+        IgnIndices leftPoints, rightPoints;
+        for (const auto& it : points) {
+            const V3ControlIgnoresLine& cign = controlIgnLines[it];
+            if (cign.everyLine()) continue;
+            // UINFO(9, "Inserting for center " << center << " point " << it);
+            if (cign.m_lineMax < center)
+                leftPoints.emplace_back(it);
+            else if (cign.m_lineMin > center)
+                rightPoints.emplace_back(it);
+            else {
+                entp->m_byMin.push_back(it);
+                entp->m_byMax.push_back(it);
+            }
+        }
+
+        std::sort(entp->m_byMin.begin(), entp->m_byMin.end(), [](uint32_t a, uint32_t b) {
+            return controlIgnLines[a].m_lineMin < controlIgnLines[b].m_lineMin;
+        });
+        std::sort(entp->m_byMax.begin(), entp->m_byMax.end(), [](uint32_t a, uint32_t b) {
+            return controlIgnLines[a].m_lineMax > controlIgnLines[b].m_lineMax;
+        });
+
+        entp->m_leftp = buildTree(leftPoints);
+        entp->m_rightp = buildTree(rightPoints);
+        return entp;
+    }
+
+    void findTree(int lineno, Entry* entp, IgnIndices& resultsr, int& nextChanger) const {
+        // UINFO(9, "Find " << lineno << " center " << entp->m_center);
+        if (lineno < entp->m_center) {
+            nextChanger = std::min(nextChanger, entp->m_center);
+            for (const auto& it : entp->m_byMin) {
+                const V3ControlIgnoresLine& cign = controlIgnLines[it];
+                if (cign.m_lineMin <= lineno) {
+                    resultsr.emplace_back(it);
+                } else {
+                    nextChanger = std::min(nextChanger, cign.m_lineMin);
+                    break;
+                }
+            }
+            if (entp->m_leftp) findTree(lineno, entp->m_leftp.get(), resultsr, nextChanger);
+        } else if (lineno > entp->m_center) {
+            for (const auto& it : entp->m_byMax) {
+                const V3ControlIgnoresLine& cign = controlIgnLines[it];
+                if (cign.m_lineMax >= lineno) {
+                    nextChanger = std::min(nextChanger, cign.m_lineMax + 1);
+                    resultsr.emplace_back(it);
+                } else {
+                    break;
+                }
+            }
+            if (entp->m_rightp) findTree(lineno, entp->m_rightp.get(), resultsr, nextChanger);
+        } else {
+            for (const auto& it : entp->m_byMin) {
+                const V3ControlIgnoresLine& cign = controlIgnLines[it];
+                resultsr.emplace_back(it);
+                if (cign.m_lineMax >= lineno)
+                    nextChanger = std::min(nextChanger, cign.m_lineMax + 1);
+            }
+            if (entp->m_leftp) findTree(lineno, entp->m_leftp.get(), resultsr, nextChanger);
+            if (entp->m_rightp) findTree(lineno, entp->m_rightp.get(), resultsr, nextChanger);
+        }
+    }
+
+public:
+    // CONSTRUCTORS
+    VIntervalTree() {}
+    ~VIntervalTree() = default;
+    // METHODS
+    void clear() { m_rootp = nullptr; }
+    void build(const IgnIndices& points) {
+        clear();
+        m_rootp = buildTree(points);
+    }
+    void find(int lineno, IgnIndices& resultsr, int& nextChanger) const {
+        resultsr = m_everyLines;
+        nextChanger = std::numeric_limits<int>::max();
+
+        if (m_rootp) findTree(lineno, m_rootp.get(), resultsr, nextChanger);
+        // Sort indices, so can process in parse order
+        std::sort(resultsr.begin(), resultsr.end());
+    }
+
+    static void selfTest() {
+        //            0     10     20     30     40     50
+        // i0:        .     10-10  .      .      .      .
+        // i1:        .     .      20-20  .      .      .
+        // i2:        .     .      .      .      40-40  .
+        // i3:        .     10------------30     .      .
+        // i4:        .     .      20------------40     .
+        // i5:(below) 0---------------------------------------0
+        IgnIndices data;
+        std::vector<std::pair<int, int>> points
+            = {{10, 10}, {20, 20}, {40, 40}, {10, 30}, {20, 40}};
+        for (auto& it : points) {
+            controlIgnLines.emplace_back(
+                V3ControlIgnoresLine{V3ErrorCode::I_LINT, it.first, it.second, true});
+            data.emplace_back(static_cast<uint32_t>(controlIgnLines.size() - 1));
+        }
+        VIntervalTree tree;
+        tree.build(data);
+
+        IgnIndices results;
+        int nextChange = 0;
+        tree.find(0, results, nextChange);
+        UASSERT_SELFTEST(size_t, results.size(), 0);
+        UASSERT_SELFTEST(int, nextChange, 10);
+        tree.find(10, results, nextChange);
+        UASSERT_SELFTEST(size_t, results.size(), 2);
+        UASSERT_SELFTEST(int, results[0], 0);
+        UASSERT_SELFTEST(int, results[1], 3);
+        UASSERT_SELFTEST(int, nextChange, 11);
+        tree.find(11, results, nextChange);
+        UASSERT_SELFTEST(size_t, results.size(), 1);
+        UASSERT_SELFTEST(int, results[0], 3);
+        UASSERT_SELFTEST(int, nextChange, 15);  // Center, or would be 20
+        tree.find(20, results, nextChange);
+        UASSERT_SELFTEST(size_t, results.size(), 3);
+        UASSERT_SELFTEST(int, results[0], 1);
+        UASSERT_SELFTEST(int, results[1], 3);
+        UASSERT_SELFTEST(int, results[2], 4);
+        UASSERT_SELFTEST(int, nextChange, 21);
+        tree.find(21, results, nextChange);
+        UASSERT_SELFTEST(size_t, results.size(), 2);
+        UASSERT_SELFTEST(int, results[0], 3);
+        UASSERT_SELFTEST(int, results[1], 4);
+        UASSERT_SELFTEST(int, nextChange, 25);  // Center, or would be 30
+        tree.find(30, results, nextChange);
+        UASSERT_SELFTEST(size_t, results.size(), 2);
+        UASSERT_SELFTEST(int, results[0], 3);
+        UASSERT_SELFTEST(int, results[1], 4);
+        UASSERT_SELFTEST(int, nextChange, 31);
+        tree.find(40, results, nextChange);
+        UASSERT_SELFTEST(size_t, results.size(), 2);
+        UASSERT_SELFTEST(int, results[0], 2);
+        UASSERT_SELFTEST(int, results[1], 4);
+        UASSERT_SELFTEST(int, nextChange, 41);
+        tree.find(41, results, nextChange);
+        UASSERT_SELFTEST(size_t, results.size(), 0);
+        UASSERT_SELFTEST(int, nextChange, std::numeric_limits<int>::max());
+        //
+        points = {{0, 0}};
+        for (auto& it : points) {
+            controlIgnLines.emplace_back(
+                V3ControlIgnoresLine{V3ErrorCode::I_LINT, it.first, it.second, true});
+            data.emplace_back(static_cast<uint32_t>(controlIgnLines.size() - 1));
+        }
+        tree.build(data);
+        //
+        tree.find(50, results, nextChange);
+        UASSERT_SELFTEST(size_t, results.size(), 1);
+        UASSERT_SELFTEST(int, results[0], 5);
+    }
+};
 
 // Some attributes are attached to entities of the occur on a fileline
 // and multiple attributes can be attached to a line
@@ -355,16 +552,17 @@ public:
 // File entity
 class V3ControlFile final {
     using LineAttrMap = std::map<int, V3ControlLineAttribute>;  // Map line->bitset of attributes
-    using IgnLines = std::multiset<V3ControlIgnoresLine>;  // list of {line,code,on}
     using Waivers = std::vector<WaiverSetting>;  // List of {code,wildcard string}
 
     LineAttrMap m_lineAttrs;  // Attributes to line mapping
-    IgnLines m_ignLines;  // Ignore line settings
+    IgnIndices m_ignIndices;  // s_ignLines that apply to this specific file
     Waivers m_waivers;  // Waive messages
+    VIntervalTree m_intervalTree;  // Tree of indices to IgnLines
 
     struct {
-        int lineno;  // Last line number
-        IgnLines::const_iterator it;  // Point with next linenumber > current line number
+        int filenameno = -1;  // Last filename
+        int lineno = -1;  // Last linenumber
+        int nextChange = -1;  // Line number of next change
     } m_lastIgnore;  // Last ignore line run
 
     // Match a given line and attribute to the map, line 0 is any
@@ -375,24 +573,24 @@ class V3ControlFile final {
     }
 
 public:
-    V3ControlFile() {
-        m_lastIgnore.lineno = -1;
-        m_lastIgnore.it = m_ignLines.begin();
-    }
+    V3ControlFile() {}
     void update(const V3ControlFile& file) {
-        // Copy in all Attributes
+        // Copy in all attributes and waivers
         for (const auto& itr : file.m_lineAttrs) m_lineAttrs[itr.first] |= itr.second;
-        // Copy in all ignores
-        for (const auto& ignLine : file.m_ignLines) m_ignLines.insert(ignLine);
-        // Update the iterator after the list has changed
-        m_lastIgnore.it = m_ignLines.begin();
         m_waivers.reserve(m_waivers.size() + file.m_waivers.size());
         m_waivers.insert(m_waivers.end(), file.m_waivers.begin(), file.m_waivers.end());
+        // Copy in all ignore references
+        m_ignIndices.reserve(m_ignIndices.size() + file.m_ignIndices.size());
+        m_ignIndices.insert(m_ignIndices.end(), file.m_ignIndices.begin(),
+                            file.m_ignIndices.end());
+        // updateFinalize() will soon build tree
     }
+    void updateFinalize() { m_intervalTree.build(m_ignIndices); }
     void addLineAttribute(int lineno, VPragmaType attr) { m_lineAttrs[lineno].set(attr); }
-    void addIgnore(V3ErrorCode code, int lineno, bool on) {
-        m_ignLines.insert(V3ControlIgnoresLine{code, lineno, on});
-        m_lastIgnore.it = m_ignLines.begin();
+    void addIgnore(V3ErrorCode code, int min, int max, bool on) {
+        controlIgnLines.emplace_back(V3ControlIgnoresLine{code, min, max, on});
+        m_ignIndices.emplace_back(static_cast<uint32_t>(controlIgnLines.size() - 1));
+        m_lastIgnore.nextChange = -1;
     }
     void addIgnoreMatch(V3ErrorCode code, const string& contents, const string& match) {
         // Since Verilator 5.031 the error message compared has context, so
@@ -425,32 +623,50 @@ public:
     }
     void applyIgnores(FileLine* filelinep) {
         // HOT routine, called each parsed token line of this filename
-        if (m_lastIgnore.lineno != filelinep->lineno()) {
-            // UINFO(9, "   ApplyIgnores for " << filelinep->ascii());
-            // Process all on/offs for lines up to and including the current line
-            const int curlineno = filelinep->lastLineno();
-            for (; m_lastIgnore.it != m_ignLines.end(); ++m_lastIgnore.it) {
-                if (m_lastIgnore.it->m_lineno > curlineno) break;
-                // UINFO(9, "     Hit " << *m_lastIgnore.it);
-                filelinep->warnOn(m_lastIgnore.it->m_code, m_lastIgnore.it->m_on);
-            }
-            if (false && debug() >= 9) {
-                for (IgnLines::const_iterator it = m_lastIgnore.it; it != m_ignLines.end(); ++it) {
-                    UINFO(9, "     NXT " << *it);
-                }
-            }
-            m_lastIgnore.lineno = filelinep->lastLineno();
+        if (filelinep->filenameno() == m_lastIgnore.filenameno
+            && filelinep->lineno() == m_lastIgnore.lineno)
+            return;  // Short circuit, no change, no debug
+        // For speed, compute line number of next potential change, and skip if before then
+        if (filelinep->filenameno() == m_lastIgnore.filenameno
+            && filelinep->lineno() < m_lastIgnore.nextChange) {
+            m_lastIgnore.lineno = filelinep->lineno();
+            UINFO(9, "   ApplyIgnores for " << filelinep->ascii() << " (no change predicted)");
+            return;
         }
+        UINFO(9, "   ApplyIgnores for " << filelinep->ascii());
+        m_lastIgnore.filenameno = filelinep->filenameno();
+        m_lastIgnore.lineno = filelinep->lineno();
+        m_lastIgnore.nextChange = std::numeric_limits<int>::max();
+
+        // Find all on/offs.  Unlike lint pragmas we calculate the entire
+        // bitset of errors to enable, instead of individual enable/disable changes.
+        IgnIndices results;
+        m_intervalTree.find(filelinep->lineno(), results /*ref*/, m_lastIgnore.nextChange /*ref*/);
+        // Process all on/offs for lines up to and including the current line
+        VErrorBitSet bitset{VErrorBitSet::AllOnes{}};
+        for (const auto& it : results) {
+            const V3ControlIgnoresLine& cign = controlIgnLines[it];
+            UASSERT(cign.inRange(filelinep->lineno()),
+                    "Interval tree returned lines outside range");
+            UINFO(9, "     Hit " << cign);
+            cign.m_code.forDelegateCodes(
+                [&](V3ErrorCode subcode) { bitset.set(subcode, cign.m_on); });
+        }
+
+        filelinep->warnSetCtrlBitSet(bitset);
+        m_lastIgnore.nextChange = std::max(m_lastIgnore.nextChange, filelinep->lineno() + 1);
+        UINFO(9, "    AppliedIgnores " << filelinep << " next@ln " << std::dec
+                                       << m_lastIgnore.nextChange
+                                       << " Messages: " << bitset.ascii());
     }
     bool waive(V3ErrorCode code, const string& message) {
         if (code.hardError()) return false;
         for (const auto& itr : m_waivers) {
-            if ((code.isUnder(itr.m_code) || (itr.m_code == V3ErrorCode::I_LINT)))
-                if ((code.isUnder(itr.m_code) || (itr.m_code == V3ErrorCode::I_LINT))
-                    && VString::wildmatch(message, itr.m_match)
-                    && WildcardContents::resolve(itr.m_contents)) {
-                    return true;
-                }
+            if ((code.isUnder(itr.m_code) || (itr.m_code == V3ErrorCode::I_LINT))
+                && VString::wildmatch(message, itr.m_match)
+                && WildcardContents::resolve(itr.m_contents)) {
+                return true;
+            }
         }
         return false;
     }
@@ -649,17 +865,14 @@ void V3Control::addCaseFull(const string& filename, int lineno) {
     V3ControlFile& file = V3ControlResolver::s().files().at(filename);
     file.addLineAttribute(lineno, VPragmaType::FULL_CASE);
 }
-
 void V3Control::addCaseParallel(const string& filename, int lineno) {
     V3ControlFile& file = V3ControlResolver::s().files().at(filename);
     file.addLineAttribute(lineno, VPragmaType::PARALLEL_CASE);
 }
-
 void V3Control::addCoverageBlockOff(const string& filename, int lineno) {
     V3ControlFile& file = V3ControlResolver::s().files().at(filename);
     file.addLineAttribute(lineno, VPragmaType::COVERAGE_BLOCK_OFF);
 }
-
 void V3Control::addCoverageBlockOff(const string& module, const string& blockname) {
     V3ControlResolver::s().modules().at(module).addCoverageBlockOff(blockname);
 }
@@ -669,16 +882,16 @@ void V3Control::addHierWorkers(FileLine* fl, const string& model, int workers) {
 }
 
 void V3Control::addIgnore(V3ErrorCode code, bool on, const string& filename, int min, int max) {
-    if (filename == "*") {
+    UINFO(9, "addIgnore " << code << " " << min << "-" << max << " fn=" << filename);
+    if (filename == "*") {  // For "lint_off/lint_on [--rule x]"
         FileLine::globalWarnOff(code, !on);
-    } else {
-        V3ControlResolver::s().files().at(filename).addIgnore(code, min, on);
-        if (max) V3ControlResolver::s().files().at(filename).addIgnore(code, max, !on);
+    } else {  // For "lint_off/lint_on [--rule x] --file y [-lines min[-max]]"
+        V3ControlResolver::s().files().at(filename).addIgnore(code, min, max, on);
     }
 }
-
 void V3Control::addIgnoreMatch(V3ErrorCode code, const string& filename, const string& contents,
                                const string& match) {
+    // For "lint_off --rule x --file y --match z", no support for lint_on
     V3ControlResolver::s().files().at(filename).addIgnoreMatch(code, contents, match);
 }
 
@@ -701,7 +914,6 @@ void V3Control::addModulePragma(const string& module, VPragmaType pragma) {
 void V3Control::addProfileData(FileLine* fl, const string& hierDpi, uint64_t cost) {
     V3ControlResolver::s().addProfileData(fl, hierDpi, cost);
 }
-
 void V3Control::addProfileData(FileLine* fl, const string& model, const string& key,
                                uint64_t cost) {
     V3ControlResolver::s().addProfileData(fl, model, key, cost);
@@ -797,7 +1009,6 @@ void V3Control::applyCoverageBlock(AstNodeModule* modulep, AstBegin* nodep) {
     V3ControlModule* const modp = V3ControlResolver::s().modules().resolve(modname);
     if (modp) modp->applyBlock(nodep);
 }
-
 void V3Control::applyCoverageBlock(AstNodeModule* modulep, AstGenBlock* nodep) {
     const string& filename = nodep->fileline()->filename();
     V3ControlFile* const filep = V3ControlResolver::s().files().resolve(filename);
@@ -886,3 +1097,5 @@ bool V3Control::waive(const FileLine* filelinep, V3ErrorCode code, const string&
     if (!filep) return false;
     return filep->waive(code, message);
 }
+
+void V3Control::selfTest() { VIntervalTree::selfTest(); }

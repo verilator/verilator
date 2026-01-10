@@ -6,8 +6,8 @@
 
 module t;
 
-   bit [99:0] wide = $c100("0");
+  bit [99:0] wide = $c100("0");
 
-   initial $display("%d", wide);
+  initial $display("%d", wide);
 
 endmodule

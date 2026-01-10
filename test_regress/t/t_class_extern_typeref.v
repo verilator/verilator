@@ -4,7 +4,9 @@
 // any use, without warranty, 2025 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-class uvm_process_guard#(type T=int);
+class uvm_process_guard #(
+    type T = int
+);
   T m_context;
   extern function T get_context();
   extern function new(T ctxt);

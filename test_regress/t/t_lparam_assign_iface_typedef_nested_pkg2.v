@@ -9,13 +9,10 @@
 //     to pass params to module hierarchy and ultimately interface
 //
 
+// verilog_format: off
 `define stop $stop
-`define checkh(gotv,expv) \
-  do if ((gotv) !== (expv)) begin \
-    $write("%%Error: %s:%0d:  got=%0h exp=%0h\n", \
-            `__FILE__,`__LINE__, (gotv), (expv)); \
-    `stop; \
-  end while(0);
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0h exp=%0h\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 package a_pkg;
   typedef struct packed {
@@ -26,46 +23,36 @@ package a_pkg;
 endpackage
 
 interface z_if #(
-  parameter a_pkg::cfg_t CFG = 0
-)();
-  typedef struct packed {
-    logic [CFG.d_cfg + CFG.a_cfg - 1:0] data;
-  } req_t;
+    parameter a_pkg::cfg_t CFG = 0
+) ();
+  typedef struct packed {logic [CFG.d_cfg + CFG.a_cfg - 1:0] data;} req_t;
 
   logic sig_a;
   logic sig_b;
 endinterface
 
 interface y_if #(
-  parameter a_pkg::cfg_t CFG = 0
-)();
-  typedef struct packed {
-    logic [CFG.a_cfg-1:0] addr;
-  } rq2_t;
+    parameter a_pkg::cfg_t CFG = 0
+) ();
+  typedef struct packed {logic [CFG.a_cfg-1:0] addr;} rq2_t;
 endinterface
 
 interface x_if #(
-  parameter a_pkg::cfg_t CFG = 0
-)();
-  typedef struct packed {
-    logic [CFG.a_cfg-1:0] addr;
-  } rq_t;
+    parameter a_pkg::cfg_t CFG = 0
+) ();
+  typedef struct packed {logic [CFG.a_cfg-1:0] addr;} rq_t;
 
-  typedef struct packed {
-    logic [CFG.d_cfg-1:0] data;
-  } rs_t;
+  typedef struct packed {logic [CFG.d_cfg-1:0] data;} rs_t;
 
-  y_if#(.CFG(CFG)) y_if0();
-  z_if#(.CFG(CFG)) z_if0();
+  y_if #(.CFG(CFG)) y_if0 ();
+  z_if #(.CFG(CFG)) z_if0 ();
 
 endinterface
 
-module top();
+module top ();
   localparam a_pkg::cfg_t CFG = '{a_cfg: 16, b_cfg: 8, d_cfg: 8};
 
-  x_if #(
-    .CFG(CFG)
-  ) if0();
+  x_if #(.CFG(CFG)) if0 ();
 
   localparam type p0_rq2_t = if0.y_if0.rq2_t;
   localparam type p0_rq_t = if0.rq_t;

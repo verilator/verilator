@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -136,7 +136,7 @@ class AstToDfgConverter final : public VNVisitor {
 
         // Traversal set user2p to the equivalent vertex
         DfgVertex* const vtxp = nodep->user2u().to<DfgVertex*>();
-        UASSERT_OBJ(vtxp, nodep, "Missing Dfg vertex after covnersion");
+        UASSERT_OBJ(vtxp, nodep, "Missing Dfg vertex after conversion");
         return vtxp;
     }
 

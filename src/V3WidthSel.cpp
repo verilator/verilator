@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -266,6 +266,12 @@ class WidthSelVisitor final : public VNVisitor {
             newp->declRange(fromRange);
             newp->declElWidth(elwidth);
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
+            if (VN_IS(adtypep->subDTypep(), BasicDType)) {
+                // IEEE 1800-2023 7.4.1 Packed arrays says:
+                //   The individual elements of the array are unsigned
+                //   unless they are of a named type declared as signed.
+                newp->dtypep()->numeric(VSigning::fromBool(false));
+            }
             UINFOTREE(9, newp, "", "SELBTn");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);

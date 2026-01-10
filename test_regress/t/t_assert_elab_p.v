@@ -25,7 +25,8 @@ module t #(
       .ID_T(ID_T),
       .STAGE_IDS(STAGE_IDS)
   ) pipe (
-      .*);
+      .*
+  );
 
   initial $finish;
 

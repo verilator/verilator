@@ -10,11 +10,10 @@
 
 `define STRINGIFY(x) `"x`"
 
-module test (
-);
-    initial begin
-        $display("TEST_MACRO %s", `STRINGIFY(`TEST_MACRO));
-        $finish;
-    end
+module test ();
+  initial begin
+    $display("TEST_MACRO %s", `STRINGIFY(`TEST_MACRO));
+    $finish;
+  end
 
 endmodule

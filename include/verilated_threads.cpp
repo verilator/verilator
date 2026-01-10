@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2012-2025 by Wilson Snyder. This program is free software; you can
+// Copyright 2012-2026 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -147,6 +147,12 @@ VlThreadPool::~VlThreadPool() {
 
 std::string VlThreadPool::numaAssign() {
 #if defined(__linux) || defined(CPU_ZERO) || defined(VL_CPPCHECK)  // Linux-like pthreads
+    std::string numa_strategy = VlOs::getenvStr("VERILATOR_NUMA_STRATEGY", "default");
+    if (numa_strategy == "none") {
+        return "no NUMA assignment requested";
+    } else if (numa_strategy != "default" && numa_strategy != "") {
+        return "%Warning: unknown VERILATOR_NUMA_STRATEGY value '" + numa_strategy + "'";
+    }
     // Get number of processor available to the current process
     const unsigned num_proc = VlOs::getProcessAvailableParallelism();
     if (!num_proc) return "Can't determine number of available threads";

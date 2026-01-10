@@ -1,9 +1,9 @@
-.. Copyright 2003-2025 by Wilson Snyder.
+.. Copyright 2003-2026 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-=====================
- Errors and Warnings
-=====================
+===================
+Errors and Warnings
+===================
 
 .. _disabling warnings:
 
@@ -45,6 +45,9 @@ Warnings may be disabled in multiple ways:
 
       lint_off -rule UNSIGNED -file "*/example.v" -lines 1
 
+Metacomments and control file directives do not interact. If a warning is
+disabled by either metacomments, or a directive in a control file, it will
+not be emitted.
 
 Error And Warning Format
 ========================
@@ -2298,6 +2301,8 @@ List Of Warnings
    make the design simulate incorrectly and is only intended for lint
    usage; see the details under :vlopt:`--bbox-unsup`.
 
+   Disabling this error also disables :option:`COVERIGN` and
+   :option:`SPECIFYIGN`.
 
 .. option:: UNUSED
 
@@ -2480,7 +2485,11 @@ List Of Warnings
    and will suppress the warning when the minimum width is appropriate to
    fit the required size.
 
-   Ignoring this warning will only suppress the lint check; it will
+   Disabling/enabling WIDTH is equivalent to disabling/enabling the
+   :option:`WIDTHEXPAND`, :option:`WIDTHTRUNC`, and :option:`WIDTHXZEXPAND`
+   warnings.
+
+   Ignoring these warnings will only suppress the lint check; it will
    simulate correctly.
 
    The recommendation is to fix these issues by:

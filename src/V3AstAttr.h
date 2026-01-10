@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU Lesser
 // General Public License Version 3 or the Perl Artistic License Version 2.0.
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
@@ -1019,10 +1019,6 @@ public:
         static const char* const names[] = {"", "input", "output", "inout", "ref", "const ref"};
         return names[m_e];
     }
-    string xmlKwd() const {  // For historical reasons no "put" suffix
-        static const char* const names[] = {"", "in", "out", "inout", "ref", "const ref"};
-        return names[m_e];
-    }
     string prettyName() const { return verilogKwd(); }
     bool isAny() const { return m_e != NONE; }
     bool isInout() const { return m_e == INOUT; }
@@ -1035,16 +1031,6 @@ public:
     bool isWritable() const VL_MT_SAFE { return m_e == OUTPUT || m_e == INOUT || m_e == REF; }
     bool isRef() const VL_MT_SAFE { return m_e == REF; }
     bool isConstRef() const VL_MT_SAFE { return m_e == CONSTREF; }
-    string traceSigDirection() const {
-        if (isInout()) {
-            return "VerilatedTraceSigDirection::INOUT";
-        } else if (isWritable()) {
-            return "VerilatedTraceSigDirection::OUTPUT";
-        } else if (isNonOutput()) {
-            return "VerilatedTraceSigDirection::INPUT";
-        }
-        return "VerilatedTraceSigDirection::NONE";
-    }
 };
 constexpr bool operator==(const VDirection& lhs, const VDirection& rhs) VL_MT_SAFE {
     return lhs.m_e == rhs.m_e;

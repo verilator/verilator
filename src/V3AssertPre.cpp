@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2005-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -632,6 +632,11 @@ private:
         // Unlink and just keep a pointer to it, convert to sentree as needed
         m_senip = nodep->sensesp();
         iterateNull(nodep->disablep());
+        if (VN_AS(nodep->backp(), NodeCoverOrAssert)->type() == VAssertType::CONCURRENT) {
+            const AstNodeDType* const propDtp = nodep->propp()->dtypep();
+            nodep->propp(new AstSampled{nodep->fileline(), nodep->propp()->unlinkFrBack()});
+            nodep->propp()->dtypeFrom(propDtp);
+        }
         iterate(nodep->propp());
     }
     void visit(AstPExpr* nodep) override {

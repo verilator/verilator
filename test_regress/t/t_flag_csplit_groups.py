@@ -125,7 +125,7 @@ test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + "_classes.mk", "vm_clas
 test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + "_classes.mk", "vm_classes_2")
 
 # Check combine count
-test.file_grep(test.stats, r'Node count, CFILE + (\d+)', (276 if test.vltmt else 257))
+test.file_grep(test.stats, r'Node count, CFILE + (\d+)', (272 if test.vltmt else 255))
 test.file_grep(test.stats, r'Makefile targets, VM_CLASSES_FAST + (\d+)', 2)
 test.file_grep(test.stats, r'Makefile targets, VM_CLASSES_SLOW + (\d+)', 2)
 

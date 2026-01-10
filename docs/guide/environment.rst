@@ -1,5 +1,7 @@
-.. Copyright 2003-2025 by Wilson Snyder.
+.. Copyright 2003-2026 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+.. _Environment:
 
 Environment
 ===========
@@ -88,6 +90,20 @@ associated programs.
 
    If set, the command to run when using the :vlopt:`--gdb` option, such as
    "ddd". If not specified, it will use "gdb".
+
+.. option:: VERILATOR_NUMA_STRATEGY
+
+   If set, controls NUMA assignment strategy for Verilator's thread pool
+   for Verilated simulations at runtime.
+   Possible values are:
+
+   * Empty(``""``) or ``"default"``: Enables NUMA assignment that prioritizes
+     assigning Verilator threads to physical cores.
+
+   * ``"none"``: Disables NUMA assignment. Let the operating system handle
+     thread scheduling.
+
+   Other values may be supported in future releases.
 
 .. option:: VERILATOR_ROOT
 

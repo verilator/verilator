@@ -6,38 +6,43 @@
 
 class SubClass;
   rand bit [2:0] field;
-  function new ();
+  function new();
     field = 0;
   endfunction
 endclass
 class MyClass;
   SubClass sc_inst2[$];
-  function new ();
+  function new();
     SubClass inst = new;
-    sc_inst2 = { inst };
+    sc_inst2 = {inst};
   endfunction
-endclass;
+endclass
+;
 class Deep;
   MyClass sc_inst1;
-  function new ();
+  function new();
     sc_inst1 = new;
   endfunction
-endclass;
+endclass
+;
 class WeNeedToGoDeeper;
   Deep sc_inst;
-  function new ();
+  function new();
     sc_inst = new;
   endfunction
-endclass;
+endclass
+;
 
 module t;
   initial begin
     WeNeedToGoDeeper inst = new;
     MyClass inst2 = new;
-    WeNeedToGoDeeper cl_inst[$] = { inst };
-    MyClass cl_inst2[$] = { inst2 };
-    repeat(10) begin
-      if (cl_inst[0].sc_inst.sc_inst1.sc_inst2[0].randomize() with {field inside {1, 2, 3};} == 0) begin
+    WeNeedToGoDeeper cl_inst[$] = {inst};
+    MyClass cl_inst2[$] = {inst2};
+    repeat (10) begin
+      if (cl_inst[0].sc_inst.sc_inst1.sc_inst2[0].randomize() with {
+            field inside {1, 2, 3};
+          } == 0) begin
         $stop;
       end
       if (cl_inst[0].sc_inst.sc_inst1.sc_inst2[0].field < 1 || cl_inst[0].sc_inst.sc_inst1.sc_inst2[0].field > 3) begin

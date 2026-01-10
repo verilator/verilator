@@ -6,5 +6,5 @@
 
 module t;
   wire i = 0;
-  not(implicit_out, i);
+  not (implicit_out, i);
 endmodule

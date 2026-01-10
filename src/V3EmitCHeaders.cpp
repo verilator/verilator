@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -169,8 +169,8 @@ class EmitCHeader final : public EmitCConstInit {
             putns(modp, name + "(" + ctorArgs + ");\n");
             putns(modp, "~" + name + "();\n");
         } else {
-            putns(modp, name + "() = default;\n");
-            putns(modp, "~" + name + "() = default;\n");
+            putns(modp, name + "();\n");
+            putns(modp, "~" + name + "();\n");
             putns(modp, "void ctor(" + ctorArgs + ");\n");
             putns(modp, "void dtor();\n");
         }

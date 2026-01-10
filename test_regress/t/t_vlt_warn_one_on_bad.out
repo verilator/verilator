@@ -1,0 +1,11 @@
+%Warning-UNUSEDPARAM: t/t_vlt_warn_one_on_bad.v:24:14: Parameter is not used: 'unuse_warn5_var_line24'
+                                                     : ... note: In instance 't'
+   24 |   localparam unuse_warn5_var_line24 = 0;   
+      |              ^~~~~~~~~~~~~~~~~~~~~~
+                      ... For warning description see https://verilator.org/warn/UNUSEDPARAM?v=latest
+                      ... Use "/* verilator lint_off UNUSEDPARAM */" and lint_on around source to disable this message.
+%Warning-UNUSEDPARAM: t/t_vlt_warn_one_on_bad.v:25:14: Parameter is not used: 'unuse_warn5_var_line25'
+                                                     : ... note: In instance 't'
+   25 |   localparam unuse_warn5_var_line25 = 0;   
+      |              ^~~~~~~~~~~~~~~~~~~~~~
+%Error: Exiting due to
