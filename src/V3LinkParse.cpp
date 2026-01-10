@@ -861,6 +861,10 @@ class LinkParseVisitor final : public VNVisitor {
     }
     void visit(AstCase* nodep) override {
         V3Control::applyCase(nodep);
+        // Check for unsupported case matches (for tagged union)
+        if (nodep->caseMatches()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: case matches (for tagged union)");
+        }
         cleanFileline(nodep);
         iterateChildren(nodep);
     }
@@ -1015,6 +1019,41 @@ class LinkParseVisitor final : public VNVisitor {
         if (m_modp && !m_ftaskp && VN_IS(m_modp, Class)) {
             nodep->v3error("Import statement directly within a class scope is illegal");
         }
+        iterateChildren(nodep);
+    }
+
+    // Tagged union features - flag as unsupported early
+    void visit(AstTaggedExpr* nodep) override {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: tagged union");
+        cleanFileline(nodep);
+        iterateChildren(nodep);
+    }
+    void visit(AstTaggedPattern* nodep) override {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: tagged pattern");
+        cleanFileline(nodep);
+        iterateChildren(nodep);
+    }
+    void visit(AstPatternVar* nodep) override {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: pattern variable");
+        cleanFileline(nodep);
+        iterateChildren(nodep);
+    }
+    void visit(AstPatternStar* nodep) override {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: pattern wildcard");
+        cleanFileline(nodep);
+        iterateChildren(nodep);
+    }
+    void visit(AstMatches* nodep) override {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: matches operator");
+        cleanFileline(nodep);
+        iterateChildren(nodep);
+    }
+    void visit(AstBasicDType* nodep) override {
+        // Check for void type used in tagged unions
+        if (nodep->keyword() == VBasicDTypeKwd::CVOID) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: void (for tagged unions)");
+        }
+        cleanFileline(nodep);
         iterateChildren(nodep);
     }
 

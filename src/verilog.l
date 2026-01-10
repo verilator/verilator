@@ -639,7 +639,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "string"              { FL; return ySTRING; }
   "struct"              { FL; return ySTRUCT; }
   "super"               { FL; return ySUPER; }
-  "tagged"              { FL; return yTAGGED; }
+  "tagged"              { FL; return yTAGGED__LEX; }
   "this"                { FL; return yTHIS; }
   "throughout"          { FL; return yTHROUGHOUT; }
   "timeprecision"       { FL; return yTIMEPRECISION; }

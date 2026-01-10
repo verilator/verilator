@@ -3237,6 +3237,10 @@ class WidthVisitor final : public VNVisitor {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         nodep->doingWidth(true);
         UINFO(5, "   NODEUORS " << nodep);
+        // Check for tagged unions
+        if (const AstUnionDType* const unionp = VN_CAST(nodep, UnionDType)) {
+            if (unionp->isTagged()) { nodep->v3warn(E_UNSUPPORTED, "Unsupported: tagged union"); }
+        }
         // UINFOTREE(9, nodep, "", "class-in");
         if (!nodep->packed() && v3Global.opt.structsPacked()) nodep->packed(true);
         userIterateChildren(nodep, nullptr);  // First size all members
@@ -4850,6 +4854,37 @@ class WidthVisitor final : public VNVisitor {
         if (nodep->rhsp()) {
             iterateCheckTyped(nodep, "Dynamic array new RHS", nodep->rhsp(), adtypep, BOTH);
         }
+    }
+
+    void visit(AstTaggedExpr* nodep) override {
+        // Tagged union expressions are currently unsupported
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: tagged union");
+        // Set a placeholder type to allow further processing
+        nodep->dtypeSetBit();
+        userIterateChildren(nodep, m_vup);
+    }
+    void visit(AstTaggedPattern* nodep) override {
+        // Tagged patterns are currently unsupported
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: tagged pattern");
+        nodep->dtypeSetBit();
+        userIterateChildren(nodep, m_vup);
+    }
+    void visit(AstPatternVar* nodep) override {
+        // Pattern variable bindings are currently unsupported
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: pattern variable");
+        nodep->dtypeSetBit();
+    }
+    void visit(AstPatternStar* nodep) override {
+        // Pattern wildcards are currently unsupported
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: pattern wildcard");
+        nodep->dtypeSetBit();
+    }
+    void visit(AstMatches* nodep) override {
+        // Matches operator is currently unsupported
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: matches operator");
+        // Matches returns a boolean
+        nodep->dtypeSetBit();
+        userIterateChildren(nodep, m_vup);
     }
 
     void visit(AstPattern* nodep) override {
