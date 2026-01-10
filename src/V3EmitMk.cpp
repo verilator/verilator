@@ -690,10 +690,19 @@ public:
         for (const string& i : cFlags) of.puts("  " + i + " \\\n");
         of.puts("\n");
 
-        of.puts("# User LDLIBS (from -LDFLAGS on Verilator command line)\n");
+        of.puts("# User LDLIBS '-l*' (from -LDFLAGS on Verilator command line)\n");
         of.puts("VM_USER_LDLIBS = \\\n");
         const VStringList& ldLibs = v3Global.opt.ldLibs();
-        for (const string& i : ldLibs) of.puts("  " + i + " \\\n");
+        for (const string& i : ldLibs) {
+            if (i.front() == '-' || V3Os::filenameExt(i) == "") of.puts("  " + i + " \\\n");
+        }
+        of.puts("\n");
+
+        of.puts("# User LDLIBS files '*.a,*.so' (from -LDFLAGS on Verilator command line)\n");
+        of.puts("VM_USER_LDLIBS_FILES = \\\n");
+        for (const string& i : ldLibs) {
+            if (i.front() != '-' && V3Os::filenameExt(i) != "") of.puts("  " + i + " \\\n");
+        }
         of.puts("\n");
 
         VStringSet dirs;
@@ -749,7 +758,7 @@ public:
             of.puts("\n### Link rules... (from --exe)\n");
             // '{prefix}__ALL.a', contains all hierarchical libraries
             of.puts(v3Global.opt.exeName()
-                    + ": $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) $(VM_PREFIX)__ALL.a\n");
+                    + ": $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) $(VM_USER_LDLIBS_FILES) $(VM_PREFIX)__ALL.a\n");
             of.puts("\t$(LINK) $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) $(LIBS) $(SC_LIBS) -o $@\n");
             of.puts("\n");
         } else if (!v3Global.opt.libCreate().empty()) {
