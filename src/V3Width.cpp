@@ -5702,6 +5702,34 @@ class WidthVisitor final : public VNVisitor {
                 }
             }
 
+            // IEEE 1800-2023 7.6: For unpacked arrays to be assignment compatible,
+            // the element types shall be equivalent (IEEE 1800-2023 6.22.2).
+            // Check specifically for 2-state vs 4-state mismatch for unpacked array
+            // to unpacked array assignments, as this is a common IEEE compliance issue.
+            // Note: Streaming operators and string literals have implicit conversion rules.
+            if (nodep->rhsp()->dtypep()) {  // May be null on earlier errors
+                const AstNodeDType* const lhsDtp = lhsDTypep->skipRefp();
+                const AstNodeDType* const rhsDtp = nodep->rhsp()->dtypep()->skipRefp();
+                // Only check unpacked array to unpacked array assignments
+                const bool lhsIsUnpackArray
+                    = VN_IS(lhsDtp, UnpackArrayDType) || VN_IS(lhsDtp, DynArrayDType)
+                      || VN_IS(lhsDtp, QueueDType) || VN_IS(lhsDtp, AssocArrayDType);
+                const bool rhsIsUnpackArray
+                    = VN_IS(rhsDtp, UnpackArrayDType) || VN_IS(rhsDtp, DynArrayDType)
+                      || VN_IS(rhsDtp, QueueDType) || VN_IS(rhsDtp, AssocArrayDType);
+                if (lhsIsUnpackArray && rhsIsUnpackArray) {
+                    if (lhsDtp->isFourstate() != rhsDtp->isFourstate()) {
+                        nodep->v3error(
+                            "Assignment between 2-state and 4-state types requires "
+                            "equivalent element types (IEEE 1800-2023 6.22.2, 7.6)\n"
+                            << nodep->warnMore() << "... LHS type: " << lhsDtp->prettyDTypeNameQ()
+                            << (lhsDtp->isFourstate() ? " (4-state)" : " (2-state)") << "\n"
+                            << nodep->warnMore() << "... RHS type: " << rhsDtp->prettyDTypeNameQ()
+                            << (rhsDtp->isFourstate() ? " (4-state)" : " (2-state)"));
+                    }
+                }
+            }
+
             iterateCheckAssign(nodep, "Assign RHS", nodep->rhsp(), FINAL, lhsDTypep);
             // UINFOTREE(1, nodep, "", "AssignOut");
         }

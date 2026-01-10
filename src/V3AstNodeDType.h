@@ -234,7 +234,7 @@ class AstNodeUOrStructDType VL_NOT_FINAL : public AstNodeDType {
     string m_name;  // Name from upper typedef, if any
     const int m_uniqueNum;
     bool m_packed;
-    bool m_isFourstate = false;  // V3Width computes
+    bool m_isFourstate = false;  // V3Width computes; true if any member is 4-state
     bool m_constrainedRand = false;  // True if struct has constraint expression
 
 protected:
