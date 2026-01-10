@@ -23,6 +23,8 @@
 #include <map>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 // We use a static char array in VL_VALUE_STRING
 constexpr int VL_VALUE_STRING_MAX_WIDTH = 8192;
 
