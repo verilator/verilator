@@ -47,6 +47,7 @@ extern "C" int mon_check();
    reg LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND;
    // verilator lint_off ASCRANGE
    reg [0:61]   quads[2:3]      /*verilator public_flat_rw @(posedge clk)*/;
+   reg [8:19]   rev   /*verilator public_flat_rw @(posedge clk) */;
 /*verilator public_off*/
    reg             invisible1;
    // verilator lint_on ASCRANGE
@@ -105,6 +106,8 @@ extern "C" int mon_check();
       long1 = 123;
       real1 = 1.0;
       str1 = "hello";
+
+      rev = 12'habc;
 
 `ifdef VERILATOR
       status = $c32("mon_check()");

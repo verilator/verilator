@@ -475,6 +475,28 @@ int _mon_check_var() {
     return errors;
 }
 
+int _mon_check_rev() {
+    t_vpi_value value;
+    TestVpiHandle vh9 = VPI_HANDLE("rev");
+    CHECK_RESULT_NZ(vh9);
+    value.format = vpiIntVal;
+    {
+        TestVpiHandle vh10 = vpi_handle(vpiLeftRange, vh9);
+        CHECK_RESULT_NZ(vh10);
+        vpi_get_value(vh10, &value);
+        TEST_CHECK_EQ(value.value.integer, 8);
+        TestVpiHandle vh11 = vpi_handle(vpiRightRange, vh9);
+        CHECK_RESULT_NZ(vh11);
+        vpi_get_value(vh11, &value);
+        TEST_CHECK_EQ(value.value.integer, 19);
+
+        value.format = vpiVectorVal;
+        vpi_get_value(vh9, &value);
+        CHECK_RESULT(value.value.vector[0].aval, 0xabc);
+    }
+    return errors;
+}
+
 int _mon_check_varlist() {
     const char* p;
 
@@ -789,10 +811,14 @@ int _mon_check_delayed() {
     CHECK_RESULT_NZ(vpi_chk_error(nullptr));
 
     // This format throws an error now
+#ifdef VERILATOR
     Verilated::fatalOnVpiError(false);
+#endif
     v.format = vpiObjTypeVal;
     vpi_put_value(vh, &v, &t, vpiInertialDelay);
+#ifdef VERILATOR
     Verilated::fatalOnVpiError(true);
+#endif
 
     return 0;
 }
@@ -993,6 +1019,7 @@ extern "C" int mon_check() {
     if (int status = _mon_check_callbacks()) return status;
     if (int status = _mon_check_value_callbacks()) return status;
     if (int status = _mon_check_var()) return status;
+    if (int status = _mon_check_rev()) return status;
     if (int status = _mon_check_varlist()) return status;
     if (int status = _mon_check_var_long_name()) return status;
 // Ports are not public_flat_rw in t_vpi_var

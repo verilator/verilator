@@ -1,4 +1,4 @@
-UVM Report t/t_uvm_dpi.v:54: id message
+UVM Report t/t_uvm_dpi.v:59: id message
 uvm_dpi_get_tool_name_c() = Verilator
 = uvm_re
 = uvm_hdl_check_path
@@ -8,6 +8,8 @@ uvm_dpi_get_tool_name_c() = Verilator
 = uvm_hdl_deposit single bit
 = uvm_hdl_read multi-bit
 = uvm_hdl_deposit multi-bit
+= uvm_hdl_read/deposit wide decending
+= uvm_hdl_read/deposit wide ascending
 = uvm_hdl_deposit bad ranges
 ===
 UVM Report expected on next line:

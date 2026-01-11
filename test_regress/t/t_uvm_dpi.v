@@ -44,6 +44,11 @@ module t;
   logic not_exposed;
   logic exposed_not_forceable;
 
+  logic [83:4] wide_dec  /* verilator public*/;
+  // verilator lint_off ASCRANGE
+  logic [4:83] wide_asc  /* verilator public*/;
+  // verilator lint_on ASCRANGE
+
   uvm_hdl_data_t lval;
 
   initial begin
@@ -137,6 +142,30 @@ module t;
     i = uvm_hdl_deposit("t.exposed[19:12]", lval);
     `checkh(i, 1);
     `checkh(exposed, 32'ha12d);
+
+    $display("= uvm_hdl_read/deposit wide decending");
+    wide_dec = 80'h1234_56789abc_dcba8765;
+    lval = '0;  // Upper bits not cleared by uvm_hdl_read
+    i = uvm_hdl_read("t.wide_dec[79:64]", lval);
+    `checkh(i, 1);
+    `checkh(lval[15:0], wide_dec[79:64]);
+    lval = 1024'hffe;
+    i = uvm_hdl_deposit("t.wide_dec[79:64]", lval);
+    `checkh(i, 1);
+    //                    .vvv_v......._........
+    `checkh(wide_dec, 80'h10ff_e6789abc_dcba8765);
+
+    $display("= uvm_hdl_read/deposit wide ascending");
+    wide_asc = 80'h1234_56789abc_dcba8765;
+    lval = '0;  // Upper bits not cleared by uvm_hdl_read
+    i = uvm_hdl_read("t.wide_asc[64:79]", lval);
+    `checkh(i, 1);
+    `checkh(lval[15:0], wide_asc[64:79]);
+    lval = 1024'hffe;
+    i = uvm_hdl_deposit("t.wide_asc[64:79]", lval);
+    `checkh(i, 1);
+    //                    ...._........_...vvvv.
+    `checkh(wide_asc, 80'h1234_56789abc_dcb0ffe5);
 
     $display("= uvm_hdl_deposit bad ranges");
     $display("===\nUVM Report expected on next line:");

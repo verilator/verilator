@@ -135,6 +135,7 @@ static vpiHandle uvm_hdl_handle_by_name_partsel(char *path, int *is_partsel_ptr,
   {
     vpiHandle rh;
     s_vpi_value value;
+    int req_width_m1;
     int decl_ranged = 0;
     int decl_lo;
     int decl_hi;
@@ -162,12 +163,13 @@ static vpiHandle uvm_hdl_handle_by_name_partsel(char *path, int *is_partsel_ptr,
     }
     // vpi_printf((PLI_BYTE8 *)"%s:%d: req %d:%d decl %d:%d for '%s'\n",
     //            __FILE__, __LINE__, *hi_ptr, *lo_ptr, decl_left, decl_right, path);
-    decl_lo = (decl_left < decl_right) ? decl_left : decl_right;
+    decl_lo = (decl_left > decl_right) ? decl_right : decl_left;
     decl_hi = (decl_left > decl_right) ? decl_left : decl_right;
     if (*lo_ptr < decl_lo) return 0;
     if (*hi_ptr > decl_hi) return 0;
-    *lo_ptr -= decl_lo;
-    *hi_ptr -= decl_lo;
+    req_width_m1 = *hi_ptr - *lo_ptr;
+    *lo_ptr = (decl_left > decl_right) ? (*lo_ptr - decl_lo) : (decl_right - *hi_ptr);
+    *hi_ptr = *lo_ptr + req_width_m1;
   }
   return r;
 }
