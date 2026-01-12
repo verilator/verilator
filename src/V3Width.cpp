@@ -237,6 +237,8 @@ class WidthVisitor final : public VNVisitor {
     TableMap m_tableMap;  // Created tables so can remove duplicates
     std::map<const AstNodeDType*, AstQueueDType*>
         m_queueDTypeIndexed;  // Queues with given index type
+    std::map<const AstNode*, const AstClass*>
+        m_containingClassp;  // Containing class cache for containingClass() function
     std::unordered_set<AstVar*> m_aliasedVars;  // Variables referenced in alias
 
     static constexpr int ENUM_LOOKUP_BITS = 16;  // Maximum # bits to make enum lookup table
@@ -6582,6 +6584,22 @@ class WidthVisitor final : public VNVisitor {
         }
         return VN_CAST(pkgItemp->backp(), Package);
     }
+    const AstClass* containingClass(AstNode* nodep) {
+        // backp is still needed, m_containingClassp is just a cache
+        if (const AstClass* const classp = VN_CAST(nodep, Class))
+            return m_containingClassp[nodep] = classp;
+        if (const AstClassPackage* const packagep = VN_CAST(nodep, ClassPackage)) {
+            return m_containingClassp[nodep] = packagep->classp();
+        }
+        if (m_containingClassp.find(nodep) != m_containingClassp.end()) {
+            return m_containingClassp[nodep];
+        }
+        if (nodep->backp()) {
+            return m_containingClassp[nodep] = containingClass(nodep->backp());
+        } else {
+            return m_containingClassp[nodep] = nullptr;
+        }
+    }
     void visit(AstFuncRef* nodep) override {
         visit(static_cast<AstNodeFTaskRef*>(nodep));
         if (nodep->taskp() && VN_IS(nodep->taskp(), Task)) {
@@ -6889,10 +6907,26 @@ class WidthVisitor final : public VNVisitor {
             return;
         }
         if ((nodep->taskp()->classMethod() && !nodep->taskp()->isStatic())
-            && !VN_IS(m_procedurep, InitialAutomatic)
-            && (!m_ftaskp || !m_ftaskp->classMethod() || m_ftaskp->isStatic()) && !m_constraintp) {
-            nodep->v3error("Cannot call non-static member function "
-                           << nodep->prettyNameQ() << " without object (IEEE 1800-2023 8.10)");
+            && !VN_IS(m_procedurep, InitialAutomatic) && !m_constraintp) {
+            bool allow = false;
+            if (m_ftaskp && m_ftaskp->classMethod() && !m_ftaskp->isStatic()) {
+                if (const AstFuncRef* const funcRefp = VN_CAST(nodep, FuncRef)) {
+                    allow = funcRefp->superReference();
+                } else if (const AstTaskRef* const taskRefp = VN_CAST(nodep, TaskRef)) {
+                    allow = taskRefp->superReference();
+                }
+                if (!allow) {
+                    const AstClass* callerClassp = containingClass(m_ftaskp);
+                    if (!callerClassp) callerClassp = containingClass(m_ftaskp->classOrPackagep());
+                    const AstClass* calleeClassp = VN_CAST(nodep->classOrPackagep(), Class);
+                    if (!calleeClassp) calleeClassp = containingClass(nodep->taskp());
+                    allow = AstClass::isClassExtendedFrom(callerClassp, calleeClassp);
+                }
+            }
+            if (!allow) {
+                nodep->v3error("Cannot call non-static member function "
+                               << nodep->prettyNameQ() << " without object (IEEE 1800-2023 8.10)");
+            }
         }
         if (nodep->taskp() && !nodep->scopeNamep()
             && (nodep->taskp()->dpiContext() || nodep->taskp()->dpiExport())) {
