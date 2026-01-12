@@ -18,7 +18,6 @@ if not test.have_solver:
 test.compile()
 
 # Test with warnings disabled via +verilator+wno+unsatconstr+1
-test.execute(all_run_flags=['+verilator+wno+unsatconstr+1'],
-             expect_filename=test.golden_filename)
+test.execute(all_run_flags=['+verilator+wno+unsatconstr+1'], expect_filename=test.golden_filename)
 
 test.passes()
