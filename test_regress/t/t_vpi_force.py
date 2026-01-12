@@ -14,8 +14,8 @@ test.scenarios('simulator')
 test.compile(make_top_shell=False,
              make_main=False,
              make_pli=True,
-             verilator_flags2=["--binary --vpi", test.pli_filename],
-             v_flags2=["+define+USE_VPI_NOT_DPI +define+VERILATOR_COMMENTS"])
+             verilator_flags2=["+define+VERILATOR_COMMENTS --binary --vpi", test.pli_filename],
+             v_flags2=["+define+USE_VPI_NOT_DPI"])
 
 test.execute(xrun_flags2=["+define+USE_VPI_NOT_DPI"], use_libvpi=True, check_finished=True)
 
