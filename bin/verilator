@@ -574,9 +574,9 @@ description of these arguments.
      +verilator+quiet                      Minimize additional printing
      +verilator+rand+reset+<value>         Set random reset technique
      +verilator+seed+<value>               Set random seed
-     +verilator+wno+unsatconstr+<value>    Disable constraint warnings
      +verilator+V                          Show verbose version and config
      +verilator+version                    Show version and exit
+     +verilator+wno+unsatconstr+<value>    Disable constraint warnings
 
 
 =head1 DISTRIBUTION
