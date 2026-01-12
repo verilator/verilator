@@ -387,6 +387,7 @@ Verilator 5.040 2025-08-30
 * Fix wide select expansion and substitution (#6341) (#6345). [Geza Lore]
 * Fix upcasting class type parameters (#6344). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix undefined weak link for Apple GCC etc (#6348). [Congcong Cai]
+* Fix syntax error on unsupported defparam array (#6915).
 
 
 Verilator 5.038 2025-07-08

@@ -3176,11 +3176,27 @@ list_of_defparam_assignments<nodep>:    //== IEEE: list_of_defparam_assignments
         ;
 
 defparam_assignment<nodep>:     // ==IEEE: defparam_assignment
-                idAny '.' idAny '=' expr                { $$ = new AstDefParam{$4, *$1, *$3, $5}; }
-        |       idAny '=' expr
-                        { $$ = nullptr; BBUNSUP($2, "Unsupported: defparam with no dot"); DEL($3); }
-        |       idAny '.' idAny '.'
-                        { $$ = nullptr; BBUNSUP($4, "Unsupported: defparam with more than one dot"); }
+                defparamIdRange '.' defparamIdRange '=' expr
+                        { $$ = new AstDefParam{$4, *$1, *$3, $5}; }
+        |       defparamIdRange '=' expr
+                        { $$ = nullptr; BBUNSUP($2, "Unsupported: defparam with no dot");
+                          DEL($3); }
+        |       defparamIdRange '.' defparamIdRange '.' defparamIdRangeList '=' expr
+                        { $$ = nullptr; BBUNSUP($4, "Unsupported: defparam with more than one dot");
+                          DEL($7); }
+        ;
+
+defparamIdRangeList<strp>:  // IEEE: part of defparam_assignment
+                defparamIdRange                         { $$ = $1; }
+        |       defparamIdRangeList '.' defparamIdRange  { $$ = $3; }
+        ;
+
+defparamIdRange<strp>:  // IEEE: part of defparam_assignment
+                idAny
+                        { $$ = $1; }
+        |       idAny part_select_rangeList
+                        { $$ = $1; BBUNSUP($2, "Unsupported: defparam with arrayed instance");
+                          DEL($2); }
         ;
 
 //************************************************
