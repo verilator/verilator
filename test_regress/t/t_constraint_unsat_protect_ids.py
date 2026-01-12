@@ -10,11 +10,17 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.top_filename = "t/t_constraint_unsat.v"
 
 if not test.have_solver:
     test.skip("No constraint solver installed")
 
-test.compile(verilator_flags2=["--protect-ids"])
+# This test makes randomly named .cpp/.h files, which tend to collect, so remove them first
+for filename in (glob.glob(test.obj_dir + "/*_PS*.cpp") + glob.glob(test.obj_dir + "/*_PS*.h") +
+                 glob.glob(test.obj_dir + "/*.d")):
+    test.unlink_ok(filename)
+
+test.compile(verilator_flags2=["--protect-ids", "--protect-key SECRET_KEY"])
 
 test.execute(expect_filename=test.golden_filename)
 
