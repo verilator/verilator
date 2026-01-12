@@ -263,8 +263,7 @@ private:
             return isRangedDType(varp) ? origDTypep : varp->findBitDType();
         } else if (VN_IS(origDTypep, PackArrayDType)) {
             return origDTypep;
-        } else if (const AstNodeUOrStructDType* const sdtp
-                   = VN_CAST(origDTypep, NodeUOrStructDType)) {
+        } else if (VN_IS(origDTypep, NodeUOrStructDType)) {
             return origDTypep;
         } else {
             varp->v3fatalSrc("Unsupported: Force of variable of unhandled data type");
