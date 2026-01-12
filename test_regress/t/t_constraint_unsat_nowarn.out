@@ -1,0 +1,18 @@
+
+=== Test 1: Valid constraints ===
+
+=== Test 2: addr out of range ===
+Randomization failed.
+
+=== Test 3: data out of range (too small) ===
+Randomization failed.
+
+=== Test 4: data out of range (too large) ===
+Randomization failed.
+
+=== Test 5: Both constraints violated ===
+Randomization failed.
+
+=== Test 6: Conflicting constraints (x > 100 && x < 50) ===
+Expected failure: conflicting constraints detected
+*-* All Finished *-*

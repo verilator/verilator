@@ -10,14 +10,15 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.top_filename = "t/t_constraint_unsat.v"
 
 if not test.have_solver:
     test.skip("No constraint solver installed")
 
 test.compile()
 
-# Test default behavior (warnings enabled)
-# To disable warnings: use +verilator+wno+unsatconstr+1
-test.execute(expect_filename=test.golden_filename)
+# Test with warnings disabled via +verilator+wno+unsatconstr+1
+test.execute(all_run_flags=['+verilator+wno+unsatconstr+1'],
+             expect_filename=test.golden_filename)
 
 test.passes()
