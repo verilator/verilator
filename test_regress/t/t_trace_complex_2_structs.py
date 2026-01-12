@@ -13,7 +13,10 @@ test.scenarios('simulator')
 test.top_filename = "t/t_trace_complex_2.v"
 
 test.compile(verilator_flags2=['--cc --trace-vcd --trace-structs --no-trace-params'])
-test.file_grep(test.obj_dir + "/" + test.vm_prefix + "___024root.h", r"VlUnpacked.*, 4.* __Vm_traceActivity")
+
+trace_cpp = test.obj_dir + "/" + test.vm_prefix + "__Trace__0.cpp"
+test.file_grep(trace_cpp, r"^ *Vt_.*trace_chg_dtype.*t__DOT__v_strp2")
+test.file_grep_count(trace_cpp, r"^ *Vt_.*trace_chg_dtype", 1)
 
 test.execute()
 
