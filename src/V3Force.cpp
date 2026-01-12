@@ -258,10 +258,6 @@ private:
             return origDTypep;
         } else if (const AstNodeUOrStructDType* const sdtp
                    = VN_CAST(origDTypep, NodeUOrStructDType)) {
-            if (!sdtp->packed()) {
-                varp->v3warn(E_UNSUPPORTED,
-                             "Unsupported: Force of unpacked struct / union variable");
-            }
             return origDTypep;
         } else {
             varp->v3fatalSrc("Unsupported: Force of variable of unhandled data type");
