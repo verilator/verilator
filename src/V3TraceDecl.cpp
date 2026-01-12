@@ -24,7 +24,6 @@
 
 #include "V3TraceDecl.h"
 
-#include "V3Ast.h"
 #include "V3Control.h"
 #include "V3EmitCBase.h"
 #include "V3Error.h"
@@ -237,7 +236,7 @@ class TraceDeclVisitor final : public VNVisitor {
     }
 
     void addToSubFunc(AstNodeStmt* stmtp) {
-        // TODO -- sub funcs for dtype components
+        // TODO (maybe) -- sub funcs for dtype components
         if (m_dtypeFuncp) {
             m_dtypeFuncp->addStmtsp(stmtp);
             return;
@@ -271,29 +270,17 @@ class TraceDeclVisitor final : public VNVisitor {
         AstTraceDecl* const newp
             = new AstTraceDecl{flp,      m_traName,  m_traVscp->varp(), valuep,
                                bitRange, arrayRange, dtypeCallp,        m_offset != 0};
-        // NOCOMMIT  -- m_offset and may be redundant with something else here ^
         if (m_offset) {
             newp->code(m_offset);
             if (!dtypeCallp) { m_offset += newp->codeInc(); }
             valuep->foreach([&](AstVarRef* const refp) {
                 UASSERT_OBJ(refp->varScopep() == m_traVscp, refp,
                             "Trace decl expression references unexpected var");
-                refp->replaceWith(new AstCExpr{flp, VIdProtect::protect(m_traVscp->varp()->name()),
-                                               m_traVscp->width()});
+                refp->replaceWith(new AstCExpr{flp, "__VdtypeVar", m_traVscp->width()});
                 VL_DO_DANGLING(refp->deleteTree(), refp);
             });
         } else {
             newp->dtypeDeclp(m_dtypeDeclp);
-        }
-        if (dtypeCallp) {
-            // NOCOMMIT  -- are all necessary?
-            // m_traVscp->tracePreserve(true);
-            m_traVscp->varp()->trace(true);
-            m_traVscp->varp()->setTracePreserve();
-            string dtypeParamName{VN_AS(dtypeCallp->funcp()->user2p(), VarScope)
-                                      ->varp()
-                                      ->vlArgType(true, false, true, "", true, true)};
-            newp->dtypeParamName(dtypeParamName);
         }
         m_declUncalledps.emplace(newp);
         addToSubFunc(newp);

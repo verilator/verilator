@@ -431,7 +431,6 @@ class GateOkVisitor final : public VNVisitorConst {
         // something else being read.
         AstVarScope* const vscp = nodep->varScopep();
         if (nodep->access().isWriteOnly()) {
-            if (vscp->tracePreserve()) clearSimple("Needed for tracing");
             if (m_lhsVarRef) clearSimple(">1 write refs");
             m_lhsVarRef = nodep;
         } else {

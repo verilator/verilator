@@ -287,7 +287,7 @@ class DeadVisitor final : public VNVisitor {
         iterateChildren(nodep);
         checkAll(nodep);
         if (nodep->scopep()) nodep->scopep()->user1Inc();
-        if (!nodep->tracePreserve() && mightElimVar(nodep->varp())) m_vscsp.push_back(nodep);
+        if (mightElimVar(nodep->varp())) m_vscsp.push_back(nodep);
     }
     void visit(AstVar* nodep) override {
         iterateChildren(nodep);
@@ -409,7 +409,7 @@ class DeadVisitor final : public VNVisitor {
         }
     }
     bool mightElimVar(const AstVar* nodep) const {
-        if (nodep->isSigPublic() || nodep->tracePreserve()) return false;  // Can't elim publics!
+        if (nodep->isSigPublic()) return false;  // Can't elim publics!
         if (nodep->isIO() || nodep->isClassMember() || nodep->sensIfacep()) return false;
         if (nodep->isTemp() && !nodep->isTrace()) return true;
         return m_elimUserVars;  // Post-Trace can kill most anything

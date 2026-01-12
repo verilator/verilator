@@ -220,19 +220,7 @@ public:
         return elementsConst() * subDTypep()->widthTotalBytes();
     }
     inline int left() const VL_MT_STABLE;
-    string cLeft() const {
-        std::ostringstream os;
-        if (left() < 0) os << "__02D";
-        os << abs(left());
-        return os.str();
-    }
     inline int right() const VL_MT_STABLE;
-    string cRight() const {
-        std::ostringstream os;
-        if (right() < 0) os << "__02D";
-        os << abs(right());
-        return os.str();
-    }
     inline int hi() const VL_MT_STABLE;
     inline int lo() const VL_MT_STABLE;
     inline int elementsConst() const VL_MT_STABLE;
@@ -508,19 +496,7 @@ public:
     inline int lo() const;
     inline int elements() const;
     int left() const { return ascending() ? lo() : hi(); }  // How to show a declaration
-    string cLeft() const {
-        std::ostringstream os;
-        if (left() < 0) os << "__02D";
-        os << abs(left());
-        return os.str();
-    }
     int right() const { return ascending() ? hi() : lo(); }
-    string cRight() const {
-        std::ostringstream os;
-        if (right() < 0) os << "__02D";
-        os << abs(right());
-        return os.str();
-    }
     inline bool ascending() const;
     bool implicit() const { return keyword() == VBasicDTypeKwd::LOGIC_IMPLICIT; }
     bool untyped() const { return keyword() == VBasicDTypeKwd::UNTYPED; }

@@ -39,7 +39,6 @@
 
 #include "V3Trace.h"
 
-#include "V3Ast.h"
 #include "V3DupFinder.h"
 #include "V3EmitCBase.h"
 #include "V3Graph.h"
@@ -246,18 +245,14 @@ class TraceVisitor final : public VNVisitor {
     void graphDtypePrune() {
         for (V3GraphVertex* const vtxp : m_graph.vertices().unlinkable()) {
             if (TraceTraceVertex* const vvertexp = vtxp->cast<TraceTraceVertex>()) {
-                // NOCOMMIT -- this will still leave the prefix push and popping -- FIX
                 AstTraceDecl* const declp = vvertexp->nodep();
                 // This skips the dtype sub-func optimization if a var is affected by multiple
                 // activities.  We really only need to do this for _chg funcs (and not decls,
                 // _const and _full) but it's simpiler to do it all one way or the other.
                 if (declp) {
-                    UINFO(1, "SIMPLIFY_DECL: " << declp);
                     if (declp->user2() || (declp->dtypeDeclp() && !declp->dtypeDeclp()->user2())) {
                         AstCCall* const callp = declp->dtypeCallp();
                         if (callp) {
-                            // NOCOMMIT -- this may leave dtype func which are not called --
-                            // problem?
                             AstNode* stmtexprp = callp->backp();
                             VL_DO_DANGLING(pushDeletep(stmtexprp->unlinkFrBack()), stmtexprp);
                         }
@@ -575,7 +570,9 @@ class TraceVisitor final : public VNVisitor {
         const std::string bufArg
             = v3Global.opt.traceClassBase()
               + "::" + (v3Global.opt.useTraceOffload() ? "OffloadBuffer" : "Buffer") + "* bufp"
-              + (declp ? (", uint32_t offset, " + declp->dtypeParamName()) : "");
+              + (declp ? (", uint32_t offset, const " + declp->dtypep()->cType("", true, true)
+                          + " __VdtypeVar")
+                       : "");
         if (isTopFunc) {
             // Top functions
             funcp->argTypes("void* voidSelf, " + bufArg);
@@ -806,7 +803,6 @@ class TraceVisitor final : public VNVisitor {
                     ifp = nullptr;
                 }
 
-                // NOCOMMIT  -- is it OK to do this only on the aggregate signal?
                 // If required, create the conditional node checking the activity flags
                 if (!prevActSet || actSet != *prevActSet) {
                     FileLine* const flp = m_topScopep->fileline();
@@ -910,8 +906,6 @@ class TraceVisitor final : public VNVisitor {
     }
 
     void createTraceFunctions() {
-        // NOCOMMIT
-        if (dumpGraphLevel() >= 6) m_graph.dumpDotFilePrefixed("trace_more_pre");
         graphDtypePrune();
 
         // Detect and remove duplicate values
@@ -1023,8 +1017,6 @@ class TraceVisitor final : public VNVisitor {
                             UINFO(8, "     SubCCALL " << ccallp);
                             V3GraphVertex* const ccallFuncVtxp = getCFuncVertexp(ccallp->funcp());
                             activityVtxp->slow(ccallp->funcp()->slow());
-                            UINFO(8, "       Activity Edge: " << activityVtxp->name() << " -- "
-                                                              << (void*)(activityVtxp));
                             new V3GraphEdge{&m_graph, activityVtxp, ccallFuncVtxp, 1};
                         }
                     }
@@ -1043,8 +1035,6 @@ class TraceVisitor final : public VNVisitor {
                 // Cannot treat a coroutine as slow, it may be resumed later
                 const bool slow = nodep->slow() && !nodep->isCoroutine();
                 TraceActivityVertex* const activityVtxp = getActivityVertexp(nodep, slow);
-                UINFO(8, "       Activity Edge: " << activityVtxp->name() << " -- "
-                                                  << (void*)(activityVtxp));
                 new V3GraphEdge{&m_graph, activityVtxp, funcVtxp, 1};
             }
         }
@@ -1076,20 +1066,15 @@ class TraceVisitor final : public VNVisitor {
             }
             V3GraphVertex* const traceVtxp = m_tracep->user1u().toGraphVertex();
             new V3GraphEdge{&m_graph, varVtxp, traceVtxp, 1};
-            UINFO(1, "EDGE: " << varVtxp << " (" << nodep << ") -> " << traceVtxp << " ("
-                              << m_tracep << ")");
             if (nodep->varp()->isPrimaryInish()  // Always need to trace primary inputs
                 || nodep->varp()->isSigPublic()) {  // Or ones user can change
                 new V3GraphEdge{&m_graph, m_alwaysVtxp, traceVtxp, 1};
-                UINFO(1, "ALWAYS_EDGE: " << varVtxp << " (" << nodep << ") -> " << m_alwaysVtxp);
             }
             if (m_tracep->dtypeCallp()) varscopep->user2p(m_tracep);
         } else if (m_cfuncp && m_finding && nodep->access().isWriteOrRW()) {
             V3GraphVertex* const funcVtxp = getCFuncVertexp(m_cfuncp);
             if (varVtxp) {  // else we're not tracing this signal
                 new V3GraphEdge{&m_graph, funcVtxp, varVtxp, 1};
-                UINFO(1, "SOME_EDGE: " << varVtxp << " (" << nodep << ") -> " << funcVtxp << " ("
-                                       << m_cfuncp << ")");
                 AstTraceDecl* const declp = VN_AS(varscopep->user2p(), TraceDecl);
                 if (declp) {
                     V3GraphVertex* const cFuncVtxp = getCFuncVertexp(m_cfuncp);
@@ -1098,7 +1083,6 @@ class TraceVisitor final : public VNVisitor {
                         if (!declp->user3p()) {
                             declp->user3p(activityp);
                         } else if (declp->user3u().toGraphVertex() != activityp) {
-                            UINFO(1, "MULTIPLE_ACTIVITIES: " << nodep << " -- " << m_cfuncp);
                             declp->user2(true);
                         }
                     }
@@ -1113,7 +1097,6 @@ public:
     // CONSTRUCTORS
     explicit TraceVisitor(AstNetlist* nodep)
         : m_alwaysVtxp{new TraceActivityVertex{&m_graph, TraceActivityVertex::ACTIVITY_ALWAYS}} {
-        // NOCOMMIT -- necessary?
         nodep->user2ClearTree();  // TraceDecl multiple activities flag
         nodep->user3ClearTree();  // TraceDecl TraceActivityVertex (assumes we start at nullptr)
         iterate(nodep);
