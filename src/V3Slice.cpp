@@ -250,10 +250,16 @@ class SliceVisitor final : public VNVisitor {
             return false;
         }
 
-        // Skip optimization if array is too large
+        // Check if LHS contains I/O ports - they use raw C arrays which can't be assigned with =
+        const bool hasIO
+            = nodep->lhsp()->exists([&](const AstVarRef* refp) -> bool { return refp->varp()->isIO(); });
+
+        // Skip optimization if array is too large, but only for non-I/O variables.
+        // I/O ports use raw C arrays which don't support aggregate initialization,
+        // so they must be expanded element-by-element.
         const int elements = arrayp->rangep()->elementsConst();
         const int elementLimit = v3Global.opt.fSliceElementLimit();
-        if (elements > elementLimit && elementLimit > 0) {
+        if (elements > elementLimit && elementLimit > 0 && !hasIO) {
             ++m_statSliceElementSkips;
             m_okInitArray = true;  // VL_RESTORER in visit(AstNodeAssign)
             return false;
