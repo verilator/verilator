@@ -32,6 +32,7 @@ Verilator 5.045 devel
 * Fix WIDTHEXTEND suppression on add/sub with single-bit signal. [Dan Katz]
 * Fix segfault in V3Slice (#6899). [Pawel Kojma, Antmicro Ltd.]
 * Fix signedness of packed array (#6901) (#6902). [Yutetsu TAKATSUKASA]
+* Fix assignment of queue from unpacked array (#6906).
 
 
 Verilator 5.044 2026-01-01

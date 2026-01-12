@@ -38,6 +38,10 @@
 #include <string>
 #include <utility>
 
+class VlProcess;
+template <typename T_Value, std::size_t N_Depth>
+class VlUnpacked;
+
 //=========================================================================
 // Debug functions
 
@@ -104,8 +108,6 @@ constexpr IData VL_CLOG2_CE_Q(QData lhs) VL_PURE {
 }
 
 // Metadata of processes
-class VlProcess;
-
 using VlProcessRef = std::shared_ptr<VlProcess>;
 
 class VlProcess final {
@@ -531,6 +533,10 @@ public:
             m_deque.resize(size, atDefault());
         }
     }
+    // Unpacked array new[]() becomes a renew_copy()
+    template <typename T_UnpackedValue, std::size_t N_UnpackedDepth>
+    void renew_copy(size_t size, const VlUnpacked<T_UnpackedValue, N_UnpackedDepth>& rhs);
+
     void resize(size_t size) { m_deque.resize(size, atDefault()); }
 
     // function void q.push_front(value)
@@ -1614,6 +1620,16 @@ std::string VL_TO_STRING(const VlUnpacked<T_Value, N_Depth>& obj) {
 
 template <typename T_Value, std::size_t N_Depth>
 struct VlContainsCustomStruct<VlUnpacked<T_Value, N_Depth>> : VlContainsCustomStruct<T_Value> {};
+
+template <typename T_Value, size_t N_MaxSize>
+template <typename T_UnpackedValue, std::size_t N_UnpackedDepth>
+void VlQueue<T_Value, N_MaxSize>::renew_copy(
+    size_t size, const VlUnpacked<T_UnpackedValue, N_UnpackedDepth>& rhs) {
+    clear();
+    if (size == 0) return;
+    m_deque.resize(size, atDefault());
+    for (size_t i = 0; i < std::min(size, N_UnpackedDepth); ++i) { m_deque[i] = rhs.m_storage[i]; }
+}
 
 //===================================================================
 // Helper to apply the given indices to a target expression
