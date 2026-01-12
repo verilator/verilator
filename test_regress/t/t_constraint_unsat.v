@@ -65,7 +65,8 @@ module t_constraint_unsat;
     tc = new;
     if (!tc.try_randomize()) begin
       $display("Expected failure: conflicting constraints detected");
-    end else begin
+    end
+    else begin
       $display("ERROR: Should have failed with conflicting constraints");
       $stop;
     end

@@ -15,6 +15,7 @@ Verilator 5.045 devel
 
 * Add VERILATOR_NUMA_STRATEGY environment variable (#6826) (#6880). [Yangyu Chen]
 * Support vpi_put/vpi_get forcing of signals (#5933) (#6704). [Christian Hecken]
+* Support detailed failure info for constraint violations (#6617) (#6883). [Yilou Wang]
 * Support complex expressions as std::randomize arguments (#6860). [Jakub Wasilewski, Antmicro Ltd.]
 * Support dynamic array elements in std::randomize (#6896). [Ryszard Rozak, Antmicro Ltd.]
 * Remove deprecated `--xml-only`.

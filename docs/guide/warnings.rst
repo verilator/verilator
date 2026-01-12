@@ -2276,8 +2276,8 @@ List Of Warnings
 .. option:: UNSATCONSTR
 
    Warns that a ``randomize()`` call failed because one or more constraints
-   could not be satisfied. This warning is issued at simulation runtime when
-   the SMT solver determines that the combination of constraints is
+   could not be satisfied. This warning is issued at simulation runtime
+   when the SMT solver determines that the combination of constraints is
    unsatisfiable.
 
    Each unsatisfied constraint is reported with its source location to help

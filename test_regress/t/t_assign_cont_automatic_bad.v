@@ -10,7 +10,7 @@ module t;
 
   task automatic tsk;
     reg l;
-    begin: cont_block
+    begin : cont_block
       assign g = signed'(l);  // <--- BAD: using automatic in cont assignment
     end
   endtask

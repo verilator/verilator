@@ -1190,6 +1190,7 @@ unopt
 unoptflat
 unoptimizable
 unroller
+unsatisfiable
 unsized
 unsup
 untyped
