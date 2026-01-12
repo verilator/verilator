@@ -2273,6 +2273,20 @@ List Of Warnings
    unpacked struct/array inside a packed struct/array.
 
 
+.. option:: UNSATCONSTR
+
+   Warns that a ``randomize()`` call failed because one or more constraints
+   could not be satisfied. This warning is issued at simulation runtime when
+   the SMT solver determines that the combination of constraints is
+   unsatisfiable.
+
+   Each unsatisfied constraint is reported with its source location to help
+   identify conflicting constraints.
+
+   This warning can be disabled by setting the runtime option
+   ``+verilator+wno+unsatconstr+1`` or by calling
+   ``Verilated::threadContextp()->warnUnsatConstr(false)`` in C++.
+
 .. option:: UNSIGNED
 
    .. TODO better example

@@ -123,3 +123,11 @@ Options:
 .. option:: +verilator+version
 
    Displays program version and exits.
+
+.. option:: +verilator+wno+unsatconstr+<value>
+
+   Disable unsatisfied constraint warnings at simulation runtime. When set to
+   1, warnings about unsatisfied constraints during ``randomize()`` calls will
+   not be displayed. Defaults to 0 (warnings enabled). This can also be
+   controlled via the C++ API using
+   ``Verilated::threadContextp()->warnUnsatConstr(false)``.

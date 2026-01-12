@@ -414,6 +414,7 @@ protected:
         std::string m_profExecFilename;  // +prof+exec+file filename
         std::string m_profVltFilename;  // +prof+vlt filename
         std::string m_solverProgram;  // SMT solver program
+        bool m_warnUnsatConstr = true;  // Warn on unsatisfied constraints
         VlOs::DeltaCpuTime m_cpuTimeStart{false};  // CPU time, starts when create first model
         VlOs::DeltaWallTime m_wallTimeStart{false};  // Wall time, starts when create first model
         std::vector<traceBaseModelCb_t> m_traceBaseModelCbs;  // Callbacks to traceRegisterModel
@@ -653,6 +654,9 @@ public:
     // Internal: SMT solver program
     std::string solverProgram() const VL_MT_SAFE;
     void solverProgram(const std::string& flag) VL_MT_SAFE;
+    // Internal: Control display of unsatisfied constraints
+    bool warnUnsatConstr() const VL_MT_SAFE { return m_ns.m_warnUnsatConstr; }
+    void warnUnsatConstr(bool flag) VL_MT_SAFE { m_ns.m_warnUnsatConstr = flag; }
 
     // Internal: Find scope
     const VerilatedScope* scopeFind(const char* namep) const VL_MT_SAFE;

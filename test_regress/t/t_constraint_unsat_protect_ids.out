@@ -1,0 +1,31 @@
+
+=== Test 1: Valid constraints ===
+
+=== Test 2: addr out of range ===
+%Warning-UNSATCONSTR: PSTByA:16: Unsatisfied constraint
+%Warning-UNSATCONSTR: PSTByA:12: Unsatisfied constraint
+%Warning-UNSATCONSTR: PSTByA:12: Unsatisfied constraint
+%Warning-UNSATCONSTR: PSTByA:11: Unsatisfied constraint
+%Warning-UNSATCONSTR: PSTByA:16: Unsatisfied constraint
+Randomization failed.
+
+=== Test 3: data out of range (too small) ===
+%Warning-UNSATCONSTR: PSTByA:12: Unsatisfied constraint
+%Warning-UNSATCONSTR: PSTByA:16: Unsatisfied constraint
+Randomization failed.
+
+=== Test 4: data out of range (too large) ===
+%Warning-UNSATCONSTR: PSTByA:12: Unsatisfied constraint
+%Warning-UNSATCONSTR: PSTByA:16: Unsatisfied constraint
+Randomization failed.
+
+=== Test 5: Both constraints violated ===
+%Warning-UNSATCONSTR: PSTByA:11: Unsatisfied constraint
+%Warning-UNSATCONSTR: PSTByA:16: Unsatisfied constraint
+Randomization failed.
+
+=== Test 6: Conflicting constraints (x > 100 && x < 50) ===
+%Warning-UNSATCONSTR: PSTByA:26: Unsatisfied constraint
+%Warning-UNSATCONSTR: PSTByA:27: Unsatisfied constraint
+Expected failure: conflicting constraints detected
+*-* All Finished *-*

@@ -389,8 +389,30 @@ bool VlRandomizer::next(VlRNG& rngr) {
     }
     os << "(check-sat)\n";
 
-    bool sat = parseSolution(os);
+    bool sat = parseSolution(os, true);
     if (!sat) {
+        // If unsat, use named assertions to get unsat-core
+        os << "(reset)\n";
+        os << "(set-option :produce-unsat-cores true)\n";
+        os << "(set-logic QF_ABV)\n";
+        os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
+        os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
+        for (const auto& var : m_vars) {
+            if (var.second->dimension() > 0) {
+                auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
+                var.second->setArrayInfo(arrVarsp);
+            }
+            os << "(declare-fun " << var.first << " () ";
+            var.second->emitType(os);
+            os << ")\n";
+        }
+        int j = 0;
+        for (const std::string& constraint : m_constraints) {
+            os << "(assert (! (= #b1 " << constraint << ") :named cons" << j << "))\n";
+            j++;
+        }
+        os << "(check-sat)\n";
+        sat = parseSolution(os, true);
         os << "(reset)\n";
         return false;
     }
@@ -399,18 +421,67 @@ bool VlRandomizer::next(VlRNG& rngr) {
         randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
         os << ")\n";
         os << "\n(check-sat)\n";
-        sat = parseSolution(os);
+        sat = parseSolution(os, false);
     }
 
     os << "(reset)\n";
     return true;
 }
 
-bool VlRandomizer::parseSolution(std::iostream& os) {
+bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
     std::string sat;
     do { std::getline(os, sat); } while (sat == "");
-
-    if (sat == "unsat") return false;
+    if (sat == "unsat") {
+        if (!log) return false;
+        os << "(get-unsat-core) \n";
+        sat.clear();
+        std::getline(os, sat);
+        std::vector<int> numbers;
+        std::string currentNum;
+        for (char c : sat) {
+            if (std::isdigit(c)) {
+                currentNum += c;
+                numbers.push_back(std::stoi(currentNum));
+                currentNum.clear();
+            }
+        }
+        if (Verilated::threadContextp()->warnUnsatConstr()) {
+            for (int n : numbers) {
+                if (n < m_constraints_line.size()) {
+                    const std::string& constraint_info = m_constraints_line[n];
+                    // Parse "filename:linenum   source" format
+                    size_t colon_pos = constraint_info.find(':');
+                    if (colon_pos != std::string::npos) {
+                        std::string filename = constraint_info.substr(0, colon_pos);
+                        size_t space_pos = constraint_info.find("   ", colon_pos);
+                        std::string linenum_str;
+                        std::string source;
+                        if (space_pos != std::string::npos) {
+                            linenum_str
+                                = constraint_info.substr(colon_pos + 1, space_pos - colon_pos - 1);
+                            source = constraint_info.substr(space_pos + 3);
+                        } else {
+                            linenum_str = constraint_info.substr(colon_pos + 1);
+                        }
+                        const int linenum = std::stoi(linenum_str);
+                        std::string msg = "UNSATCONSTR: Unsatisfied constraint";
+                        if (!source.empty()) {
+                            // Trim leading whitespace and add quotes
+                            size_t start = source.find_first_not_of(" \t");
+                            if (start != std::string::npos) {
+                                msg += ": '" + source.substr(start) + "'";
+                            }
+                        }
+                        VL_WARN_MT(filename.c_str(), linenum, "", msg.c_str());
+                    } else {
+                        VL_PRINTF("%%Warning-UNSATCONSTR: Unsatisfied constraint: %s\n",
+                                  constraint_info.c_str());
+                    }
+                }
+            }
+        }
+        return false;
+    }
     if (sat != "sat") {
         std::stringstream msg;
         msg << "Internal: Solver error: " << sat;
@@ -501,12 +572,25 @@ bool VlRandomizer::parseSolution(std::iostream& os) {
     return true;
 }
 
-void VlRandomizer::hard(std::string&& constraint) {
+void VlRandomizer::hard(std::string&& constraint, const char* filename, int linenum,
+                        const char* source) {
     m_constraints.emplace_back(std::move(constraint));
+    // Format constraint location: "filename:linenum   source"
+    if (filename[0] != '\0' || source[0] != '\0') {
+        std::string line;
+        if (filename[0] != '\0') {
+            line = std::string(filename) + ":" + std::to_string(linenum);
+            if (source[0] != '\0') line += "   " + std::string(source);
+        } else {
+            line = source;
+        }
+        m_constraints_line.emplace_back(std::move(line));
+    }
 }
 
 void VlRandomizer::clearConstraints() {
     m_constraints.clear();
+    m_constraints_line.clear();
     // Keep m_vars for class member randomization
 }
 
