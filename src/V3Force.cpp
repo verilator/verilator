@@ -99,6 +99,7 @@ public:
             AstNodeStmt* toInsertp = nullptr;
             AstNodeStmt* outerStmtp = nullptr;
             std::vector<AstNodeExpr*> loopVarRefs;
+            AstNodeDType* enRhsDTypep = m_enVscp->varp()->dtypep()->skipRefp();
             if (AstUnpackArrayDType* const unpackedp
                 = VN_CAST(m_rdVscp->varp()->dtypep()->skipRefp(), UnpackArrayDType)) {
                 // Create a loop to set all elements of __VforceEn array to 0.
@@ -137,10 +138,19 @@ public:
                         flp, new AstVarRef{flp, loopVarScopep, VAccess::WRITE},
                         new AstAdd{flp, readRefp->cloneTree(false), new AstConst{flp, 1}}};
                     currWhilep->addStmtsp(currIncrp);
+
+                    // __En var has the same number of dimensions as __Rd var
+                    enRhsDTypep = enRhsDTypep->subDTypep();
                 }
             }
-            V3Number zero{m_enVscp, m_enVscp->width()};
-            AstNodeExpr* const enRhsp = new AstConst{flp, zero};
+            AstNodeExpr* enRhsp;
+            if (AstNodeUOrStructDType* const structEnDtypep
+                = VN_CAST(enRhsDTypep, NodeUOrStructDType)) {
+                enRhsp = new AstConsPackUOrStruct{flp, structEnDtypep};
+            } else {
+                V3Number zero{m_enVscp, enRhsDTypep->width()};
+                enRhsp = new AstConst{flp, zero};
+            }
             AstNodeExpr* enLhsp = applySelects(enRefp, loopVarRefs);
             AstNodeStmt* stmtp = new AstAssign{flp, enLhsp, enRhsp};
             if (toInsertp) {
