@@ -116,6 +116,14 @@ Options:
    simulation runtime random seed value. If zero or not specified picks a
    value from the system random number generator.
 
+.. option:: +verilator+wno+unsatconstr+<value>
+
+   Disable unsatisfied constraint warnings at simulation runtime. When set to
+   1, warnings about unsatisfied constraints during ``randomize()`` calls will
+   not be displayed. Defaults to 0 (warnings enabled). This can also be
+   controlled via the C++ API using
+   ``Verilated::threadContextp()->warnUnsatConstr(false)``.
+
 .. option:: +verilator+V
 
    Shows the verbose version, including configuration information.

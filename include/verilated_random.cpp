@@ -445,7 +445,7 @@ bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
                 currentNum.clear();
             }
         }
-        if (Verilated::threadContextp()->randShowUnsatConstr()) {
+        if (Verilated::threadContextp()->warnUnsatConstr()) {
             for (int n : numbers) {
                 if (n < m_constraints_line.size()) {
                     const std::string& constraint_info = m_constraints_line[n];
@@ -465,7 +465,13 @@ bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
                         }
                         const int linenum = std::stoi(linenum_str);
                         std::string msg = "UNSATCONSTR: Unsatisfied constraint";
-                        if (!source.empty()) msg += ": " + source;
+                        if (!source.empty()) {
+                            // Trim leading whitespace and add quotes
+                            size_t start = source.find_first_not_of(" \t");
+                            if (start != std::string::npos) {
+                                msg += ": '" + source.substr(start) + "'";
+                            }
+                        }
                         VL_WARN_MT(filename.c_str(), linenum, "", msg.c_str());
                     } else {
                         VL_PRINTF("%%Warning-UNSATCONSTR: Unsatisfied constraint: %s\n",

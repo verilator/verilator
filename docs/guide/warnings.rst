@@ -2284,8 +2284,8 @@ List Of Warnings
    identify conflicting constraints.
 
    This warning can be disabled by setting the runtime option
-   ``+verilator+rand+show_unsat_constr+0`` or by calling
-   ``Verilated::threadContextp()->randShowUnsatConstr(false)`` in C++.
+   ``+verilator+wno+unsatconstr+1`` or by calling
+   ``Verilated::threadContextp()->warnUnsatConstr(false)`` in C++.
 
 .. option:: UNSIGNED
 
