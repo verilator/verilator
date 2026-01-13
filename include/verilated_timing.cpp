@@ -127,58 +127,58 @@ void VlTriggerScheduler::resume(const char* eventDescription) {
     VL_DEBUG_IF(dump(eventDescription);
                 VL_DBG_MSGF("         Resuming processes waiting for %s\n", eventDescription););
 #endif
-    for (VlCoroutineHandle& coro : m_resumeQueue) coro.resume();
-    m_resumeQueue.clear();
+    for (VlCoroutineHandle& coro : m_toResume) coro.resume();
+    m_toResume.clear();
 }
 
 void VlTriggerScheduler::moveToResumeQueue(const char* eventDescription) {
 #ifdef VL_DEBUG
-    if (!m_ready.empty()) {
+    if (!m_fired.empty()) {
         VL_DEBUG_IF(VL_DBG_MSGF("         Moving to resume queue processes waiting for %s:\n",
                                 eventDescription);
                     for (const auto& susp
-                         : m_ready) {
+                         : m_fired) {
                         VL_DBG_MSGF("           - ");
                         susp.dump();
                     });
     }
 #endif
-    std::swap(m_ready, m_resumeQueue);
+    std::swap(m_fired, m_toResume);
 }
 
 void VlTriggerScheduler::ready(const char* eventDescription) {
 #ifdef VL_DEBUG
-    if (!m_unready.empty()) {
+    if (!m_awaiting.empty()) {
         VL_DEBUG_IF(
             VL_DBG_MSGF("         Committing processes waiting for %s:\n", eventDescription);
             for (const auto& susp
-                 : m_unready) {
+                 : m_awaiting) {
                 VL_DBG_MSGF("           - ");
                 susp.dump();
             });
     }
 #endif
-    const size_t expectedSize = m_ready.size() + m_unready.size();
-    if (m_ready.capacity() < expectedSize) m_ready.reserve(expectedSize * 2);
-    m_ready.insert(m_ready.end(), std::make_move_iterator(m_unready.begin()),
-                   std::make_move_iterator(m_unready.end()));
-    m_unready.clear();
+    const size_t expectedSize = m_fired.size() + m_awaiting.size();
+    if (m_fired.capacity() < expectedSize) m_fired.reserve(expectedSize * 2);
+    m_fired.insert(m_fired.end(), std::make_move_iterator(m_awaiting.begin()),
+                   std::make_move_iterator(m_awaiting.end()));
+    m_awaiting.clear();
 }
 
 #ifdef VL_DEBUG
 void VlTriggerScheduler::dump(const char* eventDescription) const {
-    if (m_ready.empty()) {
+    if (m_fired.empty()) {
         VL_DBG_MSGF("         No ready processes waiting for %s\n", eventDescription);
     } else {
-        for (const auto& susp : m_ready) {
+        for (const auto& susp : m_fired) {
             VL_DBG_MSGF("         Ready processes waiting for %s:\n", eventDescription);
             VL_DBG_MSGF("           - ");
             susp.dump();
         }
     }
-    if (!m_unready.empty()) {
+    if (!m_awaiting.empty()) {
         VL_DBG_MSGF("         Uncommitted processes waiting for %s:\n", eventDescription);
-        for (const auto& susp : m_unready) {
+        for (const auto& susp : m_awaiting) {
             VL_DBG_MSGF("           - ");
             susp.dump();
         }
