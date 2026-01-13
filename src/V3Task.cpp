@@ -1464,11 +1464,6 @@ class TaskVisitor final : public VNVisitor {
             AstExprStmt* const exprstmtp = new AstExprStmt{
                 flp, substp, new AstVarRef{arrayp->fileline(), substvscp, VAccess::READ}};
             exprstmtp->stmtsp()->addNext(assignp);
-            exprstmtp->hasResult(false);
-
-            AstCExpr* const exprp = new AstCExpr{flp, substp->name()};
-            exprp->dtypeSetString();
-            exprstmtp->addStmtsp(new AstCReturn{flp, exprp});
             argp->exprp(exprstmtp);
         }
     }
