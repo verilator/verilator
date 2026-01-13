@@ -34,6 +34,7 @@ public:
         std::vector<AstNodeStmt*> m_inits;  // Initialization statements for previous values
         std::vector<AstNodeStmt*> m_preUpdates;  // Pre update assignments
         std::vector<AstNodeStmt*> m_postUpdates;  // Post update assignments
+        std::vector<AstVar*> m_vars;  // Temporary variables that need to be places somewhere
     };
 
 private:
@@ -82,8 +83,12 @@ private:
         } else {
             name = m_prevNames.get(exprp);
         }
-        AstVarScope* const vscp = m_scopep->createTemp(name, exprp->dtypep());
-        vscp->varp()->isInternal(true);
+        FileLine* const flp = exprp->fileline();
+        AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, exprp->dtypep()};
+        varp->isInternal(true);
+        m_results.m_vars.push_back(varp);
+        AstVarScope* const vscp = new AstVarScope{flp, m_scopep, varp};
+        m_scopep->addVarsp(vscp);
         return vscp;
     }
 
@@ -241,6 +246,8 @@ public:
     // CONSTRUCTOR
     explicit SenExprBuilder(AstScope* scopep)
         : m_scopep{scopep} {}
+
+    inline AstScope* getScope() const noexcept { return m_scopep; }
 };
 
 #endif  // Guard

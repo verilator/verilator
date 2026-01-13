@@ -653,6 +653,13 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
     // Get the SenExprBuilder results
     const SenExprBuilder::Results senResults = senExprBuilder.getAndClearResults();
 
+    AstScope* const scopep = senExprBuilder.getScope();
+    for (AstVar* const varp : senResults.m_vars) {
+        scopep->modp()->addStmtsp(varp);
+        AstVarScope* const vscp = new AstVarScope{varp->fileline(), scopep, varp};
+        scopep->addVarsp(vscp);
+    }
+
     // Add the SenExprBuilder init statements to the static initialization functino
     for (AstNodeStmt* const nodep : senResults.m_inits) initFuncp->addStmtsp(nodep);
 

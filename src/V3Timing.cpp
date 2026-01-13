@@ -762,6 +762,28 @@ class TimingControlVisitor final : public VNVisitor {
         forkp->addNextHere(awaitp->makeStmt());
     }
 
+    void addLocalVars(const std::vector<AstVar*>& varsp) const {
+        for (AstVar* const varp : varsp) varp->funcLocal(true);
+        AstNode* lastVarp;
+        // NodeProcedure/CFunc/Begin
+        if (AstNodeProcedure* const procp = VN_CAST(m_procp, NodeProcedure)) {
+            lastVarp = procp->stmtsp();
+        } else if (AstCFunc* const cfuncp = VN_CAST(m_procp, CFunc)) {
+            for (AstVar* const varp : varsp) cfuncp->addVarsp(varp);
+            return;
+        } else if (AstBegin* const beginp = VN_CAST(m_procp, Begin)) {
+            lastVarp = beginp->stmtsp();
+        } else {
+            UASSERT(m_procp, "m_procp is nullptr");
+            UASSERT_OBJ(false, m_procp,
+                        m_procp->prettyNameQ()
+                            << " is not of an expected type (NodeProcedure/CFunc/Begin) instead "
+                            << m_procp->prettyTypeName());
+        }
+        while (VN_IS(lastVarp, Var)) lastVarp = lastVarp->nextp();
+        for (AstVar* const varp : varsp) lastVarp->addHereThisAsNext(varp);
+    }
+
     // VISITORS
     void visit(AstNodeModule* nodep) override {
         UASSERT_OBJ(!m_classp, nodep, "Module or class under class");
@@ -961,6 +983,7 @@ class TimingControlVisitor final : public VNVisitor {
                                                 m_senExprBuilderp->build(sentreep).first};
             // Get the SenExprBuilder results
             const SenExprBuilder::Results senResults = m_senExprBuilderp->getAndClearResults();
+            addLocalVars(senResults.m_vars);
             // Put all and inits before the trigger eval loop
             for (AstNodeStmt* const stmtp : senResults.m_inits) {
                 nodep->addHereThisAsNext(stmtp);
