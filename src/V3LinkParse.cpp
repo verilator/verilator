@@ -417,6 +417,40 @@ class LinkParseVisitor final : public VNVisitor {
                     }
                     dtypep = exprp;
                 }
+
+                // Transform SELEXTRACT into PACKEDARRAYTYPE. For mytype_t[x:y]
+                // Grammar produces: SELEXTRACT(PARSEREF(mytype_t), x, y)
+                // We need:          PACKARRAYDTYPE(REFDTYPE(mytype_t), RANGE(x,y))
+                // And also, as above we need to reverse the ordering for
+                // multidimensional arrays.
+                if (AstSelExtract* selex = VN_CAST(dtypep, SelExtract)) {
+                    std::vector<AstSelExtract*> selexNodes;
+                    selexNodes.push_back(selex);
+                    while (AstSelExtract* next = VN_CAST(selex->fromp(), SelExtract)) {
+                        selex = next;
+                        selexNodes.push_back(selex);
+                    }
+                    // Create the base type
+                    AstNodeDType* arrayDType = nullptr;
+                    if (AstNodeExpr* refp = VN_CAST(selex->fromp(), ParseRef)) {
+                        arrayDType = new AstRefDType{selex->fileline(), refp->name()};
+                    } else {
+                        selex->v3error("???");
+                    }
+
+                    for (auto it = selexNodes.begin(); it != selexNodes.end(); ++it) {
+                        selex = *it;
+                        FileLine *fl = selex->fileline();
+                        //AstParseRef *fromp = VN_CAST(selex->fromp()->unlinkFrBack(), ParseRef);
+                        AstNodeExpr* leftp = selex->leftp()->unlinkFrBack();
+                        AstNodeExpr* rightp = selex->rightp()->unlinkFrBack();
+                        AstRange* const range = new AstRange{fl, leftp, rightp};
+                        arrayDType = new AstPackArrayDType{fl, VFlagChildDType{}, arrayDType, range};
+                    }
+                    VL_DO_DANGLING(dtypep->deleteTree(), dtypep);
+                    dtypep = arrayDType;
+                }
+
             } else {
                 dtypep = new AstVoidDType{nodep->fileline()};
             }
