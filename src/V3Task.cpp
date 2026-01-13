@@ -1615,8 +1615,7 @@ class TaskVisitor final : public VNVisitor {
             if (nodep->classMethod()) modes++;
             if (v3Global.opt.protectIds() && nodep->taskPublic()) {
                 // We always call protect() on names, we don't check if public or not
-                // Hence any external references wouldn't be able to find the refed public
-                // object.
+                // Hence any external references wouldn't be able to find the refed public object.
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: Using --protect-ids with public function");
             }
@@ -1632,14 +1631,14 @@ class TaskVisitor final : public VNVisitor {
             // TODO: Why not if recursive? It will not work ...
             if (noInline && !nodep->classMethod() && !nodep->recursive()) {
                 if (AstNode* const impurep = m_statep->checkImpure(nodep)) {
-                    nodep->v3warn(IMPURE, "Unsupported: External variable referenced by "
-                                          "non-inlined function/task: "
-                                              << nodep->prettyNameQ() << '\n'
-                                              << nodep->warnContextPrimary() << '\n'
-                                              << impurep->warnOther()
-                                              << "... Location of the external reference: "
-                                              << impurep->prettyNameQ() << '\n'
-                                              << impurep->warnContextSecondary());
+                    nodep->v3warn(
+                        IMPURE,
+                        "Unsupported: External variable referenced by non-inlined function/task: "
+                            << nodep->prettyNameQ() << '\n'
+                            << nodep->warnContextPrimary() << '\n'
+                            << impurep->warnOther() << "... Location of the external reference: "
+                            << impurep->prettyNameQ() << '\n'
+                            << impurep->warnContextSecondary());
                 }
             }
 
@@ -1679,8 +1678,8 @@ class TaskVisitor final : public VNVisitor {
         }
     }
     void visit(AstNodeForeach* nodep) override {  // LCOV_EXCL_LINE
-        nodep->v3fatalSrc("Foreach statements should have been converted to while statements "
-                          "in V3Begin.cpp");
+        nodep->v3fatalSrc(
+            "Foreach statements should have been converted to while statements in V3Begin.cpp");
     }
     void visit(AstNodeStmt* nodep) override {
         VL_RESTORER(m_insStmtp);
@@ -1767,8 +1766,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
                     pinp->v3error("No such argument " << argp->prettyNameQ()
                                                       << " in function call to "
                                                       << nodep->taskp()->prettyTypeName());
-                    // We'll just delete it; seems less error prone than making a false
-                    // argument
+                    // We'll just delete it; seems less error prone than making a false argument
                     VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
                 }
             } else {
@@ -1792,8 +1790,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
                 } else if (makeChanges) {
                     pinp->v3error("Too many arguments in function call to "
                                   << nodep->taskp()->prettyTypeName());
-                    // We'll just delete it; seems less error prone than making a false
-                    // argument
+                    // We'll just delete it; seems less error prone than making a false argument
                     VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
                 }
             } else {
