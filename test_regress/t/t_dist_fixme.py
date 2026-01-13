@@ -24,6 +24,8 @@ files = re.sub(r'\s+', ' ', files)
 
 regex = r'(FIX[M]E|BO[Z]O)'
 for filename in files.split():
+    if "test_regress/t/t_0_uvm_dpi/" in filename:  # Standard file - can't change it
+        continue
     if re.search(regex, filename):
         names[filename] = True
     filename = os.path.join(test.root, filename)

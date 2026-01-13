@@ -27,6 +27,8 @@ for filename in files.split():
         continue
     if "test_regress/t/uvm/" in filename:  # Standard file - can't change it
         continue
+    if "test_regress/t/t_0_uvm_dpi/" in filename:  # Standard file - can't change it
+        continue
     filename = os.path.join(test.root, filename)
     if not os.path.exists(filename):
         continue
