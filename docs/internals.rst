@@ -594,11 +594,11 @@ object.
 This class manages processes that await events (triggers). There is one
 such object per each trigger awaited by coroutines. Coroutines ``co_await``
 this object's ``trigger`` function. They are stored in three stages -
-`unready`, `ready` and `resumeQueue`. First, they land in the `unready` stage, and
+`awaiting`, `fired` and `toResume`. First, they land in the `awaiting` stage, and
 cannot be resumed. The ``ready`` function moves all coroutines from the
-`unready` stage into the `ready` stage. The ``moveToResumeQueue`` function moves
-`ready` coroutines into `resumeQueue`. Finally, function `resume` resumes
-all coroutines from the `resumeQueue` stage.
+`awaiting` stage into the `fired` stage. The ``moveToResumeQueue`` function moves
+`fired` coroutines into `toResume`. Finally, function `resume` resumes
+all coroutines from the `toResume` stage.
 
 This split is done to avoid self-triggering, triggering coroutines
 multiple times and triggering coroutines in the same iteration
@@ -732,9 +732,18 @@ There are two functions for managing timing logic called by ``_eval()``:
 * ``_timing_resume()``, which calls `resume()` on all trigger and delay
   schedulers whose triggers were set in the current iteration.
 
-Thanks to this separation, a coroutine awaiting a trigger cannot be
-suspended and resumed in the same iteration, and it cannot be resumed
-before it suspends.
+Thanks to this separation a coroutine:
+* awaiting a trigger cannot be suspended and resumed in the same iteration
+  (``test_regress/t/t_timing_eval_act.v``) - which is necessary to make
+  Verilator more predictable; this is the reason for introduction of 3rd stage
+  in `VlTriggerScheduler` and thanks to this it is guaranteed that downstream
+  logic will be evaluated before resumption (assuming that the coroutine wasn't
+  already triggered in previous iteration);
+* cannot be resumed before it is suspended -
+  ``test_regress/t/t_event_control_double_excessive.v``;
+* firing cannot cannot be lost
+  (``test_regress/t/t_event_control_double_lost.v``) - which is possible when
+  triggers are not evaluated right before awaiting.
 
 All coroutines are committed and resumed in the 'act' eval loop. With
 timing features enabled, the ``_eval()`` function takes this form:
