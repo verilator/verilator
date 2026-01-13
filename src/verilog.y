@@ -4053,10 +4053,13 @@ for_step_assignment<nodep>:     // ==IEEE: for_step_assignment
         ;
 
 loop_variables<nodep>:          // IEEE: loop_variables
-                parseRefBase                            { $$ = $1; }
-        |       loop_variables ',' parseRefBase         { $$ = $1->addNext($3); }
-        |       ',' parseRefBase                        { $$ = new AstEmpty{$1}; $$->addNext($2); }
-        |       ','                                     { $$ = new AstEmpty{$1}; }
+                loop_variableE                          { $$ = $1; }
+        |       loop_variables ',' loop_variableE       { $$ = $1->addNext($3); }
+        ;
+
+loop_variableE<nodep>:          // IEEE: part of loop_variables
+                /* empty */                             { $$ = new AstEmpty{CRELINE()}; }
+        |       parseRefBase                            { $$ = $1; }
         ;
 
 //************************************************
