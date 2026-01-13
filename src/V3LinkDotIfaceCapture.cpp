@@ -185,6 +185,8 @@ void V3LinkDotIfaceCapture::captureTypedefContext(
     const std::function<std::string()>& indentFn) {
     if (!enabled() || !refp) return;
 
+    refp = refp->cloneTreePure(false);
+
     UINFO(9, indentFn() << "iface capture capture request stage=" << stageLabel
                         << " typedef=" << refp << " name=" << refp->name() << " dotPos=" << dotPos
                         << " dotText='" << dotText << "' dotSym=" << dotSymp);
