@@ -99,6 +99,11 @@ protected:
         UASSERT_OBJ(!num.isFourState(), nodep, "4-state value in constant pool");
         putns(nodep, num.emitC());
     }
+    void visit(AstUnbounded* nodep) override {
+        // e.g. when emitting a public parameter's "$" value
+        // But Unbounded is only special during elaboration, so just use zero
+        putns(nodep, "0");
+    }
 
     // Default
     void visit(AstNode* nodep) override {  // LCOV_EXCL_START
