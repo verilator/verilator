@@ -394,7 +394,8 @@ class TaskVisitor final : public VNVisitor {
 
     // STATE
     TaskStateVisitor* const m_statep;  // Common state between visitors
-    V3UniqueNames m_initArrayTmpNames;  // For generating unique temporary variable names for arguments being AstInitArray
+    V3UniqueNames m_initArrayTmpNames;  // For generating unique temporary variable names for
+                                        // arguments being AstInitArray
     AstNodeModule* m_modp = nullptr;  // Current module
     AstTopScope* const m_topScopep = v3Global.rootp()->topScopep();  // The AstTopScope
     AstScope* m_scopep = nullptr;  // Current scope
@@ -1443,6 +1444,35 @@ class TaskVisitor final : public VNVisitor {
         UINFOTREE(9, newp, "", "newfunc");
         m_insStmtp->addHereThisAsNext(newp);
     }
+    void processPins(AstNodeFTaskRef* nodep) {
+        // Create a fresh variable for each concat array present in pins list
+        for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
+            AstArg* const argp = VN_CAST(pinp, Arg);
+            UASSERT_OBJ(argp, nodep, "Pin is not an AstArg");
+            AstInitArray* const arrayp = VN_CAST(argp->exprp(), InitArray);
+            if (!arrayp) continue;
+
+            FileLine* const flp = arrayp->fileline();
+            const std::string tempName = m_initArrayTmpNames.get(argp);
+            AstVar* const substp = new AstVar{flp, VVarType::VAR, tempName, arrayp->dtypep()};
+            substp->funcLocal(true);
+            AstVarScope* const substvscp = createVarScope(substp, tempName);
+
+            AstAssign* const assignp
+                = new AstAssign{flp, new AstVarRef{arrayp->fileline(), substvscp, VAccess::WRITE},
+                                arrayp->unlinkFrBack()};
+
+            AstExprStmt* const exprstmtp = new AstExprStmt{
+                flp, substp, new AstVarRef{arrayp->fileline(), substvscp, VAccess::READ}};
+            exprstmtp->stmtsp()->addNext(assignp);
+            exprstmtp->hasResult(false);
+
+            AstCExpr* const exprp = new AstCExpr{flp, substp->name()};
+            exprp->dtypeSetString();
+            exprstmtp->addStmtsp(new AstCReturn{flp, exprp});
+            argp->exprp(exprstmtp);
+        }
+    }
 
     // VISITORS
     void visit(AstNodeModule* nodep) override {
@@ -1499,33 +1529,7 @@ class TaskVisitor final : public VNVisitor {
         AstNode* beginp;
         AstCNew* cnewp = nullptr;
         if (m_statep->ftaskNoInline(nodep->taskp())) {
-            // Create a fresh variable for each concat array present in pins list
-            if (nodep->pinsp()) {
-                nodep->pinsp()->foreachAndNext([this](AstArg* const argp) {
-                    AstInitArray* const arrayp = VN_CAST(argp->exprp(), InitArray);
-                    if (!arrayp) return;
-
-                    FileLine* const flp = arrayp->fileline();
-                    const std::string tempName = m_initArrayTmpNames.get(argp);
-                    AstVar* const substp = new AstVar{flp, VVarType::VAR, tempName, arrayp->dtypep()};
-                    substp->funcLocal(true);
-                    AstVarScope* const substvscp = createVarScope(substp, tempName);
-
-                    AstAssign* const assignp = new AstAssign{
-                        flp, new AstVarRef{arrayp->fileline(), substvscp, VAccess::WRITE},
-                        arrayp->unlinkFrBack()};
-
-                    AstExprStmt* const exprstmtp = new AstExprStmt{
-                        flp, substp, new AstVarRef{arrayp->fileline(), substvscp, VAccess::READ}};
-                    exprstmtp->stmtsp()->addNext(assignp);
-                    exprstmtp->hasResult(false);
-
-                    AstCExpr* const exprp = new AstCExpr{flp, substp->name()};
-                    exprp->dtypeSetString();
-                    exprstmtp->addStmtsp(new AstCReturn{flp, exprp});
-                    argp->exprp(exprstmtp);
-                });
-            }
+            processPins(nodep);
             // This may share VarScope's with a public task, if any.  Yuk.
             beginp = createNonInlinedFTask(nodep, namePrefix, outvscp, cnewp /*ref*/);
         } else {
@@ -1612,7 +1616,8 @@ class TaskVisitor final : public VNVisitor {
             if (nodep->classMethod()) modes++;
             if (v3Global.opt.protectIds() && nodep->taskPublic()) {
                 // We always call protect() on names, we don't check if public or not
-                // Hence any external references wouldn't be able to find the refed public object.
+                // Hence any external references wouldn't be able to find the refed public
+                // object.
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: Using --protect-ids with public function");
             }
@@ -1628,14 +1633,14 @@ class TaskVisitor final : public VNVisitor {
             // TODO: Why not if recursive? It will not work ...
             if (noInline && !nodep->classMethod() && !nodep->recursive()) {
                 if (AstNode* const impurep = m_statep->checkImpure(nodep)) {
-                    nodep->v3warn(
-                        IMPURE,
-                        "Unsupported: External variable referenced by non-inlined function/task: "
-                            << nodep->prettyNameQ() << '\n'
-                            << nodep->warnContextPrimary() << '\n'
-                            << impurep->warnOther() << "... Location of the external reference: "
-                            << impurep->prettyNameQ() << '\n'
-                            << impurep->warnContextSecondary());
+                    nodep->v3warn(IMPURE, "Unsupported: External variable referenced by "
+                                          "non-inlined function/task: "
+                                              << nodep->prettyNameQ() << '\n'
+                                              << nodep->warnContextPrimary() << '\n'
+                                              << impurep->warnOther()
+                                              << "... Location of the external reference: "
+                                              << impurep->prettyNameQ() << '\n'
+                                              << impurep->warnContextSecondary());
                 }
             }
 
@@ -1675,8 +1680,8 @@ class TaskVisitor final : public VNVisitor {
         }
     }
     void visit(AstNodeForeach* nodep) override {  // LCOV_EXCL_LINE
-        nodep->v3fatalSrc(
-            "Foreach statements should have been converted to while statements in V3Begin.cpp");
+        nodep->v3fatalSrc("Foreach statements should have been converted to while statements "
+                          "in V3Begin.cpp");
     }
     void visit(AstNodeStmt* nodep) override {
         VL_RESTORER(m_insStmtp);
@@ -1763,7 +1768,8 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
                     pinp->v3error("No such argument " << argp->prettyNameQ()
                                                       << " in function call to "
                                                       << nodep->taskp()->prettyTypeName());
-                    // We'll just delete it; seems less error prone than making a false argument
+                    // We'll just delete it; seems less error prone than making a false
+                    // argument
                     VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
                 }
             } else {
@@ -1787,7 +1793,8 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
                 } else if (makeChanges) {
                     pinp->v3error("Too many arguments in function call to "
                                   << nodep->taskp()->prettyTypeName());
-                    // We'll just delete it; seems less error prone than making a false argument
+                    // We'll just delete it; seems less error prone than making a false
+                    // argument
                     VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
                 }
             } else {
