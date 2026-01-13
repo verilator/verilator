@@ -762,24 +762,28 @@ class TimingControlVisitor final : public VNVisitor {
         forkp->addNextHere(awaitp->makeStmt());
     }
 
-    void localizeVars(const std::vector<AstVar*>& varsp) const {
+    static void localizeVars(AstNode* const procp, const std::vector<AstVar*>& varsp) {
         for (AstVar* const varp : varsp) varp->funcLocal(true);
         AstNode* lastVarp;
-        // NodeProcedure/CFunc/Begin
-        if (AstNodeProcedure* const procp = VN_CAST(m_procp, NodeProcedure)) {
-            lastVarp = procp->stmtsp();
-        } else if (AstCFunc* const cfuncp = VN_CAST(m_procp, CFunc)) {
+        // m_procp is NodeProcedure/CFunc/Begin
+        if (AstNodeProcedure* const nodeProcp = VN_CAST(procp, NodeProcedure)) {
+            lastVarp = nodeProcp->stmtsp();
+        } else if (AstCFunc* const cfuncp = VN_CAST(procp, CFunc)) {
             for (AstVar* const varp : varsp) cfuncp->addVarsp(varp->unlinkFrBack());
             return;
-        } else if (AstBegin* const beginp = VN_CAST(m_procp, Begin)) {
+        } else if (AstBegin* const beginp = VN_CAST(procp, Begin)) {
             lastVarp = beginp->stmtsp();
         } else {
-            UASSERT(m_procp, "m_procp is nullptr");
-            UASSERT_OBJ(false, m_procp,
-                        m_procp->prettyNameQ()
-                            << " is not of an expected type (NodeProcedure/CFunc/Begin) instead "
-                            << m_procp->prettyTypeName());
+            UASSERT(procp, "procp is nullptr");
+            UASSERT_OBJ(
+                false, procp,
+                procp->prettyNameQ()
+                    << " is not of an expected type NodeProcedure/CFunc/Begin instead it is: "
+                    << procp->prettyTypeName());
         }
+        UASSERT_OBJ(lastVarp, procp,
+                    procp->prettyNameQ() << " has no non-var statement. 'localizeVars()' is ment "
+                                            "to be called on non empty NodeProcedure/CFunc/Begin");
         while (VN_IS(lastVarp, Var)) lastVarp = lastVarp->nextp();
         for (AstVar* const varp : varsp) lastVarp->addHereThisAsNext(varp->unlinkFrBack());
     }
@@ -983,7 +987,7 @@ class TimingControlVisitor final : public VNVisitor {
                                                 m_senExprBuilderp->build(sentreep).first};
             // Get the SenExprBuilder results
             const SenExprBuilder::Results senResults = m_senExprBuilderp->getAndClearResults();
-            localizeVars(senResults.m_vars);
+            localizeVars(m_procp, senResults.m_vars);
             // Put all and inits before the trigger eval loop
             for (AstNodeStmt* const stmtp : senResults.m_inits) {
                 nodep->addHereThisAsNext(stmtp);
