@@ -762,10 +762,11 @@ class TimingControlVisitor final : public VNVisitor {
         forkp->addNextHere(awaitp->makeStmt());
     }
 
+    // `procp` shall be a NodeProcedure/CFunc/Begin and within it vars from `varsp` will be placed.
+    // `varsp` vector of vars which shall be localizaed.
     static void localizeVars(AstNode* const procp, const std::vector<AstVar*>& varsp) {
         for (AstVar* const varp : varsp) varp->funcLocal(true);
         AstNode* lastVarp;
-        // m_procp is NodeProcedure/CFunc/Begin
         if (AstNodeProcedure* const nodeProcp = VN_CAST(procp, NodeProcedure)) {
             lastVarp = nodeProcp->stmtsp();
         } else if (AstCFunc* const cfuncp = VN_CAST(procp, CFunc)) {

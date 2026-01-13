@@ -34,7 +34,7 @@ public:
         std::vector<AstNodeStmt*> m_inits;  // Initialization statements for previous values
         std::vector<AstNodeStmt*> m_preUpdates;  // Pre update assignments
         std::vector<AstNodeStmt*> m_postUpdates;  // Post update assignments
-        std::vector<AstVar*> m_vars;  // Temporary variables that need to be places somewhere
+        std::vector<AstVar*> m_vars;  // Created temporary variables
     };
 
 private:
