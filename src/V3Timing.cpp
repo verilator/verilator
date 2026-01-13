@@ -763,30 +763,31 @@ class TimingControlVisitor final : public VNVisitor {
     }
 
     // `procp` shall be a NodeProcedure/CFunc/Begin and within it vars from `varsp` will be placed.
-    // `varsp` vector of vars which shall be localizaed.
+    // `varsp` vector of vars which shall be localized.
     static void localizeVars(AstNode* const procp, const std::vector<AstVar*>& varsp) {
         for (AstVar* const varp : varsp) varp->funcLocal(true);
-        AstNode* lastVarp;
+        AstNode* firstStmtp;
         if (AstNodeProcedure* const nodeProcp = VN_CAST(procp, NodeProcedure)) {
-            lastVarp = nodeProcp->stmtsp();
+            firstStmtp = nodeProcp->stmtsp();
         } else if (AstCFunc* const cfuncp = VN_CAST(procp, CFunc)) {
-            for (AstVar* const varp : varsp) cfuncp->addVarsp(varp->unlinkFrBack());
-            return;
+            if (!cfuncp->varsp()) {
+                for (AstVar* const varp : varsp) cfuncp->addVarsp(varp->unlinkFrBack());
+                return;
+            }
+            firstStmtp = cfuncp->varsp();
         } else if (AstBegin* const beginp = VN_CAST(procp, Begin)) {
-            lastVarp = beginp->stmtsp();
+            firstStmtp = beginp->stmtsp();
         } else {
             UASSERT(procp, "procp is nullptr");
-            UASSERT_OBJ(
-                false, procp,
+            procp->v3fatalSrc(
                 procp->prettyNameQ()
-                    << " is not of an expected type NodeProcedure/CFunc/Begin instead it is: "
-                    << procp->prettyTypeName());
+                << " is not of an expected type NodeProcedure/CFunc/Begin instead it is: "
+                << procp->prettyTypeName());
         }
-        UASSERT_OBJ(lastVarp, procp,
+        UASSERT_OBJ(firstStmtp, procp,
                     procp->prettyNameQ() << " has no non-var statement. 'localizeVars()' is ment "
                                             "to be called on non empty NodeProcedure/CFunc/Begin");
-        while (VN_IS(lastVarp, Var)) lastVarp = lastVarp->nextp();
-        for (AstVar* const varp : varsp) lastVarp->addHereThisAsNext(varp->unlinkFrBack());
+        for (AstVar* const varp : varsp) firstStmtp->addHereThisAsNext(varp->unlinkFrBack());
     }
 
     // VISITORS
