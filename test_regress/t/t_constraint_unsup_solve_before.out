@@ -1,0 +1,6 @@
+%Warning-CONSTRAINTIGN: t/t_constraint_unsup_solve_before.v:13:7: Ignoring unsupported: solve-before can only be used as top-level constraint statement
+   13 |       solve x before data[i];
+      |       ^~~~~
+                        ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
+                        ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
+%Error: Exiting due to
