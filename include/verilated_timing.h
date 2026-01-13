@@ -232,33 +232,35 @@ public:
 
 //=============================================================================
 // VlTriggerScheduler stores coroutines to be resumed by a trigger. It does not keep track of its
-// trigger, relying on calling code to resume when appropriate. Coroutines are kept in two stages
-// - 'uncommitted' and 'ready'. Whenever a coroutine is suspended, it lands in the 'uncommitted'
-// stage. Only when commit() is called, these coroutines get moved to the 'ready' stage. That's
-// when they can be resumed. This is done to avoid resuming processes before they start waiting.
+// trigger, relying on calling code to resume when appropriate. Coroutines are kept in three stages
+// - 'awaiting', 'fired' and 'toResume'. Whenever a coroutine is suspended, it lands in the
+// 'awaiting' stage. Only when ready() is called, these coroutines get moved to the 'fired' stage.
+// When moveToResumeQueue() is begin called all coroutines from 'ready' are moved to 'toResume'.
+// That's when they can be resumed. This is done to avoid resuming processes before they start
+// waiting.
 
 class VlTriggerScheduler final {
     // TYPES
     using VlCoroutineVec = std::vector<VlCoroutineHandle>;
 
     // MEMBERS
-    VlCoroutineVec m_unready;  // Coroutines suspended before ready() was called
-                               // (not resumable)
-    VlCoroutineVec m_ready;  // Coroutines that were triggered (all coros from m_unready are moved
+    VlCoroutineVec m_awaiting;  // Coroutines suspended before ready() was called
+                                // (not resumable)
+    VlCoroutineVec m_fired;  // Coroutines that were triggered (all coros from m_awaiting are moved
                              // here in ready())
-    VlCoroutineVec m_resumeQueue;  // Coroutines to resume in next resumePrep()
-                                   // - moved here in commit()
+    VlCoroutineVec m_toResume;  // Coroutines to resume in next resumePrep()
+                                // - moved here in commit()
 
 public:
     // METHODS
-    // Resumes all coroutines from the m_resumeQueue
+    // Resumes all coroutines from the m_toResume
     void resume(const char* eventDescription = VL_UNKNOWN);
-    // Moves all coroutines from m_ready to m_resumeQueue
+    // Moves all coroutines from m_fired to m_toResume
     void moveToResumeQueue(const char* eventDescription = VL_UNKNOWN);
-    // Moves all coroutines from m_unready to m_ready
+    // Moves all coroutines from m_awaiting to m_fired
     void ready(const char* eventDescription = VL_UNKNOWN);
     // Are there no coroutines awaiting?
-    bool empty() const { return m_ready.empty() && m_unready.empty(); }
+    bool empty() const { return m_fired.empty() && m_awaiting.empty(); }
 #ifdef VL_DEBUG
     void dump(const char* eventDescription) const;
 #endif
@@ -278,7 +280,7 @@ public:
             }
             void await_resume() const {}
         };
-        return Awaitable{ready ? m_ready : m_unready, process, VlFileLineDebug{filename, lineno}};
+        return Awaitable{ready ? m_fired : m_awaiting, process, VlFileLineDebug{filename, lineno}};
     }
 };
 
