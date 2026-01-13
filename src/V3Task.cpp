@@ -1447,8 +1447,7 @@ class TaskVisitor final : public VNVisitor {
     void processPins(AstNodeFTaskRef* nodep) {
         // Create a fresh variable for each concat array present in pins list
         for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
-            AstArg* const argp = VN_CAST(pinp, Arg);
-            UASSERT_OBJ(argp, nodep, "Pin is not an AstArg");
+            AstArg* const argp = VN_AS(pinp, Arg);
             AstInitArray* const arrayp = VN_CAST(argp->exprp(), InitArray);
             if (!arrayp) continue;
 
