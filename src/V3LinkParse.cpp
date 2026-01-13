@@ -440,12 +440,13 @@ class LinkParseVisitor final : public VNVisitor {
 
                     for (auto it = selexNodes.begin(); it != selexNodes.end(); ++it) {
                         selex = *it;
-                        FileLine *fl = selex->fileline();
+                        FileLine* fl = selex->fileline();
                         //AstParseRef *fromp = VN_CAST(selex->fromp()->unlinkFrBack(), ParseRef);
                         AstNodeExpr* leftp = selex->leftp()->unlinkFrBack();
                         AstNodeExpr* rightp = selex->rightp()->unlinkFrBack();
                         AstRange* const range = new AstRange{fl, leftp, rightp};
-                        arrayDType = new AstPackArrayDType{fl, VFlagChildDType{}, arrayDType, range};
+                        arrayDType
+                            = new AstPackArrayDType{fl, VFlagChildDType{}, arrayDType, range};
                     }
                     VL_DO_DANGLING(dtypep->deleteTree(), dtypep);
                     dtypep = arrayDType;
