@@ -247,7 +247,7 @@ public:
     explicit SenExprBuilder(AstScope* scopep)
         : m_scopep{scopep} {}
 
-    inline AstScope* getScope() const noexcept { return m_scopep; }
+    AstScope* getScope() const noexcept { return m_scopep; }
 };
 
 #endif  // Guard
