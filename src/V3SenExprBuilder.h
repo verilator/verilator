@@ -83,12 +83,9 @@ private:
         } else {
             name = m_prevNames.get(exprp);
         }
-        FileLine* const flp = exprp->fileline();
-        AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, exprp->dtypep()};
-        varp->isInternal(true);
-        m_results.m_vars.push_back(varp);
-        AstVarScope* const vscp = new AstVarScope{flp, m_scopep, varp};
-        m_scopep->addVarsp(vscp);
+        AstVarScope* const vscp = m_scopep->createTemp(name, exprp->dtypep());
+        vscp->varp()->isInternal(true);
+        m_results.m_vars.push_back(vscp->varp());
         return vscp;
     }
 
@@ -246,8 +243,6 @@ public:
     // CONSTRUCTOR
     explicit SenExprBuilder(AstScope* scopep)
         : m_scopep{scopep} {}
-
-    AstScope* getScope() const noexcept { return m_scopep; }
 };
 
 #endif  // Guard
