@@ -1310,7 +1310,9 @@ class ConstraintExprVisitor final : public VNVisitor {
         FileLine* const fl = nodep->fileline();
 
         AstNode* const arrayp = nodep->arrayp()->unlinkFrBack();
-        if (m_wantSingle) {
+        if (!nodep->stmtsp()) {
+            nodep->unlinkFrBack();
+        } else if (m_wantSingle) {
             AstNodeExpr* const itemp = editSingle(fl, nodep->stmtsp());
             AstCStmt* const cstmtp = new AstCStmt{fl};
             cstmtp->add("ret += \" \";\n");
