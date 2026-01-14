@@ -321,6 +321,34 @@ class UndrivenVisitor final : public VNVisitorConst {
 
     // STATE
     std::array<std::vector<UndrivenVarEntry*>, 3> m_entryps = {};  // Nodes to delete when finished
+
+    struct VarXRefOrderKey {
+        VarXRefOrderKey(const AstVar* varp, const AstAlways* alw, const string& m_dotted)
+            : m_varp(varp)
+            , m_alw(alw)
+            , m_dotted(m_dotted) {}
+
+        const AstVar* m_varp;
+        const AstAlways* m_alw;
+        string m_dotted;
+
+        bool operator==(const VarXRefOrderKey& other) const {
+            return m_varp == other.m_varp && m_alw == other.m_alw && m_dotted == other.m_dotted;
+        }
+
+        size_t hash() const {
+            return std::hash<const AstVar*>()(m_varp) ^ std::hash<const AstAlways*>()(m_alw)
+                   ^ std::hash<std::string>()(m_dotted);
+        }
+
+        struct Hash {
+            size_t operator()(const VarXRefOrderKey& key) const { return key.hash(); }
+        };
+    };
+    using VarXRefOrderMap
+        = std::unordered_map<VarXRefOrderKey, UndrivenVarEntry*, VarXRefOrderKey::Hash>;
+    VarXRefOrderMap m_varXRefOrderMap;  // Map to track VarXRefs for always_comb order checking.
+
     bool m_inBBox = false;  // In black box; mark as driven+used
     bool m_inContAssign = false;  // In continuous assignment
     bool m_inInitialStatic = false;  // In InitialStatic
@@ -355,12 +383,33 @@ class UndrivenVisitor final : public VNVisitorConst {
         }
     }
 
+    UndrivenVarEntry* getEntryp(AstNodeVarRef* nodep, int which_user) {
+        if (VN_CAST(nodep, VarRef) || (which_user != 2)) {
+            return getEntryp(nodep->varp(), which_user);
+        }
+        // Special case for checking always_comb order for VarXRefs. Use a unique key
+        // for each block and dotted path to check each instance separately.
+        AstVarXRef* const xrefp = VN_CAST(nodep, VarXRef);
+        UASSERT_OBJ(xrefp, nodep, "Unexpected NodeVarRef subtype");
+        std::pair<VarXRefOrderMap::iterator, bool> insertResult = m_varXRefOrderMap.emplace(
+            VarXRefOrderKey{xrefp->varp(), m_alwaysCombp, xrefp->dotted()}, nullptr);
+        if (insertResult.second) {
+            // New entry
+            UndrivenVarEntry* const entryp = new UndrivenVarEntry{xrefp->varp()};
+            // Add to m_entryps for cleanup
+            m_entryps[which_user].push_back(entryp);
+            insertResult.first->second = entryp;
+            return entryp;
+        } else {
+            return insertResult.first->second;
+        }
+    }
+
     void warnAlwCombOrder(AstNodeVarRef* nodep) {
         AstVar* const varp = nodep->varp();
         if (!varp->isParam() && !varp->isGenVar() && !varp->isUsedLoopIdx()
             && !varp->ignoreSchedWrite()
             && !m_inBBox  // We may have falsely considered a SysIgnore as a driver
-            && !VN_IS(nodep, VarXRef)  // Xrefs might point at two different instances
             && !varp->fileline()->warnIsOff(
                 V3ErrorCode::ALWCOMBORDER)) {  // Warn only once per variable
             nodep->v3warn(ALWCOMBORDER,
@@ -407,7 +456,7 @@ class UndrivenVisitor final : public VNVisitorConst {
         AstConst* const constp = VN_CAST(nodep->lsbp(), Const);
         if (varrefp && constp && !constp->num().isFourState()) {
             for (int usr = 1; usr < (m_alwaysCombp ? 3 : 2); ++usr) {
-                UndrivenVarEntry* const entryp = getEntryp(varrefp->varp(), usr);
+                UndrivenVarEntry* const entryp = getEntryp(varrefp, usr);
                 const int lsb = constp->toUInt();
                 if (m_inBBox || varrefp->access().isWriteOrRW()) {
                     // Don't warn if already driven earlier as "a=0; if(a) a=1;" is fine.
@@ -462,7 +511,7 @@ class UndrivenVisitor final : public VNVisitorConst {
         }
 
         for (int usr = 1; usr < (m_alwaysCombp ? 3 : 2); ++usr) {
-            UndrivenVarEntry* const entryp = getEntryp(nodep->varp(), usr);
+            UndrivenVarEntry* const entryp = getEntryp(nodep, usr);
             const bool fdrv = nodep->access().isWriteOrRW()
                               && nodep->varp()->attrFileDescr();  // FD's are also being read from
             if (m_inBBox || nodep->access().isWriteOrRW()) {

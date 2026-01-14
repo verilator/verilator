@@ -31,6 +31,8 @@ module t
    my_if out1_i ();
    my_if out2_i ();
    my_if out3_i ();
+   my_if out4a_i ();
+   my_if out4b_i ();
 
    assign in_i.valid   = in_valid;
    assign in_i.data    = in_data ;
@@ -50,6 +52,12 @@ module t
                             .out_i  (out3_i)
                             );
 
+   my_module4 my_module4_i (
+                            .in_i   (in_i  ),
+                            .outa_i  (out4a_i),
+                            .outb_i  (out4b_i)
+                            );
+
 endmodule
 
 module my_module1 (
@@ -57,7 +65,6 @@ module my_module1 (
                    my_if.master_mp out_i
                    );
 
-   // Gives ALWCOMBORDER warning
    always_comb
      begin
         out_i.valid = in_i.valid;
@@ -92,3 +99,21 @@ module my_module3 (
    assign out_i.data   = in_i.data ;
 
 endmodule
+
+module my_module4 (
+                   my_if.slave_mp  in_i,
+                   my_if.master_mp outa_i,
+                   my_if.master_mp outb_i
+                   );
+
+   // Works with two separate instances
+   always_comb
+     begin
+        outa_i.valid = in_i.valid;
+        outa_i.data  = in_i.data;
+        outb_i.valid = in_i.valid;
+        outb_i.data  = in_i.data;
+     end
+
+endmodule
+
