@@ -724,6 +724,9 @@ necessary combinational logic is triggered after a coroutine resumption.
 Every call to a `VlTriggerScheduler`'s `trigger()` method is preempt by
 a call to a proper `__VpreTrig` function which evaluates all the necessary
 triggers so, the information about order of suspension/resumption is not lost.
+The triggers necessary to evaluate are ones dependent on the same events
+as the `trigger()` - e.g.: if `triggers()` awaits for event `a` or `b`, then
+every trigger that depends of any of those shall be evaluated.
 
 There are two functions for managing timing logic called by ``_eval()``:
 
