@@ -765,6 +765,7 @@ class TimingControlVisitor final : public VNVisitor {
     // `procp` shall be a NodeProcedure/CFunc/Begin and within it vars from `varsp` will be placed.
     // `varsp` vector of vars which shall be localized.
     static void localizeVars(AstNode* const procp, const std::vector<AstVar*>& varsp) {
+        UASSERT(procp, "procp is nullptr");
         for (AstVar* const varp : varsp) varp->funcLocal(true);
         AstNode* firstStmtp;
         if (AstNodeProcedure* const nodeProcp = VN_CAST(procp, NodeProcedure)) {
@@ -778,7 +779,6 @@ class TimingControlVisitor final : public VNVisitor {
         } else if (AstBegin* const beginp = VN_CAST(procp, Begin)) {
             firstStmtp = beginp->stmtsp();
         } else {
-            UASSERT(procp, "procp is nullptr");
             procp->v3fatalSrc(
                 procp->prettyNameQ()
                 << " is not of an expected type NodeProcedure/CFunc/Begin instead it is: "
