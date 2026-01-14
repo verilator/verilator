@@ -726,7 +726,10 @@ a call to a proper `__VpreTrig` function which evaluates all the necessary
 triggers so, the information about order of suspension/resumption is not lost.
 The triggers necessary to evaluate are ones dependent on the same events
 as the `trigger()` - e.g.: if `triggers()` awaits for event `a` or `b`, then
-every trigger that depends of any of those shall be evaluated.
+every trigger that depends on any of those shall be evaluated. If they wouldn't
+be evaluated and next coroutine after resumption would fire the event `a` then
+it is impossible to get to know whether await or fire on event `a` was called
+first - which is necessary to know.
 
 There are two functions for managing timing logic called by ``_eval()``:
 
