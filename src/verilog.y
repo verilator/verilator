@@ -7800,11 +7800,11 @@ constraint_expressionList<nodep>:  // ==IEEE: { constraint_expression }
                 constraint_expression                           { $$ = $1; }
         |       ySOLVE solve_before_list yBEFORE solve_before_list ';'
                         { ($<fl>1)->v3warn(CONSTRAINTIGN, "Ignoring unsupported: solve-before can only be used as top-level constraint statement");
-                          $$ = nullptr; DEL($2); DEL($4); }
+                          $$ = nullptr; DEL($2, $4); }
         |       constraint_expressionList constraint_expression { $$ = addNextNull($1, $2); }
         |       constraint_expressionList ySOLVE solve_before_list yBEFORE solve_before_list ';'
                         { ($<fl>2)->v3warn(CONSTRAINTIGN, "Ignoring unsupported: solve-before can only be used as top-level constraint statement");
-                          $$ = $1; DEL($3); DEL($5); }
+                          $$ = $1; DEL($3, $5); }
         ;
 
 constraint_expression<nodep>:  // ==IEEE: constraint_expression
