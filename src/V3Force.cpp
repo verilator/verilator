@@ -556,12 +556,18 @@ class ForceReplaceVisitor final : public VNVisitor {
             if (ForceState::ForceComponentsVarScope* const fcp
                 = m_state.tryGetForceComponents(nodep)) {
                 FileLine* const flp = nodep->fileline();
-                std::vector<AstNodeExpr*> reversedIndices(m_selIndices.size());
-                std::reverse_copy(m_selIndices.begin(), m_selIndices.end(),
-                                  reversedIndices.begin());
-                AstNodeExpr* const lhsp = ForceState::ForceComponentsVarScope::applySelects(
-                    new AstVarRef{flp, fcp->m_rdVscp, VAccess::WRITE}, reversedIndices);
-                AstNodeExpr* const rhsp = fcp->forcedUpdate(nodep->varScopep(), reversedIndices);
+                AstNodeExpr* lhsp = new AstVarRef{flp, fcp->m_rdVscp, VAccess::WRITE};
+                AstNodeExpr* rhsp;
+                if (nodep->dtypep()->skipRefp()->isIntegralOrPacked()) {
+                    rhsp = fcp->forcedUpdate(nodep->varScopep(), {});
+                } else {
+                    std::vector<AstNodeExpr*> reversedIndices(m_selIndices.size());
+                    std::reverse_copy(m_selIndices.begin(), m_selIndices.end(),
+                                      reversedIndices.begin());
+                    lhsp = ForceState::ForceComponentsVarScope::applySelects(
+                    lhsp, reversedIndices);
+                    rhsp = fcp->forcedUpdate(nodep->varScopep(), reversedIndices);
+                }
                 m_stmtp->addNextHere(new AstAssign{flp, lhsp, rhsp});
             }
             // Emit valVscp update after each write to any VarRef on forced RHS.
