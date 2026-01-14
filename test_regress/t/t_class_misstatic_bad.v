@@ -11,6 +11,9 @@ class Cls;
   endfunction
   function void nonstatic();
   endfunction
+  function Cls nonstatic_retcls();
+    return null;
+  endfunction
   static function void isst();
   endfunction
 endclass
@@ -18,6 +21,7 @@ endclass
 class Bar;
   function void bar();
     Cls::nonstatic();  // <--- bad static ref
+    Cls::nonstatic_retcls();  // <--- bad static ref
     Cls::isst();
   endfunction
 endclass
@@ -30,6 +34,9 @@ class Extends extends Cls;
   static function void extstatic();
     nonstatic();  // <--- bad static ref
     isst();
+  endfunction
+  function new();
+    Cls c = super.nonstatic_retcls();
   endfunction
 endclass
 
