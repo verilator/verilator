@@ -490,9 +490,6 @@ public:
 };
 
 class ForceReplaceVisitor final : public VNVisitor {
-    // NODE STATE
-    //  AstNodeExpr::user1        -> bool. Don't visit
-
     // STATE
     const ForceState& m_state;
     AstNodeStmt* m_stmtp = nullptr;
@@ -535,7 +532,6 @@ class ForceReplaceVisitor final : public VNVisitor {
     }
     void visit(AstSenItem* nodep) override { iterateLogic(nodep); }
     void visit(AstArraySel* nodep) override {
-        if (nodep->user1()) return;
         m_selIndices.push_back(nodep->bitp());
         iterateChildren(nodep);
         UASSERT_OBJ(m_selIndices.size(), nodep, "Underflow");
@@ -569,14 +565,10 @@ class ForceReplaceVisitor final : public VNVisitor {
                     while (VN_IS(wholeExprp->backp(), NodeExpr)) {
                         wholeExprp = VN_AS(wholeExprp->backp(), NodeExpr);
                     }
-                    if (nodep != wholeExprp) {
-                        // nodep is a part of a bigger expression
-                        AstNodeExpr* const copiedWholeExprp = wholeExprp->cloneTreePure(false);
-                        copiedWholeExprp->user1(true);
-                        wholeExprp->replaceWith(copiedWholeExprp);
-                        nodep->replaceWith(lhsp);
-                        pushDeletep(nodep);
-                        lhsp = wholeExprp;
+                    if (wholeExprp != nodep) {
+                        AstNodeExpr* const lhsExprp = wholeExprp->cloneTreePure(false);
+                        nodep->clonep()->replaceWith(lhsp);
+                        lhsp = lhsExprp;
                     }
                     std::vector<AstNodeExpr*> reversedIndices(m_selIndices.size());
                     std::reverse_copy(m_selIndices.begin(), m_selIndices.end(),
@@ -610,10 +602,6 @@ class ForceReplaceVisitor final : public VNVisitor {
             }
             break;
         }
-    }
-    void visit(AstNodeExpr* nodep) override {
-        if (nodep->user1()) return;
-        iterateChildren(nodep);
     }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
