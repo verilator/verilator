@@ -13,12 +13,13 @@ test.scenarios('simulator')
 
 test.compile(verilator_flags2=["--binary"])
 
-test.file_grep(test.obj_dir + "/" + test.vm_prefix + "___024root__0.cpp",
-               r'void\s+' + test.vm_prefix + r'___024root___timing_resume\(' + test.vm_prefix + r'___024root\*\s+vlSelf\)\s+\{' +
-               r'\n((?!})(.|\n))*' +
-               r'vlSelfRef\.__VtrigSched_[\d\w]*\.resume\(\"@\(\[event\]\st\.a\)\"\);\n\s+' +
-               r'vlSelfRef\.__VtrigSched_[\d\w]*\.resume\(\"@\(posedge\st\.clk_inv\)\"\);\n\s+' +
-               r'vlSelfRef\.__VtrigSched_[\d\w]*\.resume\(\"@\(\[event\]\st\.e\)\"\);')
+test.file_grep(
+    test.obj_dir + "/" + test.vm_prefix + "___024root__0.cpp",
+    r'void\s+' + test.vm_prefix + r'___024root___timing_resume\(' + test.vm_prefix +
+    r'___024root\*\s+vlSelf\)\s+\{' + r'\n((?!})(.|\n))*' +
+    r'vlSelfRef\.__VtrigSched_[\d\w]*\.resume\(\"@\(\[event\]\st\.a\)\"\);\n\s+' +
+    r'vlSelfRef\.__VtrigSched_[\d\w]*\.resume\(\"@\(posedge\st\.clk_inv\)\"\);\n\s+' +
+    r'vlSelfRef\.__VtrigSched_[\d\w]*\.resume\(\"@\(\[event\]\st\.e\)\"\);')
 
 test.execute()
 
