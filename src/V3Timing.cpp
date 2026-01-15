@@ -762,6 +762,39 @@ class TimingControlVisitor final : public VNVisitor {
         forkp->addNextHere(awaitp->makeStmt());
     }
 
+    // `procp` shall be a NodeProcedure/CFunc/Begin and within it vars from `varsp` will be placed.
+    // `varsp` vector of vars which shall be localized.
+    static void localizeVars(AstNode* const procp, const std::vector<AstVar*>& varsp) {
+        UASSERT(procp, "procp is nullptr");
+        AstNode* firstStmtp;
+        if (AstNodeProcedure* const nodeProcp = VN_CAST(procp, NodeProcedure)) {
+            firstStmtp = nodeProcp->stmtsp();
+        } else if (AstCFunc* const cfuncp = VN_CAST(procp, CFunc)) {
+            if (!cfuncp->varsp()) {
+                for (AstVar* const varp : varsp) {
+                    varp->funcLocal(true);
+                    cfuncp->addVarsp(varp->unlinkFrBack());
+                }
+                return;
+            }
+            firstStmtp = cfuncp->varsp();
+        } else if (AstBegin* const beginp = VN_CAST(procp, Begin)) {
+            firstStmtp = beginp->stmtsp();
+        } else {
+            procp->v3fatalSrc(
+                procp->prettyNameQ()
+                << " is not of an expected type NodeProcedure/CFunc/Begin instead it is: "
+                << procp->prettyTypeName());
+        }
+        UASSERT_OBJ(firstStmtp, procp,
+                    procp->prettyNameQ() << " has no non-var statement. 'localizeVars()' is ment "
+                                            "to be called on non empty NodeProcedure/CFunc/Begin");
+        for (AstVar* const varp : varsp) {
+            varp->funcLocal(true);
+            firstStmtp->addHereThisAsNext(varp->unlinkFrBack());
+        }
+    }
+
     // VISITORS
     void visit(AstNodeModule* nodep) override {
         UASSERT_OBJ(!m_classp, nodep, "Module or class under class");
@@ -961,6 +994,7 @@ class TimingControlVisitor final : public VNVisitor {
                                                 m_senExprBuilderp->build(sentreep).first};
             // Get the SenExprBuilder results
             const SenExprBuilder::Results senResults = m_senExprBuilderp->getAndClearResults();
+            localizeVars(m_procp, senResults.m_vars);
             // Put all and inits before the trigger eval loop
             for (AstNodeStmt* const stmtp : senResults.m_inits) {
                 nodep->addHereThisAsNext(stmtp);
