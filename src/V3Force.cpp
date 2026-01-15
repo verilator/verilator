@@ -187,35 +187,32 @@ public:
                 vscp->scopep()->addBlocksp(activep);
             }
         }
-        static AstNodeExpr* applySelects(AstNodeExpr* exprp,
-                                         const std::vector<AstNodeExpr*>& selectExprs) {
-            for (AstNodeExpr* const sp : selectExprs) {
-                exprp = new AstArraySel{exprp->fileline(), exprp, sp->cloneTreePure(false)};
+        static AstNodeExpr* wrapIntoExprp(AstVarRef* const refp, AstNodeExpr* const exprp,
+                                          AstVarRef* const varRefToReplacep) {
+            if (exprp == varRefToReplacep) {
+                return refp;
+            } else {
+                AstNodeExpr* const copiedExprp = exprp->cloneTreePure(false);
+                varRefToReplacep->clonep()->replaceWith(refp);
+                return copiedExprp;
             }
-            return exprp;
         }
-        AstNodeExpr* forcedUpdate(AstVarScope* const vscp,
-                                  const std::vector<AstNodeExpr*>& selectExprs) const {
+        AstNodeExpr* forcedUpdate(AstVarScope* const vscp, AstNodeExpr* exprp = nullptr,
+                                  AstVarRef* const varRefToReplacep = nullptr) const {
             FileLine* const flp = vscp->fileline();
             AstVarRef* origRefp = new AstVarRef{flp, vscp, VAccess::READ};
             ForceState::markNonReplaceable(origRefp);
-            AstNodeExpr* const origp = applySelects(origRefp, selectExprs);
+            AstNodeExpr* const origExprp = wrapIntoExprp(origRefp, exprp, varRefToReplacep);
+            AstNodeExpr* const enExprp = wrapIntoExprp(new AstVarRef{flp, m_enVscp, VAccess::READ},
+                                                       exprp, varRefToReplacep);
+            AstNodeExpr* const valExprp = wrapIntoExprp(
+                new AstVarRef{flp, m_valVscp, VAccess::READ}, exprp, varRefToReplacep);
             if (ForceState::isRangedDType(vscp)) {
                 return new AstOr{
-                    flp,
-                    new AstAnd{
-                        flp,
-                        applySelects(new AstVarRef{flp, m_enVscp, VAccess::READ}, selectExprs),
-                        applySelects(new AstVarRef{flp, m_valVscp, VAccess::READ}, selectExprs)},
-                    new AstAnd{
-                        flp,
-                        new AstNot{flp, applySelects(new AstVarRef{flp, m_enVscp, VAccess::READ},
-                                                     selectExprs)},
-                        origp}};
+                    flp, new AstAnd{flp, enExprp, valExprp},
+                    new AstAnd{flp, new AstNot{flp, enExprp->cloneTreePure(false)}, origExprp}};
             }
-            return new AstCond{
-                flp, applySelects(new AstVarRef{flp, m_enVscp, VAccess::READ}, selectExprs),
-                applySelects(new AstVarRef{flp, m_valVscp, VAccess::READ}, selectExprs), origp};
+            return new AstCond{flp, enExprp, valExprp, origExprp};
         }
     };
 
@@ -570,10 +567,7 @@ class ForceReplaceVisitor final : public VNVisitor {
                         nodep->clonep()->replaceWith(lhsp);
                         lhsp = lhsExprp;
                     }
-                    std::vector<AstNodeExpr*> reversedIndices(m_selIndices.size());
-                    std::reverse_copy(m_selIndices.begin(), m_selIndices.end(),
-                                      reversedIndices.begin());
-                    rhsp = fcp->forcedUpdate(nodep->varScopep(), reversedIndices);
+                    rhsp = fcp->forcedUpdate(nodep->varScopep(), wholeExprp, nodep);
                 }
                 m_stmtp->addNextHere(new AstAssign{flp, lhsp, rhsp});
             }
