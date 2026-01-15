@@ -522,7 +522,6 @@ class ForceReplaceVisitor final : public VNVisitor {
     AstNodeStmt* m_stmtp = nullptr;
     bool m_inLogic = false;
     bool m_releaseRhs = false;  // Inside RHS of assignment created for release statement
-    std::vector<AstNodeExpr*> m_selIndices;  // Indices of array select expressions above
 
     // METHODS
     void iterateLogic(AstNode* logicp) {
@@ -558,12 +557,6 @@ class ForceReplaceVisitor final : public VNVisitor {
         iterateLogic(nodep);
     }
     void visit(AstSenItem* nodep) override { iterateLogic(nodep); }
-    void visit(AstArraySel* nodep) override {
-        m_selIndices.push_back(nodep->bitp());
-        iterateChildren(nodep);
-        UASSERT_OBJ(m_selIndices.size(), nodep, "Underflow");
-        m_selIndices.pop_back();
-    }
     void visit(AstVarRef* nodep) override {
         if (ForceState::isNotReplaceable(nodep)) return;
 
