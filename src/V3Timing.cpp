@@ -766,13 +766,15 @@ class TimingControlVisitor final : public VNVisitor {
     // `varsp` vector of vars which shall be localized.
     static void localizeVars(AstNode* const procp, const std::vector<AstVar*>& varsp) {
         UASSERT(procp, "procp is nullptr");
-        for (AstVar* const varp : varsp) varp->funcLocal(true);
         AstNode* firstStmtp;
         if (AstNodeProcedure* const nodeProcp = VN_CAST(procp, NodeProcedure)) {
             firstStmtp = nodeProcp->stmtsp();
         } else if (AstCFunc* const cfuncp = VN_CAST(procp, CFunc)) {
             if (!cfuncp->varsp()) {
-                for (AstVar* const varp : varsp) cfuncp->addVarsp(varp->unlinkFrBack());
+                for (AstVar* const varp : varsp) {
+                    varp->funcLocal(true);
+                    cfuncp->addVarsp(varp->unlinkFrBack());
+                }
                 return;
             }
             firstStmtp = cfuncp->varsp();
@@ -787,7 +789,10 @@ class TimingControlVisitor final : public VNVisitor {
         UASSERT_OBJ(firstStmtp, procp,
                     procp->prettyNameQ() << " has no non-var statement. 'localizeVars()' is ment "
                                             "to be called on non empty NodeProcedure/CFunc/Begin");
-        for (AstVar* const varp : varsp) firstStmtp->addHereThisAsNext(varp->unlinkFrBack());
+        for (AstVar* const varp : varsp) {
+            varp->funcLocal(true);
+            firstStmtp->addHereThisAsNext(varp->unlinkFrBack());
+        }
     }
 
     // VISITORS
