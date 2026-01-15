@@ -223,7 +223,9 @@ public:
                 return refp;
             } else {
                 AstNodeExpr* const copiedExprp = exprp->cloneTreePure(false);
+                AstNode* const oldRefp = varRefToReplacep->clonep();
                 varRefToReplacep->clonep()->replaceWith(refp);
+                oldRefp->deleteTree();
                 return copiedExprp;
             }
         }
@@ -576,20 +578,19 @@ class ForceReplaceVisitor final : public VNVisitor {
             if (ForceState::ForceComponentsVarScope* const fcp
                 = m_state.tryGetForceComponents(nodep)) {
                 FileLine* const flp = nodep->fileline();
-                AstNodeExpr* lhsp = new AstVarRef{flp, fcp->m_rdVscp, VAccess::WRITE};
+                AstVarRef* const lhsRefp = new AstVarRef{flp, fcp->m_rdVscp, VAccess::WRITE};
+                AstNodeExpr* lhsp;
                 AstNodeExpr* rhsp;
                 if (nodep->dtypep()->skipRefp()->isIntegralOrPacked()) {
                     rhsp = fcp->forcedUpdate(nodep->varScopep(), {});
+                    lhsp = lhsRefp;
                 } else {
                     AstNodeExpr* wholeExprp = nodep;
                     while (VN_IS(wholeExprp->backp(), NodeExpr)) {
                         wholeExprp = VN_AS(wholeExprp->backp(), NodeExpr);
                     }
-                    if (wholeExprp != nodep) {
-                        AstNodeExpr* const lhsExprp = wholeExprp->cloneTreePure(false);
-                        nodep->clonep()->replaceWith(lhsp);
-                        lhsp = lhsExprp;
-                    }
+                    lhsp = ForceState::ForceComponentsVarScope::wrapIntoExprp(lhsRefp, wholeExprp,
+                                                                              nodep);
                     rhsp = fcp->forcedUpdate(nodep->varScopep(), wholeExprp, nodep);
                 }
                 m_stmtp->addNextHere(new AstAssign{flp, lhsp, rhsp});
