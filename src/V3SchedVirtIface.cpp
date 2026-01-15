@@ -64,7 +64,7 @@ private:
             AstIfaceRefDType* const dtypep = VN_CAST(refp->varp()->dtypep(), IfaceRefDType);
             const bool writesToVirtIfaceMember
                 = (dtypep && dtypep->isVirtual() && VN_IS(refp->firstAbovep(), MemberSel));
-            const bool writesToIfaceSensVar = refp->varp()->sensIfacep();
+            const bool writesToIfaceSensVar = refp->varp()->isVirtIface();
             return writesToVirtIfaceMember || writesToIfaceSensVar;
         });
     }
@@ -108,7 +108,8 @@ private:
                     ifacep = dtypep->ifacep();
                 }
             }
-        } else if ((ifacep = nodep->varp()->sensIfacep())) {
+        } else if (nodep->varp()->isVirtIface()) {
+            ifacep = VN_AS(nodep->varp()->dtypep(), IfaceRefDType)->ifacep();
             memberVarp = nodep->varp();
         }
 

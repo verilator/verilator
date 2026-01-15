@@ -171,7 +171,8 @@ public:
             entr.init(false);
         } else {
             if (AstConst* const constp = entr.constNodep()) {
-                if (!varrefp->varp()->isSigPublic() && !varrefp->varp()->sensIfacep()) {
+                if (!varrefp->varp()->isSigPublic() && !varrefp->varp()->sensIfacep()
+                    && !varrefp->varp()->isVirtIface()) {
                     // Aha, variable is constant; substitute in.
                     // We'll later constant propagate
                     UINFO(4, "     replaceconst: " << varrefp);
