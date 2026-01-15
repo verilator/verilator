@@ -336,14 +336,15 @@ public:
         collectVirtualBasesRecursep(classp, virtualBases);
         for (AstClass* vbase : virtualBases) {
             if (doneClasses.count(vbase)) continue;
-            puts(doneClasses.empty() ? "" : "\n    , ");
             doneClasses.emplace(vbase);
             puts(EmitCUtil::prefixNameProtect(vbase));
+            puts("::init");
             if (constructorNeedsProcess(vbase)) {
-                puts("(vlProcess, vlSymsp)");
+                puts("(vlProcess, vlSymsp);");
             } else {
-                puts("(vlSymsp)");
+                puts("(vlSymsp);");
             }
+            puts("\n");
         }
         const AstCNew* const superNewCallp = getSuperNewCallRecursep(cfuncp->stmtsp());
         // Direct non-virtual bases in declaration order
@@ -351,9 +352,9 @@ public:
              extp = VN_AS(extp->nextp(), ClassExtends)) {
             if (extp->classp()->useVirtualPublic()) continue;
             if (doneClasses.count(extp->classp())) continue;
-            puts(doneClasses.empty() ? "" : "\n    , ");
             doneClasses.emplace(extp->classp());
             puts(EmitCUtil::prefixNameProtect(extp->classp()));
+            puts("::init");
             if (constructorNeedsProcess(extp->classp())) {
                 puts("(vlProcess, vlSymsp");
             } else {
@@ -363,7 +364,7 @@ public:
             if (!extp->classp()->isInterfaceClass() && superNewCallp) {
                 putCommaIterateNext(superNewCallp->argsp(), true);
             }
-            puts(")");
+            puts(");\n");
         }
     }
     void collectVirtualBasesRecursep(const AstClass* classp,
@@ -402,14 +403,14 @@ public:
         if (nodep->ifdef() != "") putns(nodep, "#ifdef " + nodep->ifdef() + "\n");
         emitCFuncHeader(nodep, m_modp, /* withScope: */ true);
 
+        puts(" {\n");
         if (nodep->isConstructor()) {
             const AstClass* const classp = VN_CAST(nodep->scopep()->modp(), Class);
             if (classp && classp->extendsp()) {
-                puts("\n    : ");
+                // puts("\n    : ");
                 putConstructorSubinit(classp, nodep);
             }
         }
-        puts(" {\n");
 
         // "+" in the debug indicates a print from the model
         puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+  ");
