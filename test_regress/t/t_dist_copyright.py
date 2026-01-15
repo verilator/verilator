@@ -39,8 +39,6 @@ EXEMPT_FILES_LIST = """
     include/vltstd
     install-sh
     src/mkinstalldirs
-    test_regress/t/t_0.v
-    test_regress/t/t_0_uvm_dpi
     test_regress/t/t_altera_lpm.v
     test_regress/t/t_flag_f__3.v
     test_regress/t/t_fuzz_eof_bad.v

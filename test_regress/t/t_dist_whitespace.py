@@ -42,10 +42,6 @@ for filename in sorted(files.keys()):
         continue  # Ignore golden files
     if re.search(r'[\001\002\003\004\005\006]', contents):
         continue  # Ignore binary files
-    if "test_regress/t/t_0_uvm_dpi/" in filename:  # Standard file - can't change it
-        continue
-    if "test_regress/t/t_0.v" in filename:
-        continue
     if contents != "" and contents[-1] != "\n":
         contents += "\n"
         warns[filename] = "Missing trailing newline (add one) in " + filename
