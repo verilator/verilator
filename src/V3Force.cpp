@@ -490,6 +490,9 @@ public:
 };
 
 class ForceReplaceVisitor final : public VNVisitor {
+    // NODE STATE
+    //  AstNodeExpr::user1        -> bool. Don't visit
+
     // STATE
     const ForceState& m_state;
     AstNodeStmt* m_stmtp = nullptr;
@@ -532,6 +535,7 @@ class ForceReplaceVisitor final : public VNVisitor {
     }
     void visit(AstSenItem* nodep) override { iterateLogic(nodep); }
     void visit(AstArraySel* nodep) override {
+        if (nodep->user1()) return;
         m_selIndices.push_back(nodep->bitp());
         iterateChildren(nodep);
         UASSERT_OBJ(m_selIndices.size(), nodep, "Underflow");
@@ -561,11 +565,22 @@ class ForceReplaceVisitor final : public VNVisitor {
                 if (nodep->dtypep()->skipRefp()->isIntegralOrPacked()) {
                     rhsp = fcp->forcedUpdate(nodep->varScopep(), {});
                 } else {
+                    AstNodeExpr* wholeExprp = nodep;
+                    while (VN_IS(wholeExprp->backp(), NodeExpr)) {
+                        wholeExprp = VN_AS(wholeExprp->backp(), NodeExpr);
+                    }
+                    if (nodep != wholeExprp) {
+                        // nodep is a part of a bigger expression
+                        AstNodeExpr* const copiedWholeExprp = wholeExprp->cloneTreePure(false);
+                        copiedWholeExprp->user1(true);
+                        wholeExprp->replaceWith(copiedWholeExprp);
+                        nodep->replaceWith(lhsp);
+                        pushDeletep(nodep);
+                        lhsp = wholeExprp;
+                    }
                     std::vector<AstNodeExpr*> reversedIndices(m_selIndices.size());
                     std::reverse_copy(m_selIndices.begin(), m_selIndices.end(),
                                       reversedIndices.begin());
-                    lhsp = ForceState::ForceComponentsVarScope::applySelects(
-                    lhsp, reversedIndices);
                     rhsp = fcp->forcedUpdate(nodep->varScopep(), reversedIndices);
                 }
                 m_stmtp->addNextHere(new AstAssign{flp, lhsp, rhsp});
@@ -595,6 +610,10 @@ class ForceReplaceVisitor final : public VNVisitor {
             }
             break;
         }
+    }
+    void visit(AstNodeExpr* nodep) override {
+        if (nodep->user1()) return;
+        iterateChildren(nodep);
     }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
