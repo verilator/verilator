@@ -14,7 +14,7 @@ typedef struct {
 class Packet;
   rand bit [7:0] data[5];
   rand bit x;
-  
+
   constraint c_data {
     foreach (data[i]) {
       solve x before data[i];
@@ -23,7 +23,7 @@ class Packet;
 }
 
   rand reg_t cfg[];
-  
+
   constraint solves_only_c {
     foreach (cfg[i]) {
       solve x before cfg[i].w, cfg[i].r;
@@ -34,7 +34,7 @@ endclass
 
 module t;
   Packet p;
-  
+
   initial begin
     p = new;
     void'(p.randomize());
