@@ -1327,6 +1327,7 @@ public:
         dtypeFrom(lhsp);
     }
     ASTGEN_MEMBERS_AstAssign;
+    bool maybePointedTo() const override VL_MT_SAFE { return true; }
     AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
         AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
         return new AstAssign{fileline(), lhsp, rhsp, controlp};

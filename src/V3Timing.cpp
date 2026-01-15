@@ -1198,8 +1198,10 @@ class TimingControlVisitor final : public VNVisitor {
             = createTemp(flp, m_contAsgnTmpNames.get(alwaysp), preAssignp->rhsp()->dtypep());
         AstVarRef* const tmpAssignRhsp = VN_AS(preAssignp->lhsp(), VarRef)->cloneTree(false);
         tmpAssignRhsp->access(VAccess::WRITE);
-        preAssignp->addNextHere(
-            new AstAssign{flp, new AstVarRef{flp, tmpVarp, VAccess::WRITE}, tmpAssignRhsp});
+        AstAssign* const tmpAssign
+            = new AstAssign{flp, new AstVarRef{flp, tmpVarp, VAccess::WRITE}, tmpAssignRhsp};
+        tmpVarp->varp()->resetAssignp(tmpAssign);
+        preAssignp->addNextHere(tmpAssign);
         // If the RHS is different from the currently scheduled value, schedule the new assignment
         // The generation will increase, effectively 'descheduling' the previous assignment.
         alwaysp->addStmtsp(new AstIf{flp,
