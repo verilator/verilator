@@ -1378,6 +1378,11 @@ class ConstraintExprVisitor final : public VNVisitor {
                     = VN_CAST(varp->dtypep(), UnpackArrayDType)) {
                     arraySize = adtypep->elementsConst();
                 }
+                if (arraySize > 100) {
+                    nodep->v3warn(CONSTRAINTIGN,
+                                  "Unsupported: Unique constraint on static arrays of size > 100");
+                    continue;
+                }
 
                 AstNodeExpr* const uPins = new AstConst{fl, AstConst::String{}, varp->name()};
                 uPins->addNext(new AstConst{fl, arraySize});

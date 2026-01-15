@@ -1,19 +1,23 @@
-%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:20:5: Unsupported: Unique constraint on other than static arrays
+%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:19:5: Unsupported: Unique constraint on static arrays of size > 100
                                                            : ... note: In instance 't'
-   20 |     unique {uniq_val_darr};   
+   19 |     unique {uniq_val_arr_400};   
       |     ^~~~~~
                         ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
                         ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
-%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:21:5: Unsupported: Unique constraint on other than static arrays
-                                                           : ... note: In instance 't'
-   21 |     unique {uniq_val_hash};   
-      |     ^~~~~~
 %Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:22:5: Unsupported: Unique constraint on other than static arrays
                                                            : ... note: In instance 't'
-   22 |     unique {uniq_val_queue};   
+   22 |     unique {uniq_val_darr};   
       |     ^~~~~~
 %Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:23:5: Unsupported: Unique constraint on other than static arrays
                                                            : ... note: In instance 't'
-   23 |     unique {uniq_val_arr_mda};   
+   23 |     unique {uniq_val_hash};   
+      |     ^~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:24:5: Unsupported: Unique constraint on other than static arrays
+                                                           : ... note: In instance 't'
+   24 |     unique {uniq_val_queue};   
+      |     ^~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:25:5: Unsupported: Unique constraint on other than static arrays
+                                                           : ... note: In instance 't'
+   25 |     unique {uniq_val_arr_mda};   
       |     ^~~~~~
 %Error: Exiting due to

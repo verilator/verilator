@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 class UniqueMultipleArray;
   rand bit [15:0] uniq_val_arr[4];
+  rand bit [15:0] uniq_val_arr_400[400];
   rand bit [15:0] uniq_val_arr_mda[4][];
   rand bit [15:0] uniq_val_darr[];
   rand bit [15:0] uniq_val_hash[int];
@@ -15,6 +16,7 @@ class UniqueMultipleArray;
   // Constraint to ensure the elements in the array are unique
   constraint unique_c {
     unique {uniq_val_arr};  // Ensure unique values in the array
+    unique {uniq_val_arr_400};  // Ensure unique values in the array
   }
   constraint unique_c1 {
     unique {uniq_val_darr};  // Ensure unique values in the array
