@@ -1863,6 +1863,7 @@ class AstVar final : public AstNode {
     // @astgen op4 := attrsp : List[AstNode] // Attributes during early parse
     // @astgen ptr := m_sensIfacep : Optional[AstIface]  // Interface type to which reads from this
     //                                                      var are sensitive
+    // @astgen ptr := m_resetAssignp : Optional[AstAssign]   // Assign to mimic instead of CReset
 
     string m_name;  // Name of variable
     string m_origName;  // Original name before dot addition
@@ -2072,6 +2073,7 @@ public:
     void ansi(bool flag) { m_ansi = flag; }
     void declTyped(bool flag) { m_declTyped = flag; }
     void sensIfacep(AstIface* nodep) { m_sensIfacep = nodep; }
+    void resetAssignp(AstAssign* nodep) { m_resetAssignp = nodep; }
     void attrFileDescr(bool flag) { m_fileDescr = flag; }
     void attrScBv(bool flag) { m_attrScBv = flag; }
     void attrScBigUint(bool flag) { m_attrScBigUint = flag; }
@@ -2231,6 +2233,7 @@ public:
     bool attrSplitVar() const { return m_attrSplitVar; }
     bool attrIsolateAssign() const { return m_attrIsolateAssign; }
     AstIface* sensIfacep() const { return m_sensIfacep; }
+    AstAssign* resetAssignp() const { return m_resetAssignp; }
     VRandAttr rand() const { return m_rand; }
     string verilogKwd() const override;
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
