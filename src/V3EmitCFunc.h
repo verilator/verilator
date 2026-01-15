@@ -407,6 +407,10 @@ public:
         if (nodep->isConstructor()) {
             const AstClass* const classp = VN_CAST(nodep->scopep()->modp(), Class);
             if (classp && classp->extendsp()) {
+                if (classp->isInterfaceClass()) {
+                    puts("if (__VvirtClassInitialized) return;\n");
+                    puts("__VvirtClassInitialized = true;\n");
+                }
                 // puts("\n    : ");
                 putConstructorSubinit(classp, nodep);
             }

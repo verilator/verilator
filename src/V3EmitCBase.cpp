@@ -144,6 +144,9 @@ void EmitCBaseVisitorConst::emitCFuncHeader(const AstCFunc* funcp, const AstNode
         if (!withScope) putns(funcp, funcNameProtect(funcp, modp));
         if (!withScope) {
             puts("() = default;\n");
+            if (const AstClass* const classp = VN_CAST(modp, Class)) {
+                if (classp->isInterfaceClass()) puts("bool __VvirtClassInitialized = false;\n");
+            }
             puts("void ");
         }
         puts("init");
