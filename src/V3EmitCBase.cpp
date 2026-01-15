@@ -129,7 +129,7 @@ string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep) {
 void EmitCBaseVisitorConst::emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp,
                                             bool withScope) {
     if (funcp->slow()) putns(funcp, "VL_ATTR_COLD ");
-    if (!funcp->isConstructor() && !funcp->isDestructor()) {
+    if ((!funcp->isConstructor() || withScope) && !funcp->isDestructor()) {
         putns(funcp, funcp->rtnTypeVoid());
         puts(" ");
     }
@@ -140,7 +140,16 @@ void EmitCBaseVisitorConst::emitCFuncHeader(const AstCFunc* funcp, const AstNode
             putns(funcp, EmitCUtil::prefixNameProtect(modp) + "::");
         }
     }
-    putns(funcp, funcNameProtect(funcp, modp));
+    if (funcp->isConstructor()) {
+        if (!withScope) putns(funcp, funcNameProtect(funcp, modp));
+        if (!withScope) {
+            puts("() = default;\n");
+            puts("void ");
+        }
+        puts("init");
+    } else {
+        putns(funcp, funcNameProtect(funcp, modp));
+    }
     puts("(" + cFuncArgs(funcp) + ")");
     if (funcp->isConst().trueKnown() && funcp->isProperMethod()) puts(" const");
 }
