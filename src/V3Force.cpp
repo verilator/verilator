@@ -100,48 +100,45 @@ public:
             AstNodeStmt* outerStmtp = nullptr;
             std::vector<AstNodeExpr*> loopVarRefs;
             AstNodeDType* enRhsDTypep = m_enVscp->varp()->dtypep()->skipRefp();
-            if (AstUnpackArrayDType* const unpackedp
-                = VN_CAST(m_rdVscp->varp()->dtypep()->skipRefp(), UnpackArrayDType)) {
-                // Create a loop to set all elements of __VforceEn array to 0.
-                // That loop node is then copied and used for updating elements of __VforceRd array
-                std::vector<AstUnpackArrayDType*> dims = unpackedp->unpackDimensions();
-                loopVarRefs.reserve(dims.size());
-                for (size_t i = 0; i < dims.size(); i++) {
-                    AstVar* const loopVarp
-                        = new AstVar{flp, VVarType::MODULETEMP,
-                                     m_rdVscp->varp()->name() + "__VwhileIter" + std::to_string(i),
-                                     VFlagBitPacked{}, 32};
-                    m_rdVscp->varp()->addNext(loopVarp);
-                    AstVarScope* const loopVarScopep
-                        = new AstVarScope{flp, m_rdVscp->scopep(), loopVarp};
-                    m_rdVscp->addNext(loopVarScopep);
-                    AstVarRef* const readRefp = new AstVarRef{flp, loopVarScopep, VAccess::READ};
-                    loopVarRefs.push_back(readRefp);
-                    AstNodeStmt* const currInitp
-                        = new AstAssign{flp, new AstVarRef{flp, loopVarScopep, VAccess::WRITE},
-                                        new AstConst{flp, 0}};
-                    if (toInsertp) {
-                        toInsertp->addNextHere(currInitp);
-                    } else {
-                        outerStmtp = currInitp;
-                    }
-                    AstLoop* const currWhilep = new AstLoop{flp};
-                    currInitp->addNextHere(currWhilep);
-                    AstLoopTest* const loopTestp = new AstLoopTest{
-                        flp, currWhilep,
-                        new AstNeq{
-                            flp, readRefp,
-                            new AstConst{flp, static_cast<uint32_t>(dims[i]->elementsConst())}}};
-                    currWhilep->addStmtsp(loopTestp);
-                    toInsertp = loopTestp;
-                    AstAssign* const currIncrp = new AstAssign{
-                        flp, new AstVarRef{flp, loopVarScopep, VAccess::WRITE},
-                        new AstAdd{flp, readRefp->cloneTree(false), new AstConst{flp, 1}}};
-                    currWhilep->addStmtsp(currIncrp);
-
-                    // __En var has the same number of dimensions as __Rd var
-                    enRhsDTypep = enRhsDTypep->subDTypep();
+            AstNodeDType* currDtypep = m_rdVscp->varp()->dtypep()->skipRefp();
+            // Create a loop to set all elements of __VforceEn array to 0.
+            // That loop node is then copied and used for updating elements of __VforceRd array
+            int cnt = 0;
+            while (AstUnpackArrayDType* const unpackedp = VN_CAST(currDtypep, UnpackArrayDType)) {
+                AstVar* const loopVarp
+                    = new AstVar{flp, VVarType::MODULETEMP,
+                                 m_rdVscp->varp()->name() + "__VwhileIter" + std::to_string(cnt++),
+                                 VFlagBitPacked{}, 32};
+                m_rdVscp->varp()->addNext(loopVarp);
+                AstVarScope* const loopVarScopep
+                    = new AstVarScope{flp, m_rdVscp->scopep(), loopVarp};
+                m_rdVscp->addNext(loopVarScopep);
+                AstVarRef* const readRefp = new AstVarRef{flp, loopVarScopep, VAccess::READ};
+                loopVarRefs.push_back(readRefp);
+                AstNodeStmt* const currInitp = new AstAssign{
+                    flp, new AstVarRef{flp, loopVarScopep, VAccess::WRITE}, new AstConst{flp, 0}};
+                if (toInsertp) {
+                    toInsertp->addNextHere(currInitp);
+                } else {
+                    outerStmtp = currInitp;
                 }
+                AstLoop* const currWhilep = new AstLoop{flp};
+                currInitp->addNextHere(currWhilep);
+                AstLoopTest* const loopTestp = new AstLoopTest{
+                    flp, currWhilep,
+                    new AstNeq{
+                        flp, readRefp,
+                        new AstConst{flp, static_cast<uint32_t>(unpackedp->elementsConst())}}};
+                currWhilep->addStmtsp(loopTestp);
+                toInsertp = loopTestp;
+                AstAssign* const currIncrp = new AstAssign{
+                    flp, new AstVarRef{flp, loopVarScopep, VAccess::WRITE},
+                    new AstAdd{flp, readRefp->cloneTree(false), new AstConst{flp, 1}}};
+                currWhilep->addStmtsp(currIncrp);
+
+                currDtypep = currDtypep->subDTypep();
+                // __En var has the same number of dimensions as __Rd var
+                enRhsDTypep = enRhsDTypep->subDTypep();
             }
             AstNodeExpr* enRhsp;
             if (AstNodeUOrStructDType* const structEnDtypep
