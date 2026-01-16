@@ -19,8 +19,8 @@ class Packet;
     foreach (data[i]) {
       solve x before data[i];
       data[i] inside {8'h10, 8'h20, 8'h30, 8'h40, 8'h50};
+    }
   }
-}
 
   rand reg_t cfg[];
 
