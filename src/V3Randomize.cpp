@@ -725,6 +725,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     // AstMemberSel::user2p()  -> AstNodeModule*. Pointer to containing module
     // VNuser3InUse m_inuser3; (Allocated for use in RandomizeVisitor)
 
+    AstClass* const m_classp;
     AstNodeFTask* const m_inlineInitTaskp;  // Method to add write_var calls to
                                             // (may be null, then new() is used)
     AstVar* const m_genp;  // VlRandomizer variable of the class
@@ -1336,9 +1337,83 @@ class ConstraintExprVisitor final : public VNVisitor {
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     void visit(AstConstraintUnique* nodep) override {
-        nodep->v3warn(CONSTRAINTIGN, "Constraint expression ignored (unsupported)");
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        if (!m_classp) return;
+
+        FileLine* const fl = nodep->fileline();
+
+        AstNodeFTask* const initTaskp = VN_AS(m_memberMap.findMember(m_classp, "new"), NodeFTask);
+        if (!initTaskp) return;
+
+        AstVar* const genVarp = VN_AS(m_classp->user3p(), Var);
+        if (!genVarp) return;
+
+        for (AstNode* itemp = nodep->rangesp(); itemp; itemp = itemp->nextp()) {
+            if (AstVarRef* const varRefp = VN_CAST(itemp, VarRef)) {
+                AstVar* const varp = varRefp->varp();
+
+                AstNodeDType* const dtypep = varp->dtypep()->skipRefp();
+                if (AstUnpackArrayDType* const up = VN_CAST(dtypep, UnpackArrayDType)) {
+                    AstRange* const rangep = up->rangep();
+                    if (!rangep || !VN_IS(rangep->leftp(), Const)
+                        || !VN_IS(rangep->rightp(), Const)) {
+                        nodep->v3warn(
+                            CONSTRAINTIGN,
+                            "Unsupported: Unique constraint on other than static arrays");
+                        continue;
+                    }
+
+                    // Ensure it is ONLY 1-D by checking that the sub-type is NOT an array/queue
+                    // We skip refs (typedefs) to see the actual underlying type
+                    AstNodeDType* const subp = up->subDTypep()->skipRefp();
+                    if (VN_IS(subp, NodeArrayDType) || VN_IS(subp, QueueDType)
+                        || VN_IS(subp, DynArrayDType)) {
+                        nodep->v3warn(
+                            CONSTRAINTIGN,
+                            "Unsupported: Unique constraint on other than static arrays");
+                        continue;
+                    }
+                } else {
+                    nodep->v3warn(CONSTRAINTIGN,
+                                  "Unsupported: Unique constraint on other than static arrays");
+                    continue;
+                }
+
+                AstCMethodHard* const wCallp = new AstCMethodHard{
+                    fl, new AstVarRef{fl, genVarp, VAccess::READ}, VCMethod::RANDOMIZER_WRITE_VAR};
+                wCallp->addPinsp(new AstVarRef{fl, varp, VAccess::READ});
+                wCallp->addPinsp(new AstConst{fl, AstConst::Unsized64{},
+                                              static_cast<uint64_t>(varp->dtypep()->width())});
+                wCallp->addPinsp(new AstConst{fl, AstConst::String{}, varp->name()});
+                wCallp->addPinsp(new AstConst{fl, 1});  // Dimension
+
+                wCallp->dtypeSetVoid();
+                initTaskp->addStmtsp(new AstStmtExpr{fl, wCallp});
+
+                uint32_t arraySize = 0;
+                if (AstUnpackArrayDType* const adtypep
+                    = VN_CAST(varp->dtypep(), UnpackArrayDType)) {
+                    arraySize = adtypep->elementsConst();
+                }
+                if (arraySize > 100) {
+                    nodep->v3warn(CONSTRAINTIGN,
+                                  "Unsupported: Unique constraint on static arrays of size > 100");
+                    continue;
+                }
+
+                AstNodeExpr* const uPins = new AstConst{fl, AstConst::String{}, varp->name()};
+                uPins->addNext(new AstConst{fl, arraySize});
+
+                AstCMethodHard* const uCallp
+                    = new AstCMethodHard{fl, new AstVarRef{fl, genVarp, VAccess::READ},
+                                         VCMethod::RANDOMIZER_UNIQUE, uPins};
+                uCallp->dtypep(nodep->findVoidDType());
+                initTaskp->addStmtsp(new AstStmtExpr{fl, uCallp});
+            }
+        }
+        nodep->unlinkFrBack();
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
+
     void visit(AstConstraintExpr* nodep) override {
         iterateChildren(nodep);
         if (m_wantSingle) {
@@ -1440,10 +1515,11 @@ class ConstraintExprVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit ConstraintExprVisitor(VMemberMap& memberMap, AstNode* nodep,
+    explicit ConstraintExprVisitor(AstClass* classp, VMemberMap& memberMap, AstNode* nodep,
                                    AstNodeFTask* inlineInitTaskp, AstVar* genp,
                                    AstVar* randModeVarp, std::set<std::string>& writtenVars)
-        : m_inlineInitTaskp{inlineInitTaskp}
+        : m_classp{classp}
+        , m_inlineInitTaskp{inlineInitTaskp}
         , m_genp{genp}
         , m_randModeVarp{randModeVarp}
         , m_memberMap{memberMap}
@@ -2579,8 +2655,8 @@ class RandomizeVisitor final : public VNVisitor {
                     resizeAllTaskp->addStmtsp(resizeTaskRefp->makeStmt());
                 }
 
-                ConstraintExprVisitor{m_memberMap, constrp->itemsp(), nullptr,
-                                      genp,        randModeVarp,      m_writtenVars};
+                ConstraintExprVisitor{classp, m_memberMap,  constrp->itemsp(), nullptr,
+                                      genp,   randModeVarp, m_writtenVars};
                 if (constrp->itemsp()) {
                     taskp->addStmtsp(wrapIfConstraintMode(
                         nodep, constrp, constrp->itemsp()->unlinkFrBackWithNext()));
@@ -2833,8 +2909,8 @@ class RandomizeVisitor final : public VNVisitor {
                 AstNode* const capturedTreep = withp->exprp()->unlinkFrBackWithNext();
                 randomizeFuncp->addStmtsp(capturedTreep);
                 {
-                    ConstraintExprVisitor{m_memberMap, capturedTreep, randomizeFuncp,
-                                          stdrand,     nullptr,       m_writtenVars};
+                    ConstraintExprVisitor{nullptr, m_memberMap, capturedTreep, randomizeFuncp,
+                                          stdrand, nullptr,     m_writtenVars};
                 }
                 AstCExpr* const solverCallp = new AstCExpr{fl};
                 solverCallp->dtypeSetBit();
@@ -2961,8 +3037,8 @@ class RandomizeVisitor final : public VNVisitor {
         AstNode* const capturedTreep = withp->exprp()->unlinkFrBackWithNext();
         randomizeFuncp->addStmtsp(capturedTreep);
         {
-            ConstraintExprVisitor{m_memberMap, capturedTreep, randomizeFuncp,
-                                  localGenp,   randModeVarp,  m_writtenVars};
+            ConstraintExprVisitor{classp,    m_memberMap,  capturedTreep, randomizeFuncp,
+                                  localGenp, randModeVarp, m_writtenVars};
         }
 
         // Call the solver and set return value

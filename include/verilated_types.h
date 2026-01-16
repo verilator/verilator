@@ -1612,6 +1612,11 @@ private:
         return a != b;
     }
 };
+// Trait to detect VlUnpacked types
+template <typename T>
+struct IsVlUnpacked : std::false_type {};
+template <typename T, std::size_t N>
+struct IsVlUnpacked<VlUnpacked<T, N>> : std::true_type {};
 
 template <typename T_Value, std::size_t N_Depth>
 std::string VL_TO_STRING(const VlUnpacked<T_Value, N_Depth>& obj) {
