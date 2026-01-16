@@ -666,6 +666,14 @@ private:
         m_inPExpr = true;
 
         if (m_disablep) {
+            const AstSampled* sampledp;
+            if (m_disablep->exists([&sampledp](const AstSampled* const sp) {
+                    sampledp = sp;
+                    return true;
+                })) {
+                sampledp->v3warn(E_UNSUPPORTED,
+                                 "Unsupported: $sampled inside disabled condition of a sequence");
+            }
             FileLine* const flp = nodep->fileline();
             // Add counter which counts times the condition turned true
             AstVar* const disableCntp
