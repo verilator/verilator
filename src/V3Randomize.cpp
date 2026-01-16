@@ -1121,6 +1121,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         editSMT(nodep, nodep->fromp(), lsbp, msbp);
     }
     void visit(AstStructSel* nodep) override {
+        if (editFormat(nodep)) return;
         m_structSel = true;
         if (VN_IS(nodep->fromp()->dtypep()->skipRefp(), StructDType)) {
             AstNodeExpr* const fromp = nodep->fromp();
@@ -1154,7 +1155,6 @@ class ConstraintExprVisitor final : public VNVisitor {
             }
         }
         iterateChildren(nodep);
-        if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
         AstSFormatF* newp = nullptr;
         if (VN_AS(nodep->fromp(), SFormatF)->name() == "%@.%@") {
