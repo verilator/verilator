@@ -33,12 +33,13 @@
 
 #include "verilatedos.h"
 
+#include "V3Randomize.h"
+
 #include "V3Ast.h"
 #include "V3Error.h"
 #include "V3FileLine.h"
 #include "V3Global.h"
 #include "V3MemberMap.h"
-#include "V3Randomize.h"
 #include "V3UniqueNames.h"
 
 #include <queue>
