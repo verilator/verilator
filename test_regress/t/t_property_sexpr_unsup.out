@@ -27,8 +27,8 @@
                                                     : ... note: In instance 't'
    43 |   assert property (@(posedge clk) (##1 val) |-> (##1 val)) $display("[%0t] two delays implication stmt, fileline:%d", $time, 43);
       |                                             ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:56:18: Unsupported: Implication with sequence expression
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:46:18: Unsupported: Implication with sequence expression
                                                     : ... note: In instance 't'
-   56 |     ##1 cyc == 4 |-> 1;
+   46 |     ##1 cyc == 4 |-> 1;
       |                  ^~~
 %Error: Exiting due to
