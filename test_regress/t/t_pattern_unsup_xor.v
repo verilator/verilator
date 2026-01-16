@@ -8,7 +8,7 @@
 module t;
   typedef struct {
     logic bit_field;
-} status_t;
+  } status_t;
 
   status_t status_reg = '{bit_field: 1'b0} ^ 1'b0;
 endmodule
