@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_pattern_unsup_xor.v:13:27: Unsupported/Illegal: Assignment pattern member not underneath a supported construct: XOR
+                                                 : ... note: In instance 't'
+   13 |     status_t status_reg = '{bit_field: 1'b0} ^ 1'b0;
+      |                           ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to
