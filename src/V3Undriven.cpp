@@ -53,6 +53,7 @@ class UndrivenVarEntry final {
     bool m_underGen = false;  // Under a generate
 
     const AstNodeFTaskRef* m_callNodep = nullptr;  // Call node if driven via writeSummary
+    const AstNodeFTask* m_containingTaskp = nullptr;  // Function/task containing this variable if it's a function local/parameter
 
     enum : uint8_t { FLAG_USED = 0, FLAG_DRIVEN = 1, FLAG_DRIVEN_ALWCOMB = 2, FLAGS_PER_BIT = 3 };
 
@@ -207,6 +208,9 @@ public:
                                                  true);  // Warn only once
             }
         } else {  // Signal
+            // Check if this is a function local/parameter in an unused function
+            const bool isUnusedFuncLocal = nodep->isFuncLocal() && m_containingTaskp
+                                           && !m_containingTaskp->user2();
             bool allU = true;
             bool allD = true;
             bool anyU = m_wholeFlags[FLAG_USED];
@@ -237,37 +241,41 @@ public:
             } else if (!anyD && !anyU) {
                 // UNDRIVEN is considered more serious - as is more likely a bug,
                 // thus undriven+unused bits get UNUSED warnings, as they're not as buggy.
-                if (!unusedMatch(nodep)) {
+                // Skip UNUSEDSIGNAL for unused function locals, but still report UNDRIVEN if needed
+                if (!isUnusedFuncLocal && !unusedMatch(nodep)) {
                     nodep->v3warn(UNUSEDSIGNAL,
                                   "Signal is not driven, nor used: " << nodep->prettyNameQ());
                     nodep->fileline()->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL,
                                                      true);  // Warn only once
                 }
             } else if (allD && !anyU) {
-                if (!unusedMatch(nodep)) {
+                // Signal is driven but not used - skip UNUSEDSIGNAL for unused function locals
+                if (!isUnusedFuncLocal && !unusedMatch(nodep)) {
                     nodep->v3warn(UNUSEDSIGNAL, "Signal is not used: " << nodep->prettyNameQ());
                     nodep->fileline()->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL,
                                                      true);  // Warn only once
                 }
             } else if (!anyD && allU) {
+                // Signal is used but not driven - always report UNDRIVEN (even for unused functions)
                 nodep->v3warn(UNDRIVEN, "Signal is not driven: " << nodep->prettyNameQ());
                 nodep->fileline()->modifyWarnOff(V3ErrorCode::UNDRIVEN, true);  // Warn only once
             } else {
                 // Bits have different dispositions
                 bool setU = false;
                 bool setD = false;
-                if (anynotDU && !unusedMatch(nodep)) {
+                if (anynotDU && !isUnusedFuncLocal && !unusedMatch(nodep)) {
                     nodep->v3warn(UNUSEDSIGNAL, "Bits of signal are not driven, nor used: "
                                                     << nodep->prettyNameQ() << bitNames(BN_BOTH));
                     setU = true;
                 }
-                if (anyDnotU && !unusedMatch(nodep)) {
+                if (anyDnotU && !isUnusedFuncLocal && !unusedMatch(nodep)) {
                     nodep->v3warn(UNUSEDSIGNAL,
                                   "Bits of signal are not used: " << nodep->prettyNameQ()
                                                                   << bitNames(BN_UNUSED));
                     setU = true;
                 }
                 if (anyUnotD) {
+                    // Always report UNDRIVEN (even for unused functions)
                     nodep->v3warn(UNDRIVEN, "Bits of signal are not driven: "
                                                 << nodep->prettyNameQ() << bitNames(BN_UNDRIVEN));
                     setD = true;
@@ -287,6 +295,8 @@ public:
         if (!m_callNodep) m_callNodep = nodep;
     }
     const AstNodeFTaskRef* callNodep() const { return m_callNodep; }
+    void containingTaskp(const AstNodeFTask* taskp) { m_containingTaskp = taskp; }
+    const AstNodeFTask* containingTaskp() const { return m_containingTaskp; }
 };
 
 //######################################################################
@@ -360,6 +370,10 @@ class UndrivenVisitor final : public VNVisitorConst {
             // For combo always, run both usr==1 for above, and also
             // usr==2 for always-only checks.
             UndrivenVarEntry* const entryp = getEntryp(nodep, usr);
+            // Store the containing function if this is a function local/parameter
+            if (nodep->isFuncLocal() && m_taskp) {
+                entryp->containingTaskp(m_taskp);
+            }
             if (nodep->isNonOutput() || nodep->isSigPublic() || nodep->isSigUserRWPublic()
                 || (m_taskp && (m_taskp->dpiImport() || m_taskp->dpiExport()))) {
                 entryp->drivenWhole();
