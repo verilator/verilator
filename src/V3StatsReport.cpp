@@ -271,6 +271,6 @@ void V3Stats::summaryReport() {
     uint64_t memPeak, memCurrent;
     VlOs::memUsageBytes(memPeak /*ref*/, memCurrent /*ref*/);
     const double memory = memPeak / 1024.0 / 1024.0;
-    if (VL_UNCOVERABLE(memory != 0.0)) std::cout << "; alloced " << memory << " MB";
+    if (VL_UNCOVERABLE(memory != 0.0)) std::cout << "; allocated " << memory << " MB";
     std::cout << "\n";
 }

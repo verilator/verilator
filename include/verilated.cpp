@@ -3118,7 +3118,7 @@ void VerilatedContext::statsPrintSummary() VL_MT_UNSAFE {
     uint64_t memPeak, memCurrent;
     VlOs::memUsageBytes(memPeak /*ref*/, memCurrent /*ref*/);
     const double modelMB = memPeak / 1024.0 / 1024.0;
-    VL_PRINTF("- Verilator: cpu %0.3f s on %u threads; alloced %0.0f MB\n", cputime,
+    VL_PRINTF("- Verilator: cpu %0.3f s on %u threads; allocated %0.0f MB\n", cputime,
               threadsInModels(), modelMB);
 }
 

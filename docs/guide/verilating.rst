@@ -580,7 +580,7 @@ will print a report to stdout summarizing the build. For example:
    - Verilator: Built from 354 MB sources in 247 modules,
        into 74 MB in 89 C++ files needing 0.192 MB
    - Verilator: Walltime 26.580 s (elab=2.096, cvt=18.268,
-       bld=2.100); cpu 26.548 s on 1 threads; alloced 2894.672 MB
+       bld=2.100); cpu 26.548 s on 1 threads; allocated 2894.672 MB
 
 The information in this report is:
 
@@ -635,7 +635,7 @@ The information in this report is:
 
    Number of simultaneous threads used.
 
-.. describe:: "alloced 123 MB"
+.. describe:: "allocated 123 MB"
 
    Total memory used during build by Verilator executable (excludes
    :vlopt:`--build` compiler's usage) in megabytes.
