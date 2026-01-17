@@ -19,6 +19,7 @@ Verilator 5.045 devel
 * Support `unique` constraints (on 1D static arrays) (#6810) (#6878). [Srinivasan Venkataramanan]
 * Support complex expressions as std::randomize arguments (#6860). [Jakub Wasilewski, Antmicro Ltd.]
 * Support dynamic array elements in std::randomize (#6896). [Ryszard Rozak, Antmicro Ltd.]
+* Support unbounded '$' in inside range expressions (#6935) (#6938). [Wei-Lun Chiu]
 * Remove deprecated `--xml-only`.
 * Remove deprecated `--make cmake`.
 * Fix variable reference lookup for module-level variables (#6741) (#6882). [Yilou Wang]
@@ -39,6 +40,7 @@ Verilator 5.045 devel
 * Fix `foreach` with mid-index empty commas (#6910).
 * Fix error when calling non-static method (#6916). [Artur Bieniek, Antmicro Ltd.]
 * Fix memory leak in vpi_put_value and vpi_get_value (#6917). [Christian Hecken]
+* Fix segfault after assignment pattern XOR error (#6928) (#6931). [emmettifelts]
 
 
 Verilator 5.044 2026-01-01
