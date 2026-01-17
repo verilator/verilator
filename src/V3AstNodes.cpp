@@ -356,6 +356,34 @@ const char* AstExecGraph::broken() const {
 
 AstNodeExpr* AstInsideRange::newAndFromInside(AstNodeExpr* exprp, AstNodeExpr* lhsp,
                                               AstNodeExpr* rhsp) {
+    const bool lhsUnbounded = VN_IS(lhsp, Unbounded);
+    const bool rhsUnbounded = VN_IS(rhsp, Unbounded);
+
+    if (lhsUnbounded && rhsUnbounded) {
+        fileline()->v3warn(INSIDETRUE,
+                           "Unbounded on both sides of inside range [$:$] is always true");
+        VL_DO_DANGLING(exprp->deleteTree(), exprp);
+        VL_DO_DANGLING(lhsp->deleteTree(), lhsp);
+        VL_DO_DANGLING(rhsp->deleteTree(), rhsp);
+        return new AstConst{fileline(), AstConst::BitTrue{}};
+    }
+
+    if (lhsUnbounded) {
+        // [$:N] - only check expr <= rhs
+        // Use exprp directly (not cloned) so ExprStmt side effects are preserved
+        VL_DO_DANGLING(lhsp->deleteTree(), lhsp);
+        AstNodeExpr* const bp = new AstLte{fileline(), exprp, rhsp};
+        bp->fileline()->modifyWarnOff(V3ErrorCode::CMPCONST, true);
+        return bp;
+    } else if (rhsUnbounded) {
+        // [N:$] - only check expr >= lhs
+        VL_DO_DANGLING(rhsp->deleteTree(), rhsp);
+        AstNodeExpr* const ap = new AstGte{fileline(), exprp, lhsp};
+        ap->fileline()->modifyWarnOff(V3ErrorCode::UNSIGNED, true);
+        return ap;
+    }
+
+    // Normal case: [N:M] - check expr >= lhs && expr <= rhs
     AstNodeExpr* const ap = new AstGte{fileline(), exprp, lhsp};
     AstNodeExpr* lteLhsp;
     if (const AstExprStmt* const exprStmt = VN_CAST(exprp, ExprStmt)) {
