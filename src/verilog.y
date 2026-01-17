@@ -539,6 +539,8 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yS_UNTIL_WITH   "s_until_with"
 %token<fl>              yTABLE          "table"
 %token<fl>              yTAGGED         "tagged"
+%token<fl>              yTAGGED__LEX    "tagged-in-lex"
+%token<fl>              yTAGGED__NONPRIMARY   "tagged-nonprimary"
 %token<fl>              yTASK           "task"
 %token<fl>              yTHIS           "this"
 %token<fl>              yTHROUGHOUT     "throughout"
@@ -2103,8 +2105,7 @@ data_typeVirtual<nodeDTypep>:           // ==IEEE: data_type after yVIRTUAL [ yI
 data_type_or_void<nodeDTypep>:  // ==IEEE: data_type_or_void
                 data_typeAny                            { $$ = $1; }
         |       yVOID
-                        { $$ = new AstBasicDType{$1, LOGIC_IMPLICIT};
-                          BBUNSUP($1, "Unsupported: void (for tagged unions)"); }
+                        { $$ = new AstBasicDType{$1, VBasicDTypeKwd::CVOID}; }
         ;
 
 var_data_type<nodeDTypep>:              // ==IEEE: var_data_type
@@ -2135,7 +2136,7 @@ struct_unionDecl<nodeUOrStructDTypep>:  // IEEE: part of data_type
         /*cont*/    struct_union_memberListEnd
                         { $$ = $<nodeUOrStructDTypep>4; $$->addMembersp($5); }
         |       yUNION taggedSoftE packedSigningE '{'
-        /*mid*/         { $<nodeUOrStructDTypep>$ = new AstUnionDType{$1, $2, $3}; }
+        /*mid*/         { $<nodeUOrStructDTypep>$ = new AstUnionDType{$1, $2 == tagged_SOFT, $2 == tagged_TAGGED, $3}; }
         /*cont*/    struct_union_memberListEnd
                         { $$ = $<nodeUOrStructDTypep>5; $$->addMembersp($6); }
         ;
@@ -2273,10 +2274,10 @@ random_qualifier<qualifiers>:   // ==IEEE: random_qualifier
         |       yRANDC                                  { $$ = VMemberQualifiers::none(); $$.m_randc = true; }
         ;
 
-taggedSoftE<cbool>:
-                /*empty*/                               { $$ = false; }
-        |       ySOFT                                   { $$ = true; }
-        |       yTAGGED                                 { $$ = false; BBUNSUP($<fl>1, "Unsupported: tagged union"); }
+taggedSoftE<taggedstate>:
+                /*empty*/                               { $$ = tagged_NONE; }
+        |       ySOFT                                   { $$ = tagged_SOFT; }
+        |       yTAGGED                                 { $$ = tagged_TAGGED; }
         ;
 
 packedSigningE<signstate>:
@@ -3557,9 +3558,13 @@ statement_item<nodeStmtp>:          // IEEE: statement_item
                           if ($1 == uniq_UNIQUE) $2->uniquePragma(true);
                           if ($1 == uniq_UNIQUE0) $2->unique0Pragma(true);
                           if ($1 == uniq_PRIORITY) $2->priorityPragma(true); }
-        // &&& is part of expr so case_patternList aliases to case_itemList
-        |       unique_priorityE caseStart caseAttrE yMATCHES case_itemList yENDCASE
-                        { $$ = nullptr; BBUNSUP($4, "Unsupported: matches (for tagged union)"); DEL($2, $5); }
+        // case matches uses patterns, not expressions
+        |       unique_priorityE caseStart caseAttrE yMATCHES case_matches_itemList yENDCASE
+                        { $$ = $2; if ($5) $2->addItemsp($5);
+                          $2->caseMatchesSet();
+                          if ($1 == uniq_UNIQUE) $2->uniquePragma(true);
+                          if ($1 == uniq_UNIQUE0) $2->unique0Pragma(true);
+                          if ($1 == uniq_PRIORITY) $2->priorityPragma(true); }
         |       unique_priorityE caseStart caseAttrE yINSIDE case_inside_itemList yENDCASE
                         { $$ = $2; if ($5) $2->addItemsp($5);
                           if (!$2->caseSimple()) $4->v3error("Illegal to have inside on a casex/casez");
@@ -3864,6 +3869,21 @@ case_inside_itemList<caseItemp>:        // IEEE: { case_inside_item + range_list
         |       case_inside_itemList yDEFAULT colon stmt   { $$ = $1->addNext(new AstCaseItem{$2, nullptr, $4}); }
         ;
 
+case_matches_itemList<caseItemp>:    // IEEE: { case_pattern_item + ... }
+        //                      // IEEE: case_pattern_item ::= pattern [&&& expr] : stmt
+        //                      // pattern includes expr for tagged void members (tagged id)
+                patternNoExpr colon stmt                   { $$ = new AstCaseItem{$2, $1, $3}; }
+        |       expr colon stmt                            { $$ = new AstCaseItem{$2, $1, $3}; }
+        |       yDEFAULT colon stmt                        { $$ = new AstCaseItem{$1, nullptr, $3}; }
+        |       yDEFAULT stmt                              { $$ = new AstCaseItem{$1, nullptr, $2}; }
+        |       case_matches_itemList patternNoExpr colon stmt
+                        { $$ = $1->addNext(new AstCaseItem{$3, $2, $4}); }
+        |       case_matches_itemList expr colon stmt
+                        { $$ = $1->addNext(new AstCaseItem{$3, $2, $4}); }
+        |       case_matches_itemList yDEFAULT stmt        { $$ = $1->addNext(new AstCaseItem{$2, nullptr, $3}); }
+        |       case_matches_itemList yDEFAULT colon stmt  { $$ = $1->addNext(new AstCaseItem{$2, nullptr, $4}); }
+        ;
+
 rand_case_itemList<caseItemp>:       // IEEE: { rand_case_item + ... }
         //                      // Randcase syntax doesn't have default, or expression lists
                 expr colon stmt                            { $$ = new AstCaseItem{$2, $1, $3}; }
@@ -3909,15 +3929,19 @@ caseCondList<nodeExprp>:        // IEEE: part of case_item
         |       caseCondList ',' exprTypeCompare        { $$ = $1->addNext($3); }
         ;
 
-patternNoExpr<nodep>:           // IEEE: pattern **Excluding Expr*
+patternNoExpr<nodeExprp>:       // IEEE: pattern **Excluding Expr*
                 '.' idAny/*variable*/
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: '{} tagged patterns"); }
+                        { $$ = new AstPatternVar{$1, *$2}; }
         |       yP_DOTSTAR
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: '{} tagged patterns"); }
+                        { $$ = new AstPatternStar{$1}; }
         //                      // IEEE: "expr" excluded; expand in callers
-        //                      // "yTAGGED idAny [expr]" Already part of expr
+        //                      // IEEE: tagged member_identifier [ pattern ]
+        //                      // Standalone "yTAGGED__NONPRIMARY idAny" is handled via expr in patternOne
+        //                      // Here, we need to treat yTAGGED and yTAGGED__NONPRIMARY identically.
         |       yTAGGED idAny/*member_identifier*/ patternNoExpr
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: '{} tagged patterns"); DEL($3); }
+                        { $$ = new AstTaggedPattern{$1, *$2, $3}; }
+        |       yTAGGED__NONPRIMARY idAny/*member_identifier*/ patternNoExpr
+                        { $$ = new AstTaggedPattern{$1, *$2, $3}; }
         //                      // "yP_TICKBRA patternList '}'" part of expr under assignment_pattern
         ;
 
@@ -3940,10 +3964,10 @@ patternMemberList<nodep>:       // IEEE: part of pattern and assignment_pattern
 
 patternMemberOne<patMemberp>:   // IEEE: part of pattern and assignment_pattern
                 patternKey ':' expr                     { $$ = new AstPatMember{$1->fileline(), $3, $1, nullptr}; }
-        |       patternKey ':' patternNoExpr            { $$ = nullptr; BBUNSUP($2, "Unsupported: '{} .* patterns"); DEL($1, $3); }
+        |       patternKey ':' patternNoExpr            { $$ = new AstPatMember{$1->fileline(), $3, $1, nullptr}; }
         //                      // From assignment_pattern_key
         |       yDEFAULT ':' expr                       { $$ = new AstPatMember{$1, $3, nullptr, nullptr}; $$->isDefault(true); }
-        |       yDEFAULT ':' patternNoExpr              { $$ = nullptr; BBUNSUP($2, "Unsupported: '{} .* patterns"); DEL($3); }
+        |       yDEFAULT ':' patternNoExpr              { AstPatMember* const patp = new AstPatMember{$1, $3, nullptr, nullptr}; patp->isDefault(true); $$ = patp; }
         ;
 
 patternKey<nodep>:              // IEEE: merge structure_pattern_key, array_pattern_key, assignment_pattern_key
@@ -5020,9 +5044,34 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         |       ~l~expr yINSIDE '{' range_list '}'      { $$ = new AstInside{$2, $1, $4}; }
         //
         //                      // IEEE: tagged_union_expression
-        //UNSUP yTAGGED id/*member*/ %prec prTAGGED             { $$ = $2; BBUNSUP("tagged reference"); }
-        //                      // Spec only allows primary
-        //UNSUP yTAGGED id/*member*/ %prec prTAGGED expr /*primary*/     { $$ = $2; BBUNSUP("tagged reference"); }
+        //                      // yTAGGED__NONPRIMARY = tokenPipeline determined no primary follows
+        |       yTAGGED__NONPRIMARY idAny/*member*/ %prec prTAGGED
+                        { $$ = new AstTaggedExpr{$1, *$2, nullptr}; }
+        //                      // yTAGGED = primary follows; handle specific primary types
+        //                      // Parenthesized expression
+        |       yTAGGED idAny/*member*/ '(' expr ')' %prec prTAGGED
+                        { $$ = new AstTaggedExpr{$1, *$2, $4}; }
+        //                      // Assignment patterns like tagged Add '{a, b, c}
+        |       yTAGGED idAny/*member*/ assignment_pattern %prec prTAGGED
+                        { $$ = new AstTaggedExpr{$1, *$2, $3}; }
+        //                      // Integer literal
+        |       yTAGGED idAny/*member*/ yaINTNUM %prec prTAGGED
+                        { $$ = new AstTaggedExpr{$1, *$2, new AstConst{$<fl>3, *$3}}; }
+        //                      // Float literal
+        |       yTAGGED idAny/*member*/ yaFLOATNUM %prec prTAGGED
+                        { $$ = new AstTaggedExpr{$1, *$2, new AstConst{$<fl>3, AstConst::RealDouble{}, $3}}; }
+        //                      // String literal
+        |       yTAGGED idAny/*member*/ yaSTRING %prec prTAGGED
+                        { $$ = new AstTaggedExpr{$1, *$2, new AstConst{$<fl>3, AstConst::VerilogStringLiteral{}, *$3}}; }
+        //                      // null literal
+        |       yTAGGED idAny/*member*/ yNULL %prec prTAGGED
+                        { $$ = new AstTaggedExpr{$1, *$2, new AstConst{$3, AstConst::Null{}}}; }
+        //                      // Identifier as value
+        |       yTAGGED idAny/*member*/ idAny %prec prTAGGED
+                        { $$ = new AstTaggedExpr{$1, *$2, new AstParseRef{$<fl>3, *$3, nullptr, nullptr}}; }
+        //                      // Concatenation
+        |       yTAGGED idAny/*member*/ '{' cateList '}' %prec prTAGGED
+                        { $$ = new AstTaggedExpr{$1, *$2, $4}; }
         //
         //======================// IEEE: primary/constant_primary
         //
@@ -5128,10 +5177,8 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         //                      // IEEE: cond_pattern - here to avoid reduce problems
         //                      // "expr yMATCHES pattern"
         //                      // IEEE: pattern - expanded here to avoid conflicts
-        |       ~l~expr yMATCHES patternNoExpr          { $$ = new AstConst{$2, AstConst::BitFalse{}};
-                                                          BBUNSUP($<fl>2, "Unsupported: matches operator"); }
-        |       ~l~expr yMATCHES ~r~expr                { $$ = new AstConst{$2, AstConst::BitFalse{}};
-                                                          BBUNSUP($<fl>2, "Unsupported: matches operator"); }
+        |       ~l~expr yMATCHES patternNoExpr          { $$ = new AstMatches{$2, $1, $3}; }
+        |       ~l~expr yMATCHES ~r~expr                { $$ = new AstMatches{$2, $1, $3}; }
         //
         //                      // IEEE: expression_or_dist - here to avoid reduce problems
         //                      // "expr yDIST '{' dist_list '}'"

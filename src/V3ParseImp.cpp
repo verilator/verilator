@@ -610,6 +610,33 @@ size_t V3ParseImp::tokenPipeScanEqNew(size_t depth) {
     return depth;
 }
 
+bool V3ParseImp::tokenPipeScanTaggedFollowsPrimary(size_t depth) {
+    // Check if token at depth is a primary-starting token
+    // Used to disambiguate tagged union expressions
+    // Returns true if the token starts a primary expression (IEEE A.8.4)
+    // Note: '.' and '.*' are pattern-specific, NOT primaries
+    const int tok = tokenPeekp(depth)->token;
+    if (tok == '(') return true;  // Parenthesized expression
+    if (tok == '{') return true;  // Concatenation
+    if (tok == yP_TICKBRA) return true;  // Assignment pattern '{
+    if (tok == yaINTNUM) return true;  // Integer literal
+    if (tok == yaFLOATNUM) return true;  // Float literal
+    if (tok == yaTIMENUM) return true;  // Time literal
+    if (tok == yaSTRING) return true;  // String literal
+    if (tok == yNULL) return true;  // null
+    if (tok == yTHIS) return true;  // this
+    if (tok == '$') return true;  // $
+    if (tok == yaID__LEX) return true;  // Identifier (raw)
+    if (tok == yaID__ETC) return true;  // Identifier
+    if (tok == yaID__CC) return true;  // Identifier with ::
+    if (tok == yaID__aTYPE) return true;  // Type identifier
+    if (tok == yaID__aINST) return true;  // Instance identifier
+    if (tok == yTAGGED__LEX) return true;  // Nested tagged (raw)
+    if (tok == yTAGGED) return true;  // Nested tagged
+    if (tok == yTAGGED__NONPRIMARY) return true;  // Nested tagged (no primary)
+    return false;
+}
+
 int V3ParseImp::tokenPipelineId(int token) {
     const V3ParseBisonYYSType* nexttokp = tokenPeekp(0);  // First char after yaID
     const int nexttok = nexttokp->token;
@@ -644,6 +671,7 @@ void V3ParseImp::tokenPipeline() {
         || token == yLOCAL__LEX  //
         || token == yNEW__LEX  //
         || token == ySTATIC__LEX  //
+        || token == yTAGGED__LEX  //
         || token == yTYPE__LEX  //
         || token == yVIRTUAL__LEX  //
         || token == yWITH__LEX  //
@@ -725,6 +753,22 @@ void V3ParseImp::tokenPipeline() {
                 token = yVIRTUAL__anyID;
             } else {
                 token = yVIRTUAL__ETC;
+            }
+        } else if (token == yTAGGED__LEX) {
+            // Look past 'tagged id' to see if primary follows
+            // Check for all ID token types (both raw and processed forms)
+            if (nexttok == yaID__LEX || nexttok == yaID__ETC || nexttok == yaID__aTYPE
+                || nexttok == yaID__aINST) {
+                VL_RESTORER(yylval);  // Remember value, as about to read ahead
+                // Check token after the identifier
+                if (tokenPipeScanTaggedFollowsPrimary(1)) {
+                    token = yTAGGED;  // Has value expression following
+                } else {
+                    token = yTAGGED__NONPRIMARY;  // No primary follows
+                }
+            } else {
+                // No identifier follows, not a tagged expression (e.g., 'union tagged {')
+                token = yTAGGED;
             }
         } else if (token == yWITH__LEX) {
             if (nexttok == '(') {

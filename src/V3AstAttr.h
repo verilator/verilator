@@ -412,6 +412,8 @@ public:
         BIT,
         BYTE,
         CHANDLE,
+        // Void type for tagged union members (CVOID to avoid Windows VOID macro)
+        CVOID,
         EVENT,
         INT,
         INTEGER,
@@ -449,6 +451,7 @@ public:
                                             "bit",
                                             "byte",
                                             "chandle",
+                                            "void",
                                             "event",
                                             "int",
                                             "integer",
@@ -476,13 +479,35 @@ public:
         return names[m_e];
     }
     const char* dpiType() const {
-        static const char* const names[]
-            = {"%E-unk",      "svBit",           "char",         "void*",          "char",
-               "int",         "%E-integer",      "svLogic",      "long long",      "double",
-               "short",       "%E-time",         "const char*",  "%E-untyped",     "dpiScope",
-               "const char*", "%E-mtaskstate",   "%E-dly-sched", "%E-trig-sched",  "%E-dyn-sched",
-               "%E-fork",     "%E-proc-ref",     "%E-rand-gen",  "%E-stdrand-gen", "IData",
-               "QData",       "%E-logic-implct", " MAX"};
+        static const char* const names[] = {"%E-unk",
+                                            "svBit",
+                                            "char",
+                                            "void*",
+                                            "void",
+                                            "char",
+                                            "int",
+                                            "%E-integer",
+                                            "svLogic",
+                                            "long long",
+                                            "double",
+                                            "short",
+                                            "%E-time",
+                                            "const char*",
+                                            "%E-untyped",
+                                            "dpiScope",
+                                            "const char*",
+                                            "%E-mtaskstate",
+                                            "%E-dly-sched",
+                                            "%E-trig-sched",
+                                            "%E-dyn-sched",
+                                            "%E-fork",
+                                            "%E-proc-ref",
+                                            "%E-rand-gen",
+                                            "%E-stdrand-gen",
+                                            "IData",
+                                            "QData",
+                                            "%E-logic-implct",
+                                            " MAX"};
         return names[m_e];
     }
     static void selfTest() {
@@ -596,6 +621,7 @@ public:
             /* BIT:                       */ "BIT",
             /* BYTE:                      */ "BYTE",
             /* CHANDLE:                   */ "LONGINT",
+            /* CVOID:                     */ "",  // Should not be traced
             /* EVENT:                     */ "EVENT",
             /* INT:                       */ "INT",
             /* INTEGER:                   */ "INTEGER",
@@ -942,7 +968,14 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
 
 class VCaseType final {
 public:
-    enum en : uint8_t { CT_CASE, CT_CASEX, CT_CASEZ, CT_CASEINSIDE, CT_RANDSEQUENCE };
+    enum en : uint8_t {
+        CT_CASE,
+        CT_CASEX,
+        CT_CASEZ,
+        CT_CASEINSIDE,
+        CT_CASEMATCHES,
+        CT_RANDSEQUENCE
+    };
     enum en m_e;
     VCaseType()
         : m_e{CT_CASE} {}

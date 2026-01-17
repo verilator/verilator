@@ -2404,6 +2404,20 @@ void AstNodeUOrStructDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, isFourstate);
     dumpJsonGen(str);
 }
+void AstUnionDType::dump(std::ostream& str) const {
+    this->AstNodeUOrStructDType::dump(str);
+    if (isSoft()) str << " [soft]";
+    if (isTagged()) str << " [tagged]";
+}
+void AstUnionDType::dumpJson(std::ostream& str) const {
+    this->AstNodeUOrStructDType::dumpJson(str);
+    dumpJsonBoolFunc(str, isSoft);
+    dumpJsonBoolFunc(str, isTagged);
+}
+bool AstUnionDType::sameNode(const AstNode* samep) const {
+    const AstUnionDType* const asamep = VN_DBG_AS(samep, UnionDType);
+    return m_isSoft == asamep->m_isSoft && m_isTagged == asamep->m_isTagged;
+}
 string AstNodeUOrStructDType::prettyDTypeName(bool full) const {
     string result = verilogKwd() + "{";
     if (full) {  // else shorten for errors
