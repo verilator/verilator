@@ -225,7 +225,8 @@ AstCFunc* TriggerKit::createClearFunc() const {
     // Done
     return funcp;
 }
-AstCFunc* TriggerKit::createOrIntoFunc(AstUnpackArrayDType* const iDtypep) const {
+AstCFunc* TriggerKit::createOrIntoFunc(AstUnpackArrayDType* const oDtypep,
+                                       AstUnpackArrayDType* const iDtypep) const {
     AstNetlist* const netlistp = v3Global.rootp();
     FileLine* const flp = netlistp->topScopep()->fileline();
     AstNodeDType* const u32DTypep = netlistp->findUInt32DType();
@@ -233,11 +234,12 @@ AstCFunc* TriggerKit::createOrIntoFunc(AstUnpackArrayDType* const iDtypep) const
     // Create function
     std::string name = "_trigger_orInto__" + m_name;
     name += iDtypep == m_trigVecDTypep ? "" : "_ext";
+    name += oDtypep == m_trigVecDTypep ? "" : "IntoExt";
     AstCFunc* const funcp = util::makeSubFunction(netlistp, name, m_slow);
     funcp->isStatic(true);
 
     // Add arguments
-    AstVarScope* const oVscp = newArgument(funcp, m_trigVecDTypep, "out", VDirection::INOUT);
+    AstVarScope* const oVscp = newArgument(funcp, oDtypep, "out", VDirection::INOUT);
     AstVarScope* const iVscp = newArgument(funcp, iDtypep, "in", VDirection::CONSTREF);
 
     // Add loop counter variable
@@ -257,10 +259,10 @@ AstCFunc* TriggerKit::createOrIntoFunc(AstUnpackArrayDType* const iDtypep) const
     AstNodeExpr* const oWordp = new AstArraySel{flp, rd(oVscp), rd(nVscp)};
     AstNodeExpr* const iWordp = new AstArraySel{flp, rd(iVscp), rd(nVscp)};
     AstNodeExpr* const rhsp = new AstOr{flp, oWordp, iWordp};
-    AstNodeExpr* const limp = new AstConst{flp, AstConst::WidthedValue{}, 32, m_nVecWords};
+    AstNodeExpr* const limp = oDtypep->rangep()->leftp()->cloneTreePure(false);
     loopp->addStmtsp(new AstAssign{flp, lhsp, rhsp});
     loopp->addStmtsp(util::incrementVar(nVscp));
-    loopp->addStmtsp(new AstLoopTest{flp, loopp, new AstLt{flp, rd(nVscp), limp}});
+    loopp->addStmtsp(new AstLoopTest{flp, loopp, new AstLte{flp, rd(nVscp), limp}});
 
     // Done
     return funcp;
@@ -297,16 +299,16 @@ AstNodeStmt* TriggerKit::newClearCall(AstVarScope* const vscp) const {
 }
 AstNodeStmt* TriggerKit::newOrIntoCall(AstVarScope* const oVscp, AstVarScope* const iVscp) const {
     if (!m_nVecWords) return nullptr;
-    UASSERT_OBJ(oVscp->dtypep() == m_trigVecDTypep, oVscp, "Bad trigger vector type");
-    AstCFunc* funcp = nullptr;
-    if (iVscp->dtypep() == m_trigVecDTypep) {
-        if (!m_orIntoVecp) m_orIntoVecp = createOrIntoFunc(m_trigVecDTypep);
-        funcp = m_orIntoVecp;
-    } else if (iVscp->dtypep() == m_trigExtDTypep) {
-        if (!m_orIntoExtp) m_orIntoExtp = createOrIntoFunc(m_trigExtDTypep);
-        funcp = m_orIntoExtp;
-    } else {
-        iVscp->v3fatalSrc("Bad trigger vector type");
+    UASSERT_OBJ(iVscp->dtypep() == m_trigVecDTypep || iVscp->dtypep() == m_trigExtDTypep, iVscp,
+                "Bad input trigger vector type");
+    UASSERT_OBJ(oVscp->dtypep() == m_trigVecDTypep || oVscp->dtypep() == m_trigExtDTypep, oVscp,
+                "Bad output trigger vector type");
+    const size_t mask
+        = ((oVscp->dtypep() == m_trigExtDTypep) << 1) | (iVscp->dtypep() == m_trigExtDTypep);
+    AstCFunc*& funcp = m_orIntoVecps[mask];
+    if (!funcp) {
+        funcp = createOrIntoFunc(VN_AS(oVscp->dtypep(), UnpackArrayDType),
+                                 VN_AS(iVscp->dtypep(), UnpackArrayDType));
     }
     FileLine* const flp = v3Global.rootp()->topScopep()->fileline();
     AstCCall* const callp = new AstCCall{flp, funcp};
@@ -357,10 +359,11 @@ AstNodeStmt* TriggerKit::newDumpCall(AstVarScope* const vscp, const std::string&
     return cstmtp;
 }
 
-AstVarScope* TriggerKit::newTrigVec(const std::string& name) const {
+AstVarScope* TriggerKit::newTrigVec(const std::string& name, bool extended) const {
     if (!m_nVecWords) return nullptr;
     AstScope* const scopep = v3Global.rootp()->topScopep()->scopep();
-    return scopep->createTemp("__V" + name + "Triggered", m_trigVecDTypep);
+    return scopep->createTemp("__V" + name + "Triggered",
+                              extended ? m_trigExtDTypep : m_trigVecDTypep);
 }
 
 AstSenTree* TriggerKit::newTriggerSenTree(AstVarScope* const vscp,
@@ -413,12 +416,14 @@ void TriggerKit::addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index) co
 }
 
 TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords,
-                       uint32_t nExtraWords, uint32_t nPreWords)
+                       uint32_t nExtraWords, uint32_t nPreWords,
+                       std::unordered_map<VNRef<const AstSenItem>, size_t> senItem2TrigIdx)
     : m_name{name}
     , m_slow{slow}
     , m_nSenseWords{nSenseWords}
     , m_nExtraWords{nExtraWords}
-    , m_nPreWords{nPreWords} {
+    , m_nPreWords{nPreWords}
+    , m_senItem2TrigIdx{std::move(senItem2TrigIdx)} {
     // If no triggers, we don't need to generate anything
     if (!m_nVecWords) return;
     // Othewise construc the parts of the kit
@@ -450,6 +455,31 @@ TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords,
     m_dumpp->ifdef("VL_DEBUG");
 }
 
+AstAssign* TriggerKit::createSenTrigVecAssignment(AstVarScope* const target,
+                                                  std::vector<AstNodeExpr*>& trigps) {
+    FileLine* const flp = target->fileline();
+    AstAssign* trigStmtsp = nullptr;
+    // Assign sense triggers vector one word at a time
+    for (size_t i = 0; i < trigps.size(); i += WORD_SIZE) {
+        // Concatenate all bits in this trigger word using a balanced
+        for (uint32_t level = 0; level < WORD_SIZE_LOG2; ++level) {
+            const uint32_t stride = 1 << level;
+            for (uint32_t j = 0; j < WORD_SIZE; j += 2 * stride) {
+                trigps[i + j] = new AstConcat{trigps[i + j]->fileline(), trigps[i + j + stride],
+                                              trigps[i + j]};
+                trigps[i + j + stride] = nullptr;
+            }
+        }
+
+        // Set the whole word in the trigger vector
+        const int wordIndex = static_cast<int>(i / WORD_SIZE);
+        AstArraySel* const aselp
+            = new AstArraySel{flp, new AstVarRef{flp, target, VAccess::WRITE}, wordIndex};
+        trigStmtsp = AstNode::addNext(trigStmtsp, new AstAssign{flp, aselp, trigps[i]});
+    }
+    return trigStmtsp;
+}
+
 TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
                               AstCFunc* const initFuncp,  //
                               SenExprBuilder& senExprBuilder,  //
@@ -457,7 +487,8 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
                               const std::vector<const AstSenTree*>& senTreeps,  //
                               const string& name,  //
                               const ExtraTriggers& extraTriggers,  //
-                              bool slow) {
+                              bool slow,  //
+                              bool noAcc) {
     // Need to gather all the unique SenItems under the given SenTrees
 
     // List of unique SenItems used by all 'senTreeps'
@@ -511,7 +542,7 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
     const uint32_t nExtraWords = nExtraTriggers / WORD_SIZE;
 
     // We can now construct the trigger kit - this constructs all items that will be kept
-    TriggerKit kit{name, slow, nSenseWords, nExtraWords, nPreWords};
+    TriggerKit kit{name, slow, nSenseWords, nExtraWords, nPreWords, senItem2TrigIdx};
 
     // If there are no triggers we are done
     if (!kit.m_nVecWords) return kit;
@@ -586,7 +617,11 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
             AstNodeExpr* const wordp = new AstArraySel{flp, wr(kit.m_vscp), wrdIndex};
             AstNodeExpr* const lhsp = new AstSel{flp, wordp, bitIndex, 1};
             AstNodeExpr* const rhsp = new AstConst{flp, AstConst::BitTrue{}};
-            initialTrigsp = AstNode::addNext(initialTrigsp, new AstAssign{flp, lhsp, rhsp});
+            if (noAcc) {
+                initialTrigsp = AstNode::addNext(initialTrigsp, new AstAssign{flp, lhsp, rhsp});
+            } else {
+                initFuncp->addStmtsp(new AstAssign{flp, lhsp, rhsp});
+            }
         }
 
         // Add a debug statement for this trigger
@@ -600,25 +635,7 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
     }
     UASSERT(trigps.size() == nSenseTriggers, "Inconsistent number of trigger expressions");
 
-    // Assign sense triggers vector one word at a time
-    AstNodeStmt* trigStmtsp = nullptr;
-    for (size_t i = 0; i < nSenseTriggers; i += WORD_SIZE) {
-        // Concatenate all bits in this trigger word using a balanced
-        for (uint32_t level = 0; level < WORD_SIZE_LOG2; ++level) {
-            const uint32_t stride = 1 << level;
-            for (uint32_t j = 0; j < WORD_SIZE; j += 2 * stride) {
-                trigps[i + j] = new AstConcat{trigps[i + j]->fileline(), trigps[i + j + stride],
-                                              trigps[i + j]};
-                trigps[i + j + stride] = nullptr;
-            }
-        }
-
-        // Set the whole word in the trigger vector
-        const int wordIndex = static_cast<int>(i / WORD_SIZE);
-        AstArraySel* const aselp = new AstArraySel{flp, wr(kit.m_vscp), wordIndex};
-        trigStmtsp = AstNode::addNext(trigStmtsp, new AstAssign{flp, aselp, trigps[i]});
-    }
-    trigps.clear();
+    AstAssign* const trigStmtsp = createSenTrigVecAssignment(kit.m_vscp, trigps);
 
     // Add a print for each of the extra triggers
     for (unsigned i = 0; i < extraTriggers.size(); ++i) {
@@ -651,7 +668,7 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
     }
 
     // Get the SenExprBuilder results
-    const SenExprBuilder::Results senResults = senExprBuilder.getAndClearResults();
+    const SenExprBuilder::Results senResults = senExprBuilder.getResultsAndClearUpdates();
 
     // Add the SenExprBuilder init statements to the static initialization functino
     for (AstNodeStmt* const nodep : senResults.m_inits) initFuncp->addStmtsp(nodep);
