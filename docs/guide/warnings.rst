@@ -1123,6 +1123,16 @@ List Of Warnings
    simulate correctly.
 
 
+.. option:: INSIDETRUE
+
+   Warns that an ``inside`` expression contains a range with unbounded
+   values on both sides (``[$:$]``), which is always true. This is likely
+   a coding mistake.
+
+   Ignoring this warning will only suppress the lint check; it will
+   simulate correctly.
+
+
 .. option:: LATCH
 
    .. TODO better example

@@ -122,6 +122,7 @@ public:
         INFINITELOOP,   // Infinite loop
         INITIALDLY,     // Initial delayed statement
         INSECURE,       // Insecure options
+        INSIDETRUE,     // Inside range is always true
         LATCH,          // Latch detected outside of always_latch block
         LITENDIAN,      // Little endian, renamed to ASCRANGE
         MINTYPMAXDLY,   // Unsupported: min/typ/max delay expressions
@@ -224,7 +225,8 @@ public:
             "ENCAPSULATED", "ENDLABEL", "ENUMITEMWIDTH", "ENUMVALUE", "EOFNEWLINE", "FUNCTIMECTL",
             "GENCLK", "GENUNNAMED", "HIERBLOCK", "HIERPARAM", "IFDEPTH", "IGNOREDRETURN",
             "IMPERFECTSCH", "IMPLICIT", "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE", "INCABSPATH",
-            "INFINITELOOP", "INITIALDLY", "INSECURE", "LATCH", "LITENDIAN", "MINTYPMAXDLY",
+            "INFINITELOOP", "INITIALDLY", "INSECURE", "INSIDETRUE", "LATCH", "LITENDIAN",
+            "MINTYPMAXDLY",
             "MISINDENT", "MODDUP", "MODMISSING", "MULTIDRIVEN", "MULTITOP", "NEWERSTD", "NOEFFECT",
             "NOLATCH", "NONSTD", "NORETURN", "NULLPORT", "PARAMNODEFAULT", "PINCONNECTEMPTY",
             "PINMISSING", "PINNOCONNECT", "PINNOTFOUND", "PKGNODECL", "PREPROCZERO", "PROCASSINIT",

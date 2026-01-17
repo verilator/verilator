@@ -1624,6 +1624,7 @@ class WidthVisitor final : public VNVisitor {
         nodep->dtypeSetSigned32();  // Used in int context
         if (VN_IS(nodep->backp(), IsUnbounded)) return;  // Ok, leave
         if (VN_IS(nodep->backp(), BracketArrayDType)) return;  // Ok, leave
+        if (VN_IS(nodep->backp(), InsideRange)) return;  // Ok, leave
         if (const auto* const varp = VN_CAST(nodep->backp(), Var)) {
             if (varp->isParam()) return;  // Ok, leave
         }
