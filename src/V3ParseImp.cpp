@@ -633,7 +633,7 @@ bool V3ParseImp::tokenPipeScanTaggedFollowsPrimary(size_t depth) {
     if (tok == yaID__aINST) return true;  // Instance identifier
     if (tok == yTAGGED__LEX) return true;  // Nested tagged (raw)
     if (tok == yTAGGED) return true;  // Nested tagged
-    if (tok == yTAGGED__VOID) return true;  // Nested tagged (void)
+    if (tok == yTAGGED__NONPRIMARY) return true;  // Nested tagged (no primary)
     return false;
 }
 
@@ -764,7 +764,7 @@ void V3ParseImp::tokenPipeline() {
                 if (tokenPipeScanTaggedFollowsPrimary(1)) {
                     token = yTAGGED;  // Has value expression following
                 } else {
-                    token = yTAGGED__VOID;  // Void member
+                    token = yTAGGED__NONPRIMARY;  // No primary follows
                 }
             } else {
                 // No identifier follows, not a tagged expression (e.g., 'union tagged {')

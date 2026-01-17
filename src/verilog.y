@@ -540,7 +540,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yTABLE          "table"
 %token<fl>              yTAGGED         "tagged"
 %token<fl>              yTAGGED__LEX    "tagged-in-lex"
-%token<fl>              yTAGGED__VOID   "tagged-void-member"
+%token<fl>              yTAGGED__NONPRIMARY   "tagged-nonprimary"
 %token<fl>              yTASK           "task"
 %token<fl>              yTHIS           "this"
 %token<fl>              yTHROUGHOUT     "throughout"
@@ -3920,11 +3920,11 @@ patternNoExpr<nodeExprp>:       // IEEE: pattern **Excluding Expr*
                         { $$ = new AstPatternStar{$1}; }
         //                      // IEEE: "expr" excluded; expand in callers
         //                      // IEEE: tagged member_identifier [ pattern ]
-        //                      // These rules are for tagged patterns with nested patternNoExpr (like .var)
-        //                      // Standalone "yTAGGED__VOID idAny" is handled via expr in patternOne
+        //                      // Standalone "yTAGGED__NONPRIMARY idAny" is handled via expr in patternOne
+        //                      // Here, we need to treat yTAGGED and yTAGGED__NONPRIMARY identically.
         |       yTAGGED idAny/*member_identifier*/ patternNoExpr
                         { $$ = new AstTaggedPattern{$1, *$2, $3}; }
-        |       yTAGGED__VOID idAny/*member_identifier*/ patternNoExpr
+        |       yTAGGED__NONPRIMARY idAny/*member_identifier*/ patternNoExpr
                         { $$ = new AstTaggedPattern{$1, *$2, $3}; }
         //                      // "yP_TICKBRA patternList '}'" part of expr under assignment_pattern
         ;
@@ -5025,8 +5025,8 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         |       ~l~expr yINSIDE '{' range_list '}'      { $$ = new AstInside{$2, $1, $4}; }
         //
         //                      // IEEE: tagged_union_expression
-        //                      // yTAGGED__VOID = void member (tokenPipeline determined no primary follows)
-        |       yTAGGED__VOID idAny/*member*/ %prec prTAGGED
+        //                      // yTAGGED__NONPRIMARY = tokenPipeline determined no primary follows
+        |       yTAGGED__NONPRIMARY idAny/*member*/ %prec prTAGGED
                         { $$ = new AstTaggedExpr{$1, *$2, nullptr}; }
         //                      // yTAGGED = primary follows; handle specific primary types
         //                      // Parenthesized expression
