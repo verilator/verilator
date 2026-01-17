@@ -16,6 +16,9 @@ class Cls extends IsNotFound;  // BAD: not found
 endclass
 
 class Cls2 extends Pkg::NotFound2;  // BAD: not found
+  function new;
+    super.new();
+  endfunction
 endclass
 
 module t;

@@ -4983,7 +4983,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     cprp = dotp->rhsp();
                     VSymEnt* const foundp = m_statep->resolveClassOrPackage(
                         lookSymp, lookNodep, true, false, nodep->verilogKwd());
-                    if (!foundp) return;
+                    if (!foundp) {
+                        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                        return;
+                    }
                     UASSERT_OBJ(lookNodep->classOrPackageSkipp(), nodep, "Bad package link");
                     lookSymp = m_statep->getNodeSym(lookNodep->classOrPackageSkipp());
                 } else {
@@ -4995,34 +4998,33 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (VL_UNCOVERABLE(!cpackagerefp)) {
                 // Linking the extend gives an error before this is hit
                 nodep->v3error("Attempting to extend using non-class");  // LCOV_EXCL_LINE
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 return;
             }
             VSymEnt* const foundp = m_statep->resolveClassOrPackage(lookSymp, cpackagerefp, true,
                                                                     true, nodep->verilogKwd());
-            if (foundp) {
-                if (AstClass* const classp = VN_CAST(foundp->nodep(), Class)) {
-                    AstPin* paramsp = cpackagerefp->paramsp();
-                    if (paramsp) {
-                        paramsp = paramsp->cloneTree(true);
-                        nodep->parameterized(true);
-                    }
-                    nodep->childDTypep(new AstClassRefDType{nodep->fileline(), classp, paramsp});
-                    // Link pins
-                    iterate(nodep->childDTypep());
-                } else if (AstParamTypeDType* const paramp
-                           = VN_CAST(foundp->nodep(), ParamTypeDType)) {
-                    AstRefDType* const refParamp
-                        = new AstRefDType{nodep->fileline(), paramp->name()};
-                    refParamp->refDTypep(paramp);
-                    nodep->childDTypep(refParamp);
+            if (!foundp) {
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                return;
+            }
+            if (AstClass* const classp = VN_CAST(foundp->nodep(), Class)) {
+                AstPin* paramsp = cpackagerefp->paramsp();
+                if (paramsp) {
+                    paramsp = paramsp->cloneTree(true);
                     nodep->parameterized(true);
-                } else {
-                    nodep->v3warn(E_UNSUPPORTED,
-                                  "Unsupported: " << foundp->nodep()->prettyTypeName()
-                                                  << " in 'class extends'");
-                    return;
                 }
+                nodep->childDTypep(new AstClassRefDType{nodep->fileline(), classp, paramsp});
+                // Link pins
+                iterate(nodep->childDTypep());
+            } else if (AstParamTypeDType* const paramp
+                       = VN_CAST(foundp->nodep(), ParamTypeDType)) {
+                AstRefDType* const refParamp = new AstRefDType{nodep->fileline(), paramp->name()};
+                refParamp->refDTypep(paramp);
+                nodep->childDTypep(refParamp);
+                nodep->parameterized(true);
             } else {
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: " << foundp->nodep()->prettyTypeName()
+                                                             << " in 'class extends'");
                 return;
             }
             if (!nodep->childDTypep()) nodep->v3error("Attempting to extend using non-class");
