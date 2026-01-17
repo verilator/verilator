@@ -23,7 +23,7 @@ class UniqueMultipleArray;
     unique {uniq_val_hash};  // Ensure unique values in the array
     unique {uniq_val_queue};  // Ensure unique values in the array
     unique {uniq_val_arr_mda};  // Ensure unique values in the array
-    unique { array[0], array[1] };
+    unique {array[0], array[1]};
   }
   // --------------------------------------------------
   // Explicit uniqueness checker (post-solve validation)
@@ -32,7 +32,8 @@ class UniqueMultipleArray;
     for (int i = 0; i < $size(uniq_val_arr); i++) begin
       for (int j = i + 1; j < $size(uniq_val_arr); j++) begin
         if (uniq_val_arr[i] == uniq_val_arr[j]) begin
-          $error("UNIQUENESS VIOLATION: uniq_val_arr[%0d] == uniq_val_arr[%0d] == 0x%h", i, j, uniq_val_arr[i]);
+          $error("UNIQUENESS VIOLATION: uniq_val_arr[%0d] == uniq_val_arr[%0d] == 0x%h", i, j,
+                 uniq_val_arr[i]);
           return 0;
         end
       end

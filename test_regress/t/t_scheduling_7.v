@@ -19,7 +19,7 @@ endtask
 
 class Foo;
   task run_phases();
-    repeat(2) begin
+    repeat (2) begin
       fork
         if ($c(1)) wait_for_nba_region();
       join_none
