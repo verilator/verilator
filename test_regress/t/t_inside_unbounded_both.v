@@ -1,15 +1,16 @@
-// DESCRIPTION: Verilator: Test for unsupported [$:$] in inside range
+// DESCRIPTION: Verilator: Test for [$:$] with warning suppressed
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty, 2026.
 // SPDX-License-Identifier: CC0-1.0
 
-module t_inside_unbounded_bad;
+module t;
   initial begin
     int value;
     value = 50;
-    // [$:$] should warn - always true
-    if (value inside {[$:$]}) $display("PASS");
+    // [$:$] is always true - warning suppressed with -Wno-INSIDETRUE
+    if (!(value inside {[$ : $]})) $stop;
+    $write("*-* All Finished *-*\n");
     $finish;
   end
 endmodule
