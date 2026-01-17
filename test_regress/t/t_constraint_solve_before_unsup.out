@@ -1,0 +1,8 @@
+%Error: t/t_constraint_solve_before_unsup.v:20:7: syntax error, unexpected solve
+   20 |       solve x before data[i];
+      |       ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_constraint_solve_before_unsup.v:29:7: syntax error, unexpected solve
+   29 |       solve x before cfg[i].w, cfg[i].r;
+      |       ^~~~~
+%Error: Exiting due to
