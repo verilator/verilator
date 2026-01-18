@@ -1004,8 +1004,7 @@ class TaggedVisitor final : public VNVisitor {
             }
             // If not in simple assignment context, this is more complex
             // For now, emit an error for unsupported contexts
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Tagged expression in non-simple assignment context");
+            nodep->v3warn(E_UNSUPPORTED, "Tagged expression in non-simple assignment context");
             return;
         }
 
