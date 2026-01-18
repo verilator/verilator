@@ -1871,9 +1871,11 @@ class LinkDotFindVisitor final : public VNVisitor {
                 nextp = argp->nextp();
                 AstVar* argrefp = nullptr;
                 if (AstParseRef* const parserefp = VN_CAST(argp, ParseRef)) {
-                    // We use an int type, this might get changed in V3Width when types resolve
+                    // IEEE 1800-2023 12.7.3: foreach loop variable type shall be int (2-state)
+                    // This might get changed in V3Width when types resolve (e.g., for assoc
+                    // arrays)
                     argrefp = new AstVar{parserefp->fileline(), VVarType::BLOCKTEMP,
-                                         parserefp->name(), argp->findSigned32DType()};
+                                         parserefp->name(), argp->findIntDType()};
                     argrefp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                     parserefp->replaceWith(argrefp);
                     VL_DO_DANGLING2(parserefp->deleteTree(), parserefp, argp);
