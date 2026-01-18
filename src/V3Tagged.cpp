@@ -1017,29 +1017,10 @@ class TaggedVisitor final : public VNVisitor {
     }
 
     void visit(AstIf* nodep) override {
-        // Check if this is an if with matches condition
+        // Check if this is an if with matches condition - let transformIfMatches validate the type
         if (AstMatches* const matchesp = VN_CAST(nodep->condp(), Matches)) {
-            // First try to get union type from the pattern (TaggedExpr/TaggedPattern have union
-            // dtype)
-            AstNode* const patternp = matchesp->patternp();
-            AstUnionDType* unionp = nullptr;
-            if (VN_IS(patternp, TaggedPattern) || VN_IS(patternp, TaggedExpr)) {
-                if (patternp->dtypep()) {
-                    unionp = VN_CAST(patternp->dtypep()->skipRefp(), UnionDType);
-                }
-            }
-            // Fall back to LHS expression's type if pattern doesn't have union dtype
-            if (!unionp) {
-                AstNodeExpr* const exprp = matchesp->lhsp();
-                if (exprp && exprp->dtypep()) {
-                    AstNodeDType* const exprDtp = exprp->dtypep()->skipRefp();
-                    unionp = VN_CAST(exprDtp, UnionDType);
-                }
-            }
-            if (unionp && unionp->isTagged()) {
-                transformIfMatches(nodep, matchesp);
-                return;
-            }
+            transformIfMatches(nodep, matchesp);
+            return;
         }
         iterateChildren(nodep);
     }
