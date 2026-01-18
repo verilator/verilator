@@ -622,9 +622,7 @@ class EmitCHeader final : public EmitCConstInit {
             if (!sdtypep->packed()) return;
             const AstNodeModule* const ownerp = sdtypep->classOrPackagep();
             // Only emit if it belongs to this module
-            if (ownerp == modp) {
-                emitStructDecl(modp, sdtypep, emitted);
-            }
+            if (ownerp == modp) { emitStructDecl(modp, sdtypep, emitted); }
         });
     }
     void emitFuncDecls(const AstNodeModule* modp, bool inClassBody) {
