@@ -547,10 +547,21 @@ class EmitCHeader final : public EmitCConstInit {
         AstMemberDType* itemp;
         AstMemberDType* lastItemp;
         const AstMemberDType* witemp = nullptr;
+        int widestWidth = 0;
         // LSB is first field in C, so loop backwards
         for (lastItemp = sdtypep->membersp(); lastItemp && lastItemp->nextp();
              lastItemp = VN_AS(lastItemp->nextp(), MemberDType)) {
             if (lastItemp->width() == sdtypep->width()) witemp = lastItemp;
+            // Also track widest member for tagged unions (width != union width due to tag bits)
+            if (lastItemp->width() > widestWidth) {
+                widestWidth = lastItemp->width();
+                if (!witemp) witemp = lastItemp;  // Use widest if no exact match found
+            }
+        }
+        // Check lastItemp too (loop stops at second-to-last)
+        if (lastItemp) {
+            if (lastItemp->width() == sdtypep->width()) witemp = lastItemp;
+            if (lastItemp->width() > widestWidth && !witemp) witemp = lastItemp;
         }
         for (itemp = lastItemp; itemp; itemp = VN_CAST(itemp->backp(), MemberDType)) {
             putns(itemp, itemp->dtypep()->cType(itemp->nameProtect(), false, false, true));

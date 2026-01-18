@@ -3314,9 +3314,15 @@ class WidthVisitor final : public VNVisitor {
             // Per IEEE 1800-2023 7.3.2: Total width = tagBits + maxMemberWidth
             nodep->packed(true);
             // Set LSBs: all members share LSB 0 in the data portion
+            // Also propagate packed status to nested struct/union types
             for (AstMemberDType* itemp = nodep->membersp(); itemp;
                  itemp = VN_AS(itemp->nextp(), MemberDType)) {
                 itemp->lsb(0);
+                // Anonymous struct/union members in tagged unions must also be packed
+                AstNodeDType* const dtp = itemp->subDTypep()->skipRefp();
+                if (AstNodeUOrStructDType* const structp = VN_CAST(dtp, NodeUOrStructDType)) {
+                    if (!structp->packed()) structp->packed(true);
+                }
             }
             const int totalWidth = tagBitWidth + maxMemberWidth;
             nodep->widthForce(totalWidth, totalWidth);
