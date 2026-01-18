@@ -261,8 +261,6 @@ class BeginVisitor final : public VNVisitor {
             m_statep->userMarkChanged(nodep);
             // Move it under enclosing tree
             liftNode(nodep);
-            // Clear funcLocal since variable is now at module level
-            nodep->funcLocal(false);
         }
     }
     void visit(AstTypedef* nodep) override {
