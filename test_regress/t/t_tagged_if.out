@@ -50,4 +50,4 @@
                                             : ... note: In instance 't'
   278 |       result = a;
       |              ^
-%Error: Exiting due to
+%Error: Exiting due to 12 warning(s)
