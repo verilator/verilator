@@ -226,7 +226,6 @@ class TaggedVisitor final : public VNVisitor {
         UASSERT_OBJ(memberp, nodep, "Member not found in tagged union");
 
         const int tagIndex = memberp->tagIndex();
-        const int tagWidth = unionp->tagBitWidth();
         const int maxMemberWidth = unionp->maxMemberWidth();
         const int totalWidth = unionp->taggedTotalWidth();
 
@@ -328,7 +327,6 @@ class TaggedVisitor final : public VNVisitor {
 
         const int tagIndex = memberp->tagIndex();
         const int tagWidth = unionp->tagBitWidth();
-        const int maxMemberWidth = unionp->maxMemberWidth();
         const bool isVoid = isVoidDType(memberp->subDTypep());
         const bool isUnpacked = !unionp->packed();
 
@@ -766,7 +764,6 @@ class TaggedVisitor final : public VNVisitor {
         }
 
         const int tagWidth = unionp->tagBitWidth();
-        const int maxMemberWidth = unionp->maxMemberWidth();
         const bool isUnpacked = !unionp->packed();
 
         // Create a variable to hold the expression (evaluate once)
