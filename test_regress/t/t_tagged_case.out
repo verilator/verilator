@@ -1,152 +1,41 @@
-%Error-UNSUPPORTED: t/t_tagged_case.v:27:5: Unsupported: void (for tagged unions)
-   27 |     void Invalid;
-      |     ^~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_tagged_case.v:33:5: Unsupported: void (for tagged unions)
-   33 |     void          Invalid;
-      |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:42:5: Unsupported: void (for tagged unions)
-   42 |     void        Invalid;
-      |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:63:5: Unsupported: void (for tagged unions)
-   63 |     void    Invalid;
-      |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:69:5: Unsupported: void (for tagged unions)
-   69 |     void      Invalid;
-      |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:78:5: Unsupported: void (for tagged unions)
-   78 |     void      Invalid;
-      |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:85:5: Unsupported: void (for tagged unions)
-   85 |     void   Invalid;
-      |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:91:5: Unsupported: void (for tagged unions)
-   91 |     void  Invalid;
-      |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:100:5: Unsupported: void (for tagged unions)
-  100 |     void  Invalid;
-      |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:124:9: Unsupported: tagged union
-  124 |     v = tagged Invalid;
-      |         ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:126:5: Unsupported: case matches (for tagged union)
-  126 |     case (v) matches
-      |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:127:7: Unsupported: tagged union
-  127 |       tagged Invalid : result = 1;
-      |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:128:7: Unsupported: tagged pattern
-  128 |       tagged Valid .n : result = n;
-      |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:128:20: Unsupported: pattern variable
-  128 |       tagged Valid .n : result = n;
-      |                    ^
-%Error-UNSUPPORTED: t/t_tagged_case.v:133:9: Unsupported: tagged union
-  133 |     v = tagged Valid (123);
-      |         ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:135:5: Unsupported: case matches (for tagged union)
-  135 |     case (v) matches
-      |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:136:7: Unsupported: tagged union
-  136 |       tagged Invalid : result = -1;
-      |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:137:7: Unsupported: tagged pattern
-  137 |       tagged Valid .n : result = n;
-      |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:137:20: Unsupported: pattern variable
-  137 |       tagged Valid .n : result = n;
-      |                    ^
-%Error-UNSUPPORTED: t/t_tagged_case.v:142:10: Unsupported: tagged union
-  142 |     wt = tagged Wide60 (60'hFEDCBA987654321);
-      |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:144:5: Unsupported: case matches (for tagged union)
-  144 |     case (wt) matches
-      |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:145:7: Unsupported: tagged union
-  145 |       tagged Invalid : wide60_result = 0;
-      |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:146:7: Unsupported: tagged pattern
-  146 |       tagged Wide60 .w : wide60_result = w;
-      |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:146:21: Unsupported: pattern variable
-  146 |       tagged Wide60 .w : wide60_result = w;
-      |                     ^
-%Error-UNSUPPORTED: t/t_tagged_case.v:152:10: Unsupported: tagged union
-  152 |     wt = tagged Wide90 (90'hDE_ADBEEFCA_FEBABE12_3456);
-      |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:154:5: Unsupported: case matches (for tagged union)
-  154 |     case (wt) matches
-      |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:155:7: Unsupported: tagged union
-  155 |       tagged Invalid : wide90_result = 0;
-      |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:156:7: Unsupported: tagged pattern
-  156 |       tagged Wide90 .w : wide90_result = w;
-      |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:156:21: Unsupported: pattern variable
-  156 |       tagged Wide90 .w : wide90_result = w;
-      |                     ^
-%Error-UNSUPPORTED: t/t_tagged_case.v:162:10: Unsupported: tagged union
-  162 |     wt = tagged Byte8NonZeroLSB (8'hA5);
-      |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:164:5: Unsupported: case matches (for tagged union)
-  164 |     case (wt) matches
-      |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:165:7: Unsupported: tagged pattern
+%Warning-ASCRANGE: t/t_tagged_case.v:35:9: Ascending bit range vector: left < right of bit range: [0:31]
+                                         : ... note: In instance 't'
+   35 |     bit [0:31]    Word32LittleEndian;    
+      |         ^
+                   ... For warning description see https://verilator.org/warn/ASCRANGE?v=latest
+                   ... Use "/* verilator lint_off ASCRANGE */" and lint_on around source to disable this message.
+%Warning-WIDTHEXPAND: t/t_tagged_case.v:165:42: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'b' generates 8 bits.
+                                              : ... note: In instance 't'
   165 |       tagged Byte8NonZeroLSB .b : result = b;
-      |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:165:30: Unsupported: pattern variable
-  165 |       tagged Byte8NonZeroLSB .b : result = b;
-      |                              ^
-%Error-UNSUPPORTED: t/t_tagged_case.v:171:10: Unsupported: tagged union
-  171 |     wt = tagged Word32LittleEndian (32'hDEADBEEF);
-      |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:173:5: Unsupported: case matches (for tagged union)
-  173 |     case (wt) matches
-      |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:174:7: Unsupported: tagged pattern
-  174 |       tagged Word32LittleEndian .w : result = w;
-      |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:174:33: Unsupported: pattern variable
-  174 |       tagged Word32LittleEndian .w : result = w;
-      |                                 ^
-%Error-UNSUPPORTED: t/t_tagged_case.v:180:10: Unsupported: tagged union
-  180 |     at = tagged Arr '{10, 20, 30, 40};
-      |          ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:182:5: Unsupported: case matches (for tagged union)
-  182 |     case (at) matches
-      |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:183:7: Unsupported: tagged union
-  183 |       tagged Invalid : result = -1;
-      |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:184:7: Unsupported: tagged pattern
-  184 |       tagged Scalar .s : result = s;
-      |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:184:21: Unsupported: pattern variable
-  184 |       tagged Scalar .s : result = s;
-      |                     ^
-%Error-UNSUPPORTED: t/t_tagged_case.v:185:7: Unsupported: tagged pattern
-  185 |       tagged Arr .a : result = a[0] + a[1] + a[2] + a[3];
-      |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:185:18: Unsupported: pattern variable
-  185 |       tagged Arr .a : result = a[0] + a[1] + a[2] + a[3];
-      |                  ^
-%Error-UNSUPPORTED: t/t_tagged_case.v:190:13: Unsupported: tagged union
-  190 |     instr = tagged Jmp (tagged JmpC '{2'd1, 10'd256});
-      |             ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:190:25: Unsupported: tagged union
-  190 |     instr = tagged Jmp (tagged JmpC '{2'd1, 10'd256});
-      |                         ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:192:5: Unsupported: case matches (for tagged union)
-  192 |     case (instr) matches
-      |     ^~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:193:7: Unsupported: tagged pattern
-  193 |       tagged Add .* : result = -1;
-      |       ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged_case.v:193:18: Unsupported: pattern wildcard
-  193 |       tagged Add .* : result = -1;
-      |                  ^~
-%Error-UNSUPPORTED: t/t_tagged_case.v:194:7: Unsupported: tagged union
+      |                                          ^
+                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
+                      ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
+%Warning-WIDTHEXPAND: t/t_tagged_case.v:168:21: Operator NEQCASE expects 32 bits on the RHS, but RHS's CONST '8'ha5' generates 8 bits.
+                                              : ... note: In instance 't'
+  168 |     do if ((result) !== (8'hA5)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", "t/t_tagged_case.v",168, (result), (8'hA5), "result", "8'hA5"); $stop; end while(0);;
+      |                     ^~~
+%Warning-WIDTHEXPAND: t/t_tagged_case.v:194:44: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 1 bits.
+                                              : ... note: In instance 't'
   194 |       tagged Jmp (tagged JmpU .a) : result = a;
-      |       ^~~~~~
+      |                                            ^
+%Warning-WIDTHEXPAND: t/t_tagged_case.v:195:59: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 1 bits.
+                                              : ... note: In instance 't'
+  195 |       tagged Jmp (tagged JmpC '{cc:.c, addr:.a}) : result = a;
+      |                                                           ^
+%Warning-WIDTHEXPAND: t/t_tagged_case.v:195:33: Operator PATMEMBER expects 2 bits on the Pattern value, but Pattern value's PATTERNVAR 'c' generates 1 bits.
+                                              : ... note: In instance 't'
+  195 |       tagged Jmp (tagged JmpC '{cc:.c, addr:.a}) : result = a;
+      |                                 ^~
+%Warning-WIDTHEXPAND: t/t_tagged_case.v:195:40: Operator PATMEMBER expects 10 bits on the Pattern value, but Pattern value's PATTERNVAR 'a' generates 1 bits.
+                                              : ... note: In instance 't'
+  195 |       tagged Jmp (tagged JmpC '{cc:.c, addr:.a}) : result = a;
+      |                                        ^~~~
+%Warning-CASEOVERLAP: t/t_tagged_case.v:195:50: Case conditions overlap
+  195 |       tagged Jmp (tagged JmpC '{cc:.c, addr:.a}) : result = a;
+      |                                                  ^
+                      t/t_tagged_case.v:194:35: ... Location of overlapping condition
+  194 |       tagged Jmp (tagged JmpU .a) : result = a;
+      |                                   ^
+                      ... For warning description see https://verilator.org/warn/CASEOVERLAP?v=latest
+                      ... Use "/* verilator lint_off CASEOVERLAP */" and lint_on around source to disable this message.
 %Error: Exiting due to

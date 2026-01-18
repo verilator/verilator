@@ -79,6 +79,7 @@ static void makeVlToString(AstIface* nodep) {
 static void makeVlToString(AstNodeUOrStructDType* nodep) {
     AstNodeModule* const modp = nodep->classOrPackagep();
     UASSERT_OBJ(modp, nodep, "Unlinked struct package");
+
     AstCFunc* const funcp
         = new AstCFunc{nodep->fileline(), "VL_TO_STRING", nullptr, "std::string"};
     funcp->argTypes("const " + EmitCUtil::prefixNameProtect(nodep) + "& obj");
@@ -87,11 +88,14 @@ static void makeVlToString(AstNodeUOrStructDType* nodep) {
     funcp->isStatic(false);
     funcp->protect(false);
     funcp->addStmtsp(new AstCStmt{nodep->fileline(), "std::string out;"});
+    bool first = true;
     for (const AstMemberDType* itemp = nodep->membersp(); itemp;
          itemp = VN_AS(itemp->nextp(), MemberDType)) {
+        // Note: void members have CData placeholder storage in tagged unions, so include them
         std::string stmt = "out += \"";
-        if (itemp == nodep->membersp()) {
+        if (first) {
             stmt += "'{";
+            first = false;
         } else {
             stmt += ", ";
         }

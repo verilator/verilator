@@ -1742,20 +1742,27 @@ public:
     bool isExprCoverageEligible() const override { return false; }
 };
 class AstMatches final : public AstNodeExpr {
-    // "matches" operator: "expr matches pattern"
+    // "matches" operator: "expr matches pattern [&&& guard_expr]"
+    // IEEE 1800-2023 Section 12.6
     // @astgen op1 := lhsp : AstNodeExpr  // Expression to match
     // @astgen op2 := patternp : AstNode  // Pattern to match against
+    // @astgen op3 := guardp : Optional[AstNodeExpr]  // Optional pattern guard (&&& expr)
 public:
-    AstMatches(FileLine* fl, AstNodeExpr* lhsp, AstNode* patternp)
+    AstMatches(FileLine* fl, AstNodeExpr* lhsp, AstNode* patternp,
+               AstNodeExpr* guardp = nullptr)
         : ASTGEN_SUPER_Matches(fl) {
         this->lhsp(lhsp);
         this->patternp(patternp);
+        this->guardp(guardp);
     }
     ASTGEN_MEMBERS_AstMatches;
-    string emitVerilog() override { return "%l matches %r"; }
+    string emitVerilog() override {
+        return guardp() ? "%l matches %r &&& %3" : "%l matches %r";
+    }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return false; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool hasGuard() const { return guardp() != nullptr; }
 };
 class AstMemberSel final : public AstNodeExpr {
     // @astgen op1 := fromp : AstNodeExpr

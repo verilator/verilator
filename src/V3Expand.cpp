@@ -470,7 +470,15 @@ class ExpandVisitor final : public VNVisitor {
             AstNodeExpr* newp = lhsp;
             if (nodep->isQuad()) {
                 if (lhsp->isQuad()) {
-                    lhsp->dtypeFrom(nodep);  // Just mark it, else nop
+                    // Don't change dtype for ConsPackUOrStruct - its dtype must remain as
+                    // the struct/union type it's constructing, not a generic BASICDTYPE
+                    if (!VN_IS(lhsp, ConsPackUOrStruct)) {
+                        lhsp->dtypeFrom(nodep);  // Just mark it, else nop
+                    } else {
+                        // For ConsPackUOrStruct, create a cast to extend it
+                        UINFO(8, "    EXTEND(q<-ConsPackUOrStruct) " << nodep);
+                        newp = new AstCCast{nodep->fileline(), lhsp, nodep};
+                    }
                 } else if (lhsp->isWide()) {
                     nodep->v3fatalSrc("extending larger thing into smaller?");
                 } else {
@@ -480,7 +488,15 @@ class ExpandVisitor final : public VNVisitor {
             } else {  // Long
                 UASSERT_OBJ(!(lhsp->isQuad() || lhsp->isWide()), nodep,
                             "extending larger thing into smaller?");
-                lhsp->dtypeFrom(nodep);  // Just mark it, else nop
+                // Don't change dtype for ConsPackUOrStruct - its dtype must remain as
+                // the struct/union type it's constructing, not a generic BASICDTYPE.
+                // Instead, create a cast to extend it while preserving its original dtype.
+                if (VN_IS(lhsp, ConsPackUOrStruct)) {
+                    UINFO(8, "    EXTEND(l<-ConsPackUOrStruct) " << nodep);
+                    newp = new AstCCast{nodep->fileline(), lhsp, nodep};
+                } else {
+                    lhsp->dtypeFrom(nodep);  // Just mark it, else nop
+                }
             }
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }

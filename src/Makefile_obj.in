@@ -333,6 +333,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Subst.o \
   V3TSP.o \
   V3Table.o \
+  V3Tagged.o \
   V3Task.o \
   V3Timing.o \
   V3Trace.o \

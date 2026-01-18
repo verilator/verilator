@@ -100,6 +100,7 @@
 #include "V3Subst.h"
 #include "V3TSP.h"
 #include "V3Table.h"
+#include "V3Tagged.h"
 #include "V3Task.h"
 #include "V3ThreadPool.h"
 #include "V3Timing.h"
@@ -341,6 +342,10 @@ static void process() {
             // Inst may have made lots of concats; fix them
             V3Const::constifyAll(v3Global.rootp());
 
+            // Transform tagged union constructs into bit operations
+            // Must be after V3Width (for type info) and before V3Scope (for VarScope creation)
+            V3Tagged::taggedAll(v3Global.rootp());
+
             // Flatten hierarchy, creating a SCOPE for each module's usage as a cell
             // No more AstAlias after linkDotScope
             V3Scope::scopeAll(v3Global.rootp());
@@ -384,7 +389,9 @@ static void process() {
             // Push constants across variables and remove redundant assignments
             V3Const::constifyAll(v3Global.rootp());
 
-            if (v3Global.opt.fLife()) V3Life::lifeAll(v3Global.rootp());
+            if (v3Global.opt.fLife()) {
+                V3Life::lifeAll(v3Global.rootp());
+            }
 
             // Make large low-fanin logic blocks into lookup tables
             // This should probably be done much later, once we have common logic elimination.

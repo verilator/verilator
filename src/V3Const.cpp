@@ -1613,6 +1613,16 @@ class ConstVisitor final : public VNVisitor {
         }
         return false;
     }
+    // Check if node contains an AstMatches expression
+    static bool containsMatches(const AstNode* nodep) {
+        if (!nodep) return false;
+        if (VN_IS(nodep, Matches)) return true;
+        if (nodep->op1p() && containsMatches(nodep->op1p())) return true;
+        if (nodep->op2p() && containsMatches(nodep->op2p())) return true;
+        if (nodep->op3p() && containsMatches(nodep->op3p())) return true;
+        if (nodep->op4p() && containsMatches(nodep->op4p())) return true;
+        return false;
+    }
     bool ifSameAssign(const AstNodeIf* nodep) {
         const AstNodeAssign* const thensp = VN_CAST(nodep->thensp(), NodeAssign);
         const AstNodeAssign* const elsesp = VN_CAST(nodep->elsesp(), NodeAssign);
@@ -1623,6 +1633,8 @@ class ConstVisitor final : public VNVisitor {
         if (!thensp->rhsp()->gateTree()) return false;
         if (!elsesp->rhsp()->gateTree()) return false;
         if (m_underRecFunc) return false;  // This optimization may lead to infinite recursion
+        // Don't convert if-matches to ternary - needs special handling by V3Tagged
+        if (containsMatches(nodep->condp())) return false;
         return true;
     }
     bool operandIfIf(const AstNodeIf* nodep) {
@@ -2669,6 +2681,9 @@ class ConstVisitor final : public VNVisitor {
         } else if (!VN_IS(nodep->lhsp(), Const)) {
             return false;
         }
+        // Must check m_params/m_doExpensive for Const case too, since
+        // replaceWithSimulation creates SimulateVisitor which allocates VNUser1InUse
+        if (!(m_doExpensive || m_params)) return false;
         replaceWithSimulation(nodep);
         return true;
     }
