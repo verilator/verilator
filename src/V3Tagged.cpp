@@ -1045,17 +1045,10 @@ class TaggedVisitor final : public VNVisitor {
     }
 
     void visit(AstCase* nodep) override {
-        // Check if this is a case matches
+        // Check if this is a case matches - let transformCaseMatches validate the type
         if (nodep->caseMatches()) {
-            AstNodeExpr* const exprp = nodep->exprp();
-            if (exprp && exprp->dtypep()) {
-                AstNodeDType* const exprDtp = exprp->dtypep()->skipRefp();
-                AstUnionDType* const unionp = VN_CAST(exprDtp, UnionDType);
-                if (unionp && unionp->isTagged()) {
-                    transformCaseMatches(nodep);
-                    return;
-                }
-            }
+            transformCaseMatches(nodep);
+            return;
         }
         iterateChildren(nodep);
     }
