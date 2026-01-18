@@ -1,0 +1,6 @@
+%Error: t/t_tagged_expr_nocontext_bad.v:17:16: Tagged expression requires a context type
+                                             : ... note: In instance 't'
+   17 |       $display(tagged Valid 42);
+      |                ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

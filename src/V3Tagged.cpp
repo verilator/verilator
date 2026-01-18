@@ -461,8 +461,8 @@ class TaggedVisitor final : public VNVisitor {
                             }
                         }
                     }
-                    // Clean up cloned data extract if not used
-                    if (!varAssignsp) { VL_DO_DANGLING(dataExtractp->deleteTree(), dataExtractp); }
+                    // Always clean up - the original is only used for cloning
+                    if (dataExtractp) { VL_DO_DANGLING(dataExtractp->deleteTree(), dataExtractp); }
                 }
             }
         }
@@ -545,8 +545,8 @@ class TaggedVisitor final : public VNVisitor {
                             }
                         }
                     }
-                    // Clean up cloned data extract if not used
-                    if (!varAssignsp) { VL_DO_DANGLING(dataExtractp->deleteTree(), dataExtractp); }
+                    // Always clean up - the original is only used for cloning
+                    if (dataExtractp) { VL_DO_DANGLING(dataExtractp->deleteTree(), dataExtractp); }
                 }
             }
             // Also handle Pattern with PatMember children
@@ -642,8 +642,8 @@ class TaggedVisitor final : public VNVisitor {
                             }
                         }
                     }
-                    // Clean up cloned data extract if not used
-                    if (!varAssignsp) { VL_DO_DANGLING(dataExtractp->deleteTree(), dataExtractp); }
+                    // Always clean up - the original is only used for cloning
+                    if (dataExtractp) { VL_DO_DANGLING(dataExtractp->deleteTree(), dataExtractp); }
                 }
             }
         }
