@@ -389,9 +389,7 @@ static void process() {
             // Push constants across variables and remove redundant assignments
             V3Const::constifyAll(v3Global.rootp());
 
-            if (v3Global.opt.fLife()) {
-                V3Life::lifeAll(v3Global.rootp());
-            }
+            if (v3Global.opt.fLife()) { V3Life::lifeAll(v3Global.rootp()); }
 
             // Make large low-fanin logic blocks into lookup tables
             // This should probably be done much later, once we have common logic elimination.

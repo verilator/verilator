@@ -5646,7 +5646,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
 
     void visit(AstAttrOf* nodep) override { iterateChildren(nodep); }
 
-    // Tagged union pattern nodes - checkNoDot not appropriate as these can appear in pattern contexts
+    // Tagged union pattern nodes - checkNoDot not appropriate as these can appear in pattern
+    // contexts
     void visit(AstTaggedExpr* nodep) override { iterateChildren(nodep); }
     void visit(AstTaggedPattern* nodep) override { iterateChildren(nodep); }
     void visit(AstPatternVar* nodep) override { iterateChildren(nodep); }

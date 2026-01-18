@@ -461,9 +461,7 @@ private:
     void visit(AstVar*) override {}  // Accelerate
     void visit(AstNodeStmt*) override {}  // Accelerate
     void visit(AstNodeExpr*) override {}  // Accelerate
-    void visit(AstNode* nodep) override {
-        iterateChildren(nodep);
-    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

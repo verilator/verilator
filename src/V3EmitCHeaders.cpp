@@ -317,7 +317,8 @@ class EmitCHeader final : public EmitCConstInit {
         // For unpacked tagged unions with dynamic types, emit as struct (not union)
         // because C++ unions with non-trivial types are problematic
         AstUnionDType* const unionp = VN_CAST(sdtypep, UnionDType);
-        const bool isTaggedWithDynamic = unionp && unionp->isTagged() && unionp->hasDynamicMember();
+        const bool isTaggedWithDynamic
+            = unionp && unionp->isTagged() && unionp->hasDynamicMember();
 
         if (isTaggedWithDynamic) {
             putns(sdtypep, "struct");
@@ -327,9 +328,7 @@ class EmitCHeader final : public EmitCConstInit {
         puts(" " + EmitCUtil::prefixNameProtect(sdtypep) + " {\n");
 
         // For tagged unions, add explicit tag field
-        if (unionp && unionp->isTagged()) {
-            puts("IData __PVT____Vtag = 0;\n");
-        }
+        if (unionp && unionp->isTagged()) { puts("IData __PVT____Vtag = 0;\n"); }
 
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
@@ -622,8 +621,7 @@ class EmitCHeader final : public EmitCConstInit {
         // This handles structs from inlined modules whose typedefs were removed
         // Build a set of active modules to check if a struct's owner was inlined
         std::set<const AstNodeModule*> activeModules;
-        for (const AstNode* nodep = v3Global.rootp()->modulesp(); nodep;
-             nodep = nodep->nextp()) {
+        for (const AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
             activeModules.insert(VN_AS(nodep, NodeModule));
         }
         v3Global.rootp()->typeTablep()->foreach([&](AstNodeUOrStructDType* sdtypep) {

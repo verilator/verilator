@@ -862,9 +862,7 @@ class LinkParseVisitor final : public VNVisitor {
     void visit(AstCase* nodep) override {
         V3Control::applyCase(nodep);
         // For case matches, create local variables for pattern variables
-        if (nodep->caseMatches()) {
-            createPatternVariables(nodep);
-        }
+        if (nodep->caseMatches()) { createPatternVariables(nodep); }
         cleanFileline(nodep);
         iterateChildren(nodep);
     }
@@ -989,8 +987,8 @@ class LinkParseVisitor final : public VNVisitor {
                 // 1. There's a guard expression (&&& pattern), OR
                 // 2. The expression is a nested Matches (chained patterns where
                 //    inner pattern variables are referenced in the outer expression)
-                const bool hasGuard = matchesp->guardp() != nullptr
-                                      || VN_IS(matchesp->lhsp(), Matches);
+                const bool hasGuard
+                    = matchesp->guardp() != nullptr || VN_IS(matchesp->lhsp(), Matches);
                 AstNode* varDeclsp = nullptr;
                 for (AstPatternVar* patVarp : patVars) {
                     // Create a local variable for this pattern variable
