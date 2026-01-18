@@ -3250,6 +3250,17 @@ class WidthVisitor final : public VNVisitor {
         const bool isTaggedUnion = unionp && unionp->isTagged();
         // UINFOTREE(9, nodep, "", "class-in");
         if (!nodep->packed() && v3Global.opt.structsPacked()) nodep->packed(true);
+        // For tagged unions: mark nested struct/union members as packed BEFORE iterating
+        // so their widths are calculated correctly (packed structs sum member widths)
+        if (isTaggedUnion) {
+            for (AstMemberDType* itemp = nodep->membersp(); itemp;
+                 itemp = VN_AS(itemp->nextp(), MemberDType)) {
+                AstNodeDType* const dtp = itemp->subDTypep()->skipRefp();
+                if (AstNodeUOrStructDType* const structp = VN_CAST(dtp, NodeUOrStructDType)) {
+                    if (!structp->packed()) structp->packed(true);
+                }
+            }
+        }
         userIterateChildren(nodep, nullptr);  // First size all members
         nodep->dtypep(nodep);
         nodep->isFourstate(false);
@@ -5002,6 +5013,8 @@ class WidthVisitor final : public VNVisitor {
         // In pattern context (case/if matches), expressions are not required for non-void members
         // since patterns can match the tag without binding the value
         AstNodeDType* const memberDType = memberp->subDTypep()->skipRefp();
+        // Ensure member type is width-evaluated (important for nested structs/unions)
+        userIterate(memberDType, WidthVP{SELF, BOTH}.p());
         const bool isVoid = VN_IS(memberDType, BasicDType)
                             && VN_AS(memberDType, BasicDType)->keyword() == VBasicDTypeKwd::CVOID;
         if (isVoid && nodep->exprp()) {
@@ -5369,21 +5382,31 @@ class WidthVisitor final : public VNVisitor {
                 // V3Tagged needs the Pattern structure to generate pattern var assignments
                 if (auto* const vdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
                     // Set dtype on each PatMember based on matching struct field
+                    // Handle both named patterns '{name:.var} and positional patterns '{.var}
+                    AstMemberDType* posMemp = vdtypep->membersp();
                     for (AstPatMember* patp = VN_CAST(nodep->itemsp(), PatMember); patp;
                          patp = VN_CAST(patp->nextp(), PatMember)) {
+                        AstMemberDType* matchedMemp = nullptr;
                         if (const AstText* const textp = VN_CAST(patp->keyp(), Text)) {
-                            // Find matching struct member
+                            // Named pattern: '{name:.var} - find matching struct member by name
                             for (AstMemberDType* memp = vdtypep->membersp(); memp;
                                  memp = VN_AS(memp->nextp(), MemberDType)) {
                                 if (memp->name() == textp->text()) {
-                                    patp->dtypep(memp);
-                                    // Also set dtype on lhssp (PatternVar) if present
-                                    if (AstPatternVar* const patVarp
-                                        = VN_CAST(patp->lhssp(), PatternVar)) {
-                                        patVarp->dtypep(memp->subDTypep());
-                                    }
+                                    matchedMemp = memp;
                                     break;
                                 }
+                            }
+                        } else if (posMemp) {
+                            // Positional pattern: '{.var} - match by position
+                            matchedMemp = posMemp;
+                            posMemp = VN_AS(posMemp->nextp(), MemberDType);
+                        }
+                        if (matchedMemp) {
+                            patp->dtypep(matchedMemp);
+                            // Also set dtype on lhssp (PatternVar) if present
+                            if (AstPatternVar* const patVarp
+                                = VN_CAST(patp->lhssp(), PatternVar)) {
+                                patVarp->dtypep(matchedMemp->subDTypep());
                             }
                         }
                     }

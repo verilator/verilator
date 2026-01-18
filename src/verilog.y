@@ -888,8 +888,9 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>      prTAGGED
 
 // These prevent other conflicts
-// yMATCHES uses %right so "a matches b &&& c matches d" parses as
-// "a matches b &&& (c matches d)" rather than "(a matches b &&& c) matches d"
+// yMATCHES uses %right and guard rules use %prec yMATCHES so
+// "a matches b &&& c matches d" parses with guard = "c matches d"
+// The %prec ensures Bison shifts 'matches' instead of reducing early
 %right          yMATCHES
 %left           yP_ANDANDAND
 %left           prTAGGED
@@ -5206,9 +5207,11 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         //                      // "expr yMATCHES pattern"
         //                      // IEEE: pattern - expanded here to avoid conflicts
         //                      // Matches with pattern guard (&&& expr) - must come before rules without guard
-        |       ~l~expr yMATCHES patternNoExpr yP_ANDANDAND ~r~expr
+        //                      // %prec yMATCHES ensures "a matches b &&& c matches d" shifts the second
+        //                      // 'matches' instead of reducing early, allowing chained matches to work
+        |       ~l~expr yMATCHES patternNoExpr yP_ANDANDAND ~r~expr  %prec yMATCHES
                                                         { $$ = new AstMatches{$2, $1, $3, $5}; }
-        |       ~l~expr yMATCHES ~r~expr yP_ANDANDAND ~r~expr
+        |       ~l~expr yMATCHES ~r~expr yP_ANDANDAND ~r~expr  %prec yMATCHES
                                                         { $$ = new AstMatches{$2, $1, $3, $5}; }
         //                      // Matches without pattern guard
         |       ~l~expr yMATCHES patternNoExpr          { $$ = new AstMatches{$2, $1, $3}; }
