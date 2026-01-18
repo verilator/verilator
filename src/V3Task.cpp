@@ -372,6 +372,7 @@ struct TaskDpiUtils final {
                               : dtypep->width() <= 16 ? 'S'
                                                       : *dtypep->charIQWN();
         const std::string& size = std::to_string(dtypep->width());
+        // cppcheck-suppress strPlusChar
         return {"VL_SET_"s + sizeChar + "_" + vecType + "(" + size + ", ", true};
     }
 };

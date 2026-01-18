@@ -59,7 +59,7 @@ class LibMapVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    LibMapVisitor(AstNetlist* nodep) { iterate(nodep); }
+    explicit LibMapVisitor(AstNetlist* nodep) { iterate(nodep); }
 };
 
 //######################################################################

@@ -2739,7 +2739,6 @@ void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
             || (vop->varp()->isForceable() && (!forceEnableSignalVop || !forceValueSignalVop)))) {
 
         // Check if getForceControlSignals provided any additional error info
-        t_vpi_error_info getForceControlSignalsError{};
         const bool gotErrorMessage = vpi_chk_error(&getForceControlSignalsError);
         const std::string previousErrorMessage
             = gotErrorMessage
@@ -2982,7 +2981,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
         const VerilatedVpioVar* const forceEnableSignalVop = forceControlSignals.first.get();
         const VerilatedVpioVar* const forceValueSignalVop = forceControlSignals.second.get();
         t_vpi_error_info getForceControlSignalsError{};
-        const bool errorOccurred = vpi_chk_error(&getForceControlSignalsError);
+        bool errorOccurred = vpi_chk_error(&getForceControlSignalsError);
         // LCOV_EXCL_START - Cannot test, since getForceControlSignals does not (currently) produce
         // any notices or warnings.
         if (errorOccurred && getForceControlSignalsError.level < vpiError) {
@@ -2995,7 +2994,6 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                         && (!forceEnableSignalVop || !forceValueSignalVop))) {
 
             // Check if getForceControlSignals provided any additional error info
-            t_vpi_error_info getForceControlSignalsError{};
             const bool gotErrorMessage = vpi_chk_error(&getForceControlSignalsError);
             const std::string previousErrorMessage
                 = gotErrorMessage
@@ -3028,7 +3026,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             vl_vpi_get_value(baseSignalVop, valuep);
 
             t_vpi_error_info baseValueGetError{};
-            const bool errorOccurred = vpi_chk_error(&baseValueGetError);
+            errorOccurred = vpi_chk_error(&baseValueGetError);
             // LCOV_EXCL_START - Cannot test, because missing signal would already trigger error
             // earlier, at the getForceControlSignals stage
             // NOLINTNEXTLINE(readability-simplify-boolean-expr);

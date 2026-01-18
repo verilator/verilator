@@ -416,24 +416,24 @@ class LinkCellsVisitor final : public VNVisitor {
         m_graph.rank();
         for (V3GraphVertex& vtx : m_graph.vertices()) {
             if (const LinkCellsVertex* const vvertexp = vtx.cast<LinkCellsVertex>()) {
-                AstNodeModule* const modp = vvertexp->modp();
-                modp->level(vvertexp->rank());
+                AstNodeModule* const vmodp = vvertexp->modp();
+                vmodp->level(vvertexp->rank());
             }
         }
         m_graph.rankMin();
         for (V3GraphVertex& vtx : m_graph.vertices()) {
             if (const LinkCellsVertex* const vvertexp = vtx.cast<LinkCellsVertex>()) {
                 // +1 so we leave level 1 for the new wrapper we'll make in a moment
-                AstNodeModule* const modp = vvertexp->modp();
-                modp->depth(vvertexp->rank() + 1);
+                AstNodeModule* const vmodp = vvertexp->modp();
+                vmodp->depth(vvertexp->rank() + 1);
             }
         }
         if (v3Global.opt.topModule() != "" && !m_topVertexp) {
             VSpellCheck spell;
             for (V3GraphVertex& vtx : m_graph.vertices()) {
                 if (const LinkCellsVertex* const vvertexp = vtx.cast<LinkCellsVertex>()) {
-                    AstNodeModule* const modp = vvertexp->modp();
-                    if (VN_IS(modp, Module)) spell.pushCandidate(modp->prettyName());
+                    AstNodeModule* const vmodp = vvertexp->modp();
+                    if (VN_IS(vmodp, Module)) spell.pushCandidate(vmodp->prettyName());
                 }
             }
             const string suggest

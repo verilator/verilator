@@ -158,7 +158,7 @@ private:
         // It has to be converted to a list of ModportClockingVarRefs,
         // because clocking blocks are removed in this pass
         for (AstNode* itemp = nodep->clockingp()->itemsp(); itemp; itemp = itemp->nextp()) {
-            if (AstClockingItem* citemp = VN_CAST(itemp, ClockingItem)) {
+            if (const AstClockingItem* citemp = VN_CAST(itemp, ClockingItem)) {
                 if (AstVar* const varp
                     = citemp->varp() ? citemp->varp() : VN_AS(citemp->user1p(), Var)) {
                     AstModportVarRef* const modVarp = new AstModportVarRef{

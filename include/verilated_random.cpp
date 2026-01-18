@@ -433,6 +433,7 @@ bool VlRandomizer::next(VlRNG& rngr) {
         }
         os << "(check-sat)\n";
         sat = parseSolution(os, true);
+        (void)sat;
         os << "(reset)\n";
         return false;
     }
@@ -442,6 +443,7 @@ bool VlRandomizer::next(VlRNG& rngr) {
         os << ")\n";
         os << "\n(check-sat)\n";
         sat = parseSolution(os, false);
+        (void)sat;
     }
 
     os << "(reset)\n";

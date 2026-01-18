@@ -244,7 +244,7 @@ private:
                                                 << ELEMENTS_MAX << " elements");
             }
             bool complexElem = true;
-            if (AstBasicDType* const basicp = VN_CAST(dtp, BasicDType)) {
+            if (const AstBasicDType* const basicp = VN_CAST(dtp, BasicDType)) {
                 complexElem = basicp->isOpaque();
             }
             if (complexElem) {

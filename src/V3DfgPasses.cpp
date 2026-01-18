@@ -178,7 +178,7 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
             if (selp->width() != 1) continue;
             DfgShiftL* const shiftLp = selp->fromp()->cast<DfgShiftL>();
             if (!shiftLp) continue;
-            DfgConst* const constp = shiftLp->lhsp()->cast<DfgConst>();
+            const DfgConst* const constp = shiftLp->lhsp()->cast<DfgConst>();
             if (!constp || !useOk(selp, false)) continue;
             if (!constp->hasValue(1)) continue;
             srcp = shiftLp->rhsp();

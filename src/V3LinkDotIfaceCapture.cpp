@@ -47,9 +47,9 @@ bool V3LinkDotIfaceCapture::finalizeCapturedEntry(CapturedMap::iterator it, cons
 string V3LinkDotIfaceCapture::extractIfacePortName(const string& dotText) {
     string name = dotText;
     const size_t dotPos = name.find('.');
-    if (dotPos != string::npos) name = name.substr(0, dotPos);
+    if (dotPos != string::npos) name.resize(dotPos);
     const size_t braPos = name.find("__BRA__");
-    if (braPos != string::npos) name = name.substr(0, braPos);
+    if (braPos != string::npos) name.resize(braPos);
     return name;
 }
 
@@ -203,7 +203,7 @@ void V3LinkDotIfaceCapture::captureTypedefContext(
     AstVar* ifacePortVarp = nullptr;
     if (!dotText.empty() && curSymp) {
         const std::string portName = extractIfacePortName(dotText);
-        if (VSymEnt* const portSymp = curSymp->findIdFallback(portName)) {
+        if (const VSymEnt* const portSymp = curSymp->findIdFallback(portName)) {
             ifacePortVarp = VN_CAST(portSymp->nodep(), Var);
             UINFO(9, indentFn() << "iface capture found port var '" << portName << "' -> "
                                 << ifacePortVarp);

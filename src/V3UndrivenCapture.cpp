@@ -65,7 +65,7 @@ private:
     void visit(AstNodeFTaskRef* nodep) override {
         // Record the call edge if resolved
         if (m_curTaskp) {
-            if (AstNodeFTask* const calleep = nodep->taskp()) {
+            if (const AstNodeFTask* const calleep = nodep->taskp()) {
                 UINFO(9, "undriven capture call edge " << CaptureUtil::taskNameQ(
                              m_curTaskp) << " -> " << CaptureUtil::taskNameQ(calleep));
                 m_cap.noteCallEdge(m_curTaskp, calleep);

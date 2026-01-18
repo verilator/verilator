@@ -758,9 +758,9 @@ public:
                             if ((cellp && cellp->modp()->origName() == ident)
                                 || (inlinep && inlinep->origModName() == ident)) {
                                 break;
-                            } else if (VSymEnt* const findSymp
+                            } else if (VSymEnt* const findSym2p
                                        = findWithAltFallback(lookupSymp, ident, altIdent)) {
-                                lookupSymp = findSymp;
+                                lookupSymp = findSym2p;
                                 if (crossedCell && VN_IS(lookupSymp->nodep(), Var)) {
                                     UINFO(9, "    Not found but matches var name in parent "
                                                  << lookupSymp);

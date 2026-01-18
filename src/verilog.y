@@ -136,6 +136,7 @@ const VBasicDTypeKwd LOGIC_IMPLICIT = VBasicDTypeKwd::LOGIC_IMPLICIT;
 
 #define DEL(...) \
     { \
+        /* cppcheck-suppress constVariable */ \
         AstNode* const nodeps[] = {__VA_ARGS__}; \
         for (AstNode* const nodep : nodeps) \
             if (nodep) nodep->deleteTree(); \

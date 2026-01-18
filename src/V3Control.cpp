@@ -466,7 +466,7 @@ public:
         IgnIndices data;
         std::vector<std::pair<int, int>> points
             = {{10, 10}, {20, 20}, {40, 40}, {10, 30}, {20, 40}};
-        for (auto& it : points) {
+        for (const auto& it : points) {
             controlIgnLines.emplace_back(
                 V3ControlIgnoresLine{V3ErrorCode::I_LINT, it.first, it.second, true});
             data.emplace_back(static_cast<uint32_t>(controlIgnLines.size() - 1));
@@ -514,7 +514,7 @@ public:
         UASSERT_SELFTEST(int, nextChange, std::numeric_limits<int>::max());
         //
         points = {{0, 0}};
-        for (auto& it : points) {
+        for (const auto& it : points) {
             controlIgnLines.emplace_back(
                 V3ControlIgnoresLine{V3ErrorCode::I_LINT, it.first, it.second, true});
             data.emplace_back(static_cast<uint32_t>(controlIgnLines.size() - 1));
