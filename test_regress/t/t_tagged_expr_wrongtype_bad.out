@@ -1,4 +1,4 @@
-%Error: t/t_tagged_expr_wrongtype_bad.v:20:11: Tagged expression can only be used with tagged union type, got 'non_tagged_union_t'
+%Error: t/t_tagged_expr_wrongtype_bad.v:20:11: Tagged expression can only be used with tagged union type, got 'union{}t.non_tagged_union_t'
                                              : ... note: In instance 't'
    20 |       u = tagged a 42;
       |           ^~~~~~
