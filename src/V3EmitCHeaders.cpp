@@ -249,8 +249,8 @@ class EmitCHeader final : public EmitCConstInit {
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
             AstNodeUOrStructDType* const subp = itemp->getChildStructp();
             if (subp && (!subp->packed() || sdtypep->packed())) {
-                // Recurse if it belongs to the current module, or has no owner (orphan)
-                if (subp->classOrPackagep() == modp || !subp->classOrPackagep()) {
+                // Recurse if it belongs to the current module
+                if (subp->classOrPackagep() == modp) {
                     emitStructDecl(modp, subp, emitted);
                     puts("\n");
                 }
@@ -617,21 +617,12 @@ class EmitCHeader final : public EmitCConstInit {
             if (!sdtypep) continue;
             emitStructDecl(modp, sdtypep, emitted);
         }
-        // Also emit packed structs/unions from the type table
-        // This handles structs from inlined modules whose typedefs were removed
-        // Build a set of active modules to check if a struct's owner was inlined
-        std::set<const AstNodeModule*> activeModules;
-        for (const AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
-            activeModules.insert(VN_AS(nodep, NodeModule));
-        }
+        // Also emit packed structs/unions from the type table that belong to this module
         v3Global.rootp()->typeTablep()->foreach([&](AstNodeUOrStructDType* sdtypep) {
             if (!sdtypep->packed()) return;
             const AstNodeModule* const ownerp = sdtypep->classOrPackagep();
-            // Emit if: belongs to this module, has no owner, or owner was inlined
-            const bool belongsHere = ownerp == modp;
-            const bool orphaned = !ownerp;
-            const bool ownerInlined = ownerp && activeModules.find(ownerp) == activeModules.end();
-            if (belongsHere || orphaned || ownerInlined) {
+            // Only emit if it belongs to this module
+            if (ownerp == modp) {
                 emitStructDecl(modp, sdtypep, emitted);
             }
         });
