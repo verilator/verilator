@@ -982,15 +982,15 @@ class TaggedVisitor final : public VNVisitor {
 
         // Get the union type from the expression's dtype
         AstNodeDType* const dtypep = nodep->dtypep();
-        if (!dtypep) {
+        if (!dtypep) {  // LCOV_EXCL_START  // V3Width catches this first
             nodep->v3warn(E_UNSUPPORTED, "Tagged expression without type context");
             return;
-        }
+        }  // LCOV_EXCL_STOP
         AstUnionDType* const unionp = VN_CAST(dtypep->skipRefp(), UnionDType);
-        if (!unionp || !unionp->isTagged()) {
+        if (!unionp || !unionp->isTagged()) {  // LCOV_EXCL_START  // V3Width catches this first
             nodep->v3error("Tagged expression used with non-tagged-union type");
             return;
-        }
+        }  // LCOV_EXCL_STOP
 
         // For unpacked tagged unions, handle at assignment level
         // This includes explicitly unpacked unions and those with dynamic/array members
@@ -1004,7 +1004,8 @@ class TaggedVisitor final : public VNVisitor {
             }
             // If not in simple assignment context, this is more complex
             // For now, emit an error for unsupported contexts
-            nodep->v3warn(E_UNSUPPORTED, "Tagged expression in non-simple assignment context");
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Tagged expression in non-simple assignment context");
             return;
         }
 

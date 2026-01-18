@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_tagged_expr_complex_bad.v:19:15: Tagged expression in non-simple assignment context
+                                                         : ... note: In instance 't'
+   19 |    assign v = tagged StrVal ("hello");
+      |               ^~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to
