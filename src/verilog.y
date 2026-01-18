@@ -3982,7 +3982,7 @@ patternOne<nodep>:              // IEEE: part of pattern
                 expr
                         { if ($1) $$ = new AstPatMember{$1->fileline(), $1, nullptr, nullptr}; else $$ = nullptr; }
         |       expr '{' argsExprList '}'               { $$ = new AstPatMember{$2, $3, nullptr, $1}; }
-        |       patternNoExpr                           { $$ = $1; }
+        |       patternNoExpr                           { $$ = new AstPatMember{$1->fileline(), $1, nullptr, nullptr}; }
         ;
 
 patternMemberList<nodep>:       // IEEE: part of pattern and assignment_pattern

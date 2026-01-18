@@ -1,14 +1,88 @@
-%Error-UNSUPPORTED: t/t_tagged_if.v:216:37: Unsupported: &&& expression
-  216 |     if (instr matches tagged Jmp .j &&&
-      |                                     ^~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_tagged_if.v:226:35: Unsupported: &&& expression
-  226 |     if (v matches tagged Valid .n &&& (n > 50))
-      |                                   ^~~
-%Error-UNSUPPORTED: t/t_tagged_if.v:235:35: Unsupported: &&& expression
-  235 |     if (v matches tagged Valid .n &&& (n > 50))
-      |                                   ^~~
-%Error-UNSUPPORTED: t/t_tagged_if.v:264:37: Unsupported: &&& expression
-  264 |     if (instr matches tagged Jmp .j &&&
-      |                                     ^~~
+%Warning-ASCRANGE: t/t_tagged_if.v:35:9: Ascending bit range vector: left < right of bit range: [0:31]
+                                       : ... note: In instance 't'
+   35 |     bit [0:31]    Word32LittleEndian;    
+      |         ^
+                   ... For warning description see https://verilator.org/warn/ASCRANGE?v=latest
+                   ... Use "/* verilator lint_off ASCRANGE */" and lint_on around source to disable this message.
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:172:14: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'b' generates 8 bits.
+                                            : ... note: In instance 't'
+  172 |       result = b;
+      |              ^
+                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
+                      ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:175:21: Operator NEQCASE expects 32 bits on the RHS, but RHS's CONST '8'ha5' generates 8 bits.
+                                            : ... note: In instance 't'
+  175 |     do if ((result) !== (8'hA5)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", "t/t_tagged_if.v",175, (result), (8'hA5), "result", "8'hA5"); $stop; end while(0);;
+      |                     ^~~
+%Warning-WIDTHTRUNC: t/t_tagged_if.v:205:25: Operator TAGGEDEXPR 'JmpC' expects 1 bits on the Tagged expression value, but Tagged expression value's CONCAT generates 12 bits.
+                                           : ... note: In instance 't'
+  205 |     instr = tagged Jmp (tagged JmpC '{2'd1, 10'd256});
+      |                         ^~~~~~
+                     ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
+                     ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:207:49: Operator PATMEMBER expects 2 bits on the Pattern value, but Pattern value's PATTERNVAR 'c' generates 1 bits.
+                                            : ... note: In instance 't'
+  207 |     if (instr matches tagged Jmp (tagged JmpC '{cc:.c, addr:.a}))
+      |                                                 ^~
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:207:56: Operator PATMEMBER expects 10 bits on the Pattern value, but Pattern value's PATTERNVAR 'a' generates 1 bits.
+                                            : ... note: In instance 't'
+  207 |     if (instr matches tagged Jmp (tagged JmpC '{cc:.c, addr:.a}))
+      |                                                        ^~~~
+%Warning-WIDTHTRUNC: t/t_tagged_if.v:207:35: Operator TAGGEDEXPR 'JmpC' expects 1 bits on the Tagged expression value, but Tagged expression value's CONCAT generates 12 bits.
+                                           : ... note: In instance 't'
+  207 |     if (instr matches tagged Jmp (tagged JmpC '{cc:.c, addr:.a}))
+      |                                   ^~~~~~
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:208:14: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 1 bits.
+                                            : ... note: In instance 't'
+  208 |       result = a;   
+      |              ^
+%Warning-WIDTHTRUNC: t/t_tagged_if.v:214:25: Operator TAGGEDEXPR 'JmpC' expects 1 bits on the Tagged expression value, but Tagged expression value's CONCAT generates 12 bits.
+                                           : ... note: In instance 't'
+  214 |     instr = tagged Jmp (tagged JmpC '{2'd2, 10'd128});
+      |                         ^~~~~~
+%Error: t/t_tagged_if.v:217:18: Tagged expression can only be used with tagged union type, got 'logic'
+                              : ... note: In instance 't'
+  217 |        j matches tagged JmpC '{cc:.c, addr:.a})
+      |                  ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:218:14: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 1 bits.
+                                            : ... note: In instance 't'
+  218 |       result = a;   
+      |              ^
+%Warning-WIDTHTRUNC: t/t_tagged_if.v:251:13: Operator TAGGEDEXPR 'Add' expects 1 bits on the Tagged expression value, but Tagged expression value's CONCAT generates 15 bits.
+                                           : ... note: In instance 't'
+  251 |     instr = tagged Add '{5'd10, 5'd20, 5'd30};
+      |             ^~~~~~
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:254:19: Operator ADD expects 32 bits on the LHS, but LHS's VARREF 'r1' generates 1 bits.
+                                            : ... note: In instance 't'
+  254 |       result = r1 + r2 + rd;
+      |                   ^
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:254:19: Operator ADD expects 32 bits on the RHS, but RHS's VARREF 'r2' generates 1 bits.
+                                            : ... note: In instance 't'
+  254 |       result = r1 + r2 + rd;
+      |                   ^
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:254:24: Operator ADD expects 32 bits on the RHS, but RHS's VARREF 'rd' generates 1 bits.
+                                            : ... note: In instance 't'
+  254 |       result = r1 + r2 + rd;
+      |                        ^
+%Warning-WIDTHTRUNC: t/t_tagged_if.v:260:25: Operator TAGGEDEXPR 'JmpC' expects 1 bits on the Tagged expression value, but Tagged expression value's CONCAT generates 12 bits.
+                                           : ... note: In instance 't'
+  260 |     instr = tagged Jmp (tagged JmpC '{2'd3, 10'd100});
+      |                         ^~~~~~
+%Error: t/t_tagged_if.v:265:18: Tagged expression can only be used with tagged union type, got 'logic'
+                              : ... note: In instance 't'
+  265 |        j matches tagged JmpC '{cc:.c, addr:.a}) begin
+      |                  ^~~~~~
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:267:16: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 1 bits.
+                                            : ... note: In instance 't'
+  267 |         result = a;
+      |                ^
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:278:14: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 1 bits.
+                                            : ... note: In instance 't'
+  278 |       result = a;
+      |              ^
+%Warning-WIDTHTRUNC: t/t_tagged_if.v:284:13: Operator TAGGEDEXPR 'Add' expects 1 bits on the Tagged expression value, but Tagged expression value's CONCAT generates 15 bits.
+                                           : ... note: In instance 't'
+  284 |     instr = tagged Add '{5'd1, 5'd2, 5'd3};
+      |             ^~~~~~
 %Error: Exiting due to
