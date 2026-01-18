@@ -316,17 +316,16 @@ public:
         const TristateVertex* const vertexp = reinterpret_cast<TristateVertex*>(nodep->user4p());
         return vertexp && vertexp->feedsTri();
     }
-    void didProcess(AstNode* nodep) {
-        TristateVertex* const vertexp = reinterpret_cast<TristateVertex*>(nodep->user4p());
-        if (!vertexp) {
+    void didProcess(AstNode* nodep, bool quiet = false) {
+        if (TristateVertex* const vertexp = reinterpret_cast<TristateVertex*>(nodep->user4p())) {
+            // We don't warn if no vertexp->isTristate() as the creation
+            // process makes midling nodes that don't have it set
+            vertexp->processed(true);
+        } else if (!quiet) {
             // Not v3errorSrc as no reason to stop the world
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported tristate construct (not in propagation graph): "
                               << nodep->prettyTypeName());
-        } else {
-            // We don't warn if no vertexp->isTristate() as the creation
-            // process makes midling nodes that don't have it set
-            vertexp->processed(true);
         }
     }
     // ITERATOR METHODS
@@ -1340,6 +1339,8 @@ class TristateVisitor final : public TristateBaseVisitor {
                 nodep->rhsp()->user1p(nullptr);
                 UINFO(9, "   enp<-rhs " << nodep->lhsp()->user1p());
                 m_tgraph.didProcess(nodep);
+            } else {
+                m_tgraph.didProcess(nodep, true);
             }
             m_alhs = true;  // And user1p() will indicate tristate equation, if any
             if (AstAssignW* const assignWp = VN_CAST(nodep, AssignW)) {
