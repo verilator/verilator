@@ -164,7 +164,8 @@ VStringList V3HierBlock::commandArgs(bool forMkJson) const {
     if (!forMkJson) {
         opts.push_back(" --prefix " + prefix);
         opts.push_back(" --mod-prefix " + prefix);
-        opts.push_back(" --top-module " + modp()->name());
+        // Similar to --top-module but need to use encoded name(), not prettyName()
+        opts.push_back(" --top-module-encoded " + modp()->name());
     }
     opts.push_back(" --lib-create " + modp()->name());  // possibly mangled name
     if (v3Global.opt.protectKeyProvided())

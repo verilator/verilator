@@ -668,7 +668,7 @@ public:
     // Not just called protectKey() to avoid bugs of not using protectKeyDefaulted()
     bool protectKeyProvided() const { return !m_protectKey.empty(); }
     string protectKeyDefaulted() VL_MT_SAFE;  // Set default key if not set by user
-    string topModule() const { return m_topModule; }
+    string topModule() const { return m_topModule; }  // As AstNode::encodeName()
     bool noTraceTop() const { return m_noTraceTop; }
     string unusedRegexp() const { return m_unusedRegexp; }
     string waiverOutput() const { return m_waiverOutput; }

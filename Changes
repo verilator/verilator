@@ -41,6 +41,7 @@ Verilator 5.045 devel
 * Fix error when calling non-static method (#6916). [Artur Bieniek, Antmicro Ltd.]
 * Fix memory leak in vpi_put_value and vpi_get_value (#6917). [Christian Hecken]
 * Fix segfault after assignment pattern XOR error (#6928) (#6931). [emmettifelts]
+* Fix `--top-module` with underscores (#6940). [Christopher Batten]
 
 
 Verilator 5.044 2026-01-01

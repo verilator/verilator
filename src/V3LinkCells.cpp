@@ -429,8 +429,19 @@ class LinkCellsVisitor final : public VNVisitor {
             }
         }
         if (v3Global.opt.topModule() != "" && !m_topVertexp) {
-            v3error("Specified --top-module '" << v3Global.opt.topModule()
-                                               << "' was not found in design.");
+            VSpellCheck spell;
+            for (V3GraphVertex& vtx : m_graph.vertices()) {
+                if (const LinkCellsVertex* const vvertexp = vtx.cast<LinkCellsVertex>()) {
+                    AstNodeModule* const modp = vvertexp->modp();
+                    if (VN_IS(modp, Module)) spell.pushCandidate(modp->prettyName());
+                }
+            }
+            const string suggest
+                = spell.bestCandidateMsg(AstNode::prettyName(v3Global.opt.topModule()));
+            v3error("Specified --top-module '"
+                    << AstNode::prettyName(v3Global.opt.topModule())
+                    << "' was not found in design.\n"
+                    << (suggest.empty() ? "" : V3Error::warnMore() + suggest));
         }
     }
     void visit(AstConstPool* nodep) override {}
@@ -473,8 +484,9 @@ class LinkCellsVisitor final : public VNVisitor {
                 UINFO(2, "Link --top-module: " << nodep);
                 nodep->inLibrary(false);  // Safer to make sure it doesn't disappear
             }
-            if (v3Global.opt.topModule() == "" ? nodep->inLibrary()  // Library cells are lower
-                                               : !topMatch) {  // Any non-specified module is lower
+            if (v3Global.opt.topModule().empty()
+                    ? nodep->inLibrary()  // Library cells are lower
+                    : !topMatch) {  // Any non-specified module is lower
                 // Put under a fake vertex so that the graph ranking won't indicate
                 // this is a top level module
                 if (!m_libVertexp) m_libVertexp = new LibraryVertex{&m_graph};

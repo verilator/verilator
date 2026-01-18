@@ -1789,8 +1789,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         }
     });
     DECL_OPTION("-timing", OnOff, &m_timing);
-    DECL_OPTION("-top", Set, &m_topModule);
-    DECL_OPTION("-top-module", Set, &m_topModule);
+    DECL_OPTION("-top", CbVal,
+                [this](const std::string& flag) { m_topModule = AstNode::encodeName(flag); });
+    DECL_OPTION("-top-module", CbVal,
+                [this](const std::string& flag) { m_topModule = AstNode::encodeName(flag); });
+    DECL_OPTION("-top-module-encoded", Set, &m_topModule).undocumented();
     DECL_OPTION("-trace", OnOff, &m_trace);
     DECL_OPTION("-trace-saif", CbCall, [this]() { m_traceEnabledSaif = true; });
     DECL_OPTION("-trace-coverage", OnOff, &m_traceCoverage);
