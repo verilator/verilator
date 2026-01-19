@@ -5023,9 +5023,10 @@ class WidthVisitor final : public VNVisitor {
                 speller.pushCandidate(itemp->name());
             }
             const string suggest = speller.bestCandidateMsg(nodep->name());
-            nodep->v3error("Tagged union member '" << nodep->name() << "' not found in "
-                           << unionDTypep->prettyDTypeNameQ()
-                           << (suggest.empty() ? "" : "\n" + nodep->fileline()->warnMore() + suggest));
+            nodep->v3error(
+                "Tagged union member '"
+                << nodep->name() << "' not found in " << unionDTypep->prettyDTypeNameQ()
+                << (suggest.empty() ? "" : "\n" + nodep->fileline()->warnMore() + suggest));
             nodep->dtypeSetBit();
             return;
         }
