@@ -7,6 +7,11 @@
 // Test error when case matches is used with non-tagged union type
 
 module t;
+  // Declare a tagged union to trigger V3Tagged pass
+  typedef union tagged {
+    void Dummy;
+  } TaggedType;
+
   // Regular union (not tagged)
   union packed {
     int a;

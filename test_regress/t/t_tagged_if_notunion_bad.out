@@ -1,5 +1,5 @@
-%Error: t/t_tagged_if_notunion_bad.v:19:13: 'matches' expression must be a tagged union type
-   19 |       if (u matches tagged a .v)
-      |             ^~~~~~~
+%Error: t/t_tagged_if_notunion_bad.v:24:11: Matches expression must be a tagged union type
+   24 |     if (u matches tagged a .v)
+      |           ^~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

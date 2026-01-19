@@ -7,6 +7,11 @@
 // Test error when if matches is used with non-tagged union type
 
 module t;
+  // Declare a tagged union to trigger V3Tagged pass
+  typedef union tagged {
+    void Dummy;
+  } TaggedType;
+
   // Regular (non-tagged) union
   union packed {
     int a;
