@@ -188,7 +188,7 @@ public:
                 return new AstAssign{flp, lhsp, forcedUpdate(vscp, lhsp, lhsVarRefp)};
             } else if (const AstStructDType* const structDtypep
                        = VN_CAST(lhsDtypep, StructDType)) {
-
+                return nullptr;
             } else if (const AstUnpackArrayDType* const arrayDtypep
                        = VN_CAST(lhsDtypep, UnpackArrayDType)) {
                 AstVar* const loopVarp = new AstVar{flp, VVarType::MODULETEMP,
@@ -218,6 +218,8 @@ public:
                     new AstAdd{flp, readRefp->cloneTree(false), new AstConst{flp, 1}}};
                 currWhilep->addStmtsp(currIncrp);
                 return currInitp;
+            } else {
+                return nullptr;
             }
         }
         static AstNodeExpr* applySelects(AstNodeExpr* exprp,
