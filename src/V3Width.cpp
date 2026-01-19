@@ -6654,7 +6654,7 @@ class WidthVisitor final : public VNVisitor {
         return VN_CAST(pkgItemp->backp(), Package);
     }
     const AstClass* containingClass(AstNode* nodep) {
-        // backp is still needed, m_containingClassp is just a cache
+        // abovep is still needed, m_containingClassp is just a cache
         if (const AstClass* const classp = VN_CAST(nodep, Class))
             return m_containingClassp[nodep] = classp;
         if (const AstClassPackage* const packagep = VN_CAST(nodep, ClassPackage)) {
@@ -6663,8 +6663,8 @@ class WidthVisitor final : public VNVisitor {
         if (m_containingClassp.find(nodep) != m_containingClassp.end()) {
             return m_containingClassp[nodep];
         }
-        if (nodep->backp()) {
-            return m_containingClassp[nodep] = containingClass(nodep->backp());
+        if (AstNode* const abovep = nodep->aboveLoopp()) {
+            return m_containingClassp[nodep] = containingClass(abovep);
         } else {
             return m_containingClassp[nodep] = nullptr;
         }

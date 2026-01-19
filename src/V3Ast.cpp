@@ -139,6 +139,13 @@ AstNode* AstNode::abovep() const {
     const AstNode* const firstp = firstAbovep() ? this : m_headtailp;
     return firstp->backp();
 }
+AstNode* AstNode::aboveLoopp() const {
+    // Returns parent node. Avoid using this, may have performance issues.
+    const AstNode* nodep = this;
+    // Backwards over peers (versus parents)
+    while (nodep->backp() && nodep->backp()->nextp() == nodep) nodep = nodep->backp();
+    return nodep->backp();
+}
 
 string AstNode::encodeName(const string& namein) {
     // Encode signal name raw from parser, then not called again on same signal

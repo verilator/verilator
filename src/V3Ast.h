@@ -540,6 +540,7 @@ public:
     AstNode* nextp() const VL_MT_STABLE { return m_nextp; }
     AstNode* backp() const VL_MT_STABLE { return m_backp; }
     AstNode* abovep() const;  // Get parent node above, only for list head and tail
+    AstNode* aboveLoopp() const;  // Get parent node above, may have performance issues as loops
     AstNode* op1p() const VL_MT_STABLE { return m_op1p; }
     AstNode* op2p() const VL_MT_STABLE { return m_op2p; }
     AstNode* op3p() const VL_MT_STABLE { return m_op3p; }
