@@ -29,7 +29,7 @@ For example:
 
    - S i m u l a t i o n   R e p o r t: Verilator ...
    - Verilator: End at simtime 123 ns; walltime 1234.001 s; speed 123 ns/s
-   - Verilator: cpu 22.001 s on 4 threads; alloced 123 MB
+   - Verilator: cpu 22.001 s on 4 threads; allocated 123 MB
 
 The information in this report is:
 
@@ -63,7 +63,7 @@ The information in this report is:
 
    Number of simultaneous threads used.
 
-.. describe:: "alloced 123 MB"
+.. describe:: "allocated 123 MB"
 
    Total memory used during simulation in megabytes.
 
