@@ -2162,7 +2162,8 @@ struct_unionDecl<nodeUOrStructDTypep>:  // IEEE: part of data_type
         /*cont*/    struct_union_memberListEnd
                         { $$ = $<nodeUOrStructDTypep>4; $$->addMembersp($5); }
         |       yUNION taggedSoftE packedSigningE '{'
-        /*mid*/         { $<nodeUOrStructDTypep>$ = new AstUnionDType{$1, $2 == tagged_SOFT, $2 == tagged_TAGGED, $3}; }
+        /*mid*/         { $<nodeUOrStructDTypep>$ = new AstUnionDType{$1, $2 == tagged_SOFT, $2 == tagged_TAGGED, $3};
+                          if ($2 == tagged_TAGGED) v3Global.useTagged(true); }
         /*cont*/    struct_union_memberListEnd
                         { $$ = $<nodeUOrStructDTypep>5; $$->addMembersp($6); }
         ;

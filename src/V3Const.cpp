@@ -1615,13 +1615,7 @@ class ConstVisitor final : public VNVisitor {
     }
     // Check if node contains an AstMatches expression
     static bool containsMatches(const AstNode* nodep) {
-        if (!nodep) return false;
-        if (VN_IS(nodep, Matches)) return true;
-        if (nodep->op1p() && containsMatches(nodep->op1p())) return true;
-        if (nodep->op2p() && containsMatches(nodep->op2p())) return true;
-        if (nodep->op3p() && containsMatches(nodep->op3p())) return true;
-        if (nodep->op4p() && containsMatches(nodep->op4p())) return true;
-        return false;
+        return nodep && nodep->exists([](const AstMatches*) { return true; });
     }
     bool ifSameAssign(const AstNodeIf* nodep) {
         const AstNodeAssign* const thensp = VN_CAST(nodep->thensp(), NodeAssign);

@@ -327,9 +327,6 @@ class EmitCHeader final : public EmitCConstInit {
         }
         puts(" " + EmitCUtil::prefixNameProtect(sdtypep) + " {\n");
 
-        // For tagged unions, add explicit tag field
-        if (unionp && unionp->isTagged()) puts("IData __PVT____Vtag = 0;\n");
-
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
             // Emit placeholder for void members so other code that references them still works
@@ -396,11 +393,6 @@ class EmitCHeader final : public EmitCConstInit {
         puts("return ");
         {
             bool needAnd = false;
-            // Include __PVT____Vtag in comparison for tagged unions
-            if (unionp && unionp->isTagged()) {
-                puts("__PVT____Vtag == rhs.__PVT____Vtag");
-                needAnd = true;
-            }
             for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
                  itemp = VN_AS(itemp->nextp(), MemberDType)) {
                 // Skip void members for tagged unions (they have no storage)
@@ -424,11 +416,6 @@ class EmitCHeader final : public EmitCConstInit {
         puts("std::tie(");
         {
             bool needComma = false;
-            // Include __PVT____Vtag in comparison for tagged unions
-            if (unionp && unionp->isTagged()) {
-                puts("__PVT____Vtag");
-                needComma = true;
-            }
             for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
                  itemp = VN_AS(itemp->nextp(), MemberDType)) {
                 // Skip void members for tagged unions (they have no storage)
@@ -443,11 +430,6 @@ class EmitCHeader final : public EmitCConstInit {
         puts(")\n    <  std::tie(");
         {
             bool needComma = false;
-            // Include __PVT____Vtag in comparison for tagged unions
-            if (unionp && unionp->isTagged()) {
-                puts("rhs.__PVT____Vtag");
-                needComma = true;
-            }
             for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
                  itemp = VN_AS(itemp->nextp(), MemberDType)) {
                 // Skip void members for tagged unions (they have no storage)

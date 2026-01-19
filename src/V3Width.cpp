@@ -3314,6 +3314,19 @@ class WidthVisitor final : public VNVisitor {
                 // Tagged unions with dynamic types cannot be bit-packed
                 // Use struct storage instead (handled in V3EmitCHeaders)
                 nodep->packed(false);
+
+                // Create synthetic __Vtag member for unpacked tagged unions
+                // This member is inserted into the AST so it gets emitted normally
+                FileLine* const flp = nodep->fileline();
+                AstNodeDType* const tagDTypep = nodep->findUInt32DType();
+                AstMemberDType* const tagMemberp = new AstMemberDType{flp, "__Vtag", tagDTypep};
+                tagMemberp->tagIndex(-1);  // Mark as synthetic tag field
+                // Insert at front of member list so tag appears first in struct
+                AstMemberDType* const existingMembersp = nodep->membersp();
+                if (existingMembersp) existingMembersp->unlinkFrBackWithNext();
+                nodep->addMembersp(tagMemberp);
+                if (existingMembersp) tagMemberp->addNextHere(existingMembersp);
+
                 // Width is implementation-defined for unpacked unions
                 // Use a minimal width to satisfy later checks
                 nodep->widthForce(32, 32);  // Use 32-bit width for tag storage
@@ -5004,8 +5017,15 @@ class WidthVisitor final : public VNVisitor {
             }
         }
         if (!memberp) {
+            VSpellCheck speller;
+            for (AstMemberDType* itemp = unionDTypep->membersp(); itemp;
+                 itemp = VN_AS(itemp->nextp(), MemberDType)) {
+                speller.pushCandidate(itemp->name());
+            }
+            const string suggest = speller.bestCandidateMsg(nodep->name());
             nodep->v3error("Tagged union member '" << nodep->name() << "' not found in "
-                                                   << unionDTypep->prettyDTypeNameQ());
+                           << unionDTypep->prettyDTypeNameQ()
+                           << (suggest.empty() ? "" : "\n" + nodep->fileline()->warnMore() + suggest));
             nodep->dtypeSetBit();
             return;
         }

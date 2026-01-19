@@ -344,7 +344,7 @@ static void process() {
 
             // Transform tagged union constructs into bit operations
             // Must be after V3Width (for type info) and before V3Scope (for VarScope creation)
-            V3Tagged::taggedAll(v3Global.rootp());
+            if (v3Global.useTagged()) V3Tagged::taggedAll(v3Global.rootp());
 
             // Flatten hierarchy, creating a SCOPE for each module's usage as a cell
             // No more AstAlias after linkDotScope
