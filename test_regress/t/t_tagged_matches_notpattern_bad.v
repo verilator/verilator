@@ -7,16 +7,16 @@
 // Test error when matches is used without a tagged pattern
 
 module t;
-   typedef union tagged {
-      void Invalid;
-      int Valid;
-   } maybe_int_t;
+  typedef union tagged {
+    void Invalid;
+    int Valid;
+  } maybe_int_t;
 
-   maybe_int_t x;
+  maybe_int_t x;
 
-   initial begin
-      // Error: pattern should be "tagged Valid .v" not just "1"
-      if (x matches 1)
-        $display("matched");
-   end
+  initial begin
+    // Error: pattern should be "tagged Valid .v" not just "1"
+    if (x matches 1)
+      $display("matched");
+  end
 endmodule

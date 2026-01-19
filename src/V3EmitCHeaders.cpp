@@ -328,7 +328,7 @@ class EmitCHeader final : public EmitCConstInit {
         puts(" " + EmitCUtil::prefixNameProtect(sdtypep) + " {\n");
 
         // For tagged unions, add explicit tag field
-        if (unionp && unionp->isTagged()) { puts("IData __PVT____Vtag = 0;\n"); }
+        if (unionp && unionp->isTagged()) puts("IData __PVT____Vtag = 0;\n");
 
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
@@ -622,7 +622,7 @@ class EmitCHeader final : public EmitCConstInit {
             if (!sdtypep->packed()) return;
             const AstNodeModule* const ownerp = sdtypep->classOrPackagep();
             // Only emit if it belongs to this module
-            if (ownerp == modp) { emitStructDecl(modp, sdtypep, emitted); }
+            if (ownerp == modp) emitStructDecl(modp, sdtypep, emitted);
         });
     }
     void emitFuncDecls(const AstNodeModule* modp, bool inClassBody) {

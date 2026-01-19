@@ -7,15 +7,15 @@
 // Test error when non-void tagged union member has no expression
 
 module t;
-   typedef union tagged {
-      void Invalid;
-      int Valid;
-   } maybe_int_t;
+  typedef union tagged {
+    void Invalid;
+    int Valid;
+  } maybe_int_t;
 
-   maybe_int_t x;
+  maybe_int_t x;
 
-   initial begin
-      // Error: Valid is non-void and requires an expression
-      x = tagged Valid;
-   end
+  initial begin
+    // Error: Valid is non-void and requires an expression
+    x = tagged Valid;
+  end
 endmodule

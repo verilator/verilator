@@ -7,18 +7,18 @@
 // Test error when case matches is used with non-tagged union type
 
 module t;
-   // Regular union (not tagged)
-   union packed {
-      int a;
-      int b;
-   } u;
+  // Regular union (not tagged)
+  union packed {
+    int a;
+    int b;
+  } u;
 
-   initial begin
-      // verilator lint_off WIDTHEXPAND
-      case (u) matches
-        tagged Valid .v: $display("valid");
-        default: $display("default");
-      endcase
-      // verilator lint_on WIDTHEXPAND
-   end
+  initial begin
+    // verilator lint_off WIDTHEXPAND
+    case (u) matches
+      tagged Valid .v: $display("valid");
+      default: $display("default");
+    endcase
+    // verilator lint_on WIDTHEXPAND
+  end
 endmodule

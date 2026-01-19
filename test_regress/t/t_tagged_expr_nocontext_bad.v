@@ -7,13 +7,13 @@
 // Test error when tagged expression used without context type
 
 module t;
-   typedef union tagged {
-      void Invalid;
-      int Valid;
-   } VInt;
+  typedef union tagged {
+    void Invalid;
+    int Valid;
+  } VInt;
 
-   initial begin
-      // Error: tagged expression requires a context type
-      $display(tagged Valid 42);
-   end
+  initial begin
+    // Error: tagged expression requires a context type
+    $display(tagged Valid 42);
+  end
 endmodule

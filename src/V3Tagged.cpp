@@ -405,7 +405,7 @@ class TaggedVisitor final : public VNVisitor {
                                                                memberp->subDTypep());
                     } else {
                         dataExtractp = makeDataExtract(fl, exprClone2p, unionp, memberp->width());
-                        if (dataExtractp) { dataExtractp->dtypep(structDtp); }
+                        if (dataExtractp) dataExtractp->dtypep(structDtp);
                     }
 
                     // For each PatMember containing a PatternVar, create assignment
@@ -462,7 +462,7 @@ class TaggedVisitor final : public VNVisitor {
                         }
                     }
                     // Always clean up - the original is only used for cloning
-                    if (dataExtractp) { VL_DO_DANGLING(dataExtractp->deleteTree(), dataExtractp); }
+                    if (dataExtractp) VL_DO_DANGLING(dataExtractp->deleteTree(), dataExtractp);
                 }
             }
         }
@@ -485,7 +485,7 @@ class TaggedVisitor final : public VNVisitor {
                                                                memberp->subDTypep());
                     } else {
                         dataExtractp = makeDataExtract(fl, exprClone2p, unionp, memberp->width());
-                        if (dataExtractp) { dataExtractp->dtypep(structDtp); }
+                        if (dataExtractp) dataExtractp->dtypep(structDtp);
                     }
 
                     // For each ConsPackMember containing a PatternVar, create assignment
@@ -546,7 +546,7 @@ class TaggedVisitor final : public VNVisitor {
                         }
                     }
                     // Always clean up - the original is only used for cloning
-                    if (dataExtractp) { VL_DO_DANGLING(dataExtractp->deleteTree(), dataExtractp); }
+                    if (dataExtractp) VL_DO_DANGLING(dataExtractp->deleteTree(), dataExtractp);
                 }
             }
             // Also handle Pattern with PatMember children
@@ -583,7 +583,7 @@ class TaggedVisitor final : public VNVisitor {
                                                                memberp->subDTypep());
                     } else {
                         dataExtractp = makeDataExtract(fl, exprClone2p, unionp, structWidth);
-                        if (dataExtractp) { dataExtractp->dtypep(structDtp); }
+                        if (dataExtractp) dataExtractp->dtypep(structDtp);
                     }
 
                     // For each PatMember containing a PatternVar, create assignment
@@ -643,7 +643,7 @@ class TaggedVisitor final : public VNVisitor {
                         }
                     }
                     // Always clean up - the original is only used for cloning
-                    if (dataExtractp) { VL_DO_DANGLING(dataExtractp->deleteTree(), dataExtractp); }
+                    if (dataExtractp) VL_DO_DANGLING(dataExtractp->deleteTree(), dataExtractp);
                 }
             }
         }
@@ -669,11 +669,11 @@ class TaggedVisitor final : public VNVisitor {
             scopep->addStmtsp(varDeclsp);
 
             // Replace pattern variable references in original body
-            if (origBodyp && varp) { replacePatternVarRefs(origBodyp, varp->name(), varp); }
+            if (origBodyp && varp) replacePatternVarRefs(origBodyp, varp->name(), varp);
 
             // If there's a guard with pattern variable, update references in the guard
             // guardp is already unlinked, no need to clone
-            if (guardp && varp) { replacePatternVarRefs(guardp, varp->name(), varp); }
+            if (guardp && varp) replacePatternVarRefs(guardp, varp->name(), varp);
 
             // Build the body
             // If guard present: assignment + if(guard) { original body }

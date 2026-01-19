@@ -7,15 +7,15 @@
 // Test error when void tagged union member has an expression
 
 module t;
-   typedef union tagged {
-      void Invalid;
-      int Valid;
-   } VInt;
+  typedef union tagged {
+    void Invalid;
+    int Valid;
+  } VInt;
 
-   VInt v;
+  VInt v;
 
-   initial begin
-      // Error: void member should not have an expression
-      v = tagged Invalid (42);
-   end
+  initial begin
+    // Error: void member should not have an expression
+    v = tagged Invalid (42);
+  end
 endmodule

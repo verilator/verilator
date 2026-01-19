@@ -7,14 +7,14 @@
 // Test error for unpacked tagged union in non-simple assignment context
 
 module t;
-   // Unpacked tagged union (string member forces unpacked storage)
-   typedef union tagged {
-      void Invalid;
-      string StrVal;
-   } VString;
+  // Unpacked tagged union (string member forces unpacked storage)
+  typedef union tagged {
+    void Invalid;
+    string StrVal;
+  } VString;
 
-   VString v;
+  VString v;
 
-   // Error: continuous assignment is not a simple assignment context for unpacked union
-   assign v = tagged StrVal ("hello");
+  // Error: continuous assignment is not a simple assignment context for unpacked union
+  assign v = tagged StrVal ("hello");
 endmodule

@@ -79,7 +79,6 @@ static void makeVlToString(AstIface* nodep) {
 static void makeVlToString(AstNodeUOrStructDType* nodep) {
     AstNodeModule* const modp = nodep->classOrPackagep();
     UASSERT_OBJ(modp, nodep, "Unlinked struct package");
-
     AstCFunc* const funcp
         = new AstCFunc{nodep->fileline(), "VL_TO_STRING", nullptr, "std::string"};
     funcp->argTypes("const " + EmitCUtil::prefixNameProtect(nodep) + "& obj");

@@ -9,15 +9,15 @@
 /* verilator lint_off WIDTHEXPAND */
 
 module t;
-   typedef union tagged {
-      void Invalid;
-      int Valid;
-   } VInt;
+  typedef union tagged {
+    void Invalid;
+    int Valid;
+  } VInt;
 
-   VInt v;
+  VInt v;
 
-   initial begin
-      // Error: member 'NonExistent' not found in union
-      v = tagged NonExistent 42;
-   end
+  initial begin
+    // Error: member 'NonExistent' not found in union
+    v = tagged NonExistent 42;
+  end
 endmodule
