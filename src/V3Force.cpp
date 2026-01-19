@@ -184,7 +184,7 @@ public:
             static int cnt = 0;
             FileLine* const flp = lhsp->fileline();
             const AstNodeDType* const lhsDtypep = lhsp->dtypep()->skipRefp();
-            if (lhsDtypep->isIntegralOrPacked()) {
+            if (lhsDtypep->isIntegralOrPacked() || VN_IS(lhsDtypep, BasicDType)) {
                 return new AstAssign{flp, lhsp, forcedUpdate(vscp, lhsp, lhsVarRefp)};
             } else if (const AstStructDType* const structDtypep
                        = VN_CAST(lhsDtypep, StructDType)) {
