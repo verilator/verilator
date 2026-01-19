@@ -154,7 +154,7 @@ public:
                 toInsertp->addNextHere(stmtp);
                 stmtp = outerStmtp;
             }
-            activeInitp->addStmtsp(new AstInitial{flp, stmtp->cloneTree(true)});
+            activeInitp->addStmtsp(new AstInitial{flp, stmtp});
             {  // Add the combinational override
                 // Explicitly list dependencies for update.
                 // Note: rdVscp is also needed to retrigger assignment for the first time.
@@ -174,14 +174,53 @@ public:
                 // Reuse the statements created for __VforceEn initialization
                 // and replace var ref on the LHS and the RHS
                 AstVarRef* const rdRefp = new AstVarRef{flp, m_rdVscp, VAccess::WRITE};
-                AstNodeExpr* const rdRhsp = forcedUpdate(vscp, loopVarRefs);
-                enRefp->replaceWith(rdRefp);
-                VL_DO_DANGLING(enRefp->deleteTree(), enRefp);
-                enRhsp->replaceWith(rdRhsp);
-                VL_DO_DANGLING(enRhsp->deleteTree(), enRhsp);
-
-                activep->addStmtsp(new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr, stmtp});
+                AstVarRef* origRefp = new AstVarRef{flp, vscp, VAccess::READ};
+                ForceState::markNonReplaceable(origRefp);
+                activep->addStmtsp(new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr,
+                                                 getAssignStmtsp(rdRefp, origRefp)});
                 vscp->scopep()->addBlocksp(activep);
+            }
+        }
+        AstNodeStmt* getAssignStmtsp(AstNodeExpr* lhsp, AstNodeExpr* rhsp) {
+            static int cnt = 0;
+            FileLine* const flp = lhsp->fileline();
+            const AstNodeDType* const lhsDtypep = lhsp->dtypep()->skipRefp();
+            if (lhsDtypep->isIntegralOrPacked()) {
+                return new AstAssign{flp, lhsp, rhsp};
+            } else if (const AstStructDType* const structDtypep
+                       = VN_CAST(lhsDtypep, StructDType)) {
+
+            } else if (const AstUnpackArrayDType* const arrayDtypep
+                       = VN_CAST(lhsDtypep, UnpackArrayDType)) {
+                AstVar* const loopVarp = new AstVar{flp, VVarType::MODULETEMP,
+                                                    m_rdVscp->varp()->name() + "__VwhileIter_new"
+                                                        + std::to_string(cnt++),
+                                                    VFlagBitPacked{}, 32};
+                m_rdVscp->varp()->addNext(loopVarp);
+                AstVarScope* const loopVarScopep
+                    = new AstVarScope{flp, m_rdVscp->scopep(), loopVarp};
+                m_rdVscp->addNext(loopVarScopep);
+                AstVarRef* const readRefp = new AstVarRef{flp, loopVarScopep, VAccess::READ};
+                AstNodeStmt* const currInitp = new AstAssign{
+                    flp, new AstVarRef{flp, loopVarScopep, VAccess::WRITE}, new AstConst{flp, 0}};
+                AstLoop* const currWhilep = new AstLoop{flp};
+                currInitp->addNextHere(currWhilep);
+                AstLoopTest* const loopTestp = new AstLoopTest{
+                    flp, currWhilep,
+                    new AstNeq{
+                        flp, readRefp,
+                        new AstConst{flp, static_cast<uint32_t>(arrayDtypep->elementsConst())}}};
+                currWhilep->addStmtsp(loopTestp);
+                AstArraySel* const lhsSelp
+                    = new AstArraySel{flp, lhsp, readRefp->cloneTree(false)};
+                AstArraySel* const rhsSelp
+                    = new AstArraySel{flp, rhsp, readRefp->cloneTree(false)};
+                currWhilep->addStmtsp(getAssignStmtsp(lhsSelp, rhsSelp));
+                AstAssign* const currIncrp = new AstAssign{
+                    flp, new AstVarRef{flp, loopVarScopep, VAccess::WRITE},
+                    new AstAdd{flp, readRefp->cloneTree(false), new AstConst{flp, 1}}};
+                currWhilep->addStmtsp(currIncrp);
+                return currInitp;
             }
         }
         static AstNodeExpr* applySelects(AstNodeExpr* exprp,
