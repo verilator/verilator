@@ -174,19 +174,18 @@ public:
                 // Reuse the statements created for __VforceEn initialization
                 // and replace var ref on the LHS and the RHS
                 AstVarRef* const rdRefp = new AstVarRef{flp, m_rdVscp, VAccess::WRITE};
-                AstVarRef* origRefp = new AstVarRef{flp, vscp, VAccess::READ};
-                ForceState::markNonReplaceable(origRefp);
                 activep->addStmtsp(new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr,
-                                                 getAssignStmtsp(rdRefp, origRefp)});
+                                                 getAssignStmtsp(rdRefp, vscp, rdRefp)});
                 vscp->scopep()->addBlocksp(activep);
             }
         }
-        AstNodeStmt* getAssignStmtsp(AstNodeExpr* lhsp, AstNodeExpr* rhsp) {
+        AstNodeStmt* getAssignStmtsp(AstNodeExpr* const lhsp, AstVarScope* const vscp,
+                                     AstVarRef* const lhsVarRefp) {
             static int cnt = 0;
             FileLine* const flp = lhsp->fileline();
             const AstNodeDType* const lhsDtypep = lhsp->dtypep()->skipRefp();
             if (lhsDtypep->isIntegralOrPacked()) {
-                return new AstAssign{flp, lhsp, rhsp};
+                return new AstAssign{flp, lhsp, forcedUpdate(vscp, lhsp, lhsVarRefp)};
             } else if (const AstStructDType* const structDtypep
                        = VN_CAST(lhsDtypep, StructDType)) {
 
@@ -213,9 +212,7 @@ public:
                 currWhilep->addStmtsp(loopTestp);
                 AstArraySel* const lhsSelp
                     = new AstArraySel{flp, lhsp, readRefp->cloneTree(false)};
-                AstArraySel* const rhsSelp
-                    = new AstArraySel{flp, rhsp, readRefp->cloneTree(false)};
-                currWhilep->addStmtsp(getAssignStmtsp(lhsSelp, rhsSelp));
+                currWhilep->addStmtsp(getAssignStmtsp(lhsSelp, vscp, lhsVarRefp));
                 AstAssign* const currIncrp = new AstAssign{
                     flp, new AstVarRef{flp, loopVarScopep, VAccess::WRITE},
                     new AstAdd{flp, readRefp->cloneTree(false), new AstConst{flp, 1}}};
