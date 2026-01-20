@@ -2770,6 +2770,12 @@ class WidthVisitor final : public VNVisitor {
                                               << nodep->prettyNameQ()
                                               << " (IEEE 1800-2023 6.20.6)");
         }
+        if (nodep->varp()->isClassMember() && !nodep->varp()->isFuncLocal()
+            && !nodep->varp()->lifetime().isStatic() && m_ftaskp && m_ftaskp->isStatic()) {
+            nodep->v3error("Cannot access non-static member variable "
+                           << nodep->prettyNameQ() << " from a static method "
+                           << m_ftaskp->prettyNameQ() << " without object (IEEE 1800-2023 8.10)");
+        }
         nodep->didWidth(true);
     }
 
@@ -3309,6 +3315,10 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstThisRef* nodep) override {
         if (nodep->didWidthAndSet()) return;
         nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->childDTypep()));
+        if (m_ftaskp && m_ftaskp->isStatic()) {
+            nodep->v3error("Cannot use 'this' in a static method "
+                           << m_ftaskp->prettyNameQ() << " (IEEE 1800-2023 8.10-8.11)");
+        }
     }
     void visit(AstClassRefDType* nodep) override {
         if (nodep->didWidthAndSet()) return;
