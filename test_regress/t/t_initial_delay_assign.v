@@ -5,24 +5,28 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t ();
-    reg a;
-    wire b;
-    initial a = '0;
-    assign #1 b = a;
+    // NOCOMMIT -- tests
+    // - var initializer
+    // - no initializer (possibly while initializing bar to '1)
+    // - more than just VarRef in delay assignment
+    reg foo;
+    wire bar;
+    initial foo = '0;
+    assign #1 bar = foo;
 
-    always @(a, b) begin
-        $display("%d a %x, b %x", $time, a, b);
+    always @(foo, bar) begin
+        $display("%d foo %x, bar %x", $time, foo, bar);
     end
 
     initial begin
         #5
-        if (b != a) $stop;
-        #5 a = '1;
+        if (bar != foo) $stop;
+        #5 foo = '1;
         #5
-        if (b != a) $stop;
-        #5 a = '0;
+        if (bar != foo) $stop;
+        #5 foo = '0;
         #5;
-        if (b != a) $stop;
+        if (bar != foo) $stop;
         $write("*-* All Finished *-*\n");
         $finish;
     end
