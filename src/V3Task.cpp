@@ -1310,9 +1310,15 @@ class TaskVisitor final : public VNVisitor {
 
         if (!nodep->dpiImport() && !nodep->taskPublic()) {
             // Need symbol table
-            if (cfuncp->name() == "new") {
-                const string stmt = VIdProtect::protect("_ctor_var_reset") + "(vlSymsp);";
-                cfuncp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
+            if (cfuncp->isConstructor()) {
+                bool isInterfaceClass = false;
+                if (const AstClass* const classp = VN_CAST(m_modp, Class)) {
+                    isInterfaceClass = classp->isInterfaceClass();
+                }
+                if (!isInterfaceClass) {
+                    const string stmt = VIdProtect::protect("_ctor_var_reset") + "(vlSymsp);";
+                    cfuncp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
+                }
             }
         }
         if (nodep->dpiContext()) {

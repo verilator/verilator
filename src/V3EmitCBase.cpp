@@ -143,11 +143,12 @@ void EmitCBaseVisitorConst::emitCFuncHeader(const AstCFunc* funcp, const AstNode
     if (funcp->isConstructor()) {
         if (!withScope) putns(funcp, funcNameProtect(funcp, modp));
         if (!withScope) {
-            puts("() = default;\n");
+            puts("() = default");
             if (const AstClass* const classp = VN_CAST(modp, Class)) {
-                if (classp->isInterfaceClass()) puts("bool __VvirtClassInitialized = false;\n");
+                // Interfaces classes do not need a constructor
+                if (classp->isInterfaceClass()) return;
             }
-            puts("void ");
+            puts(";\nvoid ");
         }
         puts("init");
     } else {
@@ -168,7 +169,9 @@ void EmitCBaseVisitorConst::emitCFuncDecl(const AstCFunc* funcp, const AstNodeMo
         putns(funcp, "virtual ");
     }
     emitCFuncHeader(funcp, modp, /* withScope: */ false);
-    if (funcp->emptyBody() && !funcp->isLoose() && !cLinkage) {
+    const AstClass* const classp = VN_CAST(modp, Class);
+    if (funcp->emptyBody() && !funcp->isLoose() && !cLinkage
+        && !(funcp->isConstructor() && classp && classp->isInterfaceClass())) {
         putns(funcp, " {}\n");
     } else {
         putns(funcp, ";\n");
