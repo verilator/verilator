@@ -88,20 +88,27 @@ void invertAndMergeSenTreeMap(
 std::vector<AstSenTree*>
 findTriggeredIface(const AstVarScope* vscp, const VirtIfaceTriggers::IfaceSensMap& vifTrigged,
                    const VirtIfaceTriggers::IfaceMemberSensMap& vifMemberTriggered) {
-    UASSERT_OBJ(vscp->varp()->sensIfacep() || vscp->varp()->isVirtIface(), vscp,
-                "Not an interface trigger");
-    // Unsupported error shall have occur earlier
-    UASSERT_OBJ(vscp->varp()->sensIfacep() && vscp->varp()->isVirtIface(), vscp,
-                "Virtual interface has sensIfacep - UNSUPPORTED");
-    // If `vscp->varp()` is of a interface type it has `sensIfacep()` set to interface it is
-    // sensible to.
-    // If `vscp->varp()->isVirtIface()` is true then the interface type that viface is pointing to
-    // is under `VN_AS(vscp->varp()->dtypep(), IfaceRefDType)->ifacep()`
-    std::vector<AstSenTree*> result;
-    const AstIface* const ifacep = vscp->varp()->sensIfacep()
-                                       ? vscp->varp()->sensIfacep()
-                                       : VN_AS(vscp->varp()->dtypep(), IfaceRefDType)->ifacep();
+    const AstIface* ifacep;
+    if (vscp->varp()->isVirtIface()) {
+        // If `vscp->varp()->isVirtIface()` is true then the interface type that viface is pointing
+        // to is under `VN_AS(vscp->varp()->dtypep(), IfaceRefDType)->ifacep()`
+
+        // Virtual interface is sensitive to a different interface type than it is a virtual type
+        // of - this may be a valid behaviour but this function does not expects that
+        UASSERT_OBJ(
+            vscp->varp()->sensIfacep() == nullptr, vscp,
+            "Virtual interface has an ambiguous type - "
+                << vscp->varp()->sensIfacep()->prettyTypeName() << " != "
+                << VN_AS(vscp->varp()->dtypep(), IfaceRefDType)->ifacep()->prettyTypeName());
+        ifacep = VN_AS(vscp->varp()->dtypep(), IfaceRefDType)->ifacep();
+    } else {
+        // If `vscp->varp()` is of a non-virtual interface type it has `sensIfacep()` set to
+        // interface it is sensible to.
+        UASSERT_OBJ(vscp->varp()->sensIfacep(), vscp, "Not an interface trigger");
+        ifacep = vscp->varp()->sensIfacep();
+    }
     const auto ifaceIt = vifTrigged.find(ifacep);
+    std::vector<AstSenTree*> result;
     if (ifaceIt != vifTrigged.end()) result.push_back(ifaceIt->second);
     for (const auto& memberIt : vifMemberTriggered) {
         if (memberIt.first.m_ifacep == ifacep) result.push_back(memberIt.second);
