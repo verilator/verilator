@@ -90,6 +90,13 @@ findTriggeredIface(const AstVarScope* vscp, const VirtIfaceTriggers::IfaceSensMa
                    const VirtIfaceTriggers::IfaceMemberSensMap& vifMemberTriggered) {
     UASSERT_OBJ(vscp->varp()->sensIfacep() || vscp->varp()->isVirtIface(), vscp,
                 "Not an interface trigger");
+    // Unsupported error shall have occur earlier
+    UASSERT_OBJ(vscp->varp()->sensIfacep() && vscp->varp()->isVirtIface(), vscp,
+                "Virtual interface has sensIfacep - UNSUPPORTED");
+    // If `vscp->varp()` is of a interface type it has `sensIfacep()` set to interface it is
+    // sensible to.
+    // If `vscp->varp()->isVirtIface()` is true then the interface type that viface is pointing to
+    // is under `VN_AS(vscp->varp()->dtypep(), IfaceRefDType)->ifacep()`
     std::vector<AstSenTree*> result;
     const AstIface* const ifacep = vscp->varp()->sensIfacep()
                                        ? vscp->varp()->sensIfacep()
@@ -99,7 +106,7 @@ findTriggeredIface(const AstVarScope* vscp, const VirtIfaceTriggers::IfaceSensMa
     for (const auto& memberIt : vifMemberTriggered) {
         if (memberIt.first.m_ifacep == ifacep) result.push_back(memberIt.second);
     }
-    if (result.empty()) vscp->v3fatalSrc("Did not find virtual interface trigger");
+    UASSERT_OBJ(!result.empty(), vscp, "Did not find virtual interface trigger");
     return result;
 }
 
