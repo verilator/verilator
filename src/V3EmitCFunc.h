@@ -412,7 +412,6 @@ public:
                     puts("if (__VvirtClassInitialized) return;\n");
                     puts("__VvirtClassInitialized = true;\n");
                 }
-                // puts("\n    : ");
                 putConstructorSubinit(classp, nodep);
             }
         }
