@@ -411,7 +411,7 @@ void createSettle(AstNetlist* netlistp, AstCFunc* const initFuncp, SenExprBuilde
     // Gather the relevant sensitivity expressions and create the trigger kit
     const auto& senTreeps = getSenTreesUsedBy({&comb, &hybrid});
     const TriggerKit trigKit = TriggerKit::create(netlistp, initFuncp, senExprBulider, {},
-                                                  senTreeps, "stl", extraTriggers, true, true);
+                                                  senTreeps, "stl", extraTriggers, true, false);
 
     // Remap sensitivities (comb has none, so only do the hybrid)
     remapSensitivities(hybrid, trigKit.mapVec());
@@ -492,7 +492,7 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
     // Gather the relevant sensitivity expressions and create the trigger kit
     const auto& senTreeps = getSenTreesUsedBy({&logic});
     const TriggerKit trigKit = TriggerKit::create(netlistp, initFuncp, senExprBuilder, {},
-                                                  senTreeps, "ico", extraTriggers, false);
+                                                  senTreeps, "ico", extraTriggers, false, true);
     std::ignore = senExprBuilder.getAndClearResults();
 
     if (dpiExportTriggerVscp) {
@@ -777,11 +777,9 @@ cloneMapWithNewTriggerReferences(const std::unordered_map<const AstSenTree*, Ast
     return newMap;
 }
 
-/**
- * Find all CAwaits, clear SenTrees inside them, generate pre-trigger functions (functions that
- * shall be called before awaiting for a VCMethod::SCHED_TRIGGER) and add thier calls before
- * proper CAwaits
- */
+//  Find all CAwaits, clear SenTrees inside them, generate pre-trigger functions (functions that
+//  shall be called before awaiting for a VCMethod::SCHED_TRIGGER) and add thier calls before
+//  proper CAwaits
 class AwaitPreTrigVisitor final : public VNVisitor {
     const VNUser1InUse m_user1InUse;
 
@@ -1108,7 +1106,7 @@ void schedule(AstNetlist* netlistp) {
                                                &logicRegions.m_react,  //
                                                &timingKit.m_lbs});
     const TriggerKit trigKit = TriggerKit::create(netlistp, staticp, senExprBuilder, preTreeps,
-                                                  senTreeps, "act", extraTriggers, false);
+                                                  senTreeps, "act", extraTriggers, false, true);
 
     // Add post updates from the timing kit
     if (timingKit.m_postUpdates) trigKit.compp()->addStmtsp(timingKit.m_postUpdates);
