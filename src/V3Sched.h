@@ -282,7 +282,7 @@ public:
                              const string& name,  //
                              const ExtraTriggers& extraTriggers,  //
                              bool slow,  //
-                             bool noAcc = false);
+                             bool useAcc);
 
     // ACCESSORS
     AstVarScope* vscp() const { return m_vscp; }
