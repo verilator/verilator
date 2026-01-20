@@ -212,14 +212,15 @@ public:
                 currWhilep->addStmtsp(loopTestp);
                 AstArraySel* const lhsSelp
                     = new AstArraySel{flp, lhsp, readRefp->cloneTree(false)};
-                currWhilep->addStmtsp(getAssignStmtsp(lhsSelp, vscp, lhsVarRefp));
+                AstNodeStmt* const loopBodyp = getAssignStmtsp(lhsSelp, vscp, lhsVarRefp);
+                currWhilep->addStmtsp(loopBodyp);
                 AstAssign* const currIncrp = new AstAssign{
                     flp, new AstVarRef{flp, loopVarScopep, VAccess::WRITE},
                     new AstAdd{flp, readRefp->cloneTree(false), new AstConst{flp, 1}}};
                 currWhilep->addStmtsp(currIncrp);
                 return currInitp;
             } else {
-                return nullptr;
+                lhsDtypep->v3fatalSrc("Unhandled type");
             }
         }
         static AstNodeExpr* applySelects(AstNodeExpr* exprp,
