@@ -323,14 +323,6 @@ private:
                                             ">= "
                                                 << ELEMENTS_MAX << " elements");
             }
-            bool complexElem = true;
-            if (const AstBasicDType* const basicp = VN_CAST(dtp, BasicDType)) {
-                complexElem = basicp->isOpaque();
-            }
-            if (complexElem) {
-                varp->v3warn(E_UNSUPPORTED, "Unsupported: Force of unpacked array variable with "
-                                            "elements of complex data type");
-            }
             return origDTypep;
         } else if (VN_IS(origDTypep, BasicDType)) {
             return isRangedDType(varp) ? origDTypep : varp->findBitDType();
