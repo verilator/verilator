@@ -188,7 +188,15 @@ public:
                 return new AstAssign{flp, lhsp, forcedUpdate(vscp, lhsp, lhsVarRefp)};
             } else if (const AstStructDType* const structDtypep
                        = VN_CAST(lhsDtypep, StructDType)) {
-                return nullptr;
+                AstNodeStmt* stmtsp = nullptr;
+                for (AstMemberDType* mdtp = structDtypep->membersp(); mdtp;
+                     mdtp = VN_AS(mdtp->nextp(), MemberDType)) {
+                    AstStructSel* const structSelp = new AstStructSel{flp, lhsp, mdtp->name()};
+                    structSelp->dtypep(mdtp);
+                    AstNodeStmt* const memberStmtp = getAssignStmtsp(structSelp, vscp, lhsVarRefp);
+                    stmtsp = stmtsp ? stmtsp->addNext(memberStmtp) : memberStmtp;
+                }
+                return stmtsp;
             } else if (const AstUnpackArrayDType* const arrayDtypep
                        = VN_CAST(lhsDtypep, UnpackArrayDType)) {
                 AstVar* const loopVarp = new AstVar{flp, VVarType::MODULETEMP,
