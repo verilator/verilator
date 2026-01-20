@@ -336,6 +336,7 @@ public:
         std::unordered_set<AstClass*> doneClasses;
         collectVirtualBasesRecursep(classp, virtualBases);
         for (AstClass* vbase : virtualBases) {
+            if (vbase->isInterfaceClass()) continue;
             if (doneClasses.count(vbase)) continue;
             doneClasses.emplace(vbase);
             puts(EmitCUtil::prefixNameProtect(vbase));
@@ -351,6 +352,7 @@ public:
         // Direct non-virtual bases in declaration order
         for (const AstClassExtends* extp = classp->extendsp(); extp;
              extp = VN_AS(extp->nextp(), ClassExtends)) {
+            if (extp->classp()->isInterfaceClass()) continue;
             if (extp->classp()->useVirtualPublic()) continue;
             if (doneClasses.count(extp->classp())) continue;
             doneClasses.emplace(extp->classp());
@@ -407,13 +409,7 @@ public:
         puts(" {\n");
         if (nodep->isConstructor()) {
             const AstClass* const classp = VN_CAST(nodep->scopep()->modp(), Class);
-            if (classp && classp->extendsp()) {
-                if (classp->isInterfaceClass()) {
-                    puts("if (__VvirtClassInitialized) return;\n");
-                    puts("__VvirtClassInitialized = true;\n");
-                }
-                putConstructorSubinit(classp, nodep);
-            }
+            if (classp && classp->extendsp()) putConstructorSubinit(classp, nodep);
         }
 
         // "+" in the debug indicates a print from the model
