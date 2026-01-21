@@ -1202,10 +1202,14 @@ class TimingControlVisitor final : public VNVisitor {
             new AstAssign{flp, new AstVarRef{flp, tmpVarp, VAccess::WRITE}, tmpAssignRhsp});
         // If the RHS is different from the currently scheduled value, schedule the new assignment
         // The generation will increase, effectively 'descheduling' the previous assignment.
-        alwaysp->addStmtsp(new AstIf{flp,
-                                     new AstNeq{flp, preAssignp->rhsp()->cloneTree(false),
-                                                new AstVarRef{flp, tmpVarp, VAccess::READ}},
-                                     forkp->unlinkFrBack()});
+        AstCExpr* const didNotInitp = new AstCExpr{flp, "!vlSymsp->__Vm_didInit", 1};
+        AstCExpr* const firstIterp = new AstCExpr{flp, "vlSelfRef.__VstlFirstIteration", 1};
+        AstNodeExpr* const schedCondp
+            = new AstLogOr{flp,
+                           new AstNeq{flp, preAssignp->rhsp()->cloneTree(false),
+                                      new AstVarRef{flp, tmpVarp, VAccess::READ}},
+                           new AstLogAnd{flp, didNotInitp, firstIterp}};
+        alwaysp->addStmtsp(new AstIf{flp, schedCondp, forkp->unlinkFrBack()});
     }
     void visit(AstDisableFork* nodep) override {
         if (m_hasProcess) return;
