@@ -87,10 +87,11 @@ private:
 
     // Get the base class reference expression from a member selection chain
     // Returns the outermost class reference that needs to be null-checked
-    static AstNodeExpr* getBaseClassRef(AstNodeExpr* exprp) {
+    // Note: Returns a pointer into the original tree - caller must clone if needed
+    static const AstNodeExpr* getBaseClassRef(const AstNodeExpr* exprp) {
         while (exprp) {
-            if (AstMemberSel* const mselp = VN_CAST(exprp, MemberSel)) {
-                AstNodeExpr* const fromp = mselp->fromp();
+            if (const AstMemberSel* const mselp = VN_CAST(exprp, MemberSel)) {
+                const AstNodeExpr* const fromp = mselp->fromp();
                 if (fromp->dtypep() && VN_IS(fromp->dtypep()->skipRefp(), ClassRefDType)) {
                     // Check if the base itself has class member access
                     if (hasClassMemberAccess(fromp)) {
@@ -126,20 +127,24 @@ private:
 
     // Helper to wrap a statement with a null check: if (baseRef != null) stmt
     AstNodeStmt* wrapStmtWithNullCheck(FileLine* flp, AstNodeStmt* stmtp,
-                                       AstNodeExpr* baseClassRefp) {
+                                       const AstNodeExpr* baseClassRefp) {
         if (!baseClassRefp) return stmtp;
         AstNodeExpr* const nullp = new AstConst{flp, AstConst::Null{}};
-        AstNodeExpr* const checkp = new AstNeq{flp, baseClassRefp->cloneTree(false), nullp};
+        // const_cast safe: cloneTree doesn't modify the source
+        AstNodeExpr* const checkp = new AstNeq{
+            flp, const_cast<AstNodeExpr*>(baseClassRefp)->cloneTree(false), nullp};
         return new AstIf{flp, checkp, stmtp};
     }
 
     // Helper to wrap a trigger expression with a null check if needed
     // Returns the expression wrapped in: (baseRef != null) ? expr : 0
     AstNodeExpr* wrapExprWithNullCheck(FileLine* flp, AstNodeExpr* exprp,
-                                       AstNodeExpr* baseClassRefp) {
+                                       const AstNodeExpr* baseClassRefp) {
         if (!baseClassRefp) return exprp;
         AstNodeExpr* const nullp = new AstConst{flp, AstConst::Null{}};
-        AstNodeExpr* const checkp = new AstNeq{flp, baseClassRefp->cloneTree(false), nullp};
+        // const_cast safe: cloneTree doesn't modify the source
+        AstNodeExpr* const checkp = new AstNeq{
+            flp, const_cast<AstNodeExpr*>(baseClassRefp)->cloneTree(false), nullp};
         AstNodeExpr* const falsep = new AstConst{flp, AstConst::BitFalse{}};
         AstNodeExpr* const condp = new AstCond{flp, checkp, exprp, falsep};
         condp->dtypeSetBit();
@@ -157,8 +162,8 @@ private:
         AstVarScope* const currp = result.first->second;
 
         // Check if we need null guards for class member access
-        AstNodeExpr* const baseClassRefp
-            = hasClassMemberAccess(exprp) ? getBaseClassRef(exprp->cloneTree(false)) : nullptr;
+        const AstNodeExpr* const baseClassRefp
+            = hasClassMemberAccess(exprp) ? getBaseClassRef(exprp) : nullptr;
 
         // Add pre update if it does not exist yet in this round
         if (m_hasPreUpdate.emplace(*currp).second) {
@@ -176,8 +181,8 @@ private:
         const auto rdCurr = [this, exprp]() { return getCurr(exprp); };
 
         // Check if we need null guards for class member access
-        AstNodeExpr* const baseClassRefp
-            = hasClassMemberAccess(exprp) ? getBaseClassRef(exprp->cloneTree(false)) : nullptr;
+        const AstNodeExpr* const baseClassRefp
+            = hasClassMemberAccess(exprp) ? getBaseClassRef(exprp) : nullptr;
 
         AstNode* scopeExprp = exprp;
         if (AstVarRef* const refp = VN_CAST(exprp, VarRef)) scopeExprp = refp->varScopep();
@@ -231,8 +236,8 @@ private:
         // Check if the sensitivity expression involves accessing through a class reference
         // that may be null (e.g., DynScope handles created in fork blocks, or class member
         // virtual interfaces). If so, we need to guard against null pointer dereference.
-        AstNodeExpr* const baseClassRefp
-            = hasClassMemberAccess(senp) ? getBaseClassRef(senp->cloneTree(false)) : nullptr;
+        const AstNodeExpr* const baseClassRefp
+            = hasClassMemberAccess(senp) ? getBaseClassRef(senp) : nullptr;
 
         const auto currp = [this, senp]() { return getCurr(senp); };
         const auto prevp
