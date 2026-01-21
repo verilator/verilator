@@ -86,7 +86,7 @@ void invertAndMergeSenTreeMap(
 }
 
 std::vector<AstSenTree*>
-findTriggeredIface(const AstVarScope* vscp, const VirtIfaceTriggers::IfaceSensMap& vifTrigged,
+findTriggeredIface(const AstVarScope* vscp,
                    const VirtIfaceTriggers::IfaceMemberSensMap& vifMemberTriggered) {
     const AstIface* ifacep;
     if (vscp->varp()->isVirtIface()) {
@@ -107,10 +107,7 @@ findTriggeredIface(const AstVarScope* vscp, const VirtIfaceTriggers::IfaceSensMa
         ifacep = vscp->varp()->sensIfacep();
     }
     UASSERT_OBJ(ifacep, vscp, "Variable is not sensitive for any interface");
-    UASSERT_OBJ(vifTrigged.empty(), vscp, "Iface trigger is useful");
-    const auto ifaceIt = vifTrigged.find(ifacep);
     std::vector<AstSenTree*> result;
-    if (ifaceIt != vifTrigged.end()) result.push_back(ifaceIt->second);
     for (const auto& memberIt : vifMemberTriggered) {
         if (memberIt.first.m_ifacep == ifacep) result.push_back(memberIt.second);
     }
@@ -533,8 +530,6 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
         = dpiExportTriggerVscp
               ? trigKit.newExtraTriggerSenTree(trigKit.vscp(), dpiExportTriggerIndex)
               : nullptr;
-    const auto& vifTriggeredIco
-        = virtIfaceTriggers.makeIfaceToSensMap(trigKit, firstVifTriggerIndex, trigKit.vscp());
     const auto& vifMemberTriggeredIco = virtIfaceTriggers.makeMemberToSensMap(
         trigKit, firstVifMemberTriggerIndex, trigKit.vscp());
 
@@ -549,7 +544,7 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
             if (varp->isWrittenByDpi()) out.push_back(dpiExportTriggered);
             if (vscp->varp()->sensIfacep() || vscp->varp()->isVirtIface()) {
                 std::vector<AstSenTree*> ifaceTriggered
-                    = findTriggeredIface(vscp, vifTriggeredIco, vifMemberTriggeredIco);
+                    = findTriggeredIface(vscp, vifMemberTriggeredIco);
                 out.insert(out.end(), ifaceTriggered.begin(), ifaceTriggered.end());
             }
         });
@@ -738,17 +733,6 @@ void createEval(AstNetlist* netlistp,  //
 //============================================================================
 // Helper that builds virtual interface trigger sentrees
 
-VirtIfaceTriggers::IfaceSensMap
-VirtIfaceTriggers::makeIfaceToSensMap(const TriggerKit& trigKit, uint32_t vifTriggerIndex,
-                                      AstVarScope* trigVscp) const {
-    std::map<const AstIface*, AstSenTree*> map;
-    for (const auto& p : m_ifaceTriggers) {
-        map.emplace(p.first, trigKit.newExtraTriggerSenTree(trigVscp, vifTriggerIndex));
-        ++vifTriggerIndex;
-    }
-    return map;
-}
-
 VirtIfaceTriggers::IfaceMemberSensMap
 VirtIfaceTriggers::makeMemberToSensMap(const TriggerKit& trigKit, uint32_t vifTriggerIndex,
                                        AstVarScope* trigVscp) const {
@@ -932,8 +916,6 @@ void schedule(AstNetlist* netlistp) {
               ? trigKit.newExtraTriggerSenTree(trigKit.vscp(), dpiExportTriggerIndex)
               : nullptr;
 
-    const auto& vifTriggeredAct
-        = virtIfaceTriggers.makeIfaceToSensMap(trigKit, firstVifTriggerIndex, trigKit.vscp());
     const auto& vifMemberTriggeredAct = virtIfaceTriggers.makeMemberToSensMap(
         trigKit, firstVifMemberTriggerIndex, trigKit.vscp());
 
@@ -945,7 +927,7 @@ void schedule(AstNetlist* netlistp) {
             if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggeredAct);
             if (vscp->varp()->sensIfacep() || vscp->varp()->isVirtIface()) {
                 std::vector<AstSenTree*> ifaceTriggered
-                    = findTriggeredIface(vscp, vifTriggeredAct, vifMemberTriggeredAct);
+                    = findTriggeredIface(vscp, vifMemberTriggeredAct);
                 out.insert(out.end(), ifaceTriggered.begin(), ifaceTriggered.end());
             }
         });
@@ -971,8 +953,6 @@ void schedule(AstNetlist* netlistp) {
             = dpiExportTriggerVscp
                   ? trigKit.newExtraTriggerSenTree(trigVscp, dpiExportTriggerIndex)
                   : nullptr;
-        const auto& vifTriggered
-            = virtIfaceTriggers.makeIfaceToSensMap(trigKit, firstVifTriggerIndex, trigVscp);
         const auto& vifMemberTriggered
             = virtIfaceTriggers.makeMemberToSensMap(trigKit, firstVifMemberTriggerIndex, trigVscp);
 
@@ -985,7 +965,7 @@ void schedule(AstNetlist* netlistp) {
                 if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggered);
                 if (vscp->varp()->sensIfacep() || vscp->varp()->isVirtIface()) {
                     std::vector<AstSenTree*> ifaceTriggered
-                        = findTriggeredIface(vscp, vifTriggered, vifMemberTriggered);
+                        = findTriggeredIface(vscp, vifMemberTriggered);
                     out.insert(out.end(), ifaceTriggered.begin(), ifaceTriggered.end());
                 }
             });

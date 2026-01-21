@@ -338,13 +338,13 @@ class VirtIfaceTriggers final {
     };
 
 public:
-    using IfaceSensMap = std::map<const AstIface*, AstSenTree*>;
     using IfaceMemberSensMap = std::map<IfaceMember, AstSenTree*>;
 
     std::vector<std::pair<const AstIface*, AstVarScope*>> m_ifaceTriggers;
     std::vector<std::pair<IfaceMember, AstVarScope*>> m_memberTriggers;
 
     void addIfaceTrigger(const AstIface* ifacep, AstVarScope* vscp) {
+        UASSERT_OBJ(false, vscp, "It is used");
         m_ifaceTriggers.emplace_back(ifacep, vscp);
     }
     void addMemberTrigger(const AstIface* ifacep, const AstVar* memberp, AstVarScope* vscp) {
@@ -361,9 +361,6 @@ public:
 
     IfaceMemberSensMap makeMemberToSensMap(const TriggerKit& trigKit, uint32_t vifTriggerIndex,
                                            AstVarScope* trigVscp) const;
-
-    IfaceSensMap makeIfaceToSensMap(const TriggerKit& trigKit, uint32_t vifTriggerIndex,
-                                    AstVarScope* trigVscp) const;
 
     VL_UNCOPYABLE(VirtIfaceTriggers);
     VirtIfaceTriggers() = default;
