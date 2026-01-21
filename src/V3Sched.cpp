@@ -395,10 +395,6 @@ void createFinal(AstNetlist* netlistp, const LogicClasses& logicClasses) {
 void addVirtIfaceTriggerAssignments(const VirtIfaceTriggers& virtIfaceTriggers,
                                     uint32_t vifTriggerIndex, uint32_t vifMemberTriggerIndex,
                                     const TriggerKit& trigKit) {
-    for (const auto& p : virtIfaceTriggers.m_ifaceTriggers) {
-        trigKit.addExtraTriggerAssignment(p.second, vifTriggerIndex);
-        ++vifTriggerIndex;
-    }
     for (const auto& p : virtIfaceTriggers.m_memberTriggers) {
         trigKit.addExtraTriggerAssignment(p.second, vifMemberTriggerIndex);
         ++vifMemberTriggerIndex;
@@ -493,9 +489,6 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
                                                ? extraTriggers.allocate("DPI export trigger")
                                                : std::numeric_limits<uint32_t>::max();
     const size_t firstVifTriggerIndex = extraTriggers.size();
-    for (const auto& p : virtIfaceTriggers.m_ifaceTriggers) {
-        extraTriggers.allocate("virtual interface: " + p.first->name());
-    }
     const size_t firstVifMemberTriggerIndex = extraTriggers.size();
     for (const auto& p : virtIfaceTriggers.m_memberTriggers) {
         const auto& item = p.first;
@@ -861,9 +854,6 @@ void schedule(AstNetlist* netlistp) {
                                                ? extraTriggers.allocate("DPI export trigger")
                                                : std::numeric_limits<uint32_t>::max();
     const uint32_t firstVifTriggerIndex = extraTriggers.size();
-    for (const auto& p : virtIfaceTriggers.m_ifaceTriggers) {
-        extraTriggers.allocate("virtual interface: " + p.first->name());
-    }
     const uint32_t firstVifMemberTriggerIndex = extraTriggers.size();
     for (const auto& p : virtIfaceTriggers.m_memberTriggers) {
         const auto& item = p.first;
