@@ -290,7 +290,7 @@ public:
     AstSenTree* newExtraTriggerSenTree(AstVarScope* vscp, uint32_t index) const;
 
     // Set then extra trigger bit at 'index' to the value of 'vscp', then set 'vscp' to 0
-    void addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index) const;
+    void addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index, bool clear = true) const;
 };
 
 // Everything needed for combining timing with static scheduling.

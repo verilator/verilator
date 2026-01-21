@@ -39,6 +39,7 @@
 
 #include "V3Sched.h"
 
+#include "V3Ast.h"
 #include "V3Const.h"
 #include "V3EmitCBase.h"
 #include "V3EmitV.h"
@@ -191,6 +192,9 @@ EvalLoop createEvalLoop(
     AstVarScope* const counterp = addVar("IterCount", 32, 0);
     // The first iteration flag - cleared in 'phasePrepp' if used
     AstVarScope* const firstIterFlagp = addVar("FirstIteration", 1, 1);
+    // Phase function result
+    // NOCOMMIT -- assign not necessary
+    AstVarScope* const phaseResultp = addVar("PhaseResult", 1, 0);
 
     // The loop
     {
@@ -212,8 +216,17 @@ EvalLoop createEvalLoop(
         // need to reset it
         AstCCall* const callp = new AstCCall{flp, phaseFuncp};
         callp->dtypeSetBit();
+        AstAssign* const resultAssignp
+            = new AstAssign{flp, new AstVarRef{flp, phaseResultp, VAccess::WRITE}, callp};
+        loopp->addStmtsp(resultAssignp);
+        // Clear FirstIteration flag
+        AstAssign* const firstClearp
+            = new AstAssign{flp, new AstVarRef{flp, firstIterFlagp, VAccess::WRITE},
+                            new AstConst{flp, AstConst::BitFalse()}};
+        loopp->addStmtsp(firstClearp);
         // Continues until the continuation flag is clear
-        loopp->addStmtsp(new AstLoopTest{flp, loopp, callp});
+        loopp->addStmtsp(
+            new AstLoopTest{flp, loopp, new AstVarRef{flp, phaseResultp, VAccess::READ}});
     }
 
     // Prof-exec section pop
@@ -427,7 +440,7 @@ void createSettle(AstNetlist* netlistp, AstCFunc* const initFuncp, SenExprBuilde
         util::callVoidFunc(stlFuncp));
 
     // Add the first iteration trigger to the trigger computation function
-    trigKit.addExtraTriggerAssignment(stlLoop.firstIterp, firstIterationTrigger);
+    trigKit.addExtraTriggerAssignment(stlLoop.firstIterp, firstIterationTrigger, false);
 
     // Add the eval loop to the top function
     funcp->addStmtsp(stlLoop.stmtsp);
@@ -535,7 +548,7 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
         util::callVoidFunc(icoFuncp));
 
     // Add the first iteration trigger to the trigger computation function
-    trigKit.addExtraTriggerAssignment(icoLoop.firstIterp, firstIterationTrigger);
+    trigKit.addExtraTriggerAssignment(icoLoop.firstIterp, firstIterationTrigger, false);
 
     return icoLoop.stmtsp;
 }

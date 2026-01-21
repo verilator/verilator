@@ -392,7 +392,7 @@ AstSenTree* TriggerKit::newExtraTriggerSenTree(AstVarScope* vscp, uint32_t index
     return newTriggerSenTree(vscp, {index + m_nSenseWords * WORD_SIZE});
 }
 
-void TriggerKit::addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index) const {
+void TriggerKit::addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index, bool clear) const {
     index += m_nSenseWords * WORD_SIZE;
     const uint32_t wordIndex = index / WORD_SIZE;
     const uint32_t bitIndex = index % WORD_SIZE;
@@ -403,12 +403,14 @@ void TriggerKit::addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index) co
     AstNodeExpr* const trigLhsp = new AstSel{flp, wordp, static_cast<int>(bitIndex), 1};
     AstNodeExpr* const trigRhsp = new AstVarRef{flp, vscp, VAccess::READ};
     AstNodeStmt* const setp = new AstAssign{flp, trigLhsp, trigRhsp};
-    // Clear the input variable
-    AstNodeExpr* const vscpLhsp = new AstVarRef{flp, vscp, VAccess::WRITE};
-    AstNodeExpr* const vscpRhsp = new AstConst{flp, AstConst::BitFalse{}};
-    AstNodeStmt* const clrp = new AstAssign{flp, vscpLhsp, vscpRhsp};
-    // Note these are added in reverse order, so 'setp' executes before 'clrp'
-    m_compp->stmtsp()->addHereThisAsNext(clrp);
+    if (clear) {
+        // Clear the input variable
+        AstNodeExpr* const vscpLhsp = new AstVarRef{flp, vscp, VAccess::WRITE};
+        AstNodeExpr* const vscpRhsp = new AstConst{flp, AstConst::BitFalse{}};
+        AstNodeStmt* const clrp = new AstAssign{flp, vscpLhsp, vscpRhsp};
+        // Note these are added in reverse order, so 'setp' executes before 'clrp'
+        m_compp->stmtsp()->addHereThisAsNext(clrp);
+    }
     m_compp->stmtsp()->addHereThisAsNext(setp);
 }
 
