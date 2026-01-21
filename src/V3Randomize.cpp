@@ -941,7 +941,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             exprp->user1(true);  // Mark as formatted
         } else {
             exprp = new AstSFormatF{nodep->fileline(), smtName, false, nullptr};
-            if (!isGlobalConstrained) { VL_DO_DANGLING(pushDeletep(nodep), nodep); }
+            if (!isGlobalConstrained) VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
         // else: Global constraints keep nodep alive for write_var processing
         relinker.relink(exprp);
