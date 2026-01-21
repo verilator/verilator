@@ -3315,15 +3315,23 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                     return;
                 } else {
-                    const string suggest
+                    const std::string suggest
                         = (nodep->param() ? m_statep->suggestSymFlat(m_pinSymp, nodep->name(),
                                                                      LinkNodeMatcherVarParam{})
                                           : m_statep->suggestSymFlat(m_pinSymp, nodep->name(),
                                                                      LinkNodeMatcherVarIO{}));
+                    const std::string decl
+                        = ((m_cellp && m_cellp->modp())
+                               ? "\n"s + nodep->warnMore() + "... Location of instance's "
+                                     + m_cellp->modp()->verilogKwd() + " declaration\n"
+                                     + m_cellp->modp()->warnContextSecondary()
+                               : "");
                     nodep->v3warn(PINNOTFOUND,
                                   ucfirst(whatp)
                                       << " not found: " << nodep->prettyNameQ() << '\n'
-                                      << (suggest.empty() ? "" : nodep->warnMore() + suggest));
+                                      << (suggest.empty() ? "" : nodep->warnMore() + suggest)
+                                      << '\n'
+                                      << nodep->warnContextPrimary() << decl);
                     return;
                 }
             }
