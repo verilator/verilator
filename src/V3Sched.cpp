@@ -107,6 +107,7 @@ findTriggeredIface(const AstVarScope* vscp, const VirtIfaceTriggers::IfaceSensMa
         ifacep = vscp->varp()->sensIfacep();
     }
     UASSERT_OBJ(ifacep, vscp, "Variable is not sensitive for any interface");
+    UASSERT_OBJ(vifTrigged.empty(), vscp, "Iface trigger is useful");
     const auto ifaceIt = vifTrigged.find(ifacep);
     std::vector<AstSenTree*> result;
     if (ifaceIt != vifTrigged.end()) result.push_back(ifaceIt->second);
