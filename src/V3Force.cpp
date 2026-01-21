@@ -484,19 +484,15 @@ class ForceConvertVisitor final : public VNVisitor {
         });
         // Replace write refs on RHS
         if (VN_IS(resetRdp->rhsp(), ArraySel)) {
-            std::vector<AstNodeExpr*> selIndices;
             AstNodeExpr* exprp = resetRdp->rhsp();
             while (AstArraySel* const selp = VN_CAST(exprp, ArraySel)) {
-                selIndices.push_back(selp->bitp());
                 exprp = selp->fromp();
             }
             if (AstVarRef* const refp = VN_CAST(exprp, VarRef)) {
                 AstVarScope* const vscp = refp->varScopep();
-                std::vector<AstNodeExpr*> reversedIndices(selIndices.size());
-                std::reverse_copy(selIndices.begin(), selIndices.end(), reversedIndices.begin());
                 AstNodeExpr* const origRhsp = resetRdp->rhsp();
                 origRhsp->replaceWith(
-                    m_state.getForceComponents(vscp).forcedUpdate(vscp, reversedIndices));
+                    m_state.getForceComponents(vscp).forcedUpdate(vscp, origRhsp, refp));
                 VL_DO_DANGLING(origRhsp->deleteTree(), origRhsp);
             } else {
                 exprp->v3warn(
