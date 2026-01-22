@@ -64,7 +64,6 @@
 
 #include "V3Timing.h"
 
-#include "V3Ast.h"
 #include "V3Const.h"
 #include "V3EmitV.h"
 #include "V3Graph.h"

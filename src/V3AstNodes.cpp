@@ -1244,15 +1244,6 @@ AstVarScope* AstScope::createTemp(const string& name, AstNodeDType* dtypep) {
     return vscp;
 }
 
-// NOCOMMIT -- remove
-AstVarScope* AstScope::createTemp(AstVar* varp) {
-    FileLine* const flp = fileline();
-    modp()->addStmtsp(varp);
-    AstVarScope* const vscp = new AstVarScope{flp, this, varp};
-    addVarsp(vscp);
-    return vscp;
-}
-
 AstVarScope* AstScope::createTempLike(const string& name, const AstVarScope* vscp) {
     return createTemp(name, vscp->dtypep());
 }
@@ -2519,7 +2510,7 @@ AstVarScope* AstNetlist::stlFirstIterationp(bool clear) {
     if (!m_stlFirstIterationp) {
         m_stlFirstIterationp = topScopep()->scopep()->createTemp("__VstlFirstIteration", 1);
     }
-    AstVarScope* vscp = m_stlFirstIterationp;
+    AstVarScope* const vscp = m_stlFirstIterationp;
     if (clear) m_stlFirstIterationp = nullptr;
     return vscp;
 }
