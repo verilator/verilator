@@ -484,7 +484,8 @@ class ForceConvertVisitor final : public VNVisitor {
         });
         // Replace write refs on RHS
         if (VN_IS(resetRdp->rhsp(), ArraySel) || VN_IS(resetRdp->rhsp(), StructSel)) {
-            AstVarRef* const refp = VN_AS(AstNodeVarRef::varRefLValueRecurse(resetRdp->rhsp()), VarRef);
+            AstVarRef* const refp
+                = VN_AS(AstNodeVarRef::varRefLValueRecurse(resetRdp->rhsp()), VarRef);
             AstVarScope* const vscp = refp->varScopep();
             AstNodeExpr* const origRhsp = resetRdp->rhsp();
             origRhsp->replaceWith(
