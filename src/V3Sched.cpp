@@ -181,7 +181,10 @@ EvalLoop createEvalLoop(
     }
 
     const auto addVar = [&](const std::string& name, int width, uint32_t initVal) {
-        AstVarScope* const vscp = scopeTopp->createTemp("__V" + tag + name, width);
+        const string tempName{"__V" + tag + name};
+        AstVarScope* const vscp = tempName == "__VstlFirstIteration"
+                                      ? netlistp->stlFirstIterationp(true)
+                                      : scopeTopp->createTemp(tempName, width);
         vscp->varp()->noReset(true);
         vscp->varp()->isInternal(true);
         stmtps = AstNode::addNext(stmtps, util::setVar(vscp, initVal));

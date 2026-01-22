@@ -64,6 +64,7 @@
 
 #include "V3Timing.h"
 
+#include "V3Ast.h"
 #include "V3Const.h"
 #include "V3EmitV.h"
 #include "V3Graph.h"
@@ -1202,8 +1203,10 @@ class TimingControlVisitor final : public VNVisitor {
             new AstAssign{flp, new AstVarRef{flp, tmpVarp, VAccess::WRITE}, tmpAssignRhsp});
         // If the RHS is different from the currently scheduled value, schedule the new assignment
         // The generation will increase, effectively 'descheduling' the previous assignment.
-        AstCExpr* const didNotInitp = new AstCExpr{flp, "!vlSymsp->__Vm_didInit", 1};
-        AstCExpr* const firstIterp = new AstCExpr{flp, "vlSelfRef.__VstlFirstIteration", 1};
+        AstNodeExpr* const didNotInitp
+            = new AstLogNot{flp, new AstCExpr{flp, "vlSymsp->__Vm_didInit", 1}};
+        AstVarRef* const firstIterp
+            = new AstVarRef{flp, m_netlistp->stlFirstIterationp(), VAccess::READ};
         AstNodeExpr* const schedCondp
             = new AstLogOr{flp,
                            new AstNeq{flp, preAssignp->rhsp()->cloneTree(false),
