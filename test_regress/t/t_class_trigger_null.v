@@ -9,6 +9,9 @@
 // even for tasks that haven't been called yet. This caused null pointer
 // dereference when accessing class_handle.event or class_handle.vif.signal
 // because the task parameter didn't have a valid value yet.
+//
+// Also tests "instant fall-through" scenario: events triggered at time 0
+// (same timestep as class construction) should still be detected.
 
 interface my_if;
   logic sig;
@@ -72,11 +75,28 @@ module t;
   int posedge_count;
   int negedge_count;
 
+  // Counter for instant (time 0) event detection
+  int instant_event_count = 0;
+
+  // Test "instant fall-through": sensitivity on class member event at module level
+  // This always block is evaluated at elaboration when drv is still null.
+  // After construction, events triggered at time 0 should still be detected.
+  always @(drv.my_event) begin
+    instant_event_count++;
+  end
+
   // Construct the class at time 0
   initial begin
     vif = intf;
     drv = new(vif);
     intf.sig = 0;
+  end
+
+  // Trigger event at time 0 (same timestep as construction) - "instant fall-through"
+  // Use #0 to ensure construction happens first in delta cycle ordering
+  initial begin
+    #0;
+    -> drv.my_event;
   end
 
   // Call the task later - trigger expressions were evaluated before this
@@ -99,6 +119,14 @@ module t;
     end
     if (negedge_count != 1) begin
       $display("%%Error: negedge_count = %0d, expected 1", negedge_count);
+      $stop;
+    end
+
+    // Verify instant fall-through worked (time 0 event was detected)
+    // We expect 2: one from time 0, one from the task at time 30
+    if (instant_event_count != 2) begin
+      $display("%%Error: instant_event_count = %0d, expected 2", instant_event_count);
+      $display("%%Error: Instant fall-through failed - events at time 0 were missed!");
       $stop;
     end
 
