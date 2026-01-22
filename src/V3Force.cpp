@@ -484,21 +484,12 @@ class ForceConvertVisitor final : public VNVisitor {
         });
         // Replace write refs on RHS
         if (VN_IS(resetRdp->rhsp(), ArraySel)) {
-            AstNodeExpr* exprp = resetRdp->rhsp();
-            while (AstArraySel* const selp = VN_CAST(exprp, ArraySel)) {
-                exprp = selp->fromp();
-            }
-            if (AstVarRef* const refp = VN_CAST(exprp, VarRef)) {
-                AstVarScope* const vscp = refp->varScopep();
-                AstNodeExpr* const origRhsp = resetRdp->rhsp();
-                origRhsp->replaceWith(
-                    m_state.getForceComponents(vscp).forcedUpdate(vscp, origRhsp, refp));
-                VL_DO_DANGLING(origRhsp->deleteTree(), origRhsp);
-            } else {
-                exprp->v3warn(
-                    E_UNSUPPORTED,
-                    "Unsupported: Release statement argument is too complex array select");
-            }
+            AstVarRef* const refp = VN_AS(AstNodeVarRef::varRefLValueRecurse(resetRdp->rhsp()), VarRef);
+            AstVarScope* const vscp = refp->varScopep();
+            AstNodeExpr* const origRhsp = resetRdp->rhsp();
+            origRhsp->replaceWith(
+                m_state.getForceComponents(vscp).forcedUpdate(vscp, origRhsp, refp));
+            VL_DO_DANGLING(origRhsp->deleteTree(), origRhsp);
         } else {
             resetRdp->rhsp()->foreach([this](AstVarRef* refp) {
                 if (refp->access() != VAccess::WRITE) return;
