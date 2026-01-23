@@ -12,10 +12,10 @@
   end \
 \
   initial begin \
-    #5 \
+    #5; \
     if (bar != foo) $stop; \
     #5 foo = ~foo; \
-    #5 \
+    #5; \
     if (bar != foo) $stop; \
     #5 foo = ~foo; \
     #5; \

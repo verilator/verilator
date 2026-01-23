@@ -405,9 +405,8 @@ void TriggerKit::addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index, bo
     AstNodeStmt* const setp = new AstAssign{flp, trigLhsp, trigRhsp};
     if (clear) {
         // Clear the input variable
-        AstNodeExpr* const vscpLhsp = new AstVarRef{flp, vscp, VAccess::WRITE};
-        AstNodeExpr* const vscpRhsp = new AstConst{flp, AstConst::BitFalse{}};
-        AstNodeStmt* const clrp = new AstAssign{flp, vscpLhsp, vscpRhsp};
+        AstNodeStmt* const clrp = new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE},
+                                                new AstConst{flp, AstConst::BitFalse{}}};
         // Note these are added in reverse order, so 'setp' executes before 'clrp'
         m_compp->stmtsp()->addHereThisAsNext(clrp);
     }

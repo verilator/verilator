@@ -179,22 +179,21 @@ EvalLoop createEvalLoop(
         stmtps = AstCStmt::profExecSectionPush(flp, "loop " + tag);
     }
 
-    const auto addVar
-        = [&](const std::string& name, int width, uint32_t initVal, bool init = true) {
-              const string tempName{"__V" + tag + name};
-              AstVarScope* const vscp = tempName == "__VstlFirstIteration"
-                                            ? netlistp->stlFirstIterationp(true)
-                                            : scopeTopp->createTemp(tempName, width);
-              vscp->varp()->noReset(true);
-              vscp->varp()->isInternal(true);
-              if (init) stmtps = AstNode::addNext(stmtps, util::setVar(vscp, initVal));
-              return vscp;
-          };
+    const auto addVar = [&](const std::string& name, int width, uint32_t initVal, bool init) {
+        const string tempName{"__V" + tag + name};
+        AstVarScope* const vscp = tempName == "__VstlFirstIteration"
+                                      ? netlistp->stlFirstIterationp(true)
+                                      : scopeTopp->createTemp(tempName, width);
+        vscp->varp()->noReset(true);
+        vscp->varp()->isInternal(true);
+        if (init) stmtps = AstNode::addNext(stmtps, util::setVar(vscp, initVal));
+        return vscp;
+    };
 
     // The iteration counter
-    AstVarScope* const counterp = addVar("IterCount", 32, 0);
+    AstVarScope* const counterp = addVar("IterCount", 32, 0, true);
     // The first iteration flag - cleared in 'phasePrepp' if used
-    AstVarScope* const firstIterFlagp = addVar("FirstIteration", 1, 1);
+    AstVarScope* const firstIterFlagp = addVar("FirstIteration", 1, 1, true);
     // Phase function result
     AstVarScope* const phaseResultp = addVar("PhaseResult", 1, 0, false);
 
