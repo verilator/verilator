@@ -1212,7 +1212,8 @@ module_declaration:             // ==IEEE: module_declaration
                           GRAMMARP->endLabel($<fl>6, $1, $6); }
         //
         |       yEXTERN modFront parameter_port_listE portsStarE ';'
-                        { BBUNSUP($<fl>1, "Unsupported: extern module"); }
+                        { DEL($2->unlinkFrBack()); }
+                        // We allow modules to be declared after instantiations, so harmless
         ;
 
 modFront<nodeModulep>:
@@ -1508,7 +1509,8 @@ interface_declaration:          // IEEE: interface_declaration + interface_nonan
                           if ($5) $1->addStmtsp($5);
                           $1->hasParameterList($<flag>2); }
         |       yEXTERN intFront parameter_port_listE portsStarE ';'
-                        { BBUNSUP($<fl>1, "Unsupported: extern interface"); }
+                        { DEL($2->unlinkFrBack()); }
+                        // We allow interfaces to be declared after instantiations, so harmless
         ;
 
 intFront<nodeModulep>:
@@ -1598,7 +1600,8 @@ program_declaration:            // IEEE: program_declaration + program_nonansi_h
                           if ($5) $1->addStmtsp($5);
                           GRAMMARP->endLabel($<fl>7, $1, $7); }
         |       yEXTERN pgmFront parameter_port_listE portsStarE ';'
-                        { BBUNSUP($<fl>1, "Unsupported: extern program"); }
+                        { DEL($2->unlinkFrBack()); }
+                        // We allow programs to be declared after instantiations, so harmless
         ;
 
 pgmFront<nodeModulep>:

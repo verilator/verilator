@@ -10,14 +10,23 @@ extern module ex_mod;
 
 module t;
 
-   ex_pgm u_pgm();
-   ex_ifc u_ifc();
-   ex_mod u_mod();
+  ex_pgm u_pgm();
+  ex_ifc u_ifc();
+  ex_mod u_mod();
 
-   initial begin
-      ex_task();
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
+endmodule
+
+// Could be in another compile run, but we don't support that
+program ex_pgm;
+endprogram
+
+interface ex_ifc;
+endinterface
+
+module ex_mod;
 endmodule

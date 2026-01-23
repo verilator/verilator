@@ -22,6 +22,7 @@ Verilator 5.045 devel
 * Support complex expressions as std::randomize arguments (#6860). [Jakub Wasilewski, Antmicro Ltd.]
 * Support dynamic array elements in std::randomize (#6896). [Ryszard Rozak, Antmicro Ltd.]
 * Support unbounded '$' in inside range expressions (#6935) (#6938). [Wei-Lun Chiu]
+* Support `extern module` as a forward-declaration that is ignored.
 * Remove deprecated `--xml-only`.
 * Remove deprecated `--make cmake`.
 * Fix variable reference lookup for module-level variables (#6741) (#6882). [Yilou Wang]
