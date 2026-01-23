@@ -768,33 +768,34 @@ string AstVar::cPubArgType(bool named, bool forReturn) const {
     return arg;
 }
 
-class dpiTypesToStringConverter VL_NOT_FINAL {
-public:
-    virtual string openArray(const AstVar*) const { return "const svOpenArrayHandle"; }
-    virtual string bitLogicVector(const AstVar* /*varp*/, bool isBit) const {
-        return isBit ? "svBitVecVal" : "svLogicVecVal";
-    }
-    virtual string primitive(const AstVar* varp) const {
-        string type;
-        const VBasicDTypeKwd keyword = varp->basicp()->keyword();
-        if (keyword.isDpiUnsignable() && !varp->basicp()->isSigned()) type = "unsigned ";
-        type += keyword.dpiType();
-        return type;
-    }
-    string convert(const AstVar* varp) const {
-        if (varp->isDpiOpenArray()) {
-            return openArray(varp);
-        } else if (const AstBasicDType* const basicp = varp->basicp()) {
-            if (basicp->isDpiBitVec() || basicp->isDpiLogicVec()) {
-                return bitLogicVector(varp, basicp->isDpiBitVec());
-            } else {
-                return primitive(varp);
-            }
+class dpiTypesToStringConverter VL_NOT_FINAL{public : virtual string openArray(const AstVar*)
+                                                 const {return "const svOpenArrayHandle";
+}
+virtual string bitLogicVector(const AstVar* /*varp*/, bool isBit) const {
+    return isBit ? "svBitVecVal" : "svLogicVecVal";
+}
+virtual string primitive(const AstVar* varp) const {
+    string type;
+    const VBasicDTypeKwd keyword = varp->basicp()->keyword();
+    if (keyword.isDpiUnsignable() && !varp->basicp()->isSigned()) type = "unsigned ";
+    type += keyword.dpiType();
+    return type;
+}
+string convert(const AstVar* varp) const {
+    if (varp->isDpiOpenArray()) {
+        return openArray(varp);
+    } else if (const AstBasicDType* const basicp = varp->basicp()) {
+        if (basicp->isDpiBitVec() || basicp->isDpiLogicVec()) {
+            return bitLogicVector(varp, basicp->isDpiBitVec());
         } else {
-            return "UNKNOWN";
+            return primitive(varp);
         }
+    } else {
+        return "UNKNOWN";
     }
-};
+}
+}
+;
 
 string AstVar::dpiArgType(bool named, bool forReturn) const {
     if (forReturn) {
@@ -2505,12 +2506,11 @@ void AstNetlist::createTopScope(AstScope* scopep) {
     m_topScopep = new AstTopScope{scopep->modp()->fileline(), scopep};
     scopep->modp()->addStmtsp(v3Global.rootp()->topScopep());
 }
-AstVarScope* AstNetlist::stlFirstIterationp(bool clear) {
+AstVarScope* AstNetlist::stlFirstIterationp() {
     if (!m_stlFirstIterationp) {
         m_stlFirstIterationp = topScopep()->scopep()->createTemp("__VstlFirstIteration", 1);
     }
     AstVarScope* const vscp = m_stlFirstIterationp;
-    if (clear) m_stlFirstIterationp = nullptr;
     return vscp;
 }
 void AstNodeModule::dump(std::ostream& str) const {

@@ -1292,7 +1292,8 @@ public:
     void timeprecisionMerge(FileLine*, const VTimescale& value);
     void timescaleSpecified(bool specified) { m_timescaleSpecified = specified; }
     bool timescaleSpecified() const { return m_timescaleSpecified; }
-    AstVarScope* stlFirstIterationp(bool clear = false);
+    AstVarScope* stlFirstIterationp();
+    void clearStlFirstIterationp() { m_stlFirstIterationp = nullptr; }
 };
 class AstPackageExport final : public AstNode {
     // A package export declaration

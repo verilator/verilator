@@ -182,7 +182,7 @@ EvalLoop createEvalLoop(
     const auto addVar = [&](const std::string& name, int width, uint32_t initVal, bool init) {
         const string tempName{"__V" + tag + name};
         AstVarScope* const vscp = tempName == "__VstlFirstIteration"
-                                      ? netlistp->stlFirstIterationp(true)
+                                      ? netlistp->stlFirstIterationp()
                                       : scopeTopp->createTemp(tempName, width);
         vscp->varp()->noReset(true);
         vscp->varp()->isInternal(true);
@@ -1006,6 +1006,9 @@ void schedule(AstNetlist* netlistp) {
     // Step 14: Bolt it all together to create the '_eval' function
     createEval(netlistp, icoLoopp, trigKit, actKit, nbaKit, obsKit, reactKit, postponedFuncp,
                timingKit);
+
+    // Step 15: Clean up
+    netlistp->clearStlFirstIterationp();
 
     // Haven't split static initializer yet
     util::splitCheck(staticp);
