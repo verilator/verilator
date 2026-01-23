@@ -16,7 +16,10 @@ module t (
 
   integer cyc = 0;
 
-  typedef struct {int x;} struct_t;
+  typedef struct {
+    int   x;
+    logic y;
+  } struct_t;
 
   struct_t s_array[3];
   struct_t my_struct;
