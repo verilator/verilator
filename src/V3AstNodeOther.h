@@ -1247,6 +1247,7 @@ class AstNetlist final : public AstNode {
     // @astgen ptr := m_nbaEventp : Optional[AstVarScope]  // NBA event variable
     // @astgen ptr := m_nbaEventTriggerp : Optional[AstVarScope]  // NBA event trigger
     // @astgen ptr := m_topScopep : Optional[AstTopScope]  // Singleton AstTopScope
+    // @astgen ptr := m_stlFirstIterationp: Optional[AstVarScope]  // Settle first iteration flag
     VTimescale m_timeunit;  // Global time unit
     VTimescale m_timeprecision;  // Global time precision
     bool m_timescaleSpecified = false;  // Input HDL specified timescale
@@ -1291,6 +1292,8 @@ public:
     void timeprecisionMerge(FileLine*, const VTimescale& value);
     void timescaleSpecified(bool specified) { m_timescaleSpecified = specified; }
     bool timescaleSpecified() const { return m_timescaleSpecified; }
+    AstVarScope* stlFirstIterationp();
+    void clearStlFirstIterationp() { m_stlFirstIterationp = nullptr; }
 };
 class AstPackageExport final : public AstNode {
     // A package export declaration

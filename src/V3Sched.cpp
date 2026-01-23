@@ -179,18 +179,23 @@ EvalLoop createEvalLoop(
         stmtps = AstCStmt::profExecSectionPush(flp, "loop " + tag);
     }
 
-    const auto addVar = [&](const std::string& name, int width, uint32_t initVal) {
-        AstVarScope* const vscp = scopeTopp->createTemp("__V" + tag + name, width);
+    const auto addVar = [&](const std::string& name, int width, uint32_t initVal, bool init) {
+        const string tempName{"__V" + tag + name};
+        AstVarScope* const vscp = tempName == "__VstlFirstIteration"
+                                      ? netlistp->stlFirstIterationp()
+                                      : scopeTopp->createTemp(tempName, width);
         vscp->varp()->noReset(true);
         vscp->varp()->isInternal(true);
-        stmtps = AstNode::addNext(stmtps, util::setVar(vscp, initVal));
+        if (init) stmtps = AstNode::addNext(stmtps, util::setVar(vscp, initVal));
         return vscp;
     };
 
     // The iteration counter
-    AstVarScope* const counterp = addVar("IterCount", 32, 0);
+    AstVarScope* const counterp = addVar("IterCount", 32, 0, true);
     // The first iteration flag - cleared in 'phasePrepp' if used
-    AstVarScope* const firstIterFlagp = addVar("FirstIteration", 1, 1);
+    AstVarScope* const firstIterFlagp = addVar("FirstIteration", 1, 1, true);
+    // Phase function result
+    AstVarScope* const phaseResultp = addVar("PhaseResult", 1, 0, false);
 
     // The loop
     {
@@ -212,8 +217,17 @@ EvalLoop createEvalLoop(
         // need to reset it
         AstCCall* const callp = new AstCCall{flp, phaseFuncp};
         callp->dtypeSetBit();
+        AstAssign* const resultAssignp
+            = new AstAssign{flp, new AstVarRef{flp, phaseResultp, VAccess::WRITE}, callp};
+        loopp->addStmtsp(resultAssignp);
+        // Clear FirstIteration flag
+        AstAssign* const firstClearp
+            = new AstAssign{flp, new AstVarRef{flp, firstIterFlagp, VAccess::WRITE},
+                            new AstConst{flp, AstConst::BitFalse()}};
+        loopp->addStmtsp(firstClearp);
         // Continues until the continuation flag is clear
-        loopp->addStmtsp(new AstLoopTest{flp, loopp, callp});
+        loopp->addStmtsp(
+            new AstLoopTest{flp, loopp, new AstVarRef{flp, phaseResultp, VAccess::READ}});
     }
 
     // Prof-exec section pop
@@ -427,7 +441,7 @@ void createSettle(AstNetlist* netlistp, AstCFunc* const initFuncp, SenExprBuilde
         util::callVoidFunc(stlFuncp));
 
     // Add the first iteration trigger to the trigger computation function
-    trigKit.addExtraTriggerAssignment(stlLoop.firstIterp, firstIterationTrigger);
+    trigKit.addExtraTriggerAssignment(stlLoop.firstIterp, firstIterationTrigger, false);
 
     // Add the eval loop to the top function
     funcp->addStmtsp(stlLoop.stmtsp);
@@ -535,7 +549,7 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
         util::callVoidFunc(icoFuncp));
 
     // Add the first iteration trigger to the trigger computation function
-    trigKit.addExtraTriggerAssignment(icoLoop.firstIterp, firstIterationTrigger);
+    trigKit.addExtraTriggerAssignment(icoLoop.firstIterp, firstIterationTrigger, false);
 
     return icoLoop.stmtsp;
 }
@@ -992,6 +1006,9 @@ void schedule(AstNetlist* netlistp) {
     // Step 14: Bolt it all together to create the '_eval' function
     createEval(netlistp, icoLoopp, trigKit, actKit, nbaKit, obsKit, reactKit, postponedFuncp,
                timingKit);
+
+    // Step 15: Clean up
+    netlistp->clearStlFirstIterationp();
 
     // Haven't split static initializer yet
     util::splitCheck(staticp);

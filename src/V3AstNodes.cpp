@@ -2547,6 +2547,13 @@ void AstNetlist::createTopScope(AstScope* scopep) {
     m_topScopep = new AstTopScope{scopep->modp()->fileline(), scopep};
     scopep->modp()->addStmtsp(v3Global.rootp()->topScopep());
 }
+AstVarScope* AstNetlist::stlFirstIterationp() {
+    if (!m_stlFirstIterationp) {
+        m_stlFirstIterationp = topScopep()->scopep()->createTemp("__VstlFirstIteration", 1);
+    }
+    AstVarScope* const vscp = m_stlFirstIterationp;
+    return vscp;
+}
 void AstNodeModule::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << "  L" << level();
