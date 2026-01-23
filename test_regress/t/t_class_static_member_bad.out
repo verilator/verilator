@@ -1,8 +1,8 @@
-%Error: t/t_class_static_member_bad.v:12:36: Cannot use 'this' in a static method 'run_phases' (IEEE 1800-2023 8.10-8.11)
-   12 |       void'(m_phase_hopper.try_put(this));
-      |                                    ^~~~
+%Error: t/t_class_static_member_bad.v:10:13: Cannot access non-static member variable 'mb' from a static method 'foo' without object (IEEE 1800-2023 8.10)
+   10 |       void'(mb.try_put(this));
+      |             ^~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_class_static_member_bad.v:13:16: Cannot access non-static member variable 'm_successors' from a static method 'run_phases' without object (IEEE 1800-2023 8.10)
-   13 |       foreach (m_successors[succ])
-      |                ^~~~~~~~~~~~
+%Error: t/t_class_static_member_bad.v:10:24: Cannot use 'this' in a static method 'foo' (IEEE 1800-2023 8.10-8.11)
+   10 |       void'(mb.try_put(this));
+      |                        ^~~~
 %Error: Exiting due to
