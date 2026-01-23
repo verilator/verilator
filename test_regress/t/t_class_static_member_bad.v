@@ -5,8 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Cls;
-   mailbox #(Cls) mb = new();
-   static task foo();
-      void'(mb.try_put(this));
-   endtask
+  mailbox #(Cls) mb = new();
+  static task foo();
+    void'(mb.try_put(this));
+  endtask
 endclass
