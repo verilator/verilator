@@ -100,7 +100,7 @@ enum PropagationType : uint8_t {
 };
 
 // Add timing flag to a node
-static void addFlags(AstNode* const nodep, uint8_t flags) { nodep->user2(nodep->user2() | flags); }
+static void addFlags(AstNode* const nodep, uint8_t flags) { nodep->user2Or(flags); }
 // Check if a node has ALL of the expected flags set
 static bool hasFlags(AstNode* const nodep, uint8_t flags) { return !(~nodep->user2() & flags); }
 

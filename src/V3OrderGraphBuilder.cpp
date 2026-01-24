@@ -214,7 +214,7 @@ class OrderGraphBuilder final : public VNVisitor {
         // Variable is produced
         if (gen) {
             // Update VarUsage
-            varscp->user2(varscp->user2() | VU_GEN);
+            varscp->user2Or(VU_GEN);
             // Add edges for produced variables
             if (m_inPost) {
                 if (!varscp->varp()->ignorePostWrite()) {
@@ -253,7 +253,7 @@ class OrderGraphBuilder final : public VNVisitor {
         // Variable is consumed
         if (con) {
             // Update VarUsage
-            varscp->user2(varscp->user2() | VU_CON);
+            varscp->user2Or(VU_CON);
             // Add edges
             if (m_inPost) {
                 // Combinational logic

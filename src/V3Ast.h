@@ -654,8 +654,9 @@ public:
     void user1p(void* userp) { user1u(VNUser{userp}); }
     void user1(int val) { user1u(VNUser{val}); }
     int user1() const { return user1u().toInt(); }
-    int user1Inc(int val = 1) { int v = user1(); user1(v + val); return v; }
-    int user1SetOnce() { int v = user1(); if (!v) user1(1); return v; }  // Better for cache than user1Inc()
+    int user1Inc(int val = 1) { const int v = user1(); user1(v + val); return v; }
+    int user1Or(int val) { const int v = user1(); user1(v | val); return v; }
+    int user1SetOnce() { const int v = user1(); if (!v) user1(1); return v; }  // Better for cache than user1Inc()
     static void user1ClearTree() { VNUser1InUse::clear(); }  // Clear userp()'s across the entire tree
 
     VNUser user2u() const VL_MT_STABLE {
@@ -668,8 +669,9 @@ public:
     void user2p(void* userp) { user2u(VNUser{userp}); }
     void user2(int val) { user2u(VNUser{val}); }
     int user2() const { return user2u().toInt(); }
-    int user2Inc(int val = 1) { int v = user2(); user2(v + val); return v; }
-    int user2SetOnce() { int v = user2(); if (!v) user2(1); return v; }  // Better for cache than user2Inc()
+    int user2Inc(int val = 1) { const int v = user2(); user2(v + val); return v; }
+    int user2Or(int val) { const int v = user2(); user2(v | val); return v; }
+    int user2SetOnce() { const int v = user2(); if (!v) user2(1); return v; }  // Better for cache than user2Inc()
     static void user2ClearTree() { VNUser2InUse::clear(); }  // Clear userp()'s across the entire tree
 
     VNUser user3u() const VL_MT_STABLE {
@@ -682,8 +684,9 @@ public:
     void user3p(void* userp) { user3u(VNUser{userp}); }
     void user3(int val) { user3u(VNUser{val}); }
     int user3() const { return user3u().toInt(); }
-    int user3Inc(int val = 1) { int v = user3(); user3(v + val); return v; }
-    int user3SetOnce() { int v = user3(); if (!v) user3(1); return v; }  // Better for cache than user3Inc()
+    int user3Inc(int val = 1) { const int v = user3(); user3(v + val); return v; }
+    int user3Or(int val) { const int v = user3(); user3(v | val); return v; }
+    int user3SetOnce() { const int v = user3(); if (!v) user3(1); return v; }  // Better for cache than user3Inc()
     static void user3ClearTree() { VNUser3InUse::clear(); }  // Clear userp()'s across the entire tree
 
     VNUser user4u() const VL_MT_STABLE {
@@ -696,8 +699,9 @@ public:
     void user4p(void* userp) { user4u(VNUser{userp}); }
     void user4(int val) { user4u(VNUser{val}); }
     int user4() const { return user4u().toInt(); }
-    int user4Inc(int val = 1) { int v = user4(); user4(v + val); return v; }
-    int user4SetOnce() { int v = user4(); if (!v) user4(1); return v; }  // Better for cache than user4Inc()
+    int user4Or(int val) { const int v = user4(); user4(v | val); return v; }
+    int user4Inc(int val = 1) { const int v = user4(); user4(v + val); return v; }
+    int user4SetOnce() { const int v = user4(); if (!v) user4(1); return v; }  // Better for cache than user4Inc()
     static void user4ClearTree() { VNUser4InUse::clear(); }  // Clear userp()'s across the entire tree
     // clang-format on
 
