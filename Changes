@@ -16,6 +16,7 @@ Verilator 5.045 devel
 * Add IEEE 4-state type lint checks (#3645 partial) (#6895). [Jose Drowne]
 * Add VERILATOR_NUMA_STRATEGY environment variable (#6826) (#6880). [Yangyu Chen]
 * Add parsing of solve-before inside foreach (#6934). [Pawel Kojma, Antmicro Ltd.]
+* Add error when accessing a non-static class field from a static function (#6948). [Artur Bieniek, Antmicro Ltd.]
 * Support vpi_put/vpi_get forcing of signals (#5933) (#6704). [Christian Hecken]
 * Support detailed failure info for constraint violations (#6617) (#6883). [Yilou Wang]
 * Support `unique` constraints (on 1D static arrays) (#6810) (#6878). [Srinivasan Venkataramanan]
@@ -45,7 +46,9 @@ Verilator 5.045 devel
 * Fix error when calling non-static method (#6916). [Artur Bieniek, Antmicro Ltd.]
 * Fix memory leak in vpi_put_value and vpi_get_value (#6917). [Christian Hecken]
 * Fix segfault after assignment pattern XOR error (#6928) (#6931). [emmettifelts]
+* Fix delayed initial assignment (#6929). [Todd Strader]
 * Fix `--top-module` with underscores (#6940). [Christopher Batten]
+* Fix null pointer dereference in class member trigger expressions (#6946). [Cameron Waite]
 
 
 Verilator 5.044 2026-01-01
