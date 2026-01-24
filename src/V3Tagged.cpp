@@ -250,28 +250,23 @@ class TaggedVisitor final : public VNVisitor {
     }
 
     // Replace all references to pattern variable with the new local variable
-    // Uses O(1) pointer comparison when origVarp is provided, else O(L) string comparison
+    // Uses O(1) pointer comparison when origVarp is provided
     void replacePatternVarRefs(AstNode* nodep, AstVar* origVarp, AstVar* newVarp) {
         if (!nodep) return;
-        if (AstVarRef* const varRefp = VN_CAST(nodep, VarRef)) {
+        nodep->foreachAndNext<AstVarRef>([&](AstVarRef* varRefp) {
             if (varRefp->varp() == origVarp) {
                 varRefp->varp(newVarp);
                 varRefp->name(newVarp->name());
             }
-        }
-        if (nodep->op1p()) replacePatternVarRefs(nodep->op1p(), origVarp, newVarp);
-        if (nodep->op2p()) replacePatternVarRefs(nodep->op2p(), origVarp, newVarp);
-        if (nodep->op3p()) replacePatternVarRefs(nodep->op3p(), origVarp, newVarp);
-        if (nodep->op4p()) replacePatternVarRefs(nodep->op4p(), origVarp, newVarp);
-        if (nodep->nextp()) replacePatternVarRefs(nodep->nextp(), origVarp, newVarp);
+        });
     }
 
     // String-based overload for backwards compatibility (case matches)
     void replacePatternVarRefs(AstNode* nodep, const string& patternVarName, AstVar* newVarp) {
         if (!nodep) return;
-        if (AstVarRef* const varRefp = VN_CAST(nodep, VarRef)) {
+        const string suffix = "__DOT__" + patternVarName;
+        nodep->foreachAndNext<AstVarRef>([&](AstVarRef* varRefp) {
             const string& refName = varRefp->varp()->name();
-            const string suffix = "__DOT__" + patternVarName;
             if (refName == patternVarName
                 || (refName.size() > suffix.size()
                     && refName.compare(refName.size() - suffix.size(), suffix.size(), suffix)
@@ -279,12 +274,7 @@ class TaggedVisitor final : public VNVisitor {
                 varRefp->varp(newVarp);
                 varRefp->name(newVarp->name());
             }
-        }
-        if (nodep->op1p()) replacePatternVarRefs(nodep->op1p(), patternVarName, newVarp);
-        if (nodep->op2p()) replacePatternVarRefs(nodep->op2p(), patternVarName, newVarp);
-        if (nodep->op3p()) replacePatternVarRefs(nodep->op3p(), patternVarName, newVarp);
-        if (nodep->op4p()) replacePatternVarRefs(nodep->op4p(), patternVarName, newVarp);
-        if (nodep->nextp()) replacePatternVarRefs(nodep->nextp(), patternVarName, newVarp);
+        });
     }
 
     // Create a constant with the given value and width
