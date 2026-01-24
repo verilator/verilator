@@ -44,7 +44,7 @@
 // the module level, all the output enable signals from what can be
 // many tristate drivers are combined together to produce a single
 // driver and output enable. If the signal propagates up into higher
-// modules, then new ports are created with for the signal with
+// modules, then new ports are created for the signal with
 // suffixes __en and __out. The original port is turned from an inout
 // to an input and the __out port carries the output driver signal and
 // the __en port carried the output enable for that driver.
@@ -55,8 +55,10 @@
 // duplicating vars and logic that is common between each instance of a
 // module.
 //
+//----------------------------------------------------------------------
 //
 // Another thing done in this phase is signal strength handling.
+//
 // Currently they are only supported in assignments and gates parsed as assignments (see verilog.y)
 // when any of the cases occurs:
 // - it is possible to statically resolve all drivers,
@@ -228,7 +230,7 @@ private:
             }
         } else {
             // A variable is tristated.  Find all of the LHS VARREFs that
-            // drive this signal now need tristate drivers
+            // drive this signal; they now need tristate drivers
             for (V3GraphEdge& edge : vtxp->inEdges()) {
                 TristateVertex* const vvertexp = static_cast<TristateVertex*>(edge.fromp());
                 if (const AstVarRef* const refp = VN_CAST(vvertexp->nodep(), VarRef)) {
@@ -422,8 +424,8 @@ class TristateVisitor final : public TristateBaseVisitor {
     enum : uint8_t {
         U2_GRAPHING = 1,  // bit[0] if did m_graphing visit
         U2_NONGRAPH = 2,  // bit[1] if did !m_graphing visit
-        U2_BOTH = 3
-    };  // Both bits set
+        U2_BOTH = 3  // Both bits set
+    };
 
     // MEMBERS
     bool m_graphing = false;  // Major mode - creating graph
@@ -599,7 +601,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported LHS tristate construct: " << nodep->prettyTypeName());
         }
-        // Ignore Var's because they end up adjacent to statements
+        // Ignore Var because they end up adjacent to statements
         if ((nodep->op1p() && nodep->op1p()->user1p() && !VN_IS(nodep->op1p(), Var))
             || (nodep->op2p() && nodep->op2p()->user1p() && !VN_IS(nodep->op2p(), Var))
             || (nodep->op3p() && nodep->op3p()->user1p() && !VN_IS(nodep->op3p(), Var))
@@ -728,7 +730,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         bool isTopInout
             = (invarp->direction() == VDirection::INOUT) && invarp->isIO() && nodep->isTop();
         if ((v3Global.opt.pinsInoutEnables() && isTopInout)
-            || ((!nodep->isTop()) && invarp->isIO())) {
+            || (!nodep->isTop() && invarp->isIO())) {
             // This var becomes an input
             invarp->varType2In();  // convert existing port to type input
             // Create an output port (__out)
@@ -738,8 +740,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             UINFO(9, "     TRISTATE propagates up with " << lhsp);
             // Create an output enable port (__en)
             // May already be created if have foo === 1'bz somewhere
-            envarp
-                = getCreateEnVarp(invarp, isTopInout);  // direction will be sen in visit(AstPin*)
+            envarp = getCreateEnVarp(invarp, isTopInout);  // direction to be set in visit(AstPin*)
             //
             outvarp->user1p(envarp);
             m_varAux(outvarp).pullp = m_varAux(invarp).pullp;  // AstPull* propagation
@@ -765,14 +766,14 @@ class TristateVisitor final : public TristateBaseVisitor {
             const string strengthVarName = lhsp->name() + "__" + beginStrength->m_strength.ascii();
 
             // var__strength variable
-            AstVar* varStrengthp = new AstVar{fl, VVarType::MODULETEMP, strengthVarName,
-                                              invarp};  // 2-state ok; sep enable;
+            AstVar* const varStrengthp = new AstVar{fl, VVarType::MODULETEMP, strengthVarName,
+                                                    invarp};  // 2-state ok; sep enable;
             UINFO(9, "       newstrength " << varStrengthp);
             nodep->addStmtsp(varStrengthp);
 
             // var__strength__en variable
-            AstVar* enVarStrengthp = new AstVar{fl, VVarType::MODULETEMP, strengthVarName + "__en",
-                                                invarp};  // 2-state ok;
+            AstVar* const enVarStrengthp = new AstVar{
+                fl, VVarType::MODULETEMP, strengthVarName + "__en", invarp};  // 2-state ok;
             UINFO(9, "       newenstrength " << enVarStrengthp);
             nodep->addStmtsp(enVarStrengthp);
 
@@ -790,7 +791,8 @@ class TristateVisitor final : public TristateBaseVisitor {
             }
             orp = (!orp) ? exprCurrentStrengthp : new AstOr{fl, orp, exprCurrentStrengthp};
 
-            AstNodeExpr* enVarStrengthRefp = new AstVarRef{fl, enVarStrengthp, VAccess::READ};
+            AstNodeExpr* const enVarStrengthRefp
+                = new AstVarRef{fl, enVarStrengthp, VAccess::READ};
 
             enp = (!enp) ? enVarStrengthRefp : new AstOr{fl, enp, enVarStrengthRefp};
 
@@ -830,7 +832,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         // __out (child) or <in> (parent) = drive-value expression
         AstAssignW* const assp = new AstAssignW{
             lhsp->fileline(), new AstVarRef{lhsp->fileline(), lhsp, VAccess::WRITE}, orp};
-        assp->user2(U2_BOTH);  // Don't process further; already resolved
+        assp->user2Or(U2_BOTH);  // Don't process further; already resolved
         UINFOTREE(9, assp, "", "lhsp-eqn");
         nodep->addStmtsp(new AstAlways{assp});
 
@@ -928,7 +930,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         for (auto& varpAssigns : m_assigns) {
             Assigns& assigns = varpAssigns.second;
             if (assigns.size() > 1) {
-                AstVar* varp = varpAssigns.first;
+                AstVar* const varp = varpAssigns.first;
                 if (varp->isWiredNet()) {
                     auto it = assigns.begin();
                     AstAssignW* const assignWp0 = *it;
@@ -1315,7 +1317,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             if (nodep->user2() & U2_GRAPHING) return;
             VL_RESTORER(m_logicp);
             m_logicp = nodep;
-            nodep->user2(U2_GRAPHING);
+            nodep->user2Or(U2_GRAPHING);
             iterateAndNextNull(nodep->rhsp());
             m_alhs = true;
             iterateAndNextNull(nodep->lhsp());
@@ -1326,7 +1328,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             if (nodep->user2() & U2_NONGRAPH) {
                 return;  // Iterated here, or created assignment to ignore
             }
-            nodep->user2(U2_NONGRAPH);
+            nodep->user2Or(U2_NONGRAPH);
             iterateAndNextNull(nodep->rhsp());
             UINFO(9, dbgState() << nodep);
             UINFOTREE(9, nodep, "", "assign");
@@ -1599,7 +1601,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     void visit(AstPin* nodep) override {
         if (m_graphing) {
             if (nodep->user2() & U2_GRAPHING) return;  // This pin is already expanded
-            nodep->user2(U2_GRAPHING);
+            nodep->user2Or(U2_GRAPHING);
             // Find child module's new variables.
             AstVar* const enModVarp = static_cast<AstVar*>(nodep->modVarp()->user1p());
             if (!enModVarp) {
@@ -1658,7 +1660,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                              new AstVarRef{nodep->fileline(), enVarp, VAccess::WRITE}};
             enpinp->modVarp(enModVarp);
             UINFO(9, "       newpin " << enpinp);
-            enpinp->user2(U2_BOTH);  // don't iterate the pin later
+            enpinp->user2Or(U2_BOTH);  // don't iterate the pin later
             nodep->addNextHere(enpinp);
             m_modp->addStmtsp(enVarp);
             UINFOTREE(9, enpinp, "", "pin-ena");
@@ -1681,7 +1683,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                                      outexprp};
                 outpinp->modVarp(outModVarp);
                 UINFO(9, "       newpin " << outpinp);
-                outpinp->user2(U2_BOTH);  // don't iterate the pin later
+                outpinp->user2Or(U2_BOTH);  // don't iterate the pin later
                 nodep->addNextHere(outpinp);
                 // Simplify
                 if (inDeclProcessing) {  // Not an input that was a converted tristate
@@ -1755,7 +1757,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         // Not graph building
         else {
             if (nodep->user2() & U2_NONGRAPH) return;  // This pin is already expanded
-            nodep->user2(U2_NONGRAPH);
+            nodep->user2Or(U2_NONGRAPH);
             UINFO(9, " " << nodep);
             iteratePinGuts(nodep);
         }
@@ -1768,7 +1770,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             if (nodep->access().isReadOrRW()) associateLogic(nodep->varp(), nodep);
         } else {
             if (nodep->user2() & U2_NONGRAPH) return;  // Processed
-            nodep->user2(U2_NONGRAPH);
+            nodep->user2Or(U2_NONGRAPH);
             // Detect all var lhs drivers and adds them to the
             // VarMap so that after the walk through the module we can expand
             // any tristate logic on the driver.
@@ -1800,7 +1802,6 @@ class TristateVisitor final : public TristateBaseVisitor {
                 AstVar* const enVarp = getCreateEnVarp(nodep->varp(), false);
                 nodep->user1p(new AstVarRef{nodep->fileline(), enVarp, VAccess::READ});
             }
-            (void)m_alhs;  // NOP; user1() already passed down from assignment
         }
     }
 
@@ -1810,7 +1811,8 @@ class TristateVisitor final : public TristateBaseVisitor {
         if (m_graphing) {
             // If tri0/1 force a pullup
             if (nodep->user2() & U2_GRAPHING) return;  // Already processed
-            nodep->user2(U2_GRAPHING);
+            nodep->user2Or(U2_GRAPHING);
+
             if (nodep->isPulldown() || nodep->isPullup()) {
                 AstNode* const newp = new AstPull{
                     nodep->fileline(), new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE},
@@ -1819,13 +1821,12 @@ class TristateVisitor final : public TristateBaseVisitor {
                 nodep->addNextHere(newp);
                 // We'll iterate on the new AstPull later
             }
-            if (nodep->isInout()
+            if (nodep->isInout()) {
                 //|| varp->isOutput()
                 // Note unconnected output only changes behavior vs. previous
                 // versions and causes outputs that don't come from anywhere to
                 // possibly create connection errors.
                 // One example of problems is this:  "output z;  task t; z <= {something}; endtask"
-            ) {
                 UINFO(9, "  setTristate-inout " << nodep);
                 m_tgraph.setTristate(nodep);
             }
@@ -1846,36 +1847,37 @@ class TristateVisitor final : public TristateBaseVisitor {
         VL_RESTORER(m_assigns);
         // Not preserved, needs pointer instead: TristateGraph origTgraph = m_tgraph;
         UASSERT_OBJ(m_tgraph.empty(), nodep, "Unsupported: NodeModule under NodeModule");
-        {
-            // Clear state
-            m_graphing = false;
-            m_tgraph.clear();
-            m_unique = 0;
-            m_logicp = nullptr;
-            m_lhsmap.clear();
-            m_assigns.clear();
-            m_modp = nodep;
-            // Walk the graph, finding all variables and tristate constructs
-            {
-                m_graphing = true;
-                iterateChildren(nodep);
-                m_graphing = false;
-            }
-            // Merge the assignments for very Wired net LHS : wor, trior, wand and triand
-            mergeWiredNetsAssignments();
-            // Remove all assignments not stronger than the strongest uniform constant
-            removeAssignmentsNotStrongerThanUniformConstant();
-            // Use graph to find tristate signals
-            m_tgraph.graphWalk(nodep);
 
-            // Remove all assignments not stronger than the strongest non-tristate RHS
-            removeAssignmentsNotStrongerThanNonTristate();
+        // Clear state
+        m_graphing = false;
+        m_tgraph.clear();
+        m_unique = 0;
+        m_logicp = nullptr;
+        m_lhsmap.clear();
+        m_assigns.clear();
+        m_modp = nodep;
+        // Walk the graph, finding all variables and tristate constructs
+        m_graphing = true;
+        UINFO(9, dbgState() << "graphing mod " << nodep);
+        iterateChildren(nodep);
+        m_graphing = false;
+        UINFO(9, dbgState() << "processing mod " << nodep);
 
-            // Build the LHS drivers map for this module
-            iterateChildren(nodep);
-            // Insert new logic for all tristates
-            insertTristates(nodep);
-        }
+        // Merge the assignments for very Wired net LHS : wor, trior, wand and triand
+        mergeWiredNetsAssignments();
+        // Remove all assignments not stronger than the strongest uniform constant
+        removeAssignmentsNotStrongerThanUniformConstant();
+        // Use graph to find tristate signals
+        m_tgraph.graphWalk(nodep);
+
+        // Remove all assignments not stronger than the strongest non-tristate RHS
+        removeAssignmentsNotStrongerThanNonTristate();
+
+        // Build the LHS drivers map for this module
+        iterateChildren(nodep);
+        // Insert new logic for all tristates
+        insertTristates(nodep);
+
         m_tgraph.clear();  // Recursion not supported
     }
 
@@ -1893,12 +1895,11 @@ class TristateVisitor final : public TristateBaseVisitor {
 
     void visit(AstCell* nodep) override {
         VL_RESTORER(m_cellp);
+        VL_RESTORER(m_alhs);
         m_cellp = nodep;
         m_alhs = false;
         iterateChildren(nodep);
     }
-
-    void visit(AstNetlist* nodep) override { iterateChildrenBackwardsConst(nodep); }
 
     // Default: Just iterate
     void visit(AstNode* nodep) override {
@@ -1910,7 +1911,8 @@ public:
     // CONSTRUCTORS
     explicit TristateVisitor(AstNetlist* netlistp) {
         m_tgraph.clear();
-        iterate(netlistp);
+        iterateChildrenBackwardsConst(netlistp);
+
 #ifdef VL_LEAK_CHECKS
         // It's a bit chaotic up there
         std::vector<AstNode*> unusedRootps;
