@@ -253,7 +253,7 @@ class TaggedVisitor final : public VNVisitor {
     // Uses O(1) pointer comparison when origVarp is provided
     void replacePatternVarRefs(AstNode* nodep, AstVar* origVarp, AstVar* newVarp) {
         if (!nodep) return;
-        nodep->foreachAndNext<AstVarRef>([&](AstVarRef* varRefp) {
+        nodep->foreachAndNext([&](AstVarRef* varRefp) {
             if (varRefp->varp() == origVarp) {
                 varRefp->varp(newVarp);
                 varRefp->name(newVarp->name());
@@ -265,7 +265,7 @@ class TaggedVisitor final : public VNVisitor {
     void replacePatternVarRefs(AstNode* nodep, const string& patternVarName, AstVar* newVarp) {
         if (!nodep) return;
         const string suffix = "__DOT__" + patternVarName;
-        nodep->foreachAndNext<AstVarRef>([&](AstVarRef* varRefp) {
+        nodep->foreachAndNext([&](AstVarRef* varRefp) {
             const string& refName = varRefp->varp()->name();
             if (refName == patternVarName
                 || (refName.size() > suffix.size()
