@@ -55,7 +55,7 @@ package my_pkg;
       end
       begin
         #10;
-        -> h.my_event;
+        ->h.my_event;
         #10;
         h.vif.sig = 1;
         #10;
@@ -67,7 +67,7 @@ package my_pkg;
 endpackage
 
 module t;
-  my_if intf();
+  my_if intf ();
   my_pkg::my_driver drv;
   virtual my_if vif;
 
@@ -96,7 +96,7 @@ module t;
   // Use #0 to ensure construction happens first in delta cycle ordering
   initial begin
     #0;
-    -> drv.my_event;
+    ->drv.my_event;
   end
 
   // Call the task later - trigger expressions were evaluated before this

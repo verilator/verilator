@@ -277,6 +277,7 @@ class TimingSuspendableVisitor final : public VNVisitor {
         addFlags(m_procp, T_FORCES_PROC | T_NEEDS_PROC);
     }
     void visit(AstWait* nodep) override {
+        UINFO(9, "suspendable-visit " << nodep);
         AstNodeExpr* const condp = V3Const::constifyEdit(nodep->condp());
         if (AstConst* const constp = VN_CAST(condp, Const)) {
             if (!nodep->fileline()->warnIsOff(V3ErrorCode::WAITCONST)) {
@@ -365,6 +366,7 @@ class TimingSuspendableVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstFork* nodep) override {
+        UINFO(9, "suspendable-visit " << nodep);
         VL_RESTORER(m_underFork);
 
         v3Global.setUsesTiming();  // Even if there are no event controls, we have to set this flag
@@ -1056,6 +1058,7 @@ class TimingControlVisitor final : public VNVisitor {
     void visit(AstNodeAssign* nodep) override {
         // Only process once to avoid infinite loops (due to the net delay)
         if (nodep->user1SetOnce()) return;
+        UINFO(9, "control-visit " << nodep);
         FileLine* const flp = nodep->fileline();
         AstNode* controlp = factorOutTimingControl(nodep);
         const bool inAssignDly = VN_IS(nodep, AssignDly);
@@ -1063,7 +1066,10 @@ class TimingControlVisitor final : public VNVisitor {
         // Transform if:
         // * there's a timing control in the assignment
         // * the assignment is an AssignDly and it's in a non-inlined function
-        if (!controlp && (!inAssignDly || m_underProcedure)) return;
+        if (!controlp && (!inAssignDly || m_underProcedure)) {
+            iterateChildren(nodep);
+            return;
+        }
         // Insert new vars before the timing control if we're in a function; in a process we can't
         // do that. These intra-assignment vars will later be passed to forked processes by value.
         AstNode* insertBeforep = m_underProcedure ? nullptr : controlp;
@@ -1232,6 +1238,7 @@ class TimingControlVisitor final : public VNVisitor {
     }
     void visit(AstWait* nodep) override {
         // Wait on changed events related to the vars in the wait statement
+        UINFO(9, "control-visit " << nodep);
         FileLine* const flp = nodep->fileline();
         AstNode* const stmtsp = nodep->stmtsp();
         if (stmtsp) stmtsp->unlinkFrBackWithNext();
@@ -1290,6 +1297,7 @@ class TimingControlVisitor final : public VNVisitor {
     }
     void visit(AstFork* nodep) override {
         if (nodep->user1SetOnce()) return;
+        UINFO(9, "control-visit " << nodep);
         v3Global.setUsesTiming();
 
         // Create a unique name for this fork

@@ -41,6 +41,7 @@ Verilator 5.045 devel
 * Fix signedness of packed array (#6901) (#6902). [Yutetsu TAKATSUKASA]
 * Fix assignment of queue from unpacked array (#6906).
 * Fix `foreach` with mid-index empty commas (#6910).
+* Fix internal error when fork under always expression (#6911).
 * Fix error when calling non-static method (#6916). [Artur Bieniek, Antmicro Ltd.]
 * Fix memory leak in vpi_put_value and vpi_get_value (#6917). [Christian Hecken]
 * Fix segfault after assignment pattern XOR error (#6928) (#6931). [emmettifelts]
