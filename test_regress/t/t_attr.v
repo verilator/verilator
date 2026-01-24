@@ -6,9 +6,12 @@
 
 module t;
 
+  localparam LP = 1;
+
   (* attr_name1 *)
-  (* attr_name1 = val1 *)
-  (* attr_name1 = val1, attr_name2 *)
+  (* attr_name1 = 1 *)
+  (* attr_name1 = LP *)
+  (* attr_name1 = LP + 2, attr_name2 *)
   (* attr_name1 = val1, attr_name2=1 *)
 
   initial $finish;
