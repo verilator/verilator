@@ -131,8 +131,8 @@ private:
         if (!baseClassRefp) return stmtp;
         AstNodeExpr* const nullp = new AstConst{flp, AstConst::Null{}};
         // const_cast safe: cloneTree doesn't modify the source
-        AstNodeExpr* const checkp = new AstNeq{
-            flp, const_cast<AstNodeExpr*>(baseClassRefp)->cloneTree(false), nullp};
+        AstNodeExpr* const checkp
+            = new AstNeq{flp, const_cast<AstNodeExpr*>(baseClassRefp)->cloneTree(false), nullp};
         return new AstIf{flp, checkp, stmtp};
     }
 
@@ -143,8 +143,8 @@ private:
         if (!baseClassRefp) return exprp;
         AstNodeExpr* const nullp = new AstConst{flp, AstConst::Null{}};
         // const_cast safe: cloneTree doesn't modify the source
-        AstNodeExpr* const checkp = new AstNeq{
-            flp, const_cast<AstNodeExpr*>(baseClassRefp)->cloneTree(false), nullp};
+        AstNodeExpr* const checkp
+            = new AstNeq{flp, const_cast<AstNodeExpr*>(baseClassRefp)->cloneTree(false), nullp};
         AstNodeExpr* const falsep = new AstConst{flp, AstConst::BitFalse{}};
         AstNodeExpr* const condp = new AstCond{flp, checkp, exprp, falsep};
         condp->dtypeSetBit();
@@ -220,9 +220,8 @@ private:
                 m_results.m_postUpdates.push_back(
                     wrapStmtWithNullCheck(flp, cmhp->makeStmt(), baseClassRefp));
             } else {
-                m_results.m_postUpdates.push_back(
-                    wrapStmtWithNullCheck(flp, new AstAssign{flp, wrPrev(), rdCurr()},
-                                          baseClassRefp));
+                m_results.m_postUpdates.push_back(wrapStmtWithNullCheck(
+                    flp, new AstAssign{flp, wrPrev(), rdCurr()}, baseClassRefp));
             }
         }
 
@@ -256,17 +255,21 @@ private:
                 resultp->dtypeSetBit();
                 return {wrapExprWithNullCheck(flp, resultp, baseClassRefp), true};
             }
-            return {wrapExprWithNullCheck(flp, new AstNeq{flp, currp(), prevp()}, baseClassRefp), true};
+            return {wrapExprWithNullCheck(flp, new AstNeq{flp, currp(), prevp()}, baseClassRefp),
+                    true};
         case VEdgeType::ET_BOTHEDGE:  //
-            return {wrapExprWithNullCheck(flp, lsb(new AstXor{flp, currp(), prevp()}), baseClassRefp),
-                    false};
+            return {
+                wrapExprWithNullCheck(flp, lsb(new AstXor{flp, currp(), prevp()}), baseClassRefp),
+                false};
         case VEdgeType::ET_POSEDGE:  //
-            return {wrapExprWithNullCheck(flp, lsb(new AstAnd{flp, currp(), new AstNot{flp, prevp()}}),
-                                      baseClassRefp),
+            return {wrapExprWithNullCheck(flp,
+                                          lsb(new AstAnd{flp, currp(), new AstNot{flp, prevp()}}),
+                                          baseClassRefp),
                     false};
         case VEdgeType::ET_NEGEDGE:  //
-            return {wrapExprWithNullCheck(flp, lsb(new AstAnd{flp, new AstNot{flp, currp()}, prevp()}),
-                                      baseClassRefp),
+            return {wrapExprWithNullCheck(flp,
+                                          lsb(new AstAnd{flp, new AstNot{flp, currp()}, prevp()}),
+                                          baseClassRefp),
                     false};
         case VEdgeType::ET_EVENT: {
             UASSERT_OBJ(v3Global.hasEvents(), senItemp, "Inconsistent");
