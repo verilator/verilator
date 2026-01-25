@@ -190,29 +190,6 @@ class TaggedVisitor final : public VNVisitor {
                && VN_AS(dtp, BasicDType)->keyword() == VBasicDTypeKwd::CVOID;
     }
 
-    // Check if a dtype is a dynamic type that can't be bit-packed
-    // (real, shortreal, string, chandle, class, event)
-    bool isDynamicDType(AstNodeDType* dtp) {
-        dtp = dtp->skipRefp();
-        if (AstBasicDType* const basicp = VN_CAST(dtp, BasicDType)) {
-            const VBasicDTypeKwd kwd = basicp->keyword();
-            return kwd == VBasicDTypeKwd::DOUBLE || kwd == VBasicDTypeKwd::STRING
-                   || kwd == VBasicDTypeKwd::CHANDLE || kwd == VBasicDTypeKwd::EVENT;
-        }
-        // Class types are also dynamic
-        if (VN_IS(dtp, ClassRefDType)) return true;
-        return false;
-    }
-
-    // Check if union has any dynamic type members
-    bool hasDynamicMember(AstUnionDType* unionp) {
-        for (AstMemberDType* memberp = unionp->membersp(); memberp;
-             memberp = VN_AS(memberp->nextp(), MemberDType)) {
-            if (isDynamicDType(memberp->subDTypep())) return true;
-        }
-        return false;
-    }
-
     // Check if a variable name matches exactly or with mangled suffix - O(1) amortized
     static bool matchesVarName(const string& varpName, const string& varName,
                                const string& suffix) {
@@ -364,7 +341,7 @@ class TaggedVisitor final : public VNVisitor {
         }
 
         // Combine: tag | value
-        AstNodeExpr* resultp = new AstOr{fl, tagValp, valuep};
+        AstNodeExpr* const resultp = new AstOr{fl, tagValp, valuep};
         resultp->dtypep(unionp);
 
         return resultp;
@@ -432,13 +409,6 @@ class TaggedVisitor final : public VNVisitor {
         return selp;
     }
 
-    // Create expression to extract a struct field (no overrides - use field defaults)
-    AstNodeExpr* makeFieldExtractExpr(FileLine* fl, AstNodeExpr* structExprp,
-                                      AstMemberDType* fieldp, bool isUnpacked) {
-        return makeFieldExtractExpr(fl, structExprp, fieldp, isUnpacked,
-                                    FieldExtractOverrides{-1, -1});
-    }
-
     // Process PatMember list and create variable assignments
     AstNode*
     processPatMemberBindings(const PatternBindContext& ctx, AstPatMember* firstp,
@@ -476,111 +446,6 @@ class TaggedVisitor final : public VNVisitor {
         return assignsp;
     }
 
-    // Process ConsPackMember list and create variable assignments
-    AstNode* processConsPackMemberBindings(FileLine* fl, AstIf* ifp, AstConsPackMember* firstp,
-                                           AstNodeExpr* dataExtractp, bool isUnpacked) {
-        AstNode* assignsp = nullptr;
-        for (AstConsPackMember* cpm = firstp; cpm; cpm = VN_CAST(cpm->nextp(), ConsPackMember)) {
-            AstNode* valuep = cpm->rhsp();
-            while (AstExtend* const extp = VN_CAST(valuep, Extend)) valuep = extp->lhsp();
-            AstPatternVar* const patVarp = VN_CAST(valuep, PatternVar);
-            if (!patVarp) continue;
-            AstMemberDType* const fieldDtp = VN_CAST(cpm->dtypep(), MemberDType);
-            if (!fieldDtp) continue;
-
-            AstVar* const varp = findPatternVar(ifp, patVarp->name());
-            if (!varp) continue;
-
-            AstNodeExpr* const structClonep = dataExtractp->cloneTree(false);
-            AstNodeExpr* const fieldExtractp
-                = makeFieldExtractExpr(fl, structClonep, fieldDtp, isUnpacked);
-            AstVarRef* const varRefp = new AstVarRef{fl, varp, VAccess::WRITE};
-            AstAssign* const assignp = new AstAssign{fl, varRefp, fieldExtractp};
-            addToNodeList(assignsp, assignp);
-        }
-        return assignsp;
-    }
-
-    // Handle struct pattern inside TaggedPattern
-    AstNode* handleStructPatternInTaggedPattern(const TaggedMatchContext& ctx, AstIf* ifp,
-                                                AstPattern* structPatp, AstNodeExpr* exprp) {
-        AstNodeDType* const memberDtp = ctx.memberp->subDTypep()->skipRefp();
-        AstNodeUOrStructDType* const structDtp = VN_CAST(memberDtp, NodeUOrStructDType);
-        if (!structDtp) return nullptr;
-
-        AstNodeExpr* dataExtractp;
-        if (ctx.isUnpacked) {
-            dataExtractp = makeDataExtractUnpacked(ctx.fl, exprp->cloneTree(false),
-                                                   ctx.memberp->name(), ctx.memberp->subDTypep());
-        } else {
-            dataExtractp = makeDataExtract(ctx.fl, exprp->cloneTree(false), ctx.unionp,
-                                           ctx.memberp->width());
-            if (dataExtractp) dataExtractp->dtypep(structDtp);
-        }
-        if (!dataExtractp) return nullptr;
-
-        const PatternBindContext bindCtx{ctx.fl, ifp, ctx.isUnpacked};
-        AstNode* assignsp = processPatMemberBindings(
-            bindCtx, VN_CAST(structPatp->itemsp(), PatMember), dataExtractp, structDtp, nullptr);
-        VL_DO_DANGLING(dataExtractp->deleteTree(), dataExtractp);
-        return assignsp;
-    }
-
-    // Handle TaggedExpr with struct pattern (both ConsPackUOrStruct and Pattern cases)
-    AstNode* handleTaggedExprStructPattern(const TaggedMatchContext& ctx, AstIf* ifp,
-                                           AstTaggedExpr* tagExprp, AstNodeExpr* exprp) {
-        AstNodeDType* const memberDtp = ctx.memberp->subDTypep()->skipRefp();
-        AstNodeUOrStructDType* const structDtp = VN_CAST(memberDtp, NodeUOrStructDType);
-        if (!structDtp) return nullptr;
-
-        // Handle ConsPackUOrStruct case
-        if (AstConsPackUOrStruct* const structp = VN_CAST(tagExprp->exprp(), ConsPackUOrStruct)) {
-            AstNodeExpr* dataExtractp;
-            if (ctx.isUnpacked) {
-                dataExtractp
-                    = makeDataExtractUnpacked(ctx.fl, exprp->cloneTree(false), ctx.memberp->name(),
-                                              ctx.memberp->subDTypep());
-            } else {
-                dataExtractp = makeDataExtract(ctx.fl, exprp->cloneTree(false), ctx.unionp,
-                                               ctx.memberp->width());
-                if (dataExtractp) dataExtractp->dtypep(structDtp);
-            }
-            if (!dataExtractp) return nullptr;
-
-            AstNode* assignsp = processConsPackMemberBindings(ctx.fl, ifp, structp->membersp(),
-                                                              dataExtractp, ctx.isUnpacked);
-            VL_DO_DANGLING(dataExtractp->deleteTree(), dataExtractp);
-            return assignsp;
-        }
-
-        // Handle Pattern case (with computed field info for anonymous structs)
-        if (AstPattern* const patternp = VN_CAST(tagExprp->exprp(), Pattern)) {
-            int structWidth = 0;
-            const auto& fieldInfo = computeStructFieldInfo(structDtp, structWidth);
-
-            AstNodeExpr* dataExtractp;
-            if (ctx.isUnpacked) {
-                dataExtractp
-                    = makeDataExtractUnpacked(ctx.fl, exprp->cloneTree(false), ctx.memberp->name(),
-                                              ctx.memberp->subDTypep());
-            } else {
-                dataExtractp
-                    = makeDataExtract(ctx.fl, exprp->cloneTree(false), ctx.unionp, structWidth);
-                if (dataExtractp) dataExtractp->dtypep(structDtp);
-            }
-            if (!dataExtractp) return nullptr;
-
-            const PatternBindContext bindCtx{ctx.fl, ifp, ctx.isUnpacked};
-            AstNode* assignsp
-                = processPatMemberBindings(bindCtx, VN_CAST(patternp->itemsp(), PatMember),
-                                           dataExtractp, structDtp, &fieldInfo);
-            VL_DO_DANGLING(dataExtractp->deleteTree(), dataExtractp);
-            return assignsp;
-        }
-
-        return nullptr;
-    }
-
     // Get tagged union type from matches expression
     AstUnionDType* getMatchesUnionType(AstMatches* matchesp) {
         AstNode* const patternp = matchesp->patternp();
@@ -610,7 +475,7 @@ class TaggedVisitor final : public VNVisitor {
             tagExtractp = makeTagExtract(fl, exprClonep, unionp);
             tagConstp = makeConst(fl, tagIndex, unionp->tagBitWidth());
         }
-        AstNodeExpr* condp = new AstEq{fl, tagExtractp, tagConstp};
+        AstNodeExpr* const condp = new AstEq{fl, tagExtractp, tagConstp};
         condp->dtypeSetBit();
         return condp;
     }
@@ -771,16 +636,7 @@ class TaggedVisitor final : public VNVisitor {
                 const auto result = handleSimplePatternVar(matchCtx, exprp, memberName, patVarp);
                 varDeclp = result.first;
                 varAssignsp = result.second;
-            } else if (AstPattern* const structPatp = VN_CAST(innerPatternp, Pattern)) {
-                varAssignsp = handleStructPatternInTaggedPattern(matchCtx, ifp, structPatp, exprp);
             }
-        }
-
-        // Handle TaggedExpr with struct pattern
-        if (tagExprp && !isVoid) {
-            AstNode* const structAssignsp
-                = handleTaggedExprStructPattern(matchCtx, ifp, tagExprp, exprp);
-            if (structAssignsp) addToNodeList(varAssignsp, structAssignsp);
         }
 
         // Get guard expression before deleting matchesp
@@ -980,7 +836,7 @@ class TaggedVisitor final : public VNVisitor {
         // This includes explicitly unpacked unions and those with dynamic/array members
         if (!unionp->packed()) {
             // Find parent assignment
-            AstAssign* assignp = VN_CAST(nodep->backp(), Assign);
+            AstAssign* const assignp = VN_CAST(nodep->backp(), Assign);
             if (assignp && assignp->rhsp() == nodep) {
                 transformTaggedExprUnpacked(assignp, nodep, unionp);
                 ++m_statTaggedExprs;

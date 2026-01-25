@@ -5203,38 +5203,9 @@ class WidthVisitor final : public VNVisitor {
                         AstNodeUOrStructDType* const structDtp
                             = VN_CAST(memberDtp, NodeUOrStructDType);
                         if (structDtp) {
-                            // Find PatternVars in ConsPackMember nodes
-                            // Structure: TaggedExpr -> ConsPackUOrStruct -> ConsPackMember
-                            AstConsPackUOrStruct* const structp
-                                = VN_CAST(tagExprp->exprp(), ConsPackUOrStruct);
-                            if (structp) {
-                                for (AstConsPackMember* cpm = structp->membersp(); cpm;
-                                     cpm = VN_CAST(cpm->nextp(), ConsPackMember)) {
-                                    // cpm->dtypep() is the MemberDType for the field
-                                    AstMemberDType* const fieldDtp
-                                        = VN_CAST(cpm->dtypep(), MemberDType);
-                                    // Find PatternVar inside rhsp (may be inside Extend)
-                                    AstNode* valuep = cpm->rhsp();
-                                    // Look through Extend nodes
-                                    while (AstExtend* extp = VN_CAST(valuep, Extend)) {
-                                        valuep = extp->lhsp();
-                                    }
-                                    if (AstPatternVar* const patVarp
-                                        = VN_CAST(valuep, PatternVar)) {
-                                        if (fieldDtp) {
-                                            // Update both the VAR and the PatternVar dtype
-                                            updatePatternVarType(patVarp->name(),
-                                                                 fieldDtp->subDTypep());
-                                            patVarp->dtypep(fieldDtp->subDTypep());
-                                            patVarp->didWidth(true);
-                                        }
-                                    }
-                                }
-                            }
-                            // Also handle Pattern with PatMember children
-                            // (inner matches may parse '{...} as Pattern not ConsPackUOrStruct)
-                            else if (AstPattern* const patternp
-                                     = VN_CAST(tagExprp->exprp(), Pattern)) {
+                            // Handle Pattern with PatMember children for struct patterns
+                            // in tagged expressions (e.g., tagged Add '{.r1, .r2, .rd})
+                            if (AstPattern* const patternp = VN_CAST(tagExprp->exprp(), Pattern)) {
                                 for (AstPatMember* patMemp
                                      = VN_CAST(patternp->itemsp(), PatMember);
                                      patMemp; patMemp = VN_CAST(patMemp->nextp(), PatMember)) {

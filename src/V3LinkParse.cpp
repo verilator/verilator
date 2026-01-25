@@ -869,36 +869,31 @@ class LinkParseVisitor final : public VNVisitor {
     // Recursively find all AstPatternVar nodes in a pattern tree
     void findPatternVars(AstNode* nodep, std::vector<AstPatternVar*>& patVars) {
         if (!nodep) return;
-        if (AstPatternVar* patVarp = VN_CAST(nodep, PatternVar)) {
+        if (AstPatternVar* const patVarp = VN_CAST(nodep, PatternVar)) {
             patVars.push_back(patVarp);
-        } else if (AstTaggedPattern* tagPatp = VN_CAST(nodep, TaggedPattern)) {
+        } else if (AstTaggedPattern* const tagPatp = VN_CAST(nodep, TaggedPattern)) {
             findPatternVars(tagPatp->patternp(), patVars);
-        } else if (AstTaggedExpr* tagExprp = VN_CAST(nodep, TaggedExpr)) {
+        } else if (AstTaggedExpr* const tagExprp = VN_CAST(nodep, TaggedExpr)) {
             // For nested tagged patterns like: tagged Jmp (tagged JmpU .a)
             findPatternVars(tagExprp->exprp(), patVars);
-        } else if (AstPattern* patp = VN_CAST(nodep, Pattern)) {
+        } else if (AstPattern* const patp = VN_CAST(nodep, Pattern)) {
             // For structure patterns like: '{.r1, .r2, .rd}
             for (AstNode* childp = patp->itemsp(); childp; childp = childp->nextp()) {
                 findPatternVars(childp, patVars);
             }
-        } else if (AstPatMember* membrp = VN_CAST(nodep, PatMember)) {
+        } else if (AstPatMember* const membrp = VN_CAST(nodep, PatMember)) {
             findPatternVars(membrp->lhssp(), patVars);
         }
     }
     // Recursively find all pattern variables in a matches expression,
-    // including any nested matches in lhsp (for chained patterns) and guardp
+    // including any nested matches in guardp (for chained matches)
     void findPatternVarsInMatches(AstMatches* matchesp, std::vector<AstPatternVar*>& patVars) {
         if (!matchesp) return;
         // Find pattern variables in this matches' pattern
         findPatternVars(matchesp->patternp(), patVars);
-        // If lhsp is also a Matches, recursively search it (for chained patterns)
-        // e.g., in "expr matches pat1 &&& expr2 matches pat2", the outer matches'
-        // lhsp is an inner matches "expr matches pat1 &&& expr2"
-        if (AstMatches* innerMatchesp = VN_CAST(matchesp->lhsp(), Matches)) {
-            findPatternVarsInMatches(innerMatchesp, patVars);
-        }
-        // If guardp is a Matches, recursively search it
-        if (AstMatches* guardMatchesp = VN_CAST(matchesp->guardp(), Matches)) {
+        // If guardp is a Matches (chained matches like "a matches b &&& c matches d"),
+        // recursively search it for pattern variables
+        if (AstMatches* const guardMatchesp = VN_CAST(matchesp->guardp(), Matches)) {
             findPatternVarsInMatches(guardMatchesp, patVars);
         }
     }
@@ -917,9 +912,9 @@ class LinkParseVisitor final : public VNVisitor {
                 for (AstPatternVar* patVarp : patVars) {
                     // Create a local variable for this pattern variable
                     // Use a placeholder type (1-bit) - will be fixed by V3Width
-                    FileLine* fl = patVarp->fileline();
-                    AstVar* varp = new AstVar{fl, VVarType::BLOCKTEMP, patVarp->name(),
-                                              VFlagBitPacked{}, 1};
+                    FileLine* const fl = patVarp->fileline();
+                    AstVar* const varp = new AstVar{fl, VVarType::BLOCKTEMP, patVarp->name(),
+                                                    VFlagBitPacked{}, 1};
                     varp->funcLocal(true);
                     if (stmtsp) {
                         AstNode::addNext<AstNode, AstNode>(stmtsp, varp);
@@ -932,7 +927,7 @@ class LinkParseVisitor final : public VNVisitor {
                     AstNode* origStmtsp = itemp->stmtsp()->unlinkFrBackWithNext();
                     AstNode::addNext<AstNode, AstNode>(stmtsp, origStmtsp);
                 }
-                AstBegin* beginp = new AstBegin{patVars[0]->fileline(), "", stmtsp, false};
+                AstBegin* const beginp = new AstBegin{patVars[0]->fileline(), "", stmtsp, false};
                 itemp->addStmtsp(beginp);
             }
         }
@@ -966,7 +961,7 @@ class LinkParseVisitor final : public VNVisitor {
     void visit(AstIf* nodep) override {
         cleanFileline(nodep);
         // For if matches, create local variables for pattern variables wrapped in a scope block
-        if (AstMatches* matchesp = VN_CAST(nodep->condp(), Matches)) {
+        if (AstMatches* const matchesp = VN_CAST(nodep->condp(), Matches)) {
             // Skip if already processed (avoids infinite loop when if is re-visited from begin)
             if (matchesp->user1SetOnce()) {
                 checkIndent(nodep, nodep->elsesp() ? nodep->elsesp() : nodep->thensp());
@@ -993,9 +988,9 @@ class LinkParseVisitor final : public VNVisitor {
                 for (AstPatternVar* patVarp : patVars) {
                     // Create a local variable for this pattern variable
                     // Use a placeholder type (1-bit) - will be fixed by V3Width
-                    FileLine* fl = patVarp->fileline();
-                    AstVar* varp = new AstVar{fl, VVarType::BLOCKTEMP, patVarp->name(),
-                                              VFlagBitPacked{}, 1};
+                    FileLine* const fl = patVarp->fileline();
+                    AstVar* const varp = new AstVar{fl, VVarType::BLOCKTEMP, patVarp->name(),
+                                                    VFlagBitPacked{}, 1};
                     varp->funcLocal(true);
                     if (varDeclsp) {
                         AstNode::addNext<AstNode, AstNode>(varDeclsp, varp);
@@ -1008,7 +1003,8 @@ class LinkParseVisitor final : public VNVisitor {
                     // When there's a guard, pattern variables must be visible in both
                     // the guard expression AND the body. Wrap the entire if statement
                     // in a begin block that contains the variable declarations first.
-                    AstBegin* beginp = new AstBegin{patVars[0]->fileline(), "", varDeclsp, false};
+                    AstBegin* const beginp
+                        = new AstBegin{patVars[0]->fileline(), "", varDeclsp, false};
                     nodep->replaceWith(beginp);
                     beginp->addStmtsp(nodep);
                     // The iteration will continue with beginp, which will then iterate
@@ -1022,7 +1018,8 @@ class LinkParseVisitor final : public VNVisitor {
                         AstNode* thensp = nodep->thensp()->unlinkFrBackWithNext();
                         AstNode::addNext<AstNode, AstNode>(stmtsp, thensp);
                     }
-                    AstBegin* beginp = new AstBegin{patVars[0]->fileline(), "", stmtsp, false};
+                    AstBegin* const beginp
+                        = new AstBegin{patVars[0]->fileline(), "", stmtsp, false};
                     nodep->addThensp(beginp);
                 }
             }
@@ -1153,27 +1150,6 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
-    // Tagged union features - now supported (IEEE 1800-2023)
-    void visit(AstTaggedExpr* nodep) override {
-        cleanFileline(nodep);
-        iterateChildren(nodep);
-    }
-    void visit(AstTaggedPattern* nodep) override {
-        cleanFileline(nodep);
-        iterateChildren(nodep);
-    }
-    void visit(AstPatternVar* nodep) override {
-        cleanFileline(nodep);
-        iterateChildren(nodep);
-    }
-    void visit(AstPatternStar* nodep) override {
-        cleanFileline(nodep);
-        iterateChildren(nodep);
-    }
-    void visit(AstMatches* nodep) override {
-        cleanFileline(nodep);
-        iterateChildren(nodep);
-    }
     void visit(AstBasicDType* nodep) override {
         // CVOID is allowed for tagged union void members
         cleanFileline(nodep);
