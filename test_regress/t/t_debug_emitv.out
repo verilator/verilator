@@ -653,7 +653,7 @@ module Vt_debug_emitv_t;
         begin : assert_intrinsic
             assert ((| $_EXPRSTMT(
                         ao = (a);
-                        , );
+                        , 32'h1);
                 )) begin
             end
             else begin
