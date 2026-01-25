@@ -71,12 +71,6 @@ class TaggedVisitor final : public VNVisitor {
     AstNodeModule* m_cachedModulep = nullptr;  // Module for which cache is valid
     std::unordered_map<AstUnionDType*, std::unordered_map<string, AstMemberDType*>>
         m_unionMemberCache;  // Union member cache
-    std::unordered_map<AstNodeUOrStructDType*, std::unordered_map<string, AstMemberDType*>>
-        m_structFieldCache;  // Struct field cache
-    // Struct field info cache: struct ptr -> (field name -> (lsb, width), total width)
-    std::unordered_map<AstNodeUOrStructDType*,
-                       std::pair<std::unordered_map<string, std::pair<int, int>>, int>>
-        m_structFieldInfoCache;
 
     // Context structs to reduce argument counts
 
@@ -85,13 +79,6 @@ class TaggedVisitor final : public VNVisitor {
         FileLine* fl;
         AstUnionDType* unionp;
         AstMemberDType* memberp;
-        bool isUnpacked;
-    };
-
-    // Context for pattern binding operations
-    struct PatternBindContext VL_NOT_FINAL {
-        FileLine* fl;
-        AstIf* ifp;
         bool isUnpacked;
     };
 
@@ -110,12 +97,6 @@ class TaggedVisitor final : public VNVisitor {
         AstVar* origVarp;  // Original pattern variable for O(1) pointer comparison
         AstNode* varAssignsp;
         AstNodeExpr* guardp;
-    };
-
-    // Optional overrides for field extraction
-    struct FieldExtractOverrides VL_NOT_FINAL {
-        int lsb;
-        int width;
     };
 
     // METHODS
@@ -164,18 +145,6 @@ class TaggedVisitor final : public VNVisitor {
         return map;
     }
 
-    // Get or build struct field map for O(1) lookups
-    std::unordered_map<string, AstMemberDType*>&
-    getStructFieldMap(AstNodeUOrStructDType* structp) {
-        auto it = m_structFieldCache.find(structp);
-        if (it != m_structFieldCache.end()) return it->second;
-        auto& map = m_structFieldCache[structp];
-        for (AstMemberDType* mp = structp->membersp(); mp; mp = VN_AS(mp->nextp(), MemberDType)) {
-            map[mp->name()] = mp;
-        }
-        return map;
-    }
-
     // Find a member in the tagged union by name - O(1) with cache
     AstMemberDType* findMember(AstUnionDType* unionp, const string& name) {
         auto& map = getUnionMemberMap(unionp);
@@ -190,34 +159,10 @@ class TaggedVisitor final : public VNVisitor {
                && VN_AS(dtp, BasicDType)->keyword() == VBasicDTypeKwd::CVOID;
     }
 
-    // Check if a variable name matches exactly or with mangled suffix - O(1) amortized
-    static bool matchesVarName(const string& varpName, const string& varName,
-                               const string& suffix) {
-        if (varpName == varName) return true;
-        if (varpName.size() <= suffix.size()) return false;
-        return varpName.compare(varpName.size() - suffix.size(), suffix.size(), suffix) == 0;
-    }
-
-    // Search a statement list for a variable matching name or suffix
-    static AstVar* searchStmtsForVar(AstNode* stmtsp, const string& varName,
-                                     const string& suffix) {
-        for (AstNode* stmtp = stmtsp; stmtp; stmtp = stmtp->nextp()) {
-            AstVar* const varp = VN_CAST(stmtp, Var);
-            if (!varp) continue;
-            if (matchesVarName(varp->name(), varName, suffix)) return varp;
-        }
-        return nullptr;
-    }
-
-    // Find AstVar by name in begin block or module containing the if statement
-    // Uses O(1) cache lookup for module-level vars
+    // Find AstVar by name in module containing the if statement
+    // Uses O(1) cache lookup - V3Begin has already lifted all begin-block vars to module level
     AstVar* findPatternVar(AstIf* ifp, const string& varName) {
-        const string suffix = "__DOT__" + varName;
         for (AstNode* parentp = ifp->backp(); parentp; parentp = parentp->backp()) {
-            if (AstBegin* const beginp = VN_CAST(parentp, Begin)) {
-                AstVar* varp = searchStmtsForVar(beginp->stmtsp(), varName, suffix);
-                if (varp) return varp;
-            }
             if (AstNodeModule* const modp = VN_CAST(parentp, NodeModule)) {
                 return findVarInModuleCache(modp, varName);
             }
@@ -328,11 +273,9 @@ class TaggedVisitor final : public VNVisitor {
         if (memberWidth < maxMemberWidth) {
             valuep = new AstExtend{fl, valuep, maxMemberWidth};
             valuep->dtypeSetBitSized(maxMemberWidth, VSigning::UNSIGNED);
-        } else if (memberWidth > maxMemberWidth) {
-            // Truncate - shouldn't happen but handle defensively
-            valuep = new AstSel{fl, valuep, 0, maxMemberWidth};
-            valuep->dtypeSetBitSized(maxMemberWidth, VSigning::UNSIGNED);
         }
+        // Note: memberWidth > maxMemberWidth is impossible since maxMemberWidth
+        // is computed as std::max() of all member widths
 
         // Extend value to total width for OR operation
         if (maxMemberWidth < totalWidth) {
@@ -345,105 +288,6 @@ class TaggedVisitor final : public VNVisitor {
         resultp->dtypep(unionp);
 
         return resultp;
-    }
-
-    // Transform pattern variable binding into a local variable declaration
-    // Returns the variable that was created
-    AstVar* createPatternVarBinding(FileLine* fl, const string& varName, AstNodeDType* dtypep,
-                                    AstNode* stmtsp) {
-        // Create a local variable for the pattern variable
-        AstVar* const varp = new AstVar{fl, VVarType::BLOCKTEMP, varName, dtypep};
-        varp->funcLocal(true);
-        return varp;
-    }
-
-    // Find a field in a struct by name - O(1) with cache
-    AstMemberDType* findStructField(AstNodeUOrStructDType* structDtp, const string& name) {
-        auto& map = getStructFieldMap(structDtp);
-        auto it = map.find(name);
-        return (it != map.end()) ? it->second : nullptr;
-    }
-
-    // Compute field positions for anonymous structs where lsb may be -1
-    // Returns map from field name to (lsb, width) pair, cached for O(1) repeated calls
-    const std::unordered_map<string, std::pair<int, int>>&
-    computeStructFieldInfo(AstNodeUOrStructDType* structDtp, int& outWidth) {
-        auto cacheIt = m_structFieldInfoCache.find(structDtp);
-        if (cacheIt != m_structFieldInfoCache.end()) {
-            outWidth = cacheIt->second.second;
-            return cacheIt->second.first;
-        }
-        std::unordered_map<string, std::pair<int, int>> fieldInfo;
-        std::vector<std::pair<string, int>> fieldOrder;
-        for (AstMemberDType* mp = structDtp->membersp(); mp;
-             mp = VN_AS(mp->nextp(), MemberDType)) {
-            fieldOrder.emplace_back(mp->name(), mp->width());
-        }
-        int bitOffset = 0;
-        for (auto it = fieldOrder.rbegin(); it != fieldOrder.rend(); ++it) {
-            fieldInfo[it->first] = std::make_pair(bitOffset, it->second);
-            bitOffset += it->second;
-        }
-        outWidth = bitOffset;
-        auto& cached = m_structFieldInfoCache[structDtp];
-        cached.first = std::move(fieldInfo);
-        cached.second = outWidth;
-        return cached.first;
-    }
-
-    // Create expression to extract a struct field (with overrides)
-    // For packed structs: uses bit selection with LSB and width
-    // For unpacked structs: uses struct member access
-    AstNodeExpr* makeFieldExtractExpr(FileLine* fl, AstNodeExpr* structExprp,
-                                      AstMemberDType* fieldp, bool isUnpacked,
-                                      const FieldExtractOverrides& overrides) {
-        const int fieldLsb = (overrides.lsb >= 0) ? overrides.lsb : fieldp->lsb();
-        const int fieldWidth = (overrides.width > 0) ? overrides.width : fieldp->width();
-        if (isUnpacked) {
-            AstStructSel* const selp = new AstStructSel{fl, structExprp, fieldp->name()};
-            selp->dtypep(fieldp->subDTypep());
-            return selp;
-        }
-        AstSel* const selp = new AstSel{fl, structExprp, fieldLsb, fieldWidth};
-        selp->dtypeSetBitSized(fieldWidth, VSigning::UNSIGNED);
-        return selp;
-    }
-
-    // Process PatMember list and create variable assignments
-    AstNode*
-    processPatMemberBindings(const PatternBindContext& ctx, AstPatMember* firstp,
-                             AstNodeExpr* dataExtractp, AstNodeUOrStructDType* structDtp,
-                             const std::unordered_map<string, std::pair<int, int>>* fieldInfop) {
-        AstNode* assignsp = nullptr;
-        for (AstPatMember* patMemp = firstp; patMemp;
-             patMemp = VN_CAST(patMemp->nextp(), PatMember)) {
-            AstPatternVar* const patVarp = VN_CAST(patMemp->lhssp(), PatternVar);
-            if (!patVarp) continue;
-            const AstText* const keyTextp = VN_CAST(patMemp->keyp(), Text);
-            if (!keyTextp) continue;
-            AstMemberDType* const fieldp = findStructField(structDtp, keyTextp->text());
-            if (!fieldp) continue;
-
-            int fieldLsb = fieldp->lsb();
-            int fieldWidth = fieldp->width();
-            if (fieldInfop && fieldInfop->count(fieldp->name())) {
-                const auto& info = fieldInfop->at(fieldp->name());
-                fieldLsb = info.first;
-                fieldWidth = info.second;
-            }
-
-            AstVar* const varp = findPatternVar(ctx.ifp, patVarp->name());
-            if (!varp) continue;
-
-            AstNodeExpr* const structClonep = dataExtractp->cloneTree(false);
-            const FieldExtractOverrides overrides{fieldLsb, fieldWidth};
-            AstNodeExpr* const fieldExtractp
-                = makeFieldExtractExpr(ctx.fl, structClonep, fieldp, ctx.isUnpacked, overrides);
-            AstVarRef* const varRefp = new AstVarRef{ctx.fl, varp, VAccess::WRITE};
-            AstAssign* const assignp = new AstAssign{ctx.fl, varRefp, fieldExtractp};
-            addToNodeList(assignsp, assignp);
-        }
-        return assignsp;
     }
 
     // Get tagged union type from matches expression
@@ -562,19 +406,8 @@ class TaggedVisitor final : public VNVisitor {
             iterate(scopep);
             return;
         }
-        if (parts.varAssignsp) {
-            AstNode* const origBodyp
-                = ifp->thensp() ? ifp->thensp()->unlinkFrBackWithNext() : nullptr;
-            AstNode* const origElsep
-                = ifp->elsesp() ? ifp->elsesp()->unlinkFrBackWithNext() : nullptr;
-            AstNode* const newBodyp
-                = buildInnerBody(parts.varAssignsp, origBodyp, parts.guardp, fl);
-            AstIf* const newIfp = new AstIf{fl, condp, newBodyp, origElsep};
-            ifp->replaceWith(newIfp);
-            VL_DO_DANGLING(pushDeletep(ifp), ifp);
-            iterate(newIfp);
-            return;
-        }
+        // Note: parts.varAssignsp without parts.varDeclp is impossible
+        // since handleSimplePatternVar() always sets both together
         if (parts.guardp) {
             // No pattern variable but have guard - AND the conditions
             AstLogAnd* const combinedCondp = new AstLogAnd{fl, condp, parts.guardp};
@@ -821,16 +654,12 @@ class TaggedVisitor final : public VNVisitor {
         }
 
         // Get the union type from the expression's dtype
+        // V3Width already validated: dtypep exists and is a tagged union
         AstNodeDType* const dtypep = nodep->dtypep();
-        if (!dtypep) {  // LCOV_EXCL_START  // V3Width catches this first
-            nodep->v3warn(E_UNSUPPORTED, "Tagged expression without type context");
-            return;
-        }  // LCOV_EXCL_STOP
+        UASSERT_OBJ(dtypep, nodep, "Tagged expression without type context");
         AstUnionDType* const unionp = VN_CAST(dtypep->skipRefp(), UnionDType);
-        if (!unionp || !unionp->isTagged()) {  // LCOV_EXCL_START  // V3Width catches this first
-            nodep->v3error("Tagged expression used with non-tagged-union type");
-            return;
-        }  // LCOV_EXCL_STOP
+        UASSERT_OBJ(unionp && unionp->isTagged(), nodep,
+                    "Tagged expression used with non-tagged-union type");
 
         // For unpacked tagged unions, handle at assignment level
         // This includes explicitly unpacked unions and those with dynamic/array members

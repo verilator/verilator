@@ -887,8 +887,8 @@ class LinkParseVisitor final : public VNVisitor {
     }
     // Recursively find all pattern variables in a matches expression,
     // including any nested matches in guardp (for chained matches)
+    // Note: matchesp is never null - callers only pass successful VN_CAST results
     void findPatternVarsInMatches(AstMatches* matchesp, std::vector<AstPatternVar*>& patVars) {
-        if (!matchesp) return;
         // Find pattern variables in this matches' pattern
         findPatternVars(matchesp->patternp(), patVars);
         // If guardp is a Matches (chained matches like "a matches b &&& c matches d"),
@@ -972,18 +972,14 @@ class LinkParseVisitor final : public VNVisitor {
             // Recursively find all pattern variables in the entire matches tree
             // This includes pattern variables in:
             // - The pattern of this matches
-            // - Patterns of any nested matches in exprp (for chained matches)
-            // - Patterns of any nested matches in guardp
+            // - Patterns of any nested matches in guardp (for chained matches)
             std::vector<AstPatternVar*> patVars;
             findPatternVarsInMatches(matchesp, patVars);
 
             if (!patVars.empty()) {
-                // Pattern variables need to be visible in the condition if:
-                // 1. There's a guard expression (&&& pattern), OR
-                // 2. The expression is a nested Matches (chained patterns where
-                //    inner pattern variables are referenced in the outer expression)
-                const bool hasGuard
-                    = matchesp->guardp() != nullptr || VN_IS(matchesp->lhsp(), Matches);
+                // Pattern variables need to be visible in the guard expression when present
+                // Note: Grammar places chained matches in guardp, not lhsp
+                const bool hasGuard = matchesp->guardp() != nullptr;
                 AstNode* varDeclsp = nullptr;
                 for (AstPatternVar* patVarp : patVars) {
                     // Create a local variable for this pattern variable

@@ -1,0 +1,5 @@
+%Error: t/t_tagged_if_member_notfound_bad.v:21:11: Tagged union member 'BadMember' not found
+   21 |     if (v matches tagged BadMember .x) begin
+      |           ^~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

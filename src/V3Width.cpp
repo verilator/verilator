@@ -5078,18 +5078,13 @@ class WidthVisitor final : public VNVisitor {
         // Type-check the LHS expression
         userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
         // Update pattern variable types based on union member types
-        // First try LHS expression's dtype, then fall back to pattern dtype
+        // Get union type from LHS expression - lhsp is always the matched expression
         // Do NOT iterate pattern yet - we need to type PatternVars first
+        // Note: Case-matches patterns go directly to CaseItem condsp, no AstMatches wrapper
         AstUnionDType* unionp = nullptr;
-        AstNode* const patternp = nodep->patternp();
         if (nodep->lhsp() && nodep->lhsp()->dtypep()) {
             AstNodeDType* const exprDType = nodep->lhsp()->dtypep()->skipRefp();
             unionp = VN_CAST(exprDType, UnionDType);
-        }
-        if (!unionp && (VN_IS(patternp, TaggedPattern) || VN_IS(patternp, TaggedExpr))) {
-            if (patternp->dtypep()) {
-                unionp = VN_CAST(patternp->dtypep()->skipRefp(), UnionDType);
-            }
         }
         if (unionp && unionp->isTagged()) {
             // Helper lambda to find variable in begin block and update its type
@@ -5107,14 +5102,16 @@ class WidthVisitor final : public VNVisitor {
                       return false;
                   };
 
-            // Find enclosing AstIf - either direct parent or through nested matches
+            // Find enclosing AstIf - AstMatches only exists in if-matches context
             auto findEnclosingIf = [nodep]() -> AstIf* {
                 for (AstNode* searchp = nodep->backp(); searchp; searchp = searchp->backp()) {
                     if (AstIf* const maybeIfp = VN_CAST(searchp, If)) return maybeIfp;
                     // Continue through nested matches expressions
                     if (!VN_IS(searchp, Matches)) break;
                 }
-                return nullptr;
+                // AstMatches only appears in if-matches, so we always find enclosing If
+                nodep->v3fatalSrc("AstMatches without enclosing AstIf");
+                return nullptr;  // Unreachable, silences compiler warning
             };
 
             // Helper to search all begin blocks for a variable
@@ -5151,41 +5148,6 @@ class WidthVisitor final : public VNVisitor {
                             updatePatternVarType(patVarp->name(), memberp->subDTypep());
                             patVarp->dtypep(memberp->subDTypep());
                             patVarp->didWidth(true);
-                        } else if (AstPattern* const structPatp
-                                   = VN_CAST(tagPatp->patternp(), Pattern)) {
-                            // Struct pattern case: tagged Member '{field:.var, ...}
-                            // Member type should be a struct
-                            AstNodeDType* const memberDtp = memberp->subDTypep()->skipRefp();
-                            AstNodeUOrStructDType* const structDtp
-                                = VN_CAST(memberDtp, NodeUOrStructDType);
-                            if (structDtp) {
-                                // For each pattern member, find the struct field type
-                                for (AstPatMember* patMemp
-                                     = VN_CAST(structPatp->itemsp(), PatMember);
-                                     patMemp; patMemp = VN_CAST(patMemp->nextp(), PatMember)) {
-                                    // Get the pattern variable from lhssp
-                                    AstPatternVar* const innerPatVarp
-                                        = VN_CAST(patMemp->lhssp(), PatternVar);
-                                    if (innerPatVarp) {
-                                        // Find the struct field by name
-                                        const AstText* const keyTextp
-                                            = VN_CAST(patMemp->keyp(), Text);
-                                        if (keyTextp) {
-                                            for (AstMemberDType* fieldp = structDtp->membersp();
-                                                 fieldp;
-                                                 fieldp = VN_AS(fieldp->nextp(), MemberDType)) {
-                                                if (fieldp->name() == keyTextp->text()) {
-                                                    updatePatternVarType(innerPatVarp->name(),
-                                                                         fieldp->subDTypep());
-                                                    innerPatVarp->dtypep(fieldp->subDTypep());
-                                                    innerPatVarp->didWidth(true);
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
                         }
                         break;
                     }

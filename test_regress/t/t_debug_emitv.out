@@ -14,6 +14,14 @@ module Vt_debug_emitv_t;
     typedef union {
         logic a;
     } union_t;
+    typedef union packed {
+        void Invalid;
+        int signed Valid;
+    } tagged_t;
+    union packed {
+        void Invalid;
+        int signed Valid;
+    } tval;
     const struct packed {
         logic [2:0]  a;
     } ps[0:2];
@@ -146,6 +154,36 @@ module Vt_debug_emitv_t;
             begin : named
                 $display("stmt");
             end
+            tval = 
+            ???? // TAGGEDEXPR 'Valid'
+            'sh2a;
+            case (tval)
+
+                ???? // TAGGEDEXPR 'Invalid'
+              : begin $display("invalid");
+                end
+
+                ???? // TAGGEDPATTERN 'Valid'
+
+                ???? // PATTERNVAR 'n'
+              : begin begin : unnamedblk3
+                        int signed n;
+                        $display("valid: %0~", n);
+                    end
+                end
+            endcase
+            if (
+                ???? // MATCHES
+                tval
+                ???? // TAGGEDPATTERN 'Valid'
+
+                ???? // PATTERNVAR 'v'
+            ) begin
+                begin : unnamedblk4
+                    int signed v;
+                    $display("matched: %0~", v);
+                end
+            end
         end
     end
     final begin
@@ -203,7 +241,7 @@ module Vt_debug_emitv_t;
             $readmemh(string'(fd), array, 'sh0);
             $readmemh(string'(fd), array, 'sh0, 'sh0);
             sum = 'sh0;
-            begin : unnamedblk3
+            begin : unnamedblk5
                 int signed i;
                 i = 'sh0;
                 begin : label2
