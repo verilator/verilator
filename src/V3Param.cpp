@@ -1318,13 +1318,13 @@ public:
         srcModp->someInstanceName(instanceName);
 
         AstNodeModule* newModp = nullptr;
-        if (AstCell* cellp = VN_CAST(nodep, Cell)) {
+        if (AstCell* const cellp = VN_CAST(nodep, Cell)) {
             newModp = cellDeparam(cellp, srcModp);
-        } else if (AstIfaceRefDType* ifaceRefDTypep = VN_CAST(nodep, IfaceRefDType)) {
+        } else if (AstIfaceRefDType* const ifaceRefDTypep = VN_CAST(nodep, IfaceRefDType)) {
             newModp = ifaceRefDeparam(ifaceRefDTypep, srcModp);
-        } else if (AstClassRefDType* classRefp = VN_CAST(nodep, ClassRefDType)) {
+        } else if (AstClassRefDType* const classRefp = VN_CAST(nodep, ClassRefDType)) {
             newModp = classRefDeparam(classRefp, srcModp);
-        } else if (AstClassOrPackageRef* classRefp = VN_CAST(nodep, ClassOrPackageRef)) {
+        } else if (AstClassOrPackageRef* const classRefp = VN_CAST(nodep, ClassOrPackageRef)) {
             newModp = classRefDeparam(classRefp, srcModp);
         } else {
             nodep->v3fatalSrc("Expected module parameterization");
@@ -2025,7 +2025,7 @@ public:
         netlistp->foreach([](AstNodeFTaskRef* ftaskrefp) {
             AstNodeFTask* ftaskp = ftaskrefp->taskp();
             if (!ftaskp || !ftaskp->classMethod()) return;
-            string funcName = ftaskp->name();
+            const string funcName = ftaskp->name();
             for (AstNode* backp = ftaskrefp->backp(); backp; backp = backp->backp()) {
                 if (VN_IS(backp, Class)) {
                     if (backp == ftaskrefp->classOrPackagep())
@@ -2042,7 +2042,7 @@ public:
             }
             UASSERT_OBJ(classp, ftaskrefp, "Class method has no class above it");
             if (classp->user3p()) return;  // will not get removed, no need to relink
-            AstClass* parametrizedClassp = VN_CAST(classp->user4p(), Class);
+            AstClass* const parametrizedClassp = VN_CAST(classp->user4p(), Class);
             if (!parametrizedClassp) return;
             AstNodeFTask* newFuncp = nullptr;
             parametrizedClassp->exists([&newFuncp, funcName](AstNodeFTask* ftaskp) {

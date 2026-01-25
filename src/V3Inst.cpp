@@ -662,6 +662,7 @@ public:
             if (pinVarp->isInout()) {
                 pinVarp->v3fatalSrc("Unsupported: Inout connections to pins must be"
                                     " direct one-to-one connection (without any expression)");
+                // V3Tristate should have cleared up before this point
             } else if (pinVarp->isWritable()) {
                 // See also V3Inst
                 AstNodeExpr* rhsp = new AstVarRef{pinp->fileline(), newvarp, VAccess::READ};
