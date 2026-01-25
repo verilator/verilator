@@ -1076,8 +1076,8 @@ class LinkDotFindVisitor final : public VNVisitor {
     void visit(AstTypeTable*) override {}  // FindVisitor::
     void visit(AstConstPool*) override {}  // FindVisitor::
     void visit(AstIfaceRefDType* nodep) override {  // FindVisitor::
-        if (m_statep->forPrimary() && nodep->isVirtual() && nodep->ifacep()
-            && !nodep->ifacep()->user3()) {
+        if ((m_statep->forPrimary() || m_statep->forParamed()) && nodep->isVirtual()
+            && nodep->ifacep() && !nodep->ifacep()->user3()) {
             m_virtIfaces.push_back(nodep->ifacep());
             nodep->ifacep()->user3(true);
         }

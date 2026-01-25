@@ -26,6 +26,7 @@ Verilator 5.045 devel
 * Support `extern module` as a forward-declaration that is ignored.
 * Remove deprecated `--xml-only`.
 * Remove deprecated `--make cmake`.
+* Fix parameterized virtual interface references that have no model references (#4286).
 * Fix variable reference lookup for module-level variables (#6741) (#6882). [Yilou Wang]
 * Fix MULTIDRIVEN with task and default driver (#4045) (#6858). [em2machine]
 * Fix false CASEOVERLAP case item expression lint (#6825) (#6886). [Luca Colagrande]
