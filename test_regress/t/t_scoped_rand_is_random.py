@@ -34,6 +34,7 @@ count_unique_strings = len(unique_strings)
 # A ideal random generator has a fail chance of 1 in 66 million
 expected_unique_strings = 4
 if count_unique_strings < expected_unique_strings:
-    test.error(f"Expected at least {expected_unique_strings} unique strings, got {count_unique_strings}")
+    test.error(
+        f"Expected at least {expected_unique_strings} unique strings, got {count_unique_strings}")
 
 test.passes()
