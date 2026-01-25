@@ -100,7 +100,7 @@ distclean::
 TEST_SNAP_DIR ?= snapshot
 
 # Command to diff directories
-TEST_DIFF_TOOL ?= $(if $(shell which icdiff), icdiff -N -r, diff -r)
+TEST_DIFF_TOOL ?= $(if $(shell which icdiff), icdiff -N -r --cols=$(shell tput cols), diff -r)
 
 TEST_SNAP_IGNORE := \
   *.status *.log *.dat *.d *.o *.a *.so *stats*.txt *.html *.includecache \
