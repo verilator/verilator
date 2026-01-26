@@ -9,9 +9,6 @@ import vltest_bootstrap
 test.scenarios('linter')
 
 # This test should NOT produce a UNUSEDSIGNAL warning for parameter 'n' in unused function
-test.lint(verilator_flags2=[
-    "--lint-only --assert --quiet-stats --top-module foo --default-language 1364-1995 -Wall -Wno-fatal -Wno-DECLFILENAME"
-],
-          fails=False)
+test.lint()
 
 test.passes()

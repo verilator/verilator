@@ -209,7 +209,9 @@ public:
             }
         } else {  // Signal
             // Check if this is a function local/parameter in an unused function
+            // Only suppress for functions, not tasks (tasks should still warn)
             const bool isUnusedFuncLocal = nodep->isFuncLocal() && m_containingTaskp
+                                           && m_containingTaskp->verilogFunction()
                                            && !m_containingTaskp->user2();
             bool allU = true;
             bool allD = true;

@@ -1,0 +1,7 @@
+%Warning-UNUSEDSIGNAL: t/t_lint_unused_func_param_bad.v:20:9: Signal is not used: 'unused_local'
+                                                  : ... note: In instance 'foo'
+   20 |     reg [31:0] unused_local;  // This should warn: assigned but never read
+      |         ^~~~~~~~~~~~~
+                      ... For warning description see https://verilator.org/warn/UNUSEDSIGNAL?v=latest
+                      ... Use "/* verilator lint_off UNUSEDSIGNAL */" and lint_on around source to disable this message.
+%Error: Exiting due to
