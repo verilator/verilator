@@ -81,7 +81,7 @@ if 'VERILATOR_SPHINX_EXTENSIONS' in os.environ:
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = [
-    '_build', 'Thumbs.db', '.DS_Store', 'internals.rst', 'xml.rst', 'gen/ex_*', 'CONTRIBUTING.rst'
+    '_build', 'Thumbs.db', '.DS_Store', 'internals.rst', 'gen/ex_*', 'CONTRIBUTING.rst'
 ]
 
 # Warn about refs
