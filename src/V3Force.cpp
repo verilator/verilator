@@ -150,10 +150,12 @@ public:
                 AstNodeStmt* stmtsp = nullptr;
                 for (AstMemberDType* mdtp = structDtypep->membersp(); mdtp;
                      mdtp = VN_AS(mdtp->nextp(), MemberDType)) {
-                    AstStructSel* const structSelp = new AstStructSel{flp, lhsp, mdtp->name()};
+                    AstNodeExpr* const lhsCopyp = lhsp->cloneTreePure(false);
+                    AstVarRef* const lhsVarRefCopyp = lhsVarRefp->clonep();
+                    AstStructSel* const structSelp = new AstStructSel{flp, lhsCopyp, mdtp->name()};
                     structSelp->dtypep(mdtp);
                     AstNodeStmt* const memberStmtp
-                        = getAssignStmtsp(structSelp, vscp, lhsVarRefp, assigns);
+                        = getAssignStmtsp(structSelp, vscp, lhsVarRefCopyp, assigns);
                     stmtsp = stmtsp ? stmtsp->addNext(memberStmtp) : memberStmtp;
                 }
                 return stmtsp;
