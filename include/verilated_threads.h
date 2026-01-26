@@ -254,7 +254,7 @@ public:
 private:
     VL_UNCOPYABLE(VlThreadPool);
 
-    std::string numaAssign();
+    std::string numaAssign(VerilatedContext* contextp);
 };
 
 #endif

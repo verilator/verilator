@@ -2816,6 +2816,7 @@ void VerilatedContext::threads(unsigned n) {
             "%Error: Cannot set simulation threads after the thread pool has been created.");
     }
 
+    m_useNumaAssign = true;
     if (m_threads == n) return;  // To avoid unnecessary warnings
     m_threads = n;
     const unsigned threadsAvailableToProcess = VlOs::getProcessDefaultParallelism();
@@ -2825,6 +2826,8 @@ void VerilatedContext::threads(unsigned n) {
                      threadsAvailableToProcess, m_threads);
     }
 }
+
+void VerilatedContext::useNumaAssign(bool flag) { m_useNumaAssign = flag; }
 
 void VerilatedContext::commandArgs(int argc, const char** argv) VL_MT_SAFE_EXCLUDES(m_argMutex) {
     // Not locking m_argMutex here, it is done in impp()->commandArgsAddGuts
