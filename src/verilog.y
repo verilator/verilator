@@ -3517,7 +3517,7 @@ stmtList<nodeStmtp>:
         |       stmtList error ';'                      { $$ = $1; }  // LCOV_EXCL_LINE
         ;
 
-stmt<nodeStmtp>:                    // IEEE: statement + seq_block + par_block
+stmt<nodeStmtp>:                    // IEEE: statement + statement_or_null + seq_block + par_block
                 statement_item                          { $$ = $1; }
         //                      // S05 block creation rule
         |       id/*block_identifier*/ ':' statement_item       { $$ = new AstBegin{$<fl>1, *$1, $3, false}; }
@@ -6609,27 +6609,7 @@ property_spec<propSpecp>:               // IEEE: property_spec
         |       pexpr                                   { $$ = new AstPropSpec{$1->fileline(), nullptr, nullptr, $1}; }
         ;
 
-//UNSUPproperty_statement_spec<nodep>:  // ==IEEE: property_statement_spec
-//UNSUP //                      // IEEE: [ clocking_event ] [ yDISABLE yIFF '(' expression_or_dist ')' ] property_statement
-//UNSUP         property_statement                      { $$ = $1; }
-//UNSUP |       yDISABLE yIFF '(' expr/*expression_or_dist*/ ')' property_statement     { }
-//UNSUP //                      // IEEE: clocking_event property_statement
-//UNSUP //                      // IEEE: clocking_event yDISABLE yIFF '(' expr/*expression_or_dist*/ ')' property_statement
-//UNSUP //                      // Both overlap pexpr:"clocking_event pexpr"  the difference is
-//UNSUP //                      // property_statement:property_statementCaseIf so replicate it
-//UNSUP |       clocking_event property_statementCaseIf { }
-//UNSUP |       clocking_event yDISABLE yIFF '(' expr/*expression_or_dist*/ ')' property_statementCaseIf        { }
-//UNSUP ;
-
-//UNSUPproperty_statement<nodep>:  // ==IEEE: property_statement
-//UNSUP //                      // Doesn't make sense to have "pexpr ;" in pexpr rule itself, so we split out case/if
-//UNSUP         pexpr ';'                               { $$ = $1; }
-//UNSUP //                      // Note this term replicated in property_statement_spec
-//UNSUP //                      // If committee adds terms, they may need to be there too.
-//UNSUP |       property_statementCaseIf                { $$ = $1; }
-//UNSUP ;
-
-property_statementCaseIf<nodeExprp>:  // IEEE: property_statement - minus pexpr
+property_exprCaseIf<nodeExprp>:  // IEEE: part of property_expr for if/case
                 yCASE '(' expr/*expression_or_dist*/ ')' property_case_itemList yENDCASE
                         { $$ = new AstConst{$1, AstConst::BitFalse{}};
                           BBUNSUP($<fl>1, "Unsupported: property case expression");
@@ -6710,7 +6690,7 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         //
         //                      // IEEE-2009: property_statement
         //                      // IEEE-2012: yIF and yCASE
-        |       property_statementCaseIf                { $$ = $1; }
+        |       property_exprCaseIf                     { $$ = $1; }
         //
         |       ~o~pexpr/*sexpr*/ yP_POUNDMINUSPD pexpr
                         { $$ = $1; BBUNSUP($2, "Unsupported: #-# (in property expression)"); DEL($3); }
@@ -6765,7 +6745,8 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         //                      // property_statement_spec: clocking_event property_statement
         //
         //                      // Include property_specDisable to match property_spec rule
-        //UNSUP clocking_event yDISABLE yIFF '(' expr ')' pexpr %prec prSEQ_CLOCKING    { }
+        //UNSUP clocking_event ~p~sexpr %prec prSEQ_CLOCKING
+        //UNSUP         { $$ = $2; BBUNSUP($2, "Unsupported: clocking event (in sequence expression)"); DEL($1); }
         //
         //============= sexpr rules copied for property_expr
         |       BISONPRE_COPY_ONCE(sexpr,{s/~p~s/p/g; })        // {copied}
