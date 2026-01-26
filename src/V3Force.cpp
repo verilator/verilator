@@ -102,15 +102,18 @@ public:
 
             AstVarRef* const enRefp = new AstVarRef{flp, m_enVscp, VAccess::WRITE};
             AstNodeStmt* const enInitStmtsp = rdUpdateStmtsp->cloneTree(true);
+            for (int i = 0; i < assigns.size(); i++) {
+                // Save copies, because clonep() works only after the last cloneTree
+                assigns[i] = assigns[i]->clonep();
+            }
             for (AstAssign* const assignp : assigns) {
-                AstAssign* const assignClonep = assignp->clonep();
                 AstVarRef* const lhsVarRefp
-                    = VN_AS(AstNodeVarRef::varRefLValueRecurse(assignClonep->lhsp()), VarRef);
+                    = VN_AS(AstNodeVarRef::varRefLValueRecurse(assignp->lhsp()), VarRef);
                 lhsVarRefp->replaceWith(enRefp->cloneTree(false));
                 lhsVarRefp->deleteTree();
-                assignClonep->rhsp()->unlinkFrBack()->deleteTree();
-                V3Number zero{m_enVscp, assignClonep->lhsp()->dtypep()->width()};
-                assignClonep->rhsp(new AstConst{flp, zero});
+                assignp->rhsp()->unlinkFrBack()->deleteTree();
+                V3Number zero{m_enVscp, assignp->lhsp()->dtypep()->width()};
+                assignp->rhsp(new AstConst{flp, zero});
             }
             activeInitp->addStmtsp(new AstInitial{flp, enInitStmtsp});
             {  // Add the combinational override
