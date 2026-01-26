@@ -4039,8 +4039,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         [this](AstVar* v, AstRefDType* r) { return promoteVarToParamType(v, r); },
                         [this]() { return indent(); });
 
-                    replaceWithCheckBreak(nodep, refp);
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    if (VN_IS(nodep->backp(), SelExtract)) {
+                        m_packedArrayDtp = refp;
+                    } else {
+                        replaceWithCheckBreak(nodep, refp);
+                        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    }
                 }
             }
             if (!ok) {
