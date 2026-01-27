@@ -1036,7 +1036,7 @@ void schedule(AstNetlist* netlistp) {
             new AstVarRef{trigAccp->fileline(), actKit.m_vscp, VAccess::READ}});
     }
 
-    // Step 15: Clean up
+    // Step 16: Clean up
     netlistp->clearStlFirstIterationp();
 
     // Haven't split static initializer yet
