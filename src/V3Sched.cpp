@@ -1022,9 +1022,9 @@ void schedule(AstNetlist* netlistp) {
     // Step 15: Add neccessary evaluation before awaits
     if (AstCCall* const readyp = timingKit.createReady(netlistp)) {
         staticp->addStmtsp(readyp->makeStmt());
-        preTrigVisitor(netlistp, senExprBuilder, trigKit);
+        beforeTrigVisitor(netlistp, senExprBuilder, trigKit);
     } else {
-        // AwaitPreTrigVisitor clears Sentree pointers in AstCAwaits (as these sentrees will get
+        // beforeTrigVisitor clears Sentree pointers in AstCAwaits (as these sentrees will get
         // deleted later) if there was no need to call it, SenTrees have to be cleaned manually
         netlistp->foreach([](AstCAwait* const cAwaitp) { cAwaitp->clearSentreep(); });
     }
