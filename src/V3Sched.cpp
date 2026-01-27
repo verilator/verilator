@@ -492,7 +492,7 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
     // Gather the relevant sensitivity expressions and create the trigger kit
     const auto& senTreeps = getSenTreesUsedBy({&logic});
     const TriggerKit trigKit = TriggerKit::create(netlistp, initFuncp, senExprBuilder, {},
-                                                  senTreeps, "ico", extraTriggers, false, true);
+                                                  senTreeps, "ico", extraTriggers, false, false);
     std::ignore = senExprBuilder.getAndClearResults();
 
     if (dpiExportTriggerVscp) {
@@ -599,9 +599,6 @@ void createEval(AstNetlist* netlistp,  //
             if (timingReadyp) stmtsp = AstNode::addNext(stmtsp, timingReadyp->makeStmt());
             if (actKit.m_vscp) {
                 AstVarScope* const vscAccp = trigKit.vscAccp();
-                UASSERT_OBJ(
-                    vscAccp, actKit.m_vscp,
-                    "Trigger vector accumulator shall exist if trigger vector itself exists");
                 stmtsp = AstNode::addNext(stmtsp, trigKit.newOrIntoCall(actKit.m_vscp, vscAccp));
             }
             // Latch the 'act' triggers under the 'nba' triggers
@@ -776,220 +773,6 @@ cloneMapWithNewTriggerReferences(const std::unordered_map<const AstSenTree*, Ast
     }
     return newMap;
 }
-
-//  Find all CAwaits, clear SenTrees inside them, generate pre-trigger functions (functions that
-//  shall be called before awaiting for a VCMethod::SCHED_TRIGGER) and add thier calls before
-//  proper CAwaits
-class AwaitPreTrigVisitor final : public VNVisitor {
-    const VNUser1InUse m_user1InUse;
-
-    /**
-     * AstCAwait::user1()       ->  bool.       True if node has been visited
-     * AstSenTree::user1p()     ->  AstCFunc*.  Function that has to be called before awaiting for
-     *                                          CAwait pointing to this SenTree
-     */
-
-    // Netlist - needed for using util::makeSubFunction()
-    AstNetlist* const m_netlistp;
-    // Trigger kit - for accessing trigger vectors and mapping senItems to thier indexes
-    const TriggerKit& m_trigKit;
-    // Expression builder - for building expressions from SenItems
-    SenExprBuilder& m_senExprBuilder;
-    // Generator of unique names for pre-trigger function
-    V3UniqueNames m_preTriggerFuncUniqueName;
-
-    // Map containing every generated CFuncs and indexes of triggers used within it
-    std::map<AstCFunc*, std::set<size_t>> m_funcToUsedTriggers;
-    // Map from SenTree to coresponding scheduler
-    std::map<const AstSenTree*, AstNodeExpr*> m_senTreeToSched;
-
-    // For set of bits indexes (of sensitivity vector) return map from those indexes to set of
-    // schedulers sensitive to these indexes.
-    // Indices are split into word index and bit masking this index within given word
-    std::map<size_t, std::map<size_t, std::set<AstNodeExpr*>>>
-    getUsedTriggersToTrees(const std::set<size_t>& usedTriggers) {
-        std::map<size_t, std::map<size_t, std::set<AstNodeExpr*>>> usedTrigsToUsingTrees;
-        for (auto senTreeSched : m_senTreeToSched) {
-            const AstSenTree* const senTreep = senTreeSched.first;
-            AstNodeExpr* const shedp = senTreeSched.second;
-
-            // Find all common SenItem indexes for `senTreep` and `usedTriggers`
-            std::set<size_t> usedTriggersInSenTree;
-            for (AstSenItem* senItemp = senTreep->sensesp(); senItemp;
-                 senItemp = VN_AS(senItemp->nextp(), SenItem)) {
-                const size_t idx = m_trigKit.senItem2TrigIdx(senItemp);
-                if (usedTriggers.find(idx) != usedTriggers.end()) {
-                    usedTrigsToUsingTrees[idx / TriggerKit::WORD_SIZE]
-                                         [1 << (idx % TriggerKit::WORD_SIZE)]
-                                             .insert(shedp);
-                }
-            }
-        }
-        return usedTrigsToUsingTrees;
-    }
-
-    // Returns a CCall to a pre-trigger function for a given SenTree,
-    // Constructs such a function if it doesn't exist yet
-    AstCCall* getPreTriggerStmt(AstSenTree* const senTreep) {
-        FileLine* const flp = senTreep->fileline();
-        if (!senTreep->user1p()) {
-            AstCFunc* const funcp = util::makeSubFunction(
-                m_netlistp, m_preTriggerFuncUniqueName.get(senTreep), false);
-            senTreep->user1p(funcp);
-
-            AstVar* const argp = new AstVar{flp, VVarType::BLOCKTEMP, "__VeventDescription",
-                                            senTreep->findBasicDType(VBasicDTypeKwd::CHARPTR)};
-            argp->funcLocal(true);
-            argp->direction(VDirection::INPUT);
-            funcp->addArgsp(argp);
-            // Scope is created in the constructor after iterate finishes
-
-            static std::vector<AstNodeExpr*> trigps;  // Static to reduce amount of allocations
-
-            // Puts `exprp` at `pos` and makes sure that trigps.size() is multiple of
-            // TriggerKit::WORD_SIZE
-            const auto emplaceAt = [flp](AstNodeExpr* const exprp, const size_t pos) {
-                const size_t targetSize
-                    = vlstd::roundUpToMultipleOf<TriggerKit::WORD_SIZE>(pos + 1);
-                if (trigps.capacity() < targetSize) trigps.reserve(targetSize * 2);
-                while (trigps.size() < targetSize) {
-                    trigps.push_back(new AstConst{flp, AstConst::BitFalse{}});
-                }
-                trigps[pos]->deleteTree();
-                trigps[pos] = exprp;
-            };
-
-            // Find all trigger indexes of SenItems inside `senTreep`
-            // and add them to `trigps` and `m_funcToUsedTriggers[funcp]`
-            for (const AstSenItem* itemp = senTreep->sensesp(); itemp;
-                 itemp = VN_AS(itemp->nextp(), SenItem)) {
-                const size_t idx = m_trigKit.senItem2TrigIdx(itemp);
-                emplaceAt(m_senExprBuilder.build(itemp).first, idx);
-                m_funcToUsedTriggers[funcp].insert(idx);
-            }
-
-            // Fill the function with neccessary statements
-            SenExprBuilder::Results results = m_senExprBuilder.getResultsAndClearUpdates();
-            for (AstNodeStmt* const stmtsp : results.m_inits) funcp->addStmtsp(stmtsp);
-            for (AstNodeStmt* const stmtsp : results.m_preUpdates) funcp->addStmtsp(stmtsp);
-            funcp->addStmtsp(TriggerKit::createSenTrigVecAssignment(m_trigKit.vscTmpp(), trigps));
-            trigps.clear();
-            for (AstNodeStmt* const stmtsp : results.m_postUpdates) funcp->addStmtsp(stmtsp);
-        }
-        AstCCall* const callp = new AstCCall{flp, VN_AS(senTreep->user1p(), CFunc)};
-        callp->dtypeSetVoid();
-        return callp;
-    }
-
-    void visit(AstCAwait* const nodep) override {
-        if (nodep->user1SetOnce()) return;
-
-        // Check whether it is a CAwait for a VCMethod::SCHED_TRIGGER
-        if (const AstCMethodHard* const cMethodHardp = VN_CAST(nodep->exprp(), CMethodHard)) {
-            if (cMethodHardp->method() == VCMethod::SCHED_TRIGGER) {
-                AstCCall* const preTrigp = getPreTriggerStmt(nodep->sentreep());
-
-                FileLine* const flp = nodep->fileline();
-                // Add eventDescription argument value to a CCall - it is used for --runtime-debug
-                if (AstNode* const pinp = cMethodHardp->pinsp()->nextp()->nextp()) {
-                    preTrigp->addArgsp(VN_AS(pinp, NodeExpr)->cloneTree(false));
-                } else {
-                    preTrigp->addArgsp(new AstCExpr{flp, "nullptr"});
-                }
-
-                // Change CAwait Expression into StmtExpr that calls to a pre-trigger function
-                // first and then return CAwait
-                VNRelinker relinker;
-                nodep->unlinkFrBack(&relinker);
-                AstExprStmt* const exprstmtp = new AstExprStmt{flp, preTrigp->makeStmt(), nodep};
-                relinker.relink(exprstmtp);
-                m_senTreeToSched.emplace(nodep->sentreep(), cMethodHardp->fromp());
-            }
-        }
-        nodep->clearSentreep();  // Clear as these sentrees will get deleted later
-        iterate(nodep);
-    }
-
-    void visit(AstNode* const nodep) override { iterateChildren(nodep); }
-
-public:
-    AwaitPreTrigVisitor(AstNetlist* netlistp, SenExprBuilder& senExprBuilder,
-                        const TriggerKit& trigKit)
-        : m_netlistp{netlistp}
-        , m_trigKit{trigKit}
-        , m_senExprBuilder{senExprBuilder}
-        , m_preTriggerFuncUniqueName{"__VpreTrig"} {
-        iterate(netlistp);
-
-        // In each of pre-trigger functions check if anything was triggered and mark as ready
-        // triggered schedulers
-        for (const auto& funcToUsedTriggers : m_funcToUsedTriggers) {
-            AstCFunc* const funcp = funcToUsedTriggers.first;
-
-            std::map<size_t, std::map<size_t, std::set<AstNodeExpr*>>> usedTrigsToUsingTrees
-                = getUsedTriggersToTrees(funcToUsedTriggers.second);
-
-            FileLine* const flp = funcp->fileline();
-            AstVarScope* const vscp = m_trigKit.vscTmpp();
-
-            // Helper returning expression getting array index `idx` from `scocep` with access
-            // `access`
-            const auto getIdx = [flp](AstVarScope* const scocep, VAccess access, size_t idx) {
-                return new AstArraySel{flp, new AstVarRef{flp, scocep, access},
-                                       new AstConst{flp, AstConst::Unsized64{}, idx}};
-            };
-
-            // Get eventDescription argument
-            AstVarScope* const argpVscp = new AstVarScope{flp, funcp->scopep(), funcp->argsp()};
-            funcp->scopep()->addVarsp(argpVscp);
-
-            // Mark as ready triggered schedulers
-            for (const auto& triggersToTrees : usedTrigsToUsingTrees) {
-                const size_t word = triggersToTrees.first;
-
-                for (const auto& bitsToTrees : triggersToTrees.second) {
-                    const size_t bit = bitsToTrees.first;
-                    const auto& schedulers = bitsToTrees.second;
-
-                    // Check if given bit is fired - single bits are checked since
-                    // usually there is only a few of them (only one most of the times as we await
-                    // only for one event)
-                    AstConst* const maskConstp = new AstConst{flp, AstConst::Unsized64{}, bit};
-                    AstAnd* const condp
-                        = new AstAnd{flp, getIdx(vscp, VAccess::READ, word), maskConstp};
-                    AstIf* const ifp = new AstIf{flp, condp};
-
-                    // Call ready() on each scheduler sensitive to `condp`
-                    for (AstNodeExpr* const schedp : schedulers) {
-                        AstCMethodHard* const callp = new AstCMethodHard{
-                            flp, schedp->cloneTree(false), VCMethod::SCHED_READY};
-                        callp->dtypeSetVoid();
-                        callp->addPinsp(new AstVarRef{flp, argpVscp, VAccess::READ});
-                        ifp->addThensp(callp->makeStmt());
-                    }
-                    funcp->addStmtsp(ifp);
-                }
-            }
-
-            AstVarScope* const vscAccp = m_trigKit.vscAccp();
-            // Add touched values to accumulator
-            for (const auto& triggersToTrees : usedTrigsToUsingTrees) {
-                const size_t word = triggersToTrees.first;
-                funcp->addStmtsp(new AstAssign{flp, getIdx(vscAccp, VAccess::WRITE, word),
-                                               new AstOr{flp, getIdx(vscAccp, VAccess::READ, word),
-                                                         getIdx(vscp, VAccess::READ, word)}});
-            }
-
-            // Clear touched values
-            for (const auto& triggersToTrees : usedTrigsToUsingTrees) {
-                const size_t word = triggersToTrees.first;
-                funcp->addStmtsp(new AstAssign{flp, getIdx(vscp, VAccess::WRITE, word),
-                                               new AstConst{flp, AstConst::Unsized64{}, 0}});
-            }
-        }
-    }
-    ~AwaitPreTrigVisitor() override = default;
-};
 
 //============================================================================
 // Top level entry-point to scheduling
@@ -1239,14 +1022,14 @@ void schedule(AstNetlist* netlistp) {
     // Step 15: Add neccessary evaluation before awaits
     if (AstCCall* const readyp = timingKit.createReady(netlistp)) {
         staticp->addStmtsp(readyp->makeStmt());
-        AwaitPreTrigVisitor{netlistp, senExprBuilder, trigKit};
+        preTrigVisitor(netlistp, senExprBuilder, trigKit);
     } else {
         // AwaitPreTrigVisitor clears Sentree pointers in AstCAwaits (as these sentrees will get
         // deleted later) if there was no need to call it, SenTrees have to be cleaned manually
         netlistp->foreach([](AstCAwait* const cAwaitp) { cAwaitp->clearSentreep(); });
     }
-    // Move 'actKit.m_vscp' to accumulator at the end of static initialziation so,
-    // triggers persist to the first resume
+    // Copy trigger vector to accumulator at the end of static initialziation so,
+    // triggers fired during initialization persist to the first resume.
     if (AstVarScope* const trigAccp = trigKit.vscAccp()) {
         staticp->addStmtsp(new AstAssign{
             trigAccp->fileline(), new AstVarRef{trigAccp->fileline(), trigAccp, VAccess::WRITE},
