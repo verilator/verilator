@@ -4,7 +4,6 @@
 === Test 2: addr out of range ===
 %Warning-UNSATCONSTR: t/t_constraint_unsat.v:16: Unsatisfied constraint: 'if (!randomize() with { addr == a; data == d; }) begin'
 %Warning-UNSATCONSTR: t/t_constraint_unsat.v:12: Unsatisfied constraint: 'constraint data_range { data > 10 && data < 200; }'
-%Warning-UNSATCONSTR: t/t_constraint_unsat.v:12: Unsatisfied constraint: 'constraint data_range { data > 10 && data < 200; }'
 %Warning-UNSATCONSTR: t/t_constraint_unsat.v:11: Unsatisfied constraint: 'constraint addr_range { addr < 127; }'
 %Warning-UNSATCONSTR: t/t_constraint_unsat.v:16: Unsatisfied constraint: 'if (!randomize() with { addr == a; data == d; }) begin'
 Randomization failed.
