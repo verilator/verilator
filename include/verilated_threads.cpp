@@ -137,7 +137,7 @@ VlThreadPool::VlThreadPool(VerilatedContext* contextp, unsigned nThreads) {
         m_workers.push_back(new VlWorkerThread{contextp});
         m_unassignedWorkers.push(i);
     }
-    m_numaStatus = numaAssign();
+    m_numaStatus = numaAssign(contextp);
 }
 
 VlThreadPool::~VlThreadPool() {
@@ -145,8 +145,9 @@ VlThreadPool::~VlThreadPool() {
     for (auto& i : m_workers) delete i;
 }
 
-std::string VlThreadPool::numaAssign() {
+std::string VlThreadPool::numaAssign(VerilatedContext* contextp) {
 #if defined(__linux) || defined(CPU_ZERO) || defined(VL_CPPCHECK)  // Linux-like pthreads
+    if (contextp && !contextp->useNumaAssign()) { return "NUMA assignment not requested"; }
     std::string numa_strategy = VlOs::getenvStr("VERILATOR_NUMA_STRATEGY", "default");
     if (numa_strategy == "none") {
         return "no NUMA assignment requested";

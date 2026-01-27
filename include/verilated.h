@@ -433,6 +433,8 @@ protected:
     const std::unique_ptr<VerilatedContextImpData> m_impdatap;
     // Number of threads to use for simulation (size of m_threadPool + 1 for main thread)
     unsigned m_threads = VlOs::getProcessDefaultParallelism();
+    // Use numa automatic CPU-to-thread assignment
+    bool m_useNumaAssign = false;
     // Number of threads in added models
     unsigned m_threadsInModels = 0;
     // The thread pool shared by all models added to this context
@@ -598,6 +600,13 @@ public:
     /// Set number of threads used for simulation (including the main thread)
     /// Can only be called before the thread pool is created (before first model is added).
     void threads(unsigned n);
+
+    /// Use numa automatic CPU-to-thread assignment.
+    bool useNumaAssign() const VL_MT_SAFE { return m_useNumaAssign; }
+    /// Set numa assignment of threads to cores
+    /// Defaults false; set true automatically when threads() called;
+    /// call this to override back to false if numa assignment not wanted.
+    void useNumaAssign(bool flag);
 
     /// Trace signals in models within the context; called by application code
     void trace(VerilatedTraceBaseC* tfp, int levels, int options = 0);
