@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Check == and != operations performed on queues
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2023 by Ilya Barkov.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2023 Ilya Barkov
 // SPDX-License-Identifier: CC0-1.0
 
 `define stop $stop

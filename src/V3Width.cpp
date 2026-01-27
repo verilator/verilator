@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -2770,6 +2770,12 @@ class WidthVisitor final : public VNVisitor {
                                               << nodep->prettyNameQ()
                                               << " (IEEE 1800-2023 6.20.6)");
         }
+        if (nodep->varp()->isClassMember() && !nodep->varp()->isFuncLocal()
+            && !nodep->varp()->lifetime().isStatic() && m_ftaskp && m_ftaskp->isStatic()) {
+            nodep->v3error("Cannot access non-static member variable "
+                           << nodep->prettyNameQ() << " from a static method "
+                           << m_ftaskp->prettyNameQ() << " without object (IEEE 1800-2023 8.10)");
+        }
         nodep->didWidth(true);
     }
 
@@ -3309,6 +3315,10 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstThisRef* nodep) override {
         if (nodep->didWidthAndSet()) return;
         nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->childDTypep()));
+        if (m_ftaskp && m_ftaskp->isStatic()) {
+            nodep->v3error("Cannot use 'this' in a static method "
+                           << m_ftaskp->prettyNameQ() << " (IEEE 1800-2023 8.10-8.11)");
+        }
     }
     void visit(AstClassRefDType* nodep) override {
         if (nodep->didWidthAndSet()) return;

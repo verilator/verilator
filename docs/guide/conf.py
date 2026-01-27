@@ -1,7 +1,7 @@
 # pylint: disable=C0103,C0114,C0116,C0301,E0402,W0622
 #
 # Configuration file for Verilator's Sphinx documentation builder.
-# Copyright 2003-2026 by Wilson Snyder.
+# SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 #
 # This file only contains overridden options. For a full list:
@@ -81,7 +81,7 @@ if 'VERILATOR_SPHINX_EXTENSIONS' in os.environ:
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = [
-    '_build', 'Thumbs.db', '.DS_Store', 'internals.rst', 'xml.rst', 'gen/ex_*', 'CONTRIBUTING.rst'
+    '_build', 'Thumbs.db', '.DS_Store', 'internals.rst', 'gen/ex_*', 'CONTRIBUTING.rst'
 ]
 
 # Warn about refs

@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -1309,8 +1309,9 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Convert to plain foreach
         FileLine* const fl = nodep->fileline();
 
-        AstNode* const arrayp = nodep->arrayp()->unlinkFrBack();
-        if (m_wantSingle) {
+        if (!nodep->stmtsp()) {
+            nodep->unlinkFrBack();
+        } else if (m_wantSingle) {
             AstNodeExpr* const itemp = editSingle(fl, nodep->stmtsp());
             AstCStmt* const cstmtp = new AstCStmt{fl};
             cstmtp->add("ret += \" \";\n");
@@ -1320,14 +1321,17 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstCExpr* const cexprp = new AstCExpr{fl};
             cexprp->dtypeSetString();
             cexprp->add("([&]{\nstd::string ret;\n");
-            cexprp->add(new AstBegin{fl, "", new AstForeach{fl, arrayp, cstmtp}, true});
+            cexprp->add(new AstBegin{
+                fl, "", new AstForeach{fl, nodep->arrayp()->unlinkFrBack(), cstmtp}, true});
             cexprp->add("return ret.empty() ? \"#b1\" : \"(bvand\" + ret + \")\";\n})()");
             nodep->replaceWith(new AstSFormatF{fl, "%@", false, cexprp});
         } else {
             iterateAndNextNull(nodep->stmtsp());
-            nodep->replaceWith(new AstBegin{
-                fl, "", new AstForeach{fl, arrayp, nodep->stmtsp()->unlinkFrBackWithNext()},
-                true});
+            nodep->replaceWith(
+                new AstBegin{fl, "",
+                             new AstForeach{fl, nodep->arrayp()->unlinkFrBack(),
+                                            nodep->stmtsp()->unlinkFrBackWithNext()},
+                             true});
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }

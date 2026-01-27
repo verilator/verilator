@@ -34,7 +34,9 @@ jobs:
           echo "path-exclude /usr/share/doc/*"  | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
           echo "path-exclude /usr/share/man/*"  | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
           echo "path-exclude /usr/share/info/*" | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
+          sudo apt update || \
           sudo apt update
+          sudo apt install ccache mold help2man libfl-dev libgoogle-perftools-dev libsystemc-dev || \
           sudo apt install ccache mold help2man libfl-dev libgoogle-perftools-dev libsystemc-dev
 
       - name: Use saved ccache

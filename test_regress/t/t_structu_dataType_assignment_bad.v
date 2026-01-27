@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module for specialized type default values
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2022 by Mostafa Gamal.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2022 Mostafa Gamal
 // SPDX-License-Identifier: CC0-1.0
 
 /* verilator lint_off UNPACKED */

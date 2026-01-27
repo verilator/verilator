@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
 # DESCRIPTION: Verilator: CI script for 'pages.yml', builds the GitHub Pages
 #
-# Copyright 2025 by Geza Lore. This program is free software; you
-# can redistribute it and/or modify it under the terms of either the GNU
-# Lesser General Public License Version 3 or the Perl Artistic License
-# Version 2.0.
-#
+# SPDX-FileCopyrightText: 2025 Geza Lore
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 # This scipt build the content of the GitHub Pages for the repository.

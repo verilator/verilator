@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module for issue #221
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2023 by Julien Margetts (Originally provided by Adrien Le Masle)
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2023 Julien Margetts (Originally provided by Adrien Le Masle)
 // SPDX-License-Identifier: Unlicense
 
 module verilator_latch

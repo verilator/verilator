@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Test for issue #2267
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2020 by James Pallister.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2020 James Pallister
 // SPDX-License-Identifier: CC0-1.0
 
 module mod_a;

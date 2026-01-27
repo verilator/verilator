@@ -1,8 +1,8 @@
 // DESCRIPTION: Test for IEEE 1800-2023 6.22.2 - 4-state to 2-state type equivalence
 // This should produce a type error because bit and logic are not equivalent types
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2026 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 module t;

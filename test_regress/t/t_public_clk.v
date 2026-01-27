@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: public clock signal
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2022 by Todd Strader
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2022 Todd Strader
 // SPDX-License-Identifier: CC0-1.0
 
 `ifdef VERILATOR

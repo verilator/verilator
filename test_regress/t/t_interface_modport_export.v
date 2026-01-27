@@ -2,8 +2,8 @@
 //
 // A test of the export parameter used with modport
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2013 by Jeremy Bennett.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2013 Jeremy Bennett
 // SPDX-License-Identifier: CC0-1.0
 
 interface test_if;

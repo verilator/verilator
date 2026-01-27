@@ -110,6 +110,7 @@ jobs:
         run: |
           echo 'set man-db/auto-update false' | sudo debconf-communicate >/dev/null
           sudo dpkg-reconfigure man-db
+          sudo apt install lcov || \
           sudo apt install lcov
 
       - name: Download repository archive

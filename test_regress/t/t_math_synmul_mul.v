@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2008 by Mahesh Kumashikar
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2008 Mahesh Kumashikar
 // SPDX-License-Identifier: CC0-1.0
 
 module t_math_synmul_mul (/*AUTOARG*/

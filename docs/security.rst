@@ -1,4 +1,6 @@
 .. for github, vim: syntax=reStructuredText
+.. SPDX-FileCopyrightText: 2025-2026 Wilson Snyder
+.. SPDX-License-Identifier: CC0-1.0
 
 Security Policy
 ===============

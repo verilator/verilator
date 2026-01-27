@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module for issue #2938
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2021 by Julien Margetts (Originally provided by YanJiun)
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2021 Julien Margetts (Originally provided by YanJiun)
 // SPDX-License-Identifier: Unlicense
 
 module test (

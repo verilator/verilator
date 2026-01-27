@@ -5,19 +5,37 @@
 %Error-PINNOTFOUND: t/t_param_implicit_local_bad.v:17:21: Parameter not found: '__paramNumber3'
    17 |     mod1  # ( 3, 4, 5 )   i_mod1 ();
       |                     ^
+                                                        : ... Location of instance's module declaration
+   26 | module mod1 # (
+      |        ^~~~
 %Error-PINNOTFOUND: t/t_param_implicit_local_bad.v:19:15: Parameter not found: '__paramNumber1'
    19 |     mod3  # ( 7, 24, 25 ) i_mod3 ();
       |               ^
+                                                        : ... Location of instance's module declaration
+   38 | module mod3 #() ();
+      |        ^~~~
 %Error-PINNOTFOUND: t/t_param_implicit_local_bad.v:19:18: Parameter not found: '__paramNumber2'
    19 |     mod3  # ( 7, 24, 25 ) i_mod3 ();
       |                  ^~
+                                                        : ... Location of instance's module declaration
+   38 | module mod3 #() ();
+      |        ^~~~
 %Error-PINNOTFOUND: t/t_param_implicit_local_bad.v:19:22: Parameter not found: '__paramNumber3'
    19 |     mod3  # ( 7, 24, 25 ) i_mod3 ();
       |                      ^~
+                                                        : ... Location of instance's module declaration
+   38 | module mod3 #() ();
+      |        ^~~~
 %Error-PINNOTFOUND: t/t_param_implicit_local_bad.v:20:22: Parameter not found: '__paramNumber3'
    20 |     intf1 # ( 8, 15, 17 ) i_intf1 ();
       |                      ^~
+                                                        : ... Location of instance's interface declaration
+   43 | interface intf1 # (
+      |           ^~~~~
 %Error-PINNOTFOUND: t/t_param_implicit_local_bad.v:21:22: Parameter not found: '__paramNumber3'
    21 |     prgm1 # ( 9, 40, 41 ) i_prgm1 ();
       |                      ^~
+                                                        : ... Location of instance's program declaration
+   50 | program prgm1 # (
+      |         ^~~~~
 %Error: Exiting due to

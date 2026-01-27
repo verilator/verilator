@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -214,7 +214,7 @@ class OrderGraphBuilder final : public VNVisitor {
         // Variable is produced
         if (gen) {
             // Update VarUsage
-            varscp->user2(varscp->user2() | VU_GEN);
+            varscp->user2Or(VU_GEN);
             // Add edges for produced variables
             if (m_inPost) {
                 if (!varscp->varp()->ignorePostWrite()) {
@@ -253,7 +253,7 @@ class OrderGraphBuilder final : public VNVisitor {
         // Variable is consumed
         if (con) {
             // Update VarUsage
-            varscp->user2(varscp->user2() | VU_CON);
+            varscp->user2Or(VU_CON);
             // Add edges
             if (m_inPost) {
                 // Combinational logic

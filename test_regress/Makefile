@@ -5,10 +5,10 @@
 # This calls the object directory makefile.  That allows the objects to
 # be placed in the "current directory" which simplifies the Makefile.
 #
-# Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-# can redistribute it and/or modify it under the terms of either the GNU
-# Lesser General Public License Version 3 or the Perl Artistic License
-# Version 2.0.
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of either the GNU Lesser General Public License Version 3
+# or the Perl Artistic License Version 2.0.
+# SPDX-FileCopyrightText: 2025-2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 #
 #****************************************************************************/
@@ -100,7 +100,7 @@ distclean::
 TEST_SNAP_DIR ?= snapshot
 
 # Command to diff directories
-TEST_DIFF_TOOL ?= $(if $(shell which icdiff), icdiff -N -r, diff -r)
+TEST_DIFF_TOOL ?= $(if $(shell which icdiff), icdiff -N -r --cols=$(shell tput cols), diff -r)
 
 TEST_SNAP_IGNORE := \
   *.status *.log *.dat *.d *.o *.a *.so *stats*.txt *.html *.includecache \

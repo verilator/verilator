@@ -7,7 +7,11 @@
  * This file contains the constant definitions, structure definitions,
  * and routine declarations used by SystemVerilog DPI.
  *
- * This file is from the SystemVerilog IEEE 1800-2023 Annex I.
+ * This file is from the SystemVerilog IEEE 1800-2023 Annex I,
+ * and is placed here as mandatory interface material, permitted under IEEE
+ * implementation permission doctrine.
+ * SPDX-FileCopyrightText: 2024 The Institute of Electrical and Electronics Engineers, Inc.
+ * SPDX-License-Identifier: LicenseRef-IEEE-1800
  */
 
 #ifndef INCLUDED_SVDPI

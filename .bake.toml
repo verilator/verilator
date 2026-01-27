@@ -1,4 +1,6 @@
-# mbake configuration file
+# DESCRIPTION: mbake configuration file
+# SPDX-FileCopyrightText: 2025 Wilson Snyder
+# SPDX-License-Identifier: CC0-1.0
 
 [formatter]
 # Indentation settings

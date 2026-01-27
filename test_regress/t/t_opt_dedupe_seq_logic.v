@@ -1,11 +1,9 @@
 // DESCRIPTION: Verilator: Dedupe optimization test.
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2012 Varun Koyyalagunta, Centaur Technology
 // SPDX-License-Identifier: CC0-1.0
 
-// Contributed 2012 by Varun Koyyalagunta, Centaur Technology.
-//
 //  Test consists of the follow logic tree, which has many obvious
 //  places for dedupe:
 /*

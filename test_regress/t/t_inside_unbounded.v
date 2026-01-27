@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Test for unbounded '$' in inside range
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2026.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wei-Lun Chiu
 // SPDX-License-Identifier: CC0-1.0
 
 module t;

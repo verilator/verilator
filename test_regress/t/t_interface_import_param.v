@@ -3,8 +3,8 @@
 // A test that a package import declaration can precede a parameter port list
 // in an interface declaration. See IEEE 1800-2023 25.3.
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2013 by Jeremy Bennett.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2013 Jeremy Bennett
 // SPDX-License-Identifier: CC0-1.0
 
 package bus_pkg;

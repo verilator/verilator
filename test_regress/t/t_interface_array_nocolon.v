@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Functionally demonstrate an array of interfaces
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2017 by Mike Popoloski.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2017 Mike Popoloski
 // SPDX-License-Identifier: CC0-1.0
 
 interface foo_intf

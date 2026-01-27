@@ -1,0 +1,60 @@
+# DESCRIPTION: Verilator default licensing for "reuse lint"
+
+version = 1
+
+[[annotations]]
+path = [
+    "**/.gitattributes",
+    "**/.gitignore",
+    ".clang-format",
+    ".clang-tidy",
+    ".codacy.yml",
+    ".devcontainer/devcontainer.json",
+    ".github/**",
+    ".pre-commit-hooks.yaml",
+    ".style.yapf",
+    "CITATION.cff",
+    "CPPLINT.cfg",
+    "docs/CONTRIBUTORS",
+    "docs/spelling.txt",
+    "docs/verilated.dox",
+    "examples/**/*.vc",
+    "install-sh",
+    "test_regress/.gdbinit",
+    "test_regress/input.vc",
+    "test_regress/input.xsim.vc",
+    "test_regress/t/*.dat",
+    "test_regress/t/*.gprof",
+    "test_regress/t/*.mem",
+    "test_regress/t/*.out",
+    "test_regress/t/*.tree",
+    "test_regress/t/*.vc",
+    "test_regress/t/t_lint_bsspace_bad.v",
+    "verilator.pc.in",
+]
+SPDX-FileCopyrightText = "2003-2026 Wilson Snyder"
+SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = [
+    "docs/_static/**",
+    "docs/gen/*.rst",
+    "docs/guide/figures/**",
+]
+SPDX-FileCopyrightText = "2003-2026 Wilson Snyder"
+SPDX-License-Identifier = "LGPL-3.0-only OR Artistic-2.0"
+
+[[annotations]]
+path = "test_regress/t/uvm/**"
+SPDX-FileCopyrightText = [
+    "2010-2017 Mentor Graphics Corporation",
+    "2010-2013 Synopsys, Inc.",
+    "2010-2018 Cadence Design Systems, Inc.",
+    "2013 NVIDIA Corporation",
+]
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = "include/gtkwave/lz4.*"
+SPDX-FileCopyrightText = "2011-2023 Yann Collet"
+SPDX-License-Identifier = "BSD-2-Clause"

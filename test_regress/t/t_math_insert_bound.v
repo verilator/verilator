@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2024 by Paul Swirhun.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2024 Paul Swirhun
 // SPDX-License-Identifier: CC0-1.0
 
 // Demonstrates the bug in https://github.com/verilator/verilator/issues/4850

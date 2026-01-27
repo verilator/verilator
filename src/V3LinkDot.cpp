@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -1051,8 +1051,8 @@ class LinkDotFindVisitor final : public VNVisitor {
     void visit(AstTypeTable*) override {}  // FindVisitor::
     void visit(AstConstPool*) override {}  // FindVisitor::
     void visit(AstIfaceRefDType* nodep) override {  // FindVisitor::
-        if (m_statep->forPrimary() && nodep->isVirtual() && nodep->ifacep()
-            && !nodep->ifacep()->user3()) {
+        if ((m_statep->forPrimary() || m_statep->forParamed()) && nodep->isVirtual()
+            && nodep->ifacep() && !nodep->ifacep()->user3()) {
             m_virtIfaces.push_back(nodep->ifacep());
             nodep->ifacep()->user3(true);
         }
@@ -3290,15 +3290,23 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                     return;
                 } else {
-                    const string suggest
+                    const std::string suggest
                         = (nodep->param() ? m_statep->suggestSymFlat(m_pinSymp, nodep->name(),
                                                                      LinkNodeMatcherVarParam{})
                                           : m_statep->suggestSymFlat(m_pinSymp, nodep->name(),
                                                                      LinkNodeMatcherVarIO{}));
+                    const std::string decl
+                        = ((m_cellp && m_cellp->modp())
+                               ? "\n"s + nodep->warnMore() + "... Location of instance's "
+                                     + m_cellp->modp()->verilogKwd() + " declaration\n"
+                                     + m_cellp->modp()->warnContextSecondary()
+                               : "");
                     nodep->v3warn(PINNOTFOUND,
                                   ucfirst(whatp)
                                       << " not found: " << nodep->prettyNameQ() << '\n'
-                                      << (suggest.empty() ? "" : nodep->warnMore() + suggest));
+                                      << (suggest.empty() ? "" : nodep->warnMore() + suggest)
+                                      << '\n'
+                                      << nodep->warnContextPrimary() << decl);
                     return;
                 }
             }
@@ -4016,8 +4024,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         [this](AstVar* v, AstRefDType* r) { return promoteVarToParamType(v, r); },
                         [this]() { return indent(); });
 
-                    replaceWithCheckBreak(nodep, refp);
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    if (VN_IS(nodep->backp(), SelExtract)) {
+                        m_packedArrayDtp = refp;
+                    } else {
+                        replaceWithCheckBreak(nodep, refp);
+                        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    }
                 }
             }
             if (!ok) {

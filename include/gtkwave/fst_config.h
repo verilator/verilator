@@ -1,6 +1,7 @@
-/* This file specifically for FST usage */
-/* config.h.  Generated from config.h.in by configure.  */
-/* config.h.in.  Generated from configure.ac by autoheader.  */
+// This file specifically for FST usage
+// Originally generated from config.h.in by configure.
+// SPDX-FileCopyrightText: 2018-2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
 
 /* Define to 1 if you have <alloca.h> and it should be used (not on Ultrix). */
 #if !defined(__MINGW32__) && !defined(__FreeBSD__)

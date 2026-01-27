@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -1212,7 +1212,8 @@ module_declaration:             // ==IEEE: module_declaration
                           GRAMMARP->endLabel($<fl>6, $1, $6); }
         //
         |       yEXTERN modFront parameter_port_listE portsStarE ';'
-                        { BBUNSUP($<fl>1, "Unsupported: extern module"); }
+                        { DEL($2->unlinkFrBack()); }
+                        // We allow modules to be declared after instantiations, so harmless
         ;
 
 modFront<nodeModulep>:
@@ -1508,7 +1509,8 @@ interface_declaration:          // IEEE: interface_declaration + interface_nonan
                           if ($5) $1->addStmtsp($5);
                           $1->hasParameterList($<flag>2); }
         |       yEXTERN intFront parameter_port_listE portsStarE ';'
-                        { BBUNSUP($<fl>1, "Unsupported: extern interface"); }
+                        { DEL($2->unlinkFrBack()); }
+                        // We allow interfaces to be declared after instantiations, so harmless
         ;
 
 intFront<nodeModulep>:
@@ -1598,7 +1600,8 @@ program_declaration:            // IEEE: program_declaration + program_nonansi_h
                           if ($5) $1->addStmtsp($5);
                           GRAMMARP->endLabel($<fl>7, $1, $7); }
         |       yEXTERN pgmFront parameter_port_listE portsStarE ';'
-                        { BBUNSUP($<fl>1, "Unsupported: extern program"); }
+                        { DEL($2->unlinkFrBack()); }
+                        // We allow programs to be declared after instantiations, so harmless
         ;
 
 pgmFront<nodeModulep>:
@@ -3514,7 +3517,7 @@ stmtList<nodeStmtp>:
         |       stmtList error ';'                      { $$ = $1; }  // LCOV_EXCL_LINE
         ;
 
-stmt<nodeStmtp>:                    // IEEE: statement + seq_block + par_block
+stmt<nodeStmtp>:                    // IEEE: statement + statement_or_null + seq_block + par_block
                 statement_item                          { $$ = $1; }
         //                      // S05 block creation rule
         |       id/*block_identifier*/ ':' statement_item       { $$ = new AstBegin{$<fl>1, *$1, $3, false}; }
@@ -6606,27 +6609,7 @@ property_spec<propSpecp>:               // IEEE: property_spec
         |       pexpr                                   { $$ = new AstPropSpec{$1->fileline(), nullptr, nullptr, $1}; }
         ;
 
-//UNSUPproperty_statement_spec<nodep>:  // ==IEEE: property_statement_spec
-//UNSUP //                      // IEEE: [ clocking_event ] [ yDISABLE yIFF '(' expression_or_dist ')' ] property_statement
-//UNSUP         property_statement                      { $$ = $1; }
-//UNSUP |       yDISABLE yIFF '(' expr/*expression_or_dist*/ ')' property_statement     { }
-//UNSUP //                      // IEEE: clocking_event property_statement
-//UNSUP //                      // IEEE: clocking_event yDISABLE yIFF '(' expr/*expression_or_dist*/ ')' property_statement
-//UNSUP //                      // Both overlap pexpr:"clocking_event pexpr"  the difference is
-//UNSUP //                      // property_statement:property_statementCaseIf so replicate it
-//UNSUP |       clocking_event property_statementCaseIf { }
-//UNSUP |       clocking_event yDISABLE yIFF '(' expr/*expression_or_dist*/ ')' property_statementCaseIf        { }
-//UNSUP ;
-
-//UNSUPproperty_statement<nodep>:  // ==IEEE: property_statement
-//UNSUP //                      // Doesn't make sense to have "pexpr ;" in pexpr rule itself, so we split out case/if
-//UNSUP         pexpr ';'                               { $$ = $1; }
-//UNSUP //                      // Note this term replicated in property_statement_spec
-//UNSUP //                      // If committee adds terms, they may need to be there too.
-//UNSUP |       property_statementCaseIf                { $$ = $1; }
-//UNSUP ;
-
-property_statementCaseIf<nodeExprp>:  // IEEE: property_statement - minus pexpr
+property_exprCaseIf<nodeExprp>:  // IEEE: part of property_expr for if/case
                 yCASE '(' expr/*expression_or_dist*/ ')' property_case_itemList yENDCASE
                         { $$ = new AstConst{$1, AstConst::BitFalse{}};
                           BBUNSUP($<fl>1, "Unsupported: property case expression");
@@ -6707,7 +6690,7 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         //
         //                      // IEEE-2009: property_statement
         //                      // IEEE-2012: yIF and yCASE
-        |       property_statementCaseIf                { $$ = $1; }
+        |       property_exprCaseIf                     { $$ = $1; }
         //
         |       ~o~pexpr/*sexpr*/ yP_POUNDMINUSPD pexpr
                         { $$ = $1; BBUNSUP($2, "Unsupported: #-# (in property expression)"); DEL($3); }
@@ -6762,7 +6745,8 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         //                      // property_statement_spec: clocking_event property_statement
         //
         //                      // Include property_specDisable to match property_spec rule
-        //UNSUP clocking_event yDISABLE yIFF '(' expr ')' pexpr %prec prSEQ_CLOCKING    { }
+        //UNSUP clocking_event ~p~sexpr %prec prSEQ_CLOCKING
+        //UNSUP         { $$ = $2; BBUNSUP($2, "Unsupported: clocking event (in sequence expression)"); DEL($1); }
         //
         //============= sexpr rules copied for property_expr
         |       BISONPRE_COPY_ONCE(sexpr,{s/~p~s/p/g; })        // {copied}
@@ -7846,7 +7830,13 @@ constraint_primary<nodeExprp>:  // ==IEEE: constraint_primary
 
 constraint_expressionList<nodep>:  // ==IEEE: { constraint_expression }
                 constraint_expression                           { $$ = $1; }
+        |       ySOLVE solve_before_list yBEFORE solve_before_list ';'
+                        { ($<fl>1)->v3warn(CONSTRAINTIGN, "Ignoring unsupported: solve-before only supported as top-level constraint statement");
+                          $$ = nullptr; DEL($2, $4); }
         |       constraint_expressionList constraint_expression { $$ = addNextNull($1, $2); }
+        |       constraint_expressionList ySOLVE solve_before_list yBEFORE solve_before_list ';'
+                        { ($<fl>2)->v3warn(CONSTRAINTIGN, "Ignoring unsupported: solve-before only supported as top-level constraint statement");
+                          $$ = $1; DEL($3, $5); }
         ;
 
 constraint_expression<nodep>:  // ==IEEE: constraint_expression

@@ -3,8 +3,8 @@
 // This model counts from 0 to 8. It forks a child process (in C++) at 6
 // and waits for the child to simulate and exit for resumption (of the parent).
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2023 by Yinan Xu.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2023 Yinan Xu
 // SPDX-License-Identifier: CC0-1.0
 
 module top(

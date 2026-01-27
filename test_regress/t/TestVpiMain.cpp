@@ -1,17 +1,10 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
-// Copyright 2024-2025 by Andrew Nolte. This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
-// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+// SPDX-FileCopyrightText: 2024-2025 cocotb contributors
+// SPDX-License-Identifier: BSD-3-Clause
 //
 //*************************************************************************
-
-// Copyright cocotb contributors
-// Licensed under the Revised BSD License, see LICENSE for details.
-// SPDX-License-Identifier: BSD-3-Clause
 
 #include "verilated.h"
 #include "verilated_vpi.h"

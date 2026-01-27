@@ -1,6 +1,6 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// Based on code Copyright (C) 2019-2021  The SymbiFlow Authors.
+// SPDX-FileCopyrightText: 2019-2021 The SymbiFlow Authors
 // SPDX-License-Identifier: ISC
 
 // verilog_format: off

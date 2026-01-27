@@ -10,8 +10,8 @@
 // %Warning-ASCRANGE: t/t_param_module.v:42: Ascending bit range vector: MSB
 // < LSB of bit range: -17:0
 //
-// This file ONLY is placed into the Public Domain, for any use, without
-// warranty, 2013 by Jie Xu.
+// This file ONLY is placed into the Public Domain.
+// SPDX-FileCopyrightText: 2013 Jie Xu
 // SPDX-License-Identifier: CC0-1.0
 
 // bug606

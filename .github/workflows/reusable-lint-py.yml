@@ -41,6 +41,7 @@ jobs:
 
       - name: Install python dependencies
         run: |
+          sudo apt install python3-clang || \
           sudo apt install python3-clang
           make venv
 

@@ -1,8 +1,8 @@
 // -*- SystemC -*-
 // DESCRIPTION: Verilator Example: Top level main for invoking SystemC model
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2017 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2017 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 //======================================================================
 

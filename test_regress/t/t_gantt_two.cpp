@@ -1,8 +1,8 @@
 //
 // DESCRIPTION: Verilator: Verilog Multiple Model Test Module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2022 by Geza Lore.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2022 Geza Lore
 // SPDX-License-Identifier: CC0-1.0
 //
 

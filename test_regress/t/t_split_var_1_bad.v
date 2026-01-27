@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2020 by Yutetsu TAKATSUKASA.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2020 Yutetsu TAKATSUKASA
 // SPDX-License-Identifier: CC0-1.0
 
 logic [7:0] should_show_warning_global0 /* verilator split_var */;

@@ -5,5 +5,8 @@
 %Error-PINNOTFOUND: t/t_interface_generic_bad3.v:21:42: Pin not found: '__pinNumber2'
    21 |   GenericModule genericModule (inf_inst, inf_inst);
       |                                          ^~~~~~~~
+                                                      : ... Location of instance's module declaration
+   11 | module GenericModule (interface a);
+      |        ^~~~~~~~~~~~~
                     ... For error description see https://verilator.org/warn/PINNOTFOUND?v=latest
 %Error: Exiting due to

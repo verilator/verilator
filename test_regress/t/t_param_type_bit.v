@@ -3,8 +3,8 @@
 // This test examines Verilator against paramter definition with functions.
 // Particularly the function takes in argument which is multi-dimentional.
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2023 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2023 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 module t;

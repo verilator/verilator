@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2013 by Ted Campbell.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2013 Ted Campbell
 // SPDX-License-Identifier: CC0-1.0
 
 //With MULTI_CLK defined shows bug, without it is hidden

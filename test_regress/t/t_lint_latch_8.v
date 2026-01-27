@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2025 by Yutetsu TAKATSUKASA
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2025 Yutetsu TAKATSUKASA
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 module t(input wire clk);

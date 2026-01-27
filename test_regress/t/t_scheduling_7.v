@@ -2,8 +2,8 @@
 //
 // Alias type check error test.
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2026 by Antmicro.
+// This file ONLY is placed under the Creative Commons Public Domain
+// SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
 static int counter = 0;

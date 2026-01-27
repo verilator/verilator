@@ -1,7 +1,7 @@
 `line 1 "t/t_preproc.v" 1
 // DESCRIPTION: Verilator: Verilog Test module
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2000-2011 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2000-2011 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 `line 6 "t/t_preproc.v" 0
@@ -15,8 +15,8 @@
 `line 1 "t/t_preproc_inc2.vh" 1
 // DESCRIPTION: Verilog::Preproc: Example source code
 `line 2 "t/t_preproc_inc2.vh" 0
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2000-2007 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2000-2007 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 At file "t/t_preproc_inc2.vh"  line 5
  
@@ -25,8 +25,8 @@ At file "t/t_preproc_inc2.vh"  line 5
 `line 1 "t/t_preproc_inc3.vh" 1
 // DESCRIPTION: Verilog::Preproc: Example source code
 `line 2 "t/t_preproc_inc3.vh" 0
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2000-2007 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2000-2007 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 `line 6 "t/t_preproc_inc3.vh" 0
@@ -369,8 +369,8 @@ begin addr <= ({regs[6], regs[7]}); wdata <= (rdata); wr <= 1; end  more
 `line 1 "t/t_preproc_inc4.vh" 1
 // DESCRIPTION: Verilog::Preproc: Example source code
 `line 2 "t/t_preproc_inc4.vh" 0
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2000-2011 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2000-2011 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 `line 6 "t/t_preproc_inc4.vh" 0
@@ -703,8 +703,8 @@ hello4hello4hello4hello4
 `line 1 "t/t_preproc_inc4.vh" 1
 // DESCRIPTION: Verilog::Preproc: Example source code
 `line 2 "t/t_preproc_inc4.vh" 0
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2000-2011 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2000-2011 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 `line 6 "t/t_preproc_inc4.vh" 0

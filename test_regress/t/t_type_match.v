@@ -5,8 +5,8 @@
 //
 // Generated C++ code should compile.
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2024 by Pawel Jewstafjew (Pawel.Jewstafjew@gmail.com).
+// This file ONLY is placed under the Creative Commons Public Domain
+// SPDX-FileCopyrightText: 2024 Pawel Jewstafjew <Pawel.Jewstafjew@gmail.com>
 // SPDX-License-Identifier: CC0-1.0
 
 module t (clk);
