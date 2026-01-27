@@ -2948,12 +2948,13 @@ if __name__ == '__main__':
         epilog="""driver.py invokes Verilator or another simulator on each test file.
     See docs/internals.rst in the distribution for more information.
 
-    Copyright 2024-2026 by Wilson Snyder. This program is free software; you
-    can redistribute it and/or modify it under the terms of either the GNU
-    Lesser General Public License Version 3 or the Perl Artistic License
-    Version 2.0.
+    This program is free software; you can redistribute it and/or modify it
+    under the terms of either the GNU Lesser General Public License Version
+    3 or the Perl Artistic License Version 2.0.
 
-    SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0""")
+    SPDX-FileCopyrightText: 2024-2026 Wilson Snyder
+    SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+""")
 
     parser.add_argument('--benchmark', action='store', help='enable benchmarking')
     parser.add_argument('--debug', action='store_const', const=9, help='enable debug')

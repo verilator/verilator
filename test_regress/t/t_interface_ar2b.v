@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: SystemVerilog interface test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2020 by Thierry Tambe.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2020 Thierry Tambe
 // SPDX-License-Identifier: CC0-1.0
 
 module t ();

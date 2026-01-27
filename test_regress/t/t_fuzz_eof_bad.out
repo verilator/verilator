@@ -1,10 +1,10 @@
-%Error: t/t_fuzz_eof_bad.v:3:31: Unterminated string
+%Error: t/t_fuzz_eof_bad.v:5:31: Unterminated string
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_fuzz_eof_bad.v:2:21: EOF in (*
-    2 |         initial $lay(*Hello!=nendmodule
+%Error: t/t_fuzz_eof_bad.v:4:21: EOF in (*
+    4 |         initial $lay(*Hello!=nendmodule
       |                     ^
-%Error: t/t_fuzz_eof_bad.v:2:21: syntax error, unexpected end of file
-    2 |         initial $lay(*Hello!=nendmodule
+%Error: t/t_fuzz_eof_bad.v:4:21: syntax error, unexpected end of file
+    4 |         initial $lay(*Hello!=nendmodule
       |                     ^
 %Error: Cannot continue
         ... This fatal error may be caused by the earlier error(s); resolve those first.

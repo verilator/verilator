@@ -6,8 +6,8 @@
 // is defined by SIZE. However since the loop range is larger, this only works
 // if short-circuited evaluation of the generate loop is in place.
 
-// This file ONLY is placed into the Public Domain, for any use, without
-// warranty, 2012 by Jeremy Bennett.
+// This file ONLY is placed into the Public Domain.
+// SPDX-FileCopyrightText: 2012 Jeremy Bennett
 // SPDX-License-Identifier: CC0-1.0
 
 `define MAX_SIZE  3

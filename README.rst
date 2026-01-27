@@ -1,5 +1,7 @@
 .. Github doesn't render images unless absolute URL
 .. Do not know of a conditional tag, "only: github" nor "github display" works
+.. SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
+.. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 |badge1| |badge2| |badge3| |badge4| |badge5| |badge7| |badge8|
 

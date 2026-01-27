@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2025 by AsFigo.
+// This file ONLY is placed under the Creative Commons Public Domain
+// SPDX-FileCopyrightText: 2025 AsFigo
 // SPDX-License-Identifier: CC0-1.0
 class UniqueMultipleArray;
   rand bit [15:0] uniq_val_arr[4];

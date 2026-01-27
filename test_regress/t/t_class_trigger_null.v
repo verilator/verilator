@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2026 by Cameron Waite.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Cameron Waite
 // SPDX-License-Identifier: CC0-1.0
 
 // Test for null pointer dereference when sensitivity expressions reference

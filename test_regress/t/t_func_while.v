@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2018 by Julien Margetts.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2018 Julien Margetts
 // SPDX-License-Identifier: CC0-1.0
 
 module t #(parameter SZ = 4096)

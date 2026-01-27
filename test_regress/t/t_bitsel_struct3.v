@@ -5,8 +5,8 @@
 // This test is to check that bit selection of multi-dimensional signal inside
 // of a packed struct works. Currently +: and -: blow up with packed structs.
 //
-// This file ONLY is placed into the Public Domain, for any use, without
-// warranty, 2013 by Jie Xu.
+// This file ONLY is placed into the Public Domain.
+// SPDX-FileCopyrightText: 2013 Jie Xu
 // SPDX-License-Identifier: CC0-1.0
 
 `define stop $stop

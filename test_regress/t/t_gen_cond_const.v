@@ -3,8 +3,8 @@
 // The given generate loop should have a constant expression as argument. This
 // test checks it really does evaluate as constant.
 
-// This file ONLY is placed into the Public Domain, for any use, without
-// warranty, 2012 by Jeremy Bennett.
+// This file ONLY is placed into the Public Domain.
+// SPDX-FileCopyrightText: 2012 Jeremy Bennett
 // SPDX-License-Identifier: CC0-1.0
 
 

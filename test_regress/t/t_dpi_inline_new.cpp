@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: DPI stub for t_dpi_inline_new
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2025 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2025 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 // Include the Verilator-generated DPI header so the C prototype matches

@@ -1,7 +1,7 @@
 // This test shall generate a warning, but not an internal error.
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2021 by Zhanglei Wang.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2021 Zhanglei Wang
 // SPDX-License-Identifier: CC0-1.0
 module t_bigmem(
    input wire clk,

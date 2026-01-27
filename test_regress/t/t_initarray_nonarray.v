@@ -3,8 +3,8 @@
 // The code here is used to trigger Verilator internal error
 // "InitArray on non-array"
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2017 by Jie Xu.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2017 Jie Xu
 // SPDX-License-Identifier: CC0-1.0
 
 typedef logic [7:0]  mask_t [7:0];

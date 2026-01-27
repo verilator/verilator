@@ -2,8 +2,8 @@
 //  Test an error where a shift amount was out of bounds and the compiler treats the
 //  value as undefined (issue #803)
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2014 by Jeff Bush.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2014 Jeff Bush
 // SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/

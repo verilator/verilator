@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty.
+// This file ONLY is placed into the Public Domain.
+// SPDX-FileCopyrightText: 2026 em2machine
 // SPDX-License-Identifier: CC0-1.0
 
 module t (

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: LicenseRef-Altera-No-Warranty
+// SPDX-FileCopyrightText: 2016 Altera Corporation
 //-------------------------------------------------------------------------
 // This Verilog file was developed by Altera Corporation.  It may be
 // freely copied and/or distributed at no cost.  Any persons using this

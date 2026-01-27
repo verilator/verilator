@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2020 by Edgar E. Iglesias.
+// This file ONLY is placed under the Creative Commons Public Domain
+// SPDX-FileCopyrightText: 2020 Edgar E. Iglesias
 // SPDX-License-Identifier: CC0-1.0
 
 #include VM_PREFIX_INCLUDE

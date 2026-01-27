@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2015 by Mike Thyer.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2015 Mike Thyer
 // SPDX-License-Identifier: CC0-1.0
 
 primitive d_edge_ff (q, clock, data);

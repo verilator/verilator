@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// Author: Yu-Sheng Lin johnjohnlys@media.ee.ntu.edu.tw
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2018 Yu-Sheng Lin <johnjohnlys@media.ee.ntu.edu.tw>
 // SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
