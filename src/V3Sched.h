@@ -287,7 +287,8 @@ public:
     // ACCESSORS
     AstVarScope* vscp() const { return m_vscp; }
     AstVarScope* vscAccp() const {
-        return m_vscAccp ? m_vscAccp : (m_vscAccp = newTrigVec("Acc", true));
+        if (!m_vscAccp) m_vscAccp = newTrigVec("Acc", true);
+        return m_vscAccp;
     }
     AstVarScope* vscTmpp() const {
         return m_vscTmpp ? m_vscTmpp : (m_vscTmpp = newTrigVec("Tmp", true));
@@ -434,6 +435,9 @@ void splitCheck(AstCFunc* ofuncp);
 // Build an AstIf conditional on the given SenTree being triggered
 AstIf* createIfFromSenTree(AstSenTree* senTreep);
 }  // namespace util
+
+void preTrigVisitor(AstNetlist* netlistp, SenExprBuilder& senExprBuilder,
+                    const TriggerKit& trigKit);
 
 }  // namespace V3Sched
 

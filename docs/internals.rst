@@ -602,7 +602,7 @@ all coroutines from the `toResume` stage.
 
 This split is done to avoid self-triggering, triggering coroutines
 multiple times and triggering coroutines in the same iteration
-they wre suspended. See the `Scheduling with timing` section
+they were suspended. See the `Scheduling with timing` section
 for details on how this is used.
 
 ``VlDynamicTriggerScheduler``
