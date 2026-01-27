@@ -353,7 +353,7 @@ static inline uint64_t vl_rolt(const uint64_t x, int k) VL_MT_SAFE {
 
 uint64_t VlRNG::rand64() VL_MT_UNSAFE {
     const uint64_t s0 = m_state[0];
-    const uint64_t s1 = m_state[1];
+    uint64_t s1 = m_state[1];
     const uint64_t result = vl_rolt(s0 * 5, 7) * 9;
 
     s1 ^= s0;
