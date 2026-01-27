@@ -7085,8 +7085,11 @@ class WidthVisitor final : public VNVisitor {
         if (m_containingClassp.find(nodep) != m_containingClassp.end()) {
             return m_containingClassp[nodep];
         }
-        if (AstNode* const abovep = nodep->aboveLoopp()) {
-            return m_containingClassp[nodep] = containingClass(abovep);
+        // Walk to list head before getting parent (abovep() not allowed on midlist nodes)
+        AstNode* np = nodep;
+        while (np->backp() && np->backp()->nextp() == np) np = np->backp();
+        if (AstNode* const parentp = np->backp()) {
+            return m_containingClassp[nodep] = containingClass(parentp);
         } else {
             return m_containingClassp[nodep] = nullptr;
         }

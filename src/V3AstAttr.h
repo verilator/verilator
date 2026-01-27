@@ -592,9 +592,6 @@ public:
                 || m_e == UNTYPED);
     }
     bool isDouble() const VL_MT_SAFE { return m_e == DOUBLE; }
-    bool isDynamicType() const {  // Types requiring unpacked storage in tagged unions
-        return m_e == DOUBLE || m_e == STRING || m_e == CHANDLE || m_e == EVENT;
-    }
     bool isEvent() const { return m_e == EVENT; }
     bool isString() const VL_MT_SAFE { return m_e == STRING; }
     bool isMTaskState() const VL_MT_SAFE { return m_e == MTASKSTATE; }

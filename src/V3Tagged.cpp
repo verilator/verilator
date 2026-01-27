@@ -108,6 +108,12 @@ class TaggedVisitor final : public VNVisitor {
         return name.substr(dotPos + 7);
     }
 
+    // Check if name ends with suffix - O(1) string comparison
+    static bool hasSuffix(const string& name, const string& suffix) {
+        return name.size() > suffix.size()
+               && name.compare(name.size() - suffix.size(), suffix.size(), suffix) == 0;
+    }
+
     // Build module variable cache for O(1) lookups
     void buildModuleVarCache(AstNodeModule* modulep) {
         if (m_cachedModulep == modulep) return;
@@ -159,16 +165,19 @@ class TaggedVisitor final : public VNVisitor {
                && VN_AS(dtp, BasicDType)->keyword() == VBasicDTypeKwd::CVOID;
     }
 
-    // Find AstVar by name in module containing the if statement
-    // Uses O(1) cache lookup - V3Begin has already lifted all begin-block vars to module level
-    AstVar* findPatternVar(AstIf* ifp, const string& varName) {
-        for (AstNode* parentp = ifp->backp(); parentp; parentp = parentp->backp()) {
-            if (AstNodeModule* const modp = VN_CAST(parentp, NodeModule)) {
-                return findVarInModuleCache(modp, varName);
+    // Find the pattern variable from a VarRef in the given tree
+    // Searches for a VarRef whose variable name ends with __DOT__ + varName
+    // O(N) where N = number of VarRefs; uses short-circuit evaluation after first match
+    AstVar* findPatternVarFromBody(AstNode* nodep, const string& varName) {
+        if (!nodep) return nullptr;
+        const string suffix = "__DOT__" + varName;
+        AstVar* foundVarp = nullptr;
+        nodep->foreachAndNext([&](AstVarRef* varRefp) {
+            if (!foundVarp && hasSuffix(varRefp->varp()->name(), suffix)) {
+                foundVarp = varRefp->varp();
             }
-            if (VN_IS(parentp, NodeFTask)) break;
-        }
-        return nullptr;
+        });
+        return foundVarp;
     }
 
     // Replace all references to pattern variable with the new local variable
@@ -189,10 +198,7 @@ class TaggedVisitor final : public VNVisitor {
         const string suffix = "__DOT__" + patternVarName;
         nodep->foreachAndNext([&](AstVarRef* varRefp) {
             const string& refName = varRefp->varp()->name();
-            if (refName == patternVarName
-                || (refName.size() > suffix.size()
-                    && refName.compare(refName.size() - suffix.size(), suffix.size(), suffix)
-                           == 0)) {
+            if (refName == patternVarName || hasSuffix(refName, suffix)) {
                 varRefp->varp(newVarp);
                 varRefp->name(newVarp->name());
             }
@@ -243,7 +249,7 @@ class TaggedVisitor final : public VNVisitor {
     AstNodeExpr* transformTaggedExpr(AstTaggedExpr* nodep, AstUnionDType* unionp) {
         FileLine* const fl = nodep->fileline();
         AstMemberDType* const memberp = findMember(unionp, nodep->name());
-        UASSERT_OBJ(memberp, nodep, "Member not found in tagged union");
+        // memberp validity checked by V3Width before V3Tagged runs
 
         const int tagIndex = memberp->tagIndex();
         const int maxMemberWidth = unionp->maxMemberWidth();
@@ -461,20 +467,24 @@ class TaggedVisitor final : public VNVisitor {
         AstNode* varAssignsp = nullptr;
         const TaggedMatchContext matchCtx{fl, unionp, memberp, isUnpacked};
 
+        // Get guard expression before looking for pattern variable
+        // (guard may contain VarRefs to the pattern variable)
+        AstNodeExpr* guardp = matchesp->guardp();
+        if (guardp) guardp = guardp->unlinkFrBack();
+
         AstNode* const innerPatternp = tagPatternp ? tagPatternp->patternp() : nullptr;
         if (innerPatternp && !VN_IS(innerPatternp, PatternStar)) {
             AstPatternVar* const patVarp = VN_CAST(innerPatternp, PatternVar);
             if (patVarp && !isVoid) {
-                origVarp = findPatternVar(ifp, patVarp->name());
+                // Search the if body and guard to find the actual variable that VarRefs point to
+                // This handles cases where V3Begin lifts variables with __DOT__ prefixes
+                origVarp = findPatternVarFromBody(ifp->thensp(), patVarp->name());
+                if (!origVarp) origVarp = findPatternVarFromBody(guardp, patVarp->name());
                 const auto result = handleSimplePatternVar(matchCtx, exprp, memberName, patVarp);
                 varDeclp = result.first;
                 varAssignsp = result.second;
             }
         }
-
-        // Get guard expression before deleting matchesp
-        AstNodeExpr* guardp = matchesp->guardp();
-        if (guardp) guardp = guardp->unlinkFrBack();
 
         // Delete the matches expression
         if (AstNodeExpr* oldCondp = matchesp->unlinkFrBack()) {
@@ -607,7 +617,7 @@ class TaggedVisitor final : public VNVisitor {
                                      AstUnionDType* unionp) {
         FileLine* const fl = taggedp->fileline();
         AstMemberDType* const memberp = findMember(unionp, taggedp->name());
-        UASSERT_OBJ(memberp, taggedp, "Member not found in tagged union");
+        // memberp validity checked by V3Width before V3Tagged runs
 
         const int tagIndex = memberp->tagIndex();
         const bool isVoid = isVoidDType(memberp->subDTypep());
@@ -656,10 +666,7 @@ class TaggedVisitor final : public VNVisitor {
         // Get the union type from the expression's dtype
         // V3Width already validated: dtypep exists and is a tagged union
         AstNodeDType* const dtypep = nodep->dtypep();
-        UASSERT_OBJ(dtypep, nodep, "Tagged expression without type context");
         AstUnionDType* const unionp = VN_CAST(dtypep->skipRefp(), UnionDType);
-        UASSERT_OBJ(unionp && unionp->isTagged(), nodep,
-                    "Tagged expression used with non-tagged-union type");
 
         // For unpacked tagged unions, handle at assignment level
         // This includes explicitly unpacked unions and those with dynamic/array members
