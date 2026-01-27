@@ -597,7 +597,7 @@ void createEval(AstNetlist* netlistp,  //
             AstNodeStmt* stmtsp = trigKit.newCompCall(nbaKit.m_vscp);
             // Mark as ready for triggered awaits
             if (timingReadyp) stmtsp = AstNode::addNext(stmtsp, timingReadyp->makeStmt());
-            if (actKit.m_vscp && v3Global.usesTiming()) {
+            if (actKit.m_vscp) {
                 AstVarScope* const vscAccp = trigKit.vscAccp();
                 stmtsp = AstNode::addNext(stmtsp, trigKit.newOrIntoCall(actKit.m_vscp, vscAccp));
             }
