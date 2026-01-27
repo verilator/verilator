@@ -318,7 +318,7 @@ void VlProcess::randstate(const std::string& state) VL_MT_UNSAFE {
 //===========================================================================
 // Random -- Mostly called at init time, so not inline.
 
-static inline uint64_t vl_splitmix64(uint64_t& x) VL_MT_UNSAFE {
+static uint64_t vl_splitmix64(uint64_t& x) VL_MT_UNSAFE {
     // SplitMix64 algorithm, copied under public domain from
     // https://prng.di.unimi.it/splitmix64.c
     // by Sebastiano Vigna
@@ -347,9 +347,7 @@ VlRNG::VlRNG(uint64_t seed) VL_MT_SAFE {
     m_state[1] = vl_splitmix64(seed /*ref; seed changed*/);
 }
 
-static inline uint64_t vl_rolt(const uint64_t x, int k) VL_MT_SAFE {
-    return (x << k) | (x >> (64 - k));
-}
+static uint64_t vl_rolt(const uint64_t x, int k) VL_MT_SAFE { return (x << k) | (x >> (64 - k)); }
 
 uint64_t VlRNG::rand64() VL_MT_UNSAFE {
     const uint64_t s0 = m_state[0];
