@@ -744,9 +744,11 @@ class AwaitPreTrigVisitor final : public VNVisitor {
     const VNUser1InUse m_user1InUse;
 
     /**
-     * AstCAwait::user1()       ->  bool.       True if node has been visited
-     * AstSenTree::user1p()     ->  AstCFunc*.  Function that has to be called before awaiting for
-     *                                          CAwait pointing to this SenTree
+     * AstCAwait::user1()       ->  bool.           True if node has been visited
+     * AstSenTree::user1p()     ->  AstCFunc*.      Function that has to be called before awaiting
+     *                                              for CAwait pointing to this SenTree
+     * AstCFunc::user1p()       ->  AstVarScope*    Function's local temporary extended trigger
+     *                                              vector variable scope
      */
 
     // Netlist - needed for using util::makeSubFunction()
@@ -797,6 +799,14 @@ class AwaitPreTrigVisitor final : public VNVisitor {
                 m_netlistp, m_preTriggerFuncUniqueName.get(senTreep), false);
             senTreep->user1p(funcp);
 
+            // Create a local temporary extended vector
+            AstVarScope* const tmpp = m_trigKit.newTrigVec("Tmp", true);
+            AstVar* const tmpVarp = tmpp->varp()->unlinkFrBack();
+            funcp->user1p(tmpp);
+            funcp->addVarsp(tmpVarp);
+            tmpVarp->funcLocal(true);
+            tmpVarp->noReset(true);
+
             AstVar* const argp = new AstVar{flp, VVarType::BLOCKTEMP, "__VeventDescription",
                                             senTreep->findBasicDType(VBasicDTypeKwd::CHARPTR)};
             argp->funcLocal(true);
@@ -832,7 +842,7 @@ class AwaitPreTrigVisitor final : public VNVisitor {
             SenExprBuilder::Results results = m_senExprBuilder.getResultsAndClearUpdates();
             for (AstNodeStmt* const stmtsp : results.m_inits) funcp->addStmtsp(stmtsp);
             for (AstNodeStmt* const stmtsp : results.m_preUpdates) funcp->addStmtsp(stmtsp);
-            funcp->addStmtsp(TriggerKit::createSenTrigVecAssignment(m_trigKit.vscTmpp(), trigps));
+            funcp->addStmtsp(TriggerKit::createSenTrigVecAssignment(tmpp, trigps));
             trigps.clear();
             for (AstNodeStmt* const stmtsp : results.m_postUpdates) funcp->addStmtsp(stmtsp);
         }
@@ -890,7 +900,7 @@ public:
                 = getUsedTriggersToTrees(funcToUsedTriggers.second);
 
             FileLine* const flp = funcp->fileline();
-            AstVarScope* const vscp = m_trigKit.vscTmpp();
+            AstVarScope* const vscp = VN_AS(funcp->user1p(), VarScope);
 
             // Helper returning expression getting array index `idx` from `scocep` with access
             // `access`
@@ -938,13 +948,6 @@ public:
                 funcp->addStmtsp(new AstAssign{flp, getIdx(vscAccp, VAccess::WRITE, word),
                                                new AstOr{flp, getIdx(vscAccp, VAccess::READ, word),
                                                          getIdx(vscp, VAccess::READ, word)}});
-            }
-
-            // Clear touched values
-            for (const auto& triggersToTrees : usedTrigsToUsingTrees) {
-                const size_t word = triggersToTrees.first;
-                funcp->addStmtsp(new AstAssign{flp, getIdx(vscp, VAccess::WRITE, word),
-                                               new AstConst{flp, AstConst::Unsized64{}, 0}});
             }
         }
     }
