@@ -737,10 +737,10 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
     return kit;
 }
 
-//  Find all CAwaits, clear SenTrees inside them, generate pre-trigger functions (functions that
+//  Find all CAwaits, clear SenTrees inside them, generate before-trigger functions (functions that
 //  shall be called before awaiting for a VCMethod::SCHED_TRIGGER) and add thier calls before
 //  proper CAwaits
-class AwaitPreTrigVisitor final : public VNVisitor {
+class AwaitBeforeTrigVisitor final : public VNVisitor {
     const VNUser1InUse m_user1InUse;
 
     /**
@@ -757,8 +757,8 @@ class AwaitPreTrigVisitor final : public VNVisitor {
     const TriggerKit& m_trigKit;
     // Expression builder - for building expressions from SenItems
     SenExprBuilder& m_senExprBuilder;
-    // Generator of unique names for pre-trigger function
-    V3UniqueNames m_preTriggerFuncUniqueName;
+    // Generator of unique names for before-trigger function
+    V3UniqueNames m_beforeTriggerFuncUniqueName;
 
     // Map containing every generated CFuncs and indexes of triggers used within it
     std::map<AstCFunc*, std::set<size_t>> m_funcToUsedTriggers;
@@ -790,13 +790,13 @@ class AwaitPreTrigVisitor final : public VNVisitor {
         return usedTrigsToUsingTrees;
     }
 
-    // Returns a CCall to a pre-trigger function for a given SenTree,
+    // Returns a CCall to a before-trigger function for a given SenTree,
     // Constructs such a function if it doesn't exist yet
-    AstCCall* getPreTriggerStmt(AstSenTree* const senTreep) {
+    AstCCall* getBeforeTriggerStmt(AstSenTree* const senTreep) {
         FileLine* const flp = senTreep->fileline();
         if (!senTreep->user1p()) {
             AstCFunc* const funcp = util::makeSubFunction(
-                m_netlistp, m_preTriggerFuncUniqueName.get(senTreep), false);
+                m_netlistp, m_beforeTriggerFuncUniqueName.get(senTreep), false);
             senTreep->user1p(funcp);
 
             // Create a local temporary extended vector
@@ -857,21 +857,22 @@ class AwaitPreTrigVisitor final : public VNVisitor {
         // Check whether it is a CAwait for a VCMethod::SCHED_TRIGGER
         if (const AstCMethodHard* const cMethodHardp = VN_CAST(nodep->exprp(), CMethodHard)) {
             if (cMethodHardp->method() == VCMethod::SCHED_TRIGGER) {
-                AstCCall* const preTrigp = getPreTriggerStmt(nodep->sentreep());
+                AstCCall* const beforeTrigp = getBeforeTriggerStmt(nodep->sentreep());
 
                 FileLine* const flp = nodep->fileline();
                 // Add eventDescription argument value to a CCall - it is used for --runtime-debug
                 if (AstNode* const pinp = cMethodHardp->pinsp()->nextp()->nextp()) {
-                    preTrigp->addArgsp(VN_AS(pinp, NodeExpr)->cloneTree(false));
+                    beforeTrigp->addArgsp(VN_AS(pinp, NodeExpr)->cloneTree(false));
                 } else {
-                    preTrigp->addArgsp(new AstCExpr{flp, "nullptr"});
+                    beforeTrigp->addArgsp(new AstCExpr{flp, "nullptr"});
                 }
 
-                // Change CAwait Expression into StmtExpr that calls to a pre-trigger function
+                // Change CAwait Expression into StmtExpr that calls to a before-trigger function
                 // first and then return CAwait
                 VNRelinker relinker;
                 nodep->unlinkFrBack(&relinker);
-                AstExprStmt* const exprstmtp = new AstExprStmt{flp, preTrigp->makeStmt(), nodep};
+                AstExprStmt* const exprstmtp
+                    = new AstExprStmt{flp, beforeTrigp->makeStmt(), nodep};
                 relinker.relink(exprstmtp);
                 m_senTreeToSched.emplace(nodep->sentreep(), cMethodHardp->fromp());
             }
@@ -883,15 +884,15 @@ class AwaitPreTrigVisitor final : public VNVisitor {
     void visit(AstNode* const nodep) override { iterateChildren(nodep); }
 
 public:
-    AwaitPreTrigVisitor(AstNetlist* netlistp, SenExprBuilder& senExprBuilder,
-                        const TriggerKit& trigKit)
+    AwaitBeforeTrigVisitor(AstNetlist* netlistp, SenExprBuilder& senExprBuilder,
+                           const TriggerKit& trigKit)
         : m_netlistp{netlistp}
         , m_trigKit{trigKit}
         , m_senExprBuilder{senExprBuilder}
-        , m_preTriggerFuncUniqueName{"__VpreTrig"} {
+        , m_beforeTriggerFuncUniqueName{"__VbeforeTrig"} {
         iterate(netlistp);
 
-        // In each of pre-trigger functions check if anything was triggered and mark as ready
+        // In each of before-trigger functions check if anything was triggered and mark as ready
         // triggered schedulers
         for (const auto& funcToUsedTriggers : m_funcToUsedTriggers) {
             AstCFunc* const funcp = funcToUsedTriggers.first;
@@ -951,12 +952,12 @@ public:
             }
         }
     }
-    ~AwaitPreTrigVisitor() override = default;
+    ~AwaitBeforeTrigVisitor() override = default;
 };
 
-void preTrigVisitor(AstNetlist* netlistp, SenExprBuilder& senExprBuilder,
-                    const TriggerKit& trigKit) {
-    AwaitPreTrigVisitor{netlistp, senExprBuilder, trigKit};
+void beforeTrigVisitor(AstNetlist* netlistp, SenExprBuilder& senExprBuilder,
+                       const TriggerKit& trigKit) {
+    AwaitBeforeTrigVisitor{netlistp, senExprBuilder, trigKit};
 }
 
 }  // namespace V3Sched

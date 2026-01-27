@@ -431,8 +431,8 @@ void splitCheck(AstCFunc* ofuncp);
 AstIf* createIfFromSenTree(AstSenTree* senTreep);
 }  // namespace util
 
-void preTrigVisitor(AstNetlist* netlistp, SenExprBuilder& senExprBuilder,
-                    const TriggerKit& trigKit);
+void beforeTrigVisitor(AstNetlist* netlistp, SenExprBuilder& senExprBuilder,
+                       const TriggerKit& trigKit);
 
 }  // namespace V3Sched
 
