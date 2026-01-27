@@ -155,7 +155,7 @@ public:
 #endif
 };
 
-enum class VlDelayPhase : bool { ACTIVE, INACTIVE };
+enum class VlDelayPhase : uint8_t { ACTIVE, FORK, INACTIVE };
 
 //=============================================================================
 // VlDelayScheduler stores coroutines to be resumed at a certain simulation time. If the current
@@ -169,10 +169,11 @@ class VlDelayScheduler final {
     // MEMBERS
     VerilatedContext& m_context;
     VlDelayedCoroutineQueue m_queue;  // Coroutines to be restored at a certain simulation time
+    std::vector<VlCoroutineHandle> m_forkDelayed;  // Coroutines waiting for fork..join_none #0
     std::vector<VlCoroutineHandle> m_zeroDelayed;  // Coroutines waiting for #0
-    std::vector<VlCoroutineHandle> m_zeroDlyResumed;  // Coroutines that waited for #0 and are
-                                                      // to be resumed. Kept as a field to avoid
-                                                      // reallocation.
+    std::vector<VlCoroutineHandle> m_zeroDlyResumed;  // Coroutines that waited for #0 or fork and
+                                                      // are to be resumed. Kept as a field to
+                                                      // avoid reallocation.
 
 public:
     // CONSTRUCTORS
@@ -185,21 +186,24 @@ public:
     // coroutines)
     uint64_t nextTimeSlot() const;
     // Are there no delayed coroutines awaiting?
-    bool empty() const { return m_queue.empty() && m_zeroDelayed.empty(); }
+    bool empty() const {
+        return m_queue.empty() && m_forkDelayed.empty() && m_zeroDelayed.empty();
+    }
     // Are there coroutines to resume at the current simulation time?
     bool awaitingCurrentTime() const {
         return (!m_queue.empty() && (m_queue.cbegin()->first <= m_context.time()))
-               || !m_zeroDelayed.empty();
+               || !m_forkDelayed.empty() || !m_zeroDelayed.empty();
     }
 #ifdef VL_DEBUG
     void dump() const;
 #endif
     // Used by coroutines for co_awaiting a certain simulation time
     auto delay(uint64_t delay, VlProcessRef process, const char* filename = VL_UNKNOWN,
-               int lineno = 0) {
+               int lineno = 0, bool isFork = false) {
         struct Awaitable final {
             VlProcessRef process;  // Data of the suspended process, null if not needed
             VlDelayedCoroutineQueue& queue;
+            std::vector<VlCoroutineHandle>& queueForkDelay;
             std::vector<VlCoroutineHandle>& queueZeroDelay;
             const uint64_t delay;
             const VlDelayPhase phase;
@@ -209,6 +213,8 @@ public:
             void await_suspend(std::coroutine_handle<> coro) {
                 if (phase == VlDelayPhase::ACTIVE) {
                     queue.emplace(delay, VlCoroutineHandle{coro, process, fileline});
+                } else if (phase == VlDelayPhase::FORK) {
+                    queueForkDelay.emplace_back(VlCoroutineHandle{coro, process, fileline});
                 } else {
                     queueZeroDelay.emplace_back(VlCoroutineHandle{coro, process, fileline});
                 }
@@ -216,7 +222,14 @@ public:
             void await_resume() const {}
         };
 
-        const VlDelayPhase phase = (delay == 0) ? VlDelayPhase::INACTIVE : VlDelayPhase::ACTIVE;
+        VlDelayPhase phase;
+        if (delay != 0) {
+            phase = VlDelayPhase::ACTIVE;
+        } else if (isFork) {
+            phase = VlDelayPhase::FORK;
+        } else {
+            phase = VlDelayPhase::INACTIVE;
+        }
 #ifdef VL_DEBUG
         if (phase == VlDelayPhase::INACTIVE) {
             VL_WARN_MT(filename, lineno, VL_UNKNOWN,
@@ -225,9 +238,13 @@ public:
         }
 #endif
 
-        return Awaitable{process,       m_queue,
-                         m_zeroDelayed, m_context.time() + delay,
-                         phase,         VlFileLineDebug{filename, lineno}};
+        return Awaitable{process,
+                         m_queue,
+                         m_forkDelayed,
+                         m_zeroDelayed,
+                         m_context.time() + delay,
+                         phase,
+                         VlFileLineDebug{filename, lineno}};
     }
 };
 

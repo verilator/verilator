@@ -3327,9 +3327,11 @@ void AstCgOptionAssign::dumpJson(std::ostream& str) const {
 void AstDelay::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     if (isCycleDelay()) str << " [CYCLE]";
+    if (isFork()) str << " [FORK]";
 }
 void AstDelay::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, isCycleDelay);
+    dumpJsonBoolFunc(str, isFork);
     dumpJsonGen(str);
 }
 
