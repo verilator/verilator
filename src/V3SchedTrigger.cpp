@@ -233,8 +233,8 @@ AstCFunc* TriggerKit::createOrIntoFunc(AstUnpackArrayDType* const oDtypep,
 
     // Create function
     std::string name = "_trigger_orInto__" + m_name;
-    name += iDtypep == m_trigVecDTypep ? "" : "_ext";
-    name += oDtypep == m_trigVecDTypep ? "" : "IntoExt";
+    name += iDtypep == m_trigVecDTypep ? "_vec" : "_ext";
+    name += oDtypep == m_trigVecDTypep ? "_vec" : "_ext";
     AstCFunc* const funcp = util::makeSubFunction(netlistp, name, m_slow);
     funcp->isStatic(true);
 

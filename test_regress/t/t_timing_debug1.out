@@ -62,8 +62,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -84,8 +84,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -97,8 +97,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -113,8 +113,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -144,8 +144,8 @@
 -V{t#,#}         Committing processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk1):
@@ -174,8 +174,8 @@
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -193,8 +193,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -209,8 +209,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -225,8 +225,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -251,8 +251,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] t.clk1)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -272,8 +272,8 @@
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -291,8 +291,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -305,8 +305,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -321,8 +321,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -349,8 +349,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -363,8 +363,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -379,8 +379,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -409,8 +409,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
 -V{t#,#}         Committing processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk1):
@@ -435,8 +435,8 @@
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -454,8 +454,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -470,8 +470,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -486,8 +486,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -516,8 +516,8 @@
 -V{t#,#}         Committing processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk2):
@@ -542,8 +542,8 @@
 -V{t#,#}         'act' region trigger index 4 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 5 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -560,8 +560,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -575,8 +575,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -591,8 +591,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -620,8 +620,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] t.clk1)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -642,8 +642,8 @@
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -662,8 +662,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -676,8 +676,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -692,8 +692,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -721,8 +721,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -735,8 +735,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -751,8 +751,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -782,8 +782,8 @@
 -V{t#,#}         Committing processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk1):
@@ -812,8 +812,8 @@
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -831,8 +831,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -847,8 +847,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -863,8 +863,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -889,8 +889,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] t.clk1)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -910,8 +910,8 @@
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -929,8 +929,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -943,8 +943,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -959,8 +959,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -987,8 +987,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -1001,8 +1001,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -1017,8 +1017,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -1047,8 +1047,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
 -V{t#,#}         Committing processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk1):
@@ -1073,8 +1073,8 @@
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -1092,8 +1092,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -1108,8 +1108,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -1124,8 +1124,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -1150,8 +1150,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 3 is active: @([hybrid] t.clk2)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -1171,8 +1171,8 @@
 -V{t#,#}         'act' region trigger index 4 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 5 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -1190,8 +1190,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -1204,8 +1204,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -1220,8 +1220,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -1246,8 +1246,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] t.clk1)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -1267,8 +1267,8 @@
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -1286,8 +1286,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -1300,8 +1300,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -1316,8 +1316,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -1344,8 +1344,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -1358,8 +1358,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -1374,8 +1374,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -1404,8 +1404,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
 -V{t#,#}         Committing processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk1):
@@ -1430,8 +1430,8 @@
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -1449,8 +1449,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -1465,8 +1465,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -1481,8 +1481,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -1507,8 +1507,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] t.clk1)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -1528,8 +1528,8 @@
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -1547,8 +1547,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -1561,8 +1561,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -1577,8 +1577,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -1605,8 +1605,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -1619,8 +1619,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -1635,8 +1635,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -1671,8 +1671,8 @@
 -V{t#,#}         Committing processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk1):
@@ -1705,8 +1705,8 @@
 -V{t#,#}         'act' region trigger index 4 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 5 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -1724,8 +1724,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -1740,8 +1740,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -1756,8 +1756,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -1784,8 +1784,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -1798,8 +1798,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -1814,8 +1814,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -1841,8 +1841,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] t.clk1)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -1863,8 +1863,8 @@
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -1883,8 +1883,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -1897,8 +1897,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -1913,8 +1913,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -1942,8 +1942,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -1956,8 +1956,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -1972,8 +1972,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -2003,8 +2003,8 @@
 -V{t#,#}         Committing processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk1):
@@ -2033,8 +2033,8 @@
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -2052,8 +2052,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -2068,8 +2068,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -2084,8 +2084,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -2110,8 +2110,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] t.clk1)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -2131,8 +2131,8 @@
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -2150,8 +2150,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -2164,8 +2164,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -2180,8 +2180,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -2208,8 +2208,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -2222,8 +2222,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -2238,8 +2238,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -2265,8 +2265,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 3 is active: @([hybrid] t.clk2)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -2288,8 +2288,8 @@
 -V{t#,#}         'act' region trigger index 4 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 5 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -2309,8 +2309,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -2323,8 +2323,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -2339,8 +2339,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -2369,8 +2369,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
 -V{t#,#}         Committing processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk1):
@@ -2395,8 +2395,8 @@
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -2414,8 +2414,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -2430,8 +2430,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -2446,8 +2446,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -2472,8 +2472,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] t.clk1)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -2493,8 +2493,8 @@
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -2512,8 +2512,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -2526,8 +2526,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -2542,8 +2542,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -2570,8 +2570,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -2584,8 +2584,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -2600,8 +2600,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -2630,8 +2630,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
 -V{t#,#}         Committing processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk1):
@@ -2656,8 +2656,8 @@
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -2675,8 +2675,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -2691,8 +2691,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -2707,8 +2707,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -2733,8 +2733,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] t.clk1)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -2754,8 +2754,8 @@
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -2773,8 +2773,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -2787,8 +2787,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -2803,8 +2803,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -2836,8 +2836,8 @@
 -V{t#,#}         Committing processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk2):
@@ -2864,8 +2864,8 @@
 -V{t#,#}         'act' region trigger index 4 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 5 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -2883,8 +2883,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -2898,8 +2898,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -2914,8 +2914,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -2942,8 +2942,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -2956,8 +2956,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -2972,8 +2972,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -3003,8 +3003,8 @@
 -V{t#,#}         Committing processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk1):
@@ -3033,8 +3033,8 @@
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -3052,8 +3052,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -3068,8 +3068,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -3084,8 +3084,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -3110,8 +3110,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] t.clk1)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -3131,8 +3131,8 @@
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -3150,8 +3150,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -3164,8 +3164,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -3180,8 +3180,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -3208,8 +3208,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -3222,8 +3222,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -3238,8 +3238,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -3268,8 +3268,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
 -V{t#,#}         Committing processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk1):
@@ -3294,8 +3294,8 @@
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -3313,8 +3313,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -3329,8 +3329,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -3345,8 +3345,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -3373,8 +3373,8 @@
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] t.clk1)
 -V{t#,#}         'act' region trigger index 3 is active: @([hybrid] t.clk2)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -3398,8 +3398,8 @@
 -V{t#,#}         'act' region trigger index 4 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 5 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -3418,8 +3418,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -3432,8 +3432,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -3448,8 +3448,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -3476,8 +3476,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -3490,8 +3490,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -3506,8 +3506,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -3536,8 +3536,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
 -V{t#,#}         Committing processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk1):
@@ -3562,8 +3562,8 @@
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -3581,8 +3581,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -3597,8 +3597,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -3613,8 +3613,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -3639,8 +3639,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] t.clk1)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -3660,8 +3660,8 @@
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -3679,8 +3679,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -3693,8 +3693,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -3709,8 +3709,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -3737,8 +3737,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -3751,8 +3751,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -3767,8 +3767,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -3797,8 +3797,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
 -V{t#,#}         Committing processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk1):
@@ -3823,8 +3823,8 @@
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -3842,8 +3842,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -3858,8 +3858,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -3874,8 +3874,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -3904,8 +3904,8 @@
 -V{t#,#}         Committing processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk2):
@@ -3930,8 +3930,8 @@
 -V{t#,#}         'act' region trigger index 4 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 5 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -3948,8 +3948,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -3963,8 +3963,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -3979,8 +3979,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 7 is active: @([true] __VdlySched.awaitingCurrentTime())
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -4008,8 +4008,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] t.clk1)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -4028,8 +4028,8 @@
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_h########__0)
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] __VassignWgen_h########__0)
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @(posedge t.clk1)
@@ -4046,8 +4046,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
@@ -4060,8 +4060,8 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}         No 'act' region triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_ready
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
--V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
+-V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
