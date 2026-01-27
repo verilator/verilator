@@ -212,8 +212,6 @@ private:
     // It is used to accumulate triggers that were found fired and cleared in preTrigger's
     // in current 'act' region iteration
     mutable AstVarScope* m_vscAccp = nullptr;
-    // The AstVarScope representing the extended trigger temporary vector
-    mutable AstVarScope* m_vscTmpp = nullptr;
     // The AstCFunc that computes the current active triggers
     AstCFunc* m_compp = nullptr;
     // The AstCFunc that dumps a trigger vector
@@ -289,9 +287,6 @@ public:
     AstVarScope* vscAccp() const {
         if (!m_vscAccp) m_vscAccp = newTrigVec("Acc", true);
         return m_vscAccp;
-    }
-    AstVarScope* vscTmpp() const {
-        return m_vscTmpp ? m_vscTmpp : (m_vscTmpp = newTrigVec("Tmp", true));
     }
     size_t senItem2TrigIdx(const AstSenItem* senItemp) const {
         return m_senItem2TrigIdx.find(*senItemp)->second;
