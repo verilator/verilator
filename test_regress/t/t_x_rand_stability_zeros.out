@@ -2,16 +2,16 @@ uninitialized = 0x00000000
 x_assigned (initial) = 0x00000000
 uninitialized2 = 0x00000000
 big = 0x0000000000000000000000000000000000000000000000000000000000000000
-random_init = 0x952aaa76
+random_init = 0x65d066c8
 top.t.the_sub_yes_inline_1 no_init 0x0
 top.t.the_sub_yes_inline_2 no_init 0x0
 top.t.the_sub_no_inline_1 no_init 0x0
 top.t.the_sub_no_inline_2 no_init 0x0
-rand = 0xe3e54aaa
-rand = 0xe85acf2d
-rand = 0x15e12c6a
-rand = 0x0f7f28c0
-rand = 0xe189c52a
-x_assigned = 0x486aeb2d
-Last rand = 0xf0700dbf
+rand = 0xf89a1fb9
+rand = 0x0577f875
+rand = 0x7bc34037
+rand = 0x2027e5c6
+rand = 0xc57ff769
+x_assigned = 0x80742d9b
+Last rand = 0x37a9fa91
 *-* All Finished *-*
