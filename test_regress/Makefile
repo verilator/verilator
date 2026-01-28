@@ -99,8 +99,14 @@ distclean::
 # Can be overridden for multiple snapshots
 TEST_SNAP_DIR ?= snapshot
 
+define CMD_EXISTS
+$(shell which $(1) > /dev/null 2>&1 && echo ok)
+endef
+
+# GNU find
+GNU_FIND := $(if $(call CMD_EXISTS, gfind), gfind, find)
 # Command to diff directories
-TEST_DIFF_TOOL ?= $(if $(shell which icdiff), icdiff -N -r --cols=$(shell tput cols), diff -r)
+TEST_DIFF_TOOL ?= $(if $(call CMD_EXISTS, icdiff), icdiff -N -r --cols=$(shell tput cols), diff -r)
 
 TEST_SNAP_IGNORE := \
   *.status *.log *.dat *.d *.o *.a *.so *stats*.txt *.html *.includecache \
@@ -114,7 +120,7 @@ define TEST_SNAP_template
 mkdir -p $(TEST_SNAP_DIR)
 rm -rf $(TEST_SNAP_DIR)/obj_$(1)
 cp -r obj_$(1) $(TEST_SNAP_DIR)/
-find $(TEST_SNAP_DIR)/obj_$(1) \( $(TEST_SNAP_IGNORE:%=-name "%" -o) \
+$(GNU_FIND) $(TEST_SNAP_DIR)/obj_$(1) \( $(TEST_SNAP_IGNORE:%=-name "%" -o) \
   -type f -executable \) -prune | xargs rm -r
 endef
 
