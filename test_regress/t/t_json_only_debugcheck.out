@@ -2709,7 +2709,7 @@
           ]},
           {"type":"CSTMT","name":"","addr":"(QNB)","loc":"a,0:0,0:0",
            "nodesp": [
-            {"type":"TEXT","name":"","addr":"(RNB)","loc":"a,0:0,0:0","text":"VL_FATAL_MT(\"t/t_enum_type_methods.v\", 11, \"\", \"DIDNOTCONVERGE: NBA region did not converge after 100 tries\");"}
+            {"type":"TEXT","name":"","addr":"(RNB)","loc":"a,0:0,0:0","text":"VL_FATAL_MT(\"t/t_enum_type_methods.v\", 11, \"\", \"DIDNOTCONVERGE: NBA region did not converge after '--converge-limit' of 100 tries\");"}
           ]}
         ],"elsesp": []},
         {"type":"ASSIGN","name":"","addr":"(SNB)","loc":"d,11:8,11:9","dtypep":"(U)",
@@ -2763,7 +2763,7 @@
             ]},
             {"type":"CSTMT","name":"","addr":"(NOB)","loc":"a,0:0,0:0",
              "nodesp": [
-              {"type":"TEXT","name":"","addr":"(OOB)","loc":"a,0:0,0:0","text":"VL_FATAL_MT(\"t/t_enum_type_methods.v\", 11, \"\", \"DIDNOTCONVERGE: Active region did not converge after 100 tries\");"}
+              {"type":"TEXT","name":"","addr":"(OOB)","loc":"a,0:0,0:0","text":"VL_FATAL_MT(\"t/t_enum_type_methods.v\", 11, \"\", \"DIDNOTCONVERGE: Active region did not converge after '--converge-limit' of 100 tries\");"}
             ]}
           ],"elsesp": []},
           {"type":"ASSIGN","name":"","addr":"(POB)","loc":"d,11:8,11:9","dtypep":"(U)",
