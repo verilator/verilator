@@ -23,7 +23,7 @@ module t ();
   reg a13 = 'x;
   reg a14 = 'x;
   reg a15 = 'x;
-  
+
   integer fd;
   initial begin
     fd = $fopen({`STRINGIFY(`TEST_OBJ_DIR),"/bits.log"}, "a");
