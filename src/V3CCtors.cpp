@@ -203,6 +203,8 @@ class CCtorsVisitor final : public VNVisitor {
                 m_varResetp->add(crstp);
             } else if (m_cfuncp) {
                 nodep->addNextHere(crstp);
+            } else {
+                nodep->v3fatalSrc("Var needs CReset but nowhere to place it");
             }
         }
     }
