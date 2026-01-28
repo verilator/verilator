@@ -179,6 +179,7 @@ set(HEADERS
     V3SymTable.h
     V3TSP.h
     V3Table.h
+    V3Tagged.h
     V3Task.h
     V3ThreadPool.h
     V3Timing.h
@@ -347,6 +348,7 @@ set(COMMON_SOURCES
     V3Subst.cpp
     V3TSP.cpp
     V3Table.cpp
+    V3Tagged.cpp
     V3Task.cpp
     V3ThreadPool.cpp
     V3Timing.cpp

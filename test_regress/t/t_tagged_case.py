@@ -11,6 +11,10 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
+# TODO: Full case matching support requires additional work:
+# - Packed structs inside unions need proper type emission
+# - VlEvent assignment handling
+# - Variable scope handling for pattern variables
 test.compile(fails=test.vlt_all, expect_filename=test.golden_filename)
 
 test.passes()

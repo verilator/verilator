@@ -959,6 +959,7 @@ class AstMemberDType final : public AstNodeDType {
     string m_name;  // Name of variable
     string m_tag;  // Holds the string of the verilator tag -- used in JSON output.
     int m_lsb = -1;  // Within this level's packed struct, the LSB of the first bit of the member
+    int m_tagIndex = -1;  // For tagged unions: 0, 1, 2, ... for each member
     bool m_constrainedRand = false;
     // UNSUP: int m_randType;    // Randomization type (IEEE)
 public:
@@ -1013,6 +1014,8 @@ public:
     void tag(const string& text) override { m_tag = text; }
     int lsb() const { return m_lsb; }
     void lsb(int lsb) { m_lsb = lsb; }
+    int tagIndex() const { return m_tagIndex; }
+    void tagIndex(int v) { m_tagIndex = v; }
     bool isCompound() const override {
         v3fatalSrc("call isCompound on subdata type, not reference");
         return false;
@@ -1472,6 +1475,9 @@ public:
 class AstUnionDType final : public AstNodeUOrStructDType {
     bool m_isSoft;  // Is a "union soft"
     bool m_isTagged;  // Is a "union tagged"
+    int m_tagBitWidth = 0;  // For tagged unions: ceil(log2(num_members))
+    int m_maxMemberWidth = 0;  // For tagged unions: max non-void member width
+    bool m_hasDynamicMember = false;  // Has dynamic type member (real, string, class, etc.)
 
 public:
     // VSigning below is mispurposed to indicate if packed or not
@@ -1486,6 +1492,13 @@ public:
     string verilogKwd() const override { return "union"; }
     bool isSoft() const { return m_isSoft; }
     bool isTagged() const { return m_isTagged; }
+    int tagBitWidth() const { return m_tagBitWidth; }
+    void tagBitWidth(int v) { m_tagBitWidth = v; }
+    int maxMemberWidth() const { return m_maxMemberWidth; }
+    void maxMemberWidth(int v) { m_maxMemberWidth = v; }
+    int taggedTotalWidth() const { return m_tagBitWidth + m_maxMemberWidth; }
+    bool hasDynamicMember() const { return m_hasDynamicMember; }
+    void hasDynamicMember(bool v) { m_hasDynamicMember = v; }
     bool sameNode(const AstNode* samep) const override;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;

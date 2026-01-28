@@ -4822,7 +4822,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
         }
 
-        if (packedArrayDtp) { m_packedArrayDtp = packedArrayDtp; }
+        if (packedArrayDtp) m_packedArrayDtp = packedArrayDtp;
     }
     void visit(AstMemberSel* nodep) override {
         // checkNoDot not appropriate, can be under a dot
@@ -5426,7 +5426,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                               << nodep->name());
             m_ds.init(m_curSymp);
         }
-        if (ifaceCaptured && resolvedCapturedTypedef) { retireCapture("resolved"); }
+        if (ifaceCaptured && resolvedCapturedTypedef) retireCapture("resolved");
         iterateChildren(nodep);
     }
     void visit(AstRequireDType* nodep) override {
@@ -5562,6 +5562,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
     }
 
     void visit(AstAttrOf* nodep) override { iterateChildren(nodep); }
+
+    // Tagged union pattern nodes - checkNoDot not appropriate as these can appear in pattern
+    // contexts
+    void visit(AstTaggedExpr* nodep) override { iterateChildren(nodep); }
+    void visit(AstTaggedPattern* nodep) override { iterateChildren(nodep); }
+    void visit(AstPatternVar* nodep) override { iterateChildren(nodep); }
+    void visit(AstPatternStar* nodep) override { iterateChildren(nodep); }
+    void visit(AstMatches* nodep) override { iterateChildren(nodep); }
 
     void visit(AstAssignW* nodep) override {
         LINKDOT_VISIT_START();

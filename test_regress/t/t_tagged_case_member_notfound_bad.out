@@ -1,0 +1,5 @@
+%Error: t/t_tagged_case_member_notfound_bad.v:22:7: Tagged union member 'BadMember' not found
+   22 |       tagged BadMember .x: $display("x = %d", x);
+      |       ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
