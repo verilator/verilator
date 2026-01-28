@@ -143,7 +143,9 @@ module t (/*AUTOARG*/
       { bins bts2 = ( 3 [->5:6] ) ; }
       { bins bts2 = ( 3 [=5] ) ; }
       { bins bts2 = ( 3 [=5:6] ) ; }
-
+      coverpoint cvp_bins_identifier_with {
+           bins b[] = cvp_bins_identifier_with with (item % 2 == 0);
+      }
    endgroup
 
    covergroup cg_cross_bins;
