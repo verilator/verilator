@@ -21,6 +21,7 @@ module t;
       $display("Randomization failed");
       $stop;
     end else if (o.obj.x != o.rand_int) $stop;
+    $write("*-* All Finished *-*\n");
     $finish;
   end
 endmodule
