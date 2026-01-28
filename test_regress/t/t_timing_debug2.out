@@ -1215,7 +1215,7 @@
 -V{t#,#}+            Vt_timing_debug2_std__03a__03aprocess::_ctor_var_reset
 -V{t#,#}+      Vt_timing_debug2_t___eval_initial__TOP__t__Vtiming__6____Vfork_1__0
 -V{t#,#}+            Vt_timing_debug2_std__03a__03aprocess::__VnoInFunc_status
--V{t#,#}         Suspending process waiting for @([true] (32'h1 != $_EXPRSTMT( // Function: status t.__Vtask___VforkTask_0__25____VforkParent.(t.__Vtask_status__26__Vfuncout); , ); )) at t/t_timing_class.v:224
+-V{t#,#}         Suspending process waiting for @([true] (32'h1 != $_EXPRSTMT( // Function: status t.__Vtask___VforkTask_0__25____VforkParent.(t.__Vtask_status__26__Vfuncout); , t.__Vtask_status__26__Vfuncout); )) at t/t_timing_class.v:224
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aAssignDelayClass::__VnoInFunc_do_assign
 -V{t#,#}             Resuming: Process waiting at t/t_timing_class.v:76
 -V{t#,#}             Process forked at t/t_timing_class.v:76 finished
@@ -1231,7 +1231,7 @@
 -V{t#,#}         Process waiting for @([true] ((32'sh2a == t::LocalWaitClass.a) | (32'sh64 != t::LocalWaitClass.b))) at t/t_timing_class.v:75 awaiting resumption
 -V{t#,#}             Resuming: Process waiting at t/t_timing_class.v:224
 -V{t#,#}+            Vt_timing_debug2_std__03a__03aprocess::__VnoInFunc_status
--V{t#,#}         Process waiting for @([true] (32'h1 != $_EXPRSTMT( // Function: status t.__Vtask___VforkTask_0__25____VforkParent.(t.__Vtask_status__26__Vfuncout); , ); )) at t/t_timing_class.v:224 awaiting resumption
+-V{t#,#}         Process waiting for @([true] (32'h1 != $_EXPRSTMT( // Function: status t.__Vtask___VforkTask_0__25____VforkParent.(t.__Vtask_status__26__Vfuncout); , t.__Vtask_status__26__Vfuncout); )) at t/t_timing_class.v:224 awaiting resumption
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 2 is active: @([true] __VdynSched.evaluate())
@@ -1347,7 +1347,7 @@
 -V{t#,#}+            Vt_timing_debug2_std__03a__03aprocess::_ctor_var_reset
 -V{t#,#}+      Vt_timing_debug2_t___eval_initial__TOP__t__Vtiming__6____Vfork_2__0
 -V{t#,#}+            Vt_timing_debug2_std__03a__03aprocess::__VnoInFunc_status
--V{t#,#}         Suspending process waiting for @([true] (32'h1 != $_EXPRSTMT( // Function: status t.__Vtask___VforkTask_1__29____VforkParent.(t.__Vtask_status__30__Vfuncout); , ); )) at t/t_timing_class.v:229
+-V{t#,#}         Suspending process waiting for @([true] (32'h1 != $_EXPRSTMT( // Function: status t.__Vtask___VforkTask_1__29____VforkParent.(t.__Vtask_status__30__Vfuncout); , t.__Vtask_status__30__Vfuncout); )) at t/t_timing_class.v:229
 -V{t#,#}             Resuming: Process waiting at t/t_timing_class.v:131
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aClkClass::__VnoInFunc_flip
 -V{t#,#}+    Vt_timing_debug2___024root___eval_phase__act
@@ -1356,7 +1356,7 @@
 -V{t#,#}           - Process waiting at t/t_timing_class.v:229
 -V{t#,#}             Resuming: Process waiting at t/t_timing_class.v:229
 -V{t#,#}+            Vt_timing_debug2_std__03a__03aprocess::__VnoInFunc_status
--V{t#,#}         Process waiting for @([true] (32'h1 != $_EXPRSTMT( // Function: status t.__Vtask___VforkTask_1__29____VforkParent.(t.__Vtask_status__30__Vfuncout); , ); )) at t/t_timing_class.v:229 awaiting resumption
+-V{t#,#}         Process waiting for @([true] (32'h1 != $_EXPRSTMT( // Function: status t.__Vtask___VforkTask_1__29____VforkParent.(t.__Vtask_status__30__Vfuncout); , t.__Vtask_status__30__Vfuncout); )) at t/t_timing_class.v:229 awaiting resumption
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 2 is active: @([true] __VdynSched.evaluate())

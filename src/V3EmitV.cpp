@@ -614,6 +614,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         putfs(nodep, "$_EXPRSTMT(\n");
         iterateAndNextConstNull(nodep->stmtsp());
         putbs(", ");
+        iterateAndNextConstNull(nodep->resultp());
         puts(");\n");
     }
 

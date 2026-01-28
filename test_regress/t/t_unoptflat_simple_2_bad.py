@@ -14,7 +14,7 @@ test.top_filename = "t/t_unoptflat_simple_2.v"
 
 # Compile only
 test.compile(verilator_flags3=[],
-             verilator_flags2=["--report-unoptflat", "-fno-dfg"],
+             verilator_flags2=["--report-unoptflat", "-fno-dfg", "--dumpi-V3SchedAcyclic", "6"],
              fails=True,
              expect_filename=test.golden_filename)
 
