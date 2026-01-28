@@ -1339,6 +1339,12 @@ class ConstraintExprVisitor final : public VNVisitor {
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     void visit(AstConstraintUnique* nodep) override {
+        if (!m_classp) {
+            nodep->v3warn(CONSTRAINTIGN,
+                          "Unsupported: Unique constraint in std::randomize() with {}");
+            pushDeletep(nodep->unlinkFrBack());
+            return;
+        }
         UASSERT_OBJ(m_classp, nodep, "m_classp not set");
 
         FileLine* const fl = nodep->fileline();
@@ -1350,7 +1356,15 @@ class ConstraintExprVisitor final : public VNVisitor {
             while (classp->extendsp()) classp = classp->extendsp()->classp();
             return VN_AS(classp->user3p(), Var);
         }(m_classp);
-        UASSERT_OBJ(genVarp, nodep, "Class has no ganerator");
+
+        // UASSERT_OBJ(genVarp, nodep, "No generator variable");
+        if (!genVarp) {
+            // This shall be substituted with an assert when it will be supported
+            nodep->v3warn(CONSTRAINTIGN, "Unsupported: Unique constraint in randomize() with {}");
+            pushDeletep(nodep->unlinkFrBack());
+            return;
+        }
+
         AstNodeModule* const modp = VN_AS(genVarp->user2p(), NodeModule);
         UASSERT_OBJ(modp, nodep, "genVarp has no NodeModule set");
 

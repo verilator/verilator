@@ -15,14 +15,6 @@ class Base;
   rand EnumType b_pmp_reg[2];
   rand EnumType b_sp;
   rand EnumType b_tp;
-
-  constraint b_example_constraint {
-    unique {b_pmp_reg};
-    {b_pmp_reg[0] > 0};
-    {b_pmp_reg[0] < 3};
-    {b_pmp_reg[1] > 0};
-    {b_pmp_reg[1] < 3};
-  }
 endclass
 
 class Foo extends Base;
@@ -30,21 +22,17 @@ class Foo extends Base;
   rand EnumType pmp_reg[2];
   rand EnumType sp;
   rand EnumType tp;
-
-  constraint example_constraint {
-    unique {pmp_reg};
-    {pmp_reg[0] > 0};
-    {pmp_reg[0] < 3};
-    {pmp_reg[1] > 0};
-    {pmp_reg[1] < 3};
-  }
 endclass
 
 module t;
   Foo foo;
   initial begin
     foo = new;
-    repeat(100) if (foo.randomize() != 1 || foo.pmp_reg[0] == foo.pmp_reg[1]) $stop;
+    repeat(100) if (foo.randomize() with {
+      unique{foo.pmp_reg};
+      foo.pmp_reg[0] inside {1,2};
+      foo.pmp_reg[1] inside {1,2};}
+    != 1 || foo.pmp_reg[0] == foo.pmp_reg[1]) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end
