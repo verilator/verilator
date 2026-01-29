@@ -377,6 +377,7 @@ class UnknownVisitor final : public VNVisitor {
             numbx.opBitsXZ(nodep->num());
             if (!m_allowXUnique || v3Global.opt.xAssign() != "unique") {
                 // All X bits just become 0; fastest simulation, but not nice
+                return;
                 V3Number numnew{nodep, numb1.width()};
                 if (v3Global.opt.xAssign() == "1") {
                     numnew.opOr(numb1, numbx);

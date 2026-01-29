@@ -116,7 +116,7 @@ class VerilatedVcdSc;
 // Type letters
 // clang-format off
 //    P                     // Packed data of bit type (C/S/I/Q/W)
-using CData = uint8_t;    ///< Data representing 'bit' of 1-8 packed bits
+// using CData = uint8_t;    ///< Data representing 'bit' of 1-8 packed bits
 using SData = uint16_t;   ///< Data representing 'bit' of 9-16 packed bits
 using IData = uint32_t;   ///< Data representing 'bit' of 17-32 packed bits
 using QData = uint64_t;   ///< Data representing 'bit' of 33-64 packed bits
@@ -128,6 +128,59 @@ using WData = EData;        ///< Data representing >64 packed bits (used as poin
 //    U     = VlUnpacked;
 //    R     = VlQueue;
 // clang-format on
+
+struct CData {
+    uint8_t value;
+
+    CData() {}
+    CData(uint8_t val)
+        : value{val} {}
+
+#define OP_GEN(op) \
+    auto operator op(const CData& other) const { return value op other.value; } \
+    template <typename T> \
+    auto operator op(const T& other) const { \
+        return value op other; \
+    }
+    OP_GEN(==)
+    OP_GEN(!=)
+    OP_GEN(<=)
+    OP_GEN(>=)
+    OP_GEN(|)
+    OP_GEN(^)
+    OP_GEN(&)
+    OP_GEN(<)
+    OP_GEN(>)
+    OP_GEN(>>)
+    OP_GEN(<<)
+    OP_GEN(+)
+    OP_GEN(-)
+    OP_GEN(/)
+    OP_GEN(*)
+    auto operator~() const { return ~value; }
+#undef OP_GEN
+#define OP_GEN(op) \
+    auto operator op(const CData& other) { return value op other.value; } \
+    template <typename T> \
+    auto operator op(const T& other) { \
+        return value op other; \
+    }
+    OP_GEN(|=)
+    OP_GEN(^=)
+    OP_GEN(&=)
+    OP_GEN(>>=)
+    OP_GEN(<<=)
+    OP_GEN(+=)
+    OP_GEN(-=)
+    OP_GEN(/=)
+    OP_GEN(*=)
+#undef OP_GEN
+    operator uint8_t() const { return value; }
+    CData& operator=(const uint8_t& val) {
+        value = val;
+        return *this;
+    }
+};
 
 using WDataInP = const WData*;  ///< 'bit' of >64 packed bits as array input to a function
 using WDataOutP = WData*;  ///< 'bit' of >64 packed bits as array output from a function

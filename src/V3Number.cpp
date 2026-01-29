@@ -908,6 +908,7 @@ string V3Number::emitC() const VL_MT_STABLE {
         // Note: putsQuoted does not track indentation, so we use this instead
         return '"' + quoted + "\"s";
     } else if (words() > 2) {
+        UASSERT(!isFourState(), "Not implemented");
         // Note the double {{ initializer. The first { starts the initializer of the VlWide,
         // and the second starts the initializer of m_storage within the VlWide.
         // Alternative is to have constructor with std::initializer_list
@@ -921,12 +922,27 @@ string V3Number::emitC() const VL_MT_STABLE {
         if (words() > 4) result += '\n';
         result += "}}";
     } else if (words() == 2) {  // Quad
+        // FIXME: This is temporary implementation
+        if (isAnyX()) { return "0b11"; }
+        if (isAnyZ()) { return "0b00"; }
+        if (toSQuad() < 2) {
+            // Lets guess that it is a logic
+            return toSQuad() ? "0b01" : "0b10";
+        }
+        UASSERT(!isFourState(), "Not implemented");
         const uint64_t qnum = static_cast<uint64_t>(toUQuad());
         const char* const fmt = (qnum < 10) ? ("%" PRIx64 "ULL") : ("0x%016" PRIx64 "ULL");
         // cppcheck-suppress wrongPrintfScanfArgNum
         VL_SNPRINTF(sbuf, bufsize, fmt, qnum);
         return sbuf;
     } else {
+        // FIXME: This is temporary implementation
+        if (isAnyX()) { return "0b11"; }
+        if (isAnyZ()) { return "0b00"; }
+        if (toSQuad() < 2) {
+            // Lets guess that it is a logic
+            return toSQuad() ? "0b01" : "0b10";
+        }
         // Always emit unsigned, if signed, will call correct signed functions
         // The 'U' must be here, to avoid <= comparisons etc ending up signed
         const uint32_t unum = toUInt();

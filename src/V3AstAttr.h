@@ -532,12 +532,12 @@ public:
         case CHANDLE: return 64;
         case EVENT: return 1;
         case INT: return 32;
-        case INTEGER: return 32;
-        case LOGIC: return 1;  // scalar, can't bit extract unless ranged
+        case INTEGER: return 64;
+        case LOGIC: return 2;  // scalar, can't bit extract unless ranged
         case LONGINT: return 64;
         case DOUBLE: return 64;  // opaque
         case SHORTINT: return 16;
-        case TIME: return 64;
+        case TIME: return 128;
         case STRING: return 64;  // opaque  // Just the pointer, for today
         case SCOPEPTR: return 0;  // opaque
         case CHARPTR: return 0;  // opaque

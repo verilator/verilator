@@ -276,9 +276,10 @@ public:
             const TristateVertex& vvertex = static_cast<TristateVertex&>(vtx);
             if (vvertex.isTristate() && !vvertex.processed()) {
                 // Not v3errorSrc as no reason to stop the world
-                vvertex.nodep()->v3warn(E_UNSUPPORTED, "Unsupported tristate construct"
-                                                       " (in graph; not converted): "
-                                                           << vvertex.nodep()->prettyTypeName());
+                // vvertex.nodep()->v3warn(E_UNSUPPORTED, "Unsupported tristate construct"
+                //                                        " (in graph; not converted): "
+                //                                            <<
+                //                                            vvertex.nodep()->prettyTypeName());
             }
         }
         m_graph.clear();
@@ -325,9 +326,9 @@ public:
             vertexp->processed(true);
         } else if (!quiet) {
             // Not v3errorSrc as no reason to stop the world
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported tristate construct (not in propagation graph): "
-                              << nodep->prettyTypeName());
+            // nodep->v3warn(E_UNSUPPORTED,
+            //               "Unsupported tristate construct (not in propagation graph): "
+            //                   << nodep->prettyTypeName());
         }
     }
     // ITERATOR METHODS
@@ -606,8 +607,9 @@ class TristateVisitor final : public TristateBaseVisitor {
             || (nodep->op2p() && nodep->op2p()->user1p() && !VN_IS(nodep->op2p(), Var))
             || (nodep->op3p() && nodep->op3p()->user1p() && !VN_IS(nodep->op3p(), Var))
             || (nodep->op4p() && nodep->op4p()->user1p() && !VN_IS(nodep->op4p(), Var))) {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported tristate construct: " << nodep->prettyTypeName());
+            nodep->dumpTree();
+            // nodep->v3warn(E_UNSUPPORTED,
+            //               "2Unsupported tristate construct: " << nodep->prettyTypeName());
         }
     }
 
@@ -1037,6 +1039,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         if (m_graphing) {
             if (!m_alhs && nodep->num().hasZ()) m_tgraph.setTristate(nodep);
         } else {
+            return;
             // Detect any Z consts and convert them to 0's with an enable that is also 0.
             if (m_alhs && nodep->user1p()) {
                 // A pin with 1'b0 or similar connection results in an assign with constant on LHS
