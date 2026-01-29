@@ -226,8 +226,8 @@ class TaggedVisitor final : public VNVisitor {
 
         // Handle member value
         const bool isVoid = isVoidDType(memberp->subDTypep());
-        if (isVoid || !nodep->exprp()) {
-            // Void member or no expression - just return tag value
+        if (isVoid) {
+            // Void member - just return tag value
             tagValp->dtypep(unionp);
             return tagValp;
         }
@@ -317,10 +317,8 @@ class TaggedVisitor final : public VNVisitor {
                                                    ctx.memberp->subDTypep());
         } else {
             dataExtractp = makeDataExtract(ctx.fl, exprClonep, ctx.unionp, memberWidth);
-            if (dataExtractp) dataExtractp->dtypeSetBitSized(memberWidth, VSigning::UNSIGNED);
+            dataExtractp->dtypeSetBitSized(memberWidth, VSigning::UNSIGNED);
         }
-
-        if (!dataExtractp) return {varp, nullptr};
 
         AstVarRef* const varRefp = new AstVarRef{ctx.fl, varp, VAccess::WRITE};
         AstAssign* const assignp = new AstAssign{ctx.fl, varRefp, dataExtractp};

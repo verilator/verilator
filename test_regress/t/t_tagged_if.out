@@ -14,27 +14,27 @@
                                             : ... note: In instance 't'
   175 |     do if ((result) !== (8'hA5)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", "t/t_tagged_if.v",175, (result), (8'hA5), "result", "8'hA5"); $stop; end while(0);;
       |                     ^~~
-%Warning-WIDTHEXPAND: t/t_tagged_if.v:208:14: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 1 bits.
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:208:14: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 10 bits.
                                             : ... note: In instance 't'
   208 |       result = a;   
       |              ^
-%Warning-WIDTHEXPAND: t/t_tagged_if.v:218:14: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 1 bits.
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:218:14: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 10 bits.
                                             : ... note: In instance 't'
   218 |       result = a;   
       |              ^
-%Warning-WIDTHEXPAND: t/t_tagged_if.v:254:19: Operator ADD expects 32 bits on the LHS, but LHS's VARREF 'r1' generates 1 bits.
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:254:19: Operator ADD expects 32 bits on the LHS, but LHS's VARREF 'r1' generates 5 bits.
                                             : ... note: In instance 't'
   254 |       result = r1 + r2 + rd;
       |                   ^
-%Warning-WIDTHEXPAND: t/t_tagged_if.v:254:19: Operator ADD expects 32 bits on the RHS, but RHS's VARREF 'r2' generates 1 bits.
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:254:19: Operator ADD expects 32 bits on the RHS, but RHS's VARREF 'r2' generates 5 bits.
                                             : ... note: In instance 't'
   254 |       result = r1 + r2 + rd;
       |                   ^
-%Warning-WIDTHEXPAND: t/t_tagged_if.v:254:24: Operator ADD expects 32 bits on the RHS, but RHS's VARREF 'rd' generates 1 bits.
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:254:24: Operator ADD expects 32 bits on the RHS, but RHS's VARREF 'rd' generates 5 bits.
                                             : ... note: In instance 't'
   254 |       result = r1 + r2 + rd;
       |                        ^
-%Warning-WIDTHEXPAND: t/t_tagged_if.v:267:16: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 1 bits.
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:267:16: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 10 bits.
                                             : ... note: In instance 't'
   267 |         result = a;
       |                ^
