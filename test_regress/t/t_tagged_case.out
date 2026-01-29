@@ -14,28 +14,12 @@
                                               : ... note: In instance 't'
   168 |     do if ((result) !== (8'hA5)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", "t/t_tagged_case.v",168, (result), (8'hA5), "result", "8'hA5"); $stop; end while(0);;
       |                     ^~~
-%Warning-WIDTHEXPAND: t/t_tagged_case.v:194:44: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 1 bits.
+%Warning-WIDTHEXPAND: t/t_tagged_case.v:194:44: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 10 bits.
                                               : ... note: In instance 't'
   194 |       tagged Jmp (tagged JmpU .a) : result = a;
       |                                            ^
-%Warning-WIDTHEXPAND: t/t_tagged_case.v:195:59: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 1 bits.
+%Warning-WIDTHEXPAND: t/t_tagged_case.v:195:59: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 10 bits.
                                               : ... note: In instance 't'
   195 |       tagged Jmp (tagged JmpC '{cc:.c, addr:.a}) : result = a;
       |                                                           ^
-%Warning-WIDTHEXPAND: t/t_tagged_case.v:195:33: Operator PATMEMBER expects 2 bits on the Pattern value, but Pattern value's PATTERNVAR 'c' generates 1 bits.
-                                              : ... note: In instance 't'
-  195 |       tagged Jmp (tagged JmpC '{cc:.c, addr:.a}) : result = a;
-      |                                 ^~
-%Warning-WIDTHEXPAND: t/t_tagged_case.v:195:40: Operator PATMEMBER expects 10 bits on the Pattern value, but Pattern value's PATTERNVAR 'a' generates 1 bits.
-                                              : ... note: In instance 't'
-  195 |       tagged Jmp (tagged JmpC '{cc:.c, addr:.a}) : result = a;
-      |                                        ^~~~
-%Warning-CASEOVERLAP: t/t_tagged_case.v:195:50: Case conditions overlap
-  195 |       tagged Jmp (tagged JmpC '{cc:.c, addr:.a}) : result = a;
-      |                                                  ^
-                      t/t_tagged_case.v:194:35: ... Location of overlapping condition
-  194 |       tagged Jmp (tagged JmpU .a) : result = a;
-      |                                   ^
-                      ... For warning description see https://verilator.org/warn/CASEOVERLAP?v=latest
-                      ... Use "/* verilator lint_off CASEOVERLAP */" and lint_on around source to disable this message.
 %Error: Exiting due to

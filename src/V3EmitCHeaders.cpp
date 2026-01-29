@@ -314,13 +314,12 @@ class EmitCHeader final : public EmitCConstInit {
                && VN_AS(dtp, BasicDType)->keyword() == VBasicDTypeKwd::EVENT;
     }
     void emitUnpackedUOrSBody(AstNodeUOrStructDType* sdtypep) {
-        // For unpacked tagged unions with dynamic types, emit as struct (not union)
-        // because C++ unions with non-trivial types are problematic
+        // For unpacked tagged unions, emit as struct (not union)
+        // because they have a __Vtag member alongside the data members
         AstUnionDType* const unionp = VN_CAST(sdtypep, UnionDType);
-        const bool isTaggedWithDynamic
-            = unionp && unionp->isTagged() && unionp->hasDynamicMember();
+        const bool isTaggedStruct = unionp && unionp->isTagged() && !unionp->packed();
 
-        if (isTaggedWithDynamic) {
+        if (isTaggedStruct) {
             putns(sdtypep, "struct");
         } else {
             putns(sdtypep, sdtypep->verilogKwd());  // "struct"/"union"
@@ -330,7 +329,7 @@ class EmitCHeader final : public EmitCConstInit {
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
             // Emit placeholder for void members so other code that references them still works
-            if (isTaggedWithDynamic && isVoidDType(itemp->subDTypep())) {
+            if (isTaggedStruct && isVoidDType(itemp->subDTypep())) {
                 putns(itemp, "CData " + itemp->nameProtect() + ";\n");
                 continue;
             }
@@ -396,7 +395,7 @@ class EmitCHeader final : public EmitCConstInit {
             for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
                  itemp = VN_AS(itemp->nextp(), MemberDType)) {
                 // Skip void members for tagged unions (they have no storage)
-                if (isTaggedWithDynamic && isVoidDType(itemp->subDTypep())) continue;
+                if (isTaggedStruct && isVoidDType(itemp->subDTypep())) continue;
                 // Skip event members (VlEvent has no comparison operators)
                 if (isEventDType(itemp->subDTypep())) continue;
                 if (needAnd) puts("\n    && ");
@@ -419,7 +418,7 @@ class EmitCHeader final : public EmitCConstInit {
             for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
                  itemp = VN_AS(itemp->nextp(), MemberDType)) {
                 // Skip void members for tagged unions (they have no storage)
-                if (isTaggedWithDynamic && isVoidDType(itemp->subDTypep())) continue;
+                if (isTaggedStruct && isVoidDType(itemp->subDTypep())) continue;
                 // Skip event members (VlEvent has no comparison operators)
                 if (isEventDType(itemp->subDTypep())) continue;
                 if (needComma) puts(", ");
@@ -433,7 +432,7 @@ class EmitCHeader final : public EmitCConstInit {
             for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
                  itemp = VN_AS(itemp->nextp(), MemberDType)) {
                 // Skip void members for tagged unions (they have no storage)
-                if (isTaggedWithDynamic && isVoidDType(itemp->subDTypep())) continue;
+                if (isTaggedStruct && isVoidDType(itemp->subDTypep())) continue;
                 // Skip event members (VlEvent has no comparison operators)
                 if (isEventDType(itemp->subDTypep())) continue;
                 if (needComma) puts(", ");

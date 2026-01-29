@@ -14,13 +14,15 @@ module Vt_debug_emitv_t;
     typedef union {
         logic a;
     } union_t;
-    typedef union packed {
+    typedef union tagged {
         void Invalid;
         int signed Valid;
+        IData __Vtag;
     } tagged_t;
-    union packed {
+    union tagged {
         void Invalid;
         int signed Valid;
+        IData __Vtag;
     } tval;
     const struct packed {
         logic [2:0]  a;

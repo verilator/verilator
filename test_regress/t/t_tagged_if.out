@@ -14,19 +14,11 @@
                                             : ... note: In instance 't'
   175 |     do if ((result) !== (8'hA5)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", "t/t_tagged_if.v",175, (result), (8'hA5), "result", "8'hA5"); $stop; end while(0);;
       |                     ^~~
-%Warning-WIDTHEXPAND: t/t_tagged_if.v:207:49: Operator PATMEMBER expects 2 bits on the Pattern value, but Pattern value's PATTERNVAR 'c' generates 1 bits.
-                                            : ... note: In instance 't'
-  207 |     if (instr matches tagged Jmp (tagged JmpC '{cc:.c, addr:.a}))
-      |                                                 ^~
-%Warning-WIDTHEXPAND: t/t_tagged_if.v:207:56: Operator PATMEMBER expects 10 bits on the Pattern value, but Pattern value's PATTERNVAR 'a' generates 1 bits.
-                                            : ... note: In instance 't'
-  207 |     if (instr matches tagged Jmp (tagged JmpC '{cc:.c, addr:.a}))
-      |                                                        ^~~~
 %Warning-WIDTHEXPAND: t/t_tagged_if.v:208:14: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 1 bits.
                                             : ... note: In instance 't'
   208 |       result = a;   
       |              ^
-%Warning-WIDTHEXPAND: t/t_tagged_if.v:218:14: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 10 bits.
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:218:14: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 1 bits.
                                             : ... note: In instance 't'
   218 |       result = a;   
       |              ^
@@ -42,11 +34,11 @@
                                             : ... note: In instance 't'
   254 |       result = r1 + r2 + rd;
       |                        ^
-%Warning-WIDTHEXPAND: t/t_tagged_if.v:267:16: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 10 bits.
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:267:16: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 1 bits.
                                             : ... note: In instance 't'
   267 |         result = a;
       |                ^
-%Warning-WIDTHEXPAND: t/t_tagged_if.v:278:14: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 1 bits.
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:278:14: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 10 bits.
                                             : ... note: In instance 't'
   278 |       result = a;
       |              ^

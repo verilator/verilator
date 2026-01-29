@@ -1489,7 +1489,7 @@ public:
         packed(packed() | m_isSoft);
     }
     ASTGEN_MEMBERS_AstUnionDType;
-    string verilogKwd() const override { return "union"; }
+    string verilogKwd() const override { return m_isTagged ? "union tagged" : "union"; }
     bool isSoft() const { return m_isSoft; }
     bool isTagged() const { return m_isTagged; }
     int tagBitWidth() const { return m_tagBitWidth; }

@@ -504,7 +504,13 @@ void EmitCFunc::emitCvtWideArray(AstNode* nodep, AstNode* fromp) {
 
 void EmitCFunc::emitConstant(AstConst* nodep) {
     // Put out constant set to the specified variable, or given variable in a string
+    // String type needs std::string{...} wrapper, not packed ULL
     const V3Number& num = nodep->num();
+    // Check V3Number's internal type (more reliable than dtype which may be union member type)
+    if (num.isString()) {
+        emitConstantString(nodep);
+        return;
+    }
     if (num.isFourState()) {
         nodep->v3warn(E_UNSUPPORTED, "Unsupported: 4-state numbers in this context");
         return;

@@ -1,6 +1,5 @@
-%Error: t/t_tagged_member_notfound_bad.v:21:9: Tagged union member 'Valad' not found in 'union{}t.VInt'
+%Error: t/t_tagged_member_notfound_bad.v:21:9: Tagged union member 'Valad' not found in 'union tagged{}t.VInt'... Suggested alternative: 'Valid'
                                              : ... note: In instance 't'
-                                             : ... Suggested alternative: 'Valid'
    21 |     v = tagged Valad 42;
       |         ^~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
