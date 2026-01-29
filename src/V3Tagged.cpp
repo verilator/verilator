@@ -65,10 +65,7 @@ class TaggedVisitor final : public VNVisitor {
     VDouble0 m_statTaggedExprs;  // Statistic tracking
     VDouble0 m_statTaggedMatches;  // Statistic tracking
 
-    // Caches for O(1) lookups instead of O(N) linear searches
-    std::unordered_map<string, AstVar*> m_moduleVarByName;  // Module var cache by name
-    std::unordered_map<string, AstVar*> m_moduleVarBySuffix;  // Module var cache by suffix
-    AstNodeModule* m_cachedModulep = nullptr;  // Module for which cache is valid
+    // Cache for O(1) union member lookups
     std::unordered_map<AstUnionDType*, std::unordered_map<string, AstMemberDType*>>
         m_unionMemberCache;  // Union member cache
 
@@ -101,43 +98,10 @@ class TaggedVisitor final : public VNVisitor {
 
     // METHODS
 
-    // Extract suffix after __DOT__ if present, otherwise empty string
-    static string extractVarSuffix(const string& name) {
-        const size_t dotPos = name.rfind("__DOT__");
-        if (dotPos == string::npos) return "";
-        return name.substr(dotPos + 7);
-    }
-
     // Check if name ends with suffix - O(1) string comparison
     static bool hasSuffix(const string& name, const string& suffix) {
         return name.size() > suffix.size()
                && name.compare(name.size() - suffix.size(), suffix.size(), suffix) == 0;
-    }
-
-    // Build module variable cache for O(1) lookups
-    void buildModuleVarCache(AstNodeModule* modulep) {
-        if (m_cachedModulep == modulep) return;
-        m_moduleVarByName.clear();
-        m_moduleVarBySuffix.clear();
-        m_cachedModulep = modulep;
-        for (AstNode* stmtp = modulep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            AstVar* const varp = VN_CAST(stmtp, Var);
-            if (!varp) continue;
-            const string& name = varp->name();
-            m_moduleVarByName[name] = varp;
-            const string suffix = extractVarSuffix(name);
-            if (!suffix.empty()) m_moduleVarBySuffix[suffix] = varp;
-        }
-    }
-
-    // Find variable in module cache - O(1) lookup
-    AstVar* findVarInModuleCache(AstNodeModule* modp, const string& varName) {
-        buildModuleVarCache(modp);
-        auto it = m_moduleVarByName.find(varName);
-        if (it != m_moduleVarByName.end()) return it->second;
-        auto itSuffix = m_moduleVarBySuffix.find(varName);
-        if (itSuffix != m_moduleVarBySuffix.end()) return itSuffix->second;
-        return nullptr;
     }
 
     // Get or build union member map for O(1) lookups
@@ -183,7 +147,6 @@ class TaggedVisitor final : public VNVisitor {
     // Replace all references to pattern variable with the new local variable
     // Uses O(1) pointer comparison when origVarp is provided
     void replacePatternVarRefs(AstNode* nodep, AstVar* origVarp, AstVar* newVarp) {
-        if (!nodep) return;
         nodep->foreachAndNext([&](AstVarRef* varRefp) {
             if (varRefp->varp() == origVarp) {
                 varRefp->varp(newVarp);
@@ -194,7 +157,6 @@ class TaggedVisitor final : public VNVisitor {
 
     // String-based overload for backwards compatibility (case matches)
     void replacePatternVarRefs(AstNode* nodep, const string& patternVarName, AstVar* newVarp) {
-        if (!nodep) return;
         const string suffix = "__DOT__" + patternVarName;
         nodep->foreachAndNext([&](AstVarRef* varRefp) {
             const string& refName = varRefp->varp()->name();
@@ -225,7 +187,6 @@ class TaggedVisitor final : public VNVisitor {
     // Create data extraction from a packed tagged union value
     AstNodeExpr* makeDataExtract(FileLine* fl, AstNodeExpr* valuep, AstUnionDType* unionp,
                                  int memberWidth) {
-        if (memberWidth == 0) return nullptr;  // Void member
         return makeSel(fl, valuep, 0, memberWidth);
     }
 
@@ -395,6 +356,8 @@ class TaggedVisitor final : public VNVisitor {
         if (parts.varDeclp) {
             AstNode* const origBodyp
                 = ifp->thensp() ? ifp->thensp()->unlinkFrBackWithNext() : nullptr;
+            AstNode* const origElsep
+                = ifp->elsesp() ? ifp->elsesp()->unlinkFrBackWithNext() : nullptr;
             AstCLocalScope* const scopep = new AstCLocalScope{fl, nullptr};
             scopep->addStmtsp(parts.varDeclp);
             if (origBodyp && parts.origVarp) {
@@ -405,7 +368,7 @@ class TaggedVisitor final : public VNVisitor {
             }
             AstNode* const innerBodyp
                 = buildInnerBody(parts.varAssignsp, origBodyp, parts.guardp, fl);
-            AstIf* const newIfp = new AstIf{fl, condp, innerBodyp, nullptr};
+            AstIf* const newIfp = new AstIf{fl, condp, innerBodyp, origElsep};
             scopep->addStmtsp(newIfp);
             ifp->replaceWith(scopep);
             VL_DO_DANGLING(pushDeletep(ifp), ifp);

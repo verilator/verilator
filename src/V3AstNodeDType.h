@@ -1497,7 +1497,6 @@ public:
     int maxMemberWidth() const { return m_maxMemberWidth; }
     void maxMemberWidth(int v) { m_maxMemberWidth = v; }
     int taggedTotalWidth() const { return m_tagBitWidth + m_maxMemberWidth; }
-    bool hasDynamicMember() const { return m_hasDynamicMember; }
     void hasDynamicMember(bool v) { m_hasDynamicMember = v; }
     bool sameNode(const AstNode* samep) const override;
     void dump(std::ostream& str) const override;
