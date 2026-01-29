@@ -211,7 +211,7 @@ private:
     // The AstVarScope representing the extended trigger accumulator vector
     // It is used to accumulate triggers that were found fired and cleared in preTrigger's
     // in current 'act' region iteration
-    mutable AstVarScope* m_vscAccp = nullptr;
+    AstVarScope* m_vscAccp = nullptr;
     // The AstCFunc that computes the current active triggers
     AstCFunc* m_compp = nullptr;
     // The AstCFunc that dumps a trigger vector
@@ -243,7 +243,7 @@ private:
 
     TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords, uint32_t nExtraWords,
                uint32_t nPreWords,
-               std::unordered_map<VNRef<const AstSenItem>, size_t> senItem2TrigIdx);
+               std::unordered_map<VNRef<const AstSenItem>, size_t> senItem2TrigIdx, bool useAcc);
     VL_UNCOPYABLE(TriggerKit);
     TriggerKit& operator=(TriggerKit&&) = delete;
 
@@ -284,10 +284,7 @@ public:
 
     // ACCESSORS
     AstVarScope* vscp() const { return m_vscp; }
-    AstVarScope* vscAccp() const {
-        if (!m_vscAccp) m_vscAccp = newTrigVec("Acc", true);
-        return m_vscAccp;
-    }
+    AstVarScope* vscAccp() const { return m_vscAccp; }
     size_t senItem2TrigIdx(const AstSenItem* senItemp) const {
         return m_senItem2TrigIdx.find(*senItemp)->second;
     }

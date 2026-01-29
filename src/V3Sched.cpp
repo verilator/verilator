@@ -597,7 +597,7 @@ void createEval(AstNetlist* netlistp,  //
             AstNodeStmt* stmtsp = trigKit.newCompCall(nbaKit.m_vscp);
             // Mark as ready for triggered awaits
             if (timingReadyp) stmtsp = AstNode::addNext(stmtsp, timingReadyp->makeStmt());
-            if (actKit.m_vscp) {
+            if (trigKit.vscAccp()) {
                 AstVarScope* const vscAccp = trigKit.vscAccp();
                 stmtsp = AstNode::addNext(stmtsp, trigKit.newOrIntoCall(actKit.m_vscp, vscAccp));
             }
@@ -888,8 +888,9 @@ void schedule(AstNetlist* netlistp) {
                                                &logicRegions.m_obs,  //
                                                &logicRegions.m_react,  //
                                                &timingKit.m_lbs});
-    const TriggerKit trigKit = TriggerKit::create(netlistp, staticp, senExprBuilder, preTreeps,
-                                                  senTreeps, "act", extraTriggers, false, true);
+    const TriggerKit trigKit
+        = TriggerKit::create(netlistp, staticp, senExprBuilder, preTreeps, senTreeps, "act",
+                             extraTriggers, false, v3Global.usesTiming());
 
     // Add post updates from the timing kit
     if (timingKit.m_postUpdates) trigKit.compp()->addStmtsp(timingKit.m_postUpdates);

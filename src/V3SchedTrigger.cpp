@@ -418,7 +418,8 @@ void TriggerKit::addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index, bo
 
 TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords,
                        uint32_t nExtraWords, uint32_t nPreWords,
-                       std::unordered_map<VNRef<const AstSenItem>, size_t> senItem2TrigIdx)
+                       std::unordered_map<VNRef<const AstSenItem>, size_t> senItem2TrigIdx,
+                       bool useAcc)
     : m_name{name}
     , m_slow{slow}
     , m_nSenseWords{nSenseWords}
@@ -454,6 +455,7 @@ TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords,
     m_dumpp = util::makeSubFunction(netlistp, "_dump_triggers__" + m_name, true);
     m_dumpp->isStatic(true);
     m_dumpp->ifdef("VL_DEBUG");
+    if (useAcc) m_vscAccp = newTrigVec("Acc", true);
 }
 
 AstAssign* TriggerKit::createSenTrigVecAssignment(AstVarScope* const target,
@@ -543,7 +545,7 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
     const uint32_t nExtraWords = nExtraTriggers / WORD_SIZE;
 
     // We can now construct the trigger kit - this constructs all items that will be kept
-    TriggerKit kit{name, slow, nSenseWords, nExtraWords, nPreWords, senItem2TrigIdx};
+    TriggerKit kit{name, slow, nSenseWords, nExtraWords, nPreWords, senItem2TrigIdx, useAcc};
 
     // If there are no triggers we are done
     if (!kit.m_nVecWords) return kit;
