@@ -1,0 +1,47 @@
+%Error-UNSUPPORTED: t/t_inst_port_complex_unsup.v:9:9: Unsupported: complex ports (IEEE 1800-2017 23.2.2.1/2)
+    9 |   input .ai_rename(ai),  .bi_rename(b),
+      |         ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_inst_port_complex_unsup.v:9:26: Unsupported: complex ports (IEEE 1800-2017 23.2.2.1/2)
+    9 |   input .ai_rename(ai),  .bi_rename(b),
+      |                          ^
+%Error-UNSUPPORTED: t/t_inst_port_complex_unsup.v:10:15: Unsupported: complex ports (IEEE 1800-2017 23.2.2.1/2)
+   10 |   output wire .ao_rename(ao),  .bo_rename(bo)
+      |               ^
+%Error-UNSUPPORTED: t/t_inst_port_complex_unsup.v:10:32: Unsupported: complex ports (IEEE 1800-2017 23.2.2.1/2)
+   10 |   output wire .ao_rename(ao),  .bo_rename(bo)
+      |                                ^
+%Error-UNSUPPORTED: t/t_inst_port_complex_unsup.v:17:3: Unsupported: complex ports (IEEE 1800-2017 23.2.2.1/2)
+   17 |   .ai_rename(ai), .bi_rename(bi),
+      |   ^
+%Error-UNSUPPORTED: t/t_inst_port_complex_unsup.v:17:19: Unsupported: complex ports (IEEE 1800-2017 23.2.2.1/2)
+   17 |   .ai_rename(ai), .bi_rename(bi),
+      |                   ^
+%Error-UNSUPPORTED: t/t_inst_port_complex_unsup.v:18:3: Unsupported: complex ports (IEEE 1800-2017 23.2.2.1/2)
+   18 |   .ao_rename(ao), .bo_rename(bo)
+      |   ^
+%Error-UNSUPPORTED: t/t_inst_port_complex_unsup.v:18:19: Unsupported: complex ports (IEEE 1800-2017 23.2.2.1/2)
+   18 |   .ao_rename(ao), .bo_rename(bo)
+      |                   ^
+%Error-UNSUPPORTED: t/t_inst_port_complex_unsup.v:30:9: Unsupported: complex ports (IEEE 1800-2017 23.2.2.1/2)
+   30 |   input .ci_30(ci[3:0]), .ci_74(ci[7:4]),
+      |         ^
+%Error-UNSUPPORTED: t/t_inst_port_complex_unsup.v:30:26: Unsupported: complex ports (IEEE 1800-2017 23.2.2.1/2)
+   30 |   input .ci_30(ci[3:0]), .ci_74(ci[7:4]),
+      |                          ^
+%Error-UNSUPPORTED: t/t_inst_port_complex_unsup.v:31:15: Unsupported: complex ports (IEEE 1800-2017 23.2.2.1/2)
+   31 |   output wire .co_30(co[3:0]),  .co_74(co[7:4])
+      |               ^
+%Error-UNSUPPORTED: t/t_inst_port_complex_unsup.v:31:33: Unsupported: complex ports (IEEE 1800-2017 23.2.2.1/2)
+   31 |   output wire .co_30(co[3:0]),  .co_74(co[7:4])
+      |                                 ^
+%Error-UNSUPPORTED: t/t_inst_port_complex_unsup.v:56:3: Unsupported: complex ports (IEEE 1800-2017 23.2.2.1/2)
+   56 |   .abi({ai, bi}),
+      |   ^
+%Error-UNSUPPORTED: t/t_inst_port_complex_unsup.v:57:3: Unsupported: complex ports (IEEE 1800-2017 23.2.2.1/2)
+   57 |   .abo({ao, bo})
+      |   ^
+%Error-UNSUPPORTED: t/t_inst_port_complex_unsup.v:70:30: Unsupported: complex ports (IEEE 1800-2017 23.2.2.1/2)
+   70 | module nansi_mixed_direction(.aio({ai, ao}));
+      |                              ^
+%Error: Exiting due to
