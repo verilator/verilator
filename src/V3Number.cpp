@@ -923,12 +923,13 @@ string V3Number::emitC() const VL_MT_STABLE {
         result += "}}";
     } else if (words() == 2) {  // Quad
         // FIXME: This is temporary implementation
-        if (isAnyX()) { return "0b11"; }
-        if (isAnyZ()) { return "0b00"; }
-        if (toSQuad() < 2) {
-            // Lets guess that it is a logic
-            return toSQuad() ? "0b01" : "0b10";
-        }
+        if (isAnyX()) { return "(FourStateLogicWrapper<QData>{1, 1})"; }
+        if (isAnyZ()) { return "(FourStateLogicWrapper<QData>{0, 1})"; }
+        // if (toSQuad() < 2) {
+        //     // Lets guess that it is a logic
+        //     return toSQuad() ? "(FourStateLogicWrapper<QData>{1, 0})"
+        //                      : "(FourStateLogicWrapper<QData>{0, 0})";
+        // }
         UASSERT(!isFourState(), "Not implemented");
         const uint64_t qnum = static_cast<uint64_t>(toUQuad());
         const char* const fmt = (qnum < 10) ? ("%" PRIx64 "ULL") : ("0x%016" PRIx64 "ULL");
@@ -937,12 +938,19 @@ string V3Number::emitC() const VL_MT_STABLE {
         return sbuf;
     } else {
         // FIXME: This is temporary implementation
-        if (isAnyX()) { return "0b11"; }
-        if (isAnyZ()) { return "0b00"; }
-        if (toSQuad() < 2) {
-            // Lets guess that it is a logic
-            return toSQuad() ? "0b01" : "0b10";
+        std::string type = "CData";
+        if (width() > 8) {
+            type = "SData";
+        } else if (width() > 16) {
+            type = "IData";
         }
+        if (isAnyX()) return "(FourStateLogicWrapper<" + type + ">{1, 1})";
+        if (isAnyZ()) return "(FourStateLogicWrapper<" + type + ">{0, 1})";
+        // if (toSQuad() < 2) {
+        //     // Lets guess that it is a logic
+        //     return toSQuad() ? "(FourStateLogicWrapper<" + type + ">{1, 0})"
+        //                      : "(FourStateLogicWrapper<" + type + ">{0, 0})";
+        // }
         // Always emit unsigned, if signed, will call correct signed functions
         // The 'U' must be here, to avoid <= comparisons etc ending up signed
         const uint32_t unum = toUInt();

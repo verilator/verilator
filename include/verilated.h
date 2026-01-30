@@ -116,7 +116,7 @@ class VerilatedVcdSc;
 // Type letters
 // clang-format off
 //    P                     // Packed data of bit type (C/S/I/Q/W)
-// using CData = uint8_t;    ///< Data representing 'bit' of 1-8 packed bits
+using CData = uint8_t;    ///< Data representing 'bit' of 1-8 packed bits
 using SData = uint16_t;   ///< Data representing 'bit' of 9-16 packed bits
 using IData = uint32_t;   ///< Data representing 'bit' of 17-32 packed bits
 using QData = uint64_t;   ///< Data representing 'bit' of 33-64 packed bits
@@ -129,58 +129,145 @@ using WData = EData;        ///< Data representing >64 packed bits (used as poin
 //    R     = VlQueue;
 // clang-format on
 
-struct CData {
-    uint8_t value;
+template <typename T>
+struct FourStateLogicWrapper;
 
-    CData() {}
-    CData(uint8_t val)
-        : value{val} {}
+template <typename T>
+FourStateLogicWrapper<T> fourLogicOr(const FourStateLogicWrapper<T>& a,
+                                     const FourStateLogicWrapper<T>& b) noexcept {
+    return {static_cast<T>(a.value | b.value | a.xz | b.xz),
+            static_cast<T>((a.xz & b.xz) | (a.xz & ~b.value) | (b.xz & ~a.value))};
+}
 
-#define OP_GEN(op) \
-    auto operator op(const CData& other) const { return value op other.value; } \
-    template <typename T> \
-    auto operator op(const T& other) const { \
-        return value op other; \
-    }
-    OP_GEN(==)
-    OP_GEN(!=)
-    OP_GEN(<=)
-    OP_GEN(>=)
-    OP_GEN(|)
-    OP_GEN(^)
-    OP_GEN(&)
-    OP_GEN(<)
-    OP_GEN(>)
-    OP_GEN(>>)
-    OP_GEN(<<)
-    OP_GEN(+)
-    OP_GEN(-)
-    OP_GEN(/)
-    OP_GEN(*)
-    auto operator~() const { return ~value; }
-#undef OP_GEN
-#define OP_GEN(op) \
-    auto operator op(const CData& other) { return value op other.value; } \
-    template <typename T> \
-    auto operator op(const T& other) { \
-        return value op other; \
-    }
-    OP_GEN(|=)
-    OP_GEN(^=)
-    OP_GEN(&=)
-    OP_GEN(>>=)
-    OP_GEN(<<=)
-    OP_GEN(+=)
-    OP_GEN(-=)
-    OP_GEN(/=)
-    OP_GEN(*=)
-#undef OP_GEN
-    operator uint8_t() const { return value; }
-    CData& operator=(const uint8_t& val) {
-        value = val;
-        return *this;
+template <typename T>
+struct FourStateLogicWrapper {
+    T value;  // 2 state logic value if .xz is 0 and x if .xz is 1 and value is 1 otherwise z
+    T xz;  // Whether is x or z
+
+    FourStateLogicWrapper() {}
+    FourStateLogicWrapper(T v)
+        : value{v}
+        , xz{0} {}
+    FourStateLogicWrapper(T v, T x)
+        : value{v}
+        , xz{x} {}
+    template <typename Y>
+    FourStateLogicWrapper(const FourStateLogicWrapper<Y>& other)
+        : value{other.value}
+        , xz{other.xz} {}
+    operator T() const noexcept { return value & ~xz; }
+    template <typename Y>
+    FourStateLogicWrapper<std::conditional_t<(sizeof(T) > sizeof(Y)), T, Y>>
+    operator|(const FourStateLogicWrapper<T>& other) const noexcept {
+        fourLogicOr<std::conditional_t<(sizeof(T) > sizeof(Y)), T, Y>>(*this, other);
     }
 };
+
+template <typename T>
+FourStateLogicWrapper<T> fourLogicConflict(const FourStateLogicWrapper<T>& a,
+                                           const FourStateLogicWrapper<T>& b) noexcept {
+    return {static_cast<T>(a.value | b.value),
+            static_cast<T>((a.value & a.xz) | (b.value & b.xz) | (a.xz & b.xz)
+                           | (a.value & ~b.value & ~b.xz) | (b.value & ~a.value & ~a.xz))};
+}
+
+template <typename T>
+FourStateLogicWrapper<T> fourLogicWor(const FourStateLogicWrapper<T>& a,
+                                      const FourStateLogicWrapper<T>& b) noexcept {
+    return {static_cast<T>(a.value | b.value),
+            static_cast<T>((a.value | b.xz) & (b.value | a.xz) & (a.xz | ~a.value)
+                           & (b.xz | ~b.value))};
+}
+
+template <typename T>
+FourStateLogicWrapper<T> fourLogicWand(const FourStateLogicWrapper<T>& a,
+                                       const FourStateLogicWrapper<T>& b) noexcept {
+    return {
+        static_cast<T>((a.value & b.xz) | (b.value & a.xz) | (a.value & b.value)),
+        static_cast<T>((a.xz & b.xz) | (a.value & b.value & a.xz) | (a.value & b.value & b.xz))};
+}
+
+template <typename T>
+FourStateLogicWrapper<T> fourLogicAnd(const FourStateLogicWrapper<T>& a,
+                                      const FourStateLogicWrapper<T>& b) noexcept {
+    return {static_cast<T>((a.value | a.xz) & (b.value | b.xz)),
+            static_cast<T>((a.value & b.xz) | (b.value & a.xz) | (a.xz & b.xz))};
+}
+
+template <typename T>
+FourStateLogicWrapper<T> fourLogicXOr(const FourStateLogicWrapper<T>& a,
+                                      const FourStateLogicWrapper<T>& b) noexcept {
+    return {static_cast<T>((a.value ^ b.value) | a.xz | b.xz), static_cast<T>(a.xz | b.xz)};
+}
+
+template <typename T>
+FourStateLogicWrapper<T> fourLogicXNOr(const FourStateLogicWrapper<T>& a,
+                                       const FourStateLogicWrapper<T>& b) noexcept {
+    return {static_cast<T>(~(a.value ^ b.value) | a.xz | b.xz), static_cast<T>(a.xz | b.xz)};
+}
+
+template <typename T>
+FourStateLogicWrapper<T> fourLogicNeg(const FourStateLogicWrapper<T>& a) noexcept {
+    return {static_cast<T>(~a.value | a.xz), static_cast<T>(a.xz)};
+}
+
+template <typename T>
+T fourLogicCastToTwo(const FourStateLogicWrapper<T>& a) noexcept {
+    return a.value & ~a.xz;
+}
+
+// struct CData {
+//     uint8_t value;
+
+//     CData() {}
+//     CData(uint8_t val)
+//         : value{val} {}
+
+// #define OP_GEN(op) \
+//     auto operator op(const CData& other) const { return value op other.value; } \
+//     template <typename T> \
+//     auto operator op(const T& other) const { \
+//         return value op other; \
+//     }
+//     OP_GEN(==)
+//     OP_GEN(!=)
+//     OP_GEN(<=)
+//     OP_GEN(>=)
+//     OP_GEN(|)
+//     OP_GEN(^)
+//     OP_GEN(&)
+//     OP_GEN(<)
+//     OP_GEN(>)
+//     OP_GEN(>>)
+//     OP_GEN(<<)
+//     OP_GEN(+)
+//     OP_GEN(-)
+//     OP_GEN(/)
+//     OP_GEN(*)
+//     auto operator~() const { return ~value; }
+// #undef OP_GEN
+// #define OP_GEN(op) \
+//     auto operator op(const CData& other) { return value op other.value; } \
+//     template <typename T> \
+//     auto operator op(const T& other) { \
+//         return value op other; \
+//     }
+//     OP_GEN(|=)
+//     OP_GEN(^=)
+//     OP_GEN(&=)
+//     OP_GEN(>>=)
+//     OP_GEN(<<=)
+//     OP_GEN(+=)
+//     OP_GEN(-=)
+//     OP_GEN(/=)
+//     OP_GEN(*=)
+// #undef OP_GEN
+//     operator uint8_t() const { return value; }
+//     CData& operator=(const uint8_t& val) {
+//         value = val;
+//         return *this;
+//     }
+// };
 
 using WDataInP = const WData*;  ///< 'bit' of >64 packed bits as array input to a function
 using WDataOutP = WData*;  ///< 'bit' of >64 packed bits as array output from a function
