@@ -13,7 +13,6 @@ test.scenarios('simulator_st')
 
 test.compile(verilator_flags2=['--binary'])
 
-if not test.vlt_all:
-    test.execute()
+test.execute()
 
 test.passes()
