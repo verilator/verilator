@@ -318,23 +318,46 @@ void VlProcess::randstate(const std::string& state) VL_MT_UNSAFE {
 //===========================================================================
 // Random -- Mostly called at init time, so not inline.
 
+static uint64_t vl_splitmix64(uint64_t& x) VL_MT_UNSAFE {
+    // SplitMix64 algorithm, copied under public domain from
+    // https://prng.di.unimi.it/splitmix64.c
+    // by Sebastiano Vigna
+    uint64_t z = (x += 0x9e3779b97f4a7c15ULL);
+    z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
+    return z ^ (z >> 31);
+}
+
 VlRNG::VlRNG() VL_MT_SAFE {
     // Starting point for this new class comes from the global RNG
     VlRNG& fromr = vl_thread_rng();
     m_state = fromr.m_state;
     // Advance the *source* so it can later generate a new number
     // Xoroshiro128+ algorithm
-    fromr.m_state[1] ^= fromr.m_state[0];
-    fromr.m_state[0] = (((fromr.m_state[0] << 55) | (fromr.m_state[0] >> 9)) ^ fromr.m_state[1]
-                        ^ (fromr.m_state[1] << 14));
-    fromr.m_state[1] = (fromr.m_state[1] << 36) | (fromr.m_state[1] >> 28);
+    fromr.rand64();
 }
+
+// Xoroshiro128** algorithm, copied under public domain from
+// https://xoshiro.di.unimi.it/xoroshiro128starstar.c
+// by David Blackman and Sebastiano Vigna
+
+VlRNG::VlRNG(uint64_t seed) VL_MT_SAFE {
+    // Seed using SplitMix64 algorithm
+    m_state[0] = vl_splitmix64(seed /*ref; seed changed*/);
+    m_state[1] = vl_splitmix64(seed /*ref; seed changed*/);
+}
+
+static uint64_t vl_rolt(const uint64_t x, int k) VL_MT_SAFE { return (x << k) | (x >> (64 - k)); }
+
 uint64_t VlRNG::rand64() VL_MT_UNSAFE {
-    // Xoroshiro128+ algorithm
-    const uint64_t result = m_state[0] + m_state[1];
-    m_state[1] ^= m_state[0];
-    m_state[0] = (((m_state[0] << 55) | (m_state[0] >> 9)) ^ m_state[1] ^ (m_state[1] << 14));
-    m_state[1] = (m_state[1] << 36) | (m_state[1] >> 28);
+    const uint64_t s0 = m_state[0];
+    uint64_t s1 = m_state[1];
+    const uint64_t result = vl_rolt(s0 * 5, 7) * 9;
+
+    s1 ^= s0;
+    m_state[0] = vl_rolt(s0, 24) ^ s1 ^ (s1 << 16);  // a, b
+    m_state[1] = vl_rolt(s1, 37);  // c
+
     return result;
 }
 uint64_t VlRNG::vl_thread_rng_rand64() VL_MT_SAFE {
