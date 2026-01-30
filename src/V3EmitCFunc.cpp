@@ -666,6 +666,8 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
         return "";
     } else if (basicp && (basicp->isRandomGenerator() || basicp->isStdRandomGenerator())) {
         return "";
+    } else if (basicp && (basicp->isEvent())) {
+        return "VlAssignableEvent{};\n";
     } else if (basicp) {
         const bool zeroit
             = (varp->attrFileDescr()  // Zero so we don't do file IO if never $fopen
