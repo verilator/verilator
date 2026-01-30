@@ -456,8 +456,8 @@ class UndrivenVisitor final : public VNVisitorConst {
                 if (entryp->isDrivenWhole() && !m_inBBox && !VN_IS(nodep, VarXRef)
                     && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)
                     && nodep->fileline() != entryp->getNodeFileLinep() && !entryp->isUnderGen()
-                    && (entryp->getNodep() || entryp->callNodep())
-                    && !entryp->isFtaskDriven() && !ftaskDef) {
+                    && (entryp->getNodep() || entryp->callNodep()) && !entryp->isFtaskDriven()
+                    && !ftaskDef) {
 
                     const AstNode* const otherWritep
                         = entryp->getNodep() ? static_cast<const AstNode*>(entryp->getNodep())
