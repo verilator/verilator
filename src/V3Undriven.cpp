@@ -51,6 +51,7 @@ class UndrivenVarEntry final {
     const AstNode* m_procWritep = nullptr;  // varref if written in process
     const FileLine* m_nodeFileLinep = nullptr;  // File line of varref if driven, else nullptr
     bool m_underGen = false;  // Under a generate
+    bool m_ftaskDriven = false;  // Last driven by function or task
 
     const AstNodeFTaskRef* m_callNodep = nullptr;  // Call node if driven via writeSummary
 
@@ -124,7 +125,8 @@ public:
         UINFO(9, "set d[*] " << m_varp->name());
         m_wholeFlags[FLAG_DRIVEN] = true;
     }
-    void drivenWhole(const AstNodeVarRef* nodep, const FileLine* fileLinep) {
+    void drivenWhole(const AstNodeVarRef* nodep, const FileLine* fileLinep, bool ftaskDef) {
+        m_ftaskDriven = ftaskDef && !isDrivenWhole();
         drivenWhole();
         m_nodep = nodep;
         m_nodeFileLinep = fileLinep;
@@ -143,6 +145,7 @@ public:
     bool isUnderGen() const { return m_underGen; }
     bool isDrivenWhole() const { return m_wholeFlags[FLAG_DRIVEN]; }
     bool isDrivenAlwaysCombWhole() const { return m_wholeFlags[FLAG_DRIVEN_ALWCOMB]; }
+    bool isFtaskDriven() const { return m_ftaskDriven; }
     const AstNodeVarRef* getNodep() const { return m_nodep; }
     const FileLine* getNodeFileLinep() const { return m_nodeFileLinep; }
     const AstAlways* getAlwCombp() const { return m_alwCombp; }
@@ -433,12 +436,12 @@ class UndrivenVisitor final : public VNVisitorConst {
         }
 
         // If writeSummary is enabled, task/function definitions are treated as non-executed.
-        // Their effects are applied at call sites via writeSummary(), so don't let definition
-        // traversal create phantom "other writes" for MULTIDRIVEN.
+        // Remember that anything driven here doesn't count toward MULTIDRIVEN.
+        bool ftaskDef = false;
         if (m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic && !m_inBBox
             && !m_taskp->dpiExport()) {
             AstVar* const retVarp = VN_CAST(m_taskp->fvarp(), Var);
-            if (!retVarp || nodep->varp() != retVarp) return;
+            if (!retVarp || nodep->varp() != retVarp) ftaskDef = true;
         }
 
         for (int usr = 1; usr < (m_alwaysCombp ? 3 : 2); ++usr) {
@@ -453,7 +456,8 @@ class UndrivenVisitor final : public VNVisitorConst {
                 if (entryp->isDrivenWhole() && !m_inBBox && !VN_IS(nodep, VarXRef)
                     && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)
                     && nodep->fileline() != entryp->getNodeFileLinep() && !entryp->isUnderGen()
-                    && (entryp->getNodep() || entryp->callNodep())) {
+                    && (entryp->getNodep() || entryp->callNodep())
+                    && !entryp->isFtaskDriven() && !ftaskDef) {
 
                     const AstNode* const otherWritep
                         = entryp->getNodep() ? static_cast<const AstNode*>(entryp->getNodep())
@@ -483,7 +487,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                                                        << otherWritep->warnContextSecondary());
                     }
                 }
-                entryp->drivenWhole(nodep, nodep->fileline());
+                entryp->drivenWhole(nodep, nodep->fileline(), ftaskDef);
                 if (m_alwaysCombp && entryp->isDrivenAlwaysCombWhole()
                     && m_alwaysCombp != entryp->getAlwCombp()
                     && m_alwaysCombp->fileline() == entryp->getAlwCombFileLinep())
