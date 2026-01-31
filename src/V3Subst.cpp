@@ -64,7 +64,7 @@ class SubstVarEntry final {
     std::vector<Record> m_wordRecords{static_cast<size_t>(m_varp->widthWords()), Record{}};
 
     // METHDOS
-    void deleteAssignmentIfUnused(Record& record, size_t &nAssignDeleted) {
+    void deleteAssignmentIfUnused(Record& record, size_t& nAssignDeleted) {
         if (!record.m_assignp) return;
         if (record.m_used) return;
         ++nAssignDeleted;
@@ -118,10 +118,11 @@ public:
     // Returns substitution of whole word, or nullptr if not known/stale
     AstNodeExpr* substWord(uint32_t word) { return substRecord(m_wordRecords[word]); }
 
-    void deleteUnusedAssignments(size_t &nWordAssignDeleted, size_t &nWholeAssignDeleted) {
+    void deleteUnusedAssignments(size_t& nWordAssignDeleted, size_t& nWholeAssignDeleted) {
         // Delete assignments to temporaries if they are not used
         if (!m_varp->isStatementTemp()) return;
-        for (Record& wordRecord : m_wordRecords) deleteAssignmentIfUnused(wordRecord, nWordAssignDeleted);
+        for (Record& wordRecord : m_wordRecords)
+            deleteAssignmentIfUnused(wordRecord, nWordAssignDeleted);
         deleteAssignmentIfUnused(m_wholeRecord, nWholeAssignDeleted);
     }
 };
@@ -427,7 +428,8 @@ public:
     explicit SubstVisitor(AstNode* nodep) { iterate(nodep); }
     ~SubstVisitor() override {
         V3Stats::addStat("Optimizations, Substituted temps", m_nSubst);
-        V3Stats::addStat("Optimizations, Whole variable assignments deleted", m_nWholeAssignDeleted);
+        V3Stats::addStat("Optimizations, Whole variable assignments deleted",
+                         m_nWholeAssignDeleted);
         V3Stats::addStat("Optimizations, Whole variables substituted", m_nWholeSubstituted);
         V3Stats::addStat("Optimizations, Word assignments deleted", m_nWordAssignDeleted);
         V3Stats::addStat("Optimizations, Words substituted", m_nWordSubstituted);
