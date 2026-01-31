@@ -901,8 +901,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstNodeExpr* exprp;
         if (randMode.usesMode) {
             // Use string literal to avoid double formatting
-            exprp = new AstCExpr{nodep->fileline(), AstCExpr::Pure{}, "\"" + smtName + "\"s"};
-            exprp->dtypeSetString();
+            exprp = new AstConst{nodep->fileline(), AstConst::String{}, smtName};
 
             // Get const format, using membersel if available for correct width/value
             AstNodeExpr* constFormatp
@@ -1437,8 +1436,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         callp->addPinsp(new AstCExpr{nodep->fileline(), AstCExpr::Pure{},
                                      "\"" + nodep->fileline()->filename() + "\""});
         // Add line number parameter
-        callp->addPinsp(new AstCExpr{nodep->fileline(), AstCExpr::Pure{},
-                                     cvtToStr(nodep->fileline()->lineno())});
+        const uint32_t lineno = static_cast<uint32_t>(nodep->fileline()->lineno());
+        callp->addPinsp(new AstConst{nodep->fileline(), lineno});
         // Add source text parameter (empty if --protect-ids to avoid source leakage)
         std::string prettyText;
         if (!v3Global.opt.protectIds()) {
