@@ -2466,7 +2466,7 @@
         ]}
       ],"elsesp": []}
     ]},
-    {"type":"CFUNC","name":"_trigger_orInto__act","addr":"(XJB)","loc":"a,0:0,0:0","slow":false,"isStatic":true,"dpiExportDispatcher":false,"dpiExportImpl":false,"dpiImportPrototype":false,"dpiImportWrapper":false,"dpiContext":false,"isConstructor":false,"isDestructor":false,"isVirtual":false,"isCoroutine":false,"needProcess":false,"scopep":"(Z)",
+    {"type":"CFUNC","name":"_trigger_orInto__act_vec_vec","addr":"(XJB)","loc":"a,0:0,0:0","slow":false,"isStatic":true,"dpiExportDispatcher":false,"dpiExportImpl":false,"dpiImportPrototype":false,"dpiImportWrapper":false,"dpiContext":false,"isConstructor":false,"isDestructor":false,"isVirtual":false,"isCoroutine":false,"needProcess":false,"scopep":"(Z)",
      "argsp": [
       {"type":"VAR","name":"out","addr":"(YJB)","loc":"a,0:0,0:0","dtypep":"(W)","origName":"out","isSc":false,"isPrimaryIO":false,"isPrimaryClock":false,"direction":"INOUT","isConst":false,"isPullup":false,"isPulldown":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":true,"isStdRandomizeArg":false,"lifetime":"NONE","varType":"BLOCKTEMP","dtypeName":"","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"ignorePostWrite":false,"ignoreSchedWrite":false,"sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
       {"type":"CRESET","name":"","addr":"(ZJB)","loc":"a,0:0,0:0","constructing":true,
@@ -2541,9 +2541,9 @@
         ],"timingControlp": []},
         {"type":"LOOPTEST","name":"","addr":"(ALB)","loc":"d,11:8,11:9",
          "condp": [
-          {"type":"GT","name":"","addr":"(BLB)","loc":"d,11:8,11:9","dtypep":"(GB)",
+          {"type":"GTE","name":"","addr":"(BLB)","loc":"d,11:8,11:9","dtypep":"(GB)",
            "lhsp": [
-            {"type":"CONST","name":"32'h1","addr":"(CLB)","loc":"d,11:8,11:9","dtypep":"(HC)"}
+            {"type":"CONST","name":"32'h0","addr":"(CLB)","loc":"d,11:8,11:9","dtypep":"(HC)"}
           ],
            "rhsp": [
             {"type":"VARREF","name":"n","addr":"(DLB)","loc":"d,11:8,11:9","dtypep":"(OP)","access":"RD","varp":"(EKB)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}
@@ -2559,7 +2559,7 @@
       ]},
       {"type":"STMTEXPR","name":"","addr":"(HLB)","loc":"d,11:8,11:9",
        "exprp": [
-        {"type":"CCALL","name":"","addr":"(ILB)","loc":"d,11:8,11:9","dtypep":"(DB)","funcName":"_trigger_orInto__act","funcp":"(XJB)",
+        {"type":"CCALL","name":"","addr":"(ILB)","loc":"d,11:8,11:9","dtypep":"(DB)","funcName":"_trigger_orInto__act_vec_vec","funcp":"(XJB)",
          "argsp": [
           {"type":"VARREF","name":"__VnbaTriggered","addr":"(JLB)","loc":"d,11:8,11:9","dtypep":"(W)","access":"WR","varp":"(X)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"},
           {"type":"VARREF","name":"__VactTriggered","addr":"(KLB)","loc":"d,11:8,11:9","dtypep":"(W)","access":"RD","varp":"(V)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}
