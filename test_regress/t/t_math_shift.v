@@ -6,7 +6,7 @@
 
 module t (/*AUTOARG*/
    // Outputs
-   ign, ign2, ign3, ign4, ign4s,
+   ign, ign2, ign3, c_wright_32, c_wleft_32, ign4, ign4s,
    // Inputs
    clk
    );
@@ -59,6 +59,12 @@ module t (/*AUTOARG*/
    reg [63:0]           qamt;
    reg [95:0]           wamt;
 
+   output reg [95:0]    c_wright_32;
+   output reg [95:0]    c_wleft_32;
+
+   reg [63:0] crc = 64'h5aef0c8d_d70a4497;
+   wire [95:0] rand_96 = {crc[63:32] | crc[31:0], crc};
+
    assign ign = {31'h0, clk} >>> 4'bx;  // bug760
    assign ign2 = {iamt[1:0] >> {22{iamt[5:2]}}, iamt[1:0] << (0 <<< iamt[5:2])}; // bug1174
    assign ign3 = {iamt[1:0] >> {22{iamt[5:2]}},
@@ -104,12 +110,16 @@ module t (/*AUTOARG*/
       w_wright  = 96'hf784bf8f_12734089_190abe48 >> wamt;
       w_wrights = 96'shf784bf8f_12734089_190abe48 >>> signed'(wamt);
       w_wleft   = 96'hf784bf8f_12734089_190abe48 << wamt;
+
+      c_wright_32 = rand_96 >> 32;
+      c_wleft_32  = rand_96 << 32;
    end
 
    integer cyc; initial cyc=1;
    always @ (posedge clk) begin
       if (cyc!=0) begin
          cyc <= cyc + 1;
+         crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
 `ifdef TEST_VERBOSE
          $write("%d %x %x %x %x %x %x\n", cyc, ileft, iright, qleft, qright, wleft, wright);
 `endif
@@ -233,6 +243,9 @@ module t (/*AUTOARG*/
             if (wleft != w_wleft) $stop;
             if (wright != w_wright) $stop;
             if (wrights != w_wrights) $stop;
+
+            if (c_wright_32 << 32 != {rand_96[95:32], 32'd0}) $stop;
+            if (c_wleft_32 >> 32 != {32'd0, rand_96[63:0]}) $stop;
          end
       end
    end
