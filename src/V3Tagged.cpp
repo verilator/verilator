@@ -406,8 +406,7 @@ class TaggedVisitor final : public VNVisitor {
 
         // Get union type - V3Width validates LHS is a tagged union
         AstUnionDType* const unionp = getMatchesUnionType(matchesp);
-        UASSERT_OBJ(unionp && unionp->isTagged(), matchesp,
-                    "V3Width ensures tagged union type");
+        UASSERT_OBJ(unionp && unionp->isTagged(), matchesp, "V3Width ensures tagged union type");
 
         // Lookup member (V3Width validates member exists)
         const string& memberName = tagPatternp ? tagPatternp->name() : tagExprp->name();
@@ -501,8 +500,7 @@ class TaggedVisitor final : public VNVisitor {
         // Evaluate both conditions to avoid short-circuit branch coverage gaps
         const bool noPatVar = !patVarp;
         const bool isVoidMember = isVoidDType(memberp->subDTypep());
-        if (noPatVar || isVoidMember)
-            return new AstCaseItem{itemp->fileline(), tagConstp, stmtsp};
+        if (noPatVar || isVoidMember) return new AstCaseItem{itemp->fileline(), tagConstp, stmtsp};
 
         // Create temp var reference and context, then get result
         AstVarRef* const tempRefp = new AstVarRef{ctx.fl, ctx.tempVarp, VAccess::READ};
