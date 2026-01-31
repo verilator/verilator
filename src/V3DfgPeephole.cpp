@@ -30,6 +30,7 @@
 #include "V3Stats.h"
 
 #include <cctype>
+#include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -800,29 +801,6 @@ class V3DfgPeephole final : public DfgVisitor {
                     DfgSel* const replacementp = make<DfgSel>(vtxp, lhsp, lsb - rhsp->width());
                     replace(vtxp, replacementp);
                 }
-            } else if (!concatp->hasMultipleSinks()) {
-                // If the select straddles both sides, the Concat has no other use,
-                // then push the Sel past the Concat
-                APPLYING(PUSH_SEL_THROUGH_CONCAT) {
-                    const uint32_t rSelWidth = rhsp->width() - lsb;
-                    const uint32_t lSelWidth = width - rSelWidth;
-
-                    // The new Lhs vertex
-                    DfgSel* const newLhsp
-                        = make<DfgSel>(flp, DfgDataType::packed(lSelWidth), lhsp, 0U);
-
-                    // The new Rhs vertex
-                    DfgSel* const newRhsp
-                        = make<DfgSel>(flp, DfgDataType::packed(rSelWidth), rhsp, lsb);
-
-                    // The replacement Concat vertex
-                    DfgConcat* const newConcat
-                        = make<DfgConcat>(concatp->fileline(), vtxp->dtype(), newLhsp, newRhsp);
-
-                    // Replace this vertex
-                    replace(vtxp, newConcat);
-                    return;
-                }
             }
         }
 
@@ -1324,6 +1302,77 @@ class V3DfgPeephole final : public DfgVisitor {
                             }
                         }
                     }
+                }
+            }
+        }
+
+        // Attempt to narrow a concatenation that produces unused bits on the edges
+        {
+            const uint32_t vMsb = vtxp->width() - 1;  // MSB of the concatenation
+            const uint32_t lLsb = vtxp->rhsp()->width();  // LSB of the LHS
+            const uint32_t rMsb = lLsb - 1;  // MSB of the RHS
+            // Check each sink, and record the range of bits used by them
+            uint32_t lsb = vMsb;  // LSB used by a sink
+            uint32_t msb = 0;  // MSB used by a sink
+            std::vector<DfgVertex*> sinkps;
+            bool hasCrossSink = false;  // True if some sinks use bits from both sides
+            vtxp->foreachSink([&](DfgVertex& sink) {
+                sinkps.emplace_back(&sink);
+                // Record bits used by DfgSel sinks
+                if (const DfgSel* const selp = sink.cast<DfgSel>()) {
+                    const uint32_t selLsb = selp->lsb();
+                    const uint32_t selMsb = selLsb + selp->width() - 1;
+                    lsb = std::min(lsb, selLsb);
+                    msb = std::max(msb, selMsb);
+                    hasCrossSink |= selMsb >= lLsb && rMsb >= selLsb;
+                    return false;
+                }
+                // Ignore non observable variable sinks. These will be eliminated.
+                if (const DfgVarPacked* const varp = sink.cast<DfgVarPacked>()) {
+                    if (!varp->hasSinks() && !varp->isObserved()) return false;
+                }
+                // Otherwise the whole value is used
+                lsb = 0;
+                msb = vMsb;
+                return true;
+            });
+            // If not all bits are used, narrow the concatenation, but only if at least
+            // one select straddles both sides (DfgSel paterns will handle the rest).
+            if ((vMsb > msb || lsb > 0) && hasCrossSink) {
+                APPLYING(NARROW_CONCAT) {
+                    FileLine* const flp = vtxp->fileline();
+
+                    // Compute new RHS
+                    DfgVertex* const rhsp = vtxp->rhsp();
+                    const uint32_t rWidth = rMsb - lsb + 1;
+                    DfgVertex* const newRhsp
+                        = rWidth == rhsp->width()
+                              ? rhsp
+                              : make<DfgSel>(flp, DfgDataType::packed(rWidth), rhsp, lsb);
+
+                    // Compute new LHS
+                    DfgVertex* const lhsp = vtxp->lhsp();
+                    const uint32_t lWidth = msb - lLsb + 1;
+                    DfgVertex* const newLhsp
+                        = lWidth == lhsp->width()
+                              ? lhsp
+                              : make<DfgSel>(flp, DfgDataType::packed(lWidth), lhsp, 0);
+
+                    // Create the new concatenation
+                    DfgConcat* const newConcat = make<DfgConcat>(
+                        flp, DfgDataType::packed(msb - lsb + 1), newLhsp, newRhsp);
+
+                    // Replace Sel sinks
+                    for (DfgVertex* const sinkp : sinkps) {
+                        if (DfgSel* const selp = sinkp->cast<DfgSel>()) {
+                            replace(selp, make<DfgSel>(selp, newConcat, selp->lsb() - lsb));
+                        }
+                    }
+                    // Also need to replace the concatenation itself, otherwise this pattern
+                    // will match again and iteration won't terminate. This vertex is now
+                    // effectively unused, so replace with zero.
+                    replace(vtxp, makeZero(flp, vtxp->width()));
+                    return;
                 }
             }
         }

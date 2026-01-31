@@ -140,6 +140,14 @@ public:
     bool hasExtWrRefs() const { return hasExtWrRefs(nodep()); }
     bool hasExtRefs() const { return hasExtRdRefs() || hasExtWrRefs(); }
 
+    // True iff the value of this variable is read outside this DfgGraph
+    bool isObserved() const {
+        // A DfgVarVertex is written in exactly one DfgGraph, and might be read in an arbitrary
+        // number of other DfgGraphs. If it's driven in this DfgGraph, it's read in others.
+        if (hasDfgRefs()) return srcp() || defaultp();
+        return hasExtRdRefs() || hasModRdRefs();
+    }
+
     // The value of this vertex might differ from what is defined by its drivers
     // 'srcp' and 'defaultp'. That is, it might be assigned, possibly partially,
     // or abruptly outside the graph, hence it is not equivalent to its 'srcp'.

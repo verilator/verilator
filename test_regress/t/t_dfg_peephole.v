@@ -264,6 +264,12 @@ module t (
    wire        sel_from_not = sel_from_not_tmp[2];
    always @(posedge randbit_a) if ($c(0)) $display(sel_from_not); // Do not remove signal
 
+   // Narrow concatenation
+   wire [9:0] narrow_concat = {5'd0, ~rand_a[44 +: 5]};
+   `signal(NARROW_CONCAT_A, narrow_concat[5:1]);
+   `signal(NARROW_CONCAT_B, narrow_concat[8:4]);
+   `signal(NARROW_CONCAT_C, narrow_concat[5:4]);
+
    // Assigned at the end to avoid inlining by other passes
    assign const_a  = 64'h0123456789abcdef;
    assign const_b  = 64'h98badefc10325647;
