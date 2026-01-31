@@ -69,6 +69,7 @@ class LocalizeVisitor final : public VNVisitor {
     bool isOptimizable(AstVarScope* nodep) {
         // Don't want to malloc/free the backing store all the time
         if (VN_IS(nodep->dtypep(), NBACommitQueueDType)) return false;
+        if (nodep->dtypep()->skipRefp()->isString()) return false;
         // Variables used in super constructor call can't be localized, because
         // in C++ there is no way to declare them before base class constructor call
         if (nodep->user4()) return false;
