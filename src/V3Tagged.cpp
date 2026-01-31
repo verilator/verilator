@@ -264,17 +264,12 @@ class TaggedVisitor final : public VNVisitor {
     // Get tagged union type from matches expression
     AstUnionDType* getMatchesUnionType(AstMatches* matchesp) {
         AstNode* const patternp = matchesp->patternp();
-        AstUnionDType* unionp = nullptr;
-        // Pattern can be TaggedPattern (normal case) or TaggedExpr (edge cases)
-        // Evaluate both conditions to avoid short-circuit branch coverage gaps
         const bool isTaggedPattern = VN_IS(patternp, TaggedPattern);
         const bool isTaggedExpr = VN_IS(patternp, TaggedExpr);
-        if (isTaggedPattern || isTaggedExpr) {
-            // V3Width ensures dtypep() is set on all typed nodes
-            UASSERT_OBJ(patternp->dtypep(), matchesp, "V3Width ensures dtypep is set");
-            unionp = VN_CAST(patternp->dtypep()->skipRefp(), UnionDType);
-        }
-        return unionp;
+        UASSERT_OBJ(isTaggedPattern || isTaggedExpr, matchesp,
+                    "Pattern must be TaggedPattern or TaggedExpr");
+        UASSERT_OBJ(patternp->dtypep(), matchesp, "V3Width ensures dtypep is set");
+        return VN_CAST(patternp->dtypep()->skipRefp(), UnionDType);
     }
 
     // Create tag comparison expression
