@@ -1,9 +1,0 @@
-// Verilated model profile-guided optimization data dump file
-`verilator_config
-profile_data -model "Vt_pgo_threads" -mtask "h8fa46310" -cost 64'd9652
-profile_data -model "Vt_pgo_threads" -mtask "h3f149570" -cost 64'd2084
-profile_data -model "Vt_pgo_threads" -mtask "h8d025332" -cost 64'd3337
-profile_data -model "Vt_pgo_threads" -mtask "h8a6ed294" -cost 64'd30217
-profile_data -model "Vt_pgo_threads" -mtask "h22f4a6a7" -cost 64'd3333
-profile_data -model "Vt_pgo_threads" -mtask "h1f2d5ba6" -cost 64'd8504
-profile_data -model "Vt_pgo_threads" -mtask "h079b1958" -cost 64'd3376
