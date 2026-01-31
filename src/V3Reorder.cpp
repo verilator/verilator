@@ -595,66 +595,6 @@ private:
     VL_UNCOPYABLE(ReorderVisitor);
 };
 
-using ColorSet = std::unordered_set<uint32_t>;
-using AlwaysVec = std::vector<AstAlways*>;
-
-class IfColorVisitor final : public VNVisitorConst {
-    // MEMBERS
-    ColorSet m_colors;  // All colors in the original always block
-
-    std::vector<AstNodeIf*> m_ifStack;  // Stack of nested if-statements we're currently processing
-
-    std::unordered_map<AstNodeIf*, ColorSet>
-        m_ifColors;  // Map each if-statement to the set of colors (split blocks)
-    // that will get a copy of that if-statement
-
-    // CONSTRUCTORS
-public:
-    // Visit through *nodep and map each AstNodeIf within to the set of
-    // colors it will participate in. Also find the whole set of colors.
-    explicit IfColorVisitor(AstAlways* nodep) { iterateConst(nodep); }
-    ~IfColorVisitor() override = default;
-
-    // METHODS
-    const ColorSet& colors() const { return m_colors; }
-    const ColorSet& colors(AstNodeIf* nodep) const {
-        const auto it = m_ifColors.find(nodep);
-        UASSERT_OBJ(it != m_ifColors.end(), nodep, "Node missing from split color() map");
-        return it->second;
-    }
-
-private:
-    void trackNode(AstNode* nodep) {
-        if (nodep->user3p()) {
-            const SplitLogicVertex* const vertexp
-                = reinterpret_cast<SplitLogicVertex*>(nodep->user3p());
-            const uint32_t color = vertexp->color();
-            m_colors.insert(color);
-            UINFO(8, "  SVL " << vertexp << " has color " << color);
-
-            // Record that all containing ifs have this color.
-            for (auto it = m_ifStack.cbegin(); it != m_ifStack.cend(); ++it) {
-                m_ifColors[*it].insert(color);
-            }
-        }
-    }
-
-protected:
-    void visit(AstNodeIf* nodep) override {
-        m_ifStack.push_back(nodep);
-        trackNode(nodep);
-        iterateChildrenConst(nodep);
-        m_ifStack.pop_back();
-    }
-    void visit(AstNode* nodep) override {
-        trackNode(nodep);
-        iterateChildrenConst(nodep);
-    }
-
-private:
-    VL_UNCOPYABLE(IfColorVisitor);
-};
-
 }  // namespace
 
 //######################################################################
