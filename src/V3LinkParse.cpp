@@ -1010,10 +1010,10 @@ class LinkParseVisitor final : public VNVisitor {
                 } else {
                     // No guard - original behavior: wrap body in begin block
                     AstNode* stmtsp = varDeclsp;
-                    if (nodep->thensp()) {
-                        AstNode* thensp = nodep->thensp()->unlinkFrBackWithNext();
-                        AstNode::addNext<AstNode, AstNode>(stmtsp, thensp);
-                    }
+                    // thensp() is always non-null from valid Verilog (even empty `;` parses as stmt)
+                    UASSERT_OBJ(nodep->thensp(), nodep, "If-matches must have then body");
+                    AstNode* thensp = nodep->thensp()->unlinkFrBackWithNext();
+                    AstNode::addNext<AstNode, AstNode>(stmtsp, thensp);
                     AstBegin* const beginp
                         = new AstBegin{patVars[0]->fileline(), "", stmtsp, false};
                     nodep->addThensp(beginp);

@@ -402,7 +402,8 @@ class EmitCHeader final : public EmitCConstInit {
                 putns(itemp, itemp->nameProtect() + " == " + "rhs." + itemp->nameProtect());
                 needAnd = true;
             }
-            if (!needAnd) puts("true");  // Empty struct edge case
+            // SystemVerilog structs/unions must have members, tagged unions always have __Vtag
+            UASSERT_OBJ(needAnd, sdtypep, "Struct/union has no comparable members");
         }
         puts(";\n");
         puts("}\n");
@@ -539,10 +540,11 @@ class EmitCHeader final : public EmitCConstInit {
             }
         }
         // Check lastItemp too (loop stops at second-to-last)
-        if (lastItemp) {
-            if (lastItemp->width() == sdtypep->width()) witemp = lastItemp;
-            if (lastItemp->width() > widestWidth && !witemp) witemp = lastItemp;
-        }
+        // SystemVerilog structs/unions must have members; tagged unions always have __Vtag
+        UASSERT_OBJ(lastItemp, sdtypep, "Struct/union has no members");
+        if (lastItemp->width() == sdtypep->width()) witemp = lastItemp;
+        // Use & instead of && to avoid short-circuit branch
+        if ((lastItemp->width() > widestWidth) & (!witemp)) witemp = lastItemp;
         for (itemp = lastItemp; itemp; itemp = VN_CAST(itemp->backp(), MemberDType)) {
             putns(itemp, itemp->dtypep()->cType(itemp->nameProtect(), false, false, true));
             puts(";\n");

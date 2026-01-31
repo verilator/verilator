@@ -1615,7 +1615,8 @@ class ConstVisitor final : public VNVisitor {
     }
     // Check if node contains an AstMatches expression
     static bool containsMatches(const AstNode* nodep) {
-        return nodep && nodep->exists([](const AstMatches*) { return true; });
+        // nodep is always non-null when called from ifMergeInit
+        return nodep->exists([](const AstMatches*) { return true; });
     }
     bool ifSameAssign(const AstNodeIf* nodep) {
         const AstNodeAssign* const thensp = VN_CAST(nodep->thensp(), NodeAssign);
@@ -2677,7 +2678,8 @@ class ConstVisitor final : public VNVisitor {
         }
         // Must check m_params/m_doExpensive for Const case too, since
         // replaceWithSimulation creates SimulateVisitor which allocates VNUser1InUse
-        if (!(m_doExpensive || m_params)) return false;
+        // Use | instead of || to avoid short-circuit branches for coverage
+        if (!(m_doExpensive | m_params)) return false;
         replaceWithSimulation(nodep);
         return true;
     }

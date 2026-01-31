@@ -1761,10 +1761,10 @@ public:
         this->guardp(guardp);
     }
     ASTGEN_MEMBERS_AstMatches;
-    string emitVerilog() override { return guardp() ? "%l matches %r &&& %3" : "%l matches %r"; }
+    // AstMatches is transformed away by V3Tagged before emission
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return false; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
-    bool hasGuard() const { return guardp() != nullptr; }
 };
 class AstMemberSel final : public AstNodeExpr {
     // @astgen op1 := fromp : AstNodeExpr
@@ -2462,7 +2462,8 @@ public:
         this->exprp(exprp);
     }
     ASTGEN_MEMBERS_AstTaggedExpr;
-    string emitVerilog() override { return "tagged %k"; }
+    // AstTaggedExpr is transformed away by V3Tagged before emission
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return false; }
     bool sameNode(const AstNode* samep) const override {
         return m_name == VN_DBG_AS(samep, TaggedExpr)->m_name;
@@ -2480,7 +2481,8 @@ public:
         this->patternp(patternp);
     }
     ASTGEN_MEMBERS_AstTaggedPattern;
-    string emitVerilog() override { return "tagged %k"; }
+    // AstTaggedPattern is transformed away by V3Tagged before emission
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return false; }
     bool sameNode(const AstNode* samep) const override {
         return m_name == VN_DBG_AS(samep, TaggedPattern)->m_name;

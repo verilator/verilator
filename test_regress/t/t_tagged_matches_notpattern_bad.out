@@ -1,4 +1,5 @@
 %Error: t/t_tagged_matches_notpattern_bad.v:19:11: Expected tagged pattern in matches expression
+                                                 : ... note: In instance 't'
    19 |     if (x matches 1)
       |           ^~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

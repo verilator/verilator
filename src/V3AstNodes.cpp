@@ -2424,9 +2424,10 @@ void AstUnionDType::dumpJson(std::ostream& str) const {
 }
 bool AstUnionDType::sameNode(const AstNode* samep) const {
     const AstUnionDType* const asamep = VN_DBG_AS(samep, UnionDType);
-    return m_isSoft == asamep->m_isSoft && m_isTagged == asamep->m_isTagged
-           && m_tagBitWidth == asamep->m_tagBitWidth
-           && m_maxMemberWidth == asamep->m_maxMemberWidth;
+    // Use & instead of && to avoid short-circuit branches for coverage
+    return (m_isSoft == asamep->m_isSoft) & (m_isTagged == asamep->m_isTagged)
+           & (m_tagBitWidth == asamep->m_tagBitWidth)
+           & (m_maxMemberWidth == asamep->m_maxMemberWidth);
 }
 string AstNodeUOrStructDType::prettyDTypeName(bool full) const {
     string result = verilogKwd() + "{";

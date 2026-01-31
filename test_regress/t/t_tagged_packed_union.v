@@ -17,6 +17,16 @@ module t;
   int errors = 0;
 
   initial begin
+    // Test void member in packed union (covers V3Tagged.cpp packed void path)
+    p = tagged A;
+    if (p matches tagged A) begin
+      // Void member matched correctly - do nothing but include statement
+      errors = errors;
+    end else begin
+      $display("ERROR: Expected tagged A");
+      errors++;
+    end
+
     // Test 8-bit member
     p = tagged B (8'hAB);
     if (p matches tagged B .val) begin
