@@ -266,10 +266,7 @@ class TaggedVisitor final : public VNVisitor {
                 unionp = VN_CAST(patternp->dtypep()->skipRefp(), UnionDType);
             }
         }
-        if (!unionp) {
-            AstNodeDType* const exprDtp = matchesp->lhsp()->dtypep()->skipRefp();
-            unionp = VN_CAST(exprDtp, UnionDType);
-        }
+        // V3Width ensures dtypep() is set, so unionp is always found above
         return unionp;
     }
 
@@ -392,18 +389,18 @@ class TaggedVisitor final : public VNVisitor {
         FileLine* const fl = matchesp->fileline();
         AstNodeExpr* const exprp = matchesp->lhsp();
 
-        // Get and validate union type
-        AstUnionDType* const unionp = getMatchesUnionType(matchesp);
-        if (!unionp || !unionp->isTagged()) {
-            matchesp->v3error("Matches expression must be a tagged union type");
-            return;
-        }
-
-        // Get the pattern
+        // Get the pattern (check pattern type first for better error messages)
         AstTaggedPattern* const tagPatternp = VN_CAST(matchesp->patternp(), TaggedPattern);
         AstTaggedExpr* const tagExprp = VN_CAST(matchesp->patternp(), TaggedExpr);
         if (!tagPatternp && !tagExprp) {
             matchesp->v3error("Expected tagged pattern in matches expression");
+            return;
+        }
+
+        // Get and validate union type
+        AstUnionDType* const unionp = getMatchesUnionType(matchesp);
+        if (!unionp || !unionp->isTagged()) {
+            matchesp->v3error("Matches expression must be a tagged union type");
             return;
         }
 
