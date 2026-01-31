@@ -373,6 +373,62 @@ class ExpandVisitor final : public VNVisitor {
         }
         return true;
     }
+    bool expandWide(AstNodeAssign* nodep, AstShiftL* rhsp) {
+        if (!doExpandWide(nodep)) return false;
+
+        // Simplify the shift amount, in case it becomes a constant
+        V3Const::constifyEditCpp(rhsp->rhsp());
+
+        // If it's a constant shift by whole words, expand it so V3Subst can substitute it
+        if (const AstConst* const rhsConstp = VN_CAST(rhsp->rhsp(), Const)) {
+            const uint32_t shiftBits = rhsConstp->toUInt();
+            if (VL_BITBIT_E(shiftBits) == 0) {
+                UINFO(8, "    Wordize ASSIGN(SHIFTL,words) " << nodep);
+                const uint32_t widthWords = nodep->widthWords();
+                const uint32_t shiftWords = std::min<uint32_t>(VL_BITWORD_E(shiftBits), widthWords);
+                // Low words of the result are zero
+                FileLine* const flp = rhsp->fileline();
+                for (int w = 0; w < shiftWords; ++w) {
+                    addWordAssign(nodep, w, new AstConst{flp, AstConst::SizedEData{}, 0});
+                }
+                // High words of the result are copied from higher words of the source
+                for (int w = shiftWords; w < widthWords; ++w) {
+                    addWordAssign(nodep, w, newAstWordSelClone(rhsp->lhsp(), w - shiftWords));
+                }
+                return true;
+            }
+        }
+
+        return false;
+    }
+    bool expandWide(AstNodeAssign* nodep, AstShiftR* rhsp) {
+        if (!doExpandWide(nodep)) return false;
+
+        // Simplify the shift amount, in case it becomes a constant
+        V3Const::constifyEditCpp(rhsp->rhsp());
+
+        // If it's a constant shift by whole words, expand it so V3Subst can substitute it
+        if (const AstConst* const rhsConstp = VN_CAST(rhsp->rhsp(), Const)) {
+            const uint32_t shiftBits = rhsConstp->toUInt();
+            if (VL_BITBIT_E(shiftBits) == 0) {
+                UINFO(8, "    Wordize ASSIGN(SHIFTR,words) " << nodep);
+                const uint32_t widthWords = nodep->widthWords();
+                const uint32_t shiftWords = std::min<uint32_t>(VL_BITWORD_E(shiftBits), widthWords);
+                // Low words of the result are copied from higher words of the source
+                for (int w = 0; w < widthWords - shiftWords; ++w) {
+                    addWordAssign(nodep, w, newAstWordSelClone(rhsp->lhsp(), w + shiftWords));
+                }
+                // High words of the result are zero
+                FileLine* const flp = rhsp->fileline();
+                for (int w = widthWords - shiftWords; w < widthWords; ++w) {
+                    addWordAssign(nodep, w, new AstConst{flp, AstConst::SizedEData{}, 0});
+                }
+                return true;
+            }
+        }
+
+        return false;
+    }
     //-------- Triops
     bool expandWide(AstNodeAssign* nodep, AstCond* rhsp) {
         UINFO(8, "    Wordize ASSIGN(COND) " << nodep);
@@ -1026,7 +1082,7 @@ class ExpandVisitor final : public VNVisitor {
         m_stmtp = nodep;
         iterateChildren(nodep);
         bool did = false;
-        if (nodep->isWide() && ((VN_IS(nodep->lhsp(), VarRef) || VN_IS(nodep->lhsp(), ArraySel)))
+        if (nodep->isWide()  //
             && ((VN_IS(nodep->lhsp(), VarRef) || VN_IS(nodep->lhsp(), ArraySel)))
             && !AstVar::scVarRecurse(nodep->lhsp())  // Need special function for SC
             && !AstVar::scVarRecurse(nodep->rhsp())) {
@@ -1051,6 +1107,10 @@ class ExpandVisitor final : public VNVisitor {
             } else if (AstNot* const rhsp = VN_CAST(nodep->rhsp(), Not)) {
                 did = expandWide(nodep, rhsp);
             } else if (AstXor* const rhsp = VN_CAST(nodep->rhsp(), Xor)) {
+                did = expandWide(nodep, rhsp);
+            } else if (AstShiftL* const rhsp = VN_CAST(nodep->rhsp(), ShiftL)) {
+                did = expandWide(nodep, rhsp);
+            } else if (AstShiftR* const rhsp = VN_CAST(nodep->rhsp(), ShiftR)) {
                 did = expandWide(nodep, rhsp);
             } else if (AstCond* const rhsp = VN_CAST(nodep->rhsp(), Cond)) {
                 did = expandWide(nodep, rhsp);
