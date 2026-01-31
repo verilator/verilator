@@ -481,17 +481,21 @@ void V3PreProcImp::comment(const string& text) {
     if ((cp[0] == 'v' || cp[0] == 'V') && VString::startsWith(cp + 1, "erilator")) {
         cp += std::strlen("verilator");
         if (*cp == '_') {
-            fileline()->v3error("Extra underscore in meta-comment;"
-                                " use /*verilator {...}*/ not /*verilator_{...}*/");
+            V3Control::applyIgnores(fileline());
+            fileline()->v3warn(BADVLTPRAGMA, "Extra underscore in meta-comment;"
+                                             " use /*verilator {...}*/ not /*verilator_{...}*/");
+            return;
         }
         vlcomment = true;
     } else if (VString::startsWith(cp, "synopsys")) {
         cp += std::strlen("synopsys");
-        synth = true;
         if (*cp == '_') {
-            fileline()->v3error("Extra underscore in meta-comment;"
-                                " use /*synopsys {...}*/ not /*synopsys_{...}*/");
+            V3Control::applyIgnores(fileline());
+            fileline()->v3warn(BADVLTPRAGMA, "Extra underscore in meta-comment;"
+                                             " use /*synopsys {...}*/ not /*synopsys_{...}*/");
+            return;
         }
+        synth = true;
     } else if (VString::startsWith(cp, "cadence")) {
         cp += std::strlen("cadence");
         synth = true;
@@ -504,8 +508,6 @@ void V3PreProcImp::comment(const string& text) {
     } else {
         return;
     }
-
-    if (!vlcomment && !synth) return;  // Short-circuit
 
     while (std::isspace(*cp)) ++cp;
     string cmd = commentCleanup(string{cp});

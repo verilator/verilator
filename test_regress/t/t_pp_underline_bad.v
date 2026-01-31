@@ -9,6 +9,7 @@ module t;
    initial begin
       case (1'b1) // synopsys_full_case
         1'b0: $stop;
+        1'b1: $finish;
       endcase
       $stop; // Should have failed
    end
