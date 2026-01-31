@@ -64,9 +64,10 @@ class SubstVarEntry final {
     std::vector<Record> m_wordRecords{static_cast<size_t>(m_varp->widthWords()), Record{}};
 
     // METHDOS
-    void deleteAssignmentIfUnused(Record& record) {
+    void deleteAssignmentIfUnused(Record& record, size_t &nAssignDeleted) {
         if (!record.m_assignp) return;
         if (record.m_used) return;
+        ++nAssignDeleted;
         VL_DO_DANGLING(record.m_assignp->unlinkFrBack()->deleteTree(), record.m_assignp);
     }
 
@@ -76,13 +77,7 @@ public:
     // CONSTRUCTORS
     explicit SubstVarEntry(AstVar* varp)
         : m_varp{varp} {}
-    ~SubstVarEntry() {
-        // Delete assignments to temporaries if they are not used
-        if (m_varp->isStatementTemp()) {
-            for (Record& wordRecord : m_wordRecords) deleteAssignmentIfUnused(wordRecord);
-            deleteAssignmentIfUnused(m_wholeRecord);
-        }
-    }
+    ~SubstVarEntry() = default;
 
     // Record assignment of whole variable. The given 'assp' can be null, which means
     // the variable is known to be assigned, but to an unknown value.
@@ -122,6 +117,13 @@ public:
     AstNodeExpr* substWhole() { return substRecord(m_wholeRecord); }
     // Returns substitution of whole word, or nullptr if not known/stale
     AstNodeExpr* substWord(uint32_t word) { return substRecord(m_wordRecords[word]); }
+
+    void deleteUnusedAssignments(size_t &nWordAssignDeleted, size_t &nWholeAssignDeleted) {
+        // Delete assignments to temporaries if they are not used
+        if (!m_varp->isStatementTemp()) return;
+        for (Record& wordRecord : m_wordRecords) deleteAssignmentIfUnused(wordRecord, nWordAssignDeleted);
+        deleteAssignmentIfUnused(m_wholeRecord, nWholeAssignDeleted);
+    }
 };
 
 //######################################################################
@@ -221,7 +223,12 @@ class SubstVisitor final : public VNVisitor {
     uint32_t m_ops = 0;  // Number of nodes on the RHS of an assignment
     uint32_t m_assignStep = 0;  // Assignment number to determine variable lifetimes
     const AstCFunc* m_funcp = nullptr;  // Current function we are under
-    size_t m_nSubst = 0;  // Number of substitutions performed
+    size_t m_nSubst = 0;  // Number of substitutions performed - for avoiding constant folding
+    // Statistics
+    size_t m_nWordSubstituted = 0;  // Number of words substituted
+    size_t m_nWholeSubstituted = 0;  // Number of whole variables substituted
+    size_t m_nWordAssignDeleted = 0;  // Number of word assignments deleted
+    size_t m_nWholeAssignDeleted = 0;  // Number of whole variable assignments deleted
 
     static constexpr uint32_t SUBST_MAX_OPS_SUBST = 30;  // Maximum number of ops to substitute in
     static constexpr uint32_t SUBST_MAX_OPS_NA = 9999;  // Not allowed to substitute
@@ -272,7 +279,10 @@ class SubstVisitor final : public VNVisitor {
             m_funcp = nodep;
             const VNUser1InUse m_inuser1;
             iterateChildren(nodep);
-            // Clear records. This also deletes unused assignments.
+            // Deletes unused assignments and clear entries
+            for (SubstVarEntry& entry : m_entries) {
+                entry.deleteUnusedAssignments(m_nWordAssignDeleted, m_nWholeAssignDeleted);
+            }
             m_entries.clear();
         }
 
@@ -350,6 +360,7 @@ class SubstVisitor final : public VNVisitor {
                 UASSERT_OBJ(refp->access().isReadOnly(), nodep, "Invalid access");
                 if (isSubstitutable(refp->varp())) {
                     if (AstNodeExpr* const substp = entry.substWord(word)) {
+                        ++m_nWordSubstituted;
                         substitute(nodep, substp);
                         return;
                     }
@@ -384,6 +395,7 @@ class SubstVisitor final : public VNVisitor {
                 // Do not substitute a compound wide expression.
                 // The whole point of adding temporaries is to eliminate them.
                 if (!nodep->isWide() || VN_IS(substp, VarRef)) {
+                    ++m_nWholeSubstituted;
                     substitute(nodep, substp);
                     return;
                 }
@@ -415,6 +427,10 @@ public:
     explicit SubstVisitor(AstNode* nodep) { iterate(nodep); }
     ~SubstVisitor() override {
         V3Stats::addStat("Optimizations, Substituted temps", m_nSubst);
+        V3Stats::addStat("Optimizations, Whole variable assignments deleted", m_nWholeAssignDeleted);
+        V3Stats::addStat("Optimizations, Whole variables substituted", m_nWholeSubstituted);
+        V3Stats::addStat("Optimizations, Word assignments deleted", m_nWordAssignDeleted);
+        V3Stats::addStat("Optimizations, Words substituted", m_nWordSubstituted);
         UASSERT(m_entries.empty(), "Should not visit outside functions");
     }
 };
