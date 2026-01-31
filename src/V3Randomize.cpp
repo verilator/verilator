@@ -901,7 +901,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstNodeExpr* exprp;
         if (randMode.usesMode) {
             // Use string literal to avoid double formatting
-            exprp = new AstCExpr{nodep->fileline(), "std::string(\"" + smtName + "\")", 1};
+            exprp = new AstCExpr{nodep->fileline(), AstCExpr::Pure{}, "\"" + smtName + "\"s"};
             exprp->dtypeSetString();
 
             // Get const format, using membersel if available for correct width/value
@@ -1003,8 +1003,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             const size_t width = tmpDtypep->width();
             methodp->addPinsp(
                 new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{}, width});
-            AstNodeExpr* const varnamep
-                = new AstCExpr{varp->fileline(), "\"" + smtName + "\"", varp->width()};
+            AstNodeExpr* const varnamep = new AstCExpr{varp->fileline(), AstCExpr::Pure{},
+                                                       "\"" + smtName + "\"", varp->width()};
             varnamep->dtypep(varp->dtypep());
             methodp->addPinsp(varnamep);
             methodp->addPinsp(
@@ -1434,10 +1434,11 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Pass filename, lineno, and source as separate arguments
         // This allows EmitC to call protect() on filename, similar to VL_STOP
         // Add filename parameter
-        callp->addPinsp(
-            new AstCExpr{nodep->fileline(), "\"" + nodep->fileline()->filename() + "\""});
+        callp->addPinsp(new AstCExpr{nodep->fileline(), AstCExpr::Pure{},
+                                     "\"" + nodep->fileline()->filename() + "\""});
         // Add line number parameter
-        callp->addPinsp(new AstCExpr{nodep->fileline(), cvtToStr(nodep->fileline()->lineno())});
+        callp->addPinsp(new AstCExpr{nodep->fileline(), AstCExpr::Pure{},
+                                     cvtToStr(nodep->fileline()->lineno())});
         // Add source text parameter (empty if --protect-ids to avoid source leakage)
         std::string prettyText;
         if (!v3Global.opt.protectIds()) {
@@ -1448,7 +1449,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                 pos += std::strlen("\\\"");
             }
         }
-        callp->addPinsp(new AstCExpr{nodep->fileline(), "\"" + prettyText + "\""});
+        callp->addPinsp(
+            new AstCExpr{nodep->fileline(), AstCExpr::Pure{}, "\"" + prettyText + "\""});
         nodep->replaceWith(callp->makeStmt());
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
