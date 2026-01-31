@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Break always into separate statements to reduce temps
+// DESCRIPTION: Verilator: Reorder statements within always blocks
 //
 // Code available from: https://verilator.org
 //
@@ -13,11 +13,10 @@
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
-// V3Split transformation:
+// V3Reorder transformations:
 //
-//  splitAll() splits large always blocks into smaller always blocks
-//  when possible (but does not change the order of statements relative
-//  to one another.)
+//  reorderAll() reorders statements within individual blocks
+//  to avoid delay vars when possible. It no longer splits always blocks.
 //
 // The scoreboard tracks data deps as follows:
 //
@@ -33,29 +32,27 @@
 // longer limited to top-level statements, we can split within if-else
 // blocks. We want to be able to split this:
 //
-//    always @ (...) begin
-//      if (reset) begin
-//        a <= 0;
-//        b <= 0;
-//         // ... ten thousand more
-//      end
-//      else begin
-//        a <= a_in;
-//        b <= b_in;
-//         // ... ten thousand more
-//      end
-//    end
+// The optional reorder routine can optimize this:
+//      NODEASSIGN/NODEIF/WHILE
+//              S1: ASSIGN {v1} <= 0.   // Duplicate of below
+//              S2: ASSIGN {v1} <= {v0}
+//              S3: IF (...,
+//                      X1: ASSIGN {v2} <= {v1}
+//                      X2: ASSIGN {v3} <= {v2}
+//      We'd like to swap S2 and S3, and X1 and X2.
 //
-// ...into a separate block for each of a, b, and so on.  Even though this
-// requires duplicating the conditional many times, it's usually
-// better. Later modules (V3Gate, V3Order) run faster if they aren't
-// handling enormous blocks with long lists of inputs and outputs.
+//  Create a graph in split assignment order.
+//      v3 -breakable-> v3Dly --> X2 --> v2 -brk-> v2Dly -> X1 -> v1
+//      Likewise on each "upper" statement vertex
+//              v3Dly & v2Dly -> S3 -> v1 & v2
+//              v1 -brk-> v1Dly -> S2 -> v0
+//                        v1Dly -> S1 -> {empty}
 //
 //*************************************************************************
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
-#include "V3Split.h"
+#include "V3Reorder.h"
 
 #include "V3Graph.h"
 #include "V3Stats.h"
@@ -422,6 +419,182 @@ private:
     VL_UNCOPYABLE(SplitReorderBaseVisitor);
 };
 
+class ReorderVisitor final : public SplitReorderBaseVisitor {
+    // CONSTRUCTORS
+public:
+    explicit ReorderVisitor(AstNetlist* nodep) { iterate(nodep); }
+    ~ReorderVisitor() override = default;
+
+    // METHODS
+protected:
+    void makeRvalueEdges(SplitVarStdVertex* vstdp) override {
+        for (SplitLogicVertex* vxp : m_stmtStackps) new SplitRVEdge{&m_graph, vxp, vstdp};
+    }
+
+    void cleanupBlockGraph(AstNode* nodep) {
+        // Transform the graph into what we need
+        UINFO(5, "ReorderBlock " << nodep);
+        m_graph.removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
+
+        if (dumpGraphLevel() >= 9) m_graph.dumpDotFilePrefixed("reorderg_nodup", false);
+
+        // Mark all the logic for this step
+        // Vertex::m_user begin: true indicates logic for this step
+        m_graph.userClearVertices();
+        for (AstNode* nextp = nodep; nextp; nextp = nextp->nextp()) {
+            SplitLogicVertex* const vvertexp
+                = reinterpret_cast<SplitLogicVertex*>(nextp->user3p());
+            vvertexp->user(true);
+        }
+
+        // If a var vertex has only inputs, it's a input-only node,
+        // and can be ignored for coloring **this block only**
+        SplitEdge::incrementStep();
+        pruneDepsOnInputs();
+
+        // For reordering this single block only, mark all logic
+        // vertexes not involved with this step as unimportant
+        for (V3GraphVertex& vertex : m_graph.vertices()) {
+            if (!vertex.user()) {
+                if (vertex.is<SplitLogicVertex>()) {
+                    for (V3GraphEdge& edge : vertex.inEdges()) {
+                        SplitEdge& oedge = static_cast<SplitEdge&>(edge);
+                        oedge.setIgnoreThisStep();
+                    }
+                    for (V3GraphEdge& edge : vertex.outEdges()) {
+                        SplitEdge& oedge = static_cast<SplitEdge&>(edge);
+                        oedge.setIgnoreThisStep();
+                    }
+                }
+            }
+        }
+
+        // Weak coloring to determine what needs to remain in order
+        // This follows all step-relevant edges excluding PostEdges, which are done later
+        m_graph.weaklyConnected(&SplitEdge::followScoreboard);
+
+        // Add hard orderings between all nodes of same color, in the order they appeared
+        std::unordered_map<uint32_t, SplitLogicVertex*> lastOfColor;
+        for (AstNode* nextp = nodep; nextp; nextp = nextp->nextp()) {
+            SplitLogicVertex* const vvertexp
+                = reinterpret_cast<SplitLogicVertex*>(nextp->user3p());
+            const uint32_t color = vvertexp->color();
+            UASSERT_OBJ(color, nextp, "No node color assigned");
+            if (lastOfColor[color]) {
+                new SplitStrictEdge{&m_graph, lastOfColor[color], vvertexp};
+            }
+            lastOfColor[color] = vvertexp;
+        }
+
+        // And a real ordering to get the statements into something reasonable
+        // We don't care if there's cutable violations here...
+        // Non-cutable violations should be impossible; as those edges are program-order
+        if (dumpGraphLevel() >= 9) m_graph.dumpDotFilePrefixed("splitg_preo", false);
+        m_graph.acyclic(&SplitEdge::followCyclic);
+        m_graph.rank(&SplitEdge::followCyclic);  // Or order(), but that's more expensive
+        if (dumpGraphLevel() >= 9) m_graph.dumpDotFilePrefixed("splitg_opt", false);
+    }
+
+    void reorderBlock(AstNode* nodep) {
+        // Reorder statements in the completed graph
+
+        // Map the rank numbers into nodes they associate with
+        std::multimap<uint32_t, AstNode*> rankMap;
+        int currOrder = 0;  // Existing sequence number of assignment
+        for (AstNode* nextp = nodep; nextp; nextp = nextp->nextp()) {
+            const SplitLogicVertex* const vvertexp
+                = reinterpret_cast<SplitLogicVertex*>(nextp->user3p());
+            rankMap.emplace(vvertexp->rank(), nextp);
+            nextp->user4(++currOrder);  // Record current ordering
+        }
+
+        // Is the current ordering OK?
+        bool leaveAlone = true;
+        int newOrder = 0;  // New sequence number of assignment
+        for (auto it = rankMap.cbegin(); it != rankMap.cend(); ++it) {
+            const AstNode* const nextp = it->second;
+            if (++newOrder != nextp->user4()) leaveAlone = false;
+        }
+        if (leaveAlone) {
+            UINFO(6, "   No changes");
+        } else {
+            VNRelinker replaceHandle;  // Where to add the list
+            AstNode* newListp = nullptr;
+            for (auto it = rankMap.cbegin(); it != rankMap.cend(); ++it) {
+                AstNode* const nextp = it->second;
+                UINFO(6, "   New order: " << nextp);
+                if (nextp == nodep) {
+                    nodep->unlinkFrBack(&replaceHandle);
+                } else {
+                    nextp->unlinkFrBack();
+                }
+                if (newListp) {
+                    newListp = newListp->addNext(nextp);
+                } else {
+                    newListp = nextp;
+                }
+            }
+            replaceHandle.relink(newListp);
+        }
+    }
+
+    void processBlock(AstNode* nodep) {
+        if (!nodep) return;  // Empty lists are ignorable
+        // Pass the first node in a list of block items, we'll process them
+        // Check there's >= 2 sub statements, else nothing to analyze
+        // Save recursion state
+        AstNode* firstp = nodep;  // We may reorder, and nodep is no longer first.
+        void* const oldBlockUser3 = nodep->user3p();  // May be overloaded in below loop, save it
+        nodep->user3p(nullptr);
+        UASSERT_OBJ(nodep->firstAbovep(), nodep,
+                    "Node passed is in next list; should have processed all list at once");
+        // Process it
+        if (!nodep->nextp()) {
+            // Just one, so can't reorder.  Just look for more blocks/statements.
+            iterate(nodep);
+        } else {
+            UINFO(9, "  processBlock " << nodep);
+            // Process block and followers
+            scanBlock(nodep);
+            if (m_noReorderWhy != "") {  // Jump or something nasty
+                UINFO(9, "  NoReorderBlock because " << m_noReorderWhy);
+            } else {
+                // Reorder statements in this block
+                cleanupBlockGraph(nodep);
+                reorderBlock(nodep);
+                // Delete old vertexes and edges only applying to this block
+                // First, walk back to first in list
+                while (firstp->backp()->nextp() == firstp) firstp = firstp->backp();
+                for (AstNode* nextp = firstp; nextp; nextp = nextp->nextp()) {
+                    SplitLogicVertex* const vvertexp
+                        = reinterpret_cast<SplitLogicVertex*>(nextp->user3p());
+                    vvertexp->unlinkDelete(&m_graph);
+                }
+            }
+        }
+        // Again, nodep may no longer be first.
+        firstp->user3p(oldBlockUser3);
+    }
+
+    void visit(AstAlways* nodep) override {
+        UINFO(4, "   ALW   " << nodep);
+        UINFOTREE(9, nodep, "", "alwIn:");
+        scoreboardClear();
+        processBlock(nodep->stmtsp());
+        UINFOTREE(9, nodep, "", "alwOut");
+    }
+
+    void visit(AstNodeIf* nodep) override {
+        UINFO(4, "     IF " << nodep);
+        iterateAndNextNull(nodep->condp());
+        processBlock(nodep->thensp());
+        processBlock(nodep->elsesp());
+    }
+
+private:
+    VL_UNCOPYABLE(ReorderVisitor);
+};
+
 using ColorSet = std::unordered_set<uint32_t>;
 using AlwaysVec = std::vector<AstAlways*>;
 
@@ -482,335 +655,13 @@ private:
     VL_UNCOPYABLE(IfColorVisitor);
 };
 
-class EmitSplitVisitor final : public VNVisitor {
-    // MEMBERS
-    const AstAlways* const m_origAlwaysp;  // Block that *this will split
-    const IfColorVisitor* const m_ifColorp;  // Digest of results of prior coloring
-
-    // Map each color to our current place within the color's new always
-    std::unordered_map<uint32_t, AstNode*> m_addAfter;
-
-    AlwaysVec* const m_newBlocksp;  // Split always blocks we have generated
-
-    // CONSTRUCTORS
-public:
-    // EmitSplitVisitor visits through always block *nodep
-    // and generates its split blocks, writing the split blocks
-    // into *newBlocksp.
-    EmitSplitVisitor(AstAlways* nodep, const IfColorVisitor* ifColorp, AlwaysVec* newBlocksp)
-        : m_origAlwaysp{nodep}
-        , m_ifColorp{ifColorp}
-        , m_newBlocksp{newBlocksp} {
-        UINFO(6, "  splitting always " << nodep);
-    }
-
-    ~EmitSplitVisitor() override = default;
-
-    // METHODS
-    void go() {
-        // Create a new always for each color
-        const ColorSet& colors = m_ifColorp->colors();
-        for (unsigned int color : colors) {
-            // We don't need to clone m_origAlwaysp->sensesp() here;
-            // V3Activate already moved it to a parent node.
-            AstAlways* const alwaysp
-                = new AstAlways{m_origAlwaysp->fileline(), VAlwaysKwd::ALWAYS, nullptr, nullptr};
-            // Put a placeholder node into stmtp to track our position.
-            // We'll strip these out after the blocks are fully cloned.
-            AstSplitPlaceholder* const placeholderp = makePlaceholderp();
-            alwaysp->addStmtsp(placeholderp);
-            m_addAfter[color] = placeholderp;
-            m_newBlocksp->push_back(alwaysp);
-        }
-        // Scan the body of the always. We'll handle if/else
-        // specially, everything else is a leaf node that we can
-        // just clone into one of the split always blocks.
-        iterateAndNextNull(m_origAlwaysp->stmtsp());
-    }
-
-protected:
-    AstSplitPlaceholder* makePlaceholderp() {
-        return new AstSplitPlaceholder{m_origAlwaysp->fileline()};
-    }
-
-    void visit(AstNode* nodep) override {
-        // Anything that's not an if/else we assume is a leaf
-        // (that is, something we won't split.) Don't visit further
-        // into the leaf.
-        //
-        // A leaf might contain another if, for example a WHILE loop
-        // could contain an if. We can't split WHILE loops, so we
-        // won't split its nested if either. Just treat it as part
-        // of the leaf; do not visit further; do not reach visit(AstNodeIf*)
-        // for such an embedded if.
-
-        // Each leaf must have a user3p
-        UASSERT_OBJ(nodep->user3p(), nodep, "null user3p in V3Split leaf");
-
-        // Clone the leaf into its new always block
-        const SplitLogicVertex* const vxp = reinterpret_cast<SplitLogicVertex*>(nodep->user3p());
-        const uint32_t color = vxp->color();
-        AstNode* const clonedp = nodep->cloneTree(false);
-        m_addAfter[color]->addNextHere(clonedp);
-        m_addAfter[color] = clonedp;
-    }
-
-    void visit(AstNodeIf* nodep) override {
-        const ColorSet& colors = m_ifColorp->colors(nodep);
-        using CloneMap = std::unordered_map<uint32_t, AstNodeIf*>;
-        CloneMap clones;
-
-        for (unsigned int color : colors) {
-            // Clone this if into its set of split blocks
-            AstSplitPlaceholder* const if_placeholderp = makePlaceholderp();
-            AstSplitPlaceholder* const else_placeholderp = makePlaceholderp();
-            // We check for condition isPure earlier, but may still clone a
-            // non-pure to separate from other pure statements.
-            AstIf* const clonep = new AstIf{nodep->fileline(), nodep->condp()->cloneTree(true),
-                                            if_placeholderp, else_placeholderp};
-            const AstIf* const origp = VN_CAST(nodep, If);
-            if (origp) {
-                // Preserve pragmas from unique if's
-                // so assertions work properly
-                clonep->uniquePragma(origp->uniquePragma());
-                clonep->unique0Pragma(origp->unique0Pragma());
-                clonep->priorityPragma(origp->priorityPragma());
-            }
-            clones[color] = clonep;
-            m_addAfter[color]->addNextHere(clonep);
-            m_addAfter[color] = if_placeholderp;
-        }
-
-        iterateAndNextNull(nodep->thensp());
-
-        for (const auto& color : colors) m_addAfter[color] = clones[color]->elsesp();
-
-        iterateAndNextNull(nodep->elsesp());
-
-        for (const auto& color : colors) m_addAfter[color] = clones[color];
-    }
-
-private:
-    VL_UNCOPYABLE(EmitSplitVisitor);
-};
-
-class RemovePlaceholdersVisitor final : public VNVisitor {
-    // MEMBERS
-    bool m_isPure = true;
-    int m_emptyAlways = 0;
-
-    // CONSTRUCTORS
-    RemovePlaceholdersVisitor() = default;
-    ~RemovePlaceholdersVisitor() override = default;
-
-    // VISITORS
-    void visit(AstSplitPlaceholder* nodep) override { pushDeletep(nodep->unlinkFrBack()); }
-    void visit(AstNodeIf* nodep) override {
-        VL_RESTORER(m_isPure);
-        m_isPure = true;
-        iterateChildren(nodep);
-        if (!nodep->thensp() && !nodep->elsesp() && m_isPure) pushDeletep(nodep->unlinkFrBack());
-    }
-    void visit(AstAlways* nodep) override {
-        VL_RESTORER(m_isPure);
-        m_isPure = true;
-        iterateChildren(nodep);
-        if (m_isPure) {
-            bool emptyOrCommentOnly = true;
-            for (AstNode* bodysp = nodep->stmtsp(); bodysp; bodysp = bodysp->nextp()) {
-                // If this always block contains only AstComment, remove here.
-                // V3Gate will remove anyway.
-                if (!VN_IS(bodysp, Comment)) {
-                    emptyOrCommentOnly = false;
-                    break;
-                }
-            }
-            if (emptyOrCommentOnly) {
-                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-                ++m_emptyAlways;
-            }
-        }
-    }
-    void visit(AstNode* nodep) override {
-        m_isPure &= nodep->isPure();
-        iterateChildren(nodep);  // must visit regardless of m_isPure to remove placeholders
-    }
-
-    VL_UNCOPYABLE(RemovePlaceholdersVisitor);
-
-public:
-    static int exec(AstAlways* nodep) {
-        RemovePlaceholdersVisitor visitor;
-        visitor.iterate(nodep);
-        return visitor.m_emptyAlways;
-    }
-};
-
-class SplitVisitor final : public SplitReorderBaseVisitor {
-    // Keys are original always blocks pending delete,
-    // values are newly split always blocks pending insertion
-    // at the same position as the originals:
-    std::unordered_map<AstAlways*, AlwaysVec> m_replaceBlocks;
-
-    // AstNodeIf* whose condition we're currently visiting
-    const AstNode* m_curIfConditional = nullptr;
-    VDouble0 m_statSplits;  // Statistic tracking
-
-    // CONSTRUCTORS
-public:
-    explicit SplitVisitor(AstNetlist* nodep) {
-        iterate(nodep);
-
-        // Splice newly-split blocks into the tree. Remove placeholders
-        // from newly-split blocks. Delete the original always blocks
-        // that we're replacing.
-        for (auto it = m_replaceBlocks.begin(); it != m_replaceBlocks.end(); ++it) {
-            AstAlways* const origp = it->first;
-            for (AlwaysVec::iterator addme = it->second.begin(); addme != it->second.end();
-                 ++addme) {
-                origp->addNextHere(*addme);
-                const int numRemoved = RemovePlaceholdersVisitor::exec(*addme);
-                m_statSplits -= numRemoved;
-            }
-            origp->unlinkFrBack();  // Without next
-            VL_DO_DANGLING(origp->deleteTree(), origp);
-        }
-    }
-
-    ~SplitVisitor() override { V3Stats::addStat("Optimizations, Split always", m_statSplits); }
-
-    // METHODS
-protected:
-    void makeRvalueEdges(SplitVarStdVertex* vstdp) override {
-        // Each 'if' depends on rvalues in its own conditional ONLY,
-        // not rvalues in the if/else bodies.
-        for (auto it = m_stmtStackps.cbegin(); it != m_stmtStackps.cend(); ++it) {
-            const AstNodeIf* const ifNodep = VN_CAST((*it)->nodep(), NodeIf);
-            if (ifNodep && (m_curIfConditional != ifNodep)) continue;
-            new SplitRVEdge{&m_graph, *it, vstdp};
-        }
-    }
-
-    void colorAlwaysGraph() {
-        // Color the graph to indicate subsets, each of which
-        // we can split into its own always block.
-        m_graph.removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
-
-        // Some vars are primary inputs to the always block; prune
-        // edges on those vars. Reasoning: if two statements both depend
-        // on primary input A, it's ok to split these statements. Whereas
-        // if they both depend on locally-generated variable B, the statements
-        // must be kept together.
-        SplitEdge::incrementStep();
-        pruneDepsOnInputs();
-
-        // For any 'if' node whose deps have all been pruned
-        // (meaning, its conditional expression only looks at primary
-        // inputs) prune all edges that depend on the 'if'.
-        for (V3GraphVertex& vertex : m_graph.vertices()) {
-            SplitLogicVertex* const logicp = vertex.cast<SplitLogicVertex>();
-            if (!logicp) continue;
-
-            const AstNodeIf* const ifNodep = VN_CAST(logicp->nodep(), NodeIf);
-            if (!ifNodep) continue;
-
-            bool pruneMe = true;
-            for (const V3GraphEdge& edge : logicp->outEdges()) {
-                const SplitEdge& oedge = static_cast<const SplitEdge&>(edge);
-                if (!oedge.ignoreThisStep()) {
-                    // This if conditional depends on something we can't
-                    // prune -- a variable generated in the current block.
-                    pruneMe = false;
-
-                    // When we can't prune dependencies on the conditional,
-                    // give a hint about why...
-                    if (debug() >= 9) {
-                        V3GraphVertex* vxp = oedge.top();
-                        const SplitNodeVertex* const nvxp
-                            = static_cast<const SplitNodeVertex*>(vxp);
-                        UINFO(0, "Cannot prune if-node due to edge "
-                                     << &oedge << " pointing to node " << nvxp->nodep());
-                        nvxp->nodep()->dumpTree("-  ");
-                    }
-
-                    break;
-                }
-            }
-
-            if (!pruneMe) continue;
-
-            // This if can be split; prune dependencies on it.
-            for (V3GraphEdge& edge : logicp->inEdges()) {
-                SplitEdge& oedge = static_cast<SplitEdge&>(edge);
-                oedge.setIgnoreThisStep();
-            }
-        }
-
-        if (dumpGraphLevel() >= 9) m_graph.dumpDotFilePrefixed("splitg_nodup", false);
-
-        // Weak coloring to determine what needs to remain grouped
-        // in a single always. This follows all edges excluding:
-        //  - those we pruned above
-        //  - PostEdges, which are done later
-        m_graph.weaklyConnected(&SplitEdge::followScoreboard);
-        if (dumpGraphLevel() >= 9) m_graph.dumpDotFilePrefixed("splitg_colored", false);
-    }
-
-    void visit(AstAlways* nodep) override {
-        // build the scoreboard
-        scoreboardClear();
-        scanBlock(nodep->stmtsp());
-
-        if (m_noReorderWhy != "") {
-            // We saw a jump or something else rare that we don't handle.
-            UINFO(9, "  NoSplitBlock because " << m_noReorderWhy);
-            return;
-        }
-
-        // Look across the entire tree of if/else blocks in the always,
-        // and color regions that must be kept together.
-        UINFO(5, "SplitVisitor @ " << nodep);
-        colorAlwaysGraph();
-
-        // Map each AstNodeIf to the set of colors (split always blocks)
-        // it must participate in. Also find the whole set of colors.
-        const IfColorVisitor ifColor{nodep};
-
-        if (ifColor.colors().size() > 1) {
-            // Counting original always blocks rather than newly-split
-            // always blocks makes it a little easier to use this stat to
-            // check the result of the t_alw_split test:
-            m_statSplits += ifColor.colors().size() - 1;  // -1 for the original always
-
-            // Visit through the original always block one more time,
-            // and emit the split always blocks into m_replaceBlocks:
-            EmitSplitVisitor emitSplit{nodep, &ifColor, &(m_replaceBlocks[nodep])};
-            emitSplit.go();
-        }
-    }
-    void visit(AstNodeIf* nodep) override {
-        UINFO(4, "     IF " << nodep);
-        if (!nodep->condp()->isPure()) m_noReorderWhy = "Impure IF condition";
-        {
-            VL_RESTORER(m_curIfConditional);
-            m_curIfConditional = nodep;
-            iterateAndNextNull(nodep->condp());
-        }
-        scanBlock(nodep->thensp());
-        scanBlock(nodep->elsesp());
-    }
-
-private:
-    VL_UNCOPYABLE(SplitVisitor);
-};
-
-}  //namespace
+}  // namespace
 
 //######################################################################
-// Split class functions
+// V3Reorder class functions
 
-void V3Split::splitAll(AstNetlist* nodep) {
+void V3Reorder::reorderAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    { SplitVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("split", 0, dumpTreeEitherLevel() >= 3);
+    { ReorderVisitor{nodep}; }  // Destruct before checking
+    V3Global::dumpCheckGlobalTree("reorder", 0, dumpTreeEitherLevel() >= 3);
 }
