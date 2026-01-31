@@ -384,9 +384,8 @@ class ExpandVisitor final : public VNVisitor {
             const uint32_t shiftBits = rhsConstp->toUInt();
             if (VL_BITBIT_E(shiftBits) == 0) {
                 UINFO(8, "    Wordize ASSIGN(SHIFTL,words) " << nodep);
-                const uint32_t widthWords = nodep->widthWords();
-                const uint32_t shiftWords
-                    = std::min<uint32_t>(VL_BITWORD_E(shiftBits), widthWords);
+                const int widthWords = nodep->widthWords();
+                const int shiftWords = std::min<int>(VL_BITWORD_E(shiftBits), widthWords);
                 // Low words of the result are zero
                 FileLine* const flp = rhsp->fileline();
                 for (int w = 0; w < shiftWords; ++w) {
@@ -413,9 +412,8 @@ class ExpandVisitor final : public VNVisitor {
             const uint32_t shiftBits = rhsConstp->toUInt();
             if (VL_BITBIT_E(shiftBits) == 0) {
                 UINFO(8, "    Wordize ASSIGN(SHIFTR,words) " << nodep);
-                const uint32_t widthWords = nodep->widthWords();
-                const uint32_t shiftWords
-                    = std::min<uint32_t>(VL_BITWORD_E(shiftBits), widthWords);
+                const int widthWords = nodep->widthWords();
+                const int shiftWords = std::min<int>(VL_BITWORD_E(shiftBits), widthWords);
                 // Low words of the result are copied from higher words of the source
                 for (int w = 0; w < widthWords - shiftWords; ++w) {
                     addWordAssign(nodep, w, newAstWordSelClone(rhsp->lhsp(), w + shiftWords));
