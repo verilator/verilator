@@ -373,7 +373,7 @@ class ExpandVisitor final : public VNVisitor {
         }
         return true;
     }
-    bool expandWide(AstNodeAssign* nodep, AstShiftL* rhsp) {
+    bool expandWideShift(AstNodeAssign* nodep, AstNodeBiop* rhsp, bool isLeftShift) {
         if (!doExpandWide(nodep)) return false;
 
         // Simplify the shift amount, in case it becomes a constant
@@ -383,17 +383,29 @@ class ExpandVisitor final : public VNVisitor {
         if (const AstConst* const rhsConstp = VN_CAST(rhsp->rhsp(), Const)) {
             const uint32_t shiftBits = rhsConstp->toUInt();
             if (VL_BITBIT_E(shiftBits) == 0) {
-                UINFO(8, "    Wordize ASSIGN(SHIFTL,words) " << nodep);
                 const int widthWords = nodep->widthWords();
                 const int shiftWords = std::min<int>(VL_BITWORD_E(shiftBits), widthWords);
-                // Low words of the result are zero
                 FileLine* const flp = rhsp->fileline();
-                for (int w = 0; w < shiftWords; ++w) {
-                    addWordAssign(nodep, w, new AstConst{flp, AstConst::SizedEData{}, 0});
-                }
-                // High words of the result are copied from higher words of the source
-                for (int w = shiftWords; w < widthWords; ++w) {
-                    addWordAssign(nodep, w, newAstWordSelClone(rhsp->lhsp(), w - shiftWords));
+                if (isLeftShift) {
+                    UINFO(8, "    Wordize ASSIGN(SHIFTL,words) " << nodep);
+                    // Low words of the result are zero
+                    for (int w = 0; w < shiftWords; ++w) {
+                        addWordAssign(nodep, w, new AstConst{flp, AstConst::SizedEData{}, 0});
+                    }
+                    // High words of the result are copied from higher words of the source
+                    for (int w = shiftWords; w < widthWords; ++w) {
+                        addWordAssign(nodep, w, newAstWordSelClone(rhsp->lhsp(), w - shiftWords));
+                    }
+                } else {
+                    UINFO(8, "    Wordize ASSIGN(SHIFTR,words) " << nodep);
+                    // Low words of the result are copied from higher words of the source
+                    for (int w = 0; w < widthWords - shiftWords; ++w) {
+                        addWordAssign(nodep, w, newAstWordSelClone(rhsp->lhsp(), w + shiftWords));
+                    }
+                    // High words of the result are zero
+                    for (int w = widthWords - shiftWords; w < widthWords; ++w) {
+                        addWordAssign(nodep, w, new AstConst{flp, AstConst::SizedEData{}, 0});
+                    }
                 }
                 return true;
             }
@@ -401,34 +413,7 @@ class ExpandVisitor final : public VNVisitor {
 
         return false;
     }
-    bool expandWide(AstNodeAssign* nodep, AstShiftR* rhsp) {
-        if (!doExpandWide(nodep)) return false;
 
-        // Simplify the shift amount, in case it becomes a constant
-        V3Const::constifyEditCpp(rhsp->rhsp());
-
-        // If it's a constant shift by whole words, expand it so V3Subst can substitute it
-        if (const AstConst* const rhsConstp = VN_CAST(rhsp->rhsp(), Const)) {
-            const uint32_t shiftBits = rhsConstp->toUInt();
-            if (VL_BITBIT_E(shiftBits) == 0) {
-                UINFO(8, "    Wordize ASSIGN(SHIFTR,words) " << nodep);
-                const int widthWords = nodep->widthWords();
-                const int shiftWords = std::min<int>(VL_BITWORD_E(shiftBits), widthWords);
-                // Low words of the result are copied from higher words of the source
-                for (int w = 0; w < widthWords - shiftWords; ++w) {
-                    addWordAssign(nodep, w, newAstWordSelClone(rhsp->lhsp(), w + shiftWords));
-                }
-                // High words of the result are zero
-                FileLine* const flp = rhsp->fileline();
-                for (int w = widthWords - shiftWords; w < widthWords; ++w) {
-                    addWordAssign(nodep, w, new AstConst{flp, AstConst::SizedEData{}, 0});
-                }
-                return true;
-            }
-        }
-
-        return false;
-    }
     //-------- Triops
     bool expandWide(AstNodeAssign* nodep, AstCond* rhsp) {
         UINFO(8, "    Wordize ASSIGN(COND) " << nodep);
@@ -1109,9 +1094,9 @@ class ExpandVisitor final : public VNVisitor {
             } else if (AstXor* const rhsp = VN_CAST(nodep->rhsp(), Xor)) {
                 did = expandWide(nodep, rhsp);
             } else if (AstShiftL* const rhsp = VN_CAST(nodep->rhsp(), ShiftL)) {
-                did = expandWide(nodep, rhsp);
+                did = expandWideShift(nodep, rhsp, /* isLeftShift: */ true);
             } else if (AstShiftR* const rhsp = VN_CAST(nodep->rhsp(), ShiftR)) {
-                did = expandWide(nodep, rhsp);
+                did = expandWideShift(nodep, rhsp, /* isLeftShift: */ false);
             } else if (AstCond* const rhsp = VN_CAST(nodep->rhsp(), Cond)) {
                 did = expandWide(nodep, rhsp);
             }
