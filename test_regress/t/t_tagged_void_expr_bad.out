@@ -1,0 +1,6 @@
+%Error: t/t_tagged_void_expr_bad.v:18:9: Void tagged union member 'Invalid' should not have an expression
+                                       : ... note: In instance 't'
+   18 |     v = tagged Invalid (42);   
+      |         ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

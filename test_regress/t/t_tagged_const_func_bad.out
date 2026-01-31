@@ -1,0 +1,9 @@
+%Error: t/t_tagged_const_func_bad.v:21:31: Expecting expression to be constant, but can't determine constant for FUNCREF 'make_valid'
+                                         : ... note: In instance 't'
+        t/t_tagged_const_func_bad.v:17:18: ... Location of non-constant TAGGEDEXPR 'Valid': Unknown node type, perhaps missing visitor in SimulateVisitor
+        t/t_tagged_const_func_bad.v:21:31: ... Called from 'make_valid()' with parameters:
+           x = ?32?h2a
+   21 |   localparam VInt CONST_VAL = make_valid(42);
+      |                               ^~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

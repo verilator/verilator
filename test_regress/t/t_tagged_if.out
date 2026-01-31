@@ -1,14 +1,45 @@
-%Error-UNSUPPORTED: t/t_tagged_if.v:216:37: Unsupported: &&& expression
-  216 |     if (instr matches tagged Jmp .j &&&
-      |                                     ^~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_tagged_if.v:226:35: Unsupported: &&& expression
-  226 |     if (v matches tagged Valid .n &&& (n > 50))
-      |                                   ^~~
-%Error-UNSUPPORTED: t/t_tagged_if.v:235:35: Unsupported: &&& expression
-  235 |     if (v matches tagged Valid .n &&& (n > 50))
-      |                                   ^~~
-%Error-UNSUPPORTED: t/t_tagged_if.v:264:37: Unsupported: &&& expression
-  264 |     if (instr matches tagged Jmp .j &&&
-      |                                     ^~~
+%Warning-ASCRANGE: t/t_tagged_if.v:35:9: Ascending bit range vector: left < right of bit range: [0:31]
+                                       : ... note: In instance 't'
+   35 |     bit [0:31]    Word32LittleEndian;    
+      |         ^
+                   ... For warning description see https://verilator.org/warn/ASCRANGE?v=latest
+                   ... Use "/* verilator lint_off ASCRANGE */" and lint_on around source to disable this message.
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:172:14: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'b' generates 8 bits.
+                                            : ... note: In instance 't'
+  172 |       result = b;
+      |              ^
+                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
+                      ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:175:21: Operator NEQCASE expects 32 bits on the RHS, but RHS's CONST '8'ha5' generates 8 bits.
+                                            : ... note: In instance 't'
+  175 |     do if ((result) !== (8'hA5)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", "t/t_tagged_if.v",175, (result), (8'hA5), "result", "8'hA5"); $stop; end while(0);;
+      |                     ^~~
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:208:14: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 10 bits.
+                                            : ... note: In instance 't'
+  208 |       result = a;   
+      |              ^
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:218:14: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 10 bits.
+                                            : ... note: In instance 't'
+  218 |       result = a;   
+      |              ^
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:254:19: Operator ADD expects 32 bits on the LHS, but LHS's VARREF 'r1' generates 5 bits.
+                                            : ... note: In instance 't'
+  254 |       result = r1 + r2 + rd;
+      |                   ^
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:254:19: Operator ADD expects 32 bits on the RHS, but RHS's VARREF 'r2' generates 5 bits.
+                                            : ... note: In instance 't'
+  254 |       result = r1 + r2 + rd;
+      |                   ^
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:254:24: Operator ADD expects 32 bits on the RHS, but RHS's VARREF 'rd' generates 5 bits.
+                                            : ... note: In instance 't'
+  254 |       result = r1 + r2 + rd;
+      |                        ^
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:267:16: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 10 bits.
+                                            : ... note: In instance 't'
+  267 |         result = a;
+      |                ^
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:278:14: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 10 bits.
+                                            : ... note: In instance 't'
+  278 |       result = a;
+      |              ^
 %Error: Exiting due to

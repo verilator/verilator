@@ -888,8 +888,11 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>      prTAGGED
 
 // These prevent other conflicts
+// yMATCHES uses %right and guard rules use %prec yMATCHES so
+// "a matches b &&& c matches d" parses with guard = "c matches d"
+// The %prec ensures Bison shifts 'matches' instead of reducing early
+%right          yMATCHES
 %left           yP_ANDANDAND
-%left           yMATCHES
 %left           prTAGGED
 //UNSUP %left   prSEQ_CLOCKING
 
@@ -2159,7 +2162,8 @@ struct_unionDecl<nodeUOrStructDTypep>:  // IEEE: part of data_type
         /*cont*/    struct_union_memberListEnd
                         { $$ = $<nodeUOrStructDTypep>4; $$->addMembersp($5); }
         |       yUNION taggedSoftE packedSigningE '{'
-        /*mid*/         { $<nodeUOrStructDTypep>$ = new AstUnionDType{$1, $2 == tagged_SOFT, $2 == tagged_TAGGED, $3}; }
+        /*mid*/         { $<nodeUOrStructDTypep>$ = new AstUnionDType{$1, $2 == tagged_SOFT, $2 == tagged_TAGGED, $3};
+                          if ($2 == tagged_TAGGED) v3Global.useTagged(true); }
         /*cont*/    struct_union_memberListEnd
                         { $$ = $<nodeUOrStructDTypep>5; $$->addMembersp($6); }
         ;
@@ -3957,6 +3961,9 @@ patternNoExpr<nodeExprp>:       // IEEE: pattern **Excluding Expr*
                         { $$ = new AstPatternVar{$1, *$2}; }
         |       yP_DOTSTAR
                         { $$ = new AstPatternStar{$1}; }
+        //                      // IEEE: ( pattern )
+        |       '(' patternNoExpr ')'
+                        { $$ = $2; }
         //                      // IEEE: "expr" excluded; expand in callers
         //                      // IEEE: tagged member_identifier [ pattern ]
         //                      // Standalone "yTAGGED__NONPRIMARY idAny" is handled via expr in patternOne
@@ -3977,7 +3984,7 @@ patternOne<nodep>:              // IEEE: part of pattern
                 expr
                         { if ($1) $$ = new AstPatMember{$1->fileline(), $1, nullptr, nullptr}; else $$ = nullptr; }
         |       expr '{' argsExprList '}'               { $$ = new AstPatMember{$2, $3, nullptr, $1}; }
-        |       patternNoExpr                           { $$ = $1; }
+        |       patternNoExpr                           { $$ = new AstPatMember{$1->fileline(), $1, nullptr, nullptr}; }
         ;
 
 patternMemberList<nodep>:       // IEEE: part of pattern and assignment_pattern
@@ -5194,12 +5201,20 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         //
         //                      // IEEE: cond_predicate - here to avoid reduce problems
         //                      // Note expr includes cond_pattern
-        |       ~l~expr yP_ANDANDAND ~r~expr            { $$ = new AstConst{$2, AstConst::BitFalse{}};
-                                                          BBUNSUP($<fl>2, "Unsupported: &&& expression"); }
+        //                      // IEEE: cond_pattern ::= expression_or_cond_pattern matches pattern
+        //                      // IEEE: cond_predicate ::= cond_pattern { &&& cond_pattern }
         //
         //                      // IEEE: cond_pattern - here to avoid reduce problems
         //                      // "expr yMATCHES pattern"
         //                      // IEEE: pattern - expanded here to avoid conflicts
+        //                      // Matches with pattern guard (&&& expr) - must come before rules without guard
+        //                      // %prec yMATCHES ensures "a matches b &&& c matches d" shifts the second
+        //                      // 'matches' instead of reducing early, allowing chained matches to work
+        |       ~l~expr yMATCHES patternNoExpr yP_ANDANDAND ~r~expr  %prec yMATCHES
+                                                        { $$ = new AstMatches{$2, $1, $3, $5}; }
+        |       ~l~expr yMATCHES ~r~expr yP_ANDANDAND ~r~expr  %prec yMATCHES
+                                                        { $$ = new AstMatches{$2, $1, $3, $5}; }
+        //                      // Matches without pattern guard
         |       ~l~expr yMATCHES patternNoExpr          { $$ = new AstMatches{$2, $1, $3}; }
         |       ~l~expr yMATCHES ~r~expr                { $$ = new AstMatches{$2, $1, $3}; }
         //

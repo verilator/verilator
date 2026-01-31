@@ -1,0 +1,6 @@
+%Error: t/t_tagged_case_notpattern_bad.v:19:9: Expected tagged pattern in case matches item
+                                             : ... note: In instance 't'
+   19 |         42: $display("wrong");   
+      |         ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

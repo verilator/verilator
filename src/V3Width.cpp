@@ -240,6 +240,9 @@ class WidthVisitor final : public VNVisitor {
     std::map<const AstNode*, const AstClass*>
         m_containingClassp;  // Containing class cache for containingClass() function
     std::unordered_set<AstVar*> m_aliasedVars;  // Variables referenced in alias
+    std::unordered_map<string, AstMemberDType*>
+        m_taggedMemberMap;  // Member name->dtype for case/if-matches O(1) lookup
+    AstUnionDType* m_taggedMemberMapUnionp = nullptr;  // Union the map was built from
 
     static constexpr int ENUM_LOOKUP_BITS = 16;  // Maximum # bits to make enum lookup table
 
@@ -3246,21 +3249,25 @@ class WidthVisitor final : public VNVisitor {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         nodep->doingWidth(true);
         UINFO(5, "   NODEUORS " << nodep);
-        // Check for tagged unions
-        if (const AstUnionDType* const unionp = VN_CAST(nodep, UnionDType)) {
-            if (unionp->isTagged()) { nodep->v3warn(E_UNSUPPORTED, "Unsupported: tagged union"); }
-        }
         // UINFOTREE(9, nodep, "", "class-in");
         if (!nodep->packed() && v3Global.opt.structsPacked()) nodep->packed(true);
         userIterateChildren(nodep, nullptr);  // First size all members
         nodep->dtypep(nodep);
         nodep->isFourstate(false);
-        // Error checks
+        // Error checks (also computes tagged union metadata in same pass)
+        AstUnionDType* const unionDtypep = VN_CAST(nodep, UnionDType);
+        const bool isTaggedUnion = unionDtypep && unionDtypep->isTagged();
+        int tagIdx = 0;
+        int maxMemberW = 0;
+        bool hasDynamic = false;
         for (AstMemberDType* itemp = nodep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
             AstNodeDType* const dtp = itemp->subDTypep()->skipRefp();
             if (nodep->packed()
                 && !dtp->isIntegralOrPacked()
+                // Skip void members in tagged unions - they represent tag-only values
+                && !(isTaggedUnion && VN_IS(dtp, BasicDType)
+                     && VN_AS(dtp, BasicDType)->keyword() == VBasicDTypeKwd::CVOID)
                 // Historically lax:
                 && !v3Global.opt.structsPacked())
                 itemp->v3error("Unpacked data type "
@@ -3275,9 +3282,39 @@ class WidthVisitor final : public VNVisitor {
                                         "Unsupported: Initial values in struct/union members");
                 pushDeletep(itemp->valuep()->unlinkFrBack());
             }
+            // Tagged union metadata (piggybacks on existing loop)
+            if (isTaggedUnion) {
+                itemp->tagIndex(tagIdx++);
+                const bool isVoid = VN_IS(dtp, BasicDType)
+                                    && VN_AS(dtp, BasicDType)->keyword() == VBasicDTypeKwd::CVOID;
+                if (!isVoid) maxMemberW = std::max(maxMemberW, itemp->width());
+                if (AstBasicDType* const bdtp = VN_CAST(dtp, BasicDType)) {
+                    const auto kw = bdtp->keyword();
+                    if (kw == VBasicDTypeKwd::STRING || kw == VBasicDTypeKwd::CHANDLE)
+                        hasDynamic = true;
+                }
+                if (VN_IS(dtp, ClassRefDType) || VN_IS(dtp, QueueDType)
+                    || VN_IS(dtp, DynArrayDType) || VN_IS(dtp, AssocArrayDType))
+                    hasDynamic = true;
+            }
         }
-        const bool isHardPackedUnion
-            = nodep->packed() && VN_IS(nodep, UnionDType) && !VN_CAST(nodep, UnionDType)->isSoft();
+        // Finalize tagged union metadata and add __Vtag member
+        if (isTaggedUnion) {
+            int tagW = 1;
+            while ((1 << tagW) < tagIdx) ++tagW;
+            unionDtypep->tagBitWidth(tagW);
+            unionDtypep->maxMemberWidth(maxMemberW);
+            unionDtypep->hasDynamicMember(hasDynamic);
+            if (!nodep->packed()) {
+                AstMemberDType* const tagMemberp
+                    = new AstMemberDType{nodep->fileline(), "__Vtag", nodep->findUInt32DType()};
+                tagMemberp->tagIndex(-1);
+                nodep->addMembersp(tagMemberp);
+            }
+        }
+        const bool isHardPackedUnion = nodep->packed() && VN_IS(nodep, UnionDType)
+                                       && !VN_CAST(nodep, UnionDType)->isSoft()
+                                       && !VN_CAST(nodep, UnionDType)->isTagged();
 
         // Determine bit assignments and width
         if (VN_IS(nodep, UnionDType) || nodep->packed()) {
@@ -3306,6 +3343,11 @@ class WidthVisitor final : public VNVisitor {
                 first = false;
             }
             nodep->widthForce(width, width);  // Signing stays as-is, as parsed from declaration
+            // For packed tagged unions, total width includes tag bits
+            if (isTaggedUnion && nodep->packed()) {
+                nodep->widthForce(unionDtypep->taggedTotalWidth(),
+                                  unionDtypep->taggedTotalWidth());
+            }
         } else {
             nodep->widthForce(1, 1);
         }
@@ -4869,35 +4911,205 @@ class WidthVisitor final : public VNVisitor {
         }
     }
 
+    // Helper: check if node is inside a case-matches condition -- O(items in case)
+    // Returns false for TaggedExpr in regular assignments (not in case-matches)
+    static bool isInCaseMatchesCondition(AstNode* nodep) {
+        // Walk up parent chain to find CaseItem (handles nested tagged expressions)
+        for (AstNode* parentp = nodep->backp(); parentp; parentp = parentp->backp()) {
+            if (AstCaseItem* const itemp = VN_CAST(parentp, CaseItem)) {
+                // Use aboveLoopp() because backp() returns previous sibling when multiple items
+                AstCase* const casep = VN_CAST(itemp->aboveLoopp(), Case);
+                // Split to avoid short-circuit branch
+                if (!casep) return false;
+                return casep->caseMatches();
+            }
+            // Early exit: not in case-matches if we hit statement boundary
+            if (VN_IS(parentp, NodeStmt)) return false;
+        }
+        return false;
+    }
+
+    // Helper: check if node is inside an if-matches condition
+    // Returns false for TaggedExpr in regular assignments (not in if-matches)
+    static bool isInIfMatchesCondition(AstNode* nodep) {
+        // Walk up parent chain to find Matches node that's a child of If
+        for (AstNode* parentp = nodep->backp(); parentp; parentp = parentp->backp()) {
+            if (AstMatches* const matchesp = VN_CAST(parentp, Matches)) {
+                // Check if this Matches is the condition of an If statement
+                if (AstIf* const ifp = VN_CAST(matchesp->backp(), If)) {
+                    return ifp->condp() == matchesp;
+                }
+            }
+            // Early exit: not in if-matches if we hit statement boundary
+            if (VN_IS(parentp, NodeStmt)) return false;
+        }
+        return false;
+    }
+
+    // Helper: check if node is in any pattern matching context (case/if matches)
+    static bool isInMatchesCondition(AstNode* nodep) {
+        return isInCaseMatchesCondition(nodep) || isInIfMatchesCondition(nodep);
+    }
+
     void visit(AstTaggedExpr* nodep) override {
-        // Tagged union expressions are currently unsupported
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: tagged union");
-        // Set a placeholder type to allow further processing
-        nodep->dtypeSetBit();
-        userIterateChildren(nodep, m_vup);
+        if (nodep->didWidthAndSet()) return;
+        // Get context type from parent (e.g., assignment LHS type)
+        AstNodeDType* const contextDtp = m_vup ? m_vup->dtypeNullp() : nullptr;
+        if (!contextDtp) {
+            nodep->v3error("Tagged expression requires a context type");
+            nodep->dtypeSetBit();
+            return;
+        }
+        // Validate context is a tagged union
+        AstNodeDType* const skipDtp = contextDtp->skipRefp();
+        AstUnionDType* const unionp = VN_CAST(skipDtp, UnionDType);
+        if (!unionp || !unionp->isTagged()) {
+            nodep->v3error("Tagged expression can only be used with tagged union type, got "
+                           << contextDtp->prettyDTypeNameQ());
+            nodep->dtypeSetBit();
+            if (nodep->exprp()) userIterateAndNext(nodep->exprp(), WidthVP{SELF, BOTH}.p());
+            return;
+        }
+        // Look up member by name -- O(1) if map matches this union, else O(M) scan
+        AstMemberDType* const memberp = findTaggedMember(unionp, nodep->name());
+        if (!memberp) {
+            reportMemberNotFound(nodep, unionp, nodep->name());
+            nodep->dtypeSetBit();
+            return;
+        }
+        // Check void/non-void consistency
+        const bool isVoid = VN_IS(memberp->subDTypep()->skipRefp(), BasicDType)
+                            && VN_AS(memberp->subDTypep()->skipRefp(), BasicDType)->keyword()
+                                   == VBasicDTypeKwd::CVOID;
+        if (isVoid && nodep->exprp()) {
+            nodep->v3error("Void tagged union member '" << nodep->name()
+                                                        << "' should not have an expression");
+            nodep->dtypeSetBit();  // Set placeholder dtype for error recovery
+            return;  // Don't try to width expression against void type
+        }
+        if (!isVoid && !nodep->exprp() && !isInMatchesCondition(nodep)) {
+            nodep->v3error("Non-void tagged union member '" << nodep->name()
+                                                            << "' requires an expression");
+        }
+        // Set dtype to the tagged union type (V3Tagged expects this)
+        nodep->dtypep(contextDtp);
+        // Width the value expression against the member's type
+        // Use iterateCheckTyped to ensure type conversion (e.g., packed bits to string)
+        if (nodep->exprp()) {
+            // For struct patterns inside case-matches conditions, set PatternVar dtypes
+            // directly without triggering visit(AstPattern*) transformation.
+            // V3Tagged handles transformation for case-matches patterns.
+            // For RValue patterns (assignments), use normal visit(AstPattern*) flow.
+            if (isInMatchesCondition(nodep)) {
+                if (AstPattern* const structPatp = VN_CAST(nodep->exprp(), Pattern)) {
+                    if (AstNodeUOrStructDType* const structDtp
+                        = VN_CAST(memberp->subDTypep()->skipRefp(), NodeUOrStructDType)) {
+                        setStructPatternVarDtypes(structPatp, structDtp);
+                    } else {
+                        iterateCheckTyped(nodep, "Tagged member value", nodep->exprp(),
+                                          memberp->subDTypep(), BOTH);
+                    }
+                } else {
+                    iterateCheckTyped(nodep, "Tagged member value", nodep->exprp(),
+                                      memberp->subDTypep(), BOTH);
+                }
+            } else {
+                iterateCheckTyped(nodep, "Tagged member value", nodep->exprp(),
+                                  memberp->subDTypep(), BOTH);
+            }
+        }
     }
     void visit(AstTaggedPattern* nodep) override {
-        // Tagged patterns are currently unsupported
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: tagged pattern");
-        nodep->dtypeSetBit();
-        userIterateChildren(nodep, m_vup);
+        if (nodep->didWidthAndSet()) return;
+        AstNodeDType* const contextDtp = m_vup ? m_vup->dtypeNullp() : nullptr;
+        if (!contextDtp) {
+            nodep->dtypeSetBit();
+            return;
+        }
+        nodep->dtypep(contextDtp);
+        // Look up member in the tagged union to get member dtype
+        AstNodeDType* const skipDtp = contextDtp->skipRefp();
+        AstUnionDType* const unionp = VN_CAST(skipDtp, UnionDType);
+        if (!unionp || !unionp->isTagged()) {
+            userIterateChildren(nodep, m_vup);
+            return;
+        }
+        // O(1) lookup via m_taggedMemberMap when map matches this union, else O(M) scan
+        AstMemberDType* const memberp = findTaggedMember(unionp, nodep->name());
+        if (!memberp) {
+            reportMemberNotFound(nodep, unionp, nodep->name());
+            nodep->dtypeSetBit();
+            return;
+        }
+        // Pass member dtype to sub-pattern (pattern variable gets correct type)
+        if (nodep->patternp()) {
+            // For struct patterns inside tagged patterns, set dtypes directly without
+            // triggering visit(AstPattern*) transformation. V3Tagged handles transformation.
+            if (AstPattern* const structPatp = VN_CAST(nodep->patternp(), Pattern)) {
+                if (AstNodeUOrStructDType* const structDtp
+                    = VN_CAST(memberp->subDTypep()->skipRefp(), NodeUOrStructDType)) {
+                    setStructPatternVarDtypes(structPatp, structDtp);
+                } else {
+                    userIterateAndNext(nodep->patternp(), WidthVP{memberp->subDTypep(), BOTH}.p());
+                }
+            } else {
+                userIterateAndNext(nodep->patternp(), WidthVP{memberp->subDTypep(), BOTH}.p());
+            }
+        }
     }
     void visit(AstPatternVar* nodep) override {
-        // Pattern variable bindings are currently unsupported
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: pattern variable");
-        nodep->dtypeSetBit();
+        if (nodep->didWidthAndSet()) return;
+        // Set dtype from context if available, otherwise 1-bit placeholder
+        // V3Tagged transformation will create the actual properly-typed variable
+        if (m_vup && m_vup->dtypeNullp()) {
+            nodep->dtypep(m_vup->dtypep());
+        } else {
+            nodep->dtypeSetBit();
+        }
     }
     void visit(AstPatternStar* nodep) override {
-        // Pattern wildcards are currently unsupported
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: pattern wildcard");
-        nodep->dtypeSetBit();
+        if (nodep->didWidthAndSet()) return;
+        // Wildcard pattern: match any value without binding (V3Tagged handles lowering)
+        if (m_vup && m_vup->dtypeNullp()) {
+            nodep->dtypep(m_vup->dtypep());
+        } else {
+            nodep->dtypeSetBit();
+        }
     }
     void visit(AstMatches* nodep) override {
-        // Matches operator is currently unsupported
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: matches operator");
+        if (nodep->didWidthAndSet()) return;
+        // Width the LHS expression (the value being matched)
+        userIterateAndNext(nodep->lhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
+        // Pass LHS dtype to pattern for context
+        AstNodeDType* const lhsDtp = nodep->lhsp()->dtypep();
+        // Validate LHS is a tagged union (V3Tagged relies on this)
+        AstUnionDType* const unionp = VN_CAST(lhsDtp->skipRefp(), UnionDType);
+        if (!unionp || !unionp->isTagged()) {
+            nodep->v3error("Matches expression must be a tagged union type");
+            nodep->dtypeSetBit();
+            return;
+        }
+        // Validate pattern is TaggedPattern or TaggedExpr (V3Tagged relies on this)
+        if (nodep->patternp()) {
+            if (!VN_IS(nodep->patternp(), TaggedPattern)
+                && !VN_IS(nodep->patternp(), TaggedExpr)) {
+                nodep->v3error("Expected tagged pattern in matches expression");
+                nodep->dtypeSetBit();
+                return;
+            }
+            userIterateAndNext(nodep->patternp(), WidthVP{lhsDtp, BOTH}.p());
+        }
+        // Width guard expression if present
+        if (nodep->guardp()) {
+            // Guard may use pattern vars - update placeholder var dtypes first
+            // Find parent if-statement and update its placeholder vars
+            if (AstNodeIf* const ifp = VN_CAST(nodep->aboveLoopp(), NodeIf)) {
+                updateIfMatchesPlaceholderVars(ifp);
+            }
+            userIterateAndNext(nodep->guardp(), WidthVP{CONTEXT_DET, PRELIM}.p());
+        }
         // Matches returns a boolean
         nodep->dtypeSetBit();
-        userIterateChildren(nodep, m_vup);
     }
 
     void visit(AstPattern* nodep) override {
@@ -5597,22 +5809,242 @@ class WidthVisitor final : public VNVisitor {
         iterateCheckBool(nodep, "If", nodep->condp(), BOTH);
     }
 
+    // Set dtypes on PatternVars inside struct patterns without triggering visit(AstPattern*)
+    // transformation. Used for case-matches where V3Tagged handles transformation later.
+    void setStructPatternVarDtypes(AstPattern* patp, AstNodeUOrStructDType* structDtp) {
+        if (!patp || !structDtp) return;
+        // Set dtype on the Pattern node itself (V3Broken requires nodes with hasDType have dtype)
+        patp->dtypep(structDtp);
+        // Build member list for both named and positional pattern matching
+        std::vector<AstMemberDType*> memberList;
+        std::map<string, AstNodeDType*> memberDtypes;
+        for (AstMemberDType* memp = structDtp->membersp(); memp;
+             memp = VN_AS(memp->nextp(), MemberDType)) {
+            memberDtypes[memp->name()] = memp->subDTypep();
+            memberList.push_back(memp);
+        }
+        // Iterate PatMember items and set dtypes on PatternVars
+        size_t posIdx = 0;
+        for (AstPatMember* itemp = VN_CAST(patp->itemsp(), PatMember); itemp;
+             itemp = VN_CAST(itemp->nextp(), PatMember)) {
+            AstNodeDType* memberDtp = nullptr;
+            // Try named lookup first
+            if (AstText* const keyp = VN_CAST(itemp->keyp(), Text)) {
+                const auto it = memberDtypes.find(keyp->text());
+                if (it != memberDtypes.end()) memberDtp = it->second;
+            }
+            // Fall back to positional matching
+            if (!memberDtp && posIdx < memberList.size()) {
+                memberDtp = memberList[posIdx]->subDTypep();
+            }
+            ++posIdx;
+            if (!memberDtp) continue;
+            // Set dtype on PatMember node itself (V3Broken requires this)
+            itemp->dtypep(memberDtp);
+            itemp->didWidth(true);  // Prevent visit(AstPatMember*) from overwriting
+            // Set dtype on PatternVar if present
+            if (AstPatternVar* const pvp = VN_CAST(itemp->lhssp(), PatternVar)) {
+                pvp->dtypep(memberDtp);
+                pvp->didWidth(true);  // Prevent visit(AstPatternVar*) from overwriting with 1-bit
+            } else if (AstTaggedPattern* const tp = VN_CAST(itemp->lhssp(), TaggedPattern)) {
+                // Nested tagged pattern - recurse
+                userIterateAndNext(tp, WidthVP{memberDtp, BOTH}.p());
+            } else if (AstPattern* const nestedp = VN_CAST(itemp->lhssp(), Pattern)) {
+                // Nested struct pattern - recurse
+                if (AstNodeUOrStructDType* const nestedStructDtp
+                    = VN_CAST(memberDtp->skipRefp(), NodeUOrStructDType)) {
+                    setStructPatternVarDtypes(nestedp, nestedStructDtp);
+                }
+            }
+        }
+    }
+
+    // Targeted traversal: collect pattern var name->dtype from known node types.
+    // Recursive dispatch on node type. O(D) where D = pattern nesting depth (typically 1-3).
+    void collectPatternVarTypes(AstNode* nodep, std::map<string, AstNodeDType*>& types) {
+        if (!nodep) return;
+        if (AstPatternVar* const pvp = VN_CAST(nodep, PatternVar)) {
+            if (pvp->dtypep()) types[pvp->name()] = pvp->dtypep();
+        } else if (AstTaggedPattern* const tp = VN_CAST(nodep, TaggedPattern)) {
+            collectPatternVarTypes(tp->patternp(), types);
+        } else if (AstTaggedExpr* const te = VN_CAST(nodep, TaggedExpr)) {
+            collectPatternVarTypes(te->exprp(), types);
+        } else if (AstPattern* const patp = VN_CAST(nodep, Pattern)) {
+            for (AstNode* childp = patp->itemsp(); childp; childp = childp->nextp()) {
+                collectPatternVarTypes(childp, types);
+            }
+        } else if (AstPatMember* const memp = VN_CAST(nodep, PatMember)) {
+            collectPatternVarTypes(memp->lhssp(), types);
+        } else if (AstMatches* const mp = VN_CAST(nodep, Matches)) {
+            collectPatternVarTypes(mp->patternp(), types);
+            collectPatternVarTypes(mp->guardp(), types);  // Handle chained matches
+        }
+    }
+    // Update placeholder AstVar dtypes in the AstBegin block created by V3LinkParse.
+    // Three sequential loops, zero nesting.
+    void updateCaseMatchesPlaceholderVars(AstCaseItem* itemp) {
+        // Loop 1: collect pattern var types from conditions
+        std::map<string, AstNodeDType*> patVarTypes;
+        for (AstNode* condp = itemp->condsp(); condp; condp = condp->nextp()) {
+            collectPatternVarTypes(condp, patVarTypes);
+        }
+        if (patVarTypes.empty()) return;
+        // Loop 2: find the AstBegin block (V3LinkParse creates exactly one per item)
+        AstBegin* beginp = nullptr;
+        for (AstNode* stmtp = itemp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            beginp = VN_CAST(stmtp, Begin);
+            if (beginp) break;
+        }
+        if (!beginp) return;
+        // Loop 3: update placeholder vars inside the begin block
+        for (AstNode* childp = beginp->stmtsp(); childp; childp = childp->nextp()) {
+            if (AstVar* const varp = VN_CAST(childp, Var)) {
+                const auto it = patVarTypes.find(varp->name());
+                if (it != patVarTypes.end()) varp->dtypep(it->second);
+            }
+        }
+    }
+
+    // Helper: find AstBegin containing placeholder vars -- O(S) scan, 1 arg
+    static AstBegin* findPlaceholderVarBegin(AstNodeIf* nodep) {
+        // Check if this is a guarded if-matches (has a guard expression)
+        AstMatches* const matchesp = VN_CAST(nodep->condp(), Matches);
+        if (matchesp && matchesp->guardp()) {
+            // Guard case: V3LinkParse wraps the entire if in an outer begin with placeholder vars
+            // Use aboveLoopp() because backp() returns previous sibling (AstVar) when if is not
+            // first
+            return VN_CAST(nodep->aboveLoopp(), Begin);
+        }
+        // Non-guard case: begin inside thensp (V3LinkParse puts it as first statement)
+        for (AstNode* stmtp = nodep->thensp(); stmtp; stmtp = stmtp->nextp()) {
+            if (AstBegin* const beginp = VN_CAST(stmtp, Begin)) return beginp;
+        }
+        // V3LinkParse always creates Begin block when pattern vars exist
+        // Caller checks patVarTypes.empty() before calling, so Begin must exist
+        UASSERT_OBJ(false, nodep, "If-matches with pattern vars must have Begin block");
+        return nullptr;  // Unreachable but required for return type
+    }
+
+    // Helper: apply types to placeholder vars -- O(V * log M), 2 args
+    static void applyPlaceholderVarTypes(AstBegin* beginp,
+                                         const std::map<string, AstNodeDType*>& types) {
+        for (AstNode* childp = beginp->stmtsp(); childp; childp = childp->nextp()) {
+            if (AstVar* const varp = VN_CAST(childp, Var)) {
+                const auto it = types.find(varp->name());
+                if (it != types.end()) {
+                    varp->dtypep(it->second);
+                    // Mark as widthed to prevent visit(AstVar*) from overwriting with 1-bit
+                    // subDTypep
+                    varp->didWidth(true);
+                }
+            }
+        }
+    }
+
+    // Update placeholder vars for if-matches -- O(D + S + V*log M), 1 arg
+    void updateIfMatchesPlaceholderVars(AstNodeIf* nodep) {
+        AstMatches* const matchesp = VN_CAST(nodep->condp(), Matches);
+        if (!matchesp) return;
+        std::map<string, AstNodeDType*> patVarTypes;
+        collectPatternVarTypes(matchesp, patVarTypes);  // O(D) - descends into guardp for chained
+        if (patVarTypes.empty()) return;
+        AstBegin* const beginp = findPlaceholderVarBegin(nodep);  // O(S)
+        if (beginp) applyPlaceholderVarTypes(beginp, patVarTypes);  // O(V*log M)
+    }
+
+    // Helper: build member map for tagged union O(M) lookup
+    void buildTaggedMemberMap(AstNodeDType* exprDtp) {
+        m_taggedMemberMap.clear();
+        m_taggedMemberMapUnionp = nullptr;
+        if (AstUnionDType* const unionp = VN_CAST(exprDtp->skipRefp(), UnionDType)) {
+            m_taggedMemberMapUnionp = unionp;
+            for (AstMemberDType* itemp = unionp->membersp(); itemp;
+                 itemp = VN_AS(itemp->nextp(), MemberDType)) {
+                m_taggedMemberMap[itemp->name()] = itemp;
+            }
+        }
+    }
+    // Helper: look up member in tagged union - O(1) if cache matches, else O(M)
+    AstMemberDType* findTaggedMember(AstUnionDType* unionp, const string& name) {
+        if (m_taggedMemberMapUnionp == unionp && !m_taggedMemberMap.empty()) {
+            const auto it = m_taggedMemberMap.find(name);
+            if (it != m_taggedMemberMap.end()) return it->second;
+            return nullptr;
+        }
+        for (AstMemberDType* itemp = unionp->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            if (itemp->name() == name) return itemp;
+        }
+        return nullptr;
+    }
+    // Helper: report "member not found" error with spell check suggestion - O(M)
+    void reportMemberNotFound(AstNode* nodep, AstUnionDType* unionp, const string& name) {
+        VSpellCheck speller;
+        for (AstMemberDType* itemp = unionp->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            speller.pushCandidate(itemp->prettyName());
+        }
+        const string suggest = speller.bestCandidateMsg(nodep->prettyName());
+        nodep->v3error("Tagged union member '" << name << "' not found in "
+                                               << unionp->prettyDTypeNameQ() << suggest);
+    }
+    // Helper: visit one case-matches item's conditions (single loop)
+    // Returns false if any condition fails validation (V3Tagged relies on this)
+    bool visitCaseMatchesItemConditions(AstCaseItem* itemp, AstNodeDType* exprDtp) {
+        for (AstNode *nextcp, *condp = itemp->condsp(); condp; condp = nextcp) {
+            nextcp = condp->nextp();
+            // Validate condition is TaggedPattern or TaggedExpr (V3Tagged relies on this)
+            if (!VN_IS(condp, TaggedPattern) && !VN_IS(condp, TaggedExpr)) {
+                condp->v3error("Expected tagged pattern in case matches item");
+                return false;
+            }
+            VL_DO_DANGLING(userIterate(condp, WidthVP{exprDtp, PRELIM}.p()), condp);
+        }
+        return true;
+    }
+    // Helper: visit one normal case item's conditions (single loop)
+    void visitCaseItemConditions(AstCaseItem* itemp) {
+        for (AstNode *nextcp, *condp = itemp->condsp(); condp; condp = nextcp) {
+            nextcp = condp->nextp();
+            VL_DO_DANGLING(userIterate(condp, WidthVP{CONTEXT_DET, PRELIM}.p()), condp);
+        }
+    }
+
     void visit(AstCase* nodep) override {
         assertAtStatement(nodep);
         // Type check expression case item conditions and bodies
         userIterateAndNext(nodep->exprp(), WidthVP{CONTEXT_DET, PRELIM}.p());
+        AstNodeDType* const exprDtp = nodep->exprp()->dtypep();
+        if (nodep->caseMatches()) {
+            // Validate expression is a tagged union (V3Tagged relies on this)
+            AstUnionDType* const unionp = VN_CAST(exprDtp->skipRefp(), UnionDType);
+            if (!unionp || !unionp->isTagged()) {
+                nodep->v3error("Case matches expression must be a tagged union type");
+                return;
+            }
+            buildTaggedMemberMap(exprDtp);
+        }
         for (AstCaseItem *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
             nextip = VN_AS(itemp->nextp(), CaseItem);  // Prelim may cause the node to get replaced
-            userIterateAndNext(itemp->stmtsp(), nullptr);
-            for (AstNode *nextcp, *condp = itemp->condsp(); condp; condp = nextcp) {
-                nextcp = condp->nextp();  // Prelim may cause the node to get replaced
-                VL_DO_DANGLING(userIterate(condp, WidthVP{CONTEXT_DET, PRELIM}.p()), condp);
+            if (nodep->caseMatches()) {
+                // For case-matches: visit conditions first (with union dtype context),
+                // then update placeholder vars, then visit body
+                if (!visitCaseMatchesItemConditions(itemp, exprDtp)) return;
+                updateCaseMatchesPlaceholderVars(itemp);
+                userIterateAndNext(itemp->stmtsp(), nullptr);
+            } else {
+                userIterateAndNext(itemp->stmtsp(), nullptr);
+                visitCaseItemConditions(itemp);
             }
         }
-        // Deal with case(type(data_type))
-        handleCaseType(nodep, nodep->exprp(), nodep->itemsp());
-        // Type check
-        handleCase(nodep, nodep->exprp(), nodep->itemsp());
+        m_taggedMemberMap.clear();
+        m_taggedMemberMapUnionp = nullptr;
+        if (!nodep->caseMatches()) {
+            // Deal with case(type(data_type))
+            handleCaseType(nodep, nodep->exprp(), nodep->itemsp());
+            // Type check
+            handleCase(nodep, nodep->exprp(), nodep->itemsp());
+        }
     }
     void visit(AstRandCase* nodep) override {
         // IEEE says each item is a int (32-bits), and sizes are based on natural sizing,
@@ -5644,9 +6076,18 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstNodeIf* nodep) override {
         assertAtStatement(nodep);
         // UINFOTREE(1, nodep, "", "IfPre");
-        userIterateAndNext(nodep->thensp(), nullptr);
-        userIterateAndNext(nodep->elsesp(), nullptr);
-        iterateCheckBool(nodep, "If", nodep->condp(), BOTH);  // it's like an if() condition.
+        if (VN_IS(nodep->condp(), Matches)) {
+            // For if-matches: visit condition first to resolve pattern var types,
+            // then update placeholder vars, then visit body
+            iterateCheckBool(nodep, "If", nodep->condp(), BOTH);
+            updateIfMatchesPlaceholderVars(nodep);
+            userIterateAndNext(nodep->thensp(), nullptr);
+            userIterateAndNext(nodep->elsesp(), nullptr);
+        } else {
+            userIterateAndNext(nodep->thensp(), nullptr);
+            userIterateAndNext(nodep->elsesp(), nullptr);
+            iterateCheckBool(nodep, "If", nodep->condp(), BOTH);  // it's like an if() condition.
+        }
         // UINFOTREE(1, nodep, "", "IfOut");
     }
     void visit(AstExprStmt* nodep) override {

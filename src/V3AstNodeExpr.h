@@ -56,7 +56,13 @@ public:
     bool hasDType() const override VL_MT_SAFE { return true; }
     virtual string emitVerilog() = 0;  /// Format string for verilog writing; see V3EmitV
     // For documentation on emitC format see EmitCFunc::emitOpName
-    virtual string emitC() = 0;
+    // Non-pure-virtual with default error: some subclasses (e.g., AstMatches, AstTaggedExpr)
+    // are transformed away before V3EmitC, so their emitC() is never called. This default
+    // allows those classes to omit the override, eliminating unreachable code. Excluded from
+    // coverage because it's never executed - exists only as a safety net for unexpected calls.
+    // LCOV_EXCL_START
+    virtual string emitC() { V3ERROR_NA_RETURN(""); }
+    // LCOV_EXCL_STOP
     virtual string emitSMT() const { return ""; };
     virtual string emitSimpleOperator() { return ""; }  // "" means not ok to use
     virtual bool emitCheckMaxWords() { return false; }  // Check VL_MULS_MAX_WORDS
@@ -1716,18 +1722,21 @@ public:
     bool isExprCoverageEligible() const override { return false; }
 };
 class AstMatches final : public AstNodeExpr {
-    // "matches" operator: "expr matches pattern"
+    // "matches" operator: "expr matches pattern [&&& guard_expr]"
+    // IEEE 1800-2023 Section 12.6
     // @astgen op1 := lhsp : AstNodeExpr  // Expression to match
     // @astgen op2 := patternp : AstNode  // Pattern to match against
+    // @astgen op3 := guardp : Optional[AstNodeExpr]  // Optional pattern guard (&&& expr)
 public:
-    AstMatches(FileLine* fl, AstNodeExpr* lhsp, AstNode* patternp)
+    AstMatches(FileLine* fl, AstNodeExpr* lhsp, AstNode* patternp, AstNodeExpr* guardp = nullptr)
         : ASTGEN_SUPER_Matches(fl) {
         this->lhsp(lhsp);
         this->patternp(patternp);
+        this->guardp(guardp);
     }
     ASTGEN_MEMBERS_AstMatches;
-    string emitVerilog() override { return "%l matches %r"; }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
+    // AstMatches is transformed away by V3Tagged before emission
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return false; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
@@ -1931,7 +1940,6 @@ public:
         : ASTGEN_SUPER_PatternStar(fl) {}
     ASTGEN_MEMBERS_AstPatternStar;
     string emitVerilog() override { return ".*"; }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return false; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
@@ -1944,7 +1952,6 @@ public:
         , m_name{name} {}
     ASTGEN_MEMBERS_AstPatternVar;
     string emitVerilog() override { return ".%k"; }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return false; }
     bool sameNode(const AstNode* samep) const override {
         return m_name == VN_DBG_AS(samep, PatternVar)->m_name;
@@ -2429,8 +2436,8 @@ public:
         this->exprp(exprp);
     }
     ASTGEN_MEMBERS_AstTaggedExpr;
-    string emitVerilog() override { return "tagged %k"; }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
+    // AstTaggedExpr is transformed away by V3Tagged before emission
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return false; }
     bool sameNode(const AstNode* samep) const override {
         return m_name == VN_DBG_AS(samep, TaggedExpr)->m_name;
@@ -2448,8 +2455,8 @@ public:
         this->patternp(patternp);
     }
     ASTGEN_MEMBERS_AstTaggedPattern;
-    string emitVerilog() override { return "tagged %k"; }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
+    // AstTaggedPattern is transformed away by V3Tagged before emission
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return false; }
     bool sameNode(const AstNode* samep) const override {
         return m_name == VN_DBG_AS(samep, TaggedPattern)->m_name;

@@ -57,6 +57,13 @@ module t (/*AUTOARG*/
       logic a;
    } union_t;
 
+   // Tagged union for coverage of dump/dumpJson
+   typedef union tagged {
+      void Invalid;
+      int Valid;
+   } tagged_t;
+   tagged_t tval;
+
    const ps_t ps[3];
    us_t us;
    union_t unu;
@@ -138,6 +145,13 @@ module t (/*AUTOARG*/
       begin : named
          $display("stmt");
       end : named
+      // Tagged union expressions and pattern matching for coverage
+      tval = tagged Valid (42);
+      case (tval) matches
+        tagged Invalid: $display("invalid");
+        tagged Valid .n: $display("valid: %0d", n);
+      endcase
+      if (tval matches tagged Valid .v) $display("matched: %0d", v);
    end
    final begin
       $display("stmt");

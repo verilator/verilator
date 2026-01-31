@@ -301,11 +301,38 @@ class EmitCHeader final : public EmitCConstInit {
         }
         puts("};\n}\n");
     }
+    // Helper to check if dtype is void
+    static bool isVoidDType(AstNodeDType* dtp) {
+        dtp = dtp->skipRefp();
+        return VN_IS(dtp, BasicDType)
+               && VN_AS(dtp, BasicDType)->keyword() == VBasicDTypeKwd::CVOID;
+    }
+    // Helper to check if dtype is event (events can't be compared)
+    static bool isEventDType(AstNodeDType* dtp) {
+        dtp = dtp->skipRefp();
+        return VN_IS(dtp, BasicDType)
+               && VN_AS(dtp, BasicDType)->keyword() == VBasicDTypeKwd::EVENT;
+    }
     void emitUnpackedUOrSBody(AstNodeUOrStructDType* sdtypep) {
-        putns(sdtypep, sdtypep->verilogKwd());  // "struct"/"union"
+        // For unpacked tagged unions, emit as struct (not union)
+        // because they have a __Vtag member alongside the data members
+        AstUnionDType* const unionp = VN_CAST(sdtypep, UnionDType);
+        const bool isTaggedStruct = unionp && unionp->isTagged() && !unionp->packed();
+
+        if (isTaggedStruct) {
+            putns(sdtypep, "struct");
+        } else {
+            putns(sdtypep, sdtypep->verilogKwd());  // "struct"/"union"
+        }
         puts(" " + EmitCUtil::prefixNameProtect(sdtypep) + " {\n");
+
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            // Emit placeholder for void members so other code that references them still works
+            if (isTaggedStruct && isVoidDType(itemp->subDTypep())) {
+                putns(itemp, "CData " + itemp->nameProtect() + ";\n");
+                continue;
+            }
             putns(itemp, itemp->dtypep()->cType(itemp->nameProtect(), false, false));
             puts(";\n");
         }
@@ -363,10 +390,20 @@ class EmitCHeader final : public EmitCConstInit {
         putns(sdtypep, "\nbool operator==(const " + EmitCUtil::prefixNameProtect(sdtypep)
                            + "& rhs) const {\n");
         puts("return ");
-        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-             itemp = VN_AS(itemp->nextp(), MemberDType)) {
-            if (itemp != sdtypep->membersp()) puts("\n    && ");
-            putns(itemp, itemp->nameProtect() + " == " + "rhs." + itemp->nameProtect());
+        {
+            bool needAnd = false;
+            for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+                 itemp = VN_AS(itemp->nextp(), MemberDType)) {
+                // Skip void members for tagged unions (they have no storage)
+                if (isTaggedStruct && isVoidDType(itemp->subDTypep())) continue;
+                // Skip event members (VlEvent has no comparison operators)
+                if (isEventDType(itemp->subDTypep())) continue;
+                if (needAnd) puts("\n    && ");
+                putns(itemp, itemp->nameProtect() + " == " + "rhs." + itemp->nameProtect());
+                needAnd = true;
+            }
+            // SystemVerilog structs/unions must have members, tagged unions always have __Vtag
+            UASSERT_OBJ(needAnd, sdtypep, "Struct/union has no comparable members");
         }
         puts(";\n");
         puts("}\n");
@@ -377,16 +414,32 @@ class EmitCHeader final : public EmitCConstInit {
                            + "& rhs) const {\n");
         puts("return ");
         puts("std::tie(");
-        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-             itemp = VN_AS(itemp->nextp(), MemberDType)) {
-            if (itemp != sdtypep->membersp()) puts(", ");
-            putns(itemp, itemp->nameProtect());
+        {
+            bool needComma = false;
+            for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+                 itemp = VN_AS(itemp->nextp(), MemberDType)) {
+                // Skip void members for tagged unions (they have no storage)
+                if (isTaggedStruct && isVoidDType(itemp->subDTypep())) continue;
+                // Skip event members (VlEvent has no comparison operators)
+                if (isEventDType(itemp->subDTypep())) continue;
+                if (needComma) puts(", ");
+                putns(itemp, itemp->nameProtect());
+                needComma = true;
+            }
         }
         puts(")\n    <  std::tie(");
-        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-             itemp = VN_AS(itemp->nextp(), MemberDType)) {
-            if (itemp != sdtypep->membersp()) puts(", ");
-            putns(itemp, "rhs." + itemp->nameProtect());
+        {
+            bool needComma = false;
+            for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+                 itemp = VN_AS(itemp->nextp(), MemberDType)) {
+                // Skip void members for tagged unions (they have no storage)
+                if (isTaggedStruct && isVoidDType(itemp->subDTypep())) continue;
+                // Skip event members (VlEvent has no comparison operators)
+                if (isEventDType(itemp->subDTypep())) continue;
+                if (needComma) puts(", ");
+                putns(itemp, "rhs." + itemp->nameProtect());
+                needComma = true;
+            }
         }
         puts(");\n");
         puts("}\n");
@@ -475,11 +528,23 @@ class EmitCHeader final : public EmitCConstInit {
         AstMemberDType* itemp;
         AstMemberDType* lastItemp;
         const AstMemberDType* witemp = nullptr;
+        int widestWidth = 0;
         // LSB is first field in C, so loop backwards
         for (lastItemp = sdtypep->membersp(); lastItemp && lastItemp->nextp();
              lastItemp = VN_AS(lastItemp->nextp(), MemberDType)) {
             if (lastItemp->width() == sdtypep->width()) witemp = lastItemp;
+            // Also track widest member for tagged unions (width != union width due to tag bits)
+            if (lastItemp->width() > widestWidth) {
+                widestWidth = lastItemp->width();
+                if (!witemp) witemp = lastItemp;  // Use widest if no exact match found
+            }
         }
+        // Check lastItemp too (loop stops at second-to-last)
+        // SystemVerilog structs/unions must have members; tagged unions always have __Vtag
+        UASSERT_OBJ(lastItemp, sdtypep, "Struct/union has no members");
+        if (lastItemp->width() == sdtypep->width()) witemp = lastItemp;
+        // Use & instead of && to avoid short-circuit branch
+        if ((lastItemp->width() > widestWidth) & (!witemp)) witemp = lastItemp;
         for (itemp = lastItemp; itemp; itemp = VN_CAST(itemp->backp(), MemberDType)) {
             putns(itemp, itemp->dtypep()->cType(itemp->nameProtect(), false, false, true));
             puts(";\n");
@@ -524,8 +589,9 @@ class EmitCHeader final : public EmitCConstInit {
         m_names.reset();
     }
     void emitStructs(const AstNodeModule* modp) {
-        // Track structs that've been emitted already
+        // Track structs that've been emitted already within this module's header
         std::set<AstNodeUOrStructDType*> emitted;
+        // Iterate typedefs in current module
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             const AstTypedef* const tdefp = VN_CAST(nodep, Typedef);
             if (!tdefp) continue;
@@ -534,6 +600,13 @@ class EmitCHeader final : public EmitCConstInit {
             if (!sdtypep) continue;
             emitStructDecl(modp, sdtypep, emitted);
         }
+        // Also emit packed structs/unions from the type table that belong to this module
+        v3Global.rootp()->typeTablep()->foreach([&](AstNodeUOrStructDType* sdtypep) {
+            if (!sdtypep->packed()) return;
+            const AstNodeModule* const ownerp = sdtypep->classOrPackagep();
+            // Only emit if it belongs to this module
+            if (ownerp == modp) emitStructDecl(modp, sdtypep, emitted);
+        });
     }
     void emitFuncDecls(const AstNodeModule* modp, bool inClassBody) {
         std::vector<const AstCFunc*> funcsp;

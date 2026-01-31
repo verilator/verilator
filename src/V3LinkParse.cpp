@@ -385,7 +385,7 @@ class LinkParseVisitor final : public VNVisitor {
         }
 
         // Mark parameters declared inside interfaces
-        if (nodep->isParam() && m_inInterface) { nodep->isIfaceParam(true); }
+        if (nodep->isParam() && m_inInterface) nodep->isIfaceParam(true);
         if (AstParseTypeDType* const ptypep = VN_CAST(nodep->subDTypep(), ParseTypeDType)) {
             // It's a parameter type. Use a different node type for this.
             AstNode* dtypep = nodep->valuep();
@@ -861,12 +861,76 @@ class LinkParseVisitor final : public VNVisitor {
     }
     void visit(AstCase* nodep) override {
         V3Control::applyCase(nodep);
-        // Check for unsupported case matches (for tagged union)
-        if (nodep->caseMatches()) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: case matches (for tagged union)");
-        }
+        // For case matches, create local variables for pattern variables
+        if (nodep->caseMatches()) createPatternVariables(nodep);
         cleanFileline(nodep);
         iterateChildren(nodep);
+    }
+    // Recursively find all AstPatternVar nodes in a pattern tree
+    void findPatternVars(AstNode* nodep, std::vector<AstPatternVar*>& patVars) {
+        if (!nodep) return;
+        if (AstPatternVar* const patVarp = VN_CAST(nodep, PatternVar)) {
+            patVars.push_back(patVarp);
+        } else if (AstTaggedPattern* const tagPatp = VN_CAST(nodep, TaggedPattern)) {
+            findPatternVars(tagPatp->patternp(), patVars);
+        } else if (AstTaggedExpr* const tagExprp = VN_CAST(nodep, TaggedExpr)) {
+            // For nested tagged patterns like: tagged Jmp (tagged JmpU .a)
+            findPatternVars(tagExprp->exprp(), patVars);
+        } else if (AstPattern* const patp = VN_CAST(nodep, Pattern)) {
+            // For structure patterns like: '{.r1, .r2, .rd}
+            for (AstNode* childp = patp->itemsp(); childp; childp = childp->nextp()) {
+                findPatternVars(childp, patVars);
+            }
+        } else if (AstPatMember* const membrp = VN_CAST(nodep, PatMember)) {
+            findPatternVars(membrp->lhssp(), patVars);
+        }
+    }
+    // Recursively find all pattern variables in a matches expression,
+    // including any nested matches in guardp (for chained matches)
+    // Note: matchesp is never null - callers only pass successful VN_CAST results
+    void findPatternVarsInMatches(AstMatches* matchesp, std::vector<AstPatternVar*>& patVars) {
+        // Find pattern variables in this matches' pattern
+        findPatternVars(matchesp->patternp(), patVars);
+        // If guardp is a Matches (chained matches like "a matches b &&& c matches d"),
+        // recursively search it for pattern variables
+        if (AstMatches* const guardMatchesp = VN_CAST(matchesp->guardp(), Matches)) {
+            findPatternVarsInMatches(guardMatchesp, patVars);
+        }
+    }
+    // Helper to create local variables from pattern variables in case matches
+    void createPatternVariables(AstCase* casep) {
+        for (AstCaseItem* itemp = casep->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), CaseItem)) {
+            // Find all pattern variables in this case item's conditions (recursively)
+            std::vector<AstPatternVar*> patVars;
+            for (AstNode* condp = itemp->condsp(); condp; condp = condp->nextp()) {
+                findPatternVars(condp, patVars);
+            }
+            // Create local variables for all pattern variables found
+            if (!patVars.empty()) {
+                AstNode* stmtsp = nullptr;
+                for (AstPatternVar* patVarp : patVars) {
+                    // Create a local variable for this pattern variable
+                    // Use a placeholder type (1-bit) - will be fixed by V3Width
+                    FileLine* const fl = patVarp->fileline();
+                    AstVar* const varp = new AstVar{fl, VVarType::BLOCKTEMP, patVarp->name(),
+                                                    VFlagBitPacked{}, 1};
+                    varp->funcLocal(true);
+                    if (stmtsp) {
+                        AstNode::addNext<AstNode, AstNode>(stmtsp, varp);
+                    } else {
+                        stmtsp = varp;
+                    }
+                }
+                // Wrap in AstBegin block to create a new scope for the pattern variables
+                if (itemp->stmtsp()) {
+                    AstNode* origStmtsp = itemp->stmtsp()->unlinkFrBackWithNext();
+                    AstNode::addNext<AstNode, AstNode>(stmtsp, origStmtsp);
+                }
+                AstBegin* const beginp = new AstBegin{patVars[0]->fileline(), "", stmtsp, false};
+                itemp->addStmtsp(beginp);
+            }
+        }
     }
     void visit(AstDot* nodep) override {
         cleanFileline(nodep);
@@ -896,6 +960,67 @@ class LinkParseVisitor final : public VNVisitor {
     }
     void visit(AstIf* nodep) override {
         cleanFileline(nodep);
+        // For if matches, create local variables for pattern variables wrapped in a scope block
+        if (AstMatches* const matchesp = VN_CAST(nodep->condp(), Matches)) {
+            // Skip if already processed (avoids infinite loop when if is re-visited from begin)
+            if (matchesp->user1SetOnce()) {
+                checkIndent(nodep, nodep->elsesp() ? nodep->elsesp() : nodep->thensp());
+                iterateChildren(nodep);
+                return;
+            }
+
+            // Recursively find all pattern variables in the entire matches tree
+            // This includes pattern variables in:
+            // - The pattern of this matches
+            // - Patterns of any nested matches in guardp (for chained matches)
+            std::vector<AstPatternVar*> patVars;
+            findPatternVarsInMatches(matchesp, patVars);
+
+            if (!patVars.empty()) {
+                // Pattern variables need to be visible in the guard expression when present
+                // Note: Grammar places chained matches in guardp, not lhsp
+                const bool hasGuard = matchesp->guardp() != nullptr;
+                AstNode* varDeclsp = nullptr;
+                for (AstPatternVar* patVarp : patVars) {
+                    // Create a local variable for this pattern variable
+                    // Use a placeholder type (1-bit) - will be fixed by V3Width
+                    FileLine* const fl = patVarp->fileline();
+                    AstVar* const varp = new AstVar{fl, VVarType::BLOCKTEMP, patVarp->name(),
+                                                    VFlagBitPacked{}, 1};
+                    varp->funcLocal(true);
+                    if (varDeclsp) {
+                        AstNode::addNext<AstNode, AstNode>(varDeclsp, varp);
+                    } else {
+                        varDeclsp = varp;
+                    }
+                }
+
+                if (hasGuard) {
+                    // When there's a guard, pattern variables must be visible in both
+                    // the guard expression AND the body. Wrap the entire if statement
+                    // in a begin block that contains the variable declarations first.
+                    AstBegin* const beginp
+                        = new AstBegin{patVars[0]->fileline(), "", varDeclsp, false};
+                    nodep->replaceWith(beginp);
+                    beginp->addStmtsp(nodep);
+                    // The iteration will continue with beginp, which will then iterate
+                    // its children including nodep. The user1 flag prevents re-processing.
+                    checkIndent(nodep, nodep->elsesp() ? nodep->elsesp() : nodep->thensp());
+                    return;  // Don't call iterateChildren here - it will happen via beginp
+                } else {
+                    // No guard - original behavior: wrap body in begin block
+                    AstNode* stmtsp = varDeclsp;
+                    // thensp() is always non-null from valid Verilog (even empty `;` parses as
+                    // stmt)
+                    UASSERT_OBJ(nodep->thensp(), nodep, "If-matches must have then body");
+                    AstNode* thensp = nodep->thensp()->unlinkFrBackWithNext();
+                    AstNode::addNext<AstNode, AstNode>(stmtsp, thensp);
+                    AstBegin* const beginp
+                        = new AstBegin{patVars[0]->fileline(), "", stmtsp, false};
+                    nodep->addThensp(beginp);
+                }
+            }
+        }
         checkIndent(nodep, nodep->elsesp() ? nodep->elsesp() : nodep->thensp());
         iterateChildren(nodep);
     }
@@ -1022,37 +1147,8 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
-    // Tagged union features - flag as unsupported early
-    void visit(AstTaggedExpr* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: tagged union");
-        cleanFileline(nodep);
-        iterateChildren(nodep);
-    }
-    void visit(AstTaggedPattern* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: tagged pattern");
-        cleanFileline(nodep);
-        iterateChildren(nodep);
-    }
-    void visit(AstPatternVar* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: pattern variable");
-        cleanFileline(nodep);
-        iterateChildren(nodep);
-    }
-    void visit(AstPatternStar* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: pattern wildcard");
-        cleanFileline(nodep);
-        iterateChildren(nodep);
-    }
-    void visit(AstMatches* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: matches operator");
-        cleanFileline(nodep);
-        iterateChildren(nodep);
-    }
     void visit(AstBasicDType* nodep) override {
-        // Check for void type used in tagged unions
-        if (nodep->keyword() == VBasicDTypeKwd::CVOID) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: void (for tagged unions)");
-        }
+        // CVOID is allowed for tagged union void members
         cleanFileline(nodep);
         iterateChildren(nodep);
     }
