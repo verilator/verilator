@@ -872,21 +872,18 @@ class AssertVisitor final : public VNVisitor {
         switch (nodep->ctlType()) {
         case VAssertCtlType::ON:
             UINFO(9, "Generating assertctl for a module: " << m_modp);
-            nodep->replaceWith(new AstCExpr{
-                fl,
-                "vlSymsp->_vm_contextp__->assertOnSet("s + std::to_string(nodep->ctlAssertTypes())
-                    + ", "s + std::to_string(nodep->ctlDirectiveTypes()) + ");\n"s,
-                1});
+            nodep->replaceWith(
+                new AstCStmt{fl, "vlSymsp->_vm_contextp__->assertOnSet("s
+                                     + std::to_string(nodep->ctlAssertTypes()) + ", "s
+                                     + std::to_string(nodep->ctlDirectiveTypes()) + ");\n"s});
             break;
         case VAssertCtlType::OFF:
         case VAssertCtlType::KILL: {
             UINFO(9, "Generating assertctl for a module: " << m_modp);
-            nodep->replaceWith(new AstCExpr{fl,
-                                            "vlSymsp->_vm_contextp__->assertOnClear("s
-                                                + std::to_string(nodep->ctlAssertTypes()) + " ,"s
-                                                + std::to_string(nodep->ctlDirectiveTypes())
-                                                + ");\n"s,
-                                            1});
+            nodep->replaceWith(
+                new AstCStmt{fl, "vlSymsp->_vm_contextp__->assertOnClear("s
+                                     + std::to_string(nodep->ctlAssertTypes()) + " ,"s
+                                     + std::to_string(nodep->ctlDirectiveTypes()) + ");\n"s});
             break;
         }
         case VAssertCtlType::LOCK:
