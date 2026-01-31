@@ -86,6 +86,7 @@
 #include "V3RandSequence.h"
 #include "V3Randomize.h"
 #include "V3Reloop.h"
+#include "V3Reorder.h"
 #include "V3Sampled.h"
 #include "V3Sched.h"
 #include "V3Scope.h"
@@ -401,7 +402,7 @@ static void process() {
             V3Active::activeAll(v3Global.rootp());
 
             // Split single ALWAYS blocks into multiple blocks for better ordering chances
-            if (v3Global.opt.fSplit()) V3Split::splitAlwaysAll(v3Global.rootp());
+            if (v3Global.opt.fSplit()) V3Split::splitAll(v3Global.rootp());
             V3SplitAs::splitAsAll(v3Global.rootp());
 
             // Create tracing sample points, before we start eliminating signals
@@ -435,7 +436,7 @@ static void process() {
             V3Dead::deadifyAllScoped(v3Global.rootp());
 
             // Reorder assignments in pipelined blocks
-            if (v3Global.opt.fReorder()) V3Split::splitReorderAll(v3Global.rootp());
+            if (v3Global.opt.fReorder()) V3Reorder::reorderAll(v3Global.rootp());
 
             if (v3Global.opt.timing().isSetTrue()) {
                 // Convert AST for timing if requested
