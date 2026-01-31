@@ -482,7 +482,7 @@ void V3PreProcImp::comment(const string& text) {
         cp += std::strlen("verilator");
         if (*cp == '_') {
             V3Control::applyIgnores(fileline());
-            fileline()->v3warn(BADVLTPRAGMA, "Extra underscore in meta-comment;"
+            fileline()->v3warn(BADVLTPRAGMA, "Extra underscore in meta-comment, ignoring comment;"
                                              " use /*verilator {...}*/ not /*verilator_{...}*/");
             return;
         }
@@ -491,7 +491,7 @@ void V3PreProcImp::comment(const string& text) {
         cp += std::strlen("synopsys");
         if (*cp == '_') {
             V3Control::applyIgnores(fileline());
-            fileline()->v3warn(BADVLTPRAGMA, "Extra underscore in meta-comment;"
+            fileline()->v3warn(BADVLTPRAGMA, "Extra underscore in meta-comment, ignoring comment;"
                                              " use /*synopsys {...}*/ not /*synopsys_{...}*/");
             return;
         }
