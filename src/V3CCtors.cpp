@@ -192,12 +192,13 @@ class CCtorsVisitor final : public VNVisitor {
     }
     void visit(AstVar* nodep) override {
         if (nodep->needsCReset()) {
+            AstNode* const crstp = new AstAssign{
+                nodep->fileline(), new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE},
+                new AstCReset{nodep->fileline(), nodep, true}};
             if (m_varResetp) {
-                AstVarRef* const vrefp = new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE};
-                m_varResetp->add(new AstCReset{nodep->fileline(), vrefp, true});
+                m_varResetp->add(crstp);
             } else if (m_cfuncp) {
-                AstVarRef* const vrefp = new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE};
-                nodep->addNextHere(new AstCReset{nodep->fileline(), vrefp, true});
+                nodep->addNextHere(crstp);
             }
         }
     }

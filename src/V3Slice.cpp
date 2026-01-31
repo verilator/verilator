@@ -241,6 +241,7 @@ class SliceVisitor final : public VNVisitor {
         const AstUnpackArrayDType* const arrayp = VN_CAST(dtp, UnpackArrayDType);
         if (!arrayp) return false;
         if (VN_IS(stp, CvtPackedToArray)) return false;
+        if (VN_IS(stp, CReset)) return false;
 
         // Any isSc variables must be expanded regardless of --fno-slice
         const bool hasSc
