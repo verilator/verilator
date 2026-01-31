@@ -162,8 +162,10 @@ class TaggedVisitor final : public VNVisitor {
         const string suffix = "__DOT__" + patternVarName;
         nodep->foreachAndNext([&](AstVarRef* varRefp) {
             const string& refName = varRefp->varp()->name();
-            // Use | instead of || to avoid short-circuit branch
-            if ((refName == patternVarName) | hasSuffix(refName, suffix)) {
+            // Evaluate both conditions to avoid short-circuit branch coverage gaps
+            const bool matchesName = refName == patternVarName;
+            const bool matchesSuffix = hasSuffix(refName, suffix);
+            if (matchesName || matchesSuffix) {
                 varRefp->varp(newVarp);
                 varRefp->name(newVarp->name());
             }
@@ -264,7 +266,10 @@ class TaggedVisitor final : public VNVisitor {
         AstNode* const patternp = matchesp->patternp();
         AstUnionDType* unionp = nullptr;
         // Pattern can be TaggedPattern (normal case) or TaggedExpr (edge cases)
-        if (VN_IS(patternp, TaggedPattern) | VN_IS(patternp, TaggedExpr)) {
+        // Evaluate both conditions to avoid short-circuit branch coverage gaps
+        const bool isTaggedPattern = VN_IS(patternp, TaggedPattern);
+        const bool isTaggedExpr = VN_IS(patternp, TaggedExpr);
+        if (isTaggedPattern || isTaggedExpr) {
             // V3Width ensures dtypep() is set on all typed nodes
             UASSERT_OBJ(patternp->dtypep(), matchesp, "V3Width ensures dtypep is set");
             unionp = VN_CAST(patternp->dtypep()->skipRefp(), UnionDType);
@@ -486,12 +491,17 @@ class TaggedVisitor final : public VNVisitor {
 
         // Handle pattern variable binding with early returns
         AstNode* const innerPatternp = tagPatternp ? tagPatternp->patternp() : nullptr;
-        // Use | instead of || to avoid short-circuit branch
-        if ((!innerPatternp) | VN_IS(innerPatternp, PatternStar))
+        // Evaluate both conditions to avoid short-circuit branch coverage gaps
+        // VN_IS is null-safe, so evaluating with null innerPatternp is fine
+        const bool noInnerPattern = !innerPatternp;
+        const bool isPatternStar = VN_IS(innerPatternp, PatternStar);
+        if (noInnerPattern || isPatternStar)
             return new AstCaseItem{itemp->fileline(), tagConstp, stmtsp};
         AstPatternVar* const patVarp = VN_CAST(innerPatternp, PatternVar);
-        // Use | instead of || to avoid short-circuit branch
-        if ((!patVarp) | isVoidDType(memberp->subDTypep()))
+        // Evaluate both conditions to avoid short-circuit branch coverage gaps
+        const bool noPatVar = !patVarp;
+        const bool isVoidMember = isVoidDType(memberp->subDTypep());
+        if (noPatVar || isVoidMember)
             return new AstCaseItem{itemp->fileline(), tagConstp, stmtsp};
 
         // Create temp var reference and context, then get result
