@@ -71,7 +71,10 @@ public:
 class ExpandVisitor final : public VNVisitor {
     // NODE STATE
     //  AstNode::user1()        -> bool.  Processed
+    //  AstNode::user2()        -> See ExpandOkVisitor
+    //  AstVar::user3()         -> bool.  Is a constant pool variable
     const VNUser1InUse m_inuser1;
+    const VNUser3InUse m_inuser3;
 
     // STATE - for current visit position (use VL_RESTORER)
     AstNode* m_stmtp = nullptr;  // Current statement
@@ -313,6 +316,9 @@ class ExpandVisitor final : public VNVisitor {
     //-------- Uniops
     bool expandWide(AstNodeAssign* nodep, AstVarRef* rhsp) {
         UINFO(8, "    Wordize ASSIGN(VARREF) " << nodep);
+        // Special case: do not expand assignment of constant pool variables.
+        // V3Subst undestands these directly.
+        if (rhsp->varp()->user3()) return false;
         if (!doExpandWide(nodep)) return false;
         for (int w = 0; w < nodep->widthWords(); ++w) {
             addWordAssign(nodep, w, newAstWordSelClone(rhsp, w));
@@ -429,6 +435,15 @@ class ExpandVisitor final : public VNVisitor {
     }
 
     // VISITORS
+    void visit(AstNetlist* nodep) override {
+        // Mark constant pool variables
+        for (AstNode* np = nodep->constPoolp()->modp()->stmtsp(); np; np = np->nextp()) {
+            if (VN_IS(np, Var)) np->user3(true);
+        }
+
+        iterateAndNextNull(nodep->modulesp());
+    }
+
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_funcp);
         VL_RESTORER(m_nTmps);

@@ -15,6 +15,6 @@ test.top_filename = "t/t_opt_life.v"
 test.compile(verilator_flags2=['--stats', '-fno-subst', '-fno-subst-const'])
 
 if test.vlt_all:
-    test.file_grep_not(test.stats, r'Optimizations, Substituted temps\s+(\d+)')
+    test.file_grep_not(test.stats, r'Optimizations, Subst,')
 
 test.passes()
