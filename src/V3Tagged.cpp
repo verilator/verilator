@@ -312,14 +312,14 @@ class TaggedVisitor final : public VNVisitor {
     }
 
     // Info for a pattern variable in nested pattern (struct or array)
-    struct PatVarInfo {
+    struct PatVarInfo VL_NOT_FINAL {
         string name;  // Pattern variable name
         string accessPath;  // Access path: "field" for struct, "[0]" for array, "field[0].x" mixed
         AstNodeDType* dtypep;  // Type from V3Width
     };
 
     // Info for a nested tag check (for nested tagged patterns like "tagged Value .y")
-    struct NestedTagCheck {
+    struct NestedTagCheck VL_NOT_FINAL {
         string accessPath;  // Access path to the union (e.g., "maybe" for o.Data.maybe)
         int tagIndex;  // Tag index to match
     };
@@ -494,7 +494,7 @@ class TaggedVisitor final : public VNVisitor {
     }
 
     // Result from handleNestedPattern
-    struct NestedPatternResult {
+    struct NestedPatternResult VL_NOT_FINAL {
         AstVar* varDeclsp;  // Linked list of new variable declarations
         AstNode* assignsp;  // Linked list of assignments
     };
@@ -503,7 +503,7 @@ class TaggedVisitor final : public VNVisitor {
     // Creates new local variables, replaces references in bodyp, generates assignments.
     NestedPatternResult handleNestedPattern(FileLine* fl, AstNodeExpr* baseExpr, AstNode* bodyp,
                                             const std::vector<PatVarInfo>& vars) {
-        AstVar* varDeclsp = nullptr;
+        AstNode* varDeclsp = nullptr;  // Use AstNode* to avoid strict-aliasing violation
         AstNode* assignsp = nullptr;
         for (const auto& var : vars) {
             // Find original placeholder variable
@@ -512,7 +512,7 @@ class TaggedVisitor final : public VNVisitor {
             // Create new local variable
             AstVar* const newVarp = new AstVar{fl, VVarType::BLOCKTEMP, var.name, var.dtypep};
             newVarp->funcLocal(true);
-            addToNodeList(reinterpret_cast<AstNode*&>(varDeclsp), newVarp);
+            addToNodeList(varDeclsp, newVarp);
             // Replace references to original with new variable
             replacePatternVarRefs(bodyp, origVarp, newVarp);
             // Build access expression and assignment
@@ -521,7 +521,7 @@ class TaggedVisitor final : public VNVisitor {
             AstAssign* const assignp = new AstAssign{fl, varRefp, accessp};
             addToNodeList(assignsp, assignp);
         }
-        return {varDeclsp, assignsp};
+        return {VN_AS(varDeclsp, Var), assignsp};
     }
 
     // Handle simple pattern variable binding (tagged Member .var)
@@ -736,6 +736,8 @@ class TaggedVisitor final : public VNVisitor {
                 const auto result = handleNestedPattern(fl, baseExprp, ifp->thensp(), patVars);
                 varDeclp = result.varDeclsp;
                 varAssignsp = result.assignsp;
+                // Delete baseExprp - it was only used as a template for cloning
+                VL_DO_DANGLING(baseExprp->deleteTree(), baseExprp);
             }
         }
 
@@ -1057,7 +1059,7 @@ class TaggedVisitor final : public VNVisitor {
             }
             // Not direct RHS - check if nested under an assignment (handled by outer expansion)
             if (isUnderAssignment(nodep)) return;
-            nodep->v3warn(E_UNSUPPORTED, "Tagged expression outside assignment context");
+            nodep->v3warn(E_UNSUPPORTED, "Tagged expression in non-simple assignment context");
             return;
         }
 
