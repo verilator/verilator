@@ -157,18 +157,12 @@ class TaggedVisitor final : public VNVisitor {
         });
     }
 
-    // String-based overload for backwards compatibility (case matches)
+    // String-based overload for case matches where pattern variables are in a begin block
+    // V3Begin renames all pattern variables with __DOT__ prefix, so we search for the suffix
     void replacePatternVarRefs(AstNode* nodep, const string& patternVarName, AstVar* newVarp) {
         const string suffix = "__DOT__" + patternVarName;
         nodep->foreachAndNext([&](AstVarRef* varRefp) {
-            const string& refName = varRefp->varp()->name();
-            // Use explicit branches for gcov coverage tracking
-            if (refName == patternVarName) {
-                varRefp->varp(newVarp);
-                varRefp->name(newVarp->name());
-                return;
-            }
-            if (hasSuffix(refName, suffix)) {
+            if (hasSuffix(varRefp->varp()->name(), suffix)) {
                 varRefp->varp(newVarp);
                 varRefp->name(newVarp->name());
             }
@@ -346,7 +340,8 @@ class TaggedVisitor final : public VNVisitor {
             varAssignsp->addNext(guardIfp);
             return varAssignsp;
         }
-        if (origBodyp) varAssignsp->addNext(origBodyp);
+        // origBodyp is always non-null (caller asserts thensp is non-null)
+        varAssignsp->addNext(origBodyp);
         return varAssignsp;
     }
 
@@ -354,18 +349,23 @@ class TaggedVisitor final : public VNVisitor {
     void buildFinalIfStatement(AstIf* ifp, FileLine* fl, AstNodeExpr* condp,
                                const IfBodyParts& parts) {
         if (parts.varDeclp) {
-            // Unlink body and else (may be null)
-            AstNode* origBodyp = nullptr;
+            // thensp is always non-null when we have a pattern variable:
+            // - Parser creates empty AstBegin via newBlock() which never returns null
+            // - V3LinkParse wraps thensp in begin block with pattern var declarations
+            // - V3Begin may flatten empty body, but dead code optimization removes the
+            //   entire if statement before V3Tagged runs in that case
+            // elsesp may be null (no else clause)
+            UASSERT_OBJ(ifp->thensp(), ifp, "thensp null with pattern variable");
+            AstNode* const origBodyp = ifp->thensp()->unlinkFrBackWithNext();
             AstNode* origElsep = nullptr;
-            if (ifp->thensp()) origBodyp = ifp->thensp()->unlinkFrBackWithNext();
             if (ifp->elsesp()) origElsep = ifp->elsesp()->unlinkFrBackWithNext();
             AstCLocalScope* const scopep = new AstCLocalScope{fl, nullptr};
             scopep->addStmtsp(parts.varDeclp);
-            // Use & instead of && to avoid short-circuit branches
-            if ((origBodyp != nullptr) & (parts.origVarp != nullptr)) {
-                replacePatternVarRefs(origBodyp, parts.origVarp, parts.varDeclp);
-            }
-            if ((parts.guardp != nullptr) & (parts.origVarp != nullptr)) {
+            // origBodyp is always non-null (asserted above), origVarp may be null
+            // if no VarRefs to the pattern variable were found in the body
+            // Use & instead of && to avoid short-circuit branches for coverage
+            if (parts.origVarp) replacePatternVarRefs(origBodyp, parts.origVarp, parts.varDeclp);
+            if ((parts.origVarp != nullptr) & (parts.guardp != nullptr)) {
                 replacePatternVarRefs(parts.guardp, parts.origVarp, parts.varDeclp);
             }
             AstNode* const innerBodyp
@@ -431,7 +431,8 @@ class TaggedVisitor final : public VNVisitor {
         AstNode* const innerPatternp = tagPatternp ? tagPatternp->patternp() : nullptr;
         if (innerPatternp && !VN_IS(innerPatternp, PatternStar)) {
             AstPatternVar* const patVarp = VN_CAST(innerPatternp, PatternVar);
-            if (patVarp && !isVoid) {
+            // Use & to avoid short-circuit branch for coverage
+            if ((patVarp != nullptr) & (!isVoid)) {
                 // Search the if body and guard to find the actual variable that VarRefs point to
                 // This handles cases where V3Begin lifts variables with __DOT__ prefixes
                 origVarp = findPatternVarFromBody(ifp->thensp(), patVarp->name());
@@ -495,10 +496,11 @@ class TaggedVisitor final : public VNVisitor {
         if (noInnerPattern || isPatternStar)
             return new AstCaseItem{itemp->fileline(), tagConstp, stmtsp};
         AstPatternVar* const patVarp = VN_CAST(innerPatternp, PatternVar);
-        // Use explicit branches for gcov coverage tracking
         if (!patVarp) return new AstCaseItem{itemp->fileline(), tagConstp, stmtsp};
-        if (isVoidDType(memberp->subDTypep()))
-            return new AstCaseItem{itemp->fileline(), tagConstp, stmtsp};
+        // A void member cannot have a pattern variable binding (e.g., "tagged Invalid .x" is
+        // invalid) V3Width should catch this, but assert defensively
+        UASSERT_OBJ(!isVoidDType(memberp->subDTypep()), itemp,
+                    "Void member cannot have pattern variable binding");
 
         // Create temp var reference and context, then get result
         AstVarRef* const tempRefp = new AstVarRef{ctx.fl, ctx.tempVarp, VAccess::READ};
