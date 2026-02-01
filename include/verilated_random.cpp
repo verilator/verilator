@@ -595,7 +595,7 @@ bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
     return true;
 }
 
-void VlRandomizer::hard(std::string&& constraint, const char* filename, int linenum,
+void VlRandomizer::hard(std::string&& constraint, const char* filename, uint32_t linenum,
                         const char* source) {
     m_constraints.emplace_back(std::move(constraint));
     // Format constraint location: "filename:linenum   source"

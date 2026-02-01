@@ -581,7 +581,7 @@ public:
                + std::to_string(idx);
     }
 
-    void hard(std::string&& constraint, const char* filename = "", int linenum = 0,
+    void hard(std::string&& constraint, const char* filename = "", uint32_t linenum = 0,
               const char* source = "");
     void clearConstraints();
     void clearAll();  // Clear both constraints and variables
