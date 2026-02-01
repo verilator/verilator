@@ -13,8 +13,8 @@ test.scenarios('vlt_all')
 
 test.compile()
 
-test.execute(all_run_flags=["+verilator+seed+5 +SEED=fffffff4"])
+test.execute(all_run_flags=["+verilator+seed+5 +SEED=h2e564fe1"])
 
-test.execute(all_run_flags=["+verilator+seed+6 +SEED=fffffff2"])
+test.execute(all_run_flags=["+verilator+seed+6 +SEED=h3dca891b"])
 
 test.passes()

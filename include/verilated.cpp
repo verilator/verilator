@@ -318,42 +318,72 @@ void VlProcess::randstate(const std::string& state) VL_MT_UNSAFE {
 //===========================================================================
 // Random -- Mostly called at init time, so not inline.
 
-VlRNG::VlRNG() VL_MT_SAFE {
-    // Starting point for this new class comes from the global RNG
-    VlRNG& fromr = vl_thread_rng();
-    m_state = fromr.m_state;
-    // Advance the *source* so it can later generate a new number
-    // Xoroshiro128+ algorithm
-    fromr.m_state[1] ^= fromr.m_state[0];
-    fromr.m_state[0] = (((fromr.m_state[0] << 55) | (fromr.m_state[0] >> 9)) ^ fromr.m_state[1]
-                        ^ (fromr.m_state[1] << 14));
-    fromr.m_state[1] = (fromr.m_state[1] << 36) | (fromr.m_state[1] >> 28);
+static std::pair<uint64_t, uint64_t> vl_splitmix64(uint64_t x) VL_PURE {
+    // SplitMix64 algorithm, copied under public domain from
+    // https://prng.di.unimi.it/splitmix64.c
+    // by Sebastiano Vigna
+    uint64_t z = (x += 0x9e3779b97f4a7c15ULL);
+    z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
+    return {x, z ^ (z >> 31)};
 }
+
+// Xoroshiro128** algorithm, copied under public domain from
+// https://xoshiro.di.unimi.it/xoroshiro128starstar.c
+// by David Blackman and Sebastiano Vigna
+
+static uint64_t vl_rolt(const uint64_t x, int k) VL_PURE { return (x << k) | (x >> (64 - k)); }
+
+static std::array<uint64_t, 2> vl_rng_state_from_seed(uint64_t seed) VL_PURE {
+    const auto split1 = vl_splitmix64(seed);
+    const auto split2 = vl_splitmix64(split1.first);
+    return {split1.second, split2.second};
+}
+
+static uint64_t vl_rng_result(const std::array<uint64_t, 2>& state) VL_PURE {
+    const uint64_t s0 = state[0];
+    return vl_rolt(s0 * 5, 7) * 9;
+}
+
+static std::array<uint64_t, 2>
+vl_rng_compute_new_state(const std::array<uint64_t, 2>& current_state) VL_PURE {
+    const uint64_t s0 = current_state[0];
+    uint64_t s1 = current_state[1];
+
+    s1 ^= s0;
+    const uint64_t new_s0 = vl_rolt(s0, 24) ^ s1 ^ (s1 << 16);  // a, b
+    const uint64_t new_s1 = vl_rolt(s1, 37);  // c
+
+    return {new_s0, new_s1};
+}
+
+VlRNG::VlRNG() VL_MT_SAFE {
+    VlRNG& fromr = vl_thread_rng();
+
+    const uint64_t s0 = vl_rng_result(fromr.m_state);
+    fromr.m_state = vl_rng_compute_new_state(fromr.m_state);
+
+    const uint64_t s1 = vl_rng_result(fromr.m_state);
+    fromr.m_state = vl_rng_compute_new_state(fromr.m_state);
+
+    m_state = {s0, s1};
+}
+
+VlRNG::VlRNG(uint64_t seed) VL_PURE { m_state = vl_rng_state_from_seed(seed); }
+void VlRNG::srandom(uint64_t n) VL_MT_UNSAFE { m_state = vl_rng_state_from_seed(n); }
+
 uint64_t VlRNG::rand64() VL_MT_UNSAFE {
-    // Xoroshiro128+ algorithm
-    const uint64_t result = m_state[0] + m_state[1];
-    m_state[1] ^= m_state[0];
-    m_state[0] = (((m_state[0] << 55) | (m_state[0] >> 9)) ^ m_state[1] ^ (m_state[1] << 14));
-    m_state[1] = (m_state[1] << 36) | (m_state[1] >> 28);
+    const uint64_t result = vl_rng_result(m_state);
+    m_state = vl_rng_compute_new_state(m_state);
     return result;
 }
 uint64_t VlRNG::vl_thread_rng_rand64() VL_MT_SAFE {
     VlRNG& fromr = vl_thread_rng();
-    const uint64_t result = fromr.m_state[0] + fromr.m_state[1];
-    fromr.m_state[1] ^= fromr.m_state[0];
-    fromr.m_state[0] = (((fromr.m_state[0] << 55) | (fromr.m_state[0] >> 9)) ^ fromr.m_state[1]
-                        ^ (fromr.m_state[1] << 14));
-    fromr.m_state[1] = (fromr.m_state[1] << 36) | (fromr.m_state[1] >> 28);
+    const uint64_t result = vl_rng_result(fromr.m_state);
+    fromr.m_state = vl_rng_compute_new_state(fromr.m_state);
     return result;
 }
-void VlRNG::srandom(uint64_t n) VL_MT_UNSAFE {
-    m_state[0] = n;
-    m_state[1] = m_state[0];
-    // Fix state as algorithm is slow to randomize if many zeros
-    // This causes a loss of ~ 1 bit of seed entropy, no big deal
-    if (VL_COUNTONES_I(m_state[0]) < 10) m_state[0] = ~m_state[0];
-    if (VL_COUNTONES_I(m_state[1]) < 10) m_state[1] = ~m_state[1];
-}
+
 std::string VlRNG::get_randstate() const VL_MT_UNSAFE {
     // Though not stated in IEEE, assumption is the string must be printable
     const char* const stateCharsp = reinterpret_cast<const char*>(&m_state);
@@ -398,13 +428,8 @@ VlRNG& VlRNG::vl_thread_rng() VL_MT_SAFE {
     if (VL_UNLIKELY(t_seedEpoch != VerilatedContextImp::randSeedEpoch())) {
         // Set epoch before state, to avoid race case with new seeding
         t_seedEpoch = VerilatedContextImp::randSeedEpoch();
-        // Same as srandom() but here as needs to be VL_MT_SAFE
-        t_rng.m_state[0] = Verilated::threadContextp()->impp()->randSeedDefault64();
-        t_rng.m_state[1] = t_rng.m_state[0];
-        // Fix state as algorithm is slow to randomize if many zeros
-        // This causes a loss of ~ 1 bit of seed entropy, no big deal
-        if (VL_COUNTONES_I(t_rng.m_state[0]) < 10) t_rng.m_state[0] = ~t_rng.m_state[0];
-        if (VL_COUNTONES_I(t_rng.m_state[1]) < 10) t_rng.m_state[1] = ~t_rng.m_state[1];
+        t_rng.m_state
+            = vl_rng_state_from_seed(Verilated::threadContextp()->impp()->randSeedDefault64());
     }
     return t_rng;
 }
