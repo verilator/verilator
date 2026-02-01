@@ -187,13 +187,8 @@ def read_messages():
             for origline in fh:
                 line = origline
                 lineno += 1
-                if re.match(r'^\s*//', line):
-                    continue
-                if re.match(r'^\s*/\*', line):
-                    continue
-                excl = excl_next
-                # print(('C ' if (statement != "") else 'L') + line)
 
+                excl = excl_next
                 if 'LCOV_EXCL_START' in line:
                     excl = True
                     excl_next = True
@@ -204,6 +199,12 @@ def read_messages():
                 if excl:
                     statement = ""
                     continue
+
+                if re.match(r'^\s*//', line):
+                    continue
+                if re.match(r'^\s*/\*', line):
+                    continue
+                # print(('C ' if (statement != "") else 'L') + line)
 
                 line = re.sub(r'\\n', '', line)
                 line = re.sub(r'\s+//.*', '', line)
