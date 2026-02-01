@@ -11,8 +11,23 @@
 
 module t;
   import uvm_pkg::*;
+  // verilator lint_off UNUSEDSIGNAL
+  // verilator lint_off WIDTHTRUNC
+  class test extends uvm_test;
+
+    `uvm_component_utils(test)
+
+    function new(string name, uvm_component parent = null);
+      super.new(name, parent);
+    endfunction
+
+    virtual function void report_phase(uvm_phase phase);
+      super.report_phase(phase);
+      $write("** UVM TEST PASSED **\n");
+    endfunction
+  endclass
+
   initial begin
-    // verilator lint_off WIDTHTRUNC
-    `uvm_info("TOP", "UVM TEST PASSED", UVM_MEDIUM);
+    run_test("test");
   end
 endmodule
