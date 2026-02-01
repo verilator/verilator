@@ -215,7 +215,7 @@ public:
     void emitVarReset(AstVar* varp, bool constructing);
     string emitVarResetRecurse(const AstVar* varp, bool constructing,
                                const string& varNameProtected, AstNodeDType* dtypep, int depth,
-                               const string& suffix);
+                               const string& suffix, const AstNode* valuep);
     void emitVarResetScopeHash();
     void emitChangeDet();
     void emitConstInit(AstNode* initp) { iterateConst(initp); }

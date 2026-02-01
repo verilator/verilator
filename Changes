@@ -18,6 +18,7 @@ Verilator 5.045 devel
 * Add parsing of solve-before inside foreach (#6934). [Pawel Kojma, Antmicro Ltd.]
 * Add error when accessing a non-static class field from a static function (#6948). [Artur Bieniek, Antmicro Ltd.]
 * Add VerilatedContext::useNumaAssign and set on threads() call (#6954). [Yangyu Chen]
+* Support structure initial values (#6130).
 * Support vpi_put/vpi_get forcing of signals (#5933) (#6704). [Christian Hecken]
 * Support detailed failure info for constraint violations (#6617) (#6883). [Yilou Wang]
 * Support `unique` constraints (on 1D static arrays) (#6810) (#6878). [Srinivasan Venkataramanan]

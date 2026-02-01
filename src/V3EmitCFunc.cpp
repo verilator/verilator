@@ -542,6 +542,8 @@ void EmitCFunc::emitVarReset(AstVar* varp, bool constructing) {
         // If an ARRAYINIT we initialize it using an initial block similar to a signal
         // puts("// parameter "+varp->nameProtect()+" = "+varp->valuep()->name()+"\n");
     } else if (const AstInitArray* const initarp = VN_CAST(varp->valuep(), InitArray)) {
+        // TODO this code probably better handled as initp argument to emitVarResetRecurse
+        // TODO merge this functionality with V3EmitCConstInit.h visitors
         if (VN_IS(dtypep, AssocArrayDType)) {
             if (initarp->defaultp()) {
                 emitSetVarConstant(varNameProtected + ".atDefault()",
@@ -583,13 +585,14 @@ void EmitCFunc::emitVarReset(AstVar* varp, bool constructing) {
             varp->v3fatalSrc("InitArray under non-arrayed var");
         }
     } else {
-        putns(varp, emitVarResetRecurse(varp, constructing, varNameProtected, dtypep, 0, ""));
+        putns(varp, emitVarResetRecurse(varp, constructing, varNameProtected, dtypep, 0, "",
+                                        varp->valuep()));
     }
 }
 
 string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                                       const string& varNameProtected, AstNodeDType* dtypep,
-                                      int depth, const string& suffix) {
+                                      int depth, const string& suffix, const AstNode* valuep) {
     dtypep = dtypep->skipRefp();
     AstBasicDType* const basicp = dtypep->basicp();
     // Returns string to do resetting, empty to do nothing (which caller should handle)
@@ -599,14 +602,14 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
         const string pre = constructing ? "" : varNameProtected + suffix + ".clear();\n";
         return pre
                + emitVarResetRecurse(varp, constructing, varNameProtected, adtypep->subDTypep(),
-                                     depth + 1, suffix + ".atDefault()" + cvtarray);
+                                     depth + 1, suffix + ".atDefault()" + cvtarray, nullptr);
     } else if (AstWildcardArrayDType* const adtypep = VN_CAST(dtypep, WildcardArrayDType)) {
         // Access std::array as C array
         const string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
         const string pre = constructing ? "" : varNameProtected + suffix + ".clear();\n";
         return pre
                + emitVarResetRecurse(varp, constructing, varNameProtected, adtypep->subDTypep(),
-                                     depth + 1, suffix + ".atDefault()" + cvtarray);
+                                     depth + 1, suffix + ".atDefault()" + cvtarray, nullptr);
     } else if (VN_IS(dtypep, CDType)) {
         return "";  // Constructor does it
     } else if (VN_IS(dtypep, ClassRefDType)) {
@@ -619,14 +622,14 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
         const string pre = constructing ? "" : varNameProtected + suffix + ".clear();\n";
         return pre
                + emitVarResetRecurse(varp, constructing, varNameProtected, adtypep->subDTypep(),
-                                     depth + 1, suffix + ".atDefault()" + cvtarray);
+                                     depth + 1, suffix + ".atDefault()" + cvtarray, nullptr);
     } else if (const AstQueueDType* const adtypep = VN_CAST(dtypep, QueueDType)) {
         // Access std::array as C array
         const string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
         const string pre = constructing ? "" : varNameProtected + suffix + ".clear();\n";
         return pre
                + emitVarResetRecurse(varp, constructing, varNameProtected, adtypep->subDTypep(),
-                                     depth + 1, suffix + ".atDefault()" + cvtarray);
+                                     depth + 1, suffix + ".atDefault()" + cvtarray, nullptr);
     } else if (VN_IS(dtypep, SampleQueueDType)) {
         return "";
     } else if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
@@ -637,17 +640,17 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                             + cvtToStr(adtypep->elementsConst()) + "; ++" + ivar + ") {\n");
         const string below
             = emitVarResetRecurse(varp, constructing, varNameProtected, adtypep->subDTypep(),
-                                  depth + 1, suffix + "[" + ivar + "]");
+                                  depth + 1, suffix + "[" + ivar + "]", nullptr);
         const string post = "}\n";
         return below.empty() ? "" : pre + below + post;
     } else if (VN_IS(dtypep, NodeUOrStructDType) && !VN_AS(dtypep, NodeUOrStructDType)->packed()) {
-        const auto* const sdtypep = VN_AS(dtypep, NodeUOrStructDType);
+        const AstNodeUOrStructDType* const sdtypep = VN_AS(dtypep, NodeUOrStructDType);
         string literal;
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
             const std::string line = emitVarResetRecurse(
                 varp, constructing, varNameProtected + suffix + "." + itemp->nameProtect(),
-                itemp->dtypep(), depth + 1, "");
+                itemp->dtypep(), depth + 1, "", itemp->valuep());
             if (!line.empty()) literal += line;
         }
         return literal;
@@ -682,10 +685,10 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
         splitSizeInc(1);
         if (dtypep->isWide()) {  // Handle unpacked; not basicp->isWide
             string out;
-            if (varp->valuep()) {
-                const AstConst* const constp = VN_AS(varp->valuep(), Const);
+            if (valuep) {
+                const AstConst* const constp = VN_AS(valuep, Const);
                 UASSERT_OBJ(constp, varp, "non-const initializer for variable");
-                for (int w = 0; w < varp->widthWords(); ++w) {
+                for (int w = 0; w < dtypep->widthWords(); ++w) {
                     out += varNameProtected + suffix + "[" + cvtToStr(w) + "] = ";
                     out += cvtToStr(constp->num().edataWord(w)) + "U;\n";
                 }
@@ -709,7 +712,15 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
             return out;
         } else {
             string out = varNameProtected + suffix;
-            if (zeroit) {
+            if (valuep) {
+                out += " = ";
+                // TODO cleanup code shared between here, V3EmitCConstInit.h,
+                // EmitCFunc::emitVarReset, EmitCFunc::emitConstant
+                const AstConst* const constp = VN_AS(valuep, Const);
+                UASSERT_OBJ(constp, varp, "non-const initializer for variable");
+                out += cvtToStr(constp->num().edataWord(0)) + "U;\n";
+                out += ";\n";
+            } else if (zeroit) {
                 out += " = 0;\n";
             } else {
                 emitVarResetScopeHash();

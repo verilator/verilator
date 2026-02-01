@@ -3270,10 +3270,6 @@ class WidthVisitor final : public VNVisitor {
                 itemp->v3error("Initial values not allowed in packed struct/union"
                                " (IEEE 1800-2023 7.2.2)");
                 pushDeletep(itemp->valuep()->unlinkFrBack());
-            } else if (itemp->valuep()) {
-                itemp->valuep()->v3warn(E_UNSUPPORTED,
-                                        "Unsupported: Initial values in struct/union members");
-                pushDeletep(itemp->valuep()->unlinkFrBack());
             }
         }
         const bool isHardPackedUnion
@@ -5145,6 +5141,11 @@ class WidthVisitor final : public VNVisitor {
         if (defaultp) {
             // default_value for any unmatched member yet
             return defaultp->cloneTree(false);
+        }
+        if (memp->valuep()) {
+            return new AstPatMember{nodep->fileline(),
+                                    VN_AS(memp->valuep()->cloneTree(false), NodeExpr),
+                                    new AstText{nodep->fileline(), memp->name()}, nullptr};
         }
         if (!VN_IS(memp_vdtypep, UnionDType)) {
             nodep->v3error("Assignment pattern missed initializing elements: "
