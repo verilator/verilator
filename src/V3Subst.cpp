@@ -218,6 +218,8 @@ AstNodeExpr* SubstVarEntry::substRecord(SubstVarEntry::Record& record) {
 class SubstVisitor final : public VNVisitor {
     // NODE STATE - only Under AstCFunc
     // AstVar::user1p -> SubstVarEntry* for assignment tracking. Also used by SubstValidVisitor
+    // AstVar::user2  -> bool. Is a constant pool variable
+    const VNUser2InUse m_user2InUse;
 
     // STATE
     std::deque<SubstVarEntry> m_entries;  // Storage for SubstVarEntry instances
@@ -230,6 +232,7 @@ class SubstVisitor final : public VNVisitor {
     size_t m_nWholeSubstituted = 0;  // Number of whole variables substituted
     size_t m_nWordAssignDeleted = 0;  // Number of word assignments deleted
     size_t m_nWholeAssignDeleted = 0;  // Number of whole variable assignments deleted
+    size_t m_nConstWordsReinlined = 0; // Number of constant words substituted
 
     static constexpr uint32_t SUBST_MAX_OPS_SUBST = 30;  // Maximum number of ops to substitute in
     static constexpr uint32_t SUBST_MAX_OPS_NA = 9999;  // Not allowed to substitute
@@ -260,7 +263,7 @@ class SubstVisitor final : public VNVisitor {
     bool isSubstitutable(AstVar* nodep) { return nodep->isStatementTemp() && !nodep->noSubst(); }
 
     void substitute(AstNode* nodep, AstNodeExpr* substp) {
-        AstNodeExpr* newp = substp->cloneTreePure(true);
+        AstNodeExpr* newp = substp->backp() ? substp->cloneTreePure(true) : substp;
         if (!nodep->isQuad() && newp->isQuad()) {
             newp = new AstCCast{newp->fileline(), newp, nodep};
         }
@@ -270,6 +273,16 @@ class SubstVisitor final : public VNVisitor {
     }
 
     // VISITORS
+
+    void visit(AstNetlist* nodep) override {
+        // Mark constant pool variables
+        for (AstNode* np = nodep->constPoolp()->modp()->stmtsp(); np; np = np->nextp()) {
+            if (VN_IS(np, Var)) np->user2(true);
+        }
+
+        iterateAndNextNull(nodep->modulesp());
+    }
+
     void visit(AstCFunc* nodep) override {
         UASSERT_OBJ(!m_funcp, nodep, "Should not nest");
         UASSERT_OBJ(m_entries.empty(), nodep, "Should not visit outside functions");
@@ -357,8 +370,21 @@ class SubstVisitor final : public VNVisitor {
                     return;
                 }
 
-                // Otherwise it's a read, substitute it if possible
+                // Otherwise it's a read,
                 UASSERT_OBJ(refp->access().isReadOnly(), nodep, "Invalid access");
+
+                // If it's a constant pool variable, substiute with the constant word
+                AstVar* const varp = refp->varp();
+                if (varp->user2()) {
+                    AstConst* const constp = VN_AS(varp->valuep(), Const);
+                    const uint32_t value = constp->num().edataWord(word);
+                    FileLine* const flp = nodep->fileline();
+                    ++m_nConstWordsReinlined;
+                    substitute(nodep, new AstConst{flp, AstConst::SizedEData{}, value});
+                    return;
+                }
+
+                // Substitute other variables if possible
                 if (isSubstitutable(refp->varp())) {
                     if (AstNodeExpr* const substp = entry.substWord(word)) {
                         ++m_nWordSubstituted;
@@ -425,9 +451,10 @@ class SubstVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit SubstVisitor(AstNode* nodep) { iterate(nodep); }
+    explicit SubstVisitor(AstNetlist* nodep) { iterate(nodep); }
     ~SubstVisitor() override {
         V3Stats::addStat("Optimizations, Substituted temps", m_nSubst);
+        V3Stats::addStat("Optimizations, Constant words reinlined", m_nConstWordsReinlined);
         V3Stats::addStat("Optimizations, Whole variable assignments deleted",
                          m_nWholeAssignDeleted);
         V3Stats::addStat("Optimizations, Whole variables substituted", m_nWholeSubstituted);
