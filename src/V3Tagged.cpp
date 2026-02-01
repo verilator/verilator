@@ -138,7 +138,7 @@ class TaggedVisitor final : public VNVisitor {
         if (!nodep) return nullptr;
         const string suffix = "__DOT__" + varName;
         AstVar* foundVarp = nullptr;
-        nodep->foreachAndNext([&](AstVarRef* varRefp) {
+        nodep->foreach([&](AstVarRef* varRefp) {
             if (!foundVarp && hasSuffix(varRefp->varp()->name(), suffix)) {
                 foundVarp = varRefp->varp();
             }
@@ -149,7 +149,7 @@ class TaggedVisitor final : public VNVisitor {
     // Replace all references to pattern variable with the new local variable
     // Uses O(1) pointer comparison when origVarp is provided
     void replacePatternVarRefs(AstNode* nodep, AstVar* origVarp, AstVar* newVarp) {
-        nodep->foreachAndNext([&](AstVarRef* varRefp) {
+        nodep->foreach([&](AstVarRef* varRefp) {
             if (varRefp->varp() == origVarp) {
                 varRefp->varp(newVarp);
                 varRefp->name(newVarp->name());
@@ -167,6 +167,17 @@ class TaggedVisitor final : public VNVisitor {
                 varRefp->name(newVarp->name());
             }
         });
+    }
+
+    // Walk up AST to find containing assignment. O(D) where D = AST depth.
+    // Returns nullptr if no assignment found before statement boundary (valid - triggers
+    // UNSUPPORTED)
+    static AstAssign* findContainingAssign(AstNode* nodep) {
+        for (AstNode* p = nodep->backp(); p; p = p->backp()) {
+            if (AstAssign* const a = VN_CAST(p, Assign)) return a;
+            if (VN_IS(p, NodeStmt)) return nullptr;
+        }
+        return nullptr;
     }
 
     // Create a constant with the given value and width
@@ -287,6 +298,210 @@ class TaggedVisitor final : public VNVisitor {
         return condp;
     }
 
+    // Info for a pattern variable in nested pattern (struct or array)
+    struct PatVarInfo {
+        string name;  // Pattern variable name
+        string accessPath;  // Access path: "field" for struct, "[0]" for array, "field[0].x" mixed
+        AstNodeDType* dtypep;  // Type from V3Width
+    };
+
+    // Info for a nested tag check (for nested tagged patterns like "tagged Value .y")
+    struct NestedTagCheck {
+        string accessPath;  // Access path to the union (e.g., "maybe" for o.Data.maybe)
+        int tagIndex;  // Tag index to match
+    };
+
+    // Collect pattern variables from array pattern. O(N).
+    void collectArrayPatternVars(AstPattern* patp, AstNodeDType* elemDtp, const string& basePath,
+                                 std::vector<PatVarInfo>& out) {
+        size_t idx = 0;
+        for (AstPatMember* itemp = VN_CAST(patp->itemsp(), PatMember); itemp;
+             itemp = VN_CAST(itemp->nextp(), PatMember), ++idx) {
+            if (AstPatternVar* const pvp = VN_CAST(itemp->lhssp(), PatternVar)) {
+                const string path = basePath + "[" + std::to_string(idx) + "]";
+                out.push_back({pvp->name(), path, elemDtp});
+            }
+        }
+    }
+
+    // Recursively collect pattern variables from nested struct pattern. O(N).
+    // basePath is the current access path prefix (empty at top level)
+    // Handles Pattern, PatternVar, TaggedPattern (for nested tagged union patterns)
+    // Also collects tag checks for nested tagged patterns when tagChecks is provided
+    void collectNestedPatternVars(AstNode* nodep, AstNodeDType* baseDtp, const string& basePath,
+                                  std::vector<PatVarInfo>& out,
+                                  std::vector<NestedTagCheck>* tagChecks = nullptr) {
+        // Simple pattern variable
+        if (AstPatternVar* const pvp = VN_CAST(nodep, PatternVar)) {
+            out.push_back({pvp->name(), basePath, pvp->dtypep()});
+            return;
+        }
+
+        // Handle TaggedPattern (e.g., "tagged Value .y" inside struct pattern)
+        // The tagged union member name becomes part of the access path
+        // Also generates a tag check for this nested tagged pattern
+        if (AstTaggedPattern* const tagPatp = VN_CAST(nodep, TaggedPattern)) {
+            AstUnionDType* const unionDtp = VN_CAST(baseDtp->skipRefp(), UnionDType);
+            if (unionDtp) {
+                AstMemberDType* const memberp = findMember(unionDtp, tagPatp->name());
+                // Add tag check for this nested tagged pattern
+                if (tagChecks) tagChecks->push_back({basePath, memberp->tagIndex()});
+                const string memberPath
+                    = basePath.empty() ? tagPatp->name() : basePath + "." + tagPatp->name();
+                if (tagPatp->patternp()) {
+                    collectNestedPatternVars(tagPatp->patternp(), memberp->subDTypep(), memberPath,
+                                             out, tagChecks);
+                }
+            }
+            return;
+        }
+
+        // Handle TaggedExpr used as pattern (same structure as TaggedPattern)
+        if (AstTaggedExpr* const tagExprp = VN_CAST(nodep, TaggedExpr)) {
+            AstUnionDType* const unionDtp = VN_CAST(baseDtp->skipRefp(), UnionDType);
+            if (unionDtp) {
+                AstMemberDType* const memberp = findMember(unionDtp, tagExprp->name());
+                // Add tag check for this nested tagged pattern
+                if (tagChecks) tagChecks->push_back({basePath, memberp->tagIndex()});
+                const string memberPath
+                    = basePath.empty() ? tagExprp->name() : basePath + "." + tagExprp->name();
+                if (tagExprp->exprp()) {
+                    collectNestedPatternVars(tagExprp->exprp(), memberp->subDTypep(), memberPath,
+                                             out, tagChecks);
+                }
+            }
+            return;
+        }
+
+        AstPattern* const patp = VN_CAST(nodep, Pattern);
+        if (!patp) return;
+        // Check if it's an array or struct type
+        AstNodeDType* const skipDtp = baseDtp->skipRefp();
+        if (AstUnpackArrayDType* const arrayDtp = VN_CAST(skipDtp, UnpackArrayDType)) {
+            collectArrayPatternVars(patp, arrayDtp->subDTypep(), basePath, out);
+            return;
+        }
+        AstNodeUOrStructDType* const structDtp = VN_CAST(skipDtp, NodeUOrStructDType);
+        UASSERT_OBJ(structDtp, nodep, "V3Width sets struct/array dtype on patterns");
+        // Build member name->dtype map for lookup
+        std::map<string, std::pair<string, AstNodeDType*>> memberInfo;
+        size_t posIdx = 0;
+        for (AstMemberDType* memp = structDtp->membersp(); memp;
+             memp = VN_AS(memp->nextp(), MemberDType), ++posIdx) {
+            memberInfo[memp->name()] = {memp->name(), memp->subDTypep()};
+        }
+        // Iterate pattern members
+        posIdx = 0;
+        std::vector<AstMemberDType*> memberList;
+        for (AstMemberDType* memp = structDtp->membersp(); memp;
+             memp = VN_AS(memp->nextp(), MemberDType)) {
+            memberList.push_back(memp);
+        }
+        for (AstPatMember* itemp = VN_CAST(patp->itemsp(), PatMember); itemp;
+             itemp = VN_CAST(itemp->nextp(), PatMember), ++posIdx) {
+            string memberName;
+            AstNodeDType* memberDtp = nullptr;
+            // Try named key first
+            if (AstText* const keyp = VN_CAST(itemp->keyp(), Text)) {
+                const auto it = memberInfo.find(keyp->text());
+                if (it != memberInfo.end()) {
+                    memberName = it->second.first;
+                    memberDtp = it->second.second;
+                }
+            }
+            // Fall back to positional
+            if (memberDtp == nullptr && posIdx < memberList.size()) {
+                memberName = memberList[posIdx]->name();
+                memberDtp = memberList[posIdx]->subDTypep();
+            }
+            if (!memberDtp) continue;
+            string path = basePath.empty() ? memberName : basePath + "." + memberName;
+            collectNestedPatternVars(itemp->lhssp(), memberDtp, path, out, tagChecks);
+        }
+    }
+
+    // Helper to find member dtype in a struct/union type
+    static AstNodeDType* findMemberDType(AstNodeDType* structDtp, const string& memberName) {
+        AstNodeUOrStructDType* const stp = VN_CAST(structDtp->skipRefp(), NodeUOrStructDType);
+        if (!stp) return nullptr;
+        for (AstMemberDType* mp = stp->membersp(); mp; mp = VN_AS(mp->nextp(), MemberDType)) {
+            if (mp->name() == memberName) return mp->subDTypep();
+        }
+        return nullptr;
+    }
+
+    // Build access expression from path: "field" -> .field, "[N]" -> [N]. O(P) where P = path
+    // depth. Sets proper dtype on each intermediate node by walking the type hierarchy.
+    AstNodeExpr* buildAccessExpr(FileLine* fl, AstNodeExpr* baseExpr, const string& path,
+                                 AstNodeDType* finalDtypep) {
+        AstNodeExpr* accessp = baseExpr->cloneTree(false);
+        AstNodeDType* currentDtp = baseExpr->dtypep();
+        size_t pos = 0;
+        while (pos < path.size()) {
+            if (path[pos] == '[') {
+                // Array index: [N]
+                size_t close = path.find(']', pos);
+                int idx = std::stoi(path.substr(pos + 1, close - pos - 1));
+                AstArraySel* const selp = new AstArraySel{fl, accessp, makeConst(fl, idx, 32)};
+                // Get element type from array
+                if (AstUnpackArrayDType* arrDtp
+                    = VN_CAST(currentDtp->skipRefp(), UnpackArrayDType)) {
+                    currentDtp = arrDtp->subDTypep();
+                }
+                selp->dtypep(currentDtp);
+                accessp = selp;
+                pos = close + 1;
+                if (pos < path.size() && path[pos] == '.') ++pos;  // Skip dot after ]
+            } else {
+                // Struct field access
+                size_t next = path.find_first_of(".[", pos);
+                if (next == string::npos) next = path.size();
+                const string field = path.substr(pos, next - pos);
+                AstStructSel* const selp = new AstStructSel{fl, accessp, field};
+                // Look up member type
+                AstNodeDType* const memberDtp = findMemberDType(currentDtp, field);
+                if (memberDtp) currentDtp = memberDtp;
+                selp->dtypep(currentDtp);
+                accessp = selp;
+                pos = (next < path.size() && path[next] == '.') ? next + 1 : next;
+            }
+        }
+        // Set final dtype (may differ from tracked type due to further processing)
+        accessp->dtypep(finalDtypep);
+        return accessp;
+    }
+
+    // Result from handleNestedPattern
+    struct NestedPatternResult {
+        AstVar* varDeclsp;  // Linked list of new variable declarations
+        AstNode* assignsp;  // Linked list of assignments
+    };
+
+    // Handle nested pattern variables (struct or array). O(N) where N = pattern vars.
+    // Creates new local variables, replaces references in bodyp, generates assignments.
+    NestedPatternResult handleNestedPattern(FileLine* fl, AstNodeExpr* baseExpr, AstNode* bodyp,
+                                            const std::vector<PatVarInfo>& vars) {
+        AstVar* varDeclsp = nullptr;
+        AstNode* assignsp = nullptr;
+        for (const auto& var : vars) {
+            // Find original placeholder variable
+            AstVar* const origVarp = findPatternVarFromBody(bodyp, var.name);
+            if (!origVarp) continue;
+            // Create new local variable
+            AstVar* const newVarp = new AstVar{fl, VVarType::BLOCKTEMP, var.name, var.dtypep};
+            newVarp->funcLocal(true);
+            addToNodeList(reinterpret_cast<AstNode*&>(varDeclsp), newVarp);
+            // Replace references to original with new variable
+            replacePatternVarRefs(bodyp, origVarp, newVarp);
+            // Build access expression and assignment
+            AstNodeExpr* const accessp = buildAccessExpr(fl, baseExpr, var.accessPath, var.dtypep);
+            AstVarRef* const varRefp = new AstVarRef{fl, newVarp, VAccess::WRITE};
+            AstAssign* const assignp = new AstAssign{fl, varRefp, accessp};
+            addToNodeList(assignsp, assignp);
+        }
+        return {varDeclsp, assignsp};
+    }
+
     // Handle simple pattern variable binding (tagged Member .var)
     // Returns pair of (varDecl, varAssign) or (nullptr, nullptr) if not applicable
     std::pair<AstVar*, AstAssign*> handleSimplePatternVar(const TaggedMatchContext& ctx,
@@ -328,6 +543,58 @@ class TaggedVisitor final : public VNVisitor {
         } else {
             listp = nodep;
         }
+    }
+
+    // Build access expression from path for nested tag checks. O(P) where P = path depth.
+    // Sets proper dtype on each intermediate StructSel by walking the type hierarchy.
+    AstNodeExpr* buildTagCheckExpr(FileLine* fl, AstNodeExpr* baseExpr, const string& path) {
+        AstNodeExpr* accessp = baseExpr->cloneTree(false);
+        AstNodeDType* currentDtp = baseExpr->dtypep();
+        size_t pos = 0;
+        while (pos < path.size()) {
+            size_t next = path.find('.', pos);
+            if (next == string::npos) next = path.size();
+            const string field = path.substr(pos, next - pos);
+            AstStructSel* const selp = new AstStructSel{fl, accessp, field};
+            // Look up member type from current struct/union type
+            if (currentDtp) {
+                AstNodeUOrStructDType* structDtp
+                    = VN_CAST(currentDtp->skipRefp(), NodeUOrStructDType);
+                if (structDtp) {
+                    for (AstMemberDType* mp = structDtp->membersp(); mp;
+                         mp = VN_AS(mp->nextp(), MemberDType)) {
+                        if (mp->name() == field) {
+                            selp->dtypep(mp->subDTypep());
+                            currentDtp = mp->subDTypep();
+                            break;
+                        }
+                    }
+                }
+            }
+            accessp = selp;
+            pos = (next < path.size()) ? next + 1 : next;
+        }
+        // Access __Vtag field of the nested union
+        AstStructSel* const tagSelp = new AstStructSel{fl, accessp, "__Vtag"};
+        tagSelp->dtypeSetBitSized(32, VSigning::UNSIGNED);
+        return tagSelp;
+    }
+
+    // Create combined condition for nested tag checks. O(N) where N = number of checks.
+    AstNodeExpr* createNestedTagCondition(FileLine* fl, AstNodeExpr* baseExpr,
+                                          const std::vector<NestedTagCheck>& checks,
+                                          AstNodeExpr* outerCondp) {
+        AstNodeExpr* condp = outerCondp;
+        for (const auto& check : checks) {
+            AstNodeExpr* const tagExprp = buildTagCheckExpr(fl, baseExpr, check.accessPath);
+            AstConst* const tagConstp = makeConst(fl, check.tagIndex, 32);
+            AstNodeExpr* const checkp = new AstEq{fl, tagExprp, tagConstp};
+            checkp->dtypeSetBit();
+            AstLogAnd* const combinedp = new AstLogAnd{fl, condp, checkp};
+            combinedp->dtypeSetBit();
+            condp = combinedp;
+        }
+        return condp;
     }
 
     // Build if-body combining assigns, original body, and optional guard
@@ -428,18 +695,35 @@ class TaggedVisitor final : public VNVisitor {
         AstNodeExpr* guardp = matchesp->guardp();
         if (guardp) guardp = guardp->unlinkFrBack();
 
-        AstNode* const innerPatternp = tagPatternp ? tagPatternp->patternp() : nullptr;
-        if (innerPatternp && !VN_IS(innerPatternp, PatternStar)) {
-            AstPatternVar* const patVarp = VN_CAST(innerPatternp, PatternVar);
-            // Use & to avoid short-circuit branch for coverage
-            if ((patVarp != nullptr) & (!isVoid)) {
-                // Search the if body and guard to find the actual variable that VarRefs point to
-                // This handles cases where V3Begin lifts variables with __DOT__ prefixes
+        // Get inner pattern from either TaggedPattern or TaggedExpr
+        AstNode* const innerPatternp = tagPatternp ? tagPatternp->patternp() : tagExprp->exprp();
+        if (innerPatternp && !VN_IS(innerPatternp, PatternStar) && !isVoid) {
+            if (AstPatternVar* const patVarp = VN_CAST(innerPatternp, PatternVar)) {
+                // Simple pattern variable binding
                 origVarp = findPatternVarFromBody(ifp->thensp(), patVarp->name());
                 if (!origVarp) origVarp = findPatternVarFromBody(guardp, patVarp->name());
                 const auto result = handleSimplePatternVar(matchCtx, exprp, memberName, patVarp);
                 varDeclp = result.first;
                 varAssignsp = result.second;
+            } else if (AstPattern* const structPatp = VN_CAST(innerPatternp, Pattern)) {
+                // Nested pattern (struct or array) - collect pattern vars and nested tag checks
+                std::vector<PatVarInfo> patVars;
+                std::vector<NestedTagCheck> nestedTagChecks;
+                collectNestedPatternVars(structPatp, memberp->subDTypep(), "", patVars,
+                                         &nestedTagChecks);
+                // Create base expression for member access (expr.MemberName)
+                AstNodeExpr* baseExprp = exprp->cloneTree(false);
+                if (isUnpacked) {
+                    baseExprp
+                        = makeDataExtractUnpacked(fl, baseExprp, memberName, memberp->subDTypep());
+                }
+                // Add nested tag checks to condition
+                if (!nestedTagChecks.empty()) {
+                    condp = createNestedTagCondition(fl, baseExprp, nestedTagChecks, condp);
+                }
+                const auto result = handleNestedPattern(fl, baseExprp, ifp->thensp(), patVars);
+                varDeclp = result.varDeclsp;
+                varAssignsp = result.assignsp;
             }
         }
 
@@ -488,7 +772,9 @@ class TaggedVisitor final : public VNVisitor {
         if (itemp->stmtsp()) stmtsp = itemp->stmtsp()->cloneTree(true);
 
         // Handle pattern variable binding with early returns
-        AstNode* const innerPatternp = tagPatternp ? tagPatternp->patternp() : nullptr;
+        // Get inner pattern from either TaggedPattern or TaggedExpr
+        AstNode* const innerPatternp
+            = tagPatternp ? tagPatternp->patternp() : tagExprCondp->exprp();
         // Evaluate both conditions to avoid short-circuit branch coverage gaps
         // VN_IS is null-safe, so evaluating with null innerPatternp is fine
         const bool noInnerPattern = !innerPatternp;
@@ -573,51 +859,173 @@ class TaggedVisitor final : public VNVisitor {
         ++m_statTaggedMatches;
     }
 
-    // Transform: target = tagged MemberName (value)
-    // For unpacked tagged unions, transforms into:
-    //   target.__Vtag = tagIndex;
-    //   target.MemberName = value;  // if not void
-    void transformTaggedExprUnpacked(AstAssign* assignp, AstTaggedExpr* taggedp,
-                                     AstUnionDType* unionp) {
-        FileLine* const fl = taggedp->fileline();
+    // Expand a nested tagged expression into field assignments. O(N) where N = pattern depth.
+    // Generates: target.__Vtag = tagIndex; target.MemberName = value;
+    void expandTaggedToAssigns(FileLine* fl, AstNodeExpr* targetp, AstTaggedExpr* taggedp,
+                               AstUnionDType* unionp, AstNode*& assignsp) {
         AstMemberDType* const memberp = findMember(unionp, taggedp->name());
-        // memberp validity checked by V3Width before V3Tagged runs
-
         const int tagIndex = memberp->tagIndex();
         const bool isVoid = isVoidDType(memberp->subDTypep());
 
-        // Get the target (LHS of assignment) and clone it
-        AstNodeExpr* const targetp = assignp->lhsp();
-
-        // Create: target.__Vtag = tagIndex
+        // target.__Vtag = tagIndex
         AstStructSel* const tagSelp = new AstStructSel{fl, targetp->cloneTree(false), "__Vtag"};
         tagSelp->dtypeSetBitSized(32, VSigning::UNSIGNED);
         AstAssign* const tagAssignp = new AstAssign{fl, tagSelp, makeConst(fl, tagIndex, 32)};
+        addToNodeList(assignsp, tagAssignp);
 
-        // Replace the original assignment with tag assignment
-        assignp->replaceWith(tagAssignp);
-
-        // If member is not void, add member assignment after tag assignment
-        // Use & instead of && to avoid short-circuit branch
+        // If not void and has value, expand the member value
         if ((!isVoid) & (taggedp->exprp() != nullptr)) {
-            AstStructSel* const memberSelp
+            AstStructSel* const memSelp
                 = new AstStructSel{fl, targetp->cloneTree(false), taggedp->name()};
-            memberSelp->dtypep(memberp->subDTypep());
-            // Clone the value expression to avoid dtype reference issues when original tree is
-            // deleted
-            AstNodeExpr* valuep = taggedp->exprp()->cloneTree(false);
-            AstAssign* const memberAssignp = new AstAssign{fl, memberSelp, valuep};
-            tagAssignp->addNextHere(memberAssignp);
+            memSelp->dtypep(memberp->subDTypep());
+            expandValueToAssigns(fl, memSelp, taggedp->exprp(), memberp->subDTypep(), assignsp);
+        }
+    }
+
+    // Expand struct pattern into field assignments. O(N) where N = pattern members.
+    void expandPatternToAssigns(FileLine* fl, AstNodeExpr* targetp, AstPattern* patp,
+                                AstNodeUOrStructDType* structDtp, AstNode*& assignsp) {
+        // Build member lookup structures
+        std::map<string, AstMemberDType*> memberMap;
+        std::vector<AstMemberDType*> memberList;
+        for (AstMemberDType* m = structDtp->membersp(); m; m = VN_AS(m->nextp(), MemberDType)) {
+            memberMap[m->name()] = m;
+            memberList.push_back(m);
         }
 
+        // Iterate pattern members
+        size_t idx = 0;
+        for (AstPatMember* itemp = VN_CAST(patp->itemsp(), PatMember); itemp;
+             itemp = VN_CAST(itemp->nextp(), PatMember), ++idx) {
+            // Determine member name and type (by key or position)
+            string memberName;
+            AstMemberDType* memDtp = nullptr;
+            if (AstText* const keyp = VN_CAST(itemp->keyp(), Text)) {
+                const auto it = memberMap.find(keyp->text());
+                if (it != memberMap.end()) {
+                    memberName = it->first;
+                    memDtp = it->second;
+                }
+            }
+            if (!memDtp && idx < memberList.size()) {
+                memberName = memberList[idx]->name();
+                memDtp = memberList[idx];
+            }
+            if (!memDtp) continue;
+
+            // Create target.memberName and recursively expand
+            AstStructSel* const fieldSelp
+                = new AstStructSel{fl, targetp->cloneTree(false), memberName};
+            fieldSelp->dtypep(memDtp->subDTypep());
+            expandValueToAssigns(fl, fieldSelp, itemp->lhssp(), memDtp->subDTypep(), assignsp);
+        }
+    }
+
+    // Expand ConsPackUOrStruct (constant struct) into field assignments. O(N) where N = members.
+    // V3Const converts Pattern to ConsPackUOrStruct before V3Tagged runs.
+    void expandConsPackToAssigns(FileLine* fl, AstNodeExpr* targetp, AstConsPackUOrStruct* consp,
+                                 AstNode*& assignsp) {
+        for (AstConsPackMember* memp = consp->membersp(); memp;
+             memp = VN_AS(memp->nextp(), ConsPackMember)) {
+            // Get member info from dtype
+            AstMemberDType* const memDtp = VN_AS(memp->dtypep(), MemberDType);
+            UASSERT_OBJ(memDtp, memp, "ConsPackMember must have MemberDType");
+            const string& memberName = memDtp->name();
+            // Create target.memberName and recursively expand
+            AstStructSel* const fieldSelp
+                = new AstStructSel{fl, targetp->cloneTree(false), memberName};
+            fieldSelp->dtypep(memDtp->subDTypep());
+            expandValueToAssigns(fl, fieldSelp, memp->rhsp(), memDtp->subDTypep(), assignsp);
+        }
+    }
+
+    // Recursively expand a value expression into field assignments. O(N) where N = pattern
+    // elements. Handles patterns, nested tagged expressions, and simple expressions. targetp: the
+    // target expression (e.g., o.Data.maybe) valuep: the value to assign (pattern, tagged expr, or
+    // simple expr) dtypep: the expected type of the target assignsp: linked list of generated
+    // assignments (output parameter)
+    void expandValueToAssigns(FileLine* fl, AstNodeExpr* targetp, AstNode* valuep,
+                              AstNodeDType* dtypep, AstNode*& assignsp) {
+        // Check for nested tagged expression
+        if (AstTaggedExpr* const nestedTaggedp = VN_CAST(valuep, TaggedExpr)) {
+            // Try TaggedExpr's dtype first, fall back to passed dtypep
+            AstNodeDType* exprDtp = nestedTaggedp->dtypep();
+            if (!exprDtp) exprDtp = dtypep;
+            AstUnionDType* const nestedUnionp
+                = exprDtp ? VN_CAST(exprDtp->skipRefp(), UnionDType) : nullptr;
+            if (nestedUnionp && !nestedUnionp->packed()) {
+                expandTaggedToAssigns(fl, targetp, nestedTaggedp, nestedUnionp, assignsp);
+                return;
+            }
+            // For packed unions, transform the expression and assign the result
+            if (nestedUnionp && nestedUnionp->packed()) {
+                AstNodeExpr* const transformedp = transformTaggedExpr(nestedTaggedp, nestedUnionp);
+                AstAssign* const assignp = new AstAssign{fl, targetp, transformedp};
+                addToNodeList(assignsp, assignp);
+                return;
+            }
+            // Unknown union type - this shouldn't happen, assert
+            UASSERT_OBJ(nestedUnionp, valuep, "TaggedExpr must have union dtype");
+        }
+
+        // Check for struct pattern
+        if (AstPattern* const patp = VN_CAST(valuep, Pattern)) {
+            AstNodeUOrStructDType* const structDtp
+                = VN_CAST(dtypep->skipRefp(), NodeUOrStructDType);
+            if (structDtp) {
+                expandPatternToAssigns(fl, targetp, patp, structDtp, assignsp);
+                return;
+            }
+        }
+
+        // Check for ConsPackUOrStruct (Pattern converted by V3Const)
+        if (AstConsPackUOrStruct* const consp = VN_CAST(valuep, ConsPackUOrStruct)) {
+            expandConsPackToAssigns(fl, targetp, consp, assignsp);
+            return;
+        }
+
+        // Simple expression - create direct assignment
+        AstNodeExpr* const valueExprp = VN_AS(valuep, NodeExpr);
+        UASSERT_OBJ(valueExprp, valuep, "Value must be expression");
+        AstAssign* const assignp = new AstAssign{fl, targetp, valueExprp->cloneTree(false)};
+        addToNodeList(assignsp, assignp);
+    }
+
+    // Check if a value contains nested unpacked tagged expressions. O(N).
+    bool hasNestedUnpackedTagged(AstNode* nodep) {
+        bool found = false;
+        nodep->foreach([&](AstTaggedExpr* taggedp) {
+            if (!found) {
+                AstUnionDType* const unionp = VN_CAST(taggedp->dtypep()->skipRefp(), UnionDType);
+                if (unionp && !unionp->packed()) found = true;
+            }
+        });
+        return found;
+    }
+
+    // Transform: target = tagged MemberName (value)
+    // For unpacked tagged unions, transforms into:
+    //   target.__Vtag = tagIndex;
+    //   target.MemberName = value;  // if not void (recursively expanded if nested)
+    void transformTaggedExprUnpacked(AstAssign* assignp, AstTaggedExpr* taggedp,
+                                     AstUnionDType* unionp) {
+        FileLine* const fl = taggedp->fileline();
+
+        // Get the target (LHS of assignment)
+        AstNodeExpr* const targetp = assignp->lhsp();
+
+        // Use expandTaggedToAssigns to handle all cases (simple and nested)
+        AstNode* assignsp = nullptr;
+        expandTaggedToAssigns(fl, targetp, taggedp, unionp, assignsp);
+
+        // Replace original assignment with the generated assignments
+        UASSERT(assignsp, "expandTaggedToAssigns must generate at least tag assignment");
+        assignp->replaceWith(assignsp);
         VL_DO_DANGLING(pushDeletep(assignp), assignp);
     }
 
     // VISITORS
     void visit(AstTaggedExpr* nodep) override {
-        // Don't iterate children - we handle exprp directly in the transform
-        // iterateChildren(nodep);
-
         // Note: TaggedExpr used as pattern in Matches expression is handled by
         // transformIfMatches() before this visitor sees it (via visit(AstIf*))
 
@@ -626,21 +1034,33 @@ class TaggedVisitor final : public VNVisitor {
         AstNodeDType* const dtypep = nodep->dtypep();
         AstUnionDType* const unionp = VN_CAST(dtypep->skipRefp(), UnionDType);
 
-        // For unpacked tagged unions, handle at assignment level
-        // This includes explicitly unpacked unions and those with dynamic/array members
+        // For unpacked tagged unions, handle based on context
         if (!unionp->packed()) {
-            // Find parent assignment - when assignp exists, rhsp() is always nodep
-            AstAssign* const assignp = VN_CAST(nodep->backp(), Assign);
-            if (assignp) {
-                UASSERT_OBJ(assignp->rhsp() == nodep, nodep, "TaggedExpr should be RHS of assign");
-                transformTaggedExprUnpacked(assignp, nodep, unionp);
+            // Check if direct RHS of assignment (simple check first)
+            AstAssign* const directAssignp = VN_CAST(nodep->backp(), Assign);
+            if (directAssignp && directAssignp->rhsp() == nodep) {
+                // Direct RHS of assignment - transform
+                transformTaggedExprUnpacked(directAssignp, nodep, unionp);
                 ++m_statTaggedExprs;
                 return;
             }
-            // Not a simple assignment - unsupported for unpacked unions
-            nodep->v3warn(E_UNSUPPORTED, "Tagged expression in non-simple assignment context");
+            // Not direct RHS - could be nested in pattern (handled by outer's expansion)
+            // or in unsupported context. Check if we're under an assignment's RHS.
+            for (AstNode* parentp = nodep->backp(); parentp; parentp = parentp->backp()) {
+                if (AstAssign* const assignp = VN_CAST(parentp, Assign)) {
+                    // We're under an assignment - the outer TaggedExpr should handle us
+                    // Just return without error (we'll be handled by expandValueToAssigns)
+                    return;
+                }
+                if (VN_IS(parentp, NodeStmt)) break;  // Stop at statement boundary
+            }
+            // Not under any assignment - unsupported
+            nodep->v3warn(E_UNSUPPORTED, "Tagged expression outside assignment context");
             return;
         }
+
+        // Packed unions: iterate children first (for any nested packed tagged expressions)
+        iterateChildren(nodep);
 
         // Transform tagged union expression (packed unions - use bit operations)
         AstNodeExpr* const newp = transformTaggedExpr(nodep, unionp);
