@@ -27,6 +27,12 @@ Verilator 5.045 devel
 * Support `extern module` as a forward-declaration that is ignored.
 * Remove deprecated `--xml-only`.
 * Remove deprecated `--make cmake`.
+* Change metacomment extra underscore error to BADVLTPRAGMA warning (#6968). [Geza Lore]
+* Optimize string temporaries to not be localized (#6969). [Geza Lore]
+* Optimize wide word shifts by multiple of word size (#6970). [Geza Lore]
+* Optimize concatenations that produce unused bits in DFG (#6971). [Geza Lore]
+* Optimize more wide operation temporaries with substitution (#6972). [Geza Lore]
+* Optimize right shifts as clean (#6981). [Geza Lore]
 * Fix parameterized virtual interface references that have no model references (#4286).
 * Fix variable reference lookup for module-level variables (#6741) (#6882). [Yilou Wang]
 * Fix MULTIDRIVEN with task and default driver (#4045) (#6858). [em2machine]
