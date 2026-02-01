@@ -33,6 +33,9 @@ module Vt_debug_emitv_t;
     function ident;
         input int signed value;
         begin : label0
+            ident = 
+            ???? // CRESET
+            ;
             ident = value;
             disable label0;
         end

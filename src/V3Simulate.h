@@ -929,6 +929,11 @@ private:
             m_anyAssignComb = true;
         }
 
+        if (VN_IS(nodep->rhsp(), CReset)) {
+            initVar(VN_AS(nodep->lhsp(), VarRef)->varp());
+            return;
+        }
+
         iterateAndNextConstNull(nodep->rhsp());  // Value to assign
         handleAssignRecurse(nodep, nodep->lhsp(), nodep->rhsp());
         // UINFO(9, "set " << fetchConst(nodep->rhsp())->num().ascii() << " for assign "
@@ -1215,7 +1220,8 @@ private:
             initVar(VN_CAST(funcp->fvarp(), Var));
             // Clear other automatic variables
             funcp->foreach([this](AstVar* varp) {
-                if (varp->lifetime().isAutomatic() && !varp->isIO()) initVar(varp);
+                if (varp->lifetime().isAutomatic() && (!varp->isIO() || varp->isFuncReturn()))
+                    initVar(varp);
             });
         }
 

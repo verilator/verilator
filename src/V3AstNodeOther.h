@@ -1911,6 +1911,7 @@ class AstVar final : public AstNode {
     bool m_isDpiOpenArray : 1;  // DPI import open array
     bool m_isHideLocal : 1;  // Verilog local
     bool m_isHideProtected : 1;  // Verilog protected
+    bool m_noCReset : 1;  // Do not do automated CReset creation
     bool m_noReset : 1;  // Do not do automated reset/randomization
     bool m_noSubst : 1;  // Do not substitute out references
     bool m_substConstOnly : 1;  // Only substitute if constant
@@ -1963,6 +1964,7 @@ class AstVar final : public AstNode {
         m_isDpiOpenArray = false;
         m_isHideLocal = false;
         m_isHideProtected = false;
+        m_noCReset = false;
         m_noReset = false;
         m_noSubst = false;
         m_substConstOnly = false;
@@ -2118,6 +2120,8 @@ public:
     void isHideLocal(bool flag) { m_isHideLocal = flag; }
     bool isHideProtected() const { return m_isHideProtected; }
     void isHideProtected(bool flag) { m_isHideProtected = flag; }
+    void noCReset(bool flag) { m_noCReset = flag; }
+    bool noCReset() const { return m_noCReset; }
     void noReset(bool flag) { m_noReset = flag; }
     bool noReset() const { return m_noReset; }
     void noSubst(bool flag) { m_noSubst = flag; }
@@ -2264,7 +2268,7 @@ public:
     }
     bool needsCReset() const {
         return !isIfaceParent() && !isIfaceRef() && !noReset() && !isParam() && !isStatementTemp()
-               && !(basicp() && basicp()->isEvent());
+               && !noCReset() && !(basicp() && basicp()->isEvent());
     }
     static AstVar* scVarRecurse(AstNode* nodep);
 };

@@ -2846,6 +2846,7 @@ void AstVar::dump(std::ostream& str) const {
     if (isLatched()) str << " [LATCHED]";
     if (isUsedLoopIdx()) str << " [LOOPIDX]";
     if (rand().isRandomizable()) str << " [" << rand() << "]";
+    if (noCReset()) str << " [!CRST]";
     if (noReset()) str << " [!RST]";
     if (attrIsolateAssign()) str << " [aISO]";
     if (attrFileDescr()) str << " [aFD]";
@@ -2873,6 +2874,7 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, isSigPublic);
     dumpJsonBoolFunc(str, isLatched);
     dumpJsonBoolFunc(str, isUsedLoopIdx);
+    dumpJsonBoolFuncIf(str, noCReset);
     dumpJsonBoolFunc(str, noReset);
     dumpJsonBoolFunc(str, attrIsolateAssign);
     dumpJsonBoolFunc(str, attrFileDescr);

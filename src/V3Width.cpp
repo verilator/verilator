@@ -5394,6 +5394,7 @@ class WidthVisitor final : public VNVisitor {
     static void checkEventAssignment(const AstNodeAssign* const asgnp) {
         string unsupEvtAsgn;
         if (!usesDynamicScheduler(asgnp->lhsp())) unsupEvtAsgn = "to";
+        if (VN_IS(asgnp->rhsp(), CReset)) return;
         if (asgnp->rhsp()->dtypep()->isEvent() && !usesDynamicScheduler(asgnp->rhsp())) {
             unsupEvtAsgn += (unsupEvtAsgn.empty() ? "from" : " and from");
         }
@@ -6045,6 +6046,10 @@ class WidthVisitor final : public VNVisitor {
         }
         nodep->text(newFormat);
         UINFO(9, "  Display out " << nodep->text());
+    }
+    void visit(AstCReset* nodep) override {
+        assertAtExpr(nodep);
+        nodep->dtypeFrom(m_vup->dtypep());
     }
     void visit(AstCReturn* nodep) override { nodep->v3fatalSrc("Should not exist yet"); }
     void visit(AstConstraintRef* nodep) override { userIterateChildren(nodep, nullptr); }

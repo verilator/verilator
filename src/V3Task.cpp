@@ -1231,6 +1231,7 @@ class TaskVisitor final : public VNVisitor {
             unlinkAndClone(nodep, portp, false);
             rtnvarp = portp;
             rtnvarp->funcLocal(true);
+            rtnvarp->noCReset(true);  // As made for port in V3LinkResolve
             rtnvarp->name(rtnvarp->name()
                           + "__Vfuncrtn");  // Avoid conflict with DPI function name
             if (nodep->dpiImport() || nodep->dpiExport()) rtnvarp->protect(false);

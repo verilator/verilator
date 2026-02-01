@@ -60,6 +60,7 @@ Verilator 5.045 devel
 * Fix type assignments for arrays of parameter types (#6955). [Todd Strader]
 * Fix accessing non-rand struct member in constraints (#6960). [Pawel Kojma, Antmicro Ltd.]
 * Fix associative array of events causes C++ compile error (#6962).
+* Fix non-inlined function return value clearing (#6982).
 
 
 Verilator 5.044 2026-01-01
