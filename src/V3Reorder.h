@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Break always into separate statements to reduce temps
+// DESCRIPTION: Verilator: Reorder statements within always blocks
 //
 // Code available from: https://verilator.org
 //
@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef VERILATOR_V3SPLIT_H_
-#define VERILATOR_V3SPLIT_H_
+#ifndef VERILATOR_V3REORDER_H_
+#define VERILATOR_V3REORDER_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -24,9 +24,9 @@ class AstNetlist;
 
 //============================================================================
 
-class V3Split final {
+class V3Reorder final {
 public:
-    static void splitAll(AstNetlist* nodep) VL_MT_DISABLED;
+    static void reorderAll(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard
