@@ -162,10 +162,13 @@ class TaggedVisitor final : public VNVisitor {
         const string suffix = "__DOT__" + patternVarName;
         nodep->foreachAndNext([&](AstVarRef* varRefp) {
             const string& refName = varRefp->varp()->name();
-            // Evaluate both conditions to avoid short-circuit branch coverage gaps
-            const bool matchesName = refName == patternVarName;
-            const bool matchesSuffix = hasSuffix(refName, suffix);
-            if (matchesName || matchesSuffix) {
+            // Use explicit branches for gcov coverage tracking
+            if (refName == patternVarName) {
+                varRefp->varp(newVarp);
+                varRefp->name(newVarp->name());
+                return;
+            }
+            if (hasSuffix(refName, suffix)) {
                 varRefp->varp(newVarp);
                 varRefp->name(newVarp->name());
             }
@@ -492,10 +495,10 @@ class TaggedVisitor final : public VNVisitor {
         if (noInnerPattern || isPatternStar)
             return new AstCaseItem{itemp->fileline(), tagConstp, stmtsp};
         AstPatternVar* const patVarp = VN_CAST(innerPatternp, PatternVar);
-        // Evaluate both conditions to avoid short-circuit branch coverage gaps
-        const bool noPatVar = !patVarp;
-        const bool isVoidMember = isVoidDType(memberp->subDTypep());
-        if (noPatVar || isVoidMember) return new AstCaseItem{itemp->fileline(), tagConstp, stmtsp};
+        // Use explicit branches for gcov coverage tracking
+        if (!patVarp) return new AstCaseItem{itemp->fileline(), tagConstp, stmtsp};
+        if (isVoidDType(memberp->subDTypep()))
+            return new AstCaseItem{itemp->fileline(), tagConstp, stmtsp};
 
         // Create temp var reference and context, then get result
         AstVarRef* const tempRefp = new AstVarRef{ctx.fl, ctx.tempVarp, VAccess::READ};
