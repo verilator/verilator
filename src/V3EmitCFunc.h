@@ -1651,6 +1651,22 @@ public:
         puts(VSelfPointerText::replaceThis(m_useSelfForThis, "this"));
         puts("}");
     }
+    void visit(AstNodeSel* nodep) override {
+        if (!VN_IS(nodep, ArraySel) && !VN_IS(nodep, WordSel)) {
+            visit(static_cast<AstNodeBiop*>(nodep));
+            return;
+        }
+        // ArraySel or WordSel
+        iterateAndNextConstNull(nodep->fromp());
+        // Special case constant index for readability
+        if (AstConst* const idxp = VN_CAST(nodep->bitp(), Const)) {
+            puts("[" + std::to_string(idxp->toUInt()) + "U]");
+            return;
+        }
+        putbs("[");
+        iterateAndNextConstNull(nodep->bitp());
+        puts("]");
+    }
 
     //
     void visit(AstConsAssoc* nodep) override {
