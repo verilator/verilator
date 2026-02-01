@@ -253,26 +253,6 @@ public:
     string verilogKwd() const override { return "break"; }
     bool isBrancher() const override { V3ERROR_NA_RETURN(true); }  // Node removed early
 };
-class AstCReset final : public AstNodeStmt {
-    // Reset variable at startup
-    // @astgen op1 := varrefp : AstVarRef
-    const bool m_constructing;  // Previously cleared by constructor
-public:
-    AstCReset(FileLine* fl, AstVarRef* varrefp, bool constructing)
-        : ASTGEN_SUPER_CReset(fl)
-        , m_constructing{constructing} {
-        this->varrefp(varrefp);
-    }
-    ASTGEN_MEMBERS_AstCReset;
-    void dump(std::ostream& str) const override;
-    void dumpJson(std::ostream& str) const override;
-    bool isGateOptimizable() const override { return false; }
-    bool isPredictOptimizable() const override { return false; }
-    bool sameNode(const AstNode* samep) const override {
-        return constructing() == VN_DBG_AS(samep, CReset)->constructing();
-    }
-    bool constructing() const { return m_constructing; }
-};
 class AstCReturn final : public AstNodeStmt {
     // C++ return from a function
     // @astgen op1 := lhsp : AstNodeExpr

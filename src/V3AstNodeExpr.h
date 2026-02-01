@@ -673,6 +673,32 @@ public:
 private:
     void setPurity();
 };
+class AstCReset final : public AstNodeExpr {
+    // Reset variable at startup
+    const bool m_constructing;  // Previously cleared by constructor
+public:
+    AstCReset(FileLine* fl, AstVar* varp, bool constructing)
+        : ASTGEN_SUPER_CReset(fl)
+        , m_constructing{constructing} {
+        dtypeFrom(varp);
+    }
+    ASTGEN_MEMBERS_AstCReset;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    bool isPure() override { return true; }
+    int instrCount() const override { return widthInstrs(); }
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+    const char* broken() const override {
+        BROKEN_RTN(!VN_IS(backp(), NodeAssign));  // V3Emit* assumption
+        return nullptr;
+    }
+    bool sameNode(const AstNode* samep) const override {
+        return constructing() == VN_DBG_AS(samep, CReset)->constructing();
+    }
+    bool constructing() const { return m_constructing; }
+};
 class AstCast final : public AstNodeExpr {
     // Cast to appropriate data type
     // @astgen op1 := fromp : AstNodeExpr

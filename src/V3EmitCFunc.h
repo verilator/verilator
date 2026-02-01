@@ -523,6 +523,11 @@ public:
     }
 
     void visit(AstNodeAssign* nodep) override {
+        if (AstCReset* const resetp = VN_CAST(nodep->rhsp(), CReset)) {
+            AstVar* const varp = VN_AS(nodep->lhsp(), NodeVarRef)->varp();
+            emitVarReset(varp, resetp->constructing());
+            return;
+        }
         bool paren = true;
         bool decind = false;
         bool rhs = true;
@@ -1735,10 +1740,6 @@ public:
             iterateAndNextConstNull(nodep->rhsp());
             puts(")");
         }
-    }
-    void visit(AstCReset* nodep) override {
-        AstVar* const varp = nodep->varrefp()->varp();
-        emitVarReset(varp, nodep->constructing());
     }
     void visit(AstExecGraph* nodep) override {
         // The location of the AstExecGraph within the containing AstCFunc is where we want to

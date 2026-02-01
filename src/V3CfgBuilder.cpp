@@ -81,7 +81,6 @@ class CfgBuilder final : public VNVisitorConst {
     // Non-representable statements
     void visit(AstAssignDly* nodep) override { nonRepresentable(nodep); }
     void visit(AstCase* nodep) override { nonRepresentable(nodep); }  // V3Case will eliminate
-    void visit(AstCReset* nodep) override { nonRepresentable(nodep); }
     void visit(AstDelay* nodep) override { nonRepresentable(nodep); }
 
     // Representable non control-flow statements

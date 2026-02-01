@@ -649,9 +649,11 @@ class TaskVisitor final : public VNVisitor {
                         if (portp->needsCReset() && portp->lifetime().isAutomatic()
                             && !portp->valuep()) {
                             // Reset automatic var to its default, on each invocation of function
-                            AstVarRef* const vrefp
-                                = new AstVarRef{portp->fileline(), portp, VAccess::WRITE};
-                            portp->replaceWith(new AstCReset{portp->fileline(), vrefp, false});
+                            AstNode* const crstp = new AstAssign{
+                                portp->fileline(),
+                                new AstVarRef{portp->fileline(), portp, VAccess::WRITE},
+                                new AstCReset{portp->fileline(), portp, false}};
+                            portp->replaceWith(crstp);
                         } else {
                             portp->unlinkFrBack();
                         }
