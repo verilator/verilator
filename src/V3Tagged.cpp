@@ -69,6 +69,10 @@ class TaggedVisitor final : public VNVisitor {
     std::unordered_map<AstUnionDType*, std::unordered_map<string, AstMemberDType*>>
         m_unionMemberCache;  // Union member cache
 
+    // Cache for O(1) struct/union member lookups (for path traversal)
+    std::unordered_map<AstNodeUOrStructDType*, std::unordered_map<string, AstMemberDType*>>
+        m_structMemberCache;
+
     // Context structs to reduce argument counts
 
     // Context for tagged matching operations
@@ -178,6 +182,15 @@ class TaggedVisitor final : public VNVisitor {
             if (VN_IS(p, NodeStmt)) return nullptr;
         }
         return nullptr;
+    }
+
+    // Check if node is under an assignment (not direct RHS). O(D) where D = AST depth.
+    static bool isUnderAssignment(AstNode* nodep) {
+        for (AstNode* p = nodep->backp(); p; p = p->backp()) {
+            if (VN_IS(p, Assign)) return true;
+            if (VN_IS(p, NodeStmt)) return false;
+        }
+        return false;
     }
 
     // Create a constant with the given value and width
@@ -420,14 +433,24 @@ class TaggedVisitor final : public VNVisitor {
         }
     }
 
-    // Helper to find member dtype in a struct/union type
-    static AstNodeDType* findMemberDType(AstNodeDType* structDtp, const string& memberName) {
+    // Get or build struct/union member map for O(1) lookups
+    std::unordered_map<string, AstMemberDType*>& getStructMemberMap(AstNodeUOrStructDType* stp) {
+        auto it = m_structMemberCache.find(stp);
+        if (it != m_structMemberCache.end()) return it->second;
+        auto& map = m_structMemberCache[stp];
+        for (AstMemberDType* mp = stp->membersp(); mp; mp = VN_AS(mp->nextp(), MemberDType)) {
+            map[mp->name()] = mp;
+        }
+        return map;
+    }
+
+    // Helper to find member dtype in a struct/union type - O(1) with cache
+    AstNodeDType* findMemberDType(AstNodeDType* structDtp, const string& memberName) {
         AstNodeUOrStructDType* const stp = VN_CAST(structDtp->skipRefp(), NodeUOrStructDType);
         if (!stp) return nullptr;
-        for (AstMemberDType* mp = stp->membersp(); mp; mp = VN_AS(mp->nextp(), MemberDType)) {
-            if (mp->name() == memberName) return mp->subDTypep();
-        }
-        return nullptr;
+        auto& map = getStructMemberMap(stp);
+        auto it = map.find(memberName);
+        return (it != map.end()) ? it->second->subDTypep() : nullptr;
     }
 
     // Build access expression from path: "field" -> .field, "[N]" -> [N]. O(P) where P = path
@@ -444,14 +467,13 @@ class TaggedVisitor final : public VNVisitor {
                 int idx = std::stoi(path.substr(pos + 1, close - pos - 1));
                 AstArraySel* const selp = new AstArraySel{fl, accessp, makeConst(fl, idx, 32)};
                 // Get element type from array
-                if (AstUnpackArrayDType* arrDtp
-                    = VN_CAST(currentDtp->skipRefp(), UnpackArrayDType)) {
-                    currentDtp = arrDtp->subDTypep();
-                }
+                AstUnpackArrayDType* const arrDtp
+                    = VN_CAST(currentDtp->skipRefp(), UnpackArrayDType);
+                currentDtp = arrDtp ? arrDtp->subDTypep() : currentDtp;
                 selp->dtypep(currentDtp);
                 accessp = selp;
                 pos = close + 1;
-                if (pos < path.size() && path[pos] == '.') ++pos;  // Skip dot after ]
+                pos += (pos < path.size() && path[pos] == '.') ? 1 : 0;
             } else {
                 // Struct field access
                 size_t next = path.find_first_of(".[", pos);
@@ -550,26 +572,17 @@ class TaggedVisitor final : public VNVisitor {
     AstNodeExpr* buildTagCheckExpr(FileLine* fl, AstNodeExpr* baseExpr, const string& path) {
         AstNodeExpr* accessp = baseExpr->cloneTree(false);
         AstNodeDType* currentDtp = baseExpr->dtypep();
+        UASSERT_OBJ(currentDtp, baseExpr, "baseExpr must have dtype");
         size_t pos = 0;
         while (pos < path.size()) {
             size_t next = path.find('.', pos);
             if (next == string::npos) next = path.size();
             const string field = path.substr(pos, next - pos);
             AstStructSel* const selp = new AstStructSel{fl, accessp, field};
-            // Look up member type from current struct/union type
-            if (currentDtp) {
-                AstNodeUOrStructDType* structDtp
-                    = VN_CAST(currentDtp->skipRefp(), NodeUOrStructDType);
-                if (structDtp) {
-                    for (AstMemberDType* mp = structDtp->membersp(); mp;
-                         mp = VN_AS(mp->nextp(), MemberDType)) {
-                        if (mp->name() == field) {
-                            selp->dtypep(mp->subDTypep());
-                            currentDtp = mp->subDTypep();
-                            break;
-                        }
-                    }
-                }
+            AstNodeDType* const memberDtp = findMemberDType(currentDtp, field);
+            if (memberDtp) {
+                selp->dtypep(memberDtp);
+                currentDtp = memberDtp;
             }
             accessp = selp;
             pos = (next < path.size()) ? next + 1 : next;
@@ -711,16 +724,15 @@ class TaggedVisitor final : public VNVisitor {
                 std::vector<NestedTagCheck> nestedTagChecks;
                 collectNestedPatternVars(structPatp, memberp->subDTypep(), "", patVars,
                                          &nestedTagChecks);
-                // Create base expression for member access (expr.MemberName)
+                // Create base expression for member access
                 AstNodeExpr* baseExprp = exprp->cloneTree(false);
-                if (isUnpacked) {
-                    baseExprp
-                        = makeDataExtractUnpacked(fl, baseExprp, memberName, memberp->subDTypep());
-                }
+                baseExprp = isUnpacked ? makeDataExtractUnpacked(fl, baseExprp, memberName,
+                                                                 memberp->subDTypep())
+                                       : baseExprp;
                 // Add nested tag checks to condition
-                if (!nestedTagChecks.empty()) {
-                    condp = createNestedTagCondition(fl, baseExprp, nestedTagChecks, condp);
-                }
+                condp = !nestedTagChecks.empty()
+                            ? createNestedTagCondition(fl, baseExprp, nestedTagChecks, condp)
+                            : condp;
                 const auto result = handleNestedPattern(fl, baseExprp, ifp->thensp(), patVars);
                 varDeclp = result.varDeclsp;
                 varAssignsp = result.assignsp;
@@ -1039,22 +1051,12 @@ class TaggedVisitor final : public VNVisitor {
             // Check if direct RHS of assignment (simple check first)
             AstAssign* const directAssignp = VN_CAST(nodep->backp(), Assign);
             if (directAssignp && directAssignp->rhsp() == nodep) {
-                // Direct RHS of assignment - transform
                 transformTaggedExprUnpacked(directAssignp, nodep, unionp);
                 ++m_statTaggedExprs;
                 return;
             }
-            // Not direct RHS - could be nested in pattern (handled by outer's expansion)
-            // or in unsupported context. Check if we're under an assignment's RHS.
-            for (AstNode* parentp = nodep->backp(); parentp; parentp = parentp->backp()) {
-                if (AstAssign* const assignp = VN_CAST(parentp, Assign)) {
-                    // We're under an assignment - the outer TaggedExpr should handle us
-                    // Just return without error (we'll be handled by expandValueToAssigns)
-                    return;
-                }
-                if (VN_IS(parentp, NodeStmt)) break;  // Stop at statement boundary
-            }
-            // Not under any assignment - unsupported
+            // Not direct RHS - check if nested under an assignment (handled by outer expansion)
+            if (isUnderAssignment(nodep)) return;
             nodep->v3warn(E_UNSUPPORTED, "Tagged expression outside assignment context");
             return;
         }
