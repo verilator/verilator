@@ -18,14 +18,10 @@ module t;
 
   class Cls;
     function string unpack_string(int n);
-      automatic int autohackinit = $c(1234); // FIXME
-      $display("unpack_string_in=\"%s\"", unpack_string);  //FIXME
-      $display("ahack=\"%0d\"", autohackinit);  //FIXME
       for (int i = 0; i < n; ++i) begin
         unpack_string = {unpack_string, " "};
         unpack_string[i] = "x";
       end
-      $display("Unpack_string=\"%s\"", unpack_string);  //FIXME
     endfunction
   endclass
 
