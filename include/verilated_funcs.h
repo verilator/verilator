@@ -1976,19 +1976,19 @@ static inline QData VL_SHIFTL_QQW(int obits, int, int rbits, QData lhs,
 // expression.  Thus consider this when optimizing.  (And perhaps have 2 funcs?)
 static inline IData VL_SHIFTR_III(int obits, int, int, IData lhs, IData rhs) VL_PURE {
     if (VL_UNLIKELY(rhs >= VL_IDATASIZE)) return 0;
-    return lhs >> rhs;  // Small is common so assumed not clean
+    return lhs >> rhs;
 }
 static inline IData VL_SHIFTR_IIQ(int obits, int, int, IData lhs, QData rhs) VL_PURE {
     if (VL_UNLIKELY(rhs >= VL_IDATASIZE)) return 0;
-    return VL_CLEAN_QQ(obits, obits, lhs >> rhs);
+    return lhs >> rhs;
 }
 static inline QData VL_SHIFTR_QQI(int obits, int, int, QData lhs, IData rhs) VL_PURE {
     if (VL_UNLIKELY(rhs >= VL_QUADSIZE)) return 0;
-    return lhs >> rhs;  // Small is common so assumed not clean
+    return lhs >> rhs;
 }
 static inline QData VL_SHIFTR_QQQ(int obits, int, int, QData lhs, QData rhs) VL_PURE {
     if (VL_UNLIKELY(rhs >= VL_QUADSIZE)) return 0;
-    return VL_CLEAN_QQ(obits, obits, lhs >> rhs);
+    return lhs >> rhs;
 }
 static inline WDataOutP VL_SHIFTR_WWI(int obits, int, int, WDataOutP owp, WDataInP const lwp,
                                       IData rd) VL_MT_SAFE {
