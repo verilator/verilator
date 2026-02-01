@@ -138,6 +138,10 @@ extern "C" int mon_check();
       end
     end
 
+`ifdef T_VPI_FORCEABLE_VAR
+    #0; // TODO: Workaround to force signal initialization, else `gen_sig` stays at 0
+`endif
+
 `ifdef VERILATOR
     status = $c32("mon_check()");
 `endif
