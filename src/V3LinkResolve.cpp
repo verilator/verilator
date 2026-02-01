@@ -174,6 +174,22 @@ class LinkResolveVisitor final : public VNVisitor {
         }
         VL_RESTORER(m_ftaskp);
         m_ftaskp = nodep;
+
+        // FIXME maybe add InitialAutomatic or CReset here.
+        if (nodep->lifetime().isAutomatic() && nodep->fvarp()) {
+            // Must clear automatic function output variable on function invocation
+            UINFO(1, "FIXME ADD CRST " << nodep->fvarp());
+            AstVar* const fvarp = VN_AS(nodep->fvarp(), Var);
+            AstNode* const crstp = new AstAssign{
+                fvarp->fileline(), new AstVarRef{fvarp->fileline(), fvarp, VAccess::WRITE},
+                new AstCReset{fvarp->fileline(), fvarp, false}};
+            UINFO(1, "FIXME ADD CRST " << crstp);
+            if (nodep->stmtsp()) {
+                nodep->stmtsp()->addHereThisAsNext(crstp);
+            } else {
+                nodep->addStmtsp(crstp);
+            }
+        }
         iterateChildren(nodep);
         if (nodep->dpiExport()) nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
     }
