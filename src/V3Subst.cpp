@@ -232,7 +232,7 @@ class SubstVisitor final : public VNVisitor {
     size_t m_nWholeSubstituted = 0;  // Number of whole variables substituted
     size_t m_nWordAssignDeleted = 0;  // Number of word assignments deleted
     size_t m_nWholeAssignDeleted = 0;  // Number of whole variable assignments deleted
-    size_t m_nConstWordsReinlined = 0; // Number of constant words substituted
+    size_t m_nConstWordsReinlined = 0;  // Number of constant words substituted
 
     static constexpr uint32_t SUBST_MAX_OPS_SUBST = 30;  // Maximum number of ops to substitute in
     static constexpr uint32_t SUBST_MAX_OPS_NA = 9999;  // Not allowed to substitute
@@ -453,13 +453,13 @@ public:
     // CONSTRUCTORS
     explicit SubstVisitor(AstNetlist* nodep) { iterate(nodep); }
     ~SubstVisitor() override {
-        V3Stats::addStat("Optimizations, Substituted temps", m_nSubst);
-        V3Stats::addStat("Optimizations, Constant words reinlined", m_nConstWordsReinlined);
-        V3Stats::addStat("Optimizations, Whole variable assignments deleted",
+        V3Stats::addStat("Optimizations, Subst, Substituted temps", m_nSubst);
+        V3Stats::addStat("Optimizations, Subst, Constant words reinlined", m_nConstWordsReinlined);
+        V3Stats::addStat("Optimizations, Subst, Whole variable assignments deleted",
                          m_nWholeAssignDeleted);
-        V3Stats::addStat("Optimizations, Whole variables substituted", m_nWholeSubstituted);
-        V3Stats::addStat("Optimizations, Word assignments deleted", m_nWordAssignDeleted);
-        V3Stats::addStat("Optimizations, Words substituted", m_nWordSubstituted);
+        V3Stats::addStat("Optimizations, Subst, Whole variables substituted", m_nWholeSubstituted);
+        V3Stats::addStat("Optimizations, Subst, Word assignments deleted", m_nWordAssignDeleted);
+        V3Stats::addStat("Optimizations, Subst, Words substituted", m_nWordSubstituted);
         UASSERT(m_entries.empty(), "Should not visit outside functions");
     }
 };
