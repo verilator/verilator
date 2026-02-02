@@ -484,22 +484,22 @@ void connectPort(AstNodeModule* modp, AstVar* nodep, AstNodeExpr* pinExprp) {
 
     const auto pinRefAsVarRef = [&](VAccess access) -> AstVarRef* {
         const AstVarRef* const vrp = VN_AS(pinRefp, VarRef);
-        AstVarRef* const p = new AstVarRef{vrp->fileline(), vrp->varp(), access};
-        p->classOrPackagep(vrp->classOrPackagep());
-        return p;
+        AstVarRef* const newp = new AstVarRef{vrp->fileline(), vrp->varp(), access};
+        newp->classOrPackagep(vrp->classOrPackagep());
+        return newp;
     };
 
     const auto pinRefAsExpr = [&](VAccess access) -> AstNodeExpr* {
         if (const AstVarRef* const vrp = VN_CAST(pinRefp, VarRef)) {
-            AstVarRef* const p = new AstVarRef{vrp->fileline(), vrp->varp(), access};
-            p->classOrPackagep(vrp->classOrPackagep());
-            return p;
+            AstVarRef* const newp = new AstVarRef{vrp->fileline(), vrp->varp(), access};
+            newp->classOrPackagep(vrp->classOrPackagep());
+            return newp;
         } else {
             const AstVarXRef* const xrp = VN_AS(pinRefp, VarXRef);
-            AstVarXRef* const p = new AstVarXRef{xrp->fileline(), xrp->name(), xrp->dotted(),
-                                                 access};
-            p->varp(xrp->varp());
-            return p;
+            AstVarXRef* const newp = new AstVarXRef{xrp->fileline(), xrp->name(), xrp->dotted(),
+                                                    access};
+            newp->varp(xrp->varp());
+            return newp;
         }
     };
 
