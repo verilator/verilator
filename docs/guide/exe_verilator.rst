@@ -262,6 +262,17 @@ Summary:
    limitation that allow only one precompiled header per compilation.
    Use this instead of ::vlopt:`-CFLAGS` with `-include <header-path>`.
 
+.. option:: --constraint-array-limit <size>
+
+   Specifies the maximum array size for which array reduction methods
+   (sum, product, and, or, xor) in constraint expressions will be
+   expanded. Arrays larger than this limit will have their reduction
+   constraints ignored with a `CONSTRAINTIGN` warning. This prevents
+   excessive code generation for very large arrays.
+
+   Defaults to 64. Setting to 0 disables all array reduction constraint
+   expansion.
+
 .. option:: --converge-limit <loops>
 
    Rarely needed. Specifies the maximum number of runtime iterations before

@@ -1,0 +1,6 @@
+%Warning-CONSTRAINTIGN: t/t_constraint_array_index_unsup.v:13:11: Unsupported: item.index in array reduction constraint 'with' clause; treating as state
+   13 |      data.sum() with (item.index) <= 10;
+      |           ^~~
+                        ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
+                        ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
+%Error: Exiting due to
