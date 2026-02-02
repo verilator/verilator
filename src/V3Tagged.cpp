@@ -969,6 +969,8 @@ class TaggedVisitor final : public VNVisitor {
                 = exprDtp ? VN_CAST(exprDtp->skipRefp(), UnionDType) : nullptr;
             if (nestedUnionp && !nestedUnionp->packed()) {
                 expandTaggedToAssigns(fl, targetp, nestedTaggedp, nestedUnionp, assignsp);
+                // targetp was used as template for cloning but not consumed
+                VL_DO_DANGLING(targetp->deleteTree(), targetp);
                 return;
             }
             // For packed unions, transform the expression and assign the result
@@ -988,6 +990,8 @@ class TaggedVisitor final : public VNVisitor {
                 = VN_CAST(dtypep->skipRefp(), NodeUOrStructDType);
             if (structDtp) {
                 expandPatternToAssigns(fl, targetp, patp, structDtp, assignsp);
+                // targetp was used as template for cloning but not consumed
+                VL_DO_DANGLING(targetp->deleteTree(), targetp);
                 return;
             }
         }
@@ -995,6 +999,8 @@ class TaggedVisitor final : public VNVisitor {
         // Check for ConsPackUOrStruct (Pattern converted by V3Const)
         if (AstConsPackUOrStruct* const consp = VN_CAST(valuep, ConsPackUOrStruct)) {
             expandConsPackToAssigns(fl, targetp, consp, assignsp);
+            // targetp was used as template for cloning but not consumed
+            VL_DO_DANGLING(targetp->deleteTree(), targetp);
             return;
         }
 
