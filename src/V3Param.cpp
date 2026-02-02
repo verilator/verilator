@@ -810,16 +810,31 @@ class ParamProcessor final {
         }
     }
 
-    // Helper to resolve DOT to RefDType for class type references
+    // Helper to resolve DOT to RefDType for class type references.
+    // If the class is parameterized and not yet specialized, specialize it first.
+    // This handles cases like: iface #(param_class#(value)::typedef_name)
     void resolveDotToTypedef(AstNode* exprp) {
         AstDot* const dotp = VN_CAST(exprp, Dot);
         if (!dotp) return;
-        const AstClassOrPackageRef* const classRefp = VN_CAST(dotp->lhsp(), ClassOrPackageRef);
+        AstClassOrPackageRef* const classRefp = VN_CAST(dotp->lhsp(), ClassOrPackageRef);
         if (!classRefp) return;
-        const AstClass* const lhsClassp = VN_CAST(classRefp->classOrPackageSkipp(), Class);
-        if (!lhsClassp) return;
         AstParseRef* const parseRefp = VN_CAST(dotp->rhsp(), ParseRef);
         if (!parseRefp) return;
+
+        const AstClass* lhsClassp = VN_CAST(classRefp->classOrPackageSkipp(), Class);
+        if (classRefp->paramsp()) {
+            // ClassOrPackageRef has parameters - may need to specialize the class
+            AstClass* const srcClassp = VN_CAST(classRefp->classOrPackageNodep(), Class);
+            if (srcClassp && srcClassp->hasGParam()) {
+                // Specialize if the reference still points to the generic class
+                if (lhsClassp == srcClassp || !lhsClassp) {
+                    UINFO(9, "resolveDotToTypedef: specializing " << srcClassp->name() << endl);
+                    classRefDeparam(classRefp, srcClassp);
+                    lhsClassp = VN_CAST(classRefp->classOrPackageSkipp(), Class);
+                }
+            }
+        }
+        if (!lhsClassp) return;
 
         AstTypedef* const tdefp
             = VN_CAST(m_memberMap.findMember(lhsClassp, parseRefp->name()), Typedef);
