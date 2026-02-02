@@ -55,6 +55,8 @@
 
 #include "V3Stats.h"
 
+#include <set>
+
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
@@ -72,6 +74,9 @@ class TaggedVisitor final : public VNVisitor {
     // Cache for O(1) struct/union member lookups (for path traversal)
     std::unordered_map<AstNodeUOrStructDType*, std::unordered_map<string, AstMemberDType*>>
         m_structMemberCache;
+
+    // Track nested TaggedExprs processed during outer expansion (for O(1) skip check in visitor)
+    std::set<AstTaggedExpr*> m_processedTaggedExprs;
 
     // Context structs to reduce argument counts
 
@@ -171,26 +176,6 @@ class TaggedVisitor final : public VNVisitor {
                 varRefp->name(newVarp->name());
             }
         });
-    }
-
-    // Walk up AST to find containing assignment. O(D) where D = AST depth.
-    // Returns nullptr if no assignment found before statement boundary (valid - triggers
-    // UNSUPPORTED)
-    static AstAssign* findContainingAssign(AstNode* nodep) {
-        for (AstNode* p = nodep->backp(); p; p = p->backp()) {
-            if (AstAssign* const a = VN_CAST(p, Assign)) return a;
-            if (VN_IS(p, NodeStmt)) return nullptr;
-        }
-        return nullptr;
-    }
-
-    // Check if node is under an assignment (not direct RHS). O(D) where D = AST depth.
-    static bool isUnderAssignment(AstNode* nodep) {
-        for (AstNode* p = nodep->backp(); p; p = p->backp()) {
-            if (VN_IS(p, Assign)) return true;
-            if (VN_IS(p, NodeStmt)) return false;
-        }
-        return false;
     }
 
     // Create a constant with the given value and width
@@ -369,23 +354,6 @@ class TaggedVisitor final : public VNVisitor {
             return;
         }
 
-        // Handle TaggedExpr used as pattern (same structure as TaggedPattern)
-        if (AstTaggedExpr* const tagExprp = VN_CAST(nodep, TaggedExpr)) {
-            AstUnionDType* const unionDtp = VN_CAST(baseDtp->skipRefp(), UnionDType);
-            if (unionDtp) {
-                AstMemberDType* const memberp = findMember(unionDtp, tagExprp->name());
-                // Add tag check for this nested tagged pattern
-                if (tagChecks) tagChecks->push_back({basePath, memberp->tagIndex()});
-                const string memberPath
-                    = basePath.empty() ? tagExprp->name() : basePath + "." + tagExprp->name();
-                if (tagExprp->exprp()) {
-                    collectNestedPatternVars(tagExprp->exprp(), memberp->subDTypep(), memberPath,
-                                             out, tagChecks);
-                }
-            }
-            return;
-        }
-
         AstPattern* const patp = VN_CAST(nodep, Pattern);
         if (!patp) return;
         // Check if it's an array or struct type
@@ -447,7 +415,7 @@ class TaggedVisitor final : public VNVisitor {
     // Helper to find member dtype in a struct/union type - O(1) with cache
     AstNodeDType* findMemberDType(AstNodeDType* structDtp, const string& memberName) {
         AstNodeUOrStructDType* const stp = VN_CAST(structDtp->skipRefp(), NodeUOrStructDType);
-        if (!stp) return nullptr;
+        UASSERT_OBJ(stp, structDtp, "V3Width validates struct/union type before V3Tagged");
         auto& map = getStructMemberMap(stp);
         auto it = map.find(memberName);
         return (it != map.end()) ? it->second->subDTypep() : nullptr;
@@ -895,46 +863,6 @@ class TaggedVisitor final : public VNVisitor {
             expandValueToAssigns(fl, memSelp, taggedp->exprp(), memberp->subDTypep(), assignsp);
         }
     }
-
-    // Expand struct pattern into field assignments. O(N) where N = pattern members.
-    void expandPatternToAssigns(FileLine* fl, AstNodeExpr* targetp, AstPattern* patp,
-                                AstNodeUOrStructDType* structDtp, AstNode*& assignsp) {
-        // Build member lookup structures
-        std::map<string, AstMemberDType*> memberMap;
-        std::vector<AstMemberDType*> memberList;
-        for (AstMemberDType* m = structDtp->membersp(); m; m = VN_AS(m->nextp(), MemberDType)) {
-            memberMap[m->name()] = m;
-            memberList.push_back(m);
-        }
-
-        // Iterate pattern members
-        size_t idx = 0;
-        for (AstPatMember* itemp = VN_CAST(patp->itemsp(), PatMember); itemp;
-             itemp = VN_CAST(itemp->nextp(), PatMember), ++idx) {
-            // Determine member name and type (by key or position)
-            string memberName;
-            AstMemberDType* memDtp = nullptr;
-            if (AstText* const keyp = VN_CAST(itemp->keyp(), Text)) {
-                const auto it = memberMap.find(keyp->text());
-                if (it != memberMap.end()) {
-                    memberName = it->first;
-                    memDtp = it->second;
-                }
-            }
-            if (!memDtp && idx < memberList.size()) {
-                memberName = memberList[idx]->name();
-                memDtp = memberList[idx];
-            }
-            if (!memDtp) continue;
-
-            // Create target.memberName and recursively expand
-            AstStructSel* const fieldSelp
-                = new AstStructSel{fl, targetp->cloneTree(false), memberName};
-            fieldSelp->dtypep(memDtp->subDTypep());
-            expandValueToAssigns(fl, fieldSelp, itemp->lhssp(), memDtp->subDTypep(), assignsp);
-        }
-    }
-
     // Expand ConsPackUOrStruct (constant struct) into field assignments. O(N) where N = members.
     // V3Const converts Pattern to ConsPackUOrStruct before V3Tagged runs.
     void expandConsPackToAssigns(FileLine* fl, AstNodeExpr* targetp, AstConsPackUOrStruct* consp,
@@ -968,6 +896,7 @@ class TaggedVisitor final : public VNVisitor {
             AstUnionDType* const nestedUnionp
                 = exprDtp ? VN_CAST(exprDtp->skipRefp(), UnionDType) : nullptr;
             if (nestedUnionp && !nestedUnionp->packed()) {
+                m_processedTaggedExprs.insert(nestedTaggedp);
                 expandTaggedToAssigns(fl, targetp, nestedTaggedp, nestedUnionp, assignsp);
                 // targetp was used as template for cloning but not consumed
                 VL_DO_DANGLING(targetp->deleteTree(), targetp);
@@ -975,6 +904,7 @@ class TaggedVisitor final : public VNVisitor {
             }
             // For packed unions, transform the expression and assign the result
             if (nestedUnionp && nestedUnionp->packed()) {
+                m_processedTaggedExprs.insert(nestedTaggedp);
                 AstNodeExpr* const transformedp = transformTaggedExpr(nestedTaggedp, nestedUnionp);
                 AstAssign* const assignp = new AstAssign{fl, targetp, transformedp};
                 addToNodeList(assignsp, assignp);
@@ -984,19 +914,7 @@ class TaggedVisitor final : public VNVisitor {
             UASSERT_OBJ(nestedUnionp, valuep, "TaggedExpr must have union dtype");
         }
 
-        // Check for struct pattern
-        if (AstPattern* const patp = VN_CAST(valuep, Pattern)) {
-            AstNodeUOrStructDType* const structDtp
-                = VN_CAST(dtypep->skipRefp(), NodeUOrStructDType);
-            if (structDtp) {
-                expandPatternToAssigns(fl, targetp, patp, structDtp, assignsp);
-                // targetp was used as template for cloning but not consumed
-                VL_DO_DANGLING(targetp->deleteTree(), targetp);
-                return;
-            }
-        }
-
-        // Check for ConsPackUOrStruct (Pattern converted by V3Const)
+        // Check for ConsPackUOrStruct (Pattern converted by V3Const before V3Tagged)
         if (AstConsPackUOrStruct* const consp = VN_CAST(valuep, ConsPackUOrStruct)) {
             expandConsPackToAssigns(fl, targetp, consp, assignsp);
             // targetp was used as template for cloning but not consumed
@@ -1063,8 +981,8 @@ class TaggedVisitor final : public VNVisitor {
                 ++m_statTaggedExprs;
                 return;
             }
-            // Not direct RHS - check if nested under an assignment (handled by outer expansion)
-            if (isUnderAssignment(nodep)) return;
+            // Not direct RHS - check if already processed during outer expansion
+            if (m_processedTaggedExprs.count(nodep)) return;
             nodep->v3warn(E_UNSUPPORTED, "Tagged expression in non-simple assignment context");
             return;
         }
