@@ -962,7 +962,8 @@ class ParamProcessor final {
                 AstIfaceRefDType* pinIrefp = nullptr;
                 const AstNode* const exprp = pinp->exprp();
                 const AstVar* const varp
-                    = (exprp && VN_IS(exprp, VarRef)) ? VN_AS(exprp, VarRef)->varp() : nullptr;
+                    = (exprp && VN_IS(exprp, NodeVarRef)) ? VN_AS(exprp, NodeVarRef)->varp()
+                                                         : nullptr;
                 if (varp && varp->subDTypep() && VN_IS(varp->subDTypep(), IfaceRefDType)) {
                     pinIrefp = VN_AS(varp->subDTypep(), IfaceRefDType);
                 } else if (varp && varp->subDTypep() && arraySubDTypep(varp->subDTypep())

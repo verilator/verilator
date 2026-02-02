@@ -2421,11 +2421,15 @@ private:
             string inl
                 = ((xrefp && xrefp->inlinedDots().size()) ? (xrefp->inlinedDots() + "__DOT__")
                                                           : "");
+            const string dottedPath = (xrefp && !xrefp->dotted().empty())
+                                          ? (xrefp->dotted() + ".")
+                                          : "";
             VSymEnt* symp = nullptr;
             string scopename;
             while (!symp) {
-                scopename
-                    = refp ? refp->name() : (inl.size() ? (inl + xrefp->name()) : xrefp->name());
+                scopename = refp ? refp->name()
+                                 : (inl.size() ? (inl + dottedPath + xrefp->name())
+                                               : (dottedPath + xrefp->name()));
                 string baddot;
                 VSymEnt* okSymp;
                 symp = m_statep->findDotted(nodep->rhsp()->fileline(), m_modSymp, scopename,
@@ -4336,10 +4340,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                    << okSymp->cellErrorScopes(nodep));
                     return;
                 }
-                // V3Inst may have expanded arrays of interfaces to
-                // AstVarXRef's even though they are in the same module detect
-                // this and convert to normal VarRefs
-                if (!m_statep->forPrearray() && !m_statep->forScopeCreation()) {
+                // V3Inst may have expanded arrays of interfaces to AstVarXRef's even though
+                // they are in the same module; convert to normal VarRefs (but not if dotted)
+                if (!m_statep->forPrearray() && !m_statep->forScopeCreation()
+                    && nodep->dotted().empty()) {
                     if (const AstIfaceRefDType* const ifaceDtp
                         = VN_CAST(nodep->dtypep(), IfaceRefDType)) {
                         if (!ifaceDtp->isVirtual()) {
