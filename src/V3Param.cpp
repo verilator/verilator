@@ -616,6 +616,97 @@ class ParamProcessor final {
         if (nodep->op4p()) replaceRefsRecurse(nodep->op4p(), oldClassp, newClassp);
         if (nodep->nextp()) replaceRefsRecurse(nodep->nextp(), oldClassp, newClassp);
     }
+
+    // Helper visitor to update VarXRefs to use variables from specialized interfaces.
+    // When a module with interface ports is cloned and the port's interface is remapped
+    // to a specialized version, VarXRefs that access members of the old interface need
+    // to be updated to reference the corresponding members in the new interface.
+    class VarXRefRelinkVisitor final : public VNVisitor {
+        AstNodeModule* m_modp;  // The cloned module we're updating
+
+    public:
+        explicit VarXRefRelinkVisitor(AstNodeModule* newModp)
+            : m_modp{newModp} {
+            iterate(newModp);
+        }
+
+    private:
+        void visit(AstVarXRef* nodep) override {
+            UINFO(9, "       VarXRefRelinkVisitor visiting " << nodep << " dotted=" << nodep->dotted() << endl);
+            if (AstVar* const varp = nodep->varp()) {
+                // Get the dotted prefix (port name) from the VarXRef
+                // dotted() format: "portname" or "portname.subpath" or empty
+                string dotted = nodep->dotted();
+                if (!dotted.empty()) {
+                    const size_t dotPos = dotted.find('.');
+                    const string portName
+                        = (dotPos == string::npos) ? dotted : dotted.substr(0, dotPos);
+
+                    if (!portName.empty()) {
+                        // Find the port variable with this name in the cloned module
+                        AstVar* portVarp = nullptr;
+                        for (AstNode* stmtp = m_modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                            if (AstVar* const varChkp = VN_CAST(stmtp, Var)) {
+                                if (varChkp->name() == portName && varChkp->isIfaceRef()) {
+                                    portVarp = varChkp;
+                                    break;
+                                }
+                            }
+                        }
+
+                        UINFO(9, "       VarXRefRelinkVisitor portName=" << portName << " portVarp=" << cvtToHex(portVarp) << endl);
+                        if (portVarp) {
+                            // Get the interface module from the port's dtype
+                            AstIfaceRefDType* irefp
+                                = VN_CAST(portVarp->subDTypep(), IfaceRefDType);
+                            UINFO(9, "       VarXRefRelinkVisitor irefp=" << cvtToHex(irefp) << " ifaceViaCellp=" << (irefp ? cvtToHex(irefp->ifaceViaCellp()) : "nullptr") << endl);
+                            if (irefp) {
+                                AstNodeModule* const newIfacep = irefp->ifaceViaCellp();
+                                if (newIfacep) {
+                                    // Find which module the variable currently belongs to
+                                    AstNodeModule* varModp = nullptr;
+                                    for (AstNode* np = varp; np; np = np->backp()) {
+                                        if (AstNodeModule* const modp
+                                            = VN_CAST(np, NodeModule)) {
+                                            varModp = modp;
+                                            break;
+                                        }
+                                    }
+
+                                    UINFO(9, "       VarXRefRelinkVisitor varModp=" << (varModp ? varModp->name() : "nullptr") << " newIfacep=" << newIfacep->name() << endl);
+                                    // If variable is in a different module than the port's
+                                    // interface, remap it
+                                    if (varModp && varModp != newIfacep) {
+                                        UINFO(9, "       VarXRefRelinkVisitor looking for " << varp->name() << " in " << newIfacep->name() << endl);
+                                        // Find variable with same name in new interface
+                                        for (AstNode* stmtp = newIfacep->stmtsp(); stmtp;
+                                             stmtp = stmtp->nextp()) {
+                                            if (AstVar* const newVarp = VN_CAST(stmtp, Var)) {
+                                                UINFO(9, "       VarXRefRelinkVisitor checking '" << newVarp->name() << "' vs '" << varp->name() << "' equal=" << (newVarp->name() == varp->name()) << endl);
+                                                if (newVarp->name() == varp->name()) {
+                                                    UINFO(9, "       VarXRef relink "
+                                                                 << nodep->name() << " varp "
+                                                                 << varp->name() << " in "
+                                                                 << varModp->name() << " -> "
+                                                                 << newVarp->name() << " in "
+                                                                 << newIfacep->name() << endl);
+                                                    nodep->varp(newVarp);
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            iterateChildren(nodep);
+        }
+        void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    };
+
     // Return true on success, false on error
     bool deepCloneModule(AstNodeModule* srcModp, AstNode* ifErrorp, AstPin* paramsp,
                          const string& newname, const IfaceRefRefs& ifaceRefRefs) {
@@ -751,6 +842,12 @@ class ParamProcessor final {
             cloneIrefp->ifacep(pinIrefp->ifaceViaCellp());
             UINFO(8, "     IfaceNew " << cloneIrefp);
         }
+
+        // Fix VarXRefs that reference variables in old interfaces.
+        // Now that interface port dtypes have been updated above, we can use them
+        // to find the correct interface for each VarXRef.
+        if (!ifaceRefRefs.empty()) { VarXRefRelinkVisitor{newModp}; }
+
         // Assign parameters to the constants specified
         // DOES clone() so must be finished with module clonep() before here
         for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
@@ -1564,6 +1661,31 @@ class ParamVisitor final : public VNVisitor {
         return false;
     }
 
+    // Recursively specialize nested interface cells within a specialized interface
+    // This handles parameter passthrough for nested interface hierarchies
+    void specializeNestedIfaceCells(AstNodeModule* ifaceModp) {
+        UINFO(9, "   Nested iface spec: processing cells in " << ifaceModp->name() << endl);
+        for (AstNode* stmtp = ifaceModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (AstCell* const nestedCellp = VN_CAST(stmtp, Cell)) {
+                if (VN_IS(nestedCellp->modp(), Iface)
+                    && nestedCellp->paramsp()
+                    && !cellParamsReferenceIfacePorts(nestedCellp)) {
+                    AstNodeModule* const nestedSrcModp = nestedCellp->modp();
+                    UINFO(9, "   Nested iface spec: " << nestedCellp->name()
+                             << " " << nestedSrcModp->name() << " in " << ifaceModp->name() << endl);
+                    if (AstNodeModule* const nestedNewModp
+                        = m_processor.nodeDeparam(nestedCellp, nestedSrcModp, ifaceModp,
+                                                  ifaceModp->someInstanceName())) {
+                        // Recursively process nested interfaces within this nested interface
+                        if (nestedNewModp != nestedSrcModp) {
+                            specializeNestedIfaceCells(nestedNewModp);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // A generic visitor for cells and class refs
     void visitCellOrClassRef(AstNode* nodep, bool isIface) {
         // Must do ifaces first, so push to list and do in proper order
@@ -1576,7 +1698,17 @@ class ParamVisitor final : public VNVisitor {
             AstCell* const cellp = VN_CAST(nodep, Cell);
             if (!cellParamsReferenceIfacePorts(cellp)) {
                 AstNodeModule* const srcModp = cellp->modp();
-                m_processor.nodeDeparam(cellp, srcModp, m_modp, m_modp->someInstanceName());
+                if (AstNodeModule* const newModp
+                    = m_processor.nodeDeparam(cellp, srcModp, m_modp, m_modp->someInstanceName())) {
+                    // For specialized interfaces, recursively process nested interface cells
+                    // This ensures that when modules using the interface are processed,
+                    // the nested interfaces are already specialized (parameter passthrough fix)
+                    if (newModp != srcModp) {
+                        UINFO(9, "   Early iface spec: " << cellp->name() << " " << srcModp->name()
+                                 << " -> " << newModp->name() << endl);
+                        specializeNestedIfaceCells(newModp);
+                    }
+                }
             }
         }
 

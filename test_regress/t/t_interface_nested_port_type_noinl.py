@@ -10,12 +10,11 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
-test.top_filename = "t/t_interface_nested_port_param.v"
+test.top_filename = "t/t_interface_nested_port_type.v"
 
-# Run with -fno-inline to explicitly test no-inline mode.
-# Tests that parameterized nested interface ports work correctly when
-# modules are not inlined. This requires AliasScope processing to be
-# done in outer-to-inner order (deferred processing).
+# Type parameters in nested interfaces (no-inline mode)
 test.compile(verilator_flags2=['--binary', '-fno-inline'])
+
 test.execute()
+
 test.passes()
