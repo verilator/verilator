@@ -5,138 +5,267 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // Issue #5066 - Test passing sub-interface of INTERFACE PORT to child module
-// Only works with inline (default); -fno-inline is not supported
+// Tests 1-deep through 5-deep interface port passthrough
+// Each handler instantiates the (N-1)_handler with its nested interface
+//
+// Mix of patterns to test both direct drive and driver/reader submodules:
+// - L4, L2: direct drive (simple pattern)
+// - L3, L1, leaf: driver/reader submodules (tests passing interface port to children)
 
-interface base_reg_if;
-  typedef struct packed { logic [7:0] scratch; } wr_t;
-  typedef struct packed { logic [7:0] version; logic [7:0] scratch_rb; } rd_t;
-  wr_t wr;
-  rd_t rd;
+// Interface hierarchy: l4 -> l3 -> l2 -> l1 -> leaf
+// Each interface has tb_in (testbench driven) and dut_out (DUT driven)
+
+interface leaf_if;
+   logic [7:0] tb_in;
+   logic [7:0] dut_out;
 endinterface
 
-interface example_reg_if;
-  typedef struct packed { logic enable; logic [6:0] cfg; } wr_t;
-  typedef struct packed { logic busy; logic [6:0] status; } rd_t;
-  wr_t wr;
-  rd_t rd;
+interface l1_if;
+   logic [7:0] tb_in;
+   logic [7:0] dut_out;
+   leaf_if     leaf();
 endinterface
 
-interface app_reg_if;
-  base_reg_if base();
-  example_reg_if example();
+interface l2_if;
+   logic [7:0] tb_in;
+   logic [7:0] dut_out;
+   l1_if       l1();
 endinterface
 
-module base_regs (input wire i_clk, base_reg_if i_base);
-  always_ff @(posedge i_clk) begin
-    i_base.rd.version    <= 8'h42;
-    i_base.rd.scratch_rb <= i_base.wr.scratch;
-  end
+interface l3_if;
+   logic [7:0] tb_in;
+   logic [7:0] dut_out;
+   l2_if       l2();
+endinterface
+
+interface l4_if;
+   logic [7:0] tb_in;
+   logic [7:0] dut_out;
+   l3_if       l3();
+endinterface
+
+// ============================================================================
+// Driver/reader submodules - test passing interface port to children
+// Used by L3, L1, and leaf handlers
+// ============================================================================
+
+module leaf_driver (input logic clk, leaf_if leaf);
+   always_ff @(posedge clk) leaf.dut_out <= leaf.tb_in ^ 8'hFF;
 endmodule
 
-module base_observer (base_reg_if i_base, output logic [7:0] o_wr_val, o_rd_val);
-  assign o_wr_val = i_base.wr.scratch;
-  assign o_rd_val = i_base.rd.version;
+module leaf_reader (leaf_if leaf, output logic [7:0] dout);
+   assign dout = leaf.dut_out;
 endmodule
 
-module example_regs (input wire i_clk, example_reg_if i_example);
-  always_ff @(posedge i_clk) begin
-    i_example.rd.busy   <= i_example.wr.enable;
-    i_example.rd.status <= i_example.wr.cfg;
-  end
+module l1_driver (input logic clk, l1_if l1);
+   always_ff @(posedge clk) l1.dut_out <= l1.tb_in ^ 8'h11;
 endmodule
 
-// Key test: module with interface PORT passes nested interface to submodule
-module app_top (
-  input wire         i_clk,
-  app_reg_if         i_app,
-  output logic [7:0] o_obs_wr,
-  output logic [7:0] o_obs_rd
+module l1_reader (l1_if l1, output logic [7:0] dout);
+   assign dout = l1.dut_out;
+endmodule
+
+module l3_driver (input logic clk, l3_if l3);
+   always_ff @(posedge clk) l3.dut_out <= l3.tb_in ^ 8'h33;
+endmodule
+
+module l3_reader (l3_if l3, output logic [7:0] dout);
+   assign dout = l3.dut_out;
+endmodule
+
+// ============================================================================
+// Leaf handler - uses driver/reader submodules
+// ============================================================================
+
+module leaf_handler (
+   input  logic       clk,
+          leaf_if     leaf,
+   output logic [7:0] dout
 );
-  base_observer m_base_obs (
-    .i_base(i_app.base),
-    .o_wr_val(o_obs_wr),
-    .o_rd_val(o_obs_rd)
-  );
-
-  example_regs m_example_regs (
-    .i_clk(i_clk),
-    .i_example(i_app.example)
-  );
+   // Use driver/reader submodules (tests passing interface port to children)
+   leaf_driver m_drv (.clk(clk), .leaf(leaf));
+   leaf_reader m_rdr (.leaf(leaf), .dout(dout));
 endmodule
+
+// ============================================================================
+// L1 handler - uses driver/reader submodules
+// ============================================================================
+
+module l1_handler (
+   input  logic       clk,
+          l1_if       l1,
+   output logic [7:0] l1_dout,
+   output logic [7:0] leaf_dout
+);
+   // Use driver/reader submodules
+   l1_driver m_drv (.clk(clk), .l1(l1));
+   l1_reader m_rdr (.l1(l1), .dout(l1_dout));
+
+   leaf_handler m_leaf (.clk(clk), .leaf(l1.leaf), .dout(leaf_dout));
+endmodule
+
+// ============================================================================
+// L2 handler - uses direct drive
+// ============================================================================
+
+module l2_handler (
+   input  logic       clk,
+          l2_if       l2,
+   output logic [7:0] l2_dout,
+   output logic [7:0] l1_dout,
+   output logic [7:0] leaf_dout
+);
+   // Direct drive
+   always_ff @(posedge clk) l2.dut_out <= l2.tb_in ^ 8'h22;
+   assign l2_dout = l2.dut_out;
+
+   l1_handler m_l1 (.clk(clk), .l1(l2.l1), .l1_dout(l1_dout), .leaf_dout(leaf_dout));
+endmodule
+
+// ============================================================================
+// L3 handler - uses driver/reader submodules
+// ============================================================================
+
+module l3_handler (
+   input  logic       clk,
+          l3_if       l3,
+   output logic [7:0] l3_dout,
+   output logic [7:0] l2_dout,
+   output logic [7:0] l1_dout,
+   output logic [7:0] leaf_dout
+);
+   // Use driver/reader submodules
+   l3_driver m_drv (.clk(clk), .l3(l3));
+   l3_reader m_rdr (.l3(l3), .dout(l3_dout));
+
+   l2_handler m_l2 (.clk(clk), .l2(l3.l2), .l2_dout(l2_dout), .l1_dout(l1_dout), .leaf_dout(leaf_dout));
+endmodule
+
+// ============================================================================
+// L4 handler - uses direct drive
+// ============================================================================
+
+module l4_handler (
+   input  logic       clk,
+          l4_if       l4,
+   output logic [7:0] l4_dout,
+   output logic [7:0] l3_dout,
+   output logic [7:0] l2_dout,
+   output logic [7:0] l1_dout,
+   output logic [7:0] leaf_dout
+);
+   // Direct drive
+   always_ff @(posedge clk) l4.dut_out <= l4.tb_in ^ 8'h44;
+   assign l4_dout = l4.dut_out;
+
+   l3_handler m_l3 (.clk(clk), .l3(l4.l3), .l3_dout(l3_dout), .l2_dout(l2_dout), .l1_dout(l1_dout), .leaf_dout(leaf_dout));
+endmodule
+
+// ============================================================================
+// Testbench
+// ============================================================================
 
 module t;
-  logic clk = 0;
-  int   cyc = 0;
+   logic clk = 0;
+   int   cyc = 0;
 
-  app_reg_if w_app_reg_if();
+   // Local interface instance (5 levels deep)
+   l4_if inst();
 
-  // Drive base_regs directly from TB (local instance case, for reference)
-  base_regs m_base_regs (.i_clk(clk), .i_base(w_app_reg_if.base));
+   // DUT outputs
+   logic [7:0] l4_dout, l3_dout, l2_dout, l1_dout, leaf_dout;
 
-  // Pass full interface to app_top, which passes nested interfaces to submodules
-  logic [7:0] app_obs_wr, app_obs_rd;
-  app_top m_app_top (
-    .i_clk(clk),
-    .i_app(w_app_reg_if),
-    .o_obs_wr(app_obs_wr),
-    .o_obs_rd(app_obs_rd)
-  );
+   // Instantiate top-level handler
+   l4_handler m_l4 (
+      .clk(clk),
+      .l4(inst),
+      .l4_dout(l4_dout),
+      .l3_dout(l3_dout),
+      .l2_dout(l2_dout),
+      .l1_dout(l1_dout),
+      .leaf_dout(leaf_dout)
+   );
 
-  always #5 clk = ~clk;
+   always #5 clk = ~clk;
 
-  logic [7:0] exp_scratch, exp_scratch_d1;
-  logic [6:0] exp_cfg, exp_cfg_d1;
-  logic       exp_enable, exp_enable_d1;
+   // Testbench drives tb_in at each level
+   always_ff @(posedge clk) begin
+      inst.tb_in            <= cyc[7:0];
+      inst.l3.tb_in         <= cyc[7:0] + 8'd10;
+      inst.l3.l2.tb_in      <= cyc[7:0] + 8'd20;
+      inst.l3.l2.l1.tb_in   <= cyc[7:0] + 8'd30;
+      inst.l3.l2.l1.leaf.tb_in <= cyc[7:0] + 8'd40;
+   end
 
-  always @(posedge clk) begin
-    cyc <= cyc + 1;
+   // Expected values (2-cycle delay: TB writes, then handler computes)
+   logic [7:0] exp_l4, exp_l3, exp_l2, exp_l1, exp_leaf;
 
-    exp_scratch    <= cyc[7:0];
-    exp_scratch_d1 <= exp_scratch;
-    exp_cfg        <= cyc[6:0];
-    exp_cfg_d1     <= exp_cfg;
-    exp_enable     <= cyc[0];
-    exp_enable_d1  <= exp_enable;
+   always_ff @(posedge clk) begin
+      exp_l4   <= inst.tb_in ^ 8'h44;
+      exp_l3   <= inst.l3.tb_in ^ 8'h33;
+      exp_l2   <= inst.l3.l2.tb_in ^ 8'h22;
+      exp_l1   <= inst.l3.l2.l1.tb_in ^ 8'h11;
+      exp_leaf <= inst.l3.l2.l1.leaf.tb_in ^ 8'hFF;
+   end
 
-    w_app_reg_if.base.wr.scratch   <= cyc[7:0];
-    w_app_reg_if.example.wr.enable <= cyc[0];
-    w_app_reg_if.example.wr.cfg    <= cyc[6:0];
+   always @(posedge clk) begin
+      cyc <= cyc + 1;
 
-    if (cyc > 3) begin
-      // Verify base_regs output
-      if (w_app_reg_if.base.rd.version !== 8'h42) begin
-        $display("FAIL cyc=%0d: version=%h expected 42", cyc, w_app_reg_if.base.rd.version);
-        $stop;
+      if (cyc > 3) begin
+         // Check L4 (1-deep from testbench) - direct drive
+         if (inst.dut_out !== exp_l4) begin
+            $display("FAIL cyc=%0d: l4.dut_out=%h expected %h", cyc, inst.dut_out, exp_l4);
+            $stop;
+         end
+         if (l4_dout !== exp_l4) begin
+            $display("FAIL cyc=%0d: l4_dout=%h expected %h", cyc, l4_dout, exp_l4);
+            $stop;
+         end
+
+         // Check L3 (2-deep) - driver/reader submodules
+         if (inst.l3.dut_out !== exp_l3) begin
+            $display("FAIL cyc=%0d: l3.dut_out=%h expected %h", cyc, inst.l3.dut_out, exp_l3);
+            $stop;
+         end
+         if (l3_dout !== exp_l3) begin
+            $display("FAIL cyc=%0d: l3_dout=%h expected %h", cyc, l3_dout, exp_l3);
+            $stop;
+         end
+
+         // Check L2 (3-deep) - direct drive
+         if (inst.l3.l2.dut_out !== exp_l2) begin
+            $display("FAIL cyc=%0d: l2.dut_out=%h expected %h", cyc, inst.l3.l2.dut_out, exp_l2);
+            $stop;
+         end
+         if (l2_dout !== exp_l2) begin
+            $display("FAIL cyc=%0d: l2_dout=%h expected %h", cyc, l2_dout, exp_l2);
+            $stop;
+         end
+
+         // Check L1 (4-deep) - driver/reader submodules
+         if (inst.l3.l2.l1.dut_out !== exp_l1) begin
+            $display("FAIL cyc=%0d: l1.dut_out=%h expected %h", cyc, inst.l3.l2.l1.dut_out, exp_l1);
+            $stop;
+         end
+         if (l1_dout !== exp_l1) begin
+            $display("FAIL cyc=%0d: l1_dout=%h expected %h", cyc, l1_dout, exp_l1);
+            $stop;
+         end
+
+         // Check leaf (5-deep) - driver/reader submodules
+         if (inst.l3.l2.l1.leaf.dut_out !== exp_leaf) begin
+            $display("FAIL cyc=%0d: leaf.dut_out=%h expected %h", cyc, inst.l3.l2.l1.leaf.dut_out, exp_leaf);
+            $stop;
+         end
+         if (leaf_dout !== exp_leaf) begin
+            $display("FAIL cyc=%0d: leaf_dout=%h expected %h", cyc, leaf_dout, exp_leaf);
+            $stop;
+         end
       end
-      if (w_app_reg_if.base.rd.scratch_rb !== exp_scratch_d1) begin
-        $display("FAIL cyc=%0d: scratch_rb=%h expected %h", cyc, w_app_reg_if.base.rd.scratch_rb, exp_scratch_d1);
-        $stop;
-      end
 
-      // Verify example_regs output (driven through app_top)
-      if (w_app_reg_if.example.rd.busy !== exp_enable_d1) begin
-        $display("FAIL cyc=%0d: busy=%b expected %b", cyc, w_app_reg_if.example.rd.busy, exp_enable_d1);
-        $stop;
+      if (cyc == 20) begin
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
-      if (w_app_reg_if.example.rd.status !== exp_cfg_d1) begin
-        $display("FAIL cyc=%0d: status=%h expected %h", cyc, w_app_reg_if.example.rd.status, exp_cfg_d1);
-        $stop;
-      end
-
-      // Verify observer inside app_top (the key test - nested port passthrough)
-      if (app_obs_wr !== exp_scratch) begin
-        $display("FAIL cyc=%0d: app_obs_wr=%h expected %h", cyc, app_obs_wr, exp_scratch);
-        $stop;
-      end
-      if (app_obs_rd !== 8'h42) begin
-        $display("FAIL cyc=%0d: app_obs_rd=%h expected 42", cyc, app_obs_rd);
-        $stop;
-      end
-    end
-
-    if (cyc == 20) begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-    end
-  end
+   end
 endmodule

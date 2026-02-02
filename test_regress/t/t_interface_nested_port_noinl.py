@@ -10,9 +10,10 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.top_filename = "t/t_interface_nested_port.v"
 
-test.compile(verilator_flags2=['--binary'])
-
+# Run with -fno-inline to explicitly test no-inline mode.
+# The same test file works with both inline and no-inline modes.
+test.compile(verilator_flags2=['--binary', '-fno-inline'])
 test.execute()
-
 test.passes()

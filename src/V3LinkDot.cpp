@@ -2386,37 +2386,52 @@ private:
         if (!nodep->varp()->isFuncLocal() && !nodep->varp()->isClassMember()) {
             VSymEnt* const varSymp
                 = m_statep->insertSym(m_modSymp, nodep->varp()->name(), nodep, nullptr);
-            if (nodep->varp()->isIfaceRef() && nodep->varp()->isIfaceParent()) {
-                UINFO(9, "Iface parent ref var " << nodep->varp()->name() << " " << nodep);
-                // Find the interface cell the var references
+            if (nodep->varp()->isIfaceRef()) {
                 AstIfaceRefDType* const dtypep
                     = LinkDotState::ifaceRefFromArray(nodep->varp()->dtypep());
                 UASSERT_OBJ(dtypep, nodep, "Non AstIfaceRefDType on isIfaceRef() var");
-                UINFO(9, "Iface parent dtype " << dtypep);
-                const string ifcellname = dtypep->cellName();
-                string baddot;
-                VSymEnt* okSymp;
-                VSymEnt* cellSymp = m_statep->findDotted(nodep->fileline(), m_modSymp, ifcellname,
-                                                         baddot, okSymp, false);
-                UASSERT_OBJ(
-                    cellSymp, nodep,
-                    "No symbol for interface instance: " << nodep->prettyNameQ(ifcellname));
-                UINFO(5, "       Found interface instance: se" << cvtToHex(cellSymp) << " "
-                                                               << cellSymp->nodep());
-                if (dtypep->modportName() != "") {
-                    VSymEnt* const mpSymp = m_statep->findDotted(
-                        nodep->fileline(), m_modSymp, ifcellname, baddot, okSymp, false);
-                    UASSERT_OBJ(mpSymp, nodep,
-                                "No symbol for interface modport: "
-                                    << nodep->prettyNameQ(dtypep->modportName()));
-                    cellSymp = mpSymp;
-                    UINFO(5, "       Found modport cell: se" << cvtToHex(cellSymp) << " "
-                                                             << mpSymp->nodep());
+                if (nodep->varp()->isIfaceParent()) {
+                    UINFO(9, "Iface parent ref var " << nodep->varp()->name() << " " << nodep);
+                    // Find the interface cell the var references
+                    UINFO(9, "Iface parent dtype " << dtypep);
+                    const string ifcellname = dtypep->cellName();
+                    string baddot;
+                    VSymEnt* okSymp;
+                    VSymEnt* cellSymp
+                        = m_statep->findDotted(nodep->fileline(), m_modSymp, ifcellname, baddot,
+                                               okSymp, false);
+                    UASSERT_OBJ(
+                        cellSymp, nodep,
+                        "No symbol for interface instance: " << nodep->prettyNameQ(ifcellname));
+                    UINFO(5, "       Found interface instance: se" << cvtToHex(cellSymp) << " "
+                                                                   << cellSymp->nodep());
+                    if (dtypep->modportName() != "") {
+                        VSymEnt* const mpSymp = m_statep->findDotted(
+                            nodep->fileline(), m_modSymp, ifcellname, baddot, okSymp, false);
+                        UASSERT_OBJ(mpSymp, nodep,
+                                    "No symbol for interface modport: "
+                                        << nodep->prettyNameQ(dtypep->modportName()));
+                        cellSymp = mpSymp;
+                        UINFO(5, "       Found modport cell: se" << cvtToHex(cellSymp) << " "
+                                                                 << mpSymp->nodep());
+                    }
+                    // Interface reference; need to put whole thing into
+                    // symtable, but can't clone it now as we may have a later
+                    // alias for it.
+                    m_statep->insertScopeAlias(LinkDotState::SAMN_IFTOP, varSymp, cellSymp);
+                } else if (dtypep->ifaceViaCellp()
+                           && m_statep->existsNodeSym(dtypep->ifaceViaCellp())) {
+                    // Interface port: create alias to the interface definition
+                    // This enables nested interface member access through interface ports
+                    UINFO(9, "Iface port ref var " << nodep->varp()->name() << " " << nodep);
+                    VSymEnt* ifaceSymp = m_statep->getNodeSym(dtypep->ifaceViaCellp());
+                    // Handle modports
+                    if (dtypep->modportName() != "") {
+                        VSymEnt* const mpSymp = ifaceSymp->findIdFallback(dtypep->modportName());
+                        if (mpSymp && VN_IS(mpSymp->nodep(), Modport)) ifaceSymp = mpSymp;
+                    }
+                    m_statep->insertScopeAlias(LinkDotState::SAMN_IFTOP, varSymp, ifaceSymp);
                 }
-                // Interface reference; need to put whole thing into
-                // symtable, but can't clone it now as we may have a later
-                // alias for it.
-                m_statep->insertScopeAlias(LinkDotState::SAMN_IFTOP, varSymp, cellSymp);
             }
         }
     }

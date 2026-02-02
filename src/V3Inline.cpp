@@ -321,7 +321,7 @@ class InlineRelinkVisitor final : public VNVisitor {
     }
     void visit(AstVarRef* nodep) override {
         // If the target port is being inlined, replace reference with the
-        // connected expression (always a Const of a VarRef).
+        // connected expression (a Const, VarRef, or VarXRef).
         AstNode* const pinExpr = nodep->varp()->user2p();
         if (!pinExpr) return;
 
@@ -353,10 +353,25 @@ class InlineRelinkVisitor final : public VNVisitor {
             return;
         }
 
-        // Otherwise it must be a variable reference, retarget this ref
-        const AstVarRef* const vrefp = VN_AS(pinExpr, VarRef);
-        nodep->varp(vrefp->varp());
-        nodep->classOrPackagep(vrefp->classOrPackagep());
+        // Handle VarRef: simple retarget
+        if (const AstVarRef* const vrefp = VN_CAST(pinExpr, VarRef)) {
+            nodep->varp(vrefp->varp());
+            nodep->classOrPackagep(vrefp->classOrPackagep());
+            return;
+        }
+
+        // Handle VarXRef: replace VarRef with VarXRef (e.g., nested interface port)
+        const AstVarXRef* const xrefp = VN_AS(pinExpr, VarXRef);
+        AstVarXRef* const newp = new AstVarXRef{nodep->fileline(), xrefp->name(), xrefp->dotted(),
+                                                nodep->access()};
+        newp->varp(xrefp->varp());
+        // Copy inlinedDots from pin expression - the normal visitor iteration will
+        // prepend the cell name when this VarXRef is visited later
+        newp->inlinedDots(xrefp->inlinedDots());
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        // Note: Don't call iterate(newp) here - the node will be visited during
+        // normal tree iteration which will apply the inlining transformations
     }
     void visit(AstVarXRef* nodep) override {
         // Track what scope it was originally under so V3LinkDot can resolve it
