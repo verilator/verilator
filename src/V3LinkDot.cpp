@@ -2347,6 +2347,8 @@ class LinkDotScopeVisitor final : public VNVisitor {
     LinkDotState* const m_statep;  // State to pass between visitors, including symbol table
     const AstScope* m_scopep = nullptr;  // The current scope
     VSymEnt* m_modSymp = nullptr;  // Symbol entry for current module
+    // Deferred AliasScope processing - must be done outer-to-inner for correct alias resolution
+    std::vector<std::pair<AstAliasScope*, VSymEnt*>> m_deferredAliasScopes;
 
     // METHODS
 public:
@@ -2462,6 +2464,12 @@ private:
         pushDeletep(nodep->unlinkFrBack());
     }
     void visit(AstAliasScope* nodep) override {  // ScopeVisitor::
+        // Defer AliasScope processing - must process outer scopes before inner ones
+        // so that nested interface port alias resolution works correctly
+        UINFO(5, "ALIASSCOPE (deferred) " << nodep);
+        m_deferredAliasScopes.emplace_back(nodep, m_modSymp);
+    }
+    void processAliasScope(AstAliasScope* nodep, VSymEnt* modSymp) {
         UINFO(5, "ALIASSCOPE  " << nodep);
         UINFOTREE(9, nodep, "", "avs");
         VSymEnt* rhsSymp;
@@ -2484,7 +2492,7 @@ private:
                                                : (dottedPath + xrefp->name()));
                 string baddot;
                 VSymEnt* okSymp;
-                symp = m_statep->findDotted(nodep->rhsp()->fileline(), m_modSymp, scopename,
+                symp = m_statep->findDotted(nodep->rhsp()->fileline(), modSymp, scopename,
                                             baddot, okSymp, true);
                 if (inl == "") break;
                 inl = LinkDotState::removeLastInlineScope(inl);
@@ -2505,7 +2513,7 @@ private:
                 = refp ? refp->varp()->name() : xrefp->dotted() + "." + xrefp->name();
             string baddot;
             VSymEnt* okSymp;
-            VSymEnt* const symp = m_statep->findDotted(nodep->lhsp()->fileline(), m_modSymp,
+            VSymEnt* const symp = m_statep->findDotted(nodep->lhsp()->fileline(), modSymp,
                                                        scopename, baddot, okSymp, false);
             UASSERT_OBJ(symp, nodep, "No symbol for interface alias lhs");
             UINFO(5, "       Found a linked scope LHS: " << scopename << "  se" << cvtToHex(symp)
@@ -2517,6 +2525,24 @@ private:
         m_statep->insertScopeAlias(LinkDotState::SAMN_IFTOP, lhsSymp, rhsSymp);
         // We have stored the link, we don't need these any more
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+    }
+    void processDeferredAliasScopes() {
+        // Sort by hierarchy depth (shallower first) so outer aliases are resolved before inner
+        // Hierarchy depth can be determined by counting dots in the scope name or using parent chain
+        std::stable_sort(m_deferredAliasScopes.begin(), m_deferredAliasScopes.end(),
+                         [](const std::pair<AstAliasScope*, VSymEnt*>& a,
+                            const std::pair<AstAliasScope*, VSymEnt*>& b) {
+                             // Count hierarchy depth using parent chain
+                             int depthA = 0, depthB = 0;
+                             for (VSymEnt* p = a.second; p; p = p->parentp()) ++depthA;
+                             for (VSymEnt* p = b.second; p; p = p->parentp()) ++depthB;
+                             return depthA < depthB;  // Shallower (fewer parents) comes first
+                         });
+        // Process in sorted order
+        for (auto& pair : m_deferredAliasScopes) {
+            processAliasScope(pair.first, pair.second);
+        }
+        m_deferredAliasScopes.clear();
     }
     void visit(AstNodeGen* nodep) override {  // ScopeVisitor::  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Generate constructs should have been reduced out");
@@ -2533,6 +2559,8 @@ public:
         : m_statep{statep} {
         UINFO(4, __FUNCTION__ << ": ");
         iterate(rootp);
+        // Process deferred AliasScopes in outer-to-inner order
+        processDeferredAliasScopes();
     }
     ~LinkDotScopeVisitor() override = default;
 };
