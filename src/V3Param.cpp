@@ -632,72 +632,56 @@ class ParamProcessor final {
 
     private:
         void visit(AstVarXRef* nodep) override {
-            UINFO(9, "       VarXRefRelinkVisitor visiting " << nodep << " dotted=" << nodep->dotted() << endl);
-            if (AstVar* const varp = nodep->varp()) {
-                // Get the dotted prefix (port name) from the VarXRef
-                // dotted() format: "portname" or "portname.subpath" or empty
-                string dotted = nodep->dotted();
-                if (!dotted.empty()) {
-                    const size_t dotPos = dotted.find('.');
-                    const string portName
-                        = (dotPos == string::npos) ? dotted : dotted.substr(0, dotPos);
+            AstVar* const varp = nodep->varp();
+            if (!varp) { iterateChildren(nodep); return; }
 
-                    if (!portName.empty()) {
-                        // Find the port variable with this name in the cloned module
-                        AstVar* portVarp = nullptr;
-                        for (AstNode* stmtp = m_modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                            if (AstVar* const varChkp = VN_CAST(stmtp, Var)) {
-                                if (varChkp->name() == portName && varChkp->isIfaceRef()) {
-                                    portVarp = varChkp;
-                                    break;
-                                }
-                            }
-                        }
+            // Get the dotted prefix (port name) from the VarXRef
+            // dotted() format: "portname" or "portname.subpath" or empty
+            const string& dotted = nodep->dotted();
+            if (dotted.empty()) { iterateChildren(nodep); return; }
 
-                        UINFO(9, "       VarXRefRelinkVisitor portName=" << portName << " portVarp=" << cvtToHex(portVarp) << endl);
-                        if (portVarp) {
-                            // Get the interface module from the port's dtype
-                            AstIfaceRefDType* irefp
-                                = VN_CAST(portVarp->subDTypep(), IfaceRefDType);
-                            UINFO(9, "       VarXRefRelinkVisitor irefp=" << cvtToHex(irefp) << " ifaceViaCellp=" << (irefp ? cvtToHex(irefp->ifaceViaCellp()) : "nullptr") << endl);
-                            if (irefp) {
-                                AstNodeModule* const newIfacep = irefp->ifaceViaCellp();
-                                if (newIfacep) {
-                                    // Find which module the variable currently belongs to
-                                    AstNodeModule* varModp = nullptr;
-                                    for (AstNode* np = varp; np; np = np->backp()) {
-                                        if (AstNodeModule* const modp
-                                            = VN_CAST(np, NodeModule)) {
-                                            varModp = modp;
-                                            break;
-                                        }
-                                    }
+            const size_t dotPos = dotted.find('.');
+            const string portName
+                = (dotPos == string::npos) ? dotted : dotted.substr(0, dotPos);
+            if (portName.empty()) { iterateChildren(nodep); return; }
 
-                                    UINFO(9, "       VarXRefRelinkVisitor varModp=" << (varModp ? varModp->name() : "nullptr") << " newIfacep=" << newIfacep->name() << endl);
-                                    // If variable is in a different module than the port's
-                                    // interface, remap it
-                                    if (varModp && varModp != newIfacep) {
-                                        UINFO(9, "       VarXRefRelinkVisitor looking for " << varp->name() << " in " << newIfacep->name() << endl);
-                                        // Find variable with same name in new interface
-                                        for (AstNode* stmtp = newIfacep->stmtsp(); stmtp;
-                                             stmtp = stmtp->nextp()) {
-                                            if (AstVar* const newVarp = VN_CAST(stmtp, Var)) {
-                                                UINFO(9, "       VarXRefRelinkVisitor checking '" << newVarp->name() << "' vs '" << varp->name() << "' equal=" << (newVarp->name() == varp->name()) << endl);
-                                                if (newVarp->name() == varp->name()) {
-                                                    UINFO(9, "       VarXRef relink "
-                                                                 << nodep->name() << " varp "
-                                                                 << varp->name() << " in "
-                                                                 << varModp->name() << " -> "
-                                                                 << newVarp->name() << " in "
-                                                                 << newIfacep->name() << endl);
-                                                    nodep->varp(newVarp);
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+            // Find the interface port variable in the cloned module
+            AstVar* portVarp = nullptr;
+            for (AstNode* stmtp = m_modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                if (AstVar* const varChkp = VN_CAST(stmtp, Var)) {
+                    if (varChkp->name() == portName && varChkp->isIfaceRef()) {
+                        portVarp = varChkp;
+                        break;
+                    }
+                }
+            }
+            if (!portVarp) { iterateChildren(nodep); return; }
+
+            // Get the interface module from the port's dtype
+            AstIfaceRefDType* const irefp = VN_CAST(portVarp->subDTypep(), IfaceRefDType);
+            if (!irefp) { iterateChildren(nodep); return; }
+
+            AstNodeModule* const newIfacep = irefp->ifaceViaCellp();
+            if (!newIfacep) { iterateChildren(nodep); return; }
+
+            // Find which module the variable currently belongs to
+            AstNodeModule* varModp = nullptr;
+            for (AstNode* np = varp; np; np = np->backp()) {
+                if (AstNodeModule* const modp = VN_CAST(np, NodeModule)) {
+                    varModp = modp;
+                    break;
+                }
+            }
+
+            // If variable is in a different module than the port's interface, remap it
+            if (varModp && varModp != newIfacep) {
+                for (AstNode* stmtp = newIfacep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                    if (AstVar* const newVarp = VN_CAST(stmtp, Var)) {
+                        if (newVarp->name() == varp->name()) {
+                            UINFO(9, "VarXRef relink " << varp->name() << " in "
+                                     << varModp->name() << " -> " << newIfacep->name() << endl);
+                            nodep->varp(newVarp);
+                            break;
                         }
                     }
                 }
@@ -1661,27 +1645,22 @@ class ParamVisitor final : public VNVisitor {
         return false;
     }
 
-    // Recursively specialize nested interface cells within a specialized interface
-    // This handles parameter passthrough for nested interface hierarchies
+    // Recursively specialize nested interface cells within a specialized interface.
+    // This handles parameter passthrough for nested interface hierarchies.
     void specializeNestedIfaceCells(AstNodeModule* ifaceModp) {
-        UINFO(9, "   Nested iface spec: processing cells in " << ifaceModp->name() << endl);
         for (AstNode* stmtp = ifaceModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstCell* const nestedCellp = VN_CAST(stmtp, Cell)) {
-                if (VN_IS(nestedCellp->modp(), Iface)
-                    && nestedCellp->paramsp()
-                    && !cellParamsReferenceIfacePorts(nestedCellp)) {
-                    AstNodeModule* const nestedSrcModp = nestedCellp->modp();
-                    UINFO(9, "   Nested iface spec: " << nestedCellp->name()
-                             << " " << nestedSrcModp->name() << " in " << ifaceModp->name() << endl);
-                    if (AstNodeModule* const nestedNewModp
-                        = m_processor.nodeDeparam(nestedCellp, nestedSrcModp, ifaceModp,
-                                                  ifaceModp->someInstanceName())) {
-                        // Recursively process nested interfaces within this nested interface
-                        if (nestedNewModp != nestedSrcModp) {
-                            specializeNestedIfaceCells(nestedNewModp);
-                        }
-                    }
-                }
+            AstCell* const nestedCellp = VN_CAST(stmtp, Cell);
+            if (!nestedCellp) continue;
+            if (!VN_IS(nestedCellp->modp(), Iface)) continue;
+            if (!nestedCellp->paramsp()) continue;
+            if (cellParamsReferenceIfacePorts(nestedCellp)) continue;
+
+            AstNodeModule* const nestedSrcModp = nestedCellp->modp();
+            if (AstNodeModule* const nestedNewModp
+                = m_processor.nodeDeparam(nestedCellp, nestedSrcModp, ifaceModp,
+                                          ifaceModp->someInstanceName())) {
+                // Recursively process nested interfaces within this nested interface
+                if (nestedNewModp != nestedSrcModp) specializeNestedIfaceCells(nestedNewModp);
             }
         }
     }
@@ -1700,14 +1679,10 @@ class ParamVisitor final : public VNVisitor {
                 AstNodeModule* const srcModp = cellp->modp();
                 if (AstNodeModule* const newModp
                     = m_processor.nodeDeparam(cellp, srcModp, m_modp, m_modp->someInstanceName())) {
-                    // For specialized interfaces, recursively process nested interface cells
-                    // This ensures that when modules using the interface are processed,
-                    // the nested interfaces are already specialized (parameter passthrough fix)
-                    if (newModp != srcModp) {
-                        UINFO(9, "   Early iface spec: " << cellp->name() << " " << srcModp->name()
-                                 << " -> " << newModp->name() << endl);
-                        specializeNestedIfaceCells(newModp);
-                    }
+                    // For specialized interfaces, recursively process nested interface cells.
+                    // This ensures nested interfaces are already specialized when modules
+                    // using the interface are processed (parameter passthrough fix).
+                    if (newModp != srcModp) specializeNestedIfaceCells(newModp);
                 }
             }
         }

@@ -804,12 +804,9 @@ public:
                         if (const AstVarScope* const vscp
                             = VN_CAST(lookupSymp->nodep(), VarScope)) {
                             const string varName = vscp->varp()->name();
-                            const string viftopSuffix = "__Viftop";
-                            if (varName.size() > viftopSuffix.size()
-                                && varName.substr(varName.size() - viftopSuffix.size())
-                                       == viftopSuffix) {
+                            if (VString::endsWith(varName, "__Viftop")) {
                                 const string cellName
-                                    = varName.substr(0, varName.size() - viftopSuffix.size());
+                                    = varName.substr(0, varName.size() - 8);  // 8 = len("__Viftop")
                                 VSymEnt* const parentSymp = lookupSymp->parentp();
                                 if (parentSymp) {
                                     VSymEnt* const cellSymp = parentSymp->findIdFlat(cellName);
