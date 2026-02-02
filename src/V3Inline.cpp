@@ -158,7 +158,8 @@ class InlineMarkVisitor final : public VNVisitor {
         }
     }
     void visit(AstVarXRef* nodep) override {
-        // Keep varp - needed by pinReconnectSimple; V3LinkDot re-resolves later
+        // Keep varp - V3Const::constifyEdit is called during pinReconnectSimple
+        // which needs varp to be set. V3LinkDot will re-resolve after inlining.
     }
     void visit(AstNodeFTaskRef* nodep) override {
         // Remove link. V3LinkDot will reestablish it after inlining.
