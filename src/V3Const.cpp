@@ -2665,8 +2665,11 @@ class ConstVisitor final : public VNVisitor {
     }
     bool matchToStringNConst(AstToStringN* nodep) {
         iterateChildren(nodep);
+        // Early exit if neither expensive nor params mode - can't simulate
+        // replaceWithSimulation creates SimulateVisitor which allocates VNUser1InUse
+        if (!(m_doExpensive || m_params)) return false;
+
         if (const AstInitArray* const initp = VN_CAST(nodep->lhsp(), InitArray)) {
-            if (!(m_doExpensive || m_params)) return false;
             // At present only support 1D unpacked arrays
             const auto initOfConst = [](const AstNode* const nodep) -> bool {  //
                 return VN_IS(nodep, Const) || VN_IS(nodep, InitItem);
@@ -2676,10 +2679,6 @@ class ConstVisitor final : public VNVisitor {
         } else if (!VN_IS(nodep->lhsp(), Const)) {
             return false;
         }
-        // Must check m_params/m_doExpensive for Const case too, since
-        // replaceWithSimulation creates SimulateVisitor which allocates VNUser1InUse
-        // Use | instead of || to avoid short-circuit branches for coverage
-        if (!(m_doExpensive | m_params)) return false;
         replaceWithSimulation(nodep);
         return true;
     }

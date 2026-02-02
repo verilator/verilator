@@ -56,13 +56,9 @@ public:
     bool hasDType() const override VL_MT_SAFE { return true; }
     virtual string emitVerilog() = 0;  /// Format string for verilog writing; see V3EmitV
     // For documentation on emitC format see EmitCFunc::emitOpName
-    // Non-pure-virtual with default error: some subclasses (e.g., AstMatches, AstTaggedExpr)
-    // are transformed away before V3EmitC, so their emitC() is never called. This default
-    // allows those classes to omit the override, eliminating unreachable code. Excluded from
-    // coverage because it's never executed - exists only as a safety net for unexpected calls.
-    // LCOV_EXCL_START
-    virtual string emitC() { V3ERROR_NA_RETURN(""); }
-    // LCOV_EXCL_STOP
+    // Default returns empty string - nodes transformed away before V3EmitC (e.g., AstMatches,
+    // AstTaggedExpr) don't need emitC(). Follows AstCountBits pattern.
+    virtual string emitC() { return ""; }
     virtual string emitSMT() const { return ""; };
     virtual string emitSimpleOperator() { return ""; }  // "" means not ok to use
     virtual bool emitCheckMaxWords() { return false; }  // Check VL_MULS_MAX_WORDS
@@ -1761,8 +1757,7 @@ public:
         this->guardp(guardp);
     }
     ASTGEN_MEMBERS_AstMatches;
-    // AstMatches is transformed away by V3Tagged before emission
-    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitVerilog() override { return "%l matches %r"; }
     bool cleanOut() const override { return false; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
@@ -2462,8 +2457,7 @@ public:
         this->exprp(exprp);
     }
     ASTGEN_MEMBERS_AstTaggedExpr;
-    // AstTaggedExpr is transformed away by V3Tagged before emission
-    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitVerilog() override { return "tagged %k"; }
     bool cleanOut() const override { return false; }
     bool sameNode(const AstNode* samep) const override {
         return m_name == VN_DBG_AS(samep, TaggedExpr)->m_name;
@@ -2481,8 +2475,7 @@ public:
         this->patternp(patternp);
     }
     ASTGEN_MEMBERS_AstTaggedPattern;
-    // AstTaggedPattern is transformed away by V3Tagged before emission
-    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitVerilog() override { return "tagged %k"; }
     bool cleanOut() const override { return false; }
     bool sameNode(const AstNode* samep) const override {
         return m_name == VN_DBG_AS(samep, TaggedPattern)->m_name;
