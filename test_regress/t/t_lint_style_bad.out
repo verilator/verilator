@@ -23,7 +23,7 @@
       |            ^~~
                        ... For warning description see https://verilator.org/warn/UNUSEDSIGNAL?v=latest
                        ... Use "/* verilator lint_off UNUSEDSIGNAL */" and lint_on around source to disable this message.
-%Warning-UNDRIVEN: t/t_lint_style_bad.v:12:14: Signal is not driven: 'top'
+%Warning-UNDRIVEN: t/t_lint_style_bad.v:12:14: Function variable is not driven: 'top'
                                              : ... note: In instance 't'
    12 |       output top;
       |              ^~~
