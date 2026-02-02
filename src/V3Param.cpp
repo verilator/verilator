@@ -912,6 +912,8 @@ class ParamProcessor final {
             AstNodeDType* rawTypep = VN_CAST(pinp->exprp(), NodeDType);
             if (rawTypep) V3Width::widthParamsEdit(rawTypep);
             AstNodeDType* exprp = rawTypep ? rawTypep->skipRefToNonRefp() : nullptr;
+            // Also width-process the default type so similarDType can compare widths correctly
+            if (modvarp->childDTypep()) V3Width::widthParamsEdit(modvarp->childDTypep());
             const AstNodeDType* const origp = modvarp->skipRefToNonRefp();
             if (!exprp) {
                 pinp->v3error("Parameter type pin value isn't a type: Param "
@@ -1185,17 +1187,9 @@ class ParamProcessor final {
         cellInterfaceCleanup(pinsp, srcModp, longname /*ref*/, any_overrides /*ref*/,
                              ifaceRefRefs /*ref*/);
 
-        // Default params are resolved as overrides
+        // Type parameters that match their default are handled in cellPinCleanup
+        // (similarDType check); only non-matching type params set any_overrides = true
         bool defaultsResolved = false;
-        if (!any_overrides) {
-            for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-                if (pinp->modPTypep()) {
-                    any_overrides = true;
-                    defaultsResolved = true;
-                    break;
-                }
-            }
-        }
 
         AstNodeModule* newModp = nullptr;
         if (m_hierBlocks.hierSubRun() && m_hierBlocks.isHierBlock(srcModp->origName())) {
