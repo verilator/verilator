@@ -2991,14 +2991,9 @@ class ConstVisitor final : public VNVisitor {
             // UINFOTREE(1, valuep, "", "visitvaref");
             iterateAndNextNull(nodep->varp()->valuep());  // May change nodep->varp()->valuep()
             AstNode* const valuep = nodep->varp()->valuep();
-            if (nodep->access().isReadOnly()
+            if (nodep->access().isReadOnly() && valuep
                 && ((!m_params  // Can reduce constant wires into equations
-                     && m_doNConst
-                     && v3Global.opt.fConst()
-                     // Default value, not a "known" constant for this usage
-                     && !nodep->varp()->isClassMember() && !nodep->varp()->sensIfacep()
-                     && !(nodep->varp()->isFuncLocal() && nodep->varp()->isNonOutput())
-                     && !nodep->varp()->noSubst() && !nodep->varp()->isSigPublic())
+                     && m_doNConst && v3Global.opt.fConst() && nodep->varp()->isConst())
                     || nodep->varp()->isParam())) {
                 if (operandConst(valuep)) {
                     const V3Number& num = VN_AS(valuep, Const)->num();
@@ -3330,6 +3325,7 @@ class ConstVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(procp), procp);
             // Set the initial value right in the variable so we can constant propagate
             AstNode* const initvaluep = exprp->cloneTree(false);
+            varrefp->varp()->isConst(true);
             varrefp->varp()->valuep(initvaluep);
         }
     }

@@ -917,6 +917,7 @@ void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t threadId,
         AstBasicDType* const s_mtaskStateDtypep
             = v3Global.rootp()->typeTablep()->findBasicDType(fl, VBasicDTypeKwd::MTASKSTATE);
         AstVar* const varp = new AstVar{fl, VVarType::MODULETEMP, name, s_mtaskStateDtypep};
+        varp->isConst(true);
         varp->valuep(new AstConst{fl, nDependencies});
         varp->protect(false);  // Do not protect as we have references in text
         modp->addStmtsp(varp);
@@ -998,6 +999,7 @@ const std::vector<AstCFunc*> createThreadFunctions(const ThreadSchedule& schedul
     AstVar* const varp = new AstVar{fl, VVarType::MODULETEMP,
                                     "__Vm_mtaskstate_final__" + cvtToStr(schedule.id()) + tag,
                                     s_mtaskStateDtypep};
+    varp->isConst(true);
     varp->valuep(new AstConst(fl, funcps.size()));
     varp->protect(false);  // Do not protect as we have references in text
     modp->addStmtsp(varp);

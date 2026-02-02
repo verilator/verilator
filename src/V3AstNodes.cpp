@@ -593,6 +593,7 @@ void AstVar::combineType(VVarType type) {
     }
     if (type == VVarType::TRI0) m_isPulldown = true;
     if (type == VVarType::TRI1) m_isPullup = true;
+    if (type.isParam()) m_isConst = true;
 }
 
 string AstVar::verilogKwd() const {
