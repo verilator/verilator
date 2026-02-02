@@ -777,9 +777,9 @@ public:
             } else {  // Searching for middle submodule, must be a cell name
                 VSymEnt* findSymp = findWithAltFlat(lookupSymp, ident, altIdent);
                 if (!findSymp) findSymp = findForkParentAlias(lookupSymp, ident);
-                if (findSymp)
+                if (findSymp) {
                     lookupSymp = unwrapForkParent(findSymp, ident);
-                else {
+                } else {
                     return nullptr;  // Not found
                 }
             }
@@ -792,6 +792,51 @@ public:
                             refLocationp->v3error("Dotted reference to instance that refers to "
                                                   "missing module/interface: "
                                                   << modp->prettyNameQ());
+                        }
+                    }
+                }
+                // Follow scope alias for nested interface port access
+                if (!leftname.empty()) {
+                    const auto aliasIt = m_scopeAliasMap[SAMN_IFTOP].find(lookupSymp);
+                    if (aliasIt != m_scopeAliasMap[SAMN_IFTOP].end()) {
+                        lookupSymp = aliasIt->second;
+                        // Alias may point to __Viftop VarScope; find corresponding Cell
+                        if (const AstVarScope* const vscp
+                            = VN_CAST(lookupSymp->nodep(), VarScope)) {
+                            const string varName = vscp->varp()->name();
+                            const string viftopSuffix = "__Viftop";
+                            if (varName.size() > viftopSuffix.size()
+                                && varName.substr(varName.size() - viftopSuffix.size())
+                                       == viftopSuffix) {
+                                const string cellName
+                                    = varName.substr(0, varName.size() - viftopSuffix.size());
+                                VSymEnt* const parentSymp = lookupSymp->parentp();
+                                if (parentSymp) {
+                                    VSymEnt* const cellSymp = parentSymp->findIdFlat(cellName);
+                                    if (cellSymp && VN_IS(cellSymp->nodep(), Cell)) {
+                                        lookupSymp = cellSymp;  // Use Cell for member lookup
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // No alias; try following IfaceRefDType to interface cell
+                        const AstVar* varp = VN_CAST(lookupSymp->nodep(), Var);
+                        if (!varp) {
+                            if (const AstVarScope* const vscp
+                                = VN_CAST(lookupSymp->nodep(), VarScope)) {
+                                varp = vscp->varp();
+                            }
+                        }
+                        if (varp) {
+                            if (const AstIfaceRefDType* const ifaceRefp
+                                = VN_CAST(varp->childDTypep(), IfaceRefDType)) {
+                                if (ifaceRefp->cellp() && existsNodeSym(ifaceRefp->cellp())) {
+                                    lookupSymp = getNodeSym(ifaceRefp->cellp());
+                                } else if (ifaceRefp->ifacep()) {
+                                    lookupSymp = getNodeSym(ifaceRefp->ifacep());
+                                }
+                            }
                         }
                     }
                 }
@@ -2433,13 +2478,9 @@ private:
                 string baddot;
                 VSymEnt* okSymp;
                 symp = m_statep->findDotted(nodep->rhsp()->fileline(), m_modSymp, scopename,
-                                            baddot, okSymp, false);
+                                            baddot, okSymp, true);
                 if (inl == "") break;
                 inl = LinkDotState::removeLastInlineScope(inl);
-            }
-            if (!symp) {
-                UINFO(9, "No symbol for interface alias rhs ("
-                             << std::string{refp ? "VARREF " : "VARXREF "} << scopename << ")");
             }
             UASSERT_OBJ(symp, nodep, "No symbol for interface alias rhs");
             UINFO(5, "       Found a linked scope RHS: " << scopename << "  se" << cvtToHex(symp)
