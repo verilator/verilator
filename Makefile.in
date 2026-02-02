@@ -578,6 +578,7 @@ MBAKE_FLAGS = format --config ./.bake.toml
 
 format-exec:
 	-chmod a+x test_regress/t/*.py
+	-chmod a-x test_regress/t/*.v
 
 format-make mbake:
 	$(MBAKE) --version
