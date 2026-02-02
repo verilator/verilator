@@ -1,0 +1,6 @@
+%Warning-CONSTRAINTIGN: t/t_constraint_array_limit.v:15:10: Constraint array reduction ignored (array size 32 exceeds --constraint-array-limit of 16), treating as state
+   15 |     data.sum() with (item) < 1000;
+      |          ^~~
+                        ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
+                        ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
+%Error: Exiting due to
