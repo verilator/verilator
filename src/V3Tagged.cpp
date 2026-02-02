@@ -764,8 +764,9 @@ class TaggedVisitor final : public VNVisitor {
         if (noInnerPattern || isPatternStar)
             return new AstCaseItem{itemp->fileline(), tagConstp, stmtsp};
         AstPatternVar* const patVarp = VN_CAST(innerPatternp, PatternVar);
-        UASSERT_OBJ(patVarp, innerPatternp,
-                    "Expected PatternVar after filtering null and PatternStar");
+        // Not PatternVar means nested TaggedPattern (e.g., "tagged Jmp (tagged JmpU .a)")
+        // Return early - nested pattern handled recursively via createMatchBody
+        if (!patVarp) return new AstCaseItem{itemp->fileline(), tagConstp, stmtsp};
         // A void member cannot have a pattern variable binding (e.g., "tagged Invalid .x" is
         // invalid) V3Width should catch this, but assert defensively
         UASSERT_OBJ(!isVoidDType(memberp->subDTypep()), itemp,

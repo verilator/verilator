@@ -741,7 +741,7 @@ class VerilatedVpiPutHolder final {
         char init = 0;  // to ensure trivial constructor
         std::string str;
         std::vector<s_vpi_vecval> vec;
-        ~Storage() noexcept {/* handled by VerilatedVpiPutHolder */};
+        ~Storage() noexcept { /* handled by VerilatedVpiPutHolder */ };
     } m_storage{};
 
 public:
