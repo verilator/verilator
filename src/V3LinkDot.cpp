@@ -828,12 +828,16 @@ public:
                                 varp = vscp->varp();
                             }
                         }
-                        if (varp) {
+                        if (varp && varp->isIfaceRef()) {
                             if (const AstIfaceRefDType* const ifaceRefp
-                                = VN_CAST(varp->childDTypep(), IfaceRefDType)) {
+                                = ifaceRefFromArray(varp->dtypep())) {
                                 if (ifaceRefp->cellp() && existsNodeSym(ifaceRefp->cellp())) {
                                     lookupSymp = getNodeSym(ifaceRefp->cellp());
-                                } else if (ifaceRefp->ifacep()) {
+                                } else if (ifaceRefp->ifaceViaCellp()
+                                           && existsNodeSym(ifaceRefp->ifaceViaCellp())) {
+                                    lookupSymp = getNodeSym(ifaceRefp->ifaceViaCellp());
+                                } else if (ifaceRefp->ifacep()
+                                           && existsNodeSym(ifaceRefp->ifacep())) {
                                     lookupSymp = getNodeSym(ifaceRefp->ifacep());
                                 }
                             }
@@ -2419,18 +2423,6 @@ private:
                     // symtable, but can't clone it now as we may have a later
                     // alias for it.
                     m_statep->insertScopeAlias(LinkDotState::SAMN_IFTOP, varSymp, cellSymp);
-                } else if (dtypep->ifaceViaCellp()
-                           && m_statep->existsNodeSym(dtypep->ifaceViaCellp())) {
-                    // Interface port: create alias to the interface definition
-                    // This enables nested interface member access through interface ports
-                    UINFO(9, "Iface port ref var " << nodep->varp()->name() << " " << nodep);
-                    VSymEnt* ifaceSymp = m_statep->getNodeSym(dtypep->ifaceViaCellp());
-                    // Handle modports
-                    if (dtypep->modportName() != "") {
-                        VSymEnt* const mpSymp = ifaceSymp->findIdFallback(dtypep->modportName());
-                        if (mpSymp && VN_IS(mpSymp->nodep(), Modport)) ifaceSymp = mpSymp;
-                    }
-                    m_statep->insertScopeAlias(LinkDotState::SAMN_IFTOP, varSymp, ifaceSymp);
                 }
             }
         }
