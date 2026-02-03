@@ -515,6 +515,7 @@ void connectPort(AstNodeModule* modp, AstVar* nodep, AstNodeExpr* pinExprp) {
             AstVarXRef* const newp = new AstVarXRef{xrp->fileline(), xrp->name(), xrp->dotted(),
                                                     access};
             newp->varp(xrp->varp());
+            newp->inlinedDots(xrp->inlinedDots());
             return newp;
         }
     };
