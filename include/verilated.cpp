@@ -1920,7 +1920,10 @@ IData VL_FREAD_I(int width, int array_lsb, int array_size, void* memp, IData fpi
 }
 
 #ifdef _VL_HAVE_STACKTRACE
-static std::string _vl_stacktrace_demangle(const std::string& input) {
+static std::string _vl_stacktrace_demangle(const std::string& input) VL_MT_SAFE {
+    static VerilatedMutex s_demangleMutex;
+    const VerilatedLockGuard lock{s_demangleMutex};
+
     std::string result;
     result.reserve(input.size());
 
