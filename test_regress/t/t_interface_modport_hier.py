@@ -11,6 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
+# Test hierarchical access through modport interface ports
+# Related to Issue #5941 and #2656
+
 test.compile()
 
 test.execute()
