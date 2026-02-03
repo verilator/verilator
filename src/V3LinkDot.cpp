@@ -2526,15 +2526,20 @@ private:
     }
     void processDeferredAliasScopes() {
         // Sort by hierarchy depth (shallower first) so outer aliases are resolved before inner
-        // Hierarchy depth can be determined by counting dots in the scope name or using parent chain
+        // Pre-compute depth map to avoid O(N log N * D) complexity in sort comparisons
+        std::unordered_map<VSymEnt*, int> depthMap;
+        for (const auto& pair : m_deferredAliasScopes) {
+            VSymEnt* const symp = pair.second;
+            if (depthMap.find(symp) == depthMap.end()) {
+                int depth = 0;
+                for (VSymEnt* p = symp; p; p = p->parentp()) ++depth;
+                depthMap[symp] = depth;
+            }
+        }
         std::stable_sort(m_deferredAliasScopes.begin(), m_deferredAliasScopes.end(),
-                         [](const std::pair<AstAliasScope*, VSymEnt*>& a,
-                            const std::pair<AstAliasScope*, VSymEnt*>& b) {
-                             // Count hierarchy depth using parent chain
-                             int depthA = 0, depthB = 0;
-                             for (VSymEnt* p = a.second; p; p = p->parentp()) ++depthA;
-                             for (VSymEnt* p = b.second; p; p = p->parentp()) ++depthB;
-                             return depthA < depthB;  // Shallower (fewer parents) comes first
+                         [&depthMap](const std::pair<AstAliasScope*, VSymEnt*>& a,
+                                     const std::pair<AstAliasScope*, VSymEnt*>& b) {
+                             return depthMap.at(a.second) < depthMap.at(b.second);
                          });
         // Process in sorted order
         for (auto& pair : m_deferredAliasScopes) {

@@ -623,6 +623,7 @@ class ParamProcessor final {
     // to be updated to reference the corresponding members in the new interface.
     class VarXRefRelinkVisitor final : public VNVisitor {
         AstNodeModule* m_modp;  // The cloned module we're updating
+        std::unordered_map<AstVar*, AstNodeModule*> m_varModuleMap;  // Cache var->module lookups
 
     public:
         explicit VarXRefRelinkVisitor(AstNodeModule* newModp)
@@ -631,6 +632,21 @@ class ParamProcessor final {
         }
 
     private:
+        // Find which module a variable belongs to, using cache to avoid repeated backp() walks
+        AstNodeModule* findVarModule(AstVar* varp) {
+            const auto it = m_varModuleMap.find(varp);
+            if (it != m_varModuleMap.end()) return it->second;
+            AstNodeModule* varModp = nullptr;
+            for (AstNode* np = varp; np; np = np->backp()) {
+                if (AstNodeModule* const modp = VN_CAST(np, NodeModule)) {
+                    varModp = modp;
+                    break;
+                }
+            }
+            m_varModuleMap[varp] = varModp;
+            return varModp;
+        }
+
         void visit(AstVarXRef* nodep) override {
             AstVar* const varp = nodep->varp();
             if (!varp) { iterateChildren(nodep); return; }
@@ -664,14 +680,8 @@ class ParamProcessor final {
             AstNodeModule* const newIfacep = irefp->ifaceViaCellp();
             if (!newIfacep) { iterateChildren(nodep); return; }
 
-            // Find which module the variable currently belongs to
-            AstNodeModule* varModp = nullptr;
-            for (AstNode* np = varp; np; np = np->backp()) {
-                if (AstNodeModule* const modp = VN_CAST(np, NodeModule)) {
-                    varModp = modp;
-                    break;
-                }
-            }
+            // Find which module the variable currently belongs to (cached)
+            AstNodeModule* const varModp = findVarModule(varp);
 
             // If variable is in a different module than the port's interface, remap it
             if (varModp && varModp != newIfacep) {
