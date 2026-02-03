@@ -1,0 +1,20 @@
+#!/usr/bin/env python3
+# DESCRIPTION: Verilator: Verilog Test driver/expect definition
+#
+# Copyright 2026 by Leela Pakanati. This program is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU
+# Lesser General Public License Version 3 or the Perl Artistic License
+# Version 2.0.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+import vltest_bootstrap
+
+test.scenarios('linter')
+
+# Issue #5066: Nested interface ports through interface arrays causes
+# internal error in V3Param. This test documents the current behavior
+# and should be updated when the bug is fixed to either pass or emit
+# a proper UNSUPPORTED error.
+test.lint(fails=True, expect_filename=test.golden_filename)
+
+test.passes()
