@@ -774,7 +774,7 @@ public:
                     }
                     if (!lookupSymp) return nullptr;  // Not found
                 }
-            } else {  // Searching for middle submodule, must be a cell name
+            } else {  // Searching for middle path component, must be a cell or interface port
                 VSymEnt* findSymp = findWithAltFlat(lookupSymp, ident, altIdent);
                 if (!findSymp) findSymp = findForkParentAlias(lookupSymp, ident);
                 if (findSymp) {
@@ -798,24 +798,23 @@ public:
                             }
                         }
                         if (varp && varp->isIfaceRef()) {
-                            // Found an interface port - redirect to its symbol table
-                            const AstIfaceRefDType* ifaceRefp
-                                = VN_CAST(varp->childDTypep(), IfaceRefDType);
-                            if (!ifaceRefp) ifaceRefp = VN_CAST(varp->dtypep(), IfaceRefDType);
-                            if (ifaceRefp) {
-                                // Redirect to modport or interface symbol table
-                                if (ifaceRefp->modportp() && existsNodeSym(ifaceRefp->modportp())) {
-                                    lookupSymp = getNodeSym(ifaceRefp->modportp());
-                                } else if (ifaceRefp->ifacep()) {
-                                    lookupSymp = getNodeSym(ifaceRefp->ifacep());
-                                } else {
-                                    return nullptr;
-                                }
+                            // Found an interface port - use findSymp directly
+                            // computeScopeAliases has already imported interface members
+                            // into this symbol entry, so we use it instead of redirecting
+                            // to the shared modport definition (which would cause all
+                            // instances to resolve to the same symbols - bug #2656)
+                            lookupSymp = findSymp;
+                        } else {
+                            // Non-interface symbol in middle path must be a cell (module instance)
+                            // to continue hierarchical resolution
+                            if (VN_IS(findSymp->nodep(), Cell)) {
+                                lookupSymp = findSymp;
                             } else {
+                                // Reject non-cell, non-interface symbols found via fallback
+                                // to prevent accidental resolution to unrelated symbols
+                                UINFO(8, "     middle-path: rejecting non-cell symbol\n");
                                 return nullptr;
                             }
-                        } else {
-                            lookupSymp = findSymp;
                         }
                     } else {
                         return nullptr;  // Not found
@@ -2452,8 +2451,8 @@ private:
                     UINFO(5, "       Found interface instance: se" << cvtToHex(cellSymp) << " "
                                                                    << cellSymp->nodep());
                     if (dtypep->modportName() != "") {
-                        VSymEnt* const mpSymp = m_statep->findDotted(
-                            nodep->fileline(), m_modSymp, ifcellname, baddot, okSymp, false);
+                        // Look up the modport within the interface cell's symbol table
+                        VSymEnt* const mpSymp = cellSymp->findIdFallback(dtypep->modportName());
                         UASSERT_OBJ(mpSymp, nodep,
                                     "No symbol for interface modport: "
                                         << nodep->prettyNameQ(dtypep->modportName()));
