@@ -1851,11 +1851,15 @@ class LinkDotFindVisitor final : public VNVisitor {
             m_curSymp->fallbackp(VL_RESTORER_PREV(m_curSymp));
             // DOT(x, SELLOOPVARS(var, loops)) -> SELLOOPVARS(DOT(x, var), loops)
             if (AstDot* const dotp = VN_CAST(nodep->arrayp(), Dot)) {
-                if (AstSelLoopVars* const loopvarsp = VN_CAST(dotp->rhsp(), SelLoopVars)) {
+                AstDot* dotAbovep = dotp;
+                while (AstDot* const dotNextp = VN_CAST(dotAbovep->rhsp(), Dot)) {
+                    dotAbovep = dotNextp;
+                }
+                if (AstSelLoopVars* const loopvarsp = VN_CAST(dotAbovep->rhsp(), SelLoopVars)) {
                     AstNodeExpr* const fromp = loopvarsp->fromp()->unlinkFrBack();
                     loopvarsp->unlinkFrBack();
                     dotp->replaceWith(loopvarsp);
-                    dotp->rhsp(fromp);
+                    dotAbovep->rhsp(fromp);
                     loopvarsp->fromp(dotp);
                 }
             }
