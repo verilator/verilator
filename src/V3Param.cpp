@@ -993,8 +993,6 @@ class ParamProcessor final {
             AstNodeDType* rawTypep = VN_CAST(pinp->exprp(), NodeDType);
             if (rawTypep) V3Width::widthParamsEdit(rawTypep);
             AstNodeDType* exprp = rawTypep ? rawTypep->skipRefToNonRefp() : nullptr;
-            // Also width-process the default type so similarDType can compare widths correctly
-            if (modvarp->childDTypep()) V3Width::widthParamsEdit(modvarp->childDTypep());
             const AstNodeDType* const origp = modvarp->skipRefToNonRefp();
             if (!exprp) {
                 pinp->v3error("Parameter type pin value isn't a type: Param "
@@ -1268,9 +1266,19 @@ class ParamProcessor final {
         cellInterfaceCleanup(pinsp, srcModp, longname /*ref*/, any_overrides /*ref*/,
                              ifaceRefRefs /*ref*/);
 
-        // Type parameters that match their default are handled in cellPinCleanup
-        // (similarDType check); only non-matching type params set any_overrides = true
+        // Classes/modules with type parameters need specialization even when types match defaults.
+        // This is required for UVM parameterized classes. However, interfaces should NOT
+        // be specialized when type params match defaults (needed for nested interface ports).
         bool defaultsResolved = false;
+        if (!any_overrides && !VN_IS(srcModp, Iface)) {
+            for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+                if (pinp->modPTypep()) {
+                    any_overrides = true;
+                    defaultsResolved = true;
+                    break;
+                }
+            }
+        }
 
         AstNodeModule* newModp = nullptr;
         if (m_hierBlocks.hierSubRun() && m_hierBlocks.isHierBlock(srcModp->origName())) {
@@ -1314,6 +1322,7 @@ class ParamProcessor final {
                                                    << " cellName=" << nodep->name()
                                                    << " cloned=" << cloned);
 
+        // Link source class to its specialized version for later relinking of method references
         if (defaultsResolved) srcModp->user4p(newModp);
 
         for (auto* stmtp = newModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
