@@ -1957,27 +1957,27 @@ std::string VL_STACKTRACE_N() VL_MT_SAFE {
     static VerilatedMutex s_stackTraceMutex;
     const VerilatedLockGuard lock{s_stackTraceMutex};
 
+#ifdef _VL_HAVE_STACKTRACE
     int nptrs = 0;
     char** strings = nullptr;
 
-#ifdef _VL_HAVE_STACKTRACE
     constexpr int BT_BUF_SIZE = 100;
     void* buffer[BT_BUF_SIZE];
     nptrs = backtrace(buffer, BT_BUF_SIZE);
     strings = backtrace_symbols(buffer, nptrs);
-#endif
 
     // cppcheck-suppress knownConditionTrueFalse
-    if (!strings) return "Unable to backtrace\n";
+    if (!strings) return "Unable to backtrace, call failed\n";
 
-#ifdef _VL_HAVE_STACKTRACE
     std::string result = "Backtrace:\n";
     for (int j = 0; j < nptrs; ++j)
         result += _vl_stacktrace_demangle(std::string{strings[j]} + "\n"s);
-#endif
 
     free(strings);
     return result;
+#else
+    return "Unable to backtrace; not supported\n";
+#endif
 }
 
 void VL_STACKTRACE() VL_MT_SAFE {
