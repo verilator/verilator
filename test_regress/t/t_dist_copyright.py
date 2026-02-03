@@ -21,6 +21,7 @@ EXEMPT_FILES_RE = r'(^\.|/\.|\.gitignore$|\.dat|\.gprof|\.mem|\.out$|\.png$|\.tr
 EXEMPT_FILES_LIST = """
     CITATION.cff
     CPPLINT.cfg
+    LICENSE
     LICENSES/
     REUSE.toml
     ci/ci-win-compile.ps1
