@@ -58,6 +58,20 @@ module l0_handler #(parameter type T = logic [7:0])(
   assign dout = l0.dut_out;
 endmodule
 
+module l1_reader #(parameter type T = logic)(
+  l1_if    l1,
+  output T dout
+);
+  assign dout = l1.dut_out;
+endmodule
+
+module l1_driver #(parameter type T = logic)(
+  input  logic clk,
+  l1_if        l1
+);
+  always_ff @(posedge clk) l1.dut_out <= l1.tb_in ^ T'('1);
+endmodule
+
 module l1_handler #(parameter type T = logic, parameter type L0A_T = logic)(
   input  logic       clk,
   l1_if              l1,
@@ -65,8 +79,11 @@ module l1_handler #(parameter type T = logic, parameter type L0A_T = logic)(
   output L0A_T       l0a_dout,
   output logic [7:0] l0b_dout
 );
-  always_ff @(posedge clk) l1.dut_out <= l1.tb_in ^ T'('1);
-  assign l1_dout = l1.dut_out;
+  // Use reader/driver submodules instead of direct access
+  l1_reader #(.T(T)) m_rdr (.l1(l1), .dout(l1_dout));
+  l1_driver #(.T(T)) m_drv (.clk(clk), .l1(l1));
+
+  // Still instantiate l0_handlers for nested ports
   l0_handler #(.T(L0A_T))       m_l0a (.clk(clk), .l0(l1.l0a), .dout(l0a_dout));
   l0_handler #(.T(logic [7:0])) m_l0b (.clk(clk), .l0(l1.l0b), .dout(l0b_dout));
 endmodule
@@ -87,6 +104,20 @@ module l2_handler #(parameter type T = logic, parameter type L0A_T = logic)(
   );
 endmodule
 
+module l3_reader #(parameter type T = logic)(
+  l3_if    l3,
+  output T dout
+);
+  assign dout = l3.dut_out;
+endmodule
+
+module l3_driver #(parameter type T = logic)(
+  input  logic clk,
+  l3_if        l3
+);
+  always_ff @(posedge clk) l3.dut_out <= l3.tb_in ^ T'('1);
+endmodule
+
 module l3_handler #(parameter type T = logic, parameter type L0A_T = logic)(
   input  logic                   clk,
   l3_if                          l3,
@@ -100,8 +131,11 @@ module l3_handler #(parameter type T = logic, parameter type L0A_T = logic)(
   output L0A_T                   l0a_2b_dout,
   output logic [7:0]             l0b_2b_dout
 );
-  always_ff @(posedge clk) l3.dut_out <= l3.tb_in ^ T'('1);
-  assign l3_dout = l3.dut_out;
+  // Use reader/driver submodules instead of direct access
+  l3_reader #(.T(T)) m_rdr (.l3(l3), .dout(l3_dout));
+  l3_driver #(.T(T)) m_drv (.clk(clk), .l3(l3));
+
+  // Still instantiate l2_handlers for nested ports
   l2_handler #(.T(logic [$bits(T)*2-1:0]), .L0A_T(L0A_T)) m_l2a (
     .clk(clk), .l2(l3.l2a),
     .l2_dout(l2a_dout), .l1_dout(l1_2a_dout),

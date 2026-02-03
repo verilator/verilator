@@ -58,6 +58,20 @@ module l0_handler #(parameter int W = 8)(
   assign dout = l0.dut_out;
 endmodule
 
+module l1_reader #(parameter int W = 8)(
+  l1_if                l1,
+  output logic [W-1:0] dout
+);
+  assign dout = l1.dut_out;
+endmodule
+
+module l1_driver #(parameter int W = 8)(
+  input  logic clk,
+  l1_if        l1
+);
+  always_ff @(posedge clk) l1.dut_out <= l1.tb_in ^ W'('1);
+endmodule
+
 module l1_handler #(parameter int W = 8, parameter int L0A_W = 8)(
   input  logic             clk,
   l1_if                    l1,
@@ -65,8 +79,11 @@ module l1_handler #(parameter int W = 8, parameter int L0A_W = 8)(
   output logic [L0A_W-1:0] l0a_dout,
   output logic [7:0]       l0b_dout
 );
-  always_ff @(posedge clk) l1.dut_out <= l1.tb_in ^ W'('1);
-  assign l1_dout = l1.dut_out;
+  // Use reader/driver submodules instead of direct access
+  l1_reader #(W) m_rdr (.l1(l1), .dout(l1_dout));
+  l1_driver #(W) m_drv (.clk(clk), .l1(l1));
+
+  // Still instantiate l0_handlers for nested ports
   l0_handler #(L0A_W) m_l0a (.clk(clk), .l0(l1.l0a), .dout(l0a_dout));
   l0_handler #(8)     m_l0b (.clk(clk), .l0(l1.l0b), .dout(l0b_dout));
 endmodule
@@ -87,6 +104,20 @@ module l2_handler #(parameter int W = 8, parameter int L0A_W = 8)(
   );
 endmodule
 
+module l3_reader #(parameter int W = 8)(
+  l3_if                l3,
+  output logic [W-1:0] dout
+);
+  assign dout = l3.dut_out;
+endmodule
+
+module l3_driver #(parameter int W = 8)(
+  input  logic clk,
+  l3_if        l3
+);
+  always_ff @(posedge clk) l3.dut_out <= l3.tb_in ^ W'('1);
+endmodule
+
 module l3_handler #(parameter int W = 8, parameter int L0A_W = 8)(
   input  logic             clk,
   l3_if                    l3,
@@ -100,8 +131,11 @@ module l3_handler #(parameter int W = 8, parameter int L0A_W = 8)(
   output logic [L0A_W-1:0] l0a_2b_dout,
   output logic [7:0]       l0b_2b_dout
 );
-  always_ff @(posedge clk) l3.dut_out <= l3.tb_in ^ W'('1);
-  assign l3_dout = l3.dut_out;
+  // Use reader/driver submodules instead of direct access
+  l3_reader #(W) m_rdr (.l3(l3), .dout(l3_dout));
+  l3_driver #(W) m_drv (.clk(clk), .l3(l3));
+
+  // Still instantiate l2_handlers for nested ports
   l2_handler #(W*2, L0A_W) m_l2a (
     .clk(clk), .l2(l3.l2a),
     .l2_dout(l2a_dout), .l1_dout(l1_2a_dout),
