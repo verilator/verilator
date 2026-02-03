@@ -260,7 +260,7 @@ VL_INST_INC_SRCDIR_FILES = \
   include/*.[chv]* \
   include/*.vlt \
   include/*.sv \
-  include/gtkwave/*.[chv]* \
+  include/fstcpp/*.[chv]* \
   include/vltstd/*.[chv]* \
 
 VL_INST_DATA_SRCDIR_FILES = \
@@ -311,7 +311,7 @@ installman: $(VL_INST_MAN_FILES)
 	done
 
 installdata:
-	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/include/gtkwave
+	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/include/fstcpp
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/include/vltstd
 	for p in $(VL_INST_INC_BLDDIR_FILES) ; do \
 	  $(INSTALL_DATA) $$p $(DESTDIR)$(pkgdatadir)/$$p; \
@@ -356,7 +356,7 @@ uninstall:
 	-rm $(DESTDIR)$(pkgdatadir)/verilator-config.cmake
 	-rm $(DESTDIR)$(pkgdatadir)/verilator-config-version.cmake
 	-rmdir $(DESTDIR)$(pkgdatadir)/bin
-	-rmdir $(DESTDIR)$(pkgdatadir)/include/gtkwave
+	-rmdir $(DESTDIR)$(pkgdatadir)/include/fstcpp
 	-rmdir $(DESTDIR)$(pkgdatadir)/include/vltstd
 	-rmdir $(DESTDIR)$(pkgdatadir)/include
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/make_hello_binary
@@ -414,7 +414,7 @@ CPPCHECK_FLAGS += --cppcheck-build-dir=$(CPPCHECK_CACHE)
 CPPCHECK_FLAGS += -DVL_DEBUG=1 -DVL_CPPCHECK=1 -DINFILTER_PIPE=1 -D__GNUC__=1
 CPPCHECK_FLAGS += -j$(CPPCHECK_JOBS)
 CPPCHECK_INC = -I$(srcdir)/include
-CPPCHECK_INC += -I$(srcdir)/include/gtkwave
+CPPCHECK_INC += -I$(srcdir)/include/fstcpp
 CPPCHECK_INC += -I$(srcdir)/include/vltstd
 CPPCHECK_INC += -I$(srcdir)/src/obj_dbg
 CPPCHECK_INC += -I$(srcdir)/src
@@ -619,7 +619,7 @@ FASTCOV_OPT += --dump-statistic
 FASTCOV_OPT += --exclude-glob
 FASTCOV_OPT += '/usr/*'
 FASTCOV_OPT += '*examples/*'
-FASTCOV_OPT += '*include/gtkwave/*'
+FASTCOV_OPT += '*include/fstcpp/*'
 FASTCOV_OPT += '*src/obj_dbg/*'
 FASTCOV_OPT += '*src/obj_opt/*.yy.cpp'
 FASTCOV_OPT += '*src/obj_opt/V3Ast*'

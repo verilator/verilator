@@ -182,6 +182,6 @@ install(
     PATTERN "include/*.cpp"
     PATTERN "include/*.vlt"
     PATTERN "include/*.sv"
-    PATTERN "include/gtkwave/*.[chv]*"
+    PATTERN "include/fstcpp/*.[chv]*"
     PATTERN "include/vltstd/*.[chv]*"
 )
