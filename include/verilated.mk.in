@@ -104,6 +104,7 @@ CPPFLAGS += -I. $(VK_CPPFLAGS_WALL) $(VK_CPPFLAGS_ALWAYS)
 VPATH += ..
 VPATH += $(VERILATOR_ROOT)/include
 VPATH += $(VERILATOR_ROOT)/include/vltstd
+VPATH += $(VERILATOR_ROOT)/include/fstcpp
 
 LDFLAGS += $(CFG_LDFLAGS_VERILATED)
 
@@ -204,6 +205,13 @@ VK_OBJS_FAST = $(addsuffix .o, $(VM_FAST))
 VK_OBJS_SLOW = $(addsuffix .o, $(VM_SLOW))
 
 VK_USER_OBJS = $(addsuffix .o, $(VM_USER_CLASSES))
+
+ifneq ($(VM_TRACE_FST),0)
+ifneq ($(VM_TRACE_FST),)
+    VM_GLOBAL_FAST += fstcpp_writer fstcpp_variable_info
+    LDLIBS = -llz4 -lz
+endif
+endif
 
 # Note VM_GLOBAL_FAST and VM_GLOBAL_SLOW holds the files required from the
 # run-time library. In practice everything is actually in VM_GLOBAL_FAST,
