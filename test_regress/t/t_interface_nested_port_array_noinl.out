@@ -1,5 +1,5 @@
-%Error: Internal Error: t/t_interface_nested_port_array_noinl.v:111:11: ../V3Param.cpp:#: Couldn't find pin in clone list
-                                                                      : ... note: In instance 't.m_l3'
+%Error: Internal Error: t/t_interface_nested_port_array.v:111:11: ../V3Param.cpp:#: Couldn't find pin in clone list
+                                                                : ... note: In instance 't.m_l3'
   111 |   l3_if #(W, L0A_W)        l3,
       |           ^
                         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

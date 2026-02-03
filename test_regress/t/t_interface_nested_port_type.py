@@ -11,7 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-# Type parameters in nested interfaces (with default type values)
 test.compile(verilator_flags2=['--binary'])
 
 test.execute()
