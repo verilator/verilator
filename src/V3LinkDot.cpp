@@ -780,7 +780,46 @@ public:
                 if (findSymp) {
                     lookupSymp = unwrapForkParent(findSymp, ident);
                 } else {
-                    return nullptr;  // Not found
+                    // Try prefixed lookup for interface ports accessed through hierarchy
+                    // (e.g., slave_inst.bus.data where bus is an interface port)
+                    // After inlining, interface ports have prefixed names like
+                    // top__DOT__slave_inst__DOT__bus
+                    UINFO(8, "     middle-path: trying prefixed lookup for '" << ident << "'\n");
+                    string baddot;
+                    findSymp = findSymPrefixed(lookupSymp, ident, baddot, /*fallback=*/true);
+                    UINFO(8, "     middle-path: prefixed lookup result: "
+                                 << (findSymp ? "found" : "not found") << "\n");
+                    if (findSymp) {
+                        // Check if this is an interface reference variable
+                        const AstVar* varp = VN_CAST(findSymp->nodep(), Var);
+                        if (!varp) {
+                            if (const AstVarScope* vscp = VN_CAST(findSymp->nodep(), VarScope)) {
+                                varp = vscp->varp();
+                            }
+                        }
+                        if (varp && varp->isIfaceRef()) {
+                            // Found an interface port - redirect to its symbol table
+                            const AstIfaceRefDType* ifaceRefp
+                                = VN_CAST(varp->childDTypep(), IfaceRefDType);
+                            if (!ifaceRefp) ifaceRefp = VN_CAST(varp->dtypep(), IfaceRefDType);
+                            if (ifaceRefp) {
+                                // Redirect to modport or interface symbol table
+                                if (ifaceRefp->modportp() && existsNodeSym(ifaceRefp->modportp())) {
+                                    lookupSymp = getNodeSym(ifaceRefp->modportp());
+                                } else if (ifaceRefp->ifacep()) {
+                                    lookupSymp = getNodeSym(ifaceRefp->ifacep());
+                                } else {
+                                    return nullptr;
+                                }
+                            } else {
+                                return nullptr;
+                            }
+                        } else {
+                            lookupSymp = findSymp;
+                        }
+                    } else {
+                        return nullptr;  // Not found
+                    }
                 }
             }
             if (lookupSymp) {
