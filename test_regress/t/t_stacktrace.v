@@ -6,22 +6,22 @@
 
 module t;
 
-   task automatic t;
-      // verilator no_inline_task
-      string trace;
+  task automatic t;
+    // verilator no_inline_task
+    string trace;
 
-      $display("== Trace Func");
-      trace = $stacktrace();
-      if (trace == "") $stop;
-      $display("%s", trace);
+    $display("== Trace Func");
+    trace = $stacktrace();
+    if (trace == "") $stop;
+    $display("%s", trace);
 
-      $display("== Trace Task");
-      $stacktrace;
+    $display("== Trace Task");
+    $stacktrace;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   endtask
+    $write("*-* All Finished *-*\n");
+    $finish;
+  endtask
 
-   initial t();
+  initial t();
 
 endmodule

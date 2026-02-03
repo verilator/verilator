@@ -1102,6 +1102,7 @@ src
 srcdir
 srcfile
 sscanf
+stacktrace
 stderr
 stdin
 stdout

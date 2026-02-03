@@ -528,6 +528,12 @@ $readmemb, $readmemh
    specification do not include support for readmem to multi-dimensional
    arrays.
 
+$stacktrace
+   The `$stacktrace` system call will show the C++ stack, not the Verilog
+   call stack, though the function names typically correlate. To get
+   symbolic names, the model must have debug symbols, e.g. compile with
+   `-CFLAGS -ggdb -LDFLAGS -ggdb -LDFLAGS -rdynamic`.
+
 $test$plusargs, $value$plusargs
    Supported, but the instantiating C++/SystemC wrapper must call
 
