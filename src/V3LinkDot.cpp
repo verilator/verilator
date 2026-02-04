@@ -2405,9 +2405,8 @@ private:
                     const string ifcellname = dtypep->cellName();
                     string baddot;
                     VSymEnt* okSymp;
-                    VSymEnt* cellSymp
-                        = m_statep->findDotted(nodep->fileline(), m_modSymp, ifcellname, baddot,
-                                               okSymp, false);
+                    VSymEnt* cellSymp = m_statep->findDotted(nodep->fileline(), m_modSymp,
+                                                             ifcellname, baddot, okSymp, false);
                     UASSERT_OBJ(
                         cellSymp, nodep,
                         "No symbol for interface instance: " << nodep->prettyNameQ(ifcellname));
@@ -2483,9 +2482,8 @@ private:
             string inl
                 = ((xrefp && xrefp->inlinedDots().size()) ? (xrefp->inlinedDots() + "__DOT__")
                                                           : "");
-            const string dottedPath = (xrefp && !xrefp->dotted().empty())
-                                          ? (xrefp->dotted() + ".")
-                                          : "";
+            const string dottedPath
+                = (xrefp && !xrefp->dotted().empty()) ? (xrefp->dotted() + ".") : "";
             VSymEnt* symp = nullptr;
             string scopename;
             while (!symp) {
@@ -2494,8 +2492,8 @@ private:
                                                : (dottedPath + xrefp->name()));
                 string baddot;
                 VSymEnt* okSymp;
-                symp = m_statep->findDotted(nodep->rhsp()->fileline(), modSymp, scopename,
-                                            baddot, okSymp, true);
+                symp = m_statep->findDotted(nodep->rhsp()->fileline(), modSymp, scopename, baddot,
+                                            okSymp, true);
                 if (inl == "") break;
                 inl = LinkDotState::removeLastInlineScope(inl);
             }
@@ -2546,9 +2544,7 @@ private:
                              return depthMap.at(a.second) < depthMap.at(b.second);
                          });
         // Process in sorted order
-        for (auto& pair : m_deferredAliasScopes) {
-            processAliasScope(pair.first, pair.second);
-        }
+        for (auto& pair : m_deferredAliasScopes) { processAliasScope(pair.first, pair.second); }
         m_deferredAliasScopes.clear();
     }
     void visit(AstNodeGen* nodep) override {  // ScopeVisitor::  // LCOV_EXCL_LINE

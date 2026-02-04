@@ -363,8 +363,8 @@ class InlineRelinkVisitor final : public VNVisitor {
 
         // Handle VarXRef: replace VarRef with VarXRef (e.g., nested interface port)
         const AstVarXRef* const xrefp = VN_AS(pinExpr, VarXRef);
-        AstVarXRef* const newp = new AstVarXRef{nodep->fileline(), xrefp->name(), xrefp->dotted(),
-                                                nodep->access()};
+        AstVarXRef* const newp
+            = new AstVarXRef{nodep->fileline(), xrefp->name(), xrefp->dotted(), nodep->access()};
         newp->varp(xrefp->varp());
         // Copy inlinedDots from pin expression - the normal visitor iteration will
         // prepend the cell name when this VarXRef is visited later
@@ -512,8 +512,8 @@ void connectPort(AstNodeModule* modp, AstVar* nodep, AstNodeExpr* pinExprp) {
             return newp;
         } else {
             const AstVarXRef* const xrp = VN_AS(pinRefp, VarXRef);
-            AstVarXRef* const newp = new AstVarXRef{xrp->fileline(), xrp->name(), xrp->dotted(),
-                                                    access};
+            AstVarXRef* const newp
+                = new AstVarXRef{xrp->fileline(), xrp->name(), xrp->dotted(), access};
             newp->varp(xrp->varp());
             newp->inlinedDots(xrp->inlinedDots());
             return newp;
