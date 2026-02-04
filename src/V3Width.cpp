@@ -6395,14 +6395,8 @@ class WidthVisitor final : public VNVisitor {
                                    << exprSize << ".");
                     UINFO(1, "    Related lo: " << modDTypep);
                     UINFO(1, "    Related hi: " << conDTypep);
-                } else if ((exprArrayp && !modArrayp) || (!exprArrayp && modArrayp)) {
-                    nodep->v3error(
-                        "Illegal "
-                        << nodep->prettyOperatorName() << "," << " mismatch between port which is"
-                        << (modArrayp ? "" : " not") << " an array," << " and expression which is"
-                        << (exprArrayp ? "" : " not") << " an array. (IEEE 1800-2023 7.6)");
-                    UINFO(1, "    Related lo: " << modDTypep);
-                    UINFO(1, "    Related hi: " << conDTypep);
+                } else {
+                    checkUnpackedArrayAssignmentCompatible(nodep, modDTypep, conDTypep);
                 }
                 iterateCheckAssign(nodep, "pin connection", nodep->exprp(), FINAL, subDTypep);
             }
