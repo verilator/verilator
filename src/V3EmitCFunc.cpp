@@ -31,7 +31,7 @@ constexpr int VL_VALUE_STRING_MAX_WIDTH = 8192;
 //######################################################################
 // EmitCFunc
 
-bool EmitCFunc::emitSimpleOk(AstNodeExpr* nodep) {
+bool EmitCFunc::emitSimpleOk(AstNodeBEmitExpr* nodep) {
     // Can we put out a simple (A + B) instead of VL_ADD_III(A,B)?
     if (nodep->emitSimpleOperator() == "") return false;
     if (nodep->isWide()) return false;
