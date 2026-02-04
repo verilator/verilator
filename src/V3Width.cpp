@@ -8047,8 +8047,8 @@ class WidthVisitor final : public VNVisitor {
         // Sizes of fixed-size arrays should be the same
         // Dynamic-sized arrays are always assignable
         for (uint32_t dim = 0; dim < rhsDim.second; dim++) {
-            if (const AstNodeArrayDType* rhsArray = VN_AS(rhsDtpIter, NodeArrayDType)) {
-                if (const AstNodeArrayDType* lhsArray = VN_AS(lhsDtpIter, NodeArrayDType)) {
+            if (const AstNodeArrayDType* rhsArray = VN_CAST(rhsDtpIter, NodeArrayDType)) {
+                if (const AstNodeArrayDType* lhsArray = VN_CAST(lhsDtpIter, NodeArrayDType)) {
                     if (lhsArray->elementsConst() != rhsArray->elementsConst()) {
                         nodep->v3error("Illegal assignment: Unmatched array sizes in dimension "
                                        << dim << " " << "(" << lhsArray->elementsConst()
