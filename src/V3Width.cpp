@@ -65,8 +65,6 @@
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
-#include "V3Width.h"
-
 #include "V3Ast.h"
 #include "V3Begin.h"
 #include "V3Const.h"
@@ -79,7 +77,10 @@
 #include "V3String.h"
 #include "V3Task.h"
 #include "V3UniqueNames.h"
+#include "V3Width.h"
 #include "V3WidthCommit.h"
+
+#include <cstdint>
 
 // More code; this file was getting too large; see actions there
 #define VERILATOR_V3WIDTH_CPP_
@@ -5785,30 +5786,11 @@ class WidthVisitor final : public VNVisitor {
 
             // IEEE 1800-2023 7.6: For unpacked arrays to be assignment compatible,
             // the element types shall be equivalent (IEEE 1800-2023 6.22.2).
-            // Check specifically for 2-state vs 4-state mismatch for unpacked array
-            // to unpacked array assignments, as this is a common IEEE compliance issue.
             // Note: Streaming operators and string literals have implicit conversion rules.
             if (nodep->rhsp()->dtypep()) {  // May be null on earlier errors
                 const AstNodeDType* const lhsDtp = lhsDTypep->skipRefp();
                 const AstNodeDType* const rhsDtp = nodep->rhsp()->dtypep()->skipRefp();
-                // Only check unpacked array to unpacked array assignments
-                const bool lhsIsUnpackArray
-                    = VN_IS(lhsDtp, UnpackArrayDType) || VN_IS(lhsDtp, DynArrayDType)
-                      || VN_IS(lhsDtp, QueueDType) || VN_IS(lhsDtp, AssocArrayDType);
-                const bool rhsIsUnpackArray
-                    = VN_IS(rhsDtp, UnpackArrayDType) || VN_IS(rhsDtp, DynArrayDType)
-                      || VN_IS(rhsDtp, QueueDType) || VN_IS(rhsDtp, AssocArrayDType);
-                if (lhsIsUnpackArray && rhsIsUnpackArray) {
-                    if (lhsDtp->isFourstate() != rhsDtp->isFourstate()) {
-                        nodep->v3error(
-                            "Assignment between 2-state and 4-state types requires "
-                            "equivalent element types (IEEE 1800-2023 6.22.2, 7.6)\n"
-                            << nodep->warnMore() << "... LHS type: " << lhsDtp->prettyDTypeNameQ()
-                            << (lhsDtp->isFourstate() ? " (4-state)" : " (2-state)") << "\n"
-                            << nodep->warnMore() << "... RHS type: " << rhsDtp->prettyDTypeNameQ()
-                            << (rhsDtp->isFourstate() ? " (4-state)" : " (2-state)"));
-                    }
-                }
+                checkUnpackedArrayAssignmentCompatible(nodep, lhsDtp, rhsDtp);
             }
 
             iterateCheckAssign(nodep, "Assign RHS", nodep->rhsp(), FINAL, lhsDTypep);
@@ -8042,6 +8024,54 @@ class WidthVisitor final : public VNVisitor {
             if (isBaseClassRecurse(cls1p, cextp->classp())) return true;
         }
         return false;
+    }
+    // Checks whether two types are assignment-compatible according to IEEE 1800-2023 7.6
+    void checkUnpackedArrayAssignmentCompatible(const AstNode* nodep,
+                                                const AstNodeDType* const lhsDtp,
+                                                const AstNodeDType* const rhsDtp) {
+        const bool isLhsAggregate = lhsDtp->isAggregateType();
+        const bool isRhsAggregate = rhsDtp->isAggregateType();
+        if (!(isLhsAggregate || isRhsAggregate)) { return; }
+        if ((isLhsAggregate && !isRhsAggregate) || (!isLhsAggregate && isRhsAggregate)) {
+            nodep->v3error("Illegal assignment: " << rhsDtp->prettyDTypeNameQ()
+                                                  << " is not assignment compatible with "
+                                                  << lhsDtp->prettyDTypeNameQ());
+            return;
+        }
+        std::pair<uint32_t, uint32_t> lhsDim = lhsDtp->dimensions(false),
+                                      rhsDim = rhsDtp->dimensions(false);
+        // Check if unpacked array dimensions are matching
+        // TODO: Check for associative arrays which are not assignment compatible with other arrays
+        if (lhsDim.second != rhsDim.second) {
+            nodep->v3error("Illegal assignment: Unmatched number of unpacked dimensions "
+                           << "(" << lhsDim.second << " v.s. " << rhsDim.second << ")");
+            return;
+        }
+
+        const AstNodeDType* lhsDtpIter = lhsDtp;
+        const AstNodeDType* rhsDtpIter = rhsDtp;
+        // Sizes of fixed-size arrays should be the same
+        // Dynamic-sized arrays are always assignable
+        for (uint32_t dim = 0; dim < rhsDim.second; dim++) {
+            if (const AstNodeArrayDType* rhsArray = VN_AS(rhsDtpIter, NodeArrayDType)) {
+                if (const AstNodeArrayDType* lhsArray = VN_AS(lhsDtpIter, NodeArrayDType)) {
+                    if (lhsArray->elementsConst() != rhsArray->elementsConst()) {
+                        nodep->v3error("Illegal assignment: Unmatched array sizes in dimension "
+                                       << dim << " " << "(" << lhsArray->elementsConst()
+                                       << " v.s. " << rhsArray->elementsConst() << ")");
+                        return;
+                    }
+                }
+            }
+            lhsDtpIter = lhsDtpIter->subDTypep();
+            rhsDtpIter = rhsDtpIter->subDTypep();
+        }
+        // Element types of source and target shall be equivalent
+        if (!isEquivalentDType(lhsDtpIter, rhsDtpIter)) {
+            nodep->v3error("Illegal assignment: Array element types are not equivalent "
+                           << "(" << lhsDtpIter->prettyDTypeNameQ() << " v.s. "
+                           << rhsDtpIter->prettyDTypeNameQ() << ")");
+        }
     }
     void checkClassAssign(const AstNode* nodep, const char* side, AstNode* rhsp,
                           AstNodeDType* const lhsDTypep) {
