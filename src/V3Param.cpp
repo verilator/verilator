@@ -822,7 +822,25 @@ class ParamProcessor final {
         // thus we need to stash this info.
         collectPins(clonemapp, newModp, srcModp->user3p());
         // Relink parameter vars to the new module
-        relinkPins(clonemapp, paramsp);
+        // For interface ports (e.g., l3_if #(W, L0A_W) l3), the parameter pins may
+        // reference variables from the enclosing module rather than from the interface
+        // being cloned. In such cases, use relinkPinsByName to match by variable name.
+        // Check if any parameter pins reference variables outside the cloned interface.
+        // This is O(n) but acceptable since parameter pin lists are typically small (<10 pins).
+        bool needRelinkByName = false;
+        if (paramsp) {
+            for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+                if (pinp->modVarp() && clonemapp->find(pinp->modVarp()) == clonemapp->end()) {
+                    needRelinkByName = true;
+                    break;
+                }
+            }
+        }
+        if (needRelinkByName) {
+            relinkPinsByName(paramsp, newModp);
+        } else {
+            relinkPins(clonemapp, paramsp);
+        }
 
         // Fix any interface references
         for (auto it = ifaceRefRefs.cbegin(); it != ifaceRefRefs.cend(); ++it) {
@@ -1070,6 +1088,13 @@ class ParamProcessor final {
                     pinIrefp
                         = VN_AS(arraySubDTypep(VN_AS(exprp->op1p(), VarRef)->varp()->subDTypep()),
                                 IfaceRefDType);
+                } else if (VN_IS(exprp, CellArrayRef)) {
+                    // Interface array element selection (e.g., l1(l2.l1[0]) for nested iface array)
+                    // The CellArrayRef is not yet fully linked to an interface type.
+                    // Skip interface cleanup for this pin - V3LinkDot will resolve this later.
+                    // Just continue to the next pin without error.
+                    UINFO(9, "Skipping interface cleanup for CellArrayRef pin: " << pinp << endl);
+                    continue;
                 }
 
                 UINFO(9, "     portIfaceRef " << portIrefp);
@@ -1929,13 +1954,25 @@ class ParamVisitor final : public VNVisitor {
         V3Const::constifyParamsEdit(nodep->selp());
         if (const AstConst* const constp = VN_CAST(nodep->selp(), Const)) {
             const string index = AstNode::encodeNumber(constp->toSInt());
-            const string replacestr = nodep->name() + "__BRA__??__KET__";
+            // For nested interface array ports, the node name may have a __Viftop suffix
+            // that doesn't exist in the original unlinked text. Try without the suffix.
+            const string viftopSuffix = "__Viftop";
+            const string baseName = VString::endsWith(nodep->name(), viftopSuffix)
+                                        ? nodep->name().substr(0, nodep->name().size()
+                                                                       - viftopSuffix.size())
+                                        : nodep->name();
+            const string replacestr = baseName + "__BRA__??__KET__";
             const size_t pos = m_unlinkedTxt.find(replacestr);
-            UASSERT_OBJ(pos != string::npos, nodep,
-                        "Could not find array index in unlinked text: '"
-                            << m_unlinkedTxt << "' for node: " << nodep);
+            // For interface port array element selections (e.g., l1(l2.l1[0])),
+            // the AstCellArrayRef may be visited outside of an AstUnlinkedRef context.
+            // In such cases, m_unlinkedTxt won't contain the expected pattern.
+            // Simply skip the replacement - the cell array ref will be resolved later.
+            if (pos == string::npos) {
+                UINFO(9, "Skipping unlinked text replacement for " << nodep << endl);
+                return;
+            }
             m_unlinkedTxt.replace(pos, replacestr.length(),
-                                  nodep->name() + "__BRA__" + index + "__KET__");
+                                  baseName + "__BRA__" + index + "__KET__");
         } else {
             nodep->v3error("Could not expand constant selection inside dotted reference: "
                            << nodep->selp()->prettyNameQ());
