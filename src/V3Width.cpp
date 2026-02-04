@@ -5788,9 +5788,8 @@ class WidthVisitor final : public VNVisitor {
             // the element types shall be equivalent (IEEE 1800-2023 6.22.2).
             // Note: Streaming operators and string literals have implicit conversion rules.
             if (nodep->rhsp()->dtypep()) {  // May be null on earlier errors
-                const AstNodeDType* const lhsDtp = lhsDTypep->skipRefp();
-                const AstNodeDType* const rhsDtp = nodep->rhsp()->dtypep()->skipRefp();
-                checkUnpackedArrayAssignmentCompatible(nodep, lhsDtp, rhsDtp);
+                checkUnpackedArrayAssignmentCompatible<AstNodeVarRef, AstNodeVarRef>(nodep, VN_CAST(nodep->lhsp(), NodeVarRef),
+                                                       VN_CAST(nodep->rhsp(), NodeVarRef));
             }
 
             iterateCheckAssign(nodep, "Assign RHS", nodep->rhsp(), FINAL, lhsDTypep);
@@ -6396,7 +6395,8 @@ class WidthVisitor final : public VNVisitor {
                     UINFO(1, "    Related lo: " << modDTypep);
                     UINFO(1, "    Related hi: " << conDTypep);
                 } else {
-                    checkUnpackedArrayAssignmentCompatible(nodep, modDTypep, conDTypep);
+                    checkUnpackedArrayAssignmentCompatible<AstVar, AstNodeVarRef>(
+                        nodep, nodep->modVarp(), VN_CAST(nodep->exprp(), NodeVarRef));
                 }
                 iterateCheckAssign(nodep, "pin connection", nodep->exprp(), FINAL, subDTypep);
             }
@@ -8020,9 +8020,16 @@ class WidthVisitor final : public VNVisitor {
         return false;
     }
     // Checks whether two types are assignment-compatible according to IEEE 1800-2023 7.6
-    void checkUnpackedArrayAssignmentCompatible(const AstNode* nodep,
-                                                const AstNodeDType* const lhsDtp,
-                                                const AstNodeDType* const rhsDtp) {
+    template <typename T, typename N>
+    void checkUnpackedArrayAssignmentCompatible(const AstNode* nodep, const T* const lhsRefp,
+                                                const N* const rhsRefp) {
+        static_assert(
+            (std::is_same_v<T, AstVar> || std::is_same_v<T, AstNodeVarRef>)
+                && (std::is_same_v<N, AstVar> || std::is_same_v<N, AstNodeVarRef>),
+            "Unsupported types provided.");
+        if (!lhsRefp || !rhsRefp) return;
+        const AstNodeDType* const lhsDtp = lhsRefp->dtypep()->skipRefp();
+        const AstNodeDType* const rhsDtp = rhsRefp->dtypep()->skipRefp();
         const bool isLhsAggregate = lhsDtp->isAggregateType();
         const bool isRhsAggregate = rhsDtp->isAggregateType();
         if (!(isLhsAggregate || isRhsAggregate)) { return; }
@@ -8030,6 +8037,8 @@ class WidthVisitor final : public VNVisitor {
             nodep->v3error("Illegal assignment: " << rhsDtp->prettyDTypeNameQ()
                                                   << " is not assignment compatible with "
                                                   << lhsDtp->prettyDTypeNameQ());
+            return;
+        } else if (VN_IS(lhsDtp, QueueDType) && VN_IS(rhsDtp, EmptyQueueDType)) {
             return;
         }
         std::pair<uint32_t, uint32_t> lhsDim = lhsDtp->dimensions(false),
