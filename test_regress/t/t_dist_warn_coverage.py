@@ -26,6 +26,16 @@ for s in [
         'Expecting define formal arguments. Found:',  # Instead define syntax error
         'Syntax error: Range \':\', \'+:\' etc are not allowed in the instance',  # Instead get syntax error
         'dynamic new() not expected in this context (expected under an assign)',  # Instead get syntax error
+
+        # Tested in t_vpi_force.cpp, but not picked up by pattern matching in this script yet
+        '%s: Signal \'%s\' is marked forceable, but force',
+        '%s: Signal \'%s\' with vpiHandle \'%p\' is marked forceable, but force',
+        '%s: vpi force or release requested for \'%s\', but vpiHandle \'%p\' of enable',  # Emitted as part of a different error message because this is thrown by a nested function
+        '%s: vpi force or release requested for \'%s\', but vpiHandle \'%p\' of value',  # Emitted as part of a different error message because this is thrown by a nested function
+        '%s: Trailing garbage \'%s\' in \'%s\' as value %s for %s',
+        '%s: Non hex character \'%c\' in \'%s\' as value %s for %s',
+        '%s: Non octal character \'%c\' in \'%s\' as value %s for %s',
+
         # Not yet analyzed
         '$VERILATOR_ROOT needs to be in environment',
         '--pipe-filter protocol error, unexpected:',
@@ -40,15 +50,9 @@ for s in [
         '%%Warning: DPI svOpenArrayHandle function index 2',
         '%%Warning: DPI svOpenArrayHandle function index 3',
         '%s : callback data pointer is null',
-        '%s: Could not retrieve value of signal \'%s\' with',
         '%s: Ignoring vpi_put_value to vpiConstant: %s',
         '%s: Ignoring vpi_put_value to vpiParameter: %s',
-        '%s: Non hex character \'%c\' in \'%s\' as value %s for %s',
-        '%s: Non octal character \'%c\' in \'%s\' as value %s for %s',
         '%s: Parsing failed for \'%s\' as value %s for %s',
-        '%s: Signal \'%s\' is marked forceable, but force',
-        '%s: Signal \'%s\' with vpiHandle \'%p\' is marked forceable, but force',
-        '%s: Trailing garbage \'%s\' in \'%s\' as value %s for %s',
         '%s: Unsupported callback type %s',
         '%s: Unsupported flags (%x)',
         '%s: Unsupported format (%s) as requested for %s',
@@ -66,8 +70,6 @@ for s in [
         '%s: index %u for object %s is out of bounds [%u,%u]',
         '%s: requested elements (%u) exceed array size (%u)',
         '%s: requested elements to set (%u) exceed array size (%u)',
-        '%s: vpi force or release requested for \'%s\', but vpiHandle \'%p\' of enable',
-        '%s: vpi force or release requested for \'%s\', but vpiHandle \'%p\' of value',
         'Ignoring vpi_get_time with nullptr value pointer',
         'Ignoring vpi_get_value_array with null index pointer',
         'Ignoring vpi_get_value_array with null value pointer',
@@ -187,13 +189,8 @@ def read_messages():
             for origline in fh:
                 line = origline
                 lineno += 1
-                if re.match(r'^\s*//', line):
-                    continue
-                if re.match(r'^\s*/\*', line):
-                    continue
-                excl = excl_next
-                # print(('C ' if (statement != "") else 'L') + line)
 
+                excl = excl_next
                 if 'LCOV_EXCL_START' in line:
                     excl = True
                     excl_next = True
@@ -204,6 +201,12 @@ def read_messages():
                 if excl:
                     statement = ""
                     continue
+
+                if re.match(r'^\s*//', line):
+                    continue
+                if re.match(r'^\s*/\*', line):
+                    continue
+                # print(('C ' if (statement != "") else 'L') + line)
 
                 line = re.sub(r'\\n', '', line)
                 line = re.sub(r'\s+//.*', '', line)
