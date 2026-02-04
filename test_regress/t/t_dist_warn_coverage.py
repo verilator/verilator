@@ -31,11 +31,11 @@ for s in [
         # Tested in t_vpi_force.cpp, but not picked up by pattern matching in this script yet
         '%s: Signal \'%s\' is marked forceable, but force',
         '%s: Signal \'%s\' with vpiHandle \'%p\' is marked forceable, but force',
-        '%s: vpi force or release requested for \'%s\', but vpiHandle \'%p\' of enable',  # Emitted as part of a different error message because this is thrown by a nested function
-        '%s: vpi force or release requested for \'%s\', but vpiHandle \'%p\' of value',  # Emitted as part of a different error message because this is thrown by a nested function
         '%s: Trailing garbage \'%s\' in \'%s\' as value %s for %s',
         '%s: Non hex character \'%c\' in \'%s\' as value %s for %s',
         '%s: Non octal character \'%c\' in \'%s\' as value %s for %s',
+        '%s: VPI force or release requested for \'%s\', but vpiHandle \'%p\' of enable',  # Emitted as part of a different error message because this is thrown by a nested function
+        '%s: VPI force or release requested for \'%s\', but vpiHandle \'%p\' of value',  # Emitted as part of a different error message because this is thrown by a nested function
 
         # Not yet analyzed
         '$VERILATOR_ROOT needs to be in environment',
@@ -50,10 +50,12 @@ for s in [
         '%%Warning: DPI svOpenArrayHandle function index 1',
         '%%Warning: DPI svOpenArrayHandle function index 2',
         '%%Warning: DPI svOpenArrayHandle function index 3',
-        '%s : callback data pointer is null',
         '%s: Ignoring vpi_put_value to vpiConstant: %s',
         '%s: Ignoring vpi_put_value to vpiParameter: %s',
+        '%s: Index %u for object \'%s\' is out of bounds [%u,%u]',
         '%s: Parsing failed for \'%s\' as value %s for %s',
+        '%s: Requested elements (%u) exceed array size (%u)',
+        '%s: Requested elements to set (%u) exceed array size (%u)',
         '%s: Unsupported callback type %s',
         '%s: Unsupported flags (%x)',
         '%s: Unsupported format (%s) as requested for %s',
@@ -68,9 +70,7 @@ for s in [
         '%s: Unsupported vpiHandle (%p)',
         '%s: Unsupported vpiHandle (%p) for type %s, nothing will be returned',
         '%s: Unsupported vpiUserAllocFlag (%x)',
-        '%s: index %u for object %s is out of bounds [%u,%u]',
-        '%s: requested elements (%u) exceed array size (%u)',
-        '%s: requested elements to set (%u) exceed array size (%u)',
+        '%s: VPI callback data pointer is null',
         'Ignoring vpi_get_time with nullptr value pointer',
         'Ignoring vpi_get_value_array with null index pointer',
         'Ignoring vpi_get_value_array with null value pointer',

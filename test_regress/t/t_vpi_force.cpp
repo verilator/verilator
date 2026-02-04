@@ -364,7 +364,7 @@ int checkValue(const std::string& scopeName, const std::string& testSignalName,
         signalHandle, signalFormat, {scopeName, testSignalName + "__VforceEn"},
         "vl_vpi_get_value: Signal '" + testSignalFullName
             + "' is marked forceable, but force control signals could not be retrieved. Error "
-              "message: getForceControlSignals: vpi force or release requested for '"
+              "message: getForceControlSignals: VPI force or release requested for '"
             + testSignalFullName + "', but vpiHandle '(nil)' of enable signal '"
             + testSignalFullName
             + "__VforceEn' could not be cast to VerilatedVpioVar*. Ensure signal is marked as "
@@ -375,7 +375,7 @@ int checkValue(const std::string& scopeName, const std::string& testSignalName,
         signalHandle, signalFormat, {scopeName, testSignalName + "__VforceVal"},
         "vl_vpi_get_value: Signal '" + testSignalFullName
             + "' is marked forceable, but force control signals could not be retrieved. Error "
-              "message: getForceControlSignals: vpi force or release requested for '"
+              "message: getForceControlSignals: VPI force or release requested for '"
             + testSignalFullName + "', but vpiHandle '(nil)' of value signal '"
             + testSignalFullName
             + "__VforceVal' could not be cast to VerilatedVpioVar*. Ensure signal is marked "
@@ -418,7 +418,7 @@ int forceSignal(const std::string& scopeName, const std::string& testSignalName,
         {"vpi_put_value: Signal '" + testSignalFullName + "' with vpiHandle ",
          // Exact handle address does not matter
          " is marked forceable, but force control signals could not be retrieved. Error "
-         "message: getForceControlSignals: vpi force or release requested for '"
+         "message: getForceControlSignals: VPI force or release requested for '"
              + testSignalFullName + "', but vpiHandle '(nil)' of enable signal '"
              + testSignalFullName
              + "__VforceEn' could not be cast to VerilatedVpioVar*. Ensure signal is marked "
@@ -431,7 +431,7 @@ int forceSignal(const std::string& scopeName, const std::string& testSignalName,
         {"vpi_put_value: Signal '" + testSignalFullName + "' with vpiHandle ",
          // Exact handle address does not matter
          " is marked forceable, but force control signals could not be retrieved. Error "
-         "message: getForceControlSignals: vpi force or release requested for '"
+         "message: getForceControlSignals: VPI force or release requested for '"
              + testSignalFullName + "', but vpiHandle '(nil)' of value signal '"
              + testSignalFullName
              + "__VforceVal' could not be cast to VerilatedVpioVar*. Ensure signal is marked "
@@ -472,7 +472,7 @@ int releaseSignal(const std::string& scopeName, const std::string& testSignalNam
         {"vpi_put_value: Signal '" + testSignalFullName + "' with vpiHandle ",
          // Exact handle address does not matter
          " is marked forceable, but force control signals could not be retrieved. Error "
-         "message: getForceControlSignals: vpi force or release requested for '"
+         "message: getForceControlSignals: VPI force or release requested for '"
              + testSignalFullName + "', but vpiHandle '(nil)' of enable signal '"
              + testSignalFullName
              + "__VforceEn' could not be cast to VerilatedVpioVar*. Ensure signal is marked "
@@ -485,7 +485,7 @@ int releaseSignal(const std::string& scopeName, const std::string& testSignalNam
         {"vpi_put_value: Signal '" + testSignalFullName + "' with vpiHandle ",
          // Exact handle address does not matter
          " is marked forceable, but force control signals could not be retrieved. Error "
-         "message: getForceControlSignals: vpi force or release requested for '"
+         "message: getForceControlSignals: VPI force or release requested for '"
              + testSignalFullName + "', but vpiHandle '(nil)' of value signal '"
              + testSignalFullName
              + "__VforceVal' could not be cast to VerilatedVpioVar*. Ensure signal is marked "

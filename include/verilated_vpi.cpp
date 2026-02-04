@@ -1308,7 +1308,7 @@ auto VerilatedVpiImp::getForceControlSignals(const VerilatedVpioVarBase* const v
     VerilatedVpioVar* forceValueSignalVop = VerilatedVpioVar::castp(forceValueSignalp);
     if (VL_UNLIKELY(!forceEnableSignalVop)) {
         VL_VPI_ERROR_(__FILE__, __LINE__,
-                      "%s: vpi force or release requested for '%s', but vpiHandle '%p' of enable "
+                      "%s: VPI force or release requested for '%s', but vpiHandle '%p' of enable "
                       "signal '%s' could not be cast to VerilatedVpioVar*. Ensure signal is "
                       "marked as forceable",
                       __func__, signalName.c_str(), forceEnableSignalp,
@@ -1316,7 +1316,7 @@ auto VerilatedVpiImp::getForceControlSignals(const VerilatedVpioVarBase* const v
     }
     if (VL_UNLIKELY(!forceValueSignalVop)) {
         VL_VPI_ERROR_(__FILE__, __LINE__,
-                      "%s: vpi force or release requested for '%s', but vpiHandle '%p' of value "
+                      "%s: VPI force or release requested for '%s', but vpiHandle '%p' of value "
                       "signal '%s' could not be cast to VerilatedVpioVar*. Ensure signal is "
                       "marked as forceable",
                       __func__, signalName.c_str(), forceValueSignalp,
@@ -2100,7 +2100,7 @@ vpiHandle vpi_register_cb(p_cb_data cb_data_p) {
     VL_VPI_ERROR_RESET_();
     // cppcheck-suppress nullPointer
     if (VL_UNLIKELY(!cb_data_p)) {
-        VL_VPI_WARNING_(__FILE__, __LINE__, "%s : callback data pointer is null", __func__);
+        VL_VPI_WARNING_(__FILE__, __LINE__, "%s: VPI callback data pointer is null", __func__);
         return nullptr;
     }
     const PLI_INT32 reason = cb_data_p->reason;
@@ -3413,7 +3413,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
 
     const unsigned size = vop->size();
     if (VL_UNCOVERABLE(num > size)) {
-        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: requested elements (%u) exceed array size (%u)",
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Requested elements (%u) exceed array size (%u)",
                       __func__, num, size);
         return;
     }
@@ -3613,7 +3613,7 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
     const int lowRange = vop->rangep()->low();
     const int highRange = vop->rangep()->high();
     if ((index_p[0] > highRange) || (index_p[0] < lowRange)) {
-        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: index %u for object %s is out of bounds [%u,%u]",
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Index %u for object '%s' is out of bounds [%u,%u]",
                       __func__, index_p[0], vop->fullname(), lowRange, highRange);
         return;
     }
@@ -3637,7 +3637,7 @@ void vl_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
     const int size = vop->size();
     if (VL_UNCOVERABLE(num > size)) {
         VL_VPI_ERROR_(__FILE__, __LINE__,
-                      "%s: requested elements to set (%u) exceed array size (%u)", __func__, num,
+                      "%s: Requested elements to set (%u) exceed array size (%u)", __func__, num,
                       size);
         return;
     }
@@ -3794,7 +3794,7 @@ void vpi_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
     const int lowRange = vop->rangep()->low();
     const int highRange = vop->rangep()->high();
     if ((index_p[0] > highRange) || (index_p[0] < lowRange)) {
-        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: index %u for object %s is out of bounds [%u,%u]",
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Index %u for object '%s' is out of bounds [%u,%u]",
                       __func__, index_p[0], vop->fullname(), lowRange, highRange);
         return;
     }
