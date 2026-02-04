@@ -8026,7 +8026,7 @@ class WidthVisitor final : public VNVisitor {
         const bool isLhsAggregate = lhsDtp->isAggregateType();
         const bool isRhsAggregate = rhsDtp->isAggregateType();
         if (!(isLhsAggregate || isRhsAggregate)) { return; }
-        if ((isLhsAggregate && !isRhsAggregate) || (!isLhsAggregate && isRhsAggregate)) {
+        if (isLhsAggregate ^ isRhsAggregate) {
             nodep->v3error("Illegal assignment: " << rhsDtp->prettyDTypeNameQ()
                                                   << " is not assignment compatible with "
                                                   << lhsDtp->prettyDTypeNameQ());
@@ -8035,7 +8035,7 @@ class WidthVisitor final : public VNVisitor {
         std::pair<uint32_t, uint32_t> lhsDim = lhsDtp->dimensions(false),
                                       rhsDim = rhsDtp->dimensions(false);
         // Check if unpacked array dimensions are matching
-        // TODO: Check for associative arrays which are not assignment compatible with other arrays
+        // TODO: Handle array slices AstSliceSel
         if (lhsDim.second != rhsDim.second) {
             nodep->v3error("Illegal assignment: Unmatched number of unpacked dimensions "
                            << "(" << lhsDim.second << " v.s. " << rhsDim.second << ")");
@@ -8056,6 +8056,13 @@ class WidthVisitor final : public VNVisitor {
                         return;
                     }
                 }
+            }
+            // Associative arrays are compatible only with each other
+            if (VN_IS(lhsDtpIter, AssocArrayDType) ^ VN_IS(rhsDtpIter, AssocArrayDType)) {
+                nodep->v3error("Illegal assignment: Associative arrays are assignment compatible "
+                               "only with associative arrays");
+
+                return;
             }
             lhsDtpIter = lhsDtpIter->subDTypep();
             rhsDtpIter = rhsDtpIter->subDTypep();

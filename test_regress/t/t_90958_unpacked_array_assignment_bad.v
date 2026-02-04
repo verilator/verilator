@@ -19,6 +19,7 @@ module t;
   logic unpackedD[4][2];
   struct_t unpackedE[4][2];
   logic nonAggregate;
+  logic assocArrayA[string];
   logic queueA[$];
 
   assign unpackedB = unpackedA;
@@ -26,4 +27,5 @@ module t;
   assign unpackedD = unpackedC;
   assign unpackedE = unpackedD;
   assign nonAggregate = unpackedA;
+  assign unpackedA = assocArrayA;
 endmodule
