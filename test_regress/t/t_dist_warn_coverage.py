@@ -146,7 +146,6 @@ for s in [
         'Unsupported: Stream operation on a variable of a type',
         'Unsupported: Unclocked assertion',
         'Unsupported: Using --protect-ids with public function',
-        'Unsupported: Verilog 1995 deassign',
         'Unsupported: Verilog 1995 gate primitive:',
         'Unsupported: [] dimensions',
         'Unsupported: \'default :/\' constraint',
