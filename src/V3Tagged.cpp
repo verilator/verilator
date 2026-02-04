@@ -229,8 +229,7 @@ class TaggedVisitor final : public VNVisitor {
 
         // Create the tag value positioned at MSB
         // tag_value << max_member_width
-        // Packed unions must have at least one non-void member for meaningful bit representation
-        UASSERT_OBJ(maxMemberWidth > 0, nodep, "Packed union must have non-void members");
+        // Note: maxMemberWidth can be 0 for all-void tagged unions - shift by 0 is valid
         AstNodeExpr* tagValp = makeConst(fl, tagIndex, totalWidth);
         tagValp = new AstShiftL{fl, tagValp, makeConst(fl, maxMemberWidth, 32)};
         tagValp->dtypeSetBitSized(totalWidth, VSigning::UNSIGNED);

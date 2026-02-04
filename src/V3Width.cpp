@@ -5137,6 +5137,7 @@ class WidthVisitor final : public VNVisitor {
 
             // Look for pattern variable in tagged pattern
             if (AstTaggedPattern* const tagPatp = VN_CAST(nodep->patternp(), TaggedPattern)) {
+                tagPatp->dtypep(unionp);  // Set dtype so V3Tagged can find union type
                 // Find the union member by name
                 for (AstMemberDType* memberp = unionp->membersp(); memberp;
                      memberp = VN_AS(memberp->nextp(), MemberDType)) {
@@ -5156,6 +5157,7 @@ class WidthVisitor final : public VNVisitor {
             // Also handle TaggedExpr (struct pattern parsed as expression)
             // Grammar creates TaggedExpr when pattern is '{...} with PatternVars
             else if (AstTaggedExpr* const tagExprp = VN_CAST(nodep->patternp(), TaggedExpr)) {
+                tagExprp->dtypep(unionp);  // Set dtype so V3Tagged can find union type
                 // Find the union member by name
                 for (AstMemberDType* memberp = unionp->membersp(); memberp;
                      memberp = VN_AS(memberp->nextp(), MemberDType)) {
