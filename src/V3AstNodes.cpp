@@ -1795,6 +1795,7 @@ void AstCell::dump(std::ostream& str) const {
 }
 void AstCell::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, origName);
+    dumpJsonStrFunc(str, verilogName);
     dumpJsonBoolFunc(str, recursive);
     dumpJsonGen(str);
 }
@@ -2572,6 +2573,7 @@ void AstNodeModule::dump(std::ostream& str) const {
 }
 void AstNodeModule::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, origName);
+    dumpJsonStrFunc(str, verilogName);
     dumpJsonNumFunc(str, level);
     dumpJsonBoolFunc(str, modPublic);
     dumpJsonBoolFunc(str, inLibrary);
@@ -2865,6 +2867,7 @@ void AstVar::dump(std::ostream& str) const {
 }
 void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, origName);
+    dumpJsonStrFunc(str, verilogName);
     dumpJsonBoolFunc(str, isSc);
     dumpJsonBoolFunc(str, isPrimaryIO);
     dumpJsonBoolFunc(str, isPrimaryClock);

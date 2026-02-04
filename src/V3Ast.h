@@ -610,6 +610,7 @@ public:
     static string vcdName(const string& namein);  // Name for printing out to vcd files
     string prettyName() const { return prettyName(name()); }
     string prettyNameQ() const { return prettyNameQ(name()); }
+    string verilogName() const { return vpiName(origName()); }  // Decoded original Verilog name
     // "VARREF" for error messages (NOT dtype's pretty name)
     string prettyTypeName() const;
     virtual string prettyOperatorName() const { return "operator " + prettyTypeName(); }
