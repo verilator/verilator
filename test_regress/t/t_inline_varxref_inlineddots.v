@@ -4,22 +4,36 @@
 // SPDX-FileCopyrightText: 2026 Leela Pakanati
 // SPDX-License-Identifier: CC0-1.0
 
-module src #(parameter [3:0] VAL = 4'h0) (output logic [3:0] val);
+module src #(
+    parameter [3:0] VAL = 4'h0
+) (
+    output logic [3:0] val
+);
   /*verilator no_inline_module*/
   assign val = VAL;
 endmodule
 
-module inner (input logic [3:0] in, output logic [3:0] out);
+module inner (
+    input logic [3:0] in,
+    output logic [3:0] out
+);
   /*verilator inline_module*/
   assign out = in;
 endmodule
 
-module outer #(parameter [3:0] VAL = 4'h0) (output logic [3:0] out);
+module outer #(
+    parameter [3:0] VAL = 4'h0
+) (
+    output logic [3:0] out
+);
   /*verilator inline_module*/
   logic [3:0] s_val;
   src #(.VAL(VAL)) s (.val(s_val));
   // Use hierarchical ref s.val (not s_val) to test inlinedDots propagation
-  inner u (.in(s.val), .out(out));
+  inner u (
+      .in(s.val),
+      .out(out)
+  );
 endmodule
 
 module t;

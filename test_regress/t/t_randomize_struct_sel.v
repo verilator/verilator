@@ -20,7 +20,8 @@ module t;
     if (o.randomize() == 0) begin
       $display("Randomization failed");
       $stop;
-    end else if (o.obj.x != o.rand_int) $stop;
+    end
+    else if (o.obj.x != o.rand_int) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end

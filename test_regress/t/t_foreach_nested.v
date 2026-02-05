@@ -4,9 +4,7 @@
 // SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-typedef struct {
-  int x[9][9];
-} Foo;
+typedef struct {int x[9][9];} Foo;
 
 class Bar;
   Foo foo;

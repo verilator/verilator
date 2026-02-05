@@ -15,7 +15,7 @@ endinterface
 module top ();
   x_if #(.a_width(8)) if0 ();
 
-  localparam type p0_t = if0.rq_t [1:0];
+  localparam type p0_t = if0.rq_t[1:0];
 
   initial begin
     if ($bits(p0_t) != 16) $stop;

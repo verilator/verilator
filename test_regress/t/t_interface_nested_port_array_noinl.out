@@ -1,24 +1,24 @@
-%Error: t/t_interface_nested_port_array.v:111:3: Interface 'l3_if' not connected as parent's interface not connected
+%Error: t/t_interface_nested_port_array.v:160:5: Interface 'l3_if' not connected as parent's interface not connected
                                                : ... note: In instance 't.m_l3'
                                                : ... Perhaps caused by another error on the parent interface that needs resolving
                                                : ... Or, perhaps intended an interface instantiation but are missing parenthesis (IEEE 1800-2023 25.3)?
-  111 |   l3_if #(W, L0A_W)        l3,
-      |   ^~~~~
+  160 |     l3_if#(W, L0A_W) l3,
+      |     ^~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_interface_nested_port_array.v:83:3: Interface 'l2_if' not connected as parent's interface not connected
-                                              : ... note: In instance 't.m_l3.m_l2'
-                                              : ... Perhaps caused by another error on the parent interface that needs resolving
-                                              : ... Or, perhaps intended an interface instantiation but are missing parenthesis (IEEE 1800-2023 25.3)?
-   83 |   l2_if #(W, L0A_W)        l2s[1:0],
-      |   ^~~~~
-%Error: t/t_interface_nested_port_array.v:60:3: Interface 'l2_if' not connected as parent's interface not connected
+%Error: t/t_interface_nested_port_array.v:123:5: Interface 'l2_if' not connected as parent's interface not connected
+                                               : ... note: In instance 't.m_l3.m_l2'
+                                               : ... Perhaps caused by another error on the parent interface that needs resolving
+                                               : ... Or, perhaps intended an interface instantiation but are missing parenthesis (IEEE 1800-2023 25.3)?
+  123 |     l2_if#(W, L0A_W) l2s[1:0],
+      |     ^~~~~
+%Error: t/t_interface_nested_port_array.v:91:5: Interface 'l2_if' not connected as parent's interface not connected
                                               : ... note: In instance 't.m_l3.m_l2.m_l2b'
                                               : ... Perhaps caused by another error on the parent interface that needs resolving
                                               : ... Or, perhaps intended an interface instantiation but are missing parenthesis (IEEE 1800-2023 25.3)?
-   60 |   l2_if #(W, L0A_W)        l2,
-      |   ^~~~~
-%Error: Internal Error: t/t_interface_nested_port_array.v:22:11: ../V3LinkDot.cpp:#: Module/etc never assigned a symbol entry?
+   91 |     l2_if#(W, L0A_W) l2,
+      |     ^~~~~
+%Error: Internal Error: t/t_interface_nested_port_array.v:27:11: ../V3LinkDot.cpp:#: Module/etc never assigned a symbol entry?
                                                                : ... note: In instance 't.m_l3.m_l2.m_l2b.m_l1_1'
-   22 | interface l2_if #(parameter int W = 8, parameter int L0A_W = 8);
+   27 | interface l2_if #(
       |           ^~~~~
                         ... This fatal error may be caused by the earlier error(s); resolve those first.
