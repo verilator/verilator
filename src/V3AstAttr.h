@@ -1471,6 +1471,7 @@ public:
         UNROLL_FULL,
         FULL_CASE,
         PARALLEL_CASE,
+        VERILATOR_LIB,
         _ENUM_SIZE
     };
     enum en m_e;
@@ -1489,6 +1490,7 @@ public:
             "UNROLL_FULL",  //
             "FULL_CASE",  //
             "PARALLEL_CASE",  //
+            "VERILATOR_LIB",  //
             "_ENUM_SIZE"  //
         };
         return names[m_e];

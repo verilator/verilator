@@ -53,7 +53,7 @@ private:
 
     fstWriterContext* m_fst = nullptr;
     std::map<uint32_t, vlFstHandle> m_code2symbol;
-    std::map<int, vlFstEnumHandle> m_local2fstdtype;
+    std::map<void*, std::map<int, vlFstEnumHandle>> m_local2fstdtype;
     vlFstHandle* m_symbolp = nullptr;  // same as m_code2symbol, but as an array
     char* m_strbufp = nullptr;  // String buffer long enough to hold maxBits() chars
     uint64_t m_timeui = 0;  // Time to emit, 0 = not needed

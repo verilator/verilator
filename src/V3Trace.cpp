@@ -847,6 +847,9 @@ class TraceVisitor final : public VNVisitor {
 
         // Create the trace functions and insert them into the tree
         createTraceFunctions();
+
+        // Save number of trace codes used
+        nodep->nTraceCodes(m_code);
     }
     void visit(AstNodeModule* nodep) override {
         if (nodep->isTop()) m_topModp = nodep;

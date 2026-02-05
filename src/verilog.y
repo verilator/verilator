@@ -271,6 +271,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_TIMING_ON              "timing_on"
 %token<fl>              yVLT_TRACING_OFF            "tracing_off"
 %token<fl>              yVLT_TRACING_ON             "tracing_on"
+%token<fl>              yVLT_VERILATOR_LIB          "verilator_lib"
 
 %token<fl>              yVLT_D_BLOCK    "--block"
 %token<fl>              yVLT_D_CONTENTS "--contents"
@@ -8199,6 +8200,8 @@ vltItem:
                         { V3Control::addProfileData($<fl>1, *$2, $3->toUQuad()); }
         |       yVLT_PROFILE_DATA vltDModel vltDMtask vltDCost
                         { V3Control::addProfileData($<fl>1, *$2, *$3, $4->toUQuad()); }
+        |       yVLT_VERILATOR_LIB vltDModule
+                        { V3Control::addModulePragma(*$2, VPragmaType::VERILATOR_LIB); }
         ;
 
 vltOffFront<errcodeen>:
