@@ -58,6 +58,8 @@ def process() -> None:
                 author = am.group(1)
                 if re.search(r'antmicro', email):
                     author += ", Antmicro Ltd."
+                if re.search(r'tenstorrent', email):
+                    author += ", Testorrent USA, Inc."
                 if re.search(r'github action', author):
                     author = ""
                     continue
