@@ -176,7 +176,7 @@ void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
         }
     };
 
-    if (nodep->isIO() && nodep->isSc()) {
+    if (nodep->isPrimaryIO() && nodep->isSc()) {
         UASSERT_OBJ(basicp, nodep, "Unimplemented: Outputting this data type");
         if (nodep->isInout()) {
             putns(nodep, "sc_core::sc_inout<");
@@ -197,7 +197,7 @@ void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
         if (asRef && refNeedParens) puts(")");
         emitDeclArrayBrackets(nodep);
         puts(";\n");
-    } else if (nodep->isIO() && basicp && !basicp->isOpaque()) {
+    } else if (nodep->isPrimaryIO() && basicp && !basicp->isOpaque()) {
         if (nodep->isInout()) {
             putns(nodep, "VL_INOUT");
         } else if (nodep->isWritable()) {
