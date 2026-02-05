@@ -2670,6 +2670,47 @@ class LinkDotIfaceVisitor final : public VNVisitor {
         return "";
     }
 
+    // Helper to resolve remaining path through a nested interface
+    // When findDotted() partially matches (okSymp set, baddot non-empty),
+    // this follows the interface type to resolve the remaining path.
+    // Returns the resolved symbol, or nullptr if not found.
+    // On success, clears baddot; on partial match of multi-level path, updates baddot.
+    VSymEnt* resolveNestedInterfacePath(FileLine* fl, VSymEnt* okSymp, string& baddot) {
+        if (!okSymp || baddot.empty()) return nullptr;
+
+        // Try to get interface from the partially-matched symbol
+        AstIface* ifacep = nullptr;
+        if (const AstCell* const cellp = VN_CAST(okSymp->nodep(), Cell)) {
+            ifacep = VN_CAST(cellp->modp(), Iface);
+        } else if (const AstVar* const varp = VN_CAST(okSymp->nodep(), Var)) {
+            if (varp->isIfaceRef()) {
+                if (const AstIfaceRefDType* const ifaceRefp
+                    = LinkDotState::ifaceRefFromArray(varp->dtypep())) {
+                    ifacep = ifaceRefp->ifaceViaCellp();
+                }
+            }
+        }
+
+        if (!ifacep || !m_statep->existsNodeSym(ifacep)) return nullptr;
+
+        VSymEnt* const ifaceSymp = m_statep->getNodeSym(ifacep);
+        VSymEnt* symp = nullptr;
+
+        if (baddot.find('.') == string::npos) {
+            // Simple identifier - direct lookup
+            symp = ifaceSymp->findIdFallback(baddot);
+            if (symp) baddot.clear();
+        } else {
+            // Multi-level path - use findDotted
+            string remainingBaddot;
+            VSymEnt* remainingOkSymp = nullptr;
+            symp = m_statep->findDotted(fl, ifaceSymp, baddot, remainingBaddot, remainingOkSymp,
+                                        true);
+            baddot = remainingBaddot;
+        }
+        return symp;
+    }
+
     // Resolve a modport expression to find the referenced symbol
     VSymEnt* resolveModportExpression(FileLine* fl, AstNodeExpr* exprp) {
         UINFO(5, "     resolveModportExpression: " << exprp << endl);
@@ -2703,19 +2744,10 @@ class LinkDotIfaceVisitor final : public VNVisitor {
                 string baddot;
                 VSymEnt* okSymp = nullptr;
                 symp = m_statep->findDotted(fl, m_curSymp, fullPath, baddot, okSymp, true);
-                // Handle nested interface path - same logic as AstDot case
+                // Handle nested interface path when findDotted had partial match
                 if (okSymp && !baddot.empty()) {
-                    AstIface* ifacep = nullptr;
-                    if (const AstCell* const cellp = VN_CAST(okSymp->nodep(), Cell)) {
-                        ifacep = VN_CAST(cellp->modp(), Iface);
-                    }
-                    if (ifacep && m_statep->existsNodeSym(ifacep)) {
-                        VSymEnt* const ifaceSymp = m_statep->getNodeSym(ifacep);
-                        if (baddot.find('.') == string::npos) {
-                            symp = ifaceSymp->findIdFallback(baddot);
-                            if (symp) baddot.clear();
-                        }
-                    }
+                    VSymEnt* const resolved = resolveNestedInterfacePath(fl, okSymp, baddot);
+                    if (resolved) symp = resolved;
                 }
             }
         } else if (AstDot* const dotp = VN_CAST(exprp, Dot)) {
@@ -2730,40 +2762,10 @@ class LinkDotIfaceVisitor final : public VNVisitor {
                 VSymEnt* okSymp = nullptr;
                 symp = m_statep->findDotted(fl, m_curSymp, dottedPath, baddot, okSymp, true);
 
-                // If partial match (found interface cell but not member), follow interface type
-                // Use okSymp which is the last successfully found symbol
+                // Handle nested interface path when findDotted had partial match
                 if (okSymp && !baddot.empty()) {
-                    AstIface* ifacep = nullptr;
-                    // Check if it's an interface cell (common case for nested interfaces)
-                    if (const AstCell* const cellp = VN_CAST(okSymp->nodep(), Cell)) {
-                        ifacep = VN_CAST(cellp->modp(), Iface);
-                    }
-                    // Also check if it's a variable with interface type
-                    else if (const AstVar* const varp = VN_CAST(okSymp->nodep(), Var)) {
-                        if (varp->isIfaceRef()) {
-                            if (const AstIfaceRefDType* const ifaceRefp
-                                = LinkDotState::ifaceRefFromArray(varp->dtypep())) {
-                                ifacep = ifaceRefp->ifaceViaCellp();
-                            }
-                        }
-                    }
-                    // Look up the remaining path in the interface's symbol table
-                    if (ifacep && m_statep->existsNodeSym(ifacep)) {
-                        VSymEnt* const ifaceSymp = m_statep->getNodeSym(ifacep);
-                        // Try direct lookup first (for single-level paths like "wr")
-                        if (baddot.find('.') == string::npos) {
-                            // Simple identifier - just look it up directly
-                            symp = ifaceSymp->findIdFallback(baddot);
-                            if (symp) baddot.clear();  // Successfully found
-                        } else {
-                            // Multi-level path - use findDotted
-                            string remainingBaddot;
-                            VSymEnt* remainingOkSymp = nullptr;
-                            symp = m_statep->findDotted(fl, ifaceSymp, baddot,
-                                                        remainingBaddot, remainingOkSymp, true);
-                            baddot = remainingBaddot;
-                        }
-                    }
+                    VSymEnt* const resolved = resolveNestedInterfacePath(fl, okSymp, baddot);
+                    if (resolved) symp = resolved;
                 }
 
                 if (!symp || !baddot.empty()) {
@@ -3019,6 +3021,44 @@ class LinkDotResolveVisitor final : public VNVisitor {
         } else {
             return nullptr;
         }
+    }
+
+    // Look up a virtual port through modport expression mapping.
+    // When a dotted reference uses a modport with expression syntax, the virtual port name
+    // maps to the real signal. This helper resolves that mapping during scope creation.
+    // Returns the VarScope for the real signal, or nullptr if not found.
+    AstVarScope* findVirtualPortVarScope(VSymEnt* dotSymp, const string& portName) {
+        const AstVarScope* const dotVscp = VN_CAST(dotSymp->nodep(), VarScope);
+        const AstVar* const dotVarp = dotVscp ? dotVscp->varp() : nullptr;
+        if (!dotVarp) return nullptr;
+
+        AstNodeDType* dtypep = dotVarp->childDTypep();
+        if (!dtypep) dtypep = dotVarp->subDTypep();
+        const AstIfaceRefDType* const ifaceRefp = VN_CAST(dtypep, IfaceRefDType);
+        if (!ifaceRefp || !ifaceRefp->modportp() || !ifaceRefp->ifaceViaCellp()) return nullptr;
+
+        // Get the interface cell's symbol table
+        VSymEnt* const ifaceCellSymp = m_statep->getNodeSym(ifaceRefp->ifaceViaCellp());
+
+        // Look up modport by name in interface cell
+        VSymEnt* const modportSymp = ifaceCellSymp->findIdFallback(ifaceRefp->modportp()->name());
+        if (!modportSymp) return nullptr;
+
+        // Look up virtual port name in modport symbol table
+        string baddot;
+        VSymEnt* const virtPortp = m_statep->findSymPrefixed(modportSymp, portName, baddot, true);
+        if (!virtPortp) return nullptr;
+
+        // Symbol may point to VarScope or Var
+        if (AstVarScope* vscp = VN_CAST(virtPortp->nodep(), VarScope)) return vscp;
+
+        // Symbol points to Var - look up VarScope by name in interface cell
+        if (const AstVar* const realVarp = VN_CAST(virtPortp->nodep(), Var)) {
+            VSymEnt* const realFoundp
+                = m_statep->findSymPrefixed(ifaceCellSymp, realVarp->name(), baddot, true);
+            return realFoundp ? VN_CAST(realFoundp->nodep(), VarScope) : nullptr;
+        }
+        return nullptr;
     }
     AstNodeStmt* addImplicitSuperNewCall(AstFunc* const nodep,
                                          const AstClassExtends* const classExtendsp) {
@@ -4634,52 +4674,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 VSymEnt* const foundp
                     = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, true);
                 AstVarScope* vscp = foundp ? VN_CAST(foundp->nodep(), VarScope) : nullptr;
-                // Handle modport expression virtual ports: if initial lookup didn't find a
-                // VarScope, check if dotSymp is a VarScope with interface reference dtype that
-                // has a modport with virtual port expressions.
-                if (!vscp) {
-                    const AstVarScope* const dotVscp = VN_CAST(dotSymp->nodep(), VarScope);
-                    const AstVar* const dotVarp = dotVscp ? dotVscp->varp() : nullptr;
-                    if (dotVarp) {
-                        AstNodeDType* dtypep = dotVarp->childDTypep();
-                        if (!dtypep) dtypep = dotVarp->subDTypep();
-                        if (const AstIfaceRefDType* const ifaceRefp
-                            = VN_CAST(dtypep, IfaceRefDType)) {
-                            if (ifaceRefp->modportp() && ifaceRefp->ifaceViaCellp()) {
-                                // Get the interface cell's symbol table
-                                VSymEnt* const ifaceCellSymp
-                                    = m_statep->getNodeSym(ifaceRefp->ifaceViaCellp());
-                                // Look up modport by name in interface cell
-                                const string modportName = ifaceRefp->modportp()->name();
-                                VSymEnt* const modportSymp
-                                    = ifaceCellSymp->findIdFallback(modportName);
-                                if (modportSymp) {
-                                    // Look up virtual port name in modport symbol table
-                                    string baddot2;
-                                    VSymEnt* const virtPortp = m_statep->findSymPrefixed(
-                                        modportSymp, nodep->name(), baddot2, true);
-                                    if (virtPortp) {
-                                        // Symbol may point to VarScope or Var
-                                        vscp = VN_CAST(virtPortp->nodep(), VarScope);
-                                        if (!vscp) {
-                                            // Symbol points to Var - look up VarScope by name
-                                            if (const AstVar* realVarp
-                                                = VN_CAST(virtPortp->nodep(), Var)) {
-                                                VSymEnt* const realFoundp
-                                                    = m_statep->findSymPrefixed(
-                                                        ifaceCellSymp, realVarp->name(), baddot2,
-                                                        true);
-                                                vscp = realFoundp
-                                                           ? VN_CAST(realFoundp->nodep(), VarScope)
-                                                           : nullptr;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                // Handle modport expression virtual ports
+                if (!vscp) vscp = findVirtualPortVarScope(dotSymp, nodep->name());
                 // If found, check if it's ok to access in case it's in a hier_block
                 if (vscp && errorHierNonPort(nodep, vscp->varp(), dotSymp)) return;
                 if (!vscp) {
