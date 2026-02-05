@@ -857,13 +857,44 @@ class TaggedVisitor final : public VNVisitor {
         addToNodeList(assignsp, tagAssignp);
 
         // If not void and has value, expand the member value
-        if ((!isVoid) & (taggedp->exprp() != nullptr)) {
+        if (!isVoid && taggedp->exprp()) {
             AstStructSel* const memSelp
                 = new AstStructSel{fl, targetp->cloneTree(false), taggedp->name()};
             memSelp->dtypep(memberp->subDTypep());
             expandValueToAssigns(fl, memSelp, taggedp->exprp(), memberp->subDTypep(), assignsp);
         }
     }
+    // Expand AstPattern (positional struct pattern) into field assignments. O(N) where N = members.
+    // Args: 5, Depth: 3, Statements: ~20
+    void expandPatternToAssigns(FileLine* fl, AstNodeExpr* targetp, AstPattern* patp,
+                                AstNodeUOrStructDType* structDtp, AstNode*& assignsp) {
+        std::map<string, AstMemberDType*> memberMap;
+        std::vector<AstMemberDType*> memberList;
+        for (AstMemberDType* m = structDtp->membersp(); m; m = VN_AS(m->nextp(), MemberDType)) {
+            memberMap[m->name()] = m;
+            memberList.push_back(m);
+        }
+        size_t idx = 0;
+        for (AstPatMember* itemp = VN_CAST(patp->itemsp(), PatMember); itemp;
+             itemp = VN_CAST(itemp->nextp(), PatMember), ++idx) {
+            string memberName;
+            AstMemberDType* memDtp = nullptr;
+            if (AstText* const keyp = VN_CAST(itemp->keyp(), Text)) {
+                const auto it = memberMap.find(keyp->text());
+                if (it != memberMap.end()) { memberName = it->first; memDtp = it->second; }
+            }
+            if (!memDtp && idx < memberList.size()) {
+                memberName = memberList[idx]->name();
+                memDtp = memberList[idx];
+            }
+            if (!memDtp) continue;
+            AstStructSel* const fieldSelp
+                = new AstStructSel{fl, targetp->cloneTree(false), memberName};
+            fieldSelp->dtypep(memDtp->subDTypep());
+            expandValueToAssigns(fl, fieldSelp, itemp->lhssp(), memDtp->subDTypep(), assignsp);
+        }
+    }
+
     // Expand ConsPackUOrStruct (constant struct) into field assignments. O(N) where N = members.
     // V3Const converts Pattern to ConsPackUOrStruct before V3Tagged runs.
     void expandConsPackToAssigns(FileLine* fl, AstNodeExpr* targetp, AstConsPackUOrStruct* consp,
@@ -913,6 +944,39 @@ class TaggedVisitor final : public VNVisitor {
             }
             // Unknown union type - this shouldn't happen, assert
             UASSERT_OBJ(nestedUnionp, valuep, "TaggedExpr must have union dtype");
+        }
+
+        // Check for AstPattern (positional struct pattern not yet converted)
+        // Note: Unpacked array patterns fall through to simple expression and get
+        // "PATTERN unexpected in assignment to unpacked array" error from V3Slice
+        if (AstPattern* const patp = VN_CAST(valuep, Pattern)) {
+            AstNodeUOrStructDType* const structDtp
+                = VN_CAST(dtypep->skipRefp(), NodeUOrStructDType);
+            // Unpacked structs - expand to field assignments
+            if (structDtp && !structDtp->packed()) {
+                expandPatternToAssigns(fl, targetp, patp, structDtp, assignsp);
+                VL_DO_DANGLING(targetp->deleteTree(), targetp);
+                return;
+            }
+            // Packed structs - convert pattern items to concat
+            if (structDtp && structDtp->packed()) {
+                AstNodeExpr* concatp = nullptr;
+                for (AstPatMember* itemp = VN_CAST(patp->itemsp(), PatMember); itemp;
+                     itemp = VN_CAST(itemp->nextp(), PatMember)) {
+                    AstNodeExpr* const itemExprp = itemp->lhssp()->cloneTree(false);
+                    if (!concatp) {
+                        concatp = itemExprp;
+                    } else {
+                        concatp = new AstConcat{fl, concatp, itemExprp};
+                    }
+                }
+                if (concatp) {
+                    concatp->dtypep(structDtp);
+                    AstAssign* const assignp = new AstAssign{fl, targetp, concatp};
+                    addToNodeList(assignsp, assignp);
+                    return;
+                }
+            }
         }
 
         // Check for ConsPackUOrStruct (Pattern converted by V3Const before V3Tagged)

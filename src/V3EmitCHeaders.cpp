@@ -333,7 +333,10 @@ class EmitCHeader final : public EmitCConstInit {
                 putns(itemp, "CData " + itemp->nameProtect() + ";\n");
                 continue;
             }
-            putns(itemp, itemp->dtypep()->cType(itemp->nameProtect(), false, false));
+            // For unpacked tagged unions, use the actual member type (subDTypep)
+            // For other types, use dtypep (which handles width-based types correctly)
+            AstNodeDType* const emitDTypep = isTaggedStruct ? itemp->subDTypep() : itemp->dtypep();
+            putns(itemp, emitDTypep->cType(itemp->nameProtect(), false, false));
             puts(";\n");
         }
 

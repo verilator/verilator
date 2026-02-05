@@ -2,13 +2,13 @@
                                        : ... note: In instance 't'
    35 |     bit [0:31]    Word32LittleEndian;    
       |         ^
-                   ... For warning description see https://verilator.org/warn/ASCRANGE?v=latest
+                   ... For warning description see https://verilator.org/warn/ASCRANGE?v=5.045
                    ... Use "/* verilator lint_off ASCRANGE */" and lint_on around source to disable this message.
 %Warning-WIDTHEXPAND: t/t_tagged_if.v:172:14: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'b' generates 8 bits.
                                             : ... note: In instance 't'
   172 |       result = b;
       |              ^
-                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
+                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=5.045
                       ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
 %Warning-WIDTHEXPAND: t/t_tagged_if.v:175:21: Operator NEQCASE expects 32 bits on the RHS, but RHS's CONST '8'ha5' generates 8 bits.
                                             : ... note: In instance 't'
@@ -22,15 +22,15 @@
                                             : ... note: In instance 't'
   218 |       result = a;   
       |              ^
-%Warning-WIDTHEXPAND: t/t_tagged_if.v:254:19: Operator ADD expects 32 bits on the LHS, but LHS's VARREF 'r1' generates 5 bits.
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:254:19: Operator ADD expects 32 bits on the LHS, but LHS's VARREF 'r1' generates 1 bits.
                                             : ... note: In instance 't'
   254 |       result = r1 + r2 + rd;
       |                   ^
-%Warning-WIDTHEXPAND: t/t_tagged_if.v:254:19: Operator ADD expects 32 bits on the RHS, but RHS's VARREF 'r2' generates 5 bits.
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:254:19: Operator ADD expects 32 bits on the RHS, but RHS's VARREF 'r2' generates 1 bits.
                                             : ... note: In instance 't'
   254 |       result = r1 + r2 + rd;
       |                   ^
-%Warning-WIDTHEXPAND: t/t_tagged_if.v:254:24: Operator ADD expects 32 bits on the RHS, but RHS's VARREF 'rd' generates 5 bits.
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:254:24: Operator ADD expects 32 bits on the RHS, but RHS's VARREF 'rd' generates 1 bits.
                                             : ... note: In instance 't'
   254 |       result = r1 + r2 + rd;
       |                        ^
@@ -38,8 +38,8 @@
                                             : ... note: In instance 't'
   267 |         result = a;
       |                ^
-%Warning-WIDTHEXPAND: t/t_tagged_if.v:278:14: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 10 bits.
+%Warning-WIDTHEXPAND: t/t_tagged_if.v:278:14: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 1 bits.
                                             : ... note: In instance 't'
   278 |       result = a;
       |              ^
-%Error: Exiting due to
+%Error: Exiting due to 10 warning(s)
