@@ -9,8 +9,8 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('simulator_st')
 
-test.compile(expect_filename=test.golden_filename)
+test.compile(verilator_flags2=['--no-skip-identical'], expect_filename=test.golden_filename)
 
 test.passes()
