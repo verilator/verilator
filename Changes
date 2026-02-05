@@ -15,9 +15,11 @@ Verilator 5.045 devel
 
 * Add IEEE 4-state type lint checks (#3645 partial) (#6895). [Jose Drowne]
 * Add VERILATOR_NUMA_STRATEGY environment variable (#6826) (#6880). [Yangyu Chen]
+* Add decoded Verilog name in JSON output (#6919) (#6995). [Oleh Maksymenko]
 * Add parsing of solve-before inside foreach (#6934). [Pawel Kojma, Antmicro Ltd.]
 * Add error when accessing a non-static class field from a static function (#6948). [Artur Bieniek, Antmicro Ltd.]
 * Add VerilatedContext::useNumaAssign and set on threads() call (#6954). [Yangyu Chen]
+* Support nested interface as port connection (#5066) (#6986). [Leela Pakanati]
 * Support structure initial values (#6130).
 * Support vpi_put/vpi_get forcing of signals (#5933) (#6704). [Christian Hecken]
 * Support detailed failure info for constraint violations (#6617) (#6883). [Yilou Wang]
@@ -26,6 +28,7 @@ Verilator 5.045 devel
 * Support dynamic array elements in std::randomize (#6896). [Ryszard Rozak, Antmicro Ltd.]
 * Support unbounded '$' in inside range expressions (#6935) (#6938). [Wei-Lun Chiu]
 * Support `extern module` as a forward-declaration that is ignored.
+* Support `foreach` with nested dots (#6991). [Krzysztof Bieganski, Antmicro Ltd.]
 * Remove deprecated `--xml-only`.
 * Remove deprecated `--make cmake`.
 * Change metacomment extra underscore error to BADVLTPRAGMA warning (#6968). [Geza Lore, Testorrent USA, Inc.]
@@ -57,11 +60,13 @@ Verilator 5.045 devel
 * Fix segfault after assignment pattern XOR error (#6928) (#6931). [emmettifelts]
 * Fix delayed initial assignment (#6929). [Todd Strader]
 * Fix `--top-module` with underscores (#6940). [Christopher Batten]
+* Fix variable randomization to better differ by seed (#6945) (#6956). [Rodrigo Batista de Moraes]
 * Fix null pointer dereference in class member trigger expressions (#6946). [Cameron Waite]
 * Fix type assignments for arrays of parameter types (#6955). [Todd Strader]
 * Fix accessing non-rand struct member in constraints (#6960). [Pawel Kojma, Antmicro Ltd.]
 * Fix associative array of events causes C++ compile error (#6962).
 * Fix non-inlined function return value clearing (#6982).
+* Fix parameterized class typedef as interface type parameter (#6983) (#6984). [Leela Pakanati]
 
 
 Verilator 5.044 2026-01-01
