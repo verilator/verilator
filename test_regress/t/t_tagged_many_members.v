@@ -69,6 +69,7 @@ module t;
       tagged M6: begin $display("ERROR: Should not match M6"); errors++; end
       tagged M7: begin $display("ERROR: Should not match M7"); errors++; end
       tagged M8 .x: begin $display("ERROR: Should not match M8"); errors++; end
+      default: begin $display("ERROR: Unknown tag"); errors++; end
     endcase
 
     // Test negative match - ensure different tags don't match (use case)

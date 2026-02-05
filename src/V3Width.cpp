@@ -5086,7 +5086,28 @@ class WidthVisitor final : public VNVisitor {
             AstNodeDType* const exprDType = nodep->lhsp()->dtypep()->skipRefp();
             unionp = VN_CAST(exprDType, UnionDType);
         }
-        if (unionp && unionp->isTagged()) {
+        const bool isTaggedPattern = VN_IS(nodep->patternp(), TaggedPattern);
+        const bool isTaggedExpr = VN_IS(nodep->patternp(), TaggedExpr);
+        if (!isTaggedPattern && !isTaggedExpr) {
+            nodep->patternp()->v3error("Expected tagged pattern in matches expression");
+            nodep->dtypeSetBit();
+            return;
+        }
+        if (!unionp || !unionp->isTagged()) {
+            nodep->v3error("Matches expression must be a tagged union type");
+            nodep->dtypeSetBit();
+            return;
+        }
+        AstTaggedPattern* const tagPatp = VN_CAST(nodep->patternp(), TaggedPattern);
+        AstTaggedExpr* const tagExprp = VN_CAST(nodep->patternp(), TaggedExpr);
+        const string& memberName = tagPatp ? tagPatp->name() : tagExprp->name();
+        if (!m_memberMap.findMember(unionp, memberName)) {
+            nodep->patternp()->v3error("Tagged union member '" << memberName
+                                       << "' not found in " << unionp->prettyDTypeNameQ());
+            nodep->dtypeSetBit();
+            return;
+        }
+        {
             // Helper lambda to find variable in begin block and update its type
             auto updateVarInBegin
                 = [](AstBegin* beginp, const string& varName, AstNodeDType* dtypep) {
@@ -5340,11 +5361,33 @@ class WidthVisitor final : public VNVisitor {
                         }
                         if (matchedMemp) {
                             patp->dtypep(matchedMemp);
-                            // Also set dtype on lhssp (PatternVar) if present
-                            if (AstPatternVar* const patVarp
-                                = VN_CAST(patp->lhssp(), PatternVar)) {
-                                patVarp->dtypep(matchedMemp->subDTypep());
+                            AstNode* const lhssp = patp->lhssp();
+                            AstNodeDType* const subDtp = matchedMemp->subDTypep();
+                            if (auto* patVarp = VN_CAST(lhssp, PatternVar)) {
+                                patVarp->dtypep(subDtp);
+                            } else if (auto* nestedPatp = VN_CAST(lhssp, Pattern)) {
+                                nestedPatp->dtypep(subDtp);
+                            } else if (auto* nestedTagPatp = VN_CAST(lhssp, TaggedPattern)) {
+                                AstNodeDType* const skipDtp = subDtp->skipRefp();
+                                if (auto* nestedUnionp = VN_CAST(skipDtp, UnionDType)) {
+                                    if (nestedUnionp->isTagged()) {
+                                        nestedTagPatp->dtypep(nestedUnionp);
+                                    }
+                                }
                             }
+                        }
+                    }
+                }
+                else if (auto* const arrayDtp = VN_CAST(dtypep, NodeArrayDType)) {
+                    AstNodeDType* const elemDtype = arrayDtp->subDTypep();
+                    for (AstPatMember* patp = VN_CAST(nodep->itemsp(), PatMember); patp;
+                         patp = VN_CAST(patp->nextp(), PatMember)) {
+                        patp->dtypep(elemDtype);
+                        AstNode* const lhssp = patp->lhssp();
+                        if (auto* patVarp = VN_CAST(lhssp, PatternVar)) {
+                            patVarp->dtypep(elemDtype);
+                        } else if (auto* nestedPatp = VN_CAST(lhssp, Pattern)) {
+                            nestedPatp->dtypep(elemDtype);
                         }
                     }
                 }
@@ -5957,43 +6000,53 @@ class WidthVisitor final : public VNVisitor {
         assertAtStatement(nodep);
         // Type check expression case item conditions and bodies
         userIterateAndNext(nodep->exprp(), WidthVP{CONTEXT_DET, PRELIM}.p());
-        // For case matches, update pattern variable types based on union member types
-        if (nodep->caseMatches() && nodep->exprp() && nodep->exprp()->dtypep()) {
-            AstNodeDType* const exprDType = nodep->exprp()->dtypep()->skipRefp();
-            if (AstUnionDType* const unionp = VN_CAST(exprDType, UnionDType)) {
-                if (unionp->isTagged()) {
-                    for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-                         itemp = VN_AS(itemp->nextp(), CaseItem)) {
-                        for (AstNode* condp = itemp->condsp(); condp; condp = condp->nextp()) {
-                            if (AstTaggedPattern* const tagPatp = VN_CAST(condp, TaggedPattern)) {
-                                // Set tagged pattern's dtype to match the union
-                                tagPatp->dtypep(unionp);
-                                if (AstPatternVar* const patVarp
-                                    = VN_CAST(tagPatp->patternp(), PatternVar)) {
-                                    // Find the member by name
-                                    for (AstMemberDType* memberp = unionp->membersp(); memberp;
-                                         memberp = VN_AS(memberp->nextp(), MemberDType)) {
-                                        if (memberp->name() == tagPatp->name()) {
-                                            // Found member, now find the AstVar for this pattern
-                                            // variable in the case item's statements (inside
-                                            // Begin)
-                                            for (AstNode* stmtp = itemp->stmtsp(); stmtp;
-                                                 stmtp = stmtp->nextp()) {
-                                                if (AstBegin* const beginp
-                                                    = VN_CAST(stmtp, Begin)) {
-                                                    for (AstNode* bstmtp = beginp->stmtsp();
-                                                         bstmtp; bstmtp = bstmtp->nextp()) {
-                                                        if (AstVar* const varp
-                                                            = VN_CAST(bstmtp, Var)) {
-                                                            if (varp->name() == patVarp->name()) {
-                                                                varp->dtypep(memberp->subDTypep());
-                                                                break;
-                                                            }
-                                                        }
+        // For case matches, validate and update pattern variable types
+        if (nodep->caseMatches()) {
+            AstUnionDType* unionp = nullptr;
+            if (nodep->exprp() && nodep->exprp()->dtypep()) {
+                AstNodeDType* const exprDType = nodep->exprp()->dtypep()->skipRefp();
+                unionp = VN_CAST(exprDType, UnionDType);
+            }
+            if (!unionp || !unionp->isTagged()) {
+                nodep->v3error("Case matches expression must be a tagged union type");
+            } else {
+                // Validate each condition is a tagged pattern with valid member
+                for (AstCaseItem* itemp = nodep->itemsp(); itemp;
+                     itemp = VN_AS(itemp->nextp(), CaseItem)) {
+                    for (AstNode* condp = itemp->condsp(); condp; condp = condp->nextp()) {
+                        AstTaggedPattern* const tagPatp = VN_CAST(condp, TaggedPattern);
+                        AstTaggedExpr* const tagExprp = VN_CAST(condp, TaggedExpr);
+                        if (!tagPatp && !tagExprp) {
+                            condp->v3error("Expected tagged pattern in case matches item");
+                            continue;
+                        }
+                        const string& memberName = tagPatp ? tagPatp->name() : tagExprp->name();
+                        if (!m_memberMap.findMember(unionp, memberName)) {
+                            condp->v3error("Tagged union member '" << memberName
+                                           << "' not found in " << unionp->prettyDTypeNameQ());
+                            continue;
+                        }
+                        if (tagPatp) tagPatp->dtypep(unionp);
+                        else if (tagExprp) tagExprp->dtypep(unionp);
+                        if (tagPatp) {
+                            if (AstPatternVar* const patVarp
+                                = VN_CAST(tagPatp->patternp(), PatternVar)) {
+                                AstMemberDType* const memp
+                                    = VN_CAST(m_memberMap.findMember(unionp, tagPatp->name()),
+                                              MemberDType);
+                                if (memp) {
+                                    for (AstNode* stmtp = itemp->stmtsp(); stmtp;
+                                         stmtp = stmtp->nextp()) {
+                                        if (AstBegin* const beginp = VN_CAST(stmtp, Begin)) {
+                                            for (AstNode* bstmtp = beginp->stmtsp(); bstmtp;
+                                                 bstmtp = bstmtp->nextp()) {
+                                                if (AstVar* const varp = VN_CAST(bstmtp, Var)) {
+                                                    if (varp->name() == patVarp->name()) {
+                                                        varp->dtypep(memp->subDTypep());
+                                                        break;
                                                     }
                                                 }
                                             }
-                                            break;
                                         }
                                     }
                                 }
