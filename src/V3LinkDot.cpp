@@ -2772,8 +2772,9 @@ class LinkDotIfaceVisitor final : public VNVisitor {
             bool hasPartSelect = false;
             const string dottedPath = extractDottedPath(dotp, hasPartSelect);
             if (hasPartSelect) {
-                fl->v3warn(E_UNSUPPORTED,
-                           "Unsupported: Modport expression with part select (IEEE 1800-2023 25.5.4)");
+                fl->v3warn(
+                    E_UNSUPPORTED,
+                    "Unsupported: Modport expression with part select (IEEE 1800-2023 25.5.4)");
             } else {
                 string baddot;
                 VSymEnt* okSymp = nullptr;
