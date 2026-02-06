@@ -535,7 +535,7 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
                 out.push_back(inputChanged);
             }
             if (varp->isWrittenByDpi()) out.push_back(dpiExportTriggered);
-            if (vscp->varp()->sensIfacep() || vscp->varp()->isVirtIface()) {
+            if (vscp->varp()->isVirtIface()) {
                 std::vector<AstSenTree*> ifaceTriggered
                     = findTriggeredIface(vscp, vifMemberTriggeredIco);
                 out.insert(out.end(), ifaceTriggered.begin(), ifaceTriggered.end());
@@ -915,7 +915,7 @@ void schedule(AstNetlist* netlistp) {
             auto it = actTimingDomains.find(vscp);
             if (it != actTimingDomains.end()) out = it->second;
             if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggeredAct);
-            if (vscp->varp()->sensIfacep() || vscp->varp()->isVirtIface()) {
+            if (vscp->varp()->isVirtIface()) {
                 std::vector<AstSenTree*> ifaceTriggered
                     = findTriggeredIface(vscp, vifMemberTriggeredAct);
                 out.insert(out.end(), ifaceTriggered.begin(), ifaceTriggered.end());
@@ -953,6 +953,8 @@ void schedule(AstNetlist* netlistp) {
                 auto it = timingDomains.find(vscp);
                 if (it != timingDomains.end()) out = it->second;
                 if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggered);
+                // Sometimes virtual interfaces mix with non-virtual one so, here both have to be
+                // detected - look `t_virtual_interface_nba_assign`
                 if (vscp->varp()->sensIfacep() || vscp->varp()->isVirtIface()) {
                     std::vector<AstSenTree*> ifaceTriggered
                         = findTriggeredIface(vscp, vifMemberTriggered);
