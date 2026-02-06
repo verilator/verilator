@@ -33,13 +33,12 @@
 
 #include "verilatedos.h"
 
-#include "V3Randomize.h"
-
 #include "V3Ast.h"
 #include "V3Error.h"
 #include "V3FileLine.h"
 #include "V3Global.h"
 #include "V3MemberMap.h"
+#include "V3Randomize.h"
 #include "V3UniqueNames.h"
 
 #include <queue>
@@ -291,8 +290,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
         targetClassp->foreachMember([&](AstClass* const, AstConstraint* const existingConstrp) {
             if (existingConstrp->name() == newName) {
                 // Multiple paths lead to same constraint - unsupported pattern
-                std::string fullPath = rootVarRefp->name();
-                for (AstVar* pathVar : newPath) { fullPath += "." + pathVar->name(); }
                 isDuplicate = true;
             }
         });
@@ -301,12 +298,14 @@ class RandomizeMarkVisitor final : public VNVisitor {
         AstConstraint* const cloneConstrp = constrp->cloneTree(false);
         cloneConstrp->name(newName);
         cloneConstrp->foreach([&](AstVarRef* varRefp) {
-            AstNodeExpr* const chainp = buildMemberSelChain(rootVarRefp, newPath);
-            AstMemberSel* const finalSelp
-                = new AstMemberSel{varRefp->fileline(), chainp, varRefp->varp()};
-            finalSelp->user2p(m_classp);
-            varRefp->replaceWith(finalSelp);
-            VL_DO_DANGLING(varRefp->deleteTree(), varRefp);
+            if (varRefp->varp()->varType() == VVarType::MEMBER) {
+                AstNodeExpr* const chainp = buildMemberSelChain(rootVarRefp, newPath);
+                AstMemberSel* const finalSelp
+                    = new AstMemberSel{varRefp->fileline(), chainp, varRefp->varp()};
+                finalSelp->user2p(m_classp);
+                varRefp->replaceWith(finalSelp);
+                VL_DO_DANGLING(varRefp->deleteTree(), varRefp);
+            }
         });
 
         // Add constraint directly to the target class
