@@ -89,8 +89,10 @@ private:
 
     template <typename T>
     void handleIface(T nodep) {
-        static_assert(std::is_same_v<std::remove_cv_t<T>, std::add_pointer_t<AstVarRef>>
-                      || std::is_same_v<std::remove_cv_t<T>, std::add_pointer_t<AstMemberSel>>);
+        static_assert(std::is_same<typename std::remove_cv<T>::type,
+                                   typename std::add_pointer<AstVarRef>::type>::value
+                      || std::is_same<typename std::remove_cv<T>::type,
+                                      typename std::add_pointer<AstMemberSel>::type>::value);
         if (nodep->access().isReadOnly()) return;
         if (nodep->user1SetOnce()) return;
         AstIface* ifacep = nullptr;
