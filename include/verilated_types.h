@@ -1934,7 +1934,7 @@ public:
     VlClassRef() = default;
     // Init with nullptr
     // cppcheck-suppress noExplicitConstructor
-    VlClassRef(VlNull){};
+    VlClassRef(VlNull) {};
     template <typename... T_Args>
     VlClassRef(VlDeleter& deleter, T_Args&&... args)
         // () required here to avoid narrowing conversion warnings,
@@ -2135,5 +2135,158 @@ inline T VL_NULL_CHECK(T t, const char* filename, int linenum) {
 }
 
 //======================================================================
+
+template <typename T>
+struct FourStateLogicWrapper;
+
+template <typename T>
+FourStateLogicWrapper<T> fourLogicOr(const FourStateLogicWrapper<T>& a,
+                                     const FourStateLogicWrapper<T>& b) noexcept {
+    return {static_cast<T>(a.value | b.value | a.xz | b.xz),
+            static_cast<T>((a.xz & b.xz) | (a.xz & ~b.value) | (b.xz & ~a.value))};
+}
+
+template <typename T>
+FourStateLogicWrapper<T> fourLogicConflict(const FourStateLogicWrapper<T>& a,
+                                           const FourStateLogicWrapper<T>& b) noexcept {
+    return {static_cast<T>(a.value | b.value),
+            static_cast<T>((a.value & a.xz) | (b.value & b.xz) | (a.xz & b.xz)
+                           | (a.value & ~b.value & ~b.xz) | (b.value & ~a.value & ~a.xz))};
+}
+
+template <typename T>
+FourStateLogicWrapper<T> fourLogicWor(const FourStateLogicWrapper<T>& a,
+                                      const FourStateLogicWrapper<T>& b) noexcept {
+    return {static_cast<T>(a.value | b.value),
+            static_cast<T>((a.value | b.xz) & (b.value | a.xz) & (a.xz | ~a.value)
+                           & (b.xz | ~b.value))};
+}
+
+template <typename T>
+FourStateLogicWrapper<T> fourLogicWand(const FourStateLogicWrapper<T>& a,
+                                       const FourStateLogicWrapper<T>& b) noexcept {
+    return {
+        static_cast<T>((a.value & b.xz) | (b.value & a.xz) | (a.value & b.value)),
+        static_cast<T>((a.xz & b.xz) | (a.value & b.value & a.xz) | (a.value & b.value & b.xz))};
+}
+
+template <typename T>
+FourStateLogicWrapper<T> fourLogicAnd(const FourStateLogicWrapper<T>& a,
+                                      const FourStateLogicWrapper<T>& b) noexcept {
+    return {static_cast<T>((a.value | a.xz) & (b.value | b.xz)),
+            static_cast<T>((a.value & b.xz) | (b.value & a.xz) | (a.xz & b.xz))};
+}
+
+template <typename T>
+FourStateLogicWrapper<T> fourLogicXOr(const FourStateLogicWrapper<T>& a,
+                                      const FourStateLogicWrapper<T>& b) noexcept {
+    return {static_cast<T>((a.value ^ b.value) | a.xz | b.xz), static_cast<T>(a.xz | b.xz)};
+}
+
+template <typename T>
+FourStateLogicWrapper<T> fourLogicXNOr(const FourStateLogicWrapper<T>& a,
+                                       const FourStateLogicWrapper<T>& b) noexcept {
+    return {static_cast<T>(~(a.value ^ b.value) | a.xz | b.xz), static_cast<T>(a.xz | b.xz)};
+}
+
+template <typename T>
+FourStateLogicWrapper<T> fourLogicNeg(const FourStateLogicWrapper<T>& a) noexcept {
+    return {static_cast<T>(~a.value | a.xz), static_cast<T>(a.xz)};
+}
+
+template <typename T>
+T fourLogicCastToTwo(const FourStateLogicWrapper<T>& a) noexcept {
+    return a.value & ~a.xz;
+}
+
+template <typename T>
+struct FourStateLogicWrapper {
+    static_assert(std::is_integral<T>::value || VlIsVlWide<T>::value, "");
+    T value;  // 2 state logic value if .xz is 0 and x if .xz is 1 and value is 1 otherwise z
+    T xz;  // true when it is x or z
+
+    FourStateLogicWrapper() {}
+    FourStateLogicWrapper(T v)
+        : value{v}
+        , xz{0} {}
+    FourStateLogicWrapper(T v, T x)
+        : value{v}
+        , xz{x} {}
+    template <typename Y>
+    FourStateLogicWrapper(const FourStateLogicWrapper<Y>& other)
+        : value{other.value}
+        , xz{other.xz} {}
+    template <std::size_t N_Words>
+    FourStateLogicWrapper(const FourStateLogicWrapper<VlWide<N_Words>>& other);
+    operator T() const noexcept { return value & ~xz; }
+    template <typename Y>
+    FourStateLogicWrapper<std::conditional_t<(sizeof(T) > sizeof(Y)), T, Y>>
+    operator|(const FourStateLogicWrapper<T>& other) const noexcept {
+        fourLogicOr<std::conditional_t<(sizeof(T) > sizeof(Y)), T, Y>>(*this, other);
+    }
+    template <typename Y>
+    FourStateLogicWrapper<std::conditional_t<(sizeof(T) > sizeof(Y)), T, Y>>
+    operator&(const FourStateLogicWrapper<T>& other) const noexcept {
+        fourLogicAnd<std::conditional_t<(sizeof(T) > sizeof(Y)), T, Y>>(*this, other);
+    }
+    template <typename Y>
+    FourStateLogicWrapper<std::conditional_t<(sizeof(T) > sizeof(Y)), T, Y>>
+    operator^(const FourStateLogicWrapper<T>& other) const noexcept {
+        fourLogicXOr<std::conditional_t<(sizeof(T) > sizeof(Y)), T, Y>>(*this, other);
+    }
+};
+
+// struct CData {
+//     uint8_t value;
+
+//     CData() {}
+//     CData(uint8_t val)
+//         : value{val} {}
+
+// #define OP_GEN(op) \
+//     auto operator op(const CData& other) const { return value op other.value; } \
+//     template <typename T> \
+//     auto operator op(const T& other) const { \
+//         return value op other; \
+//     }
+//     OP_GEN(==)
+//     OP_GEN(!=)
+//     OP_GEN(<=)
+//     OP_GEN(>=)
+//     OP_GEN(|)
+//     OP_GEN(^)
+//     OP_GEN(&)
+//     OP_GEN(<)
+//     OP_GEN(>)
+//     OP_GEN(>>)
+//     OP_GEN(<<)
+//     OP_GEN(+)
+//     OP_GEN(-)
+//     OP_GEN(/)
+//     OP_GEN(*)
+//     auto operator~() const { return ~value; }
+// #undef OP_GEN
+// #define OP_GEN(op) \
+//     auto operator op(const CData& other) { return value op other.value; } \
+//     template <typename T> \
+//     auto operator op(const T& other) { \
+//         return value op other; \
+//     }
+//     OP_GEN(|=)
+//     OP_GEN(^=)
+//     OP_GEN(&=)
+//     OP_GEN(>>=)
+//     OP_GEN(<<=)
+//     OP_GEN(+=)
+//     OP_GEN(-=)
+//     OP_GEN(/=)
+//     OP_GEN(*=)
+// #undef OP_GEN
+//     operator uint8_t() const { return value; }
+//     CData& operator=(const uint8_t& val) {
+//         value = val;
+//         return *this;
+//     }
+// };
 
 #endif  // Guard

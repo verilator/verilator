@@ -907,6 +907,34 @@ string V3Number::emitC() const VL_MT_STABLE {
             = V3OutFormatter::quoteNameControls(strg, V3OutFormatter::Language::LA_C);
         // Note: putsQuoted does not track indentation, so we use this instead
         return '"' + quoted + "\"s";
+    } else if (isAnyXZ()) {
+        std::string type = "CData";
+        UASSERT(width() <= 64, "Four state logic is unsupported on numbers widther than 64");
+        if (width() > 32) {
+            type = "QData";
+        } else if (width() > 16) {
+            type = "IData";
+        } else if (width() > 8) {
+            type = "SData";
+        }
+        std::string valBits = "0b";
+        std::string xzBits = "0b";
+        bool leadingZeros = true;
+        for (int bit = width() - 1; bit >= 0; --bit) {
+            if (bitIsXZ(bit)) {
+                xzBits += '1';
+                valBits += bitIsX(bit) ? '1' : '0';
+                leadingZeros = false;
+            } else if (bitIs1(bit)) {
+                xzBits += '0';
+                valBits += '1';
+                leadingZeros = false;
+            } else if (!leadingZeros) {
+                xzBits += '0';
+                valBits += '0';
+            }
+        }
+        result = "(FourStateLogicWrapper<" + type + ">{" + valBits + ", " + xzBits + "})";
     } else if (words() > 2) {
         UASSERT(!isFourState(), "Not implemented");
         // Note the double {{ initializer. The first { starts the initializer of the VlWide,
@@ -922,35 +950,12 @@ string V3Number::emitC() const VL_MT_STABLE {
         if (words() > 4) result += '\n';
         result += "}}";
     } else if (words() == 2) {  // Quad
-        // FIXME: This is temporary implementation
-        if (isAnyX()) { return "(FourStateLogicWrapper<QData>{1, 1})"; }
-        if (isAnyZ()) { return "(FourStateLogicWrapper<QData>{0, 1})"; }
-        // if (toSQuad() < 2) {
-        //     // Lets guess that it is a logic
-        //     return toSQuad() ? "(FourStateLogicWrapper<QData>{1, 0})"
-        //                      : "(FourStateLogicWrapper<QData>{0, 0})";
-        // }
-        UASSERT(!isFourState(), "Not implemented");
         const uint64_t qnum = static_cast<uint64_t>(toUQuad());
         const char* const fmt = (qnum < 10) ? ("%" PRIx64 "ULL") : ("0x%016" PRIx64 "ULL");
         // cppcheck-suppress wrongPrintfScanfArgNum
         VL_SNPRINTF(sbuf, bufsize, fmt, qnum);
         return sbuf;
     } else {
-        // FIXME: This is temporary implementation
-        std::string type = "CData";
-        if (width() > 8) {
-            type = "SData";
-        } else if (width() > 16) {
-            type = "IData";
-        }
-        if (isAnyX()) return "(FourStateLogicWrapper<" + type + ">{1, 1})";
-        if (isAnyZ()) return "(FourStateLogicWrapper<" + type + ">{0, 1})";
-        // if (toSQuad() < 2) {
-        //     // Lets guess that it is a logic
-        //     return toSQuad() ? "(FourStateLogicWrapper<" + type + ">{1, 0})"
-        //                      : "(FourStateLogicWrapper<" + type + ">{0, 0})";
-        // }
         // Always emit unsigned, if signed, will call correct signed functions
         // The 'U' must be here, to avoid <= comparisons etc ending up signed
         const uint32_t unum = toUInt();
