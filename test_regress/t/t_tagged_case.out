@@ -2,13 +2,13 @@
                                          : ... note: In instance 't'
    35 |     bit [0:31]    Word32LittleEndian;    
       |         ^
-                   ... For warning description see https://verilator.org/warn/ASCRANGE?v=5.045
+                   ... For warning description see https://verilator.org/warn/ASCRANGE?v=latest
                    ... Use "/* verilator lint_off ASCRANGE */" and lint_on around source to disable this message.
 %Warning-WIDTHEXPAND: t/t_tagged_case.v:165:42: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'b' generates 8 bits.
                                               : ... note: In instance 't'
   165 |       tagged Byte8NonZeroLSB .b : result = b;
       |                                          ^
-                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=5.045
+                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
                       ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
 %Warning-WIDTHEXPAND: t/t_tagged_case.v:168:21: Operator NEQCASE expects 32 bits on the RHS, but RHS's CONST '8'ha5' generates 8 bits.
                                               : ... note: In instance 't'
@@ -25,5 +25,5 @@
 %Error: t/t_tagged_case.v:180:21: PATTERN unexpected in assignment to unpacked array
   180 |     at = tagged Arr '{10, 20, 30, 40};
       |                     ^~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=5.045 for more assistance.
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to 1 error(s), 5 warning(s)

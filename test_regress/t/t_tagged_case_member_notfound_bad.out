@@ -2,11 +2,11 @@
                                                   : ... note: In instance 't'
    22 |       tagged BadMember .x: $display("x = %d", x);
       |       ^~~~~~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=5.045 for more assistance.
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Warning-WIDTHEXPAND: t/t_tagged_case_member_notfound_bad.v:21:5: Operator CASE expects 32 bits on the Case Item, but Case Item's TAGGEDPATTERN 'BadMember' generates 1 bits.
                                                                 : ... note: In instance 't'
    21 |     case (v) matches
       |     ^~~~
-                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=5.045
+                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
                       ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
 %Error: Exiting due to 1 error(s), 1 warning(s)

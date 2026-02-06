@@ -339,16 +339,30 @@ class TaggedVisitor final : public VNVisitor {
         // Also generates a tag check for this nested tagged pattern
         if (AstTaggedPattern* const tagPatp = VN_CAST(nodep, TaggedPattern)) {
             AstUnionDType* const unionDtp = VN_CAST(baseDtp->skipRefp(), UnionDType);
-            if (unionDtp) {
-                AstMemberDType* const memberp = findMember(unionDtp, tagPatp->name());
-                // Add tag check for this nested tagged pattern
-                if (tagChecks) tagChecks->push_back({basePath, memberp->tagIndex()});
-                const string memberPath
-                    = basePath.empty() ? tagPatp->name() : basePath + "." + tagPatp->name();
-                if (tagPatp->patternp()) {
-                    collectNestedPatternVars(tagPatp->patternp(), memberp->subDTypep(), memberPath,
-                                             out, tagChecks);
-                }
+            if (!unionDtp) return;
+            AstMemberDType* const memberp = findMember(unionDtp, tagPatp->name());
+            if (tagChecks) tagChecks->push_back({basePath, memberp->tagIndex()});
+            const string memberPath
+                = basePath.empty() ? tagPatp->name() : basePath + "." + tagPatp->name();
+            if (tagPatp->patternp()) {
+                collectNestedPatternVars(tagPatp->patternp(), memberp->subDTypep(), memberPath,
+                                         out, tagChecks);
+            }
+            return;
+        }
+
+        // Handle TaggedExpr (e.g., "tagged Value .y" in struct pattern with tagged union member)
+        if (AstTaggedExpr* const tagExprp = VN_CAST(nodep, TaggedExpr)) {
+            AstUnionDType* const unionDtp = VN_CAST(baseDtp->skipRefp(), UnionDType);
+            if (!unionDtp || !unionDtp->isTagged()) return;
+            AstMemberDType* const memberp = findMember(unionDtp, tagExprp->name());
+            if (!memberp) return;
+            if (tagChecks) tagChecks->push_back({basePath, memberp->tagIndex()});
+            const string memberPath
+                = basePath.empty() ? tagExprp->name() : basePath + "." + tagExprp->name();
+            if (tagExprp->exprp()) {
+                collectNestedPatternVars(tagExprp->exprp(), memberp->subDTypep(), memberPath, out,
+                                         tagChecks);
             }
             return;
         }
@@ -864,8 +878,8 @@ class TaggedVisitor final : public VNVisitor {
             expandValueToAssigns(fl, memSelp, taggedp->exprp(), memberp->subDTypep(), assignsp);
         }
     }
-    // Expand AstPattern (positional struct pattern) into field assignments. O(N) where N = members.
-    // Args: 5, Depth: 3, Statements: ~20
+    // Expand AstPattern (positional struct pattern) into field assignments. O(N) where N =
+    // members. Args: 5, Depth: 3, Statements: ~20
     void expandPatternToAssigns(FileLine* fl, AstNodeExpr* targetp, AstPattern* patp,
                                 AstNodeUOrStructDType* structDtp, AstNode*& assignsp) {
         std::map<string, AstMemberDType*> memberMap;
@@ -881,7 +895,10 @@ class TaggedVisitor final : public VNVisitor {
             AstMemberDType* memDtp = nullptr;
             if (AstText* const keyp = VN_CAST(itemp->keyp(), Text)) {
                 const auto it = memberMap.find(keyp->text());
-                if (it != memberMap.end()) { memberName = it->first; memDtp = it->second; }
+                if (it != memberMap.end()) {
+                    memberName = it->first;
+                    memDtp = it->second;
+                }
             }
             if (!memDtp && idx < memberList.size()) {
                 memberName = memberList[idx]->name();

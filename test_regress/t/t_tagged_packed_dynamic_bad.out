@@ -1,0 +1,6 @@
+%Error: t/t_tagged_packed_dynamic_bad.v:10:4: Tagged union with dynamic member types cannot be packed
+                                          : ... note: In instance 't'
+   10 |    typedef union tagged packed {
+      |    ^~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to 1 error(s)

@@ -3,5 +3,5 @@
                                              : ... Suggested alternative: 'Valid'
    21 |     v = tagged Valad 42;
       |         ^~~~~~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=5.045 for more assistance.
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to 1 error(s)

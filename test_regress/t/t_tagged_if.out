@@ -2,13 +2,13 @@
                                        : ... note: In instance 't'
    35 |     bit [0:31]    Word32LittleEndian;    
       |         ^
-                   ... For warning description see https://verilator.org/warn/ASCRANGE?v=5.045
+                   ... For warning description see https://verilator.org/warn/ASCRANGE?v=latest
                    ... Use "/* verilator lint_off ASCRANGE */" and lint_on around source to disable this message.
 %Warning-WIDTHEXPAND: t/t_tagged_if.v:172:14: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'b' generates 8 bits.
                                             : ... note: In instance 't'
   172 |       result = b;
       |              ^
-                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=5.045
+                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
                       ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
 %Warning-WIDTHEXPAND: t/t_tagged_if.v:175:21: Operator NEQCASE expects 32 bits on the RHS, but RHS's CONST '8'ha5' generates 8 bits.
                                             : ... note: In instance 't'
