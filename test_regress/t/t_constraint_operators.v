@@ -6,6 +6,8 @@
 
 class Packet;
    rand int x;
+   rand int y;
+   rand int z;
    rand bit [31:0] b;
    rand bit [31:0] c;
    rand bit [31:0] d;
@@ -22,6 +24,14 @@ class Packet;
    constraint arith { x + x - x == x; }
    constraint divmod { int'((x % 5) / 2) != (b % 99) / 7; }
    constraint mul { x * 9 != b * 3; }
+   constraint mul_signed {
+     y * y == 4;
+     y > 0;
+     y < 4;
+     z * z == 4;
+     z < 0;
+     z > -4;
+   }
    constraint impl { tiny == 1 -> x != 10; }
    constraint concat { {c, b} != 'h1111; }
    constraint unary { !(-~c == 'h22); }
@@ -79,6 +89,8 @@ module t;
       if (v != 1) $stop;
       if ((p.x % 5) / 2 == (p.b % 99) / 7) $stop;
       if (p.x * 9 == p.b * 3) $stop;
+      if (p.y != 2) $stop;
+      if (p.z != -2) $stop;
       if (p.tiny && p.x == 10) $stop;
       if ({p.c, p.b} == 'h1111) $stop;
       if (-~p.c == 'h22) $stop;
