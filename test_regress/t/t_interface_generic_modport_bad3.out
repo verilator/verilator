@@ -1,7 +1,6 @@
-%Error: t/t_interface_generic_modport_bad3.v:18:11: Can't find definition of 'v' in dotted signal: 'a.v'
+%Error: t/t_interface_generic_modport_bad3.v:18:11: Can't find definition of 'v' in dotted variable/method: 'a.v'
                                                   : ... note: In instance 't.genericModule'
    18 |     if (a.v != 7) $stop;
       |           ^
-        ... Known scopes under 'v': <no instances found>
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

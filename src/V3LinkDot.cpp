@@ -4057,6 +4057,19 @@ class LinkDotResolveVisitor final : public VNVisitor {
             } else {
                 foundp = m_ds.m_dotSymp->findIdFlat(nodep->name());
             }
+            // If not found in modport, check interface fallback for parameters.
+            // Parameters are always visible through a modport (IEEE 1800-2023 25.5).
+            // This mirrors the VarXRef modport parameter fallback in visit(AstVarXRef).
+            if (!foundp && VN_IS(m_ds.m_dotSymp->nodep(), Modport)
+                && m_ds.m_dotSymp->fallbackp()) {
+                VSymEnt* const ifaceFoundp
+                    = m_ds.m_dotSymp->fallbackp()->findIdFlat(nodep->name());
+                if (ifaceFoundp) {
+                    if (const AstVar* const varp = VN_CAST(ifaceFoundp->nodep(), Var)) {
+                        if (varp->isParam()) foundp = ifaceFoundp;
+                    }
+                }
+            }
             if (foundp) {
                 UINFO(9, indent() << "found=se" << cvtToHex(foundp) << "  exp=" << expectWhat
                                   << "  n=" << foundp->nodep());

@@ -5,7 +5,8 @@
 %Error: t/t_mod_interface_clocking_bad.v:16:41: Modport item not found: 'cx'
    16 |   modport mp(input clk, clocking reset, clocking cx);
       |                                         ^~~~~~~~
-%Error: t/t_mod_interface_clocking_bad.v:25:10: Can't find definition of 'cb'
+%Error: t/t_mod_interface_clocking_bad.v:25:7: Can't find definition of 'cb' in dotted scope/variable: 'x.cb'
    25 |     x.cb.reset <= 1;
-      |          ^~~~~
+      |       ^~
+        ... Known scopes under 'x': <no instances found>
 %Error: Exiting due to
