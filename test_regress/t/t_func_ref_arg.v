@@ -28,11 +28,16 @@ class Cls;
   endfunction
 endclass
 
+typedef struct {
+  MyInt arr[2][][$];
+} struct_t;
+
 module t;
   int a, b;
   int arr[1];
   int dyn_arr[];
   int dyn_arr_2d[][];
+  struct_t st;
   Cls cls;
   MyInt mi;
   initial begin
@@ -73,6 +78,15 @@ module t;
     `checkh(b, 10);
     b = cls.get_val_set_2(dyn_arr_2d[0][1]);
     `checkh(dyn_arr_2d[0][1], 2);
+    `checkh(b, 5);
+
+    st.arr[1] = new[3];
+    st.arr[1][2][0] = new(10);
+    b = get_val_set_5(st.arr[1][2][0].x);
+    `checkh(st.arr[1][2][0].x, 5);
+    `checkh(b, 10);
+    b = cls.get_val_set_2(st.arr[1][2][0].x);
+    `checkh(st.arr[1][2][0].x, 2);
     `checkh(b, 5);
 
     $write("*-* All Finished *-*\n");
