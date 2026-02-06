@@ -10,12 +10,10 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.top_filename = "t/t_interface_modport_expr_hier.v"
 
-test.compile(fails=test.vlt_all,
-             expect_filename=test.golden_filename,
-             verilator_flags2=["--binary"])
+test.compile(verilator_flags2=["--binary", "-fno-inline"])
 
-if not test.vlt_all:
-    test.execute()
+test.execute()
 
 test.passes()

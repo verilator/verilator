@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
-// SPDX-FileCopyrightText: 2025 Leela Pakanati
+// SPDX-FileCopyrightText: 2026 Leela Pakanati
 // SPDX-License-Identifier: CC0-1.0
 
 // Test modport expressions with nested interfaces
@@ -63,6 +63,36 @@ endinterface
 
 module deep_consumer(outer_if.mp port);
   assign port.deep_out = 8'hDE;
+  // Verify reading through deep_in virtual port
+  wire [7:0] deep_in_val = port.deep_in;
+endmodule
+
+// 4-level deep nesting test
+interface level1_if;
+  logic [7:0] val;
+endinterface
+
+interface level2_if;
+  level1_if l1();
+endinterface
+
+interface level3_if;
+  level2_if l2();
+endinterface
+
+interface level4_if;
+  level3_if l3();
+
+  // 4-level deep modport expression
+  modport mp(
+    output .deep4_w(l3.l2.l1.val),
+    input .deep4_r(l3.l2.l1.val)
+  );
+endinterface
+
+module deep4_consumer(level4_if.mp port);
+  assign port.deep4_w = 8'h4D;
+  wire [7:0] deep4_read = port.deep4_r;
 endmodule
 
 module app_consumer (
@@ -76,9 +106,11 @@ endmodule
 module top;
   app_reg_if app_regs();
   outer_if outer();
+  level4_if lev4();
 
   app_consumer m_app(.i_app_regs(app_regs));
   deep_consumer m_deep(.port(outer));
+  deep4_consumer m_deep4(.port(lev4));
 
   initial begin
     app_regs.base.wr = 8'hAB;
@@ -88,6 +120,10 @@ module top;
     `checkh(app_regs.example.rd, 16'hCDF0);
     // Verify 3-level deep nesting
     `checkh(outer.middle.inner.data, 8'hDE);
+    `checkh(m_deep.deep_in_val, 8'hDE);
+    // Verify 4-level deep nesting
+    `checkh(lev4.l3.l2.l1.val, 8'h4D);
+    `checkh(m_deep4.deep4_read, 8'h4D);
     $write("*-* All Finished *-*\n");
     $finish;
   end

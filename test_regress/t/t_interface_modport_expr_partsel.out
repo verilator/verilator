@@ -15,7 +15,9 @@
 %Error: t/t_interface_modport_expr_partsel.v:29:21: Can't find definition of 'in' in dotted variable/method: 'i.in'
    29 |   assign i.out = ~i.in;
       |                     ^~
+        ... Known scopes under 'i': <no instances found>
 %Error: t/t_interface_modport_expr_partsel.v:23:20: Can't find definition of 'in' in dotted variable/method: 'i.in'
    23 |   assign i.out = i.in;
       |                    ^~
+        ... Known scopes under 'i': <no instances found>
 %Error: Exiting due to

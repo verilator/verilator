@@ -27,13 +27,17 @@
 %Error: t/t_interface_modport_expr_array.v:33:29: Can't find definition of 'ch0_wr' in dotted variable/method: 'port.ch0_wr'
    33 |   assign port.ch0_rd = port.ch0_wr + 8'h10;
       |                             ^~~~~~
+        ... Known scopes under 'port': <no instances found>
 %Error: t/t_interface_modport_expr_array.v:33:15: Can't find definition of 'ch0_rd' in dotted variable/method: 'port.ch0_rd'
    33 |   assign port.ch0_rd = port.ch0_wr + 8'h10;
       |               ^~~~~~
+        ... Known scopes under 'port': <no instances found>
 %Error: t/t_interface_modport_expr_array.v:34:29: Can't find definition of 'ch1_wr' in dotted variable/method: 'port.ch1_wr'
    34 |   assign port.ch1_rd = port.ch1_wr + 8'h20;
       |                             ^~~~~~
+        ... Known scopes under 'port': <no instances found>
 %Error: t/t_interface_modport_expr_array.v:34:15: Can't find definition of 'ch1_rd' in dotted variable/method: 'port.ch1_rd'
    34 |   assign port.ch1_rd = port.ch1_wr + 8'h20;
       |               ^~~~~~
+        ... Known scopes under 'port': <no instances found>
 %Error: Exiting due to

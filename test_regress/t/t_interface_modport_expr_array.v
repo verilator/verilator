@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
-// SPDX-FileCopyrightText: 2025 Leela Pakanati
+// SPDX-FileCopyrightText: 2026 Leela Pakanati
 // SPDX-License-Identifier: CC0-1.0
 
 // Test modport expressions with arrayed interface instances (unsupported)

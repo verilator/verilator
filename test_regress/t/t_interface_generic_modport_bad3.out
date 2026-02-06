@@ -2,5 +2,6 @@
                                                   : ... note: In instance 't.genericModule'
    18 |     if (a.v != 7) $stop;
       |           ^
+        ... Known scopes under 'a': <no instances found>
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

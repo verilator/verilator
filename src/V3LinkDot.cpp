@@ -2678,37 +2678,54 @@ class LinkDotIfaceVisitor final : public VNVisitor {
     VSymEnt* resolveNestedInterfacePath(FileLine* fl, VSymEnt* okSymp, string& baddot) {
         if (!okSymp || baddot.empty()) return nullptr;
 
-        // Try to get interface from the partially-matched symbol
-        AstIface* ifacep = nullptr;
-        if (const AstCell* const cellp = VN_CAST(okSymp->nodep(), Cell)) {
-            ifacep = VN_CAST(cellp->modp(), Iface);
-        } else if (const AstVar* const varp = VN_CAST(okSymp->nodep(), Var)) {
-            if (varp->isIfaceRef()) {
-                if (const AstIfaceRefDType* const ifaceRefp
-                    = LinkDotState::ifaceRefFromArray(varp->dtypep())) {
-                    ifacep = ifaceRefp->ifaceViaCellp();
+        static constexpr int MAX_NESTING_DEPTH = 64;
+        VSymEnt* curOkSymp = okSymp;
+
+        for (int depth = 0; depth < MAX_NESTING_DEPTH; ++depth) {
+            // Try to get interface from the partially-matched symbol
+            AstIface* ifacep = nullptr;
+            if (const AstCell* const cellp = VN_CAST(curOkSymp->nodep(), Cell)) {
+                ifacep = VN_CAST(cellp->modp(), Iface);
+            } else if (const AstVar* const varp = VN_CAST(curOkSymp->nodep(), Var)) {
+                if (varp->isIfaceRef()) {
+                    if (const AstIfaceRefDType* const ifaceRefp
+                        = LinkDotState::ifaceRefFromArray(varp->dtypep())) {
+                        ifacep = ifaceRefp->ifaceViaCellp();
+                    }
                 }
             }
-        }
 
-        if (!ifacep || !m_statep->existsNodeSym(ifacep)) return nullptr;
+            if (!ifacep || !m_statep->existsNodeSym(ifacep)) return nullptr;
 
-        VSymEnt* const ifaceSymp = m_statep->getNodeSym(ifacep);
-        VSymEnt* symp = nullptr;
+            VSymEnt* const ifaceSymp = m_statep->getNodeSym(ifacep);
 
-        if (baddot.find('.') == string::npos) {
-            // Simple identifier - direct lookup
-            symp = ifaceSymp->findIdFallback(baddot);
-            if (symp) baddot.clear();
-        } else {
-            // Multi-level path - use findDotted
+            if (baddot.find('.') == string::npos) {
+                // Simple identifier - direct lookup
+                VSymEnt* const symp = ifaceSymp->findIdFallback(baddot);
+                if (symp) baddot.clear();
+                return symp;
+            }
+
+            // Multi-level path - use findDotted for partial resolution
             string remainingBaddot;
             VSymEnt* remainingOkSymp = nullptr;
-            symp = m_statep->findDotted(fl, ifaceSymp, baddot, remainingBaddot, remainingOkSymp,
-                                        true);
+            VSymEnt* const symp = m_statep->findDotted(fl, ifaceSymp, baddot, remainingBaddot,
+                                                       remainingOkSymp, true);
+            if (symp) {
+                baddot = remainingBaddot;
+                return symp;
+            }
+
+            // findDotted partially matched - check progress
+            if (remainingBaddot == baddot || !remainingOkSymp) return nullptr;
+
+            // Continue resolving with updated state
             baddot = remainingBaddot;
+            curOkSymp = remainingOkSymp;
         }
-        return symp;
+
+        UINFO(1, "Nested interface resolution depth limit exceeded at " << fl << endl);
+        return nullptr;
     }
 
     // Resolve a modport expression to find the referenced symbol
@@ -3034,6 +3051,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
 
         AstNodeDType* dtypep = dotVarp->childDTypep();
         if (!dtypep) dtypep = dotVarp->subDTypep();
+        if (!dtypep) return nullptr;
         const AstIfaceRefDType* const ifaceRefp = VN_CAST(dtypep, IfaceRefDType);
         if (!ifaceRefp || !ifaceRefp->modportp() || !ifaceRefp->ifaceViaCellp()) return nullptr;
 
@@ -3060,6 +3078,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         return nullptr;
     }
+
     AstNodeStmt* addImplicitSuperNewCall(AstFunc* const nodep,
                                          const AstClassExtends* const classExtendsp) {
         // Returns the added node
@@ -4070,6 +4089,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     }
                 }
             }
+            // When flat lookup in modport fails, provide dotSymp for error diagnostics
+            // so the "Known scopes under..." hint appears (restores pre-routing behavior)
+            if (!foundp && !okSymp && VN_IS(m_ds.m_dotSymp->nodep(), Modport)) {
+                okSymp = m_ds.m_dotSymp;
+            }
             if (foundp) {
                 UINFO(9, indent() << "found=se" << cvtToHex(foundp) << "  exp=" << expectWhat
                                   << "  n=" << foundp->nodep());
@@ -4319,6 +4343,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 }
             } else if (VN_IS(foundp->nodep(), Clocking)) {
                 m_ds.m_dotSymp = foundp;
+                if (m_ds.m_dotText != "") m_ds.m_dotText += "." + nodep->name();
+                ok = m_ds.m_dotPos == DP_SCOPE || m_ds.m_dotPos == DP_FIRST;
+            } else if (const AstModportClockingRef* const clockingRefp
+                       = VN_CAST(foundp->nodep(), ModportClockingRef)) {
+                // Clocking block accessed through a modport - redirect to actual clocking
+                m_ds.m_dotSymp = m_statep->getNodeSym(clockingRefp->clockingp());
                 if (m_ds.m_dotText != "") m_ds.m_dotText += "." + nodep->name();
                 ok = m_ds.m_dotPos == DP_SCOPE || m_ds.m_dotPos == DP_FIRST;
             } else if (const AstNodeFTask* const ftaskp = VN_CAST(foundp->nodep(), NodeFTask)) {
