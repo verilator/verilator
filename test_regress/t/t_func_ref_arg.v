@@ -32,6 +32,7 @@ module t;
   int a, b;
   int arr[1];
   int dyn_arr[];
+  int dyn_arr_2d[][];
   Cls cls;
   MyInt mi;
   initial begin
@@ -62,6 +63,16 @@ module t;
     `checkh(b, 10);
     b = cls.get_val_set_2(dyn_arr[1]);
     `checkh(dyn_arr[1], 2);
+    `checkh(b, 5);
+
+    dyn_arr_2d = new[2];
+    dyn_arr_2d[0] = new[4];
+    dyn_arr_2d[0][1] = 10;
+    b = get_val_set_5(dyn_arr_2d[0][1]);
+    `checkh(dyn_arr_2d[0][1], 5);
+    `checkh(b, 10);
+    b = cls.get_val_set_2(dyn_arr_2d[0][1]);
+    `checkh(dyn_arr_2d[0][1], 2);
     `checkh(b, 5);
 
     $write("*-* All Finished *-*\n");
