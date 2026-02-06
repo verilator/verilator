@@ -585,11 +585,7 @@ public:
         const AstClassRefDType* const asamep = VN_DBG_AS(samep, ClassRefDType);
         return (m_classp == asamep->m_classp && m_classOrPackagep == asamep->m_classOrPackagep);
     }
-    bool similarDTypeNode(const AstNodeDType* samep) const override {
-        // Doesn't need to compare m_classOrPackagep
-        const AstClassRefDType* const asamep = VN_DBG_AS(samep, ClassRefDType);
-        return m_classp == asamep->m_classp;
-    }
+    bool similarDTypeNode(const AstNodeDType* samep) const override;
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;

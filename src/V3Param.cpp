@@ -948,6 +948,39 @@ class ParamProcessor final {
         if (!parseRefp) return;
 
         const AstClass* lhsClassp = VN_CAST(classRefp->classOrPackageSkipp(), Class);
+
+        // If the ClassOrPackageRef points to a type parameter (ParamTypeDType), we need
+        // to check if the parameter's value contains a parameterized class that needs
+        // specialization. This handles patterns like:
+        //   interface outer #(parameter type C = class_with_type_param#(T));
+        //     inner #(.P(C::typedef_name)) i();  // C is a type parameter
+        //   endinterface
+        AstParamTypeDType* const paramTypep
+            = VN_CAST(classRefp->classOrPackageNodep(), ParamTypeDType);
+        if (paramTypep) {
+            // Traverse through the type parameter to find if there's a ClassRefDType
+            // with parameters that needs specialization
+            AstNodeDType* const dtypep = paramTypep->subDTypep();
+            AstClassRefDType* const classRefDTypep
+                = dtypep ? VN_CAST(dtypep->skipRefp(), ClassRefDType) : nullptr;
+            if (classRefDTypep) {
+                AstClass* const srcClassp = classRefDTypep->classp();
+                if (srcClassp && srcClassp->hasGParam() && classRefDTypep->paramsp()) {
+                    // The type parameter's value is a parameterized class - specialize it
+                    if (lhsClassp == srcClassp || !lhsClassp) {
+                        UINFO(9, "resolveDotToTypedef: specializing type param class "
+                                     << srcClassp->name() << endl);
+                        classRefDeparam(classRefDTypep, srcClassp);
+                        lhsClassp = classRefDTypep->classp();
+                    } else {
+                        UINFO(9, "resolveDotToTypedef: type param class "
+                                     << srcClassp->name()
+                                     << " already specialized to " << lhsClassp->name() << endl);
+                    }
+                }
+            }
+        }
+
         if (classRefp->paramsp()) {
             // ClassOrPackageRef has parameters - may need to specialize the class
             AstClass* const srcClassp = VN_CAST(classRefp->classOrPackageNodep(), Class);
@@ -957,6 +990,10 @@ class ParamProcessor final {
                     UINFO(9, "resolveDotToTypedef: specializing " << srcClassp->name() << endl);
                     classRefDeparam(classRefp, srcClassp);
                     lhsClassp = VN_CAST(classRefp->classOrPackageSkipp(), Class);
+                } else {
+                    UINFO(9, "resolveDotToTypedef: class " << srcClassp->name()
+                                                           << " already specialized to "
+                                                           << lhsClassp->name() << endl);
                 }
             }
         }
