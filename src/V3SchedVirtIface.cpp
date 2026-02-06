@@ -91,8 +91,9 @@ private:
     void handleIface(T nodep) {
         static_assert(std::is_same<typename std::remove_cv<T>::type,
                                    typename std::add_pointer<AstVarRef>::type>::value
-                      || std::is_same<typename std::remove_cv<T>::type,
-                                      typename std::add_pointer<AstMemberSel>::type>::value);
+                          || std::is_same<typename std::remove_cv<T>::type,
+                                          typename std::add_pointer<AstMemberSel>::type>::value,
+                      "Node has to be of AstVarRef* or AstMemberSel* type");
         if (nodep->access().isReadOnly()) return;
         if (nodep->user1SetOnce()) return;
         AstIface* ifacep = nullptr;
