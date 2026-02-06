@@ -42,6 +42,7 @@ class VirtIfaceVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // AstVarRef::user1() -> bool. Whether it has been visited
+    // AstMemberSel::user1() -> bool. Whether it has been visited
     const VNUser1InUse m_user1InUse;
 
     // TYPES
@@ -64,7 +65,7 @@ private:
             AstIfaceRefDType* const dtypep = VN_CAST(refp->varp()->dtypep(), IfaceRefDType);
             const bool writesToVirtIfaceMember
                 = (dtypep && dtypep->isVirtual() && VN_IS(refp->firstAbovep(), MemberSel));
-            const bool writesToIfaceSensVar = refp->varp()->sensIfacep();
+            const bool writesToIfaceSensVar = refp->varp()->isVirtIface();
             return writesToVirtIfaceMember || writesToIfaceSensVar;
         });
     }
@@ -86,27 +87,21 @@ private:
         return new AstVarRef{flp, existingTrigger, VAccess::WRITE};
     }
 
-    // VISITORS
-    void visit(AstNodeProcedure* nodep) override {
-        // Not sure if needed, but be paranoid to match previous behavior as didn't optimize
-        // before ..
-        if (VN_IS(nodep, AlwaysPost) && writesToVirtIface(nodep)) {
-            nodep->foreach([](AstVarRef* refp) { refp->varScopep()->optimizeLifePost(false); });
-        }
-        iterateChildren(nodep);
-    }
-    void visit(AstVarRef* const nodep) override {
+    template <typename T>
+    void handleIface(T nodep) {
+        static_assert(std::is_same<typename std::remove_cv<T>::type,
+                                   typename std::add_pointer<AstVarRef>::type>::value
+                          || std::is_same<typename std::remove_cv<T>::type,
+                                          typename std::add_pointer<AstMemberSel>::type>::value,
+                      "Node has to be of AstVarRef* or AstMemberSel* type");
         if (nodep->access().isReadOnly()) return;
         if (nodep->user1SetOnce()) return;
         AstIface* ifacep = nullptr;
         AstVar* memberVarp = nullptr;
-        if (AstIfaceRefDType* const dtypep = VN_CAST(nodep->varp()->dtypep(), IfaceRefDType)) {
-            if (dtypep->isVirtual()) {
-                if (AstMemberSel* const memberSelp = VN_CAST(nodep->firstAbovep(), MemberSel)) {
-                    // Extract the member varp from the MemberSel node
-                    memberVarp = memberSelp->varp();
-                    ifacep = dtypep->ifacep();
-                }
+        if (nodep->varp()->isVirtIface()) {
+            if (AstMemberSel* const memberSelp = VN_CAST(nodep->firstAbovep(), MemberSel)) {
+                ifacep = VN_AS(nodep->varp()->dtypep(), IfaceRefDType)->ifacep();
+                memberVarp = memberSelp->varp();
             }
         } else if ((ifacep = nodep->varp()->sensIfacep())) {
             memberVarp = nodep->varp();
@@ -123,6 +118,18 @@ private:
                 nodep});
         }
     }
+
+    // VISITORS
+    void visit(AstNodeProcedure* nodep) override {
+        // Not sure if needed, but be paranoid to match previous behavior as didn't optimize
+        // before ..
+        if (VN_IS(nodep, AlwaysPost) && writesToVirtIface(nodep)) {
+            nodep->foreach([](AstVarRef* refp) { refp->varScopep()->optimizeLifePost(false); });
+        }
+        iterateChildren(nodep);
+    }
+    void visit(AstMemberSel* const nodep) override { handleIface(nodep); }
+    void visit(AstVarRef* const nodep) override { handleIface(nodep); }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:

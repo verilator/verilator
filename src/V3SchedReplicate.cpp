@@ -151,7 +151,7 @@ public:
         , m_vscp{vscp} {
         // Top level inputs are
         if (varp()->isPrimaryInish() || varp()->isSigUserRWPublic() || varp()->isWrittenByDpi()
-            || varp()->sensIfacep()) {
+            || varp()->sensIfacep() || varp()->isVirtIface()) {
             addDrivingRegions(INPUT);
         }
         // Currently we always execute suspendable processes at the beginning of
