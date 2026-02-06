@@ -1,0 +1,18 @@
+%Error: t/t_interface_modport_expr_bad.v:10:22: Can't find modport expression target: 'nonexist.sig'
+   10 |   modport mp1(input .in(nonexist.sig));
+      |                      ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_interface_modport_expr_bad.v:10:22: Modport item not found: 'in'
+   10 |   modport mp1(input .in(nonexist.sig));
+      |                      ^~
+%Error-UNSUPPORTED: t/t_interface_modport_expr_bad.v:12:22: Unsupported: Complex modport expression (IEEE 1800-2023 25.5.4)
+   12 |   modport mp2(input .in(~a));
+      |                      ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: t/t_interface_modport_expr_bad.v:12:22: Modport item not found: 'in'
+   12 |   modport mp2(input .in(~a));
+      |                      ^~
+%Error: t/t_interface_modport_expr_bad.v:10:25: Can't find definition of scope/variable: 'nonexist'
+   10 |   modport mp1(input .in(nonexist.sig));
+      |                         ^~~~~~~~
+%Error: Exiting due to
