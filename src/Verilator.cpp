@@ -83,6 +83,7 @@
 #include "V3PreShell.h"
 #include "V3Premit.h"
 #include "V3ProtectLib.h"
+#include "V3Quadstate.h"
 #include "V3RandSequence.h"
 #include "V3Randomize.h"
 #include "V3Reloop.h"
@@ -281,6 +282,7 @@ static void process() {
             // Expand inouts, stage 2
             // Also simplify pin connections to always be AssignWs in prep for V3Unknown
             V3Tristate::tristateAll(v3Global.rootp());
+            V3Quadstate::quadstateAll(v3Global.rootp());
         }
 
         if (!v3Global.opt.serializeOnly()) {

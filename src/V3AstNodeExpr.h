@@ -70,6 +70,7 @@ public:
     // Returns an error message if widthMin() is not correct otherwise returns nullptr like
     // broken()
     virtual const char* widthMismatch() const VL_MT_STABLE { return nullptr; }
+    virtual bool isFourState() const;
 };
 class AstNodeBiop VL_NOT_FINAL : public AstNodeExpr {
     // Binary expression
@@ -498,6 +499,7 @@ public:
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
     static AstNodeVarRef* varRefLValueRecurse(AstNode* nodep);
+    bool isFourState() const override { return m_varp && m_varp->attrFourState(); }
 };
 
 // === Concrete node types =====================================================
@@ -1155,6 +1157,7 @@ public:
     // Parse string and create appropriate type of AstConst.
     // May return nullptr on parse failure.
     static AstConst* parseParamLiteral(FileLine* fl, const string& literal);
+    bool isFourState() const override { return m_num.isAnyXZ(); }
 };
 class AstConstraintRef final : public AstNodeExpr {
     // A reference to a constraint identifier
@@ -2794,6 +2797,7 @@ public:
     bool sizeMattersLhs() const override { return true; }
     bool sizeMattersRhs() const override { return true; }
     int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_DIV; }
+    bool isFourState() const override { return true; }
 };
 class AstDivD final : public AstNodeBiop {
 public:
@@ -2837,6 +2841,7 @@ public:
     bool sizeMattersRhs() const override { return true; }
     int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_DIV; }
     bool signedFlavor() const override { return true; }
+    bool isFourState() const override { return true; }
 };
 class AstEqWild final : public AstNodeBiop {
     // Note wildcard operator rhs differs from lhs

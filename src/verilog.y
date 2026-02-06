@@ -245,6 +245,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_COVERAGE_OFF           "coverage_off"
 %token<fl>              yVLT_COVERAGE_ON            "coverage_on"
 %token<fl>              yVLT_FORCEABLE              "forceable"
+%token<fl>              yVLT_FOUR_STATE             "four_state"
 %token<fl>              yVLT_FULL_CASE              "full_case"
 %token<fl>              yVLT_HIER_BLOCK             "hier_block"
 %token<fl>              yVLT_HIER_PARAMS            "hier_params"
@@ -781,6 +782,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVL_CLOCK_ENABLE          "/*verilator clock_enable*/"
 %token<fl>              yVL_COVERAGE_BLOCK_OFF    "/*verilator coverage_block_off*/"
 %token<fl>              yVL_FORCEABLE             "/*verilator forceable*/"
+%token<fl>              yVL_FOUR_STATE            "/*verilator four_state*/"
 %token<fl>              yVL_FULL_CASE             "/*verilator full_case*/"
 %token<fl>              yVL_HIER_BLOCK            "/*verilator hier_block*/"
 %token<fl>              yVL_INLINE_MODULE         "/*verilator inline_module*/"
@@ -3099,6 +3101,7 @@ sigAttr<nodep>:
         |       yVL_NO_CLOCKER                          { $$ = nullptr; /* Historical, now has no effect */ }
         |       yVL_CLOCK_ENABLE                        { $$ = nullptr; /* Historical, now has no effect */ }
         |       yVL_FORCEABLE                           { $$ = new AstAttrOf{$1, VAttrType::VAR_FORCEABLE}; }
+        |       yVL_FOUR_STATE                          { $$ = new AstAttrOf{$1, VAttrType::VAR_FOUR_STATE}; }
         |       yVL_PUBLIC                              { $$ = new AstAttrOf{$1, VAttrType::VAR_PUBLIC}; v3Global.dpi(true); }
         |       yVL_PUBLIC_FLAT                         { $$ = new AstAttrOf{$1, VAttrType::VAR_PUBLIC_FLAT}; v3Global.dpi(true); }
         |       yVL_PUBLIC_FLAT_RD                      { $$ = new AstAttrOf{$1, VAttrType::VAR_PUBLIC_FLAT_RD}; v3Global.dpi(true); }
@@ -8294,6 +8297,7 @@ vltVarAttrSpecE<strp>:
 
 vltVarAttrFront<attrtypeen>:
                 yVLT_ISOLATE_ASSIGNMENTS    { $$ = VAttrType::VAR_ISOLATE_ASSIGNMENTS; }
+        |       yVLT_FOUR_STATE             { $$ = VAttrType::VAR_FOUR_STATE; }
         |       yVLT_FORCEABLE              { $$ = VAttrType::VAR_FORCEABLE; }
         |       yVLT_PUBLIC                 { $$ = VAttrType::VAR_PUBLIC; v3Global.dpi(true); }
         |       yVLT_PUBLIC_FLAT            { $$ = VAttrType::VAR_PUBLIC_FLAT; v3Global.dpi(true); }

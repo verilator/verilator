@@ -475,6 +475,15 @@ class LinkParseVisitor final : public VNVisitor {
             m_varp->setForceable();
             v3Global.setHasForceableSignals();
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        } else if (nodep->attrType() == VAttrType::VAR_FOUR_STATE) {
+            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
+            if (m_varp->childDTypep()->isFourstate()) {
+                m_varp->attrFourState(true);
+            } else {
+                m_varp->v3warn(EC_INFO,
+                               "Four state pragma used on non four state type - ignoring");
+            }
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (nodep->attrType() == VAttrType::VAR_PUBLIC) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->sigUserRWPublic(true);

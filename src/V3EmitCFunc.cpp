@@ -240,6 +240,11 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
                     iterateConst(argp);
                     if (!addrof) emitDatap(argp);
                     if (addrof) puts(")");
+                    if (fmt == 'd' || fmt == '~') {
+                        if (AstNodeExpr* const exprp = VN_CAST(argp, NodeExpr)) {
+                            ofp()->puts(exprp->isFourState() ? ", 1" : ", 0");
+                        }
+                    }
                 }
                 ofp()->indentDec();
             }
