@@ -66,6 +66,7 @@
 
 #include "V3Const.h"
 #include "V3EmitV.h"
+#include "V3Global.h"
 #include "V3Graph.h"
 #include "V3MemberMap.h"
 #include "V3SenExprBuilder.h"
@@ -475,6 +476,8 @@ class TimingControlVisitor final : public VNVisitor {
     int m_forkCnt = 0;  // Number of forks inside a module
     bool m_underJumpBlock = false;  // True if we are inside of a jump-block
     bool m_underProcedure = false;  // True if we are under an always or initial
+    bool m_hasStaticZeroDelay = false;  // True if we have a static #0 delay
+    std::vector<FileLine*> m_unknownDelayFlps;  // Locations of AstDelay with non-constant value
 
     // Unique names
     V3UniqueNames m_dlyforkNames{"__Vdlyfork"};  // Names for temp AssignW vars
@@ -919,26 +922,58 @@ class TimingControlVisitor final : public VNVisitor {
         UASSERT_OBJ(!nodep->isCycleDelay(), nodep,
                     "Cycle delays should have been handled in V3AssertPre");
         FileLine* const flp = nodep->fileline();
-        AstNodeExpr* valuep = V3Const::constifyEdit(nodep->lhsp()->unlinkFrBack());
-        AstConst* const constp = VN_CAST(valuep, Const);
-        if (!constp || !constp->isZero()) {
-            // Scale the delay
-            const double timescaleFactor = calculateTimescaleFactor(nodep, nodep->timeunit());
-            if (valuep->dtypep()->skipRefp()->isDouble()) {
-                valuep = new AstRToIRoundS{
-                    flp, new AstMulD{flp, valuep,
-                                     new AstConst{flp, AstConst::RealDouble{}, timescaleFactor}}};
-                valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
-            } else {
-                valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
-                valuep = new AstMul{flp, valuep,
-                                    new AstConst{flp, AstConst::Unsized64{},
-                                                 static_cast<uint64_t>(timescaleFactor)}};
-            }
-        } else if (constp->num().is1Step()) {
+
+        AstNodeExpr* valuep = nodep->lhsp()->unlinkFrBack();
+        if (VN_IS(valuep, Const) && VN_AS(valuep, Const)->num().is1Step()) {
+            // #1step special case
             VL_DO_DANGLING(valuep->deleteTree(), valuep);
             valuep = new AstConst{flp, AstConst::Unsized64{}, 1};
             valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
+        } else {
+            // Scale the delay
+            const double timescaleFactorD = calculateTimescaleFactor(nodep, nodep->timeunit());
+            if (valuep->dtypep()->skipRefp()->isDouble()) {
+                AstConst* const tsfp = new AstConst{flp, AstConst::RealDouble{}, timescaleFactorD};
+                valuep = new AstMulD{flp, valuep, tsfp};
+                valuep = new AstRToIRoundS{flp, valuep};
+                valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
+            } else {
+                valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
+                const uint64_t timescaleFactorU = static_cast<uint64_t>(timescaleFactorD);
+                AstConst* const tsfp = new AstConst{flp, AstConst::Unsized64{}, timescaleFactorU};
+                valuep = new AstMul{flp, valuep, tsfp};
+            }
+            // Simplify
+            valuep = V3Const::constifyEdit(valuep);
+        }
+        // Check if a #0 delay is used
+        if (AstConst* const constp = VN_CAST(valuep, Const)) {
+            // Delay statically known constant. Check if zero
+            if (constp->num().isEqZero()) {
+                m_hasStaticZeroDelay = true;
+                if (v3Global.opt.runtimeZeroDelay().isSetFalse()) {
+                    // User promised there will not be #0 delays executed at runtime.
+                    // Trust them but warn a #0 delay statically exists.
+                    nodep->v3warn(
+                        ZERODLY,
+                        "Static #0 delay exists, but '--no-runtime-zero-delay' was given.\n"
+                            << nodep->warnMore()  //
+                            << "... Can proceed, but this will fail at runtime if executed.");
+                } else {
+                    // Sadly we have a #0
+                    v3Global.setUsesZeroDelay();
+                }
+            }
+        } else {
+            // Delay is not statically known
+            if (v3Global.opt.runtimeZeroDelay().isSetFalse()) {
+                // User promised there will not be #0 delays executed at runtime, trust them.
+            } else {
+                // Record location. We will warn if no static #0 delays used.
+                m_unknownDelayFlps.push_back(nodep->fileline());
+                // Assume it can be a #0
+                v3Global.setUsesZeroDelay();
+            }
         }
         // Replace self with a 'co_await dlySched.delay(<valuep>)'
         AstCMethodHard* const delayMethodp = new AstCMethodHard{
@@ -1329,6 +1364,27 @@ public:
     explicit TimingControlVisitor(AstNetlist* nodep)
         : m_netlistp{nodep} {
         iterate(nodep);
+
+        // If there is no static #0 in the design, but an unknown delay was found,
+        // and '--runtime-zero-delay' was not given, then warn on all unknown delays
+        // as we will be assuming they can be #0, which can cause performance degradation.
+        if (!m_hasStaticZeroDelay  //
+            && !v3Global.opt.runtimeZeroDelay().isSetTrue()  //
+            && !m_unknownDelayFlps.empty()) {
+            UASSERT_OBJ(v3Global.usesZeroDelay(), nodep, "Should have assumed can be #0");
+            for (FileLine* const flp : m_unknownDelayFlps) {
+                flp->v3warn(ZERODLY,
+                            "Value of # delay control statically unknown. Assuming it can be #0.\n"
+                                << flp->warnMore()  //
+                                << "... If all # delays are non-zero at runtime,\n"
+                                << flp->warnMore()  //
+                                << "... use '--no-runtime-zero-delay' for improved performance.\n"
+                                << flp->warnMore()  //
+                                << "... If a real #0 is expected at runtime,\n"
+                                << flp->warnMore()  //
+                                << "... use '--runtime-zero-delay' to suppress this warning.");
+            }
+        }
     }
     ~TimingControlVisitor() override = default;
 };

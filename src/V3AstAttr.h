@@ -821,6 +821,7 @@ public:
         RNG_SET_RANDSTATE,
         SCHED_ANY_TRIGGERED,
         SCHED_AWAITING_CURRENT_TIME,
+        SCHED_AWAITING_ZERO_DELAY,
         SCHED_READY,
         SCHED_COMMIT,
         SCHED_MOVE_TO_RESUME_QUEUE,
@@ -831,6 +832,7 @@ public:
         SCHED_EVALUATION,
         SCHED_POST_UPDATE,
         SCHED_RESUME,
+        SCHED_RESUME_ZERO_DELAY,
         SCHED_RESUMPTION,
         SCHED_TRIGGER,
         UNPACKED_ASSIGN,
@@ -954,6 +956,7 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {RNG_SET_RANDSTATE, "__Vm_rng.set_randstate", false}, \
            {SCHED_ANY_TRIGGERED, "anyTriggered", false}, \
            {SCHED_AWAITING_CURRENT_TIME, "awaitingCurrentTime", true}, \
+           {SCHED_AWAITING_ZERO_DELAY, "awaitingZeroDelay", true}, \
            {SCHED_READY, "ready", false}, \
            {SCHED_COMMIT, "commit", false}, \
            {SCHED_MOVE_TO_RESUME_QUEUE, "moveToResumeQueue", false}, \
@@ -964,6 +967,7 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {SCHED_EVALUATION, "evaluation", false}, \
            {SCHED_POST_UPDATE, "postUpdate", false}, \
            {SCHED_RESUME, "resume", false}, \
+           {SCHED_RESUME_ZERO_DELAY, "resumeZeroDelay", false}, \
            {SCHED_RESUMPTION, "resumption", false}, \
            {SCHED_TRIGGER, "trigger", false}, \
            {UNPACKED_ASSIGN, "assign", false}, \
