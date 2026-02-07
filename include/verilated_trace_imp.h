@@ -352,8 +352,8 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
         // each signal, which is 'nextCode()' entries after the init callbacks
         // above have been run, plus up to 2 more words of metadata per signal,
         // plus fixed overhead of 1 for a termination flag and 3 for a time stamp
-        // update.
-        m_offloadBufferSize = nextCode() + numSignals() * 2 + 4;
+        // update and 2 for the buffer address.
+        m_offloadBufferSize = nextCode() + numSignals() * 2 + 6;
 
         // Start the worker thread
         m_workerThread.reset(
