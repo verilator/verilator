@@ -67,7 +67,7 @@ class V3DfgPushDownSels final {
 
     // METHODS - Pearce-Kelly algorithm
     void debugCheck() {
-        if (!v3Global.opt.debugCheck()) return;
+        if (VL_LIKELY(!v3Global.opt.debugCheck())) return;
         m_dfg.forEachVertex([&](const DfgVertex& src) {
             const State& srcState = m_stateMap[src];
             UASSERT_OBJ(!srcState.visited, &src, "Visit marker not reset");
@@ -113,7 +113,7 @@ class V3DfgPushDownSels final {
             // Entering vertex. Enqueue all unvisited children.
             vtxState.visited = true;
             vtx.foreachSink([&](DfgVertex& dst) {
-                State& dstState = m_stateMap[dst];
+                const State& dstState = m_stateMap[dst];
                 if (dstState.visited) return false;
                 m_stack.push_back(&dst);
                 return false;
@@ -208,7 +208,7 @@ class V3DfgPushDownSels final {
 
             // Enqueue unvisited sources in affeced area
             vtx.foreachSource([&](DfgVertex& source) {
-                State& sourceState = m_stateMap[source];
+                const State& sourceState = m_stateMap[source];
                 if (sourceState.visited) return false;  // Stop search if already visited
                 if (sourceState.ord < dstOrd)
                     return false;  // Stop search if outside critical area
@@ -390,5 +390,6 @@ public:
 };
 
 void V3DfgPasses::pushDownSels(DfgGraph& dfg, V3DfgPushDownSelsContext& ctx) {
+    if (!v3Global.opt.fDfgPushDownSels()) return;
     V3DfgPushDownSels::apply(dfg, ctx);
 }
