@@ -19,6 +19,7 @@ Verilator 5.045 devel
 * Add parsing of solve-before inside foreach (#6934). [Pawel Kojma, Antmicro Ltd.]
 * Add error when accessing a non-static class field from a static function (#6948). [Artur Bieniek, Antmicro Ltd.]
 * Add VerilatedContext::useNumaAssign and set on threads() call (#6954). [Yangyu Chen]
+* Support modport expression syntax + nested (#2601) (#5581) (#7005). [Leela Pakanati]
 * Support nested interface as port connection (#5066) (#6986). [Leela Pakanati]
 * Support structure initial values (#6130).
 * Support vpi_put/vpi_get forcing of signals (#5933) (#6704). [Christian Hecken]
@@ -29,6 +30,7 @@ Verilator 5.045 devel
 * Support unbounded '$' in inside range expressions (#6935) (#6938). [Wei-Lun Chiu]
 * Support `extern module` as a forward-declaration that is ignored.
 * Support `foreach` with nested dots (#6991). [Krzysztof Bieganski, Antmicro Ltd.]
+* Support signed multiplication in constraints (#7008). [Pawel Kojma, Antmicro Ltd.]
 * Remove deprecated `--xml-only`.
 * Remove deprecated `--make cmake`.
 * Change metacomment extra underscore error to BADVLTPRAGMA warning (#6968). [Geza Lore, Testorrent USA, Inc.]
@@ -37,9 +39,11 @@ Verilator 5.045 devel
 * Optimize concatenations that produce unused bits in DFG (#6971). [Geza Lore, Testorrent USA, Inc.]
 * Optimize more wide operation temporaries with substitution (#6972). [Geza Lore, Testorrent USA, Inc.]
 * Optimize right shifts as clean (#6981). [Geza Lore, Testorrent USA, Inc.]
-* Fix parameterized virtual interface references that have no model references (#4286).
-* Fix variable reference lookup for module-level variables (#6741) (#6882). [Yilou Wang]
+* Optimize temporary insertion for concatenations in DFG (#7013). [Geza Lore, Testorrent USA, Inc.]
 * Fix MULTIDRIVEN with task and default driver (#4045) (#6858). [em2machine]
+* Fix parameterized virtual interface references that have no model references (#4286).
+* Fix hierarchical interface/modport issues (#5941) (#6997). [Leela Pakanati]
+* Fix variable reference lookup for module-level variables (#6741) (#6882). [Yilou Wang]
 * Fix false CASEOVERLAP case item expression lint (#6825) (#6886). [Luca Colagrande]
 * Fix virtual interface triggers (#6844). [Igor Zaworski, Antmicro Ltd.]
 * Fix use-after-free error (#6846). [Matthew Ballance]
@@ -67,6 +71,7 @@ Verilator 5.045 devel
 * Fix associative array of events causes C++ compile error (#6962).
 * Fix non-inlined function return value clearing (#6982).
 * Fix parameterized class typedef as interface type parameter (#6983) (#6984). [Leela Pakanati]
+* Fix virtual interface not found internal error (#7010). [Igor Zaworski, Antmicro Ltd.]
 
 
 Verilator 5.044 2026-01-01
