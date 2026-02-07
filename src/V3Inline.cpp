@@ -342,7 +342,8 @@ class InlineRelinkVisitor final : public VNVisitor {
             // variable that will later be pruned (it will otherwise be unreferenced).
             if (!nodep->access().isReadOnly()) {
                 AstVar* const varp = nodep->varp();
-                const std::string name = "__vInlPlaceholder_" + std::to_string(++m_nPlaceholders);
+                const std::string name
+                    = m_cellp->name() + "__vInlPlaceholder_" + std::to_string(++m_nPlaceholders);
                 AstVar* const holdep = new AstVar{varp->fileline(), VVarType::VAR, name, varp};
                 m_modp->addStmtsp(holdep);
                 AstVarRef* const newp = new AstVarRef{nodep->fileline(), holdep, nodep->access()};
