@@ -350,6 +350,7 @@ class DynScopeVisitor final : public VNVisitor {
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         if (!VN_IS(nodep, Class)) m_modp = nodep;
+        VL_RESTORER(m_id);
         m_id = 0;
         iterateChildren(nodep);
     }
@@ -385,10 +386,12 @@ class DynScopeVisitor final : public VNVisitor {
             bindNodeToDynScope(varp, framep);
         }
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            AstAssign* const asgnp = VN_CAST(stmtp, Assign);
-            UASSERT_OBJ(asgnp, stmtp, "Invalid node under block item initialization part of fork");
-            bindNodeToDynScope(asgnp->lhsp(), framep);
-            iterate(asgnp->rhsp());
+            if (AstAssign* const asgnp = VN_CAST(stmtp, Assign)) {
+                bindNodeToDynScope(asgnp->lhsp(), framep);
+                iterate(asgnp->rhsp());
+            } else {
+                stmtp->v3fatalSrc("Invalid node under block item initialization part of fork");
+            }
         }
 
         for (AstNode* stmtp = nodep->forksp(); stmtp; stmtp = stmtp->nextp()) {

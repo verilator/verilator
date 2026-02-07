@@ -1367,7 +1367,7 @@ public:
         return resultp()->isPure();
     }
     bool sameNode(const AstNode*) const override { return true; }
-    bool hasResult() { return m_hasResult; }
+    bool hasResult() const { return m_hasResult; }
     void hasResult(bool flag) { m_hasResult = flag; }
 };
 class AstFError final : public AstNodeExpr {

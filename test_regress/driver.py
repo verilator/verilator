@@ -2545,7 +2545,7 @@ class VlTest:
         if out != '':
             print(out)
             self.copy_if_golden(fn1, fn2)
-            self.error("SAIF files don't match!")
+            self.error("SAIF files miscompare")
 
     def _vcd_read(self, filename: str) -> dict:
         data = {}
