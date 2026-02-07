@@ -76,6 +76,8 @@ uint32_t colorStronglyConnectedComponents(const DfgGraph&, DfgUserMap<uint64_t>&
 void cse(DfgGraph&, V3DfgCseContext&) VL_MT_DISABLED;
 // Inline fully driven variables
 void inlineVars(DfgGraph&) VL_MT_DISABLED;
+// Push down selects through concatenations
+void pushDownSels(DfgGraph& dfg, V3DfgPushDownSelsContext& ctx) VL_MT_DISABLED;
 // Peephole optimizations
 void peephole(DfgGraph&, V3DfgPeepholeContext&) VL_MT_DISABLED;
 // Regularize graph. This must be run before converting back to Ast.

@@ -662,6 +662,10 @@ Summary:
 
    Rarely needed. Do not apply the DFG optimizer before inlining.
 
+.. option:: -fno-dfg-push-down-sels
+
+   Rarely needed. Disable DFG select/concatenation optimization.
+
 .. option:: -fno-dfg-scoped
 
    Rarely needed. Do not apply the DFG optimizer across module scopes.

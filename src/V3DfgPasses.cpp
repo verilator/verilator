@@ -371,6 +371,10 @@ void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgContext& ctx) {
     run("cse0        ", dumpLvl >= 4, [&]() { cse(dfg, ctx.m_cseContext0); });
     run("binToOneHot ", dumpLvl >= 4, [&]() { binToOneHot(dfg, ctx.m_binToOneHotContext); });
     run("peephole    ", dumpLvl >= 4, [&]() { peephole(dfg, ctx.m_peepholeContext); });
+    // Run only on final scoped DfgGraphs, as otherwise later DfgPeephole wold just undo this work
+    if (!dfg.modulep()) {
+        run("pushDownSels", dumpLvl >= 4, [&]() { pushDownSels(dfg, ctx.m_pushDownSelsContext); });
+    }
     run("cse1        ", dumpLvl >= 4, [&]() { cse(dfg, ctx.m_cseContext1); });
     run("output      ", dumpLvl >= 3, [&]() { /* debug dump only */ });
 

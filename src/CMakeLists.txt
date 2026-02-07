@@ -250,6 +250,7 @@ set(COMMON_SOURCES
     V3DfgOptimizer.cpp
     V3DfgPasses.cpp
     V3DfgPeephole.cpp
+    V3DfgPushDownSels.cpp
     V3DfgRegularize.cpp
     V3DfgSynthesize.cpp
     V3DiagSarif.cpp

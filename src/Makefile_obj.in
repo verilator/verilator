@@ -266,6 +266,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3DfgOptimizer.o \
   V3DfgPasses.o \
   V3DfgPeephole.o \
+  V3DfgPushDownSels.o \
   V3DfgRegularize.o \
   V3DfgSynthesize.o \
   V3DiagSarif.o \
