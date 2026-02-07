@@ -171,6 +171,22 @@ private:
     V3DfgPeepholeContext(V3DfgContext& ctx, const std::string& label) VL_MT_DISABLED;
     ~V3DfgPeepholeContext() VL_MT_DISABLED;
 };
+class V3DfgPushDownSelsContext final : public V3DfgSubContext {
+    // Only V3DfgContext can create an instance
+    friend class V3DfgContext;
+
+public:
+    // STATE
+    size_t m_pushedDown = 0;  // Number of selects pushed down through concatenations
+    size_t m_wouldBeCyclic = 0;  // Number of selects not pushed due to cycle
+private:
+    V3DfgPushDownSelsContext(V3DfgContext& ctx, const std::string& label)
+        : V3DfgSubContext{ctx, label, "PushDownSels"} {}
+    ~V3DfgPushDownSelsContext() {
+        addStat("sels pushed down", m_pushedDown);
+        addStat("would be cyclic", m_wouldBeCyclic);
+    }
+};
 class V3DfgRegularizeContext final : public V3DfgSubContext {
     // Only V3DfgContext can create an instance
     friend class V3DfgContext;
@@ -348,6 +364,7 @@ public:
     V3DfgCseContext m_cseContext1{*this, m_label + " 2nd"};
     V3DfgDfgToAstContext m_dfg2AstContext{*this, m_label};
     V3DfgPeepholeContext m_peepholeContext{*this, m_label};
+    V3DfgPushDownSelsContext m_pushDownSelsContext{*this, m_label};
     V3DfgRegularizeContext m_regularizeContext{*this, m_label};
     V3DfgSynthesisContext m_synthContext{*this, m_label};
 
