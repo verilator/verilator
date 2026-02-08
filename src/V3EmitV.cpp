@@ -1223,6 +1223,12 @@ void V3EmitV::debugVerilogForTree(const AstNode* nodep, std::ostream& os) {
     { EmitVStreamVisitor{nodep, os, /* tracking: */ true, true}; }
 }
 
+std::string V3EmitV::debugVerilogForTree(const AstNode* nodep) {
+    std::stringstream ss;
+    debugVerilogForTree(nodep, ss);
+    return ss.str();
+}
+
 void V3EmitV::emitvFiles() {
     UINFO(2, __FUNCTION__ << ":");
     for (AstNodeFile* filep = v3Global.rootp()->filesp(); filep;
