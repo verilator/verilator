@@ -19,7 +19,7 @@ endclass
 
 module t;
    initial begin
-      Cls c = new;
+      automatic Cls c = new;
       $write("*-* All Finished *-*\n");
       $finish;
    end

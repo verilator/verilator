@@ -21,7 +21,7 @@ endclass
 
 module t;
   initial begin
-    int x = 2;
+    automatic int x = 2;
     test_class example;
     example = new;
     example.b = new;

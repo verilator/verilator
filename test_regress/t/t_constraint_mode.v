@@ -62,10 +62,10 @@ endclass
 
 module t;
   initial begin
-    logic[1:0] ok = 0;
-    int res;
-    Qux qux = new;
-    Bar bar = qux;
+    automatic logic[1:0] ok = 0;
+    automatic int res;
+    automatic Qux qux = new;
+    automatic Bar bar = qux;
 
     qux.test;
 

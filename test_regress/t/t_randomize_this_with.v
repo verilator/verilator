@@ -23,7 +23,7 @@ endclass
 
 module t;
   initial begin
-    Cls c = new;
+    automatic Cls c = new;
     c.body();
     $finish;
   end

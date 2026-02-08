@@ -15,8 +15,8 @@ endclass
 
 module t;
    initial begin
-      Foo foo = Foo::get();
-      Foo foos[] = new[1];
+      automatic Foo foo = Foo::get();
+      automatic Foo foos[] = new[1];
       void'(foo.randomize(Foo::get().x));
       void'(foo.randomize(foos[0].x));
       void'(foo.randomize(null));

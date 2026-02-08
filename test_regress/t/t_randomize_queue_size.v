@@ -6,8 +6,8 @@
 
 `define check_rand(cl, field, cond) \
 begin \
-   longint prev_result; \
-   int ok = 0; \
+   automatic longint prev_result; \
+   automatic int ok; \
    if (!bit'(cl.randomize())) $stop; \
    prev_result = longint'(field); \
    if (!(cond)) $stop; \
@@ -55,9 +55,9 @@ endclass
 
 module t;
    initial begin
-      Foo foo = new;
-      Bar bar = new;
-      Baz baz = new;
+      automatic Foo foo = new;
+      automatic Bar bar = new;
+      automatic Baz baz = new;
 
       void'(foo.randomize());
       if (foo.q.size() != 15) $stop;

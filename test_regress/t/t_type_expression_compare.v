@@ -8,8 +8,8 @@ typedef int Int_T;
 
 module t;
   initial begin
-    Int_T value1 = 7;
-    int value2 = 13;
+    automatic Int_T value1 = 7;
+    automatic int value2 = 13;
     real r;
     if (type(value1) != type(value2)) $stop;
     if (type(value1 + value2) != type(value2 + 18)) $stop;

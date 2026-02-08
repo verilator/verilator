@@ -31,7 +31,7 @@ module tb_top();
    initial begin
       static a_t aa = a[0];
 
-      B b = new(a[0]);
+      automatic B b = new(a[0]);
 
       c = new();
       c.vif = a;

@@ -8,9 +8,9 @@ import "DPI-C" pure function int identity(input int value);
 
 module t;
    initial begin
-      int n = 0;
-      logic [127:0] val = 128'b1;
-      logic [15:0] one = 16'b1;
+      automatic int n;
+      automatic logic [127:0] val = 128'b1;
+      automatic logic [15:0] one = 16'b1;
 
       // This condition involves multiple wide temporaries, and an over-width
       // shift, all of which requires V3Premit to fix up.

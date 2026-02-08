@@ -226,21 +226,21 @@ module if_with_param;
    initial begin
       if (ZERO_PARAM) begin
          // loop under false parameterized if - no warning
-         int prints = 0;
+         int prints;
          while(prints < 5) begin
             prints++;
          end
          $write("Prints %d\n", prints);
       end else if (!ONE_PARAM) begin
          // loop under false parameterized if - no warning
-         int prints = 0;
+         int prints;
          while(prints < 5) begin
             prints++;
          end
          $write("Prints %d\n", prints);
       end else begin
          // loop under true parameterized if - no warning
-         int prints = 0;
+         int prints;
          while(prints < 5) begin
             prints++;
          end

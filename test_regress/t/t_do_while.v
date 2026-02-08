@@ -20,7 +20,7 @@ module t;
 
       a = 0;
       do begin
-         int x = 1;
+         automatic int x = 1;
          a += x;
          if (a == 1) begin
             a = 2;
@@ -55,7 +55,7 @@ module t;
       a = 1;
       do begin
          do begin
-            int x = 1;
+            automatic int x = 1;
             a += x;
          end while (a < 3);
       end while (a < 5);

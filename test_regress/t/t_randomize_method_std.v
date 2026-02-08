@@ -14,7 +14,7 @@ endclass
 
 module t;
    initial begin
-      C c = new;
+      automatic C c = new;
 
       $write("*-* All Finished *-*\n");
       $finish;

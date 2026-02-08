@@ -10,7 +10,7 @@ module flash_mp_data_region_sel (
    input int region_attrs_i[1]
 );
    initial begin
-      int o = 0;
+      automatic int o = 0;
       for (int i = 0; i < 1; i++) begin
          o = region_attrs_i[i];
       end

@@ -26,9 +26,9 @@ module t;
    endfunction
 
    initial begin
-      c o = new;
-      str_s st = '{"qux"};
-      string sc = {"foo", "bar"};
+      automatic c o = new;
+      automatic str_s st = '{"qux"};
+      automatic string sc = {"foo", "bar"};
 
       // read
       if (str[0] != "b") $stop;

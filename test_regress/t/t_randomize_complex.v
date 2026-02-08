@@ -34,8 +34,8 @@ endclass
 
 module t;
   initial begin
-    WeNeedToGoDeeper cl_inst = new;
-    MyClass cl_inst2 = new;
+    automatic WeNeedToGoDeeper cl_inst = new;
+    automatic MyClass cl_inst2 = new;
     repeat (10) begin
       if (cl_inst.sc_inst.sc_inst1.sc_inst2.randomize() with {field inside {1, 2, 3};} == 0) begin
         $stop;

@@ -16,10 +16,10 @@ endclass
 
 module t;
    initial begin
-      int sel_bit = 3;
-      Bar bar = new;
-      Foo foo = bar;
-      Bar bars[] = new[4];
+      automatic int sel_bit = 3;
+      automatic Bar bar = new;
+      automatic Foo foo = bar;
+      automatic Bar bars[] = new[4];
       $cast(bars[0], foo);
       if (bars[0].x != 2) $stop;
 

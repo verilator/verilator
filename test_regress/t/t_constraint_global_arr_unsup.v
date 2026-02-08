@@ -56,7 +56,7 @@ endclass
 
 module t_constraint_global_arr_unsup;
   initial begin
-    Outer o = new;
+    automatic Outer o = new;
     if (o.randomize()) begin
       $display("Case 1 - Simple: mid.obj.x = %0d (expected 100)", o.m_mid.m_obj.m_x);
       $display("Case 1 - Simple: mid.obj.y = %0d (expected 101)", o.m_mid.m_obj.m_y);

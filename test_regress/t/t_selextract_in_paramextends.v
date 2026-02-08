@@ -29,7 +29,7 @@ endclass
 
 module test();
   initial begin
-    Foo foo = new;
+    automatic Foo foo = new;
 
     for (int i = 0; i < 10; i++) begin
       logic [3:0] v;

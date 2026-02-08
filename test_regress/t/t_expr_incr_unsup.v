@@ -12,7 +12,7 @@ endfunction
 
 module t;
     initial begin
-        int arr [1:0] = {0, 0};
+        automatic int arr [1:0] = {0, 0};
         i = 0;
         $display("Value: %d", arr[postincrement_i()]++);
     end

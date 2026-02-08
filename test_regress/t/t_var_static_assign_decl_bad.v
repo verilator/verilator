@@ -89,7 +89,7 @@ module no_warn#(PARAM = 1)(input in, input clk);
 
   // Do not warn on variables under blocks.
   initial begin
-    logic init_tmp = in;
+    static logic init_tmp = in;
   end
 
   always @(posedge clk) begin

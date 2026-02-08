@@ -14,7 +14,7 @@ module t_randomize_method_with_bad();
   endfunction
 
   initial begin
-    Foo foo = new;
-    int res = foo.randomize() with { v < in_mod_function(); };
+    automatic Foo foo = new;
+    automatic int res = foo.randomize() with { v < in_mod_function(); };
   end
 endmodule

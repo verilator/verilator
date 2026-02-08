@@ -34,7 +34,7 @@ endclass
 
 module t;
   initial begin
-    Cls c = new;
+    automatic Cls c = new;
     c.disable_outside_fork();
     #2;
     if (c.x != 1) $stop;

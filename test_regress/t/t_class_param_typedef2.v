@@ -25,7 +25,7 @@ typedef uvm_object_registry#(MyInt) type_id;
 
 module t;
   initial begin
-    MyInt mi = type_id::create_object();
+    automatic MyInt mi = type_id::create_object();
     if (mi.x != 1) $stop;
 
     $write("*-* All Finished *-*\n");

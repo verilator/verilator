@@ -36,8 +36,8 @@ endclass
 
 
 initial begin
-    T t_c = new;
-    uvm_reg u_r = new;
+    automatic T t_c = new;
+    automatic uvm_reg u_r = new;
     if (u_r.get_string() != "user backdoor") $stop;
     if (t_c.return_str("A") != "A") $stop;
     if (t_c.static_return_str("B") != "B") $stop;

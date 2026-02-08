@@ -14,7 +14,7 @@ module t;
 
    initial begin
       bit first;
-      bit arg[$] = {1'b0, 1'b1};
+      automatic bit arg[$] = {1'b0, 1'b1};
       first = Foo::get_first();
       if (first != 1) $stop;
       first = Foo::get_first(arg);

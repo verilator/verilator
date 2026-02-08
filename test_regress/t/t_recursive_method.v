@@ -46,8 +46,8 @@ endclass
 module t;
 
    initial begin
-      Fib fib = new;
-      Getter3 getter3 = new;
+      automatic Fib fib = new;
+      automatic Getter3 getter3 = new;
 
       if (fib.get_fib(0) != 0) $stop;
       if (fib.get_fib(1) != 1) $stop;

@@ -19,7 +19,7 @@ endpackage
 module t;
 
    initial begin
-      uvm_pkg::uvm_reg_field c = new;
+      automatic uvm_pkg::uvm_reg_field c = new;
       c.configure(1, 0);
       c.configure(0, 0);
       $write("*-* All Finished *-*\n");

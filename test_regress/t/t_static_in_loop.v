@@ -6,9 +6,9 @@
 
 module t;
   initial begin
-    int x = 0;
+    automatic int x = 0;
     while (x < 10) begin : outer_loop
-      int y = 0;
+      automatic int y = 0;
       while (y < x) begin : inner_loop
         static int a = 0;
         a++;

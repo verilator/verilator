@@ -23,7 +23,7 @@ endclass
 
 module t;
   initial begin
-    spi_reg_block test = new;
+    automatic spi_reg_block test = new;
     $finish;
   end
 endmodule

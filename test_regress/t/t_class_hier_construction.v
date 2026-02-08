@@ -72,10 +72,10 @@ endclass
 module t;
 
   initial begin
-    sky_class s = new("ahoj");
-    bottom_class b = s;
-    top_class t = s;
-    IMid im;
+    automatic sky_class s = new("ahoj");
+    automatic bottom_class b = s;
+    automatic top_class t = s;
+    automatic IMid im;
 
     `checks(b.name, "middle ahoj 42");
     `checks(s.name, "middle ahoj 42");

@@ -56,8 +56,8 @@ module t;
 
    initial begin
 
-      int v;
-      bit if_4 = '0;
+      automatic int v;
+      automatic bit if_4 = '0;
       // TODO not testing constrained values
       v = p.randomize();
       if (v != 1) $stop;

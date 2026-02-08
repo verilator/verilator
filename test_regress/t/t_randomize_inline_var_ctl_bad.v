@@ -19,10 +19,10 @@ endclass
 
 module t;
    initial begin
-      Foo foo = new;
-      Foo qux = new;
-      Bar bar = new;
-      int x;
+      automatic Foo foo = new;
+      automatic Foo qux = new;
+      automatic Bar bar = new;
+      automatic int x;
       void'(foo.randomize(x, foo.x, null, qux.x, bar.y, 0 + 1, x ** 2));
    end
 endmodule

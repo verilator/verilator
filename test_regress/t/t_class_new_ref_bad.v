@@ -23,7 +23,7 @@ endclass
 module t;
 
    initial begin
-      Base b = Cls::generate_txn();
+      automatic Base b = Cls::generate_txn();
       $display("%p", b);
 
       $write("*-* All Finished *-*\n");

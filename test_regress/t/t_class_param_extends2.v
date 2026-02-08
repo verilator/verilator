@@ -26,8 +26,8 @@ typedef Baz baz_t;
 
 module t;
    initial begin
-      bar_default_t bar_default = new;
-      baz_t baz = new;
+      automatic bar_default_t bar_default = new;
+      automatic baz_t baz = new;
 
       if (bar_default.x != 32) $stop;
       if (baz.bar_x != 8) $stop;

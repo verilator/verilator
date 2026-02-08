@@ -24,7 +24,7 @@ module t;
       return next_nonzero;
    endfunction
    initial begin
-      logic r = f(0);
+      automatic logic r = f(0);
       $display(r);
       $write("*-* All Finished *-*\n");
       $finish;

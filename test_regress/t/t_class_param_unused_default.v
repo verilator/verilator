@@ -17,7 +17,7 @@ endclass
 
 module t;
    initial begin
-      Bar#(Baz) bar_baz = new;
+      automatic Bar#(Baz) bar_baz = new;
       if (bar_baz.t.x != 1) $stop;
 
       $write("*-* All Finished *-*\n");

@@ -25,9 +25,9 @@ endclass
 
 module t;
    initial begin
-      Cls cls = new;
-      ExtendCls ext_cls = new;
-      AnotherExtendCls an_ext_cls = new;
+      automatic Cls cls = new;
+      automatic ExtendCls ext_cls = new;
+      automatic AnotherExtendCls an_ext_cls = new;
 
       if (cls.x == 1) cls = ext_cls;
       else cls = an_ext_cls;

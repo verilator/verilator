@@ -19,8 +19,8 @@ endclass
 
 module t;
    initial begin
-      Cls c = new;  // Error
-      ClsVirt#(VBase) cv = new;  // Error
+      automatic Cls c = new;  // Error
+      automatic ClsVirt#(VBase) cv = new;  // Error
       $stop;
    end
 endmodule

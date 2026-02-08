@@ -22,12 +22,12 @@ endclass
 
 module t;
    initial begin
-      Cls a = new;
-      Cls b = new;
-      ExtendCls ext = new;
-      Cls::InnerCls ia = new;
-      Cls::InnerCls ib = new;
-      ExtendCls::InnerCls iext = new;
+      automatic Cls a = new;
+      automatic Cls b = new;
+      automatic ExtendCls ext = new;
+      automatic Cls::InnerCls ia = new;
+      automatic Cls::InnerCls ib = new;
+      automatic ExtendCls::InnerCls iext = new;
       `check_ne(a, b)
       `check_ne(a, ext)
       `check_ne(ext, a)

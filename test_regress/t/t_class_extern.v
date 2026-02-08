@@ -87,8 +87,8 @@ endtask
 
 module t;
    initial begin
-      Cls c = new;
-      Cls::SubCls subc = new;
+      automatic Cls c = new;
+      automatic Cls::SubCls subc = new;
       c.ext_t_i(2);
       if (c.ext_f_np() != 1) $stop;
       if (c.ext_f_p() != 2) $stop;

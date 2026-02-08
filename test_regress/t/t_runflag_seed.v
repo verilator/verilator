@@ -9,7 +9,7 @@
 
 module t;
    initial begin
-      integer r = $random;
+      automatic integer r = $random;
       integer ex;
       if ($value$plusargs("SEED=%x", ex) !== 1) $stop;
       `checkh(r, ex);

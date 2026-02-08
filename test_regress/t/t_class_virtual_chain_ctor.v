@@ -29,6 +29,6 @@ endclass
 
 module t;
    initial begin
-      VChild2 c = new;
+      automatic VChild2 c = new;
    end
 endmodule

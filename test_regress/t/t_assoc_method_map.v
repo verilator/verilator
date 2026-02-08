@@ -10,8 +10,8 @@
 module t;
 
    initial begin
-      int res[];
-      int a[int] = '{1: 100, 2: 200, 3: 300};
+      automatic int res[];
+      automatic int a[int] = '{1: 100, 2: 200, 3: 300};
 
       // TODO results not known to be correct
       res = a.map(el) with (el == 2);

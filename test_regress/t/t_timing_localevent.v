@@ -31,7 +31,7 @@ module t;
     endclass
 
     initial begin
-        Foo foo = new;
+        automatic Foo foo = new;
         foo.test;
         $write("*-* All Finished *-*\n");
         $finish;

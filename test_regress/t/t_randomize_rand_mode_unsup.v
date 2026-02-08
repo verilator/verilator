@@ -13,7 +13,7 @@ endclass
 
 module t;
    initial begin
-      Packet p = new;
+      automatic Packet p = new;
       p.m_dyn_arr[0].rand_mode(0);
       p.m_unp_arr[0].rand_mode(0);
       p.m_struct.y.rand_mode(0);

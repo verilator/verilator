@@ -125,9 +125,9 @@ module t;
       automatic GetStaticXVal#(StaticX) get_statix_x_val = new;
 
       typedef bit my_bit_t;
-      Bar#(.A(my_bit_t)) bar_a_bit = new;
-      Bar#(.B(my_bit_t)) bar_b_bit = new;
-      Bar#() bar_default = new;
+      automatic Bar#(.A(my_bit_t)) bar_a_bit = new;
+      automatic Bar#(.B(my_bit_t)) bar_b_bit = new;
+      automatic Bar#() bar_default = new;
 
       if (bar_a_bit.get_size_A != 1) $stop;
       if (bar_a_bit.get_size_B != 1) $stop;

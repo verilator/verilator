@@ -18,7 +18,7 @@ module t;
    initial begin
       int q[*];
       int qe [ * ];  // Empty - Note spaces around [*] for parsing coverage
-      point points_q[*] = '{"a": point'{1, 2}, "b": point'{2, 4}, "c": point'{1, 4}};
+      automatic point points_q[*] = '{"a": point'{1, 2}, "b": point'{2, 4}, "c": point'{1, 4}};
       int qv[$];  // Value returns
       int qi[$];  // Index returns
       int i;

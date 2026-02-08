@@ -11,7 +11,7 @@ endclass
 module t;
 
    initial begin
-      Cls cls = new;
+      automatic Cls cls = new;
       cls.queue = 1;
       if (cls.queue == 1) begin
          $write("*-* All Finished *-*\n");

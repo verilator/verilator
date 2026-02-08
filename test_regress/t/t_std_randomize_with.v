@@ -17,7 +17,7 @@ endclass
 module t;
    initial begin
       int a, b;
-      int limit = 10;
+      automatic int limit = 10;
       external_cl obj;
 
       // Test 1: Basic std::randomize with 'with' clause

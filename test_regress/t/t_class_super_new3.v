@@ -21,7 +21,7 @@ endclass
 
 module t;
   initial begin
-    Derived d = new;
+    automatic Derived d = new;
     if (d.j != 8) $stop;
     $write("*-* All Finished *-*\n");
     $finish;

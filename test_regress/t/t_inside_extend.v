@@ -10,12 +10,13 @@ class Cls;
 endclass
 
 module t;
-   initial begin
-      Cls c = new;
-      int i = 0;
-      if (i inside {c.sp}) $stop;
+  initial begin
+    Cls c;
+    int i;
+    c = new;
+    if (i inside {c.sp}) $stop;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

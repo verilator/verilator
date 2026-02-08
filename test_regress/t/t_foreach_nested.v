@@ -21,7 +21,7 @@ endclass
 
 module t;
   initial begin
-    Bar b = new;
+    automatic Bar b = new;
     b.test;
     $write("*-* All Finished *-*\n");
     $finish;

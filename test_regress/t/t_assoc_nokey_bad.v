@@ -8,13 +8,13 @@
 
 module t;
 
-   initial begin
-      int dict[string] = '{1, 2};
-      int dict2[string] = '{3: 4};  // Legal due to value-to-string conversion
-      $display("dict=%p", dict);
-      $display("dict2=%p", dict2);
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    automatic int dict[string] = '{1, 2};
+    automatic int dict2[string] = '{3: 4};  // Legal due to value-to-string conversion
+    $display("dict=%p", dict);
+    $display("dict2=%p", dict2);
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

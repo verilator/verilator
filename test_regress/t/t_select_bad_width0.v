@@ -9,10 +9,10 @@ module t;
    parameter int ZERO = 0;
 
    initial begin
-      bit [31:0] val = '1;
-      int left = 4;
+      automatic bit [31:0] val = '1;
+      automatic int left = 4;
 
-      int part = val[left +: ZERO];
+      automatic int part = val[left +: ZERO];
       $display(part);
       part = val[left -: ZERO];
       $display(part);

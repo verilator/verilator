@@ -23,7 +23,7 @@ endclass
 
 module t;
    initial begin
-      uvm_resource_pool pool = new;
+      automatic uvm_resource_pool pool = new;
       typedef logic [7:0] t_t0;
       C#(t_t0,3)::t_vector v0;
       C#(t_t0,3)::t_array a0;

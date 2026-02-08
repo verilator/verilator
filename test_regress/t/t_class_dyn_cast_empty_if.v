@@ -23,9 +23,9 @@ endclass
 
 module t;
   initial begin
-    Derived d = new("Hello");
-    Base b = d;
-    Derived c = b.cast();
+    automatic Derived d = new("Hello");
+    automatic Base b = d;
+    automatic Derived c = b.cast();
     if (d.get() != c.get()) $stop;
     $write("*-* All Finished *-*\n");
     $finish;

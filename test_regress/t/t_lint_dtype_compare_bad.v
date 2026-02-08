@@ -18,33 +18,33 @@ module t;
   typedef logic [31:0] mylogic_t;
 
   initial begin
-    int queue_var[$] = '{1, 2, 3};
-    int q1[$] = '{1, 2};
-    bit q2[$] = '{1'b1, 1'b0};
+    automatic int queue_var[$] = '{1, 2, 3};
+    automatic int q1[$] = '{1, 2};
+    automatic bit q2[$] = '{1'b1, 1'b0};
 
-    int d1[] = new[2];
-    bit d2[] = new[2];
+    automatic int d1[] = new[2];
+    automatic bit d2[] = new[2];
 
-    int u1[2] = '{1, 2};
-    int u2[2][1] = '{{1}, {2}};
+    automatic int u1[2] = '{1, 2};
+    automatic int u2[2][1] = '{{1}, {2}};
 
-    int a1[2] = '{1, 2};
-    int a2[3] = '{1, 2, 3};
+    automatic int a1[2] = '{1, 2};
+    automatic int a2[3] = '{1, 2, 3};
 
-    int aa1[string];
-    int aa2[int];
+    automatic int aa1[string];
+    automatic int aa2[int];
 
-    int aa3[string];
-    logic [3:0] aa4[string];
+    automatic int aa3[string];
+    automatic logic [3:0] aa4[string];
 
-    myint_t bad1[2] = '{1, 2};
-    mybit_t bad2[2] = '{1, 0};
+    automatic myint_t bad1[2] = '{1, 2};
+    automatic mybit_t bad2[2] = '{1, 0};
 
-    myval_t   val1[mystr_t] = '{"foo": 123};
-    mylogic_t val2[string] = '{"foo": 32'h12345678};
+    automatic myval_t   val1[mystr_t] = '{"foo": 123};
+    automatic mylogic_t val2[string] = '{"foo": 32'h12345678};
 
-    myint_t aa5[string];
-    myint_t aa6[int];
+    automatic myint_t aa5[string];
+    automatic myint_t aa6[int];
     aa5["a"] = 1;
     aa6[1] = 1;
 

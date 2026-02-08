@@ -27,7 +27,7 @@ module t;
   example_if example_if_inst();
 
   initial begin: main
-    ExampleClass exampleClass = new();
+    automatic ExampleClass exampleClass = new();
 
     exampleClass.bind_if(example_if_inst);
     exampleClass.run();

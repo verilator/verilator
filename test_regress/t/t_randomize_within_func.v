@@ -23,7 +23,7 @@ endclass
 
 module t_randomize_within_func;
   initial begin
-    Cls c = new;
+    automatic Cls c = new;
     c.test_this_randomize();
 
     $write("*-* All Finished *-*\n");

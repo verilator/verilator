@@ -23,7 +23,7 @@ module t;
   initial @(posedge vif.data) ok = 1;
 
   initial begin
-    bit first = 1;
+    static bit first = 1;
     #1;
     do begin
       if (!first) $stop;

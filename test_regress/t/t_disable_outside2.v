@@ -8,7 +8,7 @@ module t;
    initial begin
       for (int i = 0; i < 3; i++) begin
          begin : blk
-            int x = 0;
+            int x;
             fork : fork_blk
                begin
                   x = 1;

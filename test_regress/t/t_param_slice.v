@@ -21,7 +21,7 @@ module issue_desc #(
     ) x();
   end
   initial begin
-    int expected = orig_els - els_p + 1;
+    automatic int expected = orig_els - els_p + 1;
     if (val_p[2] !== expected) begin
       $error("DESC wrong value %0d expected %0d in %m", val_p[2], expected);
       $finish;
@@ -44,7 +44,7 @@ module issue_rev #(
     ) x();
   end
   initial begin
-    int expected = orig_els - els_p + 1;
+    automatic int expected = orig_els - els_p + 1;
     if (val_p[2] !== expected) begin
       $error("REV wrong value %0d expected %0d in %m", val_p[2], expected);
       $finish;

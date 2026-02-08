@@ -46,7 +46,7 @@ module t;
     Cls::isst();
   endfunction
   initial begin
-    Bar obj = new();
+    automatic Bar obj = new();
     obj.bar();
     Cls::nonstatic();  // <--- bad static ref
     Cls::isst();

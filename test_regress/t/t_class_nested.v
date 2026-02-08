@@ -46,14 +46,14 @@ endclass
 
 module t;
     initial begin
-        NodeList n = new;
-        NodeList::Node n1 = new;
-        NodeList::Node n2 = new;
-        NodeTree tr = new;
-        NodeTree::Node t1 = new;
-        NodeTree::Node t2 = new;
-        Outer o = new;
-        Outer::Inner i = new;
+        automatic NodeList n = new;
+        automatic NodeList::Node n1 = new;
+        automatic NodeList::Node n2 = new;
+        automatic NodeTree tr = new;
+        automatic NodeTree::Node t1 = new;
+        automatic NodeTree::Node t2 = new;
+        automatic Outer o = new;
+        automatic Outer::Inner i = new;
 
         i.innerMethod(o);
 

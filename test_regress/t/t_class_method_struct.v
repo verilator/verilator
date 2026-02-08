@@ -22,8 +22,8 @@ endclass : Cls
 
 module t;
    initial begin
-      Cls c = new;
-      my_struct s = c.get_struct;
+      automatic Cls c = new;
+      automatic my_struct s = c.get_struct;
       if (s.x != 1) $stop;
       if (s.y != 2) $stop;
       if (s.z != 3) $stop;

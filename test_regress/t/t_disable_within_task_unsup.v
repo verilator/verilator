@@ -11,7 +11,7 @@ endtask
 module t;
 
    initial begin : init
-      int x = 0;
+      int x;
       fork : fork_blk
          begin
             x = 1;

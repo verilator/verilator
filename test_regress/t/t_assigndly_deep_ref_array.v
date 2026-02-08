@@ -55,9 +55,9 @@ module t;
   endtask
 
   initial begin
-    Foo foo = new(iface);
-    Foo foo2 = new(iface2);
-    Bar bar = new(foo);
+    automatic Foo foo = new(iface);
+    automatic Foo foo2 = new(iface2);
+    automatic Bar bar = new(foo);
     clockSome();
     if (iface.x[0] != 0) $stop;
     if (iface.x[1] != 0) $stop;

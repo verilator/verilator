@@ -57,7 +57,7 @@ endclass : UniqueMultipleArray
 module t;
   initial begin
     // Create an instance of the UniqueMultipleArray class
-    UniqueMultipleArray array_instance = new();
+    automatic UniqueMultipleArray array_instance = new();
 
     // Attempt to randomize and verify the constraints
     /* verilator lint_off WIDTHTRUNC */

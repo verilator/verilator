@@ -33,8 +33,8 @@ module t;
 
    initial begin
       begin : a
-         integer lower;
-         integer lower_assign=1;
+         automatic integer lower;
+         automatic integer lower_assign = 1;
          lower = 1;
          top = 1;
          if (lower != 1) $stop;

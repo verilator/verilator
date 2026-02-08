@@ -46,14 +46,14 @@ endclass
 
 module t;
    initial begin
-      Cls1::type_id bar1 = new;
-      Cls2::type_id bar2 = new;
+      automatic Cls1::type_id bar1 = new;
+      automatic Cls2::type_id bar2 = new;
 
-      ClsTypedefParam #(int) cls_int = new;
-      ClsTypedefParam#() cls_def;
+      automatic ClsTypedefParam #(int) cls_int = new;
+      automatic ClsTypedefParam#() cls_def;
 
-      uvm_sequencer #(int, int) uvm_seq1 = new;
-      uvm_sequencer #(int, int)::this_type uvm_seq2;
+      automatic uvm_sequencer #(int, int) uvm_seq1 = new;
+      automatic uvm_sequencer #(int, int)::this_type uvm_seq2;
 
       if (bar1.get_x() != 1) $stop;
       if (bar2.get_x() != 2) $stop;

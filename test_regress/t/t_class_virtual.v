@@ -72,12 +72,12 @@ endclass
 
 module t;
    initial begin
-      VA va = new;
-      VB vb = new;
-      VA::VNested vna = new;
-      VB::VNested vnb = new;
-      VBase b;
-      VBase::VNested bn;
+      automatic VA va = new;
+      automatic VB vb = new;
+      automatic VA::VNested vna = new;
+      automatic VB::VNested vnb = new;
+      automatic VBase b;
+      automatic VBase::VNested bn;
 
       uvm_build_phase ph;
       ExtendsCls ec;

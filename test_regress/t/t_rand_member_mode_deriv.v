@@ -24,7 +24,7 @@ endclass
 module t;
   Base b;
   initial begin
-    Foo d = new;
+    automatic Foo d = new;
     b = d;
     d.v.disable_val();
     d.v.value = 11;

@@ -6,8 +6,8 @@
 
 `define check_rand(cl, field, cond) \
 begin \
-   longint prev_result; \
-   int ok = 0; \
+   automatic longint prev_result; \
+   automatic int ok; \
    if (!bit'(cl.randomize())) $stop; \
    prev_result = longint'(field); \
    if (!(cond)) $stop; \
@@ -47,11 +47,11 @@ endclass
 
 module t;
   initial begin
-    B b = new;
-    C c = new;
-    D d = new;
-    E e = new;
-    A a = b;
+    automatic B b = new;
+    automatic C c = new;
+    automatic D d = new;
+    automatic E e = new;
+    automatic A a = b;
     `check_rand(a, b.x, b.x > 0);
     `check_rand(c, c.x, c.x > 0);
     `check_rand(c, c.y, c.x > 0);

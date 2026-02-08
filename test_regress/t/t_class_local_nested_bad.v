@@ -17,7 +17,7 @@ endclass
 
 module t;
     initial begin
-        NodeList n = new;
+        automatic NodeList n = new;
 
         $write("*-* All Finished *-*\n");
         $finish;

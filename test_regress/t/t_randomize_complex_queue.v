@@ -35,10 +35,10 @@ endclass
 
 module t;
   initial begin
-    WeNeedToGoDeeper inst = new;
-    MyClass inst2 = new;
-    WeNeedToGoDeeper cl_inst[$] = {inst};
-    MyClass cl_inst2[$] = {inst2};
+    automatic WeNeedToGoDeeper inst = new;
+    automatic MyClass inst2 = new;
+    automatic WeNeedToGoDeeper cl_inst[$] = {inst};
+    automatic MyClass cl_inst2[$] = {inst2};
     repeat (10) begin
       if (cl_inst[0].sc_inst.sc_inst1.sc_inst2[0].randomize() with {
             field inside {1, 2, 3};

@@ -23,6 +23,6 @@ endclass
 
 module t;
   initial begin
-    derived test = new;
+    automatic derived test = new;
   end
 endmodule

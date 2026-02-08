@@ -57,11 +57,11 @@ endclass
 module t;
 
    initial begin
-      Foo foo = new;
-      Bar bar = new;
-      Baz baz = new;
-      ExtendCls ec = new;
-      Getter1 getter1 = new;
+      automatic Foo foo = new;
+      automatic Bar bar = new;
+      automatic Baz baz = new;
+      automatic ExtendCls ec = new;
+      automatic Getter1 getter1 = new;
 
       if (foo.x != 1) $stop;
 

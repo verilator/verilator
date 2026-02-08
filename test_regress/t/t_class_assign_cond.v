@@ -33,10 +33,11 @@ module t;
    typedef ExtendCls ExtendCls_t;
 
    initial begin
-      Cls cls1 = null, cls2 = null;
-      ExtendCls_t ext_cls = null;
-      AnotherExtendCls an_ext_cls = null;
-      ExtendExtendCls ext_ext_cls = null;
+      automatic Cls cls1 = null;
+      automatic Cls cls2 = null;
+      automatic ExtendCls_t ext_cls = null;
+      automatic AnotherExtendCls an_ext_cls = null;
+      automatic ExtendExtendCls ext_ext_cls = null;
       int r;
 
       cls1 = (cls1 == null) ? cls2 : cls1;

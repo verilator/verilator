@@ -6,7 +6,7 @@
 
 interface Iface (input bit [31:0] regs [1]);
    initial begin
-      string instance_path = $sformatf("%m");
+      automatic string instance_path = $sformatf("%m");
       $display("Iface path %s\n", instance_path);
       $write("*-* All Finished *-*\n");
       $finish;

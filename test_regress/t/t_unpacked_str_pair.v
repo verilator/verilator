@@ -37,8 +37,8 @@ module t;
    endfunction
 
    initial begin
-      string raw_filter = "parta-partb";
-      filter_expression_parts_t parts = get_filter_expression_parts(raw_filter);
+      automatic string raw_filter = "parta-partb";
+      automatic filter_expression_parts_t parts = get_filter_expression_parts(raw_filter);
       $display("%p", parts);
       if (parts.positive != "parta") $stop;
       if (parts.negative != "partb") $stop;
