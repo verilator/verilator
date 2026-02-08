@@ -1946,35 +1946,26 @@ for programmatic processing (e.g. with `astsee
 <https://github.com/antmicro/astsee>`_). To enable this dump format, use
 :vlopt:`--dump-tree-json` or :vlopt:`--json-only`.
 
-Structure:
+The potential fields in the JSON dump can be determined by searching for
+JSON in the `src/V3AstNodes.cpp` source file. The dump will only include
+booleans that are true, omitting those that are false.
+
+Structure example:
 
 ::
 
    {
-     /* Attributes that are common to all types of nodes */
+     /* Attributes that are common to most types of nodes */
      "type": "VAR",
      "name": "cyc",
+     "verilogName": "cyc",
      /* By default addresses and filenames use short/stable ids rather than real value */
      "addr": "(H)",
      "loc": "a,25:12,26:15", /* "fileid,firstLine:firstCol,lastLine:endCol" (endCol is right exclusive) */
      "editNum": 602,
-     /* Fields that are specific to AstVar nodes:  */
+     /* Some fields that are specific to AstVar nodes:  */
      "origName": "cyc",
-     "isSc": false,
      "ioDirection": "NONE",
-     "isConst": false,
-     "isPullup": false,
-     "isPulldown": false,
-     "isUsedClock": false,
-     "isSigPublic": false,
-     "isLatched": false,
-     "isUsedLoopIdx": false,
-     "noReset": false,
-     "attrIsolateAssign": false,
-     "attrFileDescr": false,
-     "isDpiOpenArray": false,
-     "isFuncReturn": false,
-     "isFuncLocal": false,
      "attrClocker": "UNKNOWN",
      "lifetime": "NONE",
      "varType": "VAR",

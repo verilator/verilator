@@ -33,6 +33,7 @@ Verilator 5.045 devel
 * Support signed multiplication in constraints (#7008). [Pawel Kojma, Antmicro Ltd.]
 * Remove deprecated `--xml-only`.
 * Remove deprecated `--make cmake`.
+* Change JSON dumps to not include booleans that are false (#6977).
 * Change metacomment extra underscore error to BADVLTPRAGMA warning (#6968). [Geza Lore, Testorrent USA, Inc.]
 * Optimize string temporaries to not be localized (#6969). [Geza Lore, Testorrent USA, Inc.]
 * Optimize wide word shifts by multiple of word size (#6970). [Geza Lore, Testorrent USA, Inc.]

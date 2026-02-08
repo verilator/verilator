@@ -1,17 +1,17 @@
 {"type":"NETLIST","name":"$root","addr":"(B)","loc":"a,0:0,0:0","timeunit":"1ps","timeprecision":"1ps","typeTablep":"(C)","constPoolp":"(D)","dollarUnitPkgp":"UNLINKED","stdPackagep":"UNLINKED","evalp":"UNLINKED","evalNbap":"UNLINKED","dpiExportTriggerp":"UNLINKED","delaySchedulerp":"UNLINKED","nbaEventp":"UNLINKED","nbaEventTriggerp":"UNLINKED","topScopep":"(E)","stlFirstIterationp":"UNLINKED",
  "modulesp": [
-  {"type":"MODULE","name":"$root","addr":"(F)","loc":"d,11:8,11:11","isChecker":false,"isProgram":false,"hasGenericIface":false,"origName":"$root","verilogName":"$root","level":1,"modPublic":true,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": [],
+  {"type":"MODULE","name":"$root","addr":"(F)","loc":"d,11:8,11:11","origName":"$root","verilogName":"$root","level":1,"modPublic":true,"timeunit":"1ps","inlinesp": [],
    "stmtsp": [
-    {"type":"VAR","name":"i_clk","addr":"(G)","loc":"d,11:24,11:29","dtypep":"(H)","origName":"i_clk","verilogName":"i_clk","isSc":false,"isPrimaryIO":true,"isPrimaryClock":false,"direction":"INPUT","isConst":false,"isPullup":false,"isPulldown":false,"isSigPublic":true,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"isStdRandomizeArg":false,"lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"ignorePostWrite":false,"ignoreSchedWrite":false,"sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
-    {"type":"VAR","name":"top.i_clk","addr":"(I)","loc":"d,11:24,11:29","dtypep":"(H)","origName":"i_clk","verilogName":"i_clk","isSc":false,"isPrimaryIO":false,"isPrimaryClock":false,"direction":"NONE","isConst":false,"isPullup":false,"isPulldown":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"isStdRandomizeArg":false,"lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"ignorePostWrite":false,"ignoreSchedWrite":false,"sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
-    {"type":"VAR","name":"top.f.i_clk","addr":"(J)","loc":"d,7:24,7:29","dtypep":"(H)","origName":"i_clk","verilogName":"i_clk","isSc":false,"isPrimaryIO":false,"isPrimaryClock":false,"direction":"NONE","isConst":false,"isPullup":false,"isPulldown":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"isStdRandomizeArg":false,"lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"ignorePostWrite":false,"ignoreSchedWrite":false,"sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
+    {"type":"VAR","name":"i_clk","addr":"(G)","loc":"d,11:24,11:29","dtypep":"(H)","origName":"i_clk","verilogName":"i_clk","isPrimaryIO":true,"direction":"INPUT","isSigPublic":true,"lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
+    {"type":"VAR","name":"top.i_clk","addr":"(I)","loc":"d,11:24,11:29","dtypep":"(H)","origName":"i_clk","verilogName":"i_clk","direction":"NONE","lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
+    {"type":"VAR","name":"top.f.i_clk","addr":"(J)","loc":"d,7:24,7:29","dtypep":"(H)","origName":"i_clk","verilogName":"i_clk","direction":"NONE","lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
     {"type":"TOPSCOPE","name":"","addr":"(E)","loc":"d,11:8,11:11","senTreesp": [],
      "scopep": [
       {"type":"SCOPE","name":"TOP","addr":"(K)","loc":"d,11:8,11:11","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(F)",
        "varsp": [
         {"type":"VARSCOPE","name":"i_clk","addr":"(L)","loc":"d,11:24,11:29","dtypep":"(H)","isTrace":true,"scopep":"(K)","varp":"(G)"},
         {"type":"VARSCOPE","name":"top.i_clk","addr":"(M)","loc":"d,11:24,11:29","dtypep":"(H)","isTrace":true,"scopep":"(K)","varp":"(I)"},
-        {"type":"ALWAYS","name":"","addr":"(N)","loc":"d,11:24,11:29","keyword":"cont_assign","isSuspendable":false,"needProcess":false,"sentreep": [],
+        {"type":"ALWAYS","name":"","addr":"(N)","loc":"d,11:24,11:29","keyword":"cont_assign","sentreep": [],
          "stmtsp": [
           {"type":"ASSIGNW","name":"","addr":"(O)","loc":"d,11:24,11:29","dtypep":"(H)",
            "rhsp": [
@@ -22,7 +22,7 @@
           ],"timingControlp": [],"strengthSpecp": []}
         ]},
         {"type":"VARSCOPE","name":"top.f.i_clk","addr":"(R)","loc":"d,7:24,7:29","dtypep":"(H)","isTrace":true,"scopep":"(K)","varp":"(J)"},
-        {"type":"ALWAYS","name":"","addr":"(S)","loc":"d,7:24,7:29","keyword":"cont_assign","isSuspendable":false,"needProcess":false,"sentreep": [],
+        {"type":"ALWAYS","name":"","addr":"(S)","loc":"d,7:24,7:29","keyword":"cont_assign","sentreep": [],
          "stmtsp": [
           {"type":"ASSIGNW","name":"","addr":"(T)","loc":"d,7:24,7:29","dtypep":"(H)",
            "rhsp": [
@@ -43,7 +43,7 @@
   ]},
   {"type":"CONSTPOOL","name":"","addr":"(D)","loc":"a,0:0,0:0",
    "modulep": [
-    {"type":"MODULE","name":"@CONST-POOL@","addr":"(W)","loc":"a,0:0,0:0","isChecker":false,"isProgram":false,"hasGenericIface":false,"origName":"@CONST-POOL@","verilogName":"@CONST-POOL@","level":0,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"NONE","inlinesp": [],
+    {"type":"MODULE","name":"@CONST-POOL@","addr":"(W)","loc":"a,0:0,0:0","origName":"@CONST-POOL@","verilogName":"@CONST-POOL@","level":0,"timeunit":"NONE","inlinesp": [],
      "stmtsp": [
       {"type":"SCOPE","name":"@CONST-POOL@","addr":"(X)","loc":"a,0:0,0:0","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(W)","varsp": [],"blocksp": [],"inlinesp": []}
     ]}
