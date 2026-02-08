@@ -225,12 +225,6 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         iterateAndNextConstNull(nodep->rhsp());
         if (!m_suppressSemi) puts(";\n");
     }
-    void visit(AstAssignDly* nodep) override {
-        iterateAndNextConstNull(nodep->lhsp());
-        putfs(nodep, " <= ");
-        iterateAndNextConstNull(nodep->rhsp());
-        puts(";\n");
-    }
     void visit(AstAlias* nodep) override {
         putbs("alias ");
         iterateConst(nodep->itemsp());
@@ -271,6 +265,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         if (nodep->sensp()) puts(" ");
         iterateChildrenConst(nodep);
     }
+    void visit(AstCReset* nodep) override { puts("/*CRESET*/"); }
     void visit(AstCase* nodep) override {
         putfs(nodep, "");
         if (nodep->priorityPragma()) puts("priority ");
