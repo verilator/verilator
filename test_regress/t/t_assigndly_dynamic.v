@@ -15,56 +15,56 @@
 `endif
 
 class nba_waiter;
-    // Task taken from UVM
-    task wait_for_nba_region;
-        static int nba;
-        int next_nba;
-        next_nba++;
-        nba <= `DELAY next_nba;
-        @(nba);
-    endtask
+  // Task taken from UVM
+  task wait_for_nba_region;
+    static int nba;
+    int next_nba;
+    next_nba++;
+    nba <= `DELAY next_nba;
+    @(nba);
+  endtask
 endclass
 
 class Foo;
-    task bar(logic a, logic b);
-        static int x;
-        static int y;
-        // bar's local vars and intravals could be overwritten by other locals
-        if (a) x <= `DELAY 'hDEAD;
-        if (b) y <= `DELAY 'hBEEF;
-        #2
-        if (x != 'hDEAD) $stop;
-    endtask
+  task bar(logic a, logic b);
+    static int x;
+    static int y;
+    // bar's local vars and intravals could be overwritten by other locals
+    if (a) x <= `DELAY 'hDEAD;
+    if (b) y <= `DELAY 'hBEEF;
+    #2;
+    if (x != 'hDEAD) $stop;
+  endtask
 endclass
 
 module t;
-    nba_waiter waiter = new;
-    Foo foo = new;
-    event e;
-    int cnt = 0;
+  nba_waiter waiter = new;
+  Foo foo = new;
+  event e;
+  int cnt = 0;
 
-    initial begin
-        #1 ->e;
-        if (cnt != 0) $stop;
-        cnt++;
-        waiter.wait_for_nba_region;
-        ->e;
-        if (cnt != 2) $stop;
-        if ($time != `TIME_AFTER_FIRST_WAIT) $stop;
-        cnt++;
-        waiter.wait_for_nba_region;
-        if (cnt != 4) $stop;
-        if ($time != `TIME_AFTER_SECOND_WAIT) $stop;
-        foo.bar(1, 1);
-        #2
-        $write("*-* All Finished *-*\n");
-        $finish;
-    end
+  initial begin
+    #1 ->e;
+    if (cnt != 0) $stop;
+    cnt++;
+    waiter.wait_for_nba_region;
+    ->e;
+    if (cnt != 2) $stop;
+    if ($time != `TIME_AFTER_FIRST_WAIT) $stop;
+    cnt++;
+    waiter.wait_for_nba_region;
+    if (cnt != 4) $stop;
+    if ($time != `TIME_AFTER_SECOND_WAIT) $stop;
+    foo.bar(1, 1);
+    #2;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
-    initial begin
-        @e if (cnt != 1) $stop;
-        cnt++;
-        @e if (cnt != 3) $stop;
-        cnt++;
-    end
+  initial begin
+    @e if (cnt != 1) $stop;
+    cnt++;
+    @e if (cnt != 3) $stop;
+    cnt++;
+  end
 endmodule

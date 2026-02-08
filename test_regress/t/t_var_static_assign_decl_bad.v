@@ -4,6 +4,8 @@
 // SPDX-FileCopyrightText: 2024 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
+// verilator lint_off NORETURN
+
 function static func_stat;
   input logic in;
   logic tmp = in;
@@ -63,8 +65,8 @@ module no_warn#(PARAM = 1)(input in, input clk);
 
   // Do not warn on constant assignments.
   function static func_param;
-    static logic func_var = PARAM;
-    static logic func_enum = A;
+    static bit func_var = PARAM != 0;
+    static bit func_enum = A != B;
   endfunction
 
   // Do not warn on assignment referencing module I/O.

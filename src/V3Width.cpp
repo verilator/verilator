@@ -5495,6 +5495,16 @@ class WidthVisitor final : public VNVisitor {
         }
     }
 
+    bool firstNewStatementOkRecurse(AstNode* nodep) {
+        if (AstVar* const varp = VN_CAST(nodep, Var)) {
+            if (!varp->valuep() || VN_CAST(varp->valuep(), Const) || varp->isIO()) return true;
+        }
+        if (AstAssign* const aitemp = VN_CAST(nodep, Assign)) {
+            if (VN_IS(aitemp->rhsp(), Const) || VN_IS(aitemp->rhsp(), CReset)) return true;
+        }
+        return false;
+    }
+
     //--------------------
     // Top levels
 
@@ -6510,13 +6520,7 @@ class WidthVisitor final : public VNVisitor {
                     }
                     continue;
                 }
-                if (AstVar* const varp = VN_CAST(itemp, Var)) {
-                    if (!varp->valuep() || VN_CAST(varp->valuep(), Const) || varp->isIO())
-                        continue;
-                }
-                if (AstAssign* const aitemp = VN_CAST(itemp, Assign)) {
-                    if (VN_IS(aitemp->rhsp(), Const)) continue;
-                }
+                if (firstNewStatementOkRecurse(itemp)) continue;
                 firstp = itemp;
             }
         }
