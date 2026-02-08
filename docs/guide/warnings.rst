@@ -467,7 +467,7 @@ List Of Warnings
    .. TODO better example
 
    Warns that the code is comparing a value in a way that will always be
-   constant. For example, ``X > 1`` will always be true when X is a single
+   constant. For example, ``X > 1`` will always be false when X is a single
    bit wide.
 
    Ignoring this warning will only suppress the lint check; it will
