@@ -325,13 +325,12 @@ class LinkParseVisitor final : public VNVisitor {
                    && !nodep->isIO()
                    && !nodep->isParam()
                    // In task, or a procedure but not Initial/Final as executed only once
-                   && ((m_ftaskp && !m_ftaskp->lifetime().isStaticExplicit())
-                       || (m_procedurep && !VN_IS(m_procedurep, Initial)
-                           && !VN_IS(m_procedurep, Final)))) {
+                   && ((m_ftaskp && !m_ftaskp->lifetime().isStaticExplicit()) || m_procedurep)) {
             if (VN_IS(m_modp, Module) && m_ftaskp) {
                 m_ftaskp->v3warn(
                     IMPLICITSTATIC,
-                    "Function/task's lifetime implicitly set to static\n"
+                    "Function/task's lifetime implicitly set to static;"
+                    " variables made static (IEEE 1800-2023 6.21)\n"
                         << m_ftaskp->warnMore() << "... Suggest use '" << m_ftaskp->verilogKwd()
                         << " automatic' or '" << m_ftaskp->verilogKwd() << " static'\n"
                         << m_ftaskp->warnContextPrimary() << '\n'
@@ -339,12 +338,12 @@ class LinkParseVisitor final : public VNVisitor {
                         << nodep->warnMore() << "... The initializer value will only be set once\n"
                         << nodep->warnContextSecondary());
             } else {
-                nodep->v3warn(IMPLICITSTATIC,
-                              "Variable's lifetime implicitly set to static\n"
-                                  << nodep->warnMore()
-                                  << "... The initializer value will only be set once\n"
-                                  << nodep->warnMore()
-                                  << "... Suggest use 'static' before variable declaration'");
+                nodep->v3warn(
+                    IMPLICITSTATIC,
+                    "Variable's lifetime implicitly set to static (IEEE 1800-2023 6.21)\n"
+                        << nodep->warnMore() << "... The initializer value will only be set once\n"
+                        << nodep->warnMore()
+                        << "... Suggest use 'static' before variable declaration'");
             }
         }
         if (!m_lifetimeAllowed && nodep->lifetime().isAutomatic()) {

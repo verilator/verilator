@@ -1022,13 +1022,20 @@ List Of Warnings
 .. option:: IMPLICITSTATIC
 
    Warns that the lifetime of a task or a function was not provided and so
-   was implicitly set to static. The warning is suppressed when no
-   variables inside the task or a function are assigned to.
+   an enclosed variable was implicitly set to static. The warning is
+   suppressed when no variables inside the task or a function are assigned
+   to.
+
+   Also warns that a process (e.g. "always" or "initial" statement) has
+   enclosed variables that were implicitly set to static.
+
+   IEEE 1800-2023 6.21 requires this error, though Verilator treats it by
+   default as a warning.
 
    This is a warning because the static default differs from C++, differs
    from class member function/tasks. Static is a more dangerous default
-   then automatic as static prevents the function from being reentrant,
-   which may be a source of bugs, and/or performance issues.
+   then automatic as static prevents the function or process from being
+   reentrant, which may be a source of bugs, and/or performance issues.
 
    If the function is in a module, and does not require static behavior,
    change it to "function automatic".
