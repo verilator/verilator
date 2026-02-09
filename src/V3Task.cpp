@@ -514,7 +514,7 @@ class TaskVisitor final : public VNVisitor {
             if (cMethodp->method() == VCMethod::ARRAY_AT) {
                 cMethodp->method(VCMethod::ARRAY_AT_WRITE);
             }
-            fixAtMethodRecurse(cMethodp->fromp());
+            changeAtWriteRecurse(cMethodp->fromp());
         }
     }
 
@@ -548,7 +548,7 @@ class TaskVisitor final : public VNVisitor {
                         refArgOk = cMethodp->method() == VCMethod::DYN_AT_WRITE_APPEND
                                    || cMethodp->method() == VCMethod::DYN_AT_WRITE_APPEND_BACK;
                     } else {
-                        fixAtMethodRecurse(cMethodp);
+                        changeAtWriteRecurse(cMethodp);
                         refArgOk = cMethodp->method() == VCMethod::ARRAY_AT_WRITE;
                     }
                 }
