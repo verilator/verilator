@@ -509,7 +509,6 @@ class TaskVisitor final : public VNVisitor {
     }
 
     void fixAtMethodRecurse(AstNodeExpr* const exprp) {
-        if (VN_IS(exprp, VarRef)) return;
         if (AstCMethodHard* const cMethodp = VN_CAST(exprp, CMethodHard)) {
             if (cMethodp->method() == VCMethod::ARRAY_AT) {
                 // Change the method to writable variant
