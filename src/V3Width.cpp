@@ -4414,13 +4414,13 @@ class WidthVisitor final : public VNVisitor {
                     if (argp->exprp()) userIterate(argp->exprp(), WidthVP{SELF, BOTH}.p());
                 }
             }
-            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             V3Randomize::newRandomizeFunc(m_memberMap, first_classp);
             handleRandomizeArgs(nodep, first_classp);
         } else if (nodep->name() == "srandom") {
             methodOkArguments(nodep, 1, 1);
             iterateCheckSigned32(nodep, "argument", methodArg(nodep, 0), BOTH);
-            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             V3Randomize::newSRandomFunc(m_memberMap, first_classp);
         }
         UASSERT_OBJ(first_classp, nodep, "Unlinked");
