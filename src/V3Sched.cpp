@@ -446,7 +446,11 @@ void createSettle(AstNetlist* netlistp, AstCFunc* const initFuncp, SenExprBuilde
         // Inner loop statements
         nullptr,
         // Prep statements: Compute the current 'stl' triggers
-        trigKit.newCompBaseCall(),
+        [&trigKit] {
+            AstNodeStmt* const stmtp = trigKit.newCompBaseCall();
+            if (stmtp) stmtp->addNext(trigKit.newDumpCall(trigKit.vscp(), trigKit.name(), true));
+            return stmtp;
+        }(),
         // Work statements: Invoke the 'stl' function
         util::callVoidFunc(stlFuncp));
 
@@ -550,7 +554,11 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
         // Inner loop statements
         nullptr,
         // Prep statements: Compute the current 'ico' triggers
-        trigKit.newCompBaseCall(),
+        [&trigKit] {
+            AstNodeStmt* const stmtp = trigKit.newCompBaseCall();
+            if (stmtp) stmtp->addNext(trigKit.newDumpCall(trigKit.vscp(), trigKit.name(), true));
+            return stmtp;
+        }(),
         // Work statements: Invoke the 'ico' function
         util::callVoidFunc(icoFuncp));
 
@@ -600,17 +608,15 @@ void createEval(AstNetlist* netlistp,  //
         [&]() {
             // Compute the current 'act' triggers - the NBA triggers are the latched value
             AstNodeStmt* stmtsp = trigKit.newCompBaseCall();
+            AstNodeStmt* const dumpp
+                = stmtsp ? trigKit.newDumpCall(trigKit.vscp(), trigKit.name(), true) : nullptr;
             // Mark as ready for triggered awaits
             if (timingReadyp) stmtsp = AstNode::addNext(stmtsp, timingReadyp->makeStmt());
-            stmtsp = AstNode::addNext(stmtsp, trigKit.newCompExtCall(nbaKit.m_vscp));
             if (AstVarScope* const vscAccp = trigKit.vscAccp()) {
                 stmtsp = AstNode::addNext(stmtsp, trigKit.newOrIntoCall(actKit.m_vscp, vscAccp));
-                stmtsp = AstNode::addNext(
-                    stmtsp, trigKit.newDumpCall(trigKit.vscp(), trigKit.name(), true));
-            } else if (!trigKit.mapPre().empty()) {
-                stmtsp = AstNode::addNext(
-                    stmtsp, trigKit.newDumpCall(trigKit.vscp(), trigKit.name(), true));
             }
+            stmtsp = AstNode::addNext(stmtsp, trigKit.newCompExtCall(nbaKit.m_vscp));
+            stmtsp = AstNode::addNext(stmtsp, dumpp);
             // Latch the 'act' triggers under the 'nba' triggers
             stmtsp = AstNode::addNext(stmtsp, trigKit.newOrIntoCall(nbaKit.m_vscp, actKit.m_vscp));
             //
@@ -884,7 +890,6 @@ void schedule(AstNetlist* netlistp) {
                                                &logicRegions.m_obs,  //
                                                &logicRegions.m_react,  //
                                                &timingKit.m_lbs});
-    // UASSERT(preTreeps.empty(), "Found where it is used\n");
     const TriggerKit trigKit
         = TriggerKit::create(netlistp, staticp, senExprBuilder, preTreeps, senTreeps, "act",
                              extraTriggers, false, v3Global.usesTiming());
@@ -1024,19 +1029,38 @@ void schedule(AstNetlist* netlistp) {
         // deleted later) if there was no need to call it, SenTrees have to be cleaned manually
         netlistp->foreach([](AstCAwait* const cAwaitp) { cAwaitp->clearSentreep(); });
     }
-    // Copy trigger vector to accumulator at the end of static initialziation so,
-    // triggers fired during initialization persist to the first resume.
     if (AstVarScope* const trigAccp = trigKit.vscAccp()) {
-        staticp->addStmtsp(new AstAssign{
-            trigAccp->fileline(), new AstVarRef{trigAccp->fileline(), trigAccp, VAccess::WRITE},
-            new AstVarRef{trigAccp->fileline(), actKit.m_vscp, VAccess::READ}});
+        // Copy trigger vector to accumulator at the end of static initialziation so,
+        // triggers fired during initialization persist to the first resume.
+        const AstUnpackArrayDType* const trigAccDTypep
+            = VN_AS(trigAccp->dtypep(), UnpackArrayDType);
+        UASSERT_OBJ(
+            trigAccDTypep->right() == 0, trigAccp,
+            "Expected that trigger vector and accumulator start elements enumeration from 0");
+        UASSERT_OBJ(trigAccDTypep->left() >= 0, trigAccp,
+                    "Expected that trigger vector and accumulator has no negative indexes");
+        FileLine* const flp = trigAccp->fileline();
+        AstVarScope* const vscp = netlistp->topScopep()->scopep()->createTemp("__Vi", 32);
+        staticp->addVarsp(vscp->varp()->unlinkFrBack());
+        vscp->varp()->funcLocal(true);
+        AstLoop* const loopp = new AstLoop{flp};
+        loopp->addStmtsp(
+            new AstAssign{flp,
+                          new AstArraySel{flp, new AstVarRef{flp, trigAccp, VAccess::WRITE},
+                                          new AstVarRef{flp, vscp, VAccess::READ}},
+                          new AstArraySel{flp, new AstVarRef{flp, actKit.m_vscp, VAccess::READ},
+                                          new AstVarRef{flp, vscp, VAccess::READ}}});
+        loopp->addStmtsp(util::incrementVar(vscp));
+        loopp->addStmtsp(new AstLoopTest{
+            flp, loopp,
+            new AstLte{flp, new AstVarRef{flp, vscp, VAccess::READ},
+                       new AstConst{flp, AstConst::WidthedValue{}, 32,
+                                    static_cast<uint32_t>(trigAccDTypep->left())}}});
+        staticp->addStmtsp(loopp);
     }
 
     // Step 16: Clean up
     netlistp->clearStlFirstIterationp();
-
-    // Haven't split static initializer yet
-    util::splitCheck(staticp);
 
     // Dump
     V3Global::dumpCheckGlobalTree("sched", 0, dumpTreeEitherLevel() >= 3);

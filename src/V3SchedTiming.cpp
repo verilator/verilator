@@ -73,9 +73,8 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
             activep->foreach([this](AstCMethodHard* const exprp) {
                 if (exprp->method() != VCMethod::SCHED_RESUME) return;
                 AstNodeExpr* const fromp = exprp->fromp();
-                if (AstBasicDType* dtypep = VN_CAST(fromp->dtypep(), BasicDType)) {
-                    if (dtypep->keyword() != VBasicDTypeKwd::TRIGGER_SCHEDULER) return;
-                } else {
+                if (VN_AS(fromp->dtypep(), BasicDType)->keyword()
+                    != VBasicDTypeKwd::TRIGGER_SCHEDULER) {
                     return;
                 }
                 AstCMethodHard* const moveToResumep = new AstCMethodHard{

@@ -325,7 +325,7 @@ AstNodeStmt* TriggerKit::newOrIntoCall(AstVarScope* const oVscp, AstVarScope* co
 AstNodeStmt* TriggerKit::newCompBaseCall() const {
     if (!m_nVecWords) return nullptr;
     FileLine* const flp = v3Global.rootp()->topScopep()->fileline();
-    AstCCall* const callp = new AstCCall{flp, m_compBasep};
+    AstCCall* const callp = new AstCCall{flp, m_compVecp};
     callp->dtypeSetVoid();
     return callp->makeStmt();
 }
@@ -414,15 +414,16 @@ void TriggerKit::addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index, bo
     AstNodeExpr* const wordp = new AstArraySel{flp, refp, static_cast<int>(wordIndex)};
     AstNodeExpr* const trigLhsp = new AstSel{flp, wordp, static_cast<int>(bitIndex), 1};
     AstNodeExpr* const trigRhsp = new AstVarRef{flp, vscp, VAccess::READ};
-    AstNodeStmt* const setp = new AstAssign{flp, trigLhsp, trigRhsp};
+    AstNode* const setp = new AstAssign{flp, trigLhsp, trigRhsp};
     if (clear) {
         // Clear the input variable
-        AstNodeStmt* const clrp = new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE},
-                                                new AstConst{flp, AstConst::BitFalse{}}};
-        // Note these are added in reverse order, so 'setp' executes before 'clrp'
-        m_compBasep->stmtsp()->addHereThisAsNext(clrp);
+        setp->addNext(new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE},
+                                    new AstConst{flp, AstConst::BitFalse{}}});
     }
-    m_compBasep->stmtsp()->addHereThisAsNext(setp);
+    if (AstNode* const nodep = m_compVecp->stmtsp()) {
+        setp->addNext(setp, nodep->unlinkFrBackWithNext());
+    }
+    m_compVecp->addStmtsp(setp);
 }
 
 TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords,
@@ -452,7 +453,7 @@ TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords,
         AstRange* const ep = new AstRange{flp, static_cast<int>(m_nVecWords + m_nPreWords - 1), 0};
         m_trigExtDTypep = new AstUnpackArrayDType{flp, m_wordDTypep, ep};
         netlistp->typeTablep()->addTypesp(m_trigExtDTypep);
-        m_compExtp = util::makeSubFunction(netlistp, "_eval_ext_triggers__" + m_name, m_slow);
+        m_compExtp = util::makeSubFunction(netlistp, "_eval_triggers_ext__" + m_name, m_slow);
     } else {
         m_trigExtDTypep = m_trigVecDTypep;
     }
@@ -460,7 +461,7 @@ TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords,
     m_vscp = scopep->createTemp("__V" + m_name + "Triggered", m_trigExtDTypep);
     m_vscp->varp()->isInternal(true);
     // The trigger computation function
-    m_compBasep = util::makeSubFunction(netlistp, "_eval_base_triggers__" + m_name, m_slow);
+    m_compVecp = util::makeSubFunction(netlistp, "_eval_triggers_vec__" + m_name, m_slow);
     // The debug dump function, always 'slow'
     m_dumpp = util::makeSubFunction(netlistp, "_dump_triggers__" + m_name, true);
     m_dumpp->isStatic(true);
@@ -692,7 +693,7 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
     // Assemble the base trigger computation function
     AstScope* const scopep = netlistp->topScopep()->scopep();
     {
-        AstCFunc* const fp = kit.m_compBasep;
+        AstCFunc* const fp = kit.m_compVecp;
         // Profiling push
         if (v3Global.opt.profExec()) {
             fp->addStmtsp(AstCStmt::profExecSectionPush(flp, "trigBase " + name));
@@ -709,13 +710,6 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
             ifp->branchPred(VBranchPred::BP_UNLIKELY);
             ifp->addThensp(util::setVar(initVscp, 1));
             ifp->addThensp(initialTrigsp);
-        }
-        if (!useAcc && !kit.m_nPreWords) {
-            // Add a call to the dumping function if debug is enabled
-            // But only if there are no preWords therefore there is only one eval function
-            // If there are two of them let the caller call it
-            // Also, when accumulator is being used skip this step and allow user to call the dump
-            fp->addStmtsp(kit.newDumpCall(kit.m_vscp, name, true));
         }
         // Profiling pop
         if (v3Global.opt.profExec()) {

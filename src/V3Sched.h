@@ -213,7 +213,7 @@ private:
     // in current 'act' region iteration
     AstVarScope* m_vscAccp = nullptr;
     // The AstCFunc that computes the current active base triggers
-    AstCFunc* m_compBasep = nullptr;
+    AstCFunc* m_compVecp = nullptr;
     // The AstCFunc that computes the current active extended triggers
     AstCFunc* m_compExtp = nullptr;
     // The AstCFunc that dumps a trigger vector
@@ -290,8 +290,7 @@ public:
     size_t senItem2TrigIdx(const AstSenItem* senItemp) const {
         return m_senItem2TrigIdx.at(*senItemp);
     }
-    AstCFunc* compBasep() const { return m_compBasep; }
-    AstCFunc* compExtp() const { return m_compExtp; }
+    AstCFunc* compBasep() const { return m_compVecp; }
     const std::string& name() const { return m_name; }
     const std::unordered_map<const AstSenTree*, AstSenTree*>& mapPre() const { return m_mapPre; }
     const std::unordered_map<const AstSenTree*, AstSenTree*>& mapVec() const { return m_mapVec; }
