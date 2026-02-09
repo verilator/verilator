@@ -1339,15 +1339,34 @@ class ConstraintExprVisitor final : public VNVisitor {
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     void visit(AstConstraintUnique* nodep) override {
-        if (!m_classp) return;
+        if (!m_classp) {
+            nodep->v3warn(CONSTRAINTIGN,
+                          "Unsupported: Unique constraint in std::randomize() with {}");
+            pushDeletep(nodep->unlinkFrBack());
+            return;
+        }
+        UASSERT_OBJ(m_classp, nodep, "m_classp not set");
 
         FileLine* const fl = nodep->fileline();
 
         AstNodeFTask* const initTaskp = VN_AS(m_memberMap.findMember(m_classp, "new"), NodeFTask);
-        if (!initTaskp) return;
+        UASSERT_OBJ(initTaskp, nodep, "Class has no init Task");
 
-        AstVar* const genVarp = VN_AS(m_classp->user3p(), Var);
-        if (!genVarp) return;
+        AstVar* const genVarp = [](const AstClass* classp) {
+            while (classp->extendsp()) classp = classp->extendsp()->classp();
+            return VN_AS(classp->user3p(), Var);
+        }(m_classp);
+
+        // UASSERT_OBJ(genVarp, nodep, "No generator variable");
+        if (!genVarp) {
+            // This shall be substituted with an assert when it will be supported
+            nodep->v3warn(CONSTRAINTIGN, "Unsupported: Unique constraint in randomize() with {}");
+            pushDeletep(nodep->unlinkFrBack());
+            return;
+        }
+
+        AstNodeModule* const modp = VN_AS(genVarp->user2p(), NodeModule);
+        UASSERT_OBJ(modp, nodep, "genVarp has no NodeModule set");
 
         for (AstNode* itemp = nodep->rangesp(); itemp; itemp = itemp->nextp()) {
             if (AstVarRef* const varRefp = VN_CAST(itemp, VarRef)) {
@@ -1380,8 +1399,9 @@ class ConstraintExprVisitor final : public VNVisitor {
                     continue;
                 }
 
-                AstCMethodHard* const wCallp = new AstCMethodHard{
-                    fl, new AstVarRef{fl, genVarp, VAccess::READ}, VCMethod::RANDOMIZER_WRITE_VAR};
+                AstCMethodHard* const wCallp
+                    = new AstCMethodHard{fl, new AstVarRef{fl, modp, genVarp, VAccess::READ},
+                                         VCMethod::RANDOMIZER_WRITE_VAR};
                 wCallp->addPinsp(new AstVarRef{fl, varp, VAccess::READ});
                 wCallp->addPinsp(new AstConst{fl, AstConst::Unsized64{},
                                               static_cast<uint64_t>(varp->dtypep()->width())});
@@ -1406,7 +1426,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 uPins->addNext(new AstConst{fl, arraySize});
 
                 AstCMethodHard* const uCallp
-                    = new AstCMethodHard{fl, new AstVarRef{fl, genVarp, VAccess::READ},
+                    = new AstCMethodHard{fl, new AstVarRef{fl, modp, genVarp, VAccess::READ},
                                          VCMethod::RANDOMIZER_UNIQUE, uPins};
                 uCallp->dtypep(nodep->findVoidDType());
                 initTaskp->addStmtsp(new AstStmtExpr{fl, uCallp});
