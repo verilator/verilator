@@ -1,31 +1,29 @@
-%Warning-IMPLICITSTATIC: t/t_lint_implicitstatic_bad.v:16:9: Variable's lifetime implicitly set to static
+%Warning-IMPLICITSTATIC: t/t_lint_implicitstatic_bad.v:20:9: Variable's lifetime implicitly set to static (IEEE 1800-2023 6.21)
                                                            : ... The initializer value will only be set once
                                                            : ... Suggest use 'static' before variable declaration'
-   16 |     int implicit_warn = 1;   
+   20 |     int implicit_warn = 1;   
       |         ^~~~~~~~~~~~~
                          ... For warning description see https://verilator.org/warn/IMPLICITSTATIC?v=latest
                          ... Use "/* verilator lint_off IMPLICITSTATIC */" and lint_on around source to disable this message.
-%Warning-IMPLICITSTATIC: t/t_lint_implicitstatic_bad.v:20:16: Function/task's lifetime implicitly set to static
-                                                            : ... Suggest use 'function automatic' or 'function static'
-   20 |   function int f_implicit_static();
-      |                ^~~~~~~~~~~~~~~~~
-                         t/t_lint_implicitstatic_bad.v:21:9: ... Location of implicit static variable
-                                                           : ... The initializer value will only be set once
-   21 |     int cnt = 0;   
-      |         ^~~
-%Warning-IMPLICITSTATIC: t/t_lint_implicitstatic_bad.v:25:8: Function/task's lifetime implicitly set to static
+%Warning-IMPLICITSTATIC: t/t_lint_implicitstatic_bad.v:24:8: Function/task's lifetime implicitly set to static; variables made static (IEEE 1800-2023 6.21)
                                                            : ... Suggest use 'task automatic' or 'task static'
-   25 |   task f_implicit_static();
+   24 |   task t_implicit_static();
       |        ^~~~~~~~~~~~~~~~~
-                         t/t_lint_implicitstatic_bad.v:26:9: ... Location of implicit static variable
+                         t/t_lint_implicitstatic_bad.v:25:9: ... Location of implicit static variable
                                                            : ... The initializer value will only be set once
-   26 |     int cnt = 0;   
-      |         ^~~
-%Error: t/t_lint_implicitstatic_bad.v:25:8: Unsupported in C: Task has the same name as function: 'f_implicit_static'
-   25 |   task f_implicit_static();
-      |        ^~~~~~~~~~~~~~~~~
-        t/t_lint_implicitstatic_bad.v:20:16: ... Location of original declaration
-   20 |   function int f_implicit_static();
+   25 |     int t_no_has_init = 1;   
+      |         ^~~~~~~~~~~~~
+%Warning-IMPLICITSTATIC: t/t_lint_implicitstatic_bad.v:32:16: Function/task's lifetime implicitly set to static; variables made static (IEEE 1800-2023 6.21)
+                                                            : ... Suggest use 'function automatic' or 'function static'
+   32 |   function int f_implicit_static();
       |                ^~~~~~~~~~~~~~~~~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+                         t/t_lint_implicitstatic_bad.v:33:9: ... Location of implicit static variable
+                                                           : ... The initializer value will only be set once
+   33 |     int f_no_has_init = 1;   
+      |         ^~~~~~~~~~~~~
+%Warning-IMPLICITSTATIC: t/t_lint_implicitstatic_bad.v:42:9: Variable's lifetime implicitly set to static (IEEE 1800-2023 6.21)
+                                                           : ... The initializer value will only be set once
+                                                           : ... Suggest use 'static' before variable declaration'
+   42 |     int i_no_has_init = 1;   
+      |         ^~~~~~~~~~~~~
 %Error: Exiting due to
