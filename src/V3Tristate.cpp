@@ -1645,7 +1645,8 @@ class TristateVisitor final : public TristateBaseVisitor {
             AstPin* const enpinp
                 = new AstPin{nodep->fileline(), nodep->pinNum(),
                              enModVarp->name(),  // should be {var}"__en"
-                             new AstVarRef{nodep->fileline(), enVarp, VAccess::WRITE}};
+                             new AstVarRef{nodep->fileline(), enVarp,
+                                           inDeclProcessing ? VAccess::READ : VAccess::WRITE}};
             enpinp->modVarp(enModVarp);
             UINFO(9, "       newpin " << enpinp);
             enpinp->user2Or(U2_BOTH);  // don't iterate the pin later
