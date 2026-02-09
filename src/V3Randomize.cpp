@@ -1026,6 +1026,21 @@ class ConstraintExprVisitor final : public VNVisitor {
                 }
             }
             initTaskp->addStmtsp(methodp->makeStmt());
+            // If randc, also emit mark_randc() for cyclic tracking
+            if (varp->isRandC()) {
+                AstCMethodHard* const markp = new AstCMethodHard{
+                    varp->fileline(),
+                    new AstVarRef{varp->fileline(), VN_AS(m_genp->user2p(), NodeModule), m_genp,
+                                  VAccess::READWRITE},
+                    VCMethod::RANDOMIZER_MARK_RANDC};
+                markp->dtypeSetVoid();
+                AstNodeExpr* const nameExprp
+                    = new AstCExpr{varp->fileline(), AstCExpr::Pure{},
+                                   "\"" + smtName + "\"", varp->width()};
+                nameExprp->dtypep(varp->dtypep());
+                markp->addPinsp(nameExprp);
+                initTaskp->addStmtsp(markp->makeStmt());
+            }
         } else {
             // Variable already written, clean up cloned membersel if any
             if (membersel) VL_DO_DANGLING(membersel->deleteTree(), membersel);
@@ -2678,7 +2693,9 @@ class RandomizeVisitor final : public VNVisitor {
                              stmtp = stmtp->nextp()) {
                             bool foundClearConstraints = false;
                             stmtp->foreach([&](AstCMethodHard* methodp) {
-                                if (methodp->method() == VCMethod::RANDOMIZER_WRITE_VAR) {
+                                if (methodp->method() == VCMethod::RANDOMIZER_WRITE_VAR
+                                    || methodp->method()
+                                           == VCMethod::RANDOMIZER_MARK_RANDC) {
                                     randomizep->addStmtsp(stmtp->cloneTree(false));
                                 } else if (methodp->method()
                                            == VCMethod::RANDOMIZER_CLEARCONSTRAINTS) {
@@ -3002,7 +3019,8 @@ class RandomizeVisitor final : public VNVisitor {
                 for (AstNode* stmtp = mainRandomizep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
                     bool foundClearConstraints = false;
                     stmtp->foreach([&](AstCMethodHard* methodp) {
-                        if (methodp->method() == VCMethod::RANDOMIZER_WRITE_VAR) {
+                        if (methodp->method() == VCMethod::RANDOMIZER_WRITE_VAR
+                            || methodp->method() == VCMethod::RANDOMIZER_MARK_RANDC) {
                             randomizeFuncp->addStmtsp(stmtp->cloneTree(false));
                         } else if (methodp->method() == VCMethod::RANDOMIZER_CLEARCONSTRAINTS) {
                             foundClearConstraints = true;

@@ -209,10 +209,14 @@ class VlRandomizer VL_NOT_FINAL {
     std::map<std::string, uint32_t> m_unique_array_sizes;
     const VlQueue<CData>* m_randmodep = nullptr;  // rand_mode state;
     int m_index = 0;  // Internal counter for key generation
+    std::set<std::string> m_randcVarNames;  // Names of randc variables for cyclic tracking
+    std::map<std::string, std::vector<std::string>>
+        m_randcUsedValues;  // Previously used values per randc var (SMT hex format)
 
     // PRIVATE METHODS
     void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
     bool parseSolution(std::iostream& file, bool log = false);
+    std::string readVarValueSMT(const std::string& name) const;
 
 public:
     // CONSTRUCTORS
@@ -585,6 +589,7 @@ public:
               const char* source = "");
     void clearConstraints();
     void clearAll();  // Clear both constraints and variables
+    void mark_randc(const char* name);  // Mark variable as randc for cyclic tracking
     void set_randmode(const VlQueue<CData>& randmode) { m_randmodep = &randmode; }
 #ifdef VL_DEBUG
     void dump() const;

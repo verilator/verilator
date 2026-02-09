@@ -388,33 +388,14 @@ bool VlRandomizer::next(VlRNG& rngr) {
         }
     }
 
-    std::iostream& os = getSolver();
-    if (!os) return false;
+    // Allow one retry when randc cycle exhaustion causes UNSAT
+    bool randcRetryAllowed = !m_randcVarNames.empty();
 
-    os << "(set-option :produce-models true)\n";
-    os << "(set-logic QF_ABV)\n";
-    os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
-    os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
-    for (const auto& var : m_vars) {
-        if (var.second->dimension() > 0) {
-            auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
-            var.second->setArrayInfo(arrVarsp);
-        }
-        os << "(declare-fun " << var.first << " () ";
-        var.second->emitType(os);
-        os << ")\n";
-    }
+    for (;;) {
+        std::iostream& os = getSolver();
+        if (!os) return false;
 
-    for (const std::string& constraint : m_constraints) {
-        os << "(assert (= #b1 " << constraint << "))\n";
-    }
-    os << "(check-sat)\n";
-
-    bool sat = parseSolution(os, true);
-    if (!sat) {
-        // If unsat, use named assertions to get unsat-core
-        os << "(reset)\n";
-        os << "(set-option :produce-unsat-cores true)\n";
+        os << "(set-option :produce-models true)\n";
         os << "(set-logic QF_ABV)\n";
         os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
         os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
@@ -427,28 +408,88 @@ bool VlRandomizer::next(VlRNG& rngr) {
             var.second->emitType(os);
             os << ")\n";
         }
-        int j = 0;
-        for (const std::string& constraint : m_constraints) {
-            os << "(assert (! (= #b1 " << constraint << ") :named cons" << j << "))\n";
-            j++;
-        }
-        os << "(check-sat)\n";
-        sat = parseSolution(os, true);
-        (void)sat;
-        os << "(reset)\n";
-        return false;
-    }
-    for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; ++i) {
-        os << "(assert ";
-        randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
-        os << ")\n";
-        os << "\n(check-sat)\n";
-        sat = parseSolution(os, false);
-        (void)sat;
-    }
 
-    os << "(reset)\n";
-    return true;
+        for (const std::string& constraint : m_constraints) {
+            os << "(assert (= #b1 " << constraint << "))\n";
+        }
+
+        // Emit randc exclusion constraints for cyclic behavior
+        for (const auto& name : m_randcVarNames) {
+            const auto usedIt = m_randcUsedValues.find(name);
+            if (usedIt != m_randcUsedValues.end()) {
+                for (const auto& usedVal : usedIt->second) {
+                    os << "(assert (not (= " << name << " " << usedVal << ")))\n";
+                }
+            }
+        }
+
+        os << "(check-sat)\n";
+
+        bool sat = parseSolution(os, !randcRetryAllowed);
+        if (!sat) {
+            // Check if UNSAT might be due to randc cycle exhaustion
+            if (randcRetryAllowed) {
+                bool hasExclusions = false;
+                for (const auto& name : m_randcVarNames) {
+                    const auto usedIt = m_randcUsedValues.find(name);
+                    if (usedIt != m_randcUsedValues.end() && !usedIt->second.empty()) {
+                        hasExclusions = true;
+                        break;
+                    }
+                }
+                if (hasExclusions) {
+                    // Clear randc history and retry (start fresh cycle)
+                    m_randcUsedValues.clear();
+                    os << "(reset)\n";
+                    randcRetryAllowed = false;
+                    continue;
+                }
+            }
+
+            // If unsat, use named assertions to get unsat-core
+            os << "(reset)\n";
+            os << "(set-option :produce-unsat-cores true)\n";
+            os << "(set-logic QF_ABV)\n";
+            os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
+            os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
+            for (const auto& var : m_vars) {
+                if (var.second->dimension() > 0) {
+                    auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
+                    var.second->setArrayInfo(arrVarsp);
+                }
+                os << "(declare-fun " << var.first << " () ";
+                var.second->emitType(os);
+                os << ")\n";
+            }
+            int j = 0;
+            for (const std::string& constraint : m_constraints) {
+                os << "(assert (! (= #b1 " << constraint << ") :named cons" << j << "))\n";
+                j++;
+            }
+            os << "(check-sat)\n";
+            sat = parseSolution(os, true);
+            (void)sat;
+            os << "(reset)\n";
+            return false;
+        }
+        for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; ++i) {
+            os << "(assert ";
+            randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
+            os << ")\n";
+            os << "\n(check-sat)\n";
+            sat = parseSolution(os, false);
+            (void)sat;
+        }
+
+        // Capture randc variable values for future exclusion
+        for (const auto& name : m_randcVarNames) {
+            const std::string val = readVarValueSMT(name);
+            if (!val.empty()) m_randcUsedValues[name].push_back(val);
+        }
+
+        os << "(reset)\n";
+        return true;
+    }
 }
 
 bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
@@ -620,6 +661,30 @@ void VlRandomizer::clearConstraints() {
 void VlRandomizer::clearAll() {
     m_constraints.clear();
     m_vars.clear();
+    m_randcVarNames.clear();
+    m_randcUsedValues.clear();
+}
+
+void VlRandomizer::mark_randc(const char* name) { m_randcVarNames.insert(name); }
+
+std::string VlRandomizer::readVarValueSMT(const std::string& name) const {
+    const auto it = m_vars.find(name);
+    if (it == m_vars.end()) return "";
+    const VlRandomVar& var = *it->second;
+    const int w = var.width();
+    uint32_t val = 0;
+    if (w <= 8) {
+        val = *static_cast<const CData*>(var.datap(0));
+    } else if (w <= 16) {
+        val = *static_cast<const SData*>(var.datap(0));
+    } else if (w <= 32) {
+        val = *static_cast<const IData*>(var.datap(0));
+    }
+    val &= VL_MASK_I(w);
+    // Use (_ bvN W) format for exact bitvector width (avoids #x hex rounding to 4-bit multiples)
+    std::ostringstream ss;
+    ss << "(_ bv" << val << " " << w << ")";
+    return ss.str();
 }
 
 #ifdef VL_DEBUG
