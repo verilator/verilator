@@ -88,8 +88,9 @@ module t;
     $display("Test 5 passed: a=%0d, obj.x=%0d, obj.y=%0d", a, obj.x, obj.y);
 
     // Test 6: Member of 2D array
-    assert (std::randomize(obj.dyn[2][0]) with {obj.dyn[2][0] inside {[1 : 10]};});
-    if (!obj.dyn[2][0] inside {[1 : 10]}) $stop;
+    assert (std::randomize(obj.dyn[2][0]) with {obj.dyn[2][0] inside {[1 : 10]};} == 1);
+    if (!(obj.dyn[2][0] inside {[1 : 10]})) $stop;
+    $display("Test 6 passed: obj.dyn[2][0]=%0d", obj.dyn[2][0]);
 
     $write("*-* All Finished *-*\n");
     $finish;
