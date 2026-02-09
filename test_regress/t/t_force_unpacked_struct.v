@@ -28,7 +28,7 @@ module t (
   always @(posedge clk) begin
     cyc <= cyc + 1;
     if (cyc == 0) begin
-      s_array[1].x <= 1;
+      s_array[1].x = 1;
       my_struct.x <= 1;
     end
     else if (cyc == 1) begin
@@ -41,7 +41,7 @@ module t (
     end
     else if (cyc == 3) begin
       `checkh(s_array[1].x, 0);
-      s_array[1].x <= 1;
+      s_array[1].x = 1;
       `checkh(my_struct.x, 0);
       my_struct.x <= 1;
     end
@@ -55,7 +55,7 @@ module t (
     end
     else if (cyc == 6) begin
       `checkh(s_array[1].x, 0);
-      s_array[1].x <= 1;
+      s_array[1].x = 1;
       `checkh(my_struct.x, 0);
       my_struct.x <= 1;
     end
