@@ -947,76 +947,195 @@ class ConstraintExprVisitor final : public VNVisitor {
             if (isGlobalConstrained) m_writtenVars.insert(smtName);
             // For global constraints, delete nodep after processing
             if (isGlobalConstrained && !nodep->backp()) VL_DO_DANGLING(pushDeletep(nodep), nodep);
-            AstCMethodHard* const methodp = new AstCMethodHard{
-                varp->fileline(),
-                new AstVarRef{varp->fileline(), VN_AS(m_genp->user2p(), NodeModule), m_genp,
-                              VAccess::READWRITE},
-                VCMethod::RANDOMIZER_WRITE_VAR};
-            uint32_t dimension = 0;
-            if (VN_IS(varp->dtypep(), UnpackArrayDType) || VN_IS(varp->dtypep(), DynArrayDType)
-                || VN_IS(varp->dtypep(), QueueDType) || VN_IS(varp->dtypep(), AssocArrayDType)) {
-                const std::pair<uint32_t, uint32_t> dims
-                    = varp->dtypep()->dimensions(/*includeBasic=*/true);
-                const uint32_t unpackedDimensions = dims.second;
-                dimension = unpackedDimensions;
-            }
-            if (VN_IS(varp->dtypeSkipRefp(), StructDType)
-                && !VN_AS(varp->dtypeSkipRefp(), StructDType)->packed()) {
-                VN_AS(varp->dtypeSkipRefp(), StructDType)->markConstrainedRand(true);
-                dimension = 1;
-            }
-            methodp->dtypeSetVoid();
-            AstNodeModule* classp;
-            if (membersel) {
-                // For membersel, find the root varref to get the class where randomize() is called
-                AstNode* rootNode = membersel->fromp();
-                while (AstMemberSel* nestedMemberSel = VN_CAST(rootNode, MemberSel)) {
-                    rootNode = nestedMemberSel->fromp();
+
+            // Detect if variable is an array of class references
+            bool isClassRefArray = false;
+            AstClassRefDType* elemClassRefDtp = nullptr;
+            {
+                AstNodeDType* varDtp = varp->dtypep()->skipRefp();
+                if (VN_IS(varDtp, DynArrayDType) || VN_IS(varDtp, QueueDType)
+                    || VN_IS(varDtp, UnpackArrayDType) || VN_IS(varDtp, AssocArrayDType)) {
+                    AstNodeDType* const elemDtp = varDtp->subDTypep()->skipRefp();
+                    elemClassRefDtp = VN_CAST(elemDtp, ClassRefDType);
+                    if (elemClassRefDtp) isClassRefArray = true;
                 }
-                if (AstNodeVarRef* rootVarRef = VN_CAST(rootNode, NodeVarRef)) {
-                    classp = VN_AS(rootVarRef->varp()->user2p(), NodeModule);
-                } else {
-                    classp = VN_AS(membersel->user2p(), NodeModule);
+            }
+
+            if (isClassRefArray && !membersel) {
+                // Per-member registration loop for class ref arrays
+                FileLine* const fl = varp->fileline();
+                AstClass* const elemClassp = elemClassRefDtp->classp();
+                AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
+
+                AstVar* const iterVarp
+                    = new AstVar{fl, VVarType::BLOCKTEMP, "__Vi", varp->findUInt32DType()};
+                iterVarp->funcLocal(true);
+                iterVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+
+                AstNode* const stmtsp = iterVarp;
+                stmtsp->addNext(new AstAssign{fl, new AstVarRef{fl, iterVarp, VAccess::WRITE},
+                                              new AstConst{fl, 0}});
+
+                AstVarRef* const arraySizeRef = new AstVarRef{fl, varClassp, varp, VAccess::READ};
+                arraySizeRef->classOrPackagep(classOrPackagep);
+                AstCMethodHard* const sizep
+                    = new AstCMethodHard{fl, arraySizeRef, VCMethod::DYN_SIZE, nullptr};
+                sizep->dtypeSetUInt32();
+
+                AstLoop* const loopp = new AstLoop{fl};
+                stmtsp->addNext(loopp);
+                loopp->addStmtsp(new AstLoopTest{
+                    fl, loopp, new AstLt{fl, new AstVarRef{fl, iterVarp, VAccess::READ}, sizep}});
+
+                AstVarRef* const arrayAtRef = new AstVarRef{fl, varClassp, varp, VAccess::READ};
+                arrayAtRef->classOrPackagep(classOrPackagep);
+                AstCMethodHard* const atReadp
+                    = new AstCMethodHard{fl, arrayAtRef, VCMethod::ARRAY_AT,
+                                         new AstVarRef{fl, iterVarp, VAccess::READ}};
+                atReadp->dtypep(elemClassRefDtp);
+                AstIf* const ifNonNullp = new AstIf{
+                    fl, new AstNeq{fl, atReadp, new AstConst{fl, AstConst::Null{}}}, nullptr};
+                loopp->addStmtsp(ifNonNullp);
+
+                AstCStmt* const bufDeclp = new AstCStmt{fl, "char __Vn[256];\n"};
+                ifNonNullp->addThensp(bufDeclp);
+
+                // 32-bit index → 8 hex chars for SMT name formatting
+                constexpr int idxWidth = 32;
+                const int fmtWidth = VL_WORDS_I(idxWidth) * 8;
+
+                for (const AstClass* cp = elemClassp; cp;
+                     cp = cp->extendsp() ? cp->extendsp()->classp() : nullptr) {
+                    for (AstNode* mnodep = cp->stmtsp(); mnodep; mnodep = mnodep->nextp()) {
+                        AstVar* const memberVarp = VN_CAST(mnodep, Var);
+                        if (!memberVarp || !memberVarp->rand().isRandomizable()) continue;
+                        AstNodeDType* const memberDtp = memberVarp->dtypep()->skipRefp();
+                        if (VN_IS(memberDtp, ClassRefDType) || VN_IS(memberDtp, DynArrayDType)
+                            || VN_IS(memberDtp, QueueDType) || VN_IS(memberDtp, UnpackArrayDType)
+                            || VN_IS(memberDtp, AssocArrayDType))
+                            continue;
+                        const int memberWidth = memberDtp->width();
+
+                        AstCStmt* const fmtp = new AstCStmt{fl};
+                        fmtp->add("VL_SNPRINTF(__Vn, sizeof(__Vn), \"" + smtName + ".%0"
+                                  + std::to_string(fmtWidth) + "x." + memberVarp->name()
+                                  + "\", (unsigned)");
+                        fmtp->add(new AstVarRef{fl, iterVarp, VAccess::READ});
+                        fmtp->add(");\n");
+                        ifNonNullp->addThensp(fmtp);
+
+                        AstVarRef* const arrayWrRef
+                            = new AstVarRef{fl, varClassp, varp, VAccess::WRITE};
+                        arrayWrRef->classOrPackagep(classOrPackagep);
+                        AstCMethodHard* const atWritep
+                            = new AstCMethodHard{fl, arrayWrRef, VCMethod::ARRAY_AT_WRITE,
+                                                 new AstVarRef{fl, iterVarp, VAccess::READ}};
+                        atWritep->dtypep(elemClassRefDtp);
+                        AstMemberSel* const memberSelp
+                            = new AstMemberSel{fl, atWritep, memberVarp};
+
+                        AstCMethodHard* const writeVarp = new AstCMethodHard{
+                            fl,
+                            new AstVarRef{fl, VN_AS(m_genp->user2p(), NodeModule), m_genp,
+                                          VAccess::READWRITE},
+                            VCMethod::RANDOMIZER_WRITE_VAR};
+                        writeVarp->dtypeSetVoid();
+                        writeVarp->addPinsp(memberSelp);
+                        writeVarp->addPinsp(new AstConst{fl, AstConst::Unsized64{},
+                                                         static_cast<uint64_t>(memberWidth)});
+                        AstCExpr* const nameRefp = new AstCExpr{fl, AstCExpr::Pure{}, "__Vn", 0};
+                        nameRefp->dtypep(varp->dtypep());
+                        writeVarp->addPinsp(nameRefp);
+                        writeVarp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, 0ULL});
+                        ifNonNullp->addThensp(writeVarp->makeStmt());
+                    }
                 }
-                methodp->addPinsp(membersel);
-            } else {
-                classp = VN_AS(varp->user2p(), NodeModule);
-                AstVarRef* const varRefp
-                    = new AstVarRef{varp->fileline(), classp, varp, VAccess::WRITE};
-                varRefp->classOrPackagep(classOrPackagep);
-                methodp->addPinsp(varRefp);
-            }
-            AstNodeDType* tmpDtypep = varp->dtypep();
-            while (VN_IS(tmpDtypep, UnpackArrayDType) || VN_IS(tmpDtypep, DynArrayDType)
-                   || VN_IS(tmpDtypep, QueueDType) || VN_IS(tmpDtypep, AssocArrayDType))
-                tmpDtypep = tmpDtypep->subDTypep();
-            const size_t width = tmpDtypep->width();
-            methodp->addPinsp(
-                new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{}, width});
-            AstNodeExpr* const varnamep = new AstCExpr{varp->fileline(), AstCExpr::Pure{},
-                                                       "\"" + smtName + "\"", varp->width()};
-            varnamep->dtypep(varp->dtypep());
-            methodp->addPinsp(varnamep);
-            methodp->addPinsp(
-                new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{}, dimension});
-            // Don't pass randMode.index for global constraints with membersel
-            // because constraint object can't access nested object's randmode array
-            if (randMode.usesMode && !(isGlobalConstrained && membersel)) {
-                methodp->addPinsp(
-                    new AstConst{varp->fileline(), AstConst::Unsized64{}, randMode.index});
-            }
-            AstNodeFTask* initTaskp = m_inlineInitTaskp;
-            if (!initTaskp) {
+
+                loopp->addStmtsp(
+                    new AstAssign{fl, new AstVarRef{fl, iterVarp, VAccess::WRITE},
+                                  new AstAdd{fl, new AstConst{fl, 1},
+                                             new AstVarRef{fl, iterVarp, VAccess::READ}}});
+
+                AstBegin* const beginp = new AstBegin{fl, "", stmtsp, true};
                 varp->user3(true);
-                if (membersel) {
-                    initTaskp = VN_AS(m_memberMap.findMember(classp, "randomize"), NodeFTask);
-                    UASSERT_OBJ(initTaskp, classp, "No randomize() in class");
-                } else {
-                    initTaskp = VN_AS(m_memberMap.findMember(classp, "new"), NodeFTask);
-                    UASSERT_OBJ(initTaskp, classp, "No new() in class");
+                AstNodeFTask* initTaskp = m_inlineInitTaskp;
+                if (!initTaskp) {
+                    initTaskp = VN_AS(m_memberMap.findMember(varClassp, "new"), NodeFTask);
+                    UASSERT_OBJ(initTaskp, varClassp, "No new() in class");
                 }
+                initTaskp->addStmtsp(beginp);
+            } else {
+                AstCMethodHard* const methodp = new AstCMethodHard{
+                    varp->fileline(),
+                    new AstVarRef{varp->fileline(), VN_AS(m_genp->user2p(), NodeModule), m_genp,
+                                  VAccess::READWRITE},
+                    VCMethod::RANDOMIZER_WRITE_VAR};
+                uint32_t dimension = 0;
+                if (VN_IS(varp->dtypep(), UnpackArrayDType) || VN_IS(varp->dtypep(), DynArrayDType)
+                    || VN_IS(varp->dtypep(), QueueDType)
+                    || VN_IS(varp->dtypep(), AssocArrayDType)) {
+                    const std::pair<uint32_t, uint32_t> dims
+                        = varp->dtypep()->dimensions(/*includeBasic=*/true);
+                    const uint32_t unpackedDimensions = dims.second;
+                    dimension = unpackedDimensions;
+                }
+                if (VN_IS(varp->dtypeSkipRefp(), StructDType)
+                    && !VN_AS(varp->dtypeSkipRefp(), StructDType)->packed()) {
+                    VN_AS(varp->dtypeSkipRefp(), StructDType)->markConstrainedRand(true);
+                    dimension = 1;
+                }
+                methodp->dtypeSetVoid();
+                AstNodeModule* classp;
+                if (membersel) {
+                    // For membersel, find the root varref to get the class
+                    AstNode* rootNode = membersel->fromp();
+                    while (AstMemberSel* nestedMemberSel = VN_CAST(rootNode, MemberSel)) {
+                        rootNode = nestedMemberSel->fromp();
+                    }
+                    if (AstNodeVarRef* rootVarRef = VN_CAST(rootNode, NodeVarRef)) {
+                        classp = VN_AS(rootVarRef->varp()->user2p(), NodeModule);
+                    } else {
+                        classp = VN_AS(membersel->user2p(), NodeModule);
+                    }
+                    methodp->addPinsp(membersel);
+                } else {
+                    classp = VN_AS(varp->user2p(), NodeModule);
+                    AstVarRef* const varRefp
+                        = new AstVarRef{varp->fileline(), classp, varp, VAccess::WRITE};
+                    varRefp->classOrPackagep(classOrPackagep);
+                    methodp->addPinsp(varRefp);
+                }
+                AstNodeDType* tmpDtypep = varp->dtypep();
+                while (VN_IS(tmpDtypep, UnpackArrayDType) || VN_IS(tmpDtypep, DynArrayDType)
+                       || VN_IS(tmpDtypep, QueueDType) || VN_IS(tmpDtypep, AssocArrayDType))
+                    tmpDtypep = tmpDtypep->subDTypep();
+                const size_t width = tmpDtypep->width();
+                methodp->addPinsp(
+                    new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{}, width});
+                AstNodeExpr* const varnamep = new AstCExpr{varp->fileline(), AstCExpr::Pure{},
+                                                           "\"" + smtName + "\"", varp->width()};
+                varnamep->dtypep(varp->dtypep());
+                methodp->addPinsp(varnamep);
+                methodp->addPinsp(
+                    new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{}, dimension});
+                // Don't pass randMode.index for global constraints with membersel
+                if (randMode.usesMode && !(isGlobalConstrained && membersel)) {
+                    methodp->addPinsp(
+                        new AstConst{varp->fileline(), AstConst::Unsized64{}, randMode.index});
+                }
+                AstNodeFTask* initTaskp = m_inlineInitTaskp;
+                if (!initTaskp) {
+                    varp->user3(true);
+                    if (membersel) {
+                        initTaskp = VN_AS(m_memberMap.findMember(classp, "randomize"), NodeFTask);
+                        UASSERT_OBJ(initTaskp, classp, "No randomize() in class");
+                    } else {
+                        initTaskp = VN_AS(m_memberMap.findMember(classp, "new"), NodeFTask);
+                        UASSERT_OBJ(initTaskp, classp, "No new() in class");
+                    }
+                }
+                initTaskp->addStmtsp(methodp->makeStmt());
             }
-            initTaskp->addStmtsp(methodp->makeStmt());
         } else {
             // Variable already written, clean up cloned membersel if any
             if (membersel) VL_DO_DANGLING(membersel->deleteTree(), membersel);
@@ -1259,6 +1378,38 @@ class ConstraintExprVisitor final : public VNVisitor {
             nodep->replaceWith(varRefp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             visit(varRefp);
+        } else if (nodep->user1() && VN_IS(nodep->fromp(), CMethodHard)
+                   && VN_AS(nodep->fromp(), CMethodHard)->method() == VCMethod::ARRAY_AT) {
+            // Class ref array element member access (e.g., items[i].val)
+            AstCMethodHard* const cmethodp = VN_AS(nodep->fromp(), CMethodHard);
+            AstNodeDType* const arrayDtp = cmethodp->fromp()->dtypep()->skipRefp();
+            AstNodeDType* const elemDtp = arrayDtp->subDTypep()->skipRefp();
+            if (VN_IS(elemDtp, ClassRefDType)) {
+                VL_RESTORER(m_structSel);
+                m_structSel = true;
+                iterateChildren(nodep);
+                FileLine* const fl = nodep->fileline();
+                AstSFormatF* newp = nullptr;
+                if (AstSFormatF* const fromp = VN_CAST(nodep->fromp(), SFormatF)) {
+                    if (fromp->name() == "%@.%@") {
+                        newp = new AstSFormatF{fl, "%@.%@." + nodep->name(), false,
+                                               fromp->exprsp()->cloneTreePure(true)};
+                    } else {
+                        newp = new AstSFormatF{fl, fromp->name() + "." + nodep->name(), false,
+                                               nullptr};
+                    }
+                } else {
+                    newp = new AstSFormatF{fl, nodep->name(), false, nullptr};
+                }
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
+            // Not a class ref element, fall through to normal handling
+            iterateChildren(nodep);
+            nodep->replaceWith(nodep->fromp()->unlinkFrBack());
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            return;
         } else if (nodep->user1()) {
             iterateChildren(nodep);
             nodep->replaceWith(nodep->fromp()->unlinkFrBack());
@@ -1270,6 +1421,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
     void visit(AstSFormatF* nodep) override {}
     void visit(AstStmtExpr* nodep) override {}
+    void visit(AstCStmt* nodep) override {}
     void visit(AstConstraintIf* nodep) override {
         AstNodeExpr* newp = nullptr;
         FileLine* const fl = nodep->fileline();
