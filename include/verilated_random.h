@@ -339,6 +339,11 @@ public:
         modifyMembers(var, var.memberIndices(), name);
     }
 
+    // No-op for class ref variables: members registered individually by V3Randomize-generated code
+    template <typename T>
+    void write_var(VlClassRef<T>& var, int width, const char* name, int dimension,
+                   std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {}
+
     // Register queue of non-struct types
     template <typename T>
     typename std::enable_if<!VlContainsCustomStruct<T>::value, void>::type
@@ -419,6 +424,11 @@ public:
         m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, m_index, indices, idxWidths);
         ++m_index;
     }
+
+    // No-op for class ref elements: registration handled by V3Randomize-generated loops
+    template <typename T>
+    void record_arr_table(VlClassRef<T>& var, const std::string& name, int dimension,
+                          std::vector<IData> indices, std::vector<size_t> idxWidths) {}
 
     // This is the "Sender" API for the generated code
     void rand_unique(const std::string& name, uint32_t size) {
