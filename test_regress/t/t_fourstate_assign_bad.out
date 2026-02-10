@@ -1,4 +1,4 @@
-%Error: t/t_fourstate_assign_bad.v:23:16: Illegal assignment: Array element types are not equivalent ('bit[7:0]' v.s. 'logic[7:0]')
+%Error: t/t_fourstate_assign_bad.v:23:16: Illegal assignment: Array element types are not equivalent ('bit[7:0]' vs 'logic[7:0]')
                                         : ... note: In instance 't'
    23 |     arr_2state = arr_4state;
       |                ^

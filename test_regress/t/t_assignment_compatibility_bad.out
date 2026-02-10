@@ -1,17 +1,17 @@
-%Error: t/t_assignment_compatibility_bad.v:25:20: Illegal assignment: Unmatched array sizes in dimension 0 (3 v.s. 2)
+%Error: t/t_assignment_compatibility_bad.v:25:20: Illegal assignment: Unmatched array sizes in dimension 0 (3 vs 2)
                                                 : ... note: In instance 't'
    25 |   assign unpackedB = unpackedA;
       |                    ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_assignment_compatibility_bad.v:26:20: Illegal assignment: Unmatched number of unpacked dimensions (1 v.s. 2)
+%Error: t/t_assignment_compatibility_bad.v:26:20: Illegal assignment: Unmatched number of unpacked dimensions (1 vs 2)
                                                 : ... note: In instance 't'
    26 |   assign unpackedB = unpackedC;
       |                    ^
-%Error: t/t_assignment_compatibility_bad.v:27:20: Illegal assignment: Unmatched array sizes in dimension 0 (4 v.s. 3)
+%Error: t/t_assignment_compatibility_bad.v:27:20: Illegal assignment: Unmatched array sizes in dimension 0 (4 vs 3)
                                                 : ... note: In instance 't'
    27 |   assign unpackedD = unpackedC;
       |                    ^
-%Error: t/t_assignment_compatibility_bad.v:28:20: Illegal assignment: Array element types are not equivalent ('struct{}$unit::struct_t' v.s. 'logic')
+%Error: t/t_assignment_compatibility_bad.v:28:20: Illegal assignment: Array element types are not equivalent ('struct{}$unit::struct_t' vs 'logic')
                                                 : ... note: In instance 't'
    28 |   assign unpackedE = unpackedD;
       |                    ^
