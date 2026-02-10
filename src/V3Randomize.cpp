@@ -1953,7 +1953,6 @@ class RandomizeVisitor final : public VNVisitor {
     AstVar* createStaticModeVar(AstClass* const classp, const char* const name) {
         // Create a static variable that will be shared across all instances.
         // By setting lifetime to STATIC_EXPLICIT, V3Class will move this to the class package.
-        // We set user2p to the package so generated code accesses through package, not instance.
         FileLine* const fl = classp->fileline();
         if (!m_dynarrayDtp) {
             m_dynarrayDtp = new AstDynArrayDType{
@@ -1963,8 +1962,9 @@ class RandomizeVisitor final : public VNVisitor {
         }
         AstVar* const modeVarp = new AstVar{fl, VVarType::MODULETEMP, name, m_dynarrayDtp};
         modeVarp->lifetime(VLifetime::STATIC_EXPLICIT);
-        // Store class package as user2p so wrapIfMode generates package-level access
-        modeVarp->user2p(classp->classOrPackagep());
+        // Note: user2p is set to classp here. V3Scope will later update varScopep
+        // to point to the package scope when the variable is moved by V3Class.
+        modeVarp->user2p(classp);
         classp->addStmtsp(modeVarp);
         return modeVarp;
     }
