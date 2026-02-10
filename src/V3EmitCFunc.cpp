@@ -737,6 +737,12 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                 out += ";\n";
             } else if (zeroit) {
                 out += " = 0;\n";
+            } else if (varp->attrFourState()) {
+                V3Number xNum{varp->fileline(), varp->width(), 0};
+                xNum.setAllBitsX();
+                out += " = ";
+                out += xNum.emitC();
+                out += ";\n";
             } else {
                 emitVarResetScopeHash();
                 const uint64_t salt = VString::hashMurmur(varp->prettyName());

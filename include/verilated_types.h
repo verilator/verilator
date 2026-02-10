@@ -2155,16 +2155,16 @@ FourStateLogicWrapper<T> fourLogicConflict(const FourStateLogicWrapper<T>& a,
 }
 
 template <typename T>
-FourStateLogicWrapper<T> fourLogicWor(const FourStateLogicWrapper<T>& a,
-                                      const FourStateLogicWrapper<T>& b) noexcept {
+FourStateLogicWrapper<T> fourLogicTrior(const FourStateLogicWrapper<T>& a,
+                                        const FourStateLogicWrapper<T>& b) noexcept {
     return {static_cast<T>(a.value | b.value),
             static_cast<T>((a.value | b.xz) & (b.value | a.xz) & (a.xz | ~a.value)
                            & (b.xz | ~b.value))};
 }
 
 template <typename T>
-FourStateLogicWrapper<T> fourLogicWand(const FourStateLogicWrapper<T>& a,
-                                       const FourStateLogicWrapper<T>& b) noexcept {
+FourStateLogicWrapper<T> fourLogicTriand(const FourStateLogicWrapper<T>& a,
+                                         const FourStateLogicWrapper<T>& b) noexcept {
     return {
         static_cast<T>((a.value & b.xz) | (b.value & a.xz) | (a.value & b.value)),
         static_cast<T>((a.xz & b.xz) | (a.value & b.value & a.xz) | (a.value & b.value & b.xz))};

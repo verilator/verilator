@@ -1943,4 +1943,33 @@ public:
     ~VBasicTypeKey() = default;
 };
 
+class VCFunc final {
+public:
+    enum en : uint8_t { FOUR_STATE_TRIOR_OR, FOUR_STATE_TRIAND_AND };
+    struct Properties final {
+        const enum en val;
+        const char* const cname;
+        const bool isPure;
+    };
+
+private:
+    enum en m_e;
+
+public:
+    static const Properties& getProperties(enum en e) {
+        const static struct Properties properties[] = {
+            {FOUR_STATE_TRIOR_OR, "fourLogicTrior", true},
+            {FOUR_STATE_TRIAND_AND, "fourLogicTriand", true},
+        };
+        return properties[static_cast<size_t>(e)];
+    }
+
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VCFunc(enum en e)
+        : m_e{e} {}
+
+    bool isPure() const { return getProperties(m_e).isPure; }
+    const char* ansii() const { return getProperties(m_e).cname; }
+};
+
 #endif  // Guard

@@ -665,6 +665,23 @@ public:
     void add(const std::string& text) { addNodesp(new AstText{fileline(), text}); }
     void add(AstNode* nodep) { addNodesp(nodep); }
 };
+class AstCFuncHard final : public AstNodeExpr {
+    // @astgen op2 := pinsp : List[AstNodeExpr] // Arguments
+    VCFunc m_cfunc;
+
+public:
+    AstCFuncHard(FileLine* flp, VCFunc cfunc, AstNodeExpr* pinsp)
+        : ASTGEN_SUPER_CFuncHard(flp)
+        , m_cfunc{cfunc} {
+        addPinsp(pinsp);
+    }
+    ASTGEN_MEMBERS_AstCFuncHard;
+    bool isPure() override { return m_cfunc.isPure(); }
+    std::string emitC() override { V3ERROR_NA_RETURN(""); }
+    std::string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return false; }
+    const char* ansii() const { return m_cfunc.ansii(); }
+};
 class AstCMethodHard final : public AstNodeExpr {
     // A reference to a "C" hardcoded member task (or function)
     // PARENTS: stmt/expr

@@ -1785,6 +1785,13 @@ public:
         iterateChildrenConst(nodep);
     }
 
+    void visit(AstCFuncHard* const nodep) override {
+        puts(nodep->ansii());
+        puts("(");
+        putCommaIterateNext(nodep->pinsp(), false);
+        puts(")");
+    }
+
     // Default
     void visit(AstNode* nodep) override {  // LCOV_EXCL_START
         putns(nodep, "\n???? // "s + nodep->prettyTypeName() + "\n");
