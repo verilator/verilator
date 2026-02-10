@@ -65,6 +65,8 @@
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
+#include "V3Width.h"
+
 #include "V3Ast.h"
 #include "V3Begin.h"
 #include "V3Const.h"
@@ -77,10 +79,7 @@
 #include "V3String.h"
 #include "V3Task.h"
 #include "V3UniqueNames.h"
-#include "V3Width.h"
 #include "V3WidthCommit.h"
-
-#include <cstdint>
 
 // More code; this file was getting too large; see actions there
 #define VERILATOR_V3WIDTH_CPP_
