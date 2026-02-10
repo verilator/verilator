@@ -8,9 +8,13 @@ class Packet;
    rand int x;
    rand int y;
    rand int z;
+   rand int w;
+   rand int v;
    rand bit [31:0] b;
    rand bit [31:0] c;
    rand bit [31:0] d;
+   rand bit [31:0] e;
+   rand bit [31:0] f;
    rand bit tiny;
    rand bit zero;
    rand bit one;
@@ -32,6 +36,12 @@ class Packet;
      z < 0;
      z > -4;
    }
+   constraint c_power { e ** 32'h5 < 10000; }
+   constraint c_power_ss { w ** 5 < 10000; }
+   constraint c_power_us { f ** 5 < 10000; }
+   constraint c_power_su { v ** 32'h5 < 10000; }
+   constraint c_power_neg_exp { v ** 4'shf == 0; }
+   constraint c_power_u_neg_exp { f ** 4'shf == 0; }
    constraint impl { tiny == 1 -> x != 10; }
    constraint concat { {c, b} != 'h1111; }
    constraint unary { !(-~c == 'h22); }
@@ -91,6 +101,10 @@ module t;
       if (p.x * 9 == p.b * 3) $stop;
       if (p.y != 2) $stop;
       if (p.z != -2) $stop;
+      if (p.w ** 5 >= 10000) $stop;
+      if (p.e ** 32'h5 >= 10000) $stop;
+      if (p.v ** 32'h5 >= 10000) $stop;
+      if (p.f ** 5 >= 10000) $stop;
       if (p.tiny && p.x == 10) $stop;
       if ({p.c, p.b} == 'h1111) $stop;
       if (-~p.c == 'h22) $stop;

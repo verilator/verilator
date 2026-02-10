@@ -1340,6 +1340,84 @@ class ConstraintExprVisitor final : public VNVisitor {
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         iterate(resultp);
     }
+    void visit(AstPow* nodep) override {
+        if (AstConst* const exponentp = VN_CAST(nodep->rhsp(), Const)) {
+            FileLine* const fl = nodep->fileline();
+            AstNodeExpr* const basep = nodep->lhsp();
+            V3Number numOne{nodep, basep->width(), 1};
+            AstNodeExpr* productp = new AstConst{fl, numOne};
+            for (uint32_t i = 0; i < exponentp->toUInt(); i++) {
+                productp = new AstMul{fl, productp, basep->cloneTreePure(false)};
+                productp->user1(true);
+            }
+            nodep->replaceWith(productp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            iterate(productp);
+        } else {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: power expression with non constant exponent in constraint");
+        }
+    }
+    void visit(AstPowSS* nodep) override {
+        if (AstConst* const exponentp = VN_CAST(nodep->rhsp(), Const)) {
+            FileLine* const fl = nodep->fileline();
+            AstNodeExpr* const basep = nodep->lhsp();
+            V3Number numOne{nodep, basep->width(), 1};
+            AstNodeExpr* productp = new AstConst{fl, numOne};
+            int32_t const exponent = exponentp->toSInt();
+            for (int32_t i = 0; i < std::abs(exponent); i++) {
+                if (VL_LIKELY(exponent > 0)) {
+                    productp = new AstMulS{fl, productp, basep->cloneTreePure(false)};
+                } else {
+                    productp = new AstDivS{fl, productp, basep->cloneTreePure(false)};
+                }
+                productp->user1(true);
+            }
+            nodep->replaceWith(productp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            iterate(productp);
+        } else {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: power expression with non constant exponent in constraint");
+        }
+    }
+    void visit(AstPowSU* nodep) override {
+        if (AstConst* const exponentp = VN_CAST(nodep->rhsp(), Const)) {
+            FileLine* const fl = nodep->fileline();
+            AstNodeExpr* const basep = nodep->lhsp();
+            V3Number numOne{nodep, basep->width(), 1};
+            AstNodeExpr* productp = new AstConst{fl, numOne};
+            for (uint32_t i = 0; i < exponentp->toUInt(); i++) {
+                productp = new AstMulS{fl, productp, basep->cloneTreePure(false)};
+                productp->user1(true);
+            }
+            nodep->replaceWith(productp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            iterate(productp);
+        } else {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: power expression with non constant exponent in constraint");
+        }
+    }
+    void visit(AstPowUS* nodep) override {
+        if (AstConst* const exponentp = VN_CAST(nodep->rhsp(), Const)) {
+            FileLine* const fl = nodep->fileline();
+            AstNodeExpr* const basep = nodep->lhsp();
+            V3Number numOne{nodep, basep->width(), 1};
+            AstNodeExpr* productp = new AstConst{fl, numOne};
+            int32_t const exponent = exponentp->toSInt();
+            for (int32_t i = 0; i < std::abs(exponent); i++) {
+                if (VL_LIKELY(exponent > 0)) {
+                    productp = new AstMul{fl, productp, basep->cloneTreePure(false)};
+                } else {
+                    productp = new AstDivS{fl, productp, basep->cloneTreePure(false)};
+                }
+                productp->user1(true);
+            }
+            nodep->replaceWith(productp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            iterate(productp);
+        } else {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: power expression with non constant exponent in constraint");
+        }
+    }
     void visit(AstNodeBiop* nodep) override {
         if (editFormat(nodep)) return;
         editSMT(nodep, nodep->lhsp(), nodep->rhsp());

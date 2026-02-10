@@ -5,8 +5,10 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Packet;
-   rand real m_one;
-   constraint cons { m_one + 1.0 > 0.0; }
+   rand int x;
+   rand int y;
+
+   constraint c_power { x ** y < 10000; }
 endclass
 
 module t;
