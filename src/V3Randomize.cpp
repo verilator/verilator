@@ -514,11 +514,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     = VN_CAST(methodCallp->fromp(), ConstraintRef)) {
                     constrp = constrRefp->constrp();
                     if (constrRefp->fromp()) classp = VN_AS(constrRefp->classOrPackagep(), Class);
-                    if (constrp->isStatic()) {
-                        nodep->v3warn(E_UNSUPPORTED,
-                                      "Unsupported: 'constraint_mode()' on static constraint");
-                        valid = false;
-                    }
                 } else if (AstClassRefDType* classRefDtp
                            = VN_CAST(methodCallp->fromp()->dtypep()->skipRefp(), ClassRefDType)) {
                     classp = classRefDtp->classp();
@@ -538,11 +533,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     constrp->user1(constraintMode.asInt);
                 } else {
                     classp->foreachMember([=](AstClass*, AstConstraint* constrp) {
-                        if (constrp->isStatic()) {
-                            nodep->v3warn(E_UNSUPPORTED,
-                                          "Unsupported: 'constraint_mode()' on static constraint: "
-                                              << constrp->prettyNameQ());
-                        }
                         constrp->user1(constraintMode.asInt);
                     });
                 }
@@ -1834,6 +1824,8 @@ class RandomizeVisitor final : public VNVisitor {
     std::map<std::string, AstCDType*> m_randcDtypes;  // RandC data type deduplication
     AstConstraint* m_constraintp = nullptr;  // Current constraint
     std::set<std::string> m_writtenVars;  // Track write_var calls per class to avoid duplicates
+    std::map<AstClass*, AstVar*>
+        m_staticConstraintModeVars;  // Static constraint mode vars per class
 
     // METHODS
     // Check if two nodes are semantically equivalent (not pointer equality):
@@ -1947,6 +1939,24 @@ class RandomizeVisitor final : public VNVisitor {
         }
         return nullptr;
     }
+    AstVar* getCreateStaticConstraintModeVar(AstClass* const classp) {
+        auto it = m_staticConstraintModeVars.find(classp);
+        if (it != m_staticConstraintModeVars.end()) return it->second;
+        if (AstClassExtends* const extendsp = classp->extendsp()) {
+            return getCreateStaticConstraintModeVar(extendsp->classp());
+        }
+        AstVar* const staticModeVarp = createStaticModeVar(classp, "__Vstaticconstraintmode");
+        m_staticConstraintModeVars[classp] = staticModeVarp;
+        return staticModeVarp;
+    }
+    AstVar* getStaticConstraintModeVar(AstClass* const classp) {
+        auto it = m_staticConstraintModeVars.find(classp);
+        if (it != m_staticConstraintModeVars.end()) return it->second;
+        if (AstClassExtends* const extendsp = classp->extendsp()) {
+            return getStaticConstraintModeVar(extendsp->classp());
+        }
+        return nullptr;
+    }
     AstVar* createModeVar(AstClass* const classp, const char* const name) {
         FileLine* const fl = classp->fileline();
         if (!m_dynarrayDtp) {
@@ -1956,6 +1966,24 @@ class RandomizeVisitor final : public VNVisitor {
             v3Global.rootp()->typeTablep()->addTypesp(m_dynarrayDtp);
         }
         AstVar* const modeVarp = new AstVar{fl, VVarType::MODULETEMP, name, m_dynarrayDtp};
+        modeVarp->user2p(classp);
+        classp->addStmtsp(modeVarp);
+        return modeVarp;
+    }
+    AstVar* createStaticModeVar(AstClass* const classp, const char* const name) {
+        // Create a static variable that will be shared across all instances.
+        // By setting lifetime to STATIC_EXPLICIT, V3Class will move this to the class package.
+        FileLine* const fl = classp->fileline();
+        if (!m_dynarrayDtp) {
+            m_dynarrayDtp = new AstDynArrayDType{
+                fl, v3Global.rootp()->typeTablep()->findBitDType()->dtypep()};
+            m_dynarrayDtp->dtypep(m_dynarrayDtp);
+            v3Global.rootp()->typeTablep()->addTypesp(m_dynarrayDtp);
+        }
+        AstVar* const modeVarp = new AstVar{fl, VVarType::MODULETEMP, name, m_dynarrayDtp};
+        modeVarp->lifetime(VLifetime::STATIC_EXPLICIT);
+        // Note: user2p is set to classp here. V3Scope will later update varScopep
+        // to point to the package scope when the variable is moved by V3Class.
         modeVarp->user2p(classp);
         classp->addStmtsp(modeVarp);
         return modeVarp;
@@ -1976,18 +2004,28 @@ class RandomizeVisitor final : public VNVisitor {
             bool hasConstraints = false;
             uint32_t randModeCount = 0;
             uint32_t constraintModeCount = 0;
+            uint32_t staticConstraintModeCount = 0;
             classp->foreachMember([&](AstClass*, AstNode* memberp) {
                 // SystemVerilog only allows single inheritance, so we don't need to worry about
                 // index overlap. If the index > 0, it's already been set.
-                if (VN_IS(memberp, Constraint)) {
+                if (AstConstraint* const constrp = VN_CAST(memberp, Constraint)) {
                     hasConstraints = true;
                     RandomizeMode constraintMode = {.asInt = memberp->user1()};
                     if (!constraintMode.usesMode) return;
                     if (constraintMode.index == 0) {
-                        constraintMode.index = constraintModeCount++;
+                        // Use separate index counters for static vs non-static constraints
+                        if (constrp->isStatic()) {
+                            constraintMode.index = staticConstraintModeCount++;
+                        } else {
+                            constraintMode.index = constraintModeCount++;
+                        }
                         memberp->user1(constraintMode.asInt);
                     } else {
-                        constraintModeCount = constraintMode.index + 1;
+                        if (constrp->isStatic()) {
+                            staticConstraintModeCount = constraintMode.index + 1;
+                        } else {
+                            constraintModeCount = constraintMode.index + 1;
+                        }
                     }
                 } else if (VN_IS(memberp, Var)) {
                     RandomizeMode randMode = {.asInt = memberp->user1()};
@@ -2009,6 +2047,10 @@ class RandomizeVisitor final : public VNVisitor {
                 AstVar* const constraintModeVarp = getCreateConstraintModeVar(classp);
                 makeModeInit(constraintModeVarp, classp, constraintModeCount);
             }
+            if (staticConstraintModeCount > 0) {
+                AstVar* const staticConstraintModeVarp = getCreateStaticConstraintModeVar(classp);
+                makeStaticModeInit(staticConstraintModeVarp, classp, staticConstraintModeCount);
+            }
         });
     }
     void makeModeInit(AstVar* modeVarp, AstClass* classp, uint32_t modeCount) {
@@ -2024,6 +2066,37 @@ class RandomizeVisitor final : public VNVisitor {
         newp->addStmtsp(makeModeSetLoop(fl,
                                         new AstVarRef{fl, modeVarModp, modeVarp, VAccess::WRITE},
                                         new AstConst{fl, 1}, true));
+    }
+    void makeStaticModeInit(AstVar* modeVarp, AstClass* classp, uint32_t modeCount) {
+        // For static constraint mode, we need lazy initialization since it's shared across
+        // instances. Generate: if (size() == 0) { resize(N); set all to 1; }
+        AstNodeModule* const modeVarModp = VN_AS(modeVarp->user2p(), NodeModule);
+        FileLine* fl = modeVarp->fileline();
+
+        // Build the condition: size() == 0
+        AstCMethodHard* const sizep
+            = new AstCMethodHard{fl, new AstVarRef{fl, modeVarModp, modeVarp, VAccess::READ},
+                                 VCMethod::DYN_SIZE, nullptr};
+        sizep->dtypeSetUInt32();
+        AstEq* const condp = new AstEq{fl, sizep, new AstConst{fl, 0}};
+
+        // Build the then-block: resize and set all to 1
+        AstCMethodHard* const dynarrayNewp
+            = new AstCMethodHard{fl, new AstVarRef{fl, modeVarModp, modeVarp, VAccess::WRITE},
+                                 VCMethod::DYN_RESIZE, new AstConst{fl, modeCount}};
+        dynarrayNewp->dtypeSetVoid();
+        AstNode* const thenStmtsp = dynarrayNewp->makeStmt();
+        thenStmtsp->addNext(
+            makeModeSetLoop(fl, new AstVarRef{fl, modeVarModp, modeVarp, VAccess::WRITE},
+                            new AstConst{fl, 1}, true));
+
+        // Build the if statement
+        AstIf* const ifp = new AstIf{fl, condp, thenStmtsp};
+
+        // Add to new() constructor
+        AstNodeFTask* const newp = VN_AS(m_memberMap.findMember(classp, "new"), NodeFTask);
+        UASSERT_OBJ(newp, classp, "No new() in class");
+        newp->addStmtsp(ifp);
     }
     static AstNode* makeModeSetLoop(FileLine* const fl, AstNodeExpr* const lhsp,
                                     AstNodeExpr* const rhsp, bool inTask) {
@@ -2054,17 +2127,20 @@ class RandomizeVisitor final : public VNVisitor {
         const RandomizeMode rmode = {.asInt = varp->user1()};
         return VN_AS(wrapIfMode(rmode, getRandModeVar(classp), stmtp), NodeStmt);
     }
-    static AstNode* wrapIfConstraintMode(AstClass* classp, AstConstraint* const constrp,
-                                         AstNode* stmtp) {
+    AstNode* wrapIfConstraintMode(AstClass* classp, AstConstraint* const constrp, AstNode* stmtp) {
         const RandomizeMode rmode = {.asInt = constrp->user1()};
-        return wrapIfMode(rmode, getConstraintModeVar(classp), stmtp);
+        AstVar* const modeVarp = constrp->isStatic() ? getStaticConstraintModeVar(classp)
+                                                     : getConstraintModeVar(classp);
+        return wrapIfMode(rmode, modeVarp, stmtp);
     }
     static AstNode* wrapIfMode(const RandomizeMode mode, AstVar* modeVarp, AstNode* stmtp) {
         FileLine* const fl = stmtp->fileline();
         if (mode.usesMode) {
-            AstCMethodHard* const atp = new AstCMethodHard{
-                fl, new AstVarRef{fl, VN_AS(modeVarp->user2p(), Class), modeVarp, VAccess::READ},
-                VCMethod::ARRAY_AT, new AstConst{fl, mode.index}};
+            // user2p can be either AstClass or AstClassPackage (for static constraints)
+            AstNodeModule* const modp = VN_AS(modeVarp->user2p(), NodeModule);
+            AstCMethodHard* const atp
+                = new AstCMethodHard{fl, new AstVarRef{fl, modp, modeVarp, VAccess::READ},
+                                     VCMethod::ARRAY_AT, new AstConst{fl, mode.index}};
             atp->dtypeSetUInt32();
             return new AstIf{fl, atp, stmtp};
         }
@@ -2492,7 +2568,15 @@ class RandomizeVisitor final : public VNVisitor {
     // Creates a lvalue reference to the randomize mode var. Called by visit(AstNodeFTaskRef*)
     AstNodeExpr* makeModeAssignLhs(FileLine* const fl, AstClass* const classp,
                                    AstNodeExpr* const fromp, AstVar* const modeVarp) {
-        if (classp == m_modp) {
+        // For static constraint mode vars, always use VarRef (not MemberSel).
+        // At this point V3Class hasn't run yet, so user2p may be nullptr.
+        // Generate VarRef with classp as module; V3Scope will update varScopep later
+        // when the variable is moved to the class package.
+        if (modeVarp->lifetime().isStatic()) {
+            // Static mode var - generate VarRef that will be resolved by V3Scope
+            if (fromp) VL_DO_DANGLING(fromp->unlinkFrBack()->deleteTree(), fromp);
+            return new AstVarRef{fl, classp, modeVarp, VAccess::WRITE};
+        } else if (classp == m_modp) {
             // Called on 'this' or a member of 'this'
             return new AstVarRef{fl, VN_AS(modeVarp->user2p(), NodeModule), modeVarp,
                                  VAccess::WRITE};
@@ -2848,7 +2932,10 @@ class RandomizeVisitor final : public VNVisitor {
                 classp = VN_AS(fromp->dtypep()->skipRefp(), ClassRefDType)->classp();
             }
             UASSERT_OBJ(classp, nodep, "Failed to find class");
-            AstVar* const constraintModeVarp = getConstraintModeVar(classp);
+            // Use correct mode variable based on whether constraint is static
+            AstVar* const constraintModeVarp = (constrp && constrp->isStatic())
+                                                   ? getStaticConstraintModeVar(classp)
+                                                   : getConstraintModeVar(classp);
             AstNodeExpr* const lhsp
                 = makeModeAssignLhs(nodep->fileline(), classp, fromp, constraintModeVarp);
             replaceWithModeAssign(nodep, constrp, lhsp);
