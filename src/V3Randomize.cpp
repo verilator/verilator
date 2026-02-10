@@ -1514,12 +1514,11 @@ class ConstraintExprVisitor final : public VNVisitor {
                 = VN_CAST(nodep->fromp()->dtypep()->skipRefp(), UnpackArrayDType)) {
                 const int arraySize = adtypep->elementsConst();
                 if (arraySize > v3Global.opt.constraintWithLimit()) {
-                    nodep->v3warn(
-                        CONSTRAINTIGN,
-                        "Constraint array reduction ignored (array size " + cvtToStr(arraySize)
-                            + " exceeds --constraint-with-limit of "
-                            + cvtToStr(v3Global.opt.constraintWithLimit())
-                            + "), treating as state");
+                    nodep->v3warn(CONSTRAINTIGN, "Constraint array reduction ignored (array size "
+                                                     + cvtToStr(arraySize)
+                                                     + " exceeds --constraint-with-limit of "
+                                                     + cvtToStr(v3Global.opt.constraintWithLimit())
+                                                     + "), treating as state");
                     nodep->user1(false);
                     if (editFormat(nodep)) return;
                     nodep->v3fatalSrc("Method not handled in constraints? " << nodep);
@@ -1620,7 +1619,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstNode* const lambdaStmtsp = initStmtp;
             lambdaStmtsp->addNext(loopStmtp);
             lambdaStmtsp->addNext(new AstCReturn{fl, retExprp});
-            AstExprStmt* const lambdap = new AstExprStmt{fl, lambdaStmtsp, retExprp->cloneTree(false)};
+            AstExprStmt* const lambdap
+                = new AstExprStmt{fl, lambdaStmtsp, retExprp->cloneTree(false)};
             lambdap->hasResult(false);  // Result comes from CReturn, not resultp
 
             nodep->replaceWith(new AstSFormatF{fl, "%@", false, lambdap});
