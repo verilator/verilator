@@ -508,6 +508,16 @@ class TaskVisitor final : public VNVisitor {
         return assp;
     }
 
+    void changeAtWriteRecurse(AstNodeExpr* const exprp) {
+        // Change nested at methods to writable variant
+        if (AstCMethodHard* const cMethodp = VN_CAST(exprp, CMethodHard)) {
+            if (cMethodp->method() == VCMethod::ARRAY_AT) {
+                cMethodp->method(VCMethod::ARRAY_AT_WRITE);
+            }
+            changeAtWriteRecurse(cMethodp->fromp());
+        }
+    }
+
     void connectPort(AstVar* portp, AstArg* argp, const string& namePrefix, AstNode* beginp,
                      bool inlineTask) {
         AstNodeExpr* const pinp = argp->exprp();
@@ -538,10 +548,7 @@ class TaskVisitor final : public VNVisitor {
                         refArgOk = cMethodp->method() == VCMethod::DYN_AT_WRITE_APPEND
                                    || cMethodp->method() == VCMethod::DYN_AT_WRITE_APPEND_BACK;
                     } else {
-                        if (cMethodp->method() == VCMethod::ARRAY_AT) {
-                            // Change the method to writable variant
-                            cMethodp->method(VCMethod::ARRAY_AT_WRITE);
-                        }
+                        changeAtWriteRecurse(cMethodp);
                         refArgOk = cMethodp->method() == VCMethod::ARRAY_AT_WRITE;
                     }
                 }
