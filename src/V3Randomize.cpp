@@ -890,8 +890,9 @@ class ConstraintExprVisitor final : public VNVisitor {
         nodep->unlinkFrBack(&relinker);
         AstNodeExpr* exprp;
         if (randMode.usesMode) {
-            // Use string literal to avoid double formatting
-            exprp = new AstConst{nodep->fileline(), AstConst::String{}, smtName};
+            // Use AstSFormatF (not AstConst{String}) to prevent editFormat/V3Const
+            // from reformatting the SMT variable name into a hex literal
+            exprp = new AstSFormatF{nodep->fileline(), smtName, false, nullptr};
 
             // Get const format, using membersel if available for correct width/value
             AstNodeExpr* constFormatp
