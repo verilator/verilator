@@ -3,17 +3,52 @@
 #include "V3Quadstate.h"
 
 #include <map>
-#include <set>
+#include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 class QuadstateVisitor final : public VNVisitor {
-    std::map<const AstVar*, std::set<AstAssignW*>> m_assignWToTriorOrTriand;
+    std::map<const AstVar*, std::vector<AstAssignW*>> m_assignWToTrior;
+    std::map<const AstVar*, std::vector<AstAssignW*>> m_assignWToTriand;
+
+    static AstNodeExpr* buildTree(std::vector<AstNodeExpr*> exprps, const VCFunc reductor) {
+        while (exprps.size() > 1) {
+            const size_t halfSize = exprps.size() / 2;
+            for (size_t i = 0; i < halfSize; ++i) {
+                AstNodeDType* const dtypep = exprps[i]->dtypep();
+                exprps[i] = new AstCFuncHard{exprps[i]->fileline(), reductor,
+                                             exprps[i]->addNext(exprps.back())};
+                exprps[i]->dtypep(dtypep);
+                exprps.pop_back();
+            }
+        }
+        return exprps[0];
+    }
+
+    static void
+    triorTriandReduce(const std::map<const AstVar*, std::vector<AstAssignW*>>& assignWs,
+                      const VCFunc reductor) {
+        for (const auto& pair : assignWs) {
+            const std::vector<AstAssignW*>& assignps = pair.second;
+            if (assignps.size() < 2) continue;
+            std::vector<AstNodeExpr*> exprp;
+            exprp.reserve(assignps.size());
+            for (AstAssignW* const assignp : assignps) {
+                exprp.push_back(assignp->rhsp()->unlinkFrBack());
+            }
+            assignps[0]->rhsp(buildTree(std::move(exprp), reductor));
+            for (size_t i = 1; i < assignps.size(); ++i) {
+                assignps[i]->unlinkFrBack()->deleteTree();
+            }
+        }
+    }
 
     void visit(AstAssignW* const nodep) override {
         if (AstVarRef* const varRefp = VN_CAST(nodep->lhsp(), VarRef)) {
-            if (varRefp->varp()->isWiredNet()) {
-                m_assignWToTriorOrTriand[varRefp->varp()].insert(nodep);
+            switch (varRefp->varp()->varType()) {
+            case VVarType::TRIOR: m_assignWToTrior[varRefp->varp()].push_back(nodep); break;
+            case VVarType::TRIAND: m_assignWToTriand[varRefp->varp()].push_back(nodep); break;
+            default: break;
             }
         } else {
             nodep->v3warn(EC_INFO,
@@ -26,26 +61,8 @@ class QuadstateVisitor final : public VNVisitor {
 public:
     explicit QuadstateVisitor(AstNetlist* nodep) {
         iterate(nodep);
-        for (const auto& pair : m_assignWToTriorOrTriand) {
-            const std::set<AstAssignW*>& assignps = pair.second;
-            if (assignps.size() < 2) continue;
-            AstNodeExpr* curExprp = nullptr;
-            AstAssignW* firstAssignp = nullptr;
-            for (AstAssignW* const assignp : assignps) {
-                AstNodeExpr* const exprp = assignp->rhsp()->unlinkFrBack();
-                if (!curExprp) {
-                    firstAssignp = assignp;
-                    curExprp = exprp;
-                } else {
-                    exprp->addNext(curExprp);
-                    curExprp = new AstCFuncHard{curExprp->fileline(), VCFunc::FOUR_STATE_TRIOR_OR,
-                                                exprp};
-                    curExprp->dtypep(exprp->dtypep());
-                    pushDeletep(assignp->unlinkFrBack());
-                }
-            }
-            firstAssignp->rhsp(curExprp);
-        }
+        triorTriandReduce(m_assignWToTriand, VCFunc::FOUR_STATE_TRIAND_AND);
+        triorTriandReduce(m_assignWToTrior, VCFunc::FOUR_STATE_TRIOR_OR);
     }
     ~QuadstateVisitor() override = default;
 };
