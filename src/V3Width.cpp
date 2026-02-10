@@ -8050,36 +8050,36 @@ class WidthVisitor final : public VNVisitor {
             return;
         }
 
-        const AstNodeDType* lhsDtpIter = lhsDtp;
-        const AstNodeDType* rhsDtpIter = rhsDtp;
+        const AstNodeDType* lhsDtpIterp = lhsDtp;
+        const AstNodeDType* rhsDtpIterp = rhsDtp;
         // Sizes of fixed-size arrays should be the same
         // Dynamic-sized arrays are always assignable
         for (uint32_t dim = 0; dim < rhsDim.second; dim++) {
-            if (const AstNodeArrayDType* rhsArray = VN_CAST(rhsDtpIter, NodeArrayDType)) {
-                if (const AstNodeArrayDType* lhsArray = VN_CAST(lhsDtpIter, NodeArrayDType)) {
-                    if (lhsArray->elementsConst() != rhsArray->elementsConst()) {
+            if (const AstNodeArrayDType* rhsArrayp = VN_CAST(rhsDtpIterp, NodeArrayDType)) {
+                if (const AstNodeArrayDType* lhsArrayp = VN_CAST(lhsDtpIterp, NodeArrayDType)) {
+                    if (lhsArrayp->elementsConst() != rhsArrayp->elementsConst()) {
                         nodep->v3error("Illegal assignment: Unmatched array sizes in dimension "
-                                       << dim << " " << "(" << lhsArray->elementsConst()
-                                       << " v.s. " << rhsArray->elementsConst() << ")");
+                                       << dim << " " << "(" << lhsArrayp->elementsConst()
+                                       << " v.s. " << rhsArrayp->elementsConst() << ")");
                         return;
                     }
                 }
             }
             // Associative arrays are compatible only with each other
-            if (VN_IS(lhsDtpIter, AssocArrayDType) ^ VN_IS(rhsDtpIter, AssocArrayDType)) {
+            if (VN_IS(lhsDtpIterp, AssocArrayDType) ^ VN_IS(rhsDtpIterp, AssocArrayDType)) {
                 nodep->v3error("Illegal assignment: Associative arrays are assignment compatible "
                                "only with associative arrays");
 
                 return;
             }
-            lhsDtpIter = lhsDtpIter->subDTypep();
-            rhsDtpIter = rhsDtpIter->subDTypep();
+            lhsDtpIterp = lhsDtpIterp->subDTypep();
+            rhsDtpIterp = rhsDtpIterp->subDTypep();
         }
         // Element types of source and target shall be equivalent
-        if (!isEquivalentDType(lhsDtpIter, rhsDtpIter)) {
+        if (!isEquivalentDType(lhsDtpIterp, rhsDtpIterp)) {
             nodep->v3error("Illegal assignment: Array element types are not equivalent "
-                           << "(" << lhsDtpIter->prettyDTypeNameQ() << " vs "
-                           << rhsDtpIter->prettyDTypeNameQ() << ")");
+                           << "(" << lhsDtpIterp->prettyDTypeNameQ() << " vs "
+                           << rhsDtpIterp->prettyDTypeNameQ() << ")");
         }
     }
     void checkClassAssign(const AstNode* nodep, const char* side, AstNode* rhsp,
