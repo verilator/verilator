@@ -228,6 +228,12 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
             const char fmt = m_emitDispState.m_argsChar[i];
             AstNode* const argp = m_emitDispState.m_argsp[i];
             const string func = m_emitDispState.m_argsFunc[i];
+            bool isFourState = false;
+            if (fmt == 'd' || fmt == '#') {
+                if (AstNodeExpr* const exprp = VN_CAST(argp, NodeExpr)) {
+                    isFourState = exprp->isFourState();
+                }
+            }
             if (func != "" || argp) {
                 puts(",");
                 ofp()->indentInc();
@@ -236,14 +242,18 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
                     puts(func);
                 } else if (argp) {
                     const bool addrof = isScan || (fmt == '@') || (fmt == 'p');
-                    if (addrof) puts("&(");
-                    iterateConst(argp);
-                    if (!addrof) emitDatap(argp);
-                    if (addrof) puts(")");
-                    if (fmt == 'd' || fmt == '~') {
-                        if (AstNodeExpr* const exprp = VN_CAST(argp, NodeExpr)) {
-                            ofp()->puts(exprp->isFourState() ? ", 1" : ", 0");
-                        }
+                    if (isFourState) {
+                        puts("(");
+                        iterateConst(argp);
+                        puts(").value, (");
+                        iterateConst(argp);
+                        puts(").xz");
+                    } else {
+                        if (addrof) puts("&(");
+                        iterateConst(argp);
+                        if (!addrof) emitDatap(argp);
+                        if (addrof) puts(")");
+                        if (fmt == 'd' || fmt == '#') puts(", 0");
                     }
                 }
                 ofp()->indentDec();

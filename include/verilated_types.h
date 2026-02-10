@@ -2221,13 +2221,13 @@ struct FourStateLogicWrapper {
     operator T() const noexcept { return value & ~xz; }
     template <typename Y>
     FourStateLogicWrapper<std::conditional_t<(sizeof(T) > sizeof(Y)), T, Y>>
-    operator|(const FourStateLogicWrapper<T>& other) const noexcept {
-        fourLogicOr<std::conditional_t<(sizeof(T) > sizeof(Y)), T, Y>>(*this, other);
+    operator|(const FourStateLogicWrapper<Y>& other) const noexcept {
+        return fourLogicOr<std::conditional_t<(sizeof(T) > sizeof(Y)), T, Y>>(*this, other);
     }
     template <typename Y>
     FourStateLogicWrapper<std::conditional_t<(sizeof(T) > sizeof(Y)), T, Y>>
-    operator&(const FourStateLogicWrapper<T>& other) const noexcept {
-        fourLogicAnd<std::conditional_t<(sizeof(T) > sizeof(Y)), T, Y>>(*this, other);
+    operator&(const FourStateLogicWrapper<Y>& other) const noexcept {
+        return fourLogicAnd<std::conditional_t<(sizeof(T) > sizeof(Y)), T, Y>>(*this, other);
     }
     template <typename Y>
     FourStateLogicWrapper<std::conditional_t<(sizeof(T) > sizeof(Y)), T, Y>>
@@ -2235,58 +2235,5 @@ struct FourStateLogicWrapper {
         fourLogicXOr<std::conditional_t<(sizeof(T) > sizeof(Y)), T, Y>>(*this, other);
     }
 };
-
-// struct CData {
-//     uint8_t value;
-
-//     CData() {}
-//     CData(uint8_t val)
-//         : value{val} {}
-
-// #define OP_GEN(op) \
-//     auto operator op(const CData& other) const { return value op other.value; } \
-//     template <typename T> \
-//     auto operator op(const T& other) const { \
-//         return value op other; \
-//     }
-//     OP_GEN(==)
-//     OP_GEN(!=)
-//     OP_GEN(<=)
-//     OP_GEN(>=)
-//     OP_GEN(|)
-//     OP_GEN(^)
-//     OP_GEN(&)
-//     OP_GEN(<)
-//     OP_GEN(>)
-//     OP_GEN(>>)
-//     OP_GEN(<<)
-//     OP_GEN(+)
-//     OP_GEN(-)
-//     OP_GEN(/)
-//     OP_GEN(*)
-//     auto operator~() const { return ~value; }
-// #undef OP_GEN
-// #define OP_GEN(op) \
-//     auto operator op(const CData& other) { return value op other.value; } \
-//     template <typename T> \
-//     auto operator op(const T& other) { \
-//         return value op other; \
-//     }
-//     OP_GEN(|=)
-//     OP_GEN(^=)
-//     OP_GEN(&=)
-//     OP_GEN(>>=)
-//     OP_GEN(<<=)
-//     OP_GEN(+=)
-//     OP_GEN(-=)
-//     OP_GEN(/=)
-//     OP_GEN(*=)
-// #undef OP_GEN
-//     operator uint8_t() const { return value; }
-//     CData& operator=(const uint8_t& val) {
-//         value = val;
-//         return *this;
-//     }
-// };
 
 #endif  // Guard

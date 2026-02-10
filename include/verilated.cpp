@@ -1067,8 +1067,22 @@ void _vl_vsformat(std::string& output, const std::string& format, va_list ap) VL
                 }
                 case 'd': {  // Signed decimal
                     int digits = 0;
+                    bool isXZ = false;
+                    {
+                        if (lbits <= VL_QUADSIZE) {
+                            isXZ = VL_VA_ARG_Q_(ap, lbits);
+                        } else {
+                            WDataInP lwp = nullptr;
+                            lwp = va_arg(ap, WDataInP);
+                            // FIXME
+                            isXZ = lwp[0];
+                        }
+                    }
                     std::string append;
-                    if (lbits <= VL_QUADSIZE) {
+                    if (isXZ) {
+                        append += ld ? 'x' : 'z';
+                        digits = 1;
+                    } else if (lbits <= VL_QUADSIZE) {
                         digits
                             = VL_SNPRINTF(t_tmp, VL_VALUE_STRING_MAX_WIDTH, "%" PRId64,
                                           static_cast<int64_t>(VL_EXTENDS_QQ(lbits, lbits, ld)));
@@ -1104,8 +1118,22 @@ void _vl_vsformat(std::string& output, const std::string& format, va_list ap) VL
                 }
                 case '#': {  // Unsigned decimal
                     int digits = 0;
+                    bool isXZ = false;
+                    {
+                        if (lbits <= VL_QUADSIZE) {
+                            isXZ = VL_VA_ARG_Q_(ap, lbits);
+                        } else {
+                            WDataInP lwp = nullptr;
+                            lwp = va_arg(ap, WDataInP);
+                            // FIXME
+                            isXZ = lwp[0];
+                        }
+                    }
                     std::string append;
-                    if (lbits <= VL_QUADSIZE) {
+                    if (isXZ) {
+                        append += ld ? 'x' : 'z';
+                        digits = 1;
+                    } else if (lbits <= VL_QUADSIZE) {
                         digits = VL_SNPRINTF(t_tmp, VL_VALUE_STRING_MAX_WIDTH, "%" PRIu64, ld);
                         append = t_tmp;
                     } else {

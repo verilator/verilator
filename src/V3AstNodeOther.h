@@ -2037,7 +2037,8 @@ public:
     AstVar(FileLine* fl, VVarType type, const string& name, const AstVar* examplep)
         : ASTGEN_SUPER_Var(fl)
         , m_name{name}
-        , m_origName{name} {
+        , m_origName{name}
+        , m_attrFourState{examplep->attrFourState()} {
         init();
         combineType(type);
         if (examplep->childDTypep()) childDTypep(examplep->childDTypep()->cloneTree(true));
@@ -2270,6 +2271,7 @@ public:
         if (fromp->attrFileDescr()) attrFileDescr(true);
         if (fromp->attrIsolateAssign()) attrIsolateAssign(true);
         if (fromp->isContinuously()) isContinuously(true);
+        if (fromp->attrFourState()) attrFourState(true);
     }
     void propagateWrapAttrFrom(const AstVar* fromp) {
         // Creating a function wrapper; keep attributes
