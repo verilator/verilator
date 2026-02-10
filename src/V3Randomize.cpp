@@ -1509,6 +1509,24 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstWith* const withp = VN_CAST(nodep->pinsp(), With);
             UASSERT_OBJ(withp, nodep, "Array reduction in constraint should have 'with' clause");
 
+            // Check array size against limit to avoid code explosion
+            if (AstUnpackArrayDType* const adtypep
+                = VN_CAST(nodep->fromp()->dtypep()->skipRefp(), UnpackArrayDType)) {
+                const int arraySize = adtypep->elementsConst();
+                if (arraySize > v3Global.opt.constraintWithLimit()) {
+                    nodep->v3warn(
+                        CONSTRAINTIGN,
+                        "Constraint array reduction ignored (array size " + cvtToStr(arraySize)
+                            + " exceeds --constraint-with-limit of "
+                            + cvtToStr(v3Global.opt.constraintWithLimit())
+                            + "), treating as state");
+                    nodep->user1(false);
+                    if (editFormat(nodep)) return;
+                    nodep->v3fatalSrc("Method not handled in constraints? " << nodep);
+                    return;
+                }
+            }
+
             const bool randArr = nodep->fromp()->user1();
 
             // Create loop variable
@@ -1537,20 +1555,14 @@ class ConstraintExprVisitor final : public VNVisitor {
                 }
                 VL_DO_DANGLING(rootRefp->deleteTree(), rootRefp);
             } else {
-                // Collect nodes to delete after iteration completes
-                std::vector<AstLambdaArgRef*> toDelete;
                 perElemExprp->foreach([&](AstLambdaArgRef* refp) {
                     if (refp->index()) {
                         refp->replaceWith(idxRefp->cloneTreePure(false));
                     } else {
                         refp->replaceWith(elemSelp->cloneTreePure(false));
                     }
-                    toDelete.push_back(refp);
+                    VL_DO_DANGLING(pushDeletep(refp), refp);
                 });
-                // Safe to delete now that iteration is complete
-                for (AstLambdaArgRef* refp : toDelete) {
-                    VL_DO_DANGLING(refp->deleteTree(), refp);
-                }
             }
             // Clean up the original template nodes (elemSelp contains idxRefp)
             VL_DO_DANGLING(elemSelp->deleteTree(), elemSelp);
@@ -1592,14 +1604,26 @@ class ConstraintExprVisitor final : public VNVisitor {
             cstmtp->add(";\n");
             cstmtp->add("ret += \")\";\n");
 
-            // Create the lambda that generates SMT code
-            AstCExpr* const cexprp = new AstCExpr{fl};
-            cexprp->dtypeSetString();
-            cexprp->add("([&]{\nstd::string ret = \"" + identityVal + "\";\n");
-            cexprp->add(new AstBegin{fl, "", new AstForeach{fl, arrayLoopVars, cstmtp}, true});
-            cexprp->add("return ret;\n})()");
+            // Initialize return value variable
+            AstCStmt* const initStmtp = new AstCStmt{fl};
+            initStmtp->add("std::string ret = \"" + identityVal + "\";\n");
 
-            nodep->replaceWith(new AstSFormatF{fl, "%@", false, cexprp});
+            // Create loop statement
+            AstNode* const loopStmtp
+                = new AstBegin{fl, "", new AstForeach{fl, arrayLoopVars, cstmtp}, true};
+
+            // Create return expression
+            AstCExpr* const retExprp = new AstCExpr{fl, AstCExpr::Pure{}, "ret"};
+            retExprp->dtypeSetString();
+
+            // Build lambda as AstExprStmt with CReturn
+            AstNode* const lambdaStmtsp = initStmtp;
+            lambdaStmtsp->addNext(loopStmtp);
+            lambdaStmtsp->addNext(new AstCReturn{fl, retExprp});
+            AstExprStmt* const lambdap = new AstExprStmt{fl, lambdaStmtsp, retExprp->cloneTree(false)};
+            lambdap->hasResult(false);  // Result comes from CReturn, not resultp
+
+            nodep->replaceWith(new AstSFormatF{fl, "%@", false, lambdap});
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
