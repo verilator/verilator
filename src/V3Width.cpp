@@ -8060,7 +8060,7 @@ class WidthVisitor final : public VNVisitor {
                     if (lhsArray->elementsConst() != rhsArray->elementsConst()) {
                         nodep->v3error("Illegal assignment: Unmatched array sizes in dimension "
                                        << dim << " " << "(" << lhsArray->elementsConst()
-                                       << " vs " << rhsArray->elementsConst() << ")");
+                                       << " v.s. " << rhsArray->elementsConst() << ")");
                         return;
                     }
                 }
@@ -8078,7 +8078,7 @@ class WidthVisitor final : public VNVisitor {
         // Element types of source and target shall be equivalent
         if (!isEquivalentDType(lhsDtpIter, rhsDtpIter)) {
             nodep->v3error("Illegal assignment: Array element types are not equivalent "
-                           << "(" << lhsDtpIter->prettyDTypeNameQ() << " v.s. "
+                           << "(" << lhsDtpIter->prettyDTypeNameQ() << " vs "
                            << rhsDtpIter->prettyDTypeNameQ() << ")");
         }
     }
