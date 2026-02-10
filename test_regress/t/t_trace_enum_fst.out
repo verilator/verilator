@@ -1,5 +1,5 @@
 $date
-	Sat Apr  5 13:56:28 2025
+	Tue Feb 10 13:05:32 2026
 
 $end
 $version
@@ -12,16 +12,18 @@ $scope module top $end
 $attrbegin misc 07 $unit::state_t 4 VAL_A VAL_B VAL_C VAL_D 00 01 10 11 1 $end
 $attrbegin misc 07 t.other_state_t 3 VAL_X VAL_Y VAL_Z 00 01 10 2 $end
 $var wire 1 ! clk $end
+$scope module $unit $end
+$upscope $end
 $scope module t $end
 $var wire 1 ! clk $end
+$attrbegin misc 07 "" 1 $end
+$var logic 2 " v_enumed [1:0] $end
+$attrbegin misc 07 "" 2 $end
+$var logic 2 # v_other_enumed [1:0] $end
 $scope interface sink $end
 $attrbegin misc 07 "" 1 $end
-$var logic 2 " state [1:0] $end
+$var logic 2 $ state [1:0] $end
 $upscope $end
-$attrbegin misc 07 "" 1 $end
-$var logic 2 # v_enumed [1:0] $end
-$attrbegin misc 07 "" 2 $end
-$var logic 2 $ v_other_enumed [1:0] $end
 $upscope $end
 $upscope $end
 $enddefinitions $end
