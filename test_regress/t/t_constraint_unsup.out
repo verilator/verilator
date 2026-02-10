@@ -1,5 +1,0 @@
-%Error-UNSUPPORTED: t/t_constraint_unsup.v:9:22: Unsupported expression inside constraint
-    9 |    constraint cons { $onehot(m_one) == 1; }
-      |                      ^~~~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: Exiting due to
