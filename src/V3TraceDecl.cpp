@@ -51,32 +51,37 @@ public:
         , m_emit{emit} {}
 
     // Emit Prefix adjustments until the current path is 'newPath'
-    void adjust(const string& newPath) {
+    void adjust(const string& newPath, AstCell* cellp, AstVarScope* vscp) {
         // Move up to enclosing path
-        unsigned toPop = 0;
         while (!VString::startsWith(newPath, m_stack.back())) {
-            ++toPop;
+            m_emit(new AstTracePopPrefix{m_flp});
             m_stack.pop_back();
         }
-        while (toPop--) m_emit(new AstTracePopPrefix{m_flp});
+
+        if (newPath == m_stack.back()) return;
+
+        const VTracePrefixType lastScopeType =  //
+            (cellp && VN_IS(cellp->modp(), Iface))
+                    || (vscp && VN_IS(vscp->dtypep(), IfaceRefDType))
+                ? VTracePrefixType::SCOPE_INTERFACE
+                : VTracePrefixType::SCOPE_MODULE;
+        const std::string extraPrefix = newPath.substr(m_stack.back().size());
+        size_t begin = 0;
+        size_t last = extraPrefix.rfind(SEPARATOR);
         // Move down, one path element at a time
-        if (newPath != m_stack.back()) {
-            const string& extraPrefix = newPath.substr(m_stack.back().size());
-            size_t begin = 0;
-            while (true) {
-                const size_t end = extraPrefix.find(SEPARATOR, begin);
-                if (end == string::npos) break;
-                const string& extra = extraPrefix.substr(begin, end - begin);
+        while (true) {
+            const size_t end = extraPrefix.find(SEPARATOR, begin);
+            if (end == string::npos) break;
+            const string& extra = extraPrefix.substr(begin, end - begin);
+            if (end == last) {
+                m_emit(new AstTracePushPrefix{m_flp, extra, lastScopeType});
+            } else {
                 m_emit(new AstTracePushPrefix{m_flp, extra, VTracePrefixType::SCOPE_MODULE});
-                m_stack.push_back(m_stack.back() + extra + SEPARATOR);
-                begin = end + 1;
             }
-            const string& extra = extraPrefix.substr(begin);
-            if (!extra.empty()) {
-                m_emit(new AstTracePushPrefix{m_flp, extra, VTracePrefixType::SCOPE_MODULE});
-                m_stack.push_back(m_stack.back() + extra);
-            }
+            m_stack.push_back(m_stack.back() + extra + SEPARATOR);
+            begin = end + 1;
         }
+        UASSERT(begin == extraPrefix.size(), "Should have consumed all of extraPrefix");
     }
 
     // Emit Prefix adjustments to unwind the path back to its original state
@@ -124,29 +129,38 @@ class TraceDeclVisitor final : public VNVisitor {
         AstCell* m_cellp = nullptr;  // Sub scope (as AstCell) under scope being traced
         std::string m_path;  // Path to enclosing module in original hierarchy
         std::string m_name;  // Name of signal/subscope
-        bool m_rootio = false;  // Is part of $rootio, if model at runtime uses name()=""
 
-        void init(const std::string& name) {
+        void init(const std::string& name, AstNode* nodep) {
             // Compute path in hierarchy and item name
             const std::string& vcdName = AstNode::vcdName(name);
-            const size_t pos = vcdName.rfind(' ');
-            const size_t pathLen = pos == std::string::npos ? 0 : pos + 1;
-            m_path = vcdName.substr(0, pathLen);
-            m_name = vcdName.substr(pathLen);
+            AstVar* const varp = VN_CAST(nodep, Var);
+            if (VN_IS(nodep, Cell) || VN_IS(varp->dtypep(), IfaceRefDType)) {
+                // Cell or interface reference
+                m_path = vcdName + " ";
+                m_name.clear();
+            } else if (varp->isPrimaryIO()) {
+                // Primary IO variable
+                m_path = "$rootio ";
+                m_name = vcdName;
+            } else {
+                // Other Variable
+                const size_t pos = vcdName.rfind(' ');
+                const size_t pathLen = pos == std::string::npos ? 0 : pos + 1;
+                m_path = vcdName.substr(0, pathLen);
+                m_name = vcdName.substr(pathLen);
+            }
         }
 
     public:
         explicit TraceEntry(AstVarScope* vscp)
             : m_vscp{vscp} {
-            init(vscp->varp()->name());
+            init(vscp->varp()->name(), vscp->varp());
         }
         explicit TraceEntry(AstCell* cellp)
             : m_cellp{cellp} {
-            init(cellp->name());
+            init(cellp->name(), cellp);
         }
         int operatorCompare(const TraceEntry& b) const {
-            if (rootio() && !b.rootio()) return true;
-            if (!rootio() && b.rootio()) return false;
             if (const int cmp = path().compare(b.path())) return cmp < 0;
             if (const int cmp = fileline().operatorCompare(b.fileline())) return cmp < 0;
             return name() < b.name();
@@ -157,8 +171,6 @@ class TraceDeclVisitor final : public VNVisitor {
         void path(const std::string& path) { m_path = path; }
         const std::string& name() const { return m_name; }
         FileLine& fileline() const { return m_vscp ? *m_vscp->fileline() : *m_cellp->fileline(); }
-        bool rootio() const { return m_rootio; }
-        void rootio(bool flag) { m_rootio = flag; }
     };
     std::vector<TraceEntry> m_entries;  // Trace entries under current scope
     AstVarScope* m_traVscp = nullptr;  // Current AstVarScope we are constructing AstTraceDecls for
@@ -267,37 +279,17 @@ class TraceDeclVisitor final : public VNVisitor {
             const AstScope* const scopep = it->second;
             FileLine* const flp = placeholderp->fileline();
 
-            // Pick up the last path element. The prefixes have already been pushed
-            // when building the initialization.
-            // We still need to find __DOT__ as cell names may have such.
-            const std::string dot = "__DOT__";
-            const size_t pos = path.rfind(dot);
-            const std::string name = path.substr(pos == string::npos ? 0 : pos + dot.size());
-
-            // Compute the type of the scope being fixed up
-            const AstCell* const cellp = scopep->aboveCellp();
-            const VTracePrefixType scopeType
-                = cellp ? (VN_IS((cellp->modp()), Iface) ? VTracePrefixType::SCOPE_INTERFACE
-                                                         : VTracePrefixType::SCOPE_MODULE)
-                        : VTracePrefixType::SCOPE_MODULE;
-
-            // Push the scope prefix
-            AstNodeStmt* const pushp
-                = new AstTracePushPrefix{flp, AstNode::prettyName(name), scopeType};
-
             // Call the initialization functions for the scope
+            AstNode* stmtp = nullptr;
             for (AstCFunc* const subFuncp : m_scopeInitFuncps.at(scopep)) {
                 AstCCall* const callp = new AstCCall{flp, subFuncp};
                 callp->dtypeSetVoid();
                 callp->argTypes("tracep");
-                pushp->addNext(callp->makeStmt());
+                stmtp = AstNode::addNext(stmtp, callp->makeStmt());
             }
 
-            // Pop the scope prefix
-            pushp->addNext(new AstTracePopPrefix{flp});
-
             // Add after the placeholder
-            placeholderp->addNextHere(pushp);
+            if (stmtp) placeholderp->addNextHere(stmtp);
         }
         // Delete the placeholder
         placeholderp->unlinkFrBack();
@@ -384,16 +376,8 @@ class TraceDeclVisitor final : public VNVisitor {
         }
 
         if (!m_entries.empty()) {
-            if (nodep->name() == "TOP") {
-                UINFO(9, " Add $rootio " << nodep);
-                for (TraceEntry& entry : m_entries) {
-                    if (entry.path() == "" && entry.vscp()) entry.rootio(true);
-                }
-            }
-
-            // Sort trace entries, first by if a $root io, then by enclosing instance
-            // (necessary for single traversal of hierarchy during initialization), then
-            // by source location, then by name.
+            // Sort trace entries, by enclosing instance (necessary for single traversal of
+            // hierarchy during initialization), then by source location, then by name.
             std::stable_sort(
                 m_entries.begin(), m_entries.end(),
                 [](const TraceEntry& a, const TraceEntry& b) { return a.operatorCompare(b); });
@@ -406,7 +390,7 @@ class TraceDeclVisitor final : public VNVisitor {
                 UINFO(9, "path='" << entry.path() << "' name='" << entry.name() << "' "
                                   << (entry.cellp() ? static_cast<AstNode*>(entry.cellp())
                                                     : static_cast<AstNode*>(entry.vscp())));
-                pathAdjustor.adjust(entry.rootio() ? "$rootio" : entry.path());
+                pathAdjustor.adjust(entry.path(), entry.cellp(), entry.vscp());
 
                 m_traName = entry.name();
 
