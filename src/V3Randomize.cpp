@@ -1013,8 +1013,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                         AstNodeDType* const memberDtp = memberVarp->dtypep()->skipRefp();
                         // Handle basic/packed types only (skip nested class refs, arrays)
                         if (VN_IS(memberDtp, ClassRefDType) || VN_IS(memberDtp, DynArrayDType)
-                            || VN_IS(memberDtp, QueueDType)
-                            || VN_IS(memberDtp, UnpackArrayDType)
+                            || VN_IS(memberDtp, QueueDType) || VN_IS(memberDtp, UnpackArrayDType)
                             || VN_IS(memberDtp, AssocArrayDType))
                             continue;
                         const int memberWidth = memberDtp->width();
@@ -1026,17 +1025,16 @@ class ConstraintExprVisitor final : public VNVisitor {
                             // Index width: 32 bits for DynArray/Queue/UnpackArray
                             constexpr int idxWidth = 32;
                             const int fmtWidth = VL_WORDS_I(idxWidth) * 8;
-                            regLoop->add(
-                                "snprintf(__Vn55, sizeof(__Vn55), \""
-                                + smtName + ".%0" + std::to_string(fmtWidth) + "x."
-                                + memberVarp->name() + "\", (unsigned)__Vi55);\n");
+                            regLoop->add("snprintf(__Vn55, sizeof(__Vn55), \"" + smtName + ".%0"
+                                         + std::to_string(fmtWidth) + "x." + memberVarp->name()
+                                         + "\", (unsigned)__Vi55);\n");
                         }
 
                         // <randomizer>.write_var(<array>.atWrite(__Vi55)-><member>, w, name, 0);
                         {
-                            AstVarRef* const genRef = new AstVarRef{
-                                fl, VN_AS(m_genp->user2p(), NodeModule), m_genp,
-                                VAccess::READWRITE};
+                            AstVarRef* const genRef
+                                = new AstVarRef{fl, VN_AS(m_genp->user2p(), NodeModule), m_genp,
+                                                VAccess::READWRITE};
                             regLoop->add(genRef);
                         }
                         regLoop->add(".write_var(");
@@ -1055,8 +1053,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                                 = new AstMemberSel{fl, elemExpr, memberVarp};
                             regLoop->add(memberSel);
                         }
-                        regLoop->add(", " + std::to_string(memberWidth)
-                                     + ", __Vn55, 0);\n");
+                        regLoop->add(", " + std::to_string(memberWidth) + ", __Vn55, 0);\n");
                     }
                 }
 
@@ -1066,8 +1063,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 varp->user3(true);
                 AstNodeFTask* initTaskp = m_inlineInitTaskp;
                 if (!initTaskp) {
-                    initTaskp
-                        = VN_AS(m_memberMap.findMember(varClassp, "new"), NodeFTask);
+                    initTaskp = VN_AS(m_memberMap.findMember(varClassp, "new"), NodeFTask);
                     UASSERT_OBJ(initTaskp, varClassp, "No new() in class");
                 }
                 initTaskp->addStmtsp(regLoop);
@@ -1085,8 +1081,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                                   VAccess::READWRITE},
                     VCMethod::RANDOMIZER_WRITE_VAR};
                 uint32_t dimension = 0;
-                if (VN_IS(varp->dtypep(), UnpackArrayDType)
-                    || VN_IS(varp->dtypep(), DynArrayDType) || VN_IS(varp->dtypep(), QueueDType)
+                if (VN_IS(varp->dtypep(), UnpackArrayDType) || VN_IS(varp->dtypep(), DynArrayDType)
+                    || VN_IS(varp->dtypep(), QueueDType)
                     || VN_IS(varp->dtypep(), AssocArrayDType)) {
                     const std::pair<uint32_t, uint32_t> dims
                         = varp->dtypep()->dimensions(/*includeBasic=*/true);
@@ -1126,8 +1122,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                 const size_t width = tmpDtypep->width();
                 methodp->addPinsp(
                     new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{}, width});
-                AstNodeExpr* const varnamep = new AstCExpr{
-                    varp->fileline(), AstCExpr::Pure{}, "\"" + smtName + "\"", varp->width()};
+                AstNodeExpr* const varnamep = new AstCExpr{varp->fileline(), AstCExpr::Pure{},
+                                                           "\"" + smtName + "\"", varp->width()};
                 varnamep->dtypep(varp->dtypep());
                 methodp->addPinsp(varnamep);
                 methodp->addPinsp(
@@ -1141,8 +1137,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 if (!initTaskp) {
                     varp->user3(true);
                     if (membersel) {
-                        initTaskp
-                            = VN_AS(m_memberMap.findMember(classp, "randomize"), NodeFTask);
+                        initTaskp = VN_AS(m_memberMap.findMember(classp, "randomize"), NodeFTask);
                         UASSERT_OBJ(initTaskp, classp, "No randomize() in class");
                     } else {
                         initTaskp = VN_AS(m_memberMap.findMember(classp, "new"), NodeFTask);
@@ -1411,14 +1406,13 @@ class ConstraintExprVisitor final : public VNVisitor {
                 AstSFormatF* newp = nullptr;
                 if (AstSFormatF* const fromp = VN_CAST(nodep->fromp(), SFormatF)) {
                     if (fromp->name() == "%@.%@") {
-                        newp = new AstSFormatF{
-                            fl, "%@.%@." + nodep->name(), false,
-                            fromp->exprsp()->cloneTreePure(true)};
+                        newp = new AstSFormatF{fl, "%@.%@." + nodep->name(), false,
+                                               fromp->exprsp()->cloneTreePure(true)};
                         // Note: No need for #x→%x conversion here because
                         // m_structSel=true causes CMethodHard to handle it (line 1622)
                     } else {
-                        newp = new AstSFormatF{fl, fromp->name() + "." + nodep->name(),
-                                               false, nullptr};
+                        newp = new AstSFormatF{fl, fromp->name() + "." + nodep->name(), false,
+                                               nullptr};
                     }
                 } else {
                     newp = new AstSFormatF{fl, nodep->name(), false, nullptr};
@@ -1443,7 +1437,8 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
     void visit(AstSFormatF* nodep) override {}
     void visit(AstStmtExpr* nodep) override {}
-    void visit(AstCStmt* nodep) override {}  // Ignore inline C++ added by class ref array registration
+    void visit(AstCStmt* nodep) override {
+    }  // Ignore inline C++ added by class ref array registration
     void visit(AstConstraintIf* nodep) override {
         AstNodeExpr* newp = nullptr;
         FileLine* const fl = nodep->fileline();
