@@ -1034,9 +1034,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                                   VAccess::READWRITE},
                     VCMethod::RANDOMIZER_MARK_RANDC};
                 markp->dtypeSetVoid();
-                AstNodeExpr* const nameExprp
-                    = new AstCExpr{varp->fileline(), AstCExpr::Pure{},
-                                   "\"" + smtName + "\"", varp->width()};
+                AstNodeExpr* const nameExprp = new AstCExpr{varp->fileline(), AstCExpr::Pure{},
+                                                            "\"" + smtName + "\"", varp->width()};
                 nameExprp->dtypep(varp->dtypep());
                 markp->addPinsp(nameExprp);
                 initTaskp->addStmtsp(markp->makeStmt());
@@ -2694,8 +2693,7 @@ class RandomizeVisitor final : public VNVisitor {
                             bool foundClearConstraints = false;
                             stmtp->foreach([&](AstCMethodHard* methodp) {
                                 if (methodp->method() == VCMethod::RANDOMIZER_WRITE_VAR
-                                    || methodp->method()
-                                           == VCMethod::RANDOMIZER_MARK_RANDC) {
+                                    || methodp->method() == VCMethod::RANDOMIZER_MARK_RANDC) {
                                     randomizep->addStmtsp(stmtp->cloneTree(false));
                                 } else if (methodp->method()
                                            == VCMethod::RANDOMIZER_CLEARCONSTRAINTS) {
