@@ -245,7 +245,7 @@ private:
             }
             bool complexElem = true;
             if (const AstBasicDType* const basicp = VN_CAST(dtp, BasicDType)) {
-                complexElem = basicp->isOpaque();
+                complexElem = basicp->isString();
             }
             if (complexElem) {
                 varp->v3warn(E_UNSUPPORTED, "Unsupported: Force of unpacked array variable with "
