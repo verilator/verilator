@@ -8046,7 +8046,7 @@ class WidthVisitor final : public VNVisitor {
         // TODO: Handle array slices AstSliceSel
         if (lhsDim.second != rhsDim.second) {
             nodep->v3error("Illegal assignment: Unmatched number of unpacked dimensions "
-                           << "(" << lhsDim.second << " vs " << rhsDim.second << ")");
+                           << "(" << lhsDim.second << " v.s. " << rhsDim.second << ")");
             return;
         }
 
@@ -8060,7 +8060,7 @@ class WidthVisitor final : public VNVisitor {
                     if (lhsArray->elementsConst() != rhsArray->elementsConst()) {
                         nodep->v3error("Illegal assignment: Unmatched array sizes in dimension "
                                        << dim << " " << "(" << lhsArray->elementsConst()
-                                       << " v.s. " << rhsArray->elementsConst() << ")");
+                                       << " vs " << rhsArray->elementsConst() << ")");
                         return;
                     }
                 }
