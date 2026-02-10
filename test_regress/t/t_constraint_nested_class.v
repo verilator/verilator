@@ -23,7 +23,7 @@ module t;
   initial begin
     b   = new;
     b.a = new;
-    if(b.randomize() == 0) $stop;
+    if (b.randomize() == 0) $stop;
     if (b.a.x != LEN) $stop;
     $write("*-* All finished *-*\n");
     $finish;
