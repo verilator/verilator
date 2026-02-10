@@ -1,14 +1,8 @@
-%Error-UNSUPPORTED: t/t_force_unpacked_unsup.v:23:8: Unsupported: Force of unpacked array variable with elements of complex data type
-   23 |   real r_array[2];
-      |        ^~~~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error-UNSUPPORTED: t/t_force_unpacked_unsup.v:22:7: Unsupported: Force of unpacked array variable with >= 1000 elements
    22 |   bit big_array[40][40][40];
       |       ^~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error-UNSUPPORTED: t/t_force_unpacked_unsup.v:21:12: Unsupported: Force of unpacked array variable with >= 1000 elements
-   21 |   struct_t s_array[3000];
-      |            ^~~~~~~
-%Error-UNSUPPORTED: t/t_force_unpacked_unsup.v:21:12: Unsupported: Force of unpacked array variable with elements of complex data type
    21 |   struct_t s_array[3000];
       |            ^~~~~~~
 %Error: Exiting due to
