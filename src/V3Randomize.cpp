@@ -1033,9 +1033,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             if (isGlobalConstrained && !nodep->backp()) VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
-    // Build (x & 1) + ((x & 2) >> 1) + ((x & 4) >> 2) + ... for counting set bits.
-    // Used by $countones, $countbits, $onehot, $onehot0 constraint expansions.
-    // argp is consumed (linked into the result tree). Caller must clone if reusing.
+    // Build popcount expansion: (x & 1) + ((x & 2) >> 1) + ...
+    // argp is consumed; caller must clone if reusing.
     AstNodeExpr* buildCountOnesExpansion(FileLine* fl, AstNodeExpr* argp,
                                          AstNodeExpr* dtypeNodep) {
         V3Number numOne{fl, argp->width(), 1};
@@ -1058,11 +1057,9 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
 
     void visit(AstCountOnes* nodep) override {
-        // Convert it to (x & 1) + ((x & 2) >> 1) + ((x & 4) >> 2) + ...
         FileLine* const fl = nodep->fileline();
         AstNodeExpr* const argp = nodep->lhsp()->unlinkFrBack();
         AstNodeExpr* sump = buildCountOnesExpansion(fl, argp, nodep);
-        // Restore the original width
         if (nodep->width() > sump->width()) {
             sump = new AstExtend{fl, sump, nodep->width()};
             sump->user1(true);
@@ -1089,34 +1086,28 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstOneHot* nodep) override {
         if (editFormat(nodep)) return;
         // $onehot(x) = (x != 0) && ((x & (x-1)) == 0)
-        // Bit trick: x & (x-1) clears the lowest set bit
         FileLine* const fl = nodep->fileline();
         AstNodeExpr* const argp = nodep->lhsp()->unlinkFrBack();
         const int w = argp->width();
 
-        // x != 0
         V3Number numZero{fl, w, 0};
         AstNeq* const neZerop
             = new AstNeq{fl, argp->cloneTreePure(false), new AstConst{fl, numZero}};
         neZerop->user1(true);
 
-        // x - 1
         V3Number numOne{fl, w, 1};
         AstSub* const subp = new AstSub{fl, argp->cloneTreePure(false), new AstConst{fl, numOne}};
         subp->dtypeFrom(argp);
         subp->user1(true);
 
-        // x & (x - 1)
         AstAnd* const andp = new AstAnd{fl, argp, subp};
         andp->dtypeFrom(argp);
         andp->user1(true);
 
-        // (x & (x-1)) == 0
         V3Number numZero2{fl, w, 0};
         AstEq* const eqZerop = new AstEq{fl, andp, new AstConst{fl, numZero2}};
         eqZerop->user1(true);
 
-        // (x != 0) && ((x & (x-1)) == 0)
         AstLogAnd* const resultp = new AstLogAnd{fl, neZerop, eqZerop};
         resultp->user1(true);
 
@@ -1127,23 +1118,19 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstOneHot0* nodep) override {
         if (editFormat(nodep)) return;
         // $onehot0(x) = (x & (x-1)) == 0
-        // Zero or one bit set
         FileLine* const fl = nodep->fileline();
         AstNodeExpr* const argp = nodep->lhsp()->unlinkFrBack();
         const int w = argp->width();
 
-        // x - 1
         V3Number numOne{fl, w, 1};
         AstSub* const subp = new AstSub{fl, argp->cloneTreePure(false), new AstConst{fl, numOne}};
         subp->dtypeFrom(argp);
         subp->user1(true);
 
-        // x & (x - 1)
         AstAnd* const andp = new AstAnd{fl, argp, subp};
         andp->dtypeFrom(argp);
         andp->user1(true);
 
-        // (x & (x-1)) == 0
         V3Number numZero{fl, w, 0};
         AstEq* const eqp = new AstEq{fl, andp, new AstConst{fl, numZero}};
         eqp->user1(true);
@@ -1154,12 +1141,8 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
     void visit(AstCountBits* nodep) override {
         if (editFormat(nodep)) return;
-        // $countbits(x, ctrl1, ctrl2, ctrl3): count bits matching control values
-        // For 2-state rand types, only '0' and '1' ctrl values matter
         FileLine* const fl = nodep->fileline();
-        AstNodeExpr* const argp = nodep->lhsp()->unlinkFrBack();
 
-        // Determine which bit values to count from constant controls
         bool countOnes = false;
         bool countZeros = false;
         for (AstNodeExpr* ctrlp : {nodep->rhsp(), nodep->thsp(), nodep->fhsp()}) {
@@ -1167,44 +1150,39 @@ class ConstraintExprVisitor final : public VNVisitor {
             if (!cp) {
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: non-constant control in $countbits inside constraint");
-                VL_DO_DANGLING(argp->deleteTree(), argp);
+                AstConst* const zerop
+                    = new AstConst{fl, AstConst::WidthedValue{}, nodep->width(), 0u};
+                nodep->replaceWith(zerop);
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 return;
             }
             if (cp->num().bitIs1(0) && !countOnes)
                 countOnes = true;
             else if (cp->num().bitIs0(0) && !countZeros)
                 countZeros = true;
-            // 'x' and 'z' always yield 0 count for 2-state rand types
         }
 
-        // For 2-state rand types: zeros = width - ones, so:
-        //   countOnes && countZeros → always width (constant)
-        //   countOnes only → countones(x)
-        //   countZeros only → width - countones(x)
-        //   neither → 0
+        AstNodeExpr* const argp = nodep->lhsp()->unlinkFrBack();
         const int argWidth = argp->width();
         AstNodeExpr* sump = nullptr;
         if (countOnes && countZeros) {
-            // Both: for 2-state, ones + zeros = width always
+            // ones + zeros = width for 2-state types
             sump = new AstConst{fl, AstConst::WidthedValue{}, nodep->width(), (uint32_t)argWidth};
             VL_DO_DANGLING(argp->deleteTree(), argp);
         } else if (countOnes) {
-            // Count one-bits: same as $countones expansion
             sump = buildCountOnesExpansion(fl, argp, nodep);
         } else if (countZeros) {
-            // Count zero-bits: width - countones(x)
+            // width - countones(x)
             AstNodeExpr* const onesCountp = buildCountOnesExpansion(fl, argp, nodep);
             V3Number widthVal{nodep, onesCountp->width(), (uint32_t)argWidth};
             sump = new AstSub{fl, new AstConst{fl, widthVal}, onesCountp};
             sump->dtypeFrom(onesCountp);
             sump->user1(true);
         } else {
-            // Neither ones nor zeros to count
             sump = new AstConst{fl, AstConst::WidthedValue{}, nodep->width(), 0u};
             VL_DO_DANGLING(argp->deleteTree(), argp);
         }
 
-        // Width adjustment
         if (nodep->width() > sump->width()) {
             sump = new AstExtend{fl, sump, nodep->width()};
             sump->user1(true);
@@ -1219,18 +1197,15 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
     void visit(AstCLog2* nodep) override {
         if (editFormat(nodep)) return;
-        // $clog2(x): expand as ITE chain
-        // (x <= 1) ? 0 : (x <= 2) ? 1 : (x <= 4) ? 2 : ... : argWidth
+        // $clog2(x): ITE chain (x<=1)?0 : (x<=2)?1 : ... : argWidth
         FileLine* const fl = nodep->fileline();
         AstNodeExpr* const argp = nodep->lhsp()->unlinkFrBack();
         const int argWidth = argp->width();
-        const int resultWidth = nodep->width();  // Typically 32-bit signed
+        const int resultWidth = nodep->width();
 
-        // Default result for values > 2^(argWidth-1)
         AstNodeExpr* resultp
             = new AstConst{fl, AstConst::WidthedValue{}, resultWidth, (uint32_t)argWidth};
 
-        // Build ITE chain from highest threshold down
         for (int k = argWidth - 1; k >= 0; k--) {
             V3Number threshold{fl, argWidth, 0};
             if (k < 32)
