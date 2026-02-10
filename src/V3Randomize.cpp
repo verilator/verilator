@@ -960,12 +960,10 @@ class ConstraintExprVisitor final : public VNVisitor {
             // Detect if variable is an array of class references
             bool isClassRefArray = false;
             AstClassRefDType* elemClassRefDtp = nullptr;
-            AstNodeDType* arrayDtp = nullptr;
             {
                 AstNodeDType* varDtp = varp->dtypep()->skipRefp();
                 if (VN_IS(varDtp, DynArrayDType) || VN_IS(varDtp, QueueDType)
                     || VN_IS(varDtp, UnpackArrayDType) || VN_IS(varDtp, AssocArrayDType)) {
-                    arrayDtp = varDtp;
                     AstNodeDType* elemDtp = varDtp->subDTypep();
                     if (elemDtp) elemDtp = elemDtp->skipRefp();
                     elemClassRefDtp = VN_CAST(elemDtp, ClassRefDType);
