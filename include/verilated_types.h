@@ -1934,7 +1934,7 @@ public:
     VlClassRef() = default;
     // Init with nullptr
     // cppcheck-suppress noExplicitConstructor
-    VlClassRef(VlNull) {};
+    VlClassRef(VlNull){};
     template <typename... T_Args>
     VlClassRef(VlDeleter& deleter, T_Args&&... args)
         : m_objp{new T_Class} {
@@ -1954,8 +1954,8 @@ public:
     }
     VlClassRef(VlDeleter& deleter, T_Class& args)
         // Copy constructor - this is required since if `T_Class&`
-        // will be provided a compilator will match it to the constructor
-        // with variading template instead of `T_Class&&`
+        // will be provided a compiler will match it to the constructor
+        // with variadic template instead of `T_Class&&`
         : m_objp{new T_Class{args}} {
         m_objp->m_deleterp = &deleter;
     }
