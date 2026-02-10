@@ -964,115 +964,123 @@ class ConstraintExprVisitor final : public VNVisitor {
                 AstNodeDType* varDtp = varp->dtypep()->skipRefp();
                 if (VN_IS(varDtp, DynArrayDType) || VN_IS(varDtp, QueueDType)
                     || VN_IS(varDtp, UnpackArrayDType) || VN_IS(varDtp, AssocArrayDType)) {
-                    AstNodeDType* elemDtp = varDtp->subDTypep();
-                    if (elemDtp) elemDtp = elemDtp->skipRefp();
+                    AstNodeDType* const elemDtp = varDtp->subDTypep()->skipRefp();
                     elemClassRefDtp = VN_CAST(elemDtp, ClassRefDType);
                     if (elemClassRefDtp) isClassRefArray = true;
                 }
             }
 
-            if (isClassRefArray) {
-                // Generate per-member registration loop for class ref arrays
-                // Instead of write_var(array, ...) which fails for VlClassRef elements,
-                // generate a loop that registers each element's rand members individually
+            if (isClassRefArray && !membersel) {
+                // Per-member registration loop for class ref arrays
                 FileLine* const fl = varp->fileline();
                 AstClass* const elemClassp = elemClassRefDtp->classp();
                 AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
 
-                AstCStmt* const regLoop = new AstCStmt{fl};
-                regLoop->add("{\n");
+                AstVar* const iterVarp
+                    = new AstVar{fl, VVarType::BLOCKTEMP, "__Vi", varp->findUInt32DType()};
+                iterVarp->funcLocal(true);
+                iterVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
 
-                // Build array reference helper - we'll use inline C++ with AST VarRef nodes
-                // for (size_t __Vi55 = 0; __Vi55 < <array>.size(); ++__Vi55) {
-                regLoop->add("for (size_t __Vi55 = 0; __Vi55 < ");
-                {
-                    AstVarRef* const ref = new AstVarRef{fl, varClassp, varp, VAccess::READ};
-                    ref->classOrPackagep(classOrPackagep);
-                    regLoop->add(ref);
-                }
-                regLoop->add(".size(); ++__Vi55) {\n");
+                AstNode* const stmtsp = iterVarp;
+                stmtsp->addNext(new AstAssign{
+                    fl, new AstVarRef{fl, iterVarp, VAccess::WRITE}, new AstConst{fl, 0}});
 
-                // if (<array>.atWrite(__Vi55)) {
-                regLoop->add("if (");
-                {
-                    AstVarRef* const ref = new AstVarRef{fl, varClassp, varp, VAccess::READ};
-                    ref->classOrPackagep(classOrPackagep);
-                    regLoop->add(ref);
-                }
-                regLoop->add(".atWrite(__Vi55)) {\n");
-                regLoop->add("char __Vn55[256];\n");
+                AstVarRef* const arraySizeRef
+                    = new AstVarRef{fl, varClassp, varp, VAccess::READ};
+                arraySizeRef->classOrPackagep(classOrPackagep);
+                AstCMethodHard* const sizep
+                    = new AstCMethodHard{fl, arraySizeRef, VCMethod::DYN_SIZE, nullptr};
+                sizep->dtypeSetUInt32();
 
-                // For each rand member of the element class, generate write_var
+                AstLoop* const loopp = new AstLoop{fl};
+                stmtsp->addNext(loopp);
+                loopp->addStmtsp(new AstLoopTest{
+                    fl, loopp,
+                    new AstLt{fl, new AstVarRef{fl, iterVarp, VAccess::READ}, sizep}});
+
+                AstVarRef* const arrayAtRef
+                    = new AstVarRef{fl, varClassp, varp, VAccess::READ};
+                arrayAtRef->classOrPackagep(classOrPackagep);
+                AstCMethodHard* const atReadp = new AstCMethodHard{
+                    fl, arrayAtRef, VCMethod::ARRAY_AT,
+                    new AstVarRef{fl, iterVarp, VAccess::READ}};
+                atReadp->dtypep(elemClassRefDtp);
+                AstIf* const ifNonNullp = new AstIf{
+                    fl,
+                    new AstNeq{fl, atReadp, new AstConst{fl, AstConst::Null{}}},
+                    nullptr};
+                loopp->addStmtsp(ifNonNullp);
+
+                AstCStmt* const bufDeclp = new AstCStmt{fl, "char __Vn[256];\n"};
+                ifNonNullp->addThensp(bufDeclp);
+
+                // 32-bit index → 8 hex chars for SMT name formatting
+                constexpr int idxWidth = 32;
+                const int fmtWidth = VL_WORDS_I(idxWidth) * 8;
+
                 for (const AstClass* cp = elemClassp; cp;
                      cp = cp->extendsp() ? cp->extendsp()->classp() : nullptr) {
                     for (AstNode* mnodep = cp->stmtsp(); mnodep; mnodep = mnodep->nextp()) {
                         AstVar* const memberVarp = VN_CAST(mnodep, Var);
                         if (!memberVarp || !memberVarp->rand().isRandomizable()) continue;
                         AstNodeDType* const memberDtp = memberVarp->dtypep()->skipRefp();
-                        // Handle basic/packed types only (skip nested class refs, arrays)
                         if (VN_IS(memberDtp, ClassRefDType) || VN_IS(memberDtp, DynArrayDType)
                             || VN_IS(memberDtp, QueueDType) || VN_IS(memberDtp, UnpackArrayDType)
                             || VN_IS(memberDtp, AssocArrayDType))
                             continue;
                         const int memberWidth = memberDtp->width();
 
-                        // snprintf format must match SFormatF's %x zero-padded hex output.
-                        // Verilog %x pads to VL_WORDS_I(width)*8 hex chars.
-                        // DynArray/Queue use 32-bit int index; UnpackArray also 32-bit.
-                        {
-                            // Index width: 32 bits for DynArray/Queue/UnpackArray
-                            constexpr int idxWidth = 32;
-                            const int fmtWidth = VL_WORDS_I(idxWidth) * 8;
-                            regLoop->add("snprintf(__Vn55, sizeof(__Vn55), \"" + smtName + ".%0"
-                                         + std::to_string(fmtWidth) + "x." + memberVarp->name()
-                                         + "\", (unsigned)__Vi55);\n");
-                        }
+                        AstCStmt* const fmtp = new AstCStmt{fl};
+                        fmtp->add("VL_SNPRINTF(__Vn, sizeof(__Vn), \""
+                                  + smtName + ".%0" + std::to_string(fmtWidth) + "x."
+                                  + memberVarp->name() + "\", (unsigned)");
+                        fmtp->add(new AstVarRef{fl, iterVarp, VAccess::READ});
+                        fmtp->add(");\n");
+                        ifNonNullp->addThensp(fmtp);
 
-                        // <randomizer>.write_var(<array>.atWrite(__Vi55)-><member>, w, name, 0);
-                        {
-                            AstVarRef* const genRef
-                                = new AstVarRef{fl, VN_AS(m_genp->user2p(), NodeModule), m_genp,
-                                                VAccess::READWRITE};
-                            regLoop->add(genRef);
-                        }
-                        regLoop->add(".write_var(");
-                        {
-                            // Build array element access as AstCExpr
-                            AstCExpr* const elemExpr = new AstCExpr{fl};
-                            {
-                                AstVarRef* const ref
-                                    = new AstVarRef{fl, varClassp, varp, VAccess::READ};
-                                ref->classOrPackagep(classOrPackagep);
-                                elemExpr->add(ref);
-                            }
-                            elemExpr->add(".atWrite(__Vi55)");
-                            // Wrap with AstMemberSel so V3Name renames correctly
-                            AstMemberSel* const memberSel
-                                = new AstMemberSel{fl, elemExpr, memberVarp};
-                            regLoop->add(memberSel);
-                        }
-                        regLoop->add(", " + std::to_string(memberWidth) + ", __Vn55, 0);\n");
+                        AstVarRef* const arrayWrRef
+                            = new AstVarRef{fl, varClassp, varp, VAccess::WRITE};
+                        arrayWrRef->classOrPackagep(classOrPackagep);
+                        AstCMethodHard* const atWritep = new AstCMethodHard{
+                            fl, arrayWrRef, VCMethod::ARRAY_AT_WRITE,
+                            new AstVarRef{fl, iterVarp, VAccess::READ}};
+                        atWritep->dtypep(elemClassRefDtp);
+                        AstMemberSel* const memberSelp
+                            = new AstMemberSel{fl, atWritep, memberVarp};
+
+                        AstCMethodHard* const writeVarp = new AstCMethodHard{
+                            fl,
+                            new AstVarRef{fl, VN_AS(m_genp->user2p(), NodeModule), m_genp,
+                                          VAccess::READWRITE},
+                            VCMethod::RANDOMIZER_WRITE_VAR};
+                        writeVarp->dtypeSetVoid();
+                        writeVarp->addPinsp(memberSelp);
+                        writeVarp->addPinsp(new AstConst{fl, AstConst::Unsized64{},
+                                                         static_cast<uint64_t>(memberWidth)});
+                        AstCExpr* const nameRefp
+                            = new AstCExpr{fl, AstCExpr::Pure{}, "__Vn", 0};
+                        nameRefp->dtypep(varp->dtypep());
+                        writeVarp->addPinsp(nameRefp);
+                        writeVarp->addPinsp(
+                            new AstConst{fl, AstConst::Unsized64{}, 0ULL});
+                        ifNonNullp->addThensp(writeVarp->makeStmt());
                     }
                 }
 
-                regLoop->add("}\n}\n}\n");
+                loopp->addStmtsp(new AstAssign{
+                    fl, new AstVarRef{fl, iterVarp, VAccess::WRITE},
+                    new AstAdd{fl, new AstConst{fl, 1},
+                               new AstVarRef{fl, iterVarp, VAccess::READ}}});
 
-                // Add loop to init task
+                AstBegin* const beginp = new AstBegin{fl, "", stmtsp, true};
                 varp->user3(true);
                 AstNodeFTask* initTaskp = m_inlineInitTaskp;
                 if (!initTaskp) {
                     initTaskp = VN_AS(m_memberMap.findMember(varClassp, "new"), NodeFTask);
                     UASSERT_OBJ(initTaskp, varClassp, "No new() in class");
                 }
-                initTaskp->addStmtsp(regLoop);
-
-                // Nested member access on class ref arrays (e.g., obj.items[i].val)
-                // is not yet supported; assert to catch this case
-                UASSERT_OBJ(!membersel, varp,
-                            "Nested member access on class ref array not yet supported");
-                if (membersel) VL_DO_DANGLING(membersel->deleteTree(), membersel);
+                initTaskp->addStmtsp(beginp);
             } else {
-                // Standard write_var for non-class-ref arrays and scalars
                 AstCMethodHard* const methodp = new AstCMethodHard{
                     varp->fileline(),
                     new AstVarRef{varp->fileline(), VN_AS(m_genp->user2p(), NodeModule), m_genp,
@@ -1388,15 +1396,11 @@ class ConstraintExprVisitor final : public VNVisitor {
             visit(varRefp);
         } else if (nodep->user1() && VN_IS(nodep->fromp(), CMethodHard)
                    && VN_AS(nodep->fromp(), CMethodHard)->method() == VCMethod::ARRAY_AT) {
-            // Handle class ref array element member access in constraints
-            // (e.g., packets[i].addr where packets is rand ClassRef[])
-            // Modeled after visit(AstStructSel*) for struct arrays
+            // Class ref array element member access (e.g., items[i].val)
             AstCMethodHard* const cmethodp = VN_AS(nodep->fromp(), CMethodHard);
             AstNodeDType* const arrayDtp = cmethodp->fromp()->dtypep()->skipRefp();
-            AstNodeDType* elemDtp = arrayDtp->subDTypep();
-            if (elemDtp) elemDtp = elemDtp->skipRefp();
-            if (elemDtp && VN_IS(elemDtp, ClassRefDType)) {
-                // Set m_structSel so CMethodHard produces "%@.%@" format
+            AstNodeDType* const elemDtp = arrayDtp->subDTypep()->skipRefp();
+            if (VN_IS(elemDtp, ClassRefDType)) {
                 VL_RESTORER(m_structSel);
                 m_structSel = true;
                 iterateChildren(nodep);
@@ -1406,8 +1410,6 @@ class ConstraintExprVisitor final : public VNVisitor {
                     if (fromp->name() == "%@.%@") {
                         newp = new AstSFormatF{fl, "%@.%@." + nodep->name(), false,
                                                fromp->exprsp()->cloneTreePure(true)};
-                        // Note: No need for #x→%x conversion here because
-                        // m_structSel=true causes CMethodHard to handle it (line 1622)
                     } else {
                         newp = new AstSFormatF{fl, fromp->name() + "." + nodep->name(), false,
                                                nullptr};
@@ -1435,8 +1437,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
     void visit(AstSFormatF* nodep) override {}
     void visit(AstStmtExpr* nodep) override {}
-    void visit(AstCStmt* nodep) override {
-    }  // Ignore inline C++ added by class ref array registration
+    void visit(AstCStmt* nodep) override {}
     void visit(AstConstraintIf* nodep) override {
         AstNodeExpr* newp = nullptr;
         FileLine* const fl = nodep->fileline();
