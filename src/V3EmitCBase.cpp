@@ -78,7 +78,7 @@ string EmitCBaseVisitorConst::funcNameProtect(const AstCFunc* nodep, const AstNo
     modp = modp ? modp : EmitCParentModule::get(nodep);
     string name;
     if (nodep->isConstructor()) {
-        name += EmitCUtil::prefixNameProtect(modp);
+        name += "init";
     } else if (nodep->isDestructor()) {
         name += "~";
         name += EmitCUtil::prefixNameProtect(modp);
@@ -126,10 +126,15 @@ string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep) {
     return args;
 }
 
+void EmitCBaseVisitorConst::emitCDefaultConstructor(const AstNodeModule* const modp) {
+    puts(EmitCUtil::prefixNameProtect(modp));
+    puts("() = default;\n");
+}
+
 void EmitCBaseVisitorConst::emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp,
                                             bool withScope) {
     if (funcp->slow()) putns(funcp, "VL_ATTR_COLD ");
-    if ((!funcp->isConstructor() || withScope) && !funcp->isDestructor()) {
+    if (!funcp->isDestructor()) {
         putns(funcp, funcp->rtnTypeVoid());
         puts(" ");
     }
@@ -140,20 +145,7 @@ void EmitCBaseVisitorConst::emitCFuncHeader(const AstCFunc* funcp, const AstNode
             putns(funcp, EmitCUtil::prefixNameProtect(modp) + "::");
         }
     }
-    if (funcp->isConstructor()) {
-        if (!withScope) putns(funcp, funcNameProtect(funcp, modp));
-        if (!withScope) {
-            puts("() = default");
-            if (const AstClass* const classp = VN_CAST(modp, Class)) {
-                // Interfaces classes do not need a constructor
-                if (classp->isInterfaceClass()) return;
-            }
-            puts(";\nvoid ");
-        }
-        puts("init");
-    } else {
-        putns(funcp, funcNameProtect(funcp, modp));
-    }
+    putns(funcp, funcNameProtect(funcp, modp));
     puts("(" + cFuncArgs(funcp) + ")");
     if (funcp->isConst().trueKnown() && funcp->isProperMethod()) puts(" const");
 }
@@ -162,6 +154,7 @@ void EmitCBaseVisitorConst::emitCFuncDecl(const AstCFunc* funcp, const AstNodeMo
                                           bool cLinkage) {
     ensureNewLine();
     if (!funcp->ifdef().empty()) putns(funcp, "#ifdef " + funcp->ifdef() + "\n");
+    if (funcp->isConstructor()) emitCDefaultConstructor(modp);
     if (cLinkage) putns(funcp, "extern \"C\" ");
     if (funcp->isStatic() && funcp->isProperMethod()) putns(funcp, "static ");
     if (funcp->isVirtual()) {
