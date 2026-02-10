@@ -982,11 +982,10 @@ class ConstraintExprVisitor final : public VNVisitor {
                 iterVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
 
                 AstNode* const stmtsp = iterVarp;
-                stmtsp->addNext(new AstAssign{
-                    fl, new AstVarRef{fl, iterVarp, VAccess::WRITE}, new AstConst{fl, 0}});
+                stmtsp->addNext(new AstAssign{fl, new AstVarRef{fl, iterVarp, VAccess::WRITE},
+                                              new AstConst{fl, 0}});
 
-                AstVarRef* const arraySizeRef
-                    = new AstVarRef{fl, varClassp, varp, VAccess::READ};
+                AstVarRef* const arraySizeRef = new AstVarRef{fl, varClassp, varp, VAccess::READ};
                 arraySizeRef->classOrPackagep(classOrPackagep);
                 AstCMethodHard* const sizep
                     = new AstCMethodHard{fl, arraySizeRef, VCMethod::DYN_SIZE, nullptr};
@@ -995,20 +994,16 @@ class ConstraintExprVisitor final : public VNVisitor {
                 AstLoop* const loopp = new AstLoop{fl};
                 stmtsp->addNext(loopp);
                 loopp->addStmtsp(new AstLoopTest{
-                    fl, loopp,
-                    new AstLt{fl, new AstVarRef{fl, iterVarp, VAccess::READ}, sizep}});
+                    fl, loopp, new AstLt{fl, new AstVarRef{fl, iterVarp, VAccess::READ}, sizep}});
 
-                AstVarRef* const arrayAtRef
-                    = new AstVarRef{fl, varClassp, varp, VAccess::READ};
+                AstVarRef* const arrayAtRef = new AstVarRef{fl, varClassp, varp, VAccess::READ};
                 arrayAtRef->classOrPackagep(classOrPackagep);
-                AstCMethodHard* const atReadp = new AstCMethodHard{
-                    fl, arrayAtRef, VCMethod::ARRAY_AT,
-                    new AstVarRef{fl, iterVarp, VAccess::READ}};
+                AstCMethodHard* const atReadp
+                    = new AstCMethodHard{fl, arrayAtRef, VCMethod::ARRAY_AT,
+                                         new AstVarRef{fl, iterVarp, VAccess::READ}};
                 atReadp->dtypep(elemClassRefDtp);
                 AstIf* const ifNonNullp = new AstIf{
-                    fl,
-                    new AstNeq{fl, atReadp, new AstConst{fl, AstConst::Null{}}},
-                    nullptr};
+                    fl, new AstNeq{fl, atReadp, new AstConst{fl, AstConst::Null{}}}, nullptr};
                 loopp->addStmtsp(ifNonNullp);
 
                 AstCStmt* const bufDeclp = new AstCStmt{fl, "char __Vn[256];\n"};
@@ -1031,9 +1026,9 @@ class ConstraintExprVisitor final : public VNVisitor {
                         const int memberWidth = memberDtp->width();
 
                         AstCStmt* const fmtp = new AstCStmt{fl};
-                        fmtp->add("VL_SNPRINTF(__Vn, sizeof(__Vn), \""
-                                  + smtName + ".%0" + std::to_string(fmtWidth) + "x."
-                                  + memberVarp->name() + "\", (unsigned)");
+                        fmtp->add("VL_SNPRINTF(__Vn, sizeof(__Vn), \"" + smtName + ".%0"
+                                  + std::to_string(fmtWidth) + "x." + memberVarp->name()
+                                  + "\", (unsigned)");
                         fmtp->add(new AstVarRef{fl, iterVarp, VAccess::READ});
                         fmtp->add(");\n");
                         ifNonNullp->addThensp(fmtp);
@@ -1041,9 +1036,9 @@ class ConstraintExprVisitor final : public VNVisitor {
                         AstVarRef* const arrayWrRef
                             = new AstVarRef{fl, varClassp, varp, VAccess::WRITE};
                         arrayWrRef->classOrPackagep(classOrPackagep);
-                        AstCMethodHard* const atWritep = new AstCMethodHard{
-                            fl, arrayWrRef, VCMethod::ARRAY_AT_WRITE,
-                            new AstVarRef{fl, iterVarp, VAccess::READ}};
+                        AstCMethodHard* const atWritep
+                            = new AstCMethodHard{fl, arrayWrRef, VCMethod::ARRAY_AT_WRITE,
+                                                 new AstVarRef{fl, iterVarp, VAccess::READ}};
                         atWritep->dtypep(elemClassRefDtp);
                         AstMemberSel* const memberSelp
                             = new AstMemberSel{fl, atWritep, memberVarp};
@@ -1057,20 +1052,18 @@ class ConstraintExprVisitor final : public VNVisitor {
                         writeVarp->addPinsp(memberSelp);
                         writeVarp->addPinsp(new AstConst{fl, AstConst::Unsized64{},
                                                          static_cast<uint64_t>(memberWidth)});
-                        AstCExpr* const nameRefp
-                            = new AstCExpr{fl, AstCExpr::Pure{}, "__Vn", 0};
+                        AstCExpr* const nameRefp = new AstCExpr{fl, AstCExpr::Pure{}, "__Vn", 0};
                         nameRefp->dtypep(varp->dtypep());
                         writeVarp->addPinsp(nameRefp);
-                        writeVarp->addPinsp(
-                            new AstConst{fl, AstConst::Unsized64{}, 0ULL});
+                        writeVarp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, 0ULL});
                         ifNonNullp->addThensp(writeVarp->makeStmt());
                     }
                 }
 
-                loopp->addStmtsp(new AstAssign{
-                    fl, new AstVarRef{fl, iterVarp, VAccess::WRITE},
-                    new AstAdd{fl, new AstConst{fl, 1},
-                               new AstVarRef{fl, iterVarp, VAccess::READ}}});
+                loopp->addStmtsp(
+                    new AstAssign{fl, new AstVarRef{fl, iterVarp, VAccess::WRITE},
+                                  new AstAdd{fl, new AstConst{fl, 1},
+                                             new AstVarRef{fl, iterVarp, VAccess::READ}}});
 
                 AstBegin* const beginp = new AstBegin{fl, "", stmtsp, true};
                 varp->user3(true);
