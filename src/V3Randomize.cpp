@@ -33,13 +33,12 @@
 
 #include "verilatedos.h"
 
-#include "V3Randomize.h"
-
 #include "V3Ast.h"
 #include "V3Error.h"
 #include "V3FileLine.h"
 #include "V3Global.h"
 #include "V3MemberMap.h"
+#include "V3Randomize.h"
 #include "V3UniqueNames.h"
 
 #include <queue>
@@ -278,7 +277,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
 
     // Process a single constraint during nested constraint cloning
     void processNestedConstraint(AstConstraint* const constrp, AstVarRef* rootVarRefp,
-                                 const std::vector<AstVar*>& newPath, AstClass* targetClassp) {
+                                 const std::vector<AstVar*>& newPath, AstClass* targetClassp,
+                                 AstClass* const memberClassp) {
         std::string pathPrefix = rootVarRefp->name();
         for (AstVar* pathMemberVarp : newPath) {
             pathPrefix += GLOBAL_CONSTRAINT_SEPARATOR + pathMemberVarp->name();
@@ -295,7 +295,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
             }
         });
         if (isDuplicate) return;
-
         AstConstraint* const cloneConstrp = constrp->cloneTree(false);
         cloneConstrp->name(newName);
         cloneConstrp->foreach([&](AstVarRef* varRefp) {
@@ -336,7 +335,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
             // member selections
             nestedClassp->foreachMember(
                 [&](AstClass* const containingClassp, AstConstraint* const constrp) {
-                    processNestedConstraint(constrp, rootVarRefp, newPath, targetClassp);
+                    processNestedConstraint(constrp, rootVarRefp, newPath, targetClassp,
+                                            containingClassp);
                 });
             cloneNestedConstraintsRecurse(rootVarRefp, nestedClassp, newPath, targetClassp);
         }
@@ -571,9 +571,11 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 AstVarRef* rootVarRefp
                     = new AstVarRef{nodep->fileline(), classp, memberVarp, VAccess::READ};
                 std::vector<AstVar*> emptyPath;
-                memberClassp->foreachMember([&](AstClass* const, AstConstraint* const constrp) {
-                    processNestedConstraint(constrp, rootVarRefp, emptyPath, classp);
-                });
+                memberClassp->foreachMember(
+                    [&](AstClass* const containingClassp, AstConstraint* const constrp) {
+                        processNestedConstraint(constrp, rootVarRefp, emptyPath, classp,
+                                                containingClassp);
+                    });
                 cloneNestedConstraintsRecurse(rootVarRefp, memberClassp, emptyPath, classp);
                 // Delete the temporary VarRef created for constraint cloning
                 VL_DO_DANGLING(rootVarRefp->deleteTree(), rootVarRefp);
