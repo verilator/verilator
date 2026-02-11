@@ -720,10 +720,6 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
     // If there are 'pre' triggers, compute them
     if (kit.m_nPreWords) {
         AstCFunc* const fp = kit.m_compExtp;
-        // Profiling push
-        if (v3Global.opt.profExec()) {
-            fp->addStmtsp(AstCStmt::profExecSectionPush(flp, "trigExt " + name));
-        }
         // Add an argument to the function that takes the latched values
         AstVarScope* const latchedp
             = newArgument(fp, kit.m_trigVecDTypep, "latched", VDirection::CONSTREF);
@@ -745,10 +741,6 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
         loopp->addStmtsp(new AstAssign{flp, lhsp, rhsp});
         loopp->addStmtsp(util::incrementVar(nVscp));
         loopp->addStmtsp(new AstLoopTest{flp, loopp, new AstLt{flp, rd(nVscp), limp}});
-        // Profiling pop
-        if (v3Global.opt.profExec()) {
-            fp->addStmtsp(AstCStmt::profExecSectionPop(flp, "trigExt " + name));
-        }
         util::splitCheck(fp);
     }
     // Done with the trigger computation function, split as might be large
@@ -894,11 +886,9 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
 
                 FileLine* const flp = nodep->fileline();
                 // Add eventDescription argument value to a CCall - it is used for --runtime-debug
-                if (AstNode* const pinp = cMethodHardp->pinsp()->nextp()->nextp()) {
-                    beforeTrigp->addArgsp(VN_AS(pinp, NodeExpr)->cloneTree(false));
-                } else {
-                    beforeTrigp->addArgsp(new AstCExpr{flp, "nullptr"});
-                }
+                AstNode* const pinp = cMethodHardp->pinsp()->nextp()->nextp();
+                UASSERT_OBJ(pinp, cMethodHardp, "No event description");
+                beforeTrigp->addArgsp(VN_AS(pinp, NodeExpr)->cloneTree(false));
 
                 // Change CAwait Expression into StmtExpr that calls to a before-trigger function
                 // first and then return CAwait
