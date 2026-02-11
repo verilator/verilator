@@ -208,7 +208,7 @@ private:
     AstUnpackArrayDType* m_trigExtDTypep = nullptr;
     // The AstVarScope representing the extended trigger vector
     AstVarScope* m_vscp = nullptr;
-    // The AstVarScope representing the extended trigger accumulator vector
+    // The AstVarScope representing the trigger accumulator vector
     // It is used to accumulate triggers that were found fired and cleared in beforeTrigger's
     // in current 'act' region iteration
     AstVarScope* m_vscAccp = nullptr;

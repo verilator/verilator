@@ -334,7 +334,7 @@ AstNodeStmt* TriggerKit::newCompExtCall(AstVarScope* vscp) const {
     if (!m_nPreWords) return nullptr;
     FileLine* const flp = v3Global.rootp()->topScopep()->fileline();
     AstCCall* const callp = new AstCCall{flp, m_compExtp};
-    if (m_nPreWords) callp->addArgsp(new AstVarRef{flp, vscp, VAccess::READ});
+    callp->addArgsp(new AstVarRef{flp, vscp, VAccess::READ});
     callp->dtypeSetVoid();
     return callp->makeStmt();
 }

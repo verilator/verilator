@@ -1041,8 +1041,6 @@ void schedule(AstNetlist* netlistp) {
                     "Expected that trigger vector and accumulator has no negative indexes");
         FileLine* const flp = trigAccp->fileline();
         AstVarScope* const vscp = netlistp->topScopep()->scopep()->createTemp("__Vi", 32);
-        staticp->addVarsp(vscp->varp()->unlinkFrBack());
-        vscp->varp()->funcLocal(true);
         AstLoop* const loopp = new AstLoop{flp};
         loopp->addStmtsp(
             new AstAssign{flp,
@@ -1061,6 +1059,9 @@ void schedule(AstNetlist* netlistp) {
 
     // Step 16: Clean up
     netlistp->clearStlFirstIterationp();
+
+    // Haven't split static initializer yet
+    util::splitCheck(staticp);
 
     // Dump
     V3Global::dumpCheckGlobalTree("sched", 0, dumpTreeEitherLevel() >= 3);
