@@ -5787,8 +5787,8 @@ class WidthVisitor final : public VNVisitor {
             // the element types shall be equivalent (IEEE 1800-2023 6.22.2).
             // Note: Streaming operators and string literals have implicit conversion rules.
             if (nodep->rhsp()->dtypep()) {  // May be null on earlier errors
-                checkUnpackedArrayAssignmentCompatible<AstNodeVarRef, AstNodeVarRef>(nodep, VN_CAST(nodep->lhsp(), NodeVarRef),
-                                                       VN_CAST(nodep->rhsp(), NodeVarRef));
+                checkUnpackedArrayAssignmentCompatible<AstNodeVarRef, AstNodeVarRef>(
+                    nodep, VN_CAST(nodep->lhsp(), NodeVarRef), VN_CAST(nodep->rhsp(), NodeVarRef));
             }
 
             iterateCheckAssign(nodep, "Assign RHS", nodep->rhsp(), FINAL, lhsDTypep);
@@ -8059,8 +8059,8 @@ class WidthVisitor final : public VNVisitor {
                 if (const AstNodeArrayDType* lhsArrayp = VN_CAST(lhsDtpIterp, NodeArrayDType)) {
                     if (lhsArrayp->elementsConst() != rhsArrayp->elementsConst()) {
                         nodep->v3error("Illegal assignment: Unmatched array sizes in dimension "
-                                       << dim << " " << "(" << lhsArrayp->elementsConst()
-                                       << " vs " << rhsArrayp->elementsConst() << ")");
+                                       << dim << " " << "(" << lhsArrayp->elementsConst() << " vs "
+                                       << rhsArrayp->elementsConst() << ")");
                         return;
                     }
                 }
