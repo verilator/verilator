@@ -209,9 +209,7 @@ public:
             AstNodeExpr* condp
                 = applySelects(new AstVarRef{flp, m_enVscp, VAccess::READ}, selectExprs);
             const AstBasicDType* const condDtp = VN_CAST(condp->dtypep()->skipRefp(), BasicDType);
-            if (condDtp && condDtp->isDouble()) {
-                condp = new AstRToIRoundS{flp, condp};
-            }
+            if (condDtp && condDtp->isDouble()) condp = new AstRToIRoundS{flp, condp};
             return new AstCond{
                 flp, condp,
                 applySelects(new AstVarRef{flp, m_valVscp, VAccess::READ}, selectExprs), origp};
