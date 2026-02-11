@@ -102,7 +102,7 @@ public:
             AstVarRef* const rdRefp = new AstVarRef{flp, m_rdVscp, VAccess::WRITE};
             std::vector<AstAssign*> assigns;
             AstNodeStmt* const rdUpdateStmtsp
-                = getAssignStmtsRecursep(rdRefp, vscp, rdRefp, assigns);
+                = getForcedUpdateStmtsRecursep(rdRefp, vscp, rdRefp, assigns);
 
             // To use these statements for __En initialization, replace references to __Rd with
             // ones to __En and replace assignments RHS with 0
@@ -142,10 +142,13 @@ public:
                 vscp->scopep()->addBlocksp(activep);
             }
         }
-        AstNodeStmt* getAssignStmtsRecursep(AstNodeExpr* const lhsp, AstVarScope* const vscp,
-                                            AstVarRef* const lhsVarRefp,
-                                            std::vector<AstAssign*>& assigns) {
-            // Create stataments that assigns
+        AstNodeStmt* getForcedUpdateStmtsRecursep(AstNodeExpr* const lhsp, AstVarScope* const vscp,
+                                                  AstVarRef* const lhsVarRefp,
+                                                  std::vector<AstAssign*>& assigns) {
+            // Create stataments that update values of __Rd variable.
+            // lhsp is either a reference to that variable or ArraySel or MemberSel on it.
+            // lhsVarRefp is a reference to that variable in lhsp subtree.
+            // assigns is a vector to which all assignments to __Rd are added.
             FileLine* const flp = lhsp->fileline();
             const AstNodeDType* const lhsDtypep = lhsp->dtypep()->skipRefp();
             if (lhsDtypep->isIntegralOrPacked() || VN_IS(lhsDtypep, BasicDType)) {
@@ -165,7 +168,7 @@ public:
                     AstStructSel* const structSelp = new AstStructSel{flp, lhsCopyp, mdtp->name()};
                     structSelp->dtypep(mdtp);
                     AstNodeStmt* const memberStmtp
-                        = getAssignStmtsRecursep(structSelp, vscp, lhsVarRefCopyp, assigns);
+                        = getForcedUpdateStmtsRecursep(structSelp, vscp, lhsVarRefCopyp, assigns);
                     stmtsp = firstIter ? memberStmtp : stmtsp->addNext(memberStmtp);
                     firstIter = false;
                 }
@@ -193,7 +196,7 @@ public:
                 AstArraySel* const lhsSelp
                     = new AstArraySel{flp, lhsp, readRefp->cloneTree(false)};
                 AstNodeStmt* const loopBodyp
-                    = getAssignStmtsRecursep(lhsSelp, vscp, lhsVarRefp, assigns);
+                    = getForcedUpdateStmtsRecursep(lhsSelp, vscp, lhsVarRefp, assigns);
                 currWhilep->addStmtsp(loopBodyp);
                 AstAssign* const currIncrp = new AstAssign{
                     flp, new AstVarRef{flp, loopVarScopep, VAccess::WRITE},
