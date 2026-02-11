@@ -1143,9 +1143,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                                       m_genp, VAccess::READWRITE},
                         VCMethod::RANDOMIZER_MARK_RANDC};
                     markp->dtypeSetVoid();
-                    AstNodeExpr* const nameExprp
-                        = new AstCExpr{varp->fileline(), AstCExpr::Pure{},
-                                       "\"" + smtName + "\"", varp->width()};
+                    AstNodeExpr* const nameExprp = new AstCExpr{
+                        varp->fileline(), AstCExpr::Pure{}, "\"" + smtName + "\"", varp->width()};
                     nameExprp->dtypep(varp->dtypep());
                     markp->addPinsp(nameExprp);
                     initTaskp->addStmtsp(markp->makeStmt());
