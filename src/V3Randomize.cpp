@@ -1143,15 +1143,15 @@ class ConstraintExprVisitor final : public VNVisitor {
             if (isGlobalConstrained && !nodep->backp()) VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
-    void visit(AstCountOnes* nodep) override {
-        // Convert it to (x & 1) + ((x & 2) >> 1) + ((x & 4) >> 2) + ...
-        FileLine* const fl = nodep->fileline();
-        AstNodeExpr* const argp = nodep->lhsp()->unlinkFrBack();
-        V3Number numOne{nodep, argp->width(), 1};
+    // Build popcount expansion: (x & 1) + ((x & 2) >> 1) + ...
+    // argp is consumed; caller must clone if reusing.
+    AstNodeExpr* buildCountOnesExpansion(FileLine* fl, AstNodeExpr* argp,
+                                         AstNodeExpr* dtypeNodep) {
+        V3Number numOne{fl, argp->width(), 1};
         AstNodeExpr* sump = new AstAnd{fl, argp, new AstConst{fl, numOne}};
         sump->user1(true);
         for (int i = 1; i < argp->width(); i++) {
-            V3Number numBitMask{nodep, argp->width(), 0};
+            V3Number numBitMask{fl, argp->width(), 0};
             numBitMask.setBit(i, 1);
             AstAnd* const andp
                 = new AstAnd{fl, argp->cloneTreePure(false), new AstConst{fl, numBitMask}};
@@ -1159,11 +1159,17 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstShiftR* const shiftp = new AstShiftR{
                 fl, andp, new AstConst{fl, AstConst::WidthedValue{}, argp->width(), (uint32_t)i}};
             shiftp->user1(true);
-            shiftp->dtypeFrom(nodep);
-            sump = new AstAdd{nodep->fileline(), sump, shiftp};
+            shiftp->dtypeFrom(dtypeNodep);
+            sump = new AstAdd{fl, sump, shiftp};
             sump->user1(true);
         }
-        // Restore the original width
+        return sump;
+    }
+
+    void visit(AstCountOnes* nodep) override {
+        FileLine* const fl = nodep->fileline();
+        AstNodeExpr* const argp = nodep->lhsp()->unlinkFrBack();
+        AstNodeExpr* sump = buildCountOnesExpansion(fl, argp, nodep);
         if (nodep->width() > sump->width()) {
             sump = new AstExtend{fl, sump, nodep->width()};
             sump->user1(true);
@@ -1186,6 +1192,153 @@ class ConstraintExprVisitor final : public VNVisitor {
         nodep->replaceWith(neqp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         iterate(neqp);
+    }
+    void visit(AstOneHot* nodep) override {
+        if (editFormat(nodep)) return;
+        // $onehot(x) = (x != 0) && ((x & (x-1)) == 0)
+        FileLine* const fl = nodep->fileline();
+        AstNodeExpr* const argp = nodep->lhsp()->unlinkFrBack();
+        const int w = argp->width();
+
+        V3Number numZero{fl, w, 0};
+        AstNeq* const neZerop
+            = new AstNeq{fl, argp->cloneTreePure(false), new AstConst{fl, numZero}};
+        neZerop->user1(true);
+
+        V3Number numOne{fl, w, 1};
+        AstSub* const subp = new AstSub{fl, argp->cloneTreePure(false), new AstConst{fl, numOne}};
+        subp->dtypeFrom(argp);
+        subp->user1(true);
+
+        AstAnd* const andp = new AstAnd{fl, argp, subp};
+        andp->dtypeFrom(argp);
+        andp->user1(true);
+
+        V3Number numZero2{fl, w, 0};
+        AstEq* const eqZerop = new AstEq{fl, andp, new AstConst{fl, numZero2}};
+        eqZerop->user1(true);
+
+        AstLogAnd* const resultp = new AstLogAnd{fl, neZerop, eqZerop};
+        resultp->user1(true);
+
+        nodep->replaceWith(resultp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        iterate(resultp);
+    }
+    void visit(AstOneHot0* nodep) override {
+        if (editFormat(nodep)) return;
+        // $onehot0(x) = (x & (x-1)) == 0
+        FileLine* const fl = nodep->fileline();
+        AstNodeExpr* const argp = nodep->lhsp()->unlinkFrBack();
+        const int w = argp->width();
+
+        V3Number numOne{fl, w, 1};
+        AstSub* const subp = new AstSub{fl, argp->cloneTreePure(false), new AstConst{fl, numOne}};
+        subp->dtypeFrom(argp);
+        subp->user1(true);
+
+        AstAnd* const andp = new AstAnd{fl, argp, subp};
+        andp->dtypeFrom(argp);
+        andp->user1(true);
+
+        V3Number numZero{fl, w, 0};
+        AstEq* const eqp = new AstEq{fl, andp, new AstConst{fl, numZero}};
+        eqp->user1(true);
+
+        nodep->replaceWith(eqp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        iterate(eqp);
+    }
+    void visit(AstCountBits* nodep) override {
+        if (editFormat(nodep)) return;
+        FileLine* const fl = nodep->fileline();
+
+        bool countOnes = false;
+        bool countZeros = false;
+        for (AstNodeExpr* ctrlp : {nodep->rhsp(), nodep->thsp(), nodep->fhsp()}) {
+            const AstConst* const cp = VN_CAST(ctrlp, Const);
+            if (!cp) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: non-constant control in $countbits inside constraint");
+                AstConst* const zerop
+                    = new AstConst{fl, AstConst::WidthedValue{}, nodep->width(), 0u};
+                nodep->replaceWith(zerop);
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                return;
+            }
+            if (cp->num().bitIs1(0) && !countOnes)
+                countOnes = true;
+            else if (cp->num().bitIs0(0) && !countZeros)
+                countZeros = true;
+        }
+
+        AstNodeExpr* const argp = nodep->lhsp()->unlinkFrBack();
+        const int argWidth = argp->width();
+        AstNodeExpr* sump = nullptr;
+        if (countOnes && countZeros) {
+            // ones + zeros = width for 2-state types
+            sump = new AstConst{fl, AstConst::WidthedValue{}, nodep->width(), (uint32_t)argWidth};
+            VL_DO_DANGLING(argp->deleteTree(), argp);
+        } else if (countOnes) {
+            sump = buildCountOnesExpansion(fl, argp, nodep);
+        } else if (countZeros) {
+            // width - countones(x)
+            AstNodeExpr* const onesCountp = buildCountOnesExpansion(fl, argp, nodep);
+            V3Number widthVal{nodep, onesCountp->width(), (uint32_t)argWidth};
+            sump = new AstSub{fl, new AstConst{fl, widthVal}, onesCountp};
+            sump->dtypeFrom(onesCountp);
+            sump->user1(true);
+        } else {
+            sump = new AstConst{fl, AstConst::WidthedValue{}, nodep->width(), 0u};
+            VL_DO_DANGLING(argp->deleteTree(), argp);
+        }
+
+        if (nodep->width() > sump->width()) {
+            sump = new AstExtend{fl, sump, nodep->width()};
+            sump->user1(true);
+        } else if (nodep->width() < sump->width()) {
+            sump = new AstSel{fl, sump, 0, nodep->width()};
+            sump->user1(true);
+        }
+
+        nodep->replaceWith(sump);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        iterate(sump);
+    }
+    void visit(AstCLog2* nodep) override {
+        if (editFormat(nodep)) return;
+        // $clog2(x): ITE chain (x<=1)?0 : (x<=2)?1 : ... : argWidth
+        FileLine* const fl = nodep->fileline();
+        AstNodeExpr* const argp = nodep->lhsp()->unlinkFrBack();
+        const int argWidth = argp->width();
+        const int resultWidth = nodep->width();
+
+        AstNodeExpr* resultp
+            = new AstConst{fl, AstConst::WidthedValue{}, resultWidth, (uint32_t)argWidth};
+
+        for (int k = argWidth - 1; k >= 0; k--) {
+            V3Number threshold{fl, argWidth, 0};
+            if (k < 32)
+                threshold.setLong(1ULL << k);
+            else
+                threshold.setBit(k, 1);
+
+            AstLte* const ltep
+                = new AstLte{fl, argp->cloneTreePure(false), new AstConst{fl, threshold}};
+            ltep->user1(true);
+
+            AstConst* const valuep
+                = new AstConst{fl, AstConst::WidthedValue{}, resultWidth, (uint32_t)k};
+
+            resultp = new AstCond{fl, ltep, valuep, resultp};
+            resultp->dtypeChgWidthSigned(resultWidth, resultWidth, VSigning::SIGNED);
+            resultp->user1(true);
+        }
+
+        VL_DO_DANGLING(argp->deleteTree(), argp);
+        nodep->replaceWith(resultp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        iterate(resultp);
     }
     void visit(AstNodeBiop* nodep) override {
         if (editFormat(nodep)) return;
