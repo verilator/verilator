@@ -3307,7 +3307,8 @@ class ConstVisitor final : public VNVisitor {
         // Not VarXRef, as different refs may set different values to each hierarchy
         AstNodeVarRef* const varrefp = VN_CAST(nodep->lhsp(), VarRef);
         if (m_wremove && !m_params && m_doNConst && m_modp && operandConst(nodep->rhsp())
-            && !VN_AS(nodep->rhsp(), Const)->num().isFourState()
+            && (!VN_AS(nodep->rhsp(), Const)->num().isFourState()
+                || varrefp->varp()->attrFourState())
             && varrefp  // Don't do messes with BITREFs/ARRAYREFs
             && !varrefp->varp()->hasStrengthAssignment()  // Strengths are resolved in V3Tristate
             && !varrefp->varp()->valuep()  // Not already constified

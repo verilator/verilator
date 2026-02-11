@@ -733,7 +733,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                 // EmitCFunc::emitVarReset, EmitCFunc::emitConstant
                 const AstConst* const constp = VN_AS(valuep, Const);
                 UASSERT_OBJ(constp, varp, "non-const initializer for variable");
-                out += cvtToStr(constp->num().edataWord(0)) + "U;\n";
+                out += constp->num().emitC();
                 out += ";\n";
             } else if (zeroit) {
                 out += " = 0;\n";

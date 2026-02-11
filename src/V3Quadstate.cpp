@@ -10,6 +10,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 class QuadstateVisitor final : public VNVisitor {
     std::map<const AstVar*, std::vector<AstAssignW*>> m_assignWToTrior;
     std::map<const AstVar*, std::vector<AstAssignW*>> m_assignWToTriand;
+    std::map<const AstVar*, std::vector<AstAssignW*>> m_assignWToWire;
 
     static AstNodeExpr* buildTree(std::vector<AstNodeExpr*> exprps, const VCFunc reductor) {
         while (exprps.size() > 1) {
@@ -48,6 +49,8 @@ class QuadstateVisitor final : public VNVisitor {
             switch (varRefp->varp()->varType()) {
             case VVarType::TRIOR: m_assignWToTrior[varRefp->varp()].push_back(nodep); break;
             case VVarType::TRIAND: m_assignWToTriand[varRefp->varp()].push_back(nodep); break;
+            case VVarType::TRIWIRE:
+            case VVarType::WIRE: m_assignWToWire[varRefp->varp()].push_back(nodep); break;
             default: break;
             }
         } else {
@@ -56,6 +59,22 @@ class QuadstateVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
+    void visit(AstVar* const nodep) override {
+        iterateChildren(nodep);
+        if (nodep->attrFourState()) {
+            switch (nodep->varType()) {
+            case VVarType::PORT:
+            case VVarType::VAR:
+            case VVarType::TRIOR:
+            case VVarType::TRIAND:
+            case VVarType::TRIWIRE:
+            case VVarType::WIRE: break;
+            default:
+                nodep->v3warn(E_UNSUPPORTED, "Four state logic is unsupported for this type: "
+                                                 << nodep->varType().ascii());
+            }
+        }
+    }
     void visit(AstNode* const nodep) override { iterateChildren(nodep); }
 
 public:
@@ -63,6 +82,7 @@ public:
         iterate(nodep);
         triorTriandReduce(m_assignWToTriand, VCFunc::FOUR_STATE_TRIAND_AND);
         triorTriandReduce(m_assignWToTrior, VCFunc::FOUR_STATE_TRIOR_OR);
+        triorTriandReduce(m_assignWToWire, VCFunc::FOUR_STATE_TRIOR_CONFLICT);
     }
     ~QuadstateVisitor() override = default;
 };

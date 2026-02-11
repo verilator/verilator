@@ -1945,7 +1945,7 @@ public:
 
 class VCFunc final {
 public:
-    enum en : uint8_t { FOUR_STATE_TRIOR_OR, FOUR_STATE_TRIAND_AND };
+    enum en : uint8_t { FOUR_STATE_TRIOR_CONFLICT, FOUR_STATE_TRIOR_OR, FOUR_STATE_TRIAND_AND };
     struct Properties final {
         const enum en val;
         const char* const cname;
@@ -1958,6 +1958,7 @@ private:
 public:
     static const Properties& getProperties(enum en e) {
         const static struct Properties properties[] = {
+            {FOUR_STATE_TRIOR_CONFLICT, "fourLogicConflict", true},
             {FOUR_STATE_TRIOR_OR, "fourLogicTrior", true},
             {FOUR_STATE_TRIAND_AND, "fourLogicTriand", true},
         };
