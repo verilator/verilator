@@ -4,9 +4,12 @@
 // any use, without warranty, 2026 by PlanV GmbH.
 // SPDX-License-Identifier: CC0-1.0
 
+// Test: non-constant control in $countbits inside constraint (unsupported)
+
 class Packet;
-  rand int m_one;
-  constraint cons { m_one ** 2 > 0; }
+  rand bit [7:0] value;
+  bit ctrl;
+  constraint cons { $countbits(value, ctrl) == 3; }
 endclass
 
 module t;

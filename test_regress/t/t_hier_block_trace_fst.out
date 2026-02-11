@@ -1,5 +1,5 @@
 $date
-	Mon Nov 10 12:27:19 2025
+	Tue Feb 10 19:21:54 2026
 
 $end
 $version
@@ -355,23 +355,7 @@ $var wire 1 `! clk $end
 $var wire 8 a! in [7:0] $end
 $var wire 8 b! out [7:0] $end
 $var logic 8 c! ff [7:0] $end
-$scope interface in_ifs $end
-$var wire 1 `! clk $end
-$var logic 8 c! data [7:0] $end
-$upscope $end
-$scope interface out_ifs $end
-$var wire 1 `! clk $end
-$var logic 8 d! data [7:0] $end
-$upscope $end
 $scope module i_sub3 $end
-$scope interface in $end
-$var wire 1 `! clk $end
-$var logic 8 c! data [7:0] $end
-$upscope $end
-$scope interface out $end
-$var wire 1 `! clk $end
-$var logic 8 d! data [7:0] $end
-$upscope $end
 $var wire 8 c! in_wire [7:0] $end
 $var wire 8 d! out_1 [7:0] $end
 $var wire 8 e! out_2 [7:0] $end
@@ -775,6 +759,22 @@ $upscope $end
 $upscope $end
 $upscope $end
 $upscope $end
+$scope interface in $end
+$var wire 1 `! clk $end
+$var logic 8 c! data [7:0] $end
+$upscope $end
+$scope interface out $end
+$var wire 1 `! clk $end
+$var logic 8 d! data [7:0] $end
+$upscope $end
+$upscope $end
+$scope interface in_ifs $end
+$var wire 1 `! clk $end
+$var logic 8 c! data [7:0] $end
+$upscope $end
+$scope interface out_ifs $end
+$var wire 1 `! clk $end
+$var logic 8 d! data [7:0] $end
 $upscope $end
 $upscope $end
 $upscope $end
