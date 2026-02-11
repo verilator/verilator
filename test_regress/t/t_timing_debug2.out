@@ -118,8 +118,8 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
--V{t#,#}         Uncommitted processes waiting for @([event] t.ec.e):
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
+-V{t#,#}         Not triggered processes waiting for @([event] t.ec.e):
 -V{t#,#}           - Process waiting at t/t_timing_class.v:111
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Delayed processes:
@@ -150,8 +150,8 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
--V{t#,#}         Uncommitted processes waiting for @([event] t.ec.e):
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
+-V{t#,#}         Not triggered processes waiting for @([event] t.ec.e):
 -V{t#,#}           - Process waiting at t/t_timing_class.v:111
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes:
@@ -209,8 +209,8 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
--V{t#,#}         Uncommitted processes waiting for @([event] t.ec.e):
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
+-V{t#,#}         Not triggered processes waiting for @([event] t.ec.e):
 -V{t#,#}           - Process waiting at t/t_timing_class.v:111
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Delayed processes:
@@ -283,8 +283,8 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
--V{t#,#}         Uncommitted processes waiting for @([event] t.ec.e):
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
+-V{t#,#}         Not triggered processes waiting for @([event] t.ec.e):
 -V{t#,#}           - Process waiting at t/t_timing_class.v:111
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Delayed processes:
@@ -314,8 +314,8 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
--V{t#,#}         Uncommitted processes waiting for @([event] t.ec.e):
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
+-V{t#,#}         Not triggered processes waiting for @([event] t.ec.e):
 -V{t#,#}           - Process waiting at t/t_timing_class.v:111
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes:
@@ -373,8 +373,8 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
--V{t#,#}         Uncommitted processes waiting for @([event] t.ec.e):
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
+-V{t#,#}         Not triggered processes waiting for @([event] t.ec.e):
 -V{t#,#}           - Process waiting at t/t_timing_class.v:111
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Delayed processes:
@@ -414,7 +414,8 @@
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
 -V{t#,#}         Moving to resume queue processes waiting for @([event] t.ec.e):
 -V{t#,#}           - Process waiting at t/t_timing_class.v:111
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
+-V{t#,#}         Processes to resume waiting for @([event] t.ec.e):
+-V{t#,#}           - Process waiting at t/t_timing_class.v:111
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_class.v:111
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aEventClass::__VnoInFunc_sleep
@@ -496,7 +497,7 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Delayed processes:
 -V{t#,#}             Awaiting time 25: Process waiting at t/t_timing_class.v:131
@@ -531,7 +532,7 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes:
 -V{t#,#}           - Process waiting at t/t_timing_class.v:99
@@ -612,7 +613,7 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Delayed processes:
 -V{t#,#}             Awaiting time 30: Process waiting at t/t_timing_class.v:257
@@ -705,7 +706,7 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Delayed processes:
 -V{t#,#}             Awaiting time 35: Process waiting at t/t_timing_class.v:131
@@ -740,7 +741,7 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes:
 -V{t#,#}           - Process waiting at t/t_timing_class.v:100
@@ -821,7 +822,7 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Delayed processes:
 -V{t#,#}             Awaiting time 40: Process waiting at t/t_timing_class.v:120
@@ -858,7 +859,7 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes:
 -V{t#,#}           - Process waiting at t/t_timing_class.v:37
@@ -931,7 +932,7 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Delayed processes:
 -V{t#,#}             Awaiting time 45: Process waiting at t/t_timing_class.v:131
@@ -961,7 +962,7 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes:
 -V{t#,#}           - Process waiting at t/t_timing_class.v:101
@@ -1017,7 +1018,7 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Delayed processes:
 -V{t#,#}             Awaiting time 50: Process waiting at t/t_timing_class.v:122
@@ -1081,7 +1082,7 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Delayed processes:
 -V{t#,#}             Awaiting time 55: Process waiting at t/t_timing_class.v:131
@@ -1144,7 +1145,7 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Delayed processes:
 -V{t#,#}             Awaiting time 60: Process waiting at t/t_timing_class.v:123
@@ -1171,7 +1172,7 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes:
 -V{t#,#}           - Process waiting at t/t_timing_class.v:58
@@ -1232,7 +1233,7 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Delayed processes:
 -V{t#,#}             Awaiting time 65: Process waiting at t/t_timing_class.v:131
@@ -1295,7 +1296,7 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Delayed processes:
 -V{t#,#}             Awaiting time 70: Process waiting at t/t_timing_class.v:238
@@ -1344,7 +1345,7 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes:
 -V{t#,#}           - Process waiting at t/t_timing_class.v:75
@@ -1395,7 +1396,7 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Delayed processes:
 -V{t#,#}             Awaiting time 75: Process waiting at t/t_timing_class.v:131
@@ -1449,7 +1450,7 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Delayed processes:
 -V{t#,#}             Awaiting time 80: Process waiting at t/t_timing_class.v:136
@@ -1482,7 +1483,7 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes:
 -V{t#,#}           - Process waiting at t/t_timing_class.v:229
@@ -1530,7 +1531,7 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Delayed processes:
 -V{t#,#}             Awaiting time 85: Process waiting at t/t_timing_class.v:230
@@ -1583,7 +1584,7 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Delayed processes:
 -V{t#,#}             Awaiting time 90: Process waiting at t/t_timing_class.v:190
@@ -1636,7 +1637,7 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Delayed processes:
 -V{t#,#}             Awaiting time 95: Process waiting at t/t_timing_class.v:131
@@ -1687,7 +1688,7 @@
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug2___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.ec.e)
+-V{t#,#}         No process to resume waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
 -V{t#,#}         Delayed processes:
 -V{t#,#}             Awaiting time 100: Process waiting at t/t_timing_class.v:231

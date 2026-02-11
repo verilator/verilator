@@ -167,17 +167,24 @@ void VlTriggerScheduler::ready(const char* eventDescription) {
 
 #ifdef VL_DEBUG
 void VlTriggerScheduler::dump(const char* eventDescription) const {
-    if (m_fired.empty()) {
-        VL_DBG_MSGF("         No ready processes waiting for %s\n", eventDescription);
+    if (m_toResume.empty()) {
+        VL_DBG_MSGF("         No process to resume waiting for %s\n", eventDescription);
     } else {
-        for (const auto& susp : m_fired) {
-            VL_DBG_MSGF("         Ready processes waiting for %s:\n", eventDescription);
+        for (const auto& susp : m_toResume) {
+            VL_DBG_MSGF("         Processes to resume waiting for %s:\n", eventDescription);
+            VL_DBG_MSGF("           - ");
+            susp.dump();
+        }
+    }
+    if (!m_fired.empty()) {
+        VL_DBG_MSGF("         Triggered processes waiting for %s:\n", eventDescription);
+        for (const auto& susp : m_awaiting) {
             VL_DBG_MSGF("           - ");
             susp.dump();
         }
     }
     if (!m_awaiting.empty()) {
-        VL_DBG_MSGF("         Uncommitted processes waiting for %s:\n", eventDescription);
+        VL_DBG_MSGF("         Not triggered processes waiting for %s:\n", eventDescription);
         for (const auto& susp : m_awaiting) {
             VL_DBG_MSGF("           - ");
             susp.dump();

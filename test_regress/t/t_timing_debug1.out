@@ -71,13 +71,13 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
@@ -122,13 +122,13 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
 -V{t#,#}         Delayed processes:
@@ -156,14 +156,17 @@
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         Processes to resume waiting for @(posedge t.clk1):
+-V{t#,#}           - Process waiting at t/t_timing_sched.v:18
+-V{t#,#}         Processes to resume waiting for @(posedge t.clk1):
+-V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:18
 -V{t#,#}+    Vt_timing_debug1___024root____VbeforeTrig_h########__0
 -V{t#,#}         Suspending process waiting for @(posedge t.clk2) at t/t_timing_sched.v:18
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:17
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -183,10 +186,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -234,10 +237,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -260,10 +263,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -281,10 +284,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -330,10 +333,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -388,12 +391,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -420,11 +423,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         Processes to resume waiting for @(posedge t.clk1):
+-V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:17
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -444,10 +448,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -495,10 +499,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -528,9 +532,12 @@
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
+-V{t#,#}         Processes to resume waiting for @(posedge t.clk2):
+-V{t#,#}           - Process waiting at t/t_timing_sched.v:48
+-V{t#,#}         Processes to resume waiting for @(posedge t.clk2):
+-V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:48
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:18
@@ -551,11 +558,11 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__1
@@ -600,11 +607,11 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
 -V{t#,#}         Delayed processes:
 -V{t#,#}             Awaiting time 12: Process waiting at t/t_timing_sched.v:10
@@ -629,12 +636,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
@@ -651,12 +658,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
@@ -701,12 +708,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
 -V{t#,#}         Delayed processes:
@@ -760,13 +767,13 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
 -V{t#,#}         Delayed processes:
@@ -794,14 +801,17 @@
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         Processes to resume waiting for @(posedge t.clk1):
+-V{t#,#}           - Process waiting at t/t_timing_sched.v:18
+-V{t#,#}         Processes to resume waiting for @(posedge t.clk1):
+-V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:18
 -V{t#,#}+    Vt_timing_debug1___024root____VbeforeTrig_h########__0
 -V{t#,#}         Suspending process waiting for @(posedge t.clk2) at t/t_timing_sched.v:18
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:17
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -821,10 +831,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -872,10 +882,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -898,10 +908,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -919,10 +929,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -968,10 +978,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -1026,12 +1036,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -1058,11 +1068,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         Processes to resume waiting for @(posedge t.clk1):
+-V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:17
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -1082,10 +1093,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -1133,10 +1144,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -1159,10 +1170,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -1180,10 +1191,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -1229,10 +1240,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -1255,10 +1266,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -1276,10 +1287,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -1325,10 +1336,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -1383,12 +1394,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -1415,11 +1426,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         Processes to resume waiting for @(posedge t.clk1):
+-V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:17
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -1439,10 +1451,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -1490,10 +1502,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -1516,10 +1528,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -1537,10 +1549,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -1586,10 +1598,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -1644,12 +1656,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -1685,10 +1697,14 @@
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         Processes to resume waiting for @(posedge t.clk1):
+-V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:17
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
+-V{t#,#}         Processes to resume waiting for @(posedge t.clk2):
+-V{t#,#}           - Process waiting at t/t_timing_sched.v:48
+-V{t#,#}         Processes to resume waiting for @(posedge t.clk2):
+-V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:48
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:18
@@ -1714,11 +1730,11 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0
@@ -1765,11 +1781,11 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
 -V{t#,#}         Delayed processes:
 -V{t#,#}             Awaiting time 34: Process waiting at t/t_timing_sched.v:48
@@ -1823,12 +1839,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
 -V{t#,#}         Delayed processes:
@@ -1850,12 +1866,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
@@ -1872,12 +1888,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
@@ -1922,12 +1938,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
 -V{t#,#}         Delayed processes:
@@ -1981,13 +1997,13 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
 -V{t#,#}         Delayed processes:
@@ -2015,14 +2031,17 @@
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         Processes to resume waiting for @(posedge t.clk1):
+-V{t#,#}           - Process waiting at t/t_timing_sched.v:18
+-V{t#,#}         Processes to resume waiting for @(posedge t.clk1):
+-V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:18
 -V{t#,#}+    Vt_timing_debug1___024root____VbeforeTrig_h########__0
 -V{t#,#}         Suspending process waiting for @(posedge t.clk2) at t/t_timing_sched.v:18
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:17
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -2042,10 +2061,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -2093,10 +2112,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -2119,10 +2138,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -2140,10 +2159,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -2189,10 +2208,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -2247,12 +2266,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -2274,12 +2293,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -2297,12 +2316,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -2348,12 +2367,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -2380,11 +2399,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         Processes to resume waiting for @(posedge t.clk1):
+-V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:17
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -2404,10 +2424,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -2455,10 +2475,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -2481,10 +2501,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -2502,10 +2522,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -2551,10 +2571,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -2609,12 +2629,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -2641,11 +2661,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         Processes to resume waiting for @(posedge t.clk1):
+-V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:17
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -2665,10 +2686,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -2716,10 +2737,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -2742,10 +2763,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -2763,10 +2784,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -2812,10 +2833,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -2848,11 +2869,14 @@
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
+-V{t#,#}         Processes to resume waiting for @(posedge t.clk2):
+-V{t#,#}           - Process waiting at t/t_timing_sched.v:48
+-V{t#,#}         Processes to resume waiting for @(posedge t.clk2):
+-V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:48
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:18
@@ -2873,12 +2897,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__1
@@ -2923,12 +2947,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
 -V{t#,#}         Delayed processes:
 -V{t#,#}             Awaiting time 56: Process waiting at t/t_timing_sched.v:48
@@ -2981,13 +3005,13 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
 -V{t#,#}         Delayed processes:
@@ -3015,14 +3039,17 @@
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         Processes to resume waiting for @(posedge t.clk1):
+-V{t#,#}           - Process waiting at t/t_timing_sched.v:17
+-V{t#,#}         Processes to resume waiting for @(posedge t.clk1):
+-V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:17
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:18
 -V{t#,#}+    Vt_timing_debug1___024root____VbeforeTrig_h########__0
 -V{t#,#}         Suspending process waiting for @(posedge t.clk2) at t/t_timing_sched.v:18
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -3042,10 +3069,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -3093,10 +3120,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -3119,10 +3146,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -3140,10 +3167,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -3189,10 +3216,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -3247,12 +3274,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -3279,11 +3306,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         Processes to resume waiting for @(posedge t.clk1):
+-V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:17
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -3303,10 +3331,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -3354,10 +3382,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -3382,10 +3410,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -3407,10 +3435,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -3457,10 +3485,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -3515,12 +3543,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -3547,11 +3575,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         Processes to resume waiting for @(posedge t.clk1):
+-V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:17
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -3571,10 +3600,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -3622,10 +3651,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -3648,10 +3677,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -3669,10 +3698,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -3718,10 +3747,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -3776,12 +3805,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -3808,11 +3837,12 @@
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         Processes to resume waiting for @(posedge t.clk1):
+-V{t#,#}           - Process waiting at t/t_timing_sched.v:17
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:17
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -3832,10 +3862,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -3883,10 +3913,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk2):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
@@ -3916,9 +3946,12 @@
 -V{t#,#}         Moving to resume queue processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:48
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
+-V{t#,#}         Processes to resume waiting for @(posedge t.clk2):
+-V{t#,#}           - Process waiting at t/t_timing_sched.v:48
+-V{t#,#}         Processes to resume waiting for @(posedge t.clk2):
+-V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:48
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:18
@@ -3939,11 +3972,11 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__1
@@ -3988,11 +4021,11 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
 -V{t#,#}         Delayed processes:
 -V{t#,#}             Awaiting time 78: Process waiting at t/t_timing_sched.v:50
@@ -4017,11 +4050,11 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0
@@ -4037,11 +4070,11 @@
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_orInto__act_vec_vec
 -V{t#,#}+    Vt_timing_debug1___024root___trigger_anySet__act
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
--V{t#,#}         No ready processes waiting for @(posedge t.clk1)
--V{t#,#}         Uncommitted processes waiting for @(posedge t.clk1):
+-V{t#,#}         No process to resume waiting for @(posedge t.clk1)
+-V{t#,#}         Not triggered processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk1)
--V{t#,#}         No ready processes waiting for @(posedge t.clk2)
+-V{t#,#}         No process to resume waiting for @(posedge t.clk2)
 -V{t#,#}         Resuming processes waiting for @(posedge t.clk2)
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0
