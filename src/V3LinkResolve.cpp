@@ -27,7 +27,6 @@
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3LinkResolve.h"
-
 #include "V3String.h"
 #include "V3Task.h"
 
@@ -73,8 +72,9 @@ class LinkResolveVisitor final : public VNVisitor {
     void visit(AstClass* nodep) override {
         VL_RESTORER(m_classp);
         m_classp = nodep;
-        nodep->foreachMember(
-            [&](AstClass* const, AstVar* const varp) { varp->varType(VVarType::MEMBER); });
+        nodep->foreachMember([&](AstClass* const, AstVar* const varp) {
+            if (!varp->isParam()) varp->varType(VVarType::MEMBER);
+        });
         iterateChildren(nodep);
     }
     void visit(AstConstraint* nodep) override {
