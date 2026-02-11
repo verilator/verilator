@@ -8023,8 +8023,8 @@ class WidthVisitor final : public VNVisitor {
     void checkUnpackedArrayAssignmentCompatible(const AstNode* nodep, const T* const lhsRefp,
                                                 const N* const rhsRefp) {
         static_assert(
-            (std::is_same_v<T, AstVar> || std::is_same_v<T, AstNodeVarRef>)
-                && (std::is_same_v<N, AstVar> || std::is_same_v<N, AstNodeVarRef>),
+            (std::is_same<T, AstVar>::value || std::is_same<T, AstNodeVarRef>::value)
+                && (std::is_same<N, AstVar>::value || std::is_same<N, AstNodeVarRef>::value),
             "Unsupported types provided.");
         if (!lhsRefp || !rhsRefp) return;
         const AstNodeDType* const lhsDtp = lhsRefp->dtypep()->skipRefp();
