@@ -97,8 +97,8 @@ public:
             activeInitp->senTreeStorep(activeInitp->sentreep());
             vscp->scopep()->addBlocksp(activeInitp);
 
-            // Reuse the statements created for __VforceEn initialization
-            // and replace var ref on the LHS and the RHS
+            // Create statements that update __Rd variable.
+            // These nodes will be copied and used also for __VforceEn initialization
             AstVarRef* const rdRefp = new AstVarRef{flp, m_rdVscp, VAccess::WRITE};
             std::vector<AstAssign*> assigns;
             AstNodeStmt* const rdUpdateStmtsp = getAssignStmtsp(rdRefp, vscp, rdRefp, assigns);
