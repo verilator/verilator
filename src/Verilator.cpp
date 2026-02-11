@@ -370,6 +370,7 @@ static void process() {
         if (!(v3Global.opt.serializeOnly() && !v3Global.opt.flatten())) {
             // Inline all tasks
             V3Task::taskAll(v3Global.rootp());
+            V3Quadstate::quadstateReduce(v3Global.rootp());
         }
 
         if (!v3Global.opt.serializeOnly()) {
@@ -465,6 +466,7 @@ static void process() {
             // Schedule the logic
             V3Sched::schedule(v3Global.rootp());
             V3Sched::transformForks(v3Global.rootp());
+            V3Quadstate::quadstateReduce(v3Global.rootp());
 
             // Post scheduling transformations - TODO: this should at least be renamed
             V3Clock::clockAll(v3Global.rootp());
@@ -578,6 +580,7 @@ static void process() {
             // Branch prediction
             V3Branch::branchAll(v3Global.rootp());
 
+            V3Quadstate::quadstateReduce(v3Global.rootp());
             // Add C casts when longs need to become long-long and vice-versa
             // Note depth may insert something needing a cast, so this must be last.
             V3Cast::castAll(v3Global.rootp());

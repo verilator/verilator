@@ -365,7 +365,7 @@ class UnknownVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstConst* nodep) override {
-        if (m_constXCvt && nodep->num().isFourState()) {
+        if (m_constXCvt && !nodep->dtypep()->isFourstate() && nodep->num().isFourState()) {
             UINFO(4, " CONST4 " << nodep);
             UINFOTREE(9, nodep, "", "Const_old");
             // CONST(num) -> VARREF(newvarp)
@@ -377,7 +377,6 @@ class UnknownVisitor final : public VNVisitor {
             numbx.opBitsXZ(nodep->num());
             if (!m_allowXUnique || v3Global.opt.xAssign() != "unique") {
                 // All X bits just become 0; fastest simulation, but not nice
-                return;
                 V3Number numnew{nodep, numb1.width()};
                 if (v3Global.opt.xAssign() == "1") {
                     numnew.opOr(numb1, numbx);
@@ -458,8 +457,8 @@ class UnknownVisitor final : public VNVisitor {
                 // SEL(...) -> COND(LTE(bit<=maxmsb), ARRAYSEL(...), {width{1'bx}})
                 VNRelinker replaceHandle;
                 nodep->unlinkFrBack(&replaceHandle);
-                V3Number xnum{nodep, nodep->width(), 0};
-                // xnum.setAllBitsX();  // FIXME - this x was set to 0 anyway...
+                V3Number xnum{nodep, nodep->width()};
+                xnum.setAllBitsX();
                 AstNodeExpr* const xexprp = new AstConst{nodep->fileline(), xnum};
                 AstNodeExpr* const newp = [&]() -> AstNodeExpr* {
                     if (condp->isZero()) {
