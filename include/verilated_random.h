@@ -641,6 +641,23 @@ public:
         for (size_t i = 0; i < N_Depth; ++i) { basicStdRandomization(value.operator[](i), width); }
         return true;
     }
+
+    // Queue/dynamic array randomization
+    template <typename T_Value, size_t N_MaxSize>
+    bool basicStdRandomization(VlQueue<T_Value, N_MaxSize>& value, size_t width) {
+        for (int i = 0; i < value.size(); ++i) { basicStdRandomization(value.atWrite(i), width); }
+        return true;
+    }
+
+    // Associative array randomization
+    template <typename T_Key, typename T_Value>
+    bool basicStdRandomization(VlAssocArray<T_Key, T_Value>& value, size_t width) {
+        T_Key key;
+        for (int exists = value.first(key); exists; exists = value.next(key)) {
+            basicStdRandomization(value.at(key), width);
+        }
+        return true;
+    }
     bool next() { return VlRandomizer::next(m_rng); }
 };
 
