@@ -79,7 +79,7 @@ public:
         AstVarScope* const m_rdVscp;  // New variable to replace read references with
         AstVarScope* const m_valVscp;  // Forced value
         AstVarScope* const m_enVscp;  // Force enabled signal
-        V3UniqueNames m_iterNames;
+        V3UniqueNames m_iterNames;  // Names for loop iteration variables
         explicit ForceComponentsVarScope(AstVarScope* vscp, ForceComponentsVar& fcv)
             : m_rdVscp{new AstVarScope{vscp->fileline(), vscp->scopep(), fcv.m_rdVarp}}
             , m_valVscp{new AstVarScope{vscp->fileline(), vscp->scopep(), fcv.m_valVarp}}
