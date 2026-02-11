@@ -206,6 +206,7 @@ public:
         }
         static AstNodeExpr* wrapIntoExprp(AstVarRef* const refp, AstNodeExpr* const exprp,
                                           AstVarRef* const varRefToReplacep) {
+            // Return a copy of exprp in which varRefToReplacep is replaced with refp
             if (exprp == varRefToReplacep) {
                 return refp;
             } else {
