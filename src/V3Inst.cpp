@@ -74,6 +74,7 @@ class InstVisitor final : public VNVisitor {
                 AstNodeExpr* const rhsp = new AstVarXRef{exprp->fileline(), nodep->modVarp(),
                                                          m_cellp->name(), VAccess::READ};
                 AstAssignW* const assp = new AstAssignW{exprp->fileline(), exprp, rhsp};
+                assp->fromPortConnection(true);
                 m_cellp->addNextHere(new AstAlways{assp});
             } else if (nodep->modVarp()->isNonOutput()) {
                 // Don't bother moving constants now,
@@ -83,6 +84,7 @@ class InstVisitor final : public VNVisitor {
                                      new AstVarXRef{exprp->fileline(), nodep->modVarp(),
                                                     m_cellp->name(), VAccess::WRITE},
                                      exprp};
+                assp->fromPortConnection(true);
                 m_cellp->addNextHere(new AstAlways{assp});
                 UINFOTREE(9, assp, "", "_new");
             } else if (nodep->modVarp()->isIfaceRef()

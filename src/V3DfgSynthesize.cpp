@@ -822,6 +822,30 @@ class AstToDfgSynthesize final {
             // Loop index often abused, so suppress
             if (getAstVar(varp)->isUsedLoopIdx()) continue;
 
+            // Suppress when ALL drivers are from port connections — multiple
+            // cell output ports driving the same parent wire is structural,
+            // not a user error. If any driver is user code, still warn.
+            {
+                bool allFromPort = true;
+                bool anyLogic = false;
+                if (DfgUnresolved* const unresolvedp
+                    = var.srcp() ? var.srcp()->cast<DfgUnresolved>() : nullptr) {
+                    unresolvedp->foreachSource([&](DfgVertex& src) {
+                        if (DfgLogic* const logicp = src.cast<DfgLogic>()) {
+                            anyLogic = true;
+                            if (const AstAssignW* const ap
+                                = VN_CAST(logicp->nodep()->stmtsp(), AssignW)) {
+                                if (!ap->fromPortConnection()) allFromPort = false;
+                            } else {
+                                allFromPort = false;
+                            }
+                        }
+                        return false;
+                    });
+                }
+                if (anyLogic && allFromPort) continue;
+            }
+
             // Warn the user now
             const std::string lo = std::to_string(jD.m_lo);
             const std::string hi = std::to_string(std::min(iD.m_hi, jD.m_hi));

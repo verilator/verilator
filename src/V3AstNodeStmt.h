@@ -46,10 +46,12 @@ class AstNodeAssign VL_NOT_FINAL : public AstNodeStmt {
     // @astgen op1 := rhsp : AstNodeExpr
     // @astgen op2 := lhsp : AstNodeExpr
     // @astgen op3 := timingControlp : Optional[AstNode]
+    bool m_fromPortConnection : 1;  // Created by instAll() for cell port connection
 protected:
     AstNodeAssign(VNType t, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
                   AstNode* timingControlp = nullptr)
-        : AstNodeStmt{t, fl} {
+        : AstNodeStmt{t, fl}
+        , m_fromPortConnection{false} {
         this->rhsp(rhsp);
         this->lhsp(lhsp);
         this->timingControlp(timingControlp);
@@ -66,6 +68,8 @@ public:
     bool sameNode(const AstNode*) const override { return true; }
     string verilogKwd() const override { return "="; }
     bool isTimingControl() const override { return timingControlp(); }
+    bool fromPortConnection() const { return m_fromPortConnection; }
+    void fromPortConnection(bool flag) { m_fromPortConnection = flag; }
 };
 class AstNodeBlock VL_NOT_FINAL : public AstNodeStmt {
     // A Begin/fork block
