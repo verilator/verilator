@@ -217,13 +217,34 @@ class UnknownVisitor final : public VNVisitor {
     }
     void visit(AstAssignW* nodep) override {
         VL_RESTORER(m_timingControlp);
+        VL_RESTORER(m_constXCvt);
+        m_constXCvt = m_constXCvt && !nodep->lhsp()->isFourState();
         m_timingControlp = nodep->timingControlp();
         VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
     }
     void visit(AstNodeAssign* nodep) override {
         VL_RESTORER(m_timingControlp);
+        VL_RESTORER(m_constXCvt);
+        m_constXCvt = m_constXCvt && !nodep->lhsp()->isFourState();
         m_timingControlp = nodep->timingControlp();
         iterateChildren(nodep);
+    }
+    void visit(AstNodeFTaskRef* const nodep) override {
+        iterateNull(nodep->namep());
+        iterateNull(nodep->op2p());
+        {
+            const AstNode* portp = nodep->taskp()->stmtsp();
+            for (AstNodeExpr* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), NodeExpr)) {
+                VL_RESTORER(m_constXCvt);
+                const AstVar* const portVarp = VN_AS(portp, Var);
+                m_constXCvt
+                    = m_constXCvt
+                      && !(portVarp->direction().isNonOutput() && portVarp->attrFourState());
+                iterate(pinp);
+                portp = portVarp->nextp();
+            }
+        }
+        iterateNull(nodep->scopeNamep());
     }
     void visit(AstCaseItem* nodep) override {
         VL_RESTORER(m_constXCvt);
@@ -365,7 +386,7 @@ class UnknownVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstConst* nodep) override {
-        if (m_constXCvt && !nodep->dtypep()->isFourstate() && nodep->num().isFourState()) {
+        if (m_constXCvt && nodep->num().isFourState()) {
             UINFO(4, " CONST4 " << nodep);
             UINFOTREE(9, nodep, "", "Const_old");
             // CONST(num) -> VARREF(newvarp)
