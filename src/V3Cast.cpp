@@ -82,7 +82,7 @@ class CastVisitor final : public VNVisitor {
     }
     void ensureCast(AstNodeExpr* nodep) {
         if (castSize(nodep->backp()) != castSize(nodep) || !nodep->user1()) {
-            if (!nodep->isNull()) insertCast(nodep, castSize(nodep->backp()));
+            if (!nodep->isNull() && !nodep->isWide()) insertCast(nodep, castSize(nodep->backp()));
         }
     }
     // cppcheck-suppress constParameterPointer // lhsp might be changed
@@ -183,19 +183,27 @@ class CastVisitor final : public VNVisitor {
             if (nodep->sizeMattersLhs()) ensureCast(nodep->lhsp());
         }
     }
-    void visit(AstVarRef* nodep) override {
+    void refCast(AstNodeExpr* nodep, const AstVarRef* const varRefp) {
         const AstNode* const backp = nodep->backp();
-        if (nodep->access().isReadOnly() && VN_IS(backp, NodeExpr) && !VN_IS(backp, CCast)
-            && !VN_IS(backp, NodeCCall) && !VN_IS(backp, CMethodHard) && !VN_IS(backp, SFormatF)
-            && !VN_IS(backp, ArraySel) && !VN_IS(backp, StructSel) && !VN_IS(backp, RedXor)
-            && (nodep->varp()->basicp() && !nodep->varp()->basicp()->isForkSync()
-                && !nodep->varp()->basicp()->isProcessRef() && !nodep->varp()->basicp()->isEvent())
-            && backp->width() && castSize(nodep) != castSize(nodep->varp())) {
+        if (varRefp && varRefp->access().isReadOnly() && VN_IS(backp, NodeExpr)
+            && !VN_IS(backp, CCast) && !VN_IS(backp, NodeCCall) && !VN_IS(backp, CMethodHard)
+            && !VN_IS(backp, SFormatF) && !VN_IS(backp, ArraySel) && !VN_IS(backp, StructSel)
+            && !VN_IS(backp, RedXor)
+            && (varRefp->varp()->basicp() && !varRefp->varp()->basicp()->isForkSync()
+                && !varRefp->varp()->basicp()->isProcessRef()
+                && !varRefp->varp()->basicp()->isEvent())
+            && backp->width() && castSize(nodep) != castSize(varRefp->varp())) {
             // Cast vars to IData first, else below has upper bits wrongly set
             //  CData x=3; out = (QData)(x<<30);
             insertCast(nodep, castSize(nodep));
         }
         nodep->user1(1);
+    }
+    void visit(AstVarRef* nodep) override { refCast(nodep, nodep); }
+    void visit(AstArraySel* nodep) override {
+        iterateChildren(nodep);
+        const AstVarRef* const varRefp = VN_CAST(nodep->fromp(), VarRef);
+        if (varRefp) refCast(nodep, varRefp);
     }
     void visit(AstConst* nodep) override {
         // Constants are of unknown size if smaller than 33 bits, because
