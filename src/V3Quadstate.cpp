@@ -44,6 +44,24 @@ class QuadstateVisitor final : public VNVisitor {
         }
     }
 
+    static void reduceToTwoStateLogic(AstNode* const exprp) {
+        if (!exprp->dtypep()->isFourstate()) return;
+        const AstBasicDType* const dtypep = exprp->dtypep()->basicp();
+        switch (dtypep->keyword()) {
+        case VBasicDTypeKwd::LOGIC:
+        case VBasicDTypeKwd::LOGIC_IMPLICIT:
+            exprp->dtypep(
+                exprp->findBitDType(dtypep->width(), dtypep->widthMin(), dtypep->numeric()));
+            break;
+        case VBasicDTypeKwd::INTEGER: exprp->dtypep(exprp->findIntDType()); break;
+        case VBasicDTypeKwd::TIME:
+            exprp->dtypep(exprp->findBitDType(64, 64, dtypep->numeric()));
+            break;
+        default:
+            exprp->v3fatalSrc("Unhandled four state variable type: " << dtypep->keyword().ascii());
+        }
+    }
+
     void visit(AstAssignW* const nodep) override {
         if (AstVarRef* const varRefp = VN_CAST(nodep->lhsp(), VarRef)) {
             switch (varRefp->varp()->varType()) {
@@ -53,7 +71,7 @@ class QuadstateVisitor final : public VNVisitor {
             case VVarType::WIRE: m_assignWToWire[varRefp->varp()].push_back(nodep); break;
             default: break;
             }
-        } else {
+        } else if (nodep->lhsp()->isFourState()) {
             nodep->v3warn(EC_INFO,
                           "assign with complex lhs is unsupported in 4-state logic context");
         }
@@ -73,7 +91,13 @@ class QuadstateVisitor final : public VNVisitor {
                 nodep->v3warn(E_UNSUPPORTED, "Four state logic is unsupported for this type: "
                                                  << nodep->varType().ascii());
             }
+        } else {
+            reduceToTwoStateLogic(nodep);
         }
+    }
+    void visit(AstConst* const nodep) override {
+        iterateChildren(nodep);
+        if (!nodep->num().isAnyXZ()) reduceToTwoStateLogic(nodep);
     }
     void visit(AstNode* const nodep) override { iterateChildren(nodep); }
 

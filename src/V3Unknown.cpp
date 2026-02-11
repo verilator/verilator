@@ -458,8 +458,8 @@ class UnknownVisitor final : public VNVisitor {
                 // SEL(...) -> COND(LTE(bit<=maxmsb), ARRAYSEL(...), {width{1'bx}})
                 VNRelinker replaceHandle;
                 nodep->unlinkFrBack(&replaceHandle);
-                V3Number xnum{nodep, nodep->width()};
-                xnum.setAllBitsX();
+                V3Number xnum{nodep, nodep->width(), 0};
+                // xnum.setAllBitsX();  // FIXME - this x was set to 0 anyway...
                 AstNodeExpr* const xexprp = new AstConst{nodep->fileline(), xnum};
                 AstNodeExpr* const newp = [&]() -> AstNodeExpr* {
                     if (condp->isZero()) {
