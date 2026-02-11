@@ -204,36 +204,6 @@ public:
                 lhsDtypep->v3fatalSrc("Unhandled type");
             }
         }
-        static AstNodeExpr* applySelects(AstNodeExpr* exprp,
-                                         const std::vector<AstNodeExpr*>& selectExprs) {
-            for (AstNodeExpr* const sp : selectExprs) {
-                exprp = new AstArraySel{exprp->fileline(), exprp, sp->cloneTreePure(false)};
-            }
-            return exprp;
-        }
-        AstNodeExpr* forcedUpdate(AstVarScope* const vscp,
-                                  const std::vector<AstNodeExpr*>& selectExprs) const {
-            FileLine* const flp = vscp->fileline();
-            AstVarRef* origRefp = new AstVarRef{flp, vscp, VAccess::READ};
-            ForceState::markNonReplaceable(origRefp);
-            AstNodeExpr* const origp = applySelects(origRefp, selectExprs);
-            if (ForceState::isRangedDType(vscp)) {
-                return new AstOr{
-                    flp,
-                    new AstAnd{
-                        flp,
-                        applySelects(new AstVarRef{flp, m_enVscp, VAccess::READ}, selectExprs),
-                        applySelects(new AstVarRef{flp, m_valVscp, VAccess::READ}, selectExprs)},
-                    new AstAnd{
-                        flp,
-                        new AstNot{flp, applySelects(new AstVarRef{flp, m_enVscp, VAccess::READ},
-                                                     selectExprs)},
-                        origp}};
-            }
-            return new AstCond{
-                flp, applySelects(new AstVarRef{flp, m_enVscp, VAccess::READ}, selectExprs),
-                applySelects(new AstVarRef{flp, m_valVscp, VAccess::READ}, selectExprs), origp};
-        }
         static AstNodeExpr* wrapIntoExprp(AstVarRef* const refp, AstNodeExpr* const exprp,
                                           AstVarRef* const varRefToReplacep) {
             if (exprp == varRefToReplacep) {
