@@ -443,7 +443,7 @@ class ForceConvertVisitor final : public VNVisitor {
                     refp->access(VAccess::READ);
                     ForceState::markNonReplaceable(refp);
                 } else {
-                    refp->replaceWith(m_state.getForceComponents(vscp).forcedUpdate(vscp, {}));
+                    refp->replaceWith(m_state.getForceComponents(vscp).forcedUpdate(vscp));
                     VL_DO_DANGLING(refp->deleteTree(), refp);
                 }
             });
@@ -550,7 +550,7 @@ class ForceReplaceVisitor final : public VNVisitor {
                 AstNodeExpr* lhsp;
                 AstNodeExpr* rhsp;
                 if (nodep->dtypep()->skipRefp()->isIntegralOrPacked()) {
-                    rhsp = fcp->forcedUpdate(nodep->varScopep(), {});
+                    rhsp = fcp->forcedUpdate(nodep->varScopep());
                     lhsp = lhsRefp;
                 } else {
                     AstNodeExpr* wholeExprp = nodep;
