@@ -47,6 +47,7 @@
 #include "V3Force.h"
 
 #include "V3AstUserAllocator.h"
+#include "V3UniqueNames.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -78,10 +79,12 @@ public:
         AstVarScope* const m_rdVscp;  // New variable to replace read references with
         AstVarScope* const m_valVscp;  // Forced value
         AstVarScope* const m_enVscp;  // Force enabled signal
+        V3UniqueNames m_iterNames;
         explicit ForceComponentsVarScope(AstVarScope* vscp, ForceComponentsVar& fcv)
             : m_rdVscp{new AstVarScope{vscp->fileline(), vscp->scopep(), fcv.m_rdVarp}}
             , m_valVscp{new AstVarScope{vscp->fileline(), vscp->scopep(), fcv.m_valVarp}}
-            , m_enVscp{new AstVarScope{vscp->fileline(), vscp->scopep(), fcv.m_enVarp}} {
+            , m_enVscp{new AstVarScope{vscp->fileline(), vscp->scopep(), fcv.m_enVarp}}
+            , m_iterNames{"__VForceIter"} {
             m_rdVscp->addNext(m_enVscp);
             m_rdVscp->addNext(m_valVscp);
             vscp->addNextHere(m_rdVscp);
@@ -139,7 +142,6 @@ public:
         AstNodeStmt* getAssignStmtsp(AstNodeExpr* const lhsp, AstVarScope* const vscp,
                                      AstVarRef* const lhsVarRefp,
                                      std::vector<AstAssign*>& assigns) {
-            static int cnt = 0;
             FileLine* const flp = lhsp->fileline();
             const AstNodeDType* const lhsDtypep = lhsp->dtypep()->skipRefp();
             if (lhsDtypep->isIntegralOrPacked() || VN_IS(lhsDtypep, BasicDType)) {
@@ -166,10 +168,9 @@ public:
                 return stmtsp;
             } else if (const AstUnpackArrayDType* const arrayDtypep
                        = VN_CAST(lhsDtypep, UnpackArrayDType)) {
-                AstVar* const loopVarp = new AstVar{flp, VVarType::MODULETEMP,
-                                                    m_rdVscp->varp()->name() + "__VwhileIter_new"
-                                                        + std::to_string(cnt++),
-                                                    VFlagBitPacked{}, 32};
+                AstVar* const loopVarp
+                    = new AstVar{flp, VVarType::MODULETEMP,
+                                 m_iterNames.get(m_rdVscp->varp()->name()), VFlagBitPacked{}, 32};
                 m_rdVscp->varp()->addNext(loopVarp);
                 AstVarScope* const loopVarScopep
                     = new AstVarScope{flp, m_rdVscp->scopep(), loopVarp};
