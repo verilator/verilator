@@ -322,6 +322,14 @@ public:
         return {resultp, firedAtInitialization};
     }
 
+    Results getResultsAndClearUpdates() {
+        m_hasPreUpdate.clear();
+        m_hasPostUpdate.clear();
+        Results ans = std::move(m_results);
+        m_results = {};
+        return ans;
+    }
+
     Results getAndClearResults() {
         m_curr.clear();
         m_prev.clear();

@@ -16,7 +16,7 @@
 //
 // Functions defined in this file are used by V3Sched.cpp to properly integrate
 // static scheduling with timing features. They create external domains for
-// variables, remap them to trigger vectors, and create timing resume/commit
+// variables, remap them to trigger vectors, and create timing resume/ready
 // calls for the global eval loop. There is also a function that transforms
 // forks into emittable constructs.
 //
@@ -68,6 +68,24 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
         m_resumeFuncp->declPrivate(true);
         scopeTopp->addBlocksp(m_resumeFuncp);
 
+        for (const auto& p : m_lbs) {
+            AstActive* const activep = p.second;
+            activep->foreach([this](AstCMethodHard* const exprp) {
+                if (exprp->method() != VCMethod::SCHED_RESUME) return;
+                AstNodeExpr* const fromp = exprp->fromp();
+                if (VN_AS(fromp->dtypep(), BasicDType)->keyword()
+                    != VBasicDTypeKwd::TRIGGER_SCHEDULER) {
+                    return;
+                }
+                AstCMethodHard* const moveToResumep = new AstCMethodHard{
+                    fromp->fileline(), fromp->cloneTree(false),
+                    VCMethod::SCHED_MOVE_TO_RESUME_QUEUE,
+                    exprp->pinsp() ? exprp->pinsp()->cloneTree(true) : nullptr};
+                moveToResumep->dtypeSetVoid();
+                m_resumeFuncp->addStmtsp(moveToResumep->makeStmt());
+            });
+        }
+
         // Put all the timing actives in the resume function
         AstIf* dlyShedIfp = nullptr;
         for (auto& p : m_lbs) {
@@ -77,13 +95,12 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
             AstVarRef* const schedrefp = VN_AS(
                 VN_AS(VN_AS(activep->stmtsp(), StmtExpr)->exprp(), CMethodHard)->fromp(), VarRef);
 
-            AstIf* const ifp = V3Sched::util::createIfFromSenTree(activep->sentreep());
-            ifp->addThensp(activep->stmtsp()->unlinkFrBackWithNext());
-
+            AstNode* const actionp = activep->stmtsp()->unlinkFrBackWithNext();
             if (schedrefp->varScopep()->dtypep()->basicp()->isDelayScheduler()) {
-                dlyShedIfp = ifp;
+                dlyShedIfp = V3Sched::util::createIfFromSenTree(activep->sentreep());
+                dlyShedIfp->addThensp(actionp);
             } else {
-                m_resumeFuncp->addStmtsp(ifp);
+                m_resumeFuncp->addStmtsp(actionp);
             }
         }
         if (dlyShedIfp) m_resumeFuncp->addStmtsp(dlyShedIfp);
@@ -97,10 +114,10 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
 }
 
 //============================================================================
-// Creates a timing commit call (if needed, else returns null)
+// Creates a timing ready call (if needed, else returns null)
 
-AstCCall* TimingKit::createCommit(AstNetlist* const netlistp) {
-    if (!m_commitFuncp) {
+AstCCall* TimingKit::createReady(AstNetlist* const netlistp) {
+    if (!m_readyFuncp) {
         for (auto& p : m_lbs) {
             AstActive* const activep = p.second;
             auto* const resumep = VN_AS(VN_AS(activep->stmtsp(), StmtExpr)->exprp(), CMethodHard);
@@ -111,67 +128,35 @@ AstCCall* TimingKit::createCommit(AstNetlist* const netlistp) {
                             || schedulerp->dtypep()->basicp()->isDynamicTriggerScheduler(),
                         schedulerp, "Unexpected type");
             if (!schedulerp->dtypep()->basicp()->isTriggerScheduler()) continue;
-            // Create the global commit function only if we have trigger schedulers
-            if (!m_commitFuncp) {
+            // Create the global ready function only if we have trigger schedulers
+            if (!m_readyFuncp) {
                 AstScope* const scopeTopp = netlistp->topScopep()->scopep();
-                m_commitFuncp
-                    = new AstCFunc{netlistp->fileline(), "_timing_commit", scopeTopp, ""};
-                m_commitFuncp->dontCombine(true);
-                m_commitFuncp->isLoose(true);
-                m_commitFuncp->isConst(false);
-                m_commitFuncp->declPrivate(true);
-                scopeTopp->addBlocksp(m_commitFuncp);
+                m_readyFuncp = new AstCFunc{netlistp->fileline(), "_timing_ready", scopeTopp, ""};
+                m_readyFuncp->dontCombine(true);
+                m_readyFuncp->isLoose(true);
+                m_readyFuncp->isConst(false);
+                m_readyFuncp->declPrivate(true);
+                scopeTopp->addBlocksp(m_readyFuncp);
             }
-
-            // There is a somewhat complicate dance here. Given a suspendable
-            // process of the form:
-            //    ->evntA;
-            //    $display("Fired evntA");
-            //    @(evntA or evntB);
-            // The firing of the event cannot trigger the event control
-            // following it, as the process is not yet sensitive to the event
-            // when it fires (same applies for change detects). The way the
-            // scheduling works, the @evnt will suspend the process before
-            // the firing of the event is recognized on the next iteration of
-            // the 'act' loop, and hence could incorrectly resume the @evnt
-            // statement. To make this work, whenever a process suspends, it
-            // goes into an "uncommitted" state, so it cannot be resumed
-            // immediately on the next iteration of the 'act' loop, which is
-            // what we want. The question then is, when should the suspended
-            // process be "committed" and hence possible to be resumed. This is
-            // done when it is know for sure the suspending expression was not
-            // triggered on the current iteration of the 'act' loop. With
-            // multiple events in the suspending expression, all events need
-            // to be not triggered to safely commit the suspended process.
-            //
-            // This is is consistent with IEEE scheduling semantics, and
-            // behaves as if the above was executed as:
-            //    ->evntA;
-            //    $display("Fired evnt");
-            //    ... all other statements in the 'act' loop that might fire evntA or evntB ...
-            //    @(evntA or evntB);
-            // which is a valid execution. Race conditions be fun to debug,
-            // but they are a responsibility of the user.
 
             AstSenTree* const senTreep = activep->sentreep();
             FileLine* const flp = senTreep->fileline();
 
             // Create an 'AstIf' sensitive to the suspending triggers
             AstIf* const ifp = V3Sched::util::createIfFromSenTree(senTreep);
-            m_commitFuncp->addStmtsp(ifp);
+            m_readyFuncp->addStmtsp(ifp);
 
-            // Commit the processes suspended on this sensitivity expression
-            //  in the **else** branch, when the event is known to be not fired.
+            // Mark as ready the processes resumed on this sensitivity expression
             AstVarRef* const refp = new AstVarRef{flp, schedulerp, VAccess::READWRITE};
-            AstCMethodHard* const callp = new AstCMethodHard{flp, refp, VCMethod::SCHED_COMMIT};
+            AstCMethodHard* const callp = new AstCMethodHard{flp, refp, VCMethod::SCHED_READY};
             callp->dtypeSetVoid();
             if (resumep->pinsp()) callp->addPinsp(resumep->pinsp()->cloneTree(false));
-            ifp->addElsesp(callp->makeStmt());
+            ifp->addThensp(callp->makeStmt());
         }
-        // We still haven't created a commit function (no trigger schedulers), return null
-        if (!m_commitFuncp) return nullptr;
+        // We still haven't created a ready function (no trigger schedulers), return null
+        if (!m_readyFuncp) return nullptr;
     }
-    AstCCall* const callp = new AstCCall{m_commitFuncp->fileline(), m_commitFuncp};
+    AstCCall* const callp = new AstCCall{m_readyFuncp->fileline(), m_readyFuncp};
     callp->dtypeSetVoid();
     return callp;
 }
@@ -223,7 +208,7 @@ class AwaitVisitor final : public VNVisitor {
         if (schedulerp->dtypep()->basicp()->isTriggerScheduler()) {
             UASSERT_OBJ(methodp->pinsp(), methodp,
                         "Trigger method should have pins from V3Timing");
-            // The first pin is the commit boolean, the rest (if any) should be debug info
+            // The first pin is the ready boolean, the rest (if any) should be debug info
             // See V3Timing for details
             if (AstNode* const dbginfop = methodp->pinsp()->nextp()) {
                 if (methodp->pinsp()) addResumePins(resumep, static_cast<AstNodeExpr*>(dbginfop));
@@ -267,7 +252,6 @@ class AwaitVisitor final : public VNVisitor {
     void visit(AstCAwait* nodep) override {
         if (AstSenTree* const sentreep = nodep->sentreep()) {
             if (!sentreep->user1SetOnce()) createResumeActive(nodep);
-            nodep->clearSentreep();  // Clear as these sentrees will get deleted later
             if (m_inProcess) m_processDomains.insert(sentreep);
         }
     }
