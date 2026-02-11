@@ -7,6 +7,12 @@
 // Test: randc variables with additional constraints limiting values
 // IEEE 1800 Section 18.4.2: randc cyclic behavior over constrained domain
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define check_range(gotv,minv,maxv) do if ((gotv) < (minv) || (gotv) > (maxv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d-%0d\n", `__FILE__,`__LINE__, (gotv), (minv), (maxv)); `stop; end while(0);
+// verilog_format: on
+
 class RandcRange;
   randc bit [3:0] value;  // 4-bit: unconstrained domain = 0-15
 
@@ -24,39 +30,21 @@ class RandcRange;
     for (int trial = 0; trial < 3; ++trial) begin
       for (int i = 0; i < domain_size; ++i) begin
         randomize_result = randomize();
-        if (randomize_result !== 1) begin
-          $display("%%Error: randomize() failed");
-          $stop;
-        end
-        if (value < 3 || value > 10) begin
-          $display("%%Error: value %0d out of constrained range [3:10]", value);
-          $stop;
-        end
-`ifdef TEST_VERBOSE
-        $display("  trial=%0d i=%0d value=%0d", trial, i, value);
-`endif
+        `checkd(randomize_result, 1);
+        `check_range(value, 3, 10);
         ++count[value];
       end
     end
     // After 3 full cycles, each value in [3,10] should appear exactly 3 times
     for (int v = 3; v <= 10; ++v) begin
-      if (count[v] != 3) begin
-        $display("%%Error: value %0d appeared %0d times, expected 3", v, count[v]);
-        $stop;
-      end
+      `checkd(count[v], 3);
     end
     // Values outside [3,10] should never appear
     for (int v = 0; v < 3; ++v) begin
-      if (count[v] != 0) begin
-        $display("%%Error: value %0d appeared %0d times, expected 0", v, count[v]);
-        $stop;
-      end
+      `checkd(count[v], 0);
     end
     for (int v = 11; v < 16; ++v) begin
-      if (count[v] != 0) begin
-        $display("%%Error: value %0d appeared %0d times, expected 0", v, count[v]);
-        $stop;
-      end
+      `checkd(count[v], 0);
     end
   endfunction
 endclass
@@ -74,30 +62,15 @@ class RandcSmall;
     for (int trial = 0; trial < 4; ++trial) begin
       for (int i = 0; i < domain_size; ++i) begin
         randomize_result = randomize();
-        if (randomize_result !== 1) begin
-          $display("%%Error: randomize() failed");
-          $stop;
-        end
-        if (val == 0) begin
-          $display("%%Error: val == 0 violates constraint");
-          $stop;
-        end
-`ifdef TEST_VERBOSE
-        $display("  trial=%0d i=%0d val=%0d", trial, i, val);
-`endif
+        `checkd(randomize_result, 1);
+        `checkd(val == 0, 0);
         ++count[val];
       end
     end
     // After 4 full cycles, each of 1,2,3 should appear exactly 4 times
-    if (count[0] != 0) begin
-      $display("%%Error: val 0 appeared %0d times, expected 0", count[0]);
-      $stop;
-    end
+    `checkd(count[0], 0);
     for (int v = 1; v <= 3; ++v) begin
-      if (count[v] != 4) begin
-        $display("%%Error: val %0d appeared %0d times, expected 4", v, count[v]);
-        $stop;
-      end
+      `checkd(count[v], 4);
     end
   endfunction
 endclass
@@ -115,30 +88,15 @@ class RandcParent;
     for (int trial = 0; trial < 3; ++trial) begin
       for (int i = 0; i < domain_size; ++i) begin
         randomize_result = randomize();
-        if (randomize_result !== 1) begin
-          $display("%%Error: randomize() failed");
-          $stop;
-        end
-        if (code == 0) begin
-          $display("%%Error: code == 0 violates constraint");
-          $stop;
-        end
-`ifdef TEST_VERBOSE
-        $display("  trial=%0d i=%0d code=%0d", trial, i, code);
-`endif
+        `checkd(randomize_result, 1);
+        `checkd(code == 0, 0);
         ++count[code];
       end
     end
     for (int v = 1; v <= 7; ++v) begin
-      if (count[v] != 3) begin
-        $display("%%Error: code %0d appeared %0d times, expected 3", v, count[v]);
-        $stop;
-      end
+      `checkd(count[v], 3);
     end
-    if (count[0] != 0) begin
-      $display("%%Error: code 0 appeared %0d times, expected 0", count[0]);
-      $stop;
-    end
+    `checkd(count[0], 0);
   endfunction
 endclass
 
@@ -154,36 +112,21 @@ class RandcChild extends RandcParent;
     for (int trial = 0; trial < 4; ++trial) begin
       for (int i = 0; i < domain_size; ++i) begin
         randomize_result = randomize();
-        if (randomize_result !== 1) begin
-          $display("%%Error: randomize() failed");
-          $stop;
-        end
-        if (code == 0 || code > 5) begin
-          $display("%%Error: code %0d out of range [1:5]", code);
-          $stop;
-        end
-`ifdef TEST_VERBOSE
-        $display("  trial=%0d i=%0d code=%0d", trial, i, code);
-`endif
+        `checkd(randomize_result, 1);
+        `check_range(code, 1, 5);
         ++count[code];
       end
     end
     for (int v = 1; v <= 5; ++v) begin
-      if (count[v] != 4) begin
-        $display("%%Error: code %0d appeared %0d times, expected 4", v, count[v]);
-        $stop;
-      end
+      `checkd(count[v], 4);
     end
     for (int v = 6; v <= 7; ++v) begin
-      if (count[v] != 0) begin
-        $display("%%Error: code %0d appeared %0d times, expected 0", v, count[v]);
-        $stop;
-      end
+      `checkd(count[v], 0);
     end
   endfunction
 endclass
 
-// Test 4: constraint_mode() interaction
+// Test 5: constraint_mode() interaction
 // Verifies randc cyclic behavior adapts when constraints are toggled at runtime.
 // Note: randc cycles are continuous, not per-phase, so we verify constraint
 // enforcement and that all valid values eventually appear rather than exact counts.
@@ -202,24 +145,12 @@ class RandcModeSwitch;
       // Run 2 full cycles (6 calls) to ensure all constrained values appear
       for (int i = 0; i < 6; ++i) begin
         randomize_result = randomize();
-        if (randomize_result !== 1) begin
-          $display("%%Error: phase1 randomize() failed");
-          $stop;
-        end
-        if (x == 0) begin
-          $display("%%Error: phase1 x == 0 violates active constraint");
-          $stop;
-        end
-`ifdef TEST_VERBOSE
-        $display("  phase1 i=%0d x=%0d", i, x);
-`endif
+        `checkd(randomize_result, 1);
+        `checkd(x == 0, 0);
         seen[x] = 1;
       end
       for (int v = 1; v <= 3; ++v) begin
-        if (!seen[v]) begin
-          $display("%%Error: phase1 value %0d never seen in 6 calls", v);
-          $stop;
-        end
+        `checkd(seen[v], 1);
       end
     end
 
@@ -230,41 +161,23 @@ class RandcModeSwitch;
     // Run enough calls (2 full cycles of 4 + margin) to see all values
     for (int i = 0; i < 12; ++i) begin
       randomize_result = randomize();
-      if (randomize_result !== 1) begin
-        $display("%%Error: phase2 randomize() failed");
-        $stop;
-      end
-`ifdef TEST_VERBOSE
-      $display("  phase2 i=%0d x=%0d", i, x);
-`endif
+      `checkd(randomize_result, 1);
       if (x == 0) seen_zero = 1;
     end
-    if (!seen_zero) begin
-      $display("%%Error: phase2 x=0 never appeared with constraint OFF");
-      $stop;
-    end
+    `checkd(seen_zero, 1);
 
     // Phase 3: constraint back ON -> x should never be 0 again
     $display("Test constraint_mode: phase 3 (constraint ON again)");
     c_nonzero.constraint_mode(1);
     for (int i = 0; i < 9; ++i) begin
       randomize_result = randomize();
-      if (randomize_result !== 1) begin
-        $display("%%Error: phase3 randomize() failed");
-        $stop;
-      end
-      if (x == 0) begin
-        $display("%%Error: phase3 x == 0 violates re-enabled constraint");
-        $stop;
-      end
-`ifdef TEST_VERBOSE
-      $display("  phase3 i=%0d x=%0d", i, x);
-`endif
+      `checkd(randomize_result, 1);
+      `checkd(x == 0, 0);
     end
   endfunction
 endclass
 
-// Test 5: Enum randc with constraint excluding some values
+// Test 6: Enum randc with constraint excluding some values
 // Use a 2-bit enum where all bit values are valid enum members,
 // so the solver domain matches the enum domain exactly.
 class RandcEnumConstrained;
@@ -286,29 +199,38 @@ class RandcEnumConstrained;
     for (int trial = 0; trial < 4; ++trial) begin
       for (int i = 0; i < domain_size; ++i) begin
         randomize_result = randomize();
-        if (randomize_result !== 1) begin
-          $display("%%Error: randomize() failed");
-          $stop;
-        end
-        if (color == WHITE) begin
-          $display("%%Error: color == WHITE violates constraint");
-          $stop;
-        end
-`ifdef TEST_VERBOSE
-        $display("  trial=%0d i=%0d color=%0d", trial, i, color);
-`endif
+        `checkd(randomize_result, 1);
+        `checkd(color == WHITE, 0);
         ++count[color];
       end
     end
     for (int v = 0; v <= 2; ++v) begin
-      if (count[v] != 4) begin
-        $display("%%Error: color %0d appeared %0d times, expected 4", v, count[v]);
-        $stop;
+      `checkd(count[v], 4);
+    end
+    `checkd(count[3], 0);
+  endfunction
+endclass
+
+// Test 7: Deep cyclic - full 4-bit range 0:15 (16 values, no constraint)
+class RandcDeep;
+  randc bit [3:0] val;
+
+  function void test_cyclic;
+    automatic int count[16];
+    automatic int domain_size = 16;
+    automatic int randomize_result;
+    $display("Test randc deep cyclic [0:15] (16 values)");
+    // Run 3 full cycles
+    for (int trial = 0; trial < 3; ++trial) begin
+      for (int i = 0; i < domain_size; ++i) begin
+        randomize_result = randomize();
+        `checkd(randomize_result, 1);
+        ++count[val];
       end
     end
-    if (count[3] != 0) begin
-      $display("%%Error: WHITE appeared %0d times, expected 0", count[3]);
-      $stop;
+    // Each value 0..15 should appear exactly 3 times
+    for (int v = 0; v < 16; ++v) begin
+      `checkd(count[v], 3);
     end
   endfunction
 endclass
@@ -320,6 +242,7 @@ module t;
   RandcChild rc;
   RandcModeSwitch rms;
   RandcEnumConstrained rec;
+  RandcDeep rd;
 
   initial begin
     rr = new;
@@ -339,6 +262,9 @@ module t;
 
     rec = new;
     rec.test_cyclic();
+
+    rd = new;
+    rd.test_cyclic();
 
     $write("*-* All Finished *-*\n");
     $finish();

@@ -592,7 +592,7 @@ public:
               const char* source = "");
     void clearConstraints();
     void clearAll();  // Clear both constraints and variables
-    void mark_randc(const char* name);  // Mark variable as randc for cyclic tracking
+    void markRandc(const char* name);  // Mark variable as randc for cyclic tracking
     void set_randmode(const VlQueue<CData>& randmode) { m_randmodep = &randmode; }
 #ifdef VL_DEBUG
     void dump() const;

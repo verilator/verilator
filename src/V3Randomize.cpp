@@ -1026,7 +1026,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 }
             }
             initTaskp->addStmtsp(methodp->makeStmt());
-            // If randc, also emit mark_randc() for cyclic tracking
+            // If randc, also emit markRandc() for cyclic tracking
             if (varp->isRandC()) {
                 AstCMethodHard* const markp = new AstCMethodHard{
                     varp->fileline(),

@@ -734,7 +734,7 @@ void VlRandomizer::clearAll() {
     m_randcConstraintHash = 0;
 }
 
-void VlRandomizer::mark_randc(const char* name) { m_randcVarNames.insert(name); }
+void VlRandomizer::markRandc(const char* name) { m_randcVarNames.insert(name); }
 
 #ifdef VL_DEBUG
 void VlRandomizer::dump() const {
