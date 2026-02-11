@@ -73,6 +73,8 @@ class LinkResolveVisitor final : public VNVisitor {
     void visit(AstClass* nodep) override {
         VL_RESTORER(m_classp);
         m_classp = nodep;
+        nodep->foreachMember(
+            [&](AstClass* const, AstVar* const varp) { varp->varType(VVarType::MEMBER); });
         iterateChildren(nodep);
     }
     void visit(AstConstraint* nodep) override {
@@ -120,8 +122,6 @@ class LinkResolveVisitor final : public VNVisitor {
     }
     void visit(AstVar* nodep) override {
         iterateChildren(nodep);
-        if (m_classp && !nodep->isParam() && !VN_IS(nodep->backp(), SelLoopVars))
-            nodep->varType(VVarType::MEMBER);
         if (m_ftaskp) nodep->funcLocal(true);
         if (nodep->isSigModPublic()) {
             nodep->sigModPublic(false);  // We're done with this attribute
