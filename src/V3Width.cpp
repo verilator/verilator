@@ -8031,7 +8031,7 @@ class WidthVisitor final : public VNVisitor {
         const AstNodeDType* const rhsDtp = rhsRefp->dtypep()->skipRefp();
         const bool isLhsAggregate = lhsDtp->isAggregateType();
         const bool isRhsAggregate = rhsDtp->isAggregateType();
-        if (!isLhsAggregate && !isRhsAggregate) { return; }
+        if (!isLhsAggregate && !isRhsAggregate) return;
         if (isLhsAggregate ^ isRhsAggregate) {
             nodep->v3error("Illegal assignment: " << rhsDtp->prettyDTypeNameQ()
                                                   << " is not assignment compatible with "
