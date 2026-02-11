@@ -3264,7 +3264,12 @@ class RandomizeVisitor final : public VNVisitor {
             return;
         }
 
-        if (nodep->name() != "randomize") return;
+        if (nodep->name() != "randomize") {
+            // Iterate children so nested rand_mode/constraint_mode/randomize calls
+            // inside function arguments are still visited and transformed
+            iterateChildren(nodep);
+            return;
+        }
 
         if (nodep->classOrPackagep() && nodep->classOrPackagep()->name() == "std") {
             // Handle std::randomize; create wrapper function that calls basicStdRandomization on
