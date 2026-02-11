@@ -151,15 +151,17 @@ public:
             } else if (const AstStructDType* const structDtypep
                        = VN_CAST(lhsDtypep, StructDType)) {
                 AstNodeStmt* stmtsp = nullptr;
+                bool firstIter = true;
                 for (AstMemberDType* mdtp = structDtypep->membersp(); mdtp;
                      mdtp = VN_AS(mdtp->nextp(), MemberDType)) {
-                    AstNodeExpr* const lhsCopyp = lhsp->cloneTreePure(false);
-                    AstVarRef* const lhsVarRefCopyp = lhsVarRefp->clonep();
+                    AstNodeExpr* const lhsCopyp = firstIter ? lhsp : lhsp->cloneTreePure(false);
+                    AstVarRef* const lhsVarRefCopyp = firstIter ? lhsVarRefp : lhsVarRefp->clonep();
                     AstStructSel* const structSelp = new AstStructSel{flp, lhsCopyp, mdtp->name()};
                     structSelp->dtypep(mdtp);
                     AstNodeStmt* const memberStmtp
                         = getAssignStmtsp(structSelp, vscp, lhsVarRefCopyp, assigns);
-                    stmtsp = stmtsp ? stmtsp->addNext(memberStmtp) : memberStmtp;
+                    stmtsp = firstIter ? memberStmtp : stmtsp->addNext(memberStmtp);
+                    firstIter = false;
                 }
                 return stmtsp;
             } else if (const AstUnpackArrayDType* const arrayDtypep
