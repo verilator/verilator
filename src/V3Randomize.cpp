@@ -2366,12 +2366,28 @@ class RandomizeVisitor final : public VNVisitor {
             = new AstCMethodHard{fl, new AstVarRef{fl, modeVarModp, modeVarp, VAccess::WRITE},
                                  VCMethod::DYN_RESIZE, new AstConst{fl, modeCount}};
         dynarrayNewp->dtypeSetVoid();
-        AstNodeFTask* const newp = VN_AS(m_memberMap.findMember(classp, "new"), NodeFTask);
-        UASSERT_OBJ(newp, classp, "No new() in class");
-        newp->addStmtsp(dynarrayNewp->makeStmt());
-        newp->addStmtsp(makeModeSetLoop(fl,
-                                        new AstVarRef{fl, modeVarModp, modeVarp, VAccess::WRITE},
-                                        new AstConst{fl, 1}, true));
+        AstNodeFTask* const ctorNewp = VN_AS(m_memberMap.findMember(classp, "new"), NodeFTask);
+        UASSERT_OBJ(ctorNewp, classp, "No new() in class");
+        // Build init chain: resize -> set-all-to-1 loop
+        AstNode* const initFirstp = dynarrayNewp->makeStmt();
+        initFirstp->addNext(
+            makeModeSetLoop(fl, new AstVarRef{fl, modeVarModp, modeVarp, VAccess::WRITE},
+                            new AstConst{fl, 1}, true));
+        // Prepend init code before user statements in constructor body, but after
+        // var declarations and super.new(). This ensures that user's constraint_mode()
+        // or rand_mode() calls in the constructor execute after mode arrays are initialized.
+        // Pattern from V3LinkDot::addImplicitSuperNewCall.
+        for (AstNode* stmtp = ctorNewp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (!VN_IS(stmtp, NodeStmt)) continue;  // Skip var declarations
+            if (const AstStmtExpr* const sep = VN_CAST(stmtp, StmtExpr)) {
+                if (VN_IS(sep->exprp(), New)) continue;  // Skip super.new()
+            }
+            // Found first user statement - insert init code before it
+            stmtp->addHereThisAsNext(initFirstp);
+            return;
+        }
+        // No user statements (empty constructor or only var decls/super.new)
+        ctorNewp->addStmtsp(initFirstp);
     }
     void makeStaticModeInit(AstVar* modeVarp, AstClass* classp, uint32_t modeCount) {
         // For static constraint mode, we need lazy initialization since it's shared across
