@@ -299,7 +299,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
         AstConstraint* const cloneConstrp = constrp->cloneTree(false);
         cloneConstrp->name(newName);
         cloneConstrp->foreach([&](AstVarRef* varRefp) {
-            if (varRefp->varp()->varType() == VVarType::MEMBER) {
+            if (varRefp->varp()->isClassMember()) {
                 AstNodeExpr* const chainp = buildMemberSelChain(rootVarRefp, newPath);
                 AstMemberSel* const finalSelp
                     = new AstMemberSel{varRefp->fileline(), chainp, varRefp->varp()};
