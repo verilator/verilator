@@ -146,25 +146,40 @@ public:
     void pushPrefix(const char*, VerilatedTracePrefixType);
     void popPrefix();
 
-    void declEvent(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                   VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
+    void declEvent(uint32_t code, uint32_t fidx, const char* name,
                    bool array, int arraynum);
-    void declBit(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                 VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
+    void declBit(uint32_t code, uint32_t fidx, const char* name,
                  bool array, int arraynum);
-    void declBus(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                 VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
+    void declBus(uint32_t code, uint32_t fidx, const char* name,
                  bool array, int arraynum, int msb, int lsb);
-    void declQuad(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                  VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
+    void declQuad(uint32_t code, uint32_t fidx, const char* name,
                   bool array, int arraynum, int msb, int lsb);
-    void declArray(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                   VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
+    void declArray(uint32_t code, uint32_t fidx, const char* name,
                    bool array, int arraynum, int msb, int lsb);
-    void declDouble(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                    VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
+    void declDouble(uint32_t code, uint32_t fidx, const char* name,
                     bool array, int arraynum);
 };
+
+// duck-typed interface to decl* methods
+// We use macros in order to strip out unused args at compile time.
+#define DECL_EVENT(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum) \
+    tracep->declEvent(code, fidx, name, array, arraynum)
+
+#define DECL_BIT(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum) \
+    tracep->declBit(code, fidx, name, array, arraynum)
+
+#define DECL_BUS(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb) \
+    tracep->declBus(code, fidx, name, array, arraynum, msb, lsb)
+
+#define DECL_QUAD(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb) \
+    tracep->declQuad(code, fidx, name, array, arraynum, msb, lsb)
+
+#define DECL_ARRAY(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb) \
+    tracep->declArray(code, fidx, name, array, arraynum, msb, lsb)
+
+#define DECL_DOUBLE(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb) \
+    tracep->declArray(code, fidx, name, array, arraynum)
+
 
 #ifndef DOXYGEN
 // Declare specialization here as it's used in VerilatedSaifC just below

@@ -113,28 +113,48 @@ public:
     void pushPrefix(const char*, VerilatedTracePrefixType);
     void popPrefix();
 
-    void declEvent(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+    void declEvent(uint32_t code, const char* name, int dtypenum,
                    VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
                    bool array, int arraynum);
-    void declBit(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+    void declBit(uint32_t code, const char* name, int dtypenum,
                  VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
                  bool array, int arraynum);
-    void declBus(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+    void declBus(uint32_t code, const char* name, int dtypenum,
                  VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
                  bool array, int arraynum, int msb, int lsb);
-    void declQuad(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+    void declQuad(uint32_t code, const char* name, int dtypenum,
                   VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
                   bool array, int arraynum, int msb, int lsb);
-    void declArray(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+    void declArray(uint32_t code, const char* name, int dtypenum,
                    VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
                    bool array, int arraynum, int msb, int lsb);
-    void declDouble(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+    void declDouble(uint32_t code, const char* name, int dtypenum,
                     VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
                     bool array, int arraynum);
 
     void declDTypeEnum(int dtypenum, const char* name, uint32_t elements, unsigned int minValbits,
                        const char** itemNamesp, const char** itemValuesp);
 };
+
+// duck-typed interface to decl* methods
+// We use macros in order to strip out unused args at compile time.
+#define DECL_EVENT(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum) \
+    tracep->declEvent(code, name, dtypenum, sigDir, sigKind, sigType, array, arraynum)
+
+#define DECL_BIT(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum) \
+    tracep->declBit(code, name, dtypenum, sigDir, sigKind, sigType, array, arraynum)
+
+#define DECL_BUS(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb) \
+    tracep->declBus(code, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb)
+
+#define DECL_QUAD(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb) \
+    tracep->declQuad(code, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb)
+
+#define DECL_ARRAY(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb) \
+    tracep->declArray(code, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb)
+
+#define DECL_DOUBLE(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb) \
+    tracep->declArray(code, name, dtypenum, sigDir, sigKind, sigType, array, arraynum)
 
 #ifndef DOXYGEN
 // Declare specialization here as it's used in VerilatedFstC just below

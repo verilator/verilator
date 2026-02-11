@@ -451,34 +451,28 @@ void VerilatedVcd::declare(uint32_t code, const char* name, const char* wirep, b
     printStr(decl.c_str());
 }
 
-void VerilatedVcd::declEvent(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                             VerilatedTraceSigDirection, VerilatedTraceSigKind,
-                             VerilatedTraceSigType, bool array, int arraynum) {
+void VerilatedVcd::declEvent(uint32_t code, const char* name,
+                             bool array, int arraynum) {
     declare(code, name, "event", array, arraynum, false, 0, 0);
 }
-void VerilatedVcd::declBit(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                           VerilatedTraceSigDirection, VerilatedTraceSigKind,
-                           VerilatedTraceSigType, bool array, int arraynum) {
+void VerilatedVcd::declBit(uint32_t code, const char* name,
+                           bool array, int arraynum) {
     declare(code, name, "wire", array, arraynum, false, 0, 0);
 }
-void VerilatedVcd::declBus(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                           VerilatedTraceSigDirection, VerilatedTraceSigKind,
-                           VerilatedTraceSigType, bool array, int arraynum, int msb, int lsb) {
+void VerilatedVcd::declBus(uint32_t code, const char* name,
+                           bool array, int arraynum, int msb, int lsb) {
     declare(code, name, "wire", array, arraynum, true, msb, lsb);
 }
-void VerilatedVcd::declQuad(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                            VerilatedTraceSigDirection, VerilatedTraceSigKind,
-                            VerilatedTraceSigType, bool array, int arraynum, int msb, int lsb) {
+void VerilatedVcd::declQuad(uint32_t code, const char* name,
+                            bool array, int arraynum, int msb, int lsb) {
     declare(code, name, "wire", array, arraynum, true, msb, lsb);
 }
-void VerilatedVcd::declArray(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                             VerilatedTraceSigDirection, VerilatedTraceSigKind,
-                             VerilatedTraceSigType, bool array, int arraynum, int msb, int lsb) {
+void VerilatedVcd::declArray(uint32_t code, const char* name,
+                             bool array, int arraynum, int msb, int lsb) {
     declare(code, name, "wire", array, arraynum, true, msb, lsb);
 }
-void VerilatedVcd::declDouble(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                              VerilatedTraceSigDirection, VerilatedTraceSigKind,
-                              VerilatedTraceSigType, bool array, int arraynum) {
+void VerilatedVcd::declDouble(uint32_t code, const char* name,
+                              bool array, int arraynum) {
     declare(code, name, "real", array, arraynum, false, 63, 0);
 }
 

@@ -548,39 +548,27 @@ void VerilatedSaif::declare(const uint32_t code, uint32_t fidx, const char* name
 }
 
 void VerilatedSaif::declEvent(const uint32_t code, const uint32_t fidx, const char* name,
-                              const int dtypenum, const VerilatedTraceSigDirection,
-                              const VerilatedTraceSigKind, const VerilatedTraceSigType,
                               const bool array, const int arraynum) {
     declare(code, fidx, name, "event", array, arraynum, false, 0, 0);
 }
 
 void VerilatedSaif::declBit(const uint32_t code, const uint32_t fidx, const char* name,
-                            const int dtypenum, const VerilatedTraceSigDirection,
-                            const VerilatedTraceSigKind, const VerilatedTraceSigType,
                             const bool array, const int arraynum) {
     declare(code, fidx, name, "wire", array, arraynum, false, 0, 0);
 }
 void VerilatedSaif::declBus(const uint32_t code, const uint32_t fidx, const char* name,
-                            const int dtypenum, const VerilatedTraceSigDirection,
-                            const VerilatedTraceSigKind, const VerilatedTraceSigType,
                             const bool array, const int arraynum, const int msb, const int lsb) {
     declare(code, fidx, name, "wire", array, arraynum, true, msb, lsb);
 }
 void VerilatedSaif::declQuad(const uint32_t code, const uint32_t fidx, const char* name,
-                             const int dtypenum, const VerilatedTraceSigDirection,
-                             const VerilatedTraceSigKind, const VerilatedTraceSigType,
                              const bool array, const int arraynum, const int msb, const int lsb) {
     declare(code, fidx, name, "wire", array, arraynum, true, msb, lsb);
 }
 void VerilatedSaif::declArray(const uint32_t code, const uint32_t fidx, const char* name,
-                              const int dtypenum, const VerilatedTraceSigDirection,
-                              const VerilatedTraceSigKind, const VerilatedTraceSigType,
                               const bool array, const int arraynum, const int msb, const int lsb) {
     declare(code, fidx, name, "wire", array, arraynum, true, msb, lsb);
 }
 void VerilatedSaif::declDouble(const uint32_t code, const uint32_t fidx, const char* name,
-                               const int dtypenum, const VerilatedTraceSigDirection,
-                               const VerilatedTraceSigKind, const VerilatedTraceSigType,
                                const bool array, const int arraynum) {
     declare(code, fidx, name, "real", array, arraynum, false, 63, 0);
 }
