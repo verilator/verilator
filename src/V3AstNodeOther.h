@@ -2609,7 +2609,7 @@ public:
             "T_Callable 'f' must have a signature compatible with 'void(AstClass*, T_Node*)', "
             "with 'T_Node' being a subtype of 'AstNode'");
         if (const AstClassExtends* const cextendsp = this->extendsp()) {
-            cextendsp->classp()->foreachMember(f);
+            if (cextendsp->classOrNullp()) cextendsp->classp()->foreachMember(f);
         }
         for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstNode::privateTypeTest<T_Node>(stmtp)) f(this, static_cast<T_Node*>(stmtp));
