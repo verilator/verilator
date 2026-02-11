@@ -89,9 +89,10 @@ for filename in sorted(files.keys()):
     # Unicode checker; should this be done in another file?
     # No way to auto-fix.
     unicode_exempt = re.search(Unicode_Exempt_Re, filename)
-    m = re.search(r'([^ \t\r\n\x20-\x7e])', contents)
+    m = re.search(r'(([^ \t\r\n\x20-\x7e]).*)', contents)
     if not unicode_exempt and m:
-        warns[filename] = "Warning: non-ASCII contents '" + m.group(1) + "' in " + filename
+        warns[filename] = "Warning: non-ASCII contents '" + m.group(2) + "' at '" + m.group(
+            1) + "' in " + filename
 
     fcount += 1
 

@@ -1000,7 +1000,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 AstCStmt* const bufDeclp = new AstCStmt{fl, "char __Vn[256];\n"};
                 ifNonNullp->addThensp(bufDeclp);
 
-                // 32-bit index → 8 hex chars for SMT name formatting
+                // 32-bit index hex chars for SMT name formatting
                 constexpr int idxWidth = 32;
                 const int fmtWidth = VL_WORDS_I(idxWidth) * 8;
 
