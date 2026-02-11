@@ -1225,6 +1225,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             resultp->user1(true);
         }
 
+        VL_DO_DANGLING(argp->deleteTree(), argp);
         nodep->replaceWith(resultp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         iterate(resultp);
