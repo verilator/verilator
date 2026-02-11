@@ -155,7 +155,8 @@ public:
                 for (AstMemberDType* mdtp = structDtypep->membersp(); mdtp;
                      mdtp = VN_AS(mdtp->nextp(), MemberDType)) {
                     AstNodeExpr* const lhsCopyp = firstIter ? lhsp : lhsp->cloneTreePure(false);
-                    AstVarRef* const lhsVarRefCopyp = firstIter ? lhsVarRefp : lhsVarRefp->clonep();
+                    AstVarRef* const lhsVarRefCopyp
+                        = firstIter ? lhsVarRefp : lhsVarRefp->clonep();
                     AstStructSel* const structSelp = new AstStructSel{flp, lhsCopyp, mdtp->name()};
                     structSelp->dtypep(mdtp);
                     AstNodeStmt* const memberStmtp
