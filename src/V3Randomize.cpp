@@ -1135,19 +1135,21 @@ class ConstraintExprVisitor final : public VNVisitor {
                     }
                 }
                 initTaskp->addStmtsp(methodp->makeStmt());
-            }
-            if (varp->isRandC()) {
-                AstCMethodHard* const markp = new AstCMethodHard{
-                    varp->fileline(),
-                    new AstVarRef{varp->fileline(), VN_AS(m_genp->user2p(), NodeModule), m_genp,
-                                  VAccess::READWRITE},
-                    VCMethod::RANDOMIZER_MARK_RANDC};
-                markp->dtypeSetVoid();
-                AstNodeExpr* const nameExprp = new AstCExpr{varp->fileline(), AstCExpr::Pure{},
-                                                            "\"" + smtName + "\"", varp->width()};
-                nameExprp->dtypep(varp->dtypep());
-                markp->addPinsp(nameExprp);
-                initTaskp->addStmtsp(markp->makeStmt());
+                // If randc, also emit markRandc() for cyclic tracking
+                if (varp->isRandC()) {
+                    AstCMethodHard* const markp = new AstCMethodHard{
+                        varp->fileline(),
+                        new AstVarRef{varp->fileline(), VN_AS(m_genp->user2p(), NodeModule),
+                                      m_genp, VAccess::READWRITE},
+                        VCMethod::RANDOMIZER_MARK_RANDC};
+                    markp->dtypeSetVoid();
+                    AstNodeExpr* const nameExprp
+                        = new AstCExpr{varp->fileline(), AstCExpr::Pure{},
+                                       "\"" + smtName + "\"", varp->width()};
+                    nameExprp->dtypep(varp->dtypep());
+                    markp->addPinsp(nameExprp);
+                    initTaskp->addStmtsp(markp->makeStmt());
+                }
             }
         } else {
             // Variable already written, clean up cloned membersel if any
