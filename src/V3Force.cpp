@@ -100,7 +100,6 @@ public:
             std::vector<AstAssign*> assigns;
             AstNodeStmt* const rdUpdateStmtsp = getAssignStmtsp(rdRefp, vscp, rdRefp, assigns);
 
-            AstVarRef* const enRefp = new AstVarRef{flp, m_enVscp, VAccess::WRITE};
             AstNodeStmt* const enInitStmtsp = rdUpdateStmtsp->cloneTree(true);
             for (size_t i = 0; i < assigns.size(); i++) {
                 // Save copies, because clonep() works only after the last cloneTree
@@ -109,7 +108,7 @@ public:
             for (AstAssign* const assignp : assigns) {
                 AstVarRef* const lhsVarRefp
                     = VN_AS(AstNodeVarRef::varRefLValueRecurse(assignp->lhsp()), VarRef);
-                lhsVarRefp->replaceWith(enRefp->cloneTree(false));
+                lhsVarRefp->replaceWith(new AstVarRef{flp, m_enVscp, VAccess::WRITE});
                 lhsVarRefp->deleteTree();
                 assignp->rhsp()->unlinkFrBack()->deleteTree();
                 V3Number zero{m_enVscp, assignp->lhsp()->dtypep()->width()};
