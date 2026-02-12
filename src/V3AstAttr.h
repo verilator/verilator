@@ -1946,13 +1946,20 @@ public:
 class VCFunc final {
 public:
     enum en : uint8_t {
-        FOUR_STATE_TRIOR_CONFLICT,
+        FOUR_STATE_TRIOR_CONFLICT = 0,
         FOUR_STATE_TRIOR_OR,
         FOUR_STATE_TRIAND_AND,
         FOUR_STATE_HAS_XZ,
         FOUR_STATE_TWO_STATE_VALUE,
+        FOUR_STATE_TWO_STATE_VALUE_RAW,
+        FOUR_STATE_TWO_STATE_XZ_RAW,
         FOUR_STATE_FROM_TWO_STATE,
+        FOUR_STATE_BITWISE_OR,
         FOUR_STATE_BITWISE_AND,
+        FOUR_STATE_BITWISE_XOR,
+        FOUR_STATE_BITWISE_XNOR,
+        FOUR_STATE_BITWISE_NEG,
+        END_SENTINEL
     };
     struct Properties final {
         const enum en val;
@@ -1965,14 +1972,25 @@ private:
 
 public:
     static const Properties& getProperties(enum en e) {
-        const static struct Properties properties[]
-            = {{FOUR_STATE_TRIOR_CONFLICT, "fourLogicConflict", true},
-               {FOUR_STATE_TRIOR_OR, "fourLogicTrior", true},
-               {FOUR_STATE_TRIAND_AND, "fourLogicTriand", true},
-               {FOUR_STATE_HAS_XZ, "fourLogicHasXZ", true},
-               {FOUR_STATE_TWO_STATE_VALUE, "fourLogicTwoStateValue", true},
-               {FOUR_STATE_FROM_TWO_STATE, "fourLogicFromTwoStateValue", true},
-               {FOUR_STATE_BITWISE_AND, "fourLogicAnd", true}};
+        const static struct Properties properties[] = {
+            //
+            {FOUR_STATE_TRIOR_CONFLICT, "fourLogicConflict", true},
+            {FOUR_STATE_TRIOR_OR, "fourLogicTrior", true},
+            {FOUR_STATE_TRIAND_AND, "fourLogicTriand", true},
+            {FOUR_STATE_HAS_XZ, "fourLogicHasXZ", true},
+            {FOUR_STATE_TWO_STATE_VALUE, "fourLogicCastToTwo", true},
+            {FOUR_STATE_TWO_STATE_VALUE_RAW, "fourLogicTwoStateValueRaw", true},
+            {FOUR_STATE_TWO_STATE_XZ_RAW, "fourLogicTwoStateXZRaw", true},
+            {FOUR_STATE_FROM_TWO_STATE, "fourLogicFromTwoStateValue", true},
+            {FOUR_STATE_BITWISE_OR, "fourLogicOr", true},
+            {FOUR_STATE_BITWISE_AND, "fourLogicAnd", true},
+            {FOUR_STATE_BITWISE_XOR, "fourLogicXOr", true},
+            {FOUR_STATE_BITWISE_XNOR, "fourLogicXNOr", true},
+            {FOUR_STATE_BITWISE_NEG, "fourLogicNeg", true},
+            //
+        };
+        static_assert(sizeof(properties) / sizeof(Properties) == static_cast<size_t>(END_SENTINEL),
+                      "properties must have one element for each non sentinel enum value");
         return properties[static_cast<size_t>(e)];
     }
 

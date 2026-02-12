@@ -3465,8 +3465,10 @@ class ConstVisitor final : public VNVisitor {
                 nodep->condp(new AstLogNot{condp->fileline(),
                                            condp});  // LogNot, as C++ optimization also possible
                 nodep->addThensp(elsesp);
-            } else if (((VN_IS(nodep->condp(), Not) && nodep->condp()->width() == 1)
-                        || VN_IS(nodep->condp(), LogNot))
+            } else if ((((VN_IS(nodep->condp(), Not) && nodep->condp()->width() == 1)
+                         || VN_IS(nodep->condp(), LogNot))
+                        && !nodep->condp()->exists(
+                            [](const AstVarRef* const varRefp) { return varRefp->isFourState(); }))
                        && nodep->thensp() && nodep->elsesp()) {
                 UINFO(4, "IF(NOT {x})  => IF(x) swapped if/else" << nodep);
                 AstNodeExpr* const condp

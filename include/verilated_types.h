@@ -2140,13 +2140,6 @@ template <typename T>
 struct FourStateLogicWrapper;
 
 template <typename T>
-FourStateLogicWrapper<T> fourLogicOr(const FourStateLogicWrapper<T>& a,
-                                     const FourStateLogicWrapper<T>& b) noexcept {
-    return {static_cast<T>(a.value | b.value | a.xz | b.xz),
-            static_cast<T>((a.xz & b.xz) | (a.xz & ~b.value) | (b.xz & ~a.value))};
-}
-
-template <typename T>
 FourStateLogicWrapper<T> fourLogicConflict(const FourStateLogicWrapper<T>& a,
                                            const FourStateLogicWrapper<T>& b) noexcept {
     return {static_cast<T>(a.value | b.value),
@@ -2168,6 +2161,13 @@ FourStateLogicWrapper<T> fourLogicTriand(const FourStateLogicWrapper<T>& a,
     return {
         static_cast<T>((a.value & b.xz) | (b.value & a.xz) | (a.value & b.value)),
         static_cast<T>((a.xz & b.xz) | (a.value & b.value & a.xz) | (a.value & b.value & b.xz))};
+}
+
+template <typename T>
+FourStateLogicWrapper<T> fourLogicOr(const FourStateLogicWrapper<T>& a,
+                                     const FourStateLogicWrapper<T>& b) noexcept {
+    return {static_cast<T>(a.value | b.value | a.xz | b.xz),
+            static_cast<T>((a.xz & b.xz) | (a.xz & ~b.value) | (b.xz & ~a.value))};
 }
 
 template <typename T>
@@ -2212,7 +2212,8 @@ bool fourLogicHasXZ(const FourStateLogicWrapper<VlWide<N>>& a) noexcept {
     return result;
 }
 
-#define fourLogicTwoStateValue(a) (a).value
+#define fourLogicTwoStateValueRaw(a) (a).value
+#define fourLogicTwoStateXZRaw(a) (a).xz
 #define fourLogicFromTwoStateValue(a) \
     FourStateLogicWrapper<decltype(a)> { a, 0 }
 

@@ -167,7 +167,7 @@ class QuadstateVisitor final : public VNVisitor {
         newp->hasResult(false);
         newp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, exprp});
         AstCFuncHard* const varTwoStateValp = new AstCFuncHard{
-            flp, VCFunc::FOUR_STATE_TWO_STATE_VALUE, new AstVarRef{flp, varp, VAccess::READ}};
+            flp, VCFunc::FOUR_STATE_TWO_STATE_VALUE_RAW, new AstVarRef{flp, varp, VAccess::READ}};
         varTwoStateValp->dtypep(exprp->findBitDType(exprp->width(), exprp->widthMin(),
                                                     VSigning::fromBool(exprp->isSigned())));
         newp->addStmtsp(new AstCReturn{
@@ -176,6 +176,25 @@ class QuadstateVisitor final : public VNVisitor {
                      new AstLogNot{flp, new AstCFuncHard{flp, VCFunc::FOUR_STATE_HAS_XZ,
                                                          new AstVarRef{flp, varp, VAccess::READ}}},
                      varTwoStateValp}});
+        relinker.relink(newp);
+    }
+
+    static void replaceFourStateUniop(AstNodeUniop* const uniop, VCFunc func) {
+        VNRelinker relinker;
+        uniop->unlinkFrBack(&relinker);
+        AstCFuncHard* const newp
+            = new AstCFuncHard{uniop->fileline(), func, uniop->lhsp()->unlinkFrBack()};
+        newp->dtypep(uniop->dtypep());
+        relinker.relink(newp);
+    }
+
+    static void replaceFourStateBiop(AstNodeBiop* const biop, VCFunc func) {
+        VNRelinker relinker;
+        biop->unlinkFrBack(&relinker);
+        AstCFuncHard* const newp = new AstCFuncHard{
+            biop->fileline(), func,
+            AstNode::addNext(biop->lhsp()->unlinkFrBack(), biop->rhsp()->unlinkFrBack())};
+        newp->dtypep(biop->dtypep());
         relinker.relink(newp);
     }
 
@@ -226,14 +245,36 @@ class QuadstateVisitor final : public VNVisitor {
     }
     void visit(AstAnd* const nodep) {
         iterateChildren(nodep);
+        if (m_expectFourStateExpr) replaceFourStateBiop(nodep, VCFunc::FOUR_STATE_BITWISE_AND);
+    }
+    void visit(AstOr* const nodep) {
+        iterateChildren(nodep);
+        if (m_expectFourStateExpr) replaceFourStateBiop(nodep, VCFunc::FOUR_STATE_BITWISE_OR);
+    }
+    void visit(AstXor* const nodep) {
+        iterateChildren(nodep);
+        if (m_expectFourStateExpr) replaceFourStateBiop(nodep, VCFunc::FOUR_STATE_BITWISE_XOR);
+    }
+    void visit(AstNot* const nodep) {
+        iterateChildren(nodep);
+        if (m_expectFourStateExpr) replaceFourStateUniop(nodep, VCFunc::FOUR_STATE_BITWISE_NEG);
+    }
+    void visit(AstRedAnd* const nodep) {
+        iterateChildren(nodep);
         if (m_expectFourStateExpr) {
-            VNRelinker relinker;
-            nodep->unlinkFrBack(&relinker);
-            AstCFuncHard* const newp = new AstCFuncHard{
-                nodep->fileline(), VCFunc::FOUR_STATE_BITWISE_AND,
-                AstNode::addNext(nodep->lhsp()->unlinkFrBack(), nodep->rhsp()->unlinkFrBack())};
-            newp->dtypep(nodep->dtypep());
-            relinker.relink(newp);
+            nodep->v3warn(E_UNSUPPORTED, "This operator is unsupported for four-state logic");
+        }
+    }
+    void visit(AstRedOr* const nodep) {
+        iterateChildren(nodep);
+        if (m_expectFourStateExpr) {
+            nodep->v3warn(E_UNSUPPORTED, "This operator is unsupported for four-state logic");
+        }
+    }
+    void visit(AstRedXor* const nodep) {
+        iterateChildren(nodep);
+        if (m_expectFourStateExpr) {
+            nodep->v3warn(E_UNSUPPORTED, "This operator is unsupported for four-state logic");
         }
     }
     void visit(AstCFuncHard* const) override {
