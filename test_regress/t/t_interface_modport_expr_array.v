@@ -19,25 +19,29 @@ interface base_if;
 endinterface
 
 interface container_if;
-  base_if ch[2]();
+  base_if ch[2] ();
 
   // Modport expressions accessing arrayed interface instances
   modport mp(
-    output .ch0_wr(ch[0].wr), input .ch0_rd(ch[0].rd),
-    output .ch1_wr(ch[1].wr), input .ch1_rd(ch[1].rd)
+      output .ch0_wr(ch[0].wr),
+      input .ch0_rd(ch[0].rd),
+      output .ch1_wr(ch[1].wr),
+      input .ch1_rd(ch[1].rd)
   );
 endinterface
 
-module consumer(container_if.mp port);
+module consumer (
+    container_if.mp port
+);
   // Access through modport expression virtual ports
   assign port.ch0_rd = port.ch0_wr + 8'h10;
   assign port.ch1_rd = port.ch1_wr + 8'h20;
 endmodule
 
 module top;
-  container_if cont();
+  container_if cont ();
 
-  consumer m_cons(.port(cont));
+  consumer m_cons (.port(cont));
 
   initial begin
     cont.ch[0].wr = 8'hA0;

@@ -4,11 +4,13 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
-// Test: pre/post_randomize callbacks on nested rand class objects and inherited methods
-// Covers: IEEE 1800-2017 Section 18.4.1 recursive callback invocation
-
+// verilog_format: off
 `define stop $stop
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
+// Test: pre/post_randomize callbacks on nested rand class objects and inherited methods
+// Covers: IEEE 1800-2017 Section 18.4.1 recursive callback invocation
 
 // --- Inherited callbacks (no override) ---
 
@@ -100,7 +102,7 @@ class Level3;
   int pre_count;
   int post_count;
 
-  constraint c_val { val inside {[10:200]}; }
+  constraint c_val {val inside {[10 : 200]};}
 
   function new();
     pre_count = 0;
@@ -122,7 +124,7 @@ class Level2;
   int pre_count;
   int post_count;
 
-  constraint c_val { val inside {[1:100]}; }
+  constraint c_val {val inside {[1 : 100]};}
 
   function new();
     l3 = new();
@@ -145,7 +147,7 @@ class Level1;
   int pre_count;
   int post_count;
 
-  constraint c_val { val inside {[50:150]}; }
+  constraint c_val {val inside {[50 : 150]};}
 
   function new();
     l2 = new();
@@ -193,7 +195,7 @@ module t;
       `checkd(r, 1);
       `checkd(obj.derived_pre_count, 1);
       `checkd(obj.derived_post_count, 1);
-      `checkd(obj.pre_count, 0);   // base NOT called (no super)
+      `checkd(obj.pre_count, 0);  // base NOT called (no super)
       `checkd(obj.post_count, 0);  // base NOT called (no super)
     end
 
@@ -202,9 +204,9 @@ module t;
       automatic DerivedOverridePostOnly obj = new;
       r = obj.randomize();
       `checkd(r, 1);
-      `checkd(obj.pre_count, 1);          // inherited pre_randomize called
+      `checkd(obj.pre_count, 1);  // inherited pre_randomize called
       `checkd(obj.derived_post_count, 1);  // overridden post called
-      `checkd(obj.post_count, 0);          // base post NOT called (no super)
+      `checkd(obj.post_count, 0);  // base post NOT called (no super)
     end
 
     // Test 5: Nested callbacks (3-level)
@@ -223,7 +225,7 @@ module t;
     // Test 6: Multiple randomizations
     begin
       automatic Level1 l1 = new;
-      repeat(5) begin
+      repeat (5) begin
         r = l1.randomize();
         `checkd(r, 1);
       end

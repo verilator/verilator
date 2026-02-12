@@ -36,11 +36,11 @@ function automatic void untouched_inout_unused_func(inout int untouched_inout_un
 endfunction
 
 function automatic void driven_inout_unused_func(inout int driven_inout_unused_func_param);
-    driven_inout_unused_func_param = 7;
+  driven_inout_unused_func_param = 7;
 endfunction
 
 function automatic void used_inout_unused_func(inout int used_inout_unused_func_param);
-    $display(used_inout_unused_func_param);
+  $display(used_inout_unused_func_param);
 endfunction
 
 module t;

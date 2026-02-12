@@ -51,7 +51,7 @@ endclass
 
 class RandcSmall;
   randc bit [1:0] val;  // 4 possible values: 0,1,2,3
-  constraint c_exclude { val != 0; }  // 3 valid values: 1,2,3
+  constraint c_exclude {val != 0;}  // 3 valid values: 1,2,3
 
   function void test_cyclic;
     automatic int count[4];
@@ -78,7 +78,7 @@ endclass
 // Test 3: Inheritance - parent randc with constraint, child inherits
 class RandcParent;
   randc bit [2:0] code;  // 8 values: 0-7
-  constraint c_positive { code > 0; }  // 7 valid values: 1-7
+  constraint c_positive {code > 0;}  // 7 valid values: 1-7
 
   function void test_cyclic;
     automatic int count[8];
@@ -102,7 +102,7 @@ endclass
 
 class RandcChild extends RandcParent;
   // Inherits randc code and c_positive constraint
-  constraint c_upper { code <= 5; }  // Further restrict: 1-5 (5 values)
+  constraint c_upper {code <= 5;}  // Further restrict: 1-5 (5 values)
 
   function void test_cyclic;
     automatic int count[8];
@@ -132,7 +132,7 @@ endclass
 // enforcement and that all valid values eventually appear rather than exact counts.
 class RandcModeSwitch;
   randc bit [1:0] x;  // 4 values: 0-3
-  constraint c_nonzero { x != 0; }  // 3 valid values: 1,2,3
+  constraint c_nonzero {x != 0;}  // 3 valid values: 1,2,3
 
   function void test_mode_switch;
     automatic int randomize_result;
@@ -182,14 +182,14 @@ endclass
 // so the solver domain matches the enum domain exactly.
 class RandcEnumConstrained;
   typedef enum bit [1:0] {
-    RED   = 0,
+    RED = 0,
     GREEN = 1,
-    BLUE  = 2,
+    BLUE = 2,
     WHITE = 3
   } color_t;
 
   randc color_t color;
-  constraint c_no_white { color != WHITE; }  // 3 valid: RED, GREEN, BLUE
+  constraint c_no_white {color != WHITE;}  // 3 valid: RED, GREEN, BLUE
 
   function void test_cyclic;
     automatic int count[4] = '{0, 0, 0, 0};

@@ -4,19 +4,21 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
-// Test std::randomize() with queue and dynamic array variables
-
+// verilog_format: off
 `define stop $stop;
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
+// Test std::randomize() with queue and dynamic array variables
 
 module t_std_randomize_queue;
 
   // Queue variables
-  bit [7:0] q8 [$];
-  bit [31:0] q32 [$];
+  bit [7:0] q8[$];
+  bit [31:0] q32[$];
 
   // Dynamic array variables
-  bit [7:0] dyn8 [];
+  bit [7:0] dyn8[];
 
   int i;
 

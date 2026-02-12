@@ -22,13 +22,17 @@ interface if_a;
 endinterface
 
 // Leaf module: uses modport expression virtual ports
-module a_leaf(if_a.mp port);
+module a_leaf (
+    if_a.mp port
+);
   assign port.data_out = port.data_in + 8'h10;
 endmodule
 
 // Mid-level module: passes interface down
-module a_mid(if_a.mp port);
-  a_leaf u_leaf(.port(port));
+module a_mid (
+    if_a.mp port
+);
+  a_leaf u_leaf (.port(port));
 endmodule
 
 // ============================================================
@@ -41,16 +45,22 @@ interface if_b;
   modport mp(input .alpha(x), output .beta(y));
 endinterface
 
-module b_leaf(if_b.mp port);
+module b_leaf (
+    if_b.mp port
+);
   assign port.beta = port.alpha ^ 16'hFFFF;
 endmodule
 
-module b_mid(if_b.mp port);
-  b_leaf u_leaf(.port(port));
+module b_mid (
+    if_b.mp port
+);
+  b_leaf u_leaf (.port(port));
 endmodule
 
-module b_top_wrap(if_b.mp port);
-  b_mid u_mid(.port(port));
+module b_top_wrap (
+    if_b.mp port
+);
+  b_mid u_mid (.port(port));
 endmodule
 
 // ============================================================
@@ -62,17 +72,21 @@ interface if_c_inner;
 endinterface
 
 interface if_c_outer;
-  if_c_inner inner();
+  if_c_inner inner ();
   modport mp(output .w(inner.val), input .r(inner.val));
 endinterface
 
-module c_leaf(if_c_outer.mp port);
+module c_leaf (
+    if_c_outer.mp port
+);
   assign port.w = 8'hBE;
   wire [7:0] c_read = port.r;
 endmodule
 
-module c_mid(if_c_outer.mp port);
-  c_leaf u_leaf(.port(port));
+module c_mid (
+    if_c_outer.mp port
+);
+  c_leaf u_leaf (.port(port));
 endmodule
 
 // ============================================================
@@ -85,12 +99,16 @@ interface if_d;
   modport mp(input .vi(din), output .vo(dout));
 endinterface
 
-module d_leaf(if_d.mp port);
+module d_leaf (
+    if_d.mp port
+);
   assign port.vo = port.vi + 8'h01;
 endmodule
 
-module d_mid(if_d.mp port);
-  d_leaf u_leaf(.port(port));
+module d_mid (
+    if_d.mp port
+);
+  d_leaf u_leaf (.port(port));
 endmodule
 
 // ============================================================
@@ -100,20 +118,20 @@ endmodule
 module top;
 
   // --- Scenario A ---
-  if_a ifa();
-  a_mid u_a(.port(ifa));
+  if_a ifa ();
+  a_mid u_a (.port(ifa));
 
   // --- Scenario B ---
-  if_b ifb();
-  b_top_wrap u_b(.port(ifb));
+  if_b ifb ();
+  b_top_wrap u_b (.port(ifb));
 
   // --- Scenario C ---
-  if_c_outer ifc();
-  c_mid u_c(.port(ifc));
+  if_c_outer ifc ();
+  c_mid u_c (.port(ifc));
 
   // --- Scenario D ---
-  if_d ifd();
-  d_mid u_d(.port(ifd));
+  if_d ifd ();
+  d_mid u_d (.port(ifd));
 
   initial begin
     // Scenario A: single-level hierarchy

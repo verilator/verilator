@@ -7,7 +7,7 @@
 module t;
   initial begin
     bit x[2];
-    if (!bit'(std::randomize(x) with {unique{x};}) || x[0] == x[1]) $stop;
+    if (!bit'(std::randomize(x) with {unique {x};}) || x[0] == x[1]) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end

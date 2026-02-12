@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2026 by PlanV GmbH.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 PlanV GmbH.
 // SPDX-License-Identifier: CC0-1.0
 
 // Test static constraint_mode() support per IEEE 1800-2017 Section 18.4, 18.8
@@ -11,14 +11,10 @@ class StaticConstraintTest;
   rand bit [7:0] value;
 
   // Static constraint - shared across all instances
-  static constraint static_con {
-    value inside {[10:15]};
-  }
+  static constraint static_con {value inside {[10 : 15]};}
 
   // Non-static constraint for comparison
-  constraint instance_con {
-    value > 5;
-  }
+  constraint instance_con {value > 5;}
 endclass
 
 module t;
@@ -51,7 +47,7 @@ module t;
     obj1.instance_con.constraint_mode(1);
     for (int i = 0; i < 10; i++) begin
       void'(obj1.randomize());
-      if (!(obj1.value inside {[10:15]})) $stop;
+      if (!(obj1.value inside {[10 : 15]})) $stop;
       if (!(obj1.value > 5)) $stop;
     end
 

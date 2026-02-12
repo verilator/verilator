@@ -8,14 +8,14 @@ interface simple_if;
   logic data;
   logic [7:0] value;
 
-  modport source (output data, output value);
-  modport sink (input data, input value);
+  modport source(output data, output value);
+  modport sink(input data, input value);
 endinterface
 
 // Test 6: Submodule with interface array as sink modport port
 module sub_sink (
-  simple_if.sink ifaces [3:0],
-  output logic [7:0] sum_out
+    simple_if.sink ifaces[3:0],
+    output logic [7:0] sum_out
 );
   always_comb begin
     sum_out = 8'b0;
@@ -27,7 +27,7 @@ endmodule
 
 // Test 7: Submodule with interface array as source modport port
 module sub_source (
-  simple_if.source ifaces [3:0]
+    simple_if.source ifaces[3:0]
 );
   always_comb begin
     for (int i = 0; i < 4; i++) begin
@@ -39,7 +39,7 @@ endmodule
 
 // Test 8: Submodule with interface array without modport
 module sub_generic (
-  simple_if ifaces [3:0]
+    simple_if ifaces[3:0]
 );
   always_comb begin
     for (int i = 0; i < 4; i++) begin
@@ -51,10 +51,10 @@ endmodule
 
 // Test 11: Parameterized submodule with interface array size from parameter
 module l1_param_sub #(
-  parameter NUM_IFACES = 4
+    parameter NUM_IFACES = 4
 ) (
-  simple_if.sink l0_ifaces [NUM_IFACES-1:0],
-  output logic [7:0] l0_sum
+    simple_if.sink l0_ifaces[NUM_IFACES-1:0],
+    output logic [7:0] l0_sum
 );
   always_comb begin
     l0_sum = 8'b0;
@@ -64,16 +64,16 @@ module l1_param_sub #(
   end
 endmodule
 
-module t (/*AUTOARG*/
-  // Inputs
-  clk
+module t (  /*AUTOARG*/
+    // Inputs
+    clk
 );
 
   input clk;
 
   localparam N = 4;
 
-  simple_if ifaces [N-1:0] ();
+  simple_if ifaces[N-1:0] ();
 
   // Test 1: Simple for loop writing to interface array
   always_comb begin
@@ -92,7 +92,7 @@ module t (/*AUTOARG*/
 
   // Test 3: For loop with expression in body
   always_comb begin
-    for (int k = 0; k < N-1; k++) begin
+    for (int k = 0; k < N - 1; k++) begin
       // Use k to index, accessing different member
       ifaces[k].value = 8'(k);
     end
@@ -102,7 +102,7 @@ module t (/*AUTOARG*/
   // Test 4: Descending loop with >= comparison
   logic [N-1:0] desc_data;
   always_comb begin
-    for (int p = N-1; p >= 0; p--) begin
+    for (int p = N - 1; p >= 0; p--) begin
       desc_data[p] = ifaces[p].data;
     end
   end
@@ -110,13 +110,13 @@ module t (/*AUTOARG*/
   // Test 4b: Ascending loop with <= comparison
   logic [N-1:0] lte_data;
   always_comb begin
-    for (int m = 0; m <= N-1; m++) begin
+    for (int m = 0; m <= N - 1; m++) begin
       lte_data[m] = ifaces[m].data;
     end
   end
 
   // Test 4c: Descending loop with > comparison
-  simple_if gt_ifaces [N-1:0] ();
+  simple_if gt_ifaces[N-1:0] ();
   always_comb begin
     for (int n = N; n > 0; n--) begin
       gt_ifaces[n-1].data = 1'b1;
@@ -125,7 +125,7 @@ module t (/*AUTOARG*/
   end
 
   // Test 5: Multiple interface arrays in same loop
-  simple_if other_ifaces [N-1:0] ();
+  simple_if other_ifaces[N-1:0] ();
   always_comb begin
     for (int q = 0; q < N; q++) begin
       other_ifaces[q].data = ifaces[q].data;
@@ -135,18 +135,21 @@ module t (/*AUTOARG*/
 
   // Test 6: Interface array as sink modport port (read from ports in loop)
   logic [7:0] sink_sum;
-  sub_sink u_sub_sink (.ifaces(ifaces), .sum_out(sink_sum));
+  sub_sink u_sub_sink (
+      .ifaces(ifaces),
+      .sum_out(sink_sum)
+  );
 
   // Test 7: Interface array as source modport port (write to ports in loop)
-  simple_if source_ifaces [N-1:0] ();
+  simple_if source_ifaces[N-1:0] ();
   sub_source u_sub_source (.ifaces(source_ifaces));
 
   // Test 8: Interface array without modport (read/write in loop)
-  simple_if generic_ifaces [N-1:0] ();
+  simple_if generic_ifaces[N-1:0] ();
   sub_generic u_sub_generic (.ifaces(generic_ifaces));
 
   // Test 9: Ascending loop with step of 2
-  simple_if step2_ifaces [7:0] ();
+  simple_if step2_ifaces[7:0] ();
   always_comb begin
     for (int i = 0; i < 8; i += 2) begin
       step2_ifaces[i].data = 1'b1;
@@ -159,7 +162,7 @@ module t (/*AUTOARG*/
   end
 
   // Test 10: Descending loop with step of -2
-  simple_if step2d_ifaces [7:0] ();
+  simple_if step2d_ifaces[7:0] ();
   always_comb begin
     for (int i = 6; i >= 0; i -= 2) begin
       step2d_ifaces[i].data = 1'b1;
@@ -174,7 +177,7 @@ module t (/*AUTOARG*/
   // Test 11: Parameterized submodule with interface array size from parameter
   // Override NUM_IFACES from default 4 to 6 to test that pre-unroll
   // uses the overridden parameter value (not the default)
-  simple_if l0_param_ifaces [5:0] ();
+  simple_if l0_param_ifaces[5:0] ();
   always_comb begin
     for (int i = 0; i < 6; i++) begin
       l0_param_ifaces[i].data = 1'b1;
@@ -182,13 +185,15 @@ module t (/*AUTOARG*/
     end
   end
   logic [7:0] l0_param_sum;
-  l1_param_sub #(.NUM_IFACES(6)) u_l1_param (
-    .l0_ifaces(l0_param_ifaces),
-    .l0_sum(l0_param_sum)
+  l1_param_sub #(
+      .NUM_IFACES(6)
+  ) u_l1_param (
+      .l0_ifaces(l0_param_ifaces),
+      .l0_sum(l0_param_sum)
   );
 
   // Test 12: Complex index expression (N-1-i) - reversed assignment
-  simple_if rev_ifaces [N-1:0] ();
+  simple_if rev_ifaces[N-1:0] ();
   always_comb begin
     for (int i = 0; i < N; i++) begin
       rev_ifaces[N-1-i].data = 1'b1;
@@ -197,7 +202,7 @@ module t (/*AUTOARG*/
   end
 
   // Test 13: Non-zero-based interface array range [2:5]
-  simple_if nzb_ifaces [2:5] ();
+  simple_if nzb_ifaces[2:5] ();
   always_comb begin
     for (int i = 2; i <= 5; i++) begin
       nzb_ifaces[i].data = 1'b1;
@@ -223,14 +228,14 @@ module t (/*AUTOARG*/
       end
 
       // Check values
-      for (int i = 0; i < N-1; i++) begin
+      for (int i = 0; i < N - 1; i++) begin
         if (ifaces[i].value !== 8'(i)) begin
           $display("%%Error: ifaces[%0d].value should be %0d, got %0d", i, i, ifaces[i].value);
           $stop;
         end
       end
       if (ifaces[N-1].value !== 8'hFF) begin
-        $display("%%Error: ifaces[%0d].value should be 0xFF, got %0d", N-1, ifaces[N-1].value);
+        $display("%%Error: ifaces[%0d].value should be 0xFF, got %0d", N - 1, ifaces[N-1].value);
         $stop;
       end
 
@@ -249,7 +254,8 @@ module t (/*AUTOARG*/
           $stop;
         end
         if (gt_ifaces[i].value !== 8'(i + 1)) begin
-          $display("%%Error: gt_ifaces[%0d].value should be %0d, got %0d", i, i+1, gt_ifaces[i].value);
+          $display("%%Error: gt_ifaces[%0d].value should be %0d, got %0d", i, i + 1,
+                   gt_ifaces[i].value);
           $stop;
         end
       end
@@ -263,11 +269,13 @@ module t (/*AUTOARG*/
       // Test 7: Check source_ifaces (written by sub_source with i+100)
       for (int i = 0; i < N; i++) begin
         if (source_ifaces[i].data !== 1'b1) begin
-          $display("%%Error: source_ifaces[%0d].data should be 1, got %b", i, source_ifaces[i].data);
+          $display("%%Error: source_ifaces[%0d].data should be 1, got %b", i,
+                   source_ifaces[i].data);
           $stop;
         end
         if (source_ifaces[i].value !== 8'(i + 100)) begin
-          $display("%%Error: source_ifaces[%0d].value should be %0d, got %0d", i, i+100, source_ifaces[i].value);
+          $display("%%Error: source_ifaces[%0d].value should be %0d, got %0d", i, i + 100,
+                   source_ifaces[i].value);
           $stop;
         end
       end
@@ -275,11 +283,13 @@ module t (/*AUTOARG*/
       // Test 8: Check generic_ifaces (written by sub_generic with i+50)
       for (int i = 0; i < N; i++) begin
         if (generic_ifaces[i].data !== 1'b0) begin
-          $display("%%Error: generic_ifaces[%0d].data should be 0, got %b", i, generic_ifaces[i].data);
+          $display("%%Error: generic_ifaces[%0d].data should be 0, got %b", i,
+                   generic_ifaces[i].data);
           $stop;
         end
         if (generic_ifaces[i].value !== 8'(i + 50)) begin
-          $display("%%Error: generic_ifaces[%0d].value should be %0d, got %0d", i, i+50, generic_ifaces[i].value);
+          $display("%%Error: generic_ifaces[%0d].value should be %0d, got %0d", i, i + 50,
+                   generic_ifaces[i].value);
           $stop;
         end
       end
@@ -288,20 +298,25 @@ module t (/*AUTOARG*/
       for (int i = 0; i < 8; i++) begin
         if (i % 2 == 0) begin
           if (step2_ifaces[i].data !== 1'b1) begin
-            $display("%%Error: step2_ifaces[%0d].data should be 1, got %b", i, step2_ifaces[i].data);
+            $display("%%Error: step2_ifaces[%0d].data should be 1, got %b", i,
+                     step2_ifaces[i].data);
             $stop;
           end
           if (step2_ifaces[i].value !== 8'(i)) begin
-            $display("%%Error: step2_ifaces[%0d].value should be %0d, got %0d", i, i, step2_ifaces[i].value);
+            $display("%%Error: step2_ifaces[%0d].value should be %0d, got %0d", i, i,
+                     step2_ifaces[i].value);
             $stop;
           end
-        end else begin
+        end
+        else begin
           if (step2_ifaces[i].data !== 1'b0) begin
-            $display("%%Error: step2_ifaces[%0d].data should be 0, got %b", i, step2_ifaces[i].data);
+            $display("%%Error: step2_ifaces[%0d].data should be 0, got %b", i,
+                     step2_ifaces[i].data);
             $stop;
           end
           if (step2_ifaces[i].value !== 8'hAA) begin
-            $display("%%Error: step2_ifaces[%0d].value should be 0xAA, got 0x%02x", i, step2_ifaces[i].value);
+            $display("%%Error: step2_ifaces[%0d].value should be 0xAA, got 0x%02x", i,
+                     step2_ifaces[i].value);
             $stop;
           end
         end
@@ -311,20 +326,25 @@ module t (/*AUTOARG*/
       for (int i = 0; i < 8; i++) begin
         if (i % 2 == 0) begin
           if (step2d_ifaces[i].data !== 1'b1) begin
-            $display("%%Error: step2d_ifaces[%0d].data should be 1, got %b", i, step2d_ifaces[i].data);
+            $display("%%Error: step2d_ifaces[%0d].data should be 1, got %b", i,
+                     step2d_ifaces[i].data);
             $stop;
           end
           if (step2d_ifaces[i].value !== 8'(i)) begin
-            $display("%%Error: step2d_ifaces[%0d].value should be %0d, got %0d", i, i, step2d_ifaces[i].value);
+            $display("%%Error: step2d_ifaces[%0d].value should be %0d, got %0d", i, i,
+                     step2d_ifaces[i].value);
             $stop;
           end
-        end else begin
+        end
+        else begin
           if (step2d_ifaces[i].data !== 1'b0) begin
-            $display("%%Error: step2d_ifaces[%0d].data should be 0, got %b", i, step2d_ifaces[i].data);
+            $display("%%Error: step2d_ifaces[%0d].data should be 0, got %b", i,
+                     step2d_ifaces[i].data);
             $stop;
           end
           if (step2d_ifaces[i].value !== 8'hBB) begin
-            $display("%%Error: step2d_ifaces[%0d].value should be 0xBB, got 0x%02x", i, step2d_ifaces[i].value);
+            $display("%%Error: step2d_ifaces[%0d].value should be 0xBB, got 0x%02x", i,
+                     step2d_ifaces[i].value);
             $stop;
           end
         end
@@ -344,7 +364,8 @@ module t (/*AUTOARG*/
           $stop;
         end
         if (rev_ifaces[i].value !== 8'(N - 1 - i)) begin
-          $display("%%Error: rev_ifaces[%0d].value should be %0d, got %0d", i, N-1-i, rev_ifaces[i].value);
+          $display("%%Error: rev_ifaces[%0d].value should be %0d, got %0d", i, N - 1 - i,
+                   rev_ifaces[i].value);
           $stop;
         end
       end
@@ -356,7 +377,8 @@ module t (/*AUTOARG*/
           $stop;
         end
         if (nzb_ifaces[i].value !== 8'(i)) begin
-          $display("%%Error: nzb_ifaces[%0d].value should be %0d, got %0d", i, i, nzb_ifaces[i].value);
+          $display("%%Error: nzb_ifaces[%0d].value should be %0d, got %0d", i, i,
+                   nzb_ifaces[i].value);
           $stop;
         end
       end

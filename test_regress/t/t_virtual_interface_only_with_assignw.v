@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2026 by Antmicro.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
 interface sys_if;
@@ -13,12 +13,12 @@ interface axi_if;
 endinterface
 
 class sys_config;
-  virtual sys_if   sys_vi;
+  virtual sys_if sys_vi;
 endclass
 
 class axi_agent_config;
-  virtual axi_if   axi_vi;
-  sys_config   cfg;
+  virtual axi_if axi_vi;
+  sys_config cfg;
   task start_clk();
     fork
       forever begin
@@ -38,8 +38,8 @@ class axi_agent_config;
 endclass
 
 module axi_tb_top;
-  sys_if sys_vi();
-  axi_if axi_vi();
+  sys_if sys_vi ();
+  axi_if axi_vi ();
   assign axi_vi.clk = sys_vi.clk;
   sys_config a;
   axi_agent_config b;

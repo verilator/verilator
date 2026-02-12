@@ -14,8 +14,8 @@ class InnerClass;
   rand bit [7:0] inner_val2;
 
   constraint inner_con {
-    inner_val1 inside {[8'd10:8'd50]};
-    inner_val2 inside {[8'd100:8'd200]};
+    inner_val1 inside {[8'd10 : 8'd50]};
+    inner_val2 inside {[8'd100 : 8'd200]};
   }
 
   function new();
@@ -28,9 +28,7 @@ class OuterClass;
   rand InnerClass nested_obj;
   rand bit [7:0] outer_val;
 
-  constraint outer_con {
-    outer_val inside {[8'd1:8'd20]};
-  }
+  constraint outer_con {outer_val inside {[8'd1 : 8'd20]};}
 
   function new();
     nested_obj = new();

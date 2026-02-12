@@ -8,16 +8,16 @@ interface simple_bad_if;
   logic [7:0] value;
 endinterface
 
-module t (/*AUTOARG*/
-  // Inputs
-  clk
+module t (  /*AUTOARG*/
+    // Inputs
+    clk
 );
 
   input clk;
 
   localparam N = 4;
 
-  simple_bad_if ifaces [N-1:0] ();
+  simple_bad_if ifaces[N-1:0] ();
 
   // BAD: Loop with runtime-variable bound - not unrollable, so the
   // interface array index cannot be resolved to a constant.

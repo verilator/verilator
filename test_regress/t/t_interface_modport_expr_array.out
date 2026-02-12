@@ -1,43 +1,43 @@
-%Error-UNSUPPORTED: t/t_interface_modport_expr_array.v:26:13: Unsupported: Modport expression with part select (IEEE 1800-2023 25.5.4)
-   26 |     output .ch0_wr(ch[0].wr), input .ch0_rd(ch[0].rd),
-      |             ^~~~~~
+%Error-UNSUPPORTED: t/t_interface_modport_expr_array.v:26:15: Unsupported: Modport expression with part select (IEEE 1800-2023 25.5.4)
+   26 |       output .ch0_wr(ch[0].wr),
+      |               ^~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: t/t_interface_modport_expr_array.v:26:13: Modport item not found: 'ch0_wr'
-   26 |     output .ch0_wr(ch[0].wr), input .ch0_rd(ch[0].rd),
-      |             ^~~~~~
+%Error: t/t_interface_modport_expr_array.v:26:15: Modport item not found: 'ch0_wr'
+   26 |       output .ch0_wr(ch[0].wr),
+      |               ^~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error-UNSUPPORTED: t/t_interface_modport_expr_array.v:26:38: Unsupported: Modport expression with part select (IEEE 1800-2023 25.5.4)
-   26 |     output .ch0_wr(ch[0].wr), input .ch0_rd(ch[0].rd),
-      |                                      ^~~~~~
-%Error: t/t_interface_modport_expr_array.v:26:38: Modport item not found: 'ch0_rd'
-   26 |     output .ch0_wr(ch[0].wr), input .ch0_rd(ch[0].rd),
-      |                                      ^~~~~~
-%Error-UNSUPPORTED: t/t_interface_modport_expr_array.v:27:13: Unsupported: Modport expression with part select (IEEE 1800-2023 25.5.4)
-   27 |     output .ch1_wr(ch[1].wr), input .ch1_rd(ch[1].rd)
-      |             ^~~~~~
-%Error: t/t_interface_modport_expr_array.v:27:13: Modport item not found: 'ch1_wr'
-   27 |     output .ch1_wr(ch[1].wr), input .ch1_rd(ch[1].rd)
-      |             ^~~~~~
-%Error-UNSUPPORTED: t/t_interface_modport_expr_array.v:27:38: Unsupported: Modport expression with part select (IEEE 1800-2023 25.5.4)
-   27 |     output .ch1_wr(ch[1].wr), input .ch1_rd(ch[1].rd)
-      |                                      ^~~~~~
-%Error: t/t_interface_modport_expr_array.v:27:38: Modport item not found: 'ch1_rd'
-   27 |     output .ch1_wr(ch[1].wr), input .ch1_rd(ch[1].rd)
-      |                                      ^~~~~~
-%Error: t/t_interface_modport_expr_array.v:33:29: Can't find definition of 'ch0_wr' in dotted variable/method: 'port.ch0_wr'
-   33 |   assign port.ch0_rd = port.ch0_wr + 8'h10;
+%Error-UNSUPPORTED: t/t_interface_modport_expr_array.v:27:14: Unsupported: Modport expression with part select (IEEE 1800-2023 25.5.4)
+   27 |       input .ch0_rd(ch[0].rd),
+      |              ^~~~~~
+%Error: t/t_interface_modport_expr_array.v:27:14: Modport item not found: 'ch0_rd'
+   27 |       input .ch0_rd(ch[0].rd),
+      |              ^~~~~~
+%Error-UNSUPPORTED: t/t_interface_modport_expr_array.v:28:15: Unsupported: Modport expression with part select (IEEE 1800-2023 25.5.4)
+   28 |       output .ch1_wr(ch[1].wr),
+      |               ^~~~~~
+%Error: t/t_interface_modport_expr_array.v:28:15: Modport item not found: 'ch1_wr'
+   28 |       output .ch1_wr(ch[1].wr),
+      |               ^~~~~~
+%Error-UNSUPPORTED: t/t_interface_modport_expr_array.v:29:14: Unsupported: Modport expression with part select (IEEE 1800-2023 25.5.4)
+   29 |       input .ch1_rd(ch[1].rd)
+      |              ^~~~~~
+%Error: t/t_interface_modport_expr_array.v:29:14: Modport item not found: 'ch1_rd'
+   29 |       input .ch1_rd(ch[1].rd)
+      |              ^~~~~~
+%Error: t/t_interface_modport_expr_array.v:37:29: Can't find definition of 'ch0_wr' in dotted variable/method: 'port.ch0_wr'
+   37 |   assign port.ch0_rd = port.ch0_wr + 8'h10;
       |                             ^~~~~~
         ... Known scopes under 'port': <no instances found>
-%Error: t/t_interface_modport_expr_array.v:33:15: Can't find definition of 'ch0_rd' in dotted variable/method: 'port.ch0_rd'
-   33 |   assign port.ch0_rd = port.ch0_wr + 8'h10;
+%Error: t/t_interface_modport_expr_array.v:37:15: Can't find definition of 'ch0_rd' in dotted variable/method: 'port.ch0_rd'
+   37 |   assign port.ch0_rd = port.ch0_wr + 8'h10;
       |               ^~~~~~
         ... Known scopes under 'port': <no instances found>
-%Error: t/t_interface_modport_expr_array.v:34:29: Can't find definition of 'ch1_wr' in dotted variable/method: 'port.ch1_wr'
-   34 |   assign port.ch1_rd = port.ch1_wr + 8'h20;
+%Error: t/t_interface_modport_expr_array.v:38:29: Can't find definition of 'ch1_wr' in dotted variable/method: 'port.ch1_wr'
+   38 |   assign port.ch1_rd = port.ch1_wr + 8'h20;
       |                             ^~~~~~
         ... Known scopes under 'port': <no instances found>
-%Error: t/t_interface_modport_expr_array.v:34:15: Can't find definition of 'ch1_rd' in dotted variable/method: 'port.ch1_rd'
-   34 |   assign port.ch1_rd = port.ch1_wr + 8'h20;
+%Error: t/t_interface_modport_expr_array.v:38:15: Can't find definition of 'ch1_rd' in dotted variable/method: 'port.ch1_rd'
+   38 |   assign port.ch1_rd = port.ch1_wr + 8'h20;
       |               ^~~~~~
         ... Known scopes under 'port': <no instances found>
 %Error: Exiting due to

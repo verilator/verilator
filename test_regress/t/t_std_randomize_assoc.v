@@ -4,16 +4,18 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
-// Test std::randomize() with associative array variables
-
+// verilog_format: off
 `define stop $stop;
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
+// Test std::randomize() with associative array variables
 
 module t_std_randomize_assoc;
 
   // Associative array variables
-  int assoc_int [int];
-  bit [7:0] assoc_byte [string];
+  int assoc_int[int];
+  bit [7:0] assoc_byte[string];
 
   initial begin
     // Test 1: std::randomize with int-keyed associative array (no constraints)

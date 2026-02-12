@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2026 by PlanV GmbH.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 PlanV GmbH.
 // SPDX-License-Identifier: CC0-1.0
 
 // Test: Inline foreach constraints on dynamic arrays and queues of class objects
@@ -46,12 +46,12 @@ module t;
     od = new(3);
 
     if (od.randomize() with {
-      foreach (items[i]) {
-        items[i].val > 10;
-        items[i].val < 200;
-        items[i].tag > 0;
-      }
-    } == 0) begin
+          foreach (items[i]) {
+            items[i].val > 10;
+            items[i].val < 200;
+            items[i].tag > 0;
+          }
+        } == 0) begin
       $display("FAIL: dyn randomize() returned 0");
       $stop;
     end
@@ -71,10 +71,10 @@ module t;
     od = new(0);
 
     if (od.randomize() with {
-      foreach (items[i]) {
-        items[i].val > 10;
-      }
-    } == 0) begin
+          foreach (items[i]) {
+            items[i].val > 10;
+          }
+        } == 0) begin
       $display("FAIL: empty dyn randomize() returned 0");
       $stop;
     end
@@ -83,12 +83,12 @@ module t;
     oq = new(3);
 
     if (oq.randomize() with {
-      foreach (items[i]) {
-        items[i].val > 50;
-        items[i].val < 150;
-        items[i].tag > 0;
-      }
-    } == 0) begin
+          foreach (items[i]) {
+            items[i].val > 50;
+            items[i].val < 150;
+            items[i].tag > 0;
+          }
+        } == 0) begin
       $display("FAIL: queue randomize() returned 0");
       $stop;
     end

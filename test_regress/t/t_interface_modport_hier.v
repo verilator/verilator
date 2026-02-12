@@ -10,45 +10,54 @@
 // - Multiple interface instances (same modport type, different data)
 // - Interface arrays
 
-interface bus_if (input logic clk);
+interface bus_if (
+    input logic clk
+);
   logic [7:0] data;
-  modport slave (output data, input clk);
+  modport slave(output data, input clk);
 endinterface
 
 // l1 module with the actual logic
-module l1_mod (bus_if.slave bus);
-  always_ff @(posedge bus.clk)
-    bus.data <= 8'h5A;
+module l1_mod (
+    bus_if.slave bus
+);
+  always_ff @(posedge bus.clk) bus.data <= 8'h5A;
 endmodule
 
 // l0 module wrapping l1 module
-module l0_mod (bus_if.slave bus);
+module l0_mod (
+    bus_if.slave bus
+);
   l1_mod l1_inst (bus);
 endmodule
 
 // Modules for testing multiple instances with same modport
-module mod_aa (bus_if.slave bus);
+module mod_aa (
+    bus_if.slave bus
+);
   assign bus.data = 8'hAA;
 endmodule
 
-module mod_bb (bus_if.slave bus);
+module mod_bb (
+    bus_if.slave bus
+);
   assign bus.data = 8'hBB;
 endmodule
 
 // Module for testing interface arrays
-module array_mod (bus_if.slave bus[2]);
+module array_mod (
+    bus_if.slave bus[2]
+);
   always_ff @(posedge bus[0].clk) begin
     bus[0].data <= 8'hA0;
     bus[1].data <= 8'hA1;
   end
 endmodule
 
-module t (/*AUTOARG*/
-  // Inputs
-  clk
-  );
+module t (
+    input clk
+);
 
-  input clk;
   integer cyc = 0;
 
   // Deep hierarchy test

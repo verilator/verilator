@@ -9,8 +9,11 @@
 class ConstraintModeInCtor;
   rand bit [7:0] value;
 
-  constraint low_range_c { value < 50; };
-  constraint high_range_c { value >= 50; value < 200; };
+  constraint low_range_c {value < 50;}
+  constraint high_range_c {
+    value >= 50;
+    value < 200;
+  }
 
   function new;
     // Disable high_range_c in constructor - only low_range_c should be active

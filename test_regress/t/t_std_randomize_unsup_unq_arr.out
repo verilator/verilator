@@ -1,6 +1,6 @@
 %Warning-CONSTRAINTIGN: t/t_std_randomize_unsup_unq_arr.v:10:39: Unsupported: Unique constraint in std::randomize() with {}
                                                                : ... note: In instance 't'
-   10 |     if (!bit'(std::randomize(x) with {unique{x};}) || x[0] == x[1]) $stop;
+   10 |     if (!bit'(std::randomize(x) with {unique {x};}) || x[0] == x[1]) $stop;
       |                                       ^~~~~~
                         ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
                         ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.

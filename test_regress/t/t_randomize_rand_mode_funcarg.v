@@ -12,7 +12,10 @@ class RandModeClass;
   rand int x;
   rand int y;
 
-  constraint c { x inside {[1:255]}; y inside {[1:255]}; }
+  constraint c {
+    x inside {[1 : 255]};
+    y inside {[1 : 255]};
+  }
 
   task check_mode(string name, int actual, int expected);
     if (actual !== expected) begin

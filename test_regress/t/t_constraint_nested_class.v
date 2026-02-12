@@ -21,7 +21,7 @@ endclass
 module t;
   B b;
   initial begin
-    b   = new;
+    b = new;
     b.a = new;
     if (b.randomize() == 0) $stop;
     if (b.a.x != LEN) $stop;
