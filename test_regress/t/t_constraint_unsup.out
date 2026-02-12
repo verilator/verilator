@@ -1,5 +1,5 @@
 %Error-UNSUPPORTED: t/t_constraint_unsup.v:9:27: Unsupported expression inside constraint
-    9 |   constraint cons { m_one ** 2 > 0; }
-      |                           ^~
+    9 |    constraint cons { x + 1.0 > 0.0; }
+      |                              ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

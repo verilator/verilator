@@ -5,8 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Packet;
-   rand real m_one;
-   constraint cons { m_one + 1.0 > 0.0; }
+   rand real x;
+   constraint cons { x + 1.0 > 0.0; }
 endclass
 
 module t;
