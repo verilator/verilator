@@ -29,11 +29,11 @@
       {"type":"VAR","name":"state","addr":"(Z)","loc":"d,17:11,17:16","dtypep":"(M)","origName":"state","verilogName":"state","direction":"NONE","lifetime":"VAUTOMI","varType":"MEMBER","dtypeName":"string","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
       {"type":"FUNC","name":"strings_equal","addr":"(AB)","loc":"d,61:17,61:30","dtypep":"(U)","method":true,"cname":"strings_equal",
        "fvarp": [
-        {"type":"VAR","name":"strings_equal","addr":"(BB)","loc":"d,61:17,61:30","dtypep":"(U)","origName":"strings_equal","verilogName":"strings_equal","direction":"OUTPUT","noCReset":true,"isFuncReturn":true,"isFuncLocal":true,"lifetime":"VAUTOM","varType":"MEMBER","dtypeName":"bit","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []}
+        {"type":"VAR","name":"strings_equal","addr":"(BB)","loc":"d,61:17,61:30","dtypep":"(U)","origName":"strings_equal","verilogName":"strings_equal","direction":"OUTPUT","noCReset":true,"isFuncReturn":true,"isFuncLocal":true,"lifetime":"VAUTOM","varType":"VAR","dtypeName":"bit","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []}
       ],"classOrPackagep": [],
        "stmtsp": [
-        {"type":"VAR","name":"a","addr":"(CB)","loc":"d,61:38,61:39","dtypep":"(M)","origName":"a","verilogName":"a","direction":"INPUT","isFuncLocal":true,"lifetime":"VAUTOMI","varType":"MEMBER","dtypeName":"string","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
-        {"type":"VAR","name":"b","addr":"(DB)","loc":"d,61:48,61:49","dtypep":"(M)","origName":"b","verilogName":"b","direction":"INPUT","isFuncLocal":true,"lifetime":"VAUTOMI","varType":"MEMBER","dtypeName":"string","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
+        {"type":"VAR","name":"a","addr":"(CB)","loc":"d,61:38,61:39","dtypep":"(M)","origName":"a","verilogName":"a","direction":"INPUT","isFuncLocal":true,"lifetime":"VAUTOMI","varType":"PORT","dtypeName":"string","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
+        {"type":"VAR","name":"b","addr":"(DB)","loc":"d,61:48,61:49","dtypep":"(M)","origName":"b","verilogName":"b","direction":"INPUT","isFuncLocal":true,"lifetime":"VAUTOMI","varType":"PORT","dtypeName":"string","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
         {"type":"ASSIGN","name":"","addr":"(EB)","loc":"d,61:17,61:30","dtypep":"(U)",
          "rhsp": [
           {"type":"CRESET","name":"","addr":"(FB)","loc":"d,61:17,61:30","dtypep":"(U)"}
