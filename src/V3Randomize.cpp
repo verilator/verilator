@@ -1892,6 +1892,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
             AstNodeExpr* const itemp = VN_AS(withp->exprp()->cloneTreePure(false), NodeExpr);
             substLambdaRefs(itemp, selp, idxRefp);
+            VL_DO_DANGLING(selp->deleteTree(), selp);
             propagateUser1(itemp);
 
             AstCStmt* const cstmtp = new AstCStmt{fl};
