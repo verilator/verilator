@@ -854,6 +854,60 @@ class ConstraintExprVisitor final : public VNVisitor {
         return selp;
     }
 
+    // Copy user1 flags from source to structurally identical clone
+    static void deepCopyUser1(AstNode* srcp, AstNode* dstp) {
+        dstp->user1(srcp->user1());
+        AstNode* const srcOps[] = {srcp->op1p(), srcp->op2p(), srcp->op3p(), srcp->op4p()};
+        AstNode* const dstOps[] = {dstp->op1p(), dstp->op2p(), dstp->op3p(), dstp->op4p()};
+        for (int i = 0; i < 4; i++) {
+            AstNode* sc = srcOps[i];
+            AstNode* dc = dstOps[i];
+            while (sc && dc) {
+                deepCopyUser1(sc, dc);
+                sc = sc->nextp();
+                dc = dc->nextp();
+            }
+        }
+    }
+
+    // Replace AstLambdaArgRef with element (valp) / index (idxp), preserving user1
+    static void substLambdaRefs(AstNode* nodep, AstNodeExpr* valp, AstNodeExpr* idxp) {
+        if (AstLambdaArgRef* const refp = VN_CAST(nodep, LambdaArgRef)) {
+            AstNodeExpr* const substp = refp->index() ? idxp : valp;
+            if (substp) {
+                AstNodeExpr* const clonep = substp->cloneTreePure(false);
+                deepCopyUser1(substp, clonep);
+                refp->replaceWith(clonep);
+                VL_DO_DANGLING(refp->deleteTree(), refp);
+            }
+            return;
+        }
+        AstNode* const ops[] = {nodep->op1p(), nodep->op2p(), nodep->op3p(), nodep->op4p()};
+        for (AstNode* opp : ops) {
+            for (AstNode* childp = opp; childp;) {
+                AstNode* const nextp = childp->nextp();
+                substLambdaRefs(childp, valp, idxp);
+                childp = nextp;
+            }
+        }
+    }
+
+    // Propagate user1 bottom-up (OR semantics, preserves already-set flags)
+    static void propagateUser1(AstNode* nodep) {
+        AstNode* const ops[] = {nodep->op1p(), nodep->op2p(), nodep->op3p(), nodep->op4p()};
+        for (AstNode* opp : ops) {
+            for (AstNode* childp = opp; childp; childp = childp->nextp()) {
+                propagateUser1(childp);
+            }
+        }
+        if (VN_IS(nodep, NodeExpr)) {
+            nodep->user1(nodep->user1() || (nodep->op1p() && nodep->op1p()->user1())
+                         || (nodep->op2p() && nodep->op2p()->user1())
+                         || (nodep->op3p() && nodep->op3p()->user1())
+                         || (nodep->op4p() && nodep->op4p()->user1()));
+        }
+    }
+
     // VISITORS
     void visit(AstNodeVarRef* nodep) override {
         AstVar* varp = nodep->varp();
@@ -1811,6 +1865,68 @@ class ConstraintExprVisitor final : public VNVisitor {
             cexprp->add("([&]{\nstd::string ret;\n");
             cexprp->add(new AstBegin{fl, "", new AstForeach{fl, arrayp, cstmtp}, true});
             cexprp->add("return ret.empty() ? \"#b0\" : \"(bvor\" + ret + \")\";\n})()");
+            nodep->replaceWith(new AstSFormatF{fl, "%@", false, cexprp});
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            return;
+        }
+
+        // Array reduction with 'with' clause (sum, product, and, or, xor)
+        if (nodep->fromp()->user1()
+            && (nodep->method() == VCMethod::ARRAY_R_SUM
+                || nodep->method() == VCMethod::ARRAY_R_PRODUCT
+                || nodep->method() == VCMethod::ARRAY_R_AND
+                || nodep->method() == VCMethod::ARRAY_R_OR
+                || nodep->method() == VCMethod::ARRAY_R_XOR)) {
+            AstWith* const withp = VN_CAST(nodep->pinsp(), With);
+            UASSERT_OBJ(withp, nodep, "Reduction method missing 'with' clause");
+            const bool randArr = nodep->fromp()->user1();
+
+            AstVar* const newVarp
+                = new AstVar{fl, VVarType::BLOCKTEMP, "__Vreduce", nodep->findSigned32DType()};
+            AstNodeExpr* const idxRefp = new AstVarRef{fl, newVarp, VAccess::READ};
+            AstSelLoopVars* const arrayp
+                = new AstSelLoopVars{fl, nodep->fromp()->cloneTreePure(false), newVarp};
+
+            AstNodeExpr* const selp = newSel(fl, nodep->fromp(), idxRefp);
+            selp->user1(randArr);
+
+            AstNodeExpr* const itemp = VN_AS(withp->exprp()->cloneTreePure(false), NodeExpr);
+            substLambdaRefs(itemp, selp, idxRefp);
+            propagateUser1(itemp);
+
+            AstCStmt* const cstmtp = new AstCStmt{fl};
+            cstmtp->add("ret += \" \";\n");
+            cstmtp->add("ret += ");
+            cstmtp->add(iterateSubtreeReturnEdits(itemp));
+            cstmtp->add(";");
+            AstCExpr* const cexprp = new AstCExpr{fl};
+            cexprp->dtypeSetString();
+            cexprp->add("([&]{\nstd::string ret;\n");
+            cexprp->add(new AstBegin{fl, "", new AstForeach{fl, arrayp, cstmtp}, true});
+
+            const char* smtOp = nullptr;
+            const char* identity = nullptr;
+            if (nodep->method() == VCMethod::ARRAY_R_SUM) {
+                smtOp = "bvadd";
+                identity = "#b0";
+            } else if (nodep->method() == VCMethod::ARRAY_R_PRODUCT) {
+                smtOp = "bvmul";
+                identity = "#b1";
+            } else if (nodep->method() == VCMethod::ARRAY_R_AND) {
+                smtOp = "bvand";
+                identity = "#b1";
+            } else if (nodep->method() == VCMethod::ARRAY_R_OR) {
+                smtOp = "bvor";
+                identity = "#b0";
+            } else if (nodep->method() == VCMethod::ARRAY_R_XOR) {
+                smtOp = "bvxor";
+                identity = "#b0";
+            } else {
+                nodep->v3fatalSrc("Unhandled reduction method");
+            }
+            cexprp->add(std::string("return ret.empty() ? \"") + identity + "\" : \"(" + smtOp
+                        + "\" + ret + \")\";\n})()");
+
             nodep->replaceWith(new AstSFormatF{fl, "%@", false, cexprp});
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
