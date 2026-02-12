@@ -40,6 +40,7 @@ class Packet;
    constraint c_power_ss { w ** 5 < 10000; }
    constraint c_power_us { f ** 5 < 10000; }
    constraint c_power_su { v ** 32'h5 < 10000; }
+   // check for negative values in constant
    constraint c_power_neg_exp { v ** 4'shf == 0; }
    constraint c_power_u_neg_exp { f ** 4'shf == 0; }
    constraint impl { tiny == 1 -> x != 10; }
