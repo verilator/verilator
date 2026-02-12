@@ -236,7 +236,11 @@ class UnknownVisitor final : public VNVisitor {
             const AstNode* portp = nodep->taskp()->stmtsp();
             for (AstNodeExpr* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), NodeExpr)) {
                 VL_RESTORER(m_constXCvt);
-                const AstVar* const portVarp = VN_AS(portp, Var);
+                const AstVar* portVarp;
+                while (!(portVarp = VN_CAST(portp, Var))) {
+                    UASSERT_OBJ(portp, pinp, "No port for this var");
+                    portp = portp->nextp();
+                }
                 m_constXCvt
                     = m_constXCvt
                       && !(portVarp->direction().isNonOutput() && portVarp->attrFourState());
