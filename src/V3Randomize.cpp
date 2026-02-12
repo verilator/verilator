@@ -3218,8 +3218,8 @@ class RandomizeVisitor final : public VNVisitor {
                 AstNodeModule* const genModp = VN_AS(genp->user2p(), NodeModule);
                 nodep->foreachMember([&](AstClass*, AstVar* memberVarp) {
                     if (!memberVarp->user3()) return;  // Not in solver path
-                    AstEnumDType* const enumDtp = VN_CAST(
-                        memberVarp->dtypep()->skipRefToEnump(), EnumDType);
+                    AstEnumDType* const enumDtp
+                        = VN_CAST(memberVarp->dtypep()->skipRefToEnump(), EnumDType);
                     if (!enumDtp) return;
                     const int width = enumDtp->width();
                     const std::string smtName = memberVarp->name();
@@ -3228,17 +3228,14 @@ class RandomizeVisitor final : public VNVisitor {
                     for (AstEnumItem* itemp = enumDtp->itemsp(); itemp;
                          itemp = VN_AS(itemp->nextp(), EnumItem)) {
                         const AstConst* const vconstp = VN_AS(itemp->valuep(), Const);
-                        constraint += " (= " + smtName + " (_ bv"
-                                      + cvtToStr(vconstp->toUInt()) + " "
-                                      + cvtToStr(width) + "))";
+                        constraint += " (= " + smtName + " (_ bv" + cvtToStr(vconstp->toUInt())
+                                      + " " + cvtToStr(width) + "))";
                     }
                     constraint += "))";
                     AstCMethodHard* const callp = new AstCMethodHard{
-                        fl,
-                        new AstVarRef{fl, genModp, genp, VAccess::READWRITE},
+                        fl, new AstVarRef{fl, genModp, genp, VAccess::READWRITE},
                         VCMethod::RANDOMIZER_HARD,
-                        new AstCExpr{fl, AstCExpr::Pure{},
-                                     "\"" + constraint + "\""}};
+                        new AstCExpr{fl, AstCExpr::Pure{}, "\"" + constraint + "\""}};
                     callp->dtypeSetVoid();
                     randomizep->addStmtsp(callp->makeStmt());
                 });
