@@ -8,6 +8,7 @@ class Cls;
    task bar;
       static int qux;
       qux <= '1;
+      $display("qux = %d\n", qux);
    endtask
 endclass
 

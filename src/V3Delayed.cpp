@@ -1202,7 +1202,7 @@ class DelayedVisitor final : public VNVisitor {
         if (nodep->user1SetOnce()) return;
 
         if (m_cfuncp) {
-            if (v3Global.opt.timing().isSetFalse()) {
+            if (!v3Global.rootp()->nbaEventp()) {
                 nodep->v3warn(
                     E_NOTIMING,
                     "Delayed assignment in a non-inlined function/task requires --timing");
