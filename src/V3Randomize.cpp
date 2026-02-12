@@ -2169,8 +2169,8 @@ class RandomizeVisitor final : public VNVisitor {
         }
         return false;
     }
-    // Expand AstConstraintUnique with element-list items into pairwise != constraints.
-    // Whole-array VarRef unique constraints are left untouched for ConstraintExprVisitor.
+    // Expand unique{a,b,c} with explicit elements into pairwise != constraints.
+    // Whole-array unique{arr} is left for ConstraintExprVisitor's rand_unique handling.
     static void expandUniqueElementList(AstNode* itemsp) {
         AstNode* itemp = itemsp;
         while (itemp) {
@@ -2181,14 +2181,13 @@ class RandomizeVisitor final : public VNVisitor {
                 continue;
             }
 
-            // Collect non-array-VarRef items
             std::vector<AstNodeExpr*> exprItems;
             bool hasArrayVarRef = false;
             for (AstNode* rp = uniquep->rangesp(); rp; rp = rp->nextp()) {
                 if (AstVarRef* const vrp = VN_CAST(rp, VarRef)) {
                     if (VN_IS(vrp->varp()->dtypep()->skipRefp(), UnpackArrayDType)) {
                         hasArrayVarRef = true;
-                        continue;  // Skip whole-array items
+                        continue;
                     }
                 }
                 exprItems.push_back(VN_AS(rp, NodeExpr));
@@ -2201,17 +2200,15 @@ class RandomizeVisitor final : public VNVisitor {
                         AstNodeExpr* const lhsp = exprItems[i]->cloneTree(false);
                         AstNodeExpr* const rhsp = exprItems[j]->cloneTree(false);
                         AstNeq* const neqp = new AstNeq{fl, lhsp, rhsp};
-                        neqp->user1(true);  // Mark as depending on rand variable
+                        neqp->user1(true);
                         AstConstraintExpr* const cexprp = new AstConstraintExpr{fl, neqp};
                         uniquep->addNextHere(cexprp);
                     }
                 }
                 if (!hasArrayVarRef) {
-                    // All items expanded — remove the AstConstraintUnique
                     uniquep->unlinkFrBack();
                     VL_DO_DANGLING(uniquep->deleteTree(), uniquep);
                 }
-                // If hasArrayVarRef: keep AstConstraintUnique for whole-array handling
             }
             itemp = nextp;
         }
