@@ -256,22 +256,22 @@ private:
         m_valVscps;
     // `valVscp` force components of a forced RHS
 
-    static size_t checkIfDTypeSupportedRecurse(AstNodeDType* const dtypep,
+    static size_t checkIfDTypeSupportedRecurse(const AstNodeDType* const dtypep,
                                                const AstVar* const varp) {
         // Checks if force stmt is supported on all subtypes
         // and returns number of unpacked elements
-        AstNodeDType* const dtp = dtypep->skipRefp();
-        if (AstUnpackArrayDType* const udtp = VN_CAST(dtp, UnpackArrayDType)) {
+        const AstNodeDType* const dtp = dtypep->skipRefp();
+        if (const AstUnpackArrayDType* const udtp = VN_CAST(dtp, UnpackArrayDType)) {
             const size_t elemsInSubDType = checkIfDTypeSupportedRecurse(udtp->subDTypep(), varp);
             return udtp->elementsConst() * elemsInSubDType;
-        } else if (AstNodeUOrStructDType* const sdtp = VN_CAST(dtp, NodeUOrStructDType)) {
+        } else if (const AstNodeUOrStructDType* const sdtp = VN_CAST(dtp, NodeUOrStructDType)) {
             size_t elemCount = 0;
-            for (AstMemberDType* mdtp = sdtp->membersp(); mdtp;
+            for (const AstMemberDType* mdtp = sdtp->membersp(); mdtp;
                  mdtp = VN_AS(mdtp->nextp(), MemberDType)) {
                 elemCount += checkIfDTypeSupportedRecurse(mdtp->subDTypep(), varp);
             }
             return elemCount;
-        } else if (AstBasicDType* const bdtp = VN_CAST(dtp, BasicDType)) {
+        } else if (const AstBasicDType* const bdtp = VN_CAST(dtp, BasicDType)) {
             if (bdtp->isString() || bdtp->isEvent() || bdtp->keyword() == VBasicDTypeKwd::CHANDLE
                 || bdtp->keyword() == VBasicDTypeKwd::TIME) {
                 varp->v3warn(E_UNSUPPORTED, "Forcing variable of unsupported type: "
@@ -287,7 +287,7 @@ private:
             return 1;
         }
     }
-    static AstNodeDType* getEnVarpDTypep(AstVar* const varp) {
+    static AstNodeDType* getEnVarpDTypep(const AstVar* const varp) {
         AstNodeDType* const origDTypep = varp->dtypep()->skipRefp();
         const size_t unpackElemNum = checkIfDTypeSupportedRecurse(origDTypep, varp);
         if (unpackElemNum > ELEMENTS_MAX) {
@@ -315,7 +315,7 @@ public:
     VL_UNCOPYABLE(ForceState);
 
     // STATIC METHODS
-    static bool isRangedDType(AstNode* nodep) {
+    static bool isRangedDType(const AstNode* const nodep) {
         // If ranged we need a multibit enable to support bit-by-bit part-select forces,
         // otherwise forcing a real or other opaque dtype and need a single bit enable.
         const AstBasicDType* const basicp = nodep->dtypep()->skipRefp()->basicp();
