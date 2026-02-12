@@ -31,11 +31,15 @@ Verilator 5.045 devel
 * Support `extern module` as a forward-declaration that is ignored.
 * Support `foreach` with nested dots (#6991). [Krzysztof Bieganski, Antmicro Ltd.]
 * Support signed multiplication in constraints (#7008). [Pawel Kojma, Antmicro Ltd.]
+* Support constraint_mode() on static constraints (#7027) (#7038). [Yilou Wang]
+* Support some system functions in constraint blocks (#7028) (#7036). [Yilou Wang]
+* Support std::randomize() for queue, dynamic array, and associative array variables (#7044). [Yilou Wang]
+* Support inherited and nested pre/post_randomize callbacks (#7049) (#7053). [Yilou Wang]
 * Remove deprecated `--xml-only`.
 * Remove deprecated `--make cmake`.
 * Change JSON dumps to not include booleans that are false (#6977).
 * Change metacomment extra underscore error to BADVLTPRAGMA warning (#6968). [Geza Lore, Testorrent USA, Inc.]
-* Change INITIALSTATIC to also report on processes, per IEEE.
+* Change INITIALSTATIC to also report on processes, per IEEE (#7020).
 * Optimize string temporaries to not be localized (#6969). [Geza Lore, Testorrent USA, Inc.]
 * Optimize wide word shifts by multiple of word size (#6970). [Geza Lore, Testorrent USA, Inc.]
 * Optimize concatenations that produce unused bits in DFG (#6971). [Geza Lore, Testorrent USA, Inc.]
@@ -65,15 +69,25 @@ Verilator 5.045 devel
 * Fix memory leak in vpi_put_value and vpi_get_value (#6917). [Christian Hecken]
 * Fix segfault after assignment pattern XOR error (#6928) (#6931). [emmettifelts]
 * Fix delayed initial assignment (#6929). [Todd Strader]
+* Fix event triggering (#6932). [Igor Zaworski, Antmicro Ltd.]
 * Fix `--top-module` with underscores (#6940). [Christopher Batten]
 * Fix variable randomization to better differ by seed (#6945) (#6956). [Rodrigo Batista de Moraes]
 * Fix null pointer dereference in class member trigger expressions (#6946). [Cameron Waite]
 * Fix type assignments for arrays of parameter types (#6955). [Todd Strader]
 * Fix accessing non-rand struct member in constraints (#6960). [Pawel Kojma, Antmicro Ltd.]
 * Fix associative array of events causes C++ compile error (#6962).
+* Fix UNUSED / UNDRIVEN for unused functions (#6967). [Todd Strader]
 * Fix non-inlined function return value clearing (#6982).
 * Fix parameterized class typedef as interface type parameter (#6983) (#6984). [Leela Pakanati]
 * Fix virtual interface not found internal error (#7010). [Igor Zaworski, Antmicro Ltd.]
+* Fix multidimensional dynamic array elements passed to ref argument (#7023). [Ryszard Rozak, Antmicro Ltd.]
+* Fix randc cyclic behavior broken with constraints (#7029) (#7035). [Yilou Wang]
+* Fix inline foreach constraints on dynamic arrays of class objects (#7030) (#7037). [Yilou Wang]
+* Fix rand_mode() on nested object variables causing Z3 solver error (#7031) (#7034). [Yilou Wang]
+* Fix non-member identifiers used inside constraints (#7033). [Pawel Kojma, Antmicro Ltd.]
+* Fix tracing without module inlining to match with inlining (#7041). [Geza Lore]
+* Fix rand_mode()/constraint_mode() when used as function arguments (#7051) (#7055). [Yilou Wang]
+* Fix constraint_mode()/rand_mode() in constructor being overwritten (#7054). [Yilou Wang]
 
 
 Verilator 5.044 2026-01-01
