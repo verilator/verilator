@@ -10,16 +10,9 @@
 `define check_range(gotv,minv,maxv) do if ((gotv) < (minv) || (gotv) > (maxv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d-%0d\n", `__FILE__,`__LINE__, (gotv), (minv), (maxv)); `stop; end while(0);
 // verilog_format: on
 
-// Test randomize() on null object handle.
-// Per IEEE 1800 Section 18.4, randomize() on null should return 0.
-
 class SimpleRandClass;
   rand bit [7:0] value;
-
-  constraint value_con {
-    value > 0 && value < 200;
-  }
-
+  constraint value_con { value > 0 && value < 200; }
   function new();
   endfunction
 endclass
@@ -29,14 +22,10 @@ module t;
   int rand_result;
 
   initial begin
-    // obj is null (not constructed)
     obj = null;
-
-    // Per IEEE 1800, calling randomize() on null should return 0
     rand_result = obj.randomize();
     `checkd(rand_result, 0);
 
-    // Now test with a valid object
     obj = new();
     rand_result = obj.randomize();
     `checkd(rand_result, 1);

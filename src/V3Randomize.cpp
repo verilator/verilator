@@ -3026,21 +3026,16 @@ class RandomizeVisitor final : public VNVisitor {
         }
     };
 
-    // Wrap a randomize() method call with null guard:
-    //   (obj != null) ? obj.randomize(...) : 0
-    // Per IEEE 1800, calling randomize() on a null handle should return 0.
-    // Only wraps AstMethodCall (external calls like obj.randomize()),
-    // not AstFuncRef (internal calls like randomize() inside the class).
-    // Uses user4() on the MethodCall to prevent re-wrapping when the visitor
-    // re-encounters the node inside the AstCond.
+    // Wrap obj.randomize() with null guard: (obj != null) ? obj.randomize() : 0
+    // IEEE 1800 requires randomize() on null handle to return 0.
+    // Uses user4() to prevent re-wrapping during iterateChildren.
     void wrapRandomizeCallWithNullGuard(AstNodeFTaskRef* nodep) {
         AstMethodCall* const callp = VN_CAST(nodep, MethodCall);
         if (!callp) return;
-        if (callp->user4()) return;  // Already wrapped
+        if (callp->user4()) return;
         callp->user4(true);
         FileLine* const fl = callp->fileline();
         AstNodeExpr* const fromp = callp->fromp();
-        // Create: (fromp != null) ? randomize_call : 0
         AstNodeExpr* const nullp = new AstConst{fl, AstConst::Null{}};
         AstNodeExpr* const checkp = new AstNeq{fl, fromp->cloneTree(false), nullp};
         AstNodeExpr* const zerop = new AstConst{fl, 0};
