@@ -1,8 +1,8 @@
-%Error-UNSUPPORTED: t/t_force_unpacked_unsup.v:22:7: Unsupported: Force of unpacked array variable with >= 1000 elements
+%Error-UNSUPPORTED: t/t_force_unpacked_unsup.v:22:7: Unsupported: Force of variable with >= 1000 unpacked elements
    22 |   bit big_array[40][40][40];
       |       ^~~~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_force_unpacked_unsup.v:21:12: Unsupported: Force of unpacked array variable with >= 1000 elements
+%Error-UNSUPPORTED: t/t_force_unpacked_unsup.v:21:12: Unsupported: Force of variable with >= 1000 unpacked elements
    21 |   struct_t s_array[3000];
       |            ^~~~~~~
 %Error: Exiting due to

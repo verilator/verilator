@@ -256,20 +256,46 @@ private:
         m_valVscps;
     // `valVscp` force components of a forced RHS
 
+    static size_t checkIfDTypeSupportedRecurse(AstNodeDType* const dtypep,
+                                               const AstVar* const varp) {
+        // Checks if force stmt is supported on all subtypes
+        // and returns number of unpacked elements
+        AstNodeDType* const dtp = dtypep->skipRefp();
+        if (AstUnpackArrayDType* const udtp = VN_CAST(dtp, UnpackArrayDType)) {
+            const size_t elemsInSubDType = checkIfDTypeSupportedRecurse(udtp->subDTypep(), varp);
+            return udtp->elementsConst() * elemsInSubDType;
+        } else if (AstNodeUOrStructDType* const sdtp = VN_CAST(dtp, NodeUOrStructDType)) {
+            size_t elemCount = 0;
+            for (AstMemberDType* mdtp = sdtp->membersp(); mdtp;
+                 mdtp = VN_AS(mdtp->nextp(), MemberDType)) {
+                elemCount += checkIfDTypeSupportedRecurse(mdtp->subDTypep(), varp);
+            }
+            return elemCount;
+        } else if (AstBasicDType* const bdtp = VN_CAST(dtp, BasicDType)) {
+            if (bdtp->isString() || bdtp->isEvent() || bdtp->keyword() == VBasicDTypeKwd::CHANDLE
+                || bdtp->keyword() == VBasicDTypeKwd::TIME) {
+                varp->v3warn(E_UNSUPPORTED, "Forcing variable of unsupported type: "
+                                                << varp->dtypep()->prettyTypeName());
+            }
+            return 1;
+        } else if (!dtp->isIntegralOrPacked()) {
+            varp->v3warn(E_UNSUPPORTED, "Forcing variable of unsupported type: "
+                                            << varp->dtypep()->prettyTypeName());
+            return 1;
+        } else {
+            // All packed types are supported
+            return 1;
+        }
+    }
     static AstNodeDType* getEnVarpDTypep(AstVar* const varp) {
         AstNodeDType* const origDTypep = varp->dtypep()->skipRefp();
+        const size_t unpackElemNum = checkIfDTypeSupportedRecurse(origDTypep, varp);
+        if (unpackElemNum > ELEMENTS_MAX) {
+            varp->v3warn(E_UNSUPPORTED, "Unsupported: Force of variable with "
+                                        ">= "
+                                            << ELEMENTS_MAX << " unpacked elements");
+        }
         if (VN_IS(origDTypep, UnpackArrayDType)) {
-            size_t elemNum = 1;
-            AstNodeDType* dtp = origDTypep;
-            while (AstUnpackArrayDType* const uDtp = VN_CAST(dtp, UnpackArrayDType)) {
-                dtp = uDtp->subDTypep()->skipRefp();
-                elemNum *= uDtp->elementsConst();
-            }
-            if (elemNum > ELEMENTS_MAX) {
-                varp->v3warn(E_UNSUPPORTED, "Unsupported: Force of unpacked array variable with "
-                                            ">= "
-                                                << ELEMENTS_MAX << " elements");
-            }
             return origDTypep;
         } else if (VN_IS(origDTypep, BasicDType)) {
             return isRangedDType(varp) ? origDTypep : varp->findBitDType();
