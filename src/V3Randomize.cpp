@@ -900,7 +900,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         bool anyChild = false;
         for (int i = 1; i <= 4; ++i) {
-            AstNode* const childp = (i == 1) ? nodep->op1p()
+            AstNode* const childp = (i == 1)   ? nodep->op1p()
                                     : (i == 2) ? nodep->op2p()
                                     : (i == 3) ? nodep->op3p()
                                                : nodep->op4p();
