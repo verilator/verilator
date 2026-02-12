@@ -674,6 +674,9 @@ public:
         : ASTGEN_SUPER_CFuncHard(flp)
         , m_cfunc{cfunc} {
         addPinsp(pinsp);
+        if (cfunc == VCFunc::FOUR_STATE_HAS_XZ) {
+            dtypep(findBitDType(8, 8, VSigning::UNSIGNED));  // 8 so V3Const does not mess it up
+        }
     }
     ASTGEN_MEMBERS_AstCFuncHard;
     bool isPure() override { return m_cfunc.isPure(); }

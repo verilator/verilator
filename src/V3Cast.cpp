@@ -55,7 +55,7 @@ class CastVisitor final : public VNVisitor {
     // STATE
 
     // METHODS
-
+    void visit(AstCFuncHard* const) {}  // FIXME
     void insertCast(AstNodeExpr* nodep, int needsize) {  // We'll insert ABOVE passed node
         if (nodep->isFourState()) return;  // FIXME
         VNRelinker relinkHandle;

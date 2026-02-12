@@ -93,9 +93,15 @@ public:
 };
 
 class QuadstateVisitor final : public VNVisitor {
+
+    // AstNodeVarRef::user1()   -> bool whether it has been visited
+
+    VNUser1InUse m_user1;
+
     std::map<const AstVar*, std::vector<AstAssignW*>> m_assignWToTrior;
     std::map<const AstVar*, std::vector<AstAssignW*>> m_assignWToTriand;
     std::map<const AstVar*, std::vector<AstAssignW*>> m_assignWToWire;
+    bool m_expectFourStateExpr = false;
 
     static AstNodeExpr* buildTree(std::vector<AstNodeExpr*> exprps, const VCFunc reductor) {
         while (exprps.size() > 1) {
@@ -129,16 +135,64 @@ class QuadstateVisitor final : public VNVisitor {
         }
     }
 
-    void visit(AstAssignW* const nodep) override {
+    static bool hasAttrFourState(const AstNodeExpr* const exprp) {
+        return exprp->exists(
+            [](const AstVarRef* const varRefp) { return varRefp->varp()->attrFourState(); });
+    }
+
+    static AstNodeDType* fourStateTypeFromTwoState(const AstNodeDType* const nodep) {
+        if (const AstBasicDType* const basicDTypep = VN_CAST(nodep, BasicDType)) {
+            switch (basicDTypep->keyword()) {
+            case VBasicDTypeKwd::BIT:
+                return nodep->findLogicDType(basicDTypep->width(), basicDTypep->widthMin(),
+                                             basicDTypep->numeric());
+            case VBasicDTypeKwd::INT: return nodep->findSigned32DType();
+            default: nodep->v3fatalSrc("Unsupported Basic 2-state type promotion to 4-state");
+            }
+        }
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported 2-state type promotion to 4-state");
+        return nullptr;
+    }
+
+    static void isTrueFourState(AstNodeExpr* const exprp) {
+        VNRelinker relinker;
+        exprp->unlinkFrBack(&relinker);
+        FileLine* const flp = exprp->fileline();
+        AstVar* const varp = new AstVar{flp, VVarType::BLOCKTEMP, "__Vtmp",
+                                        exprp->findLogicDType(1, 1, VSigning::UNSIGNED)};
+        varp->funcLocal(true);
+        varp->noReset(true);
+        varp->attrFourState(true);
+        AstExprStmt* const newp = new AstExprStmt{flp, varp, exprp->cloneTree(false)};
+        newp->hasResult(false);
+        newp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, exprp});
+        AstCFuncHard* const varTwoStateValp = new AstCFuncHard{
+            flp, VCFunc::FOUR_STATE_TWO_STATE_VALUE, new AstVarRef{flp, varp, VAccess::READ}};
+        varTwoStateValp->dtypep(exprp->findBitDType(exprp->width(), exprp->widthMin(),
+                                                    VSigning::fromBool(exprp->isSigned())));
+        newp->addStmtsp(new AstCReturn{
+            flp, new AstLogAnd{
+                     flp,
+                     new AstLogNot{flp, new AstCFuncHard{flp, VCFunc::FOUR_STATE_HAS_XZ,
+                                                         new AstVarRef{flp, varp, VAccess::READ}}},
+                     varTwoStateValp}});
+        relinker.relink(newp);
+    }
+
+    void visit(AstNodeAssign* const nodep) override {
+        VL_RESTORER(m_expectFourStateExpr);
         if (const AstVarRef* const varRefp = VN_CAST(nodep->lhsp(), VarRef)) {
-            const AstVar* const varp = varRefp->varp();
-            if (varp->attrFourState()) {
-                switch (varp->varType()) {
-                case VVarType::TRIOR: m_assignWToTrior[varp].push_back(nodep); break;
-                case VVarType::TRIAND: m_assignWToTriand[varp].push_back(nodep); break;
-                case VVarType::TRIWIRE:
-                case VVarType::WIRE: m_assignWToWire[varp].push_back(nodep); break;
-                default: break;
+            m_expectFourStateExpr = varRefp->varp()->attrFourState();
+            if (AstAssignW* const assignWp = VN_CAST(nodep, AssignW)) {
+                const AstVar* const varp = varRefp->varp();
+                if (varp->attrFourState()) {
+                    switch (varp->varType()) {
+                    case VVarType::TRIOR: m_assignWToTrior[varp].push_back(assignWp); break;
+                    case VVarType::TRIAND: m_assignWToTriand[varp].push_back(assignWp); break;
+                    case VVarType::TRIWIRE:
+                    case VVarType::WIRE: m_assignWToWire[varp].push_back(assignWp); break;
+                    default: break;
+                    }
                 }
             }
         } else if (nodep->lhsp()->isFourState()) {
@@ -147,6 +201,43 @@ class QuadstateVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
+    void visit(AstNodeIf* const nodep) override {
+        {
+            VL_RESTORER(m_expectFourStateExpr);
+            m_expectFourStateExpr = hasAttrFourState(nodep->condp());
+            iterateAndNextNull(nodep->condp());
+            if (m_expectFourStateExpr) isTrueFourState(nodep->condp());
+        }
+        iterateAndNextNull(nodep->thensp());
+        iterateAndNextNull(nodep->elsesp());
+        iterateAndNextNull(nodep->op4p());
+    }
+    void visit(AstNodeVarRef* const nodep) override {
+        if (nodep->user1SetOnce()) return;
+        iterateChildren(nodep);
+        if (m_expectFourStateExpr && !nodep->dtypep()->isFourstate()) {
+            VNRelinker relinker;
+            nodep->unlinkFrBack(&relinker);
+            AstCFuncHard* const newp
+                = new AstCFuncHard{nodep->fileline(), VCFunc::FOUR_STATE_FROM_TWO_STATE, nodep};
+            newp->dtypep(fourStateTypeFromTwoState(nodep->dtypep()));
+            relinker.relink(newp);
+        }
+    }
+    void visit(AstAnd* const nodep) {
+        iterateChildren(nodep);
+        if (m_expectFourStateExpr) {
+            VNRelinker relinker;
+            nodep->unlinkFrBack(&relinker);
+            AstCFuncHard* const newp = new AstCFuncHard{
+                nodep->fileline(), VCFunc::FOUR_STATE_BITWISE_AND,
+                AstNode::addNext(nodep->lhsp()->unlinkFrBack(), nodep->rhsp()->unlinkFrBack())};
+            newp->dtypep(nodep->dtypep());
+            relinker.relink(newp);
+        }
+    }
+    void visit(AstCFuncHard* const) override {
+    }  // Those are here first created so, it allows to easily to not revisit same subtree
     void visit(AstVar* const nodep) override {
         iterateChildren(nodep);
         if (nodep->attrFourState()) {

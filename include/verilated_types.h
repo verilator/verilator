@@ -2200,6 +2200,23 @@ T fourLogicCastToTwo(const FourStateLogicWrapper<T>& a) noexcept {
 }
 
 template <typename T>
+bool fourLogicHasXZ(const FourStateLogicWrapper<T>& a) noexcept {
+    return a.xz;
+}
+
+template <size_t N>
+bool fourLogicHasXZ(const FourStateLogicWrapper<VlWide<N>>& a) noexcept {
+    static_assert(N != 0, "VlWide cannot have size equal to 0");
+    bool result = false;
+    for (size_t i = 0; i < N; ++i) result |= a[i];
+    return result;
+}
+
+#define fourLogicTwoStateValue(a) (a).value
+#define fourLogicFromTwoStateValue(a) \
+    FourStateLogicWrapper<decltype(a)> { a, 0 }
+
+template <typename T>
 struct FourStateLogicWrapper {
     static_assert(std::is_integral<T>::value || VlIsVlWide<T>::value, "");
     T value;  // 2 state logic value if .xz is 0 and x if .xz is 1 and value is 1 otherwise z

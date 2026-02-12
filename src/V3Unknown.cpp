@@ -231,7 +231,7 @@ class UnknownVisitor final : public VNVisitor {
     }
     void visit(AstNodeFTaskRef* const nodep) override {
         iterateNull(nodep->namep());
-        iterateNull(nodep->op2p());
+        iterateAndNextNull(nodep->op2p());
         {
             const AstNode* portp = nodep->taskp()->stmtsp();
             for (AstNodeExpr* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), NodeExpr)) {

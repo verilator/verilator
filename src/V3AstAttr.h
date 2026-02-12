@@ -1945,7 +1945,15 @@ public:
 
 class VCFunc final {
 public:
-    enum en : uint8_t { FOUR_STATE_TRIOR_CONFLICT, FOUR_STATE_TRIOR_OR, FOUR_STATE_TRIAND_AND };
+    enum en : uint8_t {
+        FOUR_STATE_TRIOR_CONFLICT,
+        FOUR_STATE_TRIOR_OR,
+        FOUR_STATE_TRIAND_AND,
+        FOUR_STATE_HAS_XZ,
+        FOUR_STATE_TWO_STATE_VALUE,
+        FOUR_STATE_FROM_TWO_STATE,
+        FOUR_STATE_BITWISE_AND,
+    };
     struct Properties final {
         const enum en val;
         const char* const cname;
@@ -1957,11 +1965,14 @@ private:
 
 public:
     static const Properties& getProperties(enum en e) {
-        const static struct Properties properties[] = {
-            {FOUR_STATE_TRIOR_CONFLICT, "fourLogicConflict", true},
-            {FOUR_STATE_TRIOR_OR, "fourLogicTrior", true},
-            {FOUR_STATE_TRIAND_AND, "fourLogicTriand", true},
-        };
+        const static struct Properties properties[]
+            = {{FOUR_STATE_TRIOR_CONFLICT, "fourLogicConflict", true},
+               {FOUR_STATE_TRIOR_OR, "fourLogicTrior", true},
+               {FOUR_STATE_TRIAND_AND, "fourLogicTriand", true},
+               {FOUR_STATE_HAS_XZ, "fourLogicHasXZ", true},
+               {FOUR_STATE_TWO_STATE_VALUE, "fourLogicTwoStateValue", true},
+               {FOUR_STATE_FROM_TWO_STATE, "fourLogicFromTwoStateValue", true},
+               {FOUR_STATE_BITWISE_AND, "fourLogicAnd", true}};
         return properties[static_cast<size_t>(e)];
     }
 
@@ -1971,6 +1982,8 @@ public:
 
     bool isPure() const { return getProperties(m_e).isPure; }
     const char* ansii() const { return getProperties(m_e).cname; }
+    bool operator==(const VCFunc& other) const noexcept { return m_e == other.m_e; }
+    bool operator==(const VCFunc::en& other) const noexcept { return m_e == other; }
 };
 
 #endif  // Guard
