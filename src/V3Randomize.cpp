@@ -1362,19 +1362,25 @@ class ConstraintExprVisitor final : public VNVisitor {
             FileLine* const fl = nodep->fileline();
             AstNodeExpr* const basep = nodep->lhsp();
             V3Number numOne{nodep, basep->width(), 1};
-            AstNodeExpr* productp = new AstConst{fl, numOne};
             int32_t const exponent = exponentp->toSInt();
-            for (int32_t i = 0; i < std::abs(exponent); i++) {
-                if (VL_LIKELY(exponent > 0)) {
-                    productp = new AstMulS{fl, productp, basep->cloneTreePure(false)};
-                } else {
-                    productp = new AstDivS{fl, productp, basep->cloneTreePure(false)};
+            AstNodeExpr* powerp = new AstConst{fl, numOne};
+            AstConst* foo = new AstConst{fl, numOne};
+            if (exponent > 0) {
+                for (int32_t i = 0; i < exponent; i++) {
+                    powerp = new AstMulS{fl, powerp, basep->cloneTreePure(false)};
+                    powerp->user1(true);
                 }
-                productp->user1(true);
+            } else if (exponent < 0) {
+                powerp = new AstDivS{fl, powerp, basep->cloneTreePure(false)};
+                powerp->user1(true);
+                if (exponent % 2 == 0) {
+                    powerp = new AstDivS{fl, powerp, basep->cloneTreePure(false)};
+                    powerp->user1(true);
+                }
             }
-            nodep->replaceWith(productp);
+            nodep->replaceWith(powerp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            iterate(productp);
+            iterate(powerp);
         } else {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: power expression with non constant exponent in constraint");
         }
@@ -1401,19 +1407,20 @@ class ConstraintExprVisitor final : public VNVisitor {
             FileLine* const fl = nodep->fileline();
             AstNodeExpr* const basep = nodep->lhsp();
             V3Number numOne{nodep, basep->width(), 1};
-            AstNodeExpr* productp = new AstConst{fl, numOne};
+            AstNodeExpr* powerp = new AstConst{fl, numOne};
             int32_t const exponent = exponentp->toSInt();
-            for (int32_t i = 0; i < std::abs(exponent); i++) {
-                if (VL_LIKELY(exponent > 0)) {
-                    productp = new AstMul{fl, productp, basep->cloneTreePure(false)};
-                } else {
-                    productp = new AstDiv{fl, productp, basep->cloneTreePure(false)};
+            if (exponent > 0) {
+                for (int32_t i = 0; i < std::abs(exponent); i++) {
+                    powerp = new AstMul{fl, powerp, basep->cloneTreePure(false)};
+                    powerp->user1(true);
                 }
-                productp->user1(true);
+            } else if (exponent < 0) {
+                powerp = new AstDiv{fl, powerp, basep->cloneTreePure(false)};
+                powerp->user1(true);
             }
-            nodep->replaceWith(productp);
+            nodep->replaceWith(powerp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            iterate(productp);
+            iterate(powerp);
         } else {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: power expression with non constant exponent in constraint");
         }
