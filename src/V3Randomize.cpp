@@ -547,7 +547,16 @@ class RandomizeMarkVisitor final : public VNVisitor {
             return;
         }
 
-        if (nodep->name() != "randomize") return;
+        if (nodep->name() != "randomize") {
+            // Propagate user1 from children (same pattern as visit(AstNodeExpr*))
+            if (m_constraintExprGenp || m_inStdWith) {
+                nodep->user1((nodep->op1p() && nodep->op1p()->user1())
+                             || (nodep->op2p() && nodep->op2p()->user1())
+                             || (nodep->op3p() && nodep->op3p()->user1())
+                             || (nodep->op4p() && nodep->op4p()->user1()));
+            }
+            return;
+        }
         AstClass* classp = m_classp;
         if (const AstMethodCall* const methodCallp = VN_CAST(nodep, MethodCall)) {
             if (const AstClassRefDType* const classRefp
@@ -852,6 +861,56 @@ class ConstraintExprVisitor final : public VNVisitor {
         UASSERT_OBJ(selp, arrayp, "Selecting from non-array?");
         selp->dtypep(arrDtp->subDTypep());
         return selp;
+    }
+
+    // Extract return expression from a simple function body, or nullptr if too complex
+    AstNodeExpr* extractReturnExpr(AstFunc* funcp) {
+        AstVar* const retVarp = VN_CAST(funcp->fvarp(), Var);
+        if (!retVarp) return nullptr;
+
+        AstNodeExpr* retExprp = nullptr;
+        for (AstNode* stmtp = funcp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            AstJumpBlock* const jblockp = VN_CAST(stmtp, JumpBlock);
+            if (!jblockp) continue;
+            int assignCount = 0;
+            for (AstNode* innerp = jblockp->stmtsp(); innerp; innerp = innerp->nextp()) {
+                AstAssign* const assignp = VN_CAST(innerp, Assign);
+                if (!assignp) continue;
+                AstVarRef* const lhsp = VN_CAST(assignp->lhsp(), VarRef);
+                if (!lhsp || lhsp->varp() != retVarp) continue;
+                if (VN_IS(assignp->rhsp(), CReset)) continue;
+                retExprp = assignp->rhsp();
+                ++assignCount;
+            }
+            if (assignCount > 1) return nullptr;  // Multiple return paths
+        }
+        return retExprp;
+    }
+
+    // Bottom-up user1 propagation on inlined expression tree
+    void propagateUser1Inline(AstNodeExpr* nodep) {
+        if (VN_IS(nodep, NodeVarRef)) {
+            AstNodeVarRef* const refp = VN_AS(nodep, NodeVarRef);
+            nodep->user1(refp->varp()->rand().isRandomizable());
+            return;
+        }
+        if (VN_IS(nodep, Const)) {
+            nodep->user1(false);
+            return;
+        }
+        bool anyChild = false;
+        for (int i = 1; i <= 4; ++i) {
+            AstNode* const childp = (i == 1) ? nodep->op1p()
+                                    : (i == 2) ? nodep->op2p()
+                                    : (i == 3) ? nodep->op3p()
+                                               : nodep->op4p();
+            if (!childp) continue;
+            if (AstNodeExpr* const exprp = VN_CAST(childp, NodeExpr)) {
+                propagateUser1Inline(exprp);
+                anyChild |= exprp->user1();
+            }
+        }
+        nodep->user1(anyChild);
     }
 
     // VISITORS
@@ -1822,6 +1881,59 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         if (editFormat(nodep)) return;
         nodep->v3fatalSrc("Method not handled in constraints? " << nodep);
+    }
+    void visit(AstNodeFTaskRef* nodep) override {
+        // Inline function calls with random args into SMT (IEEE 1800-2017 18.5)
+        if (editFormat(nodep)) return;
+
+        AstFunc* const funcp = VN_CAST(nodep->taskp(), Func);
+        if (!funcp) {
+            nodep->v3warn(CONSTRAINTIGN,
+                          "Unsupported: task call in constraint, treating as state");
+            nodep->user1(false);
+            if (editFormat(nodep)) return;
+            nodep->v3fatalSrc("Task call not handled in constraints");
+            return;
+        }
+
+        AstNodeExpr* const retExprp = extractReturnExpr(funcp);
+        if (!retExprp) {
+            nodep->v3warn(CONSTRAINTIGN,
+                          "Unsupported: complex function in constraint, treating as state");
+            nodep->user1(false);
+            if (editFormat(nodep)) return;
+            return;
+        }
+
+        // Map formal parameters to actual arguments
+        std::map<const AstVar*, AstNodeExpr*> paramMap;
+        {
+            AstNode* argp = nodep->pinsp();
+            for (AstNode* stmtp = funcp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                AstVar* const parp = VN_CAST(stmtp, Var);
+                if (!parp || !parp->isNonOutput()) continue;
+                AstArg* const aargp = VN_CAST(argp, Arg);
+                if (aargp && aargp->exprp()) paramMap[parp] = aargp->exprp();
+                if (argp) argp = argp->nextp();
+            }
+        }
+
+        // Clone return expression, substitute params with args
+        AstNodeExpr* const inlinedp = retExprp->cloneTreePure(false);
+        inlinedp->foreach([&](AstVarRef* refp) {
+            const auto it = paramMap.find(refp->varp());
+            if (it != paramMap.end()) {
+                AstNodeExpr* const substp = it->second->cloneTreePure(false);
+                refp->replaceWith(substp);
+                VL_DO_DANGLING(refp->deleteTree(), refp);
+            }
+        });
+
+        inlinedp->dtypep(nodep->dtypep());
+        propagateUser1Inline(inlinedp);
+        nodep->replaceWith(inlinedp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        iterate(inlinedp);
     }
     void visit(AstNodeExpr* nodep) override {
         if (editFormat(nodep)) return;
