@@ -47,7 +47,7 @@ def process() -> None:
 def print_header() -> None:
     print("// DESCR"
           "IPTION: Verilator: Concatenated UVM header for internal testing")
-    print("// SP", "DX-License-Identifier: Apache-2.0")
+    print("// SP" + "DX-License-Identifier: Apache-2.0")
     print("//----------------------------------------------------------------------")
     print("// To recreate:")
     print("//   Using verilator_ext_tests:")
