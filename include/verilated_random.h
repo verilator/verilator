@@ -28,6 +28,7 @@
 
 #include "verilated.h"
 
+#include <deque>
 #include <iomanip>
 #include <iostream>
 #include <ostream>
@@ -209,10 +210,16 @@ class VlRandomizer VL_NOT_FINAL {
     std::map<std::string, uint32_t> m_unique_array_sizes;
     const VlQueue<CData>* m_randmodep = nullptr;  // rand_mode state;
     int m_index = 0;  // Internal counter for key generation
+    std::set<std::string> m_randcVarNames;  // Names of randc variables for cyclic tracking
+    std::map<std::string, std::deque<uint64_t>>
+        m_randcValueQueues;  // Remaining values per randc var (queue-based cycling)
+    size_t m_randcConstraintHash = 0;  // Hash of constraints when queues were built
 
     // PRIVATE METHODS
     void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
     bool parseSolution(std::iostream& file, bool log = false);
+    void enumerateRandcValues(const std::string& varName, VlRNG& rngr);
+    size_t hashConstraints() const;
 
 public:
     // CONSTRUCTORS
@@ -585,6 +592,7 @@ public:
               const char* source = "");
     void clearConstraints();
     void clearAll();  // Clear both constraints and variables
+    void markRandc(const char* name);  // Mark variable as randc for cyclic tracking
     void set_randmode(const VlQueue<CData>& randmode) { m_randmodep = &randmode; }
 #ifdef VL_DEBUG
     void dump() const;

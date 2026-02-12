@@ -23,6 +23,7 @@
 
 #include "verilated_random.h"
 
+#include <algorithm>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -367,13 +368,90 @@ void VlRandomizer::randomConstraint(std::ostream& os, VlRNG& rngr, int bits) {
     os << ')';
 }
 
+size_t VlRandomizer::hashConstraints() const {
+    size_t h = 0;
+    for (const auto& c : m_constraints) {
+        h ^= std::hash<std::string>{}(c) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    }
+    return h;
+}
+
+void VlRandomizer::enumerateRandcValues(const std::string& varName, VlRNG& rngr) {
+    std::vector<uint64_t> values;
+    const auto varIt = m_vars.find(varName);
+    if (varIt == m_vars.end()) return;
+    const int width = varIt->second->width();
+
+    std::iostream& os = getSolver();
+    if (!os) return;
+
+    // Set up a single incremental solver session for enumeration
+    os << "(set-option :produce-models true)\n";
+    os << "(set-logic QF_ABV)\n";
+    os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
+    os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
+
+    // Declare all variables (solver needs full context for cross-var constraints)
+    for (const auto& var : m_vars) {
+        if (var.second->dimension() > 0) {
+            auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
+            var.second->setArrayInfo(arrVarsp);
+        }
+        os << "(declare-fun " << var.first << " () ";
+        var.second->emitType(os);
+        os << ")\n";
+    }
+
+    // Assert all user constraints
+    for (const std::string& constraint : m_constraints) {
+        os << "(assert (= #b1 " << constraint << "))\n";
+    }
+
+    // Incrementally enumerate all valid values for this randc variable
+    while (true) {
+        os << "(check-sat)\n";
+        std::string sat;
+        do { std::getline(os, sat); } while (sat.empty());
+        if (sat != "sat") break;
+
+        // Read just this variable's value
+        os << "(get-value (" << varName << "))\n";
+        char c;
+        os >> c;  // '('
+        os >> c;  // '('
+        std::string name, value;
+        os >> name;  // Consume variable name token from solver output
+        (void)name;
+        std::getline(os, value, ')');
+        os >> c;  // ')'
+
+        // Parse the SMT value to uint64_t
+        VlWide<VL_WQ_WORDS_E> qowp;
+        VL_SET_WQ(qowp, 0ULL);
+        if (!parseSMTNum(width, qowp, value)) break;
+        const uint64_t numVal = (width <= 32) ? qowp[0] : VL_SET_QW(qowp);
+
+        values.push_back(numVal);
+
+        // Exclude this value for next iteration (incremental)
+        os << "(assert (not (= " << varName << " (_ bv" << numVal << " " << width << "))))\n";
+    }
+
+    os << "(reset)\n";
+
+    // Shuffle using Fisher-Yates
+    for (size_t i = values.size(); i > 1; --i) {
+        const size_t j = VL_RANDOM_RNG_I(rngr) % i;
+        std::swap(values[i - 1], values[j]);
+    }
+
+    m_randcValueQueues[varName] = std::deque<uint64_t>(values.begin(), values.end());
+}
+
 bool VlRandomizer::next(VlRNG& rngr) {
     if (m_vars.empty() && m_unique_arrays.empty()) return true;
     for (const std::string& baseName : m_unique_arrays) {
         const auto it = m_vars.find(baseName);
-
-        // Look up the actual size we stored earlier
-        // const uint32_t size = m_unique_array_sizes[baseName];
         const uint32_t size = m_unique_array_sizes.at(baseName);
 
         if (it != m_vars.end()) {
@@ -386,6 +464,30 @@ bool VlRandomizer::next(VlRNG& rngr) {
             distinctExpr += "))";
             m_constraints.push_back(distinctExpr);
         }
+    }
+
+    // Randc queue-based cycling: enumerate valid values once, then pop per call
+    if (!m_randcVarNames.empty()) {
+        const size_t currentHash = hashConstraints();
+        // Invalidate queues if constraints changed (e.g., constraint_mode toggled)
+        if (currentHash != m_randcConstraintHash) {
+            m_randcValueQueues.clear();
+            m_randcConstraintHash = currentHash;
+        }
+        // Refill empty queues (start of new cycle)
+        for (const auto& name : m_randcVarNames) {
+            auto& queue = m_randcValueQueues[name];
+            if (queue.empty()) enumerateRandcValues(name, rngr);
+        }
+    }
+
+    // Pop randc values from queues (will be pinned in solver)
+    std::map<std::string, uint64_t> randcPinned;
+    for (const auto& name : m_randcVarNames) {
+        auto& queue = m_randcValueQueues[name];
+        if (queue.empty()) return false;  // No valid values exist
+        randcPinned[name] = queue.front();
+        queue.pop_front();
     }
 
     std::iostream& os = getSolver();
@@ -408,6 +510,13 @@ bool VlRandomizer::next(VlRNG& rngr) {
     for (const std::string& constraint : m_constraints) {
         os << "(assert (= #b1 " << constraint << "))\n";
     }
+
+    // Pin randc values from pre-enumerated queues
+    for (const auto& pair : randcPinned) {
+        const int w = m_vars.at(pair.first)->width();
+        os << "(assert (= " << pair.first << " (_ bv" << pair.second << " " << w << ")))\n";
+    }
+
     os << "(check-sat)\n";
 
     bool sat = parseSolution(os, true);
@@ -620,7 +729,12 @@ void VlRandomizer::clearConstraints() {
 void VlRandomizer::clearAll() {
     m_constraints.clear();
     m_vars.clear();
+    m_randcVarNames.clear();
+    m_randcValueQueues.clear();
+    m_randcConstraintHash = 0;
 }
+
+void VlRandomizer::markRandc(const char* name) { m_randcVarNames.insert(name); }
 
 #ifdef VL_DEBUG
 void VlRandomizer::dump() const {
