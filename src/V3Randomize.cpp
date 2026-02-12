@@ -1407,7 +1407,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 if (VL_LIKELY(exponent > 0)) {
                     productp = new AstMul{fl, productp, basep->cloneTreePure(false)};
                 } else {
-                    productp = new AstDivS{fl, productp, basep->cloneTreePure(false)};
+                    productp = new AstDiv{fl, productp, basep->cloneTreePure(false)};
                 }
                 productp->user1(true);
             }
