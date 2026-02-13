@@ -1959,7 +1959,9 @@ public:
         FOUR_STATE_BITWISE_XOR,
         FOUR_STATE_BITWISE_XNOR,
         FOUR_STATE_BITWISE_NEG,
-        END_SENTINEL
+        FOUR_STATE_IS_TRUE,
+        FOUR_STATE_EXPANDER,
+        _END_SENTINEL
     };
     struct Properties final {
         const enum en val;
@@ -1987,9 +1989,12 @@ public:
             {FOUR_STATE_BITWISE_XOR, "fourLogicXOr", true},
             {FOUR_STATE_BITWISE_XNOR, "fourLogicXNOr", true},
             {FOUR_STATE_BITWISE_NEG, "fourLogicNeg", true},
+            {FOUR_STATE_IS_TRUE, "fourLogicIsTrue", true},
+            {FOUR_STATE_EXPANDER, "fourStateLogicExpand", true},
             //
         };
-        static_assert(sizeof(properties) / sizeof(Properties) == static_cast<size_t>(END_SENTINEL),
+        static_assert(sizeof(properties) / sizeof(Properties)
+                          == static_cast<size_t>(_END_SENTINEL),
                       "properties must have one element for each non sentinel enum value");
         return properties[static_cast<size_t>(e)];
     }
@@ -2002,6 +2007,7 @@ public:
     const char* ansii() const { return getProperties(m_e).cname; }
     bool operator==(const VCFunc& other) const noexcept { return m_e == other.m_e; }
     bool operator==(const VCFunc::en& other) const noexcept { return m_e == other; }
+    operator en() const noexcept { return m_e; }
 };
 
 #endif  // Guard

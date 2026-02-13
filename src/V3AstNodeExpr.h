@@ -674,8 +674,10 @@ public:
         : ASTGEN_SUPER_CFuncHard(flp)
         , m_cfunc{cfunc} {
         addPinsp(pinsp);
-        if (cfunc == VCFunc::FOUR_STATE_HAS_XZ) {
-            dtypep(findBitDType(8, 8, VSigning::UNSIGNED));  // 8 so V3Const does not mess it up
+        switch (cfunc) {
+        case VCFunc::FOUR_STATE_HAS_XZ:
+        case VCFunc::FOUR_STATE_IS_TRUE: dtypeSetBit(); break;
+        default: break;
         }
     }
     ASTGEN_MEMBERS_AstCFuncHard;
