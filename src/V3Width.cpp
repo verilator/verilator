@@ -8033,9 +8033,11 @@ class WidthVisitor final : public VNVisitor {
         const bool isRhsAggregate = rhsDtp->isAggregateType();
         if (!isLhsAggregate && !isRhsAggregate) return;
         if (isLhsAggregate ^ isRhsAggregate) {
-            nodep->v3error("Illegal assignment: " << rhsDtp->prettyDTypeNameQ()
-                                                  << " is not assignment compatible with "
-                                                  << lhsDtp->prettyDTypeNameQ());
+            nodep->v3error("Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)\n"
+                           << nodep->warnMore() << "... LHS type: " << lhsDtp->prettyDTypeNameQ()
+                           << " " << lhsDtp->stateDName() << "\n"
+                           << nodep->warnMore() << "... RHS type: " << rhsDtp->prettyDTypeNameQ()
+                           << " " << rhsDtp->stateDName() << "\n");
             return;
         } else if (VN_IS(lhsDtp, QueueDType) && VN_IS(rhsDtp, EmptyQueueDType)) {
             return;
@@ -8068,7 +8070,7 @@ class WidthVisitor final : public VNVisitor {
             // Associative arrays are compatible only with each other
             if (VN_IS(lhsDtpIterp, AssocArrayDType) ^ VN_IS(rhsDtpIterp, AssocArrayDType)) {
                 nodep->v3error("Illegal assignment: Associative arrays are assignment compatible "
-                               "only with associative arrays");
+                               "only with associative arrays (IEEE 1800-2023 7.6)");
 
                 return;
             }
@@ -8077,9 +8079,11 @@ class WidthVisitor final : public VNVisitor {
         }
         // Element types of source and target shall be equivalent
         if (!isEquivalentDType(lhsDtpIterp, rhsDtpIterp)) {
-            nodep->v3error("Illegal assignment: Array element types are not equivalent "
-                           << "(" << lhsDtpIterp->prettyDTypeNameQ() << " vs "
-                           << rhsDtpIterp->prettyDTypeNameQ() << ")");
+            nodep->v3error("Illegal assignment: Array element types are not equivalent (IEEE 1800-2023 6.22.2)\n"
+                           << nodep->warnMore() << "... LHS type: " << lhsDtp->prettyDTypeNameQ()
+                           << " " << lhsDtp->stateDName() << "\n"
+                           << nodep->warnMore() << "... RHS type: " << rhsDtp->prettyDTypeNameQ()
+                           << " " << rhsDtp->stateDName() << "\n");
         }
     }
     void checkClassAssign(const AstNode* nodep, const char* side, AstNode* rhsp,
