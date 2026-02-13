@@ -43,6 +43,8 @@ class Packet;
    // check for negative values in constant
    constraint c_power_neg_exp { v ** 4'shf == 0; }
    constraint c_power_u_neg_exp { f ** 4'shf == 0; }
+   constraint c_power_zero_exp { v ** 0 == 1; }
+   constraint c_power_u_zero_exp { f ** 0 == 1; }
    constraint impl { tiny == 1 -> x != 10; }
    constraint concat { {c, b} != 'h1111; }
    constraint unary { !(-~c == 'h22); }
