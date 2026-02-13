@@ -1349,6 +1349,7 @@ class AstExprStmt final : public AstNodeExpr {
     // @astgen op2 := resultp : AstNodeExpr
 private:
     bool m_hasResult = true;
+    bool m_isTimingControl = false;
 
 public:
     AstExprStmt(FileLine* fl, AstNode* stmtsp, AstNodeExpr* resultp)
@@ -1369,6 +1370,8 @@ public:
     bool sameNode(const AstNode*) const override { return true; }
     bool hasResult() const { return m_hasResult; }
     void hasResult(bool flag) { m_hasResult = flag; }
+    void setTimingControl() { m_isTimingControl = true; }
+    bool isTimingControl() const override { return m_isTimingControl; }
 };
 class AstFError final : public AstNodeExpr {
     // @astgen op1 := filep : AstNode

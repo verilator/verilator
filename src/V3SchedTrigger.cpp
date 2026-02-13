@@ -896,6 +896,7 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
                 nodep->unlinkFrBack(&relinker);
                 AstExprStmt* const exprstmtp
                     = new AstExprStmt{flp, beforeTrigp->makeStmt(), nodep};
+                exprstmtp->setTimingControl();
                 relinker.relink(exprstmtp);
                 m_senTreeToSched.emplace(nodep->sentreep(), cMethodHardp->fromp());
             }
