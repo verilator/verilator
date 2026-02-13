@@ -1370,6 +1370,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                     powerp->user1(true);
                 }
             } else if (exponent < 0) {
+                // Limit chain of divisions to max 2, because operations are on integers.
+                // Two divisions are needed to preserve the sign.
                 powerp = new AstDivS{fl, powerp, basep->cloneTreePure(false)};
                 powerp->user1(true);
                 if (exponent % 2 == 0) {
@@ -1414,6 +1416,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                     powerp->user1(true);
                 }
             } else if (exponent < 0) {
+                // Only one division in needed because operations are on integers and base is unsigned.
+                // More divisions would still result in same results.
                 powerp = new AstDiv{fl, powerp, basep->cloneTreePure(false)};
                 powerp->user1(true);
             }
