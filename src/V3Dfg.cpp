@@ -288,6 +288,12 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         os << '\n';
         varVtxp->dtype().astDtypep()->dumpSmall(os);
         os << " / F" << varVtxp->fanout();
+        // Reference flags
+        os << " / ";
+        static const char* const rwmn[2][2] = {{"_", "W"}, {"R", "M"}};
+        os << rwmn[varVtxp->hasExtRdRefs()][varVtxp->hasExtWrRefs()];
+        os << rwmn[varVtxp->hasModRdRefs()][varVtxp->hasModWrRefs()];
+        os << (varVtxp->hasDfgRefs() ? "D" : "_");
         // End 'label'
         os << '"';
         // Shape
