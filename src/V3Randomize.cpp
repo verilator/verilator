@@ -295,6 +295,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
             }
         });
         if (isDuplicate) return;
+
         AstConstraint* const cloneConstrp = constrp->cloneTree(false);
         cloneConstrp->name(newName);
         cloneConstrp->foreach([&](AstVarRef* varRefp) {
