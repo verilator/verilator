@@ -94,7 +94,7 @@ uint64_t VlDelayScheduler::nextTimeSlot() const {
 
 #ifdef VL_DEBUG
 void VlDelayScheduler::dump() const {
-    if (m_queue.empty()) {
+    if (m_queue.empty() && m_zeroDelayed.empty()) {
         VL_DBG_MSGF("         No delayed processes:\n");
     } else {
         VL_DBG_MSGF("         Delayed processes:\n");

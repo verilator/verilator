@@ -210,9 +210,11 @@ private:
         // Find all var->varscope mappings, for later cleanup
         for (AstNode* stmtp = nodep->varsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVarScope* const vscp = VN_CAST(stmtp, VarScope)) {
-                if (vscp->varp()->isFuncLocal() || vscp->varp()->isUsedLoopIdx()) {
+                AstVar* const varp = vscp->varp();
+                if (varp->isFuncLocal() || varp->isUsedLoopIdx()
+                    || varp->lifetime().isAutomatic()) {
                     UINFO(9, "   funcvsc " << vscp);
-                    m_varToScopeMap.emplace(std::make_pair(nodep, vscp->varp()), vscp);
+                    m_varToScopeMap.emplace(std::make_pair(nodep, varp), vscp);
                 }
             }
         }

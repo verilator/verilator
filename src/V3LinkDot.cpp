@@ -653,29 +653,6 @@ private:
         return findp;
     }
 
-    VSymEnt* findForkParentAlias(VSymEnt* symp, const string& ident) {
-        static const string suffix = "__VgetForkParent";
-        VSymEnt* const wrapperp = symp->findIdFlat(ident + suffix);
-        if (!wrapperp) return nullptr;
-        if (!VN_IS(wrapperp->nodep(), Begin)) return nullptr;
-        if (VSymEnt* const forkSymp = wrapperp->findIdFlat(ident)) {
-            if (VN_IS(forkSymp->nodep(), Fork)) return forkSymp;
-        }
-        return nullptr;
-    }
-
-    VSymEnt* unwrapForkParent(VSymEnt* symp, const string& ident) {
-        static const string suffix = "__VgetForkParent";
-        if (AstBegin* const beginp = VN_CAST(symp->nodep(), Begin)) {
-            if (VString::endsWith(beginp->name(), suffix)) {
-                if (VSymEnt* const forkSymp = symp->findIdFlat(ident)) {
-                    if (VN_IS(forkSymp->nodep(), Fork)) return forkSymp;
-                }
-            }
-        }
-        return symp;
-    }
-
     VSymEnt* findWithAltFlat(VSymEnt* symp, const string& name, const string& altname) {
         VSymEnt* findp = symp->findIdFlat(name);
         if (findp) return findp;
@@ -726,9 +703,9 @@ public:
                 const AstCellInline* inlinep = lookupSymp
                                                    ? VN_CAST(lookupSymp->nodep(), CellInline)
                                                    : nullptr;  // Replicated below
-                VSymEnt* findSymp = findWithAltFallback(lookupSymp, ident, altIdent);
-                if (!findSymp) findSymp = findForkParentAlias(lookupSymp, ident);
-                if (findSymp) lookupSymp = unwrapForkParent(findSymp, ident);
+                if (VSymEnt* const findSymp = findWithAltFallback(lookupSymp, ident, altIdent)) {
+                    lookupSymp = findSymp;
+                }
 
                 // Check this module - cur modname
                 else if ((cellp && cellp->modp()->origName() == ident)
@@ -776,9 +753,8 @@ public:
                 }
             } else {  // Searching for middle path component, must be a cell or interface port
                 VSymEnt* findSymp = findWithAltFlat(lookupSymp, ident, altIdent);
-                if (!findSymp) findSymp = findForkParentAlias(lookupSymp, ident);
                 if (findSymp) {
-                    lookupSymp = unwrapForkParent(findSymp, ident);
+                    lookupSymp = findSymp;
                 } else {
                     // Try prefixed lookup for interface ports accessed through hierarchy
                     // (e.g., slave_inst.bus.data where bus is an interface port)

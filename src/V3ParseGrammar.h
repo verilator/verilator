@@ -364,12 +364,4 @@ public:
         }
         return resp;
     }
-
-    // Wrap fork statements in AstBegin, ensure fork...join_none have process
-    static AstNodeStmt* wrapFork(V3ParseImp* parsep, AstFork* forkp, AstNodeStmt* stmtsp) {
-        if (forkp->joinType() == VJoinType::JOIN_NONE && stmtsp)
-            parsep->importIfInStd(forkp->fileline(), "process", true);
-        forkp->addForksp(wrapInBegin(stmtsp));
-        return forkp;
-    }
 };
