@@ -8,6 +8,8 @@ class Cls;
    task bar;
       static int qux;
       qux <= '1;
+      // Use qux to prevent V3Dead optimizations
+      $display("qux = %d\n", qux);
    endtask
 endclass
 
