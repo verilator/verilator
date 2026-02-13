@@ -1368,6 +1368,9 @@ private:
         if (jumpingOver()) return;
         knownBadNodeType(nodep);
     }
+    void visit(AstGetInitialRandomSeed* nodep) override {
+      badNodeType(nodep);
+    }
     // ====
     // default
     // These types are definitely not reducible
