@@ -1354,7 +1354,9 @@ class ConstraintExprVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             iterate(productp);
         } else {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: power expression with non constant exponent in constraint");
+            nodep->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: power expression with non constant exponent in constraint");
         }
     }
     void visit(AstPowSS* nodep) override {
@@ -1383,7 +1385,9 @@ class ConstraintExprVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             iterate(powerp);
         } else {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: power expression with non constant exponent in constraint");
+            nodep->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: power expression with non constant exponent in constraint");
         }
     }
     void visit(AstPowSU* nodep) override {
@@ -1400,7 +1404,9 @@ class ConstraintExprVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             iterate(productp);
         } else {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: power expression with non constant exponent in constraint");
+            nodep->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: power expression with non constant exponent in constraint");
         }
     }
     void visit(AstPowUS* nodep) override {
@@ -1416,8 +1422,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                     powerp->user1(true);
                 }
             } else if (exponent < 0) {
-                // Only one division in needed because operations are on integers and base is unsigned.
-                // More divisions would still result in same results.
+                // Only one division in needed because operations are on integers and base is
+                // unsigned. More divisions would still result in same results.
                 powerp = new AstDiv{fl, powerp, basep->cloneTreePure(false)};
                 powerp->user1(true);
             }
@@ -1425,7 +1431,9 @@ class ConstraintExprVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             iterate(powerp);
         } else {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: power expression with non constant exponent in constraint");
+            nodep->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: power expression with non constant exponent in constraint");
         }
     }
     void visit(AstNodeBiop* nodep) override {
