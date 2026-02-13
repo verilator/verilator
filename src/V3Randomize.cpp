@@ -1364,7 +1364,6 @@ class ConstraintExprVisitor final : public VNVisitor {
             V3Number numOne{nodep, basep->width(), 1};
             int32_t const exponent = exponentp->toSInt();
             AstNodeExpr* powerp = new AstConst{fl, numOne};
-            AstConst* foo = new AstConst{fl, numOne};
             if (exponent > 0) {
                 for (int32_t i = 0; i < exponent; i++) {
                     powerp = new AstMulS{fl, powerp, basep->cloneTreePure(false)};
