@@ -14,9 +14,8 @@ test.scenarios('simulator')
 if not test.have_solver:
     test.skip("No constraint solver installed")
 
-test.compile(
-    fails=True,
-    verilator_flags2=["--constraint-array-limit", "16"],
-    expect_filename=test.golden_filename)
+test.compile(fails=True,
+             verilator_flags2=["--constraint-array-limit", "16"],
+             expect_filename=test.golden_filename)
 
 test.passes()
