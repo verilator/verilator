@@ -16,6 +16,6 @@
 extern "C" void setDpi(int value);
 
 extern "C" void setViaDpi(int value) {
-   std::cout << "setViaDpi " << value << std::endl;
-   setDpi(value);
+    std::cout << "setViaDpi " << value << std::endl;
+    setDpi(value);
 }
