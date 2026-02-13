@@ -1306,6 +1306,44 @@ class V3DfgPeephole final : public DfgVisitor {
             }
         }
 
+        if (DfgConst* const lConstp = lhsp->cast<DfgConst>()) {
+            if (DfgCond* const rCondp = rhsp->cast<DfgCond>()) {
+                if (!rCondp->hasMultipleSinks()) {
+                    DfgVertex* const rtVtxp = rCondp->thenp();
+                    DfgVertex* const reVtxp = rCondp->elsep();
+                    APPLYING(PUSH_CONCAT_THROUGH_COND_LHS) {
+                        DfgConcat* const thenp
+                            = make<DfgConcat>(rtVtxp->fileline(), vtxp->dtype(), lConstp, rtVtxp);
+                        DfgConcat* const elsep
+                            = make<DfgConcat>(reVtxp->fileline(), vtxp->dtype(), lConstp, reVtxp);
+                        DfgCond* const replacementp
+                            = make<DfgCond>(vtxp, rCondp->condp(), thenp, elsep);
+                        replace(vtxp, replacementp);
+                        return;
+                    }
+                }
+            }
+        }
+
+        if (DfgConst* const rConstp = rhsp->cast<DfgConst>()) {
+            if (DfgCond* const lCondp = lhsp->cast<DfgCond>()) {
+                if (!lCondp->hasMultipleSinks()) {
+                    DfgVertex* const ltVtxp = lCondp->thenp();
+                    DfgVertex* const leVtxp = lCondp->elsep();
+                    APPLYING(PUSH_CONCAT_THROUGH_COND_RHS) {
+                        DfgConcat* const thenp
+                            = make<DfgConcat>(ltVtxp->fileline(), vtxp->dtype(), ltVtxp, rConstp);
+                        DfgConcat* const elsep
+                            = make<DfgConcat>(leVtxp->fileline(), vtxp->dtype(), leVtxp, rConstp);
+                        DfgCond* const replacementp
+                            = make<DfgCond>(vtxp, lCondp->condp(), thenp, elsep);
+                        replace(vtxp, replacementp);
+                        return;
+                    }
+                }
+            }
+        }
+
         // Attempt to narrow a concatenation that produces unused bits on the edges
         {
             const uint32_t vMsb = vtxp->width() - 1;  // MSB of the concatenation
@@ -1523,6 +1561,43 @@ class V3DfgPeephole final : public DfgVisitor {
     void visit(DfgShiftL* vtxp) override {
         if (foldBinary(vtxp)) return;
         if (optimizeShiftRHS(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+
+        if (DfgConst* const rConstp = rhsp->cast<DfgConst>()) {
+            if (DfgConcat* const lConcatp = lhsp->cast<DfgConcat>()) {
+                if (!lConcatp->hasMultipleSinks()
+                    && lConcatp->lhsp()->width() == rConstp->toU32()) {
+                    APPLYING(REPLACE_SHIFTL_CAT) {
+                        DfgConcat* const replacementp = make<DfgConcat>(
+                            vtxp, lConcatp->rhsp(),
+                            makeZero(lConcatp->fileline(), lConcatp->lhsp()->width()));
+                        replace(vtxp, replacementp);
+                        return;
+                    }
+                }
+            }
+
+            if (DfgShiftR* const lShiftRp = lhsp->cast<DfgShiftR>()) {
+                if (!lShiftRp->hasMultipleSinks() && isSame(rConstp, lShiftRp->rhsp())) {
+                    if (DfgConcat* const llConcatp = lShiftRp->lhsp()->cast<DfgConcat>()) {
+                        const uint32_t shiftAmount = rConstp->toU32();
+                        if (!llConcatp->hasMultipleSinks()
+                            && llConcatp->rhsp()->width() == shiftAmount) {
+                            APPLYING(REPLACE_SHIFTRL_CAT) {
+                                DfgConst* const zerop
+                                    = makeZero(llConcatp->fileline(), shiftAmount);
+                                DfgConcat* const replacementp
+                                    = make<DfgConcat>(vtxp, llConcatp->lhsp(), zerop);
+                                replace(vtxp, replacementp);
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     void visit(DfgShiftR* vtxp) override {
