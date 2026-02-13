@@ -129,6 +129,7 @@ public:
     // Ideally an IEEE $typename
     virtual string prettyDTypeName(bool) const { return prettyTypeName(); }
     string prettyDTypeNameQ() const { return "'" + prettyDTypeName(false) + "'"; }
+    string stateDName() const { return this->isFourstate() ? "(4-state)" : "(2-state)"; }
     //
     // Changing the width may confuse the data type resolution, so must clear
     // TypeTable cache after use.
