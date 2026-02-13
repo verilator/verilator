@@ -292,9 +292,12 @@ class DeadVisitor final : public VNVisitor {
     void visit(AstVar* nodep) override {
         iterateChildren(nodep);
         checkAll(nodep);
-        if (nodep->isSigPublic() && m_modp && VN_IS(m_modp, Package)) m_modp->user1Inc();
         if (m_selloopvarsp) nodep->user1Inc();
-        if (mightElimVar(nodep)) m_varsp.push_back(nodep);
+        if (mightElimVar(nodep)) {
+            m_varsp.push_back(nodep);
+        } else {
+            if (m_modp && VN_IS(m_modp, Package)) m_modp->user1Inc();
+        }
     }
     void visit(AstNodeAssign* nodep) override {
         // See if simple assignments to variables may be eliminated because

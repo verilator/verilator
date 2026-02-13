@@ -312,10 +312,17 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
     m_maxBits = 0;
     m_sigs_enabledVec.clear();
 
-    // Call all initialize callbacks, which will:
+    // Call all initialize callbacks for root (non-library) instances, which will:
     // - Call decl* for each signal (these eventually call ::declCode)
+    // - Call the initialize callbacks of library instances underneath
     // - Store the base code
-    for (const CallbackRecord& cbr : m_initCbs) cbr.m_initCb(cbr.m_userp, self(), nextCode());
+    for (const CallbackRecord& cbr : m_initCbs) {
+        if (cbr.m_isLibInstance) continue;  // Will be called from parent callback
+        const uint32_t baseCode = nextCode();
+        m_nextCode += cbr.m_nTraceCodes;
+        m_initUserp = cbr.m_userp;
+        cbr.m_initCb(cbr.m_userp, self(), baseCode);
+    }
 
     if (expectedCodes && nextCode() != expectedCodes) {
         VL_FATAL_MT(__FILE__, __LINE__, "",
@@ -393,8 +400,6 @@ bool VerilatedTrace<VL_SUB_T, VL_BUF_T>::declCode(uint32_t code, const std::stri
         break;
     }
 
-    int codesNeeded = VL_WORDS_I(bits);
-    m_nextCode = std::max(m_nextCode, code + codesNeeded);
     ++m_numSignals;
     m_maxBits = std::max(m_maxBits, bits);
     return enabled;
@@ -680,8 +685,10 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addCallbackRecord(std::vector<CallbackR
 }
 
 template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addInitCb(initCb_t cb, void* userp) VL_MT_SAFE {
-    addCallbackRecord(m_initCbs, CallbackRecord{cb, userp});
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addInitCb(initCb_t cb, void* userp,
+                                                   const std::string& name, bool isLibInstance,
+                                                   uint32_t nTraceCodes) VL_MT_SAFE {
+    addCallbackRecord(m_initCbs, CallbackRecord{cb, userp, isLibInstance, name, nTraceCodes});
 }
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addConstCb(dumpCb_t cb, uint32_t fidx,
@@ -716,6 +723,20 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addChgCb(dumpOffloadCb_t cb, uint32_t f
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addCleanupCb(cleanupCb_t cb, void* userp) VL_MT_SAFE {
     addCallbackRecord(m_cleanupCbs, CallbackRecord{cb, userp});
+}
+
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::initLib(const std::string& name) VL_MT_SAFE {
+    // Note it's possible the instance doesn't exist if the lib was compiled without tracing
+    void* const prevInitUserp = m_initUserp;
+    for (const CallbackRecord& cbr : m_initCbs) {
+        if (cbr.m_name != name) continue;
+        const uint32_t baseCode = nextCode();
+        m_nextCode += cbr.m_nTraceCodes;
+        m_initUserp = cbr.m_userp;
+        cbr.m_initCb(cbr.m_userp, self(), baseCode);
+        m_initUserp = prevInitUserp;
+    }
 }
 
 //=========================================================================

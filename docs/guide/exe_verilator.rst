@@ -2571,3 +2571,9 @@ The grammar of control commands is as follows:
    scope which the rule is to match, where 0 means all levels below, 1 the
    exact level as the provided scope, and 2 means an additional level of
    children below the provided scope, etc.
+
+.. option:: verilator_lib -module "<modulename>"
+
+   Internal use only. Marks the specified module as being a stub for a library
+   created by :option:`--lib-creat` (including when created with
+   :option:`--hierarchical`). Required for special internal processing.

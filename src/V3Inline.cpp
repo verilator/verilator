@@ -122,6 +122,12 @@ class InlineMarkVisitor final : public VNVisitor {
         if (m_modp->modPublic() && (m_modp->isTop() || !v3Global.opt.flatten())) {
             cantInline("modPublic", false);
         }
+        // If the instance is a --lib-create library stub instance, and need tracing,
+        // then don't inline as we need to know its a lib stub for sepecial handling
+        // in V3TraceDecl. See #7001.
+        if (m_modp->verilatorLib() && v3Global.opt.trace()) {
+            cantInline("verilatorLib with --trace", false);
+        }
 
         iterateChildren(nodep);
     }

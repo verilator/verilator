@@ -94,8 +94,6 @@ public:
 // TraceDecl state, as a visitor of each AstNode
 
 class TraceDeclVisitor final : public VNVisitor {
-    // NODE STATE
-
     // STATE
     AstTopScope* const m_topScopep;  // The singleton AstTopScope
     const AstScope* m_currScopep = nullptr;  // Current scope being visited
@@ -130,7 +128,7 @@ class TraceDeclVisitor final : public VNVisitor {
         std::string m_path;  // Path to enclosing module in original hierarchy
         std::string m_name;  // Name of signal/subscope
 
-        void init(const std::string& name, AstNode* nodep) {
+        void init(const std::string& name, AstNode* nodep, bool inTopScope) {
             // Compute path in hierarchy and item name
             const std::string& vcdName = AstNode::vcdName(name);
             AstVar* const varp = VN_CAST(nodep, Var);
@@ -149,16 +147,33 @@ class TraceDeclVisitor final : public VNVisitor {
                 m_path = vcdName.substr(0, pathLen);
                 m_name = vcdName.substr(pathLen);
             }
+
+            // When creating a --lib-create library, drop the name of the top module (l2 name).
+            // This will be replaced by the instance name in the model that uses the library.
+            // This would be a bit murky when there are other top level entities ($unit,
+            // packages, which have an instance in all libs - a problem on its own). If
+            // --top-module was explicitly specified, then we will drop the prefix only for the
+            // actual top level module, and wrap the rest in '$libroot'. This way at least we get a
+            // usable dump of everything, with library instances showing in a right place, without
+            // pollution from other top level entities.
+            if (inTopScope && !v3Global.opt.libCreate().empty()) {
+                const size_t start = m_path.find(' ');
+                // Must have a prefix in the top scope with lib, as top wrapper signals not traced
+                UASSERT_OBJ(start != std::string::npos, nodep, "No prefix with --lib-create");
+                const std::string prefix = m_path.substr(0, start);
+                m_path = m_path.substr(start + 1);
+                if (v3Global.opt.topModule() != prefix) m_path = "$libroot " + m_path;
+            }
         }
 
     public:
-        explicit TraceEntry(AstVarScope* vscp)
+        explicit TraceEntry(const AstScope* scopep, AstVarScope* vscp)
             : m_vscp{vscp} {
-            init(vscp->varp()->name(), vscp->varp());
+            init(vscp->varp()->name(), vscp->varp(), scopep->isTop());
         }
-        explicit TraceEntry(AstCell* cellp)
+        explicit TraceEntry(const AstScope* scopep, AstCell* cellp)
             : m_cellp{cellp} {
-            init(cellp->name(), cellp);
+            init(cellp->name(), cellp, scopep->isTop());
         }
         int operatorCompare(const TraceEntry& b) const {
             if (const int cmp = path().compare(b.path())) return cmp < 0;
@@ -296,6 +311,21 @@ class TraceDeclVisitor final : public VNVisitor {
         VL_DO_DANGLING(placeholderp->deleteTree(), placeholderp);
     }
 
+    void fixupLibStub(const std::string& path, AstNodeStmt* placeholderp) {
+        FileLine* const flp = placeholderp->fileline();
+
+        // Call the initialization function for the library instance
+        AstCStmt* const initp = new AstCStmt{flp};
+        initp->add("tracep->initLib(vlSymsp->name() + ");
+        initp->add(new AstConst{flp, AstConst::String{}, "." + AstNode::prettyName(path)});
+        initp->add(");\n");
+
+        placeholderp->addNextHere(initp);
+        // Delete the placeholder
+        VL_DO_DANGLING(placeholderp->unlinkFrBack()->deleteTree(), placeholderp);
+        return;
+    }
+
     void fixupPlaceholders() {
         // Fix up cell initialization placehodlers
         UINFO(9, "fixupPlaceholders()");
@@ -304,7 +334,11 @@ class TraceDeclVisitor final : public VNVisitor {
             const AstCell* const cellp = std::get<1>(item);
             AstNodeStmt* const placeholderp = std::get<2>(item);
             const std::string path = parentp->name() + "__DOT__" + cellp->name();
-            fixupPlaceholder(path, placeholderp);
+            if (cellp->modp()->verilatorLib()) {
+                fixupLibStub(path, placeholderp);
+            } else {
+                fixupPlaceholder(path, placeholderp);
+            }
         }
 
         // Fix up interface reference initialization placeholders
@@ -364,6 +398,9 @@ class TraceDeclVisitor final : public VNVisitor {
         UASSERT_OBJ(!m_traValuep, nodep, "Should not nest");
         UASSERT_OBJ(m_traName.empty(), nodep, "Should not nest");
 
+        // If this is a stub for a --lib-create library, skip.
+        if (nodep->modp()->verilatorLib()) return;
+
         VL_RESTORER(m_currScopep);
         m_currScopep = nodep;
 
@@ -372,7 +409,7 @@ class TraceDeclVisitor final : public VNVisitor {
 
         // Gather cells under this scope
         for (AstNode* stmtp = nodep->modp()->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstCell* const cellp = VN_CAST(stmtp, Cell)) m_entries.emplace_back(cellp);
+            if (AstCell* const cellp = VN_CAST(stmtp, Cell)) m_entries.emplace_back(nodep, cellp);
         }
 
         if (!m_entries.empty()) {
@@ -483,8 +520,16 @@ class TraceDeclVisitor final : public VNVisitor {
         if (nodep->varp()->isClassMember()) return;
         if (nodep->varp()->isFuncLocal()) return;
 
+        // When creating a --lib-create library ...
+        if (!v3Global.opt.libCreate().empty()) {
+            // Ignore the wrapper created primary IO ports
+            if (nodep->varp()->isPrimaryIO()) return;
+            // Ignore parameters in packages. These will be traced at the top level.
+            if (nodep->varp()->isParam() && VN_IS(nodep->scopep()->modp(), Package)) return;
+        }
+
         // Add to traced signal list
-        m_entries.emplace_back(nodep);
+        m_entries.emplace_back(m_currScopep, nodep);
     }
 
     // VISITORS - Data types when tracing

@@ -233,22 +233,41 @@ private:
         };
         const uint32_t m_fidx;  // The index of the tracing function
         void* const m_userp;  // The user pointer to pass to the callback (the symbol table)
-        CallbackRecord(initCb_t cb, void* userp)
+        const bool m_isLibInstance;  // Whether the callback is for a --lib-create instance
+        const std::string m_name;  // The name of the instance callback is for
+        const uint32_t m_nTraceCodes;  // The number of trace codes used by callback
+        CallbackRecord(initCb_t cb, void* userp, bool isLibInstance, const std::string& name,
+                       uint32_t nTraceCodes)
             : m_initCb{cb}
             , m_fidx{0}
-            , m_userp{userp} {}
+            , m_userp{userp}
+            , m_isLibInstance{isLibInstance}
+            , m_name{name}
+            , m_nTraceCodes{nTraceCodes} {}
         CallbackRecord(dumpCb_t cb, uint32_t fidx, void* userp)
             : m_dumpCb{cb}
             , m_fidx{fidx}
-            , m_userp{userp} {}
+            , m_userp{userp}
+            , m_isLibInstance{false}  // Don't care
+            , m_name{}  // Don't care
+            , m_nTraceCodes{0}  // Don't care
+        {}
         CallbackRecord(dumpOffloadCb_t cb, uint32_t fidx, void* userp)
             : m_dumpOffloadCb{cb}
             , m_fidx{fidx}
-            , m_userp{userp} {}
+            , m_userp{userp}
+            , m_isLibInstance{false}  // Don't care
+            , m_name{}  // Don't care
+            , m_nTraceCodes{0}  // Don't care
+        {}
         CallbackRecord(cleanupCb_t cb, void* userp)
             : m_cleanupCb{cb}
             , m_fidx{0}
-            , m_userp{userp} {}
+            , m_userp{userp}
+            , m_isLibInstance{false}  // Don't care
+            , m_name{}  // Don't care
+            , m_nTraceCodes{0}  // Don't care
+        {}
     };
 
     bool m_offload = false;  // Use the offload thread
@@ -292,6 +311,7 @@ private:
     uint32_t m_nextCode = 0;  // Next code number to assign
     uint32_t m_numSignals = 0;  // Number of distinct signals
     uint32_t m_maxBits = 0;  // Number of bits in the widest signal
+    void* m_initUserp = nullptr;  // The callback userp of the instance currently being initialized
     // TODO: Should keep this as a Trie, that is how it's accessed all the time.
     std::vector<std::pair<int, std::string>> m_dumpvars;  // dumpvar() entries
     double m_timeRes = 1e-9;  // Time resolution (ns/ms etc)
@@ -359,6 +379,7 @@ protected:
     uint32_t nextCode() const { return m_nextCode; }
     uint32_t numSignals() const { return m_numSignals; }
     uint32_t maxBits() const { return m_maxBits; }
+    void* initUserp() const { return m_initUserp; }
     void constDump(bool value) { m_constDump = value; }
     void fullDump(bool value) { m_fullDump = value; }
 
@@ -429,7 +450,8 @@ public:
     // Non-hot path internal interface to Verilator generated code
 
     void addModel(VerilatedModel*) VL_MT_SAFE_EXCLUDES(m_mutex);
-    void addInitCb(initCb_t cb, void* userp) VL_MT_SAFE;
+    void addInitCb(initCb_t cb, void* userp, const std::string& name, bool isLibInstance,
+                   uint32_t nTraceCodes) VL_MT_SAFE;
     void addConstCb(dumpCb_t cb, uint32_t fidx, void* userp) VL_MT_SAFE;
     void addConstCb(dumpOffloadCb_t cb, uint32_t fidx, void* userp) VL_MT_SAFE;
     void addFullCb(dumpCb_t cb, uint32_t fidx, void* userp) VL_MT_SAFE;
@@ -437,6 +459,7 @@ public:
     void addChgCb(dumpCb_t cb, uint32_t fidx, void* userp) VL_MT_SAFE;
     void addChgCb(dumpOffloadCb_t cb, uint32_t fidx, void* userp) VL_MT_SAFE;
     void addCleanupCb(cleanupCb_t cb, void* userp) VL_MT_SAFE;
+    void initLib(const std::string& name) VL_MT_UNSAFE;
 };
 
 //=============================================================================
