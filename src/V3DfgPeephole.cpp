@@ -150,11 +150,7 @@ class V3DfgPeephole final : public DfgVisitor {
         return true;
     }
 
-    void addToWorkList(DfgVertex* vtxp) {
-        // We only process actual operation vertices
-        if (vtxp->is<DfgConst>() || vtxp->is<DfgVertexVar>()) return;
-        m_workList.push_front(*vtxp);
-    }
+    void addToWorkList(DfgVertex* vtxp) { m_workList.push_front(*vtxp); }
 
     void addSourcesToWorkList(DfgVertex* vtxp) {
         vtxp->foreachSource([&](DfgVertex& src) {
@@ -179,10 +175,17 @@ class V3DfgPeephole final : public DfgVisitor {
         // Otherwise we can delete it now.
         // Remove from cache
         m_cache.invalidateByValue(vtxp);
+        // This pass only removes variables that are either not driven in this graph,
+        // or are not observable outside the graph. If there is also no external write
+        // to the variable and no references in other graph then delete the Ast var too.
+        const DfgVertexVar* const varp = vtxp->cast<DfgVertexVar>();
+        AstNode* const nodep
+            = varp && !varp->isVolatile() && !varp->hasDfgRefs() ? varp->nodep() : nullptr;
         // Should not have sinks
         UASSERT_OBJ(!vtxp->hasSinks(), vtxp, "Should not delete used vertex");
-        //
+        // Delete vertex and Ast variable if any
         VL_DO_DANGLING(vtxp->unlinkDelete(m_dfg), vtxp);
+        if (nodep) VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
 
     void replace(DfgVertex* vtxp, DfgVertex* replacementp) {
@@ -899,12 +902,9 @@ class V3DfgPeephole final : public DfgVisitor {
                 if (replacementp) {
                     // Replace with sel from driver
                     APPLYING(PUSH_SEL_THROUGH_SPLICE) {
+                        addToWorkList(varp);  // In case it became redundant and can be removed
                         replace(vtxp, replacementp);
-                        // Special case just for this pattern: delete temporary if became unsued
-                        if (!varp->hasSinks() && !varp->hasDfgRefs()) {
-                            addToWorkList(splicep);  // So it can be delete itself if unused
-                            VL_DO_DANGLING(varp->unlinkDelete(m_dfg), varp);  // Delete it
-                        }
+                        return;
                     }
                 }
             }
@@ -1738,22 +1738,58 @@ class V3DfgPeephole final : public DfgVisitor {
         }
     }
 
+    void visit(DfgVertexVar* vtxp) override {
+        if (vtxp->hasSinks()) return;
+        if (vtxp->isObserved()) return;
+        if (vtxp->defaultp()) return;
+
+        // If undriven, or driven from another var, it is completely redundant.
+        if (!vtxp->srcp() || vtxp->srcp()->is<DfgVertexVar>()) {
+            APPLYING(REMOVE_VAR) {
+                deleteVertex(vtxp);
+                return;
+            }
+        }
+
+        // Otherwise remove if there is only one sink that is not a removable variable
+        bool foundOne = false;
+        const bool keep = vtxp->srcp()->foreachSink([&](DfgVertex& sink) {
+            // Ignore non observable variable sinks. These can be eliminated.
+            if (const DfgVertexVar* const varp = sink.cast<DfgVertexVar>()) {
+                if (!varp->hasSinks() && !varp->isObserved()) return false;
+            }
+            if (foundOne) return true;
+            foundOne = true;
+            return false;
+        });
+        if (!keep) {
+            APPLYING(REMOVE_VAR) {
+                deleteVertex(vtxp);
+                return;
+            }
+        }
+    }
+
 #undef APPLYING
 
     V3DfgPeephole(DfgGraph& dfg, V3DfgPeepholeContext& ctx)
         : m_dfg{dfg}
         , m_ctx{ctx} {
 
+        // Add all variable vertices to the work list. Do this first so they are processed last.
+        // This order has a better chance of preserving original variables in case they are needed.
+        for (DfgVertexVar& vtx : m_dfg.varVertices()) addToWorkList(&vtx);
+
         // Add all operation vertices to the work list and cache
         for (DfgVertex& vtx : m_dfg.opVertices()) {
-            m_workList.push_front(vtx);
+            addToWorkList(&vtx);
             m_cache.cache(&vtx);
         }
 
         // Process the work list
         m_workList.foreach([&](DfgVertex& vtx) {
-            // Remove unused vertices as we go
-            if (!vtx.hasSinks()) {
+            // Remove unused operations as we go. Some vars may be removed in the visit method.
+            if (!vtx.hasSinks() && !vtx.is<DfgVertexVar>()) {
                 deleteVertex(&vtx);
                 return;
             }
