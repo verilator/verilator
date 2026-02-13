@@ -352,7 +352,7 @@ private:
     int         m_unrollCount = 64;  // main switch: --unroll-count
     int         m_unrollLimit = 16384;  // main switch: --unroll-limit
     int         m_unrollStmts = 30000;  // main switch: --unroll-stmts
-    int         m_constraintWithLimit = 64;  // main switch: --constraint-with-limit
+    int         m_constraintArrayLimit = 64;  // main switch: --constraint-array-limit
     int         m_verilateJobs = -1;  // main switch: --verilate-jobs
 
     int         m_compLimitBlocks = 0;  // compiler selection; number of nested blocks
@@ -636,7 +636,7 @@ public:
     int unrollCount() const { return m_unrollCount; }
     int unrollLimit() const { return m_unrollLimit; }
     int unrollStmts() const { return m_unrollStmts; }
-    int constraintWithLimit() const { return m_constraintWithLimit; }
+    int constraintArrayLimit() const { return m_constraintArrayLimit; }
     int verilateJobs() const { return m_verilateJobs; }
 
     int compLimitBlocks() const { return m_compLimitBlocks; }

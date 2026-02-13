@@ -1513,11 +1513,11 @@ class ConstraintExprVisitor final : public VNVisitor {
             if (AstUnpackArrayDType* const adtypep
                 = VN_CAST(nodep->fromp()->dtypep()->skipRefp(), UnpackArrayDType)) {
                 const int arraySize = adtypep->elementsConst();
-                if (arraySize > v3Global.opt.constraintWithLimit()) {
+                if (arraySize > v3Global.opt.constraintArrayLimit()) {
                     nodep->v3warn(CONSTRAINTIGN, "Constraint array reduction ignored (array size "
                                                      + cvtToStr(arraySize)
-                                                     + " exceeds --constraint-with-limit of "
-                                                     + cvtToStr(v3Global.opt.constraintWithLimit())
+                                                     + " exceeds --constraint-array-limit of "
+                                                     + cvtToStr(v3Global.opt.constraintArrayLimit())
                                                      + "), treating as state");
                     nodep->user1(false);
                     if (editFormat(nodep)) return;

@@ -5,6 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // Test case for array reduction methods with 'with' clause in constraints (issue #6455)
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 
 class test_sum;
   rand byte array[5];
@@ -20,14 +22,18 @@ class test_sum;
     }
   }
 
-  function bit verify();
+  function void verify();
     int count_map[byte];
     int repeated_count = 0;
+    int i;
+
+    i = randomize();
+    `checkd(i, 1);
 
     // Count occurrences
-    foreach (array[i]) begin
-      if (!count_map.exists(array[i])) count_map[array[i]] = 0;
-      count_map[array[i]]++;
+    foreach (array[idx]) begin
+      if (!count_map.exists(array[idx])) count_map[array[idx]] = 0;
+      count_map[array[idx]]++;
     end
 
     // Check repeated_value appears exactly 3 times
@@ -36,22 +42,20 @@ class test_sum;
       if (repeated_count != 3) begin
         $display("%%Error: sum test - repeated_value=%0d appears %0d times, expected 3",
                  repeated_value, repeated_count);
-        return 0;
+        $stop;
       end
     end else begin
       $display("%%Error: sum test - repeated_value=%0d doesn't appear in array", repeated_value);
-      return 0;
+      $stop;
     end
 
     // Check all other values appear exactly once
     foreach (count_map[val]) begin
       if (val != repeated_value && count_map[val] != 1) begin
         $display("%%Error: sum test - value=%0d appears %0d times, expected 1", val, count_map[val]);
-        return 0;
+        $stop;
       end
     end
-
-    return 1;
   endfunction
 endclass
 
@@ -65,28 +69,30 @@ class test_product;
     array.sum() with (int'(item != 0)) >= 2;
   }
 
-  function bit verify();
+  function void verify();
     int prod = 1;
     int nonzero_count = 0;
+    int i;
 
-    foreach (array[i]) begin
-      if (array[i] != 0) begin
-        prod *= array[i];
+    i = randomize();
+    `checkd(i, 1);
+
+    foreach (array[idx]) begin
+      if (array[idx] != 0) begin
+        prod *= array[idx];
         nonzero_count++;
       end
     end
 
     if (prod > 100) begin
       $display("%%Error: product test - product %0d > 100", prod);
-      return 0;
+      $stop;
     end
 
     if (nonzero_count < 2) begin
       $display("%%Error: product test - only %0d non-zero elements", nonzero_count);
-      return 0;
+      $stop;
     end
-
-    return 1;
   endfunction
 endclass
 
@@ -98,19 +104,21 @@ class test_and;
     array.and() with (item & 8'hF0) == 8'h50;
   }
 
-  function bit verify();
+  function void verify();
     bit [7:0] result = 8'hFF;
+    int i;
 
-    foreach (array[i]) begin
-      result &= (array[i] & 8'hF0);
+    i = randomize();
+    `checkd(i, 1);
+
+    foreach (array[idx]) begin
+      result &= (array[idx] & 8'hF0);
     end
 
     if (result != 8'h50) begin
       $display("%%Error: and test - result 0x%0h != 0x50", result);
-      return 0;
+      $stop;
     end
-
-    return 1;
   endfunction
 endclass
 
@@ -124,19 +132,21 @@ class test_or;
     array.sum() with (int'((item & 8'h08) != 0)) >= 1;
   }
 
-  function bit verify();
+  function void verify();
     bit [7:0] result = 8'h00;
+    int i;
 
-    foreach (array[i]) begin
-      result |= (array[i] & 8'h08);
+    i = randomize();
+    `checkd(i, 1);
+
+    foreach (array[idx]) begin
+      result |= (array[idx] & 8'h08);
     end
 
     if (result != 8'h08) begin
       $display("%%Error: or test - result 0x%0h != 0x08", result);
-      return 0;
+      $stop;
     end
-
-    return 1;
   endfunction
 endclass
 
@@ -150,19 +160,21 @@ class test_xor;
     array.sum() with (int'(item != 0)) >= 2;
   }
 
-  function bit verify();
+  function void verify();
     bit [7:0] result = 8'h00;
+    int i;
 
-    foreach (array[i]) begin
-      result ^= array[i];
+    i = randomize();
+    `checkd(i, 1);
+
+    foreach (array[idx]) begin
+      result ^= array[idx];
     end
 
     if (result == 0) begin
       $display("%%Error: xor test - result is 0");
-      return 0;
+      $stop;
     end
-
-    return 1;
   endfunction
 endclass
 
@@ -176,57 +188,27 @@ module t;
   initial begin
     // Test sum
     sum_inst = new();
-    repeat (3) begin
-      if (sum_inst.randomize() == 0) begin
-        $display("%%Error: Failed to randomize sum test");
-        $stop;
-      end
-      if (!sum_inst.verify()) $stop;
-    end
+    repeat (20) sum_inst.verify();
     $display("sum test PASSED");
 
     // Test product
     product_inst = new();
-    repeat (3) begin
-      if (product_inst.randomize() == 0) begin
-        $display("%%Error: Failed to randomize product test");
-        $stop;
-      end
-      if (!product_inst.verify()) $stop;
-    end
+    repeat (20) product_inst.verify();
     $display("product test PASSED");
 
     // Test and
     and_inst = new();
-    repeat (3) begin
-      if (and_inst.randomize() == 0) begin
-        $display("%%Error: Failed to randomize and test");
-        $stop;
-      end
-      if (!and_inst.verify()) $stop;
-    end
+    repeat (20) and_inst.verify();
     $display("and test PASSED");
 
     // Test or
     or_inst = new();
-    repeat (3) begin
-      if (or_inst.randomize() == 0) begin
-        $display("%%Error: Failed to randomize or test");
-        $stop;
-      end
-      if (!or_inst.verify()) $stop;
-    end
+    repeat (20) or_inst.verify();
     $display("or test PASSED");
 
     // Test xor
     xor_inst = new();
-    repeat (3) begin
-      if (xor_inst.randomize() == 0) begin
-        $display("%%Error: Failed to randomize xor test");
-        $stop;
-      end
-      if (!xor_inst.verify()) $stop;
-    end
+    repeat (20) xor_inst.verify();
     $display("xor test PASSED");
 
     $write("*-* All Finished *-*\n");
