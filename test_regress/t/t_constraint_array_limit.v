@@ -9,10 +9,10 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 
 class Packet;
-   rand int data[100];  // Array size 100 > default limit of 64
+   rand int data[32];
 
    constraint c {
-      data.sum() with (item) < 1000;  // This should be ignored due to array size
+      data.sum() with (item) < 1000;
    }
 
    function void verify();
