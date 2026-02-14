@@ -3040,6 +3040,26 @@ class RandomizeVisitor final : public VNVisitor {
         }
     };
 
+    // Wrap obj.randomize() with null guard: (obj != null) ? obj.randomize() : 0
+    // IEEE 1800 requires randomize() on null handle to return 0.
+    // Uses user4() to prevent re-wrapping during iterateChildren.
+    void wrapRandomizeCallWithNullGuard(AstNodeFTaskRef* nodep) {
+        AstMethodCall* const callp = VN_CAST(nodep, MethodCall);
+        if (!callp) return;
+        if (callp->user4()) return;
+        callp->user4(true);
+        FileLine* const fl = callp->fileline();
+        AstNodeExpr* const fromp = callp->fromp();
+        AstNodeExpr* const nullp = new AstConst{fl, AstConst::Null{}};
+        AstNodeExpr* const checkp = new AstNeq{fl, fromp->cloneTree(false), nullp};
+        AstNodeExpr* const zerop = new AstConst{fl, 0};
+        VNRelinker relinker;
+        callp->unlinkFrBack(&relinker);
+        AstCond* const condp = new AstCond{fl, checkp, callp, zerop};
+        condp->dtypeFrom(callp);
+        relinker.relink(condp);
+    }
+
     // Handle inline random variable control. After this, the randomize() call has no args
     void handleRandomizeArgs(AstNodeFTaskRef* const nodep) {
         if (!nodep->pinsp()) return;
@@ -3496,6 +3516,7 @@ class RandomizeVisitor final : public VNVisitor {
         AstWith* const withp = VN_CAST(nodep->pinsp(), With);
         if (!withp) {
             iterateChildren(nodep);
+            wrapRandomizeCallWithNullGuard(nodep);
             return;
         }
         withp->unlinkFrBack();
@@ -3632,6 +3653,7 @@ class RandomizeVisitor final : public VNVisitor {
         nodep->dtypeFrom(randomizeFuncp->dtypep());
         nodep->classOrPackagep(classp);
         UINFO(9, "Added `%s` randomization procedure");
+        wrapRandomizeCallWithNullGuard(nodep);
         VL_DO_DANGLING(withp->deleteTree(), withp);
     }
     void visit(AstConstraint* nodep) override {
