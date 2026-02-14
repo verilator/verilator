@@ -18,6 +18,7 @@ module t (
 
   logic logic_arr[2][-2:2][-3:-5];
   int int_arr[-1:2][1][3];
+  real real_arr[2][1][3];
 
   // Test loop
   always @(posedge clk) begin
@@ -25,38 +26,48 @@ module t (
     if (cyc == 0) begin
       logic_arr[0][2][-4] <= 1;
       int_arr[0][0][2] <= 1;
+      real_arr[0][0][1] <= 1;
     end
     else if (cyc == 1) begin
       `checkh(logic_arr[0][2][-4], 1);
       `checkh(int_arr[0][0][2], 1);
+      `checkr(real_arr[0][0][1], 1);
     end
     else if (cyc == 2) begin
       force logic_arr[0][2][-4] = 0;
       force int_arr[0][0][2] = 0;
+      force real_arr[0][0][1] = 0;
     end
     else if (cyc == 3) begin
       `checkh(logic_arr[0][2][-4], 0);
       logic_arr[0][2][-4] <= 1;
       `checkh(int_arr[0][0][2], 0);
       int_arr[0][0][2] <= 1;
+      `checkr(real_arr[0][0][1], 0);
+      real_arr[0][0][1] <= 2;
     end
     else if (cyc == 4) begin
       `checkh(logic_arr[0][2][-4], 0);
       `checkh(int_arr[0][0][2], 0);
+      `checkr(real_arr[0][0][1], 0);
     end
     else if (cyc == 5) begin
       release logic_arr[0][2][-4];
       release int_arr[0][0][2];
+      release real_arr[0][0][1];
     end
     else if (cyc == 6) begin
       `checkh(logic_arr[0][2][-4], 0);
       logic_arr[0][2][-4] <= 1;
       `checkh(int_arr[0][0][2], 0);
       int_arr[0][0][2] <= 1;
+      `checkr(real_arr[0][0][1], 0);
+      real_arr[0][0][1] <= 3;
     end
     else if (cyc == 7) begin
       `checkh(logic_arr[0][2][-4], 1);
       `checkh(int_arr[0][0][2], 1);
+      `checkr(real_arr[0][0][1], 3);
     end
     else if (cyc == 8) begin
       $write("*-* All Finished *-*\n");
