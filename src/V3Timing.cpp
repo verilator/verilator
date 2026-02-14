@@ -908,7 +908,7 @@ class TimingControlVisitor final : public VNVisitor {
             // Calls to suspendables are always void return type, hence parent must be StmtExpr
             AstStmtExpr* const stmtp = VN_AS(nodep->backp(), StmtExpr);
             stmtp->replaceWith(new AstCAwait{nodep->fileline(), nodep->unlinkFrBack()});
-            VL_DO_DANGLING(stmtp->deleteTree(), stmtp);
+            VL_DO_DANGLING(pushDeletep(stmtp), stmtp);
         }
         iterateChildren(nodep);
     }
