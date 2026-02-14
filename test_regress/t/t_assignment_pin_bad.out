@@ -1,0 +1,6 @@
+%Error: t/t_assignment_pin_bad.v:22:19: Illegal assignment: 'logic$[0:1]' is not assignment compatible with 'logic'
+                                      : ... note: In instance 'test'
+   22 |   test2 i_test2 (.b);
+      |                   ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
