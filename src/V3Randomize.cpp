@@ -1354,6 +1354,102 @@ class ConstraintExprVisitor final : public VNVisitor {
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         iterate(resultp);
     }
+    void visit(AstPow* nodep) override {
+        if (AstConst* const exponentp = VN_CAST(nodep->rhsp(), Const)) {
+            FileLine* const fl = nodep->fileline();
+            AstNodeExpr* const basep = nodep->lhsp();
+            V3Number numOne{nodep, basep->width(), 1};
+            AstNodeExpr* productp = new AstConst{fl, numOne};
+            for (uint32_t i = 0; i < exponentp->toUInt(); i++) {
+                productp = new AstMul{fl, productp, basep->cloneTreePure(false)};
+                productp->user1(true);
+            }
+            nodep->replaceWith(productp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            iterate(productp);
+        } else {
+            nodep->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: power expression with non constant exponent in constraint");
+        }
+    }
+    void visit(AstPowSS* nodep) override {
+        if (AstConst* const exponentp = VN_CAST(nodep->rhsp(), Const)) {
+            FileLine* const fl = nodep->fileline();
+            AstNodeExpr* const basep = nodep->lhsp();
+            V3Number numOne{nodep, basep->width(), 1};
+            int32_t const exponent = exponentp->toSInt();
+            AstNodeExpr* powerp = new AstConst{fl, numOne};
+            if (exponent > 0) {
+                for (int32_t i = 0; i < exponent; i++) {
+                    powerp = new AstMulS{fl, powerp, basep->cloneTreePure(false)};
+                    powerp->user1(true);
+                }
+            } else if (exponent < 0) {
+                // Limit chain of divisions to max 2, because operations are on integers.
+                // Two divisions are needed to preserve the sign.
+                powerp = new AstDivS{fl, powerp, basep->cloneTreePure(false)};
+                powerp->user1(true);
+                if (exponent % 2 == 0) {
+                    powerp = new AstDivS{fl, powerp, basep->cloneTreePure(false)};
+                    powerp->user1(true);
+                }
+            }
+            nodep->replaceWith(powerp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            iterate(powerp);
+        } else {
+            nodep->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: power expression with non constant exponent in constraint");
+        }
+    }
+    void visit(AstPowSU* nodep) override {
+        if (AstConst* const exponentp = VN_CAST(nodep->rhsp(), Const)) {
+            FileLine* const fl = nodep->fileline();
+            AstNodeExpr* const basep = nodep->lhsp();
+            V3Number numOne{nodep, basep->width(), 1};
+            AstNodeExpr* productp = new AstConst{fl, numOne};
+            for (uint32_t i = 0; i < exponentp->toUInt(); i++) {
+                productp = new AstMulS{fl, productp, basep->cloneTreePure(false)};
+                productp->user1(true);
+            }
+            nodep->replaceWith(productp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            iterate(productp);
+        } else {
+            nodep->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: power expression with non constant exponent in constraint");
+        }
+    }
+    void visit(AstPowUS* nodep) override {
+        if (AstConst* const exponentp = VN_CAST(nodep->rhsp(), Const)) {
+            FileLine* const fl = nodep->fileline();
+            AstNodeExpr* const basep = nodep->lhsp();
+            V3Number numOne{nodep, basep->width(), 1};
+            AstNodeExpr* powerp = new AstConst{fl, numOne};
+            int32_t const exponent = exponentp->toSInt();
+            if (exponent > 0) {
+                for (int32_t i = 0; i < std::abs(exponent); i++) {
+                    powerp = new AstMul{fl, powerp, basep->cloneTreePure(false)};
+                    powerp->user1(true);
+                }
+            } else if (exponent < 0) {
+                // Only one division in needed because operations are on integers and base is
+                // unsigned. More divisions would still result in same results.
+                powerp = new AstDiv{fl, powerp, basep->cloneTreePure(false)};
+                powerp->user1(true);
+            }
+            nodep->replaceWith(powerp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            iterate(powerp);
+        } else {
+            nodep->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: power expression with non constant exponent in constraint");
+        }
+    }
     void visit(AstNodeBiop* nodep) override {
         if (editFormat(nodep)) return;
         editSMT(nodep, nodep->lhsp(), nodep->rhsp());
