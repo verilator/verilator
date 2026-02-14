@@ -3236,6 +3236,7 @@ void AstCFunc::dump(std::ostream& str) const {
     if (isCoroutine()) str << " [CORO]";
     if (needProcess()) str << " [NPRC]";
     if (entryPoint()) str << " [ENTRY]";
+    if (noLife()) str << " [NOLIFE]";
 }
 void AstCFunc::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, slow);
@@ -3250,11 +3251,12 @@ void AstCFunc::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isVirtual);
     dumpJsonBoolFuncIf(str, isCoroutine);
     dumpJsonBoolFuncIf(str, needProcess);
+    dumpJsonBoolFuncIf(str, noLife);
     dumpJsonGen(str);
     // TODO: maybe try to shorten these flags somehow
 }
 void AstCAwait::dump(std::ostream& str) const {
-    this->AstNodeUniop::dump(str);
+    this->AstNodeStmt::dump(str);
     if (sentreep()) {
         str << " => ";
         sentreep()->dump(str);

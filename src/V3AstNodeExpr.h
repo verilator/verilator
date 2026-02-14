@@ -1349,7 +1349,6 @@ class AstExprStmt final : public AstNodeExpr {
     // @astgen op2 := resultp : AstNodeExpr
 private:
     bool m_hasResult = true;
-    bool m_containsTimingControl = false;
 
 public:
     AstExprStmt(FileLine* fl, AstNode* stmtsp, AstNodeExpr* resultp)
@@ -1370,8 +1369,6 @@ public:
     bool sameNode(const AstNode*) const override { return true; }
     bool hasResult() const { return m_hasResult; }
     void hasResult(bool flag) { m_hasResult = flag; }
-    void setTimingControl() { m_containsTimingControl = true; }
-    bool isTimingControl() const override { return m_containsTimingControl; }
 };
 class AstFError final : public AstNodeExpr {
     // @astgen op1 := filep : AstNode
@@ -4961,28 +4958,6 @@ public:
     bool sizeMattersLhs() const override { return false; }  // Eliminated before matters
     int instrCount() const override { return INSTR_COUNT_DBL; }
     bool isSystemFunc() const override { return true; }
-};
-class AstCAwait final : public AstNodeUniop {
-    // Emit C++'s co_await expression
-    // @astgen alias op1 := exprp
-    //
-    // @astgen ptr := m_sentreep : Optional[AstSenTree]  // Sentree related to this await
-public:
-    AstCAwait(FileLine* fl, AstNodeExpr* exprp, AstSenTree* sentreep = nullptr)
-        : ASTGEN_SUPER_CAwait(fl, exprp)
-        , m_sentreep{sentreep} {}
-    ASTGEN_MEMBERS_AstCAwait;
-    bool isTimingControl() const override { return true; }
-    void dump(std::ostream& str) const override;
-    void dumpJson(std::ostream& str) const override;
-    AstSenTree* sentreep() const { return m_sentreep; }
-    void clearSentreep() { m_sentreep = nullptr; }
-    void numberOperate(V3Number& out, const V3Number& lhs) override { V3ERROR_NA; }
-    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { return true; }
-    bool cleanLhs() const override { return true; }
-    bool sizeMattersLhs() const override { return false; }
 };
 class AstCCast final : public AstNodeUniop {
     // Cast to C-based data type
