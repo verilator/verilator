@@ -2,4 +2,8 @@
     8 |   string str  /*verilator forceable*/;
       |          ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error-UNSUPPORTED: t/t_forceable_string_bad.v:8:10: Forcing variable of unsupported type: BASICDTYPE 'string'
+    8 |   string str  /*verilator forceable*/;
+      |          ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

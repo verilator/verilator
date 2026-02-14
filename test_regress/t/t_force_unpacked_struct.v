@@ -1,6 +1,6 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain
+// This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
@@ -16,60 +16,63 @@ module t (
 
   integer cyc = 0;
 
-  typedef struct {int x;} struct_t;
+  typedef struct {
+    int   x;
+    logic y;
+    int  arr[5];
+  } struct_t;
 
-  struct_t s_array[3000];
-  bit big_array[40][40][40];
-  real r_array[2];
+  struct_t s_array[3];
+  struct_t my_struct;
 
   // Test loop
   always @(posedge clk) begin
     cyc <= cyc + 1;
     if (cyc == 0) begin
-      r_array[0] <= 1;
-      big_array[1][2][3] <= 1;
-      s_array[1].x <= 1;
+      s_array[1].x = 1;
+      s_array[1].arr[2] = 1;
+      my_struct.x <= 1;
     end
     else if (cyc == 1) begin
-      `checkr(r_array[0], 1);
-      `checkr(big_array[1][2][3], 1);
       `checkh(s_array[1].x, 1);
+      `checkh(s_array[1].arr[2], 1);
+      `checkh(my_struct.x, 1);
     end
     else if (cyc == 2) begin
-      force r_array[0] = 0;
-      force big_array[1][2][3] = 0;
       force s_array[1].x = 0;
+      force s_array[1].arr[2] = 2;
+      force my_struct.x = 0;
     end
     else if (cyc == 3) begin
-      `checkr(r_array[0], 0);
-      `checkr(big_array[1][2][3], 0);
-      r_array[0] <= 1;
-      big_array[1][2][3] <= 1;
       `checkh(s_array[1].x, 0);
-      s_array[1].x <= 1;
+      s_array[1].x = 1;
+      `checkh(s_array[1].arr[2], 2);
+      s_array[1].arr[2] = 3;
+      `checkh(my_struct.x, 0);
+      my_struct.x <= 1;
     end
     else if (cyc == 4) begin
-      `checkr(r_array[0], 0);
-      `checkr(big_array[1][2][3], 0);
       `checkh(s_array[1].x, 0);
+      `checkh(s_array[1].arr[2], 2);
+      `checkh(my_struct.x, 0);
     end
     else if (cyc == 5) begin
-      release r_array[0];
-      release big_array[1][2][3];
       release s_array[1].x;
+      release s_array[1].arr[2];
+      release my_struct.x;
     end
     else if (cyc == 6) begin
-      `checkr(r_array[0], 0);
-      `checkr(big_array[1][2][3], 0);
-      r_array[0] <= 1;
-      big_array[1][2][3] <= 1;
       `checkh(s_array[1].x, 0);
-      s_array[1].x <= 1;
+      s_array[1].x = 1;
+      `checkh(s_array[1].arr[2], 2);
+      s_array[1].arr[2] = 4;
+      `checkh(my_struct.x, 0);
+      my_struct.x <= 1;
     end
     else if (cyc == 7) begin
-      `checkr(r_array[0], 1);
-      `checkr(big_array[1][2][3], 1);
       `checkh(s_array[1].x, 1);
+      `checkh(s_array[1].arr[2], 4);
+      `checkh(my_struct.x, 1);
     end
     else if (cyc == 8) begin
       $write("*-* All Finished *-*\n");
