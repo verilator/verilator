@@ -125,6 +125,7 @@ class V3Global final {
     bool m_usesProbDist = false;  // Uses $dist_*
     bool m_usesStdPackage = false;  // Design uses the std package
     bool m_usesTiming = false;  // Design uses timing constructs
+    bool m_usesZeroDelay = false;  // Design uses #0 delay (or non-constant delay)
     bool m_hasForceableSignals = false;  // Need to apply V3Force pass
     bool m_hasSystemCSections = false;  // Has AstSystemCSection that need to be emitted
     bool m_useParallelBuild = false;  // Use parallel build for model
@@ -200,6 +201,8 @@ public:
     void setUsesStdPackage() { m_usesStdPackage = true; }
     bool usesTiming() const { return m_usesTiming; }
     void setUsesTiming() { m_usesTiming = true; }
+    bool usesZeroDelay() const { return m_usesZeroDelay; }
+    void setUsesZeroDelay() { m_usesZeroDelay = true; }
     bool hasForceableSignals() const { return m_hasForceableSignals; }
     void setHasForceableSignals() { m_hasForceableSignals = true; }
     bool hasSystemCSections() const VL_MT_SAFE { return m_hasSystemCSections; }

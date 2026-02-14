@@ -89,7 +89,7 @@ AstNodeStmt* checkIterationLimit(AstNetlist* netlistp, const string& name, AstVa
     AstNodeExpr* const condp = new AstGt{flp, counterRefp, constp};
     AstIf* const ifp = new AstIf{flp, condp};
     ifp->branchPred(VBranchPred::BP_UNLIKELY);
-    ifp->addThensp(dumpCallp);
+    if (dumpCallp) ifp->addThensp(dumpCallp);
     AstCStmt* const stmtp = new AstCStmt{flp};
     ifp->addThensp(stmtp);
     const FileLine* const locp = netlistp->topModulep()->fileline();

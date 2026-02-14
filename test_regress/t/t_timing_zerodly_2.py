@@ -11,8 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["--binary", "--no-runtime-zero-delay"])
+test.compile(verilator_flags2=["--exe --main --timing"])
 
-test.execute(expect_filename=test.golden_filename)
+test.execute(check_finished=True)
 
 test.passes()

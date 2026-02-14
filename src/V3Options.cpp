@@ -1700,6 +1700,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         if (m_reloopLimit < 2) fl->v3error("--reloop-limit must be >= 2: " << valp);
     });
     DECL_OPTION("-report-unoptflat", OnOff, &m_reportUnoptflat);
+    DECL_OPTION("-runtime-zero-delay", OnOff, &m_runtimeZeroDelay);
     DECL_OPTION("-rr", CbCall, []() {});  // Processed only in bin/verilator shell
     DECL_OPTION("-runtime-debug", CbCall, [this, fl]() {
         decorations(fl, "node");

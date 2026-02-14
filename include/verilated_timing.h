@@ -170,9 +170,8 @@ class VlDelayScheduler final {
     VerilatedContext& m_context;
     VlDelayedCoroutineQueue m_queue;  // Coroutines to be restored at a certain simulation time
     std::vector<VlCoroutineHandle> m_zeroDelayed;  // Coroutines waiting for #0
-    std::vector<VlCoroutineHandle> m_zeroDlyResumed;  // Coroutines that waited for #0 and are
-                                                      // to be resumed. Kept as a field to avoid
-                                                      // reallocation.
+    // Coroutines that waited for #0 and are being resumed now. As member to avoid reallocations
+    std::vector<VlCoroutineHandle> m_zeroDelayesSwap;
 
 public:
     // CONSTRUCTORS
@@ -181,6 +180,8 @@ public:
     // METHODS
     // Resume coroutines waiting for the current simulation time
     void resume();
+    // Resume coroutines waiting for #0
+    void resumeZeroDelay();
     // Returns the simulation time of the next time slot (aborts if there are no delayed
     // coroutines)
     uint64_t nextTimeSlot() const;
@@ -188,9 +189,10 @@ public:
     bool empty() const { return m_queue.empty() && m_zeroDelayed.empty(); }
     // Are there coroutines to resume at the current simulation time?
     bool awaitingCurrentTime() const {
-        return (!m_queue.empty() && (m_queue.cbegin()->first <= m_context.time()))
-               || !m_zeroDelayed.empty();
+        return (!m_queue.empty() && (m_queue.cbegin()->first <= m_context.time()));
     }
+    // Are there coroutines to resume in the inactive region after a #0 delay?
+    bool awaitingZeroDelay() const { return !m_zeroDelayed.empty(); }
 #ifdef VL_DEBUG
     void dump() const;
 #endif
@@ -217,14 +219,6 @@ public:
         };
 
         const VlDelayPhase phase = (delay == 0) ? VlDelayPhase::INACTIVE : VlDelayPhase::ACTIVE;
-#ifdef VL_DEBUG
-        if (phase == VlDelayPhase::INACTIVE) {
-            VL_WARN_MT(filename, lineno, VL_UNKNOWN,
-                       "Encountered #0 delay. #0 scheduling support is incomplete and the "
-                       "process will be resumed before combinational logic evaluation.");
-        }
-#endif
-
         return Awaitable{process,       m_queue,
                          m_zeroDelayed, m_context.time() + delay,
                          phase,         VlFileLineDebug{filename, lineno}};

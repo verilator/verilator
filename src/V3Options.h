@@ -284,6 +284,7 @@ private:
     bool m_quietStats = false;      // main switch: --quiet-stats
     bool m_relativeIncludes = false;  // main switch: --relative-includes
     bool m_reportUnoptflat = false;  // main switch: --report-unoptflat
+    VOptionBool m_runtimeZeroDelay;  // main switch: --runtime-zero-delay
     bool m_savable = false;         // main switch: --savable
     bool m_stdPackage = true;       // main switch: --std-package
     bool m_stdWaiver = true;        // main switch: --std-waiver
@@ -582,6 +583,7 @@ public:
     bool quietExit() const VL_MT_SAFE { return m_quietExit; }
     bool quietStats() const VL_MT_SAFE { return m_quietStats; }
     bool reportUnoptflat() const { return m_reportUnoptflat; }
+    VOptionBool runtimeZeroDelay() const { return m_runtimeZeroDelay; }
     bool verilate() const { return m_verilate; }
     bool vpi() const { return m_vpi; }
     bool waiverMultiline() const { return m_waiverMultiline; }

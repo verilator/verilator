@@ -1,0 +1,7 @@
+%Warning-ZERODLY: t/t_flag_runtime_zero_delay_off_bad.v:10:11: Static #0 delay exists, but '--no-runtime-zero-delay' was given.
+                                                             : ... Can proceed, but this will fail at runtime if executed.
+   10 |   initial #0;
+      |           ^
+                  ... For warning description see https://verilator.org/warn/ZERODLY?v=latest
+                  ... Use "/* verilator lint_off ZERODLY */" and lint_on around source to disable this message.
+%Error: Exiting due to

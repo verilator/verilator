@@ -67,19 +67,6 @@ void VlDelayScheduler::resume() {
         resumed = true;
     }
 
-    if (!m_zeroDelayed.empty()) {
-        // First, we need to move the coroutines out of the queue, as a resumed coroutine can
-        // suspend on #0 again, adding itself to the queue, which can result in reallocating the
-        // queue mid-iteration.
-        // We swap with the m_zeroDlyResumed field to keep the allocated buffer.
-        m_zeroDlyResumed.swap(m_zeroDelayed);
-        for (auto&& handle : m_zeroDlyResumed) handle.resume();
-        m_zeroDlyResumed.clear();
-        resumed = true;
-        // We are now in the Active region, so any coroutines added to m_zeroDelayed in the
-        // meantime will have to wait until the next Inactive region.
-    }
-
     if (!resumed) {
         if (m_context.time() == 0) {
             // Nothing was scheduled at time 0, but resume() got called due to --x-initial-edge
@@ -90,6 +77,12 @@ void VlDelayScheduler::resume() {
                     "%Error: Encountered process that should've been resumed at an "
                     "earlier simulation time. Missed a time slot?\n");
     }
+}
+
+void VlDelayScheduler::resumeZeroDelay() {
+    m_zeroDelayesSwap.swap(m_zeroDelayed);
+    for (VlCoroutineHandle& handle : m_zeroDelayesSwap) handle.resume();
+    m_zeroDelayesSwap.clear();
 }
 
 uint64_t VlDelayScheduler::nextTimeSlot() const {
