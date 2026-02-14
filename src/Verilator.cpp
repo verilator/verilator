@@ -423,7 +423,7 @@ static void process() {
             // Always run gateAll to perform critical downstream normalizations
             // (like GateInline) even if fGate is false.
             V3Gate::gateAll(v3Global.rootp());
-            
+
             if (!v3Global.opt.fGate()) {
                 v3info("Command Line disabled gate optimization with -fno-gate. "
                        "Only critical normalizations will be performed.");

@@ -1291,7 +1291,7 @@ void V3Gate::gateAll(AstNetlist* netlistp) {
         // --- NON-CRITICAL OPTIMIZATIONS ---
         // Only run these aggressive logic reducers if gate optimization is enabled
         if (v3Global.opt.fGate()) {
-            
+
             // Remove redundant logic
             if (v3Global.opt.fDedupe()) {
                 GateDedupe::apply(*graphp);
@@ -1307,7 +1307,7 @@ void V3Gate::gateAll(AstNetlist* netlistp) {
             // Remove unused logic
             GateUnused::apply(*graphp);
             if (dumpGraphLevel() >= 3) graphp->dumpDotFilePrefixed("gate_final");
-            
+
         } // End of fGate() check
     }
 
