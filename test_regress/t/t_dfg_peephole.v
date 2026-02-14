@@ -245,6 +245,12 @@ module t (
    end
    `signal(PUSH_SEL_THROUGH_SPLICE, sel_from_partial_tmp[1:0]);
 
+   `signal(PUSH_CONCAT_THROUGH_COND_LHS, {5'd0, rand_a[0] ? {rand_b[4], 1'b0} : {1'b0, rand_b[6]}});
+   `signal(PUSH_CONCAT_THROUGH_COND_RHS, {rand_a[0] ? {rand_b[5], 1'b0} : {1'b0, rand_b[7]}, 5'd0});
+
+   `signal(REPLACE_SHIFTL_CAT, {31'd0, rand_a[42 +: 7]} << 31);
+   `signal(REPLACE_SHIFTRL_CAT, {rand_a[13 +: 7], rand_b[8 +: 27]} >> 27 << 27);
+
    // Asscending ranges
    `signal(ASCENDNG_SEL, arand_a[0:4]);
    // verilator lint_off ASCRANGE
