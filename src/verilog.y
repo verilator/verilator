@@ -689,6 +689,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_FWRITEB      "$fwriteb"
 %token<fl>              yD_FWRITEH      "$fwriteh"
 %token<fl>              yD_FWRITEO      "$fwriteo"
+%token<fl>              yD_GET_INITIAL_RANDOM_SEED "$get_initial_random_seed"
 %token<fl>              yD_GLOBAL_CLOCK "$global_clock"
 %token<fl>              yD_HIGH         "$high"
 %token<fl>              yD_HYPOT        "$hypot"
@@ -775,7 +776,6 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_WRITEMEMB    "$writememb"
 %token<fl>              yD_WRITEMEMH    "$writememh"
 %token<fl>              yD_WRITEO       "$writeo"
-%token<fl>              yD_GET_INITIAL_RANDOM_SEED "$get_initial_random_seed"
 %token<fl>              yVL_CLOCKER               "/*verilator clocker*/"
 %token<fl>              yVL_CLOCK_ENABLE          "/*verilator clock_enable*/"
 %token<fl>              yVL_COVERAGE_BLOCK_OFF    "/*verilator coverage_block_off*/"
@@ -4457,6 +4457,7 @@ system_f_or_t_expr_call<nodeExprp>:  // IEEE: part of system_tf_call (can be tas
         |       yD_FSCANF '(' expr ',' str commaVRDListE ')'    { $$ = new AstFScanF{$1, *$5, $3, $6}; }
         |       yD_FSEEK '(' expr ',' expr ',' expr ')' { $$ = new AstFSeek{$1, $3, $5, $7}; }
         |       yD_FTELL '(' expr ')'                   { $$ = new AstFTell{$1, $3}; }
+        |       yD_GET_INITIAL_RANDOM_SEED parenE      { $$ = new AstGetInitialRandomSeed{$1}; }
         |       yD_GLOBAL_CLOCK parenE                  { $$ = GRAMMARP->createGlobalClockParseRef($1); }
         |       yD_HIGH '(' exprOrDataType ')'          { $$ = new AstAttrOf{$1, VAttrType::DIM_HIGH, $3, nullptr}; }
         |       yD_HIGH '(' exprOrDataType ',' expr ')' { $$ = new AstAttrOf{$1, VAttrType::DIM_HIGH, $3, $5}; }
@@ -4525,7 +4526,6 @@ system_f_or_t_expr_call<nodeExprp>:  // IEEE: part of system_tf_call (can be tas
         |       yD_TIMEUNIT                             { $$ = new AstTimeUnit{$1}; }
         |       yD_TIMEUNIT '(' ')'                     { $$ = new AstTimeUnit{$1}; }
         |       yD_TIMEUNIT '(' idClassSel ')'          { $$ = new AstTimeUnit{$1}; DEL($3); }
-        |       yD_GET_INITIAL_RANDOM_SEED parenE      { $$ = new AstGetInitialRandomSeed{$1}; }
         |       yD_TYPENAME '(' exprOrDataType ')'      { $$ = new AstAttrOf{$1, VAttrType::TYPENAME, $3}; }
         |       yD_UNGETC '(' expr ',' expr ')'         { $$ = new AstFUngetC{$1, $5, $3}; }  // Arg swap to file first
         |       yD_UNPACKED_DIMENSIONS '(' exprOrDataType ')'   { $$ = new AstAttrOf{$1, VAttrType::DIM_UNPK_DIMENSIONS, $3}; }

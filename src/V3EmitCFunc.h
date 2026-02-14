@@ -1341,7 +1341,7 @@ public:
         puts(")");
     }
     void visit(AstGetInitialRandomSeed* nodep) override {
-      putns(nodep, "vlSymsp->_vm_contextp__->randSeed()");
+        putns(nodep, "vlSymsp->_vm_contextp__->randSeed()");
     }
     void visit(AstTimeFormat* nodep) override {
         putns(nodep, "VL_TIMEFORMAT_IINI(");

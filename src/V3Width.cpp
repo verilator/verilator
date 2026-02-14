@@ -500,9 +500,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstTime* nodep) override { nodep->dtypeSetUInt64(); }
     void visit(AstTimeD* nodep) override { nodep->dtypeSetDouble(); }
     void visit(AstTimePrecision* nodep) override { nodep->dtypeSetSigned32(); }
-    void visit(AstGetInitialRandomSeed* nodep) override {
-        nodep->dtypeSetSigned32();
-    }
+    void visit(AstGetInitialRandomSeed* nodep) override { nodep->dtypeSetSigned32(); }
     void visit(AstTimeUnit* nodep) override {
         nodep->replaceWith(
             new AstConst{nodep->fileline(), AstConst::Signed32{}, nodep->timeunit().powerOfTen()});

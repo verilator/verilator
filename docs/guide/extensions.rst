@@ -699,10 +699,8 @@ or "`ifdef`"'s may break other tools.
    to clang's ``#pragma clang loop unroll(full)``.
 
 $get_initial_random_seed()
-    Returns the initial random seed used for the simulation. This 
-    is the value provided via the :vlopt:`+verilator+seed+\<value\>` 
-    runtime option. If no seed is specified, it returns the default 
-    initialization seed (typically 0). 
-    Note that this is NOT in the SystemVerilog IEEE 1800-2023 LRM, but 
-    most commerical simulators support and hence added to Verilator
-
+    Returns an integer with the initial random seed used for the simulation.
+    This is the value provided via the :vlopt:`+verilator+seed+\<value\>`
+    runtime option. If no seed is specified, it returns the default
+    initialization seed (typically 0).
+    Note that this is not defined by IEEE 1800-2023, but most simulators support it.

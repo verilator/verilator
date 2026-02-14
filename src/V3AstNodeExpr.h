@@ -1618,22 +1618,21 @@ public:
 };
 class AstGetInitialRandomSeed final : public AstNodeExpr {
     // Verilog $get_initial_random_seed()
-    // @astgen
 public:
     explicit AstGetInitialRandomSeed(FileLine* fl)
         : ASTGEN_SUPER_GetInitialRandomSeed(fl) {
         dtypeSetSigned32();
     }
     ASTGEN_MEMBERS_AstGetInitialRandomSeed;
-    virtual string emitVerilog() override { return "$get_initial_random_seed()"; }
+    string emitVerilog() override { return "$get_initial_random_seed()"; }
     string emitC() final override { V3ERROR_NA_RETURN(""); }
-    virtual bool cleanOut() const override { return true; }
-    virtual bool isGateOptimizable() const override { return false; }
-    virtual bool isPredictOptimizable() const override { return true; }
-    virtual bool isPure() override { return true; }
-    virtual bool isSystemFunc() const override { return true; }
-    virtual int instrCount() const override { return INSTR_COUNT_PLI; }
-    virtual bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool cleanOut() const override { return true; }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return true; }
+    bool isPure() override { return true; }
+    bool isSystemFunc() const override { return true; }
+    int instrCount() const override { return INSTR_COUNT_PLI; }
+    bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstImplication final : public AstNodeExpr {
     // Verilog Implication Operator
@@ -5881,3 +5880,4 @@ public:
     }
 };
 #endif  // Guard
+
