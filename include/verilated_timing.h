@@ -28,6 +28,7 @@
 
 #include "verilated.h"
 
+#include <limits>
 #include <vector>
 
 // clang-format off
@@ -207,7 +208,8 @@ public:
 
             bool await_ready() const { return false; }  // Always suspend
             void await_suspend(std::coroutine_handle<> coro) {
-                if (phase == VlDelayPhase::ACTIVE) {
+                // Both active delays and fork..join_none #0 are resumed out of the time queue.
+                if (phase != VlDelayPhase::INACTIVE) {
                     queue.emplace(delay, VlCoroutineHandle{coro, process, fileline});
                 } else {
                     queueZeroDelay.emplace_back(VlCoroutineHandle{coro, process, fileline});
@@ -216,7 +218,14 @@ public:
             void await_resume() const {}
         };
 
-        const VlDelayPhase phase = (delay == 0) ? VlDelayPhase::INACTIVE : VlDelayPhase::ACTIVE;
+        VlDelayPhase phase;
+        if (delay != 0) {
+            // UINT64_MAX is a sentinel for synthetic fork..join_none delays.
+            if (delay == std::numeric_limits<uint64_t>::max()) delay = 0;
+            phase = VlDelayPhase::ACTIVE;
+        } else {
+            phase = VlDelayPhase::INACTIVE;
+        }
 #ifdef VL_DEBUG
         if (phase == VlDelayPhase::INACTIVE) {
             VL_WARN_MT(filename, lineno, VL_UNKNOWN,

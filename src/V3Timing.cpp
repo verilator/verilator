@@ -72,6 +72,7 @@
 #include "V3SenTree.h"
 #include "V3UniqueNames.h"
 
+#include <limits>
 #include <queue>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -618,9 +619,10 @@ class TimingControlVisitor final : public VNVisitor {
     // Returns true if the given trigger expression needs a destructive post update after trigger
     // evaluation. Currently this only applies to named events.
     bool destructivePostUpdate(AstNode* const exprp) const {
-        return exprp->exists([](const AstNodeVarRef* const refp) {
-            AstBasicDType* const dtypep = refp->dtypep()->basicp();
-            return dtypep && dtypep->isEvent();
+        return exprp->exists([](const AstNode* const nodep) {
+            const AstNodeDType* const dtypep = nodep->dtypep();
+            const AstBasicDType* const basicp = dtypep ? dtypep->skipRefp()->basicp() : nullptr;
+            return basicp && basicp->isEvent();
         });
     }
     // Creates a trigger scheduler variable
@@ -921,7 +923,9 @@ class TimingControlVisitor final : public VNVisitor {
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* valuep = V3Const::constifyEdit(nodep->lhsp()->unlinkFrBack());
         AstConst* const constp = VN_CAST(valuep, Const);
-        if (!constp || !constp->isZero()) {
+        const bool isForkSentinel
+            = constp && (constp->toUQuad() == std::numeric_limits<uint64_t>::max());
+        if (!isForkSentinel && (!constp || !constp->isZero())) {
             // Scale the delay
             const double timescaleFactor = calculateTimescaleFactor(nodep, nodep->timeunit());
             if (valuep->dtypep()->skipRefp()->isDouble()) {
