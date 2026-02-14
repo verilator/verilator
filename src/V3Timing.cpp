@@ -759,9 +759,7 @@ class TimingControlVisitor final : public VNVisitor {
         joinp->dtypeSetVoid();
         addProcessInfo(joinp);
         addDebugInfo(joinp);
-        AstCAwait* const awaitp = new AstCAwait{flp, joinp};
-        awaitp->dtypeSetVoid();
-        forkp->addNextHere(awaitp->makeStmt());
+        forkp->addNextHere(new AstCAwait{flp, joinp});
     }
 
     // `procp` shall be a NodeProcedure/CFunc/Begin and within it vars from `varsp` will be placed.
@@ -907,11 +905,10 @@ class TimingControlVisitor final : public VNVisitor {
     void visit(AstNodeCCall* nodep) override {
         if (nodep->funcp()->needProcess()) m_hasProcess = true;
         if (hasFlags(nodep->funcp(), T_SUSPENDEE) && !nodep->user1SetOnce()) {  // If suspendable
-            VNRelinker relinker;
-            nodep->unlinkFrBack(&relinker);
-            AstCAwait* const awaitp = new AstCAwait{nodep->fileline(), nodep};
-            awaitp->dtypeSetVoid();
-            relinker.relink(awaitp);
+            // Calls to suspendables are always void return type, hence parent must be StmtExpr
+            AstStmtExpr* const stmtp = VN_AS(nodep->backp(), StmtExpr);
+            stmtp->replaceWith(new AstCAwait{nodep->fileline(), nodep->unlinkFrBack()});
+            VL_DO_DANGLING(stmtp->deleteTree(), stmtp);
         }
         iterateChildren(nodep);
     }
@@ -948,15 +945,12 @@ class TimingControlVisitor final : public VNVisitor {
         addProcessInfo(delayMethodp);
         addDebugInfo(delayMethodp);
         // Create the co_await
-        AstCAwait* const awaitp = new AstCAwait{flp, delayMethodp, getCreateDelaySenTree()};
-        awaitp->dtypeSetVoid();
-        AstStmtExpr* const awaitStmtp = awaitp->makeStmt();
+        AstNode* const awaitp = new AstCAwait{flp, delayMethodp, getCreateDelaySenTree()};
         // Relink child statements after the co_await
-        if (nodep->stmtsp()) {
-            AstNode::addNext<AstNode, AstNode>(awaitStmtp,
-                                               nodep->stmtsp()->unlinkFrBackWithNext());
+        if (AstNode* const stmtsp = nodep->stmtsp()) {
+            awaitp->addNext(stmtsp->unlinkFrBackWithNext());
         }
-        nodep->replaceWith(awaitStmtp);
+        nodep->replaceWith(awaitp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstEventControl* nodep) override {
@@ -989,7 +983,6 @@ class TimingControlVisitor final : public VNVisitor {
             // Create the co_await
             AstCAwait* const awaitEvalp
                 = new AstCAwait{flp, evalMethodp, getCreateDynamicTriggerSenTree()};
-            awaitEvalp->dtypeSetVoid();
             // Construct the sen expression for this sentree
             UASSERT_OBJ(m_senExprBuilderp, nodep, "No SenExprBuilder for this scope");
             auto* const assignp = new AstAssign{flp, new AstVarRef{flp, trigvscp, VAccess::WRITE},
@@ -1007,7 +1000,7 @@ class TimingControlVisitor final : public VNVisitor {
                 = new AstLogNot{flp, new AstVarRef{flp, trigvscp, VAccess::READ}};
             AstLoop* const loopp = new AstLoop{flp};
             loopp->addStmtsp(new AstLoopTest{flp, loopp, condp});
-            loopp->addStmtsp(awaitEvalp->makeStmt());
+            loopp->addStmtsp(awaitEvalp);
             // Put pre updates before the trigger check and assignment
             for (AstNodeStmt* const stmtp : senResults.m_preUpdates) loopp->addStmtsp(stmtp);
             // Then the trigger check and assignment
@@ -1024,14 +1017,14 @@ class TimingControlVisitor final : public VNVisitor {
             if (destructivePostUpdate(sentreep)) {
                 AstCAwait* const awaitPostUpdatep = awaitEvalp->cloneTree(false);
                 VN_AS(awaitPostUpdatep->exprp(), CMethodHard)->method(VCMethod::SCHED_POST_UPDATE);
-                loopp->addStmtsp(awaitPostUpdatep->makeStmt());
+                loopp->addStmtsp(awaitPostUpdatep);
             }
             // Put the post updates at the end of the loop
             for (AstNodeStmt* const stmtp : senResults.m_postUpdates) loopp->addStmtsp(stmtp);
             // Finally, await the resumption step in 'act'
             AstCAwait* const awaitResumep = awaitEvalp->cloneTree(false);
             VN_AS(awaitResumep->exprp(), CMethodHard)->method(VCMethod::SCHED_RESUMPTION);
-            AstNode::addNext<AstNodeStmt, AstNodeStmt>(loopp, awaitResumep->makeStmt());
+            AstNode::addNext<AstNodeStmt, AstNodeStmt>(loopp, awaitResumep);
             // Replace the event control with the loop
             nodep->replaceWith(loopp);
         } else {
@@ -1050,8 +1043,7 @@ class TimingControlVisitor final : public VNVisitor {
             addEventDebugInfo(triggerMethodp, sentreep);
             // Create the co_await
             AstCAwait* const awaitp = new AstCAwait{flp, triggerMethodp, sentreep};
-            awaitp->dtypeSetVoid();
-            nodep->replaceWith(awaitp->makeStmt());
+            nodep->replaceWith(awaitp);
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
@@ -1250,8 +1242,7 @@ class TimingControlVisitor final : public VNVisitor {
                 // callstack
                 AstCExpr* const foreverp = new AstCExpr{flp, "VlForever{}"};
                 AstCAwait* const awaitp = new AstCAwait{flp, foreverp};
-                awaitp->dtypeSetVoid();
-                nodep->replaceWith(awaitp->makeStmt());
+                nodep->replaceWith(awaitp);
                 if (stmtsp) VL_DO_DANGLING(stmtsp->deleteTree(), stmtsp);
                 VL_DO_DANGLING(condp->deleteTree(), condp);
             } else {

@@ -137,11 +137,11 @@ void splitCheckFinishSubFunc(AstCFunc* ofuncp, AstCFunc* subFuncp,
     }
 
     bool containsAwait = false;
-    subFuncp->foreach([&](AstNodeExpr* exprp) {
+    subFuncp->foreach([&](AstNode* nodep) {
         // Record if it has a CAwait
-        if (VN_IS(exprp, CAwait)) containsAwait = true;
+        if (VN_IS(nodep, CAwait)) containsAwait = true;
         // Redirect references to arguments to the clone in the sub-function
-        if (AstVarRef* const refp = VN_CAST(exprp, VarRef)) {
+        if (AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
             if (AstVarScope* const vscp = VN_AS(refp->varp()->user3p(), VarScope)) {
                 refp->varp(vscp->varp());
                 refp->varScopep(vscp);
@@ -151,9 +151,7 @@ void splitCheckFinishSubFunc(AstCFunc* ofuncp, AstCFunc* subFuncp,
 
     if (ofuncp->isCoroutine() && containsAwait) {  // Wrap call with co_await
         subFuncp->rtnType("VlCoroutine");
-        AstCAwait* const awaitp = new AstCAwait{flp, callp};
-        awaitp->dtypeSetVoid();
-        ofuncp->addStmtsp(awaitp->makeStmt());
+        ofuncp->addStmtsp(new AstCAwait{flp, callp});
     } else {
         ofuncp->addStmtsp(callp->makeStmt());
     }

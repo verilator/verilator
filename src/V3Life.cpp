@@ -398,6 +398,7 @@ class LifeVisitor final : public VNVisitor {
         if (!m_tracingCall && !nodep->entryPoint()) return;
         m_tracingCall = false;
         if (nodep->recursive()) setNoopt();
+        if (nodep->noLife()) setNoopt();
         if (nodep->dpiImportPrototype() && !nodep->dpiPure()) {
             m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
         }

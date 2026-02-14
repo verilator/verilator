@@ -859,6 +859,9 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
             AstVar* const tmpVarp = tmpp->varp()->unlinkFrBack();
             funcp->user1p(tmpp);
             funcp->addVarsp(tmpVarp);
+            // This function can be called multiple times, and accesses model state, which
+            // violates the assumption made in V3Life that there is no such function.
+            funcp->noLife(true);
             tmpVarp->funcLocal(true);
             tmpVarp->noReset(true);
 
@@ -884,20 +887,13 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
             if (cMethodHardp->method() == VCMethod::SCHED_TRIGGER) {
                 AstCCall* const beforeTrigp = getBeforeTriggerStmt(nodep->sentreep());
 
-                FileLine* const flp = nodep->fileline();
                 // Add eventDescription argument value to a CCall - it is used for --runtime-debug
                 AstNode* const pinp = cMethodHardp->pinsp()->nextp()->nextp();
                 UASSERT_OBJ(pinp, cMethodHardp, "No event description");
                 beforeTrigp->addArgsp(VN_AS(pinp, NodeExpr)->cloneTree(false));
 
-                // Change CAwait Expression into StmtExpr that calls to a before-trigger function
-                // first and then return CAwait
-                VNRelinker relinker;
-                nodep->unlinkFrBack(&relinker);
-                AstExprStmt* const exprstmtp
-                    = new AstExprStmt{flp, beforeTrigp->makeStmt(), nodep};
-                exprstmtp->setTimingControl();
-                relinker.relink(exprstmtp);
+                // Call the before-trigger function before the CAwait
+                nodep->addHereThisAsNext(beforeTrigp->makeStmt());
                 m_senTreeToSched.emplace(nodep->sentreep(), cMethodHardp->fromp());
             }
         }
