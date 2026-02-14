@@ -322,6 +322,10 @@ class TimingKit final {
     // Additional var sensitivities for V3Order
     std::map<const AstVarScope*, std::set<AstSenTree*>> m_externalDomains;
 
+    // Helper functions for createResume
+    void addNbaCommitsBeforeResume(AstIf* dlyShedIfp, AstNetlist* netlistp) VL_MT_DISABLED;
+    AstIf* processTimingActives() VL_MT_DISABLED;
+
 public:
     LogicByScope m_lbs;  // Actives that resume timing schedulers
     AstNodeStmt* m_postUpdates = nullptr;  // Post updates for the trigger eval function

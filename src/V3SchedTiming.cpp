@@ -54,60 +54,109 @@ TimingKit::remapDomains(const std::unordered_map<const AstSenTree*, AstSenTree*>
 }
 
 //============================================================================
+// Helper: Add NBA queue commits before delay scheduler resume
+
+void TimingKit::addNbaCommitsBeforeResume(AstIf* dlyShedIfp, AstNetlist* netlistp) {
+    const auto& pairs = netlistp->nbaQueuePairs();
+    if (pairs.empty()) return;
+
+    // Unlink the existing statements (the resume call)
+    AstNode* const resumeStmtsp = dlyShedIfp->thensp()->unlinkFrBackWithNext();
+
+    // Add NBA scalar queue commits BEFORE delay scheduler resume.
+    // This ensures coroutines see committed values when they resume from delays.
+    for (const auto& pair : pairs) {
+        AstVarScope* const queueVscp = pair.first;
+        AstVarScope* const targetVscp = pair.second;
+        FileLine* const flp = queueVscp->fileline();
+        AstCMethodHard* const commitp = new AstCMethodHard{
+            flp, new AstVarRef{flp, queueVscp, VAccess::READWRITE}, VCMethod::SCHED_COMMIT};
+        commitp->dtypeSetVoid();
+        commitp->addPinsp(new AstVarRef{flp, targetVscp, VAccess::WRITE});
+        dlyShedIfp->addThensp(commitp->makeStmt());
+    }
+
+    // Re-add the resume call after the commits
+    dlyShedIfp->addThensp(resumeStmtsp);
+}
+
+//============================================================================
+// Helper: Process timing actives and return delay scheduler if found
+
+AstIf* TimingKit::processTimingActives() {
+    AstIf* dlyShedIfp = nullptr;
+    for (auto& p : m_lbs) {
+        AstActive* const activep = p.second;
+        // Hack to ensure that #0 delays will be executed after any other `act` events.
+        // Just handle delayed coroutines last.
+        AstVarRef* const schedrefp = VN_AS(
+            VN_AS(VN_AS(activep->stmtsp(), StmtExpr)->exprp(), CMethodHard)->fromp(), VarRef);
+
+        AstNode* const actionp = activep->stmtsp()->unlinkFrBackWithNext();
+        if (schedrefp->varScopep()->dtypep()->basicp()->isDelayScheduler()) {
+            dlyShedIfp = V3Sched::util::createIfFromSenTree(activep->sentreep());
+            dlyShedIfp->addThensp(actionp);
+        } else {
+            m_resumeFuncp->addStmtsp(actionp);
+        }
+    }
+    return dlyShedIfp;
+}
+
+//============================================================================
 // Creates a timing resume call (if needed, else returns null)
 
 AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
-    if (!m_resumeFuncp) {
-        if (m_lbs.empty()) return nullptr;
-        // Create global resume function
-        AstScope* const scopeTopp = netlistp->topScopep()->scopep();
-        m_resumeFuncp = new AstCFunc{netlistp->fileline(), "_timing_resume", scopeTopp, ""};
-        m_resumeFuncp->dontCombine(true);
-        m_resumeFuncp->isLoose(true);
-        m_resumeFuncp->isConst(false);
-        m_resumeFuncp->declPrivate(true);
-        scopeTopp->addBlocksp(m_resumeFuncp);
-
-        for (const auto& p : m_lbs) {
-            AstActive* const activep = p.second;
-            activep->foreach([this](AstCMethodHard* const exprp) {
-                if (exprp->method() != VCMethod::SCHED_RESUME) return;
-                AstNodeExpr* const fromp = exprp->fromp();
-                if (VN_AS(fromp->dtypep(), BasicDType)->keyword()
-                    != VBasicDTypeKwd::TRIGGER_SCHEDULER) {
-                    return;
-                }
-                AstCMethodHard* const moveToResumep = new AstCMethodHard{
-                    fromp->fileline(), fromp->cloneTree(false),
-                    VCMethod::SCHED_MOVE_TO_RESUME_QUEUE,
-                    exprp->pinsp() ? exprp->pinsp()->cloneTree(true) : nullptr};
-                moveToResumep->dtypeSetVoid();
-                m_resumeFuncp->addStmtsp(moveToResumep->makeStmt());
-            });
-        }
-
-        // Put all the timing actives in the resume function
-        AstIf* dlyShedIfp = nullptr;
-        for (auto& p : m_lbs) {
-            AstActive* const activep = p.second;
-            // Hack to ensure that #0 delays will be executed after any other `act` events.
-            // Just handle delayed coroutines last.
-            AstVarRef* const schedrefp = VN_AS(
-                VN_AS(VN_AS(activep->stmtsp(), StmtExpr)->exprp(), CMethodHard)->fromp(), VarRef);
-
-            AstNode* const actionp = activep->stmtsp()->unlinkFrBackWithNext();
-            if (schedrefp->varScopep()->dtypep()->basicp()->isDelayScheduler()) {
-                dlyShedIfp = V3Sched::util::createIfFromSenTree(activep->sentreep());
-                dlyShedIfp->addThensp(actionp);
-            } else {
-                m_resumeFuncp->addStmtsp(actionp);
-            }
-        }
-        if (dlyShedIfp) m_resumeFuncp->addStmtsp(dlyShedIfp);
-
-        // These are now spent, oispose of now empty AstActive instances
-        m_lbs.deleteActives();
+    // Return existing call if already created
+    if (m_resumeFuncp) {
+        AstCCall* const callp = new AstCCall{m_resumeFuncp->fileline(), m_resumeFuncp};
+        callp->dtypeSetVoid();
+        return callp;
     }
+
+    // No timing events to resume
+    if (m_lbs.empty()) return nullptr;
+
+    // Create global resume function
+    AstScope* const scopeTopp = netlistp->topScopep()->scopep();
+    m_resumeFuncp = new AstCFunc{netlistp->fileline(), "_timing_resume", scopeTopp, ""};
+    m_resumeFuncp->dontCombine(true);
+    m_resumeFuncp->isLoose(true);
+    m_resumeFuncp->isConst(false);
+    m_resumeFuncp->declPrivate(true);
+    scopeTopp->addBlocksp(m_resumeFuncp);
+
+    // Add move-to-resume-queue calls for trigger schedulers
+    for (const auto& p : m_lbs) {
+        AstActive* const activep = p.second;
+        activep->foreach([this](AstCMethodHard* const exprp) {
+            if (exprp->method() != VCMethod::SCHED_RESUME) return;
+            AstNodeExpr* const fromp = exprp->fromp();
+            if (VN_AS(fromp->dtypep(), BasicDType)->keyword()
+                != VBasicDTypeKwd::TRIGGER_SCHEDULER) {
+                return;
+            }
+            AstCMethodHard* const moveToResumep = new AstCMethodHard{
+                fromp->fileline(), fromp->cloneTree(false), VCMethod::SCHED_MOVE_TO_RESUME_QUEUE,
+                exprp->pinsp() ? exprp->pinsp()->cloneTree(true) : nullptr};
+            moveToResumep->dtypeSetVoid();
+            m_resumeFuncp->addStmtsp(moveToResumep->makeStmt());
+        });
+    }
+
+    // Process all timing actives and get delay scheduler if present
+    AstIf* const dlyShedIfp = processTimingActives();
+
+    // Add delay scheduler with NBA commits if needed
+    if (dlyShedIfp) {
+        addNbaCommitsBeforeResume(dlyShedIfp, netlistp);
+        m_resumeFuncp->addStmtsp(dlyShedIfp);
+    }
+
+    // Dispose of now-empty AstActive instances
+    m_lbs.deleteActives();
+
+    // Create and return the call
     AstCCall* const callp = new AstCCall{m_resumeFuncp->fileline(), m_resumeFuncp};
     callp->dtypeSetVoid();
     return callp;
