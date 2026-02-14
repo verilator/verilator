@@ -498,7 +498,8 @@ class AstCFunc final : public AstNode {
     bool m_dpiImportWrapper : 1;  // Wrapper for invoking DPI import prototype from generated code
     bool m_needProcess : 1;  // Needs access to VlProcess of the caller
     bool m_recursive : 1;  // Recursive or part of recursion
-    bool m_noLife: 1; // Disable V3Life on this function - has multiple calls, and reads Syms state
+    bool m_noLife : 1;  // Disable V3Life on this function - has multiple calls, and reads Syms
+                        // state
     int m_cost;  // Function call cost
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType = "")
