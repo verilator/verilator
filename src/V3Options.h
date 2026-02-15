@@ -284,8 +284,8 @@ private:
     bool m_quietStats = false;      // main switch: --quiet-stats
     bool m_relativeIncludes = false;  // main switch: --relative-includes
     bool m_reportUnoptflat = false;  // main switch: --report-unoptflat
-    VOptionBool m_runtimeZeroDelay;  // main switch: --runtime-zero-delay
     bool m_savable = false;         // main switch: --savable
+    VOptionBool m_schedZeroDelay;  // main switch: --sched-zero-delay
     bool m_stdPackage = true;       // main switch: --std-package
     bool m_stdWaiver = true;        // main switch: --std-waiver
     bool m_structsPacked = false;   // main switch: --structs-packed
@@ -492,6 +492,7 @@ public:
     bool underlineZero() const { return m_underlineZero; }
     bool systemC() const VL_MT_SAFE { return m_systemC; }
     bool savable() const VL_MT_SAFE { return m_savable; }
+    VOptionBool schedZeroDelay() const { return m_schedZeroDelay; }
     bool stats() const { return m_stats; }
     bool statsVars() const { return m_statsVars; }
     bool stdPackage() const { return m_stdPackage; }
@@ -583,7 +584,6 @@ public:
     bool quietExit() const VL_MT_SAFE { return m_quietExit; }
     bool quietStats() const VL_MT_SAFE { return m_quietStats; }
     bool reportUnoptflat() const { return m_reportUnoptflat; }
-    VOptionBool runtimeZeroDelay() const { return m_runtimeZeroDelay; }
     bool verilate() const { return m_verilate; }
     bool vpi() const { return m_vpi; }
     bool waiverMultiline() const { return m_waiverMultiline; }

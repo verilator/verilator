@@ -690,8 +690,8 @@ void createEval(AstNetlist* netlistp,  //
                     const std::string& line = std::to_string(locp->lineno());
                     stmtp->add(
                         "VL_FATAL_MT(\"" + V3OutFormatter::quoteNameControls(file) + "\", " + line
-                        + ", \"\", \"ZERODLY: Design verilated with '--no-runtime-zero-delay', "
-                        + "but #0 delay encountered at runtime\");");
+                        + ", \"\", \"ZERODLY: Design Verilated with '--no-sched-zero-delay', "
+                        + "but #0 delay executed at runtime\");");
                     return stmtp;
                 }
             }());

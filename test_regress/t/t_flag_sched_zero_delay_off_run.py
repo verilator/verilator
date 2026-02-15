@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('vlt')
 
 test.compile(verilator_flags2=[
-    "--timing", "--main", "--exe", "--no-skip-identical", "--no-runtime-zero-delay", "-Wno-fatal"
+    "--timing", "--main", "--exe", "--no-skip-identical", "--no-sched-zero-delay", "-Wno-fatal"
 ],
              expect_filename=test.golden_filename)
 

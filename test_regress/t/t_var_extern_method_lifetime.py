@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["--binary", "--no-runtime-zero-delay"])
+test.compile(verilator_flags2=["--binary", "--no-sched-zero-delay"])
 
 test.execute()
 

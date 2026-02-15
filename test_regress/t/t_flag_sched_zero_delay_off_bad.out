@@ -1,5 +1,5 @@
-%Warning-ZERODLY: t/t_flag_runtime_zero_delay_off_bad.v:10:11: Static #0 delay exists, but '--no-runtime-zero-delay' was given.
-                                                             : ... Can proceed, but this will fail at runtime if executed.
+%Warning-ZERODLY: t/t_flag_sched_zero_delay_off_bad.v:10:11: Static #0 delay exists, but '--no-sched-zero-delay' was given.
+                                                           : ... Can proceed, but this will fail at runtime if executed.
    10 |   initial #0;
       |           ^
                   ... For warning description see https://verilator.org/warn/ZERODLY?v=latest

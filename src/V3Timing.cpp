@@ -946,35 +946,35 @@ class TimingControlVisitor final : public VNVisitor {
             // Simplify
             valuep = V3Const::constifyEdit(valuep);
         }
-        // Check if a #0 delay is used
-        if (AstConst* const constp = VN_CAST(valuep, Const)) {
-            // Delay statically known constant. Check if zero
-            if (constp->num().isEqZero()) {
-                m_hasStaticZeroDelay = true;
-                if (v3Global.opt.runtimeZeroDelay().isSetFalse()) {
-                    // User promised there will not be #0 delays executed at runtime.
-                    // Trust them but warn a #0 delay statically exists.
-                    nodep->v3warn(
-                        ZERODLY,
-                        "Static #0 delay exists, but '--no-runtime-zero-delay' was given.\n"
-                            << nodep->warnMore()  //
-                            << "... Can proceed, but this will fail at runtime if executed.");
-                } else {
-                    // Sadly we have a #0
-                    v3Global.setUsesZeroDelay();
-                }
+
+        if (v3Global.opt.schedZeroDelay().isSetTrue()) {
+            // User said to schedule for #0 support, nothing else to do
+            v3Global.setUsesZeroDelay();
+        } else if (v3Global.opt.schedZeroDelay().isSetFalse()) {
+            // User said to schedule without #0 support. Still warn if a static #0 delay exists
+            if (valuep->isZero()) {
+                nodep->v3warn(
+                    ZERODLY,
+                    "Static #0 delay exists, but '--no-sched-zero-delay' was given.\n"
+                        << nodep->warnMore()  //
+                        << "... Can proceed, but this will fail at runtime if executed.");
             }
         } else {
-            // Delay is not statically known
-            if (v3Global.opt.runtimeZeroDelay().isSetFalse()) {
-                // User promised there will not be #0 delays executed at runtime, trust them.
-            } else {
-                // Record location. We will warn if no static #0 delays used.
-                m_unknownDelayFlps.push_back(nodep->fileline());
-                // Assume it can be a #0
+            // User did not express preference, decide based on presence of delays
+            if (valuep->isZero()) {
+                // Statically known #0 delay exists, schedule for #0 support
                 v3Global.setUsesZeroDelay();
+                m_hasStaticZeroDelay = true;
+                // Don't warn on variable delays, as no point
+                m_unknownDelayFlps.clear();
+            } else if (!VN_IS(valuep, Const)) {
+                // Delay is not known at compiile time. Conservatively schedule for #0 support,
+                // but warn if no static #0 delays used as performance might be improved
+                v3Global.setUsesZeroDelay();
+                if (!m_hasStaticZeroDelay) m_unknownDelayFlps.push_back(nodep->fileline());
             }
         }
+
         // Replace self with a 'co_await dlySched.delay(<valuep>)'
         AstCMethodHard* const delayMethodp = new AstCMethodHard{
             flp, new AstVarRef{flp, getCreateDelayScheduler(), VAccess::WRITE},
@@ -1366,24 +1366,19 @@ public:
         iterate(nodep);
 
         // If there is no static #0 in the design, but an unknown delay was found,
-        // and '--runtime-zero-delay' was not given, then warn on all unknown delays
+        // and the user did not specify preference, then warn on all unknown delays
         // as we will be assuming they can be #0, which can cause performance degradation.
-        if (!m_hasStaticZeroDelay  //
-            && !v3Global.opt.runtimeZeroDelay().isSetTrue()  //
-            && !m_unknownDelayFlps.empty()) {
-            UASSERT_OBJ(v3Global.usesZeroDelay(), nodep, "Should have assumed can be #0");
-            for (FileLine* const flp : m_unknownDelayFlps) {
-                flp->v3warn(ZERODLY,
-                            "Value of # delay control statically unknown. Assuming it can be #0.\n"
-                                << flp->warnMore()  //
-                                << "... If all # delays are non-zero at runtime,\n"
-                                << flp->warnMore()  //
-                                << "... use '--no-runtime-zero-delay' for improved performance.\n"
-                                << flp->warnMore()  //
-                                << "... If a real #0 is expected at runtime,\n"
-                                << flp->warnMore()  //
-                                << "... use '--runtime-zero-delay' to suppress this warning.");
-            }
+        for (FileLine* const flp : m_unknownDelayFlps) {
+            flp->v3warn(ZERODLY,
+                        "Value of # delay control statically unknown. Assuming it can be #0.\n"
+                            << flp->warnMore()  //
+                            << "... If all # delays are non-zero at runtime,\n"
+                            << flp->warnMore()  //
+                            << "... use '--no-sched-zero-delay' for improved performance.\n"
+                            << flp->warnMore()  //
+                            << "... If a real #0 is expected at runtime,\n"
+                            << flp->warnMore()  //
+                            << "... use '--sched-zero-delay' to suppress this warning.");
         }
     }
     ~TimingControlVisitor() override = default;

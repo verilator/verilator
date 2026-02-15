@@ -11,10 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.top_filename = "t_flag_runtime_zero_delay_off_bad.v"
+test.compile(verilator_flags2=["--binary", "--sched-zero-delay"])
 
-test.compile(verilator_flags2=["--binary", "--no-runtime-zero-delay", "-Wno-fatal"])
-
-test.execute(fails=True, expect_filename=test.golden_filename)
+test.execute(check_finished=True)
 
 test.passes()

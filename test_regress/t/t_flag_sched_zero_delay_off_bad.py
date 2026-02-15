@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile(verilator_flags2=["--binary", "--no-runtime-zero-delay"],
+test.compile(verilator_flags2=["--binary", "--no-sched-zero-delay"],
              fails=True,
              expect_filename=test.golden_filename)
 
