@@ -71,6 +71,7 @@
 #include "V3MemberMap.h"
 #include "V3SenExprBuilder.h"
 #include "V3SenTree.h"
+#include "V3Stats.h"
 #include "V3UniqueNames.h"
 
 #include <queue>
@@ -503,6 +504,11 @@ class TimingControlVisitor final : public VNVisitor {
     // Other
     SenTreeFinder m_finder{m_netlistp};  // Sentree finder and uniquifier
     SenExprBuilder* m_senExprBuilderp = nullptr;  // Sens expression builder for current m_scope
+
+    // Stats
+    size_t m_statZeroDelays = 0;  // Number of statically known #0 delays
+    size_t m_statConstDelays = 0;  // Number of statically known #const (non-zero) delays
+    size_t m_statVariableDelays = 0;  // Number of delays with value unknown at compile time
 
     // METHODS
     // Transform an assignment with an intra timing control into a timing control with the
@@ -947,6 +953,16 @@ class TimingControlVisitor final : public VNVisitor {
             valuep = V3Const::constifyEdit(valuep);
         }
 
+        // Statistics
+        if (valuep->isZero()) {
+            ++m_statZeroDelays;
+        } else if (VN_IS(valuep, Const)) {
+            ++m_statConstDelays;
+        } else {
+            ++m_statVariableDelays;
+        }
+
+        // Decide scheduling support for #0
         if (v3Global.opt.schedZeroDelay().isSetTrue()) {
             // User said to schedule for #0 support, nothing else to do
             v3Global.setUsesZeroDelay();
@@ -1381,7 +1397,11 @@ public:
                             << "... use '--sched-zero-delay' to suppress this warning.");
         }
     }
-    ~TimingControlVisitor() override = default;
+    ~TimingControlVisitor() override {
+        V3Stats::addStat("Timing, known #0 delays", m_statZeroDelays);
+        V3Stats::addStat("Timing, known #const delays", m_statConstDelays);
+        V3Stats::addStat("Timing, unknown #variable delays", m_statVariableDelays);
+    }
 };
 
 //######################################################################

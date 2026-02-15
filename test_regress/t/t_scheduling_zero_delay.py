@@ -11,8 +11,12 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["--binary", "--timing"])
+test.compile(verilator_flags2=["--binary", "--stats"])
 
 test.execute(expect_filename=test.golden_filename)
+
+test.file_grep(test.stats, r'Timing, known #0 delays\s+(\d+)', 1)
+test.file_grep(test.stats, r'Timing, known #const delays\s+(\d+)', 2)
+test.file_grep(test.stats, r'Timing, unknown #variable delays\s+(\d+)', 0)
 
 test.passes()
