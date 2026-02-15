@@ -2592,6 +2592,21 @@ List Of Warnings
 
 .. option:: ZERODLY
 
+   Since version 5.046:
+
+   Issued if neither :vlopt:`--sched-zero-delay`, nor
+   :vlopt:`--sched-zero-delay` is used on the command line, and the input does
+   not contain a compile time known ``#0`` delay, but does contain a
+   ``#(expressin)`` where the delay value cannot be determined at compile time.
+   Passing :vlopt:`--no-sched-zero-delay` can improve runtime performance if
+   variable delays are all known to be non-zero at runtime.
+
+   Also issued if :vlopt:`--no-sched-zero-delay` is used on the command line,
+   but the input contains a compile time known ``#0`` delay. This is safe to
+   ignore if the reported delay is known to be not executed at runtime.
+
+   Before version 5.046:
+
    Warns that `#0` delays do not schedule the process to be resumed in the
    Inactive region. Such processes do get resumed in the same time slot
    somewhere in the Active region. Issued only if Verilator is run with the

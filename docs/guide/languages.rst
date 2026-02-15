@@ -121,11 +121,6 @@ as well as all flavors of ``fork``.
 Compiling a Verilated design that uses these features requires a compiler
 with C++20 coroutine support, e.g. Clang 5, GCC 10, or newer.
 
-``#0`` delays cause Verilator to issue the :option:`ZERODLY` warning, as
-they work differently than described in the LRM. They do not schedule
-process resumption in the Inactive region, though the process will get
-resumed in the same time slot.
-
 Rising/falling/turn-off delays are currently unsupported and cause the
 :option:`RISEFALLDLY` warning.
 
