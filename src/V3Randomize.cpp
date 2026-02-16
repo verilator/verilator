@@ -1374,21 +1374,15 @@ class ConstraintExprVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             iterate(powerp);
         } else {
-            nodep->v3warn(CONSTRAINTIGN, "Unsupported: Power (**) expression with non-constant exponent in constraint");
+            nodep->v3warn(
+                CONSTRAINTIGN,
+                "Unsupported: Power (**) expression with non-constant exponent in constraint");
         }
     }
-    void visit(AstPow* nodep) override {
-        handlePow(nodep);
-    }
-    void visit(AstPowSS* nodep) override {
-        handlePow(nodep);
-    }
-    void visit(AstPowSU* nodep) override {
-        handlePow(nodep);
-    }
-    void visit(AstPowUS* nodep) override {
-        handlePow(nodep);
-    }
+    void visit(AstPow* nodep) override { handlePow(nodep); }
+    void visit(AstPowSS* nodep) override { handlePow(nodep); }
+    void visit(AstPowSU* nodep) override { handlePow(nodep); }
+    void visit(AstPowUS* nodep) override { handlePow(nodep); }
     void visit(AstNodeBiop* nodep) override {
         if (editFormat(nodep)) return;
         editSMT(nodep, nodep->lhsp(), nodep->rhsp());
