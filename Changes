@@ -40,6 +40,7 @@ Verilator 5.045 devel
 * Support some system functions in constraint blocks (#7028) (#7036). [Yilou Wang]
 * Support std::randomize() for queue, dynamic array, and associative array variables (#7044). [Yilou Wang]
 * Support inherited and nested pre/post_randomize callbacks (#7049) (#7053). [Yilou Wang]
+* Support `$get_initial_random_seed` (#7056) (#7069). [Srinivasan Venkataramanan]
 * Remove deprecated `--xml-only`.
 * Remove deprecated `--make cmake`.
 * Change JSON dumps to not include booleans that are false (#6977).

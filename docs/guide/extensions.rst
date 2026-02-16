@@ -207,6 +207,14 @@ or "`ifdef`"'s may break other tools.
    5 digits per the C standard. This extension was standardized into
    1800-2009.
 
+.. option:: $get_initial_random_seed()
+
+   Returns an integer with the initial random seed used for the simulation.
+   This is the value provided via the :vlopt:`+verilator+seed+\<value\>`
+   runtime option. If no seed is specified, it returns the default
+   initialization seed (typically 0). This is not defined by IEEE
+   1800-2023, but most simulators support it.
+
 .. option:: $stacktrace
 
    Called as a task, print a stack trace. Called as a function, return a

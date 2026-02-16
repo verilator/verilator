@@ -528,6 +528,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$fell"               { FL; return yD_FELL; }
   "$fell_gclk"          { FL; return yD_FELL_GCLK; }
   "$future_gclk"        { FL; return yD_FUTURE_GCLK; }
+  "$get_initial_random_seed" { FL; return yD_GET_INITIAL_RANDOM_SEED; }
   "$get_coverage"       { FL; STR; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
   "$high"               { FL; return yD_HIGH; }
   "$increment"          { FL; return yD_INCREMENT; }
