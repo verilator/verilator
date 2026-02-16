@@ -19,7 +19,7 @@ test.execute()
 
 if test.vlt:
     test.file_grep(test.stats, r'Optimizations, DFG scoped PushDownSels, sels pushed down\s+(\d+)',
-                   50)
+                   49)
     test.file_grep(test.stats, r'Optimizations, DFG scoped PushDownSels, would be cyclic\s+(\d+)',
                    1)
 
