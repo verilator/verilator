@@ -3035,13 +3035,11 @@ class RandomizeVisitor final : public VNVisitor {
         if (callp->user4()) return;
         callp->user4(true);
         FileLine* const fl = callp->fileline();
-        AstNodeExpr* const fromp = callp->fromp();
-        AstNodeExpr* const nullp = new AstConst{fl, AstConst::Null{}};
-        AstNodeExpr* const checkp = new AstNeq{fl, fromp->cloneTree(false), nullp};
-        AstNodeExpr* const zerop = new AstConst{fl, 0};
+        AstNodeExpr* const checkp
+            = new AstNeq{fl, callp->fromp()->cloneTree(false), new AstConst{fl, AstConst::Null{}}};
         VNRelinker relinker;
         callp->unlinkFrBack(&relinker);
-        AstCond* const condp = new AstCond{fl, checkp, callp, zerop};
+        AstCond* const condp = new AstCond{fl, checkp, callp, new AstConst{fl, 0}};
         condp->dtypeFrom(callp);
         relinker.relink(condp);
     }
