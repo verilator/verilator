@@ -1922,16 +1922,22 @@ static void dfgSelectLogicForSynthesis(DfgGraph& dfg) {
         });
     }
 
-    // Synthesize all continuous assignments and simple blocks driving exactly
-    // one variable. This is approximately the old default behaviour of Dfg.
+    // Choose some simple special cases to always synthesize
     for (DfgVertex& vtx : dfg.opVertices()) {
         DfgLogic* const logicp = vtx.cast<DfgLogic>();
         if (!logicp) continue;
+        // Blocks corresponding to continuous assignments
         if (logicp->nodep()->keyword() == VAlwaysKwd::CONT_ASSIGN) {
             worklist.push_front(*logicp);
             continue;
         }
         const CfgGraph& cfg = logicp->cfg();
+        // Straight line code with no branches
+        if (cfg.nBlocks() == 1) {
+            worklist.push_front(*logicp);
+            continue;
+        }
+        // Simple blocks driving exactly 1 variable, e.g if (rst) a = b else a = c;
         if (!logicp->hasMultipleSinks() && cfg.nBlocks() <= 4 && cfg.nEdges() <= 4) {
             worklist.push_front(*logicp);
         }
