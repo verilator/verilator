@@ -1,6 +1,12 @@
-%Error: t/t_assignment_pin_bad.v:22:19: Illegal input port connection 'b', mismatch between port which is not an array, and expression which is an array. (IEEE 1800-2023 7.6)
-                                      : ... note: In instance 'test'
-   22 |   test2 i_test2 (.b);
+%Error: t/t_assignment_pin_bad.v:29:19: Illegal input port connection 'b', mismatch between port which is not an array, and expression which is an array. (IEEE 1800-2023 7.6)
+                                      : ... note: In instance 't'
+   29 |   test1 i_test1 (.b);
       |                   ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_assignment_pin_bad.v:30:19: Illegal assignment: Array element types are not equivalent (IEEE 1800-2023 6.22.2)
+                                      : ... note: In instance 't'
+                                      : ... PIN type: 'bit$[0:1]' (2-state)
+                                      : ... EXPR type: 'logic$[0:1]' (4-state)
+   30 |   test2 i_test2 (.b);
+      |                   ^
 %Error: Exiting due to
