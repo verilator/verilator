@@ -8029,6 +8029,10 @@ class WidthVisitor final : public VNVisitor {
         return false;
     }
     // Checks whether two types are assignment-compatible according to IEEE 1800-2023 7.6
+    // Currently, this function supports variables, which are of following types:
+    // - Fixed-size unpacked array
+    // - Dynamic unpacked array
+    // - Associative array
     template <typename T, typename N>
     void checkUnpackedArrayAssignmentCompatible(const AstNode* nodep, const T* const lhsRefp,
                                                 const N* const rhsRefp) {
@@ -8065,7 +8069,6 @@ class WidthVisitor final : public VNVisitor {
         std::pair<uint32_t, uint32_t> lhsDim = lhsDtp->dimensions(false),
                                       rhsDim = rhsDtp->dimensions(false);
         // Check if unpacked array dimensions are matching
-        // TODO: Handle array slices AstSliceSel
         if (lhsDim.second != rhsDim.second) {
             nodep->v3error("Illegal assignment: Unmatched number of unpacked dimensions "
                            << "(" << lhsDim.second << " vs " << rhsDim.second << ")");
