@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile(verilator_flags2=["--binary", "--assert"])
+test.compile(verilator_flags2=["--binary", "--assert", "-Wno-ZERODLY"])
 
 test.execute()
 
