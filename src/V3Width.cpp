@@ -6393,9 +6393,19 @@ class WidthVisitor final : public VNVisitor {
                                    << exprSize << ".");
                     UINFO(1, "    Related lo: " << modDTypep);
                     UINFO(1, "    Related hi: " << conDTypep);
+                } else if ((exprArrayp && !modArrayp) || (!exprArrayp && modArrayp)) {
+                    nodep->v3error(
+                        "Illegal "
+                        << nodep->prettyOperatorName() << "," << " mismatch between port which is"
+                        << (modArrayp ? "" : " not") << " an array," << " and expression which is"
+                        << (exprArrayp ? "" : " not") << " an array. (IEEE 1800-2023 7.6)");
+                    UINFO(1, "    Related lo: " << modDTypep);
+                    UINFO(1, "    Related hi: " << conDTypep);
                 } else {
                     checkUnpackedArrayAssignmentCompatible<AstVar, AstNodeVarRef>(
                         nodep, nodep->modVarp(), VN_CAST(nodep->exprp(), NodeVarRef));
+                    UINFO(1, "    Related lo: " << modDTypep);
+                    UINFO(1, "    Related hi: " << conDTypep);
                 }
                 iterateCheckAssign(nodep, "pin connection", nodep->exprp(), FINAL, subDTypep);
             }
@@ -8027,17 +8037,27 @@ class WidthVisitor final : public VNVisitor {
                 && (std::is_same<N, AstVar>::value || std::is_same<N, AstNodeVarRef>::value),
             "Unsupported types provided.");
         if (!lhsRefp || !rhsRefp) return;
+        string lhsName, rhsName;
+        if (VN_IS(nodep, Pin)) {
+            lhsName = std::string{"PIN"};
+            rhsName = std::string{"EXPR"};
+        } else {
+            lhsName = std::string{"LHS"};
+            rhsName = std::string{"RHS"};
+        }
+
         const AstNodeDType* const lhsDtp = lhsRefp->dtypep()->skipRefp();
         const AstNodeDType* const rhsDtp = rhsRefp->dtypep()->skipRefp();
         const bool isLhsAggregate = lhsDtp->isAggregateType();
         const bool isRhsAggregate = rhsDtp->isAggregateType();
         if (!isLhsAggregate && !isRhsAggregate) return;
         if (isLhsAggregate ^ isRhsAggregate) {
-            nodep->v3error("Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)\n"
-                           << nodep->warnMore() << "... LHS type: " << lhsDtp->prettyDTypeNameQ()
-                           << " " << lhsDtp->stateDName() << "\n"
-                           << nodep->warnMore() << "... RHS type: " << rhsDtp->prettyDTypeNameQ()
-                           << " " << rhsDtp->stateDName() << "\n");
+            nodep->v3error(
+                "Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)\n"
+                << nodep->warnMore() << "... " << lhsName
+                << " type: " << lhsDtp->prettyDTypeNameQ() << " " << lhsDtp->stateDName() << "\n"
+                << nodep->warnMore() << "... " << rhsName
+                << " type: " << rhsDtp->prettyDTypeNameQ() << " " << rhsDtp->stateDName() << "\n");
             return;
         } else if (VN_IS(lhsDtp, QueueDType) && VN_IS(rhsDtp, EmptyQueueDType)) {
             return;
@@ -8079,11 +8099,12 @@ class WidthVisitor final : public VNVisitor {
         }
         // Element types of source and target shall be equivalent
         if (!isEquivalentDType(lhsDtpIterp, rhsDtpIterp)) {
-            nodep->v3error("Illegal assignment: Array element types are not equivalent (IEEE 1800-2023 6.22.2)\n"
-                           << nodep->warnMore() << "... LHS type: " << lhsDtp->prettyDTypeNameQ()
-                           << " " << lhsDtp->stateDName() << "\n"
-                           << nodep->warnMore() << "... RHS type: " << rhsDtp->prettyDTypeNameQ()
-                           << " " << rhsDtp->stateDName() << "\n");
+            nodep->v3error("Illegal assignment: Array element types are not equivalent (IEEE "
+                           "1800-2023 6.22.2)\n"
+                           << nodep->warnMore() << "... " << lhsName << " type: "
+                           << lhsDtp->prettyDTypeNameQ() << " " << lhsDtp->stateDName() << "\n"
+                           << nodep->warnMore() << "... " << rhsName << " type: "
+                           << rhsDtp->prettyDTypeNameQ() << " " << rhsDtp->stateDName() << "\n");
         }
     }
     void checkClassAssign(const AstNode* nodep, const char* side, AstNode* rhsp,
