@@ -1888,11 +1888,8 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         AstFunc* const funcp = VN_CAST(nodep->taskp(), Func);
         if (!funcp) {
-            nodep->v3warn(CONSTRAINTIGN,
-                          "Unsupported: task call in constraint, treating as state");
-            nodep->user1(false);
-            if (editFormat(nodep)) return;
-            nodep->v3fatalSrc("Task call not handled in constraints");
+            // Tasks have no return value — cannot appear in constraint expressions
+            nodep->v3fatalSrc("Unexpected task call in constraint expression");
             return;
         }
 
