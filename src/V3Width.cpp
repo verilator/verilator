@@ -3158,10 +3158,9 @@ class WidthVisitor final : public VNVisitor {
             AstNodeDType* const exprDtp = nodep->exprp()->dtypep();
             const int w = exprDtp->width();
             AstNodeDType* const tempDTypep
-                = exprDtp->widthSized()
-                      ? exprDtp
-                      : nodep->findBitOrLogicDType(w, w, exprDtp->numeric(),
-                                                   exprDtp->isFourstate());
+                = exprDtp->widthSized() ? exprDtp
+                                        : nodep->findBitOrLogicDType(w, w, exprDtp->numeric(),
+                                                                     exprDtp->isFourstate());
             AstVar* const varp
                 = new AstVar{fl, VVarType::XTEMP, m_insideTempNames.get(nodep), tempDTypep};
             exprp = new AstVarRef{fl, varp, VAccess::READ};
