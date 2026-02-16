@@ -2673,7 +2673,7 @@ class RandomizeVisitor final : public VNVisitor {
                     if (!structSelp->dtypep()) structSelp->dtypep(smemberp->subDTypep());
                     randp = newRandStmtsp(fl, structSelp, nullptr, outputVarp);
                 }
-                stmtsp = stmtsp ? stmtsp->addNext(randp) : randp;
+                stmtsp = AstNode::addNextNull(stmtsp, randp);
             }
             return stmtsp;
         } else if (const auto* const unionDtp = VN_CAST(memberDtp, UnionDType)) {

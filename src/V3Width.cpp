@@ -5098,7 +5098,7 @@ class WidthVisitor final : public VNVisitor {
                 AstNodeExpr* const valuep = patternMemberValueIterate(patp);
                 AstConsPackMember* const cpmp
                     = new AstConsPackMember{patp->fileline(), memp, valuep};
-                membersp = membersp ? membersp->addNext(cpmp) : cpmp;
+                membersp = AstNode::addNextNull(membersp, cpmp);
             }
             newp = new AstConsPackUOrStruct{nodep->fileline(), vdtypep, membersp};
         }

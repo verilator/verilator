@@ -171,8 +171,7 @@ void yyerror(const char* errmsg) { PARSEP->bisonLastFileline()->v3error(errmsg);
 
 template <typename T_Node, typename T_Next>
 static T_Node* addNextNull(T_Node* nodep, T_Next* nextp) {
-    if (!nextp) return nodep;
-    return AstNode::addNext<T_Node, T_Next>(nodep, nextp);
+    return AstNode::addNextNull<T_Node, T_Next>(nodep, nextp);
 }
 
 //======================================================================

@@ -310,7 +310,7 @@ public:
             if (nextp) nextp->unlinkFrBackWithNext();
             if (itemsp && skewp) skewp = skewp->cloneTree(false);
             AstClockingItem* itemp = new AstClockingItem{flp, direction, skewp, nodep};
-            itemsp = itemsp ? itemsp->addNext(itemp) : itemp;
+            itemsp = AstNode::addNextNull(itemsp, itemp);
         }
         return itemsp;
     }
