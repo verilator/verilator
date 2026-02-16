@@ -1034,20 +1034,20 @@ class AstToDfgSynthesize final {
 
     // Merge 'thenSymTab' into 'elseSymTab' using the given predicate to join values
     bool joinSymbolTables(SymTab& elseSymTab, DfgVertexVar* predicatep, const SymTab& thenSymTab) {
-        // Give up if something is not assigned on all paths ... Latch?
-        if (thenSymTab.size() != elseSymTab.size()) {
-            ++m_ctx.m_synt.nonSynLatch;
-            return false;
-        }
+        // Any variable that does not have a binding on both paths will be removed. These might be
+        // temporaries, loop vars, etc used only in one branch. Conversion will fail if the variable
+        // is actually referenced later.
+        std::vector<Variable*> toRemove;
+
         // Join each symbol
         for (std::pair<Variable* const, DfgVertexVar*>& pair : elseSymTab) {
             Variable* const varp = pair.first;
             // Find same variable on the else path
-            auto it = thenSymTab.find(varp);
-            // Give up if something is not assigned on all paths ... Latch?
+            const auto it = thenSymTab.find(varp);
+            // Record for removal if not assigned on both paths
             if (it == thenSymTab.end()) {
-                ++m_ctx.m_synt.nonSynLatch;
-                return false;
+                toRemove.emplace_back(varp);
+                continue;
             }
             // Join paths with the predicate
             DfgVertexVar* const thenp = it->second;
@@ -1056,6 +1056,10 @@ class AstToDfgSynthesize final {
             if (!newp) return false;
             pair.second = newp;
         }
+
+        // Remove variables not assigned on both paths
+        for (Variable* const varp : toRemove) elseSymTab.erase(varp);
+
         // Done
         return true;
     }
