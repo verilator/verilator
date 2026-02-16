@@ -14,8 +14,8 @@ module t;
 
   typedef virtual b_if vif_t;
   initial begin
-    static vif_t vif = t.m_i.if_bind;
-    static int y = t.m_i.if_bind.x;
+    automatic vif_t vif = t.m_i.if_bind;
+    automatic int y = t.m_i.if_bind.x;
 
     if (vif.x != 1) $stop;
     if (y != 1) $stop;

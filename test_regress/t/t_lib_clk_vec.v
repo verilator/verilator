@@ -55,7 +55,7 @@ module top;
 
     // Conclude when all counters reach 10
     begin
-      static bit done = 1'b1;
+      automatic bit done = 1'b1;
       for (int i = 0; i < N; ++i) begin
         if (cnt[i] != 10) done = 1'b0;
       end

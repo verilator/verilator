@@ -39,7 +39,7 @@ module t (
   endfunction
 
   initial begin
-    int i_no_has_init = 1;  // <--- Warning: want explicit lifetime
+    int i_no_has_init = 1;  // <--- Warning: IMPLICIT STATIC
     automatic int i_automatic_has_init = 1;  // Ok
     static int i_static_has_init = 1;  // Ok
     $finish;

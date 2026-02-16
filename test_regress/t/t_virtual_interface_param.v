@@ -14,7 +14,7 @@ module t;
   m #(.p(2)) m_i ();
 
   initial begin
-    static virtual b_if #(2) vif = m_i.b;
+    automatic virtual b_if #(2) vif = m_i.b;
     automatic int y = m_i.b.x;
 
     if (vif.x != 2) $stop;

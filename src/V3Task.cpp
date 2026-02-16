@@ -404,6 +404,7 @@ class TaskVisitor final : public VNVisitor {
     bool m_inSensesp = false;  // Are we under a senitem?
     bool m_inNew = false;  // Are we under a constructor?
     int m_modNCalls = 0;  // Incrementing func # for making symbols
+    int m_unconVarNum = 0;  // Unique bad connection variable
 
     // STATE - across all visitors
     DpiCFuncs m_dpiNames;  // Map of all created DPI functions
@@ -520,7 +521,7 @@ class TaskVisitor final : public VNVisitor {
 
     void connectPort(AstVar* portp, AstArg* argp, const string& namePrefix, AstNode* beginp,
                      bool inlineTask) {
-        AstNodeExpr* const pinp = argp->exprp();
+        AstNodeExpr* pinp = argp->exprp();
         if (inlineTask) {
             portp->unlinkFrBack();
             pushDeletep(portp);  // Remove it from the clone (not original)
@@ -530,15 +531,28 @@ class TaskVisitor final : public VNVisitor {
         } else {
             UINFO(9, "     Port " << portp);
             UINFO(9, "      pin " << pinp);
-            if (inlineTask) {
-                pushDeletep(pinp->unlinkFrBack());  // Cloned in assignment below
-                VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);  // Args no longer needed
-            }
             if (portp->isWritable() && VN_IS(pinp, Const)) {
                 pinp->v3error("Function/task " + portp->direction().prettyName()  // e.g. "output"
                               + " connected to constant instead of variable: "
                               + portp->prettyNameQ());
-            } else if (portp->isRef() || portp->isConstRef()) {
+                // Make temp pin to tie it off
+                AstVar* const varp = new AstVar{pinp->fileline(), VVarType::STMTTEMP,
+                                                "__VfuncUnconn_" + portp->name() + "__"
+                                                    + std::to_string(m_unconVarNum++),
+                                                portp->dtypep()};
+                m_modp->addStmtsp(varp);
+                AstVarScope* const newvscp = new AstVarScope{pinp->fileline(), m_scopep, varp};
+                m_scopep->addVarsp(newvscp);
+                AstVarRef* const repp = new AstVarRef{pinp->fileline(), newvscp, VAccess::WRITE};
+                pinp->replaceWith(repp);
+                pushDeletep(pinp);
+                pinp = repp;
+            }
+            if (inlineTask) {
+                pushDeletep(pinp->unlinkFrBack());  // Cloned in assignment below
+                VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);  // Args no longer needed
+            }
+            if (portp->isRef() || portp->isConstRef()) {
                 bool refArgOk = false;
                 if (VN_IS(pinp, VarRef) || VN_IS(pinp, MemberSel) || VN_IS(pinp, StructSel)
                     || VN_IS(pinp, ArraySel)) {
