@@ -585,6 +585,11 @@ class ForceReplaceVisitor final : public VNVisitor {
                     AstNodeExpr* wholeExprp = nodep;
                     while (VN_IS(wholeExprp->backp(), NodeExpr)) {
                         wholeExprp = VN_AS(wholeExprp->backp(), NodeExpr);
+                        // wholeExprp should never be ExprStmt, because:
+                        // * if nodep is inside stmtsp() of one, we should sooner get NodeStmt node
+                        // * nodep should never be in resultp(), because it is a WRITE reference
+                        //   and resultp() should be an rvalue
+                        UASSERT_OBJ(!VN_IS(wholeExprp, ExprStmt), nodep, "Unexpected AstExprStmt");
                     }
                     lhsp = ForceState::ForceComponentsVarScope::wrapIntoExprp(lhsRefp, wholeExprp,
                                                                               nodep);
