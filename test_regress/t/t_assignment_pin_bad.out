@@ -1,4 +1,4 @@
-%Error: t/t_assignment_pin_bad.v:22:19: Illegal assignment: 'logic$[0:1]' is not assignment compatible with 'logic'
+%Error: t/t_assignment_pin_bad.v:22:19: Illegal input port connection 'b', mismatch between port which is not an array, and expression which is an array. (IEEE 1800-2023 7.6)
                                       : ... note: In instance 'test'
    22 |   test2 i_test2 (.b);
       |                   ^

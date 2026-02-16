@@ -1,5 +1,7 @@
-%Error: t/t_fourstate_assign_bad.v:23:16: Illegal assignment: Array element types are not equivalent ('bit[7:0]' vs 'logic[7:0]')
+%Error: t/t_fourstate_assign_bad.v:23:16: Illegal assignment: Array element types are not equivalent (IEEE 1800-2023 6.22.2)
                                         : ... note: In instance 't'
+                                        : ... LHS type: 'bit[7:0]$[3:0]' (2-state)
+                                        : ... RHS type: 'logic[7:0]$[3:0]' (4-state)
    23 |     arr_2state = arr_4state;
       |                ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

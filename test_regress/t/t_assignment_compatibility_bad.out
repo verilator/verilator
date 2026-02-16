@@ -11,8 +11,10 @@
                                                 : ... note: In instance 't'
    27 |   assign unpackedD = unpackedC;
       |                    ^
-%Error: t/t_assignment_compatibility_bad.v:28:20: Illegal assignment: Array element types are not equivalent ('struct{}$unit::struct_t' vs 'logic')
+%Error: t/t_assignment_compatibility_bad.v:28:20: Illegal assignment: Array element types are not equivalent (IEEE 1800-2023 6.22.2)
                                                 : ... note: In instance 't'
+                                                : ... LHS type: 'struct{}$unit::struct_t$[0:3][0:1]' (2-state)
+                                                : ... RHS type: 'logic$[0:3][0:1]' (4-state)
    28 |   assign unpackedE = unpackedD;
       |                    ^
 %Warning-WIDTHEXPAND: t/t_assignment_compatibility_bad.v:28:20: Operator ASSIGNW expects 64 bits on the Assign RHS, but Assign RHS's VARREF 'unpackedD' generates 1 bits.
@@ -21,11 +23,13 @@
       |                    ^
                       ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
                       ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
-%Error: t/t_assignment_compatibility_bad.v:29:23: Illegal assignment: 'logic$[0:1]' is not assignment compatible with 'logic'
+%Error: t/t_assignment_compatibility_bad.v:29:23: Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)
                                                 : ... note: In instance 't'
+                                                : ... LHS type: 'logic' (4-state)
+                                                : ... RHS type: 'logic$[0:1]' (4-state)
    29 |   assign nonAggregate = unpackedA;
       |                       ^
-%Error: t/t_assignment_compatibility_bad.v:30:20: Illegal assignment: Associative arrays are assignment compatible only with associative arrays
+%Error: t/t_assignment_compatibility_bad.v:30:20: Illegal assignment: Associative arrays are assignment compatible only with associative arrays (IEEE 1800-2023 7.6)
                                                 : ... note: In instance 't'
    30 |   assign unpackedA = assocArrayA;
       |                    ^
