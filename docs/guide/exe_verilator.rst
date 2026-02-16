@@ -1596,6 +1596,8 @@ Summary:
 
 .. option:: --sched-zero-delay
 
+.. option:: --no-sched-zero-delay
+
    Specifies if the generated code should support ``#0`` delays with full IEEE
    1800 standard scheduling semantics. Full ``#0`` support has a simulation
    performance cost. If :vlopt:`--sched-zero-delay` is used, the generated code
@@ -2590,5 +2592,5 @@ The grammar of control commands is as follows:
 .. option:: verilator_lib -module "<modulename>"
 
    Internal use only. Marks the specified module as being a stub for a library
-   created by :option:`--lib-creat` (including when created with
-   :option:`--hierarchical`). Required for special internal processing.
+   created by :vlopt:`--lib-create` (including when created with
+   :vlopt:`--hierarchical`). Required for special internal processing.
