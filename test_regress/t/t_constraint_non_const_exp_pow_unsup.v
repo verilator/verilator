@@ -5,19 +5,19 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Packet;
-   rand int x;
-   rand int y;
+  rand int x;
+  rand int y;
 
-   constraint c_power { x ** y < 10000; }
+  constraint c_power { x ** y < 10000; }
 endclass
 
 module t;
 
-   Packet p;
+  Packet p;
 
-   initial begin
-      p = new;
-      void'(p.randomize());
-      $finish;
-   end
+  initial begin
+    p = new;
+    void'(p.randomize());
+    $finish;
+  end
 endmodule

@@ -10,6 +10,7 @@ class Packet;
    rand int z;
    rand int w;
    rand int v;
+   rand int u;
    rand bit [31:0] b;
    rand bit [31:0] c;
    rand bit [31:0] d;
@@ -40,6 +41,7 @@ class Packet;
    constraint c_power_ss { w ** 5 < 10000; }
    constraint c_power_us { f ** 5 < 10000; }
    constraint c_power_su { v ** 32'h5 < 10000; }
+   constraint c_power_many { u ** 2 ** 3 < 1000; u > 2; u < 10; }
    // check for negative values in constant
    constraint c_power_neg_exp { v ** 4'shf == 0; }
    constraint c_power_u_neg_exp { f ** 4'shf == 0; }
@@ -108,6 +110,7 @@ module t;
       if (p.e ** 32'h5 >= 10000) $stop;
       if (p.v ** 32'h5 >= 10000) $stop;
       if (p.f ** 5 >= 10000) $stop;
+      if (p.u != 3) $stop;
       if (p.tiny && p.x == 10) $stop;
       if ({p.c, p.b} == 'h1111) $stop;
       if (-~p.c == 'h22) $stop;
