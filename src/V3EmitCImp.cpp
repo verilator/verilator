@@ -729,6 +729,13 @@ class EmitCTrace final : public EmitCFunc {
                 = nodep->dtypep()->basicp()->keyword() == VBasicDTypeKwd::LOGIC ? "Logic" : "Bit";
             emitWidth = false;
         }
+        if (nodep->declp()->widthMin() > 1 && nodep->dtypep()->basicp()->isFourstate()) {
+            if (VL_UNLIKELY(nodep->isWide())) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Traces of wide vars (>64) for four state logic are unsupported");
+            }
+            stype += "FourState";
+        }
         putns(nodep, "bufp->" + func + stype);
 
         const uint32_t offset = (arrayindex < 0)

@@ -647,11 +647,37 @@ void VerilatedVcdBuffer::emitCData(uint32_t code, CData newval, int bits) {
 }
 
 VL_ATTR_ALWINLINE
+void VerilatedVcdBuffer::emitCDataFourState(uint32_t code, FourStateLogicWrapper<CData> newval,
+                                            int bits) {
+    char* wp = m_writep;
+    *wp++ = 'b';
+    for (int i = bits - 1; i >= 0; --i) {
+        const CData mask = 1 << i;
+        *wp++ = (newval.xz & mask) ? (newval.value & mask ? 'x' : 'z')
+                                   : ('0' | (static_cast<char>(newval.value >> i) & 1));
+    }
+    finishLine(code, wp);
+}
+
+VL_ATTR_ALWINLINE
 void VerilatedVcdBuffer::emitSData(uint32_t code, SData newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
     cvtSDataToStr(wp, newval << (VL_SHORTSIZE - bits));
     finishLine(code, wp + bits);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedVcdBuffer::emitSDataFourState(uint32_t code, FourStateLogicWrapper<SData> newval,
+                                            int bits) {
+    char* wp = m_writep;
+    *wp++ = 'b';
+    for (int i = bits - 1; i >= 0; --i) {
+        const SData mask = 1 << i;
+        *wp++ = (newval.xz & mask) ? (newval.value & mask ? 'x' : 'z')
+                                   : ('0' | (static_cast<char>(newval.value >> i) & 1));
+    }
+    finishLine(code, wp);
 }
 
 VL_ATTR_ALWINLINE
@@ -663,11 +689,37 @@ void VerilatedVcdBuffer::emitIData(uint32_t code, IData newval, int bits) {
 }
 
 VL_ATTR_ALWINLINE
+void VerilatedVcdBuffer::emitIDataFourState(uint32_t code, FourStateLogicWrapper<IData> newval,
+                                            int bits) {
+    char* wp = m_writep;
+    *wp++ = 'b';
+    for (int i = bits - 1; i >= 0; --i) {
+        const IData mask = 1 << i;
+        *wp++ = (newval.xz & mask) ? (newval.value & mask ? 'x' : 'z')
+                                   : ('0' | (static_cast<char>(newval.value >> i) & 1));
+    }
+    finishLine(code, wp);
+}
+
+VL_ATTR_ALWINLINE
 void VerilatedVcdBuffer::emitQData(uint32_t code, QData newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
     cvtQDataToStr(wp, newval << (VL_QUADSIZE - bits));
     finishLine(code, wp + bits);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedVcdBuffer::emitQDataFourState(uint32_t code, FourStateLogicWrapper<QData> newval,
+                                            int bits) {
+    char* wp = m_writep;
+    *wp++ = 'b';
+    for (int i = bits - 1; i >= 0; --i) {
+        const QData mask = 1 << i;
+        *wp++ = (newval.xz & mask) ? (newval.value & mask ? 'x' : 'z')
+                                   : ('0' | (static_cast<char>(newval.value >> i) & 1));
+    }
+    finishLine(code, wp);
 }
 
 VL_ATTR_ALWINLINE
