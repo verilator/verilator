@@ -90,8 +90,8 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
         AstIf* dlyShedIfp = nullptr;
         for (auto& p : m_lbs) {
             AstActive* const activep = p.second;
-            // Hack to ensure that #0 delays will be executed after any other `act` events.
-            // Just handle delayed coroutines last.
+            // Resume time delays last. For no particular reason other than
+            // that's what we used to do prior to proper #0 support.
             AstVarRef* const schedrefp = VN_AS(
                 VN_AS(VN_AS(activep->stmtsp(), StmtExpr)->exprp(), CMethodHard)->fromp(), VarRef);
 
@@ -111,6 +111,19 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
     AstCCall* const callp = new AstCCall{m_resumeFuncp->fileline(), m_resumeFuncp};
     callp->dtypeSetVoid();
     return callp;
+}
+
+AstVarScope* TimingKit::getDelayScheduler(AstNetlist* const netlistp) {
+    for (auto& p : m_lbs) {
+        AstActive* const ap = p.second;
+        // TODO: this triple VN_AS expression is ridiculous
+        AstVarRef* const schedrefp
+            = VN_AS(VN_AS(VN_AS(ap->stmtsp(), StmtExpr)->exprp(), CMethodHard)->fromp(), VarRef);
+        AstVarScope* const vscp = schedrefp->varScopep();
+        if (vscp->dtypep()->basicp()->isDelayScheduler()) return vscp;
+    }
+    // None found. Design doesn't use any time delays
+    return nullptr;
 }
 
 //============================================================================

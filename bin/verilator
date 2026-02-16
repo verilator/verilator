@@ -487,6 +487,7 @@ detailed descriptions of these arguments.
     --runtime-debug             Enable model runtime debugging
     --savable                   Enable model save-restore
     --sc                        Create SystemC output
+    --sched-zero-delay          Specify #0 delay support
     --no-skip-identical         Disable skipping identical output
     --stats                     Create statistics file
     --stats-vars                Provide statistics on variables

@@ -1594,6 +1594,21 @@ Summary:
 
    Specifies SystemC output mode; see also :vlopt:`--cc` option.
 
+.. option:: --sched-zero-delay
+
+   Specifies if the generated code should support ``#0`` delays with full IEEE
+   1800 standard scheduling semantics. Full ``#0`` support has a simulation
+   performance cost. If :vlopt:`--sched-zero-delay` is used, the generated code
+   will fully support ``#0`` delays. If :vlopt:`--no-sched-zero-delay` is used,
+   the generated code will not support ``#0` delays, and simulation will fail
+   at runtime if a ``#0`` delay is executed. If no option is given, Verilator
+   will generate code with proper ``#0`` support if the input contains either a
+   ``#0``, or a ``#(expression)`` with a delay value unknown at compile time.
+
+   Option :vlopt:`--no-sched-zero-delay` can be used if the input contains
+   ``#0`` delays, but they are known to be not executed at runtime. This can
+   improve simulation performance.
+
 .. option:: --skip-identical
 
 .. option:: --no-skip-identical

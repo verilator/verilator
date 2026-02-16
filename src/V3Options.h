@@ -285,6 +285,7 @@ private:
     bool m_relativeIncludes = false;  // main switch: --relative-includes
     bool m_reportUnoptflat = false;  // main switch: --report-unoptflat
     bool m_savable = false;         // main switch: --savable
+    VOptionBool m_schedZeroDelay;  // main switch: --sched-zero-delay
     bool m_stdPackage = true;       // main switch: --std-package
     bool m_stdWaiver = true;        // main switch: --std-waiver
     bool m_structsPacked = false;   // main switch: --structs-packed
@@ -491,6 +492,7 @@ public:
     bool underlineZero() const { return m_underlineZero; }
     bool systemC() const VL_MT_SAFE { return m_systemC; }
     bool savable() const VL_MT_SAFE { return m_savable; }
+    VOptionBool schedZeroDelay() const { return m_schedZeroDelay; }
     bool stats() const { return m_stats; }
     bool statsVars() const { return m_statsVars; }
     bool stdPackage() const { return m_stdPackage; }

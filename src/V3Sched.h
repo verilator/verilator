@@ -329,6 +329,8 @@ public:
     // Remaps external domains using the specified trigger map
     std::map<const AstVarScope*, std::vector<AstSenTree*>> remapDomains(
         const std::unordered_map<const AstSenTree*, AstSenTree*>& trigMap) const VL_MT_DISABLED;
+    // Get the delay scheduler variable
+    AstVarScope* getDelayScheduler(AstNetlist* const netlistp) VL_MT_DISABLED;
     // Creates a timing resume call (if needed, else returns null)
     AstCCall* createResume(AstNetlist* const netlistp) VL_MT_DISABLED;
     // Creates a timing ready call (if needed, else returns null)
