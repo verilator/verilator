@@ -2516,10 +2516,8 @@ class WidthVisitor final : public VNVisitor {
         // So two steps, first do the calculation's width (max of the two widths)
         {
             const int calcWidth = std::max(width, underDtp->width());
-            AstNodeDType* const calcDtp
-                = (underDtp->isFourstate()
-                       ? nodep->findLogicDType(calcWidth, calcWidth, underDtp->numeric())
-                       : nodep->findBitDType(calcWidth, calcWidth, underDtp->numeric()));
+            AstNodeDType* const calcDtp = nodep->findBitOrLogicDType(
+                calcWidth, calcWidth, underDtp->numeric(), underDtp->isFourstate());
             nodep->dtypep(calcDtp);
             // We ignore warnings as that is sort of the point of a cast
             iterateCheck(nodep, "Cast expr", underp, CONTEXT_DET, FINAL, calcDtp, EXTEND_EXP,
@@ -2530,10 +2528,8 @@ class WidthVisitor final : public VNVisitor {
         // UINFOTREE(1, nodep, "", "CastSizeClc");
         // Next step, make the proper output width
         {
-            AstNodeDType* const outDtp
-                = (underDtp->isFourstate()
-                       ? nodep->findLogicDType(width, width, underDtp->numeric())
-                       : nodep->findBitDType(width, width, underDtp->numeric()));
+            AstNodeDType* const outDtp = nodep->findBitOrLogicDType(
+                width, width, underDtp->numeric(), underDtp->isFourstate());
             nodep->dtypep(outDtp);
             // We ignore warnings as that is sort of the point of a cast
             widthCheckSized(nodep, "Cast expr", VN_AS(underp, NodeExpr), outDtp, EXTEND_EXP,
@@ -3139,8 +3135,7 @@ class WidthVisitor final : public VNVisitor {
             }
             nodep->dtypeSetBit();
             const VSigning numeric = nodep->exprp()->dtypep()->numeric();
-            expDTypep = isFourstate ? nodep->findLogicDType(width, mwidth, numeric)
-                                    : nodep->findBitDType(width, mwidth, numeric);
+            expDTypep = nodep->findBitOrLogicDType(width, mwidth, numeric, isFourstate);
         }
 
         iterateCheck(nodep, "Inside expression", nodep->exprp(), CONTEXT_DET, FINAL, expDTypep,
@@ -3162,10 +3157,11 @@ class WidthVisitor final : public VNVisitor {
             // Ensure sized dtype for temp variable
             AstNodeDType* const exprDtp = nodep->exprp()->dtypep();
             const int w = exprDtp->width();
-            AstNodeDType* const tempDTypep = exprDtp->widthSized() ? exprDtp
-                                             : exprDtp->isFourstate()
-                                                 ? nodep->findLogicDType(w, w, exprDtp->numeric())
-                                                 : nodep->findBitDType(w, w, exprDtp->numeric());
+            AstNodeDType* const tempDTypep
+                = exprDtp->widthSized()
+                      ? exprDtp
+                      : nodep->findBitOrLogicDType(w, w, exprDtp->numeric(),
+                                                   exprDtp->isFourstate());
             AstVar* const varp
                 = new AstVar{fl, VVarType::XTEMP, m_insideTempNames.get(nodep), tempDTypep};
             exprp = new AstVarRef{fl, varp, VAccess::READ};
