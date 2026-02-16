@@ -1354,6 +1354,49 @@ class ConstraintExprVisitor final : public VNVisitor {
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         iterate(resultp);
     }
+    void handlePow(AstNodeBiop* nodep) {
+        if (AstConst* const exponentp = VN_CAST(nodep->rhsp(), Const)) {
+            FileLine* const fl = nodep->fileline();
+            AstNodeExpr* const basep = nodep->lhsp();
+            V3Number numOne{nodep, basep->width(), 1};
+            AstNodeExpr* powerp = new AstConst{fl, numOne};
+            const bool baseSigned = VN_IS(nodep, PowSS) || VN_IS(nodep, PowSU);
+            const int32_t exponent = baseSigned ? exponentp->toSInt() : exponentp->toUInt();
+            if (exponent > 0) {
+                for (int32_t i = 0; i < exponent; i++) {
+                    if (baseSigned) {
+                        powerp = new AstMulS{fl, powerp, basep->cloneTreePure(false)};
+                    } else {
+                        powerp = new AstMul{fl, powerp, basep->cloneTreePure(false)};
+                    }
+                    powerp->user1(true);
+                }
+            } else if (exponent < 0) {
+                // Limit chain of divisions to max 2, because operations are on integers.
+                // Two divisions are needed to preserve the sign.
+                if (baseSigned) {
+                    powerp = new AstDivS{fl, powerp, basep->cloneTreePure(false)};
+                    powerp->user1(true);
+                    powerp = new AstDivS{fl, powerp, basep->cloneTreePure(false)};
+                    powerp->user1(true);
+                } else {
+                    powerp = new AstDiv{fl, powerp, basep->cloneTreePure(false)};
+                    powerp->user1(true);
+                }
+            }
+            nodep->replaceWith(powerp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            iterate(powerp);
+        } else {
+            nodep->v3warn(
+                CONSTRAINTIGN,
+                "Unsupported: Power (**) expression with non-constant exponent in constraint");
+        }
+    }
+    void visit(AstPow* nodep) override { handlePow(nodep); }
+    void visit(AstPowSS* nodep) override { handlePow(nodep); }
+    void visit(AstPowSU* nodep) override { handlePow(nodep); }
+    void visit(AstPowUS* nodep) override { handlePow(nodep); }
     void visit(AstNodeBiop* nodep) override {
         if (editFormat(nodep)) return;
         editSMT(nodep, nodep->lhsp(), nodep->rhsp());
