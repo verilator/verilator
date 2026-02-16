@@ -49,9 +49,21 @@ class UniqueElemFour;
   endfunction
 endclass
 
+class UniqueElemSingle;
+  rand bit [3:0] val[4];
+
+  constraint unique_single_con {
+    unique { val[0] };
+  }
+
+  function new();
+  endfunction
+endclass
+
 module t;
   UniqueElemSubset ues;
   UniqueElemFour uef;
+  UniqueElemSingle uesgl;
 
   initial begin
     ues = new();
@@ -64,6 +76,11 @@ module t;
     repeat (20) begin
       `checkd(uef.randomize(), 1)
       `checkd(uef.check_unique(), 1)
+    end
+
+    uesgl = new();
+    repeat (5) begin
+      `checkd(uesgl.randomize(), 1)
     end
 
     $write("*-* All Finished *-*\n");
