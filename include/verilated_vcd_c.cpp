@@ -626,6 +626,18 @@ void VerilatedVcdBuffer::emitBit(uint32_t code, CData newval) {
     finishLine(code, wp);
 }
 
+VL_ATTR_ALWINLINE void VerilatedVcdBuffer::emitLogic(uint32_t code,
+                                                     FourStateLogicWrapper<CData> newval) {
+    // Don't prefetch suffix as it's a bit too late;
+    char* wp = m_writep;
+    if (newval.xz) {
+        *wp++ = newval.value ? 'x' : 'z';
+    } else {
+        *wp++ = '0' | static_cast<char>(newval.value);
+    }
+    finishLine(code, wp);
+}
+
 VL_ATTR_ALWINLINE
 void VerilatedVcdBuffer::emitCData(uint32_t code, CData newval, int bits) {
     char* wp = m_writep;

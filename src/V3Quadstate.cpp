@@ -257,7 +257,7 @@ class QuadstateVisitor final : public VNVisitor {
                 ->dtypep(fourStateTypeFromTwoState(nodep->dtypep()));
         }
     }
-    void visit(AstConst* const nodep) {
+    void visit(AstConst* const nodep) override {
         iterateChildren(nodep);
         if (m_expectFourStateExpr && !nodep->isFourState()) {
             wrapExprpInCFuncHard(nodep, VCFunc::FOUR_STATE_FROM_TWO_STATE)
@@ -266,41 +266,41 @@ class QuadstateVisitor final : public VNVisitor {
                              : fourStateTypeFromTwoState(nodep->dtypep()));
         }
     }
-    void visit(AstAnd* const nodep) {
+    void visit(AstAnd* const nodep) override {
         EXPRESSION_VISITOR_COMMON
         iterateChildren(nodep);
         if (m_expectFourStateExpr) replaceFourStateBiop(nodep, VCFunc::FOUR_STATE_BITWISE_AND);
     }
-    void visit(AstOr* const nodep) {
+    void visit(AstOr* const nodep) override {
         EXPRESSION_VISITOR_COMMON
         iterateChildren(nodep);
         if (m_expectFourStateExpr) replaceFourStateBiop(nodep, VCFunc::FOUR_STATE_BITWISE_OR);
     }
-    void visit(AstXor* const nodep) {
+    void visit(AstXor* const nodep) override {
         EXPRESSION_VISITOR_COMMON
         iterateChildren(nodep);
         if (m_expectFourStateExpr) replaceFourStateBiop(nodep, VCFunc::FOUR_STATE_BITWISE_XOR);
     }
-    void visit(AstNot* const nodep) {
+    void visit(AstNot* const nodep) override {
         EXPRESSION_VISITOR_COMMON
         iterateChildren(nodep);
         if (m_expectFourStateExpr) replaceFourStateUniop(nodep, VCFunc::FOUR_STATE_BITWISE_NEG);
     }
-    void visit(AstRedAnd* const nodep) {
+    void visit(AstRedAnd* const nodep) override {
         EXPRESSION_VISITOR_COMMON
         iterateChildren(nodep);
         if (m_expectFourStateExpr) {
             nodep->v3warn(E_UNSUPPORTED, "This operator is unsupported for four-state logic");
         }
     }
-    void visit(AstRedOr* const nodep) {
+    void visit(AstRedOr* const nodep) override {
         EXPRESSION_VISITOR_COMMON
         iterateChildren(nodep);
         if (m_expectFourStateExpr) {
             nodep->v3warn(E_UNSUPPORTED, "This operator is unsupported for four-state logic");
         }
     }
-    void visit(AstRedXor* const nodep) {
+    void visit(AstRedXor* const nodep) override {
         EXPRESSION_VISITOR_COMMON
         iterateChildren(nodep);
         if (m_expectFourStateExpr) {

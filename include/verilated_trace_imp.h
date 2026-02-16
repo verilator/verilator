@@ -852,6 +852,16 @@ void VerilatedTraceBuffer<VL_BUF_T>::fullBit(uint32_t* oldp, CData newval) {
 }
 
 template <>
+void VerilatedTraceBuffer<VL_BUF_T>::fullLogic(uint32_t* oldp,
+                                               FourStateLogicWrapper<CData> newval) {
+    const uint32_t code = oldp - m_sigs_oldvalp;
+    std::memcpy(oldp, &newval,
+                sizeof(newval));  // Still copy even if not tracing so chg doesn't call full
+    if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
+    emitLogic(code, newval);
+}
+
+template <>
 void VerilatedTraceBuffer<VL_BUF_T>::fullEvent(uint32_t* oldp, const VlEventBase* newvalp) {
     const uint32_t code = oldp - m_sigs_oldvalp;
     // No need to update *oldp

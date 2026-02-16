@@ -508,6 +508,7 @@ public:
 
     // Write to previous value buffer value and emit trace entry.
     void fullBit(uint32_t* oldp, CData newval);
+    void fullLogic(uint32_t* oldp, FourStateLogicWrapper<CData> newval);
     void fullCData(uint32_t* oldp, CData newval, int bits);
     void fullSData(uint32_t* oldp, SData newval, int bits);
     void fullIData(uint32_t* oldp, IData newval, int bits);
@@ -525,6 +526,12 @@ public:
     VL_ATTR_ALWINLINE void chgBit(uint32_t* oldp, CData newval) {
         const uint32_t diff = *oldp ^ newval;
         if (VL_UNLIKELY(diff)) fullBit(oldp, newval);
+    }
+    VL_ATTR_ALWINLINE void chgLogic(uint32_t* oldp, FourStateLogicWrapper<CData> newval) {
+        const FourStateLogicWrapper<CData>& old
+            = static_cast<const FourStateLogicWrapper<CData>&>(*oldp);
+        const uint32_t diff = (old.value ^ newval.value) | (old.xz ^ newval.xz);
+        if (VL_UNLIKELY(diff)) fullLogic(oldp, newval);
     }
     VL_ATTR_ALWINLINE void chgCData(uint32_t* oldp, CData newval, int bits) {
         const uint32_t diff = *oldp ^ newval;
