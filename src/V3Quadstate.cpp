@@ -201,25 +201,6 @@ class QuadstateVisitor final : public VNVisitor {
             new AstCCast{exprp->fileline(), exprp, fourStateTypeFromTwoState(exprp->dtypep())});
     }
 
-    static void replaceFourStateUniop(AstNodeUniop* const uniop, VCFunc func) {
-        VNRelinker relinker;
-        uniop->unlinkFrBack(&relinker);
-        AstCFuncHard* const newp
-            = new AstCFuncHard{uniop->fileline(), func, uniop->lhsp()->unlinkFrBack()};
-        newp->dtypep(uniop->dtypep());
-        relinker.relink(newp);
-    }
-
-    static void replaceFourStateBiop(AstNodeBiop* const biop, VCFunc func) {
-        VNRelinker relinker;
-        biop->unlinkFrBack(&relinker);
-        AstCFuncHard* const newp = new AstCFuncHard{
-            biop->fileline(), func,
-            AstNode::addNext(biop->lhsp()->unlinkFrBack(), biop->rhsp()->unlinkFrBack())};
-        newp->dtypep(biop->dtypep());
-        relinker.relink(newp);
-    }
-
     void visit(AstNodeAssign* const nodep) override {
         VL_RESTORER(m_expectFourStateExpr);
         if (const AstVarRef* const varRefp = VN_CAST(nodep->lhsp(), VarRef)) {
@@ -292,7 +273,7 @@ class QuadstateVisitor final : public VNVisitor {
 #define EXPRESSION_VISITOR_COMMON \
     VL_RESTORER(m_isUnderExprp); \
     VL_RESTORER(m_expectFourStateExpr); \
-    m_expectFourStateExpr |= m_isUnderExprp && hasAttrFourState(nodep); \
+    m_expectFourStateExpr |= !m_isUnderExprp && hasAttrFourState(nodep); \
     m_isUnderExprp = true;
 
     void visit(AstNodeExpr* const nodep) override {
@@ -311,26 +292,6 @@ class QuadstateVisitor final : public VNVisitor {
         if (expectsFourStateExpr() && nodep->dtypep()->isFourstate() && !nodep->num().isAnyXZ()) {
             castTwoToFour(nodep);
         }
-    }
-    void visit(AstAnd* const nodep) override {
-        EXPRESSION_VISITOR_COMMON
-        iterateChildren(nodep);
-        if (expectsFourStateExpr()) replaceFourStateBiop(nodep, VCFunc::FOUR_STATE_BITWISE_AND);
-    }
-    void visit(AstOr* const nodep) override {
-        EXPRESSION_VISITOR_COMMON
-        iterateChildren(nodep);
-        if (expectsFourStateExpr()) replaceFourStateBiop(nodep, VCFunc::FOUR_STATE_BITWISE_OR);
-    }
-    void visit(AstXor* const nodep) override {
-        EXPRESSION_VISITOR_COMMON
-        iterateChildren(nodep);
-        if (expectsFourStateExpr()) replaceFourStateBiop(nodep, VCFunc::FOUR_STATE_BITWISE_XOR);
-    }
-    void visit(AstNot* const nodep) override {
-        EXPRESSION_VISITOR_COMMON
-        iterateChildren(nodep);
-        if (expectsFourStateExpr()) replaceFourStateUniop(nodep, VCFunc::FOUR_STATE_BITWISE_NEG);
     }
     void visit(AstRedAnd* const nodep) override {
         EXPRESSION_VISITOR_COMMON

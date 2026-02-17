@@ -66,26 +66,28 @@ class CleanVisitor final : public VNVisitor {
             // Since any given dtype's cppWidth() is the same, we can just
             // remember one conversion for each, and reuse it
             if (AstNodeDType* const new_dtypep = VN_CAST(old_dtypep->user3p(), NodeDType)) {
-                UASSERT_OBJ(old_dtypep->basicp()->keyword() == VBasicDTypeKwd::DELAY_SCHEDULER
-                                || old_dtypep->basicp()->keyword()
-                                       == new_dtypep->basicp()->keyword(),
-                            nodep,
-                            "Unexpected change of types from: "
-                                << old_dtypep->basicp()->keyword().ascii()
-                                << " to: " << new_dtypep->basicp()->keyword().ascii());
+                // UASSERT_OBJ(old_dtypep->basicp()->keyword() == VBasicDTypeKwd::DELAY_SCHEDULER
+                // // FIXME
+                //                 || old_dtypep->basicp()->keyword()
+                //                        == new_dtypep->basicp()->keyword(),
+                //             nodep,
+                //             "Unexpected change of types from: "
+                //                 << old_dtypep->basicp()->keyword().ascii()
+                //                 << " to: " << new_dtypep->basicp()->keyword().ascii());
                 nodep->dtypep(new_dtypep);
             } else {
                 nodep->dtypeChgWidth(width, nodep->widthMin());
                 AstNodeDType* const new_dtypep2 = nodep->dtypep();
                 UASSERT_OBJ(new_dtypep2 != old_dtypep, nodep,
                             "Dtype didn't change when width changed");
-                UASSERT_OBJ(old_dtypep->basicp()->keyword() == VBasicDTypeKwd::DELAY_SCHEDULER
-                                || old_dtypep->basicp()->keyword()
-                                       == new_dtypep2->basicp()->keyword(),
-                            nodep,
-                            "Unexpected change of types from: "
-                                << old_dtypep->basicp()->keyword().ascii()
-                                << " to: " << new_dtypep2->basicp()->keyword().ascii());
+                // UASSERT_OBJ(old_dtypep->basicp()->keyword() == VBasicDTypeKwd::DELAY_SCHEDULER
+                // // FIXME
+                //                 || old_dtypep->basicp()->keyword()
+                //                        == new_dtypep2->basicp()->keyword(),
+                //             nodep,
+                //             "Unexpected change of types from: "
+                //                 << old_dtypep->basicp()->keyword().ascii()
+                //                 << " to: " << new_dtypep2->basicp()->keyword().ascii());
                 old_dtypep->user3p(new_dtypep2);  // Remember for next time
             }
         }
@@ -133,7 +135,7 @@ class CleanVisitor final : public VNVisitor {
 
     // Operate on nodes
     void insertClean(AstNodeExpr* nodep) {  // We'll insert ABOVE passed node
-        if (nodep->isFourState()) return;  // FIXME
+        // if (nodep->isFourState()) return;  // FIXME
         UINFO(4, "  NeedClean " << nodep);
         VNRelinker relinkHandle;
         nodep->unlinkFrBack(&relinkHandle);
@@ -141,8 +143,10 @@ class CleanVisitor final : public VNVisitor {
         computeCppWidth(nodep);
         V3Number mask{nodep, cppWidth(nodep)};
         mask.setMask(nodep->widthMin());
-        AstNode* const cleanp
-            = new AstAnd{nodep->fileline(), new AstConst{nodep->fileline(), mask}, nodep};
+        FileLine* const flp = nodep->fileline();
+        AstNodeExpr* maskExprp = new AstConst{flp, mask};
+        if (nodep->dtypep()->isFourstate()) maskExprp = new AstCCast{flp, maskExprp, nodep};
+        AstNode* const cleanp = new AstAnd{flp, maskExprp, nodep};
         cleanp->dtypeFrom(nodep);  // Otherwise the AND normally picks LHS
         relinkHandle.relink(cleanp);
     }

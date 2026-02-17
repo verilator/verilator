@@ -1777,7 +1777,7 @@ public:
     }
 
     void visit(AstCFuncHard* const nodep) override {
-        puts(nodep->ansii());
+        puts(nodep->ascii());
         puts("(");
         putCommaIterateNext(nodep->pinsp(), false);
         puts(")");

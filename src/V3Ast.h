@@ -766,7 +766,7 @@ public:
     void dtypeSetVoid() { dtypep(findVoidDType()); }
 
     // Data type locators
-    AstNodeDType* findBitDType() const { return findBasicDType(VBasicDTypeKwd::LOGIC); }
+    AstNodeDType* findBitDType() const { return findBasicDType(VBasicDTypeKwd::BIT); }
     AstNodeDType* findDoubleDType() const { return findBasicDType(VBasicDTypeKwd::DOUBLE); }
     AstNodeDType* findIntDType() const { return findBasicDType(VBasicDTypeKwd::INT); }
     AstNodeDType* findStringDType() const { return findBasicDType(VBasicDTypeKwd::STRING); }

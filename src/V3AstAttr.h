@@ -1953,11 +1953,6 @@ public:
         FOUR_STATE_TWO_STATE_VALUE,
         FOUR_STATE_TWO_STATE_VALUE_RAW,
         FOUR_STATE_TWO_STATE_XZ_RAW,
-        FOUR_STATE_BITWISE_OR,
-        FOUR_STATE_BITWISE_AND,
-        FOUR_STATE_BITWISE_XOR,
-        FOUR_STATE_BITWISE_XNOR,
-        FOUR_STATE_BITWISE_NEG,
         FOUR_STATE_IS_TRUE,
         FOUR_STATE_EXPANDER,
         _END_SENTINEL
@@ -1982,11 +1977,6 @@ public:
             {FOUR_STATE_TWO_STATE_VALUE, "fourLogicCastToTwo", true},
             {FOUR_STATE_TWO_STATE_VALUE_RAW, "fourLogicTwoStateValueRaw", true},
             {FOUR_STATE_TWO_STATE_XZ_RAW, "fourLogicTwoStateXZRaw", true},
-            {FOUR_STATE_BITWISE_OR, "fourLogicOr", true},
-            {FOUR_STATE_BITWISE_AND, "fourLogicAnd", true},
-            {FOUR_STATE_BITWISE_XOR, "fourLogicXOr", true},
-            {FOUR_STATE_BITWISE_XNOR, "fourLogicXNOr", true},
-            {FOUR_STATE_BITWISE_NEG, "fourLogicNeg", true},
             {FOUR_STATE_IS_TRUE, "fourLogicIsTrue", true},
             {FOUR_STATE_EXPANDER, "fourStateLogicCast", true},
             //
@@ -2002,10 +1992,10 @@ public:
         : m_e{e} {}
 
     bool isPure() const { return getProperties(m_e).isPure; }
-    const char* ansii() const { return getProperties(m_e).cname; }
-    bool operator==(const VCFunc& other) const noexcept { return m_e == other.m_e; }
-    bool operator==(const VCFunc::en& other) const noexcept { return m_e == other; }
-    operator en() const noexcept { return m_e; }
+    const char* ascii() const { return getProperties(m_e).cname; }
+    constexpr bool operator==(const VCFunc& other) const noexcept { return m_e == other.m_e; }
+    constexpr bool operator==(const VCFunc::en& other) const noexcept { return m_e == other; }
+    constexpr operator en() const noexcept { return m_e; }
 };
 
 #endif  // Guard

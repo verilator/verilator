@@ -3292,7 +3292,7 @@ void AstCAwait::dump(std::ostream& str) const {
 }
 void AstCFuncHard::dump(std::ostream& str) const {
     this->AstNode::dump(str);
-    str << " [" << m_cfunc.ansii() << ']';
+    str << " [" << m_cfunc.ascii() << ']';
 }
 void AstCAwait::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 int AstCMethodHard::instrCount() const {

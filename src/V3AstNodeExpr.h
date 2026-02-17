@@ -684,10 +684,10 @@ public:
     bool isPure() override { return m_cfunc.isPure(); }
     std::string emitC() override { V3ERROR_NA_RETURN(""); }
     std::string emitVerilog() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { return false; }
+    bool cleanOut() const override { return true; }
     void dump(std::ostream& str) const override;
     VCFunc cfunc() const { return m_cfunc; }
-    const char* ansii() const { return m_cfunc.ansii(); }
+    const char* ascii() const { return m_cfunc.ascii(); }
 };
 class AstCMethodHard final : public AstNodeExpr {
     // A reference to a "C" hardcoded member task (or function)
@@ -4132,9 +4132,12 @@ public:
         out.opAnd(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f& %r)"; }
-    string emitC() override { return "VL_AND_%lq(%lW, %P, %li, %ri)"; }
+    string emitC() override {
+        return dtypep()->isFourstate() ? "fourLogicAnd(%li, %ri)"
+                                       : "VL_AND_%lq(%lW, %P, %li, %ri)";
+    }
     string emitSMT() const override { return "(bvand %l %r)"; }
-    string emitSimpleOperator() override { return "&"; }
+    string emitSimpleOperator() override { return dtypep()->isFourstate() ? "" : "&"; }
     bool cleanOut() const override { V3ERROR_NA_RETURN(false); }
     bool cleanLhs() const override { return false; }
     bool cleanRhs() const override { return false; }
@@ -4218,9 +4221,11 @@ public:
         out.opOr(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f| %r)"; }
-    string emitC() override { return "VL_OR_%lq(%lW, %P, %li, %ri)"; }
+    string emitC() override {
+        return dtypep()->isFourstate() ? "fourLogicOr(%li, %ri)" : "VL_OR_%lq(%lW, %P, %li, %ri)";
+    }
     string emitSMT() const override { return "(bvor %l %r)"; }
-    string emitSimpleOperator() override { return "|"; }
+    string emitSimpleOperator() override { return dtypep()->isFourstate() ? "" : "|"; }
     bool cleanOut() const override { V3ERROR_NA_RETURN(false); }
     bool cleanLhs() const override { return false; }
     bool cleanRhs() const override { return false; }
@@ -4239,9 +4244,12 @@ public:
         out.opXor(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f^ %r)"; }
-    string emitC() override { return "VL_XOR_%lq(%lW, %P, %li, %ri)"; }
+    string emitC() override {
+        return dtypep()->isFourstate() ? "fourLogicXOr(%li, %ri)"
+                                       : "VL_XOR_%lq(%lW, %P, %li, %ri)";
+    }
     string emitSMT() const override { return "(bvxor %l %r)"; }
-    string emitSimpleOperator() override { return "^"; }
+    string emitSimpleOperator() override { return dtypep()->isFourstate() ? "" : "^"; }
     bool cleanOut() const override { return false; }  // Lclean && Rclean
     bool cleanLhs() const override { return false; }
     bool cleanRhs() const override { return false; }
@@ -5340,9 +5348,11 @@ public:
     ASTGEN_MEMBERS_AstNot;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opNot(lhs); }
     string emitVerilog() override { return "%f(~ %l)"; }
-    string emitC() override { return "VL_NOT_%lq(%lW, %P, %li)"; }
+    string emitC() override {
+        return dtypep()->isFourstate() ? "fourLogicNeg(%li)" : "VL_NOT_%lq(%lW, %P, %li)";
+    }
     string emitSMT() const override { return "(bvnot %l)"; }
-    string emitSimpleOperator() override { return "~"; }
+    string emitSimpleOperator() override { return dtypep()->isFourstate() ? "" : "~"; }
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return false; }
     bool sizeMattersLhs() const override { return true; }
