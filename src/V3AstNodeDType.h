@@ -458,6 +458,7 @@ public:
         return m.m_keyword;
     }
     bool isBitLogic() const { return keyword().isBitLogic(); }
+    bool isCHandle() const VL_MT_STABLE { return keyword().isCHandle(); }
     bool isDouble() const VL_MT_STABLE { return keyword().isDouble(); }
     bool isEvent() const VL_MT_STABLE { return keyword() == VBasicDTypeKwd::EVENT; }
     bool isForkSync() const VL_MT_SAFE { return keyword() == VBasicDTypeKwd::FORK_SYNC; }

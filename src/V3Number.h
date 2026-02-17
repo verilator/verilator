@@ -340,6 +340,11 @@ class V3Number final {
     FileLine* m_fileline = nullptr;  // Source location - if no parent node is reasonable
 
     // METHODS
+    void setNull() {
+        m_data.setLogic();
+        m_data.m_isNull = true;
+        m_data.m_autoExtend = true;
+    }
     V3Number& setSingleBits(char value);
     V3Number& setString(const string& str) {
         m_data.setString(str);
@@ -512,9 +517,7 @@ public:
     class Null {};
     V3Number(AstNode* nodep, Null) {
         init(nodep);
-        m_data.setLogic();
-        m_data.m_isNull = true;
-        m_data.m_autoExtend = true;
+        setNull();
     }
     explicit V3Number(const V3Number* nump, int width = 1) {
         init(nullptr, width);

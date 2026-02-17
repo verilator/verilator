@@ -116,12 +116,15 @@ V3Number::V3Number(AstNode* nodep, VerilogStringLiteral, const string& str) {
 }
 
 V3Number::V3Number(AstNode* nodep, const AstNodeDType* nodedtypep) {
-    if (nodedtypep->isString()) {
+    if (nodedtypep->isCHandle()) {
         init(nodep);
-        setString("");
+        setNull();
     } else if (nodedtypep->isDouble()) {
         init(nodep, 64);
         setDouble(0.0);
+    } else if (nodedtypep->isString()) {
+        init(nodep);
+        setString("");
     } else {
         init(nodep, nodedtypep->width(), nodedtypep->widthSized());
     }

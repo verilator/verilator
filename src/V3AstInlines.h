@@ -33,6 +33,9 @@ bool AstNode::width1() const {  // V3Const uses to know it can optimize
 int AstNode::widthInstrs() const {
     return (!dtypep() ? 1 : (dtypep()->isWide() ? dtypep()->widthWords() : 1));
 }
+bool AstNode::isCHandle() const VL_MT_STABLE {
+    return dtypep() && dtypep()->basicp() && dtypep()->basicp()->isCHandle();
+}
 bool AstNode::isDouble() const VL_MT_STABLE {
     return dtypep() && dtypep()->basicp() && dtypep()->basicp()->isDouble();
 }

@@ -639,6 +639,7 @@ public:
     int widthWords() const { return VL_WORDS_I(width()); }
     bool isQuad() const VL_MT_STABLE { return (width() > VL_IDATASIZE && width() <= VL_QUADSIZE); }
     bool isWide() const VL_MT_STABLE { return (width() > VL_QUADSIZE); }
+    inline bool isCHandle() const VL_MT_STABLE;
     inline bool isDouble() const VL_MT_STABLE;
     inline bool isSigned() const VL_MT_STABLE;
     inline bool isString() const VL_MT_STABLE;

@@ -458,7 +458,7 @@ private:
         if (const AstBasicDType* const basicp = nodep->dtypeSkipRefp()->basicp()) {
             AstConst cnst{nodep->fileline(), AstConst::WidthedValue{}, basicp->widthMin(), 0};
             if (basicp->isZeroInit()) {
-                cnst.num().setAllBits0();
+                cnst.num() = V3Number{nodep, basicp};
             } else {
                 cnst.num().setAllBitsX();
             }
