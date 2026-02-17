@@ -13,7 +13,7 @@ Verilator 5.045 devel
 
 **Important:**
 
-* Support #0 delays with IEEE-1800 compliant semantics (#7079). [Geza Lore]
+* Support #0 delays with IEEE-1800 compliant semantics (#7079). [Geza Lore, Testorrent USA, Inc.]
   This may require `-no-sched-zero-delay` to maintain performance vs. previous versions.
 
 **Other:**
@@ -41,6 +41,9 @@ Verilator 5.045 devel
 * Support std::randomize() for queue, dynamic array, and associative array variables (#7044). [Yilou Wang]
 * Support inherited and nested pre/post_randomize callbacks (#7049) (#7053). [Yilou Wang]
 * Support `$get_initial_random_seed` (#7056) (#7069). [Srinivasan Venkataramanan]
+* Support unique constraint on explicit array element subsets (#7057) (#7064). [Yilou Wang]
+* Support force assignments to unpacked structs (#7060). [Ryszard Rozak, Antmicro Ltd.]
+* Support power expressions with constant exponent in constraints (#7073). [Kamil Danecki]
 * Remove deprecated `--xml-only`.
 * Remove deprecated `--make cmake`.
 * Change JSON dumps to not include booleans that are false (#6977).
@@ -52,8 +55,8 @@ Verilator 5.045 devel
 * Optimize more wide operation temporaries with substitution (#6972). [Geza Lore, Testorrent USA, Inc.]
 * Optimize right shifts as clean (#6981). [Geza Lore, Testorrent USA, Inc.]
 * Optimize temporary insertion for concatenations in DFG (#7013). [Geza Lore, Testorrent USA, Inc.]
-* Optimize removing redundant variables during DFG Peephole pass (#7076). [Geza Lore]
-* Optimize additional DFG peephole Shift and Concat patterns (#7077). [Geza Lore]
+* Optimize removing redundant variables during DFG Peephole pass (#7076). [Geza Lore, Testorrent USA, Inc.]
+* Optimize additional DFG peephole Shift and Concat patterns (#7077). [Geza Lore, Testorrent USA, Inc.]
 * Fix MULTIDRIVEN with task and default driver (#4045) (#6858). [em2machine]
 * Fix parameterized virtual interface references that have no model references (#4286).
 * Fix hierarchical interface/modport issues (#5941) (#6997). [Leela Pakanati]
@@ -89,6 +92,7 @@ Verilator 5.045 devel
 * Fix parameterized class typedef as interface type parameter (#6983) (#6984). [Leela Pakanati]
 * Fix virtual interface not found internal error (#7010). [Igor Zaworski, Antmicro Ltd.]
 * Fix multidimensional dynamic array elements passed to ref argument (#7023). [Ryszard Rozak, Antmicro Ltd.]
+* Fix randomize() null pointer dereference (#7026). [Artur Bieniek, Antmicro Ltd.]
 * Fix randc cyclic behavior broken with constraints (#7029) (#7035). [Yilou Wang]
 * Fix inline foreach constraints on dynamic arrays of class objects (#7030) (#7037). [Yilou Wang]
 * Fix rand_mode() on nested object variables causing Z3 solver error (#7031) (#7034). [Yilou Wang]
@@ -97,7 +101,10 @@ Verilator 5.045 devel
 * Fix scope tree in traces in hierarchical mode (#7042). [Geza Lore, Testorrent USA, Inc.]
 * Fix rand_mode()/constraint_mode() when used as function arguments (#7051) (#7055). [Yilou Wang]
 * Fix constraint_mode()/rand_mode() in constructor being overwritten (#7054). [Yilou Wang]
-* Fix constant propagating DPI-written variables (#7074). [Geza Lore]
+* Fix enum variables in constraint solver producing invalid enum values (#7058) (#7065). [Yilou Wang]
+* Fix randomize() on null object handle crashing instead of returning 0 (#7059) (#7066). [Yilou Wang]
+* Fix inside operator crash with impure expression and unsized range literals (#7063) (#7067). [Yilou Wang]
+* Fix constant propagating DPI-written variables (#7074). [Geza Lore, Testorrent USA, Inc.]
 
 
 Verilator 5.044 2026-01-01
