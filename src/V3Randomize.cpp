@@ -1423,6 +1423,10 @@ class ConstraintExprVisitor final : public VNVisitor {
             // Do not burden the solver if cond computable: (cond ? "then" : "else")
             iterate(nodep->thenp());
             iterate(nodep->elsep());
+            UASSERT_OBJ(
+                nodep->thenp()->isString() && nodep->elsep()->isString(), nodep,
+                "Branches of conditional expression in constraint not converted to strings");
+            nodep->dtypeSetString();
             return;
         }
         // Fall back to "(ite cond then else)"
