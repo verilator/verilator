@@ -3338,6 +3338,7 @@ class ConstVisitor final : public VNVisitor {
         AstConst* const newp = new AstConst{nodep->fileline(), V3Number{nodep, bdtypep}};
         UINFO(9, "CRESET(0) => CONST(0) " << nodep);
         nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstCvtArrayToArray* nodep) override {
         iterateChildren(nodep);
