@@ -502,4 +502,26 @@ module t (
   end
   `signal(BOTH_BREAK, both_break);
 
+  logic [1:0] uses_tmp;
+  always_comb begin
+    uses_tmp = 2'd0;
+    if (rand_a[0]) begin
+      automatic logic [1:0] tmp;
+      tmp = rand_b[1:0];
+      uses_tmp = tmp ^ rand_b[3:2];
+    end
+  end
+  `signal(USES_TMP, uses_tmp);
+
+  logic [3:0] uses_loop_var;
+  always_comb begin
+    uses_loop_var = 4'd0;
+    if (rand_a[0]) begin
+      for (int i = 0; i < 4; ++i) begin
+        uses_loop_var[i] = rand_b[2*i];
+      end
+    end
+  end
+  `signal(USES_LOOP_VAR, uses_loop_var);
+
 endmodule
