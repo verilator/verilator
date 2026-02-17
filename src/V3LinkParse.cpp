@@ -460,6 +460,7 @@ class LinkParseVisitor final : public VNVisitor {
         if (nodep->num().autoExtend() && nodep->fileline()->language() < V3LangCode::L1800_2005) {
             nodep->v3warn(NEWERSTD, "Unbased unsized literals require IEEE 1800-2005 or later.");
         }
+        nodep->setUserLiteral();
     }
 
     void visit(AstAttrOf* nodep) override {

@@ -1435,6 +1435,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         parseOptsFile(fl, parseFileArg(optdir, valp), false);
     }).notForRerun();
     DECL_OPTION("-flatten", OnOff, &m_flatten);
+    DECL_OPTION("-four-state", OnOff, &m_fourstate);
+    DECL_OPTION("-four-state-literals", OnOff, &m_fourstateLiterals);
     DECL_OPTION("-future0", CbVal, [this](const char* valp) { addFuture0(valp); });
     DECL_OPTION("-future1", CbVal, [this](const char* valp) { addFuture1(valp); });
 

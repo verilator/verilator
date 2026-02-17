@@ -217,7 +217,7 @@ public:
     void emitVarReset(AstVar* varp, bool constructing);
     string emitVarResetRecurse(const AstVar* varp, bool constructing,
                                const string& varNameProtected, AstNodeDType* dtypep, int depth,
-                               const string& suffix, const AstNode* valuep);
+                               const string& suffix, AstNode* valuep);
     void emitVarResetScopeHash();
     void emitChangeDet();
     void emitConstInit(AstNode* initp) { iterateConst(initp); }
@@ -382,6 +382,8 @@ public:
             if (extp->classp()->useVirtualPublic()) { virtualBases.push_back(extp->classp()); }
         }
     }
+
+    static std::pair<std::string, std::string> castExpr(const AstCCast* const nodep);
 
     // VISITORS
     using EmitCConstInit::visit;
@@ -1490,21 +1492,10 @@ public:
         }
     }
     void visit(AstCCast* nodep) override {
-        // Extending a value of the same word width is just a NOP.
-        if (const AstClassRefDType* const classDtypep
-            = VN_CAST(nodep->dtypep()->skipRefp(), ClassRefDType)) {
-            putns(nodep, "(" + classDtypep->cType("", false, false) + ")(");
-        } else if (nodep->size() <= VL_BYTESIZE) {
-            putns(nodep, "(CData)(");
-        } else if (nodep->size() <= VL_SHORTSIZE) {
-            putns(nodep, "(SData)(");
-        } else if (nodep->size() <= VL_IDATASIZE) {
-            putns(nodep, "(IData)(");
-        } else {
-            putns(nodep, "(QData)(");
-        }
+        std::pair<std::string, std::string> cast = castExpr(nodep);
+        putns(nodep, cast.first);
         iterateAndNextConstNull(nodep->lhsp());
-        puts(")");
+        puts(cast.second);
     }
     void visit(AstCond* nodep) override {
         // Widths match up already, so we'll just use C++'s operator w/o any temps.

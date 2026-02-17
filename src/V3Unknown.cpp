@@ -218,14 +218,16 @@ class UnknownVisitor final : public VNVisitor {
     void visit(AstAssignW* nodep) override {
         VL_RESTORER(m_timingControlp);
         VL_RESTORER(m_constXCvt);
-        m_constXCvt = m_constXCvt && !nodep->lhsp()->isFourState();
+        m_constXCvt
+            = m_constXCvt && !nodep->lhsp()->isFourState() && !nodep->rhsp()->isFourState();
         m_timingControlp = nodep->timingControlp();
         VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
     }
     void visit(AstNodeAssign* nodep) override {
         VL_RESTORER(m_timingControlp);
         VL_RESTORER(m_constXCvt);
-        m_constXCvt = m_constXCvt && !nodep->lhsp()->isFourState();
+        m_constXCvt
+            = m_constXCvt && !nodep->lhsp()->isFourState() && !nodep->rhsp()->isFourState();
         m_timingControlp = nodep->timingControlp();
         iterateChildren(nodep);
     }
@@ -243,7 +245,8 @@ class UnknownVisitor final : public VNVisitor {
                 }
                 m_constXCvt
                     = m_constXCvt
-                      && !(portVarp->direction().isNonOutput() && portVarp->attrFourState());
+                      && !(portVarp->direction().isNonOutput() && portVarp->attrFourState())
+                      && !pinp->isFourState();
                 iterate(pinp);
                 portp = portVarp->nextp();
             }

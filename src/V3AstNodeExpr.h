@@ -685,6 +685,8 @@ public:
     std::string emitC() override { V3ERROR_NA_RETURN(""); }
     std::string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return false; }
+    void dump(std::ostream& str) const override;
+    VCFunc cfunc() const { return m_cfunc; }
     const char* ansii() const { return m_cfunc.ansii(); }
 };
 class AstCMethodHard final : public AstNodeExpr {
@@ -1024,14 +1026,15 @@ public:
 class AstConst final : public AstNodeExpr {
     // A constant
     V3Number m_num;  // Constant value
+    bool m_isUserLiteral = false;
     void initWithNumber() {
         if (m_num.isDouble()) {
             dtypeSetDouble();
         } else if (m_num.isString()) {
             dtypeSetString();
         } else {
-            dtypeSetLogicUnsized(m_num.width(), (m_num.sized() ? 0 : m_num.widthToFit()),
-                                 VSigning::fromBool(m_num.isSigned()));
+            dtypeSetBitUnsized(m_num.width(), (m_num.sized() ? 0 : m_num.widthToFit()),
+                               VSigning::fromBool(m_num.isSigned()));
         }
         m_num.nodep(this);
     }
@@ -1070,35 +1073,35 @@ public:
     AstConst(FileLine* fl, uint32_t num)
         : ASTGEN_SUPER_Const(fl)
         , m_num(this, 32, num) {  // Need () constructor
-        dtypeSetLogicUnsized(m_num.width(), 0, VSigning::UNSIGNED);
+        dtypeSetBitUnsized(m_num.width(), 0, VSigning::UNSIGNED);
     }
     class Unsized32 {};  // for creator type-overload selection
     AstConst(FileLine* fl, Unsized32, uint32_t num)  // Unsized 32-bit integer of specified value
         : ASTGEN_SUPER_Const(fl)
         , m_num(this, 32, num) {  // Need () constructor
         m_num.width(32, false);
-        dtypeSetLogicUnsized(32, m_num.widthToFit(), VSigning::UNSIGNED);
+        dtypeSetBitUnsized(32, m_num.widthToFit(), VSigning::UNSIGNED);
     }
     class Signed32 {};  // for creator type-overload selection
     AstConst(FileLine* fl, Signed32, int32_t num)  // Signed 32-bit integer of specified value
         : ASTGEN_SUPER_Const(fl)
         , m_num(this, 32, num) {  // Need () constructor
         m_num.width(32, true);
-        dtypeSetLogicUnsized(32, m_num.widthToFit(), VSigning::SIGNED);
+        dtypeSetBitUnsized(32, m_num.widthToFit(), VSigning::SIGNED);
     }
     class Unsized64 {};  // for creator type-overload selection
     AstConst(FileLine* fl, Unsized64, uint64_t num)
         : ASTGEN_SUPER_Const(fl)
         , m_num(this, 64, 0) {  // Need () constructor
         m_num.setQuad(num);
-        dtypeSetLogicSized(64, VSigning::UNSIGNED);
+        dtypeSetBitSized(64, VSigning::UNSIGNED);
     }
     class SizedEData {};  // for creator type-overload selection
     AstConst(FileLine* fl, SizedEData, uint64_t num)
         : ASTGEN_SUPER_Const(fl)
         , m_num(this, VL_EDATASIZE, 0) {  // Need () constructor
         m_num.setQuad(num);
-        dtypeSetLogicSized(VL_EDATASIZE, VSigning::UNSIGNED);
+        dtypeSetBitSized(VL_EDATASIZE, VSigning::UNSIGNED);
     }
     class RealDouble {};  // for creator type-overload selection
     AstConst(FileLine* fl, RealDouble, double num)
@@ -1114,12 +1117,12 @@ public:
         dtypeSetString();
     }
     class BitFalse {};
-    AstConst(FileLine* fl, BitFalse)  // Shorthand const 0, dtype should be a logic of size 1
+    AstConst(FileLine* fl, BitFalse)  // Shorthand const 0, dtype should be a bit of size 1
         : ASTGEN_SUPER_Const(fl)
         , m_num(this, 1, 0) {  // Need () constructor
         dtypeSetBit();
     }
-    // Shorthand const 1 (or with argument 0/1), dtype should be a logic of size 1
+    // Shorthand const 1 (or with argument 0/1), dtype should be a bit of size 1
     class BitTrue {};
     AstConst(FileLine* fl, BitTrue, bool on = true)
         : ASTGEN_SUPER_Const(fl)
@@ -1151,7 +1154,7 @@ public:
     AstConst(FileLine* fl, OneStep)
         : ASTGEN_SUPER_Const(fl)
         , m_num{this, V3Number::OneStep{}} {
-        dtypeSetLogicSized(64, VSigning::UNSIGNED);
+        dtypeSetBitSized(64, VSigning::UNSIGNED);
         initWithNumber();
     }
     ASTGEN_MEMBERS_AstConst;
@@ -1179,7 +1182,11 @@ public:
     // Parse string and create appropriate type of AstConst.
     // May return nullptr on parse failure.
     static AstConst* parseParamLiteral(FileLine* fl, const string& literal);
-    bool isFourState() const override { return m_num.isAnyXZ(); }
+    bool isFourState() const override {
+        return v3Global.opt.fourstateLiterals() && m_num.isAnyXZ();
+    }
+    void setUserLiteral() { m_isUserLiteral = true; }
+    bool isUserLiteral() const { return m_isUserLiteral; }
 };
 class AstConstraintRef final : public AstNodeExpr {
     // A reference to a constraint identifier
@@ -4986,7 +4993,23 @@ public:
         m_size = setwidth;
         if (setwidth) {
             if (minwidth == -1) minwidth = setwidth;
-            dtypeSetLogicUnsized(setwidth, minwidth, VSigning::UNSIGNED);
+            if (lhsp->dtypep()->isFourstate()) {
+                dtypeSetLogicUnsized(setwidth, minwidth, VSigning::UNSIGNED);
+            } else {
+                dtypeSetBitUnsized(setwidth, minwidth, VSigning::UNSIGNED);
+            }
+        }
+    }
+    AstCCast(FileLine* fl, AstNodeExpr* lhsp, bool toFourstate, int setwidth, int minwidth = -1)
+        : ASTGEN_SUPER_CCast(fl, lhsp) {
+        m_size = setwidth;
+        if (setwidth) {
+            if (minwidth == -1) minwidth = setwidth;
+            if (toFourstate) {
+                dtypeSetLogicUnsized(setwidth, minwidth, VSigning::UNSIGNED);
+            } else {
+                dtypeSetBitUnsized(setwidth, minwidth, VSigning::UNSIGNED);
+            }
         }
     }
     // cppcheck-suppress constParameterPointer

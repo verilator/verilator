@@ -3290,6 +3290,10 @@ void AstCAwait::dump(std::ostream& str) const {
         sentreep()->dump(str);
     }
 }
+void AstCFuncHard::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " [" << m_cfunc.ansii() << ']';
+}
 void AstCAwait::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 int AstCMethodHard::instrCount() const {
     return 0;  // TODO

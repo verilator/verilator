@@ -57,7 +57,6 @@ class CastVisitor final : public VNVisitor {
     // METHODS
     void visit(AstCFuncHard* const) {}  // FIXME
     void insertCast(AstNodeExpr* nodep, int needsize) {  // We'll insert ABOVE passed node
-        if (nodep->isFourState()) return;  // FIXME
         VNRelinker relinkHandle;
         nodep->unlinkFrBack(&relinkHandle);
         //
@@ -203,6 +202,14 @@ class CastVisitor final : public VNVisitor {
         // we're too lazy to wrap every constant in the universe in
         // ((IData)#).
         nodep->user1(nodep->isQuad() || nodep->isWide() || nodep->isNull());
+        if (nodep->dtypep()->isFourstate() && !nodep->num().isAnyXZ()) {
+            VNRelinker relinkHandle;
+            nodep->unlinkFrBack(&relinkHandle);
+            relinkHandle.relink(new AstCCast{nodep->fileline(), nodep, nodep->dtypep()});
+            nodep->dtypeSetBitUnsized(nodep->backp()->dtypep()->width(),
+                                      nodep->backp()->dtypep()->widthMin(),
+                                      nodep->backp()->dtypep()->numeric());
+        }
     }
 
     // Null dereference protection

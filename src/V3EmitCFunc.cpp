@@ -271,6 +271,49 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
     }
 }
 
+std::pair<std::string, std::string> EmitCFunc::castExpr(const AstCCast* const nodep) {
+    const auto sizeToCDType = [](int size) {
+        if (size <= VL_BYTESIZE) {
+            return "CData";
+        } else if (size <= VL_SHORTSIZE) {
+            return "SData";
+        } else if (size <= VL_IDATASIZE) {
+            return "IData";
+        } else {
+            return "QData";
+        }
+    };
+    std::pair<std::string, std::string> result{"", ")"};
+    // Extending a value of the same word width is just a NOP.
+    AstConst* const constp = VN_CAST(nodep->lhsp(), Const);
+    const bool isLhsFourState
+        = nodep->lhsp()->dtypep()->isFourstate() && (!constp || constp->num().isAnyXZ());
+    if (const AstClassRefDType* const classDtypep
+        = VN_CAST(nodep->dtypep()->skipRefp(), ClassRefDType)) {
+        result.first += "(" + classDtypep->cType("", false, false) + ")(";
+    } else if (nodep->dtypep()->isFourstate() && isLhsFourState) {
+        result.first += "fourLogicCast<";
+        result.first += sizeToCDType(nodep->size());
+        result.first += ">(";
+    } else {
+        const char* const cdtypep = sizeToCDType(nodep->size());
+        if (nodep->dtypep()->isFourstate() && !isLhsFourState) {
+            result.first += "FourStateLogicWrapper<";
+            result.first += cdtypep;
+            result.first += ">{";
+            result.second = "), 0 }";
+        }
+        result.first += "(";
+        result.first += cdtypep;
+        result.first += ")(";
+        if (!nodep->dtypep()->isFourstate() && isLhsFourState) {
+            result.first += "fourLogicCastToTwo(";
+            result.second = "))";
+        }
+    }
+    return result;
+}
+
 void EmitCFunc::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const string& vfmt,
                            bool ignore, char fmtLetter) {
     // Print display argument, edits elistp
@@ -607,7 +650,7 @@ void EmitCFunc::emitVarReset(AstVar* varp, bool constructing) {
 
 string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                                       const string& varNameProtected, AstNodeDType* dtypep,
-                                      int depth, const string& suffix, const AstNode* valuep) {
+                                      int depth, const string& suffix, AstNode* valuep) {
     dtypep = dtypep->skipRefp();
     AstBasicDType* const basicp = dtypep->basicp();
     // Returns string to do resetting, empty to do nothing (which caller should handle)
@@ -731,9 +774,19 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                 out += " = ";
                 // TODO cleanup code shared between here, V3EmitCConstInit.h,
                 // EmitCFunc::emitVarReset, EmitCFunc::emitConstant
-                const AstConst* const constp = VN_AS(valuep, Const);
-                UASSERT_OBJ(constp, varp, "non-const initializer for variable");
-                out += constp->num().emitC();
+                if (const AstConst* const constp = VN_CAST(valuep, Const)) {
+                    out += constp->num().emitC();
+                } else if (AstCCast* const cCastp = VN_CAST(valuep, CCast)) {
+                    const AstConst* const constp = VN_CAST(cCastp->lhsp(), Const);
+                    UASSERT_OBJ(constp, varp,
+                                "CCast in variable initializer may only have CONST as an lhs");
+                    std::pair<std::string, std::string> cast = castExpr(cCastp);
+                    out += cast.first;
+                    out += constp->num().emitC();
+                    out += cast.second;
+                } else {
+                    varp->v3fatalSrc("Unexpected node in variable initializer: " << valuep);
+                }
                 out += ";\n";
             } else if (zeroit) {
                 out += " = 0;\n";

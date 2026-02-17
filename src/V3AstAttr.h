@@ -1953,7 +1953,6 @@ public:
         FOUR_STATE_TWO_STATE_VALUE,
         FOUR_STATE_TWO_STATE_VALUE_RAW,
         FOUR_STATE_TWO_STATE_XZ_RAW,
-        FOUR_STATE_FROM_TWO_STATE,
         FOUR_STATE_BITWISE_OR,
         FOUR_STATE_BITWISE_AND,
         FOUR_STATE_BITWISE_XOR,
@@ -1983,14 +1982,13 @@ public:
             {FOUR_STATE_TWO_STATE_VALUE, "fourLogicCastToTwo", true},
             {FOUR_STATE_TWO_STATE_VALUE_RAW, "fourLogicTwoStateValueRaw", true},
             {FOUR_STATE_TWO_STATE_XZ_RAW, "fourLogicTwoStateXZRaw", true},
-            {FOUR_STATE_FROM_TWO_STATE, "fourLogicFromTwoStateValue", true},
             {FOUR_STATE_BITWISE_OR, "fourLogicOr", true},
             {FOUR_STATE_BITWISE_AND, "fourLogicAnd", true},
             {FOUR_STATE_BITWISE_XOR, "fourLogicXOr", true},
             {FOUR_STATE_BITWISE_XNOR, "fourLogicXNOr", true},
             {FOUR_STATE_BITWISE_NEG, "fourLogicNeg", true},
             {FOUR_STATE_IS_TRUE, "fourLogicIsTrue", true},
-            {FOUR_STATE_EXPANDER, "fourStateLogicExpand", true},
+            {FOUR_STATE_EXPANDER, "fourStateLogicCast", true},
             //
         };
         static_assert(sizeof(properties) / sizeof(Properties)

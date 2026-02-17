@@ -934,7 +934,7 @@ string V3Number::emitC() const VL_MT_STABLE {
                 valBits += '0';
             }
         }
-        result = "(FourStateLogicWrapper<" + type + ">{" + valBits + ", " + xzBits + "})";
+        result = "FourStateLogicWrapper<" + type + ">{" + valBits + ", " + xzBits + "}";
     } else if (words() > 2) {
         UASSERT(!isFourState(), "Not implemented");
         // Note the double {{ initializer. The first { starts the initializer of the VlWide,

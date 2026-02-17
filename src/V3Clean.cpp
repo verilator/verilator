@@ -18,7 +18,7 @@
 // Each module:
 //      For each expression, if it requires a clean operand,
 //      and the operand is dirty, insert a CLEAN node.
-//      Resize operands to C++ 32/64/wide types.
+//      Resize operands to C++ 8/16/32/64/wide types.
 //      Copy all width() values to widthMin() so RANGE, etc can still see orig widths
 //
 //*************************************************************************
@@ -52,13 +52,11 @@ class CleanVisitor final : public VNVisitor {
 
     // Width resetting
     int cppWidth(const AstNode* nodep) {
-        if (nodep->width() <= VL_IDATASIZE) {
-            return VL_IDATASIZE;
-        } else if (nodep->width() <= VL_QUADSIZE) {
-            return VL_QUADSIZE;
-        } else {
-            return nodep->widthWords() * VL_EDATASIZE;
-        }
+        if (nodep->width() <= VL_BYTESIZE) return VL_BYTESIZE;
+        if (nodep->width() <= VL_SHORTSIZE) return VL_SHORTSIZE;
+        if (nodep->width() <= VL_IDATASIZE) return VL_IDATASIZE;
+        if (nodep->width() <= VL_QUADSIZE) return VL_QUADSIZE;
+        return nodep->widthWords() * VL_EDATASIZE;
     }
     void setCppWidth(AstNode* nodep) {
         nodep->user2(true);  // Don't resize it again
@@ -68,12 +66,26 @@ class CleanVisitor final : public VNVisitor {
             // Since any given dtype's cppWidth() is the same, we can just
             // remember one conversion for each, and reuse it
             if (AstNodeDType* const new_dtypep = VN_CAST(old_dtypep->user3p(), NodeDType)) {
+                UASSERT_OBJ(old_dtypep->basicp()->keyword() == VBasicDTypeKwd::DELAY_SCHEDULER
+                                || old_dtypep->basicp()->keyword()
+                                       == new_dtypep->basicp()->keyword(),
+                            nodep,
+                            "Unexpected change of types from: "
+                                << old_dtypep->basicp()->keyword().ascii()
+                                << " to: " << new_dtypep->basicp()->keyword().ascii());
                 nodep->dtypep(new_dtypep);
             } else {
                 nodep->dtypeChgWidth(width, nodep->widthMin());
                 AstNodeDType* const new_dtypep2 = nodep->dtypep();
                 UASSERT_OBJ(new_dtypep2 != old_dtypep, nodep,
                             "Dtype didn't change when width changed");
+                UASSERT_OBJ(old_dtypep->basicp()->keyword() == VBasicDTypeKwd::DELAY_SCHEDULER
+                                || old_dtypep->basicp()->keyword()
+                                       == new_dtypep2->basicp()->keyword(),
+                            nodep,
+                            "Unexpected change of types from: "
+                                << old_dtypep->basicp()->keyword().ascii()
+                                << " to: " << new_dtypep2->basicp()->keyword().ascii());
                 old_dtypep->user3p(new_dtypep2);  // Remember for next time
             }
         }

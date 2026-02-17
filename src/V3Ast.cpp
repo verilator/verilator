@@ -1551,7 +1551,11 @@ void AstNode::dtypeChgWidthSigned(int width, int widthMin, VSigning numeric) {
         // work OK but this assumption may break in the future.
         // Note we can't just clone and do a widthForce, as if it's a BasicDType
         // the msb() indications etc will be incorrect.
-        dtypeSetLogicUnsized(width, widthMin, numeric);
+        if (dtypep()->basicp()->keyword() == VBasicDTypeKwd::BIT) {
+            dtypeSetBitUnsized(width, widthMin, numeric);
+        } else {
+            dtypeSetLogicUnsized(width, widthMin, numeric);
+        }
     }
 }
 

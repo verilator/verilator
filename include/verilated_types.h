@@ -2140,72 +2140,72 @@ template <typename T>
 struct FourStateLogicWrapper;
 
 template <typename T>
-FourStateLogicWrapper<T> fourLogicConflict(const FourStateLogicWrapper<T>& a,
-                                           const FourStateLogicWrapper<T>& b) noexcept {
+constexpr FourStateLogicWrapper<T> fourLogicConflict(const FourStateLogicWrapper<T>& a,
+                                                     const FourStateLogicWrapper<T>& b) noexcept {
     return {static_cast<T>(a.value | b.value),
             static_cast<T>((a.value & a.xz) | (b.value & b.xz) | (a.xz & b.xz)
                            | (a.value & ~b.value & ~b.xz) | (b.value & ~a.value & ~a.xz))};
 }
 
 template <typename T>
-FourStateLogicWrapper<T> fourLogicTrior(const FourStateLogicWrapper<T>& a,
-                                        const FourStateLogicWrapper<T>& b) noexcept {
+constexpr FourStateLogicWrapper<T> fourLogicTrior(const FourStateLogicWrapper<T>& a,
+                                                  const FourStateLogicWrapper<T>& b) noexcept {
     return {static_cast<T>(a.value | b.value),
             static_cast<T>((a.value | b.xz) & (b.value | a.xz) & (a.xz | ~a.value)
                            & (b.xz | ~b.value))};
 }
 
 template <typename T>
-FourStateLogicWrapper<T> fourLogicTriand(const FourStateLogicWrapper<T>& a,
-                                         const FourStateLogicWrapper<T>& b) noexcept {
+constexpr FourStateLogicWrapper<T> fourLogicTriand(const FourStateLogicWrapper<T>& a,
+                                                   const FourStateLogicWrapper<T>& b) noexcept {
     return {
         static_cast<T>((a.value & b.xz) | (b.value & a.xz) | (a.value & b.value)),
         static_cast<T>((a.xz & b.xz) | (a.value & b.value & a.xz) | (a.value & b.value & b.xz))};
 }
 
 template <typename T>
-FourStateLogicWrapper<T> fourLogicOr(const FourStateLogicWrapper<T>& a,
-                                     const FourStateLogicWrapper<T>& b) noexcept {
+constexpr FourStateLogicWrapper<T> fourLogicOr(const FourStateLogicWrapper<T>& a,
+                                               const FourStateLogicWrapper<T>& b) noexcept {
     return {static_cast<T>(a.value | b.value | a.xz | b.xz),
             static_cast<T>((a.xz & b.xz) | (a.xz & ~b.value) | (b.xz & ~a.value))};
 }
 
 template <typename T>
-FourStateLogicWrapper<T> fourLogicAnd(const FourStateLogicWrapper<T>& a,
-                                      const FourStateLogicWrapper<T>& b) noexcept {
+constexpr FourStateLogicWrapper<T> fourLogicAnd(const FourStateLogicWrapper<T>& a,
+                                                const FourStateLogicWrapper<T>& b) noexcept {
     return {static_cast<T>((a.value | a.xz) & (b.value | b.xz)),
             static_cast<T>((a.value & b.xz) | (b.value & a.xz) | (a.xz & b.xz))};
 }
 
 template <typename T>
-FourStateLogicWrapper<T> fourLogicXOr(const FourStateLogicWrapper<T>& a,
-                                      const FourStateLogicWrapper<T>& b) noexcept {
+constexpr FourStateLogicWrapper<T> fourLogicXOr(const FourStateLogicWrapper<T>& a,
+                                                const FourStateLogicWrapper<T>& b) noexcept {
     return {static_cast<T>((a.value ^ b.value) | a.xz | b.xz), static_cast<T>(a.xz | b.xz)};
 }
 
 template <typename T>
-FourStateLogicWrapper<T> fourLogicXNOr(const FourStateLogicWrapper<T>& a,
-                                       const FourStateLogicWrapper<T>& b) noexcept {
+constexpr FourStateLogicWrapper<T> fourLogicXNOr(const FourStateLogicWrapper<T>& a,
+                                                 const FourStateLogicWrapper<T>& b) noexcept {
     return {static_cast<T>(~(a.value ^ b.value) | a.xz | b.xz), static_cast<T>(a.xz | b.xz)};
 }
 
 template <typename T>
-FourStateLogicWrapper<T> fourLogicNeg(const FourStateLogicWrapper<T>& a) noexcept {
+constexpr FourStateLogicWrapper<T> fourLogicNeg(const FourStateLogicWrapper<T>& a) noexcept {
     return {static_cast<T>(~a.value | a.xz), static_cast<T>(a.xz)};
 }
 
 template <typename T>
-T fourLogicCastToTwo(const FourStateLogicWrapper<T>& a) noexcept {
+constexpr T fourLogicCastToTwo(const FourStateLogicWrapper<T>& a) noexcept {
     return a.value & ~a.xz;
 }
 
 template <typename T>
-bool fourLogicHasXZ(const FourStateLogicWrapper<T>& a) noexcept {
+constexpr bool fourLogicHasXZ(const FourStateLogicWrapper<T>& a) noexcept {
     return a.xz;
 }
 
 template <size_t N>
-bool fourLogicHasXZ(const FourStateLogicWrapper<VlWide<N>>& a) noexcept {
+constexpr bool fourLogicHasXZ(const FourStateLogicWrapper<VlWide<N>>& a) noexcept {
     static_assert(N != 0, "VlWide cannot have size equal to 0");
     bool result = false;
     for (size_t i = 0; i < N; ++i) result |= a.xz[i];
@@ -2213,16 +2213,21 @@ bool fourLogicHasXZ(const FourStateLogicWrapper<VlWide<N>>& a) noexcept {
 }
 
 template <typename T>
-bool fourLogicIsTrue(const FourStateLogicWrapper<T>& a) noexcept {
+constexpr bool fourLogicIsTrue(const FourStateLogicWrapper<T>& a) noexcept {
     return !a.xz && a.value;
 }
 
 template <size_t N>
-bool fourLogicIsTrue(const FourStateLogicWrapper<VlWide<N>>& a) noexcept {
+constexpr bool fourLogicIsTrue(const FourStateLogicWrapper<VlWide<N>>& a) noexcept {
     static_assert(N != 0, "VlWide cannot have size equal to 0");
     bool result = false;
     for (size_t i = 0; i < N; ++i) result |= a.value[i];
     return !fourLogicHasXZ(a) && result;
+}
+
+template <typename T, typename Y>
+constexpr FourStateLogicWrapper<T> fourLogicCast(const FourStateLogicWrapper<Y>& a) noexcept {
+    return {static_cast<T>(a.value), static_cast<T>(a.xz)};
 }
 
 #define fourLogicTwoStateValueRaw(a) (a).value
@@ -2236,126 +2241,133 @@ struct FourStateLogicWrapper {
     T value;  // 2 state logic value if .xz is 0 and x if .xz is 1 and value is 1 otherwise z
     T xz;  // true when it is x or z
 
-    FourStateLogicWrapper() {}
-    FourStateLogicWrapper(T v)
+    constexpr FourStateLogicWrapper() {}
+    constexpr FourStateLogicWrapper(T v)
         : value{v}
         , xz{0} {}
-    FourStateLogicWrapper(T v, T x)
+    constexpr FourStateLogicWrapper(T v, T x)
         : value{v}
         , xz{x} {}
-    template <typename Y>
-    FourStateLogicWrapper(const FourStateLogicWrapper<Y>& other)
-        : value{other.value}
-        , xz{other.xz} {}
+    // template <typename Y>
+    // FourStateLogicWrapper(const FourStateLogicWrapper<Y>& other)
+    //     : value{other.value}
+    //     , xz{other.xz} {}
     template <std::size_t N_Words>
     FourStateLogicWrapper(const FourStateLogicWrapper<VlWide<N_Words>>& other);
     operator T() const noexcept { return value & ~xz; }
     template <typename Y>
-    FourStateLogicWrapper<std::conditional_t<(sizeof(T) > sizeof(Y)), T, Y>>
+    constexpr FourStateLogicWrapper<std::conditional_t<(sizeof(T) > sizeof(Y)), T, Y>>
     operator|(const FourStateLogicWrapper<Y>& other) const noexcept {
         return fourLogicOr<std::conditional_t<(sizeof(T) > sizeof(Y)), T, Y>>(*this, other);
     }
     template <typename Y>
-    FourStateLogicWrapper<std::conditional_t<(sizeof(T) > sizeof(Y)), T, Y>>
+    constexpr FourStateLogicWrapper<std::conditional_t<(sizeof(T) > sizeof(Y)), T, Y>>
     operator&(const FourStateLogicWrapper<Y>& other) const noexcept {
         return fourLogicAnd<std::conditional_t<(sizeof(T) > sizeof(Y)), T, Y>>(*this, other);
     }
     template <typename Y>
-    FourStateLogicWrapper<std::conditional_t<(sizeof(T) > sizeof(Y)), T, Y>>
+    constexpr FourStateLogicWrapper<std::conditional_t<(sizeof(T) > sizeof(Y)), T, Y>>
     operator^(const FourStateLogicWrapper<T>& other) const noexcept {
         fourLogicXOr<std::conditional_t<(sizeof(T) > sizeof(Y)), T, Y>>(*this, other);
+    }
+    template <typename Y>
+    constexpr FourStateLogicWrapper<T>& operator=(const FourStateLogicWrapper<Y>& other) noexcept {
+        static_assert(sizeof(T) == sizeof(Y), "Size of those types must be equal");
+        value = other.value;
+        xz = other.xz;
+        return *this;
     }
 };
 
 template <size_t Size, typename From>
-struct FourStateLogicExpander {
+struct FourStateLogicCaster {
     FourStateLogicWrapper<VlWide<Size>> operator()(const FourStateLogicWrapper<From>&);
 };
 
 template <size_t Size, size_t From>
-struct FourStateLogicExpander<Size, VlWide<From>> {
+struct FourStateLogicCaster<Size, VlWide<From>> {
     static_assert(Size != From, "Useless expand");
     static_assert(Size > From, "It is not a expand");
     FourStateLogicWrapper<VlWide<Size>> operator()(const FourStateLogicWrapper<VlWide<From>>&);
 };
 
-#define FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(size, T) \
+#define FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(size, T) \
     template <typename From> \
-    struct FourStateLogicExpander<size, From> { \
+    struct FourStateLogicCaster<size, From> { \
         FourStateLogicWrapper<T> operator()(const FourStateLogicWrapper<From>& a) { \
-            return {a.value, a.xz}; \
+            return {static_cast<T>(a.value), static_cast<T>(a.xz)}; \
         } \
     };
 
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(1, CData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(2, CData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(3, CData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(4, CData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(5, CData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(6, CData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(7, CData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(8, CData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(1, CData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(2, CData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(3, CData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(4, CData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(5, CData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(6, CData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(7, CData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(8, CData)
 
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(9, SData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(10, SData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(11, SData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(12, SData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(13, SData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(14, SData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(15, SData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(16, SData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(9, SData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(10, SData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(11, SData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(12, SData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(13, SData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(14, SData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(15, SData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(16, SData)
 
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(17, IData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(18, IData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(19, IData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(20, IData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(21, IData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(22, IData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(23, IData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(24, IData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(25, IData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(26, IData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(27, IData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(28, IData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(29, IData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(30, IData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(31, IData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32, IData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(17, IData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(18, IData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(19, IData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(20, IData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(21, IData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(22, IData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(23, IData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(24, IData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(25, IData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(26, IData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(27, IData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(28, IData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(29, IData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(30, IData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(31, IData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32, IData)
 
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 1, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 2, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 3, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 4, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 5, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 6, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 7, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 8, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 9, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 10, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 11, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 12, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 13, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 14, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 15, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 16, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 17, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 18, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 19, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 20, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 21, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 22, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 23, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 24, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 25, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 26, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 27, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 28, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 29, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 30, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 31, QData)
-FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR(32 + 32, QData)
-#undef FOUR_STATE_LOGIC_EXPANDER_FOUR_STATE_GENERATOR
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 1, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 2, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 3, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 4, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 5, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 6, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 7, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 8, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 9, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 10, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 11, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 12, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 13, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 14, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 15, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 16, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 17, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 18, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 19, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 20, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 21, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 22, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 23, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 24, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 25, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 26, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 27, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 28, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 29, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 30, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 31, QData)
+FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR(32 + 32, QData)
+#undef FOUR_STATE_LOGIC_CASTER_FOUR_STATE_GENERATOR
 
-#define fourStateLogicExpand(size, value) FourStateLogicExpander<(size)>{}(value)
+#define fourStateLogicCast(size, value) FourStateLogicCaster<(size)>{}(value)
 
 #endif  // Guard
