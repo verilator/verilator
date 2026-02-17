@@ -2859,6 +2859,7 @@ void AstVar::dump(std::ostream& str) const {
     } else if (isFuncLocal()) {
         str << " [FUNC]";
     }
+    if (hasUserInit()) str << " [UINIT]";
     if (isDpiOpenArray()) str << " [DPIOPENA]";
     if (ignorePostWrite()) str << " [IGNPWR]";
     if (ignoreSchedWrite()) str << " [IGNWR]";
@@ -2896,6 +2897,7 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isParam);
     dumpJsonBoolFuncIf(str, attrScBv);
     dumpJsonBoolFuncIf(str, attrSFormat);
+    dumpJsonBoolFuncIf(str, hasUserInit);
     dumpJsonBoolFuncIf(str, ignorePostWrite);
     dumpJsonBoolFuncIf(str, ignoreSchedWrite);
     dumpJsonGen(str);

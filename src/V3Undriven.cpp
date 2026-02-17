@@ -185,7 +185,8 @@ public:
         // Combine bits into overall state
         AstVar* const nodep = m_varp;
 
-        if (initStaticp() && procWritep() && !nodep->isClassMember() && !nodep->isFuncLocal()) {
+        if (initStaticp() && procWritep() && nodep->hasUserInit() && !nodep->isClassMember()
+            && !nodep->isFuncLocal()) {
             initStaticp()->v3warn(
                 PROCASSINIT,
                 "Procedural assignment to declaration with initial value: "
@@ -536,6 +537,8 @@ class UndrivenVisitor final : public VNVisitorConst {
     void visit(AstAssign* nodep) override {
         VL_RESTORER(m_inProcAssign);
         m_inProcAssign = true;
+        // Don't count default initialization as a driver to a net/variable
+        if (VN_IS(nodep->rhsp(), CReset)) return;
         iterateChildrenConst(nodep);
     }
     void visit(AstAssignDly* nodep) override {

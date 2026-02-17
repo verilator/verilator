@@ -55,14 +55,14 @@
   ]},
   {"type":"MODULE","name":"mod1__W4","addr":"(M)","loc":"d,31:8,31:12","origName":"mod1","verilogName":"mod1","level":2,"timeunit":"1ps","inlinesp": [],
    "stmtsp": [
-    {"type":"VAR","name":"WIDTH","addr":"(LB)","loc":"d,32:15,32:20","dtypep":"(MB)","origName":"WIDTH","verilogName":"WIDTH","direction":"NONE","isConst":true,"lifetime":"VSTATICI","varType":"GPARAM","dtypeName":"logic","isGParam":true,"isParam":true,"sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],
+    {"type":"VAR","name":"WIDTH","addr":"(LB)","loc":"d,32:15,32:20","dtypep":"(MB)","origName":"WIDTH","verilogName":"WIDTH","direction":"NONE","isConst":true,"lifetime":"VSTATICI","varType":"GPARAM","dtypeName":"logic","isGParam":true,"isParam":true,"hasUserInit":true,"sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],
      "valuep": [
       {"type":"CONST","name":"32'sh4","addr":"(NB)","loc":"d,19:18,19:19","dtypep":"(MB)"}
     ],"attrsp": []},
     {"type":"VAR","name":"clk","addr":"(R)","loc":"d,34:24,34:27","dtypep":"(I)","origName":"clk","verilogName":"clk","direction":"INPUT","lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
     {"type":"VAR","name":"d","addr":"(U)","loc":"d,35:30,35:31","dtypep":"(G)","origName":"d","verilogName":"d","direction":"INPUT","lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
     {"type":"VAR","name":"q","addr":"(O)","loc":"d,36:30,36:31","dtypep":"(G)","origName":"q","verilogName":"q","direction":"OUTPUT","lifetime":"VSTATICI","varType":"PORT","dtypeName":"logic","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
-    {"type":"VAR","name":"IGNORED","addr":"(OB)","loc":"d,39:15,39:22","dtypep":"(MB)","origName":"IGNORED","verilogName":"IGNORED","direction":"NONE","isConst":true,"lifetime":"VSTATICI","varType":"LPARAM","dtypeName":"logic","isParam":true,"sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],
+    {"type":"VAR","name":"IGNORED","addr":"(OB)","loc":"d,39:15,39:22","dtypep":"(MB)","origName":"IGNORED","verilogName":"IGNORED","direction":"NONE","isConst":true,"lifetime":"VSTATICI","varType":"LPARAM","dtypeName":"logic","isParam":true,"hasUserInit":true,"sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],
      "valuep": [
       {"type":"CONST","name":"32'sh1","addr":"(PB)","loc":"d,39:25,39:26","dtypep":"(MB)"}
     ],"attrsp": []},

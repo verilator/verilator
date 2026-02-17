@@ -1914,6 +1914,7 @@ class AstVar final : public AstNode {
     bool m_isConst : 1;  // Table contains constant data
     bool m_isContinuously : 1;  // Ever assigned continuously (for force/release)
     bool m_hasStrengthAssignment : 1;  // Is on LHS of assignment with strength specifier
+    bool m_hasUserInit : 1;  // Has initial assignment by user at parse time
     bool m_isStatic : 1;  // Static C variable (for Verilog see instead lifetime())
     bool m_isPulldown : 1;  // Tri0
     bool m_isPullup : 1;  // Tri1
@@ -1967,6 +1968,7 @@ class AstVar final : public AstNode {
         m_isConst = false;
         m_isContinuously = false;
         m_hasStrengthAssignment = false;
+        m_hasUserInit = false;
         m_isStatic = false;
         m_isPulldown = false;
         m_isPullup = false;
@@ -2126,6 +2128,8 @@ public:
     void gotNansiType(bool flag) { m_gotNansiType = flag; }
     bool hasStrengthAssignment() const { return m_hasStrengthAssignment; }
     void hasStrengthAssignment(bool flag) { m_hasStrengthAssignment = flag; }
+    bool hasUserInit() const { return m_hasUserInit; }
+    void hasUserInit(bool flag) { m_hasUserInit = flag; }
     bool isDpiOpenArray() const VL_MT_SAFE { return m_isDpiOpenArray; }
     void isDpiOpenArray(bool flag) { m_isDpiOpenArray = flag; }
     bool isHideLocal() const { return m_isHideLocal; }

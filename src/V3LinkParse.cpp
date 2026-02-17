@@ -317,6 +317,8 @@ class LinkParseVisitor final : public VNVisitor {
 
     void visit(AstVar* nodep) override {
         cleanFileline(nodep);
+        UINFO(9, "VAR " << nodep);
+        if (nodep->valuep()) nodep->hasUserInit(true);
         if (nodep->lifetime().isStatic() && m_insideLoop && nodep->valuep()) {
             nodep->lifetime(VLifetime::AUTOMATIC_IMPLICIT);
             nodep->v3warn(STATICVAR, "Static variable with assignment declaration declared in a "
