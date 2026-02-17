@@ -1,5 +1,5 @@
 $date
-	Sat Apr  5 13:56:27 2025
+	Tue Feb 17 01:32:42 2026
 
 $end
 $version
@@ -40,20 +40,12 @@ $var logic 5 4 state_w [4:0] $end
 $var logic 5 5 state_array[0] [4:0] $end
 $var logic 5 6 state_array[1] [4:0] $end
 $var logic 5 7 state_array[2] [4:0] $end
-$scope module unnamedblk1 $end
-$var int 32 8 i [31:0] $end
-$upscope $end
-$scope module unnamedblk2 $end
-$var int 32 9 i [31:0] $end
-$upscope $end
 $upscope $end
 $upscope $end
 $upscope $end
 $enddefinitions $end
 #0
 $dumpvars
-b00000000000000000000000000000000 9
-b00000000000000000000000000000000 8
 b00000 7
 b00000 6
 b00000 5
@@ -86,7 +78,6 @@ b10100 4
 b00001 5
 b00001 6
 b00001 7
-b00000000000000000000000000000011 8
 #15
 0!
 #20
@@ -145,7 +136,6 @@ b00000000000000000000000000001011 "
 b00000000000000000000000000001100 "
 b10100 7
 b01010 4
-b00000000000000000000000000000010 9
 #125
 0!
 #130

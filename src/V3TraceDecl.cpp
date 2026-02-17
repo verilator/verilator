@@ -203,6 +203,12 @@ class TraceDeclVisitor final : public VNVisitor {
         const AstVar* const varp = nodep->varp();
         if (!varp->isTrace()) return "Verilator trace_off";
         if (!nodep->isTrace()) return "Verilator instance trace_off";
+        // Automatics (typically, excluding forks) have no persistance over
+        // time, and may optimize differently when multithreadeded or hierarchical.
+        // Class automatics refer to being in a class but might still be pointed
+        // to by a static, so are ok.
+        if (varp->lifetime().isAutomatic() && !varp->isClassMember() && !varp->isParam())
+            return "Automatic variable";
 
         const int width = recurseDTypeWidth(nodep->varp()->dtypep());
         if (v3Global.opt.traceMaxWidth() && width > v3Global.opt.traceMaxWidth())

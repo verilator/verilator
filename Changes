@@ -49,6 +49,7 @@ Verilator 5.045 devel
 * Change JSON dumps to not include booleans that are false (#6977).
 * Change metacomment extra underscore error to BADVLTPRAGMA warning (#6968). [Geza Lore, Testorrent USA, Inc.]
 * Change INITIALSTATIC to also report on processes, per IEEE (#7020).
+* Change automatic variables to not be traced.
 * Optimize string temporaries to not be localized (#6969). [Geza Lore, Testorrent USA, Inc.]
 * Optimize wide word shifts by multiple of word size (#6970). [Geza Lore, Testorrent USA, Inc.]
 * Optimize concatenations that produce unused bits in DFG (#6971). [Geza Lore, Testorrent USA, Inc.]
