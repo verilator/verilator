@@ -117,17 +117,17 @@ private:
     }
 
 public:
-    void usedWhole() {
-        UINFO(9, "set u[*] " << m_varp->name());
+    void usedWhole(const AstNode* nodep) {
+        UINFO(9, "set u[*] " << m_varp->name() << " " << nodep);
         m_wholeFlags[FLAG_USED] = true;
     }
-    void drivenWhole() {
-        UINFO(9, "set d[*] " << m_varp->name());
+    void drivenWhole(const AstNode* nodep) {
+        UINFO(9, "set d[*] " << m_varp->name() << " " << nodep);
         m_wholeFlags[FLAG_DRIVEN] = true;
     }
     void drivenWhole(const AstNodeVarRef* nodep, const FileLine* fileLinep, bool ftaskDef) {
         m_ftaskDriven = ftaskDef && !isDrivenWhole();
-        drivenWhole();
+        drivenWhole(nodep);
         m_nodep = nodep;
         m_nodeFileLinep = fileLinep;
     }
@@ -301,7 +301,7 @@ public:
     }
 
     void drivenViaCall(const AstNodeFTaskRef* nodep) {
-        drivenWhole();
+        drivenWhole(nodep);
         if (!m_callNodep) m_callNodep = nodep;
     }
     const AstNodeFTaskRef* callNodep() const { return m_callNodep; }
@@ -323,6 +323,7 @@ class UndrivenVisitor final : public VNVisitorConst {
     std::array<std::vector<UndrivenVarEntry*>, 3> m_entryps = {};  // Nodes to delete when finished
     bool m_inBBox = false;  // In black box; mark as driven+used
     bool m_inContAssign = false;  // In continuous assignment
+    bool m_inInitialSetup = false;  // In InitialAutomatic*/InitialStatic* assignment LHS
     bool m_inInitialStatic = false;  // In InitialStatic
     bool m_inProcAssign = false;  // In procedural assignment
     bool m_inFTaskRef = false;  // In function or task call
@@ -380,16 +381,16 @@ class UndrivenVisitor final : public VNVisitorConst {
             // usr==2 for always-only checks.
             UndrivenVarEntry* const entryp = getEntryp(nodep, usr);
             if ((nodep->isNonOutput() && !funcInout) || nodep->isSigPublic()
-                || nodep->isSigUserRWPublic()
+                || nodep->hasUserInit() || nodep->isSigUserRWPublic()
                 || (m_taskp && (m_taskp->dpiImport() || m_taskp->dpiExport()))) {
-                entryp->drivenWhole();
+                entryp->drivenWhole(nodep);
             }
             if ((nodep->isWritable() && !funcInout) || nodep->isSigPublic()
                 || nodep->isSigUserRWPublic() || nodep->isSigUserRdPublic()
                 || (m_taskp && (m_taskp->dpiImport() || m_taskp->dpiExport()))) {
-                entryp->usedWhole();
+                entryp->usedWhole(nodep);
             }
-            if (nodep->valuep()) entryp->drivenWhole();
+            if (nodep->valuep()) entryp->drivenWhole(nodep->valuep());
         }
         // Discover variables used in bit definitions, etc
         iterateChildrenConst(nodep);
@@ -504,7 +505,10 @@ class UndrivenVisitor final : public VNVisitorConst {
                                                        << otherWritep->warnContextSecondary());
                     }
                 }
-                entryp->drivenWhole(nodep, nodep->fileline(), ftaskDef);
+                if (!m_inInitialSetup || nodep->varp()->hasUserInit()) {
+                    // Else don't count default initialization as a driver to a net/variable
+                    entryp->drivenWhole(nodep, nodep->fileline(), ftaskDef);
+                }
                 if (m_alwaysCombp && entryp->isDrivenAlwaysCombWhole()
                     && m_alwaysCombp != entryp->getAlwCombp()
                     && m_alwaysCombp->fileline() == entryp->getAlwCombFileLinep())
@@ -517,13 +521,14 @@ class UndrivenVisitor final : public VNVisitorConst {
                 if (m_alwaysp && m_inProcAssign && !entryp->procWritep())
                     entryp->procWritep(nodep);
             }
-            if (m_inBBox || nodep->access().isReadOrRW()
-                || fdrv
-                // Inouts have only isWrite set, as we don't have more
-                // information and operating on module boundary, treat as
-                // both read and writing
-                || m_inInoutOrRefPin)
-                entryp->usedWhole();
+            if ((!m_inInitialSetup || nodep->varp()->hasUserInit())
+                && (m_inBBox || nodep->access().isReadOrRW()
+                    || fdrv
+                    // Inouts have only isWrite set, as we don't have more
+                    // information and operating on module boundary, treat as
+                    // both read and writing
+                    || m_inInoutOrRefPin))
+                entryp->usedWhole(nodep);
         }
     }
 
@@ -537,9 +542,12 @@ class UndrivenVisitor final : public VNVisitorConst {
     void visit(AstAssign* nodep) override {
         VL_RESTORER(m_inProcAssign);
         m_inProcAssign = true;
-        // Don't count default initialization as a driver to a net/variable
-        if (VN_IS(nodep->rhsp(), CReset)) return;
-        iterateChildrenConst(nodep);
+        {
+            VL_RESTORER(m_inInitialSetup);
+            m_inInitialSetup = false;
+            iterateConst(nodep->rhsp());
+        }
+        iterateConst(nodep->lhsp());
     }
     void visit(AstAssignDly* nodep) override {
         VL_RESTORER(m_inProcAssign);
@@ -551,9 +559,26 @@ class UndrivenVisitor final : public VNVisitorConst {
         m_inContAssign = true;
         iterateChildrenConst(nodep);
     }
+    void visit(AstInitialAutomatic* nodep) override {
+        VL_RESTORER(m_inInitialSetup);
+        m_inInitialSetup = true;
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstInitialAutomaticStmt* nodep) override {
+        VL_RESTORER(m_inInitialSetup);
+        m_inInitialSetup = true;
+        iterateChildrenConst(nodep);
+    }
     void visit(AstInitialStatic* nodep) override {
         VL_RESTORER(m_inInitialStatic);
         m_inInitialStatic = true;
+        VL_RESTORER(m_inInitialSetup);
+        m_inInitialSetup = true;
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstInitialStaticStmt* nodep) override {
+        VL_RESTORER(m_inInitialSetup);
+        m_inInitialSetup = true;
         iterateChildrenConst(nodep);
     }
     void visit(AstAlways* nodep) override {
