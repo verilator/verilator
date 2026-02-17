@@ -5031,6 +5031,7 @@ public:
     }
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
+    bool isFourState() const override { return dtypep()->isFourstate(); }
     //
     int size() const { return m_size; }
 };
