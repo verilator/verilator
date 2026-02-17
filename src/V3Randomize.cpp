@@ -604,6 +604,14 @@ class RandomizeMarkVisitor final : public VNVisitor {
             handleRandomizeArgument(argp->exprp(), fromVarp, false);
         }
     }
+    void visit(AstConstraintUnique* nodep) override {
+        VL_RESTORER(m_stmtp);
+        VL_RESTORER(m_constraintExprGenp);
+        m_stmtp = nodep;
+        m_constraintExprGenp = nodep;
+        iterateChildren(nodep);
+        if (!nodep->backp()) VL_DO_DANGLING(nodep->deleteTree(), nodep);
+    }
     void visit(AstConstraintExpr* nodep) override {
         VL_RESTORER(m_constraintExprGenp);
         m_constraintExprGenp = nodep;
@@ -2218,6 +2226,50 @@ class RandomizeVisitor final : public VNVisitor {
         }
         return false;
     }
+    // Expand unique{a,b,c} with explicit elements into pairwise != constraints.
+    // Whole-array unique{arr} is left for ConstraintExprVisitor's rand_unique handling.
+    static void expandUniqueElementList(AstNode* itemsp) {
+        AstNode* itemp = itemsp;
+        while (itemp) {
+            AstNode* const nextp = itemp->nextp();
+            AstConstraintUnique* const uniquep = VN_CAST(itemp, ConstraintUnique);
+            if (!uniquep) {
+                itemp = nextp;
+                continue;
+            }
+
+            std::vector<AstNodeExpr*> exprItems;
+            bool hasArrayVarRef = false;
+            for (AstNode* rp = uniquep->rangesp(); rp; rp = rp->nextp()) {
+                if (AstVarRef* const vrp = VN_CAST(rp, VarRef)) {
+                    if (VN_IS(vrp->varp()->dtypep()->skipRefp(), UnpackArrayDType)) {
+                        hasArrayVarRef = true;
+                        continue;
+                    }
+                }
+                exprItems.push_back(VN_AS(rp, NodeExpr));
+            }
+
+            if (exprItems.size() >= 2) {
+                FileLine* const fl = uniquep->fileline();
+                for (size_t i = 0; i < exprItems.size(); i++) {
+                    for (size_t j = i + 1; j < exprItems.size(); j++) {
+                        AstNodeExpr* const lhsp = exprItems[i]->cloneTree(false);
+                        AstNodeExpr* const rhsp = exprItems[j]->cloneTree(false);
+                        AstNeq* const neqp = new AstNeq{fl, lhsp, rhsp};
+                        neqp->user1(true);
+                        AstConstraintExpr* const cexprp = new AstConstraintExpr{fl, neqp};
+                        uniquep->addNextHere(cexprp);
+                    }
+                }
+                if (!hasArrayVarRef) {
+                    uniquep->unlinkFrBack();
+                    VL_DO_DANGLING(uniquep->deleteTree(), uniquep);
+                }
+            }
+            itemp = nextp;
+        }
+    }
     void createRandomGenerator(AstClass* const classp) {
         if (classp->user3p()) return;
         if (classp->extendsp()) {
@@ -3232,6 +3284,7 @@ class RandomizeVisitor final : public VNVisitor {
                     resizeAllTaskp->addStmtsp(resizeTaskRefp->makeStmt());
                 }
 
+                if (constrp->itemsp()) expandUniqueElementList(constrp->itemsp());
                 ConstraintExprVisitor{classp, m_memberMap,  constrp->itemsp(), nullptr,
                                       genp,   randModeVarp, m_writtenVars};
                 if (constrp->itemsp()) {
@@ -3503,6 +3556,7 @@ class RandomizeVisitor final : public VNVisitor {
                 AstNode* const capturedTreep = withp->exprp()->unlinkFrBackWithNext();
                 randomizeFuncp->addStmtsp(capturedTreep);
                 {
+                    expandUniqueElementList(capturedTreep);
                     ConstraintExprVisitor{nullptr, m_memberMap, capturedTreep, randomizeFuncp,
                                           stdrand, nullptr,     m_writtenVars};
                 }
@@ -3642,6 +3696,7 @@ class RandomizeVisitor final : public VNVisitor {
         AstNode* const capturedTreep = withp->exprp()->unlinkFrBackWithNext();
         randomizeFuncp->addStmtsp(capturedTreep);
         {
+            expandUniqueElementList(capturedTreep);
             ConstraintExprVisitor{classp,    m_memberMap,  capturedTreep, randomizeFuncp,
                                   localGenp, randModeVarp, m_writtenVars};
         }
