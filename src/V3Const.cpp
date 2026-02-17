@@ -3329,6 +3329,17 @@ class ConstVisitor final : public VNVisitor {
             varrefp->varp()->valuep(initvaluep);
         }
     }
+    void visit(AstCReset* nodep) override {
+        iterateChildren(nodep);
+        if (!m_doNConst) return;
+        const AstBasicDType* const bdtypep = VN_CAST(nodep->dtypep()->skipRefp(), BasicDType);
+        if (!bdtypep) return;
+        if (!bdtypep->isZeroInit()) return;
+        AstConst* const newp = new AstConst{nodep->fileline(), V3Number{nodep, bdtypep}};
+        UINFO(9, "CRESET(0) => CONST(0) " << nodep);
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
     void visit(AstCvtArrayToArray* nodep) override {
         iterateChildren(nodep);
         // Handle the case where we have a stream operation inside a cast conversion

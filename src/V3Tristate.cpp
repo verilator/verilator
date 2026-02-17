@@ -1296,6 +1296,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     void visitAssign(AstNodeAssign* nodep) {
         VL_RESTORER(m_alhs);
         VL_RESTORER(m_currentStrength);
+        if (VN_IS(nodep->rhsp(), CReset)) return;
         if (m_graphing) {
             if (AstAssignW* assignWp = VN_CAST(nodep, AssignW)) {
                 if (assignWp->timingControlp() || assignWp->getLhsNetDelay()) return;
