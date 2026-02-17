@@ -1,29 +1,29 @@
-%Warning-UNUSEDSIGNAL: t/t_lint_unused_func_bad.v:14:53: Function variable is not used: 'not_used'
-                                                       : ... note: In instance 't'
-   14 | function automatic int unused_input_unused_func(int not_used);
-      |                                                     ^~~~~~~~
+%Warning-UNUSEDSIGNAL: t/t_lint_unused_func_bad.v:15:7: Function variable is not used: 'not_used'
+                                                      : ... note: In instance 't'
+   15 |   int not_used);   
+      |       ^~~~~~~~
                        ... For warning description see https://verilator.org/warn/UNUSEDSIGNAL?v=latest
                        ... Use "/* verilator lint_off UNUSEDSIGNAL */" and lint_on around source to disable this message.
-%Warning-UNDRIVEN: t/t_lint_unused_func_bad.v:20:7: Function variable is not driven: 'not_driven'
+%Warning-UNDRIVEN: t/t_lint_unused_func_bad.v:21:7: Function variable is not driven: 'not_driven'
                                                   : ... note: In instance 't'
-   20 |   int not_driven;
+   21 |   int not_driven;   
       |       ^~~~~~~~~~
                    ... For warning description see https://verilator.org/warn/UNDRIVEN?v=latest
                    ... Use "/* verilator lint_off UNDRIVEN */" and lint_on around source to disable this message.
-%Warning-UNDRIVEN: t/t_lint_unused_func_bad.v:25:7: Function variable is not driven: 'undriven_result'
+%Warning-UNDRIVEN: t/t_lint_unused_func_bad.v:26:7: Function variable is not driven: 'undriven_result'
                                                   : ... note: In instance 't'
-   25 |   int undriven_result;
+   26 |   int undriven_result;   
       |       ^~~~~~~~~~~~~~~
-%Warning-UNDRIVEN: t/t_lint_unused_func_bad.v:29:52: Function variable is not driven: 'undriven_out_param'
+%Warning-UNDRIVEN: t/t_lint_unused_func_bad.v:36:14: Function variable is not driven: 'undriven_out_param'
                                                    : ... note: In instance 't'
-   29 | function automatic void undriven_output(output int undriven_out_param);
-      |                                                    ^~~~~~~~~~~~~~~~~~
-%Warning-UNUSEDSIGNAL: t/t_lint_unused_func_bad.v:32:51: Function variable is not driven, nor used: 'untouched_inout_param'
+   36 |   output int undriven_out_param);   
+      |              ^~~~~~~~~~~~~~~~~~
+%Warning-UNUSEDSIGNAL: t/t_lint_unused_func_bad.v:40:13: Function variable is not driven, nor used: 'untouched_inout_param'
                                                        : ... note: In instance 't'
-   32 | function automatic void untouched_inout(inout int untouched_inout_param);
-      |                                                   ^~~~~~~~~~~~~~~~~~~~~
-%Warning-UNUSEDSIGNAL: t/t_lint_unused_func_bad.v:35:63: Function variable is not driven, nor used: 'untouched_inout_unused_func_param'
+   40 |   inout int untouched_inout_param);   
+      |             ^~~~~~~~~~~~~~~~~~~~~
+%Warning-UNUSEDSIGNAL: t/t_lint_unused_func_bad.v:44:13: Function variable is not driven, nor used: 'untouched_inout_unused_func_param'
                                                        : ... note: In instance 't'
-   35 | function automatic void untouched_inout_unused_func(inout int untouched_inout_unused_func_param);
-      |                                                               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   44 |   inout int untouched_inout_unused_func_param);   
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 %Error: Exiting due to
