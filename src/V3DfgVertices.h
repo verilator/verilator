@@ -465,6 +465,7 @@ class DfgLogic final : public DfgVertexVariadic {
     bool m_selectedForSynthesis = false;  // Logic selected for synthesis
     bool m_nonSynthesizable = false;  // Logic is not synthesizeable (by DfgSynthesis)
     bool m_reverted = false;  // Logic was synthesized (in part if non synthesizable) then reverted
+    mutable uint8_t m_cachedPure = 0;  // Cached purity of the logic
 
 public:
     DfgLogic(DfgGraph& dfg, AstAlways* nodep, AstScope* scopep, std::unique_ptr<CfgGraph> cfgp)
@@ -493,6 +494,16 @@ public:
     void setNonSynthesizable() { m_nonSynthesizable = true; }
     bool reverted() const { return m_reverted; }
     void setReverted() { m_reverted = true; }
+    // Logic has no side-effect, just computes its output variables based on its input variables
+    bool isPure() const {
+        if (!m_cachedPure) {
+            // This is a sledgehamer, but AstNodeStmts don't compute their 'purity' properly,
+            // not that 'purity' makes sense for statements... We don't call this often and cached.
+            const bool pure = m_nodep->forall([](AstNode* nodep) { return nodep->isPure(); });
+            m_cachedPure = static_cast<uint8_t>(pure) | 0x2;
+        }
+        return m_cachedPure & 0x01;
+    }
 };
 
 class DfgUnresolved final : public DfgVertexVariadic {

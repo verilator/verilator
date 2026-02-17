@@ -38,6 +38,9 @@ std::unique_ptr<DfgGraph> astToDfg(AstModule&, V3DfgContext&) VL_MT_DISABLED;
 // Same as above, but for the entire netlist, after V3Scope
 std::unique_ptr<DfgGraph> astToDfg(AstNetlist&, V3DfgContext&) VL_MT_DISABLED;
 
+// Remove unobservable variabels and logic that drives only such variables
+void removeUnobservable(DfgGraph&, V3DfgContext&) VL_MT_DISABLED;
+
 // Synthesize DfgLogic vertices into primitive operations.
 // Removes all DfgLogic (even those that were not synthesized).
 void synthesize(DfgGraph&, V3DfgContext&) VL_MT_DISABLED;

@@ -314,6 +314,10 @@ class DataflowOptimize final {
         // Dump the initial graph for debugging
         if (dumpDfgLevel() >= 8) dfg.dumpDotFilePrefixed(m_ctx.prefix() + "dfg-in");
 
+        // Remove unobservable variabels and logic that drives only such variables
+        V3DfgPasses::removeUnobservable(dfg, m_ctx);
+        if (dumpDfgLevel() >= 8) dfg.dumpDotFilePrefixed(m_ctx.prefix() + "pruned");
+
         // Synthesize DfgLogic vertices
         V3DfgPasses::synthesize(dfg, m_ctx);
         if (dumpDfgLevel() >= 8) dfg.dumpDotFilePrefixed(m_ctx.prefix() + "synth");

@@ -216,6 +216,27 @@ private:
         addStat("temporaries introduced", m_temporariesIntroduced);
     }
 };
+class V3DfgRemoveUnobservableContext final : public V3DfgSubContext {
+    // Only V3DfgContext can create an instance
+    friend class V3DfgContext;
+
+public:
+    // STATE
+    VDouble0 m_varsRemoved;  // Number of variables removed from the Dfg
+    VDouble0 m_varsDeleted;  // Number of variables removed from the Dfg and the Ast
+    VDouble0 m_logicRemoved;  // Number of logic blocks removed from the Dfg
+    VDouble0 m_logicDeleted;  // Number of logic blocks removed from the Dfg and the Ast
+
+private:
+    V3DfgRemoveUnobservableContext(V3DfgContext& ctx, const std::string& label)
+        : V3DfgSubContext{ctx, label, "RemoveUnobservable"} {}
+    ~V3DfgRemoveUnobservableContext() {
+        addStat("variables removed", m_varsRemoved);
+        addStat("variables deleted", m_varsDeleted);
+        addStat("logic removed", m_logicRemoved);
+        addStat("logic deleted", m_logicDeleted);
+    }
+};
 class V3DfgSynthesisContext final : public V3DfgSubContext {
     // Only V3DfgContext can create an instance
     friend class V3DfgContext;
@@ -366,6 +387,7 @@ public:
     V3DfgPeepholeContext m_peepholeContext{*this, m_label};
     V3DfgPushDownSelsContext m_pushDownSelsContext{*this, m_label};
     V3DfgRegularizeContext m_regularizeContext{*this, m_label};
+    V3DfgRemoveUnobservableContext m_removeUnobservableContext{*this, m_label};
     V3DfgSynthesisContext m_synthContext{*this, m_label};
 
     // Node pattern collector
