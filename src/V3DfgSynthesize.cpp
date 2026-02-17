@@ -1035,8 +1035,8 @@ class AstToDfgSynthesize final {
     // Merge 'thenSymTab' into 'elseSymTab' using the given predicate to join values
     bool joinSymbolTables(SymTab& elseSymTab, DfgVertexVar* predicatep, const SymTab& thenSymTab) {
         // Any variable that does not have a binding on both paths will be removed. These might be
-        // temporaries, loop vars, etc used only in one branch. Conversion will fail if the variable
-        // is actually referenced later.
+        // temporaries, loop vars, etc used only in one branch. Conversion will fail if the
+        // variable is actually referenced later.
         std::vector<Variable*> toRemove;
 
         // Join each symbol
