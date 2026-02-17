@@ -100,12 +100,12 @@ endmodule
 module t(input clk);
   function static func_stat;
     input logic in;
-    logic tmp = in;
+    /*static*/ logic tmp = in;
   endfunction
 
   task static task_stat;
     input logic in;
-    logic tmp = in;
+    /*static*/ logic tmp = in;
   endtask
 
   function automatic func_auto_with_static;
