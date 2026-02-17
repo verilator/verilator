@@ -6,14 +6,14 @@
 
 module t;
 
-   initial begin
-      // This test is separate from t_wait.v because we needed a process with
-      // just one wait of a non-zero to see a bug where GCC gave "return value
-      // not used"
-      // verilator lint_off WAITCONST
-      wait (1);
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    // This test is separate from t_wait.v because we needed a process with
+    // just one wait of a non-zero to see a bug where GCC gave "return value
+    // not used"
+    // verilator lint_off WAITCONST
+    wait (1);
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

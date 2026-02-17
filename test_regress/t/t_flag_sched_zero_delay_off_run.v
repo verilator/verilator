@@ -14,7 +14,7 @@ module top;
       $display("%02t tick", $time);
       ++n;
       if (n > 5) begin
-        #0; // Will not execute
+        #0;  // Will not execute
         $stop;
       end
     end

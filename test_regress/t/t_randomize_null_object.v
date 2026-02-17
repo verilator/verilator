@@ -12,7 +12,7 @@
 
 class SimpleRandClass;
   rand bit [7:0] value;
-  constraint value_con { value > 0 && value < 200; }
+  constraint value_con {value > 0 && value < 200;}
   function new();
   endfunction
 endclass

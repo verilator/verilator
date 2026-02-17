@@ -4,8 +4,10 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define stop $stop
-`define check(got ,exp) do if ((got) !== (exp)) begin $write("%%Error: %s:%0d: got='h%x exp='h%x\n", `__FILE__,`__LINE__, (got), (exp)); `stop; end while(0)
+`define check(got,exp) do if ((got) !== (exp)) begin $write("%%Error: %s:%0d: got='h%x exp='h%x\n", `__FILE__,`__LINE__, (got), (exp)); `stop; end while(0)
+// verilog_format: on
 
 module t;
 
@@ -14,7 +16,7 @@ module t;
     dpiSet = value;
   endfunction
   export "DPI-C" function setDpi;
-  import "DPI-C" context function void setViaDpi(int value); // calls setDpi(value)
+  import "DPI-C" context function void setViaDpi(int value);  // calls setDpi(value)
 
   initial begin
     dpiSet = 13;

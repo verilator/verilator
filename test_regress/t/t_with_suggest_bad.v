@@ -8,14 +8,14 @@
 
 module t;
 
-   initial begin
-      int q[$];
-      int qv[$];  // Value returns
-      q = '{1, 2, 2, 4, 3};
+  initial begin
+    int q[$];
+    int qv[$];  // Value returns
+    q = '{1, 2, 2, 4, 3};
 
-      qv = q.find with (itemm == 2);
+    qv = q.find with (itemm == 2);
 
-      qv = q.find(misspelled) with (misspelledd == 2);
-   end
+    qv = q.find(misspelled) with (misspelledd == 2);
+  end
 
 endmodule

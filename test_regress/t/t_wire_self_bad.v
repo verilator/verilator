@@ -8,6 +8,6 @@
 
 module t;
 
-   wire myself = myself;
+  wire myself = myself;
 
 endmodule

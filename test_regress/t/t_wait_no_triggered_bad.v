@@ -6,16 +6,16 @@
 
 module t;
 
-   event e_my_event;
+  event e_my_event;
 
-   initial begin
-      #(1us);
-      wait(e_my_event.triggered);  // Ok
-      #(1us);
-      wait(e_my_event);  // Bad
+  initial begin
+    #(1us);
+    wait (e_my_event.triggered);  // Ok
+    #(1us);
+    wait (e_my_event);  // Bad
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

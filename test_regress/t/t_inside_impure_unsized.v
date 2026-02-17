@@ -20,16 +20,16 @@ module t;
   initial begin
     str_arr["test"] = 25;
     str_key = "test";
-    if (!(str_arr[str_key] inside {[10:50]})) $stop;
-    if (str_arr[str_key] inside {[100:200]}) $stop;
+    if (!(str_arr[str_key] inside {[10 : 50]})) $stop;
+    if (str_arr[str_key] inside {[100 : 200]}) $stop;
 
     int_arr[0] = 25;
     int_key = 0;
-    if (!(int_arr[int_key] inside {[10:50]})) $stop;
-    if (int_arr[int_key] inside {[100:200]}) $stop;
+    if (!(int_arr[int_key] inside {[10 : 50]})) $stop;
+    if (int_arr[int_key] inside {[100 : 200]}) $stop;
 
-    if (!(get_val() inside {[10:50]})) $stop;
-    if (get_val() inside {[100:200]}) $stop;
+    if (!(get_val() inside {[10 : 50]})) $stop;
+    if (get_val() inside {[100 : 200]}) $stop;
 
     $write("*-* All Finished *-*\n");
     $finish;

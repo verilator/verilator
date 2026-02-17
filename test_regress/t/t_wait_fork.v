@@ -6,20 +6,24 @@
 
 module t;
 
-   logic never;
+  logic never;
 
-   integer n = 0;
+  integer n = 0;
 
-   initial begin
-      disable fork;
-      fork
-         #10 if (n != 0) $stop; else n = 1;
-         #15 if (n != 1) $stop; else n = 2;
-      join_none
-      wait fork;
-      if (n != 2) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    disable fork;
+    fork
+      #10
+      if (n != 0) $stop;
+      else n = 1;
+      #15
+      if (n != 1) $stop;
+      else n = 2;
+    join_none
+    wait fork;
+    if (n != 2) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

@@ -16,17 +16,17 @@
 class UniqueElemSubset;
   rand bit [3:0] arr[10];
 
-  constraint unique_subset_con {
-    unique { arr[2], arr[3], arr[4], arr[5], arr[6] };
-  }
+  constraint unique_subset_con {unique {arr[2], arr[3], arr[4], arr[5], arr[6]};}
 
   function new();
   endfunction
 
   function bit check_unique();
-    for (int i = 2; i <= 6; i++)
-      for (int j = i + 1; j <= 6; j++)
+    for (int i = 2; i <= 6; i++) begin
+      for (int j = i + 1; j <= 6; j++) begin
         if (arr[i] == arr[j]) return 0;
+      end
+    end
     return 1;
   endfunction
 endclass
@@ -34,17 +34,17 @@ endclass
 class UniqueElemFour;
   rand bit [3:0] data[8];
 
-  constraint unique_data_con {
-    unique { data[1], data[2], data[3], data[4] };
-  }
+  constraint unique_data_con {unique {data[1], data[2], data[3], data[4]};}
 
   function new();
   endfunction
 
   function bit check_unique();
-    for (int i = 1; i <= 4; i++)
-      for (int j = i + 1; j <= 4; j++)
+    for (int i = 1; i <= 4; i++) begin
+      for (int j = i + 1; j <= 4; j++) begin
         if (data[i] == data[j]) return 0;
+      end
+    end
     return 1;
   endfunction
 endclass
@@ -52,9 +52,7 @@ endclass
 class UniqueElemSingle;
   rand bit [3:0] val[4];
 
-  constraint unique_single_con {
-    unique { val[0] };
-  }
+  constraint unique_single_con {unique {val[0]};}
 
   function new();
   endfunction

@@ -9,50 +9,47 @@
 
 `define STRINGIFY(x) `"x`"
 
-module top
-  (
-   input             clk,
-   input             rst,
-   input [31:0]      trace_number,
-   input             stop,
-   output bit [31:0] counter,
-   output bit        done_o
-   );
+module top (
+    input clk,
+    input rst,
+    input [31:0] trace_number,
+    input stop,
+    output bit [31:0] counter,
+    output bit done_o
+);
 
-   initial begin
-      string number;
-      string filename;
-      number.itoa(trace_number);
+  initial begin
+    string number;
+    string filename;
+    number.itoa(trace_number);
 `ifdef TRACE_FST
-      filename = {`STRINGIFY(`TEST_OBJ_DIR), "/trace", number, ".fst"};
+    filename = {`STRINGIFY(`TEST_OBJ_DIR), "/trace", number, ".fst"};
 `else
-      filename = {`STRINGIFY(`TEST_OBJ_DIR), "/trace", number, ".vcd"};
+    filename = {`STRINGIFY(`TEST_OBJ_DIR), "/trace", number, ".vcd"};
 `endif
-      $display("Writing dumpfile '%s'", filename);
-      $dumpfile(filename);
-      $dumpvars();
-   end
+    $display("Writing dumpfile '%s'", filename);
+    $dumpfile(filename);
+    $dumpvars();
+  end
 
-   always@(posedge clk) begin
-      if (rst)
-        counter <= 0;
-      else
-        counter <= counter + 1;
-   end
-   always_comb begin
-      done_o = '0;
-      if (stop) begin
-         if (counter >= 5 && stop) begin
-            done_o = '1;
-            $stop;
-         end
+  always @(posedge clk) begin
+    if (rst) counter <= 0;
+    else counter <= counter + 1;
+  end
+  always_comb begin
+    done_o = '0;
+    if (stop) begin
+      if (counter >= 5 && stop) begin
+        done_o = '1;
+        $stop;
       end
-      else begin
-         if (counter >= 10) begin
-            done_o = '1;
-            $finish;
-         end
+    end
+    else begin
+      if (counter >= 10) begin
+        done_o = '1;
+        $finish;
       end
-   end
+    end
+  end
 
 endmodule

@@ -17,9 +17,9 @@ module t (
   integer cyc = 0;
 
   typedef struct {
-    int   x;
+    int x;
     logic y;
-    int  arr[5];
+    int arr[5];
   } struct_t;
 
   struct_t s_array[3];

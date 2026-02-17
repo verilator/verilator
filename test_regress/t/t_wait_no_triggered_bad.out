@@ -1,7 +1,7 @@
-%Error: t/t_wait_no_triggered_bad.v:15:12: Wait statement conditions do not take raw events (IEEE 1800-2023 15.5.3)
+%Error: t/t_wait_no_triggered_bad.v:15:11: Wait statement conditions do not take raw events (IEEE 1800-2023 15.5.3)
                                          : ... note: In instance 't'
                                          : ... Suggest use 'e_my_event.triggered'
-   15 |       wait(e_my_event);   
-      |            ^~~~~~~~~~
+   15 |     wait (e_my_event);   
+      |           ^~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

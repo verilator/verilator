@@ -15,22 +15,22 @@
 module t;
 
   typedef enum bit [2:0] {
-    RED   = 0,
+    RED = 0,
     GREEN = 1,
-    BLUE  = 2,
+    BLUE = 2,
     WHITE = 3,
     BLACK = 4
   } color_t;
 
   class ColorClass;
     randc color_t color;
-    constraint c_no_dark { color != BLACK; }
+    constraint c_no_dark {color != BLACK;}
   endclass
 
   // Test with all enum values allowed (no exclusion constraint)
   class AllColorsClass;
     randc color_t color;
-    constraint c_range { color <= WHITE; }
+    constraint c_range {color <= WHITE;}
   endclass
 
   initial begin

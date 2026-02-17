@@ -1,6 +1,6 @@
-%Warning-CONSTRAINTIGN: t/t_constraint_non_const_exp_pow_unsup.v:11:26: Unsupported: Power (**) expression with non-constant exponent in constraint
-   11 |   constraint c_power { x ** y < 10000; }
-      |                          ^~
+%Warning-CONSTRAINTIGN: t/t_constraint_non_const_exp_pow_unsup.v:11:25: Unsupported: Power (**) expression with non-constant exponent in constraint
+   11 |   constraint c_power {x ** y < 10000;}
+      |                         ^~
                         ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
                         ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
 %Error: Exiting due to

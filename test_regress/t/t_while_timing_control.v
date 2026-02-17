@@ -4,21 +4,21 @@
 // SPDX-FileCopyrightText: 2022 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
-module t();
-   logic clk = 0;
-   logic out = 1;
+module t;
+  logic clk = 0;
+  logic out = 1;
 
-   always #5 clk = ~clk;
+  always #5 clk = ~clk;
 
-   initial begin
-      while(1) begin
-         if(out) begin
-            break;
-         end
-         @(negedge clk);
+  initial begin
+    while (1) begin
+      if (out) begin
+        break;
       end
+      @(negedge clk);
+    end
 
-      $write("*-* All Finished *-*\n");
-      $finish();
-   end
+    $write("*-* All Finished *-*\n");
+    $finish();
+  end
 endmodule

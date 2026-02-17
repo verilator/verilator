@@ -28,8 +28,8 @@ module t;
   reg clk, reset;
   wire done;
   s dut (
-      .clk  (clk),
-      .rdy  (done),
+      .clk(clk),
+      .rdy(done),
       .reset(reset)
   );
   always #5 clk = !clk;

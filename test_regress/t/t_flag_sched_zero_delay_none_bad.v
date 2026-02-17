@@ -10,7 +10,7 @@ module top;
   int a = 1;
   initial begin
     #a;
-    a=2;
+    a = 2;
     #a;
   end
 endmodule
