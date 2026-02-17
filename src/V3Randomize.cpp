@@ -3338,6 +3338,34 @@ class RandomizeVisitor final : public VNVisitor {
                 }
             }
             randomizep->addStmtsp(implementConstraintsClear(fl, genp));
+
+            // Restrict enum variables in solver to valid members only
+            {
+                AstNodeModule* const genModp = VN_AS(genp->user2p(), NodeModule);
+                nodep->foreachMember([&](AstClass*, AstVar* memberVarp) {
+                    if (!memberVarp->user3()) return;
+                    AstEnumDType* const enumDtp
+                        = VN_CAST(memberVarp->dtypep()->skipRefToEnump(), EnumDType);
+                    if (!enumDtp) return;
+                    const int width = enumDtp->width();
+                    const std::string smtName = memberVarp->name();
+                    std::string constraint = "(__Vbv (or";
+                    for (AstEnumItem* itemp = enumDtp->itemsp(); itemp;
+                         itemp = VN_AS(itemp->nextp(), EnumItem)) {
+                        const AstConst* const vconstp = VN_AS(itemp->valuep(), Const);
+                        constraint += " (= " + smtName + " (_ bv" + cvtToStr(vconstp->toUInt())
+                                      + " " + cvtToStr(width) + "))";
+                    }
+                    constraint += "))";
+                    AstCMethodHard* const callp = new AstCMethodHard{
+                        fl, new AstVarRef{fl, genModp, genp, VAccess::READWRITE},
+                        VCMethod::RANDOMIZER_HARD,
+                        new AstCExpr{fl, AstCExpr::Pure{}, "\"" + constraint + "\""}};
+                    callp->dtypeSetVoid();
+                    randomizep->addStmtsp(callp->makeStmt());
+                });
+            }
+
             AstTask* setupAllTaskp = getCreateConstraintSetupFunc(nodep);
             AstTaskRef* const setupTaskRefp = new AstTaskRef{fl, setupAllTaskp, nullptr};
             randomizep->addStmtsp(setupTaskRefp->makeStmt());
