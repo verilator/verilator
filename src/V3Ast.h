@@ -781,6 +781,11 @@ public:
     AstNodeDType* findVoidDType() const;
     AstNodeDType* findBitDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findLogicDType(int width, int widthMin, VSigning numeric) const;
+    AstNodeDType* findBitOrLogicDType(int width, int widthMin, VSigning numeric,
+                                      bool isFourstate) const {
+        return isFourstate ? findLogicDType(width, widthMin, numeric)
+                           : findBitDType(width, widthMin, numeric);
+    }
     AstNodeDType* findLogicRangeDType(const VNumRange& range, int widthMin,
                                       VSigning numeric) const VL_MT_STABLE;
     AstNodeDType* findBitRangeDType(const VNumRange& range, int widthMin,
