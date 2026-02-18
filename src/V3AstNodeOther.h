@@ -2057,6 +2057,10 @@ public:
     }
     VDirection direction() const VL_MT_SAFE { return m_direction; }
     bool isIO() const VL_MT_SAFE { return m_direction != VDirection::NONE; }
+    bool isVLIO() const {
+        const AstBasicDType* const bdtypep = basicp();
+        return isPrimaryIO() && bdtypep && !bdtypep->isOpaque();
+    }
     void declDirection(const VDirection& flag) { m_declDirection = flag; }
     VDirection declDirection() const { return m_declDirection; }
     void varType(VVarType type) { m_varType = type; }
@@ -2075,7 +2079,7 @@ public:
     string dpiTmpVarType(const string& varName) const;
     // Return Verilator internal type for argument: CData, SData, IData, WData
     string vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc = "",
-                     bool asRef = false) const;
+                     bool asRef = false, bool constRef = false) const;
     string vlEnumType() const;  // Return VerilatorVarType: VLVT_UINT32, etc
     string vlEnumDir() const;  // Return VerilatorVarDir: VLVD_INOUT, etc
     string vlPropDecl(const string& propName) const;  // Return VerilatorVarProps declaration
