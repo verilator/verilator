@@ -40,6 +40,7 @@
 #include "V3FileLine.h"
 #include "V3Global.h"
 #include "V3MemberMap.h"
+#include "V3Task.h"
 #include "V3UniqueNames.h"
 
 #include <queue>
@@ -863,35 +864,29 @@ class ConstraintExprVisitor final : public VNVisitor {
         return selp;
     }
 
-    // Extract return expression from a simple function body, or nullptr if too complex
+    // Extract return expression from a simple function body, or nullptr if too complex.
+    // Uses foreach to walk all assigns regardless of body organization (JumpBlock nesting etc.).
+    // Takes the last assignment to the return variable -- the first is the initializer.
     AstNodeExpr* extractReturnExpr(AstFunc* funcp) {
         AstVar* const retVarp = VN_CAST(funcp->fvarp(), Var);
         if (!retVarp) return nullptr;
-
         AstNodeExpr* retExprp = nullptr;
-        for (AstNode* stmtp = funcp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            AstJumpBlock* const jblockp = VN_CAST(stmtp, JumpBlock);
-            if (!jblockp) continue;
-            int assignCount = 0;
-            for (AstNode* innerp = jblockp->stmtsp(); innerp; innerp = innerp->nextp()) {
-                AstAssign* const assignp = VN_CAST(innerp, Assign);
-                if (!assignp) continue;
-                AstVarRef* const lhsp = VN_CAST(assignp->lhsp(), VarRef);
-                if (!lhsp || lhsp->varp() != retVarp) continue;
-                if (VN_IS(assignp->rhsp(), CReset)) continue;
-                retExprp = assignp->rhsp();
-                ++assignCount;
-            }
-            if (assignCount > 1) return nullptr;  // Multiple return paths
-        }
+        int assignCount = 0;
+        funcp->foreach([&](AstAssign* assignp) {
+            AstVarRef* const lhsp = VN_CAST(assignp->lhsp(), VarRef);
+            if (!lhsp || lhsp->varp() != retVarp) return;
+            retExprp = assignp->rhsp();
+            ++assignCount;
+        });
+        // Simple function: initializer + return (2) or just return (1)
+        if (assignCount > 2 || !retExprp) return nullptr;
         return retExprp;
     }
 
     // Bottom-up user1 propagation on inlined expression tree
-    void propagateUser1Inline(AstNodeExpr* nodep) {
+    void propagateUser1InlineRecurse(AstNodeExpr* nodep) {
         if (VN_IS(nodep, NodeVarRef)) {
-            AstNodeVarRef* const refp = VN_AS(nodep, NodeVarRef);
-            nodep->user1(refp->varp()->rand().isRandomizable());
+            nodep->user1(VN_AS(nodep, NodeVarRef)->varp()->rand().isRandomizable());
             return;
         }
         if (VN_IS(nodep, Const)) {
@@ -899,16 +894,21 @@ class ConstraintExprVisitor final : public VNVisitor {
             return;
         }
         bool anyChild = false;
-        for (int i = 1; i <= 4; ++i) {
-            AstNode* const childp = (i == 1)   ? nodep->op1p()
-                                    : (i == 2) ? nodep->op2p()
-                                    : (i == 3) ? nodep->op3p()
-                                               : nodep->op4p();
-            if (!childp) continue;
-            if (AstNodeExpr* const exprp = VN_CAST(childp, NodeExpr)) {
-                propagateUser1Inline(exprp);
-                anyChild |= exprp->user1();
-            }
+        if (AstNodeExpr* const cp = VN_CAST(nodep->op1p(), NodeExpr)) {
+            propagateUser1InlineRecurse(cp);
+            anyChild |= cp->user1();
+        }
+        if (AstNodeExpr* const cp = VN_CAST(nodep->op2p(), NodeExpr)) {
+            propagateUser1InlineRecurse(cp);
+            anyChild |= cp->user1();
+        }
+        if (AstNodeExpr* const cp = VN_CAST(nodep->op3p(), NodeExpr)) {
+            propagateUser1InlineRecurse(cp);
+            anyChild |= cp->user1();
+        }
+        if (AstNodeExpr* const cp = VN_CAST(nodep->op4p(), NodeExpr)) {
+            propagateUser1InlineRecurse(cp);
+            anyChild |= cp->user1();
         }
         nodep->user1(anyChild);
     }
@@ -1883,12 +1883,12 @@ class ConstraintExprVisitor final : public VNVisitor {
         nodep->v3fatalSrc("Method not handled in constraints? " << nodep);
     }
     void visit(AstNodeFTaskRef* nodep) override {
-        // Inline function calls with random args into SMT (IEEE 1800-2017 18.5)
         if (editFormat(nodep)) return;
 
         AstFunc* const funcp = VN_CAST(nodep->taskp(), Func);
         if (!funcp) {
-            // Tasks have no return value — cannot appear in constraint expressions
+            // Tasks have no return value and can't appear in expressions.
+            // Parser rejects this, so reaching here indicates a compiler bug.
             nodep->v3fatalSrc("Unexpected task call in constraint expression");
             return;
         }
@@ -1902,32 +1902,26 @@ class ConstraintExprVisitor final : public VNVisitor {
             return;
         }
 
-        // Map formal parameters to actual arguments
-        std::map<const AstVar*, AstNodeExpr*> paramMap;
-        {
-            AstNode* argp = nodep->pinsp();
-            for (AstNode* stmtp = funcp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                AstVar* const parp = VN_CAST(stmtp, Var);
-                if (!parp || !parp->isNonOutput()) continue;
-                AstArg* const aargp = VN_CAST(argp, Arg);
-                if (aargp && aargp->exprp()) paramMap[parp] = aargp->exprp();
-                if (argp) argp = argp->nextp();
-            }
-        }
+        // Map formal parameters to actual arguments using V3Task infrastructure
+        const V3TaskConnects tconnects
+            = V3Task::taskConnects(nodep, funcp->stmtsp(), nullptr, false);
 
         // Clone return expression, substitute params with args
         AstNodeExpr* const inlinedp = retExprp->cloneTreePure(false);
-        inlinedp->foreach([&](AstVarRef* refp) {
-            const auto it = paramMap.find(refp->varp());
-            if (it != paramMap.end()) {
-                AstNodeExpr* const substp = it->second->cloneTreePure(false);
-                refp->replaceWith(substp);
-                VL_DO_DANGLING(refp->deleteTree(), refp);
-            }
-        });
+        for (const auto& tconnect : tconnects) {
+            const AstVar* const portp = tconnect.first;
+            AstArg* const argp = tconnect.second;
+            if (!argp || !argp->exprp()) continue;
+            inlinedp->foreach([&](AstVarRef* refp) {
+                if (refp->varp() == portp) {
+                    refp->replaceWith(argp->exprp()->cloneTreePure(false));
+                    VL_DO_DANGLING(refp->deleteTree(), refp);
+                }
+            });
+        }
 
         inlinedp->dtypep(nodep->dtypep());
-        propagateUser1Inline(inlinedp);
+        propagateUser1InlineRecurse(inlinedp);
         nodep->replaceWith(inlinedp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         iterate(inlinedp);
