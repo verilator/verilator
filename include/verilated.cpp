@@ -160,6 +160,7 @@ void vl_finish(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE
 #ifndef VL_USER_STOP  ///< Define this to override the vl_stop function
 void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
     // $stop or $fatal reporting; would break current API to add param as to which
+    if (Verilated::threadContextp()->gotFinish()) return;
     const char* const msg = "Verilog $stop";
     Verilated::threadContextp()->gotError(true);
     Verilated::threadContextp()->gotFinish(true);

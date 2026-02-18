@@ -74,6 +74,7 @@
 #include "V3Stats.h"
 #include "V3UniqueNames.h"
 
+#include <limits>
 #include <queue>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -627,9 +628,10 @@ class TimingControlVisitor final : public VNVisitor {
     // Returns true if the given trigger expression needs a destructive post update after trigger
     // evaluation. Currently this only applies to named events.
     bool destructivePostUpdate(AstNode* const exprp) const {
-        return exprp->exists([](const AstNodeVarRef* const refp) {
-            AstBasicDType* const dtypep = refp->dtypep()->basicp();
-            return dtypep && dtypep->isEvent();
+        return exprp->exists([](const AstNode* const nodep) {
+            const AstNodeDType* const dtypep = nodep->dtypep();
+            const AstBasicDType* const basicp = dtypep ? dtypep->skipRefp()->basicp() : nullptr;
+            return basicp && basicp->isEvent();
         });
     }
     // Creates a trigger scheduler variable
@@ -933,21 +935,28 @@ class TimingControlVisitor final : public VNVisitor {
             valuep = new AstConst{flp, AstConst::Unsized64{}, 1};
             valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
         } else {
-            // Scale the delay
-            const double timescaleFactorD = calculateTimescaleFactor(nodep, nodep->timeunit());
-            if (valuep->dtypep()->skipRefp()->isDouble()) {
-                AstConst* const tsfp = new AstConst{flp, AstConst::RealDouble{}, timescaleFactorD};
-                valuep = new AstMulD{flp, valuep, tsfp};
-                valuep = new AstRToIRoundS{flp, valuep};
-                valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
-            } else {
-                valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
-                const uint64_t timescaleFactorU = static_cast<uint64_t>(timescaleFactorD);
-                AstConst* const tsfp = new AstConst{flp, AstConst::Unsized64{}, timescaleFactorU};
-                valuep = new AstMul{flp, valuep, tsfp};
+            AstConst* const constp = VN_CAST(valuep, Const);
+            const bool isForkSentinel
+                = constp && (constp->toUQuad() == std::numeric_limits<uint64_t>::max());
+            if (!isForkSentinel && (!constp || !constp->isZero())) {
+                // Scale the delay
+                const double timescaleFactorD = calculateTimescaleFactor(nodep, nodep->timeunit());
+                if (valuep->dtypep()->skipRefp()->isDouble()) {
+                    AstConst* const tsfp
+                        = new AstConst{flp, AstConst::RealDouble{}, timescaleFactorD};
+                    valuep = new AstMulD{flp, valuep, tsfp};
+                    valuep = new AstRToIRoundS{flp, valuep};
+                    valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
+                } else {
+                    valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
+                    const uint64_t timescaleFactorU = static_cast<uint64_t>(timescaleFactorD);
+                    AstConst* const tsfp
+                        = new AstConst{flp, AstConst::Unsized64{}, timescaleFactorU};
+                    valuep = new AstMul{flp, valuep, tsfp};
+                }
+                // Simplify
+                valuep = V3Const::constifyEdit(valuep);
             }
-            // Simplify
-            valuep = V3Const::constifyEdit(valuep);
         }
 
         // Statistics

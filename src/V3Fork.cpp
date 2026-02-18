@@ -47,6 +47,7 @@
 #include "V3AstNodeExpr.h"
 #include "V3MemberMap.h"
 
+#include <limits>
 #include <set>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -90,7 +91,7 @@ public:
         m_instance.m_handlep
             = new AstVar{m_procp->fileline(), VVarType::BLOCKTEMP,
                          generateDynScopeHandleName(m_procp), m_instance.m_refDTypep};
-        m_instance.m_handlep->funcLocal(true);
+        m_instance.m_handlep->funcLocal(false);
         m_instance.m_handlep->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         UINFO(9, "new dynscope var " << m_instance.m_handlep);
 
@@ -336,12 +337,14 @@ class DynScopeVisitor final : public VNVisitor {
     }
 
     bool needsDynScope(const AstVarRef* refp) const {
+        const AstVar* const varp = refp->varp();
+        const bool localLifetime = varp->isFuncLocal() || varp->lifetime().isAutomatic();
         return
             // Can this variable escape the scope
-            ((m_forkDepth > refp->varp()->user1()) && refp->varp()->isFuncLocal())
+            ((m_forkDepth > varp->user1()) && localLifetime)
             && (
                 // Is it mutated
-                (refp->varp()->isClassHandleValue() ? refp->user2() : refp->access().isWriteOrRW())
+                (varp->isClassHandleValue() ? refp->user2() : refp->access().isWriteOrRW())
                 // Or is it after a timing-control event
                 || m_afterTimingControl);
     }
@@ -527,11 +530,6 @@ class ForkVisitor final : public VNVisitor {
     AstVar* m_capturedVarsp = nullptr;  // Local copies of captured variables
     AstArg* m_capturedArgsp = nullptr;  // References to captured variables (as args)
 
-    // STATE - across all visitors
-    AstClass* m_processClassp = nullptr;
-    AstFunc* m_statusMethodp = nullptr;
-    VMemberMap m_memberMap;  // for lookup of process class methods
-
     // METHODS
     AstVar* capture(AstVarRef* refp) {
         AstVar* varp = nullptr;
@@ -585,19 +583,6 @@ class ForkVisitor final : public VNVisitor {
         return true;
     }
 
-    AstClass* getProcessClassp() {
-        if (!m_processClassp)
-            m_processClassp
-                = VN_AS(m_memberMap.findMember(v3Global.rootp()->stdPackagep(), "process"), Class);
-        return m_processClassp;
-    }
-
-    AstFunc* getStatusmethodp() {
-        if (m_statusMethodp == nullptr)
-            m_statusMethodp = VN_AS(m_memberMap.findMember(getProcessClassp(), "status"), Func);
-        return m_statusMethodp;
-    }
-
     // VISITORS
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
@@ -624,24 +609,16 @@ class ForkVisitor final : public VNVisitor {
         if (nodep->joinType().joinNone()) {
             UINFO(9, "Visiting fork..join_none " << nodep);
             FileLine* fl = nodep->fileline();
-            AstVarRef* forkParentrefp = nodep->parentProcessp();
-
-            if (forkParentrefp) {  // Forks created by V3Fork will not have this
-                for (AstBegin *itemp = nodep->forksp(), *nextp; itemp; itemp = nextp) {
-                    nextp = VN_AS(itemp->nextp(), Begin);
-                    if (!itemp->stmtsp()) continue;
-                    AstMethodCall* const statusCallp = new AstMethodCall{
-                        fl, forkParentrefp->cloneTree(false), "status", nullptr};
-                    statusCallp->taskp(getStatusmethodp());
-                    statusCallp->classOrPackagep(getProcessClassp());
-                    statusCallp->dtypep(getStatusmethodp()->dtypep());
-                    AstNeq* const condp
-                        = new AstNeq{fl, statusCallp,
-                                     new AstConst{fl, AstConst::WidthedValue{},
-                                                  getStatusmethodp()->dtypep()->width(), 1}};
-                    AstWait* const waitStmt = new AstWait{fl, condp, nullptr};
-                    itemp->stmtsp()->addHereThisAsNext(waitStmt);
-                }
+            // We use a sentinel value of UINT64_MAX to mark this delay so that it goes to the
+            // ACTIVE region with a delay value of 0.
+            for (AstBegin *itemp = nodep->forksp(), *nextp; itemp; itemp = nextp) {
+                nextp = VN_AS(itemp->nextp(), Begin);
+                if (!itemp->stmtsp()) continue;
+                AstDelay* const delayp = new AstDelay{
+                    fl,
+                    new AstConst{fl, AstConst::Unsized64{}, std::numeric_limits<uint64_t>::max()},
+                    false};
+                itemp->stmtsp()->addHereThisAsNext(delayp);
             }
         }
 

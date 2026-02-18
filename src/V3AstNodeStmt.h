@@ -1421,7 +1421,6 @@ class AstFork final : public AstNodeBlock {
     // be executed sequentially within each fork branch.
     //
     // @astgen op3 := forksp : List[AstBegin]
-    // @astgen op4 := parentProcessp : Optional[AstVarRef]
     const VJoinType m_joinType;  // Join keyword type
 public:
     AstFork(FileLine* fl, VJoinType joinType, const string& name = "")
