@@ -274,6 +274,8 @@ private:
         UASSERT_OBJ(
             !(v3Global.assertScoped() && m_inScope && nodep->varp() && !nodep->varScopep()), nodep,
             "VarRef missing VarScope pointer");
+        UASSERT_OBJ(!v3Global.assertScoped() || !nodep->classOrPackagep(), nodep,
+                    "VarRef classOrPackagep must be nullptr after V3Scope");
         if (m_cfuncp) {
             // Check if variable is an in-scope local, otherwise mark as suspect
             if (const AstVar* const varp = nodep->varp()) {
