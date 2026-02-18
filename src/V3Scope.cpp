@@ -72,6 +72,7 @@ class ScopeVisitor final : public VNVisitor {
                 UASSERT_OBJ(it2 != m_classOrPackageScopes.end(), nodep,
                             "Can't locate class or package scope");
                 scopep = it2->second;
+                nodep->classOrPackagep(nullptr);
             }
             // Search up the scope hierarchy for the variable
             AstVarScope* varscp = nullptr;
