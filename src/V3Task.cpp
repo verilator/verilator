@@ -1015,7 +1015,7 @@ class TaskVisitor final : public VNVisitor {
         // Return value argument goes last
         if (rtnvarp) addFuncArg(rtnvarp);
         // Close statement
-        callp->add("); });\n");  // Close callback, close lambda, close awaitExport
+        callp->add("); }());\n");  // Close callback, close lambda, close awaitExport
         // Call the user function
         funcp->addStmtsp(callp);
 
@@ -1242,7 +1242,7 @@ class TaskVisitor final : public VNVisitor {
 
                 // Now add the callImport wrapper to the function
                 // Use regular return since this is not a coroutine itself, just returns one
-                string stmt = "return VerilatedDpi::callImport([&]() { ";
+                string stmt = "co_await VerilatedDpi::callImport([&]() { ";
                 if (rtnvscp) stmt += "return ";
                 stmt += dpiFuncp->name() + "(" + args + ");";
                 stmt += " });\n";
