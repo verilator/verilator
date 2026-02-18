@@ -307,9 +307,6 @@ class TimingSuspendableVisitor final : public VNVisitor {
         m_procp = nodep;
         iterateChildren(nodep);
         if (nodep->needProcess()) addFlags(nodep, T_FORCES_PROC | T_NEEDS_PROC);
-        // Functions returning VlCoroutine should be marked as suspendable
-        // so callers know to co_await them
-        if (nodep->isCoroutine()) addFlags(nodep, T_SUSPENDEE);
         DepVtx* const sVxp = getSuspendDepVtx(nodep);
         DepVtx* const pVxp = getNeedsProcDepVtx(nodep);
         if (!m_classp) return;
@@ -970,9 +967,6 @@ class TimingControlVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (hasFlags(nodep, T_HAS_PROC)) nodep->setNeedProcess();
         if (!(hasFlags(nodep, T_SUSPENDEE))) return;
-        
-        // If the function already returns VlCoroutine (e.g., DPI wrapper), skip transformation
-        if (nodep->isCoroutine()) return;
 
         nodep->rtnType("VlCoroutine");
         // If in a class, create a shared pointer to 'this'
@@ -983,6 +977,15 @@ class TimingControlVisitor final : public VNVisitor {
             } else {
                 nodep->addStmtsp(cstmtp);
             }
+        }
+        if (nodep->dpiExportImpl()) {
+            nodep->exists([](AstCAwait* const awaitp) -> bool {
+                // A DPI-exported coroutine won't be able to block the calling code
+                // Error on the await node; fall back to the function node
+                awaitp->v3warn(E_UNSUPPORTED,
+                               "Unsupported: Timing controls inside DPI-exported tasks");
+                return true;
+            });
         }
     }
     void visit(AstNodeCCall* nodep) override {

@@ -9,10 +9,12 @@
 
 import vltest_bootstrap
 
-test.scenarios('linter')
+test.scenarios("simulator")
 test.top_filename = "t/t_timing_dpi.v"
 
-test.compile(v_flags2=["t/t_timing_dpi.c"], verilator_flags2=["--binary", "--trace-fst"])
+test.compile(
+    v_flags2=["t/t_timing_dpi.c"], verilator_flags2=["--binary", "--trace-fst"]
+)
 
 test.execute(expect_filename=test.golden_filename)
 

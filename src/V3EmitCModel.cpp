@@ -682,8 +682,6 @@ class EmitCModel final : public EmitCFunc {
                 puts("#include \"" + EmitCUtil::topClassName() + ".h\"\n");
                 puts("#include \"" + EmitCUtil::symClassName() + ".h\"\n");
                 puts("#include \"verilated_dpi.h\"\n");
-                // Always include fiber header for DPI exports (awaitExport is no-op without timing)
-                puts("#include \"verilated_dpi_fiber.h\"\n");
                 puts("\n");
                 m_lazyDecls.reset();
             }

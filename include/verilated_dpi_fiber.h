@@ -20,8 +20,8 @@
 #define VERILATOR_VERILATED_DPI_FIBER_H_
 
 #include "verilated.h"
-#include "verilated_timing.h"
 #include "verilated_fiber.h"
+#include "verilated_timing.h"
 
 #include <coroutine>
 #include <utility>

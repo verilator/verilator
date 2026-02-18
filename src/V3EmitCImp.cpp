@@ -44,8 +44,6 @@ class EmitCImp final : public EmitCFunc {
         puts("// See " + EmitCUtil::topClassName() + ".h for the primary calling header\n");
         puts("\n");
         puts("#include \"" + EmitCUtil::pchClassName() + ".h\"\n");
-        // Include DPI declarations for import prototypes
-        if (v3Global.dpi()) puts("#include \"" + EmitCUtil::topClassName() + "__Dpi.h\"\n");
         emitSystemCSection(m_fileModp, VSystemCSectionType::IMP_HDR);
         // Need to emit new lazy declarations
         m_lazyDecls.reset();

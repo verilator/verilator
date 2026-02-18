@@ -990,7 +990,7 @@ class TaskVisitor final : public VNVisitor {
             return vscp;
         };
         // Call callback
-        callp->add("VerilatedDpi::awaitExport([&]() { return (*__Vcb)(");
+        callp->add("(*__Vcb)(");
         // First argument is the Syms
         callp->add("(" + EmitCUtil::symClassName() + "*)(__Vscopep->symsp())");
         // Add function arguments
@@ -1015,10 +1015,9 @@ class TaskVisitor final : public VNVisitor {
         // Return value argument goes last
         if (rtnvarp) addFuncArg(rtnvarp);
         // Close statement
-        callp->add("); }());\n");  // Close callback, close lambda, close awaitExport
+        callp->add(");");
         // Call the user function
         funcp->addStmtsp(callp);
-
         // Convert output/inout arguments back to internal type
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVar* const portp = VN_CAST(stmtp, Var)) {
@@ -1213,42 +1212,8 @@ class TaskVisitor final : public VNVisitor {
                 cstmtp->add(callp);  // RHS
                 cstmtp->add(";");
                 cfuncp->addStmtsp(cstmtp);
-            }
-
-            // Check if we need fiber-based wrapper (all DPI imports with context use fibers)
-            const bool needsFiberWrapper = nodep->dpiContext();
-
-            if (needsFiberWrapper) {
-                // Add extern declaration at module scope (file level), not function scope
-                string externDecl = "extern \"C\" ";
-                const string rtnType = dpiFuncp->rtnTypeVoid();
-                if (!rtnType.empty())
-                    externDecl += rtnType + " ";
-                else
-                    externDecl += "void ";
-                externDecl += dpiFuncp->name() + "(";
-                // Add parameter types
-                bool first = true;
-                for (AstNode* stmtp = dpiFuncp->argsp(); stmtp; stmtp = stmtp->nextp()) {
-                    if (AstVar* const portp = VN_CAST(stmtp, Var)) {
-                        if (!first) externDecl += ", ";
-                        externDecl += portp->dpiArgType(true, false);
-                        first = false;
-                    }
-                }
-                externDecl += ");\n";
-                // Add to module, not to function - this puts it at file scope
-                m_scopep->modp()->addStmtsp(new AstCStmt{nodep->fileline(), externDecl});
-
-                // Now add the callImport wrapper to the function
-                // Use regular return since this is not a coroutine itself, just returns one
-                string stmt = "co_await VerilatedDpi::callImport([&]() { ";
-                if (rtnvscp) stmt += "return ";
-                stmt += dpiFuncp->name() + "(" + args + ");";
-                stmt += " });\n";
-                cfuncp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
             } else {
-                // Direct call for non-context DPI imports
+                // Othervise just call it
                 cfuncp->addStmtsp(callp->makeStmt());
             }
         }
@@ -1369,16 +1334,9 @@ class TaskVisitor final : public VNVisitor {
         string suffix;  // So, make them unique
         if (!nodep->taskPublic() && !nodep->classMethod()) suffix = "_" + m_scopep->nameDotless();
         const string name = ((nodep->name() == "new") ? "new" : prefix + nodep->name() + suffix);
-
-        // Determine return type: VlCoroutine for DPI imports with context (for fiber support)
-        string rtnType;
-        if (nodep->dpiImport() && nodep->dpiContext()) {
-            rtnType = "VlCoroutine";
-        } else if (nodep->taskPublic() && rtnvarp) {
-            rtnType = rtnvarp->cPubArgType(true, true);
-        }
-
-        AstCFunc* const cfuncp = new AstCFunc{nodep->fileline(), name, m_scopep, rtnType};
+        AstCFunc* const cfuncp = new AstCFunc{
+            nodep->fileline(), name, m_scopep,
+            ((nodep->taskPublic() && rtnvarp) ? rtnvarp->cPubArgType(true, true) : "")};
         // It's ok to combine imports because this is just a wrapper;
         // duplicate wrappers can get merged.
         cfuncp->dontCombine(!nodep->dpiImport());
