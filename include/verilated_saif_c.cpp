@@ -547,30 +547,53 @@ void VerilatedSaif::declare(const uint32_t code, uint32_t fidx, const char* name
                         arraynum);
 }
 
-void VerilatedSaif::declEvent(const uint32_t code, const uint32_t fidx, const char* name,
-                              const bool array, const int arraynum) {
-    declare(code, fidx, name, "event", array, arraynum, false, 0, 0);
+// versions to call when the sig is not array member
+void VerilatedSaif::declEvent(const uint32_t code, const uint32_t fidx, const char* name) {
+    declare(code, fidx, name, "event", false, -1, false, 0, 0);
 }
-
-void VerilatedSaif::declBit(const uint32_t code, const uint32_t fidx, const char* name,
-                            const bool array, const int arraynum) {
-    declare(code, fidx, name, "wire", array, arraynum, false, 0, 0);
+void VerilatedSaif::declBit(const uint32_t code, const uint32_t fidx, const char* name) {
+    declare(code, fidx, name, "wire", false, -1, false, 0, 0);
 }
 void VerilatedSaif::declBus(const uint32_t code, const uint32_t fidx, const char* name,
-                            const bool array, const int arraynum, const int msb, const int lsb) {
-    declare(code, fidx, name, "wire", array, arraynum, true, msb, lsb);
+                            const int msb, const int lsb) {
+    declare(code, fidx, name, "wire", false, -1, true, msb, lsb);
 }
 void VerilatedSaif::declQuad(const uint32_t code, const uint32_t fidx, const char* name,
-                             const bool array, const int arraynum, const int msb, const int lsb) {
-    declare(code, fidx, name, "wire", array, arraynum, true, msb, lsb);
+                             const int msb, const int lsb) {
+    declare(code, fidx, name, "wire", false, -1, true, msb, lsb);
 }
 void VerilatedSaif::declArray(const uint32_t code, const uint32_t fidx, const char* name,
-                              const bool array, const int arraynum, const int msb, const int lsb) {
-    declare(code, fidx, name, "wire", array, arraynum, true, msb, lsb);
+                              const int msb, const int lsb) {
+    declare(code, fidx, name, "wire", false, -1, true, msb, lsb);
+}
+void VerilatedSaif::declDouble(const uint32_t code, const uint32_t fidx, const char* name) {
+    declare(code, fidx, name, "real", false, -1, false, 63, 0);
+}
+
+// versions to call when the sig is array member
+void VerilatedSaif::declEvent(const uint32_t code, const uint32_t fidx, const char* name,
+                              const int arraynum) {
+    declare(code, fidx, name, "event", true, arraynum, false, 0, 0);
+}
+void VerilatedSaif::declBit(const uint32_t code, const uint32_t fidx, const char* name,
+                            const int arraynum) {
+    declare(code, fidx, name, "wire", true, arraynum, false, 0, 0);
+}
+void VerilatedSaif::declBus(const uint32_t code, const uint32_t fidx, const char* name,
+                            const int arraynum, const int msb, const int lsb) {
+    declare(code, fidx, name, "wire", true, arraynum, true, msb, lsb);
+}
+void VerilatedSaif::declQuad(const uint32_t code, const uint32_t fidx, const char* name,
+                             const int arraynum, const int msb, const int lsb) {
+    declare(code, fidx, name, "wire", true, arraynum, true, msb, lsb);
+}
+void VerilatedSaif::declArray(const uint32_t code, const uint32_t fidx, const char* name,
+                              const int arraynum, const int msb, const int lsb) {
+    declare(code, fidx, name, "wire", true, arraynum, true, msb, lsb);
 }
 void VerilatedSaif::declDouble(const uint32_t code, const uint32_t fidx, const char* name,
-                               const bool array, const int arraynum) {
-    declare(code, fidx, name, "real", array, arraynum, false, 63, 0);
+                               const int arraynum) {
+    declare(code, fidx, name, "real", true, arraynum, false, 63, 0);
 }
 
 //=============================================================================

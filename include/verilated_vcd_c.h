@@ -137,39 +137,54 @@ public:
     void pushPrefix(const char*, VerilatedTracePrefixType);
     void popPrefix();
 
-    void declEvent(uint32_t code, const char* name,
-                   bool array, int arraynum);
-    void declBit(uint32_t code, const char* name,
-                 bool array, int arraynum);
-    void declBus(uint32_t code, const char* name,
-                 bool array, int arraynum, int msb, int lsb);
-    void declQuad(uint32_t code, const char* name,
-                  bool array, int arraynum, int msb, int lsb);
-    void declArray(uint32_t code, const char* name,
-                   bool array, int arraynum, int msb, int lsb);
-    void declDouble(uint32_t code, const char* name,
-                    bool array, int arraynum);
+    // versions to call when the sig is not array member
+    void declEvent(uint32_t code, const char* name);
+    void declBit(uint32_t code, const char* name);
+    void declBus(uint32_t code, const char* name, int msb, int lsb);
+    void declQuad(uint32_t code, const char* name, int msb, int lsb);
+    void declArray(uint32_t code, const char* name, int msb, int lsb);
+    void declDouble(uint32_t code, const char* name);
+
+    // versions to call when the sig is array member
+    void declEvent(uint32_t code, const char* name, int arraynum);
+    void declBit(uint32_t code, const char* name, int arraynum);
+    void declBus(uint32_t code, const char* name, int arraynum, int msb, int lsb);
+    void declQuad(uint32_t code, const char* name, int arraynum, int msb, int lsb);
+    void declArray(uint32_t code, const char* name, int arraynum, int msb, int lsb);
+    void declDouble(uint32_t code, const char* name, int arraynum);
 };
 
 // duck-typed interface to decl* methods
 // We use macros in order to strip out unused args at compile time.
-#define DECL_EVENT(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum) \
-    tracep->declEvent(code, name, array, arraynum)
+#define DECL_EVENT(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum) do { \
+    if constexpr(array) tracep->declEvent(code, name, arraynum); \
+    else tracep->declEvent(code, name); \
+} while(0)
 
-#define DECL_BIT(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum) \
-    tracep->declBit(code, name, array, arraynum)
+#define DECL_BIT(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum) do { \
+    if constexpr(array) tracep->declBit(code, name, arraynum); \
+    else tracep->declBit(code, name); \
+} while(0)
 
-#define DECL_BUS(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb) \
-    tracep->declBus(code, name, array, arraynum, msb, lsb)
+#define DECL_BUS(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb) do { \
+    if constexpr(array) tracep->declBus(code, name, arraynum, msb, lsb); \
+    else tracep->declBus(code, name, msb, lsb); \
+} while(0)
 
-#define DECL_QUAD(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb) \
-    tracep->declQuad(code, name, array, arraynum, msb, lsb)
+#define DECL_QUAD(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb) do { \
+    if constexpr(array) tracep->declQuad(code, name, arraynum, msb, lsb); \
+    else tracep->declQuad(code, name, msb, lsb); \
+} while(0)
 
-#define DECL_ARRAY(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb) \
-    tracep->declArray(code, name, array, arraynum, msb, lsb)
+#define DECL_ARRAY(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb) do { \
+    if constexpr(array) tracep->declArray(code, name, arraynum, msb, lsb); \
+    else tracep->declArray(code, name, msb, lsb); \
+} while(0)
 
-#define DECL_DOUBLE(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb) \
-    tracep->declArray(code, name, array, arraynum)
+#define DECL_DOUBLE(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum) do { \
+    if constexpr(array) tracep->declDouble(code, name, arraynum); \
+    else tracep->declDouble(code, name); \
+} while(0)
 
 #ifndef DOXYGEN
 // Declare specialization here as it's used in VerilatedFstC just below
