@@ -499,7 +499,10 @@ public:
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
     static AstNodeVarRef* varRefLValueRecurse(AstNode* nodep);
-    bool isFourState() const override { return m_varp && m_varp->attrFourState(); }
+    bool isFourState() const override {
+        return (v3Global.opt.fourstate() && dtypep()->isFourstate())
+               || (m_varp && m_varp->attrFourState());
+    }
 };
 
 // === Concrete node types =====================================================
@@ -2826,7 +2829,9 @@ public:
     bool sizeMattersLhs() const override { return true; }
     bool sizeMattersRhs() const override { return true; }
     int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_DIV; }
-    bool isFourState() const override { return true; }
+    bool isFourState() const override {
+        return v3Global.opt.fourstate() || AstNodeExpr::isFourState();
+    }
 };
 class AstDivD final : public AstNodeBiop {
 public:
@@ -2848,6 +2853,9 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_DBL_DIV; }
     bool doubleFlavor() const override { return true; }
+    bool isFourState() const override {
+        return v3Global.opt.fourstate() || AstNodeExpr::isFourState();
+    }
 };
 class AstDivS final : public AstNodeBiop {
 public:
@@ -2870,7 +2878,9 @@ public:
     bool sizeMattersRhs() const override { return true; }
     int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_DIV; }
     bool signedFlavor() const override { return true; }
-    bool isFourState() const override { return true; }
+    bool isFourState() const override {
+        return v3Global.opt.fourstate() || AstNodeExpr::isFourState();
+    }
 };
 class AstEqWild final : public AstNodeBiop {
     // Note wildcard operator rhs differs from lhs
@@ -3627,9 +3637,10 @@ public:
     }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override {
-        return widthConst() == 1 ? "VL_BITSEL_%nq%lq%rqI(%lw, %P, %li, %ri)"
-               : isWide()        ? "VL_SEL_%nq%lq%rqI(%nw, %lw, %P, %li, %ri, %nw)"
-                                 : "VL_SEL_%nq%lq%rqI(%lw, %P, %li, %ri, %nw)";
+        return dtypep()->isFourstate() ? "fourLogicBitSel(%li, %ri)"
+               : widthConst() == 1     ? "VL_BITSEL_%nq%lq%rqI(%lw, %P, %li, %ri)"
+               : isWide()              ? "VL_SEL_%nq%lq%rqI(%nw, %lw, %P, %li, %ri, %nw)"
+                                       : "VL_SEL_%nq%lq%rqI(%lw, %P, %li, %ri, %nw)";
     }
     string emitSMT() const override { return "((_ extract %t %r) %l)"; }
     bool cleanOut() const override { return false; }

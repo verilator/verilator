@@ -2195,6 +2195,25 @@ constexpr FourStateLogicWrapper<T> fourLogicNeg(const FourStateLogicWrapper<T>& 
 }
 
 template <typename T>
+constexpr FourStateLogicWrapper<T> fourLogicBitShiftLeft(const FourStateLogicWrapper<T>& a,
+                                                         uint64_t b) noexcept {
+    return {static_cast<T>(a.value << b), static_cast<T>(a.xz << b)};
+}
+
+template <typename T>
+constexpr FourStateLogicWrapper<T> fourLogicBitShiftRight(const FourStateLogicWrapper<T>& a,
+                                                          uint64_t b) noexcept {
+    return {static_cast<T>(a.value >> b), static_cast<T>(a.xz >> b)};
+}
+
+template <typename T, typename Y>
+constexpr FourStateLogicWrapper<T> fourLogicBitSel(const FourStateLogicWrapper<T>& a,
+                                                   const FourStateLogicWrapper<Y>& b) noexcept {
+    if (fourLogicHasXZ(b)) return {static_cast<T>(~0), static_cast<T>(~0)};
+    return fourLogicBitShiftRight(a, b.value);
+}
+
+template <typename T>
 constexpr T fourLogicCastToTwo(const FourStateLogicWrapper<T>& a) noexcept {
     return a.value & ~a.xz;
 }

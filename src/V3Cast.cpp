@@ -60,8 +60,8 @@ class CastVisitor final : public VNVisitor {
         VNRelinker relinkHandle;
         nodep->unlinkFrBack(&relinkHandle);
         //
-        AstCCast* const castp
-            = new AstCCast{nodep->fileline(), nodep, needsize, nodep->widthMin()};
+        AstCCast* const castp = new AstCCast{nodep->fileline(), nodep, needsize,
+                                             std::min(needsize, nodep->widthMin())};
         UINFO(4, "  MadeCast " << static_cast<void*>(castp) << " for " << nodep);
         relinkHandle.relink(castp);
         // UINFOTREE(9, castp, "", "castins");
@@ -202,14 +202,14 @@ class CastVisitor final : public VNVisitor {
         // we're too lazy to wrap every constant in the universe in
         // ((IData)#).
         nodep->user1(nodep->isQuad() || nodep->isWide() || nodep->isNull());
-        if (nodep->dtypep()->isFourstate() && !nodep->num().isAnyXZ()) {
-            VNRelinker relinkHandle;
-            nodep->unlinkFrBack(&relinkHandle);
-            relinkHandle.relink(new AstCCast{nodep->fileline(), nodep, nodep->dtypep()});
-            nodep->dtypeSetBitUnsized(nodep->backp()->dtypep()->width(),
-                                      nodep->backp()->dtypep()->widthMin(),
-                                      nodep->backp()->dtypep()->numeric());
-        }
+        // if (nodep->dtypep()->isFourstate() && !nodep->num().isAnyXZ()) {
+        //     VNRelinker relinkHandle;
+        //     nodep->unlinkFrBack(&relinkHandle);
+        //     relinkHandle.relink(new AstCCast{nodep->fileline(), nodep, nodep->dtypep()});
+        //     nodep->dtypeSetBitUnsized(nodep->backp()->dtypep()->width(),
+        //                               nodep->backp()->dtypep()->widthMin(),
+        //                               nodep->backp()->dtypep()->numeric());
+        // }
     }
 
     // Null dereference protection

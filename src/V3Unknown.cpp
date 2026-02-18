@@ -244,7 +244,7 @@ class UnknownVisitor final : public VNVisitor {
                     portp = portp->nextp();
                 }
                 m_constXCvt
-                    = m_constXCvt
+                    = m_constXCvt && !v3Global.opt.fourstate()
                       && !(portVarp->direction().isNonOutput() && portVarp->attrFourState())
                       && !pinp->isFourState();
                 iterate(pinp);

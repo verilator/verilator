@@ -66,28 +66,12 @@ class CleanVisitor final : public VNVisitor {
             // Since any given dtype's cppWidth() is the same, we can just
             // remember one conversion for each, and reuse it
             if (AstNodeDType* const new_dtypep = VN_CAST(old_dtypep->user3p(), NodeDType)) {
-                // UASSERT_OBJ(old_dtypep->basicp()->keyword() == VBasicDTypeKwd::DELAY_SCHEDULER
-                // // FIXME
-                //                 || old_dtypep->basicp()->keyword()
-                //                        == new_dtypep->basicp()->keyword(),
-                //             nodep,
-                //             "Unexpected change of types from: "
-                //                 << old_dtypep->basicp()->keyword().ascii()
-                //                 << " to: " << new_dtypep->basicp()->keyword().ascii());
                 nodep->dtypep(new_dtypep);
             } else {
                 nodep->dtypeChgWidth(width, nodep->widthMin());
                 AstNodeDType* const new_dtypep2 = nodep->dtypep();
                 UASSERT_OBJ(new_dtypep2 != old_dtypep, nodep,
                             "Dtype didn't change when width changed");
-                // UASSERT_OBJ(old_dtypep->basicp()->keyword() == VBasicDTypeKwd::DELAY_SCHEDULER
-                // // FIXME
-                //                 || old_dtypep->basicp()->keyword()
-                //                        == new_dtypep2->basicp()->keyword(),
-                //             nodep,
-                //             "Unexpected change of types from: "
-                //                 << old_dtypep->basicp()->keyword().ascii()
-                //                 << " to: " << new_dtypep2->basicp()->keyword().ascii());
                 old_dtypep->user3p(new_dtypep2);  // Remember for next time
             }
         }
@@ -145,7 +129,13 @@ class CleanVisitor final : public VNVisitor {
         mask.setMask(nodep->widthMin());
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* maskExprp = new AstConst{flp, mask};
-        if (nodep->dtypep()->isFourstate()) maskExprp = new AstCCast{flp, maskExprp, nodep};
+        if (nodep->dtypep()->isFourstate()) {
+            if (AstSel* const selp = VN_CAST(nodep, Sel)) {
+                maskExprp = new AstCCast{flp, maskExprp, selp->fromp()};
+            } else {
+                maskExprp = new AstCCast{flp, maskExprp, nodep};
+            }
+        }
         AstNode* const cleanp = new AstAnd{flp, maskExprp, nodep};
         cleanp->dtypeFrom(nodep);  // Otherwise the AND normally picks LHS
         relinkHandle.relink(cleanp);

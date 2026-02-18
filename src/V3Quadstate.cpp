@@ -14,11 +14,11 @@ class QuadstateTypeReducerVisitor final : public VNVisitor {
         if (!dtypep) return nullptr;
         // FIXME: this is terrible since we call this for each Expr and this function in almost
         // each extp travels a whole subtree
-        if (!dtypep->isFourstate()) return dtypep;
         dtypep = dtypep->skipRefp();
         const auto it = m_typesToReduced.find(dtypep);
         if (it != m_typesToReduced.end()) return it->second;
         if (const AstBasicDType* const basicDtypep = VN_CAST(dtypep, BasicDType)) {
+            if (!basicDtypep->isFourstate()) return dtypep;
             switch (basicDtypep->keyword()) {
             case VBasicDTypeKwd::LOGIC:
             case VBasicDTypeKwd::LOGIC_IMPLICIT:
@@ -30,20 +30,43 @@ class QuadstateTypeReducerVisitor final : public VNVisitor {
                 basicDtypep->v3fatalSrc(
                     "Unhandled four state variable type: " << basicDtypep->keyword().ascii());
             }
-        } else if (AstNodeArrayDType* const arrayDtypep = VN_CAST(dtypep, NodeArrayDType)) {
+        }
+        if (AstNodeArrayDType* const arrayDtypep = VN_CAST(dtypep, NodeArrayDType)) {
             AstNodeArrayDType* const newp = arrayDtypep->cloneTree(false);
             newp->refDTypep(reduceTypeToTwoStateLogic(arrayDtypep->subDTypep()));
             v3Global.rootp()->typeTablep()->addTypesp(newp);
             m_typesToReduced.insert({dtypep, newp});
             return newp;
-        } else if (AstSampleQueueDType* const queueDtypep = VN_CAST(dtypep, SampleQueueDType)) {
+        }
+        if (AstDynArrayDType* const arrayDtypep = VN_CAST(dtypep, DynArrayDType)) {
+            AstDynArrayDType* const newp = arrayDtypep->cloneTree(false);
+            newp->refDTypep(reduceTypeToTwoStateLogic(arrayDtypep->subDTypep()));
+            v3Global.rootp()->typeTablep()->addTypesp(newp);
+            m_typesToReduced.insert({dtypep, newp});
+            return newp;
+        }
+        if (AstWildcardArrayDType* const arrayDtypep = VN_CAST(dtypep, WildcardArrayDType)) {
+            AstWildcardArrayDType* const newp = arrayDtypep->cloneTree(false);
+            newp->refDTypep(reduceTypeToTwoStateLogic(arrayDtypep->subDTypep()));
+            v3Global.rootp()->typeTablep()->addTypesp(newp);
+            m_typesToReduced.insert({dtypep, newp});
+            return newp;
+        }
+        if (AstSampleQueueDType* const queueDtypep = VN_CAST(dtypep, SampleQueueDType)) {
             AstSampleQueueDType* const newp = queueDtypep->cloneTree(false);
             newp->refDTypep(reduceTypeToTwoStateLogic(queueDtypep->subDTypep()));
             v3Global.rootp()->typeTablep()->addTypesp(newp);
             m_typesToReduced.insert({dtypep, newp});
             return newp;
-        } else if (AstNodeUOrStructDType* const structDtypep
-                   = VN_CAST(dtypep, NodeUOrStructDType)) {
+        }
+        if (AstQueueDType* const queueDtypep = VN_CAST(dtypep, QueueDType)) {
+            AstQueueDType* const newp = queueDtypep->cloneTree(false);
+            newp->refDTypep(reduceTypeToTwoStateLogic(queueDtypep->subDTypep()));
+            v3Global.rootp()->typeTablep()->addTypesp(newp);
+            m_typesToReduced.insert({dtypep, newp});
+            return newp;
+        }
+        if (AstNodeUOrStructDType* const structDtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
             AstNodeUOrStructDType* const newp = structDtypep->cloneTree(false);
             for (AstMemberDType* memberp = newp->membersp(); memberp;
                  memberp = VN_AS(memberp->nextp(), MemberDType)) {
@@ -57,8 +80,22 @@ class QuadstateTypeReducerVisitor final : public VNVisitor {
             m_typesToReduced.insert({dtypep, newp});
             return newp;
         }
+        if (AstAssocArrayDType* const arrayDtypep = VN_CAST(dtypep, AssocArrayDType)) {
+            AstAssocArrayDType* const newp = arrayDtypep->cloneTree(false);
+            newp->refDTypep(reduceTypeToTwoStateLogic(arrayDtypep->subDTypep()));
+            newp->keyDTypep(reduceTypeToTwoStateLogic(arrayDtypep->keyDTypep()));
+            v3Global.rootp()->typeTablep()->addTypesp(newp);
+            m_typesToReduced.insert({dtypep, newp});
+            return newp;
+        }
+        if (VN_IS(dtypep, VoidDType) || VN_IS(dtypep, ClassRefDType)
+            || VN_IS(dtypep, IfaceRefDType) || VN_IS(dtypep, NBACommitQueueDType)
+            || VN_IS(dtypep, CDType)) {
+            return dtypep;
+        }
         dtypep->v3fatalSrc("Unhandled DType: " << dtypep);
     }
+
     void visit(AstVar* const nodep) override {
         if (!nodep->attrFourState()) nodep->dtypep(reduceTypeToTwoStateLogic(nodep->dtypep()));
     }
@@ -345,7 +382,7 @@ public:
 };
 
 void V3Quadstate::quadstateReduce(AstNetlist* nodep) {
-    if (!v3Global.opt.fourstateLiterals()) {
+    if (!v3Global.opt.fourstate()) {
         UINFO(2, __FUNCTION__ << ":");
         QuadstateTypeReducerVisitor{nodep};
         V3Global::dumpCheckGlobalTree("quadstate_reduce", 0, dumpTreeEitherLevel() >= 6);
