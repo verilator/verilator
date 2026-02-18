@@ -382,6 +382,14 @@ private:
             nodep->v3error("Event controls cannot be used in "
                            "synchronous drives (IEEE 1800-2023 14.16)");
         }
+
+        const AstSampled* sampledp;
+        if (nodep->exists([&sampledp](const AstSampled* const sp) {
+                sampledp = sp;
+                return true;
+            })) {
+            sampledp->v3warn(E_UNSUPPORTED, "Unsupported: $sampled inside sensitivity list");
+        }
     }
     void visit(AstNodeVarRef* nodep) override {
         UINFO(8, " -varref:  " << nodep);
