@@ -205,7 +205,11 @@ class AstToDfgVisitor final : public VNVisitor {
 
         // Can only handle combinational logic
         if (nodep->sentreep()) return false;
-        if (kwd != VAlwaysKwd::ALWAYS && kwd != VAlwaysKwd::ALWAYS_COMB) return false;
+        if (kwd != VAlwaysKwd::ALWAYS  //
+            && kwd != VAlwaysKwd::ALWAYS_COMB  //
+            && kwd != VAlwaysKwd::CONT_ASSIGN) {
+            return false;
+        }
 
         // Potentially convertible block
         ++m_ctx.m_inputs;

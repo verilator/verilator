@@ -18,6 +18,6 @@ test.compile(
 test.execute()
 
 if test.vlt:
-    test.file_grep(test.stats, r'Optimizations, Const bit op reduction\s+(\d+)', 3888)
+    test.file_grep(test.stats, r'Optimizations, Const bit op reduction\s+(\d+)', 3416)
 
 test.passes()
