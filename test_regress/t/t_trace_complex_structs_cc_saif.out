@@ -421,6 +421,12 @@
      (b0 (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
     )
    )
+   (INSTANCE v_strp2
+    (NET
+     (b1 (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
+     (b0 (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
+    )
+   )
    (INSTANCE v_strp_strp
     (INSTANCE x1
      (NET
