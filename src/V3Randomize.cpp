@@ -40,6 +40,7 @@
 #include "V3FileLine.h"
 #include "V3Global.h"
 #include "V3MemberMap.h"
+#include "V3Task.h"
 #include "V3UniqueNames.h"
 
 #include <queue>
@@ -547,7 +548,16 @@ class RandomizeMarkVisitor final : public VNVisitor {
             return;
         }
 
-        if (nodep->name() != "randomize") return;
+        if (nodep->name() != "randomize") {
+            // Propagate user1 from children (same pattern as visit(AstNodeExpr*))
+            if (m_constraintExprGenp || m_inStdWith) {
+                nodep->user1((nodep->op1p() && nodep->op1p()->user1())
+                             || (nodep->op2p() && nodep->op2p()->user1())
+                             || (nodep->op3p() && nodep->op3p()->user1())
+                             || (nodep->op4p() && nodep->op4p()->user1()));
+            }
+            return;
+        }
         AstClass* classp = m_classp;
         if (const AstMethodCall* const methodCallp = VN_CAST(nodep, MethodCall)) {
             if (const AstClassRefDType* const classRefp
@@ -860,6 +870,55 @@ class ConstraintExprVisitor final : public VNVisitor {
         UASSERT_OBJ(selp, arrayp, "Selecting from non-array?");
         selp->dtypep(arrDtp->subDTypep());
         return selp;
+    }
+
+    // Extract return expression from a simple function body, or nullptr if too complex.
+    // Uses foreach to walk all assigns regardless of body organization (JumpBlock nesting etc.).
+    // Takes the last assignment to the return variable -- the first is the initializer.
+    AstNodeExpr* extractReturnExpr(AstFunc* funcp) {
+        AstVar* const retVarp = VN_CAST(funcp->fvarp(), Var);
+        if (!retVarp) return nullptr;
+        AstNodeExpr* retExprp = nullptr;
+        int assignCount = 0;
+        funcp->foreach([&](AstAssign* assignp) {
+            AstVarRef* const lhsp = VN_CAST(assignp->lhsp(), VarRef);
+            if (!lhsp || lhsp->varp() != retVarp) return;
+            retExprp = assignp->rhsp();
+            ++assignCount;
+        });
+        // Simple function: initializer + return (2) or just return (1)
+        if (assignCount > 2 || !retExprp) return nullptr;
+        return retExprp;
+    }
+
+    // Bottom-up user1 propagation on inlined expression tree
+    void propagateUser1InlineRecurse(AstNodeExpr* nodep) {
+        if (VN_IS(nodep, NodeVarRef)) {
+            nodep->user1(VN_AS(nodep, NodeVarRef)->varp()->rand().isRandomizable());
+            return;
+        }
+        if (VN_IS(nodep, Const)) {
+            nodep->user1(false);
+            return;
+        }
+        bool anyChild = false;
+        if (AstNodeExpr* const cp = VN_CAST(nodep->op1p(), NodeExpr)) {
+            propagateUser1InlineRecurse(cp);
+            anyChild |= cp->user1();
+        }
+        if (AstNodeExpr* const cp = VN_CAST(nodep->op2p(), NodeExpr)) {
+            propagateUser1InlineRecurse(cp);
+            anyChild |= cp->user1();
+        }
+        if (AstNodeExpr* const cp = VN_CAST(nodep->op3p(), NodeExpr)) {
+            propagateUser1InlineRecurse(cp);
+            anyChild |= cp->user1();
+        }
+        if (AstNodeExpr* const cp = VN_CAST(nodep->op4p(), NodeExpr)) {
+            propagateUser1InlineRecurse(cp);
+            anyChild |= cp->user1();
+        }
+        nodep->user1(anyChild);
     }
 
     // VISITORS
@@ -1891,6 +1950,50 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         if (editFormat(nodep)) return;
         nodep->v3fatalSrc("Method not handled in constraints? " << nodep);
+    }
+    void visit(AstNodeFTaskRef* nodep) override {
+        if (editFormat(nodep)) return;
+
+        AstFunc* const funcp = VN_CAST(nodep->taskp(), Func);
+        if (!funcp) {
+            // Tasks have no return value and can't appear in expressions.
+            // Parser rejects this, so reaching here indicates a compiler bug.
+            nodep->v3fatalSrc("Unexpected task call in constraint expression");
+            return;
+        }
+
+        AstNodeExpr* const retExprp = extractReturnExpr(funcp);
+        if (!retExprp) {
+            nodep->v3warn(CONSTRAINTIGN,
+                          "Unsupported: complex function in constraint, treating as state");
+            nodep->user1(false);
+            if (editFormat(nodep)) return;
+            return;
+        }
+
+        // Map formal parameters to actual arguments using V3Task infrastructure
+        const V3TaskConnects tconnects
+            = V3Task::taskConnects(nodep, funcp->stmtsp(), nullptr, false);
+
+        // Clone return expression, substitute params with args
+        AstNodeExpr* const inlinedp = retExprp->cloneTreePure(false);
+        for (const auto& tconnect : tconnects) {
+            const AstVar* const portp = tconnect.first;
+            AstArg* const argp = tconnect.second;
+            if (!argp || !argp->exprp()) continue;
+            inlinedp->foreach([&](AstVarRef* refp) {
+                if (refp->varp() == portp) {
+                    refp->replaceWith(argp->exprp()->cloneTreePure(false));
+                    VL_DO_DANGLING(refp->deleteTree(), refp);
+                }
+            });
+        }
+
+        inlinedp->dtypep(nodep->dtypep());
+        propagateUser1InlineRecurse(inlinedp);
+        nodep->replaceWith(inlinedp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        iterate(inlinedp);
     }
     void visit(AstNodeExpr* nodep) override {
         if (editFormat(nodep)) return;
