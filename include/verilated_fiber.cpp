@@ -34,7 +34,7 @@ namespace {
 
 // Align pointer down to 16-byte boundary (required by x86_64 ABI)
 // The x86_64 calling convention requires stack pointer to be 16-byte aligned
-inline std::uint8_t* alignDown16(std::uint8_t* ptr) {
+std::uint8_t* alignDown16(std::uint8_t* ptr) {
     return reinterpret_cast<std::uint8_t*>(reinterpret_cast<std::uintptr_t>(ptr)
                                            & ~std::uintptr_t(0xF));
 }
@@ -45,7 +45,7 @@ inline std::uint8_t* alignDown16(std::uint8_t* ptr) {
 // Construction helpers
 
 std::unique_ptr<VlFiber> VlFiber::create(Fn fn, std::size_t stackSize) {
-    return std::unique_ptr<VlFiber>(new VlFiber(std::move(fn), stackSize));
+    return std::unique_ptr<VlFiber>(new VlFiber{std::move(fn), stackSize});
 }
 
 VlFiber::VlFiber(Fn fn, std::size_t stackSize)
