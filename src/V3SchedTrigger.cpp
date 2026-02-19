@@ -840,12 +840,12 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
                 }
             }
         }
-        if (VL_UNLIKELY(debug() >= 6)) {
+        if (VL_UNLIKELY(v3Global.opt.debugCheck())) {
             for (const auto& triggersToTrees : usedTrigsToUsingTrees) {
                 for (const auto& bitsToTrees : triggersToTrees.second) {
                     const std::set<const AstNodeExpr*> exprps{bitsToTrees.second.begin(),
                                                               bitsToTrees.second.end()};
-                    UASSERT(usedTrigsToUsingTrees.size() == exprps.size(),
+                    UASSERT(bitsToTrees.second.size() == exprps.size(),
                             "There is a SenTree with two SenItems indicating to the same bit");
                 }
             }
