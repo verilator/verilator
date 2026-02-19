@@ -207,6 +207,15 @@ class EmitCHeader final : public EmitCConstInit {
             puts("void " + protect("__Vserialize") + "(VerilatedSerialize& os);\n");
             puts("void " + protect("__Vdeserialize") + "(VerilatedDeserialize& os);\n");
         }
+
+        // Polymorphic clone for concrete (non-abstract, non-interface) classes
+        if (const AstClass* const classp = VN_CAST(modp, Class)) {
+            if (!classp->isInterfaceClass() && !classp->isVirtual()) {
+                decorateFirst(first, section);
+                putns(classp, "VlClass* vlClone() const override { return new "
+                              + EmitCUtil::prefixNameProtect(classp) + "(*this); }\n");
+            }
+        }
     }
     void emitEnums(const AstNodeModule* modp) {
         bool first = true;

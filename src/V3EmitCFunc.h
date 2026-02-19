@@ -1536,10 +1536,10 @@ public:
         puts(")");
     }
     void visit(AstNewCopy* nodep) override {
-        putns(nodep, "VL_NEW(" + EmitCUtil::prefixNameProtect(nodep->dtypep()));
-        puts(", *");  // i.e. make into a reference
+        // Polymorphic shallow clone: preserves runtime type via virtual vlClone()
+        putns(nodep, "(");
         iterateAndNextConstNull(nodep->rhsp());
-        puts(")");
+        puts(").vlClone(vlSymsp->__Vm_deleter)");
     }
     void visit(AstSel* nodep) override {
         // Note ASSIGN checks for this on a LHS
