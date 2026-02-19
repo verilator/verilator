@@ -343,14 +343,17 @@ private:
             if (changed) {
                 AstNodeUOrStructDType* enStructp;
                 if (VN_IS(structp, StructDType)) {
-                    enStructp = new AstStructDType{structp->fileline(),
-                                                   VSigning::fromBool(structp->packed())};
+                    enStructp = new AstStructDType{structp->fileline(), structp->packed()
+                                                                            ? VSigning::SIGNED
+                                                                            : VSigning::NOSIGN};
                 } else {
                     varp->v3fatalSrc("Unsupported: Force of variable of unhandled data type");
                     return dtypep;
                 }
                 for (const auto& memberp : enMemberDTypes) enStructp->addMembersp(memberp);
                 v3Global.rootp()->typeTablep()->addTypesp(enStructp);
+                enStructp->dtypep(enStructp);
+                enStructp->classOrPackagep(structp->classOrPackagep());
                 return enStructp;
             } else {
                 for (const auto& memberp : enMemberDTypes) memberp->deleteTree();
