@@ -63,7 +63,7 @@ VlFiber::VlFiber(Fn fn, std::size_t stackSize)
 
     // Allocate memory with mmap (anonymous, private mapping)
     void* const mappingp = ::mmap(nullptr, m_mappingSize, PROT_READ | PROT_WRITE,
-                                   MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+                                  MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (VL_UNLIKELY(mappingp == MAP_FAILED)) {
         VL_FATAL_MT(__FILE__, __LINE__, "",
                     (std::string{"mmap failed: "} + std::strerror(errno)).c_str());
@@ -76,7 +76,7 @@ VlFiber::VlFiber(Fn fn, std::size_t stackSize)
     // Protect guard pages (no read/write access) to catch stack overflow/underflow
     uint8_t* const lowGuard = static_cast<uint8_t*>(mappingp);
     uint8_t* const highGuard = m_stackBasep + stackSize;
-    
+
     if (VL_UNLIKELY(::mprotect(lowGuard, guardSize, PROT_NONE) != 0)) {
         VL_FATAL_MT(__FILE__, __LINE__, "", "mprotect failed for low guard page");
     }
@@ -87,9 +87,7 @@ VlFiber::VlFiber(Fn fn, std::size_t stackSize)
 
 VlFiber::~VlFiber() {
     resumeWaiters();
-    if (m_mappingp) {
-        ::munmap(m_mappingp, m_mappingSize);
-    }
+    if (m_mappingp) { ::munmap(m_mappingp, m_mappingSize); }
 }
 
 //======================================================================
@@ -101,21 +99,21 @@ void VlFiber::resume() {
         resumeWaiters();
         return;
     }
-    
+
     // Save the current fiber context
     VlFiber* const previousFiberp = s_currentFiberp;
-    s_currentFiberp = this; // We are now the current fiber
+    s_currentFiberp = this;  // We are now the current fiber
 
     // Save caller's state and switch to fiber context
     if (setjmp(m_callerCtx) == 0) {
         if (!m_started) {
             m_started = true;
-            start(this); // First time through: bootstrap the fiber
+            start(this);  // First time through: bootstrap the fiber
         } else {
-            longjmp(m_fiberCtx, 1); // Resume: jump to saved fiber state
+            longjmp(m_fiberCtx, 1);  // Resume: jump to saved fiber state
         }
     }
-    
+
     // Returns here when fiber yields or completes
 
     // Restore previous context
@@ -125,16 +123,16 @@ void VlFiber::resume() {
 
 void VlFiber::yield() {
     VlFiber* const currentFiberp = s_currentFiberp;
-    if (!currentFiberp) return; // Not in fiber, nothing to yield
+    if (!currentFiberp) return;  // Not in fiber, nothing to yield
 
     // Save fiber's state and return to caller
     if (setjmp(currentFiberp->m_fiberCtx) == 0) {
-        s_currentFiberp = nullptr; // No longer in fiber
-        longjmp(currentFiberp->m_callerCtx, 1); // Jump back to resume()
+        s_currentFiberp = nullptr;  // No longer in fiber
+        longjmp(currentFiberp->m_callerCtx, 1);  // Jump back to resume()
     }
 
     // Returns here when fiber is resumed
-    s_currentFiberp = currentFiberp; // Restore current fiber
+    s_currentFiberp = currentFiberp;  // Restore current fiber
 }
 
 void VlFiber::resumeWaiters() {
@@ -160,21 +158,20 @@ void VlFiber::start(VlFiber* fiberp) {
     // Subtract 8 bytes for alignment, then add back to ensure proper alignment
     std::uint8_t* const stackTop
         = alignDown16(fiberp->m_stackBasep + fiberp->m_stackSize - 8u) + 8u;
-    
+
 #if defined(__x86_64__)
     // Switch to fiber stack and call entry point
     // - Set %rsp to stack top (new stack pointer)
     // - Clear %rbp (mark as base of call stack for debuggers)
     // - Call entryPoint with fiberp in %rdi (first arg in x86_64 calling convention)
-    asm volatile(
-        "mov %[stack], %%rsp\n\t"
-        "xor %%rbp, %%rbp\n\t"
-        "call *%[entry]\n\t"
-        :
-        : [stack] "r"(stackTop), [entry] "r"(&VlFiber::entryPoint), "D"(fiberp)
-        : "memory");
+    asm volatile("mov %[stack], %%rsp\n\t"
+                 "xor %%rbp, %%rbp\n\t"
+                 "call *%[entry]\n\t"
+                 :
+                 : [stack] "r"(stackTop), [entry] "r"(&VlFiber::entryPoint), "D"(fiberp)
+                 : "memory");
 #else
-# error "VlFiber currently supports only x86_64"
+#error "VlFiber currently supports only x86_64"
 #endif
     __builtin_unreachable();
 }

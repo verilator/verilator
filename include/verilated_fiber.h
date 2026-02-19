@@ -24,19 +24,20 @@
 
 #include "verilatedos.h"
 
+#include <coroutine>
+#include <csetjmp>
 #include <cstddef>
 #include <cstdint>
-#include <csetjmp>
 #include <functional>
 #include <memory>
 #include <vector>
-#include <coroutine>
 
 #if defined(__x86_64__)
-# include <sys/mman.h>
-# include <unistd.h>
+#include <unistd.h>
+
+#include <sys/mman.h>
 #else
-# error "VlFiber currently supports only x86_64"
+#error "VlFiber currently supports only x86_64"
 #endif
 
 // Simple userspace fiber used to run DPI code on an alternate stack.
@@ -53,6 +54,7 @@ public:
 
     // Resume execution of the fiber
     void resume();
+
     // Suspend execution of the currently running fiber and switch to caller
     static void yield();
 
@@ -72,18 +74,8 @@ public:
     VlFiber& operator=(const VlFiber&) = delete;
 
 private:
-    VlFiber(Fn fn, std::size_t stackSize);
-
-    // Bootstrap entry that jumps to entryPoint on the fiber stack
-    static void start(VlFiber* fiberp) VL_ATTR_NORETURN;
-    // Actual function executing the user callable and performing cleanup
-    static void entryPoint(VlFiber* fiberp) VL_ATTR_NORETURN;
-
-    // Resume all stored waiters when the fiber completes
-    void resumeWaiters();
-
-    std::jmp_buf m_callerCtx{};   // Register state of caller context
-    std::jmp_buf m_fiberCtx{};    // Register state of fiber context
+    std::jmp_buf m_callerCtx{};  // Register state of caller context
+    std::jmp_buf m_fiberCtx{};  // Register state of fiber context
     void* m_mappingp = nullptr;  // Base of mmap allocation (includes guards)
     std::size_t m_mappingSize = 0;  // Total size of allocation (stack + 2*guard)
     uint8_t* m_stackBasep = nullptr;  // Start of usable stack (after low guard)
@@ -94,6 +86,17 @@ private:
     std::vector<std::coroutine_handle<>> m_waiters;  // Coroutines resumed on completion
 
     static thread_local VlFiber* s_currentFiberp;  // Fiber currently executing on the thread
+
+    VlFiber(Fn fn, std::size_t stackSize);
+
+    // Bootstrap entry that jumps to entryPoint on the fiber stack
+    static void start(VlFiber* fiberp) VL_ATTR_NORETURN;
+
+    // Actual function executing the user callable and performing cleanup
+    static void entryPoint(VlFiber* fiberp) VL_ATTR_NORETURN;
+
+    // Resume all stored waiters when the fiber completes
+    void resumeWaiters();
 };
 
 #endif  // Guard

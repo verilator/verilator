@@ -499,8 +499,8 @@ public:
     // Suspend the awaiter if the coroutine is suspended (the promise exists)
     bool await_ready() const noexcept { return !m_promisep; }
     // Set the awaiting coroutine as the continuation of the current coroutine
-    void await_suspend(std::coroutine_handle<> coro) { 
-        if (m_promisep) m_promisep->m_continuation = coro; 
+    void await_suspend(std::coroutine_handle<> coro) {
+        if (m_promisep) m_promisep->m_continuation = coro;
     }
     void await_resume() const noexcept {}
 
