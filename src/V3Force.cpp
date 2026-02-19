@@ -67,7 +67,7 @@ class ForceState final {
             , m_valVarp{new AstVar{varp->fileline(), VVarType::VAR, varp->name() + "__VforceVal",
                                    varp->dtypep()}}
             , m_enVarp{new AstVar{varp->fileline(), VVarType::VAR, varp->name() + "__VforceEn",
-                                  getEnVarpDTypep(varp)}} {
+                                  getEnVarpDTypeRecursep(varp, varp->dtypep())}} {
             m_rdVarp->addNext(m_enVarp);
             m_rdVarp->addNext(m_valVarp);
             varp->addNextHere(m_rdVarp);
@@ -287,20 +287,44 @@ private:
             return 1;
         }
     }
-    static AstNodeDType* getEnVarpDTypep(const AstVar* const varp) {
-        AstNodeDType* const origDTypep = varp->dtypep()->skipRefp();
+    static AstNodeDType* getEnVarpDTypeRecursep(const AstVar* const varp,
+                                                AstNodeDType* const dtypep) {
+        AstNodeDType* const origDTypep = dtypep->skipRefp();
         const size_t unpackElemNum = checkIfDTypeSupportedRecurse(origDTypep, varp);
         if (unpackElemNum > ELEMENTS_MAX) {
             varp->v3warn(E_UNSUPPORTED, "Unsupported: Force of variable with "
                                         ">= "
                                             << ELEMENTS_MAX << " unpacked elements");
         }
-        if (VN_IS(origDTypep, UnpackArrayDType)) {
-            return origDTypep;
-        } else if (VN_IS(origDTypep, BasicDType)) {
-            return isRangedDType(varp) ? origDTypep : varp->findBitDType();
-        } else if (VN_IS(origDTypep, PackArrayDType)) {
-            return origDTypep;
+        if (AstUnpackArrayDType* const unpackp = VN_CAST(origDTypep, UnpackArrayDType)) {
+            AstNodeDType* const subDTypep = unpackp->subDTypep();
+            AstNodeDType* const enSubDTypep = getEnVarpDTypeRecursep(varp, unpackp);
+            if (subDTypep != enSubDTypep) {
+                AstUnpackArrayDType* const enUnpackp = new AstUnpackArrayDType{
+                    unpackp->fileline(), enSubDTypep, unpackp->rangep()->cloneTree(false)};
+                v3Global.rootp()->typeTablep()->addTypesp(enUnpackp);
+                return enUnpackp;
+            } else {
+                return unpackp;
+            }
+        } else if (AstBasicDType* const basicp = VN_CAST(origDTypep, BasicDType)) {
+            if (basicp->isBit()) {
+                return basicp;
+            } else {
+                return varp->findBitRangeDType(basicp->declRange(), basicp->widthMin(),
+                                               VSigning::UNSIGNED);
+            }
+        } else if (AstPackArrayDType* const packp = VN_CAST(origDTypep, PackArrayDType)) {
+            AstNodeDType* const subDTypep = packp->subDTypep();
+            AstNodeDType* const enSubDTypep = getEnVarpDTypeRecursep(varp, packp);
+            if (subDTypep != enSubDTypep) {
+                AstPackArrayDType* const enPackp = new AstPackArrayDType{
+                    packp->fileline(), enSubDTypep, packp->rangep()->cloneTree(false)};
+                v3Global.rootp()->typeTablep()->addTypesp(enPackp);
+                return enPackp;
+            } else {
+                return packp;
+            }
         } else if (VN_IS(origDTypep, NodeUOrStructDType)) {
             return origDTypep;
         } else {
