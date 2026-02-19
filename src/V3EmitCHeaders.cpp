@@ -213,7 +213,7 @@ class EmitCHeader final : public EmitCConstInit {
             if (!classp->isInterfaceClass() && !classp->isVirtual()) {
                 decorateFirst(first, section);
                 putns(classp, "VlClass* vlClone() const override { return new "
-                              + EmitCUtil::prefixNameProtect(classp) + "(*this); }\n");
+                                  + EmitCUtil::prefixNameProtect(classp) + "(*this); }\n");
             }
         }
     }
