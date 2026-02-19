@@ -998,6 +998,50 @@ public:
     bool isPredictOptimizable() const override { return false; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
+class AstCoverBin final : public AstNode {
+    // A coverage bin definition within a coverpoint
+    // Parents: AstCoverpoint
+    string m_name;  // Bin name
+    VCoverBinKind m_binKind;  // BINS / ILLEGAL_BINS / IGNORE_BINS
+    bool m_isArray = false;  // bins x[] = ...
+    uint32_t m_arraySize = 0;  // bins x[N] = ... (0 = auto)
+    bool m_isDefault = false;  // bins x = default
+    // @astgen op1 := rangesp : List[AstNodeExpr]
+public:
+    AstCoverBin(FileLine* fl, const string& name, VCoverBinKind binKind)
+        : ASTGEN_SUPER_CoverBin(fl)
+        , m_name{name}
+        , m_binKind{binKind} {}
+    ASTGEN_MEMBERS_AstCoverBin;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    string name() const override VL_MT_STABLE { return m_name; }
+    VCoverBinKind binKind() const { return m_binKind; }
+    bool isArray() const { return m_isArray; }
+    void isArray(bool flag) { m_isArray = flag; }
+    uint32_t arraySize() const { return m_arraySize; }
+    void arraySize(uint32_t size) { m_arraySize = size; }
+    bool isDefault() const { return m_isDefault; }
+    void isDefault(bool flag) { m_isDefault = flag; }
+};
+class AstCoverpoint final : public AstNode {
+    // A coverpoint within a covergroup constructor
+    // Parents: AstFunc (constructor)
+    string m_name;  // Coverpoint name (empty for anonymous)
+    // @astgen op1 := exprp : AstNodeExpr  // Sampled expression
+    // @astgen op2 := iffp : Optional[AstNodeExpr]  // iff guard (reserved for future use)
+    // @astgen op3 := binsp : List[AstNode]  // AstCoverBin + AstCgOptionAssign
+public:
+    AstCoverpoint(FileLine* fl, const string& name, AstNodeExpr* exprp)
+        : ASTGEN_SUPER_Coverpoint(fl)
+        , m_name{name} {
+        this->exprp(exprp);
+    }
+    ASTGEN_MEMBERS_AstCoverpoint;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    string name() const override VL_MT_STABLE { return m_name; }
+};
 class AstDefParam final : public AstNode {
     // A defparam assignment
     // Parents: MODULE
@@ -2548,6 +2592,7 @@ class AstClass final : public AstNodeModule {
     bool m_covergroup = false;  // Is covergroup (TODO perhaps make a new Ast node type for CG?)
     bool m_extended = false;  // Is extension or extended by other classes
     bool m_interfaceClass = false;  // Interface class
+    bool m_needCovergroup = false;  // Need VlCovergroup runtime member
     bool m_needRNG = false;  // Need RNG, uses srandom/randomize
     bool m_useVirtualPublic = false;  // Subclasses need virtual public as uses interface class
     bool m_virtual = false;  // Virtual class
@@ -2574,6 +2619,8 @@ public:
     void isInterfaceClass(bool flag) { m_interfaceClass = flag; }
     bool isVirtual() const { return m_virtual; }
     void isVirtual(bool flag) { m_virtual = flag; }
+    bool needCovergroup() const { return m_needCovergroup; }
+    void needCovergroup(bool flag) { m_needCovergroup = flag; }
     bool needRNG() const { return m_needRNG; }
     void needRNG(bool flag) { m_needRNG = flag; }
     bool useVirtualPublic() const { return m_useVirtualPublic; }

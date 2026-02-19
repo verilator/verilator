@@ -477,6 +477,9 @@ public:
     bool isStdRandomGenerator() const VL_MT_SAFE {
         return keyword() == VBasicDTypeKwd::RANDOM_STDGENERATOR;
     }
+    bool isCovergroupRuntime() const VL_MT_SAFE {
+        return keyword() == VBasicDTypeKwd::COVERGROUP_RUNTIME;
+    }
     bool isOpaque() const VL_MT_SAFE { return keyword().isOpaque(); }
     bool isString() const VL_MT_STABLE { return keyword().isString(); }
     bool isZeroInit() const { return keyword().isZeroInit(); }

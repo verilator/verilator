@@ -1101,6 +1101,8 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
             info.m_type = "VlRandomizer";
         } else if (bdtypep->isStdRandomGenerator()) {
             info.m_type = "VlStdRandomizer";
+        } else if (bdtypep->isCovergroupRuntime()) {
+            info.m_type = "VlCovergroup";
         } else if (bdtypep->isEvent()) {
             info.m_type = v3Global.assignsEvents() ? "VlAssignableEvent" : "VlEvent";
         } else if (dtypep->widthMin() <= 8) {  // Handle unpacked arrays; not bdtypep->width
@@ -3329,6 +3331,20 @@ void AstCgOptionAssign::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, typeOption);
     dumpJsonGen(str);
 }
+void AstCoverBin::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " " << m_binKind.ascii();
+    if (m_isArray) str << " [ARRAY]";
+    if (m_isDefault) str << " [DEFAULT]";
+}
+void AstCoverBin::dumpJson(std::ostream& str) const {
+    dumpJsonStr(str, "binKind", m_binKind.ascii());
+    dumpJsonBoolFuncIf(str, isArray);
+    dumpJsonBoolFuncIf(str, isDefault);
+    dumpJsonGen(str);
+}
+void AstCoverpoint::dump(std::ostream& str) const { this->AstNode::dump(str); }
+void AstCoverpoint::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstDelay::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     if (isCycleDelay()) str << " [CYCLE]";

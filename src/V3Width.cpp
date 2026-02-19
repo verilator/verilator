@@ -1674,9 +1674,8 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
     }
     void visit(AstCgOptionAssign* nodep) override {
-        // We report COVERIGN on the whole covergroup; if get more fine-grained add this
-        // nodep->v3warn(COVERIGN, "Ignoring unsupported: coverage option");
-        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+        // Preserve for V3Covergroup pass to process
+        if (nodep->valuep()) userIterateAndNext(nodep->valuep(), WidthVP{SELF, BOTH}.p());
     }
     void visit(AstPow* nodep) override {
         // Pow is special, output sign only depends on LHS sign, but

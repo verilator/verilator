@@ -438,6 +438,7 @@ public:
         PROCESS_REFERENCE,
         RANDOM_GENERATOR,
         RANDOM_STDGENERATOR,
+        COVERGROUP_RUNTIME,
         // Unsigned and two state; fundamental types
         UINT32,
         UINT64,
@@ -473,6 +474,7 @@ public:
                                             "VlProcessRef",
                                             "VlRandomizer",
                                             "VlStdRandomizer",
+                                            "VlCovergroup",
                                             "IData",
                                             "QData",
                                             "LOGIC_IMPLICIT",
@@ -505,6 +507,7 @@ public:
                                             "%E-proc-ref",
                                             "%E-rand-gen",
                                             "%E-stdrand-gen",
+                                            "%E-covgrp-rt",
                                             "IData",
                                             "QData",
                                             "%E-logic-implct",
@@ -549,6 +552,7 @@ public:
         case PROCESS_REFERENCE: return 0;  // opaque
         case RANDOM_GENERATOR: return 0;  // opaque
         case RANDOM_STDGENERATOR: return 0;  // opaque
+        case COVERGROUP_RUNTIME: return 0;  // opaque
         case UINT32: return 32;
         case UINT64: return 64;
         default: return 0;
@@ -588,7 +592,8 @@ public:
         return (m_e == EVENT || m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR
                 || m_e == MTASKSTATE || m_e == DELAY_SCHEDULER || m_e == TRIGGER_SCHEDULER
                 || m_e == DYNAMIC_TRIGGER_SCHEDULER || m_e == FORK_SYNC || m_e == PROCESS_REFERENCE
-                || m_e == RANDOM_GENERATOR || m_e == RANDOM_STDGENERATOR || m_e == DOUBLE
+                || m_e == RANDOM_GENERATOR || m_e == RANDOM_STDGENERATOR
+                || m_e == COVERGROUP_RUNTIME || m_e == DOUBLE
                 || m_e == UNTYPED);
     }
     bool isDouble() const VL_MT_SAFE { return m_e == DOUBLE; }
@@ -643,6 +648,7 @@ public:
             /* PROCESS_REFERENCE:         */ "",  // Should not be traced
             /* RANDOM_GENERATOR:          */ "",  // Should not be traced
             /* RANDOM_STD_GENERATOR:      */ "",  // Should not be traced
+            /* COVERGROUP_RUNTIME:        */ "",  // Should not be traced
             /* UINT32:                    */ "BIT",
             /* UINT64:                    */ "BIT",
             /* LOGIC_IMPLICIT:            */ "",  // Should not be traced
@@ -810,6 +816,10 @@ public:
         FORK_DONE,
         FORK_INIT,
         FORK_JOIN,
+        COVERGROUP_FINALIZE,
+        COVERGROUP_GET_INST_COV,
+        COVERGROUP_SAMPLE_CP,
+        COVERGROUP_SET_INST_NAME,
         RANDOMIZER_BASIC_STD_RANDOMIZATION,
         RANDOMIZER_CLEARCONSTRAINTS,
         RANDOMIZER_CLEARALL,
@@ -942,6 +952,10 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {FORK_DONE, "done", false}, \
            {FORK_INIT, "init", false}, \
            {FORK_JOIN, "join", false}, \
+           {COVERGROUP_FINALIZE, "finalize", false}, \
+           {COVERGROUP_GET_INST_COV, "getInstCoverage", true}, \
+           {COVERGROUP_SAMPLE_CP, "sampleCoverpoint", false}, \
+           {COVERGROUP_SET_INST_NAME, "setInstName", false}, \
            {RANDOMIZER_BASIC_STD_RANDOMIZATION, "basicStdRandomization", false}, \
            {RANDOMIZER_CLEARCONSTRAINTS, "clearConstraints", false}, \
            {RANDOMIZER_CLEARALL, "clearAll", false}, \
@@ -968,6 +982,42 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {UNPACKED_FILL, "fill", false}, \
            {UNPACKED_NEQ, "neq", true}, \
            {_ENUM_MAX, "_ENUM_MAX", false}};
+
+// ######################################################################
+
+class VCoverBinKind final {
+public:
+    enum en : uint8_t {
+        BINS = 0,
+        ILLEGAL_BINS = 1,
+        IGNORE_BINS = 2
+    };
+    enum en m_e;
+    VCoverBinKind()
+        : m_e{BINS} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VCoverBinKind(en _e)
+        : m_e{_e} {}
+    explicit VCoverBinKind(int _e)
+        : m_e(static_cast<en>(_e)) {}
+    constexpr operator en() const { return m_e; }
+    const char* ascii() const {
+        static const char* const names[] = {"bins", "illegal_bins", "ignore_bins"};
+        return names[m_e];
+    }
+};
+constexpr bool operator==(const VCoverBinKind& lhs, const VCoverBinKind& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VCoverBinKind& lhs, VCoverBinKind::en rhs) {
+    return lhs.m_e == rhs;
+}
+constexpr bool operator==(VCoverBinKind::en lhs, const VCoverBinKind& rhs) {
+    return lhs == rhs.m_e;
+}
+inline std::ostream& operator<<(std::ostream& os, const VCoverBinKind& rhs) {
+    return os << rhs.ascii();
+}
 
 // ######################################################################
 
