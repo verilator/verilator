@@ -299,7 +299,7 @@ private:
         }
         if (AstNodeArrayDType* const arrp = VN_CAST(origDTypep, NodeArrayDType)) {
             AstNodeDType* const subDTypep = arrp->subDTypep();
-            AstNodeDType* const enSubDTypep = getEnVarpDTypeRecursep(varp, arrp);
+            AstNodeDType* const enSubDTypep = getEnVarpDTypeRecursep(varp, subDTypep);
             if (subDTypep != enSubDTypep) {
                 AstNodeArrayDType* enArrp;
                 if (VN_IS(arrp, UnpackArrayDType)) {
@@ -324,8 +324,38 @@ private:
                 return varp->findBitRangeDType(basicp->declRange(), basicp->widthMin(),
                                                VSigning::UNSIGNED);
             }
-        } else if (VN_IS(origDTypep, NodeUOrStructDType)) {
-            return origDTypep;
+        } else if (AstNodeUOrStructDType* const structp
+                   = VN_CAST(origDTypep, NodeUOrStructDType)) {
+            std::vector<AstMemberDType*> enMemberDTypes;
+            bool changed = false;
+            for (AstMemberDType* mdtp = structp->membersp(); mdtp;
+                 mdtp = VN_AS(mdtp->nextp(), MemberDType)) {
+                AstNodeDType* const subMdtp = mdtp->subDTypep();
+                AstNodeDType* const enSubMdtp = getEnVarpDTypeRecursep(varp, subMdtp);
+                if (subMdtp != enSubMdtp) {
+                    changed = true;
+                    enMemberDTypes.push_back(
+                        new AstMemberDType{mdtp->fileline(), mdtp->name(), enSubMdtp});
+                } else {
+                    enMemberDTypes.push_back(mdtp->cloneTreePure(false));
+                }
+            }
+            if (changed) {
+                AstNodeUOrStructDType* enStructp;
+                if (VN_IS(structp, StructDType)) {
+                    enStructp = new AstStructDType{structp->fileline(),
+                                                   VSigning::fromBool(structp->packed())};
+                } else {
+                    varp->v3fatalSrc("Unsupported: Force of variable of unhandled data type");
+                    return dtypep;
+                }
+                for (const auto& memberp : enMemberDTypes) enStructp->addMembersp(memberp);
+                v3Global.rootp()->typeTablep()->addTypesp(enStructp);
+                return enStructp;
+            } else {
+                for (const auto& memberp : enMemberDTypes) memberp->deleteTree();
+                return dtypep;
+            }
         }
         varp->v3fatalSrc("Unsupported: Force of variable of unhandled data type");
         return dtypep;
