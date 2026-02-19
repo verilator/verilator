@@ -130,18 +130,9 @@ public:
 };
 
 class QuadstateVisitor final : public VNVisitor {
-
-    // AstNodeVarRef::user1()   -> bool whether it has been visited
-
-    VNUser1InUse m_user1;
-
     std::map<const AstVar*, std::vector<AstAssignW*>> m_assignWToTrior;
     std::map<const AstVar*, std::vector<AstAssignW*>> m_assignWToTriand;
     std::map<const AstVar*, std::vector<AstAssignW*>> m_assignWToWire;
-    bool m_expectFourStateExpr = false;
-    bool m_isUnderExprp = false;
-
-    bool expectsFourStateExpr() const { return m_expectFourStateExpr; }
 
     static AstNodeExpr* buildTree(std::vector<AstNodeExpr*> exprps, const VCFunc reductor) {
         while (exprps.size() > 1) {
@@ -176,27 +167,11 @@ class QuadstateVisitor final : public VNVisitor {
     }
 
     static bool hasAttrFourState(const AstNodeExpr* const exprp) {
-        return v3Global.opt.fourstate() || exprp->exists([](const AstVarRef* const varRefp) {
-            return varRefp->varp()->attrFourState();
+        return exprp->exists([](const AstVarRef* const varRefp) {
+            return v3Global.opt.fourstate() || varRefp->varp()->attrFourState();
         }) || (v3Global.opt.fourstateLiterals() && exprp->exists([](const AstConst* const nodep) {
                    return nodep->isFourState();
                }));
-    }
-
-    static AstNodeDType* fourStateTypeFromTwoState(const AstNodeDType* const nodep) {
-        if (const AstBasicDType* const basicDTypep = VN_CAST(nodep, BasicDType)) {
-            switch (basicDTypep->keyword()) {
-            case VBasicDTypeKwd::BIT:
-                return nodep->findLogicDType(basicDTypep->width(), basicDTypep->widthMin(),
-                                             basicDTypep->numeric());
-            case VBasicDTypeKwd::INT: return nodep->findSigned32DType();
-            default:
-                nodep->v3fatalSrc("Unsupported Basic 2-state type promotion to 4-state - "
-                                  << basicDTypep->keyword().ascii());
-            }
-        }
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported 2-state type promotion to 4-state - " << nodep);
-        return nullptr;
     }
 
     static AstCFuncHard* wrapExprpInCFuncHard(AstNodeExpr* const exprp, const VCFunc func) {
@@ -207,51 +182,16 @@ class QuadstateVisitor final : public VNVisitor {
         return newp;
     }
 
-    static void castFourToTwo(AstNodeExpr* const exprp) {
-        if (!exprp->dtypep()->isFourstate()) return;
-        if (const AstConst* const constp = VN_CAST(exprp, Const)) {
-            if (!constp->num().isAnyXZ()) return;
-        }
-        // if (AstCFuncHard* const cfuncHard = VN_CAST(exprp, CFuncHard)) {  // FIXME
-        //     if (cfuncHard->cfunc() == VCFunc::FOUR_STATE_FROM_TWO_STATE) {
-        //         VNRelinker relinker;
-        //         exprp->unlinkFrBack(&relinker);
-        //         relinker.relink(cfuncHard->pinsp()->unlinkFrBack());
-        //         cfuncHard->deleteTree();
-        //         return;
-        //     }
-        // }
-        VNRelinker relinker;
-        exprp->unlinkFrBack(&relinker);
-        AstCCast* const newp = new AstCCast{exprp->fileline(), exprp, exprp};
-        relinker.relink(newp);
-        newp->dtypeSetLogicUnsized(exprp->dtypep()->width(), exprp->dtypep()->widthMin(),
-                                   exprp->dtypep()->numeric());
-    }
-
-    static void castTwoToFour(AstNodeExpr* const exprp) {
-        if (exprp->dtypep()->isFourstate()) return;
-        // Casting from four to two and back has some side effects e.g.: x becomes 0
-        VNRelinker relinker;
-        exprp->unlinkFrBack(&relinker);
-        relinker.relink(
-            new AstCCast{exprp->fileline(), exprp, fourStateTypeFromTwoState(exprp->dtypep())});
-    }
-
-    void visit(AstNodeAssign* const nodep) override {
-        VL_RESTORER(m_expectFourStateExpr);
+    void visit(AstAssignW* const nodep) override {
         if (const AstVarRef* const varRefp = VN_CAST(nodep->lhsp(), VarRef)) {
-            m_expectFourStateExpr = varRefp->varp()->attrFourState();
-            if (AstAssignW* const assignWp = VN_CAST(nodep, AssignW)) {
-                const AstVar* const varp = varRefp->varp();
-                if (varp->attrFourState()) {
-                    switch (varp->varType()) {
-                    case VVarType::TRIOR: m_assignWToTrior[varp].push_back(assignWp); break;
-                    case VVarType::TRIAND: m_assignWToTriand[varp].push_back(assignWp); break;
-                    case VVarType::TRIWIRE:
-                    case VVarType::WIRE: m_assignWToWire[varp].push_back(assignWp); break;
-                    default: break;
-                    }
+            const AstVar* const varp = varRefp->varp();
+            if (varp->attrFourState()) {
+                switch (varp->varType()) {
+                case VVarType::TRIOR: m_assignWToTrior[varp].push_back(nodep); break;
+                case VVarType::TRIAND: m_assignWToTriand[varp].push_back(nodep); break;
+                case VVarType::TRIWIRE:
+                case VVarType::WIRE: m_assignWToWire[varp].push_back(nodep); break;
+                default: break;
                 }
             }
         } else if (nodep->lhsp()->isFourState()) {
@@ -259,100 +199,37 @@ class QuadstateVisitor final : public VNVisitor {
                           "assign with complex lhs is unsupported in 4-state logic context");
         }
         iterateChildren(nodep);
-        // if (!expectsFourStateExpr()
-        //     && nodep->rhsp()->isFourState()) {  // FIXME check dtype which will be faster
-        //     wrapExprpInCFuncHard(nodep->rhsp(), VCFunc::FOUR_STATE_TWO_STATE_VALUE)
-        //         ->dtypep(nodep->lhsp()->dtypep());  // FIXME What if there is a width mismatch
-        // }
     }
     void visit(AstNodeIf* const nodep) override {
-        {
-            VL_RESTORER(m_expectFourStateExpr);
-            m_expectFourStateExpr = hasAttrFourState(nodep->condp());
-            iterateAndNextNull(nodep->condp());
-            if (expectsFourStateExpr()) {
-                wrapExprpInCFuncHard(nodep->condp(), VCFunc::FOUR_STATE_IS_TRUE);
-            }
+        if (hasAttrFourState(nodep->condp())) {
+            wrapExprpInCFuncHard(nodep->condp(), VCFunc::FOUR_STATE_IS_TRUE);
         }
-        iterateAndNextNull(nodep->thensp());
-        iterateAndNextNull(nodep->elsesp());
-        iterateAndNextNull(nodep->op4p());
+        iterateChildren(nodep);
     }
     void visit(AstLoopTest* const nodep) override {
-        VL_RESTORER(m_expectFourStateExpr);
-        m_expectFourStateExpr = hasAttrFourState(nodep->condp());
         iterateAndNextNull(nodep->condp());
-        if (expectsFourStateExpr()) {
+        if (hasAttrFourState(nodep->condp())) {
             wrapExprpInCFuncHard(nodep->condp(), VCFunc::FOUR_STATE_IS_TRUE);
         }
     }
     void visit(AstWait* const nodep) override {
-        {
-            VL_RESTORER(m_expectFourStateExpr);
-            m_expectFourStateExpr = hasAttrFourState(nodep->condp());
-            iterateAndNextNull(nodep->condp());
-            if (expectsFourStateExpr()) {
-                wrapExprpInCFuncHard(nodep->condp(), VCFunc::FOUR_STATE_IS_TRUE);
-            }
+        if (hasAttrFourState(nodep->condp())) {
+            wrapExprpInCFuncHard(nodep->condp(), VCFunc::FOUR_STATE_IS_TRUE);
         }
-        iterateAndNextNull(nodep->stmtsp());
+        iterateChildren(nodep);
     }
     void visit(AstDelay* const nodep) override {
-        {
-            VL_RESTORER(m_expectFourStateExpr);
-            m_expectFourStateExpr = hasAttrFourState(nodep->lhsp());
-            iterate(nodep->lhsp());
-            if (expectsFourStateExpr()) castFourToTwo(nodep->lhsp());
+        if (AstConst* const constp = VN_CAST(nodep->lhsp(), Const)) {
+            if (!constp->num().isAnyXZ()) constp->dtypeSetUInt64();
         }
-        iterateAndNextNull(nodep->stmtsp());
+        if (hasAttrFourState(nodep->lhsp())) {
+            const AstNodeDType* const dtypep = nodep->lhsp()->dtypep();
+            wrapExprpInCFuncHard(nodep->lhsp(), VCFunc::FOUR_STATE_TWO_STATE_VALUE)
+                ->dtypeSetBitSized(dtypep->width(), dtypep->numeric());
+        }
+        iterateChildren(nodep);
     }
 
-#define EXPRESSION_VISITOR_COMMON \
-    VL_RESTORER(m_isUnderExprp); \
-    VL_RESTORER(m_expectFourStateExpr); \
-    m_expectFourStateExpr |= !m_isUnderExprp && hasAttrFourState(nodep); \
-    m_isUnderExprp = true;
-
-    void visit(AstNodeExpr* const nodep) override {
-        EXPRESSION_VISITOR_COMMON
-        iterateChildren(nodep);
-    }
-    void visit(AstNodeVarRef* const nodep) override {
-        if (nodep->user1SetOnce()) return;
-        iterateChildren(nodep);
-        if (nodep->access().isReadOnly() && expectsFourStateExpr()
-            && !nodep->dtypep()->isFourstate())
-            castTwoToFour(nodep);
-    }
-    void visit(AstConst* const nodep) override {
-        iterateChildren(nodep);
-        if (expectsFourStateExpr() && nodep->dtypep()->isFourstate() && !nodep->num().isAnyXZ()) {
-            castTwoToFour(nodep);
-        }
-    }
-    void visit(AstRedAnd* const nodep) override {
-        EXPRESSION_VISITOR_COMMON
-        iterateChildren(nodep);
-        if (expectsFourStateExpr()) {
-            nodep->v3warn(E_UNSUPPORTED, "This operator is unsupported for four-state logic");
-        }
-    }
-    void visit(AstRedOr* const nodep) override {
-        EXPRESSION_VISITOR_COMMON
-        iterateChildren(nodep);
-        if (expectsFourStateExpr()) {
-            nodep->v3warn(E_UNSUPPORTED, "This operator is unsupported for four-state logic");
-        }
-    }
-    void visit(AstRedXor* const nodep) override {
-        EXPRESSION_VISITOR_COMMON
-        iterateChildren(nodep);
-        if (expectsFourStateExpr()) {
-            nodep->v3warn(E_UNSUPPORTED, "This operator is unsupported for four-state logic");
-        }
-    }
-    void visit(AstCFuncHard* const) override {
-    }  // Those are here first created so, it allows to easily to not revisit same subtree
     void visit(AstVar* const nodep) override {
         iterateChildren(nodep);
         if (nodep->attrFourState()) {

@@ -606,7 +606,7 @@ class AstCExpr final : public AstNodeExpr {
     void init(const string& text, int setwidth) {
         if (!text.empty()) add(text);
         if (setwidth) {
-            dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
+            dtypeSetBitSized(setwidth, VSigning::UNSIGNED);
         } else {
             dtypeSetVoid();  // Caller to override if necessary
         }
@@ -2770,8 +2770,13 @@ public:
     AstConcat(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Concat(fl, lhsp, rhsp) {
         if (lhsp->dtypep() && rhsp->dtypep()) {
-            dtypeSetLogicSized(lhsp->dtypep()->width() + rhsp->dtypep()->width(),
-                               VSigning::UNSIGNED);
+            if (lhsp->dtypep()->isFourstate() || rhsp->dtypep()->isFourstate()) {
+                dtypeSetLogicSized(lhsp->dtypep()->width() + rhsp->dtypep()->width(),
+                                   VSigning::UNSIGNED);
+            } else {
+                dtypeSetBitSized(lhsp->dtypep()->width() + rhsp->dtypep()->width(),
+                                 VSigning::UNSIGNED);
+            }
         }
     }
     ASTGEN_MEMBERS_AstConcat;
@@ -3628,6 +3633,27 @@ public:
         , m_declElWidth{1}
         , m_widthConst{bitwidth} {
         dtypeSetLogicSized(bitwidth, VSigning::UNSIGNED);
+    }
+    struct GuaranteedInRange {};
+    AstSel(FileLine* fl, AstNodeExpr* fromp, AstNodeExpr* lsbp, int bitwidth, GuaranteedInRange)
+        : ASTGEN_SUPER_Sel(fl, fromp, lsbp)
+        , m_declElWidth{1}
+        , m_widthConst{bitwidth} {
+        if (fromp->dtypep()->isFourstate()) {
+            dtypeSetLogicSized(bitwidth, VSigning::UNSIGNED);
+        } else {
+            dtypeSetBitSized(bitwidth, VSigning::UNSIGNED);
+        }
+    }
+    AstSel(FileLine* fl, AstNodeExpr* fromp, int lsb, int bitwidth, GuaranteedInRange)
+        : ASTGEN_SUPER_Sel(fl, fromp, new AstConst(fl, lsb))  // Need () constructor
+        , m_declElWidth{1}
+        , m_widthConst{bitwidth} {
+        if (fromp->dtypep()->isFourstate()) {
+            dtypeSetLogicSized(bitwidth, VSigning::UNSIGNED);
+        } else {
+            dtypeSetBitSized(bitwidth, VSigning::UNSIGNED);
+        }
     }
     ASTGEN_MEMBERS_AstSel;
     void dump(std::ostream& str) const override;

@@ -412,7 +412,8 @@ void TriggerKit::addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index, bo
     // Set the trigger bit
     AstVarRef* const refp = new AstVarRef{flp, m_vscp, VAccess::WRITE};
     AstNodeExpr* const wordp = new AstArraySel{flp, refp, static_cast<int>(wordIndex)};
-    AstNodeExpr* const trigLhsp = new AstSel{flp, wordp, static_cast<int>(bitIndex), 1};
+    AstNodeExpr* const trigLhsp
+        = new AstSel{flp, wordp, static_cast<int>(bitIndex), 1, AstSel::GuaranteedInRange{}};
     AstNodeExpr* const trigRhsp = new AstVarRef{flp, vscp, VAccess::READ};
     AstNode* const setp = new AstAssign{flp, trigLhsp, trigRhsp};
     if (clear) {
@@ -475,6 +476,11 @@ TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords,
 AstAssign* TriggerKit::createSenTrigVecAssignment(AstVarScope* const target,
                                                   std::vector<AstNodeExpr*>& trigps) {
     FileLine* const flp = target->fileline();
+    for (size_t i = 0; i < trigps.size(); ++i) {
+        if (trigps[i]->isFourState()) {
+            trigps[i] = new AstCFuncHard{flp, VCFunc::FOUR_STATE_IS_TRUE, trigps[i]};
+        }
+    }
     AstAssign* trigStmtsp = nullptr;
     // Assign sense triggers vector one word at a time
     for (size_t i = 0; i < trigps.size(); i += WORD_SIZE) {
@@ -597,7 +603,8 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
         const int wrdIndex = static_cast<int>(index / WORD_SIZE);
         const int bitIndex = static_cast<int>(index % WORD_SIZE);
         AstNodeExpr* const aselp = new AstArraySel{flp, rd(dumpTrgp), wrdIndex};
-        AstNodeExpr* const condp = new AstSel{flp, aselp, bitIndex, 1};
+        AstNodeExpr* const condp
+            = new AstSel{flp, aselp, bitIndex, 1, AstSel::GuaranteedInRange{}};
         AstIf* const ifp = new AstIf{flp, condp};
         kit.m_dumpp->addStmtsp(ifp);
         AstCStmt* const cstmtp = new AstCStmt{flp};
@@ -632,7 +639,8 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
             const int wrdIndex = static_cast<int>(i / WORD_SIZE);
             const int bitIndex = static_cast<int>(i % WORD_SIZE);
             AstNodeExpr* const wordp = new AstArraySel{flp, wr(kit.m_vscp), wrdIndex};
-            AstNodeExpr* const lhsp = new AstSel{flp, wordp, bitIndex, 1};
+            AstNodeExpr* const lhsp
+                = new AstSel{flp, wordp, bitIndex, 1, AstSel::GuaranteedInRange{}};
             AstNodeExpr* const rhsp = new AstConst{flp, AstConst::BitTrue{}};
             if (useAcc) {
                 initFuncp->addStmtsp(new AstAssign{flp, lhsp, rhsp});

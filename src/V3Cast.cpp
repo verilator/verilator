@@ -46,6 +46,139 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 // Cast state, as a visitor of each AstNode
 
+class CastQuadstateVisitor : public VNVisitor {
+    // AstNodeExpr::user1()   -> bool whether it has been visited
+
+    VNUser1InUse m_user1;
+    bool m_expectFourStateExpr = false;
+    bool m_underExpr = false;
+
+    bool expectsFourStateExpr() const { return m_expectFourStateExpr; }
+
+    static bool hasAttrFourState(const AstNodeExpr* const exprp) {
+        if (const AstBasicDType* const dtypep = VN_CAST(exprp->dtypep(), BasicDType)) {
+            if (!dtypep->keyword().isIntNumeric()) return false;
+        }
+        return v3Global.opt.fourstate() || exprp->exists([](const AstVarRef* const varRefp) {
+            return varRefp->varp()->attrFourState();
+        }) || (v3Global.opt.fourstateLiterals() && exprp->exists([](const AstConst* const nodep) {
+                   return nodep->isFourState();
+               }));
+    }
+
+    static AstNodeDType* fourStateTypeFromTwoState(AstNodeDType* const nodep) {
+        if (nodep->isFourstate()) return nodep;
+        if (const AstBasicDType* const basicDTypep = VN_CAST(nodep, BasicDType)) {
+            switch (basicDTypep->keyword()) {
+            default:
+            case VBasicDTypeKwd::BIT:
+                return nodep->findLogicDType(basicDTypep->width(), basicDTypep->widthMin(),
+                                             basicDTypep->numeric());
+            case VBasicDTypeKwd::INT: return nodep->findSigned32DType();
+            }
+        }
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported 2-state type promotion to 4-state - " << nodep);
+        nodep->v3fatalSrc("Unsupported 2-state type promotion to 4-state - ");
+        return nullptr;
+    }
+
+    static AstCFuncHard* wrapExprpInCFuncHard(AstNodeExpr* const exprp, const VCFunc func) {
+        VNRelinker relinker;
+        exprp->unlinkFrBack(&relinker);
+        AstCFuncHard* const newp = new AstCFuncHard{exprp->fileline(), func, exprp};
+        relinker.relink(newp);
+        return newp;
+    }
+
+    static void castFourToTwo(AstNodeExpr* const exprp) {
+        if (!exprp->dtypep()->isFourstate()) return;
+        if (const AstConst* const constp = VN_CAST(exprp, Const)) {
+            if (!constp->num().isAnyXZ()) return;
+        }
+        // if (AstCFuncHard* const cfuncHard = VN_CAST(exprp, CFuncHard)) {  // FIXME
+        //     if (cfuncHard->cfunc() == VCFunc::FOUR_STATE_FROM_TWO_STATE) {
+        //         VNRelinker relinker;
+        //         exprp->unlinkFrBack(&relinker);
+        //         relinker.relink(cfuncHard->pinsp()->unlinkFrBack());
+        //         cfuncHard->deleteTree();
+        //         return;
+        //     }
+        // }
+        VNRelinker relinker;
+        exprp->unlinkFrBack(&relinker);
+        AstCCast* const newp = new AstCCast{exprp->fileline(), exprp, exprp};
+        newp->user1(1);
+        relinker.relink(newp);
+        newp->dtypeSetLogicUnsized(exprp->dtypep()->width(), exprp->dtypep()->widthMin(),
+                                   exprp->dtypep()->numeric());
+    }
+
+    static void castTwoToFour(AstNodeExpr* const exprp) {
+        if (!VN_IS(exprp, Const) && exprp->dtypep()->isFourstate()) return;
+        // Casting from four to two and back has some side effects e.g.: x becomes 0
+        VNRelinker relinker;
+        exprp->unlinkFrBack(&relinker);
+        AstCCast* const newp
+            = new AstCCast{exprp->fileline(), exprp, fourStateTypeFromTwoState(exprp->dtypep())};
+        newp->user1(1);
+        relinker.relink(newp);
+    }
+
+    void visit(AstNodeAssign* const nodep) override {
+        VL_RESTORER(m_expectFourStateExpr);
+        if (const AstVarRef* const varRefp = VN_CAST(nodep->lhsp(), VarRef)) {
+            m_expectFourStateExpr = varRefp->varp()->attrFourState();
+        } else if (nodep->lhsp()->isFourState()) {
+            nodep->v3warn(EC_INFO,
+                          "assign with complex lhs is unsupported in 4-state logic context");
+        }
+        iterateChildren(nodep);
+        // if (!expectsFourStateExpr()
+        //     && nodep->rhsp()->isFourState()) {  // FIXME check dtype which will be faster
+        //     wrapExprpInCFuncHard(nodep->rhsp(), VCFunc::FOUR_STATE_TWO_STATE_VALUE)
+        //         ->dtypep(nodep->lhsp()->dtypep());  // FIXME What if there is a width mismatch
+        // }
+    }
+
+    void visit(AstNodeExpr* const nodep) override {
+        if (nodep->user1SetOnce()) return;
+        VL_RESTORER(m_expectFourStateExpr);
+        VL_RESTORER(m_underExpr);
+        m_expectFourStateExpr = hasAttrFourState(nodep);
+        m_underExpr = true;
+        iterateChildren(nodep);
+    }
+    void visit(AstCCast* const nodep) override {
+        if (nodep->user1SetOnce()) return;
+        VL_RESTORER(m_expectFourStateExpr);
+        VL_RESTORER(m_underExpr);
+        m_expectFourStateExpr = false;
+        m_underExpr = false;
+        iterateChildren(nodep);
+    }
+    void visit(AstNodeVarRef* const nodep) override {
+        if (const AstBasicDType* const dtypep = VN_CAST(nodep->dtypep(), BasicDType)) {
+            if (dtypep->keyword().isIntNumeric() && nodep->access().isReadOnly()
+                && expectsFourStateExpr() && !dtypep->isFourstate()) {
+                castTwoToFour(nodep);
+            }
+        }
+    }
+    void visit(AstConst* const nodep) override {
+        if ((expectsFourStateExpr() || nodep->dtypep()->isFourstate())
+            && !nodep->num().isAnyXZ()) {
+            castTwoToFour(nodep);
+        }
+    }
+    void visit(AstTime* const nodep) override { castTwoToFour(nodep); }
+    void visit(AstNode* const nodep) override { iterateChildren(nodep); }
+
+public:
+    // CONSTRUCTORS
+    explicit CastQuadstateVisitor(AstNetlist* const nodep) { iterate(nodep); }
+    ~CastQuadstateVisitor() override = default;
+};
+
 class CastVisitor final : public VNVisitor {
     // NODE STATE
     // Entire netlist:
@@ -55,7 +188,6 @@ class CastVisitor final : public VNVisitor {
     // STATE
 
     // METHODS
-    void visit(AstCFuncHard* const) {}  // FIXME
     void insertCast(AstNodeExpr* nodep, int needsize) {  // We'll insert ABOVE passed node
         VNRelinker relinkHandle;
         nodep->unlinkFrBack(&relinkHandle);
@@ -202,14 +334,6 @@ class CastVisitor final : public VNVisitor {
         // we're too lazy to wrap every constant in the universe in
         // ((IData)#).
         nodep->user1(nodep->isQuad() || nodep->isWide() || nodep->isNull());
-        // if (nodep->dtypep()->isFourstate() && !nodep->num().isAnyXZ()) {
-        //     VNRelinker relinkHandle;
-        //     nodep->unlinkFrBack(&relinkHandle);
-        //     relinkHandle.relink(new AstCCast{nodep->fileline(), nodep, nodep->dtypep()});
-        //     nodep->dtypeSetBitUnsized(nodep->backp()->dtypep()->width(),
-        //                               nodep->backp()->dtypep()->widthMin(),
-        //                               nodep->backp()->dtypep()->numeric());
-        // }
     }
 
     // Null dereference protection
@@ -253,6 +377,7 @@ public:
 
 void V3Cast::castAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
+    { CastQuadstateVisitor{nodep}; }  // Destruct before checking
     { CastVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("cast", 0, dumpTreeEitherLevel() >= 3);
 }

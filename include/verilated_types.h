@@ -2296,6 +2296,19 @@ struct FourStateLogicWrapper {
         xz = other.xz;
         return *this;
     }
+#define OP_GEN(op) \
+    constexpr FourStateLogicWrapper<CData> operator op( \
+        const FourStateLogicWrapper<T>& other) noexcept { \
+        if (xz || other.xz) return {1, 1}; \
+        return {value op other.value, 0}; \
+    }
+    OP_GEN(==)
+    OP_GEN(!=)
+    OP_GEN(<=)
+    OP_GEN(>=)
+    OP_GEN(<)
+    OP_GEN(>)
+#undef OP_GEN
 };
 
 template <size_t Size, typename From>

@@ -241,7 +241,9 @@ private:
         const auto currp = [this, senp]() { return getCurr(senp); };
         const auto prevp
             = [this, flp, senp]() { return new AstVarRef{flp, getPrev(senp), VAccess::READ}; };
-        const auto lsb = [=](AstNodeExpr* opp) { return new AstSel{flp, opp, 0, 1}; };
+        const auto lsb = [=](AstNodeExpr* opp) {
+            return new AstSel{flp, opp, 0, 1, AstSel::GuaranteedInRange{}};
+        };
 
         // All event signals should be 1-bit at this point
         switch (senItemp->edgeType()) {
