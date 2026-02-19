@@ -11,7 +11,7 @@ package pkg;
     return a - b;
   endfunction
 
-  function automatic logic [7:0] brancy(input logic [7:0] a, input logic [7:0] b);
+  function automatic logic [7:0] branchy(input logic [7:0] a, input logic [7:0] b);
     if (a[0]) begin
       return b + 8'd1;
     end else if (a[1]) begin
@@ -567,7 +567,7 @@ module t (
   end
   `signal(FUNC_2, func_2);
 
-  wire logic [7:0] func_3 = pkg::brancy(rand_a[7:0], rand_b[7:0]);
+  wire logic [7:0] func_3 = pkg::branchy(rand_a[7:0], rand_b[7:0]);
   `signal(FUNC_3, func_3);
 
 endmodule
