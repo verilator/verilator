@@ -122,7 +122,7 @@ class CovergroupVisitor final : public VNVisitor {
         // Find the constructor
         AstFunc* const ctorp = VN_CAST(m_memberMap.findMember(classp, "new"), Func);
         if (!ctorp) {
-            classp->v3warn(E_UNSUPPORTED, "Covergroup missing constructor");
+            classp->v3fatalSrc("Covergroup missing constructor");
             return;
         }
 
@@ -132,6 +132,15 @@ class CovergroupVisitor final : public VNVisitor {
             if (AstCoverpoint* const cpp = VN_CAST(stmtp, Coverpoint)) {
                 m_coverpoints.push_back(cpp);
             }
+        }
+
+        // Remove AstCgOptionAssign from constructor (before early return)
+        for (AstNode* stmtp = ctorp->stmtsp(); stmtp;) {
+            AstNode* const nextp = stmtp->nextp();
+            if (VN_IS(stmtp, CgOptionAssign)) {
+                VL_DO_DANGLING(stmtp->unlinkFrBack()->deleteTree(), stmtp);
+            }
+            stmtp = nextp;
         }
 
         if (m_coverpoints.empty()) return;
@@ -232,20 +241,11 @@ class CovergroupVisitor final : public VNVisitor {
             }
         }
 
-        // 8. Remove original AstCoverpoint/AstCgOptionAssign from constructor
+        // 8. Remove original AstCoverpoint nodes from constructor
         for (AstCoverpoint* const cpp : m_coverpoints) {
             VL_DO_DANGLING(cpp->unlinkFrBack()->deleteTree(), cpp);
         }
         m_coverpoints.clear();
-
-        // Also remove any AstCgOptionAssign at the constructor top-level
-        for (AstNode* stmtp = ctorp->stmtsp(); stmtp;) {
-            AstNode* const nextp = stmtp->nextp();
-            if (VN_IS(stmtp, CgOptionAssign)) {
-                VL_DO_DANGLING(stmtp->unlinkFrBack()->deleteTree(), stmtp);
-            }
-            stmtp = nextp;
-        }
     }
 
     // VISITORS

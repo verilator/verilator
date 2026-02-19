@@ -3,18 +3,6 @@
       |                   ^
                    ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
                    ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
-%Warning-COVERIGN: t/t_covergroup_coverpoints_unsup.v:22:9: Ignoring unsupported: coverpoint
-   22 |         coverpoint a;
-      |         ^~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_coverpoints_unsup.v:24:31: Ignoring unsupported: cover bin specification
-   24 |             bins the_bins [5] = { [0:20] };
-      |                               ^
-%Warning-COVERIGN: t/t_covergroup_coverpoints_unsup.v:23:9: Ignoring unsupported: coverpoint
-   23 |         coverpoint b {
-      |         ^~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_coverpoints_unsup.v:21:5: Ignoring unsupported: covergroup
-   21 |     covergroup cg @(posedge clk);
-      |     ^~~~~~~~~~
 %Error: t/t_covergroup_coverpoints_unsup.v:35:48: Member 'a' not found in covergroup 'cg'
                                                 : ... note: In instance 't'
    35 |             $display("coverage a = %f", the_cg.a.get_inst_coverage());

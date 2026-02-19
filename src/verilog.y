@@ -6912,6 +6912,17 @@ covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
                           newp->dtypep(cgClassp->dtypep());
                           newp->addStmtsp($3);
                           newp->addStmtsp($6);
+                          // 'with function sample' coverpoints reference sample params
+                          // not resolvable in constructor scope — remove them
+                          if ($4) {
+                              for (AstNode* stmtp = newp->stmtsp(); stmtp; ) {
+                                  AstNode* const nextp = stmtp->nextp();
+                                  if (VN_IS(stmtp, Coverpoint)) {
+                                      VL_DO_DANGLING(stmtp->unlinkFrBack()->deleteTree(), stmtp);
+                                  }
+                                  stmtp = nextp;
+                              }
+                          }
                           cgClassp->addMembersp(newp);
                           GRAMMARP->createCoverGroupMethods(cgClassp, $4);
 
