@@ -458,7 +458,7 @@ class EmitCModel final : public EmitCFunc {
             putns(modp, "bool " + EmitCUtil::topClassName()
                             + "::eventsPending() { return !vlSymsp->TOP.");
             puts(delaySchedp->nameProtect());
-            puts(".empty(); }\n\n");
+            puts(".empty() && !contextp()->gotFinish(); }\n\n");
 
             putns(modp, "uint64_t " + EmitCUtil::topClassName()
                             + "::nextTimeSlot() { return vlSymsp->TOP.");

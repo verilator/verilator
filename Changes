@@ -113,6 +113,7 @@ Verilator 5.045 devel
 * Fix inside operator crash with impure expression and unsized range literals (#7063) (#7067). [Yilou Wang]
 * Fix constant propagating DPI-written variables (#7074). [Geza Lore, Testorrent USA, Inc.]
 * Fix conditional expressions in constraints (#7087). [Ryszard Rozak, Antmicro Ltd.]
+* Fix time to not advance after `$finish` (#7095).
 
 
 Verilator 5.044 2026-01-01
