@@ -469,7 +469,8 @@ public:
     // Convert AstAssign to Dfg, return true if successful.
     // Fills 'updates' with bindings for assigned variables.
     bool convert(std::vector<std::pair<Variable*, DfgVertexVar*>>& updates, DfgLogic& vtx,
-                 AstAssign* nodep) {
+                 AstNodeAssign* nodep) {
+        UASSERT_OBJ(VN_IS(nodep, Assign) || VN_IS(nodep, AssignW), nodep, "Bad NodeAssign");
         UASSERT_OBJ(updates.empty(), nodep, "'updates' should be empty");
         VL_RESTORER(m_updatesp);
         VL_RESTORER(m_logicp);
@@ -1315,7 +1316,8 @@ class AstToDfgSynthesize final {
         std::vector<std::pair<Variable*, DfgVertexVar*>> updates;
         for (AstNodeStmt* const stmtp : stmtps) {
             // Regular statements
-            if (AstAssign* const ap = VN_CAST(stmtp, Assign)) {
+            AstNodeAssign* const ap = VN_CAST(stmtp, NodeAssign);
+            if (ap && (VN_IS(ap, Assign) || VN_IS(ap, AssignW))) {
                 // Convert this assignment
                 if (!m_converter.convert(updates, *m_logicp, ap)) {
                     ++m_ctx.m_synt.nonSynConv;
