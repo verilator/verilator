@@ -18,6 +18,7 @@
 
 #include "V3EmitC.h"
 #include "V3EmitCFunc.h"
+#include "V3Global.h"
 #include "V3UniqueNames.h"
 
 #include <algorithm>
@@ -682,7 +683,7 @@ class EmitCModel final : public EmitCFunc {
                 puts("#include \"" + EmitCUtil::topClassName() + ".h\"\n");
                 puts("#include \"" + EmitCUtil::symClassName() + ".h\"\n");
                 puts("#include \"verilated_dpi.h\"\n");
-                puts("#include \"verilated_dpi_fiber.h\"\n");
+                if (v3Global.usesTiming()) { puts("#include \"verilated_dpi_fiber.h\"\n"); }
                 puts("\n");
                 m_lazyDecls.reset();
             }
