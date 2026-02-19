@@ -978,15 +978,6 @@ class TimingControlVisitor final : public VNVisitor {
                 nodep->addStmtsp(cstmtp);
             }
         }
-        if (nodep->dpiExportImpl()) {
-            nodep->exists([](AstCAwait* const awaitp) -> bool {
-                // A DPI-exported coroutine won't be able to block the calling code
-                // Error on the await node; fall back to the function node
-                awaitp->v3warn(E_UNSUPPORTED,
-                               "Unsupported: Timing controls inside DPI-exported tasks");
-                return true;
-            });
-        }
     }
     void visit(AstNodeCCall* nodep) override {
         AstCFunc* const funcp = nodep->funcp();
