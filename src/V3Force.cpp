@@ -295,6 +295,7 @@ private:
             varp->v3warn(E_UNSUPPORTED, "Unsupported: Force of variable with "
                                         ">= "
                                             << ELEMENTS_MAX << " unpacked elements");
+            return dtypep;
         }
         if (AstNodeArrayDType* const arrp = VN_CAST(origDTypep, NodeArrayDType)) {
             AstNodeDType* const subDTypep = arrp->subDTypep();
