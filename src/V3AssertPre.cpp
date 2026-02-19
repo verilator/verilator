@@ -54,8 +54,10 @@ private:
     AstSenItem* m_seniAlwaysp = nullptr;  // Last sensitivity in always
     // Reset each assertion:
     AstNodeExpr* m_disablep = nullptr;  // Last disable
+    AstIf* m_disableSeqIfp = nullptr;  // Used for handling disable iff in sequences
     // Other:
     V3UniqueNames m_cycleDlyNames{"__VcycleDly"};  // Cycle delay counter name generator
+    V3UniqueNames m_disableCntNames{"__VdisableCnt"};  // Disable condition counter name generator
     bool m_inAssign = false;  // True if in an AssignNode
     bool m_inAssignDlyLhs = false;  // True if in AssignDly's LHS
     bool m_inSynchDrive = false;  // True if in synchronous drive
@@ -374,6 +376,11 @@ private:
                                          new AstConst{flp, 1}}});
             beginp->addStmtsp(loopp);
         }
+        if (m_disableSeqIfp) {
+            AstIf* const disableSeqIfp = m_disableSeqIfp->cloneTree(false);
+            disableSeqIfp->addThensp(nodep->nextp()->unlinkFrBackWithNext());
+            nodep->addNextHere(disableSeqIfp);
+        }
         nodep->replaceWith(beginp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
@@ -648,16 +655,64 @@ private:
         iterate(nodep->propp());
     }
     void visit(AstPExpr* nodep) override {
-        VL_RESTORER(m_inPExpr);
-        m_inPExpr = true;
-
         if (AstLogNot* const notp = VN_CAST(nodep->backp(), LogNot)) {
             notp->replaceWith(nodep->unlinkFrBack());
             VL_DO_DANGLING(pushDeletep(notp), notp);
             iterate(nodep);
-        } else {
-            iterateChildren(nodep);
+            return;
         }
+        VL_RESTORER(m_inPExpr);
+        VL_RESTORER(m_disableSeqIfp);
+        m_inPExpr = true;
+
+        if (m_disablep) {
+            const AstSampled* sampledp;
+            if (m_disablep->exists([&sampledp](const AstSampled* const sp) {
+                    sampledp = sp;
+                    return true;
+                })) {
+                sampledp->v3warn(E_UNSUPPORTED,
+                                 "Unsupported: $sampled inside disabled condition of a sequence");
+                m_disablep = new AstConst{m_disablep->fileline(), AstConst::BitFalse{}};
+                // always a copy is used, so remove it now
+                pushDeletep(m_disablep);
+            }
+            FileLine* const flp = nodep->fileline();
+            // Add counter which counts times the condition turned true
+            AstVar* const disableCntp
+                = new AstVar{flp, VVarType::MODULETEMP, m_disableCntNames.get(""),
+                             nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
+            disableCntp->lifetime(VLifetime::STATIC_EXPLICIT);
+            m_modp->addStmtsp(disableCntp);
+            AstVarRef* const readCntRefp = new AstVarRef{flp, disableCntp, VAccess::READ};
+            AstVarRef* const writeCntRefp = new AstVarRef{flp, disableCntp, VAccess::WRITE};
+            AstAssign* const incrStmtp = new AstAssign{
+                flp, writeCntRefp, new AstAdd{flp, readCntRefp, new AstConst{flp, 1}}};
+            AstAlways* const alwaysp
+                = new AstAlways{flp, VAlwaysKwd::ALWAYS,
+                                new AstSenTree{flp, new AstSenItem{flp, VEdgeType::ET_POSEDGE,
+                                                                   m_disablep->cloneTree(false)}},
+                                incrStmtp};
+            disableCntp->addNextHere(alwaysp);
+
+            // Store value of that counter at the beginning of sequence evaluation
+            AstBegin* const bodyp = nodep->bodyp();
+            AstVar* const initialCntp = new AstVar{flp, VVarType::BLOCKTEMP, "__VinitialCnt",
+                                                   nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
+            initialCntp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+            bodyp->stmtsp()->addHereThisAsNext(initialCntp);
+            AstAssign* const assignp
+                = new AstAssign{flp, new AstVarRef{flp, initialCntp, VAccess::WRITE},
+                                readCntRefp->cloneTree(false)};
+            initialCntp->addNextHere(assignp);
+
+            m_disableSeqIfp
+                = new AstIf{flp, new AstEq{flp, new AstVarRef{flp, initialCntp, VAccess::READ},
+                                           readCntRefp->cloneTree(false)}};
+            // Delete it, because it is always copied before insetion to the AST
+            pushDeletep(m_disableSeqIfp);
+        }
+        iterateChildren(nodep);
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_defaultClockingp);
