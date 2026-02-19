@@ -296,41 +296,38 @@ private:
                                         ">= "
                                             << ELEMENTS_MAX << " unpacked elements");
         }
-        if (AstUnpackArrayDType* const unpackp = VN_CAST(origDTypep, UnpackArrayDType)) {
-            AstNodeDType* const subDTypep = unpackp->subDTypep();
-            AstNodeDType* const enSubDTypep = getEnVarpDTypeRecursep(varp, unpackp);
+        if (AstNodeArrayDType* const arrp = VN_CAST(origDTypep, NodeArrayDType)) {
+            AstNodeDType* const subDTypep = arrp->subDTypep();
+            AstNodeDType* const enSubDTypep = getEnVarpDTypeRecursep(varp, arrp);
             if (subDTypep != enSubDTypep) {
-                AstUnpackArrayDType* const enUnpackp = new AstUnpackArrayDType{
-                    unpackp->fileline(), enSubDTypep, unpackp->rangep()->cloneTree(false)};
-                v3Global.rootp()->typeTablep()->addTypesp(enUnpackp);
-                return enUnpackp;
+                AstNodeArrayDType* enArrp;
+                if (VN_IS(arrp, UnpackArrayDType)) {
+                    enArrp = new AstUnpackArrayDType{arrp->fileline(), enSubDTypep,
+                                                     arrp->rangep()->cloneTree(false)};
+                } else if (VN_IS(arrp, PackArrayDType)) {
+                    enArrp = new AstPackArrayDType{arrp->fileline(), enSubDTypep,
+                                                   arrp->rangep()->cloneTree(false)};
+                } else {
+                    varp->v3fatalSrc("Unsupported: Force of variable of unhandled data type");
+                    return origDTypep;
+                }
+                v3Global.rootp()->typeTablep()->addTypesp(enArrp);
+                return enArrp;
             } else {
-                return unpackp;
+                return dtypep;
             }
         } else if (AstBasicDType* const basicp = VN_CAST(origDTypep, BasicDType)) {
             if (basicp->isBit()) {
-                return basicp;
+                return dtypep;
             } else {
                 return varp->findBitRangeDType(basicp->declRange(), basicp->widthMin(),
                                                VSigning::UNSIGNED);
             }
-        } else if (AstPackArrayDType* const packp = VN_CAST(origDTypep, PackArrayDType)) {
-            AstNodeDType* const subDTypep = packp->subDTypep();
-            AstNodeDType* const enSubDTypep = getEnVarpDTypeRecursep(varp, packp);
-            if (subDTypep != enSubDTypep) {
-                AstPackArrayDType* const enPackp = new AstPackArrayDType{
-                    packp->fileline(), enSubDTypep, packp->rangep()->cloneTree(false)};
-                v3Global.rootp()->typeTablep()->addTypesp(enPackp);
-                return enPackp;
-            } else {
-                return packp;
-            }
         } else if (VN_IS(origDTypep, NodeUOrStructDType)) {
             return origDTypep;
-        } else {
-            varp->v3fatalSrc("Unsupported: Force of variable of unhandled data type");
-            return origDTypep;
         }
+        varp->v3fatalSrc("Unsupported: Force of variable of unhandled data type");
+        return dtypep;
     }
 
 public:
