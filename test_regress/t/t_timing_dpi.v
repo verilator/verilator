@@ -14,7 +14,7 @@ module dpi_test ();
 
   export "DPI-C" v_export = task dpi_export;
   task dpi_export(input int unsigned i);
-    @(posedge rtl_clk);
+    //@(posedge rtl_clk);
     $display("%t: v_export: i=%3d", $time, i);
   endtask
 

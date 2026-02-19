@@ -4,8 +4,8 @@
 // any use, without warranty, 2023 by Antmicro.
 // SPDX-License-Identifier: CC0-1.0
 
-#include <assert.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstdio>
 #include <svdpi.h>
 
 #ifdef __cplusplus
