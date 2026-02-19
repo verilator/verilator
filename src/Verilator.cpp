@@ -67,6 +67,7 @@
 #include "V3LibMap.h"
 #include "V3Life.h"
 #include "V3LifePost.h"
+#include "V3LiftExpr.h"
 #include "V3LinkDot.h"
 #include "V3LinkInc.h"
 #include "V3LinkJump.h"
@@ -284,6 +285,13 @@ static void process() {
         }
 
         if (!v3Global.opt.serializeOnly()) {
+            // Lift expressions out of statements. Currently disabled for line and
+            // expression coverage, as otherwise later V3Split would further split
+            // combinational always blocks and alter counts (that needs to be fixed in V3Split)
+            if (v3Global.opt.fLiftExpr()  //
+                && !v3Global.opt.coverageLine() && !v3Global.opt.coverageExpr()) {
+                V3LiftExpr::liftExprAll(v3Global.rootp());
+            }
             // Move assignments from X into MODULE temps.
             // (Before flattening, so each new X variable is shared between all scopes of that
             // module.)

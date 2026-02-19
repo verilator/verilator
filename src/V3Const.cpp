@@ -1623,7 +1623,11 @@ class ConstVisitor final : public VNVisitor {
         if (!thensp->rhsp()->gateTree()) return false;
         if (!elsesp->rhsp()->gateTree()) return false;
         if (m_underRecFunc) return false;  // This optimization may lead to infinite recursion
-        return true;
+        // Only do it if not calls and both pure, otherwise undoes V3LiftExpr
+        return !VN_IS(thensp->rhsp(), NodeFTaskRef)  //
+               && !VN_IS(elsesp->rhsp(), NodeFTaskRef)  //
+               && thensp->rhsp()->isPure()  //
+               && elsesp->rhsp()->isPure();
     }
     bool operandIfIf(const AstNodeIf* nodep) {
         if (nodep->elsesp()) return false;

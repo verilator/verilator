@@ -91,6 +91,7 @@ test.compile(verilator_flags2=[
     "-Mdir", test.obj_dir + "/obj_opt",
     "--prefix", "Vopt",
     "-fno-const-before-dfg",  # Otherwise V3Const makes testing painful
+    "-fno-lift-expr", # Assumes V3Const run prior to V3LiftExpr
     "-fdfg-synthesize-all",
     "--dump-dfg",  # To fill code coverage
     "-CFLAGS \"-I .. -I ../obj_ref\"",

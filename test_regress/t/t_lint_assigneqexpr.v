@@ -24,13 +24,14 @@ module Sub (
     input logic [2:0] a_i,
     input logic b_i,
     output logic c_o,
-    output logic d_o
+    output logic d_o,
+    output logic e_o
 );
   assign c_o = (a_i != 0) ? 1 : 0;
   assign d_o =  // Note = not == below
       (
-      c_o = 1  // <--- Warning: ASSIGNEQEXPR
+      e_o = 1  // <--- Warning: ASSIGNEQEXPR
       ) ? 1 : (
-      c_o = 0  // <--- Warning: ASSIGNEQEXPR
+      e_o = 0  // <--- Warning: ASSIGNEQEXPR
       ) ? b_i : 0;
 endmodule

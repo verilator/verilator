@@ -1791,6 +1791,26 @@ string AstBasicDType::prettyDTypeName(bool) const {
 
 void AstNodeExpr::dump(std::ostream& str) const { this->AstNode::dump(str); }
 void AstNodeExpr::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
+
+bool AstNodeExpr::isLValue() const {
+    if (const AstNodeVarRef* const varrefp = VN_CAST(this, NodeVarRef)) {
+        return varrefp->access().isWriteOrRW();
+    } else if (const AstMemberSel* const memberselp = VN_CAST(this, MemberSel)) {
+        return memberselp->access().isWriteOrRW();
+    } else if (const AstSel* const selp = VN_CAST(this, Sel)) {
+        return selp->fromp()->isLValue();
+    } else if (const AstNodeSel* const nodeSelp = VN_CAST(this, NodeSel)) {
+        return nodeSelp->fromp()->isLValue();
+    } else if (const AstConcat* const concatp = VN_CAST(this, Concat)) {
+        // Enough to check only one side, as both must be same otherwise malformed
+        return concatp->lhsp()->isLValue();
+    } else if (const AstCMethodHard* const cMethodHardp = VN_CAST(this, CMethodHard)) {
+        // Used for things like Queue/AssocArray/DynArray
+        return cMethodHardp->fromp()->isLValue();
+    }
+    return false;
+}
+
 void AstNodeUniop::dump(std::ostream& str) const { this->AstNodeExpr::dump(str); }
 void AstNodeUniop::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 

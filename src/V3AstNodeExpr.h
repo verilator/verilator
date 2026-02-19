@@ -64,6 +64,7 @@ public:
     // Someday we will generically support data types on every expr node
     // Until then isOpaque indicates we shouldn't constant optimize this node type
     bool isOpaque() const { return VN_IS(this, CvtPackString); }
+    bool isLValue() const;
 
     // Wrap This expression into an AstStmtExpr to denote it occurs in statement position
     inline AstStmtExpr* makeStmt();
