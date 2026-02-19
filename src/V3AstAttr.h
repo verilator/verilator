@@ -482,36 +482,13 @@ public:
         return names[m_e];
     }
     const char* dpiType() const {
-        static const char* const names[] = {"%E-unk",
-                                            "svBit",
-                                            "char",
-                                            "void*",
-                                            "void",
-                                            "char",
-                                            "int",
-                                            "%E-integer",
-                                            "svLogic",
-                                            "long long",
-                                            "double",
-                                            "short",
-                                            "%E-time",
-                                            "const char*",
-                                            "%E-untyped",
-                                            "dpiScope",
-                                            "const char*",
-                                            "%E-mtaskstate",
-                                            "%E-dly-sched",
-                                            "%E-trig-sched",
-                                            "%E-dyn-sched",
-                                            "%E-fork",
-                                            "%E-proc-ref",
-                                            "%E-rand-gen",
-                                            "%E-stdrand-gen",
-                                            "%E-covgrp-rt",
-                                            "IData",
-                                            "QData",
-                                            "%E-logic-implct",
-                                            " MAX"};
+        static const char* const names[]
+            = {"%E-unk",       "svBit",       "char",          "void*",           "void",
+               "char",         "int",         "%E-integer",    "svLogic",         "long long",
+               "double",       "short",       "%E-time",       "const char*",     "%E-untyped",
+               "dpiScope",     "const char*", "%E-mtaskstate", "%E-dly-sched",    "%E-trig-sched",
+               "%E-dyn-sched", "%E-fork",     "%E-proc-ref",   "%E-rand-gen",     "%E-stdrand-gen",
+               "%E-covgrp-rt", "IData",       "QData",         "%E-logic-implct", " MAX"};
         return names[m_e];
     }
     static void selfTest() {
@@ -593,8 +570,7 @@ public:
                 || m_e == MTASKSTATE || m_e == DELAY_SCHEDULER || m_e == TRIGGER_SCHEDULER
                 || m_e == DYNAMIC_TRIGGER_SCHEDULER || m_e == FORK_SYNC || m_e == PROCESS_REFERENCE
                 || m_e == RANDOM_GENERATOR || m_e == RANDOM_STDGENERATOR
-                || m_e == COVERGROUP_RUNTIME || m_e == DOUBLE
-                || m_e == UNTYPED);
+                || m_e == COVERGROUP_RUNTIME || m_e == DOUBLE || m_e == UNTYPED);
     }
     bool isDouble() const VL_MT_SAFE { return m_e == DOUBLE; }
     bool isEvent() const { return m_e == EVENT; }
@@ -987,11 +963,7 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
 
 class VCoverBinKind final {
 public:
-    enum en : uint8_t {
-        BINS = 0,
-        ILLEGAL_BINS = 1,
-        IGNORE_BINS = 2
-    };
+    enum en : uint8_t { BINS = 0, ILLEGAL_BINS = 1, IGNORE_BINS = 2 };
     enum en m_e;
     VCoverBinKind()
         : m_e{BINS} {}

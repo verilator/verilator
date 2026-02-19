@@ -71,8 +71,8 @@ class CovergroupVisitor final : public VNVisitor {
 
         // Open block scope for __b
         funcp->addStmtsp(new AstCStmt{fl, "{ VlCovBinDef& __b = " + cpVar + "->addBin("
-                                               + cppStr(binp->name()) + ", "
-                                               + binKindStr(binp->binKind()) + ");\n"});
+                                              + cppStr(binp->name()) + ", "
+                                              + binKindStr(binp->binKind()) + ");\n"});
 
         if (binp->isDefault()) {
             funcp->addStmtsp(new AstCStmt{fl, "__b.setDefault(true);\n"});
@@ -98,8 +98,8 @@ class CovergroupVisitor final : public VNVisitor {
         }
 
         if (binp->isArray()) {
-            funcp->addStmtsp(new AstCStmt{
-                fl, "__b.setArray(true, " + cvtToStr(binp->arraySize()) + ");\n"});
+            funcp->addStmtsp(
+                new AstCStmt{fl, "__b.setArray(true, " + cvtToStr(binp->arraySize()) + ");\n"});
         }
 
         funcp->addStmtsp(new AstCStmt{fl, "}\n"});
@@ -120,8 +120,7 @@ class CovergroupVisitor final : public VNVisitor {
         classp->needCovergroup(true);
 
         // Find the constructor
-        AstFunc* const ctorp
-            = VN_CAST(m_memberMap.findMember(classp, "new"), Func);
+        AstFunc* const ctorp = VN_CAST(m_memberMap.findMember(classp, "new"), Func);
         if (!ctorp) {
             classp->v3warn(E_UNSUPPORTED, "Covergroup missing constructor");
             return;
@@ -174,22 +173,19 @@ class CovergroupVisitor final : public VNVisitor {
         // __Vcovergrouprt.finalize();
         {
             AstCMethodHard* const callp = new AstCMethodHard{
-                fl, new AstVarRef{fl, cgVarp, VAccess::READ},
-                VCMethod::COVERGROUP_FINALIZE};
+                fl, new AstVarRef{fl, cgVarp, VAccess::READ}, VCMethod::COVERGROUP_FINALIZE};
             callp->dtypeSetVoid();
             ctorp->addStmtsp(callp->makeStmt());
         }
 
         // 5. Populate sample() method body
-        AstFunc* const samplep
-            = VN_CAST(m_memberMap.findMember(classp, "sample"), Func);
+        AstFunc* const samplep = VN_CAST(m_memberMap.findMember(classp, "sample"), Func);
         if (samplep) {
             cpIdx = 0;
             for (AstCoverpoint* const cpp : m_coverpoints) {
                 // __Vcovergrouprt.sampleCoverpoint(cpIdx, (QData)(expr))
                 AstCMethodHard* const callp = new AstCMethodHard{
-                    fl, new AstVarRef{fl, cgVarp, VAccess::READ},
-                    VCMethod::COVERGROUP_SAMPLE_CP};
+                    fl, new AstVarRef{fl, cgVarp, VAccess::READ}, VCMethod::COVERGROUP_SAMPLE_CP};
                 callp->addPinsp(new AstConst{fl, cpIdx});
                 callp->addPinsp(new AstCCast{fl, cpp->exprp()->cloneTree(false), 64});
                 callp->dtypeSetVoid();
@@ -200,12 +196,12 @@ class CovergroupVisitor final : public VNVisitor {
 
         // 6. Populate get_inst_coverage()
         if (AstFunc* const funcp
-                = VN_CAST(m_memberMap.findMember(classp, "get_inst_coverage"), Func)) {
+            = VN_CAST(m_memberMap.findMember(classp, "get_inst_coverage"), Func)) {
             if (AstVar* const fvarp = VN_CAST(funcp->fvarp(), Var)) {
                 // fvarp = __Vcovergrouprt.getInstCoverage()
-                AstCMethodHard* const callp = new AstCMethodHard{
-                    fl, new AstVarRef{fl, cgVarp, VAccess::READ},
-                    VCMethod::COVERGROUP_GET_INST_COV};
+                AstCMethodHard* const callp
+                    = new AstCMethodHard{fl, new AstVarRef{fl, cgVarp, VAccess::READ},
+                                         VCMethod::COVERGROUP_GET_INST_COV};
                 callp->dtypeSetDouble();
                 funcp->addStmtsp(
                     new AstAssign{fl, new AstVarRef{fl, fvarp, VAccess::WRITE}, callp});
@@ -214,7 +210,7 @@ class CovergroupVisitor final : public VNVisitor {
 
         // 7. Populate set_inst_name()
         if (AstFunc* const funcp
-                = VN_CAST(m_memberMap.findMember(classp, "set_inst_name"), Func)) {
+            = VN_CAST(m_memberMap.findMember(classp, "set_inst_name"), Func)) {
             // Find the "name" parameter
             AstVar* nameVarp = nullptr;
             for (AstNode* stmtp = funcp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
@@ -227,10 +223,10 @@ class CovergroupVisitor final : public VNVisitor {
             }
             if (nameVarp) {
                 // __Vcovergrouprt.setInstName(name)
-                AstCMethodHard* const callp = new AstCMethodHard{
-                    fl, new AstVarRef{fl, cgVarp, VAccess::READ},
-                    VCMethod::COVERGROUP_SET_INST_NAME,
-                    new AstVarRef{fl, nameVarp, VAccess::READ}};
+                AstCMethodHard* const callp
+                    = new AstCMethodHard{fl, new AstVarRef{fl, cgVarp, VAccess::READ},
+                                         VCMethod::COVERGROUP_SET_INST_NAME,
+                                         new AstVarRef{fl, nameVarp, VAccess::READ}};
                 callp->dtypeSetVoid();
                 funcp->addStmtsp(callp->makeStmt());
             }

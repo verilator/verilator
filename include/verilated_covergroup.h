@@ -51,11 +51,7 @@ struct VlCovBinRange final {
 //=============================================================================
 // VlCovBinKind - Bin classification
 
-enum class VlCovBinKind : uint8_t {
-    BINS = 0,
-    ILLEGAL_BINS = 1,
-    IGNORE_BINS = 2
-};
+enum class VlCovBinKind : uint8_t { BINS = 0, ILLEGAL_BINS = 1, IGNORE_BINS = 2 };
 
 //=============================================================================
 // VlCovBinDef - Definition of a single named bin (may expand to multiple bins)
@@ -208,8 +204,7 @@ public:
         // Check illegal bins
         for (const auto& def : m_illegalBinDefs) {
             if (def.sample(value) >= 0) {
-                const std::string msg
-                    = "illegal_bins hit in coverpoint '" + m_name + "'";
+                const std::string msg = "illegal_bins hit in coverpoint '" + m_name + "'";
                 VL_WARN_MT(__FILE__, __LINE__, "", msg.c_str());
                 return;
             }
@@ -233,8 +228,7 @@ public:
     double getCoverage() const {
         if (m_nBins == 0) return 100.0;
         if (!m_coverageValid) {
-            m_cachedCoverage
-                = static_cast<double>(m_nBins - m_unhit.size()) / m_nBins * 100.0;
+            m_cachedCoverage = static_cast<double>(m_nBins - m_unhit.size()) / m_nBins * 100.0;
             m_coverageValid = true;
         }
         return m_cachedCoverage;
