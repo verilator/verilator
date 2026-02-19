@@ -20,54 +20,43 @@ module t (
 
   struct_t s_array[3000];
   bit big_array[40][40][40];
-  real r_array[2];
 
   // Test loop
   always @(posedge clk) begin
     cyc <= cyc + 1;
     if (cyc == 0) begin
-      r_array[0] <= 1;
       big_array[1][2][3] <= 1;
       s_array[1].x <= 1;
     end
     else if (cyc == 1) begin
-      `checkr(r_array[0], 1);
       `checkr(big_array[1][2][3], 1);
       `checkh(s_array[1].x, 1);
     end
     else if (cyc == 2) begin
-      force r_array[0] = 0;
       force big_array[1][2][3] = 0;
       force s_array[1].x = 0;
     end
     else if (cyc == 3) begin
-      `checkr(r_array[0], 0);
       `checkr(big_array[1][2][3], 0);
-      r_array[0] <= 1;
       big_array[1][2][3] <= 1;
       `checkh(s_array[1].x, 0);
       s_array[1].x <= 1;
     end
     else if (cyc == 4) begin
-      `checkr(r_array[0], 0);
       `checkr(big_array[1][2][3], 0);
       `checkh(s_array[1].x, 0);
     end
     else if (cyc == 5) begin
-      release r_array[0];
       release big_array[1][2][3];
       release s_array[1].x;
     end
     else if (cyc == 6) begin
-      `checkr(r_array[0], 0);
       `checkr(big_array[1][2][3], 0);
-      r_array[0] <= 1;
       big_array[1][2][3] <= 1;
       `checkh(s_array[1].x, 0);
       s_array[1].x <= 1;
     end
     else if (cyc == 7) begin
-      `checkr(r_array[0], 1);
       `checkr(big_array[1][2][3], 1);
       `checkh(s_array[1].x, 1);
     end
