@@ -58,6 +58,10 @@ Verilator 5.045 devel
 * Optimize temporary insertion for concatenations in DFG (#7013). [Geza Lore, Testorrent USA, Inc.]
 * Optimize removing redundant variables during DFG Peephole pass (#7076). [Geza Lore, Testorrent USA, Inc.]
 * Optimize additional DFG peephole Shift and Concat patterns (#7077). [Geza Lore, Testorrent USA, Inc.]
+* Optimize logic and variable removal early in DFG (#7081). [Geza Lore, Testorrent USA, Inc.]
+* Optimize straight line code in DFG always (#7084). [Geza Lore, Testorrent USA, Inc.]
+* Optimize always blocks using local temporary variables in DFG (#7085). [Geza Lore, Testorrent USA, Inc.]
+* Optimize functions inlined from packages in DFG (#7091). [Geza Lore, Testorrent USA, Inc.]
 * Fix MULTIDRIVEN with task and default driver (#4045) (#6858). [em2machine]
 * Fix parameterized virtual interface references that have no model references (#4286).
 * Fix hierarchical interface/modport issues (#5941) (#6997). [Leela Pakanati]
@@ -69,6 +73,7 @@ Verilator 5.045 devel
 * Fix dynamic array elements passed to ref argument (#6877). [Ryszard Rozak, Antmicro Ltd.]
 * Fix large debug_str for emitted Syms headers (#6889). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix `disable iff` in simple properties (#6890). [Ryszard Rozak, Antmicro Ltd.]
+* Fix #0 delays to control fork scheduling (#6891). [Artur Bieniek, Antmicro Ltd.]
 * Fix member-selected randomization assignments (#6892). [Yilou Wang]
 * Fix WIDTHEXTEND suppression on add/sub with single-bit signal. [Dan Katz]
 * Fix segfault in V3Slice (#6899). [Pawel Kojma, Antmicro Ltd.]
@@ -79,6 +84,7 @@ Verilator 5.045 devel
 * Fix internal error when fork under always expression (#6911).
 * Fix error when calling non-static method (#6916). [Artur Bieniek, Antmicro Ltd.]
 * Fix memory leak in vpi_put_value and vpi_get_value (#6917). [Christian Hecken]
+* Fix interface internal type reference (#6920) (#6966). [Todd Strader]
 * Fix segfault after assignment pattern XOR error (#6928) (#6931). [emmettifelts]
 * Fix delayed initial assignment (#6929). [Todd Strader]
 * Fix event triggering (#6932) (#7072). [Igor Zaworski, Antmicro Ltd.]
@@ -106,6 +112,7 @@ Verilator 5.045 devel
 * Fix randomize() on null object handle crashing instead of returning 0 (#7059) (#7066). [Yilou Wang]
 * Fix inside operator crash with impure expression and unsized range literals (#7063) (#7067). [Yilou Wang]
 * Fix constant propagating DPI-written variables (#7074). [Geza Lore, Testorrent USA, Inc.]
+* Fix conditional expressions in constraints (#7087). [Ryszard Rozak, Antmicro Ltd.]
 
 
 Verilator 5.044 2026-01-01
