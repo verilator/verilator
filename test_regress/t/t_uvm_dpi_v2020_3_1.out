@@ -1,4 +1,4 @@
-UVM Report t/t_uvm_dpi.v:59: id message
+UVM Report t/t_uvm_dpi.v:62: id message
 uvm_dpi_get_tool_name_c() = Verilator
 = uvm_re
 = uvm_hdl_check_path

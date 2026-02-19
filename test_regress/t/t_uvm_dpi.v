@@ -49,6 +49,9 @@ module t;
   logic [4:83] wide_asc  /* verilator public*/;
   // verilator lint_on ASCRANGE
 
+  logic [31:0] mem1d[1:2]  /* verilator public*/;
+  logic [31:0] mem2d[1:2][3:4]  /* verilator public*/;
+
   uvm_hdl_data_t lval;
 
   initial begin
@@ -174,6 +177,51 @@ module t;
       //                    ...._........_...vvvv.
       `checkh(wide_asc, 80'h1234_56789abc_dcb0ffe5);
     end
+
+`ifndef VERILATOR  // Unsupported
+    begin : memory_1d
+      $display("= uvm_hdl_read/deposit 1D memory");
+      i = uvm_hdl_check_path("t.mem1d[0]");
+      `checkh(i, 0);
+      i = uvm_hdl_check_path("t.mem1d[1]");
+      `checkh(i, 1);
+      i = uvm_hdl_check_path("t.mem1d[2]");
+      `checkh(i, 1);
+      i = uvm_hdl_check_path("t.mem1d[3]");
+      `checkh(i, 0);
+      mem1d[1] = 1;
+      mem1d[2] = 2;
+      lval = '0;  // Upper bits not cleared by uvm_hdl_read
+      i = uvm_hdl_read("t.mem1d[2]", lval);
+      `checkh(i, 1);
+      `checkh(lval[31:0], 2);
+      lval = 1024'h200;
+      i = uvm_hdl_deposit("t.mem1d[2]", lval);
+      `checkh(i, 1);
+      `checkh(mem1d[2], 32'h200);
+    end
+
+    begin : memory_2d
+      $display("= uvm_hdl_read/deposit 2D memory");
+      i = uvm_hdl_check_path("t.mem2d[0][2]");
+      `checkh(i, 0);
+      i = uvm_hdl_check_path("t.mem2d[1][3]");
+      `checkh(i, 1);
+      i = uvm_hdl_check_path("t.mem2d[2][4]");
+      `checkh(i, 1);
+      i = uvm_hdl_check_path("t.mem2d[2][5]");
+      `checkh(i, 0);
+      mem2d = '{'{13, 14}, '{23, 24}};
+      lval = '0;  // Upper bits not cleared by uvm_hdl_read
+      i = uvm_hdl_read("t.mem2d[2][3]", lval);
+      `checkh(i, 1);
+      `checkh(lval[31:0], 23);
+      lval = 1024'h2300;
+      i = uvm_hdl_deposit("t.mem2d[2][3]", lval);
+      `checkh(i, 1);
+      `checkh(mem2d[2][3], 32'h2300);
+    end
+`endif
 
     begin : t_deposit_bad
       $display("= uvm_hdl_deposit bad ranges");
