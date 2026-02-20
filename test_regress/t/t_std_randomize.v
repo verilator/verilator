@@ -36,6 +36,8 @@ class std_randomize_class;
 
 endclass
 
+parameter int PARAM = 123;
+
 module t_scope_std_randomize;
     bit [7:0] addr;
     bit [15:0] data;
@@ -45,6 +47,8 @@ module t_scope_std_randomize;
     bit [30:0] limit_31bits[10];
     bit [62:0] limit_63bits[10];
     bit [94:0] limit_95bits[10];
+    int x;
+    int y = 50;
 
     function bit run();
         int ready;
@@ -119,6 +123,12 @@ module t_scope_std_randomize;
         if (addr <= 8'd10 || addr >= 8'd50) `stop;
         if (test.addr <= addr || test.addr >= 8'd100) `stop;
         if (limit_31bits[0] <= 31'(test.addr) || limit_31bits[0] >= 31'd200) `stop;
+
+        // Test parameter in with clause
+        void'(std::randomize(x) with { x > PARAM; });
+        if (x <= PARAM) $stop;
+        void'(std::randomize(x) with { x < PARAM; x > y; });
+        if (x >= PARAM || x <= y) $stop;
 
         $write("*-* All Finished *-*\n");
         $finish;
