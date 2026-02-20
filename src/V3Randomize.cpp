@@ -1944,6 +1944,105 @@ class ConstraintExprVisitor final : public VNVisitor {
             return;
         }
 
+        // Array reduction without 'with' clause (sum, product, and, or, xor)
+        // For dynamic arrays, V3Width keeps these as AstCMethodHard.
+        // Register each element as individual scalar solver variable at constraint
+        // setup time, then build SMT reduction expression over those variables.
+        if (nodep->fromp()->user1()
+            && (nodep->method() == VCMethod::ARRAY_R_SUM
+                || nodep->method() == VCMethod::ARRAY_R_PRODUCT
+                || nodep->method() == VCMethod::ARRAY_R_AND
+                || nodep->method() == VCMethod::ARRAY_R_OR
+                || nodep->method() == VCMethod::ARRAY_R_XOR)) {
+
+            AstVarRef* const arrRefp = VN_CAST(nodep->fromp(), VarRef);
+            if (!arrRefp) {
+                nodep->v3warn(CONSTRAINTIGN,
+                              "Unsupported: reduction on complex expression, treating as state");
+                nodep->user1(false);
+                if (editFormat(nodep)) return;
+                nodep->v3fatalSrc("Method not handled in constraints? " << nodep);
+            }
+            AstVar* const arrVarp = arrRefp->varp();
+            const std::string smtArrayName = arrVarp->name();
+
+            // Get element width
+            AstNodeDType* elemDtp = arrVarp->dtypep()->skipRefp()->subDTypep();
+            const int elemWidth = elemDtp->width();
+
+            // Compute correctly-sized identity value for empty array case
+            const int hexDigits = (elemWidth + 3) / 4;
+            std::string zeroIdentity = "#x" + std::string(hexDigits, '0');
+            std::string oneIdentity = "#x" + std::string(hexDigits - 1, '0') + "1";
+            std::string allOnesIdentity = "#x" + std::string(hexDigits, 'f');
+
+            // Class module for generating VarRefs
+            AstNodeModule* const classModulep = m_classp ? static_cast<AstNodeModule*>(m_classp)
+                                                         : VN_AS(m_genp->user2p(), NodeModule);
+
+            // Mark array as handled so BasicRand skips it. Solver controls
+            // element values via per-element write_var calls in the foreach below.
+            // Don't generate constructor write_var with dimension>0: dynamic arrays
+            // are empty at construction, so record_arr_table finds no elements.
+            arrVarp->user3(true);
+
+            AstVar* const newVarp
+                = new AstVar{fl, VVarType::BLOCKTEMP, "__Vreduce", nodep->findSigned32DType()};
+            AstSelLoopVars* const arrayp
+                = new AstSelLoopVars{fl, nodep->fromp()->cloneTreePure(false), newVarp};
+
+            // Foreach body: register element as scalar solver var + append name
+            AstCStmt* const cstmtp = new AstCStmt{fl};
+            // char __Vn[128]; VL_SNPRINTF(__Vn, ..., "arrayname_%x", idx);
+            cstmtp->add("{\nchar __Vn[128];\nVL_SNPRINTF(__Vn, sizeof(__Vn), \"" + smtArrayName
+                        + "_%x\", (unsigned)");
+            cstmtp->add(new AstVarRef{fl, newVarp, VAccess::READ});
+            cstmtp->add(");\n");
+            // constraint.write_var(array.atWrite(idx), width, __Vn, 0);
+            cstmtp->add(new AstVarRef{fl, classModulep, m_genp, VAccess::READWRITE});
+            cstmtp->add(".write_var(");
+            cstmtp->add(new AstVarRef{fl, classModulep, arrVarp, VAccess::READWRITE});
+            cstmtp->add(".atWrite(");
+            cstmtp->add(new AstVarRef{fl, newVarp, VAccess::READ});
+            cstmtp->add("), " + std::to_string(elemWidth) + "ULL, __Vn, 0ULL);\n");
+            // ret += " "; ret += __Vn;
+            cstmtp->add("ret += \" \";\nret += __Vn;\n}\n");
+
+            AstCExpr* const cexprp = new AstCExpr{fl};
+            cexprp->dtypeSetString();
+            cexprp->add("([&]{\nstd::string ret;\n");
+            cexprp->add(new AstBegin{fl, "", new AstForeach{fl, arrayp, cstmtp}, true});
+
+            const char* smtOp = nullptr;
+            std::string identity;
+            if (nodep->method() == VCMethod::ARRAY_R_SUM) {
+                smtOp = "bvadd";
+                identity = zeroIdentity;
+            } else if (nodep->method() == VCMethod::ARRAY_R_PRODUCT) {
+                smtOp = "bvmul";
+                identity = oneIdentity;
+            } else if (nodep->method() == VCMethod::ARRAY_R_AND) {
+                smtOp = "bvand";
+                identity = allOnesIdentity;
+            } else if (nodep->method() == VCMethod::ARRAY_R_OR) {
+                smtOp = "bvor";
+                identity = zeroIdentity;
+            } else if (nodep->method() == VCMethod::ARRAY_R_XOR) {
+                smtOp = "bvxor";
+                identity = zeroIdentity;
+            } else {
+                nodep->v3fatalSrc("Unhandled reduction method");
+            }
+
+            cexprp->add(std::string("return ret.empty() ? \"") + identity + "\" : \"(" + smtOp
+                        + "\" + ret + \")\";\n})()");
+            // Unlink fromp before replacing (newSel already unlinked it in v1,
+            // but here we used cloneTreePure, so fromp is still linked)
+            nodep->replaceWith(new AstSFormatF{fl, "%@", false, cexprp});
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            return;
+        }
+
         nodep->v3warn(CONSTRAINTIGN,
                       "Unsupported: randomizing this expression, treating as state");
         nodep->user1(false);
