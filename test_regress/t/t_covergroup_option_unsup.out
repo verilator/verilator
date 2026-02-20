@@ -1,0 +1,6 @@
+%Warning-COVERIGN: t/t_covergroup_option_unsup.v:15:13: Ignoring unsupported coverage option: foobar
+   15 |             option.foobar = 1;
+      |             ^~~~~~
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Error: Exiting due to
