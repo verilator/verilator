@@ -19,9 +19,19 @@ class DataItem;
   constraint default_con { limit inside {[8'd50:8'd200]}; }
 endclass
 
+// Test 4: 'this' in inline constraint called from another class method.
+// 'this' must bind to the randomized object, not the calling class.
+class Caller;
+  rand bit [7:0] own_value;
+  function int do_rand(DataItem item);
+    return item.randomize() with { this.value > 8'd30; this.value < 8'd40; };
+  endfunction
+endclass
+
 module t;
   initial begin
     automatic DataItem item = new();
+    automatic Caller caller = new();
     automatic int rand_ok;
 
     // Test 1: 'this.member' in inline constraint from module-level code
@@ -40,6 +50,11 @@ module t;
     `checkd(rand_ok, 1)
     `check_range(item.value, 6, 99)
     `check_range(item.limit, 151, 200)
+
+    // Test 4: 'this' binds to randomized object, not calling class
+    rand_ok = caller.do_rand(item);
+    `checkd(rand_ok, 1)
+    `check_range(item.value, 31, 39)
 
     $write("*-* All Finished *-*\n");
     $finish;

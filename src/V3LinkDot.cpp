@@ -3705,8 +3705,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
 
             if (VN_IS(nodep->lhsp(), ParseRef) && nodep->lhsp()->name() == "this") {
                 VSymEnt* classSymp = getThisClassSymp();
-                // In 'randomize() with { this.member }', 'this' refers to randomized object
-                if (!classSymp && m_randSymp) classSymp = m_randSymp;
+                // In 'randomize() with { this.member }', 'this' refers to randomized
+                // object, not the calling class (IEEE 1800-2023 18.7)
+                if (m_randSymp && m_inWith) classSymp = m_randSymp;
                 if (!classSymp) {
                     nodep->v3error("'this' used outside class (IEEE 1800-2023 8.11)");
                     m_ds.m_dotErr = true;
