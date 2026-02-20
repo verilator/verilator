@@ -419,6 +419,21 @@ int _mon_check_var() {
         CHECK_RESULT(d, vpiUndefined);
     }
 
+    // other unsigned types
+    constexpr struct {
+        const char* name;
+        PLI_INT32 exp_type;
+    } uint_vars[] = {
+        // uvm_hdl_polling.v requires single bits return vpiBitVar
+        {"bit1", vpiBitVar},
+    };
+    for (const auto& s : uint_vars) {
+        TestVpiHandle vh101 = VPI_HANDLE(s.name);
+        CHECK_RESULT_NZ(vh101);
+        d = vpi_get(vpiType, vh101);
+        CHECK_RESULT(d, s.exp_type);
+    }
+
     // other integer types
     tmpValue.format = vpiIntVal;
     constexpr struct {

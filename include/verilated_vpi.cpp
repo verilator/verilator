@@ -421,11 +421,12 @@ public:
         return ret;
     }
     uint32_t type() const override {
-        uint32_t type = vpiReg;
+        uint32_t type;
+        // TODO have V3EmitCSyms.cpp put vpiType directly into constant table
         switch (varp()->vltype()) {
         case VLVT_REAL: type = vpiRealVar; break;
         case VLVT_STRING: type = vpiStringVar; break;
-        default: break;
+        default: type = varp()->isBitVar() ? vpiBitVar : vpiReg; break;
         }
         if (isIndexedDimUnpacked())
             return vpiRegArray;

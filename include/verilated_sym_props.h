@@ -161,6 +161,7 @@ public:
     // DPI compatible C standard layout
     bool isDpiCLayout() const { return ((m_vlflags & VLVF_DPI_CLAY) != 0); }
     bool isSigned() const { return ((m_vlflags & VLVF_SIGNED) != 0); }
+    bool isBitVar() const { return ((m_vlflags & VLVF_BITVAR) != 0); }
     int udims() const VL_MT_SAFE { return m_unpacked.size(); }
     int pdims() const VL_MT_SAFE { return m_packed.size(); }
     int dims() const VL_MT_SAFE { return pdims() + udims(); }

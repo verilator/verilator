@@ -778,8 +778,8 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
 
     // Vector containing every generated CFuncs and related SenTree
     std::vector<std::pair<AstCFunc*, AstSenTree*>> m_generatedFuncs;
-    // Map from SenTree to coresponding scheduler
-    std::map<AstSenTree*, AstNodeExpr*> m_senTreeToSched;
+    // Vector containing SenTrees and coresponding scheduler
+    std::vector<std::pair<AstSenTree*, AstNodeExpr*>> m_senTreeToSched;
     // Map containing vectors of SenItems that share the same prevValue variable
     std::unordered_map<VNRef<AstNode>, std::vector<AstSenItem*>> m_senExprToSenItem;
 
@@ -822,22 +822,31 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
     // For set of bits indexes (of sensitivity vector) return map from those indexes to set
     // of schedulers sensitive to these indexes. Indices are split into word index and bit
     // masking this index within given word
-    std::map<size_t, std::map<size_t, std::set<AstNodeExpr*>>>
+    std::map<size_t, std::map<size_t, std::vector<AstNodeExpr*>>>
     getUsedTriggersToTrees(const std::set<size_t>& usedTriggers) {
-        std::map<size_t, std::map<size_t, std::set<AstNodeExpr*>>> usedTrigsToUsingTrees;
+        std::map<size_t, std::map<size_t, std::vector<AstNodeExpr*>>> usedTrigsToUsingTrees;
         for (auto senTreeSched : m_senTreeToSched) {
             const AstSenTree* const senTreep = senTreeSched.first;
             AstNodeExpr* const shedp = senTreeSched.second;
 
             // Find all common SenItem indexes for `senTreep` and `usedTriggers`
-            std::set<size_t> usedTriggersInSenTree;
             for (AstSenItem* senItemp = senTreep->sensesp(); senItemp;
                  senItemp = VN_AS(senItemp->nextp(), SenItem)) {
                 const size_t idx = m_trigKit.senItem2TrigIdx(senItemp);
                 if (usedTriggers.find(idx) != usedTriggers.end()) {
                     usedTrigsToUsingTrees[idx / TriggerKit::WORD_SIZE]
                                          [1 << (idx % TriggerKit::WORD_SIZE)]
-                                             .insert(shedp);
+                                             .push_back(shedp);
+                }
+            }
+        }
+        if (VL_UNLIKELY(v3Global.opt.debugCheck())) {
+            for (const auto& triggersToTrees : usedTrigsToUsingTrees) {
+                for (const auto& bitsToTrees : triggersToTrees.second) {
+                    const std::set<const AstNodeExpr*> exprps{bitsToTrees.second.begin(),
+                                                              bitsToTrees.second.end()};
+                    UASSERT(bitsToTrees.second.size() == exprps.size(),
+                            "There is a SenTree with two SenItems indicating to the same bit");
                 }
             }
         }
@@ -894,7 +903,7 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
 
                 // Call the before-trigger function before the CAwait
                 nodep->addHereThisAsNext(beforeTrigp->makeStmt());
-                m_senTreeToSched.emplace(nodep->sentreep(), cMethodHardp->fromp());
+                m_senTreeToSched.emplace_back(nodep->sentreep(), cMethodHardp->fromp());
             }
         }
         nodep->clearSentreep();  // Clear as these sentrees will get deleted later
@@ -965,7 +974,7 @@ public:
                 for (AstNodeStmt* const stmtsp : results.m_postUpdates) funcp->addStmtsp(stmtsp);
             }
 
-            std::map<size_t, std::map<size_t, std::set<AstNodeExpr*>>> usedTrigsToUsingTrees
+            std::map<size_t, std::map<size_t, std::vector<AstNodeExpr*>>> usedTrigsToUsingTrees
                 = getUsedTriggersToTrees(usedTriggers);
             usedTriggers.clear();
 

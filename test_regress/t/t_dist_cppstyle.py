@@ -62,7 +62,7 @@ for filename in sorted(files.keys()):
 
     contents = test.file_contents(filename) + "\n\n"
 
-    check_pattern(filename, contents, r"[^\']*virtual[^{};\n]+override[^\n]*", None,
+    check_pattern(filename, contents, r"[^\'/]*virtual[^{};\n]+override[^\n]*", None,
                   "'virtual' keyword is redundant on 'override' method")
 
     check_pattern(filename, contents,

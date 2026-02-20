@@ -154,6 +154,8 @@ void EmitCBaseVisitorConst::emitCFuncDecl(const AstCFunc* funcp, const AstNodeMo
     if (funcp->isVirtual()) {
         UASSERT_OBJ(funcp->isProperMethod(), funcp, "Virtual function is not a proper method");
         putns(funcp, "virtual ");
+        // Intentionally no emit for "override" instead, as clang will then enable warning
+        // on other methods where virtual vs override is needed, and this is not tracked yet
     }
     emitCFuncHeader(funcp, modp, /* withScope: */ false);
     if (funcp->emptyBody() && !funcp->isLoose() && !cLinkage) {
