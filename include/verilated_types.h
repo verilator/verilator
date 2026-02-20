@@ -2213,6 +2213,12 @@ constexpr FourStateLogicWrapper<T> fourLogicBitSel(const FourStateLogicWrapper<T
     return fourLogicBitShiftRight(a, b.value);
 }
 
+template <typename T, typename Y>
+constexpr FourStateLogicWrapper<T> fourLogicBitSel(const FourStateLogicWrapper<T>& a,
+                                                   Y b) noexcept {
+    return fourLogicBitShiftRight(a, b);
+}
+
 template <typename T>
 constexpr T fourLogicCastToTwo(const FourStateLogicWrapper<T>& a) noexcept {
     return a.value & ~a.xz;

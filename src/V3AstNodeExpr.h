@@ -71,6 +71,7 @@ public:
     // broken()
     virtual const char* widthMismatch() const VL_MT_STABLE { return nullptr; }
     virtual bool isFourState() const;
+    virtual void deduceDType() {}
 };
 class AstNodeBiop VL_NOT_FINAL : public AstNodeExpr {
     // Binary expression
@@ -102,6 +103,22 @@ public:
     bool sameNode(const AstNode*) const override { return true; }
     bool isPure() override;
     const char* broken() const override;
+    void deduceDtypeMax() {
+        if (lhsp()->dtypep() && rhsp()->dtypep()) {
+            const AstNodeDType* const lhsDTypep = lhsp()->dtypep();
+            const AstNodeDType* const rhsDTypep = rhsp()->dtypep();
+            int width = std::max(lhsDTypep->width(), rhsDTypep->width());
+            VSigning sign = VSigning::fromBool(lhsDTypep->numeric().isSigned()
+                                               && rhsDTypep->numeric().isSigned());
+            if (lhsDTypep->isFourstate() || rhsDTypep->isFourstate()) {
+                dtypeSetLogicSized(width, sign);
+            } else {
+                dtypeSetBitSized(width, sign);
+            }
+        } else {
+            dtypeFrom(lhsp());
+        }
+    }
 
 private:
     bool getPurityRecurse() const { return lhsp()->isPure() && rhsp()->isPure(); }
@@ -2818,7 +2835,7 @@ class AstDiv final : public AstNodeBiop {
 public:
     AstDiv(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Div(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp);
+        dtypeFrom(lhsp);  // FIXME
     }
     ASTGEN_MEMBERS_AstDiv;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3393,7 +3410,7 @@ class AstModDiv final : public AstNodeBiop {
 public:
     AstModDiv(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_ModDiv(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp);
+        deduceDType();
     }
     ASTGEN_MEMBERS_AstModDiv;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3409,12 +3426,13 @@ public:
     bool sizeMattersLhs() const override { return true; }
     bool sizeMattersRhs() const override { return true; }
     int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_DIV; }
+    void deduceDType() override { deduceDtypeMax(); }
 };
 class AstModDivS final : public AstNodeBiop {
 public:
     AstModDivS(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_ModDivS(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp);
+        deduceDType();
     }
     ASTGEN_MEMBERS_AstModDivS;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3431,6 +3449,7 @@ public:
     bool sizeMattersRhs() const override { return true; }
     int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_DIV; }
     bool signedFlavor() const override { return true; }
+    void deduceDType() override { deduceDtypeMax(); }
 };
 class AstNeqWild final : public AstNodeBiop {
 public:
@@ -3830,7 +3849,7 @@ class AstSub final : public AstNodeBiop {
 public:
     AstSub(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Sub(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp);
+        deduceDType();
     }
     ASTGEN_MEMBERS_AstSub;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3845,6 +3864,7 @@ public:
     bool cleanRhs() const override { return false; }
     bool sizeMattersLhs() const override { return true; }
     bool sizeMattersRhs() const override { return true; }
+    void deduceDType() override { deduceDtypeMax(); }
 };
 class AstSubD final : public AstNodeBiop {
 public:
@@ -4121,7 +4141,7 @@ class AstAdd final : public AstNodeBiComAsv {
 public:
     AstAdd(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Add(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp);
+        deduceDType();
     }
     ASTGEN_MEMBERS_AstAdd;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4136,6 +4156,7 @@ public:
     bool cleanRhs() const override { return false; }
     bool sizeMattersLhs() const override { return true; }
     bool sizeMattersRhs() const override { return true; }
+    void deduceDType() override { deduceDtypeMax(); }
 };
 class AstAddD final : public AstNodeBiComAsv {
 public:
@@ -4162,7 +4183,7 @@ class AstAnd final : public AstNodeBiComAsv {
 public:
     AstAnd(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_And(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp);
+        deduceDType();
     }
     ASTGEN_MEMBERS_AstAnd;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4181,12 +4202,13 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     const char* widthMismatch() const override VL_MT_STABLE;
+    void deduceDType() override { deduceDtypeMax(); }
 };
 class AstMul final : public AstNodeBiComAsv {
 public:
     AstMul(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Mul(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp);
+        deduceDType();
     }
     ASTGEN_MEMBERS_AstMul;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4202,6 +4224,7 @@ public:
     bool sizeMattersLhs() const override { return true; }
     bool sizeMattersRhs() const override { return true; }
     int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_MUL; }
+    void deduceDType() override { deduceDtypeMax(); }
 };
 class AstMulD final : public AstNodeBiComAsv {
 public:
@@ -4228,7 +4251,7 @@ class AstMulS final : public AstNodeBiComAsv {
 public:
     AstMulS(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_MulS(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp);
+        deduceDType();
     }
     ASTGEN_MEMBERS_AstMulS;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4246,12 +4269,13 @@ public:
     bool sizeMattersRhs() const override { return true; }
     int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_MUL; }
     bool signedFlavor() const override { return true; }
+    void deduceDType() override { deduceDtypeMax(); }
 };
 class AstOr final : public AstNodeBiComAsv {
 public:
     AstOr(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Or(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp);
+        deduceDType();
     }
     ASTGEN_MEMBERS_AstOr;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4269,12 +4293,13 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     const char* widthMismatch() const override VL_MT_STABLE;
+    void deduceDType() override { deduceDtypeMax(); }
 };
 class AstXor final : public AstNodeBiComAsv {
 public:
     AstXor(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Xor(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp);
+        deduceDType();
     }
     ASTGEN_MEMBERS_AstXor;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -4293,6 +4318,7 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     const char* widthMismatch() const override VL_MT_STABLE;
+    void deduceDType() override { deduceDtypeMax(); }
 };
 
 // === AstNodeDistBiop ===

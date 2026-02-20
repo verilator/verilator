@@ -8,85 +8,112 @@
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 class QuadstateTypeReducerVisitor final : public VNVisitor {
-    std::map<const AstNodeDType*, AstNodeDType*> m_typesToReduced;
-
-    AstNodeDType* reduceTypeToTwoStateLogic(AstNodeDType* dtypep) {
+    static AstNodeDType* reduceTypeToTwoStateLogic(AstNodeDType* dtypep) {
         if (!dtypep) return nullptr;
         // FIXME: this is terrible since we call this for each Expr and this function in almost
         // each extp travels a whole subtree
-        dtypep = dtypep->skipRefp();
-        const auto it = m_typesToReduced.find(dtypep);
-        if (it != m_typesToReduced.end()) return it->second;
+        {
+            AstNodeDType* const newp = dtypep->skipRefp();
+            if (dtypep != newp) {
+                dtypep->deleteTree();
+                dtypep = newp->cloneTree(false);
+            } else {
+                dtypep = newp;
+            }
+        }
         if (const AstBasicDType* const basicDtypep = VN_CAST(dtypep, BasicDType)) {
             if (!basicDtypep->isFourstate()) return dtypep;
             switch (basicDtypep->keyword()) {
             case VBasicDTypeKwd::LOGIC:
-            case VBasicDTypeKwd::LOGIC_IMPLICIT:
-                return basicDtypep->findBitDType(basicDtypep->width(), basicDtypep->widthMin(),
-                                                 basicDtypep->numeric());
-            case VBasicDTypeKwd::INTEGER: return basicDtypep->findIntDType();
-            case VBasicDTypeKwd::TIME: return basicDtypep->findUInt64DType();
+            case VBasicDTypeKwd::LOGIC_IMPLICIT: {
+                AstBasicDType* const newp = new AstBasicDType{
+                    dtypep->fileline(), VBasicDTypeKwd::BIT, basicDtypep->numeric(),
+                    basicDtypep->width(), basicDtypep->widthMin()};
+                dtypep->deleteTree();
+                return newp;
+            }
+            case VBasicDTypeKwd::INTEGER: {
+                AstBasicDType* const newp = new AstBasicDType{
+                    dtypep->fileline(), VBasicDTypeKwd::INT, basicDtypep->numeric(),
+                    basicDtypep->width(), basicDtypep->widthMin()};
+                dtypep->deleteTree();
+                return newp;
+            }
+            case VBasicDTypeKwd::TIME: {
+                AstBasicDType* const newp = new AstBasicDType{
+                    dtypep->fileline(), VBasicDTypeKwd::UINT64, basicDtypep->numeric(),
+                    basicDtypep->width(), basicDtypep->widthMin()};
+                dtypep->deleteTree();
+                return newp;
+            }
             default:
                 basicDtypep->v3fatalSrc(
                     "Unhandled four state variable type: " << basicDtypep->keyword().ascii());
             }
         }
         if (AstNodeArrayDType* const arrayDtypep = VN_CAST(dtypep, NodeArrayDType)) {
-            AstNodeArrayDType* const newp = arrayDtypep->cloneTree(false);
-            newp->refDTypep(reduceTypeToTwoStateLogic(arrayDtypep->subDTypep()));
-            v3Global.rootp()->typeTablep()->addTypesp(newp);
-            m_typesToReduced.insert({dtypep, newp});
-            return newp;
+            // AstNodeArrayDType* const newp = arrayDtypep->cloneTree(false);
+            arrayDtypep->childDTypep(
+                reduceTypeToTwoStateLogic(arrayDtypep->childDTypep()->unlinkFrBack()));
+            // v3Global.rootp()->typeTablep()->addTypesp(newp);
+            return arrayDtypep;
         }
         if (AstDynArrayDType* const arrayDtypep = VN_CAST(dtypep, DynArrayDType)) {
-            AstDynArrayDType* const newp = arrayDtypep->cloneTree(false);
-            newp->refDTypep(reduceTypeToTwoStateLogic(arrayDtypep->subDTypep()));
-            v3Global.rootp()->typeTablep()->addTypesp(newp);
-            m_typesToReduced.insert({dtypep, newp});
-            return newp;
+            // AstDynArrayDType* const newp = arrayDtypep->cloneTree(false);
+            arrayDtypep->childDTypep(
+                reduceTypeToTwoStateLogic(arrayDtypep->childDTypep()->unlinkFrBack()));
+            // v3Global.rootp()->typeTablep()->addTypesp(newp);
+            return arrayDtypep;
         }
         if (AstWildcardArrayDType* const arrayDtypep = VN_CAST(dtypep, WildcardArrayDType)) {
-            AstWildcardArrayDType* const newp = arrayDtypep->cloneTree(false);
-            newp->refDTypep(reduceTypeToTwoStateLogic(arrayDtypep->subDTypep()));
-            v3Global.rootp()->typeTablep()->addTypesp(newp);
-            m_typesToReduced.insert({dtypep, newp});
-            return newp;
+            // AstWildcardArrayDType* const newp = arrayDtypep->cloneTree(false);
+            arrayDtypep->childDTypep(
+                reduceTypeToTwoStateLogic(arrayDtypep->childDTypep()->unlinkFrBack()));
+            // v3Global.rootp()->typeTablep()->addTypesp(newp);
+            return arrayDtypep;
         }
         if (AstSampleQueueDType* const queueDtypep = VN_CAST(dtypep, SampleQueueDType)) {
-            AstSampleQueueDType* const newp = queueDtypep->cloneTree(false);
-            newp->refDTypep(reduceTypeToTwoStateLogic(queueDtypep->subDTypep()));
-            v3Global.rootp()->typeTablep()->addTypesp(newp);
-            m_typesToReduced.insert({dtypep, newp});
-            return newp;
+            // AstSampleQueueDType* const newp = queueDtypep->cloneTree(false);
+            queueDtypep->childDTypep(
+                reduceTypeToTwoStateLogic(queueDtypep->childDTypep()->unlinkFrBack()));
+            // v3Global.rootp()->typeTablep()->addTypesp(newp);
+            return queueDtypep;
         }
         if (AstQueueDType* const queueDtypep = VN_CAST(dtypep, QueueDType)) {
-            AstQueueDType* const newp = queueDtypep->cloneTree(false);
-            newp->refDTypep(reduceTypeToTwoStateLogic(queueDtypep->subDTypep()));
-            v3Global.rootp()->typeTablep()->addTypesp(newp);
-            m_typesToReduced.insert({dtypep, newp});
-            return newp;
+            // AstQueueDType* const newp = queueDtypep->cloneTree(false);
+            queueDtypep->childDTypep(
+                reduceTypeToTwoStateLogic(queueDtypep->childDTypep()->unlinkFrBack()));
+            // v3Global.rootp()->typeTablep()->addTypesp(newp);
+            return queueDtypep;
+        }
+        if (AstBracketArrayDType* const bracketArrayDtypep = VN_CAST(dtypep, BracketArrayDType)) {
+            // AstQueueDType* const newp = bracketArrayDtypep->cloneTree(false);
+            bracketArrayDtypep->childDTypep(
+                reduceTypeToTwoStateLogic(bracketArrayDtypep->childDTypep()->unlinkFrBack()));
+            // v3Global.rootp()->typeTablep()->addTypesp(newp);
+            return bracketArrayDtypep;
         }
         if (AstNodeUOrStructDType* const structDtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
-            AstNodeUOrStructDType* const newp = structDtypep->cloneTree(false);
-            for (AstMemberDType* memberp = newp->membersp(); memberp;
+            // AstNodeUOrStructDType* const newp = structDtypep->cloneTree(false);
+            for (AstMemberDType* memberp = structDtypep->membersp(); memberp;
                  memberp = VN_AS(memberp->nextp(), MemberDType)) {
                 AstNodeDType* const newMemberDTypep
-                    = reduceTypeToTwoStateLogic(memberp->subDTypep());
-                memberp->refDTypep(newMemberDTypep);
-                memberp->dtypep(newMemberDTypep);
+                    = reduceTypeToTwoStateLogic(memberp->childDTypep()->unlinkFrBack());
+                memberp->childDTypep(newMemberDTypep);
+                // memberp->dtypep(newMemberDTypep);
             }
-            newp->isFourstate(false);  // FIXME: allow four_state pragma in structs
-            v3Global.rootp()->typeTablep()->addTypesp(newp);
-            m_typesToReduced.insert({dtypep, newp});
-            return newp;
+            structDtypep->isFourstate(false);  // FIXME: allow four_state pragma in structs
+            // v3Global.rootp()->typeTablep()->addTypesp(newp);
+            return structDtypep;
         }
         if (AstAssocArrayDType* const arrayDtypep = VN_CAST(dtypep, AssocArrayDType)) {
-            AstAssocArrayDType* const newp = arrayDtypep->cloneTree(false);
-            newp->refDTypep(reduceTypeToTwoStateLogic(arrayDtypep->subDTypep()));
-            newp->keyDTypep(reduceTypeToTwoStateLogic(arrayDtypep->keyDTypep()));
-            v3Global.rootp()->typeTablep()->addTypesp(newp);
-            m_typesToReduced.insert({dtypep, newp});
-            return newp;
+            // AstAssocArrayDType* const newp = arrayDtypep->cloneTree(false);
+            arrayDtypep->refDTypep(
+                reduceTypeToTwoStateLogic(arrayDtypep->subDTypep()->unlinkFrBack()));
+            arrayDtypep->keyDTypep(
+                reduceTypeToTwoStateLogic(arrayDtypep->keyDTypep()->unlinkFrBack()));
+            // v3Global.rootp()->typeTablep()->addTypesp(newp);
+            return arrayDtypep;
         }
         if (VN_IS(dtypep, VoidDType) || VN_IS(dtypep, ClassRefDType)
             || VN_IS(dtypep, IfaceRefDType) || VN_IS(dtypep, NBACommitQueueDType)
@@ -97,31 +124,35 @@ class QuadstateTypeReducerVisitor final : public VNVisitor {
     }
 
     void visit(AstVar* const nodep) override {
-        if (!nodep->attrFourState()) nodep->dtypep(reduceTypeToTwoStateLogic(nodep->dtypep()));
-    }
-    void visit(AstNodeExpr* const nodep) override {
         iterateChildren(nodep);
-        if (!nodep->isFourState()) nodep->dtypep(reduceTypeToTwoStateLogic(nodep->dtypep()));
-    }
-    void visit(AstConsPackUOrStruct* const nodep) override {
-        if (!nodep->isFourState()) {
-            nodep->dtypep(reduceTypeToTwoStateLogic(nodep->dtypep()));
-            AstMemberDType* dtypep = VN_AS(nodep->dtypep(), NodeUOrStructDType)->membersp();
-            for (AstConsPackMember* memberp = nodep->membersp(); memberp;
-                 memberp = VN_AS(memberp->nextp(), ConsPackMember)) {
-                memberp->dtypep(dtypep);
-                dtypep = VN_AS(dtypep->nextp(), MemberDType);
-                iterateChildren(memberp);
-            }
+        if (!nodep->attrFourState() && nodep->varType() != VVarType::GENVAR) {
+            nodep->childDTypep(reduceTypeToTwoStateLogic(nodep->getChildDTypep()->unlinkFrBack()));
         }
     }
-    void visit(AstNodeAssign* const nodep) override {
-        iterateChildren(nodep);
-        nodep->dtypep(nodep->lhsp()->dtypep());
-    }
-    void visit(AstConsPackMember* const nodep) override {
-        nodep->v3fatalSrc("This node shall never be visited here");
-    }
+    // void visit(AstNodeExpr* const nodep) override {
+    //     iterateChildren(nodep);
+    //     if (!nodep->isFourState())
+    //         nodep->dtypep(reduceTypeToTwoStateLogic(nodep->getChildDTypep()));
+    // }
+    // void visit(AstNodeAssign* const nodep) override {
+    //     iterateChildren(nodep);
+    //     nodep->dtypep(nodep->lhsp()->dtypep());
+    // }
+    // void visit(AstConsPackUOrStruct* const nodep) override {
+    //     if (!nodep->isFourState()) {
+    //         nodep->dtypep(reduceTypeToTwoStateLogic(nodep->dtypep()));
+    //         AstMemberDType* dtypep = VN_AS(nodep->dtypep(), NodeUOrStructDType)->membersp();
+    //         for (AstConsPackMember* memberp = nodep->membersp(); memberp;
+    //              memberp = VN_AS(memberp->nextp(), ConsPackMember)) {
+    //             memberp->dtypep(dtypep);
+    //             dtypep = VN_AS(dtypep->nextp(), MemberDType);
+    //             iterateChildren(memberp);
+    //         }
+    //     }
+    // }
+    // void visit(AstConsPackMember* const nodep) override {
+    //     nodep->v3fatalSrc("This node shall never be visited here");
+    // }
     void visit(AstNode* const nodep) override { iterateChildren(nodep); }
 
 public:
@@ -268,7 +299,6 @@ void V3Quadstate::quadstateReduce(AstNetlist* nodep) {
 
 void V3Quadstate::quadstateAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    quadstateReduce(nodep);
     { QuadstateVisitor{nodep}; }
     V3Global::dumpCheckGlobalTree("quadstate", 0, dumpTreeEitherLevel() >= 6);
 }

@@ -200,6 +200,7 @@ static void process() {
             }
         }
 
+        V3Quadstate::quadstateReduce(v3Global.rootp());
         // Calculate and check widths, edit tree to TRUNC/EXTRACT any width mismatches
         V3Width::width(v3Global.rootp());
 

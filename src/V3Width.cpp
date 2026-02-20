@@ -9328,6 +9328,32 @@ public:
     ~WidthVisitor() override = default;
 };
 
+class WidthTypeFixer : public VNVisitor {
+    void visit(AstNodeExpr* const nodep) override {
+        iterateChildren(nodep);
+        nodep->deduceDType();
+    }
+    void visit(AstConst* const nodep) override {
+        if (nodep->dtypep()->isFourstate() && !nodep->num().isAnyXZ()) {
+            nodep->dtypeSetBitUnsized(nodep->dtypep()->width(), nodep->dtypep()->widthMin(),
+                                      nodep->dtypep()->numeric());
+        }
+    }
+    void visit(AstSel* const nodep) override {
+        iterateChildren(nodep);
+        if (nodep->dtypep()->isFourstate() && !nodep->fromp()->dtypep()->isFourstate()
+            && !nodep->lsbp()->dtypep()->isFourstate()) {
+            nodep->dtypeSetBitUnsized(nodep->dtypep()->width(), nodep->dtypep()->widthMin(),
+                                      nodep->dtypep()->numeric());
+        }
+    }
+    void visit(AstNode* const nodep) override { iterateChildren(nodep); }
+
+public:
+    explicit WidthTypeFixer(AstNode* const nodep) { iterate(nodep); }
+    ~WidthTypeFixer() override = default;
+};
+
 //######################################################################
 // Width class functions
 
@@ -9341,6 +9367,7 @@ void V3Width::width(AstNetlist* nodep) {
         WidthRemoveVisitor rvisitor;
         (void)rvisitor.mainAcceptEdit(nodep);
     }  // Destruct before checking
+    { WidthTypeFixer{nodep}; }
     V3Global::dumpCheckGlobalTree("width", 0, dumpTreeEitherLevel() >= 3);
 }
 //! Single node parameter propagation
@@ -9348,8 +9375,11 @@ void V3Width::width(AstNetlist* nodep) {
 AstNode* V3Width::widthParamsEdit(AstNode* nodep) {
     UINFO(4, __FUNCTION__ << ": " << nodep);
     // We should do it in bottom-up module order, but it works in any order.
-    WidthVisitor visitor{true, false};
-    nodep = visitor.mainAcceptEdit(nodep);
+    {
+        WidthVisitor visitor{true, false};
+        nodep = visitor.mainAcceptEdit(nodep);
+    }
+    { WidthTypeFixer{nodep}; }
     // No WidthRemoveVisitor, as don't want to drop $signed etc inside gen blocks
     return nodep;
 }
@@ -9367,8 +9397,11 @@ AstNode* V3Width::widthGenerateParamsEdit(
     AstNode* nodep) {  //!< [in] AST whose parameters widths are to be analyzed.
     UINFO(4, __FUNCTION__ << ": " << nodep);
     // We should do it in bottom-up module order, but it works in any order.
-    WidthVisitor visitor{true, true};
-    nodep = visitor.mainAcceptEdit(nodep);
+    {
+        WidthVisitor visitor{true, true};
+        nodep = visitor.mainAcceptEdit(nodep);
+    }
+    { WidthTypeFixer{nodep}; }
     // No WidthRemoveVisitor, as don't want to drop $signed etc inside gen blocks
     return nodep;
 }

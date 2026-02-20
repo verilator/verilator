@@ -140,6 +140,22 @@ class CastQuadstateVisitor : public VNVisitor {
         // }
     }
 
+    void visit(AstSel* const nodep) override {
+        iterate(nodep->fromp());
+        {
+            m_expectFourStateExpr = false;  // FIXME: What if is x/z lsbp
+            if (AstConst* const constp = VN_CAST(nodep->lsbp(), Const)) {
+                if (constp->num().isAnyXZ()) nodep->v3warn(E_UNSUPPORTED, "x and z in here");
+                if (constp->dtypep()->isFourstate()) {
+                    constp->dtypeSetBitUnsized(constp->dtypep()->width(),
+                                               constp->dtypep()->widthMin(),
+                                               constp->dtypep()->numeric());
+                }
+            } else {
+                iterate(nodep->lsbp());
+            }
+        }
+    }
     void visit(AstNodeExpr* const nodep) override {
         if (nodep->user1SetOnce()) return;
         VL_RESTORER(m_expectFourStateExpr);
