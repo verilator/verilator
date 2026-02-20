@@ -2010,6 +2010,7 @@ public:
     VlClassRef vlClone(VlDeleter& deleter) const {
         if (VL_UNLIKELY(!m_objp)) return {};
         VlClass* clonedp = m_objp->vlClone();
+        if (VL_UNLIKELY(!clonedp)) return {};
         clonedp->m_deleterp = &deleter;
         VlClassRef result;
         result.m_objp = dynamic_cast<T_Class*>(clonedp);
