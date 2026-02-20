@@ -41,6 +41,8 @@
 
 #include "V3Cast.h"
 
+#include "V3Ast.h"
+
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
@@ -69,19 +71,21 @@ class CastVisitor final : public VNVisitor {
         ensureLower32Cast(castp);
         nodep->user1(1);  // Now must be of known size
     }
-    static int castSize(const AstNode* nodep) {
-        if (nodep->isQuad()) {
+    static int castSize(const AstNode* nodep, bool useMin = false) {
+        int width = useMin ? nodep->widthMin() : nodep->width();
+
+        if (width > VL_IDATASIZE && width <= VL_QUADSIZE) {
             return VL_QUADSIZE;
-        } else if (nodep->width() <= 8) {
+        } else if (width <= 8) {
             return 8;
-        } else if (nodep->width() <= 16) {
+        } else if (width <= 16) {
             return 16;
         } else {
             return VL_IDATASIZE;
         }
     }
     void ensureCast(AstNodeExpr* nodep) {
-        if (castSize(nodep->backp()) != castSize(nodep) || !nodep->user1()) {
+        if (castSize(nodep->backp()) != castSize(nodep, true) || !nodep->user1()) {
             if (!nodep->isNull()) insertCast(nodep, castSize(nodep->backp()));
         }
     }
@@ -190,7 +194,7 @@ class CastVisitor final : public VNVisitor {
             && !VN_IS(backp, ArraySel) && !VN_IS(backp, StructSel) && !VN_IS(backp, RedXor)
             && (nodep->varp()->basicp() && !nodep->varp()->basicp()->isForkSync()
                 && !nodep->varp()->basicp()->isProcessRef() && !nodep->varp()->basicp()->isEvent())
-            && backp->width() && castSize(nodep) != castSize(nodep->varp())) {
+            && backp->width() && castSize(nodep, true) != castSize(nodep->varp())) {
             // Cast vars to IData first, else below has upper bits wrongly set
             //  CData x=3; out = (QData)(x<<30);
             insertCast(nodep, castSize(nodep));
@@ -247,4 +251,37 @@ void V3Cast::castAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     { CastVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("cast", 0, dumpTreeEitherLevel() >= 3);
+}
+
+void V3Cast::selfTestArraySelect(bool twoD) {
+    FileLine* const fl = new FileLine{FileLine::builtInFilename()};
+    AstNetlist* const arrTest = new AstNetlist{};
+
+    AstBasicDType* const dtp
+        = new AstBasicDType{fl, VBasicDTypeKwd::LOGIC, VSigning::NOSIGN, 32, 16};
+    AstUnpackArrayDType* arrDtp
+        = new AstUnpackArrayDType{fl, VFlagChildDType{}, dtp, new AstRange{fl, 15, 0}};
+    if (twoD)
+        arrDtp = new AstUnpackArrayDType{fl, VFlagChildDType{}, arrDtp, new AstRange{fl, 1, 0}};
+    arrTest->addMiscsp(arrDtp);
+    AstVar* const varp = new AstVar{fl, VVarType::VAR, "some_array", arrDtp};
+    arrTest->addMiscsp(varp);
+
+    AstNodeExpr* refp = new AstVarRef{fl, varp, VAccess::READ};
+    if (twoD) {
+        refp = new AstArraySel{fl, refp, new AstConst{fl, 1}};
+        refp->dtypep(arrDtp);
+    }
+    AstArraySel* const selp = new AstArraySel{fl, refp, new AstConst{fl, 8}};
+    AstShiftL* const shiftp = new AstShiftL{fl, selp, new AstConst{fl, 3}, 32};
+    arrTest->addMiscsp(shiftp);
+
+    CastVisitor{arrTest};
+    UASSERT(VN_IS(selp->backp(), CCast), "Missing cast on array select");
+    VL_DO_DANGLING(arrTest->deleteTree(), arrTest);
+}
+
+void V3Cast::selfTest() {
+    selfTestArraySelect(false);
+    selfTestArraySelect(true);
 }
