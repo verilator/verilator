@@ -3915,16 +3915,21 @@ class RandomizeVisitor final : public VNVisitor {
 
                 queueVarp->user4p(sizeVarp);
 
-                AstTask* resizerTaskp = VN_AS(m_constraintp->user3p(), Task);
-                if (!resizerTaskp) {
-                    resizerTaskp = newResizeConstrainedArrayTask(classp, m_constraintp->name());
-                    m_constraintp->user3p(resizerTaskp);
+                // Associative arrays have no resize(); only generate resize
+                // for dynamic arrays and queues
+                if (!VN_IS(queueVarp->dtypep()->skipRefp(), AssocArrayDType)) {
+                    AstTask* resizerTaskp = VN_AS(m_constraintp->user3p(), Task);
+                    if (!resizerTaskp) {
+                        resizerTaskp
+                            = newResizeConstrainedArrayTask(classp, m_constraintp->name());
+                        m_constraintp->user3p(resizerTaskp);
+                    }
+                    AstCMethodHard* const resizep = new AstCMethodHard{
+                        fl, nodep->fromp()->unlinkFrBack(), VCMethod::DYN_RESIZE,
+                        new AstVarRef{fl, sizeVarp, VAccess::READ}};
+                    resizep->dtypep(nodep->findVoidDType());
+                    resizerTaskp->addStmtsp(new AstStmtExpr{fl, resizep});
                 }
-                AstCMethodHard* const resizep
-                    = new AstCMethodHard{fl, nodep->fromp()->unlinkFrBack(), VCMethod::DYN_RESIZE,
-                                         new AstVarRef{fl, sizeVarp, VAccess::READ}};
-                resizep->dtypep(nodep->findVoidDType());
-                resizerTaskp->addStmtsp(new AstStmtExpr{fl, resizep});
 
                 // Since size variable is signed int, we need additional constraint
                 // to make sure it is always >= 0.
