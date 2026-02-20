@@ -37,7 +37,7 @@
        "stmtsp": [
         {"type":"STMTEXPR","name":"","addr":"(HB)","loc":"d,41:7,41:8",
          "exprp": [
-          {"type":"TASKREF","name":"f","addr":"(IB)","loc":"d,41:7,41:8","dtypep":"(JB)","dotted":"","taskp":"(Z)","classOrPackagep":"UNLINKED","namep": [],
+          {"type":"TASKREF","name":"f","addr":"(IB)","loc":"d,41:7,41:8","dtypep":"(JB)","dotted":"","taskp":"(Z)","classOrPackagep":"UNLINKED",
            "pinsp": [
             {"type":"ARG","name":"","addr":"(KB)","loc":"d,41:9,41:736",
              "exprp": [
