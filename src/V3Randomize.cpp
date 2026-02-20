@@ -758,6 +758,17 @@ class ConstraintExprVisitor final : public VNVisitor {
         return "";
     }
 
+    // Extract SMT variable name from a solve-before expression.
+    // Returns empty string if the expression is not a simple variable reference.
+    std::string extractSolveBeforeVarName(AstNodeExpr* exprp) {
+        if (const AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
+            return buildMemberPath(memberSelp);
+        } else if (const AstVarRef* const varrefp = VN_CAST(exprp, VarRef)) {
+            return varrefp->name();
+        }
+        return "";
+    }
+
     AstSFormatF* getConstFormat(AstNodeExpr* nodep) {
         return new AstSFormatF{nodep->fileline(), (nodep->width() & 3) ? "#b%b" : "#x%x", false,
                                nodep};
@@ -1759,7 +1770,41 @@ class ConstraintExprVisitor final : public VNVisitor {
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstConstraintBefore* nodep) override {
-        nodep->v3warn(CONSTRAINTIGN, "Constraint expression ignored (imperfect distribution)");
+        // Generate solveBefore() calls for each (lhs, rhs) variable pair.
+        // Do NOT iterate children — these are variable references, not constraint expressions.
+        FileLine* const fl = nodep->fileline();
+        AstNodeModule* const genModp = VN_AS(m_genp->user2p(), NodeModule);
+
+        for (AstNodeExpr* lhsp = nodep->lhssp(); lhsp; lhsp = VN_CAST(lhsp->nextp(), NodeExpr)) {
+            const std::string lhsName = extractSolveBeforeVarName(lhsp);
+            if (lhsName.empty()) {
+                lhsp->v3warn(CONSTRAINTIGN,
+                             "Unsupported: non-variable expression in solve...before");
+                continue;
+            }
+            for (AstNodeExpr* rhsp = nodep->rhssp(); rhsp;
+                 rhsp = VN_CAST(rhsp->nextp(), NodeExpr)) {
+                const std::string rhsName = extractSolveBeforeVarName(rhsp);
+                if (rhsName.empty()) {
+                    rhsp->v3warn(CONSTRAINTIGN,
+                                 "Unsupported: non-variable expression in solve...before");
+                    continue;
+                }
+                AstCMethodHard* const callp = new AstCMethodHard{
+                    fl, new AstVarRef{fl, genModp, m_genp, VAccess::READWRITE},
+                    VCMethod::RANDOMIZER_SOLVE_BEFORE};
+                callp->dtypeSetVoid();
+                AstNodeExpr* const beforeNamep
+                    = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + lhsName + "\""};
+                beforeNamep->dtypeSetUInt32();
+                AstNodeExpr* const afterNamep
+                    = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + rhsName + "\""};
+                afterNamep->dtypeSetUInt32();
+                callp->addPinsp(beforeNamep);
+                callp->addPinsp(afterNamep);
+                nodep->addHereThisAsNext(callp->makeStmt());
+            }
+        }
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     void visit(AstConstraintUnique* nodep) override {
