@@ -37,6 +37,7 @@
 #include "V3Const.h"
 #include "V3Control.h"
 #include "V3Coverage.h"
+#include "V3CoverageFunctional.h"
 #include "V3CoverageJoin.h"
 #include "V3Dead.h"
 #include "V3Delayed.h"
@@ -238,6 +239,10 @@ static void process() {
         // coverage is handled later in V3FsmDetect, after scoping has created
         // the AST context needed to recover and lower FSMs reliably.
         if (v3Global.opt.coverageNonFsm()) V3Coverage::coverage(v3Global.rootp());
+
+        // Functional coverage code generation
+        //    Generate code for covergroups/coverpoints
+        V3CoverageFunctional::coverageFunctional(v3Global.rootp());
 
         // Resolve randsequence if they are used by the design
         if (v3Global.useRandSequence()) V3RandSequence::randSequenceNetlist(v3Global.rootp());
