@@ -157,7 +157,8 @@ enum VerilatedVarFlags {
     VLVF_DPI_CLAY = (1 << 10),  // DPI compatible C standard layout
     VLVF_CONTINUOUSLY = (1 << 11),  // Is continously assigned
     VLVF_FORCEABLE = (1 << 12),  // Forceable
-    VLVF_SIGNED = (1 << 13)  // Signed integer
+    VLVF_SIGNED = (1 << 13),  // Signed integer
+    VLVF_BITVAR = (1 << 14)  // Four state bit (vs two state logic)
 };
 
 // IEEE 1800-2023 Table 20-6

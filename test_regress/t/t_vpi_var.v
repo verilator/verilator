@@ -54,6 +54,7 @@ extern "C" int mon_check();
 
    integer        status;
 
+   bit            bit1           /*verilator public_flat_rw */;
    integer        integer1       /*verilator public_flat_rw */;
    byte           byte1          /*verilator public_flat_rw */;
    shortint       short1         /*verilator public_flat_rw */;
@@ -82,6 +83,7 @@ extern "C" int mon_check();
       text = "Verilog Test module";
       too_big = "some text";
 
+      bit1 = 1;
       integer1 = 123;
       byte1 = 123;
       short1 = 123;

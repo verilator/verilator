@@ -54,6 +54,7 @@ extern "C" int mon_check();
 
    integer        status;
 
+   bit            bit1;
    integer        integer1;
    byte           byte1;
    shortint       short1;
@@ -79,6 +80,7 @@ extern "C" int mon_check();
       text = "Verilog Test module";
       too_big = "some text";
 
+      bit1 = 1;
       integer1 = 123;
       byte1 = 123;
       short1 = 123;
