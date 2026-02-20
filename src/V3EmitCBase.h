@@ -183,6 +183,7 @@ public:
     static string protect(const string& name) VL_MT_SAFE { return VIdProtect::protect(name); }
     static string funcNameProtect(const AstCFunc* nodep, const AstNodeModule* modp = nullptr);
     string cFuncArgs(const AstCFunc* nodep);
+    void emitCDefaultConstructor(const AstNodeModule* modp);
     void emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp, bool withScope);
     void emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule* modp, bool cLinkage = false);
     void emitVarDecl(const AstVar* nodep, bool asRef = false);
