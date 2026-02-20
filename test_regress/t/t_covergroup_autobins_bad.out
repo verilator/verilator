@@ -1,0 +1,14 @@
+%Error: t/t_covergroup_autobins_bad.v:17:18: Automatic bins array size must be a constant
+                                           : ... note: In instance 't'
+   17 |             bins auto[size_var];
+      |                  ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_covergroup_autobins_bad.v:24:18: Automatic bins array size must be 1-10000, got 0
+                                           : ... note: In instance 't'
+   24 |             bins auto[0];
+      |                  ^~~~
+%Error: t/t_covergroup_autobins_bad.v:31:18: Automatic bins array size must be 1-10000, got 10001
+                                           : ... note: In instance 't'
+   31 |             bins auto[10001];
+      |                  ^~~~
+%Error: Exiting due to
