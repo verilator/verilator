@@ -1588,6 +1588,7 @@ AstNode* VNVisitor::iterateSubtreeReturnEdits(AstNode* nodep) {
 #include "V3AstNodeOther.h"
 #include "V3AstNodeExpr.h"
 #include "V3AstNodeStmt.h"
+#include "V3AstNodeFuncCov.h"
 // clang-format on
 
 // Inline function definitions need to go last

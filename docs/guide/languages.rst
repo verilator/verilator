@@ -40,8 +40,10 @@ union, var, void, priority case/if, and unique case/if.
 
 It also supports .name and .\* interconnection.
 
-Verilator partially supports concurrent assert and cover statements; see
-the enclosed coverage tests for the allowed syntax.
+Verilator partially supports concurrent assert and cover statements, as well as
+SystemVerilog functional coverage with ``covergroup``, ``coverpoint``, bins,
+cross coverage, and transition bins. See :ref:`Functional Coverage<user
+coverage>` for details.
 
 Verilator has limited support for class and related object-oriented
 constructs.
@@ -363,10 +365,15 @@ appropriate width.
 Assertions
 ----------
 
-Verilator is beginning to add support for assertions. Verilator currently
-only converts assertions to simple ``if (...) error`` statements, and
-coverage statements to increment the line counters described in the
-coverage section.
+Verilator is beginning to add support for assertions and functional coverage.
+Verilator currently converts assertions to simple ``if (...) error`` statements,
+and simple coverage statements to increment the line counters described in the
+:ref:`coverage section<Coverage>`.
+
+Verilator also partially supports SystemVerilog functional coverage with
+``covergroup``, ``coverpoint``, bins, cross coverage, and transition bins. See
+the :ref:`Functional Coverage<user coverage>` section for details on using
+covergroups for comprehensive coverage analysis.
 
 Verilator does not support SEREs yet. All assertion and coverage statements
 must be simple expressions that complete in one cycle.
