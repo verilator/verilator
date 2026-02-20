@@ -219,7 +219,6 @@ public:
 };
 class AstNodeFTaskRef VL_NOT_FINAL : public AstNodeExpr {
     // A reference to a task (or function)
-    // @astgen op1 := namep : Optional[AstNode]
     // op2 used by some sub-types only
     // @astgen op3 := pinsp : List[AstNodeExpr]
     // @astgen op4 := scopeNamep : Optional[AstScopeName]
