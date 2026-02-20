@@ -1956,13 +1956,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 || nodep->method() == VCMethod::ARRAY_R_XOR)) {
 
             AstVarRef* const arrRefp = VN_CAST(nodep->fromp(), VarRef);
-            if (!arrRefp) {
-                nodep->v3warn(CONSTRAINTIGN,
-                              "Unsupported: reduction on complex expression, treating as state");
-                nodep->user1(false);
-                if (editFormat(nodep)) return;
-                nodep->v3fatalSrc("Method not handled in constraints? " << nodep);
-            }
+            UASSERT_OBJ(arrRefp, nodep, "Array reduction in constraint has non-VarRef source");
             AstVar* const arrVarp = arrRefp->varp();
             const std::string smtArrayName = arrVarp->name();
 
