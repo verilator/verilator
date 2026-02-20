@@ -27,6 +27,10 @@ class AstNetlist;
 class V3Cast final {
 public:
     static void castAll(AstNetlist* nodep) VL_MT_DISABLED;
+    static void selfTest();
+
+private:
+    static void selfTestArraySelect(bool twoD);
 };
 
 #endif  // Guard
