@@ -247,6 +247,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Clock.o \
   V3Combine.o \
   V3Common.o \
+  V3Covergroup.o \
   V3Coverage.o \
   V3CoverageJoin.o \
   V3Dead.o \

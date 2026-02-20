@@ -51,6 +51,8 @@ public:
     bool m_modportImpExpLastIsExport
         = false;  // Last import_export statement in modportPortsDecl is an export
 
+    VCoverBinKind m_coverBinKind;  // Current bins keyword kind for covergroup parsing
+
     int m_pinNum = -1;  // Pin number currently parsing
     std::stack<int> m_pinStack;  // Queue of pin numbers being parsed
 

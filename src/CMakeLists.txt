@@ -231,6 +231,7 @@ set(COMMON_SOURCES
     V3Common.cpp
     V3Control.cpp
     V3Const__gen.cpp
+    V3Covergroup.cpp
     V3Coverage.cpp
     V3CoverageJoin.cpp
     V3Dead.cpp
