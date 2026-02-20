@@ -135,6 +135,7 @@ static vpiHandle uvm_hdl_handle_by_name_partsel(char *path, int *is_partsel_ptr,
   {
     vpiHandle rh;
     s_vpi_value value;
+    int req_width_m1;
     int decl_ranged = 0;
     int decl_lo;
     int decl_hi;
@@ -162,12 +163,13 @@ static vpiHandle uvm_hdl_handle_by_name_partsel(char *path, int *is_partsel_ptr,
     }
     // vpi_printf((PLI_BYTE8 *)"%s:%d: req %d:%d decl %d:%d for '%s'\n",
     //            __FILE__, __LINE__, *hi_ptr, *lo_ptr, decl_left, decl_right, path);
-    decl_lo = (decl_left < decl_right) ? decl_left : decl_right;
+    decl_lo = (decl_left > decl_right) ? decl_right : decl_left;
     decl_hi = (decl_left > decl_right) ? decl_left : decl_right;
     if (*lo_ptr < decl_lo) return 0;
     if (*hi_ptr > decl_hi) return 0;
-    *lo_ptr -= decl_lo;
-    *hi_ptr -= decl_lo;
+    req_width_m1 = *hi_ptr - *lo_ptr;
+    *lo_ptr = (decl_left > decl_right) ? (*lo_ptr - decl_lo) : (decl_right - *hi_ptr);
+    *hi_ptr = *lo_ptr + req_width_m1;
   }
   return r;
 }
@@ -183,13 +185,6 @@ static int uvm_hdl_set_vlog(char *path, p_vpi_vecval value, PLI_INT32 flag) {
   int is_partsel, hi, lo;
   int size;
   static int s_maxsize = -1;
-
-  if (flag == vpiForceFlag || flag == vpiReleaseFlag) {
-    // It appears other simulator interfaces likewise don't support this
-    m_uvm_error("UVM/DPI/VLOG_GET", "Unsupported: uvh_hdl_force/uvm_hdl_release on hdl path '%s'",
-                path);
-    return 0;
-  }
 
   r = uvm_hdl_handle_by_name_partsel(path, &is_partsel, &hi, &lo);
   if (r == 0) {

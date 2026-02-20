@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2007 by Peter Debacker.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2007 Peter Debacker
 // SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/

@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -47,16 +47,17 @@ bool V3LinkDotIfaceCapture::finalizeCapturedEntry(CapturedMap::iterator it, cons
 string V3LinkDotIfaceCapture::extractIfacePortName(const string& dotText) {
     string name = dotText;
     const size_t dotPos = name.find('.');
-    if (dotPos != string::npos) name = name.substr(0, dotPos);
+    if (dotPos != string::npos) name.resize(dotPos);
     const size_t braPos = name.find("__BRA__");
-    if (braPos != string::npos) name = name.substr(0, braPos);
+    if (braPos != string::npos) name.resize(braPos);
     return name;
 }
 
 void V3LinkDotIfaceCapture::add(AstRefDType* refp, AstCell* cellp, AstNodeModule* ownerModp,
                                 AstTypedef* typedefp, AstNodeModule* typedefOwnerModp,
                                 AstVar* ifacePortVarp) {
-    if (!refp) return;
+    // TODO -- probably classes too
+    if (!refp || cellp->modp() == ownerModp) return;
     if (!typedefp) typedefp = refp->typedefp();
     if (!typedefOwnerModp && typedefp) typedefOwnerModp = findOwnerModule(typedefp);
     s_map[refp] = CapturedIfaceTypedef{
@@ -203,7 +204,7 @@ void V3LinkDotIfaceCapture::captureTypedefContext(
     AstVar* ifacePortVarp = nullptr;
     if (!dotText.empty() && curSymp) {
         const std::string portName = extractIfacePortName(dotText);
-        if (VSymEnt* const portSymp = curSymp->findIdFallback(portName)) {
+        if (const VSymEnt* const portSymp = curSymp->findIdFallback(portName)) {
             ifacePortVarp = VN_CAST(portSymp->nodep(), Var);
             UINFO(9, indentFn() << "iface capture found port var '" << portName << "' -> "
                                 << ifacePortVarp);

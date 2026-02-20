@@ -1355,12 +1355,13 @@ parser = argparse.ArgumentParser(
     allow_abbrev=False,
     formatter_class=argparse.RawDescriptionHelpFormatter,
     description="""Generate V3Ast headers to reduce C++ code duplication.""",
-    epilog="""Copyright 2002-2025 by Wilson Snyder. This program is free software; you
-can redistribute it and/or modify it under the terms of either the GNU
-Lesser General Public License Version 3 or the Perl Artistic License
-Version 2.0.
+    epilog="""This program is free software; you can redistribute it and/or modify it
+under the terms of either the GNU Lesser General Public License Version 3
+or the Perl Artistic License Version 2.0.
 
-SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0""")
+SPDX-FileCopyrightText: 2002-2026 Wilson Snyder
+SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+""")
 
 parser.add_argument('-I', action='store', help='source code include directory')
 parser.add_argument('--astdef', action='append', help='add AST definition file (relative to -I)')

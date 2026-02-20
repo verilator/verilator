@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2023 by Antmicro Ltd.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2023 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
 virtual class Virt;
@@ -25,7 +25,7 @@ typedef uvm_object_registry#(MyInt) type_id;
 
 module t;
   initial begin
-    MyInt mi = type_id::create_object();
+    automatic MyInt mi = type_id::create_object();
     if (mi.x != 1) $stop;
 
     $write("*-* All Finished *-*\n");

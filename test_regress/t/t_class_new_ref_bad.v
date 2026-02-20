@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2024 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2024 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 class Base;
@@ -23,7 +23,7 @@ endclass
 module t;
 
    initial begin
-      Base b = Cls::generate_txn();
+      automatic Base b = Cls::generate_txn();
       $display("%p", b);
 
       $write("*-* All Finished *-*\n");

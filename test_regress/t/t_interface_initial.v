@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Test interface with multiple initial blocks
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2025 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2025 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 // Test that interfaces with multiple initial blocks don't cause

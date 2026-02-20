@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2025 by Antmicro.
+// This file ONLY is placed under the Creative Commons Public Domain
+// SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
 class RandomValue;
@@ -24,7 +24,7 @@ endclass
 module t;
   Base b;
   initial begin
-    Foo d = new;
+    automatic Foo d = new;
     b = d;
     d.v.disable_val();
     d.v.value = 11;

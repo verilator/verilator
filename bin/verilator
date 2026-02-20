@@ -1,10 +1,10 @@
 #!/usr/bin/env perl
 ######################################################################
 #
-# Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-# can redistribute it and/or modify it under the terms of either the GNU
-# Lesser General Public License Version 3 or the Perl Artistic License
-# Version 2.0.
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of either the GNU Lesser General Public License Version 3
+# or the Perl Artistic License Version 2.0.
+# SPDX-FileCopyrightText: 2025-2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 #
 ######################################################################
@@ -42,6 +42,7 @@ if ($#ARGV < 0) {
 }
 
 # Insert debugging options up front
+# (VERILATOR_TEST_FLAGS is not a documented nor official supported feature)
 push @ARGV, (split ' ', $ENV{VERILATOR_TEST_FLAGS} || "");
 
 # We sneak a look at the flags so we can do some pre-environment checks
@@ -476,6 +477,7 @@ detailed descriptions of these arguments.
     --public-params             Mark all parameters as public_flat
      -pvalue+<name>=<value>     Overwrite toplevel parameter
     --quiet                     Minimize additional printing
+    --quiet-build               Don't print build progress
     --quiet-exit                Don't print the command on failure
     --quiet-stats               Don't print statistics
     --relative-includes         Resolve includes relative to current file
@@ -485,6 +487,7 @@ detailed descriptions of these arguments.
     --runtime-debug             Enable model runtime debugging
     --savable                   Enable model save-restore
     --sc                        Create SystemC output
+    --sched-zero-delay          Specify #0 delay support
     --no-skip-identical         Disable skipping identical output
     --stats                     Create statistics file
     --stats-vars                Provide statistics on variables
@@ -550,8 +553,6 @@ detailed descriptions of these arguments.
     --x-assign <mode>           Assign non-initial Xs to this value
     --x-initial <mode>          Assign initial Xs to this value
     --x-initial-edge            Enable initial X->0 and X->1 edge triggers
-    --xml-only                  Create XML parser output
-    --xml-output                XML output filename
      -y <dir>                   Directory to search for modules
 
 This is a short summary of the simulation runtime arguments, i.e. for the
@@ -576,13 +577,14 @@ description of these arguments.
      +verilator+seed+<value>               Set random seed
      +verilator+V                          Show verbose version and config
      +verilator+version                    Show version and exit
+     +verilator+wno+unsatconstr+<value>    Disable constraint warnings
 
 
 =head1 DISTRIBUTION
 
 The latest version is available from L<https://verilator.org>.
 
-Copyright 2003-2025 by Wilson Snyder. This program is free software; you can
+Copyright 2003-2026 by Wilson Snyder. This program is free software; you can
 redistribute it and/or modify the Verilator internals under the terms of
 either the GNU Lesser General Public License Version 3 or the Perl Artistic
 License Version 2.0.

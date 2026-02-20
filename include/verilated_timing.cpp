@@ -3,9 +3,10 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2022 by Wilson Snyder. This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU Lesser
-// General Public License Version 3 or the Perl Artistic License Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2001-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //=========================================================================
@@ -66,19 +67,6 @@ void VlDelayScheduler::resume() {
         resumed = true;
     }
 
-    if (!m_zeroDelayed.empty()) {
-        // First, we need to move the coroutines out of the queue, as a resumed coroutine can
-        // suspend on #0 again, adding itself to the queue, which can result in reallocating the
-        // queue mid-iteration.
-        // We swap with the m_zeroDlyResumed field to keep the allocated buffer.
-        m_zeroDlyResumed.swap(m_zeroDelayed);
-        for (auto&& handle : m_zeroDlyResumed) handle.resume();
-        m_zeroDlyResumed.clear();
-        resumed = true;
-        // We are now in the Active region, so any coroutines added to m_zeroDelayed in the
-        // meantime will have to wait until the next Inactive region.
-    }
-
     if (!resumed) {
         if (m_context.time() == 0) {
             // Nothing was scheduled at time 0, but resume() got called due to --x-initial-edge
@@ -91,6 +79,12 @@ void VlDelayScheduler::resume() {
     }
 }
 
+void VlDelayScheduler::resumeZeroDelay() {
+    m_zeroDelayesSwap.swap(m_zeroDelayed);
+    for (VlCoroutineHandle& handle : m_zeroDelayesSwap) handle.resume();
+    m_zeroDelayesSwap.clear();
+}
+
 uint64_t VlDelayScheduler::nextTimeSlot() const {
     if (!m_queue.empty()) return m_queue.cbegin()->first;
     if (m_zeroDelayed.empty())
@@ -100,7 +94,7 @@ uint64_t VlDelayScheduler::nextTimeSlot() const {
 
 #ifdef VL_DEBUG
 void VlDelayScheduler::dump() const {
-    if (m_queue.empty()) {
+    if (m_queue.empty() && m_zeroDelayed.empty()) {
         VL_DBG_MSGF("         No delayed processes:\n");
     } else {
         VL_DBG_MSGF("         Delayed processes:\n");
@@ -126,44 +120,65 @@ void VlTriggerScheduler::resume(const char* eventDescription) {
     VL_DEBUG_IF(dump(eventDescription);
                 VL_DBG_MSGF("         Resuming processes waiting for %s\n", eventDescription););
 #endif
-    std::swap(m_ready, m_resumeQueue);
-    for (VlCoroutineHandle& coro : m_resumeQueue) coro.resume();
-    m_resumeQueue.clear();
-    commit(eventDescription);
+    for (VlCoroutineHandle& coro : m_toResume) coro.resume();
+    m_toResume.clear();
 }
 
-void VlTriggerScheduler::commit(const char* eventDescription) {
+void VlTriggerScheduler::moveToResumeQueue(const char* eventDescription) {
 #ifdef VL_DEBUG
-    if (!m_uncommitted.empty()) {
+    if (!m_fired.empty()) {
+        VL_DEBUG_IF(VL_DBG_MSGF("         Moving to resume queue processes waiting for %s:\n",
+                                eventDescription);
+                    for (const auto& susp
+                         : m_fired) {
+                        VL_DBG_MSGF("           - ");
+                        susp.dump();
+                    });
+    }
+#endif
+    std::swap(m_fired, m_toResume);
+}
+
+void VlTriggerScheduler::ready(const char* eventDescription) {
+#ifdef VL_DEBUG
+    if (!m_awaiting.empty()) {
         VL_DEBUG_IF(
             VL_DBG_MSGF("         Committing processes waiting for %s:\n", eventDescription);
             for (const auto& susp
-                 : m_uncommitted) {
+                 : m_awaiting) {
                 VL_DBG_MSGF("           - ");
                 susp.dump();
             });
     }
 #endif
-    m_ready.reserve(m_ready.size() + m_uncommitted.size());
-    m_ready.insert(m_ready.end(), std::make_move_iterator(m_uncommitted.begin()),
-                   std::make_move_iterator(m_uncommitted.end()));
-    m_uncommitted.clear();
+    const size_t expectedSize = m_fired.size() + m_awaiting.size();
+    if (m_fired.capacity() < expectedSize) m_fired.reserve(expectedSize * 2);
+    m_fired.insert(m_fired.end(), std::make_move_iterator(m_awaiting.begin()),
+                   std::make_move_iterator(m_awaiting.end()));
+    m_awaiting.clear();
 }
 
 #ifdef VL_DEBUG
 void VlTriggerScheduler::dump(const char* eventDescription) const {
-    if (m_ready.empty()) {
-        VL_DBG_MSGF("         No ready processes waiting for %s\n", eventDescription);
+    if (m_toResume.empty()) {
+        VL_DBG_MSGF("         No process to resume waiting for %s\n", eventDescription);
     } else {
-        for (const auto& susp : m_ready) {
-            VL_DBG_MSGF("         Ready processes waiting for %s:\n", eventDescription);
+        for (const auto& susp : m_toResume) {
+            VL_DBG_MSGF("         Processes to resume waiting for %s:\n", eventDescription);
             VL_DBG_MSGF("           - ");
             susp.dump();
         }
     }
-    if (!m_uncommitted.empty()) {
-        VL_DBG_MSGF("         Uncommitted processes waiting for %s:\n", eventDescription);
-        for (const auto& susp : m_uncommitted) {
+    if (!m_fired.empty()) {
+        VL_DBG_MSGF("         Triggered processes waiting for %s:\n", eventDescription);
+        for (const auto& susp : m_awaiting) {
+            VL_DBG_MSGF("           - ");
+            susp.dump();
+        }
+    }
+    if (!m_awaiting.empty()) {
+        VL_DBG_MSGF("         Not triggered processes waiting for %s:\n", eventDescription);
+        for (const auto& susp : m_awaiting) {
             VL_DBG_MSGF("           - ");
             susp.dump();
         }

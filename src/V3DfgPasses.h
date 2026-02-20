@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -37,6 +37,9 @@ std::unique_ptr<DfgGraph> astToDfg(AstModule&, V3DfgContext&) VL_MT_DISABLED;
 
 // Same as above, but for the entire netlist, after V3Scope
 std::unique_ptr<DfgGraph> astToDfg(AstNetlist&, V3DfgContext&) VL_MT_DISABLED;
+
+// Remove unobservable variabels and logic that drives only such variables
+void removeUnobservable(DfgGraph&, V3DfgContext&) VL_MT_DISABLED;
 
 // Synthesize DfgLogic vertices into primitive operations.
 // Removes all DfgLogic (even those that were not synthesized).
@@ -76,6 +79,8 @@ uint32_t colorStronglyConnectedComponents(const DfgGraph&, DfgUserMap<uint64_t>&
 void cse(DfgGraph&, V3DfgCseContext&) VL_MT_DISABLED;
 // Inline fully driven variables
 void inlineVars(DfgGraph&) VL_MT_DISABLED;
+// Push down selects through concatenations
+void pushDownSels(DfgGraph& dfg, V3DfgPushDownSelsContext& ctx) VL_MT_DISABLED;
 // Peephole optimizations
 void peephole(DfgGraph&, V3DfgPeepholeContext&) VL_MT_DISABLED;
 // Regularize graph. This must be run before converting back to Ast.

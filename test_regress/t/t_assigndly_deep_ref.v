@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2025 by Antmicro.
+// This file ONLY is placed under the Creative Commons Public Domain
+// SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
 interface Iface;
@@ -51,9 +51,9 @@ module t;
   endtask
 
   initial begin
-    Foo foo = new(iface);
-    Foo foo2 = new(iface2);
-    Bar bar = new(foo);
+    automatic Foo foo = new(iface);
+    automatic Foo foo2 = new(iface2);
+    automatic Bar bar = new(foo);
     clockSome();
     if (iface.x != 0) $stop;
     if (iface2.x != 0) $stop;

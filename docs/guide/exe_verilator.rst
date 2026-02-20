@@ -1,4 +1,4 @@
-.. Copyright 2003-2025 by Wilson Snyder.
+.. SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 ===================
@@ -155,7 +155,7 @@ Summary:
    requires GNU Make to be available on the platform.
 
    :vlopt:`--build` cannot be specified when using :vlopt:`-E`,
-   :vlopt:`--dpi-hdr-only`, :vlopt:`--lint-only`, or :vlopt:`--xml-only`.
+   :vlopt:`--dpi-hdr-only`, :vlopt:`--json-only` or :vlopt:`--lint-only`.
 
 .. option:: --build-dep-bin <filename>
 
@@ -606,7 +606,7 @@ Summary:
 .. option:: --flatten
 
    Force flattening of the design's hierarchy, with all modules, tasks, and
-   functions inlined. Typically used with :vlopt:`--xml-only`.
+   functions inlined. Typically used with :vlopt:`--json-only`.
    Flattening large designs may require significant CPU time, memory and
    storage.
 
@@ -661,6 +661,10 @@ Summary:
 .. option:: -fno-dfg-pre-inline
 
    Rarely needed. Do not apply the DFG optimizer before inlining.
+
+.. option:: -fno-dfg-push-down-sels
+
+   Rarely needed. Disable DFG select/concatenation optimization.
 
 .. option:: -fno-dfg-scoped
 
@@ -869,10 +873,11 @@ Summary:
 
 .. option:: --inline-cfuncs <value>
 
-   Inline small CFunc calls directly into their callers when the function
-   has at most <value> nodes. This reduces function call overhead when
-   :vlopt:`--output-split-cfuncs` places functions in separate compilation
-   units that the C++ compiler cannot inline.
+   Inline small C++ function (internal AstCFunc) calls directly into their
+   callers when the function has at most <value> nodes. This reduces
+   function call overhead when :vlopt:`--output-split-cfuncs` places
+   functions in separate compilation units that the C++ compiler cannot
+   inline.
 
    Set to 0 to disable this optimization. The default is 20.
 
@@ -881,10 +886,10 @@ Summary:
 
 .. option:: --inline-cfuncs-product <value>
 
-   Tune the inlining of CFunc calls for larger functions. When a function
-   is too large to always inline (exceeds :vlopt:`--inline-cfuncs` threshold),
-   it may still be inlined if the function size multiplied by the number of
-   call sites is at most <value>.
+   Tune the inlining of C++ function (internal AstCFunc) calls for larger
+   functions. When a function is too large to always inline (exceeds
+   :vlopt:`--inline-cfuncs` threshold), it may still be inlined if the
+   function size multiplied by the number of call sites is at most <value>.
 
    This allows functions that are called only once or twice to be inlined
    even if they exceed the small function threshold. Set to 0 to only inline
@@ -1068,8 +1073,12 @@ Summary:
 
    Generates a script for the specified build tool.
 
-   Supported values are ``gmake`` for GNU Make, or ``cmake`` for CMake, or
-   ``json`` to create a JSON file to feed other build tools.
+   Supported values are ``gmake`` for GNU Make, or ``json`` to create a
+   JSON file to feed other build tools.
+
+   Verilator also supports building with CMake, but CMakeLists.txt
+   under-the-covers uses the ``--make json`` output format. There was a
+   native ``--make cmake`` but it was removed in Version 5.046.
 
    Multiple options can be specified together. If no build tool is
    specified, gmake is assumed. The executable of gmake can be configured
@@ -1474,7 +1483,13 @@ Summary:
 
 .. option:: --quiet
 
-   Alias for :vlopt:`--quiet-exit` :vlopt:`--quiet-stats`.
+   Alias for :vlopt:`--quiet-build` :vlopt:`--quiet-exit`
+   :vlopt:`--quiet-stats`.
+
+.. option:: --quiet-build
+
+   Disable printing build progress such as compiler command lines, when
+   using :vlopt:`--build`.
 
 .. option:: --quiet-exit
 
@@ -1578,6 +1593,23 @@ Summary:
 .. option:: --sc
 
    Specifies SystemC output mode; see also :vlopt:`--cc` option.
+
+.. option:: --sched-zero-delay
+
+.. option:: --no-sched-zero-delay
+
+   Specifies if the generated code should support ``#0`` delays with full IEEE
+   1800 standard scheduling semantics. Full ``#0`` support has a simulation
+   performance cost. If :vlopt:`--sched-zero-delay` is used, the generated code
+   will fully support ``#0`` delays. If :vlopt:`--no-sched-zero-delay` is used,
+   the generated code will not support ``#0` delays, and simulation will fail
+   at runtime if a ``#0`` delay is executed. If no option is given, Verilator
+   will generate code with proper ``#0`` support if the input contains either a
+   ``#0``, or a ``#(expression)`` with a delay value unknown at compile time.
+
+   Option :vlopt:`--no-sched-zero-delay` can be used if the input contains
+   ``#0`` delays, but they are known to be not executed at runtime. This can
+   improve simulation performance.
 
 .. option:: --skip-identical
 
@@ -1722,7 +1754,7 @@ Summary:
    :vlopt:`--trace-vcd` instead.
 
    Using :vlopt:`--trace` without :vlopt:`--trace-fst` nor
-   :vlopt:`--trace-fst` requests VCD traces.
+   :vlopt:`--trace-saif` requests VCD traces.
 
    Using :vlopt:`--trace` :vlopt:`--trace-fst` requests FST traces.
 
@@ -1730,7 +1762,7 @@ Summary:
 
 .. option:: --trace-coverage
 
-   With `--trace-*` and ``--coverage-*``, enable tracing to include a
+   With ``--trace-*`` and ``--coverage-*``, enable tracing to include a
    traced signal for every :vlopt:`--coverage-line` or
    :vlopt:`--coverage-user`\ -inserted coverage point, to assist in
    debugging coverage items. Note :vlopt:`--coverage-toggle` does not get
@@ -2049,15 +2081,13 @@ Summary:
 .. option:: -Wwarn-lint
 
    Enable all lint-related warning messages (note that by default, they are
-   already enabled), but do not affect style messages. This is equivalent
-   to ``-Wwarn-ALWCOMBORDER`` ``-Wwarn-ASCRANGE`` ``-Wno-ASSIGNEQEXPR``
-   ``-Wwarn-BSSPACE`` ``-Wwarn-CASEINCOMPLETE`` ``-Wwarn-CASEOVERLAP``
-   ``-Wwarn-CASEWITHX`` ``-Wwarn-CASEX`` ``-Wwarn-CASTCONST``
-   ``-Wwarn-CMPCONST`` ``-Wwarn-COLONPLUS`` ``-Wwarn-IMPLICIT``
-   ``-Wwarn-IMPLICITSTATIC`` ``-Wwarn-LATCH`` ``-Wwarn-MISINDENT``
-   ``-Wwarn-NEWERSTD`` ``-Wwarn-PREPROCZERO`` ``-Wwarn-PINMISSING``
-   ``-Wwarn-REALCVT`` ``-Wwarn-STATICVAR`` ``-Wwarn-UNSIGNED``
-   ``-Wwarn-WIDTHTRUNC`` ``-Wwarn-WIDTHEXPAND`` ``-Wwarn-WIDTHXZEXPAND``.
+   already enabled), and also style messages. This is equivalent to
+   :vlopt:`-Wall`.
+
+   In versions before 5.044 this enabled only lint, but not
+   :vlopt:`-Wwarn-style` messages; for similar behavior use `-Wwarn-lint
+   -Wno-style`. The current behavior is consistent with the inverse of
+   :vlopt:`-Wno-lint`.
 
 .. option:: -Wwarn-style
 
@@ -2193,23 +2223,16 @@ Summary:
 
 .. option:: --xml-only
 
-   Create XML output only, do not create any other output.
+   Removed in 5.046.
 
-   The XML format is intended to be used to leverage Verilator's parser and
-   elaboration to feed to other downstream tools.
-
-   .. note::
-
-      This feature is deprecated in favor of :vlopt:`--json-only`.
+   Created XML output only, did not create any other output.
 
 .. option:: --xml-output <filename>
 
-   Specifies the filename for the XML output file. Using this option
-   automatically sets :vlopt:`--xml-only`.
+   Removed in 5.046.
 
-   .. note::
-
-      This feature is deprecated in favor of :vlopt:`--json-only`.
+   Specified the filename for the XML output file. Using this option
+   automatically set :vlopt:`--xml-only`.
 
 .. option:: -y <dir>
 
@@ -2405,14 +2428,8 @@ The grammar of control commands is as follows:
    (or wildcard with '\*' or '?', or all files if omitted) and range of
    line numbers (or all lines if omitted).
 
-   If a warning is disabled with lint_off, it will not be printed, even if the
-   source contains a lint_on metacomment. The control file directives and
-   metacomments are interpreted separately and do not interact. A warning is
-   emitted only if not disabled either in a control file or via metacomments.
-
    If the ``-rule`` is omitted, all lint warnings (see list in
-   :vlopt:`-Wno-lint`) are enabled/disabled. This will override all later
-   lint warning enables for the specified region.
+   :vlopt:`-Wno-lint`) are enabled/disabled.
 
    If ``-contents`` is provided, the input files must contain the given
    wildcard (with '\*' or '?'), and are waived in case they match, provided
@@ -2429,6 +2446,21 @@ The grammar of control commands is as follows:
    provided the ``-rule``, ``-file``, and ``-contents`` also match. The
    wildcard is compared across the entire multi-line message; see
    :vlopt:`--waiver-multiline`.
+
+   When there are overlapping conflicting lint_on/lint_off directives, they
+   are resolved in the following priority order:
+
+   * All lint_on/lint_off without a ``-file``, or with a ``-file "\*"``,
+     are processed in order of parsing.
+   * All lint_on/lint_off with ``-file "non-\*"`` are processed in order of
+     parsing.
+   * All lint_off with ``--match`` in order of parsing.
+
+   If a warning is disabled with lint_off, it will not be printed, even if
+   the source contains a lint_on metacomment. The control file directives
+   and metacomments are interpreted separately and do not interact. A
+   warning is emitted only if not disabled either in a control file or via
+   metacomments.
 
    Before version 4.026, ``-rule`` was named ``-msg``, and
    ``-msg`` remained a deprecated alias until Version 5.000.
@@ -2535,21 +2567,30 @@ The grammar of control commands is as follows:
    Enable/disable waveform tracing for all future signals declared in
    all files.
 
-   With -file, enable/disable waveform tracing in the specified
-   filename (or wildcard with '\*' or '?'), and -line range of line
+   With ``-file``, enable/disable waveform tracing in the specified
+   filename (or wildcard with '\*' or '?'), and ``-line`` range of line
    numbers (or all lines if omitted).
 
-   For tracing_off with -file, instances below any module in the
+   For tracing_off with ``-file``, instances below any module in the
    files/ranges specified will also not be traced. To overcome this
    feature, use tracing_on on the upper module declaration and on any
-   cells, or use the -scope flavor of the command.
+   cells, or use the ``-scope`` flavor of the command.
 
-   With -scope enable/disable waveform tracing for the specified scope (or
-   wildcard with '\*' or '?'), and optional --levels number of levels
-   below. These controls only operate after other file/line/module-based
-   controls have indicated the signal should be traced.
+   With ``-scope`` enable/disable waveform tracing for the specified scope
+   (or wildcard with '\*' or '?'), and optional ``--levels`` number of
+   levels below. These controls only operate after other
+   file/line/module-based controls have indicated the signal should be
+   traced. Matching is performed on the shortest prefix first, such that
+   ``tracing_on -scope "a.b" tracing_off -scope "a"`` will turn it on for
+   "a.b" and off for everything else "a.*".
 
-   With -levels (used with -scope), the number of levels below that
-   scope which the rule is to match, where 0 means all levels below, 1
-   the exact level as the provided scope, and 2 means an additional
-   level of children below the provided scope, etc.
+   With ``-levels`` (used with ``-scope``), the number of levels below that
+   scope which the rule is to match, where 0 means all levels below, 1 the
+   exact level as the provided scope, and 2 means an additional level of
+   children below the provided scope, etc.
+
+.. option:: verilator_lib -module "<modulename>"
+
+   Internal use only. Marks the specified module as being a stub for a library
+   created by :vlopt:`--lib-create` (including when created with
+   :vlopt:`--hierarchical`). Required for special internal processing.

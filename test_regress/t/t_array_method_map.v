@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2024 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2024 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 // verilog_format: off
@@ -12,8 +12,8 @@
 module t;
 
    initial begin
-      int res[];
-      int a[3] = '{100, 200, 300};
+      automatic int res[];
+      automatic int a[3] = '{100, 200, 300};
 
       // TODO results not known to be correct
       res = a.map(el) with (el == 200);

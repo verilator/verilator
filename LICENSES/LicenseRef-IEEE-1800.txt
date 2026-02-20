@@ -1,0 +1,22 @@
+This license is used on IEEE files where there is a permitted use of
+standards, including copying strictly necessary to implement normative
+interfaces defined by the standard. Refer to IEEE SA Operations Manual
+Clause 6.1 and IEEE Standards Permission policies.
+
+--
+
+Copyright 2024 by The Institute of Electrical and Electronics Engineers, Inc.
+All rights reserved.
+
+IEEE, 802, and POSIX are registered trademarks in the U.S. Patent &
+Trademark Office, owned by The Institute of Electrical and Electronics
+Engineers, Incorporated.
+
+IEEE draft and approved standards are copyrighted by IEEE under US and
+international copyright laws.  They are made available by IEEE and are
+adopted for a wide variety of both public and private uses. These include
+both use, by reference, in laws and regulations, and use in private
+self-regulation, standardization, and the promotion of engineering
+practices and methods. By making these documents available for use and
+adoption by public authorities and private users, neither IEEE nor its
+licensors waive any rights in copyright to the documents.

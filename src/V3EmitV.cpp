@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2004-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -225,12 +225,6 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         iterateAndNextConstNull(nodep->rhsp());
         if (!m_suppressSemi) puts(";\n");
     }
-    void visit(AstAssignDly* nodep) override {
-        iterateAndNextConstNull(nodep->lhsp());
-        putfs(nodep, " <= ");
-        iterateAndNextConstNull(nodep->rhsp());
-        puts(";\n");
-    }
     void visit(AstAlias* nodep) override {
         putbs("alias ");
         iterateConst(nodep->itemsp());
@@ -271,6 +265,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         if (nodep->sensp()) puts(" ");
         iterateChildrenConst(nodep);
     }
+    void visit(AstCReset* nodep) override { puts("/*CRESET*/"); }
     void visit(AstCase* nodep) override {
         putfs(nodep, "");
         if (nodep->priorityPragma()) puts("priority ");
@@ -614,6 +609,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         putfs(nodep, "$_EXPRSTMT(\n");
         iterateAndNextConstNull(nodep->stmtsp());
         putbs(", ");
+        iterateAndNextConstNull(nodep->resultp());
         puts(");\n");
     }
 
@@ -1220,6 +1216,12 @@ void V3EmitV::verilogForTree(const AstNode* nodep, std::ostream& os) {
 
 void V3EmitV::debugVerilogForTree(const AstNode* nodep, std::ostream& os) {
     { EmitVStreamVisitor{nodep, os, /* tracking: */ true, true}; }
+}
+
+std::string V3EmitV::debugVerilogForTree(const AstNode* nodep) {
+    std::stringstream ss;
+    debugVerilogForTree(nodep, ss);
+    return ss.str();
 }
 
 void V3EmitV::emitvFiles() {

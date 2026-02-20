@@ -3,10 +3,10 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -37,6 +37,10 @@
 #include <set>
 #include <string>
 #include <utility>
+
+class VlProcess;
+template <typename T_Value, std::size_t N_Depth>
+class VlUnpacked;
 
 //=========================================================================
 // Debug functions
@@ -104,8 +108,6 @@ constexpr IData VL_CLOG2_CE_Q(QData lhs) VL_PURE {
 }
 
 // Metadata of processes
-class VlProcess;
-
 using VlProcessRef = std::shared_ptr<VlProcess>;
 
 class VlProcess final {
@@ -242,7 +244,7 @@ public:
     // having to check for construction at each call
     // Alternative: seed with zero and check on rand64() call
     VlRNG() VL_MT_SAFE;
-    explicit VlRNG(uint64_t seed0) VL_MT_SAFE : m_state{0x12341234UL, seed0} {}
+    explicit VlRNG(uint64_t seed) VL_PURE;
     void srandom(uint64_t n) VL_MT_UNSAFE;
     std::string get_randstate() const VL_MT_UNSAFE;
     void set_randstate(const std::string& state) VL_MT_UNSAFE;
@@ -531,6 +533,10 @@ public:
             m_deque.resize(size, atDefault());
         }
     }
+    // Unpacked array new[]() becomes a renew_copy()
+    template <typename T_UnpackedValue, std::size_t N_UnpackedDepth>
+    void renew_copy(size_t size, const VlUnpacked<T_UnpackedValue, N_UnpackedDepth>& rhs);
+
     void resize(size_t size) { m_deque.resize(size, atDefault()); }
 
     // function void q.push_front(value)
@@ -1606,6 +1612,11 @@ private:
         return a != b;
     }
 };
+// Trait to detect VlUnpacked types
+template <typename T>
+struct IsVlUnpacked : std::false_type {};
+template <typename T, std::size_t N>
+struct IsVlUnpacked<VlUnpacked<T, N>> : std::true_type {};
 
 template <typename T_Value, std::size_t N_Depth>
 std::string VL_TO_STRING(const VlUnpacked<T_Value, N_Depth>& obj) {
@@ -1614,6 +1625,16 @@ std::string VL_TO_STRING(const VlUnpacked<T_Value, N_Depth>& obj) {
 
 template <typename T_Value, std::size_t N_Depth>
 struct VlContainsCustomStruct<VlUnpacked<T_Value, N_Depth>> : VlContainsCustomStruct<T_Value> {};
+
+template <typename T_Value, size_t N_MaxSize>
+template <typename T_UnpackedValue, std::size_t N_UnpackedDepth>
+void VlQueue<T_Value, N_MaxSize>::renew_copy(
+    size_t size, const VlUnpacked<T_UnpackedValue, N_UnpackedDepth>& rhs) {
+    clear();
+    if (size == 0) return;
+    m_deque.resize(size, atDefault());
+    for (size_t i = 0; i < std::min(size, N_UnpackedDepth); ++i) { m_deque[i] = rhs.m_storage[i]; }
+}
 
 //===================================================================
 // Helper to apply the given indices to a target expression
@@ -1863,6 +1884,9 @@ public:
     VlClass() {}
     VlClass(const VlClass& copied) {}
     ~VlClass() override = default;
+    // METHODS
+    virtual const char* typeName() const { return "VlClass"; }
+    virtual std::string to_string() const { return ""; }
 };
 
 //===================================================================
@@ -2022,6 +2046,30 @@ template <typename T_Lhs>
 static inline bool VL_CAST_DYNAMIC(VlNull in, VlClassRef<T_Lhs>& outr) {
     outr = VlNull{};
     return true;
+}
+
+// For printing class references under a container, several choices:
+// 1. Dump recursively the pointed-to object.  Can be huge.  Might be circular.
+// 2. Print object type and pointer as C pointer.  Astable when rerun.
+// 3. Print object type and pointer as an incrementing number.  Needs num storage.
+// 4. Print object type alone.  Avoids above issues.
+template <typename T_Lhs>
+inline std::string VL_TO_STRING(const VlClassRef<T_Lhs>& obj) {
+    return obj ? obj->typeName() : "null";
+}
+// Entry point for string conversion (called from not under a container);
+// dereference VlClassRef objects to print members
+template <typename T_Lhs>  // Default if no specialization
+inline std::string VL_TO_STRING_DEREF(T_Lhs obj) {
+    return VL_TO_STRING(obj);
+}
+template <typename T_Lhs>  // Specialization
+inline std::string VL_TO_STRING_DEREF(const VlClassRef<T_Lhs>& obj) {
+    return obj ? obj->to_string() : "null";
+}
+template <typename T_Lhs>  // Specialization
+inline std::string VL_TO_STRING_DEREF(VlClassRef<T_Lhs>& obj) {
+    return obj ? obj->to_string() : "null";
 }
 
 //=============================================================================

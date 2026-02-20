@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2024 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2024 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 class Cls;
@@ -11,6 +11,9 @@ class Cls;
   endfunction
   function void nonstatic();
   endfunction
+  function Cls nonstatic_retcls();
+    return null;
+  endfunction
   static function void isst();
   endfunction
 endclass
@@ -18,6 +21,7 @@ endclass
 class Bar;
   function void bar();
     Cls::nonstatic();  // <--- bad static ref
+    Cls::nonstatic_retcls();  // <--- bad static ref
     Cls::isst();
   endfunction
 endclass
@@ -31,6 +35,9 @@ class Extends extends Cls;
     nonstatic();  // <--- bad static ref
     isst();
   endfunction
+  function new();
+    Cls c = super.nonstatic_retcls();
+  endfunction
 endclass
 
 module t;
@@ -39,7 +46,7 @@ module t;
     Cls::isst();
   endfunction
   initial begin
-    Bar obj = new();
+    automatic Bar obj = new();
     obj.bar();
     Cls::nonstatic();  // <--- bad static ref
     Cls::isst();

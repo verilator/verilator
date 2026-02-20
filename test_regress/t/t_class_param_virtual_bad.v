@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2023 by Antmicro Ltd.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2023 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
 virtual class VBase;
@@ -19,8 +19,8 @@ endclass
 
 module t;
    initial begin
-      Cls c = new;  // Error
-      ClsVirt#(VBase) cv = new;  // Error
+      automatic Cls c = new;  // Error
+      automatic ClsVirt#(VBase) cv = new;  // Error
       $stop;
    end
 endmodule

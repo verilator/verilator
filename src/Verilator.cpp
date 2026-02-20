@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -47,11 +47,9 @@
 #include "V3DiagSarif.h"
 #include "V3EmitC.h"
 #include "V3EmitCMain.h"
-#include "V3EmitCMake.h"
 #include "V3EmitMk.h"
 #include "V3EmitMkJson.h"
 #include "V3EmitV.h"
-#include "V3EmitXml.h"
 #include "V3ExecGraph.h"
 #include "V3Expand.h"
 #include "V3File.h"
@@ -88,6 +86,7 @@
 #include "V3RandSequence.h"
 #include "V3Randomize.h"
 #include "V3Reloop.h"
+#include "V3Reorder.h"
 #include "V3Sampled.h"
 #include "V3Sched.h"
 #include "V3Scope.h"
@@ -138,8 +137,7 @@ static void emitJson() VL_MT_DISABLED {
     v3Global.rootp()->dumpTreeJsonFile(filename);
 }
 
-static void emitXmlOrJson() VL_MT_DISABLED {
-    if (v3Global.opt.xmlOnly()) V3EmitXml::emitxml();
+static void emitSerialized() VL_MT_DISABLED {
     if (v3Global.opt.jsonOnly()) emitJson();
 }
 
@@ -216,7 +214,7 @@ static void process() {
         VlOs::DeltaWallTime cvtWallTime{true};
         if (v3Global.opt.debugExitElab()) {
             V3Error::abortIfErrors();
-            if (v3Global.opt.serializeOnly()) emitXmlOrJson();
+            if (v3Global.opt.serializeOnly()) emitSerialized();
             cout << "--debug-exit-elab: Exiting after elaboration pass\n";
             v3Global.vlExit(0);
         }
@@ -404,7 +402,7 @@ static void process() {
             V3Active::activeAll(v3Global.rootp());
 
             // Split single ALWAYS blocks into multiple blocks for better ordering chances
-            if (v3Global.opt.fSplit()) V3Split::splitAlwaysAll(v3Global.rootp());
+            if (v3Global.opt.fSplit()) V3Split::splitAll(v3Global.rootp());
             V3SplitAs::splitAsAll(v3Global.rootp());
 
             // Create tracing sample points, before we start eliminating signals
@@ -438,7 +436,7 @@ static void process() {
             V3Dead::deadifyAllScoped(v3Global.rootp());
 
             // Reorder assignments in pipelined blocks
-            if (v3Global.opt.fReorder()) V3Split::splitReorderAll(v3Global.rootp());
+            if (v3Global.opt.fReorder()) V3Reorder::reorderAll(v3Global.rootp());
 
             if (v3Global.opt.timing().isSetTrue()) {
                 // Convert AST for timing if requested
@@ -634,11 +632,10 @@ static void process() {
         V3EmitC::emitcImp();
     }
     if (v3Global.opt.serializeOnly()) {
-        emitXmlOrJson();
+        emitSerialized();
     } else if (v3Global.opt.debugCheck() && !v3Global.opt.lintOnly()
                && !v3Global.opt.dpiHdrOnly()) {
-        // Check XML/JSON when debugging to make sure no missing node types
-        V3EmitXml::emitxml();
+        // Check JSON when debugging to make sure no missing node types
         emitJson();
     }
 
@@ -655,7 +652,7 @@ static void process() {
     if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly() && !v3Global.opt.dpiHdrOnly()) {
         if (v3Global.opt.main()) V3EmitCMain::emit();
 
-        // V3EmitMk/V3EmitCMake/V3EmitMkJson must be after all other emitters,
+        // V3EmitMk/V3EmitMkJson must be after all other emitters,
         // as they and below code visits AstCFiles added earlier
         size_t src_f_cnt = 0;
         for (AstNode* nodep = v3Global.rootp()->filesp(); nodep; nodep = nodep->nextp()) {
@@ -663,7 +660,6 @@ static void process() {
                 src_f_cnt += cfilep->source() ? 1 : 0;
         }
         if (src_f_cnt >= V3EmitMk::PARALLEL_FILE_CNT_THRESHOLD) v3Global.useParallelBuild(true);
-        if (v3Global.opt.cmake()) V3EmitCMake::emit();
         if (v3Global.opt.makeJson()) V3EmitMkJson::emit();
         if (v3Global.opt.gmake()) V3EmitMk::emitmk();
     }
@@ -723,6 +719,7 @@ static bool verilate(const string& argString) {
         V3ExecGraph::selfTest();
         V3PreShell::selfTest();
         V3Broken::selfTest();
+        V3Control::selfTest();
         V3ThreadPool::selfTest();
         UINFO(2, "selfTest done");
     }
@@ -763,10 +760,6 @@ static bool verilate(const string& argString) {
         if (v3Global.opt.gmake()) {
             hierGraphp->writeCommandArgsFiles(false);
             V3EmitMk::emitHierVerilation(hierGraphp);
-        }
-        if (v3Global.opt.cmake()) {
-            hierGraphp->writeCommandArgsFiles(true);
-            V3EmitCMake::emit();
         }
         if (v3Global.opt.makeJson()) {
             hierGraphp->writeCommandArgsFiles(true);
@@ -818,6 +811,7 @@ static string buildMakeCmd(const string& makefile, const string& target) {
     cmd << " -C " << v3Global.opt.makeDir();
     cmd << " -f " << makefile;
     // Unless using make's jobserver, do a -j
+    if (v3Global.opt.quietBuild()) cmd << " -s --no-print-directory";
     if (v3Global.opt.getenvMAKEFLAGS().find("-jobserver-auth") == string::npos) {
         if (jobs > 0) cmd << " -j " << jobs;
     }
@@ -830,7 +824,6 @@ static string buildMakeCmd(const string& makefile, const string& target) {
 static void execBuildJob() {
     UASSERT(v3Global.opt.build(), "--build is not specified.");
     UASSERT(v3Global.opt.gmake(), "--build requires GNU Make.");
-    UASSERT(!v3Global.opt.cmake(), "--build cannot use CMake.");
     UASSERT(!v3Global.opt.makeJson(), "--build cannot use json build.");
     VlOs::DeltaWallTime buildWallTime{true};
     UINFO(1, "Start Build");
@@ -841,7 +834,7 @@ static void execBuildJob() {
     V3Stats::addStatPerf(V3Stats::STAT_WALLTIME_BUILD, buildWallTime.deltaTime());
 
     if (exit_code != 0) {
-        v3error(cmdStr << " exited with " << exit_code << std::endl);
+        v3error("'" << cmdStr << "' exited with " << exit_code << std::endl);
         v3Global.vlExit(exit_code);
     }
 }

@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2023 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2023 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
@@ -10,6 +10,7 @@ module t;
    real rtim1;
    real rtim2;
 
+   // verilator lint_off ZERODLY
    initial begin
       tim1 = 2;
       tim2 = 3;
@@ -31,5 +32,6 @@ module t;
       $write("*-* All Finished *-*\n");
       $finish;
    end
+   // verilator lint_on ZERODLY
 
 endmodule

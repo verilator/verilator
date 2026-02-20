@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2025 by PlanV GmbH.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2025 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
 /* verilator lint_off WIDTHTRUNC */
@@ -56,7 +56,7 @@ endclass
 
 module t_constraint_global_arr_unsup;
   initial begin
-    Outer o = new;
+    automatic Outer o = new;
     if (o.randomize()) begin
       $display("Case 1 - Simple: mid.obj.x = %0d (expected 100)", o.m_mid.m_obj.m_x);
       $display("Case 1 - Simple: mid.obj.y = %0d (expected 101)", o.m_mid.m_obj.m_y);

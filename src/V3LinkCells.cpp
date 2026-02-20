@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -416,21 +416,32 @@ class LinkCellsVisitor final : public VNVisitor {
         m_graph.rank();
         for (V3GraphVertex& vtx : m_graph.vertices()) {
             if (const LinkCellsVertex* const vvertexp = vtx.cast<LinkCellsVertex>()) {
-                AstNodeModule* const modp = vvertexp->modp();
-                modp->level(vvertexp->rank());
+                AstNodeModule* const vmodp = vvertexp->modp();
+                vmodp->level(vvertexp->rank());
             }
         }
         m_graph.rankMin();
         for (V3GraphVertex& vtx : m_graph.vertices()) {
             if (const LinkCellsVertex* const vvertexp = vtx.cast<LinkCellsVertex>()) {
                 // +1 so we leave level 1 for the new wrapper we'll make in a moment
-                AstNodeModule* const modp = vvertexp->modp();
-                modp->depth(vvertexp->rank() + 1);
+                AstNodeModule* const vmodp = vvertexp->modp();
+                vmodp->depth(vvertexp->rank() + 1);
             }
         }
         if (v3Global.opt.topModule() != "" && !m_topVertexp) {
-            v3error("Specified --top-module '" << v3Global.opt.topModule()
-                                               << "' was not found in design.");
+            VSpellCheck spell;
+            for (V3GraphVertex& vtx : m_graph.vertices()) {
+                if (const LinkCellsVertex* const vvertexp = vtx.cast<LinkCellsVertex>()) {
+                    AstNodeModule* const vmodp = vvertexp->modp();
+                    if (VN_IS(vmodp, Module)) spell.pushCandidate(vmodp->prettyName());
+                }
+            }
+            const string suggest
+                = spell.bestCandidateMsg(AstNode::prettyName(v3Global.opt.topModule()));
+            v3error("Specified --top-module '"
+                    << AstNode::prettyName(v3Global.opt.topModule())
+                    << "' was not found in design.\n"
+                    << (suggest.empty() ? "" : V3Error::warnMore() + suggest));
         }
     }
     void visit(AstConstPool* nodep) override {}
@@ -473,8 +484,9 @@ class LinkCellsVisitor final : public VNVisitor {
                 UINFO(2, "Link --top-module: " << nodep);
                 nodep->inLibrary(false);  // Safer to make sure it doesn't disappear
             }
-            if (v3Global.opt.topModule() == "" ? nodep->inLibrary()  // Library cells are lower
-                                               : !topMatch) {  // Any non-specified module is lower
+            if (v3Global.opt.topModule().empty()
+                    ? nodep->inLibrary()  // Library cells are lower
+                    : !topMatch) {  // Any non-specified module is lower
                 // Put under a fake vertex so that the graph ranking won't indicate
                 // this is a top level module
                 if (!m_libVertexp) m_libVertexp = new LibraryVertex{&m_graph};

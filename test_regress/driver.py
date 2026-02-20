@@ -2435,6 +2435,9 @@ class VlTest:
                 if n:
                     l1o.append(line)
                     break  # Trunc rest
+                if re.search(r'This fatal error may be caused', line):
+                    l1o.append(line)
+                    break  # Trunc after "This fatal error" line
                 l1o.append(line)
             #
             l1s = l1o
@@ -2489,7 +2492,7 @@ class VlTest:
             print("%Warning: HARNESS_UPDATE_GOLDEN set: cp " + fn1 + " " + fn2, file=sys.stderr)
             shutil.copy(fn1, fn2)
 
-    def vcd_identical(self, fn1: str, fn2: str) -> None:
+    def vcd_identical(self, fn1: str, fn2: str, ignore_attr: bool = False) -> None:
         """Test if two VCD files have logically-identical contents"""
         # vcddiff to check transitions, if installed
         cmd = "vcddiff --help"
@@ -2508,6 +2511,9 @@ class VlTest:
         # Also provides backup if vcddiff not installed
         h1 = self._vcd_read(fn1)
         h2 = self._vcd_read(fn2)
+        if ignore_attr:
+            h1 = {k: v for k, v in h1.items() if "$attr" not in v}
+            h2 = {k: v for k, v in h2.items() if "$attr" not in v}
         a = json.dumps(h1, sort_keys=True, indent=1)
         b = json.dumps(h2, sort_keys=True, indent=1)
         if a != b:
@@ -2527,11 +2533,17 @@ class VlTest:
         out = VtOs.run_capture(cmd, check=False)
         print(out)
 
-    def fst_identical(self, fn1: str, fn2: str) -> None:
+    def fst_identical(self, fn1: str, fn2: str, ignore_attr: bool = False) -> None:
         """Test if two FST files have logically-identical contents"""
-        tmp = fn1 + ".vcd"
-        self.fst2vcd(fn1, tmp)
-        self.vcd_identical(tmp, fn2)
+        if fn1.endswith(".fst"):
+            tmp = fn1 + ".vcd"
+            self.fst2vcd(fn1, tmp)
+            fn1 = tmp
+        if fn2.endswith(".fst"):
+            tmp = fn2 + ".vcd"
+            self.fst2vcd(fn2, tmp)
+            fn2 = tmp
+        self.vcd_identical(fn1, fn2, ignore_attr)
 
     def saif_identical(self, fn1: str, fn2: str) -> None:
         """Test if two SAIF files have logically-identical contents"""
@@ -2542,7 +2554,7 @@ class VlTest:
         if out != '':
             print(out)
             self.copy_if_golden(fn1, fn2)
-            self.error("SAIF files don't match!")
+            self.error("SAIF files miscompare")
 
     def _vcd_read(self, filename: str) -> dict:
         data = {}
@@ -2945,12 +2957,13 @@ if __name__ == '__main__':
         epilog="""driver.py invokes Verilator or another simulator on each test file.
     See docs/internals.rst in the distribution for more information.
 
-    Copyright 2024-2025 by Wilson Snyder. This program is free software; you
-    can redistribute it and/or modify it under the terms of either the GNU
-    Lesser General Public License Version 3 or the Perl Artistic License
-    Version 2.0.
+    This program is free software; you can redistribute it and/or modify it
+    under the terms of either the GNU Lesser General Public License Version
+    3 or the Perl Artistic License Version 2.0.
 
-    SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0""")
+    SPDX-FileCopyrightText: 2024-2026 Wilson Snyder
+    SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+""")
 
     parser.add_argument('--benchmark', action='store', help='enable benchmarking')
     parser.add_argument('--debug', action='store_const', const=9, help='enable debug')

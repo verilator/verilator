@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2000-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2000-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -481,17 +481,21 @@ void V3PreProcImp::comment(const string& text) {
     if ((cp[0] == 'v' || cp[0] == 'V') && VString::startsWith(cp + 1, "erilator")) {
         cp += std::strlen("verilator");
         if (*cp == '_') {
-            fileline()->v3error("Extra underscore in meta-comment;"
-                                " use /*verilator {...}*/ not /*verilator_{...}*/");
+            V3Control::applyIgnores(fileline());
+            fileline()->v3warn(BADVLTPRAGMA, "Extra underscore in meta-comment, ignoring comment;"
+                                             " use /*verilator {...}*/ not /*verilator_{...}*/");
+            return;
         }
         vlcomment = true;
     } else if (VString::startsWith(cp, "synopsys")) {
         cp += std::strlen("synopsys");
-        synth = true;
         if (*cp == '_') {
-            fileline()->v3error("Extra underscore in meta-comment;"
-                                " use /*synopsys {...}*/ not /*synopsys_{...}*/");
+            V3Control::applyIgnores(fileline());
+            fileline()->v3warn(BADVLTPRAGMA, "Extra underscore in meta-comment, ignoring comment;"
+                                             " use /*synopsys {...}*/ not /*synopsys_{...}*/");
+            return;
         }
+        synth = true;
     } else if (VString::startsWith(cp, "cadence")) {
         cp += std::strlen("cadence");
         synth = true;
@@ -504,8 +508,6 @@ void V3PreProcImp::comment(const string& text) {
     } else {
         return;
     }
-
-    if (!vlcomment && !synth) return;  // Short-circuit
 
     while (std::isspace(*cp)) ++cp;
     string cmd = commentCleanup(string{cp});

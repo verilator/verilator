@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -226,7 +226,6 @@ private:
     bool m_bboxUnsup = false;       // main switch: --bbox-unsup
     bool m_binary = false;          // main switch: --binary
     bool m_build = false;           // main switch: --build
-    bool m_cmake = false;           // main switch: --make cmake
     bool m_context = true;          // main switch: --Wcontext
     bool m_coverageExpr = false;    // main switch: --coverage-expr
     bool m_coverageLine = false;    // main switch: --coverage-block
@@ -246,6 +245,7 @@ private:
     bool m_debugProtect = false;    // main switch: --debug-protect
     bool m_debugSelfTest = false;   // main switch: --debug-self-test
     bool m_debugStackCheck = false;  // main switch: --debug-stack-check
+    int m_debugRuntimeTimeout = 0;  // main switch: --debug-runtime-timeout <n>
     bool m_debugWidth = false;      // main switch: --debug-width
     bool m_decoration = true;       // main switch: --decoration
     bool m_decorationNodes = false;  // main switch: --decoration=nodes
@@ -279,11 +279,13 @@ private:
     bool m_publicFlatRW = false;    // main switch: --public-flat-rw
     bool m_publicIgnore = false;    // main switch: --public-ignore
     bool m_publicParams = false;    // main switch: --public-params
+    bool m_quietBuild = false;      // main switch: --quiet-build
     bool m_quietExit = false;       // main switch: --quiet-exit
     bool m_quietStats = false;      // main switch: --quiet-stats
     bool m_relativeIncludes = false;  // main switch: --relative-includes
     bool m_reportUnoptflat = false;  // main switch: --report-unoptflat
     bool m_savable = false;         // main switch: --savable
+    VOptionBool m_schedZeroDelay;  // main switch: --sched-zero-delay
     bool m_stdPackage = true;       // main switch: --std-package
     bool m_stdWaiver = true;        // main switch: --std-waiver
     bool m_structsPacked = false;   // main switch: --structs-packed
@@ -308,7 +310,6 @@ private:
     bool m_vpi = false;             // main switch: --vpi
     bool m_waiverMultiline = false;  // main switch: --waiver-multiline
     bool m_xInitialEdge = false;    // main switch: --x-initial-edge
-    bool m_xmlOnly = false;         // main switch: --xml-only
 
     int         m_buildJobs = -1;    // main switch: --build-jobs, -j
     int         m_coverageExprMax = 32;    // main switch: --coverage-expr-max
@@ -378,7 +379,6 @@ private:
     string      m_work = "work";  // main switch: --work {libname}
     string      m_xAssign;      // main switch: --x-assign
     string      m_xInitial;     // main switch: --x-initial
-    string      m_xmlOutput;    // main switch: --xml-output
 
     // Language is now held in FileLine, on a per-node basis. However we still
     // have a concept of the default language at a global level.
@@ -398,6 +398,7 @@ private:
     bool m_fDfgPeephole = true; // main switch: -fno-dfg-peephole
     bool m_fDfgPreInline;    // main switch: -fno-dfg-pre-inline and -fno-dfg
     bool m_fDfgPostInline;   // main switch: -fno-dfg-post-inline and -fno-dfg
+    bool m_fDfgPushDownSels = true; // main switch: -fno-dfg-push-down-sels
     bool m_fDfgScoped;       // main switch: -fno-dfg-scoped and -fno-dfg
     bool m_fDfgSynthesizeAll = false;  // main switch: -fdfg-synthesize-all
     bool m_fDeadAssigns;     // main switch: -fno-dead-assigns: remove dead assigns
@@ -491,6 +492,7 @@ public:
     bool underlineZero() const { return m_underlineZero; }
     bool systemC() const VL_MT_SAFE { return m_systemC; }
     bool savable() const VL_MT_SAFE { return m_savable; }
+    VOptionBool schedZeroDelay() const { return m_schedZeroDelay; }
     bool stats() const { return m_stats; }
     bool statsVars() const { return m_statsVars; }
     bool stdPackage() const { return m_stdPackage; }
@@ -504,7 +506,6 @@ public:
     bool build() const { return m_build; }
     string buildDepBin() const { return m_buildDepBin; }
     void buildDepBin(const string& flag) { m_buildDepBin = flag; }
-    bool cmake() const { return m_cmake; }
     bool context() const VL_MT_SAFE { return m_context; }
     bool coverage() const VL_MT_SAFE {
         return m_coverageLine || m_coverageToggle || m_coverageExpr || m_coverageUser;
@@ -524,6 +525,7 @@ public:
     bool debugPartition() const { return m_debugPartition; }
     bool debugPreprocPassthru() const VL_MT_SAFE { return m_debugPreprocPassthru; }
     bool debugProtect() const VL_MT_SAFE { return m_debugProtect; }
+    int debugRuntimeTimeout() const { return m_debugRuntimeTimeout; }
     bool debugSelfTest() const { return m_debugSelfTest; }
     bool debugStackCheck() const { return m_debugStackCheck; }
     bool debugWidth() const VL_PURE { return m_debugWidth; }
@@ -578,6 +580,7 @@ public:
     bool anyPublicFlat() const { return m_publicParams || m_publicFlatRW || m_publicDepth; }
     bool lintOnly() const VL_MT_SAFE { return m_lintOnly; }
     bool ignc() const { return m_ignc; }
+    bool quietBuild() const VL_MT_SAFE { return m_quietBuild; }
     bool quietExit() const VL_MT_SAFE { return m_quietExit; }
     bool quietStats() const VL_MT_SAFE { return m_quietStats; }
     bool reportUnoptflat() const { return m_reportUnoptflat; }
@@ -585,8 +588,7 @@ public:
     bool vpi() const { return m_vpi; }
     bool waiverMultiline() const { return m_waiverMultiline; }
     bool xInitialEdge() const { return m_xInitialEdge; }
-    bool xmlOnly() const { return m_xmlOnly; }
-    bool serializeOnly() const { return m_xmlOnly || m_jsonOnly; }
+    bool serializeOnly() const { return m_jsonOnly; }
     bool topIfacesSupported() const { return lintOnly() && !hierarchical(); }
 
     int buildJobs() const VL_MT_SAFE { return m_buildJobs; }
@@ -669,7 +671,7 @@ public:
     // Not just called protectKey() to avoid bugs of not using protectKeyDefaulted()
     bool protectKeyProvided() const { return !m_protectKey.empty(); }
     string protectKeyDefaulted() VL_MT_SAFE;  // Set default key if not set by user
-    string topModule() const { return m_topModule; }
+    string topModule() const { return m_topModule; }  // As AstNode::encodeName()
     bool noTraceTop() const { return m_noTraceTop; }
     string unusedRegexp() const { return m_unusedRegexp; }
     string waiverOutput() const { return m_waiverOutput; }
@@ -677,7 +679,6 @@ public:
     bool isWaiverOutput() const { return !m_waiverOutput.empty(); }
     string xAssign() const { return m_xAssign; }
     string xInitial() const { return m_xInitial; }
-    string xmlOutput() const { return m_xmlOutput; }
 
     const VStringSet& cppFiles() const { return m_cppFiles; }
     const VStringList& cFlags() const { return m_cFlags; }
@@ -713,6 +714,7 @@ public:
     bool fDfgPeephole() const { return m_fDfgPeephole; }
     bool fDfgPreInline() const { return m_fDfgPreInline; }
     bool fDfgPostInline() const { return m_fDfgPostInline; }
+    bool fDfgPushDownSels() const { return m_fDfgPushDownSels; }
     bool fDfgScoped() const { return m_fDfgScoped; }
     bool fDfgSynthesizeAll() const { return m_fDfgSynthesizeAll; }
     bool fDfgPeepholeEnabled(const std::string& name) const {

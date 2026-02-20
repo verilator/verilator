@@ -4,10 +4,10 @@
 #
 #*****************************************************************************
 #
-# Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-# can redistribute it and/or modify it under the terms of either the GNU
-# Lesser General Public License Version 3 or the Perl Artistic License
-# Version 2.0.
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of either the GNU Lesser General Public License Version 3
+# or the Perl Artistic License Version 2.0.
+# SPDX-FileCopyrightText: 2003-2025 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 #
 #****************************************************************************/
@@ -16,7 +16,7 @@ cmake_minimum_required(VERSION 3.15)
 cmake_policy(SET CMP0091 NEW) # Use MSVC_RUNTIME_LIBRARY to select the runtime
 project(
     Verilator
-    VERSION 5.043
+    VERSION 5.045
     HOMEPAGE_URL https://verilator.org
     LANGUAGES CXX
 )

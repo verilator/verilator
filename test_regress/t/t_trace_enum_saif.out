@@ -10,6 +10,8 @@
   (NET
    (clk (T0 10) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 1))
   )
+  (INSTANCE $unit
+  )
   (INSTANCE t
    (NET
     (clk (T0 10) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 1))

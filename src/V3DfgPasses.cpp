@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -24,6 +24,82 @@
 #include "V3String.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
+
+void V3DfgPasses::removeUnobservable(DfgGraph& dfg, V3DfgContext& dfgCtx) {
+    V3DfgRemoveUnobservableContext& ctx = dfgCtx.m_removeUnobservableContext;
+
+    // Enqueue all DfgLogic vertices to work list
+    DfgWorklist workList{dfg};
+    for (DfgVertex& vtx : dfg.opVertices()) {
+        if (vtx.is<DfgLogic>()) workList.push_front(vtx);
+    }
+
+    // Remove all logic that only drives unobservable variables
+    workList.foreach([&](DfgVertex& vtx) {
+        DfgLogic* const logicp = vtx.as<DfgLogic>();
+        // Check all variables driven by this logic are removable
+        bool used = logicp->foreachSink([&](DfgVertex& snk) {
+            DfgUnresolved* const uVtxp = snk.as<DfgUnresolved>();
+            DfgVertexVar* const vVtxp = uVtxp->firtsSinkp()->as<DfgVertexVar>();
+            if (vVtxp->hasSinks()) return true;
+            if (vVtxp->isObserved()) return true;
+            return false;
+        });
+        // If some are used, the logic must stay in the Ast
+        if (used) return;
+        // If impure, it must stay in the Ast
+        if (!logicp->isPure()) return;
+        // Enqueue logic driving the inputs of this logic we are about to delete
+        logicp->foreachSource([&](DfgVertex& src) {
+            DfgVertexVar* const varp = src.as<DfgVertexVar>();
+            if (!varp->srcp()) return false;
+            varp->srcp()->as<DfgUnresolved>()->foreachSource([&](DfgVertex& driver) {
+                workList.push_front(*driver.as<DfgLogic>());
+                return false;
+            });
+            return false;
+        });
+        // Delete this logic both from the Dfg and the Ast
+        AstNode* const nodep = logicp->nodep();
+        VL_DO_DANGLING(logicp->unlinkDelete(dfg), logicp);
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        ++ctx.m_logicDeleted;
+    });
+
+    // Remove unobservable variables
+    for (DfgVertexVar* const vVtxp : dfg.varVertices().unlinkable()) {
+        if (vVtxp->hasSinks()) continue;
+        if (vVtxp->isObserved()) continue;
+        DfgVertex* const srcp = vVtxp->srcp();  // Must be a DfgUnresolved or nullptr
+        AstNode* const varp = vVtxp->nodep();
+        // Can delete the Ast variable too if it has no other references
+        const bool delAst = (!srcp || !srcp->nInputs())  //
+                            && !vVtxp->hasExtWrRefs()  //
+                            && !vVtxp->hasModWrRefs();
+        VL_DO_DANGLING(vVtxp->unlinkDelete(dfg), vVtxp);
+        if (srcp) VL_DO_DANGLING(srcp->unlinkDelete(dfg), srcp);
+        if (delAst) {
+            VL_DO_DANGLING(varp->unlinkFrBack()->deleteTree(), varp);
+            ++ctx.m_varsDeleted;
+        } else {
+            ++ctx.m_varsRemoved;
+        }
+    }
+
+    // Finally remove logic from the Dfg if it drives no variables in the graph.
+    // These should only be those with side effects.
+    for (DfgVertex* const vtxp : dfg.opVertices().unlinkable()) {
+        if (!vtxp->is<DfgLogic>()) continue;
+        if (vtxp->hasSinks()) continue;
+        // Input variables will be read in Ast code, mark as such
+        vtxp->foreachSource([](DfgVertex& src) {
+            src.as<DfgVertexVar>()->setHasModRdRefs();
+            return false;
+        });
+        VL_DO_DANGLING(vtxp->unlinkDelete(dfg), vtxp);
+        ++ctx.m_logicRemoved;
+    }
+}
 
 void V3DfgPasses::inlineVars(DfgGraph& dfg) {
     for (DfgVertexVar& vtx : dfg.varVertices()) {
@@ -178,7 +254,7 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
             if (selp->width() != 1) continue;
             DfgShiftL* const shiftLp = selp->fromp()->cast<DfgShiftL>();
             if (!shiftLp) continue;
-            DfgConst* const constp = shiftLp->lhsp()->cast<DfgConst>();
+            const DfgConst* const constp = shiftLp->lhsp()->cast<DfgConst>();
             if (!constp || !useOk(selp, false)) continue;
             if (!constp->hasValue(1)) continue;
             srcp = shiftLp->rhsp();
@@ -371,6 +447,10 @@ void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgContext& ctx) {
     run("cse0        ", dumpLvl >= 4, [&]() { cse(dfg, ctx.m_cseContext0); });
     run("binToOneHot ", dumpLvl >= 4, [&]() { binToOneHot(dfg, ctx.m_binToOneHotContext); });
     run("peephole    ", dumpLvl >= 4, [&]() { peephole(dfg, ctx.m_peepholeContext); });
+    // Run only on final scoped DfgGraphs, as otherwise later DfgPeephole wold just undo this work
+    if (!dfg.modulep()) {
+        run("pushDownSels", dumpLvl >= 4, [&]() { pushDownSels(dfg, ctx.m_pushDownSelsContext); });
+    }
     run("cse1        ", dumpLvl >= 4, [&]() { cse(dfg, ctx.m_cseContext1); });
     run("output      ", dumpLvl >= 3, [&]() { /* debug dump only */ });
 

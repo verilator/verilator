@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -354,7 +354,14 @@ LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLo
 
     for (V3GraphVertex& vtx : graphp->vertices()) {
         if (const auto lvtxp = vtx.cast<SchedLogicVertex>()) {
-            LogicByScope& lbs = lvtxp->color() ? result.m_act : result.m_nba;
+            // Move to 'act'/'nba' based on coloring by default ...
+            bool toAct = lvtxp->color();
+            // ... however, if a #0 delay is possible, then the 'inact' region is required,
+            // in which case **EVERYTHING** that is not a Post block needs to go to 'act'.
+            // This severely limits downstream optimizations (e.g. V3LifePost), and severely
+            // reduces available parallelism in 'nba' for multi-threaded execution.
+            if (v3Global.usesZeroDelay() && !VN_IS(lvtxp->logicp(), AlwaysPost)) toAct = true;
+            LogicByScope& lbs = toAct ? result.m_act : result.m_nba;
             AstNode* const logicp = lvtxp->logicp();
             logicp->unlinkFrBack();
             lbs.add(lvtxp->scopep(), lvtxp->senTreep(), logicp);

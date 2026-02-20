@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -48,8 +48,8 @@ class WidthCommitVisitor final : public VNVisitor {
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstNodeModule* m_modp = nullptr;  // Current module
     std::string m_contNba;  // In continuous- or non-blocking assignment
-    bool m_dynsizedelem
-        = false;  // Writing a dynamically-sized array element, not the array itself
+    bool m_contReads = false;  // Check read continuous automatic variables
+    bool m_dynsizedelem = false;  // Writing dynamically-sized array element, not the array itself
     VMemberMap m_memberMap;  // Member names cached for fast lookup
     bool m_taskRefWarn = true;  // Allow task reference warnings
     bool m_underSel = false;  // Under AstMemberSel or AstSel
@@ -390,7 +390,7 @@ private:
         iterateChildren(nodep);
         editDType(nodep);
         classEncapCheck(nodep, nodep->varp(), VN_CAST(nodep->classOrPackagep(), Class));
-        if (nodep->access().isWriteOrRW()) varLifetimeCheck(nodep, nodep->varp());
+        if (nodep->access().isWriteOrRW() || m_contReads) varLifetimeCheck(nodep, nodep->varp());
         if (VN_IS(nodep, VarRef))
             nodep->name("");  // Clear to save memory; nodep->name() will work via nodep->varp()
     }
@@ -416,12 +416,31 @@ private:
             }
         }
     }
+    void visit(AstAssignCont* nodep) override {
+        iterateAndNextNull(nodep->timingControlp());
+        {
+            VL_RESTORER(m_contNba);
+            VL_RESTORER(m_contReads);
+            m_contNba = "continuous";
+            m_contReads = true;
+            iterateAndNextNull(nodep->lhsp());
+            iterateAndNextNull(nodep->rhsp());
+        }
+        editDType(nodep);
+        AstNode* const controlp
+            = nodep->timingControlp() ? nodep->timingControlp()->unlinkFrBack() : nullptr;
+        nodep->replaceWith(new AstAssign{nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
+                                         nodep->rhsp()->unlinkFrBack(), controlp});
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
     void visit(AstAssignDly* nodep) override {
         iterateAndNextNull(nodep->timingControlp());
         iterateAndNextNull(nodep->rhsp());
         {
             VL_RESTORER(m_contNba);
+            VL_RESTORER(m_contReads);
             m_contNba = "nonblocking";
+            m_contReads = false;
             iterateAndNextNull(nodep->lhsp());
         }
         editDType(nodep);
@@ -431,7 +450,9 @@ private:
         iterateAndNextNull(nodep->rhsp());
         {
             VL_RESTORER(m_contNba);
+            VL_RESTORER(m_contReads);
             m_contNba = "continuous";
+            m_contReads = false;
             iterateAndNextNull(nodep->lhsp());
         }
         editDType(nodep);
@@ -470,7 +491,7 @@ private:
             iterateChildren(nodep);
         }
         editDType(nodep);
-        if (auto* const classrefp = VN_CAST(nodep->fromp()->dtypep(), ClassRefDType)) {
+        if (AstClassRefDType* const classrefp = VN_CAST(nodep->fromp()->dtypep(), ClassRefDType)) {
             classEncapCheck(nodep, nodep->varp(), classrefp->classp());
         }  // else might be struct, etc
         varLifetimeCheck(nodep, nodep->varp());

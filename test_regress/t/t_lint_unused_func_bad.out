@@ -1,0 +1,29 @@
+%Warning-UNUSEDSIGNAL: t/t_lint_unused_func_bad.v:15:7: Function variable is not used: 'not_used'
+                                                      : ... note: In instance 't'
+   15 |   int not_used);   
+      |       ^~~~~~~~
+                       ... For warning description see https://verilator.org/warn/UNUSEDSIGNAL?v=latest
+                       ... Use "/* verilator lint_off UNUSEDSIGNAL */" and lint_on around source to disable this message.
+%Warning-UNDRIVEN: t/t_lint_unused_func_bad.v:21:7: Function variable is not driven: 'not_driven'
+                                                  : ... note: In instance 't'
+   21 |   int not_driven;   
+      |       ^~~~~~~~~~
+                   ... For warning description see https://verilator.org/warn/UNDRIVEN?v=latest
+                   ... Use "/* verilator lint_off UNDRIVEN */" and lint_on around source to disable this message.
+%Warning-UNDRIVEN: t/t_lint_unused_func_bad.v:26:7: Function variable is not driven: 'undriven_result'
+                                                  : ... note: In instance 't'
+   26 |   int undriven_result;   
+      |       ^~~~~~~~~~~~~~~
+%Warning-UNDRIVEN: t/t_lint_unused_func_bad.v:36:14: Function variable is not driven: 'undriven_out_param'
+                                                   : ... note: In instance 't'
+   36 |   output int undriven_out_param);   
+      |              ^~~~~~~~~~~~~~~~~~
+%Warning-UNUSEDSIGNAL: t/t_lint_unused_func_bad.v:40:13: Function variable is not driven, nor used: 'untouched_inout_param'
+                                                       : ... note: In instance 't'
+   40 |   inout int untouched_inout_param);   
+      |             ^~~~~~~~~~~~~~~~~~~~~
+%Warning-UNUSEDSIGNAL: t/t_lint_unused_func_bad.v:44:13: Function variable is not driven, nor used: 'untouched_inout_unused_func_param'
+                                                       : ... note: In instance 't'
+   44 |   inout int untouched_inout_unused_func_param);   
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: Exiting due to

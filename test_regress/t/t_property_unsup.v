@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2001-2020 Daniel Kroening, Edmund Clarke
+// SPDX-License-Identifier: BSD-3-Clause
+//
 // (C) 2001-2020, Daniel Kroening, Edmund Clarke,
 // Computer Science Department, University of Oxford
 // Computer Science Department, Carnegie Mellon University

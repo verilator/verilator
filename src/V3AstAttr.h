@@ -6,9 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU Lesser
-// General Public License Version 3 or the Perl Artistic License Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -412,6 +413,8 @@ public:
         BIT,
         BYTE,
         CHANDLE,
+        // Void type for tagged union members (CVOID to avoid Windows VOID macro)
+        CVOID,
         EVENT,
         INT,
         INTEGER,
@@ -449,6 +452,7 @@ public:
                                             "bit",
                                             "byte",
                                             "chandle",
+                                            "void",
                                             "event",
                                             "int",
                                             "integer",
@@ -476,13 +480,35 @@ public:
         return names[m_e];
     }
     const char* dpiType() const {
-        static const char* const names[]
-            = {"%E-unk",      "svBit",           "char",         "void*",          "char",
-               "int",         "%E-integer",      "svLogic",      "long long",      "double",
-               "short",       "%E-time",         "const char*",  "%E-untyped",     "dpiScope",
-               "const char*", "%E-mtaskstate",   "%E-dly-sched", "%E-trig-sched",  "%E-dyn-sched",
-               "%E-fork",     "%E-proc-ref",     "%E-rand-gen",  "%E-stdrand-gen", "IData",
-               "QData",       "%E-logic-implct", " MAX"};
+        static const char* const names[] = {"%E-unk",
+                                            "svBit",
+                                            "char",
+                                            "void*",
+                                            "void",
+                                            "char",
+                                            "int",
+                                            "%E-integer",
+                                            "svLogic",
+                                            "long long",
+                                            "double",
+                                            "short",
+                                            "%E-time",
+                                            "const char*",
+                                            "%E-untyped",
+                                            "dpiScope",
+                                            "const char*",
+                                            "%E-mtaskstate",
+                                            "%E-dly-sched",
+                                            "%E-trig-sched",
+                                            "%E-dyn-sched",
+                                            "%E-fork",
+                                            "%E-proc-ref",
+                                            "%E-rand-gen",
+                                            "%E-stdrand-gen",
+                                            "IData",
+                                            "QData",
+                                            "%E-logic-implct",
+                                            " MAX"};
         return names[m_e];
     }
     static void selfTest() {
@@ -565,6 +591,7 @@ public:
                 || m_e == RANDOM_GENERATOR || m_e == RANDOM_STDGENERATOR || m_e == DOUBLE
                 || m_e == UNTYPED);
     }
+    bool isCHandle() const VL_MT_SAFE { return m_e == CHANDLE; }
     bool isDouble() const VL_MT_SAFE { return m_e == DOUBLE; }
     bool isEvent() const { return m_e == EVENT; }
     bool isString() const VL_MT_SAFE { return m_e == STRING; }
@@ -596,6 +623,7 @@ public:
             /* BIT:                       */ "BIT",
             /* BYTE:                      */ "BYTE",
             /* CHANDLE:                   */ "LONGINT",
+            /* CVOID:                     */ "",  // Should not be traced
             /* EVENT:                     */ "EVENT",
             /* INT:                       */ "INT",
             /* INTEGER:                   */ "INTEGER",
@@ -787,12 +815,17 @@ public:
         RANDOMIZER_CLEARCONSTRAINTS,
         RANDOMIZER_CLEARALL,
         RANDOMIZER_HARD,
+        RANDOMIZER_UNIQUE,
+        RANDOMIZER_MARK_RANDC,
         RANDOMIZER_WRITE_VAR,
         RNG_GET_RANDSTATE,
         RNG_SET_RANDSTATE,
         SCHED_ANY_TRIGGERED,
         SCHED_AWAITING_CURRENT_TIME,
+        SCHED_AWAITING_ZERO_DELAY,
+        SCHED_READY,
         SCHED_COMMIT,
+        SCHED_MOVE_TO_RESUME_QUEUE,
         SCHED_DELAY,
         SCHED_DO_POST_UPDATES,
         SCHED_ENQUEUE,
@@ -800,6 +833,7 @@ public:
         SCHED_EVALUATION,
         SCHED_POST_UPDATE,
         SCHED_RESUME,
+        SCHED_RESUME_ZERO_DELAY,
         SCHED_RESUMPTION,
         SCHED_TRIGGER,
         UNPACKED_ASSIGN,
@@ -916,12 +950,17 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {RANDOMIZER_CLEARCONSTRAINTS, "clearConstraints", false}, \
            {RANDOMIZER_CLEARALL, "clearAll", false}, \
            {RANDOMIZER_HARD, "hard", false}, \
+           {RANDOMIZER_UNIQUE, "rand_unique", false}, \
+           {RANDOMIZER_MARK_RANDC, "markRandc", false}, \
            {RANDOMIZER_WRITE_VAR, "write_var", false}, \
            {RNG_GET_RANDSTATE, "__Vm_rng.get_randstate", true}, \
            {RNG_SET_RANDSTATE, "__Vm_rng.set_randstate", false}, \
            {SCHED_ANY_TRIGGERED, "anyTriggered", false}, \
            {SCHED_AWAITING_CURRENT_TIME, "awaitingCurrentTime", true}, \
+           {SCHED_AWAITING_ZERO_DELAY, "awaitingZeroDelay", true}, \
+           {SCHED_READY, "ready", false}, \
            {SCHED_COMMIT, "commit", false}, \
+           {SCHED_MOVE_TO_RESUME_QUEUE, "moveToResumeQueue", false}, \
            {SCHED_DELAY, "delay", false}, \
            {SCHED_DO_POST_UPDATES, "doPostUpdates", false}, \
            {SCHED_ENQUEUE, "enqueue", false}, \
@@ -929,6 +968,7 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {SCHED_EVALUATION, "evaluation", false}, \
            {SCHED_POST_UPDATE, "postUpdate", false}, \
            {SCHED_RESUME, "resume", false}, \
+           {SCHED_RESUME_ZERO_DELAY, "resumeZeroDelay", false}, \
            {SCHED_RESUMPTION, "resumption", false}, \
            {SCHED_TRIGGER, "trigger", false}, \
            {UNPACKED_ASSIGN, "assign", false}, \
@@ -940,7 +980,14 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
 
 class VCaseType final {
 public:
-    enum en : uint8_t { CT_CASE, CT_CASEX, CT_CASEZ, CT_CASEINSIDE, CT_RANDSEQUENCE };
+    enum en : uint8_t {
+        CT_CASE,
+        CT_CASEX,
+        CT_CASEZ,
+        CT_CASEINSIDE,
+        CT_CASEMATCHES,
+        CT_RANDSEQUENCE
+    };
     enum en m_e;
     VCaseType()
         : m_e{CT_CASE} {}
@@ -1017,10 +1064,6 @@ public:
     }
     string verilogKwd() const {
         static const char* const names[] = {"", "input", "output", "inout", "ref", "const ref"};
-        return names[m_e];
-    }
-    string xmlKwd() const {  // For historical reasons no "put" suffix
-        static const char* const names[] = {"", "in", "out", "inout", "ref", "const ref"};
         return names[m_e];
     }
     string prettyName() const { return verilogKwd(); }
@@ -1433,6 +1476,7 @@ public:
         UNROLL_FULL,
         FULL_CASE,
         PARALLEL_CASE,
+        VERILATOR_LIB,
         _ENUM_SIZE
     };
     enum en m_e;
@@ -1451,6 +1495,7 @@ public:
             "UNROLL_FULL",  //
             "FULL_CASE",  //
             "PARALLEL_CASE",  //
+            "VERILATOR_LIB",  //
             "_ENUM_SIZE"  //
         };
         return names[m_e];

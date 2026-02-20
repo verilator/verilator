@@ -2,8 +2,8 @@
 //
 // The code as shown makes a really big file name with Verilator.
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2015 by Todd Strader.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2015 Todd Strader
 // SPDX-License-Identifier: CC0-1.0
 
 `define LONG_NAME_MOD modlongnameiuqyrewewriqyewroiquyweriuqyewriuyewrioryqoiewyriuewyrqrqioeyriuqyewriuqyeworqiurewyqoiuewyrqiuewoyewriuoeyqiuewryqiuewyroiqyewiuryqeiuwryuqiyreoiqyewiuryqewiruyqiuewyroiuqyewroiuyqewoiryqiewuyrqiuewyroqiyewriuqyewrewqroiuyqiuewyriuqyewroiqyewroiquewyriuqyewroiqewyriuqewyroiqyewroiyewoiuryqoiewyriuqyewiuryqoierwyqoiuewyrewoiuyqroiewuryewurqyoiweyrqiuewyreqwroiyweroiuyqweoiuryqiuewyroiuqyroie

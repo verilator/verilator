@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2024 by Antmicro.
+// This file ONLY is placed under the Creative Commons Public Domain
+// SPDX-FileCopyrightText: 2024 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
 class Foo;
@@ -99,11 +99,11 @@ endclass
 
 module t;
   initial begin
-    logic ok = 0;
-    int res;
-    Baz baz = new;
-    Qux qux = new;
-    Quux quux = new;
+    automatic logic ok = 0;
+    automatic int res;
+    automatic Baz baz = new;
+    automatic Qux qux = new;
+    automatic Quux quux = new;
 
     baz.test;
     qux.test;

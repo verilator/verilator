@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -458,7 +458,7 @@ private:
         if (const AstBasicDType* const basicp = nodep->dtypeSkipRefp()->basicp()) {
             AstConst cnst{nodep->fileline(), AstConst::WidthedValue{}, basicp->widthMin(), 0};
             if (basicp->isZeroInit()) {
-                cnst.num().setAllBits0();
+                cnst.num() = V3Number{nodep, basicp};
             } else {
                 cnst.num().setAllBitsX();
             }
@@ -929,6 +929,11 @@ private:
             m_anyAssignComb = true;
         }
 
+        if (VN_IS(nodep->rhsp(), CReset)) {
+            initVar(VN_AS(nodep->lhsp(), VarRef)->varp());
+            return;
+        }
+
         iterateAndNextConstNull(nodep->rhsp());  // Value to assign
         handleAssignRecurse(nodep, nodep->lhsp(), nodep->rhsp());
         // UINFO(9, "set " << fetchConst(nodep->rhsp())->num().ascii() << " for assign "
@@ -1215,7 +1220,8 @@ private:
             initVar(VN_CAST(funcp->fvarp(), Var));
             // Clear other automatic variables
             funcp->foreach([this](AstVar* varp) {
-                if (varp->lifetime().isAutomatic() && !varp->isIO()) initVar(varp);
+                if (varp->lifetime().isAutomatic() && (!varp->isIO() || varp->isFuncReturn()))
+                    initVar(varp);
             });
         }
 
@@ -1362,6 +1368,7 @@ private:
         if (jumpingOver()) return;
         knownBadNodeType(nodep);
     }
+    void visit(AstGetInitialRandomSeed* nodep) override { badNodeType(nodep); }
     // ====
     // default
     // These types are definitely not reducible

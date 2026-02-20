@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2022 by Geza Lore.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2022 Geza Lore
 // SPDX-License-Identifier: CC0-1.0
 
 `define signal(name, expr) wire [$bits(expr)-1:0] ``name = expr
@@ -245,6 +245,12 @@ module t (
    end
    `signal(PUSH_SEL_THROUGH_SPLICE, sel_from_partial_tmp[1:0]);
 
+   `signal(PUSH_CONCAT_THROUGH_COND_LHS, {5'd0, rand_a[0] ? {rand_b[4], 1'b0} : {1'b0, rand_b[6]}});
+   `signal(PUSH_CONCAT_THROUGH_COND_RHS, {rand_a[0] ? {rand_b[5], 1'b0} : {1'b0, rand_b[7]}, 5'd0});
+
+   `signal(REPLACE_SHIFTL_CAT, {31'd0, rand_a[42 +: 7]} << 31);
+   `signal(REPLACE_SHIFTRL_CAT, {rand_a[13 +: 7], rand_b[8 +: 27]} >> 27 << 27);
+
    // Asscending ranges
    `signal(ASCENDNG_SEL, arand_a[0:4]);
    // verilator lint_off ASCRANGE
@@ -263,6 +269,12 @@ module t (
    wire [63:0] sel_from_not_tmp = ~(rand_a >> rand_b[2:0] << rand_a[3:0]);
    wire        sel_from_not = sel_from_not_tmp[2];
    always @(posedge randbit_a) if ($c(0)) $display(sel_from_not); // Do not remove signal
+
+   // Narrow concatenation
+   wire [9:0] narrow_concat = {5'd0, ~rand_a[44 +: 5]};
+   `signal(NARROW_CONCAT_A, narrow_concat[5:1]);
+   `signal(NARROW_CONCAT_B, narrow_concat[8:4]);
+   `signal(NARROW_CONCAT_C, narrow_concat[5:4]);
 
    // Assigned at the end to avoid inlining by other passes
    assign const_a  = 64'h0123456789abcdef;

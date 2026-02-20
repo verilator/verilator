@@ -593,15 +593,17 @@ object.
 
 This class manages processes that await events (triggers). There is one
 such object per each trigger awaited by coroutines. Coroutines ``co_await``
-this object's ``trigger`` function. They are stored in two stages -
-`uncommitted` and `ready`. First, they land in the `uncommitted` stage, and
-cannot be resumed. The ``resume`` function resumes all coroutines from the
-`ready` stage and moves `uncommitted` coroutines into `ready`. The
-``commit`` function only moves `uncommitted` coroutines into `ready`.
+this object's ``trigger`` function. They are stored in three stages -
+`awaiting`, `fired` and `toResume`. First, they land in the `awaiting` stage, and
+cannot be resumed. The ``ready`` function moves all coroutines from the
+`awaiting` stage into the `fired` stage. The ``moveToResumeQueue`` function moves
+`fired` coroutines into `toResume`. Finally, function `resume` resumes
+all coroutines from the `toResume` stage.
 
-This split is done to avoid self-triggering and triggering coroutines
-multiple times. See the `Scheduling with timing` section for details on how
-this is used.
+This split is done to avoid self-triggering, triggering coroutines
+multiple times and triggering coroutines in the same iteration
+they were suspended. See the `Scheduling with timing` section
+for details on how this is used.
 
 ``VlDynamicTriggerScheduler``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -719,16 +721,35 @@ in that process. When ordering code using ``V3Order``, these triggers are
 provided as external domains of these variables. This ensures that the
 necessary combinational logic is triggered after a coroutine resumption.
 
+Every call to a `VlTriggerScheduler`'s `trigger()` method is preempt by
+a call to a proper `__VbeforeTrig` function which evaluates all the necessary
+triggers so, the information about order of suspension/resumption is not lost.
+The triggers necessary to evaluate are ones dependent on the same events
+as the `trigger()` - e.g.: if `triggers()` awaits for event `a` or `b`, then
+every trigger that depends on any of those shall be evaluated. If they wouldn't
+be evaluated and next coroutine after resumption would fire the event `a` then
+it is impossible to get to know whether await or fire on event `a` was called
+first - which is necessary to know.
+
 There are two functions for managing timing logic called by ``_eval()``:
 
-* ``_timing_commit()``, which commits all coroutines whose triggers were
+* ``_timing_ready()``, which commits all coroutines whose triggers were
   not set in the current iteration,
 * ``_timing_resume()``, which calls `resume()` on all trigger and delay
   schedulers whose triggers were set in the current iteration.
 
-Thanks to this separation, a coroutine awaiting a trigger cannot be
-suspended and resumed in the same iteration, and it cannot be resumed
-before it suspends.
+Thanks to this separation a coroutine:
+* awaiting a trigger cannot be suspended and resumed in the same iteration
+  (``test_regress/t/t_timing_eval_act.v``) - which is necessary to make
+  Verilator more predictable; this is the reason for introduction of 3rd stage
+  in `VlTriggerScheduler` and thanks to this it is guaranteed that downstream
+  logic will be evaluated before resumption (assuming that the coroutine wasn't
+  already triggered in previous iteration);
+* cannot be resumed before it is suspended -
+  ``test_regress/t/t_event_control_double_excessive.v``;
+* firing cannot cannot be lost
+  (``test_regress/t/t_event_control_double_lost.v``) - which is possible when
+  triggers are not evaluated right before awaiting.
 
 All coroutines are committed and resumed in the 'act' eval loop. With
 timing features enabled, the ``_eval()`` function takes this form:
@@ -1946,35 +1967,26 @@ for programmatic processing (e.g. with `astsee
 <https://github.com/antmicro/astsee>`_). To enable this dump format, use
 :vlopt:`--dump-tree-json` or :vlopt:`--json-only`.
 
-Structure:
+The potential fields in the JSON dump can be determined by searching for
+JSON in the `src/V3AstNodes.cpp` source file. The dump will only include
+booleans that are true, omitting those that are false.
+
+Structure example:
 
 ::
 
    {
-     /* Attributes that are common to all types of nodes */
+     /* Attributes that are common to most types of nodes */
      "type": "VAR",
      "name": "cyc",
+     "verilogName": "cyc",
      /* By default addresses and filenames use short/stable ids rather than real value */
      "addr": "(H)",
      "loc": "a,25:12,26:15", /* "fileid,firstLine:firstCol,lastLine:endCol" (endCol is right exclusive) */
      "editNum": 602,
-     /* Fields that are specific to AstVar nodes:  */
+     /* Some fields that are specific to AstVar nodes:  */
      "origName": "cyc",
-     "isSc": false,
      "ioDirection": "NONE",
-     "isConst": false,
-     "isPullup": false,
-     "isPulldown": false,
-     "isUsedClock": false,
-     "isSigPublic": false,
-     "isLatched": false,
-     "isUsedLoopIdx": false,
-     "noReset": false,
-     "attrIsolateAssign": false,
-     "attrFileDescr": false,
-     "isDpiOpenArray": false,
-     "isFuncReturn": false,
-     "isFuncLocal": false,
      "attrClocker": "UNKNOWN",
      "lifetime": "NONE",
      "varType": "VAR",
@@ -2645,10 +2657,11 @@ xsim_flags / xsim_flags2 / xsim_run_flags
 Distribution
 ============
 
-Copyright 2008-2025 by Wilson Snyder. Verilator is free software; you can
-redistribute it and/or modify it under the terms of either the GNU Lesser
-General Public License Version 3 or the Perl Artistic License Version 2.0.
+Verilator is free software; you can redistribute it and/or modify it under
+the terms of either the GNU Lesser General Public License Version 3 or the
+Perl Artistic License Version 2.0.
 
+SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 .. |Logo| image:: https://www.veripool.org/img/verilator_256_200_min.png

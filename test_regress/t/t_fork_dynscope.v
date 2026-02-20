@@ -1,51 +1,51 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2023 by Antmicro Ltd.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2023 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
 class Foo;
   task do_something(int arg_v);
     int dynscope_var;
     int x;
-    dynscope_var = 0;
+    if (dynscope_var != 0) $stop;
+    dynscope_var = 10;
+    if (dynscope_var != 10) $stop;
 
     fork
       #10 begin
         x = 0;
         // Test capturing a variable that needs to be modified
-        $display("Incremented dynscope_var: %d", ++dynscope_var);
-        if (dynscope_var != 1)
-          $stop;
+        if (dynscope_var != 10) $stop;
+        $display("Incremented dynscope_var: %0d", ++dynscope_var);
+        if (dynscope_var != 11) $stop;
 
         // Check nested access
         fork
           #10 begin
-            $display("Incremented x: %d", ++x);
-            $display("Incremented dynscope_var: %d", ++dynscope_var);
-            if (dynscope_var != 2)
-              $stop;
+            $display("Incremented x: %0d", ++x);
+            $display("Incremented dynscope_var: %0d", ++dynscope_var);
+            if (dynscope_var != 12) $stop;
           end
         join_none
       end
       #10 begin
         // Same as the first check, but with an argument
         // (so it needs to be copied to the dynamic scope instead of being moved there)
-        $display("Incremented arg_v: %d", ++arg_v);
-        if (arg_v != 2)
-          $stop;
+        if (arg_v != 1) $stop;
+        $display("Incremented arg_v: %0d", ++arg_v);
+        if (arg_v != 2) $stop;
       end
     join_none
 
     // Check if regular access to arg_v has been substituted with access to its copy from
     // a dynamic scope
-    $display("Incremented arg_v: %d", ++arg_v);
-    if (arg_v != 1)
-      $stop;
+    $display("Incremented arg_v: %0d", ++arg_v);
+    if (arg_v != 1) $stop;
   endtask
 endclass
 
-module t();
+module t;
   initial begin
     Foo foo;
     foo = new;

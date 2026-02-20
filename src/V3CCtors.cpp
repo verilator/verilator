@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -192,12 +192,13 @@ class CCtorsVisitor final : public VNVisitor {
     }
     void visit(AstVar* nodep) override {
         if (nodep->needsCReset()) {
+            AstNode* const crstp = new AstAssign{
+                nodep->fileline(), new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE},
+                new AstCReset{nodep->fileline(), nodep, true}};
             if (m_varResetp) {
-                AstVarRef* const vrefp = new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE};
-                m_varResetp->add(new AstCReset{nodep->fileline(), vrefp, true});
+                m_varResetp->add(crstp);
             } else if (m_cfuncp) {
-                AstVarRef* const vrefp = new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE};
-                nodep->addNextHere(new AstCReset{nodep->fileline(), vrefp, true});
+                nodep->addNextHere(crstp);
             }
         }
     }

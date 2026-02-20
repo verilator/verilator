@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -310,7 +310,7 @@ public:
             if (nextp) nextp->unlinkFrBackWithNext();
             if (itemsp && skewp) skewp = skewp->cloneTree(false);
             AstClockingItem* itemp = new AstClockingItem{flp, direction, skewp, nodep};
-            itemsp = itemsp ? itemsp->addNext(itemp) : itemp;
+            itemsp = AstNode::addNextNull(itemsp, itemp);
         }
         return itemsp;
     }
@@ -363,13 +363,5 @@ public:
             resp = AstNode::addNext(resp, beginp);
         }
         return resp;
-    }
-
-    // Wrap fork statements in AstBegin, ensure fork...join_none have process
-    static AstNodeStmt* wrapFork(V3ParseImp* parsep, AstFork* forkp, AstNodeStmt* stmtsp) {
-        if (forkp->joinType() == VJoinType::JOIN_NONE && stmtsp)
-            parsep->importIfInStd(forkp->fileline(), "process", true);
-        forkp->addForksp(wrapInBegin(stmtsp));
-        return forkp;
     }
 };

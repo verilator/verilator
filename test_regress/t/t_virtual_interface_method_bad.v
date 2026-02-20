@@ -1,7 +1,7 @@
-// Copyright 2003 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 class ExampleClass;
   localparam NUM_TXNS = 10;
@@ -27,7 +27,7 @@ module t;
   example_if example_if_inst();
 
   initial begin: main
-    ExampleClass exampleClass = new();
+    automatic ExampleClass exampleClass = new();
 
     exampleClass.bind_if(example_if_inst);
     exampleClass.run();

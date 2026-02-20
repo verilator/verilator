@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -122,6 +122,12 @@ class InlineMarkVisitor final : public VNVisitor {
         if (m_modp->modPublic() && (m_modp->isTop() || !v3Global.opt.flatten())) {
             cantInline("modPublic", false);
         }
+        // If the instance is a --lib-create library stub instance, and need tracing,
+        // then don't inline as we need to know its a lib stub for sepecial handling
+        // in V3TraceDecl. See #7001.
+        if (m_modp->verilatorLib() && v3Global.opt.trace()) {
+            cantInline("verilatorLib with --trace", false);
+        }
 
         iterateChildren(nodep);
     }
@@ -158,8 +164,8 @@ class InlineMarkVisitor final : public VNVisitor {
         }
     }
     void visit(AstVarXRef* nodep) override {
-        // Remove link. V3LinkDot will reestablish it after inlining.
-        nodep->varp(nullptr);
+        // Keep varp - V3Const::constifyEdit is called during pinReconnectSimple
+        // which needs varp to be set. V3LinkDot will re-resolve after inlining.
     }
     void visit(AstNodeFTaskRef* nodep) override {
         // Remove link. V3LinkDot will reestablish it after inlining.
@@ -322,7 +328,7 @@ class InlineRelinkVisitor final : public VNVisitor {
     }
     void visit(AstVarRef* nodep) override {
         // If the target port is being inlined, replace reference with the
-        // connected expression (always a Const of a VarRef).
+        // connected expression (a Const, VarRef, or VarXRef).
         AstNode* const pinExpr = nodep->varp()->user2p();
         if (!pinExpr) return;
 
@@ -342,7 +348,8 @@ class InlineRelinkVisitor final : public VNVisitor {
             // variable that will later be pruned (it will otherwise be unreferenced).
             if (!nodep->access().isReadOnly()) {
                 AstVar* const varp = nodep->varp();
-                const std::string name = "__vInlPlaceholder_" + std::to_string(++m_nPlaceholders);
+                const std::string name
+                    = m_cellp->name() + "__vInlPlaceholder_" + std::to_string(++m_nPlaceholders);
                 AstVar* const holdep = new AstVar{varp->fileline(), VVarType::VAR, name, varp};
                 m_modp->addStmtsp(holdep);
                 AstVarRef* const newp = new AstVarRef{nodep->fileline(), holdep, nodep->access()};
@@ -354,10 +361,25 @@ class InlineRelinkVisitor final : public VNVisitor {
             return;
         }
 
-        // Otherwise it must be a variable reference, retarget this ref
-        const AstVarRef* const vrefp = VN_AS(pinExpr, VarRef);
-        nodep->varp(vrefp->varp());
-        nodep->classOrPackagep(vrefp->classOrPackagep());
+        // Handle VarRef: simple retarget
+        if (const AstVarRef* const vrefp = VN_CAST(pinExpr, VarRef)) {
+            nodep->varp(vrefp->varp());
+            nodep->classOrPackagep(vrefp->classOrPackagep());
+            return;
+        }
+
+        // Handle VarXRef: replace VarRef with VarXRef (e.g., nested interface port)
+        const AstVarXRef* const xrefp = VN_AS(pinExpr, VarXRef);
+        AstVarXRef* const newp
+            = new AstVarXRef{nodep->fileline(), xrefp->name(), xrefp->dotted(), nodep->access()};
+        newp->varp(xrefp->varp());
+        // Copy inlinedDots from pin expression - the normal visitor iteration will
+        // prepend the cell name when this VarXRef is visited later
+        newp->inlinedDots(xrefp->inlinedDots());
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        // Note: Don't call iterate(newp) here - the node will be visited during
+        // normal tree iteration which will apply the inlining transformations
     }
     void visit(AstVarXRef* nodep) override {
         // Track what scope it was originally under so V3LinkDot can resolve it
@@ -481,24 +503,39 @@ void connectPort(AstNodeModule* modp, AstVar* nodep, AstNodeExpr* pinExprp) {
     }
 
     // Otherwise it must be a variable reference due to having called pinReconnectSimple
-    const AstVarRef* const pinRefp = VN_AS(pinExprp, VarRef);
+    const AstNodeVarRef* const pinRefp = VN_AS(pinExprp, NodeVarRef);
 
-    // Helper to create an AstVarRef reference to the pin variable
-    const auto pinRef = [&](VAccess access) {
-        AstVarRef* const p = new AstVarRef{pinRefp->fileline(), pinRefp->varp(), access};
-        p->classOrPackagep(pinRefp->classOrPackagep());
-        return p;
+    const auto pinRefAsVarRef = [&](VAccess access) -> AstVarRef* {
+        const AstVarRef* const vrp = VN_AS(pinRefp, VarRef);
+        AstVarRef* const newp = new AstVarRef{vrp->fileline(), vrp->varp(), access};
+        newp->classOrPackagep(vrp->classOrPackagep());
+        return newp;
+    };
+
+    const auto pinRefAsExpr = [&](VAccess access) -> AstNodeExpr* {
+        if (const AstVarRef* const vrp = VN_CAST(pinRefp, VarRef)) {
+            AstVarRef* const newp = new AstVarRef{vrp->fileline(), vrp->varp(), access};
+            newp->classOrPackagep(vrp->classOrPackagep());
+            return newp;
+        } else {
+            const AstVarXRef* const xrp = VN_AS(pinRefp, VarXRef);
+            AstVarXRef* const newp
+                = new AstVarXRef{xrp->fileline(), xrp->name(), xrp->dotted(), access};
+            newp->varp(xrp->varp());
+            newp->inlinedDots(xrp->inlinedDots());
+            return newp;
+        }
     };
 
     // If it is being inlined, create the alias for it
     if (inlineIt) {
-        UINFO(6, "Inlning port variable: " << nodep);
+        UINFO(6, "Inlining port variable: " << nodep);
         if (nodep->isIfaceRef()) {
             modp->addStmtsp(
-                new AstAliasScope{flp, portRef(VAccess::WRITE), pinRef(VAccess::READ)});
+                new AstAliasScope{flp, portRef(VAccess::WRITE), pinRefAsExpr(VAccess::READ)});
         } else {
             AstVarRef* const aliasArgsp = portRef(VAccess::WRITE);
-            aliasArgsp->addNext(pinRef(VAccess::READ));
+            aliasArgsp->addNext(pinRefAsVarRef(VAccess::READ));
             modp->addStmtsp(new AstAlias{flp, aliasArgsp});
         }
         // They will become the same variable, so propagate file-line and variable attributes
@@ -510,12 +547,14 @@ void connectPort(AstNodeModule* modp, AstVar* nodep, AstNodeExpr* pinExprp) {
     }
 
     // Otherwise create the continuous assignment between the port var and the pin expression
-    UINFO(6, "Not inlning port variable: " << nodep);
+    UINFO(6, "Not inlining port variable: " << nodep);
     if (nodep->direction() == VDirection::INPUT) {
-        AstAssignW* const ap = new AstAssignW{flp, portRef(VAccess::WRITE), pinRef(VAccess::READ)};
+        AstAssignW* const ap
+            = new AstAssignW{flp, portRef(VAccess::WRITE), pinRefAsExpr(VAccess::READ)};
         modp->addStmtsp(new AstAlways{ap});
     } else if (nodep->direction() == VDirection::OUTPUT) {
-        AstAssignW* const ap = new AstAssignW{flp, pinRef(VAccess::WRITE), portRef(VAccess::READ)};
+        AstAssignW* const ap
+            = new AstAssignW{flp, pinRefAsExpr(VAccess::WRITE), portRef(VAccess::READ)};
         modp->addStmtsp(new AstAlways{ap});
     } else {
         pinExprp->v3fatalSrc("V3Tristate left INOUT port");

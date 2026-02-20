@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2024 by Antmicro.
+// This file ONLY is placed under the Creative Commons Public Domain
+// SPDX-FileCopyrightText: 2024 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
@@ -31,7 +31,7 @@ module t;
     endclass
 
     initial begin
-        Foo foo = new;
+        automatic Foo foo = new;
         foo.test;
         $write("*-* All Finished *-*\n");
         $finish;

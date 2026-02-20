@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
-# Copyright 2024 by Wilson Snyder. This program is free software; you
-# can redistribute it and/or modify it under the terms of either the GNU
-# Lesser General Public License Version 3 or the Perl Artistic License
-# Version 2.0.
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of either the GNU Lesser General Public License Version 3
+# or the Perl Artistic License Version 2.0.
+# SPDX-FileCopyrightText: 2024 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
@@ -14,7 +14,13 @@ test.scenarios('simulator_st')
 test.compile(verilator_flags2=["--stats"])
 
 if test.vlt_all:
-    test.file_grep(test.stats, r'Optimizations, Substituted temps\s+(\d+)', 43)
+    test.file_grep(test.stats, r'Optimizations, Subst, Constant words reinlined\s+(\d+)', 156)
+    test.file_grep(test.stats, r'Optimizations, Subst, Substituted temps\s+(\d+)', 225)
+    test.file_grep(test.stats, r'Optimizations, Subst, Whole variable assignments deleted\s+(\d+)',
+                   1)
+    test.file_grep(test.stats, r'Optimizations, Subst, Whole variables substituted\s+(\d+)', 1)
+    test.file_grep(test.stats, r'Optimizations, Subst, Word assignments deleted\s+(\d+)', 68)
+    test.file_grep(test.stats, r'Optimizations, Subst, Words substituted\s+(\d+)', 68)
 
 test.execute()
 

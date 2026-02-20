@@ -13,6 +13,9 @@
 %Error-PINNOTFOUND: t/t_udp_bad.v:10:13: Pin not found: '__pinNumber1'
    10 |    udp_x x (a, b);
       |             ^
+                                       : ... Location of instance's primitive declaration
+   14 | primitive udp_x (a_bad, b, c_bad);
+      |           ^~~~~
                     ... For error description see https://verilator.org/warn/PINNOTFOUND?v=latest
 %Error: t/t_udp_bad.v:17:11: Multiple outputs not allowed in udp modules
    17 |    output c_bad;

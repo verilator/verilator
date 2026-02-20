@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2025 by Antmicro.
+// This file ONLY is placed under the Creative Commons Public Domain
+// SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
 typedef class Derived;
@@ -23,9 +23,9 @@ endclass
 
 module t;
   initial begin
-    Derived d = new("Hello");
-    Base b = d;
-    Derived c = b.cast();
+    automatic Derived d = new("Hello");
+    automatic Base b = d;
+    automatic Derived c = b.cast();
     if (d.get() != c.get()) $stop;
     $write("*-* All Finished *-*\n");
     $finish;

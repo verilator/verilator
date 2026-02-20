@@ -1,4 +1,4 @@
-.. Copyright 2003-2025 by Wilson Snyder.
+.. SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 ===================
@@ -467,7 +467,7 @@ List Of Warnings
    .. TODO better example
 
    Warns that the code is comparing a value in a way that will always be
-   constant. For example, ``X > 1`` will always be true when X is a single
+   constant. For example, ``X > 1`` will always be false when X is a single
    bit wide.
 
    Ignoring this warning will only suppress the lint check; it will
@@ -1022,13 +1022,20 @@ List Of Warnings
 .. option:: IMPLICITSTATIC
 
    Warns that the lifetime of a task or a function was not provided and so
-   was implicitly set to static. The warning is suppressed when no
-   variables inside the task or a function are assigned to.
+   an enclosed variable was implicitly set to static. The warning is
+   suppressed when no variables inside the task or a function are assigned
+   to.
+
+   Also warns that a process (e.g. "always" or "initial" statement) has
+   enclosed variables that were implicitly set to static.
+
+   IEEE 1800-2023 6.21 requires this error, though Verilator treats it by
+   default as a warning.
 
    This is a warning because the static default differs from C++, differs
    from class member function/tasks. Static is a more dangerous default
-   then automatic as static prevents the function from being reentrant,
-   which may be a source of bugs, and/or performance issues.
+   then automatic as static prevents the function or process from being
+   reentrant, which may be a source of bugs, and/or performance issues.
 
    If the function is in a module, and does not require static behavior,
    change it to "function automatic".
@@ -1118,6 +1125,16 @@ List Of Warnings
    attempt to protect/obscure identifiers or hide information in the model.
    Correct the options provided, or inspect the output code to see if the
    information exposed is acceptable.
+
+   Ignoring this warning will only suppress the lint check; it will
+   simulate correctly.
+
+
+.. option:: INSIDETRUE
+
+   Warns that an ``inside`` expression contains a range with unbounded
+   values on both sides (``[$:$]``), which is always true. This is likely
+   a coding mistake.
 
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.
@@ -2273,6 +2290,20 @@ List Of Warnings
    unpacked struct/array inside a packed struct/array.
 
 
+.. option:: UNSATCONSTR
+
+   Warns that a ``randomize()`` call failed because one or more constraints
+   could not be satisfied. This warning is issued at simulation runtime
+   when the SMT solver determines that the combination of constraints is
+   unsatisfiable.
+
+   Each unsatisfied constraint is reported with its source location to help
+   identify conflicting constraints.
+
+   This warning can be disabled by setting the runtime option
+   ``+verilator+wno+unsatconstr+1`` or by calling
+   ``Verilated::threadContextp()->warnUnsatConstr(false)`` in C++.
+
 .. option:: UNSIGNED
 
    .. TODO better example
@@ -2301,6 +2332,8 @@ List Of Warnings
    make the design simulate incorrectly and is only intended for lint
    usage; see the details under :vlopt:`--bbox-unsup`.
 
+   Disabling this error also disables :option:`COVERIGN` and
+   :option:`SPECIFYIGN`.
 
 .. option:: UNUSED
 
@@ -2483,7 +2516,11 @@ List Of Warnings
    and will suppress the warning when the minimum width is appropriate to
    fit the required size.
 
-   Ignoring this warning will only suppress the lint check; it will
+   Disabling/enabling WIDTH is equivalent to disabling/enabling the
+   :option:`WIDTHEXPAND`, :option:`WIDTHTRUNC`, and :option:`WIDTHXZEXPAND`
+   warnings.
+
+   Ignoring these warnings will only suppress the lint check; it will
    simulate correctly.
 
    The recommendation is to fix these issues by:
@@ -2554,6 +2591,21 @@ List Of Warnings
    expanded. See :option:`WIDTH`.
 
 .. option:: ZERODLY
+
+   Since version 5.046:
+
+   Issued if neither :vlopt:`--sched-zero-delay`, nor
+   :vlopt:`--sched-zero-delay` is used on the command line, and the input does
+   not contain a compile time known ``#0`` delay, but does contain a
+   ``#(expressin)`` where the delay value cannot be determined at compile time.
+   Passing :vlopt:`--no-sched-zero-delay` can improve runtime performance if
+   variable delays are all known to be non-zero at runtime.
+
+   Also issued if :vlopt:`--no-sched-zero-delay` is used on the command line,
+   but the input contains a compile time known ``#0`` delay. This is safe to
+   ignore if the reported delay is known to be not executed at runtime.
+
+   Before version 5.046:
 
    Warns that `#0` delays do not schedule the process to be resumed in the
    Inactive region. Such processes do get resumed in the same time slot

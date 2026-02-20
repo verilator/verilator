@@ -4,10 +4,10 @@
 #
 #*****************************************************************************
 #
-# Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-# can redistribute it and/or modify it under the terms of either the GNU
-# Lesser General Public License Version 3 or the Perl Artistic License
-# Version 2.0.
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of either the GNU Lesser General Public License Version 3
+# or the Perl Artistic License Version 2.0.
+# SPDX-FileCopyrightText: 2025-2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 #
 #****************************************************************************/
@@ -90,11 +90,9 @@ set(HEADERS
     V3EmitCConstInit.h
     V3EmitCFunc.h
     V3EmitCMain.h
-    V3EmitCMake.h
     V3EmitMk.h
     V3EmitMkJson.h
     V3EmitV.h
-    V3EmitXml.h
     V3Error.h
     V3ExecGraph.h
     V3Expand.h
@@ -161,6 +159,7 @@ set(HEADERS
     V3RandSequence.h
     V3Randomize.h
     V3Reloop.h
+    V3Reorder.h
     V3Rtti.h
     V3Sampled.h
     V3Sched.h
@@ -189,6 +188,7 @@ set(HEADERS
     V3Tristate.h
     V3Udp.h
     V3Undriven.h
+    V3UndrivenCapture.h
     V3UniqueNames.h
     V3Unknown.h
     V3Unroll.h
@@ -250,6 +250,7 @@ set(COMMON_SOURCES
     V3DfgOptimizer.cpp
     V3DfgPasses.cpp
     V3DfgPeephole.cpp
+    V3DfgPushDownSels.cpp
     V3DfgRegularize.cpp
     V3DfgSynthesize.cpp
     V3DiagSarif.cpp
@@ -261,14 +262,12 @@ set(COMMON_SOURCES
     V3EmitCImp.cpp
     V3EmitCInlines.cpp
     V3EmitCMain.cpp
-    V3EmitCMake.cpp
     V3EmitCModel.cpp
     V3EmitCPch.cpp
     V3EmitCSyms.cpp
     V3EmitMk.cpp
     V3EmitMkJson.cpp
     V3EmitV.cpp
-    V3EmitXml.cpp
     V3Error.cpp
     V3ExecGraph.cpp
     V3Expand.cpp
@@ -328,6 +327,7 @@ set(COMMON_SOURCES
     V3RandSequence.cpp
     V3Randomize.cpp
     V3Reloop.cpp
+    V3Reorder.cpp
     V3Sampled.cpp
     V3Sched.cpp
     V3SchedAcyclic.cpp
@@ -358,6 +358,7 @@ set(COMMON_SOURCES
     V3Tristate.cpp
     V3Udp.cpp
     V3Undriven.cpp
+    V3UndrivenCapture.cpp
     V3Unknown.cpp
     V3Unroll.cpp
     V3UnrollGen.cpp

@@ -1,0 +1,10 @@
+%Error: t/t_interface_array_loop_bad.v:27:14: Expecting expression to be constant, but variable isn't const: 'i'
+                                            : ... note: In instance 't'
+   27 |       ifaces[i].value = 8'(i);
+      |              ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_interface_array_loop_bad.v:27:13: Could not expand constant selection inside dotted reference: 'i'
+                                            : ... note: In instance 't'
+   27 |       ifaces[i].value = 8'(i);
+      |             ^
+%Error: Exiting due to

@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_constraint_countbits_unsup.v:12:20: Unsupported: non-constant control in $countbits inside constraint
+   12 |   constraint cons {$countbits(value, ctrl) == 3;}
+      |                    ^~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2025 by Antmicro.
+// This file ONLY is placed under the Creative Commons Public Domain
+// SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
 interface b_if;
@@ -14,8 +14,8 @@ module t;
 
   typedef virtual b_if vif_t;
   initial begin
-    vif_t vif = t.m_i.if_bind;
-    int y = t.m_i.if_bind.x;
+    automatic vif_t vif = t.m_i.if_bind;
+    automatic int y = t.m_i.if_bind.x;
 
     if (vif.x != 1) $stop;
     if (y != 1) $stop;

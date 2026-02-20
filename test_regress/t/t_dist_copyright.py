@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
-# Copyright 2024 by Wilson Snyder. This program is free software; you
-# can redistribute it and/or modify it under the terms of either the GNU
-# Lesser General Public License Version 3 or the Perl Artistic License
-# Version 2.0.
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of either the GNU Lesser General Public License Version 3
+# or the Perl Artistic License Version 2.0.
+# SPDX-FileCopyrightText: 2024 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
@@ -14,23 +14,20 @@ test.scenarios('dist')
 
 RELEASE_OK_RE = r'(^test_regress/t/.*\.(cpp|h|map|mk|sv|v|vlt)|^test_regress/t_done/|^examples/)'
 
-EXEMPT_AUTHOR_RE = r'(^ci/|^nodist/fastcov.py|^nodist/fuzzer|^test_regress/t/.*\.(cpp|h|v|vlt)$)'
+EXEMPT_AUTHOR_RE = r'(^ci/|^nodist/fastcov.py|^nodist/fuzzer|^test_regress/t/.*\.(cpp|h|mk|s?vh?|vlt)$)'
 
 EXEMPT_FILES_RE = r'(^\.|/\.|\.gitignore$|\.dat|\.gprof|\.mem|\.out$|\.png$|\.tree|\.vc$|\.vcd$|^\.)'
 
 EXEMPT_FILES_LIST = """
-    Artistic
     CITATION.cff
     CPPLINT.cfg
     LICENSE
-    README.rst
+    LICENSES/
+    REUSE.toml
     ci/ci-win-compile.ps1
     ci/ci-win-test.ps1
     ci/codecov
-    docs/CONTRIBUTING.rst
     docs/CONTRIBUTORS
-    docs/README.rst
-    docs/security.rst
     docs/_static
     docs/gen
     docs/spelling.txt
@@ -40,14 +37,7 @@ EXEMPT_FILES_LIST = """
     install-sh
     src/mkinstalldirs
     test_regress/t/t_altera_lpm.v
-    test_regress/t/t_flag_f__3.v
-    test_regress/t/t_fuzz_eof_bad.v
-    test_regress/t/t_incr_void.v
-    test_regress/t/t_property_unsup.v
     test_regress/t/t_randsequence_svtests.v
-    test_regress/t/t_sequence_first_match_unsup.v
-    test_regress/t/tsub/t_flag_f_tsub.v
-    test_regress/t/tsub/t_flag_f_tsub_inc.v
     test_regress/t/uvm/
     verilator.pc.in
     """
@@ -83,9 +73,9 @@ for filename in files:
         release = False
         for line in fh:
             line = line.rstrip()
-            if 'SPDX-License-Identifier:' in line:
+            if 'SP' + 'DX-License-Identifier:' in line:
                 spdx = line
-            elif re.search(r'Copyright 20[0-9][0-9]', line):
+            elif re.search(r'(Copyright 20[0-9][0-9]|SPDX-FileCopyrightText: 20[0-9][0-9])', line):
                 copyright_msg = line
                 if 'Wilson Snyder' in line:
                     pass
@@ -113,8 +103,7 @@ for filename in files:
             test.error_keep_going(filename + ": Please add standard 'Copyright " + str(year) +
                                   " ...', similar to in other files" + release_note)
         if not spdx:
-            test.error_keep_going(
-                filename +
-                ": Please add standard 'SPDX-License_Identifier: ...', similar to in other files")
+            test.error_keep_going(filename + ": Please add standard 'SP"
+                                  "DX-License-Identifier: ...', similar to in other files")
 
 test.passes()

@@ -3,10 +3,10 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -154,7 +154,11 @@ enum VerilatedVarFlags {
     // Flags
     VLVF_PUB_RD = (1 << 8),  // Public readable
     VLVF_PUB_RW = (1 << 9),  // Public writable
-    VLVF_DPI_CLAY = (1 << 10)  // DPI compatible C standard layout
+    VLVF_DPI_CLAY = (1 << 10),  // DPI compatible C standard layout
+    VLVF_CONTINUOUSLY = (1 << 11),  // Is continously assigned
+    VLVF_FORCEABLE = (1 << 12),  // Forceable
+    VLVF_SIGNED = (1 << 13),  // Signed integer
+    VLVF_BITVAR = (1 << 14)  // Four state bit (vs two state logic)
 };
 
 // IEEE 1800-2023 Table 20-6
@@ -411,6 +415,7 @@ protected:
         std::string m_profExecFilename;  // +prof+exec+file filename
         std::string m_profVltFilename;  // +prof+vlt filename
         std::string m_solverProgram;  // SMT solver program
+        bool m_warnUnsatConstr = true;  // Warn on unsatisfied constraints
         VlOs::DeltaCpuTime m_cpuTimeStart{false};  // CPU time, starts when create first model
         VlOs::DeltaWallTime m_wallTimeStart{false};  // Wall time, starts when create first model
         std::vector<traceBaseModelCb_t> m_traceBaseModelCbs;  // Callbacks to traceRegisterModel
@@ -429,6 +434,8 @@ protected:
     const std::unique_ptr<VerilatedContextImpData> m_impdatap;
     // Number of threads to use for simulation (size of m_threadPool + 1 for main thread)
     unsigned m_threads = VlOs::getProcessDefaultParallelism();
+    // Use numa automatic CPU-to-thread assignment
+    bool m_useNumaAssign = false;
     // Number of threads in added models
     unsigned m_threadsInModels = 0;
     // The thread pool shared by all models added to this context
@@ -595,6 +602,13 @@ public:
     /// Can only be called before the thread pool is created (before first model is added).
     void threads(unsigned n);
 
+    /// Use numa automatic CPU-to-thread assignment.
+    bool useNumaAssign() const VL_MT_SAFE { return m_useNumaAssign; }
+    /// Set numa assignment of threads to cores
+    /// Defaults false; set true automatically when threads() called;
+    /// call this to override back to false if numa assignment not wanted.
+    void useNumaAssign(bool flag);
+
     /// Trace signals in models within the context; called by application code
     void trace(VerilatedTraceBaseC* tfp, int levels, int options = 0);
     /// Allow traces to at some point be enabled (disables some optimizations)
@@ -650,6 +664,9 @@ public:
     // Internal: SMT solver program
     std::string solverProgram() const VL_MT_SAFE;
     void solverProgram(const std::string& flag) VL_MT_SAFE;
+    // Internal: Control display of unsatisfied constraints
+    bool warnUnsatConstr() const VL_MT_SAFE { return m_ns.m_warnUnsatConstr; }
+    void warnUnsatConstr(bool flag) VL_MT_SAFE { m_ns.m_warnUnsatConstr = flag; }
 
     // Internal: Find scope
     const VerilatedScope* scopeFind(const char* namep) const VL_MT_SAFE;

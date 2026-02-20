@@ -2,8 +2,8 @@
 //
 // Simple bi-directional alias test.
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2020 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2020 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 // verilog_format: off
@@ -15,14 +15,14 @@
 module t;
 
   initial begin
-    int tofind;
-    int aliases[$];
-    int found[$];
-    int i;
-    byte byteq[$] = {2, -1, 127};
-    byte b[];
-    logic [7:0] m[2][2];
-    logic bit_arr[1024];
+    automatic int tofind;
+    automatic int aliases[$];
+    automatic int found[$];
+    automatic int i;
+    automatic byte byteq[$] = {2, -1, 127};
+    automatic byte b[];
+    automatic logic [7:0] m[2][2];
+    automatic logic bit_arr[1024];
 
     aliases = '{1, 4, 6, 8};
     tofind = 6;

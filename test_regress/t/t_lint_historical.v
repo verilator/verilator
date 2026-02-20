@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2022 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2022 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
@@ -56,6 +56,7 @@ module t;
    // verilator lint_off INFINITELOOP
    // verilator lint_off INITIALDLY
    // verilator lint_off INSECURE
+   // verilator lint_off INSIDETRUE
    // verilator lint_off LATCH
    // verilator lint_off LITENDIAN
    // verilator lint_off MINTYPMAXDLY
@@ -93,6 +94,7 @@ module t;
    // verilator lint_off SPLITVAR
    // verilator lint_off STATICVAR
    // verilator lint_off STMTDLY
+   // verilator lint_off SUPERNFIRST
    // verilator lint_off SYMRSVDWORD
    // verilator lint_off SYNCASYNCNET
    // verilator lint_off TICKCOUNT
@@ -102,7 +104,9 @@ module t;
    // verilator lint_off UNOPTFLAT
    // verilator lint_off UNOPTTHREADS
    // verilator lint_off UNPACKED
+   // verilator lint_off UNSATCONSTR
    // verilator lint_off UNSIGNED
+   // verilator lint_off UNUSED
    // verilator lint_off UNUSEDGENVAR
    // verilator lint_off UNUSEDLOOP
    // verilator lint_off UNUSEDPARAM

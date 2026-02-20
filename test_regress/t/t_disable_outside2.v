@@ -1,14 +1,14 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2025 by Antmicro.
+// This file ONLY is placed under the Creative Commons Public Domain
+// SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
    initial begin
       for (int i = 0; i < 3; i++) begin
          begin : blk
-            int x = 0;
+            int x;
             fork : fork_blk
                begin
                   x = 1;

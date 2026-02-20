@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2023 by Antmicro Ltd.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2023 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
 typedef struct packed {
@@ -22,8 +22,8 @@ endclass : Cls
 
 module t;
    initial begin
-      Cls c = new;
-      my_struct s = c.get_struct;
+      automatic Cls c = new;
+      automatic my_struct s = c.get_struct;
       if (s.x != 1) $stop;
       if (s.y != 2) $stop;
       if (s.z != 3) $stop;

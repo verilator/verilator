@@ -1,10 +1,10 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
-// Copyright 2010-2011 by Wilson Snyder. This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2010-2011 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -407,6 +407,56 @@ int _mon_check_var() {
         CHECK_RESULT_CSTR(p, "vpiParameter");
     }
 
+    // test properties on bad handle
+    {
+        TestVpiHandle vh999 = VPI_HANDLE("nonexistent");
+        CHECK_RESULT_Z(vh999);
+        d = vpi_get(vpiType, vh999);
+        CHECK_RESULT(d, vpiUndefined);
+        d = vpi_get(vpiSigned, vh999);
+        CHECK_RESULT(d, vpiUndefined);
+        d = vpi_get(vpiSize, vh999);
+        CHECK_RESULT(d, vpiUndefined);
+    }
+
+    // other unsigned types
+    constexpr struct {
+        const char* name;
+        PLI_INT32 exp_type;
+    } uint_vars[] = {
+        // uvm_hdl_polling.v requires single bits return vpiBitVar
+        {"bit1", vpiBitVar},
+    };
+    for (const auto& s : uint_vars) {
+        TestVpiHandle vh101 = VPI_HANDLE(s.name);
+        CHECK_RESULT_NZ(vh101);
+        d = vpi_get(vpiType, vh101);
+        CHECK_RESULT(d, s.exp_type);
+    }
+
+    // other integer types
+    tmpValue.format = vpiIntVal;
+    constexpr struct {
+        const char* name;
+        PLI_INT32 exp_sz;
+    } int_vars[] = {
+        {"integer1", 32}, {"byte1", 8}, {"short1", 16}, {"int1", 32}, {"long1", 64},
+    };
+    for (const auto& s : int_vars) {
+        TestVpiHandle vh101 = VPI_HANDLE(s.name);
+        CHECK_RESULT_NZ(vh101);
+        d = vpi_get(vpiType, vh101);
+        CHECK_RESULT(d, vpiReg);
+        auto sz = vpi_get(vpiSize, vh101);
+        CHECK_RESULT(sz, s.exp_sz);
+        auto sn = vpi_get(vpiSigned, vh101);
+        CHECK_RESULT(sn, 1);
+        vpi_get_value(vh101, &tmpValue);
+        TEST_CHECK_EQ(tmpValue.value.integer, 123);
+        p = vpi_get_str(vpiType, vh101);
+        CHECK_RESULT_CSTR(p, "vpiReg");
+    }
+
     // non-integer variables
     tmpValue.format = vpiRealVal;
     {
@@ -414,6 +464,8 @@ int _mon_check_var() {
         CHECK_RESULT_NZ(vh101);
         d = vpi_get(vpiType, vh101);
         CHECK_RESULT(d, vpiRealVar);
+        auto sn = vpi_get(vpiSigned, vh101);
+        CHECK_RESULT(sn, 1);
         vpi_get_value(vh101, &tmpValue);
         TEST_CHECK_REAL_EQ(tmpValue.value.real, 1.0, 0.0005);
         p = vpi_get_str(vpiType, vh101);
@@ -427,12 +479,36 @@ int _mon_check_var() {
         CHECK_RESULT_NZ(vh101);
         d = vpi_get(vpiType, vh101);
         CHECK_RESULT(d, vpiStringVar);
+        auto sn = vpi_get(vpiSigned, vh101);
+        CHECK_RESULT(sn, 0);
         vpi_get_value(vh101, &tmpValue);
         CHECK_RESULT_CSTR(tmpValue.value.str, "hello");
         p = vpi_get_str(vpiType, vh101);
         CHECK_RESULT_CSTR(p, "vpiStringVar");
     }
 
+    return errors;
+}
+
+int _mon_check_rev() {
+    t_vpi_value value;
+    TestVpiHandle vh9 = VPI_HANDLE("rev");
+    CHECK_RESULT_NZ(vh9);
+    value.format = vpiIntVal;
+    {
+        TestVpiHandle vh10 = vpi_handle(vpiLeftRange, vh9);
+        CHECK_RESULT_NZ(vh10);
+        vpi_get_value(vh10, &value);
+        TEST_CHECK_EQ(value.value.integer, 8);
+        TestVpiHandle vh11 = vpi_handle(vpiRightRange, vh9);
+        CHECK_RESULT_NZ(vh11);
+        vpi_get_value(vh11, &value);
+        TEST_CHECK_EQ(value.value.integer, 19);
+
+        value.format = vpiVectorVal;
+        vpi_get_value(vh9, &value);
+        CHECK_RESULT(value.value.vector[0].aval, 0xabc);
+    }
     return errors;
 }
 
@@ -750,10 +826,14 @@ int _mon_check_delayed() {
     CHECK_RESULT_NZ(vpi_chk_error(nullptr));
 
     // This format throws an error now
+#ifdef VERILATOR
     Verilated::fatalOnVpiError(false);
+#endif
     v.format = vpiObjTypeVal;
     vpi_put_value(vh, &v, &t, vpiInertialDelay);
+#ifdef VERILATOR
     Verilated::fatalOnVpiError(true);
+#endif
 
     return 0;
 }
@@ -954,6 +1034,7 @@ extern "C" int mon_check() {
     if (int status = _mon_check_callbacks()) return status;
     if (int status = _mon_check_value_callbacks()) return status;
     if (int status = _mon_check_var()) return status;
+    if (int status = _mon_check_rev()) return status;
     if (int status = _mon_check_varlist()) return status;
     if (int status = _mon_check_var_long_name()) return status;
 // Ports are not public_flat_rw in t_vpi_var

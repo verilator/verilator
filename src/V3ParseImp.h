@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2009-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2009-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -38,6 +38,8 @@ class V3Lexer;
 // Types (between parser & lexer)
 
 enum V3UniqState : uint8_t { uniq_NONE, uniq_UNIQUE, uniq_UNIQUE0, uniq_PRIORITY };
+
+enum V3TaggedState : uint8_t { tagged_NONE, tagged_SOFT, tagged_TAGGED };
 
 enum V3ImportProperty : uint8_t { iprop_NONE, iprop_CONTEXT, iprop_PURE };
 
@@ -119,6 +121,7 @@ struct V3ParseBisonYYSType final {
         bool cbool;
         VMemberQualifiers qualifiers;
         V3UniqState uniqstate;
+        V3TaggedState taggedstate;
         V3ImportProperty iprop;
         VSigning::en signstate;
         V3ErrorCode::en errcodeen;
@@ -196,7 +199,7 @@ public:
     static string lexParseTag(const char* textp) VL_MT_DISABLED;
     static double lexParseTimenum(const char* text) VL_MT_DISABLED;
     void lexPpline(const char* textp) VL_MT_DISABLED;
-    void lexVerilatorCmtLint(FileLine* fl, const char* textp, bool warnOff) VL_MT_DISABLED;
+    void lexVerilatorCmtLint(FileLine* fl, const char* textp, bool turnOff) VL_MT_DISABLED;
     void lexVerilatorCmtLintSave(const FileLine* fl) VL_MT_DISABLED;
     void lexVerilatorCmtLintRestore(FileLine* fl) VL_MT_DISABLED;
     static void lexVerilatorCmtBad(FileLine* fl, const char* textp) VL_MT_DISABLED;
@@ -322,6 +325,7 @@ private:
     size_t tokenPipeScanParam(size_t depth, bool forInst) VL_MT_DISABLED;
     size_t tokenPipeScanParens(size_t depth) VL_MT_DISABLED;
     size_t tokenPipeScanEqNew(size_t depth) VL_MT_DISABLED;
+    bool tokenPipeScanTaggedFollowsPrimary(size_t depth) VL_MT_DISABLED;
     const V3ParseBisonYYSType* tokenPeekp(size_t depth) VL_MT_DISABLED;
     void preprocDumps(std::ostream& os, bool forInputs) VL_MT_DISABLED;
 };

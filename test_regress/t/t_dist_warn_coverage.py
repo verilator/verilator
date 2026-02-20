@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
-# Copyright 2024 by Wilson Snyder. This program is free software; you
-# can redistribute it and/or modify it under the terms of either the GNU
-# Lesser General Public License Version 3 or the Perl Artistic License
-# Version 2.0.
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of either the GNU Lesser General Public License Version 3
+# or the Perl Artistic License Version 2.0.
+# SPDX-FileCopyrightText: 2024 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
@@ -14,29 +14,72 @@ test.scenarios('dist')
 Messages = {}
 Outputs = {}
 Suppressed = {}
+Used_Suppressed = {}
 
 for s in [
         # Cannot hit, and comment as to why
         # Instead of adding here, consider adding a LCOV_EXCL_LINE/START/STOP to the sources on the message
         'exited with',  # Is hit; driver.py filters out
         'loading non-variable',  # Instead 'storing to parameter' or syntax error
-        'does not allow '
-        ' in the middle of literal',  # Is covered, this parser misses it due to quote
         'Assigned pin is neither input nor output',  # Instead earlier error
         'Define missing argument \'',  # Instead get Define passed too many arguments
         'Define or directive not defined: `',  # Instead V3ParseImp will warn
         'Expecting define formal arguments. Found:',  # Instead define syntax error
         'Syntax error: Range \':\', \'+:\' etc are not allowed in the instance',  # Instead get syntax error
         'dynamic new() not expected in this context (expected under an assign)',  # Instead get syntax error
+
+        # Tested in t_vpi_force.cpp, but not picked up by pattern matching in this script yet
+        '%s: Signal \'%s\' is marked forceable, but force',
+        '%s: Signal \'%s\' with vpiHandle \'%p\' is marked forceable, but force',
+        '%s: Trailing garbage \'%s\' in \'%s\' as value %s for %s',
+        '%s: Non hex character \'%c\' in \'%s\' as value %s for %s',
+        '%s: Non octal character \'%c\' in \'%s\' as value %s for %s',
+        '%s: VPI force or release requested for \'%s\', but vpiHandle \'%p\' of enable',  # Emitted as part of a different error message because this is thrown by a nested function
+        '%s: VPI force or release requested for \'%s\', but vpiHandle \'%p\' of value',  # Emitted as part of a different error message because this is thrown by a nested function
+
         # Not yet analyzed
         '$VERILATOR_ROOT needs to be in environment',
         '--pipe-filter protocol error, unexpected:',
         '--pipe-filter returned bad status',
         '--pipe-filter: stdin/stdout closed before pipe opened',
         '--pipe-filter: write to closed file',
-        'Array initialization has too few elements, need element',
         'Assigning >32 bit to unranged parameter (defaults to 32 bits)',
         'Assignment pattern with no members',
+        '%%Warning: DPI C Function called by Verilog DPI import with missing',
+        '%%Warning: DPI svOpenArrayHandle function called on',
+        '%%Warning: DPI svOpenArrayHandle function index 1',
+        '%%Warning: DPI svOpenArrayHandle function index 2',
+        '%%Warning: DPI svOpenArrayHandle function index 3',
+        '%s: Ignoring vpi_put_value to vpiConstant: %s',
+        '%s: Ignoring vpi_put_value to vpiParameter: %s',
+        '%s: Index %u for object \'%s\' is out of bounds [%u,%u]',
+        '%s: Parsing failed for \'%s\' as value %s for %s',
+        '%s: Requested elements (%u) exceed array size (%u)',
+        '%s: Requested elements to set (%u) exceed array size (%u)',
+        '%s: Unsupported callback type %s',
+        '%s: Unsupported flags (%x)',
+        '%s: Unsupported format (%s) as requested for %s',
+        '%s: Unsupported format (%s) for %s',
+        '%s: Unsupported p_vpi_value as requested for \'%s\' with vpiInertialDelay',
+        '%s: Unsupported property %s, nothing will be returned',
+        '%s: Unsupported type %s, ignoring',
+        '%s: Unsupported type %s, nothing will be returned',
+        '%s: Unsupported type (%d)',
+        '%s: Unsupported type (%p, %s)',
+        '%s: Unsupported vltype (%d)',
+        '%s: Unsupported vpiHandle (%p)',
+        '%s: Unsupported vpiHandle (%p) for type %s, nothing will be returned',
+        '%s: Unsupported vpiUserAllocFlag (%x)',
+        '%s: VPI callback data pointer is null',
+        'Ignoring vpi_get_time with nullptr value pointer',
+        'Ignoring vpi_get_value_array with null index pointer',
+        'Ignoring vpi_get_value_array with null value pointer',
+        'Ignoring vpi_put_value with nullptr value pointer',
+        'Ignoring vpi_put_value_array to signal marked read-only,',
+        'Ignoring vpi_put_value_array with null index pointer',
+        'Ignoring vpi_put_value_array with null value pointer',
+        'vpi_get_value with more than VL_VALUE_STRING_MAX_WORDS; increase and',
+        'vpi_put_value was used on signal marked read-only,',
         'Can\'t find varpin scope of',
         'Can\'t read annotation file:',
         'Can\'t resolve module reference: \'',
@@ -67,6 +110,7 @@ for s in [
         'Slices of arrays in assignments have different unpacked dimensions,',
         'String of',
         'Symbol matching',
+        'Thread scheduler is unable to provide requested',
         'Unexpected connection to arrayed port',
         'Unsized numbers/parameters not allowed in streams.',
         'Unsupported (or syntax error): Foreach on this array\'s construct',
@@ -78,7 +122,6 @@ for s in [
         'Unsupported tristate port expression:',
         'Unsupported/unknown built-in queue method',
         'Unsupported: $bits for queue',
-        'Unsupported: &&& expression',
         'Unsupported: 4-state numbers in this context',
         'Unsupported: Assignments with signal strength with LHS of type:',
         'Unsupported: Bind with instance list',
@@ -103,11 +146,9 @@ for s in [
         'Unsupported: Stream operation on a variable of a type',
         'Unsupported: Unclocked assertion',
         'Unsupported: Using --protect-ids with public function',
-        'Unsupported: Verilog 1995 deassign',
         'Unsupported: Verilog 1995 gate primitive:',
         'Unsupported: [] dimensions',
         'Unsupported: \'default :/\' constraint',
-        'Unsupported: \'{} .* patterns',
         'Unsupported: assertion items in clocking blocks',
         'Unsupported: don\'t know how to deal with',
         'Unsupported: extern constraint definition with class-in-class',
@@ -131,7 +172,8 @@ for s in [
 
 
 def read_messages():
-    for filename in test.glob_some(test.root + "/src/*"):
+    for filename in (test.glob_some(test.root + "/src/*") +
+                     test.glob_some(test.root + "/include/*")):
         if not os.path.isfile(filename):
             continue
         if '#' in filename:
@@ -146,13 +188,8 @@ def read_messages():
             for origline in fh:
                 line = origline
                 lineno += 1
-                if re.match(r'^\s*//', line):
-                    continue
-                if re.match(r'^\s*/\*', line):
-                    continue
-                excl = excl_next
-                # print(('C ' if (statement != "") else 'L') + line)
 
+                excl = excl_next
                 if 'LCOV_EXCL_START' in line:
                     excl = True
                     excl_next = True
@@ -164,11 +201,19 @@ def read_messages():
                     statement = ""
                     continue
 
+                if re.match(r'^\s*//', line):
+                    continue
+                if re.match(r'^\s*/\*', line):
+                    continue
+                # print(('C ' if (statement != "") else 'L') + line)
+
                 line = re.sub(r'\\n', '', line)
                 line = re.sub(r'\s+//.*', '', line)
                 line = line.rstrip()
 
-                m = re.search(r'\b((v3error|v3warn|v3fatal|BBUNSUP)\b.*)', line)
+                m = re.search(
+                    r'\b((v3error|v3warn|v3fatal|BBUNSUP|VL_FATAL|VL_FATAL_MT|VL_SVDPI_WARN_|VL_WARN|VL_WARN_MT|VL_VPI_ERROR_|VL_VPI_WARNING_)\b.*)',
+                    line)
                 if m:
                     statement = m.group(1)
                     statement_lineno = lineno
@@ -207,14 +252,67 @@ def read_outputs():
                      test.glob_some(test.root + "/docs/gen/*.rst")):
         if "t_dist_warn_coverage" in filename:  # Avoid our own suppressions
             continue
+        is_python = re.search(r'\.py$', filename)
         with open(filename, 'r', encoding="latin-1") as fh:
             for line in fh:
-                if re.match(r'^\$date', line):  # Assume it is a VCD file
+                # File suppressions based on magic content
+                if re.match(r'^\$version', line):  # Assume it is a VCD file
                     break
+                if re.match(r'^# SystemC::Coverage', line):  # Coverage data
+                    break
+                if re.match(r'^//.*verilator_coverage annotation', line):  # Coverage data
+                    break
+                if re.match(r'^{"type":"NETLIST"', line):  # JSON
+                    break
+                if re.match(r'^// *Generated by verilated_saif', line):  # SAIF
+                    break
+                # Line suppressions
+                if is_python and re.match(r'^#', line):  # Assume it is a VCD file
+                    continue
                 line = line.lstrip().rstrip()
                 Outputs[line] = True
 
     print("Number of outputs = " + str(len(Outputs)))
+
+
+def check_msg(msg):
+    fileline = Messages[msg]['fileline']
+    # Fast first - exact match
+    for output in Outputs:
+        if msg in output:
+            # print(fileline+": M '" + msg + "' HIT '" + output)
+            return
+
+    # Try regexp, with %s in message changed to .*?
+    if re.search(r'%[a-z]', msg):
+        msg_re = re.escape(msg)
+        msg_re = re.sub(r'^%[a-z]', r'', msg_re)
+        msg_re = re.sub(r'%[a-z]$', r'', msg_re)
+        msg_re = re.sub(r'%[a-z]', r'.*?', msg_re)
+        # print("msg_re='%s'" % (msg_re))
+        m = re.compile(msg_re)
+        for output in Outputs:
+            if re.search(m, output):
+                # print(fileline+": M '" + msg + "' HIT '" + output)
+                return
+
+    # Some exceptions
+    if re.match(r'internal:', msg, re.IGNORECASE):
+        return
+
+    line = Messages[msg]['line']
+    line = line.lstrip().rstrip()
+
+    if msg in Suppressed:
+        Used_Suppressed[msg] = True
+        if test.verbose:
+            print(fileline + ": Suppressed check for message in source: '" + msg + "'")
+    else:
+        test.error_keep_going(fileline +
+                              ": Missing test_regress/t/*.out test for message in source: '" +
+                              msg + "'")
+        if test.verbose:
+            print("  Line is: " + line)
 
 
 def check():
@@ -231,41 +329,12 @@ def check():
     print("UASSERT or v3fatalSrc instead of v3error)")
     print()
 
-    used_suppressed = {}
-
     for msg in sorted(Messages.keys()):
-        fileline = Messages[msg]['fileline']
-        next_msg = False
-        for output in Outputs:
-            if msg in output:
-                # print(fileline+": M '" + msg + "' HIT '" + output)
-                next_msg = True
-                break
-
-        if next_msg:
-            continue
-
-        # Some exceptions
-        if re.match(r'internal:', msg, re.IGNORECASE):
-            continue
-
-        line = Messages[msg]['line']
-        line = line.lstrip().rstrip()
-
-        if msg in Suppressed:
-            used_suppressed[msg] = True
-            if test.verbose:
-                print(fileline + ": Suppressed check for message in source: '" + msg + "'")
-        else:
-            test.error_keep_going(fileline +
-                                  ": Missing test_regress/t/*.out test for message in source: '" +
-                                  msg + "'")
-            if test.verbose:
-                print("  Line is: " + line)
+        check_msg(msg)
 
     print()
     for msg in sorted(Suppressed.keys()):
-        if msg not in used_suppressed:
+        if msg not in Used_Suppressed:
             print("Suppression not used: '" + msg + "'")
     print()
 

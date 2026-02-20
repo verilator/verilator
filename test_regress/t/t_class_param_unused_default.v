@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2023 by Antmicro Ltd.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2023 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
 class Bar#(type T = int);
@@ -17,7 +17,7 @@ endclass
 
 module t;
    initial begin
-      Bar#(Baz) bar_baz = new;
+      automatic Bar#(Baz) bar_baz = new;
       if (bar_baz.t.x != 1) $stop;
 
       $write("*-* All Finished *-*\n");

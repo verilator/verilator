@@ -1,8 +1,8 @@
 // DESCRIPTION: Verilator: Check that an abstract class' contstructor
 // can be called indirectly from a constructor of a derived class.
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2023 by Ilya Barkov
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2023 Ilya Barkov
 // SPDX-License-Identifier: CC0-1.0
 
 // It's illegal to call
@@ -29,6 +29,6 @@ endclass
 
 module t;
    initial begin
-      VChild2 c = new;
+      automatic VChild2 c = new;
    end
 endmodule

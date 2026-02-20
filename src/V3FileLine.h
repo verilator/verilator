@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -26,7 +26,6 @@
 #include "V3Mutex.h"
 
 #include <atomic>
-#include <bitset>
 #include <deque>
 #include <map>
 #include <memory>
@@ -50,8 +49,8 @@ class FileLineSingleton final {
     using fileNameIdx_t = uint16_t;  // Increase width if 64K input files are not enough
     using msgEnSetIdx_t = uint16_t;  // Increase width if 64K unique message sets are not enough
     class MsgEnBitSet final {
-        std::bitset<V3ErrorCode::_ENUM_MAX> m_codeEn;  // Enabeld by code directives/metacomments
-        std::bitset<V3ErrorCode::_ENUM_MAX> m_ctrlEn;  // Enabled by control file
+        VErrorBitSet m_codeEn;  // Enabled by code directives/metacomments
+        VErrorBitSet m_ctrlEn;  // Enabled by control file
 
     public:
         enum class Subset {
@@ -68,12 +67,8 @@ class FileLineSingleton final {
 
         struct Hash final {
             size_t operator()(const MsgEnBitSet& item) const {
-                const size_t hashCode
-                    = std::hash<std::bitset<V3ErrorCode::_ENUM_MAX>>()(item.m_codeEn);
-                const size_t hashCtrl
-                    = std::hash<std::bitset<V3ErrorCode::_ENUM_MAX>>()(item.m_ctrlEn);
-                V3Hash hash{static_cast<uint64_t>(hashCode)};
-                hash += static_cast<uint64_t>(hashCtrl);
+                V3Hash hash{item.m_codeEn.hash()};
+                hash += item.m_ctrlEn.hash();
                 return hash.value();
             }
         };
@@ -86,11 +81,20 @@ class FileLineSingleton final {
             return m_codeEn == other.m_codeEn && m_ctrlEn == other.m_ctrlEn;
         }
 
-        bool test(Subset subset, size_t code) const {
+        const VErrorBitSet& getAll(Subset subset) const {
+            return subset == Subset::CODE ? m_codeEn : m_ctrlEn;
+        }
+        bool test(Subset subset, V3ErrorCode code) const {
             return subset == Subset::CODE ? m_codeEn.test(code) : m_ctrlEn.test(code);
         }
-
-        void set(Subset subset, size_t code, bool value) {
+        void setAll(Subset subset, const VErrorBitSet& bitset) {
+            if (subset == Subset::CODE) {  // LCOV_EXCL_BR_LINE
+                m_codeEn = bitset;  // LCOV_EXCL_LINE
+            } else {
+                m_ctrlEn = bitset;
+            }
+        }
+        void set(Subset subset, V3ErrorCode code, bool value) {
             if (subset == Subset::CODE) {
                 m_codeEn.set(code, value);
             } else {
@@ -131,7 +135,6 @@ class FileLineSingleton final {
         m_names.clear();
         m_languages.clear();
     }
-    void fileNameNumMapDumpXml(std::ostream& os);
     void fileNameNumMapDumpJson(std::ostream& os);
     static string filenameLetters(fileNameIdx_t fileno) VL_PURE;
 
@@ -139,9 +142,11 @@ class FileLineSingleton final {
     msgEnSetIdx_t addMsgEnBitSet(const MsgEnBitSet& bitSet) VL_MT_SAFE_EXCLUDES(m_mutex);
     // Add index of default bitset
     msgEnSetIdx_t defaultMsgEnIndex() VL_MT_SAFE;
-    // Set bitIdx to value in bitset at interned index setIdx, return interned index of result
-    msgEnSetIdx_t msgEnSetBit(msgEnSetIdx_t setIdx, MsgEnBitSet::Subset subset, size_t bitIdx,
+    // Set code to value in bitset at interned index setIdx, return interned index of result
+    msgEnSetIdx_t msgEnSetBit(msgEnSetIdx_t setIdx, MsgEnBitSet::Subset subset, V3ErrorCode code,
                               bool value);
+    // Bulk-set all control codes to given bitset
+    msgEnSetIdx_t msgSetCtrlBitSet(msgEnSetIdx_t setIdx, const VErrorBitSet& bitset);
     // Return index to intersection set
     msgEnSetIdx_t msgEnAnd(msgEnSetIdx_t lhsIdx, msgEnSetIdx_t rhsIdx);
     // Retrieve interned bitset at given interned index. The returned reference is not persistent.
@@ -362,32 +367,24 @@ public:
     string filebasenameNoExt() const;
     string firstColumnLetters() const VL_MT_SAFE;
     string profileFuncname() const;
-    string xmlDetailedLocation() const;
     string lineDirectiveStrg(int enterExit) const;
 
     // Turn on/off warning messages on this line.
 private:
     void warnSet(MsgEnBitSet::Subset subset, V3ErrorCode code, bool flag) {
-        if (code == V3ErrorCode::WIDTH) {
-            warnSet(subset, V3ErrorCode::WIDTHTRUNC, flag);
-            warnSet(subset, V3ErrorCode::WIDTHEXPAND, flag);
-            warnSet(subset, V3ErrorCode::WIDTHXZEXPAND, flag);
-        }
-        if (code == V3ErrorCode::E_UNSUPPORTED) { warnSet(subset, V3ErrorCode::COVERIGN, flag); }
         m_msgEnIdx = singleton().msgEnSetBit(m_msgEnIdx, subset, code, flag);
     }
 
 public:
     void warnOn(V3ErrorCode code, bool flag) { warnSet(MsgEnBitSet::Subset::CODE, code, flag); }
-    void warnOnCtrl(V3ErrorCode code, bool flag) {
-        warnSet(MsgEnBitSet::Subset::CTRL, code, flag);
+    void warnSetCtrlBitSet(const VErrorBitSet& bitset) {
+        m_msgEnIdx = singleton().msgSetCtrlBitSet(m_msgEnIdx, bitset);
     }
-    void warnOff(V3ErrorCode code, bool flag) { warnOn(code, !flag); }
-    string warnOffParse(const string& msgs, bool flag);  // Returns "" if ok
+    void warnOff(V3ErrorCode code, bool turnOff) { warnOn(code, !turnOff); }
+    string warnOffParse(const string& msgs, bool turnOff);  // Returns "" if ok
     bool warnIsOff(V3ErrorCode code) const VL_MT_SAFE;
-    void warnLintOff(bool flag);
-    void warnStyleOff(bool flag);
-    void warnUnusedOff(bool flag);
+    void warnLintOff(bool turnOff);
+    void warnStyleOff(bool turnOff);
     void warnStateFrom(const FileLine& from) { m_msgEnIdx = from.m_msgEnIdx; }
     void warnResetDefault() { warnStateFrom(defaultFileLine()); }
 
@@ -405,16 +402,12 @@ public:
     // <command-line> and <built-in> match what GCC outputs
     static string commandLineFilename() VL_MT_SAFE { return "<command-line>"; }
     static string builtInFilename() VL_MT_SAFE { return "<built-in>"; }
-    static void globalWarnLintOff(bool flag) { defaultFileLine().warnLintOff(flag); }
-    static void globalWarnStyleOff(bool flag) { defaultFileLine().warnStyleOff(flag); }
-    static void globalWarnUnusedOff(bool flag) { defaultFileLine().warnUnusedOff(flag); }
-    static void globalWarnOff(V3ErrorCode code, bool flag) {
-        defaultFileLine().warnOff(code, flag);
+    static void globalWarnOff(V3ErrorCode code, bool turnOff) {
+        defaultFileLine().warnOff(code, turnOff);
     }
-    static string globalWarnOffParse(const string& msgs, bool flag) {
-        return defaultFileLine().warnOffParse(msgs, flag);
+    static string globalWarnOffParse(const string& msgs, bool turnOff) {
+        return defaultFileLine().warnOffParse(msgs, turnOff);
     }
-    static void fileNameNumMapDumpXml(std::ostream& os) { singleton().fileNameNumMapDumpXml(os); }
     static void fileNameNumMapDumpJson(std::ostream& os) {
         singleton().fileNameNumMapDumpJson(os);
     }
@@ -427,7 +420,7 @@ public:
     // Change the current fileline due to actions discovered after parsing
     // and may have side effects on other nodes sharing this FileLine.
     // Use only when this is intended
-    void modifyWarnOff(V3ErrorCode code, bool flag) { warnOff(code, flag); }
+    void modifyWarnOff(V3ErrorCode code, bool turnOff) { warnOff(code, turnOff); }
 
     // OPERATORS
     void v3errorEnd(std::ostringstream& str, const string& extra = "")

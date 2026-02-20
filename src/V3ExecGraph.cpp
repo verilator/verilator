@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -917,6 +917,7 @@ void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t threadId,
         AstBasicDType* const s_mtaskStateDtypep
             = v3Global.rootp()->typeTablep()->findBasicDType(fl, VBasicDTypeKwd::MTASKSTATE);
         AstVar* const varp = new AstVar{fl, VVarType::MODULETEMP, name, s_mtaskStateDtypep};
+        varp->isConst(true);
         varp->valuep(new AstConst{fl, nDependencies});
         varp->protect(false);  // Do not protect as we have references in text
         modp->addStmtsp(varp);
@@ -998,6 +999,7 @@ const std::vector<AstCFunc*> createThreadFunctions(const ThreadSchedule& schedul
     AstVar* const varp = new AstVar{fl, VVarType::MODULETEMP,
                                     "__Vm_mtaskstate_final__" + cvtToStr(schedule.id()) + tag,
                                     s_mtaskStateDtypep};
+    varp->isConst(true);
     varp->valuep(new AstConst(fl, funcps.size()));
     varp->protect(false);  // Do not protect as we have references in text
     modp->addStmtsp(varp);

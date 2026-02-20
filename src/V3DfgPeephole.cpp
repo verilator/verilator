@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -30,6 +30,7 @@
 #include "V3Stats.h"
 
 #include <cctype>
+#include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -149,11 +150,7 @@ class V3DfgPeephole final : public DfgVisitor {
         return true;
     }
 
-    void addToWorkList(DfgVertex* vtxp) {
-        // We only process actual operation vertices
-        if (vtxp->is<DfgConst>() || vtxp->is<DfgVertexVar>()) return;
-        m_workList.push_front(*vtxp);
-    }
+    void addToWorkList(DfgVertex* vtxp) { m_workList.push_front(*vtxp); }
 
     void addSourcesToWorkList(DfgVertex* vtxp) {
         vtxp->foreachSource([&](DfgVertex& src) {
@@ -178,10 +175,17 @@ class V3DfgPeephole final : public DfgVisitor {
         // Otherwise we can delete it now.
         // Remove from cache
         m_cache.invalidateByValue(vtxp);
+        // This pass only removes variables that are either not driven in this graph,
+        // or are not observable outside the graph. If there is also no external write
+        // to the variable and no references in other graph then delete the Ast var too.
+        const DfgVertexVar* const varp = vtxp->cast<DfgVertexVar>();
+        AstNode* const nodep
+            = varp && !varp->isVolatile() && !varp->hasDfgRefs() ? varp->nodep() : nullptr;
         // Should not have sinks
         UASSERT_OBJ(!vtxp->hasSinks(), vtxp, "Should not delete used vertex");
-        //
+        // Delete vertex and Ast variable if any
         VL_DO_DANGLING(vtxp->unlinkDelete(m_dfg), vtxp);
+        if (nodep) VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
 
     void replace(DfgVertex* vtxp, DfgVertex* replacementp) {
@@ -800,29 +804,6 @@ class V3DfgPeephole final : public DfgVisitor {
                     DfgSel* const replacementp = make<DfgSel>(vtxp, lhsp, lsb - rhsp->width());
                     replace(vtxp, replacementp);
                 }
-            } else if (!concatp->hasMultipleSinks()) {
-                // If the select straddles both sides, the Concat has no other use,
-                // then push the Sel past the Concat
-                APPLYING(PUSH_SEL_THROUGH_CONCAT) {
-                    const uint32_t rSelWidth = rhsp->width() - lsb;
-                    const uint32_t lSelWidth = width - rSelWidth;
-
-                    // The new Lhs vertex
-                    DfgSel* const newLhsp
-                        = make<DfgSel>(flp, DfgDataType::packed(lSelWidth), lhsp, 0U);
-
-                    // The new Rhs vertex
-                    DfgSel* const newRhsp
-                        = make<DfgSel>(flp, DfgDataType::packed(rSelWidth), rhsp, lsb);
-
-                    // The replacement Concat vertex
-                    DfgConcat* const newConcat
-                        = make<DfgConcat>(concatp->fileline(), vtxp->dtype(), newLhsp, newRhsp);
-
-                    // Replace this vertex
-                    replace(vtxp, newConcat);
-                    return;
-                }
             }
         }
 
@@ -921,12 +902,9 @@ class V3DfgPeephole final : public DfgVisitor {
                 if (replacementp) {
                     // Replace with sel from driver
                     APPLYING(PUSH_SEL_THROUGH_SPLICE) {
+                        addToWorkList(varp);  // In case it became redundant and can be removed
                         replace(vtxp, replacementp);
-                        // Special case just for this pattern: delete temporary if became unsued
-                        if (!varp->hasSinks() && !varp->hasDfgRefs()) {
-                            addToWorkList(splicep);  // So it can be delete itself if unused
-                            VL_DO_DANGLING(varp->unlinkDelete(m_dfg), varp);  // Delete it
-                        }
+                        return;
                     }
                 }
             }
@@ -1327,6 +1305,115 @@ class V3DfgPeephole final : public DfgVisitor {
                 }
             }
         }
+
+        if (DfgConst* const lConstp = lhsp->cast<DfgConst>()) {
+            if (DfgCond* const rCondp = rhsp->cast<DfgCond>()) {
+                if (!rCondp->hasMultipleSinks()) {
+                    DfgVertex* const rtVtxp = rCondp->thenp();
+                    DfgVertex* const reVtxp = rCondp->elsep();
+                    APPLYING(PUSH_CONCAT_THROUGH_COND_LHS) {
+                        DfgConcat* const thenp
+                            = make<DfgConcat>(rtVtxp->fileline(), vtxp->dtype(), lConstp, rtVtxp);
+                        DfgConcat* const elsep
+                            = make<DfgConcat>(reVtxp->fileline(), vtxp->dtype(), lConstp, reVtxp);
+                        DfgCond* const replacementp
+                            = make<DfgCond>(vtxp, rCondp->condp(), thenp, elsep);
+                        replace(vtxp, replacementp);
+                        return;
+                    }
+                }
+            }
+        }
+
+        if (DfgConst* const rConstp = rhsp->cast<DfgConst>()) {
+            if (DfgCond* const lCondp = lhsp->cast<DfgCond>()) {
+                if (!lCondp->hasMultipleSinks()) {
+                    DfgVertex* const ltVtxp = lCondp->thenp();
+                    DfgVertex* const leVtxp = lCondp->elsep();
+                    APPLYING(PUSH_CONCAT_THROUGH_COND_RHS) {
+                        DfgConcat* const thenp
+                            = make<DfgConcat>(ltVtxp->fileline(), vtxp->dtype(), ltVtxp, rConstp);
+                        DfgConcat* const elsep
+                            = make<DfgConcat>(leVtxp->fileline(), vtxp->dtype(), leVtxp, rConstp);
+                        DfgCond* const replacementp
+                            = make<DfgCond>(vtxp, lCondp->condp(), thenp, elsep);
+                        replace(vtxp, replacementp);
+                        return;
+                    }
+                }
+            }
+        }
+
+        // Attempt to narrow a concatenation that produces unused bits on the edges
+        {
+            const uint32_t vMsb = vtxp->width() - 1;  // MSB of the concatenation
+            const uint32_t lLsb = vtxp->rhsp()->width();  // LSB of the LHS
+            const uint32_t rMsb = lLsb - 1;  // MSB of the RHS
+            // Check each sink, and record the range of bits used by them
+            uint32_t lsb = vMsb;  // LSB used by a sink
+            uint32_t msb = 0;  // MSB used by a sink
+            std::vector<DfgVertex*> sinkps;
+            bool hasCrossSink = false;  // True if some sinks use bits from both sides
+            vtxp->foreachSink([&](DfgVertex& sink) {
+                sinkps.emplace_back(&sink);
+                // Record bits used by DfgSel sinks
+                if (const DfgSel* const selp = sink.cast<DfgSel>()) {
+                    const uint32_t selLsb = selp->lsb();
+                    const uint32_t selMsb = selLsb + selp->width() - 1;
+                    lsb = std::min(lsb, selLsb);
+                    msb = std::max(msb, selMsb);
+                    hasCrossSink |= selMsb >= lLsb && rMsb >= selLsb;
+                    return false;
+                }
+                // Ignore non observable variable sinks. These will be eliminated.
+                if (const DfgVarPacked* const varp = sink.cast<DfgVarPacked>()) {
+                    if (!varp->hasSinks() && !varp->isObserved()) return false;
+                }
+                // Otherwise the whole value is used
+                lsb = 0;
+                msb = vMsb;
+                return true;
+            });
+            // If not all bits are used, narrow the concatenation, but only if at least
+            // one select straddles both sides (DfgSel paterns will handle the rest).
+            if ((vMsb > msb || lsb > 0) && hasCrossSink) {
+                APPLYING(NARROW_CONCAT) {
+                    FileLine* const flp = vtxp->fileline();
+
+                    // Compute new RHS
+                    DfgVertex* const rhsp = vtxp->rhsp();
+                    const uint32_t rWidth = rMsb - lsb + 1;
+                    DfgVertex* const newRhsp
+                        = rWidth == rhsp->width()
+                              ? rhsp
+                              : make<DfgSel>(flp, DfgDataType::packed(rWidth), rhsp, lsb);
+
+                    // Compute new LHS
+                    DfgVertex* const lhsp = vtxp->lhsp();
+                    const uint32_t lWidth = msb - lLsb + 1;
+                    DfgVertex* const newLhsp
+                        = lWidth == lhsp->width()
+                              ? lhsp
+                              : make<DfgSel>(flp, DfgDataType::packed(lWidth), lhsp, 0);
+
+                    // Create the new concatenation
+                    DfgConcat* const newConcat = make<DfgConcat>(
+                        flp, DfgDataType::packed(msb - lsb + 1), newLhsp, newRhsp);
+
+                    // Replace Sel sinks
+                    for (DfgVertex* const sinkp : sinkps) {
+                        if (DfgSel* const selp = sinkp->cast<DfgSel>()) {
+                            replace(selp, make<DfgSel>(selp, newConcat, selp->lsb() - lsb));
+                        }
+                    }
+                    // Also need to replace the concatenation itself, otherwise this pattern
+                    // will match again and iteration won't terminate. This vertex is now
+                    // effectively unused, so replace with zero.
+                    replace(vtxp, makeZero(flp, vtxp->width()));
+                    return;
+                }
+            }
+        }
     }
 
     void visit(DfgDiv* vtxp) override {
@@ -1474,6 +1561,43 @@ class V3DfgPeephole final : public DfgVisitor {
     void visit(DfgShiftL* vtxp) override {
         if (foldBinary(vtxp)) return;
         if (optimizeShiftRHS(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+
+        if (DfgConst* const rConstp = rhsp->cast<DfgConst>()) {
+            if (DfgConcat* const lConcatp = lhsp->cast<DfgConcat>()) {
+                if (!lConcatp->hasMultipleSinks()
+                    && lConcatp->lhsp()->width() == rConstp->toU32()) {
+                    APPLYING(REPLACE_SHIFTL_CAT) {
+                        DfgConcat* const replacementp = make<DfgConcat>(
+                            vtxp, lConcatp->rhsp(),
+                            makeZero(lConcatp->fileline(), lConcatp->lhsp()->width()));
+                        replace(vtxp, replacementp);
+                        return;
+                    }
+                }
+            }
+
+            if (DfgShiftR* const lShiftRp = lhsp->cast<DfgShiftR>()) {
+                if (!lShiftRp->hasMultipleSinks() && isSame(rConstp, lShiftRp->rhsp())) {
+                    if (DfgConcat* const llConcatp = lShiftRp->lhsp()->cast<DfgConcat>()) {
+                        const uint32_t shiftAmount = rConstp->toU32();
+                        if (!llConcatp->hasMultipleSinks()
+                            && llConcatp->rhsp()->width() == shiftAmount) {
+                            APPLYING(REPLACE_SHIFTRL_CAT) {
+                                DfgConst* const zerop
+                                    = makeZero(llConcatp->fileline(), shiftAmount);
+                                DfgConcat* const replacementp
+                                    = make<DfgConcat>(vtxp, llConcatp->lhsp(), zerop);
+                                replace(vtxp, replacementp);
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     void visit(DfgShiftR* vtxp) override {
@@ -1689,22 +1813,58 @@ class V3DfgPeephole final : public DfgVisitor {
         }
     }
 
+    void visit(DfgVertexVar* vtxp) override {
+        if (vtxp->hasSinks()) return;
+        if (vtxp->isObserved()) return;
+        if (vtxp->defaultp()) return;
+
+        // If undriven, or driven from another var, it is completely redundant.
+        if (!vtxp->srcp() || vtxp->srcp()->is<DfgVertexVar>()) {
+            APPLYING(REMOVE_VAR) {
+                deleteVertex(vtxp);
+                return;
+            }
+        }
+
+        // Otherwise remove if there is only one sink that is not a removable variable
+        bool foundOne = false;
+        const bool keep = vtxp->srcp()->foreachSink([&](DfgVertex& sink) {
+            // Ignore non observable variable sinks. These can be eliminated.
+            if (const DfgVertexVar* const varp = sink.cast<DfgVertexVar>()) {
+                if (!varp->hasSinks() && !varp->isObserved()) return false;
+            }
+            if (foundOne) return true;
+            foundOne = true;
+            return false;
+        });
+        if (!keep) {
+            APPLYING(REMOVE_VAR) {
+                deleteVertex(vtxp);
+                return;
+            }
+        }
+    }
+
 #undef APPLYING
 
     V3DfgPeephole(DfgGraph& dfg, V3DfgPeepholeContext& ctx)
         : m_dfg{dfg}
         , m_ctx{ctx} {
 
+        // Add all variable vertices to the work list. Do this first so they are processed last.
+        // This order has a better chance of preserving original variables in case they are needed.
+        for (DfgVertexVar& vtx : m_dfg.varVertices()) addToWorkList(&vtx);
+
         // Add all operation vertices to the work list and cache
         for (DfgVertex& vtx : m_dfg.opVertices()) {
-            m_workList.push_front(vtx);
+            addToWorkList(&vtx);
             m_cache.cache(&vtx);
         }
 
         // Process the work list
         m_workList.foreach([&](DfgVertex& vtx) {
-            // Remove unused vertices as we go
-            if (!vtx.hasSinks()) {
+            // Remove unused operations as we go. Some vars may be removed in the visit method.
+            if (!vtx.hasSinks() && !vtx.is<DfgVertexVar>()) {
                 deleteVertex(&vtx);
                 return;
             }

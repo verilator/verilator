@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_sampled_sensitivity.v:14:20: Unsupported: $sampled inside sensitivity list
+                                                   : ... note: In instance 't'
+   14 |   always @(posedge $sampled(clk)) begin
+      |                    ^~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

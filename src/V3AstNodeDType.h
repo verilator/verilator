@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -234,7 +234,7 @@ class AstNodeUOrStructDType VL_NOT_FINAL : public AstNodeDType {
     string m_name;  // Name from upper typedef, if any
     const int m_uniqueNum;
     bool m_packed;
-    bool m_isFourstate = false;  // V3Width computes
+    bool m_isFourstate = false;  // V3Width computes; true if any member is 4-state
     bool m_constrainedRand = false;  // True if struct has constraint expression
 
 protected:
@@ -291,7 +291,7 @@ public:
     VNumRange declRange() const VL_MT_STABLE { return VNumRange{hi(), lo()}; }
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* classpackagep) { m_classOrPackagep = classpackagep; }
-    bool isConstrainedRand() { return m_constrainedRand; }
+    bool isConstrainedRand() const { return m_constrainedRand; }
     void markConstrainedRand(bool flag) { m_constrainedRand = flag; }
 };
 
@@ -458,6 +458,7 @@ public:
         return m.m_keyword;
     }
     bool isBitLogic() const { return keyword().isBitLogic(); }
+    bool isCHandle() const VL_MT_STABLE { return keyword().isCHandle(); }
     bool isDouble() const VL_MT_STABLE { return keyword().isDouble(); }
     bool isEvent() const VL_MT_STABLE { return keyword() == VBasicDTypeKwd::EVENT; }
     bool isForkSync() const VL_MT_SAFE { return keyword() == VBasicDTypeKwd::FORK_SYNC; }
@@ -957,7 +958,7 @@ class AstMemberDType final : public AstNodeDType {
     //
     // @astgen ptr := m_refDTypep : Optional[AstNodeDType]  // Elements of this type (post-width)
     string m_name;  // Name of variable
-    string m_tag;  // Holds the string of the verilator tag -- used in XML output.
+    string m_tag;  // Holds the string of the verilator tag -- used in JSON output.
     int m_lsb = -1;  // Within this level's packed struct, the LSB of the first bit of the member
     bool m_constrainedRand = false;
     // UNSUP: int m_randType;    // Randomization type (IEEE)
@@ -1471,19 +1472,24 @@ public:
 };
 class AstUnionDType final : public AstNodeUOrStructDType {
     bool m_isSoft;  // Is a "union soft"
+    bool m_isTagged;  // Is a "union tagged"
 
 public:
-    // UNSUP: bool isTagged;
     // VSigning below is mispurposed to indicate if packed or not
     // isSoft implies packed
-    AstUnionDType(FileLine* fl, bool isSoft, VSigning numericUnpack)
+    AstUnionDType(FileLine* fl, bool isSoft, bool isTagged, VSigning numericUnpack)
         : ASTGEN_SUPER_UnionDType(fl, numericUnpack)
-        , m_isSoft{isSoft} {
+        , m_isSoft{isSoft}
+        , m_isTagged{isTagged} {
         packed(packed() | m_isSoft);
     }
     ASTGEN_MEMBERS_AstUnionDType;
     string verilogKwd() const override { return "union"; }
     bool isSoft() const { return m_isSoft; }
+    bool isTagged() const { return m_isTagged; }
+    bool sameNode(const AstNode* samep) const override;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
 };
 
 #endif  // Guard

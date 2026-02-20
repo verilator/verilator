@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2024 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2024 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 module t(/*AUTOARG*/
@@ -141,4 +141,16 @@ module Test(/*AUTOARG*/
    cover_concurrent_stmt: cover property(prop) $display("pass");
 
    restrict property (prop);
+
+   always_ff @(posedge clk) begin
+     unique0 casez(in)
+       1: $display("1a");
+       default: $display("1b");
+     endcase
+     priority casez(1'b1)
+       in[0]: $display("2a");
+       default: $display("2b");
+     endcase
+   end
+
 endmodule

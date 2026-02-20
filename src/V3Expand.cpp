@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2004-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -71,7 +71,10 @@ public:
 class ExpandVisitor final : public VNVisitor {
     // NODE STATE
     //  AstNode::user1()        -> bool.  Processed
+    //  AstNode::user2()        -> See ExpandOkVisitor
+    //  AstVar::user3()         -> bool.  Is a constant pool variable
     const VNUser1InUse m_inuser1;
+    const VNUser3InUse m_inuser3;
 
     // STATE - for current visit position (use VL_RESTORER)
     AstNode* m_stmtp = nullptr;  // Current statement
@@ -313,6 +316,9 @@ class ExpandVisitor final : public VNVisitor {
     //-------- Uniops
     bool expandWide(AstNodeAssign* nodep, AstVarRef* rhsp) {
         UINFO(8, "    Wordize ASSIGN(VARREF) " << nodep);
+        // Special case: do not expand assignment of constant pool variables.
+        // V3Subst undestands these directly.
+        if (rhsp->varp()->user3()) return false;
         if (!doExpandWide(nodep)) return false;
         for (int w = 0; w < nodep->widthWords(); ++w) {
             addWordAssign(nodep, w, newAstWordSelClone(rhsp, w));
@@ -373,6 +379,47 @@ class ExpandVisitor final : public VNVisitor {
         }
         return true;
     }
+    bool expandWideShift(AstNodeAssign* nodep, AstNodeBiop* rhsp, bool isLeftShift) {
+        if (!doExpandWide(nodep)) return false;
+
+        // Simplify the shift amount, in case it becomes a constant
+        V3Const::constifyEditCpp(rhsp->rhsp());
+
+        // If it's a constant shift by whole words, expand it so V3Subst can substitute it
+        if (const AstConst* const rhsConstp = VN_CAST(rhsp->rhsp(), Const)) {
+            const uint32_t shiftBits = rhsConstp->toUInt();
+            if (VL_BITBIT_E(shiftBits) == 0) {
+                const int widthWords = nodep->widthWords();
+                const int shiftWords = std::min<int>(VL_BITWORD_E(shiftBits), widthWords);
+                FileLine* const flp = rhsp->fileline();
+                if (isLeftShift) {
+                    UINFO(8, "    Wordize ASSIGN(SHIFTL,words) " << nodep);
+                    // Low words of the result are zero
+                    for (int w = 0; w < shiftWords; ++w) {
+                        addWordAssign(nodep, w, new AstConst{flp, AstConst::SizedEData{}, 0});
+                    }
+                    // High words of the result are copied from higher words of the source
+                    for (int w = shiftWords; w < widthWords; ++w) {
+                        addWordAssign(nodep, w, newAstWordSelClone(rhsp->lhsp(), w - shiftWords));
+                    }
+                } else {
+                    UINFO(8, "    Wordize ASSIGN(SHIFTR,words) " << nodep);
+                    // Low words of the result are copied from higher words of the source
+                    for (int w = 0; w < widthWords - shiftWords; ++w) {
+                        addWordAssign(nodep, w, newAstWordSelClone(rhsp->lhsp(), w + shiftWords));
+                    }
+                    // High words of the result are zero
+                    for (int w = widthWords - shiftWords; w < widthWords; ++w) {
+                        addWordAssign(nodep, w, new AstConst{flp, AstConst::SizedEData{}, 0});
+                    }
+                }
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     //-------- Triops
     bool expandWide(AstNodeAssign* nodep, AstCond* rhsp) {
         UINFO(8, "    Wordize ASSIGN(COND) " << nodep);
@@ -388,6 +435,15 @@ class ExpandVisitor final : public VNVisitor {
     }
 
     // VISITORS
+    void visit(AstNetlist* nodep) override {
+        // Mark constant pool variables
+        for (AstNode* np = nodep->constPoolp()->modp()->stmtsp(); np; np = np->nextp()) {
+            if (VN_IS(np, Var)) np->user3(true);
+        }
+
+        iterateAndNextNull(nodep->modulesp());
+    }
+
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_funcp);
         VL_RESTORER(m_nTmps);
@@ -1026,7 +1082,7 @@ class ExpandVisitor final : public VNVisitor {
         m_stmtp = nodep;
         iterateChildren(nodep);
         bool did = false;
-        if (nodep->isWide() && ((VN_IS(nodep->lhsp(), VarRef) || VN_IS(nodep->lhsp(), ArraySel)))
+        if (nodep->isWide()  //
             && ((VN_IS(nodep->lhsp(), VarRef) || VN_IS(nodep->lhsp(), ArraySel)))
             && !AstVar::scVarRecurse(nodep->lhsp())  // Need special function for SC
             && !AstVar::scVarRecurse(nodep->rhsp())) {
@@ -1052,6 +1108,10 @@ class ExpandVisitor final : public VNVisitor {
                 did = expandWide(nodep, rhsp);
             } else if (AstXor* const rhsp = VN_CAST(nodep->rhsp(), Xor)) {
                 did = expandWide(nodep, rhsp);
+            } else if (AstShiftL* const rhsp = VN_CAST(nodep->rhsp(), ShiftL)) {
+                did = expandWideShift(nodep, rhsp, /* isLeftShift: */ true);
+            } else if (AstShiftR* const rhsp = VN_CAST(nodep->rhsp(), ShiftR)) {
+                did = expandWideShift(nodep, rhsp, /* isLeftShift: */ false);
             } else if (AstCond* const rhsp = VN_CAST(nodep->rhsp(), Cond)) {
                 did = expandWide(nodep, rhsp);
             }

@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2023 by Antmicro Ltd.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2023 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
 typedef enum bit {A = 0, B = 1} enum_t;
@@ -14,8 +14,9 @@ endclass
 
 module t;
    initial begin
-      Converter#(enum_t) conv1 = new;
-      Converter#(bit) conv2 = new;
+      automatic Converter#(enum_t) conv1 = new;
+      automatic Converter#(bit) conv2 = new;
+
       if (conv1.toInt(A) != 0) $stop;
       if (conv2.toInt(1) != 1) $stop;
 

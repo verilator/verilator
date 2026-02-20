@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -259,7 +259,7 @@ class CfgGraph final : public V3Graph {
     void addUntknEdge(CfgBlock* srcp, CfgBlock* dstp) {
         UASSERT_OBJ(srcp->m_cfgp == this, srcp, "'srcp' is not in this graph");
         UASSERT_OBJ(dstp->m_cfgp == this, dstp, "'dstp' is not in this graph");
-        UASSERT_OBJ(srcp->takenEdgep(), srcp, "Untaken edge shold be added second");
+        UASSERT_OBJ(srcp->takenEdgep(), srcp, "Untaken edge should be added second");
         UASSERT_OBJ(srcp->takenp() != dstp, srcp, "Untaken branch targets the same block");
         //
         UASSERT_OBJ(dstp != m_enterp, dstp, "Enter block cannot have a predecessor");

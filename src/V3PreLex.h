@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2000-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2000-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -211,7 +211,7 @@ public:  // Used only by V3PreLex.cpp and V3PreProc.cpp
         }
     }
     void warnBackslashSpace();
-    void verilatorCmtLint(const char* textp, bool warnOff);
+    void verilatorCmtLint(const char* textp, bool turnOff);
     void verilatorCmtLintRestore();
     void verilatorCmtLintSave();
     // Called by V3PreProc.cpp to inform lexer

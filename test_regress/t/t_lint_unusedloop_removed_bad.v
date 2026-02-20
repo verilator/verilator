@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2024 by Antmicro.
+// This file ONLY is placed under the Creative Commons Public Domain
+// SPDX-FileCopyrightText: 2024 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
 // verilator lint_off BLKSEQ
@@ -226,21 +226,21 @@ module if_with_param;
    initial begin
       if (ZERO_PARAM) begin
          // loop under false parameterized if - no warning
-         int prints = 0;
+         int prints;
          while(prints < 5) begin
             prints++;
          end
          $write("Prints %d\n", prints);
       end else if (!ONE_PARAM) begin
          // loop under false parameterized if - no warning
-         int prints = 0;
+         int prints;
          while(prints < 5) begin
             prints++;
          end
          $write("Prints %d\n", prints);
       end else begin
          // loop under true parameterized if - no warning
-         int prints = 0;
+         int prints;
          while(prints < 5) begin
             prints++;
          end

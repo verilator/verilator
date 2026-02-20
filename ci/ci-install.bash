@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
 # DESCRIPTION: Verilator: CI dependency install script
 #
-# Copyright 2020 by Geza Lore. This program is free software; you
-# can redistribute it and/or modify it under the terms of either the GNU
-# Lesser General Public License Version 3 or the Perl Artistic License
-# Version 2.0.
-#
+# SPDX-FileCopyrightText: 2020 Geza Lore
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 ################################################################################
@@ -47,7 +43,7 @@ fi
 install-vcddiff() {
   TMP_DIR="$(mktemp -d)"
   git clone https://github.com/veripool/vcddiff "$TMP_DIR"
-  git -C "${TMP_DIR}" checkout dca845020668887fd13498c772939814d9264fd5
+  git -C "${TMP_DIR}" checkout 4db0d84a27e8f148b127e916fc71d650837955c5
   "$MAKE" -C "${TMP_DIR}"
   sudo cp "${TMP_DIR}/vcddiff" /usr/local/bin
 }
@@ -76,7 +72,9 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
       sudo apt-get install bear mold
     fi
   elif [ "$CI_OS_NAME" = "osx" ]; then
+    brew update ||
     brew update
+    brew install ccache perl gperftools autoconf bison flex help2man ||
     brew install ccache perl gperftools autoconf bison flex help2man
   elif [ "$CI_OS_NAME" = "freebsd" ]; then
     sudo pkg install -y autoconf bison ccache gmake perl5

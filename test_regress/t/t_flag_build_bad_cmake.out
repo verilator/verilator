@@ -1,6 +1,0 @@
-%Warning-DEPRECATED: Option '--make cmake' is deprecated, use '--make json' instead
-                     ... For warning description see https://verilator.org/warn/DEPRECATED?v=latest
-                     ... Use "/* verilator lint_off DEPRECATED */" and lint_on around source to disable this message.
-%Error: --make cannot be used together with --build. Suggest see manual
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: Exiting due to

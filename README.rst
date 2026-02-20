@@ -1,5 +1,7 @@
 .. Github doesn't render images unless absolute URL
 .. Do not know of a conditional tag, "only: github" nor "github display" works
+.. SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
+.. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 |badge1| |badge2| |badge3| |badge4| |badge5| |badge7| |badge8|
 
@@ -28,7 +30,7 @@ Welcome to Verilator
         * Accepts Verilog or SystemVerilog
         * Performs lint code-quality checks
         * Compiles into multithreaded C++, or SystemC
-        * Creates XML to front-end your own tools
+        * Creates JSON to front-end your own tools
      - |Logo|
    * - |verilator multithreaded performance|
      - **Fast**
@@ -60,18 +62,20 @@ performing lint checks, and optionally inserting assertion checks and
 coverage-analysis points. It outputs single- or multithreaded .cpp and .h
 files, the "Verilated" code.
 
-These Verilated C++/SystemC files are then compiled by a C++ compiler
-(gcc/clang/MSVC++), optionally along with a user's own C++/SystemC wrapper
-file, to instantiate the Verilated model. Executing the resulting
-executable performs the design simulation. Verilator also supports linking
-Verilated generated libraries, optionally encrypted, into other simulators.
+Verilator can automatically generate a simulator executable (using
+``--binary``), or users can write their own C++/SystemC wrapper to
+instantiate the model. The resulting Verilated executable performs the
+design simulation. Verilator also supports linking Verilator-generated
+libraries, optionally encrypted, into other simulators.
 
-Verilator may not be the best choice if you are expecting a full-featured
-replacement for a closed-source Verilog simulator, need SDF annotation,
-mixed-signal simulation, or are doing a quick class project (we recommend
-`Icarus Verilog`_ for classwork). However, if you are looking for a path to
-migrate SystemVerilog to C++/SystemC, or want high-speed simulation of
-designs, Verilator is the tool for you.
+Verilator supports all design constructs, most verification constructs,
+intra-assignment delays (e.g, `#10`), and events. Tristate-bus (`z`) and
+unknowns (`x`) are handled in limited contexts, in a special manor for
+performance. It currently may not be the best choice if you are expecting a
+full-featured replacement for a closed-source Verilog simulator, performing
+SDF annotation, or mixed-signal simulation. However, if you are looking for
+a path to migrate SystemVerilog to C++/SystemC, or want high-speed
+simulation, Verilator is the tool for you.
 
 
 Performance
@@ -132,6 +136,10 @@ organizations; please see `Verilator Commercial Support
 Related Projects
 ================
 
+- `Cocotb <https://www.cocotb.org/>`_ - A coroutine-based cosimulation
+  library for writing testbenches in Python which officially supports
+  Verilator.
+
 - `GTKwave <https://gtkwave.sourceforge.net/>`_ - Waveform viewer for
   Verilator traces.
 
@@ -145,7 +153,7 @@ Related Projects
 Open License
 ============
 
-Verilator is Copyright 2003-2025 by Wilson Snyder. (Report bugs to
+Verilator is Copyright 2003-2026 by Wilson Snyder. (Report bugs to
 `Verilator Issues <https://verilator.org/issues>`_.)
 
 Verilator is free software; you can redistribute it and/or modify it under

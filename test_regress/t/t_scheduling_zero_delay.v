@@ -1,0 +1,44 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+// verilog_format: off
+`define stop $stop
+`define check(got,exp) do if ((got) !== (exp)) begin $write("%%Error: %s:%0d: time=%t got='h%x exp='h%x\n", `__FILE__,`__LINE__, $time, (got), (exp)); `stop; end while(0)
+// verilog_format: on
+
+module top;
+
+  logic clk = 0;
+  always #5 clk = ~clk;
+
+  int a = 0;
+  int b;
+
+  always begin
+    $display("%2t Waiting for 'a'", $time);
+    @a;
+    b = a + 10;
+  end
+
+  always @(posedge clk) begin
+    ++a;
+  end
+
+  always @(posedge clk) begin
+    #0;
+    $display("%2t a=%2d b=%2d", $time, a, b);
+    `check(b, a + 10);
+  end
+
+  initial begin
+    #99;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
+
+endmodule

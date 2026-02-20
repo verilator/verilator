@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2019 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2019 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 `define stop $stop
@@ -18,7 +18,7 @@ module t;
    initial begin
       int q[*];
       int qe [ * ];  // Empty - Note spaces around [*] for parsing coverage
-      point points_q[*] = '{"a": point'{1, 2}, "b": point'{2, 4}, "c": point'{1, 4}};
+      automatic point points_q[*] = '{"a": point'{1, 2}, "b": point'{2, 4}, "c": point'{1, 4}};
       int qv[$];  // Value returns
       int qi[$];  // Index returns
       int i;

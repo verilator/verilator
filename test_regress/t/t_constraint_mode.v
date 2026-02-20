@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2023 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2023 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 class Foo;
@@ -62,10 +62,10 @@ endclass
 
 module t;
   initial begin
-    logic[1:0] ok = 0;
-    int res;
-    Qux qux = new;
-    Bar bar = qux;
+    automatic logic[1:0] ok = 0;
+    automatic int res;
+    automatic Qux qux = new;
+    automatic Bar bar = qux;
 
     qux.test;
 

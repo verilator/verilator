@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -144,6 +144,8 @@ class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
     } m_emitDispState;
 
 protected:
+    VL_DEFINE_DEBUG_FUNCTIONS;
+
     EmitCLazyDecls m_lazyDecls{*this};  // Visitor for emitting lazy declarations
     bool m_useSelfForThis = false;  // Replace "this" with "vlSelf"
     bool m_usevlSelfRef = false;  // Use vlSelfRef reference instead of vlSelf pointer
@@ -215,7 +217,7 @@ public:
     void emitVarReset(AstVar* varp, bool constructing);
     string emitVarResetRecurse(const AstVar* varp, bool constructing,
                                const string& varNameProtected, AstNodeDType* dtypep, int depth,
-                               const string& suffix);
+                               const string& suffix, const AstNode* valuep);
     void emitVarResetScopeHash();
     void emitChangeDet();
     void emitConstInit(AstNode* initp) { iterateConst(initp); }
@@ -478,7 +480,7 @@ public:
         if (nodep->isCoroutine()) {
             // Sometimes coroutines don't have co_awaits,
             // so emit a co_return at the end to avoid compile errors.
-            puts("co_return;");
+            puts("co_return;\n");
         }
 
         puts("}\n");
@@ -523,6 +525,11 @@ public:
     }
 
     void visit(AstNodeAssign* nodep) override {
+        if (AstCReset* const resetp = VN_CAST(nodep->rhsp(), CReset)) {
+            AstVar* const varp = VN_AS(nodep->lhsp(), NodeVarRef)->varp();
+            emitVarReset(varp, resetp->constructing());
+            return;
+        }
         bool paren = true;
         bool decind = false;
         bool rhs = true;
@@ -702,6 +709,7 @@ public:
     void visit(AstCAwait* nodep) override {
         putns(nodep, "co_await ");
         iterateConst(nodep->exprp());
+        puts(";\n");
     }
     void visit(AstCNew* nodep) override {
         if (VN_IS(nodep->dtypep(), VoidDType)) {
@@ -720,15 +728,40 @@ public:
         putns(nodep, nodep->name());
         puts("(");
         bool comma = false;
+        int argNum = 0;
         for (AstNode* subnodep = nodep->pinsp(); subnodep; subnodep = subnodep->nextp()) {
             if (comma) puts(", ");
             // handle wide arguments to the queues
             if (VN_IS(nodep->fromp()->dtypep(), QueueDType) && subnodep->dtypep()->isWide()) {
                 emitCvtWideArray(subnodep, nodep->fromp());
+            } else if (nodep->method() == VCMethod::RANDOMIZER_HARD && argNum == 1) {
+                // For RANDOMIZER_HARD's filename argument (2nd arg after constraint),
+                // apply protect() similar to VL_STOP to handle --protected flag
+                if (const AstCExpr* const cexprp = VN_CAST(subnodep, CExpr)) {
+                    // Extract filename from the CExpr (which contains "filename")
+                    std::string filename;
+                    for (const AstNode* textnodep = cexprp->nodesp(); textnodep;
+                         textnodep = textnodep->nextp()) {
+                        if (const AstText* const textp = VN_CAST(textnodep, Text)) {
+                            filename = textp->text();
+                            break;
+                        }
+                    }
+                    // Remove surrounding quotes if present
+                    if (filename.size() >= 2 && filename.front() == '"'
+                        && filename.back() == '"') {
+                        filename = filename.substr(1, filename.size() - 2);
+                    }
+                    // Emit with protect()
+                    putsQuoted(protect(filename));
+                } else {
+                    iterateConst(subnodep);
+                }
             } else {
                 iterateConst(subnodep);
             }
             comma = true;
+            argNum++;
         }
         puts(")");
     }
@@ -1308,6 +1341,9 @@ public:
                       / v3Global.rootp()->timeprecision().multiplier()));
         puts(")");
     }
+    void visit(AstGetInitialRandomSeed* nodep) override {
+        putns(nodep, "vlSymsp->_vm_contextp__->randSeed()");
+    }
     void visit(AstTimeFormat* nodep) override {
         putns(nodep, "VL_TIMEFORMAT_IINI(");
         if (nodep->unitsp()) {
@@ -1621,6 +1657,22 @@ public:
         puts(VSelfPointerText::replaceThis(m_useSelfForThis, "this"));
         puts("}");
     }
+    void visit(AstNodeSel* nodep) override {
+        if (!VN_IS(nodep, ArraySel) && !VN_IS(nodep, WordSel)) {
+            visit(static_cast<AstNodeBiop*>(nodep));
+            return;
+        }
+        // ArraySel or WordSel
+        iterateAndNextConstNull(nodep->fromp());
+        // Special case constant index for readability
+        if (AstConst* const idxp = VN_CAST(nodep->bitp(), Const)) {
+            puts("[" + std::to_string(idxp->toUInt()) + "U]");
+            return;
+        }
+        putbs("[");
+        iterateAndNextConstNull(nodep->bitp());
+        puts("]");
+    }
 
     //
     void visit(AstConsAssoc* nodep) override {
@@ -1710,10 +1762,6 @@ public:
             iterateAndNextConstNull(nodep->rhsp());
             puts(")");
         }
-    }
-    void visit(AstCReset* nodep) override {
-        AstVar* const varp = nodep->varrefp()->varp();
-        emitVarReset(varp, nodep->constructing());
     }
     void visit(AstExecGraph* nodep) override {
         // The location of the AstExecGraph within the containing AstCFunc is where we want to

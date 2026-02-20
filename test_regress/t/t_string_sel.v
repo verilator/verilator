@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2025 by Antmicro.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
 typedef struct {
@@ -26,9 +26,9 @@ module t;
    endfunction
 
    initial begin
-      c o = new;
-      str_s st = '{"qux"};
-      string sc = {"foo", "bar"};
+      automatic c o = new;
+      automatic str_s st = '{"qux"};
+      automatic string sc = {"foo", "bar"};
 
       // read
       if (str[0] != "b") $stop;

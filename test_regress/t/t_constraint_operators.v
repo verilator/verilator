@@ -1,14 +1,21 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2023 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2023 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 class Packet;
    rand int x;
+   rand int y;
+   rand int z;
+   rand int w;
+   rand int v;
+   rand int u;
    rand bit [31:0] b;
    rand bit [31:0] c;
    rand bit [31:0] d;
+   rand bit [31:0] e;
+   rand bit [31:0] f;
    rand bit tiny;
    rand bit zero;
    rand bit one;
@@ -22,6 +29,24 @@ class Packet;
    constraint arith { x + x - x == x; }
    constraint divmod { int'((x % 5) / 2) != (b % 99) / 7; }
    constraint mul { x * 9 != b * 3; }
+   constraint mul_signed {
+     y * y == 4;
+     y > 0;
+     y < 4;
+     z * z == 4;
+     z < 0;
+     z > -4;
+   }
+   constraint c_power { e ** 32'h5 < 10000; }
+   constraint c_power_ss { w ** 5 < 10000; }
+   constraint c_power_us { f ** 5 < 10000; }
+   constraint c_power_su { v ** 32'h5 < 10000; }
+   constraint c_power_many { u ** 2 ** 3 < 1000; u > 2; u < 10; }
+   // check for negative values in constant
+   constraint c_power_neg_exp { v ** 4'shf == 0; }
+   constraint c_power_u_neg_exp { f ** 4'shf == 0; }
+   constraint c_power_zero_exp { v ** 0 == 1; }
+   constraint c_power_u_zero_exp { f ** 0 == 1; }
    constraint impl { tiny == 1 -> x != 10; }
    constraint concat { {c, b} != 'h1111; }
    constraint unary { !(-~c == 'h22); }
@@ -79,6 +104,13 @@ module t;
       if (v != 1) $stop;
       if ((p.x % 5) / 2 == (p.b % 99) / 7) $stop;
       if (p.x * 9 == p.b * 3) $stop;
+      if (p.y != 2) $stop;
+      if (p.z != -2) $stop;
+      if (p.w ** 5 >= 10000) $stop;
+      if (p.e ** 32'h5 >= 10000) $stop;
+      if (p.v ** 32'h5 >= 10000) $stop;
+      if (p.f ** 5 >= 10000) $stop;
+      if (p.u != 3) $stop;
       if (p.tiny && p.x == 10) $stop;
       if ({p.c, p.b} == 'h1111) $stop;
       if (-~p.c == 'h22) $stop;

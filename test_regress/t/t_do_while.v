@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2023 by Antmicro Ltd.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2023 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
 function automatic int get_1;
@@ -20,7 +20,7 @@ module t;
 
       a = 0;
       do begin
-         int x = 1;
+         automatic int x = 1;
          a += x;
          if (a == 1) begin
             a = 2;
@@ -55,7 +55,7 @@ module t;
       a = 1;
       do begin
          do begin
-            int x = 1;
+            automatic int x = 1;
             a += x;
          end while (a < 3);
       end while (a < 5);

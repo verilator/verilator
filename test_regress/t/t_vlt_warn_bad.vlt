@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2010 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2010 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 `verilator_config
@@ -10,8 +10,6 @@ lint_off -rule CASEINCOMPLETE -file "t/t_vlt_warn.v"
 lint_off -rule WIDTH          -file "t/t_vlt_warn.v" -lines 18
 // Test wildcard filenames
 lint_off -rule WIDTH          -file "*/t_vlt_warn.v" -lines 19-19
-// Test global disables
-lint_off                      -file "*/t_vlt_warn.v" -lines 20-20
 
 coverage_off -file "t/t_vlt_warn.v"
 // Test --flag is also accepted

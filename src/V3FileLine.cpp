@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -77,18 +77,6 @@ FileLineSingleton::fileNameIdx_t FileLineSingleton::nameToNumber(const string& f
     return idx;
 }
 
-//! Support XML output
-//! Experimental. Updated to also put out the language.
-void FileLineSingleton::fileNameNumMapDumpXml(std::ostream& os) {
-    os << "<files>\n";
-    for (const auto& itr : m_namemap) {
-        os << "<file id=\"" << filenameLetters(itr.second) << "\" filename=\""
-           << V3OutFormatter::quoteNameControls(itr.first, V3OutFormatter::LA_XML)
-           << "\" language=\"" << numberToLang(itr.second).ascii() << "\"/>\n";
-    }
-    os << "</files>\n";
-}
-
 void FileLineSingleton::fileNameNumMapDumpJson(std::ostream& os) {
     std::string sep = "\n  ";
     os << "\"files\": {";
@@ -126,21 +114,39 @@ FileLineSingleton::msgEnSetIdx_t FileLineSingleton::addMsgEnBitSet(const MsgEnBi
 FileLineSingleton::msgEnSetIdx_t FileLineSingleton::defaultMsgEnIndex() VL_MT_SAFE {
     MsgEnBitSet msgEnBitSet;
     for (int i = V3ErrorCode::EC_MIN; i < V3ErrorCode::_ENUM_MAX; ++i) {
-        // "-Wall" and the like only adjsut the code subset, so use default enablement there
-        msgEnBitSet.set(MsgEnBitSet::Subset::CODE, i, !V3ErrorCode{i}.defaultsOff());
+        const V3ErrorCode code{i};
+        // "-Wall" and the like only adjust the code subset, so use default enablement there
+        msgEnBitSet.set(MsgEnBitSet::Subset::CODE, code, !code.defaultsOff());
         // The control file subset is only adjusted by the control files, everything enabled by
-        // default
-        msgEnBitSet.set(MsgEnBitSet::Subset::CTRL, i, true);
+        // default.  (V3Control also likewise creates with this)
+        msgEnBitSet.set(MsgEnBitSet::Subset::CTRL, code, true);
     }
     return addMsgEnBitSet(msgEnBitSet);
 }
 
 FileLineSingleton::msgEnSetIdx_t FileLineSingleton::msgEnSetBit(msgEnSetIdx_t setIdx,
                                                                 MsgEnBitSet::Subset subset,
-                                                                size_t bitIdx, bool value) {
-    if (msgEn(setIdx).test(subset, bitIdx) == value) return setIdx;
+                                                                V3ErrorCode code, bool value) {
+    // See if state matches existing
+    bool same = true;
+    code.forDelegateCodes([&](V3ErrorCode subcode) {
+        if (msgEn(setIdx).test(subset, subcode) != value) same = false;
+    });
+    if (same) return setIdx;
+    // Make new mask of all delegated codes at once (to avoid extra indices if looped above this)
     MsgEnBitSet msgEnBitSet{msgEn(setIdx)};
-    msgEnBitSet.set(subset, bitIdx, value);
+    code.forDelegateCodes([&](V3ErrorCode subcode) { msgEnBitSet.set(subset, subcode, value); });
+    return addMsgEnBitSet(msgEnBitSet);
+}
+
+FileLineSingleton::msgEnSetIdx_t FileLineSingleton::msgSetCtrlBitSet(msgEnSetIdx_t setIdx,
+                                                                     const VErrorBitSet& bitset) {
+    const MsgEnBitSet::Subset subset = MsgEnBitSet::Subset::CTRL;
+    // See if state matches existing
+    if (msgEn(setIdx).getAll(subset) == bitset) return setIdx;
+    // Make new mask of all delegated codes at once (to avoid extra indices if looped above this)
+    MsgEnBitSet msgEnBitSet{msgEn(setIdx)};
+    msgEnBitSet.setAll(subset, bitset);
     return addMsgEnBitSet(msgEnBitSet);
 }
 
@@ -221,12 +227,6 @@ void FileLine::newContent() {
     m_contentp = new VFileContent;
     m_contentp->refInc();
     m_contentLineno = 1;
-}
-
-string FileLine::xmlDetailedLocation() const {
-    return "loc=\"" + cvtToStr(filenameLetters()) + "," + cvtToStr(firstLineno()) + ","
-           + cvtToStr(firstColumn()) + "," + cvtToStr(lastLineno()) + "," + cvtToStr(lastColumn())
-           + "\"";
 }
 
 string FileLine::lineDirectiveStrg(int enterExit) const {
@@ -374,59 +374,23 @@ std::ostream& operator<<(std::ostream& os, FileLine* fileline) {
     return (os);
 }
 
-string FileLine::warnOffParse(const string& msgs, bool flag) {
+string FileLine::warnOffParse(const string& msgs, bool turnOff) {
     string result;
     for (const string& msg : VString::split(msgs, ',')) {
-        const char* cmsg = msg.c_str();
-        // Backward compatibility with msg="UNUSED"
-        if (V3ErrorCode::unusedMsg(cmsg)) {
-            warnOff(V3ErrorCode::UNUSEDGENVAR, flag);
-            warnOff(V3ErrorCode::UNUSEDLOOP, flag);
-            warnOff(V3ErrorCode::UNUSEDPARAM, flag);
-            warnOff(V3ErrorCode::UNUSEDSIGNAL, flag);
-            continue;
-        }
-
-        const V3ErrorCode code{cmsg};
+        const V3ErrorCode code{msg};
         if (!code.hardError()) {
-            warnOff(code, flag);
+            warnOff(code, turnOff);
             continue;
         }
-
         // Error if not suppressed
-        if (!v3Global.opt.isFuture(msg)) result = VString::dot(result, ",", cmsg);
+        if (!v3Global.opt.isFuture(msg)) result = VString::dot(result, ",", msg);
     }
     return result;
-}
-
-void FileLine::warnLintOff(bool flag) {
-    for (int codei = V3ErrorCode::EC_MIN; codei < V3ErrorCode::_ENUM_MAX; codei++) {
-        const V3ErrorCode code{codei};
-        if (code.lintError()) warnOff(code, flag);
-    }
-}
-
-void FileLine::warnStyleOff(bool flag) {
-    for (int codei = V3ErrorCode::EC_MIN; codei < V3ErrorCode::_ENUM_MAX; codei++) {
-        const V3ErrorCode code{codei};
-        if (code.styleError()) warnOff(code, flag);
-    }
-}
-
-void FileLine::warnUnusedOff(bool flag) {
-    warnOff(V3ErrorCode::UNUSEDGENVAR, flag);
-    warnOff(V3ErrorCode::UNUSEDLOOP, flag);
-    warnOff(V3ErrorCode::UNUSEDPARAM, flag);
-    warnOff(V3ErrorCode::UNUSEDSIGNAL, flag);
 }
 
 bool FileLine::warnIsOff(V3ErrorCode code) const {
     if (!msgEn().enabled(code)) return true;
     if (!defaultFileLine().msgEn().enabled(code)) return true;  // Global overrides local
-    if ((code.lintError() || code.styleError()) && !msgEn().enabled(V3ErrorCode::I_LINT)) {
-        return true;
-    }
-    if ((code.unusedError()) && !msgEn().enabled(V3ErrorCode::I_UNUSED)) return true;
     return false;
 }
 

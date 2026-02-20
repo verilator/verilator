@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2020 by Anderson Ignacio da Silva.
+// This file ONLY is placed under the Creative Commons Public Domain
+// SPDX-FileCopyrightText: 2020 Anderson Ignacio da Silva
 // SPDX-License-Identifier: CC0-1.0
 
 package test_pkg;

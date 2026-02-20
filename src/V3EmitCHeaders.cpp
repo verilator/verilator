@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -169,8 +169,8 @@ class EmitCHeader final : public EmitCConstInit {
             putns(modp, name + "(" + ctorArgs + ");\n");
             putns(modp, "~" + name + "();\n");
         } else {
-            putns(modp, name + "() = default;\n");
-            putns(modp, "~" + name + "() = default;\n");
+            putns(modp, name + "();\n");
+            putns(modp, "~" + name + "();\n");
             putns(modp, "void ctor(" + ctorArgs + ");\n");
             putns(modp, "void dtor();\n");
         }
@@ -183,6 +183,12 @@ class EmitCHeader final : public EmitCConstInit {
         if (!VN_IS(modp, Class)) {
             decorateFirst(first, section);
             puts("void " + protect("__Vconfigure") + "(bool first);\n");
+        } else {
+            decorateFirst(first, section);
+            const std::string name = V3OutFormatter::quoteNameControls(
+                VIdProtect::protectWordsIf(modp->prettyName(), v3Global.opt.protectIds()));
+            // "override", but don't want clang to start checking them:
+            puts("virtual const char* typeName() const { return \""s + name + "\"; }\n");
         }
 
         if (v3Global.opt.coverage() && !VN_IS(modp, Class)) {

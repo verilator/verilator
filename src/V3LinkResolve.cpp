@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -73,6 +73,11 @@ class LinkResolveVisitor final : public VNVisitor {
     void visit(AstClass* nodep) override {
         VL_RESTORER(m_classp);
         m_classp = nodep;
+        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (AstVar* const varp = VN_CAST(stmtp, Var)) {
+                if (!varp->isParam()) varp->varType(VVarType::MEMBER);
+            }
+        }
         iterateChildren(nodep);
     }
     void visit(AstConstraint* nodep) override {
@@ -120,7 +125,6 @@ class LinkResolveVisitor final : public VNVisitor {
     }
     void visit(AstVar* nodep) override {
         iterateChildren(nodep);
-        if (m_classp && !nodep->isParam()) nodep->varType(VVarType::MEMBER);
         if (m_ftaskp) nodep->funcLocal(true);
         if (nodep->isSigModPublic()) {
             nodep->sigModPublic(false);  // We're done with this attribute
@@ -174,6 +178,20 @@ class LinkResolveVisitor final : public VNVisitor {
         }
         VL_RESTORER(m_ftaskp);
         m_ftaskp = nodep;
+
+        if (nodep->lifetime().isAutomatic() && nodep->fvarp()) {
+            // Must clear automatic function output variable on function invocation
+            AstVar* const fvarp = VN_AS(nodep->fvarp(), Var);
+            AstNode* const crstp = new AstAssign{
+                fvarp->fileline(), new AstVarRef{fvarp->fileline(), fvarp, VAccess::WRITE},
+                new AstCReset{fvarp->fileline(), fvarp, false}};
+            fvarp->noCReset(true);
+            if (nodep->stmtsp()) {
+                nodep->stmtsp()->addHereThisAsNext(crstp);
+            } else {
+                nodep->addStmtsp(crstp);
+            }
+        }
         iterateChildren(nodep);
         if (nodep->dpiExport()) nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
     }
@@ -291,6 +309,11 @@ class LinkResolveVisitor final : public VNVisitor {
             UASSERT_OBJ(m_ftaskp, nodep, "PUBLIC_TASK not under a task");
             m_ftaskp->taskPublic(true);
             m_modp->modPublic(true);  // Need to get to the task...
+            nodep->unlinkFrBack();
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        } else if (nodep->pragType() == VPragmaType::VERILATOR_LIB) {
+            UASSERT_OBJ(m_modp, nodep, "VERILATOR_LIB not under a module");
+            m_modp->verilatorLib(true);
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else {
@@ -484,7 +507,7 @@ class LinkResolveVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     //  void visit(AstModport* nodep) override { ... }
-    // We keep Modport's themselves around for XML dump purposes
+    // We keep Modport's themselves around for JSON dump purposes
 
     void visit(AstGenFor* nodep) override {
         VL_RESTORER(m_underGenerate);

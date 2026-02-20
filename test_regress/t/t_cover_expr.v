@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2024 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2024 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 class cls;
@@ -128,10 +128,10 @@ module t (/*AUTOARG*/
 
     logic ta, tb, tc;
     initial begin
-        cls obj = new;
-        cls null_obj = null;
-        int q[5];
-        int qv[$];
+        automatic cls obj = new;
+        automatic cls null_obj = null;
+        automatic int q[5];
+        automatic int qv[$];
 
         q = '{1, 2, 2, 4, 3};
         // lambas not handled

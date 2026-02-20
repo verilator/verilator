@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -414,11 +414,11 @@ class EmitCModel final : public EmitCFunc {
         if (v3Global.hasClasses()) puts("vlSymsp->__Vm_deleter.deleteAll();\n");
 
         puts("if (VL_UNLIKELY(!vlSymsp->__Vm_didInit)) {\n");
-        puts("vlSymsp->__Vm_didInit = true;\n");
         puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+ Initial\\n\"););\n");
         puts(topModNameProtected + "__" + protect("_eval_static") + "(&(vlSymsp->TOP));\n");
         puts(topModNameProtected + "__" + protect("_eval_initial") + "(&(vlSymsp->TOP));\n");
         puts(topModNameProtected + "__" + protect("_eval_settle") + "(&(vlSymsp->TOP));\n");
+        puts("vlSymsp->__Vm_didInit = true;\n");
         puts("}\n");
 
         if (v3Global.opt.profExec() && !v3Global.opt.hierChild()
@@ -458,7 +458,7 @@ class EmitCModel final : public EmitCFunc {
             putns(modp, "bool " + EmitCUtil::topClassName()
                             + "::eventsPending() { return !vlSymsp->TOP.");
             puts(delaySchedp->nameProtect());
-            puts(".empty(); }\n\n");
+            puts(".empty() && !contextp()->gotFinish(); }\n\n");
 
             putns(modp, "uint64_t " + EmitCUtil::topClassName()
                             + "::nextTimeSlot() { return vlSymsp->TOP.");
@@ -544,15 +544,19 @@ class EmitCModel final : public EmitCFunc {
         puts(EmitCUtil::voidSelfAssign(modp));
         puts(EmitCUtil::symClassAssign());
         puts("if (!vlSymsp->_vm_contextp__->calcUnusedSigs()) {\n");
-        puts("VL_FATAL_MT(__FILE__, __LINE__, __FILE__,\n");
+        puts("VL_FATAL_MT(__FILE__, __LINE__, __FILE__,\n");  // LCOV_EXCL_LINE
         puts("\"Turning on wave traces requires Verilated::traceEverOn(true) call before time "
              "0.\");\n");
         puts("}\n");
         puts("vlSymsp->__Vm_baseCode = code;\n");
-        puts("tracep->pushPrefix(vlSymsp->name(), VerilatedTracePrefixType::SCOPE_MODULE);\n");
+        if (v3Global.opt.libCreate().empty()) {
+            puts("tracep->pushPrefix(vlSymsp->name(), VerilatedTracePrefixType::SCOPE_MODULE);\n");
+        }
         puts(topModNameProtected + "__" + protect("trace_decl_types") + "(tracep);\n");
         puts(topModNameProtected + "__" + protect("trace_init_top") + "(vlSelf, tracep);\n");
-        puts("tracep->popPrefix();\n");
+        if (v3Global.opt.libCreate().empty()) {  //
+            puts("tracep->popPrefix();\n");
+        }
         puts("}\n");
 
         // Forward declaration
@@ -583,8 +587,13 @@ class EmitCModel final : public EmitCFunc {
              + " and --trace-vcd with VerilatedVcd object\");\n");
         puts(/**/ "}\n");
         puts(/**/ "stfp->spTrace()->addModel(this);\n");
-        puts(/**/ "stfp->spTrace()->addInitCb(&" + protect("trace_init")
-             + ", &(vlSymsp->TOP));\n");
+        puts(/**/ "stfp->spTrace()->addInitCb("s  //
+             + "&" + protect("trace_init")  //
+             + ", &(vlSymsp->TOP)"  //
+             + ", name()"  //
+             + ", " + (v3Global.opt.libCreate().empty() ? "false" : "true")  //
+             + ", " + std::to_string(v3Global.rootp()->nTraceCodes())  //
+             + ");\n");
         puts(/**/ topModNameProtected + "__" + protect("trace_register")
              + "(&(vlSymsp->TOP), stfp->spTrace());\n");
         puts("}\n");

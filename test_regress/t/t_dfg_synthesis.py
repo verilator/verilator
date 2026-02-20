@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
-# Copyright 2025 by Wilson Snyder. This program is free software; you
-# can redistribute it and/or modify it under the terms of either the GNU
-# Lesser General Public License Version 3 or the Perl Artistic License
-# Version 2.0.
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of either the GNU Lesser General Public License Version 3
+# or the Perl Artistic License Version 2.0.
+# SPDX-FileCopyrightText: 2025 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
@@ -33,6 +33,8 @@ with open(rdFile, 'r', encoding="utf8") as rdFh, \
         elif re.search(r'^\s*always.*//\s*revert$', line):
             nAlwaysReverted += 1
         elif re.search(r'^\s*always', line):
+            nAlwaysSynthesized += 1
+        elif re.search(r'^\s*wire.*=', line):
             nAlwaysSynthesized += 1
         line = line.split("//")[0]
         m = re.search(r'`signal\((\w+),', line)

@@ -6,23 +6,18 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
-// V3Split implements two separate transformations:
-//  splitAlwaysAll() splits large always blocks into smaller always blocks
+// V3Split transformation:
+//
+//  splitAll() splits large always blocks into smaller always blocks
 //  when possible (but does not change the order of statements relative
 //  to one another.)
-//
-//  splitReorderAll() reorders statements within individual blocks
-//  to avoid delay vars when possible. It no longer splits always blocks.
-//
-// Both use a common base class, and common graph-building code to reflect
-// data dependencies within an always block (the "scoreboard".)
 //
 // The scoreboard tracks data deps as follows:
 //
@@ -56,25 +51,6 @@
 // better. Later modules (V3Gate, V3Order) run faster if they aren't
 // handling enormous blocks with long lists of inputs and outputs.
 //
-// Furthermore, the optional reorder routine can optimize this:
-//      NODEASSIGN/NODEIF/WHILE
-//              S1: ASSIGN {v1} <= 0.   // Duplicate of below
-//              S2: ASSIGN {v1} <= {v0}
-//              S3: IF (...,
-//                      X1: ASSIGN {v2} <= {v1}
-//                      X2: ASSIGN {v3} <= {v2}
-//      We'd like to swap S2 and S3, and X1 and X2.
-//
-//  Create a graph in split assignment order.
-//      v3 -breakable-> v3Dly --> X2 --> v2 -brk-> v2Dly -> X1 -> v1
-//      Likewise on each "upper" statement vertex
-//              v3Dly & v2Dly -> S3 -> v1 & v2
-//              v1 -brk-> v1Dly -> S2 -> v0
-//                        v1Dly -> S1 -> {empty}
-//  Multiple assignments to the same variable must remain in order
-//
-//  Also vars must not be "public" and we also scoreboard nodep->isPure()
-//
 //*************************************************************************
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
@@ -89,6 +65,8 @@
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
+
+namespace {
 
 //######################################################################
 // Support classes
@@ -442,182 +420,6 @@ protected:
 
 private:
     VL_UNCOPYABLE(SplitReorderBaseVisitor);
-};
-
-class ReorderVisitor final : public SplitReorderBaseVisitor {
-    // CONSTRUCTORS
-public:
-    explicit ReorderVisitor(AstNetlist* nodep) { iterate(nodep); }
-    ~ReorderVisitor() override = default;
-
-    // METHODS
-protected:
-    void makeRvalueEdges(SplitVarStdVertex* vstdp) override {
-        for (SplitLogicVertex* vxp : m_stmtStackps) new SplitRVEdge{&m_graph, vxp, vstdp};
-    }
-
-    void cleanupBlockGraph(AstNode* nodep) {
-        // Transform the graph into what we need
-        UINFO(5, "ReorderBlock " << nodep);
-        m_graph.removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
-
-        if (dumpGraphLevel() >= 9) m_graph.dumpDotFilePrefixed("reorderg_nodup", false);
-
-        // Mark all the logic for this step
-        // Vertex::m_user begin: true indicates logic for this step
-        m_graph.userClearVertices();
-        for (AstNode* nextp = nodep; nextp; nextp = nextp->nextp()) {
-            SplitLogicVertex* const vvertexp
-                = reinterpret_cast<SplitLogicVertex*>(nextp->user3p());
-            vvertexp->user(true);
-        }
-
-        // If a var vertex has only inputs, it's a input-only node,
-        // and can be ignored for coloring **this block only**
-        SplitEdge::incrementStep();
-        pruneDepsOnInputs();
-
-        // For reordering this single block only, mark all logic
-        // vertexes not involved with this step as unimportant
-        for (V3GraphVertex& vertex : m_graph.vertices()) {
-            if (!vertex.user()) {
-                if (vertex.is<SplitLogicVertex>()) {
-                    for (V3GraphEdge& edge : vertex.inEdges()) {
-                        SplitEdge& oedge = static_cast<SplitEdge&>(edge);
-                        oedge.setIgnoreThisStep();
-                    }
-                    for (V3GraphEdge& edge : vertex.outEdges()) {
-                        SplitEdge& oedge = static_cast<SplitEdge&>(edge);
-                        oedge.setIgnoreThisStep();
-                    }
-                }
-            }
-        }
-
-        // Weak coloring to determine what needs to remain in order
-        // This follows all step-relevant edges excluding PostEdges, which are done later
-        m_graph.weaklyConnected(&SplitEdge::followScoreboard);
-
-        // Add hard orderings between all nodes of same color, in the order they appeared
-        std::unordered_map<uint32_t, SplitLogicVertex*> lastOfColor;
-        for (AstNode* nextp = nodep; nextp; nextp = nextp->nextp()) {
-            SplitLogicVertex* const vvertexp
-                = reinterpret_cast<SplitLogicVertex*>(nextp->user3p());
-            const uint32_t color = vvertexp->color();
-            UASSERT_OBJ(color, nextp, "No node color assigned");
-            if (lastOfColor[color]) {
-                new SplitStrictEdge{&m_graph, lastOfColor[color], vvertexp};
-            }
-            lastOfColor[color] = vvertexp;
-        }
-
-        // And a real ordering to get the statements into something reasonable
-        // We don't care if there's cutable violations here...
-        // Non-cutable violations should be impossible; as those edges are program-order
-        if (dumpGraphLevel() >= 9) m_graph.dumpDotFilePrefixed("splitg_preo", false);
-        m_graph.acyclic(&SplitEdge::followCyclic);
-        m_graph.rank(&SplitEdge::followCyclic);  // Or order(), but that's more expensive
-        if (dumpGraphLevel() >= 9) m_graph.dumpDotFilePrefixed("splitg_opt", false);
-    }
-
-    void reorderBlock(AstNode* nodep) {
-        // Reorder statements in the completed graph
-
-        // Map the rank numbers into nodes they associate with
-        std::multimap<uint32_t, AstNode*> rankMap;
-        int currOrder = 0;  // Existing sequence number of assignment
-        for (AstNode* nextp = nodep; nextp; nextp = nextp->nextp()) {
-            const SplitLogicVertex* const vvertexp
-                = reinterpret_cast<SplitLogicVertex*>(nextp->user3p());
-            rankMap.emplace(vvertexp->rank(), nextp);
-            nextp->user4(++currOrder);  // Record current ordering
-        }
-
-        // Is the current ordering OK?
-        bool leaveAlone = true;
-        int newOrder = 0;  // New sequence number of assignment
-        for (auto it = rankMap.cbegin(); it != rankMap.cend(); ++it) {
-            const AstNode* const nextp = it->second;
-            if (++newOrder != nextp->user4()) leaveAlone = false;
-        }
-        if (leaveAlone) {
-            UINFO(6, "   No changes");
-        } else {
-            VNRelinker replaceHandle;  // Where to add the list
-            AstNode* newListp = nullptr;
-            for (auto it = rankMap.cbegin(); it != rankMap.cend(); ++it) {
-                AstNode* const nextp = it->second;
-                UINFO(6, "   New order: " << nextp);
-                if (nextp == nodep) {
-                    nodep->unlinkFrBack(&replaceHandle);
-                } else {
-                    nextp->unlinkFrBack();
-                }
-                if (newListp) {
-                    newListp = newListp->addNext(nextp);
-                } else {
-                    newListp = nextp;
-                }
-            }
-            replaceHandle.relink(newListp);
-        }
-    }
-
-    void processBlock(AstNode* nodep) {
-        if (!nodep) return;  // Empty lists are ignorable
-        // Pass the first node in a list of block items, we'll process them
-        // Check there's >= 2 sub statements, else nothing to analyze
-        // Save recursion state
-        AstNode* firstp = nodep;  // We may reorder, and nodep is no longer first.
-        void* const oldBlockUser3 = nodep->user3p();  // May be overloaded in below loop, save it
-        nodep->user3p(nullptr);
-        UASSERT_OBJ(nodep->firstAbovep(), nodep,
-                    "Node passed is in next list; should have processed all list at once");
-        // Process it
-        if (!nodep->nextp()) {
-            // Just one, so can't reorder.  Just look for more blocks/statements.
-            iterate(nodep);
-        } else {
-            UINFO(9, "  processBlock " << nodep);
-            // Process block and followers
-            scanBlock(nodep);
-            if (m_noReorderWhy != "") {  // Jump or something nasty
-                UINFO(9, "  NoReorderBlock because " << m_noReorderWhy);
-            } else {
-                // Reorder statements in this block
-                cleanupBlockGraph(nodep);
-                reorderBlock(nodep);
-                // Delete old vertexes and edges only applying to this block
-                // First, walk back to first in list
-                while (firstp->backp()->nextp() == firstp) firstp = firstp->backp();
-                for (AstNode* nextp = firstp; nextp; nextp = nextp->nextp()) {
-                    SplitLogicVertex* const vvertexp
-                        = reinterpret_cast<SplitLogicVertex*>(nextp->user3p());
-                    vvertexp->unlinkDelete(&m_graph);
-                }
-            }
-        }
-        // Again, nodep may no longer be first.
-        firstp->user3p(oldBlockUser3);
-    }
-
-    void visit(AstAlways* nodep) override {
-        UINFO(4, "   ALW   " << nodep);
-        UINFOTREE(9, nodep, "", "alwIn:");
-        scoreboardClear();
-        processBlock(nodep->stmtsp());
-        UINFOTREE(9, nodep, "", "alwOut");
-    }
-
-    void visit(AstNodeIf* nodep) override {
-        UINFO(4, "     IF " << nodep);
-        iterateAndNextNull(nodep->condp());
-        processBlock(nodep->thensp());
-        processBlock(nodep->elsesp());
-    }
-
-private:
-    VL_UNCOPYABLE(ReorderVisitor);
 };
 
 using ColorSet = std::unordered_set<uint32_t>;
@@ -1002,15 +804,12 @@ private:
     VL_UNCOPYABLE(SplitVisitor);
 };
 
+}  //namespace
+
 //######################################################################
 // Split class functions
 
-void V3Split::splitReorderAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ":");
-    { ReorderVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("reorder", 0, dumpTreeEitherLevel() >= 3);
-}
-void V3Split::splitAlwaysAll(AstNetlist* nodep) {
+void V3Split::splitAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     { SplitVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("split", 0, dumpTreeEitherLevel() >= 3);

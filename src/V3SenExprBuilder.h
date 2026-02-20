@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -34,6 +34,7 @@ public:
         std::vector<AstNodeStmt*> m_inits;  // Initialization statements for previous values
         std::vector<AstNodeStmt*> m_preUpdates;  // Pre update assignments
         std::vector<AstNodeStmt*> m_postUpdates;  // Post update assignments
+        std::vector<AstVar*> m_vars;  // Created temporary variables
     };
 
 private:
@@ -71,6 +72,42 @@ private:
         });
     }
 
+    // Check if expression contains a class member access that could be null
+    // (e.g., accessing an event through a class reference that may not be initialized)
+    static bool hasClassMemberAccess(const AstNode* const exprp) {
+        return exprp->exists([](const AstNode* const nodep) {
+            if (const AstMemberSel* const mselp = VN_CAST(nodep, MemberSel)) {
+                // Check if the base expression is a class reference
+                return mselp->fromp()->dtypep()
+                       && VN_IS(mselp->fromp()->dtypep()->skipRefp(), ClassRefDType);
+            }
+            return false;
+        });
+    }
+
+    // Get the base class reference expression from a member selection chain
+    // Returns the outermost class reference that needs to be null-checked
+    // Note: Returns a pointer into the original tree - caller must clone if needed
+    static const AstNodeExpr* getBaseClassRef(const AstNodeExpr* exprp) {
+        while (exprp) {
+            if (const AstMemberSel* const mselp = VN_CAST(exprp, MemberSel)) {
+                const AstNodeExpr* const fromp = mselp->fromp();
+                if (fromp->dtypep() && VN_IS(fromp->dtypep()->skipRefp(), ClassRefDType)) {
+                    // Check if the base itself has class member access
+                    if (hasClassMemberAccess(fromp)) {
+                        exprp = fromp;
+                        continue;
+                    }
+                    return fromp;
+                }
+                exprp = fromp;
+            } else {
+                return nullptr;
+            }
+        }
+        return nullptr;
+    }
+
     // METHODS
     AstVarScope* crateTemp(AstNodeExpr* exprp) {
         // For readability, use the scoped signal name if the trigger is a simple AstVarRef
@@ -84,7 +121,34 @@ private:
         }
         AstVarScope* const vscp = m_scopep->createTemp(name, exprp->dtypep());
         vscp->varp()->isInternal(true);
+        m_results.m_vars.push_back(vscp->varp());
         return vscp;
+    }
+
+    // Helper to wrap a statement with a null check: if (baseRef != null) stmt
+    AstNodeStmt* wrapStmtWithNullCheck(FileLine* flp, AstNodeStmt* stmtp,
+                                       const AstNodeExpr* baseClassRefp) {
+        if (!baseClassRefp) return stmtp;
+        AstNodeExpr* const nullp = new AstConst{flp, AstConst::Null{}};
+        // const_cast safe: cloneTree doesn't modify the source
+        AstNodeExpr* const checkp
+            = new AstNeq{flp, const_cast<AstNodeExpr*>(baseClassRefp)->cloneTree(false), nullp};
+        return new AstIf{flp, checkp, stmtp};
+    }
+
+    // Helper to wrap a trigger expression with a null check if needed
+    // Returns the expression wrapped in: (baseRef != null) ? expr : 0
+    AstNodeExpr* wrapExprWithNullCheck(FileLine* flp, AstNodeExpr* exprp,
+                                       const AstNodeExpr* baseClassRefp) {
+        if (!baseClassRefp) return exprp;
+        AstNodeExpr* const nullp = new AstConst{flp, AstConst::Null{}};
+        // const_cast safe: cloneTree doesn't modify the source
+        AstNodeExpr* const checkp
+            = new AstNeq{flp, const_cast<AstNodeExpr*>(baseClassRefp)->cloneTree(false), nullp};
+        AstNodeExpr* const falsep = new AstConst{flp, AstConst::BitFalse{}};
+        AstNodeExpr* const condp = new AstCond{flp, checkp, exprp, falsep};
+        condp->dtypeSetBit();
+        return condp;
     }
 
     AstNodeExpr* getCurr(AstNodeExpr* exprp) {
@@ -97,16 +161,28 @@ private:
         if (result.second) result.first->second = crateTemp(exprp);
         AstVarScope* const currp = result.first->second;
 
+        // Check if we need null guards for class member access
+        const AstNodeExpr* const baseClassRefp
+            = hasClassMemberAccess(exprp) ? getBaseClassRef(exprp) : nullptr;
+
         // Add pre update if it does not exist yet in this round
         if (m_hasPreUpdate.emplace(*currp).second) {
-            m_results.m_preUpdates.push_back(new AstAssign{
-                flp, new AstVarRef{flp, currp, VAccess::WRITE}, exprp->cloneTree(false)});
+            m_results.m_preUpdates.push_back(
+                wrapStmtWithNullCheck(flp,
+                                      new AstAssign{flp, new AstVarRef{flp, currp, VAccess::WRITE},
+                                                    exprp->cloneTree(false)},
+                                      baseClassRefp));
         }
         return new AstVarRef{flp, currp, VAccess::READ};
     }
+
     AstVarScope* getPrev(AstNodeExpr* exprp) {
         FileLine* const flp = exprp->fileline();
         const auto rdCurr = [this, exprp]() { return getCurr(exprp); };
+
+        // Check if we need null guards for class member access
+        const AstNodeExpr* const baseClassRefp
+            = hasClassMemberAccess(exprp) ? getBaseClassRef(exprp) : nullptr;
 
         AstNode* scopeExprp = exprp;
         if (AstVarRef* const refp = VN_CAST(exprp, VarRef)) scopeExprp = refp->varScopep();
@@ -115,10 +191,10 @@ private:
         if (pair.second) {
             AstVarScope* const prevp = crateTemp(exprp);
             pair.first->second = prevp;
-            // Add the initializer init
+            // Add the initializer init (guarded if class member access)
             AstAssign* const initp = new AstAssign{flp, new AstVarRef{flp, prevp, VAccess::WRITE},
                                                    exprp->cloneTree(false)};
-            m_results.m_inits.push_back(initp);
+            m_results.m_inits.push_back(wrapStmtWithNullCheck(flp, initp, baseClassRefp));
         }
 
         AstVarScope* const prevp = pair.first->second;
@@ -141,9 +217,11 @@ private:
                 AstCMethodHard* const cmhp
                     = new AstCMethodHard{flp, wrPrev(), VCMethod::UNPACKED_ASSIGN, rdCurr()};
                 cmhp->dtypeSetVoid();
-                m_results.m_postUpdates.push_back(cmhp->makeStmt());
+                m_results.m_postUpdates.push_back(
+                    wrapStmtWithNullCheck(flp, cmhp->makeStmt(), baseClassRefp));
             } else {
-                m_results.m_postUpdates.push_back(new AstAssign{flp, wrPrev(), rdCurr()});
+                m_results.m_postUpdates.push_back(wrapStmtWithNullCheck(
+                    flp, new AstAssign{flp, wrPrev(), rdCurr()}, baseClassRefp));
             }
         }
 
@@ -153,6 +231,12 @@ private:
     std::pair<AstNodeExpr*, bool> createTerm(const AstSenItem* senItemp) {
         FileLine* const flp = senItemp->fileline();
         AstNodeExpr* const senp = senItemp->sensp();
+
+        // Check if the sensitivity expression involves accessing through a class reference
+        // that may be null (e.g., DynScope handles created in fork blocks, or class member
+        // virtual interfaces). If so, we need to guard against null pointer dereference.
+        const AstNodeExpr* const baseClassRefp
+            = hasClassMemberAccess(senp) ? getBaseClassRef(senp) : nullptr;
 
         const auto currp = [this, senp]() { return getCurr(senp); };
         const auto prevp
@@ -169,31 +253,39 @@ private:
                 AstCMethodHard* const resultp
                     = new AstCMethodHard{flp, prevp(), VCMethod::UNPACKED_NEQ, currp()};
                 resultp->dtypeSetBit();
-                return {resultp, true};
+                return {wrapExprWithNullCheck(flp, resultp, baseClassRefp), true};
             }
-            return {new AstNeq{flp, currp(), prevp()}, true};
+            return {wrapExprWithNullCheck(flp, new AstNeq{flp, currp(), prevp()}, baseClassRefp),
+                    true};
         case VEdgeType::ET_BOTHEDGE:  //
-            return {lsb(new AstXor{flp, currp(), prevp()}), false};
+            return {
+                wrapExprWithNullCheck(flp, lsb(new AstXor{flp, currp(), prevp()}), baseClassRefp),
+                false};
         case VEdgeType::ET_POSEDGE:  //
-            return {lsb(new AstAnd{flp, currp(), new AstNot{flp, prevp()}}), false};
+            return {wrapExprWithNullCheck(flp,
+                                          lsb(new AstAnd{flp, currp(), new AstNot{flp, prevp()}}),
+                                          baseClassRefp),
+                    false};
         case VEdgeType::ET_NEGEDGE:  //
-            return {lsb(new AstAnd{flp, new AstNot{flp, currp()}, prevp()}), false};
+            return {wrapExprWithNullCheck(flp,
+                                          lsb(new AstAnd{flp, new AstNot{flp, currp()}, prevp()}),
+                                          baseClassRefp),
+                    false};
         case VEdgeType::ET_EVENT: {
             UASSERT_OBJ(v3Global.hasEvents(), senItemp, "Inconsistent");
-            {
-                // Clear 'fired' state when done
-                // No need to check if the event was fired, we need the flag clear regardless
-                AstCMethodHard* const clearp
-                    = new AstCMethodHard{flp, currp(), VCMethod::EVENT_CLEAR_FIRED};
-                clearp->dtypeSetVoid();
-                m_results.m_postUpdates.push_back(clearp->makeStmt());
-            }
+
+            // Clear 'fired' state when done (guarded if class member access)
+            AstCMethodHard* const clearp
+                = new AstCMethodHard{flp, currp(), VCMethod::EVENT_CLEAR_FIRED};
+            clearp->dtypeSetVoid();
+            m_results.m_postUpdates.push_back(
+                wrapStmtWithNullCheck(flp, clearp->makeStmt(), baseClassRefp));
 
             // Get 'fired' state
             AstCMethodHard* const callp
                 = new AstCMethodHard{flp, currp(), VCMethod::EVENT_IS_FIRED};
             callp->dtypeSetBit();
-            return {callp, false};
+            return {wrapExprWithNullCheck(flp, callp, baseClassRefp), false};
         }
         case VEdgeType::ET_TRUE:  //
             return {currp(), false};
@@ -228,6 +320,14 @@ public:
             }
         }
         return {resultp, firedAtInitialization};
+    }
+
+    Results getResultsAndClearUpdates() {
+        m_hasPreUpdate.clear();
+        m_hasPostUpdate.clear();
+        Results ans = std::move(m_results);
+        m_results = {};
+        return ans;
     }
 
     Results getAndClearResults() {

@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2025 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2025 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 `timescale 1ns/1ps
@@ -21,7 +21,7 @@ module issue_desc #(
     ) x();
   end
   initial begin
-    int expected = orig_els - els_p + 1;
+    automatic int expected = orig_els - els_p + 1;
     if (val_p[2] !== expected) begin
       $error("DESC wrong value %0d expected %0d in %m", val_p[2], expected);
       $finish;
@@ -44,7 +44,7 @@ module issue_rev #(
     ) x();
   end
   initial begin
-    int expected = orig_els - els_p + 1;
+    automatic int expected = orig_els - els_p + 1;
     if (val_p[2] !== expected) begin
       $error("REV wrong value %0d expected %0d in %m", val_p[2], expected);
       $finish;

@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -125,6 +125,7 @@ class SliceVisitor final : public VNVisitor {
                     nodep->v3error("Array initialization has too few elements, need element "
                                    << elemIdx);
                     m_assignError = true;
+                    break;
                 }
                 const AstNodeDType* itemRawDTypep = itemp->dtypep()->skipRefp();
                 const VCastable castable
@@ -240,6 +241,7 @@ class SliceVisitor final : public VNVisitor {
         const AstUnpackArrayDType* const arrayp = VN_CAST(dtp, UnpackArrayDType);
         if (!arrayp) return false;
         if (VN_IS(stp, CvtPackedToArray)) return false;
+        if (VN_IS(stp, CReset)) return false;
 
         // Any isSc variables must be expanded regardless of --fno-slice
         const bool hasSc

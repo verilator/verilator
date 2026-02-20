@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -41,6 +41,9 @@ void AstNode::dumpJsonNum(std::ostream& os, const std::string& name, int64_t val
 void AstNode::dumpJsonBool(std::ostream& os, const std::string& name, bool val) {
     os << ",\"" << name << "\":" << (val ? "true" : "false");
 }
+void AstNode::dumpJsonBoolIf(std::ostream& os, const std::string& name, bool val) {
+    if (val) dumpJsonBool(os, name, val);
+}
 void AstNode::dumpJsonStr(std::ostream& os, const std::string& name, const std::string& val) {
     os << ",\"" << name << "\":\"" << V3OutFormatter::quoteNameControls(val) << '"';
 }
@@ -53,7 +56,7 @@ void AstNode::dumpJsonPtr(std::ostream& os, const std::string& name, const AstNo
 
 // Shorthands for dumping fields that use func name as key
 #define dumpJsonNumFunc(os, func) dumpJsonNum(os, #func, func())
-#define dumpJsonBoolFunc(os, func) dumpJsonBool(os, #func, func())
+#define dumpJsonBoolFuncIf(os, func) dumpJsonBoolIf(os, #func, func())
 #define dumpJsonStrFunc(os, func) dumpJsonStr(os, #func, func())
 #define dumpJsonPtrFunc(os, func) dumpJsonPtr(os, #func, func())
 
@@ -344,7 +347,7 @@ const char* AstExecGraph::broken() const {
     BROKEN_RTN(!m_depGraphp);
     for (const V3GraphVertex& vtx : m_depGraphp->vertices()) {
         const ExecMTask* const mtaskp = vtx.as<ExecMTask>();
-        AstCFunc* const funcp = mtaskp->funcp();
+        const AstCFunc* const funcp = mtaskp->funcp();
         BROKEN_RTN(!funcp || !funcp->brokeExists());
     }
     return nullptr;
@@ -352,6 +355,34 @@ const char* AstExecGraph::broken() const {
 
 AstNodeExpr* AstInsideRange::newAndFromInside(AstNodeExpr* exprp, AstNodeExpr* lhsp,
                                               AstNodeExpr* rhsp) {
+    const bool lhsUnbounded = VN_IS(lhsp, Unbounded);
+    const bool rhsUnbounded = VN_IS(rhsp, Unbounded);
+
+    if (lhsUnbounded && rhsUnbounded) {
+        fileline()->v3warn(INSIDETRUE,
+                           "Unbounded on both sides of inside range [$:$] is always true");
+        VL_DO_DANGLING(exprp->deleteTree(), exprp);
+        VL_DO_DANGLING(lhsp->deleteTree(), lhsp);
+        VL_DO_DANGLING(rhsp->deleteTree(), rhsp);
+        return new AstConst{fileline(), AstConst::BitTrue{}};
+    }
+
+    if (lhsUnbounded) {
+        // [$:N] - only check expr <= rhs
+        // Use exprp directly (not cloned) so ExprStmt side effects are preserved
+        VL_DO_DANGLING(lhsp->deleteTree(), lhsp);
+        AstNodeExpr* const bp = new AstLte{fileline(), exprp, rhsp};
+        bp->fileline()->modifyWarnOff(V3ErrorCode::CMPCONST, true);
+        return bp;
+    } else if (rhsUnbounded) {
+        // [N:$] - only check expr >= lhs
+        VL_DO_DANGLING(rhsp->deleteTree(), rhsp);
+        AstNodeExpr* const ap = new AstGte{fileline(), exprp, lhsp};
+        ap->fileline()->modifyWarnOff(V3ErrorCode::UNSIGNED, true);
+        return ap;
+    }
+
+    // Normal case: [N:M] - check expr >= lhs && expr <= rhs
     AstNodeExpr* const ap = new AstGte{fileline(), exprp, lhsp};
     AstNodeExpr* lteLhsp;
     if (const AstExprStmt* const exprStmt = VN_CAST(exprp, ExprStmt)) {
@@ -370,7 +401,21 @@ void AstCReset::dump(std::ostream& str) const {
     if (constructing()) str << " [CONS]";
 }
 void AstCReset::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, constructing);
+    dumpJsonBoolFuncIf(str, constructing);
+    dumpJsonGen(str);
+}
+
+void AstCase::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " " << verilogKwd();
+}
+void AstCase::dumpJson(std::ostream& str) const {
+    dumpJsonStr(str, "kwd", verilogKwd());
+    dumpJsonBoolIf(str, "full", fullPragma());
+    dumpJsonBoolIf(str, "parallel", parallelPragma());
+    dumpJsonBoolIf(str, "unique", uniquePragma());
+    dumpJsonBoolIf(str, "unique0", unique0Pragma());
+    dumpJsonBoolIf(str, "priority", priorityPragma());
     dumpJsonGen(str);
 }
 
@@ -398,8 +443,8 @@ void AstConsDynArray::dump(std::ostream& str) const {
     if (rhsIsValue()) str << " [RVAL]";
 }
 void AstConsDynArray::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, lhsIsValue);
-    dumpJsonBoolFunc(str, rhsIsValue);
+    dumpJsonBoolFuncIf(str, lhsIsValue);
+    dumpJsonBoolFuncIf(str, rhsIsValue);
     dumpJsonGen(str);
 }
 
@@ -409,8 +454,8 @@ void AstConsQueue::dump(std::ostream& str) const {
     if (rhsIsValue()) str << " [RVAL]";
 }
 void AstConsQueue::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, lhsIsValue);
-    dumpJsonBoolFunc(str, rhsIsValue);
+    dumpJsonBoolFuncIf(str, lhsIsValue);
+    dumpJsonBoolFuncIf(str, rhsIsValue);
     dumpJsonGen(str);
 }
 void AstConstraint::dump(std::ostream& str) const {
@@ -424,11 +469,11 @@ void AstConstraint::dump(std::ostream& str) const {
     if (isStatic()) str << " [STATIC]";
 }
 void AstConstraint::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, isExternDef);
-    dumpJsonBoolFunc(str, isExternExplicit);
-    dumpJsonBoolFunc(str, isExternProto);
-    dumpJsonBoolFunc(str, isKwdPure);
-    dumpJsonBoolFunc(str, isStatic);
+    dumpJsonBoolFuncIf(str, isExternDef);
+    dumpJsonBoolFuncIf(str, isExternExplicit);
+    dumpJsonBoolFuncIf(str, isExternProto);
+    dumpJsonBoolFuncIf(str, isKwdPure);
+    dumpJsonBoolFuncIf(str, isStatic);
     if (baseOverride().isAny()) dumpJsonStr(str, "baseOverride", baseOverride().ascii());
     dumpJsonGen(str);
 }
@@ -438,8 +483,8 @@ void AstConstraintExpr::dump(std::ostream& str) const {
     if (isSoft()) str << " [SOFT]";
 }
 void AstConstraintExpr::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, isDisableSoft);
-    dumpJsonBoolFunc(str, isSoft);
+    dumpJsonBoolFuncIf(str, isDisableSoft);
+    dumpJsonBoolFuncIf(str, isSoft);
     dumpJsonGen(str);
 }
 AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
@@ -498,8 +543,8 @@ void AstNew::dump(std::ostream& str) const {
     if (isScoped()) str << " [SCOPED]";
 }
 void AstNew::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, isImplicit);
-    dumpJsonBoolFunc(str, isScoped);
+    dumpJsonBoolFuncIf(str, isImplicit);
+    dumpJsonBoolFuncIf(str, isScoped);
     dumpJsonGen(str);
 }
 
@@ -547,6 +592,7 @@ void AstVar::combineType(VVarType type) {
     }
     if (type == VVarType::TRI0) m_isPulldown = true;
     if (type == VVarType::TRI1) m_isPullup = true;
+    if (type.isParam()) m_isConst = true;
 }
 
 string AstVar::verilogKwd() const {
@@ -630,6 +676,8 @@ string AstVar::vlEnumDir() const {
     } else if (isSigUserRdPublic()) {
         out += "|VLVF_PUB_RD";
     }
+    if (isForceable()) out += "|VLVF_FORCEABLE";
+    if (isContinuously()) out += "|VLVF_CONTINUOUSLY";
     //
     if (const AstBasicDType* const bdtypep = basicp()) {
         if (bdtypep->keyword().isDpiCLayout()) out += "|VLVF_DPI_CLAY";
@@ -829,8 +877,7 @@ string AstVar::dpiTmpVarType(const string& varName) const {
         string primitive(const AstVar* varp) const override {
             string type = dpiTypesToStringConverter::primitive(varp);
             if (varp->isWritable() || VN_IS(varp->dtypep()->skipRefp(), UnpackArrayDType)) {
-                if (!varp->isWritable() && varp->basicp()->keyword() == VBasicDTypeKwd::CHANDLE)
-                    type = "const " + type;
+                if (!varp->isWritable() && varp->basicp()->isCHandle()) type = "const " + type;
             }
             type += ' ' + m_name + arraySuffix(varp, 0);
             return type;
@@ -1623,8 +1670,8 @@ void AstNodeProcedure::dump(std::ostream& str) const {
 }
 
 void AstNodeProcedure::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, isSuspendable);
-    dumpJsonBoolFunc(str, needProcess);
+    dumpJsonBoolFuncIf(str, isSuspendable);
+    dumpJsonBoolFuncIf(str, needProcess);
     dumpJsonGen(str);
 }
 
@@ -1728,7 +1775,7 @@ void AstCvtArrayToArray::dump(std::ostream& str) const {
     str << " srcElementBits=" << srcElementBits();
 }
 void AstCvtArrayToArray::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, reverse);
+    dumpJsonBoolFuncIf(str, reverse);
     dumpJsonNumFunc(str, blockSize);
     dumpJsonNumFunc(str, dstElementBits);
     dumpJsonNumFunc(str, srcElementBits);
@@ -1746,7 +1793,8 @@ void AstCell::dump(std::ostream& str) const {
 }
 void AstCell::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, origName);
-    dumpJsonBoolFunc(str, recursive);
+    dumpJsonStrFunc(str, verilogName);
+    dumpJsonBoolFuncIf(str, recursive);
     dumpJsonGen(str);
 }
 void AstCellInline::dump(std::ostream& str) const {
@@ -1797,10 +1845,10 @@ void AstClass::dump(std::ostream& str) const {
 }
 void AstClass::dumpJson(std::ostream& str) const {
     // dumpJsonNumFunc(str, declTokenNum);  // Not dumped as adding token changes whole file
-    if (isCovergroup()) dumpJsonBoolFunc(str, isCovergroup);
-    dumpJsonBoolFunc(str, isExtended);
-    dumpJsonBoolFunc(str, isInterfaceClass);
-    dumpJsonBoolFunc(str, isVirtual);
+    dumpJsonBoolFuncIf(str, isCovergroup);
+    dumpJsonBoolFuncIf(str, isExtended);
+    dumpJsonBoolFuncIf(str, isInterfaceClass);
+    dumpJsonBoolFuncIf(str, isVirtual);
     if (baseOverride().isAny()) dumpJsonStr(str, "baseOverride", baseOverride().ascii());
     dumpJsonGen(str);
 }
@@ -1809,7 +1857,7 @@ void AstClassExtends::dump(std::ostream& str) const {
     if (isImplements()) str << " [IMPLEMENTS]";
 }
 void AstClassExtends::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, isImplements);
+    dumpJsonBoolFuncIf(str, isImplements);
     dumpJsonGen(str);
 }
 AstClass* AstClassExtends::classOrNullp() const {
@@ -1858,8 +1906,8 @@ void AstClocking::dump(std::ostream& str) const {
     if (isGlobal()) str << " [GLOBAL]";
 }
 void AstClocking::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, isDefault);
-    dumpJsonBoolFunc(str, isGlobal);
+    dumpJsonBoolFuncIf(str, isDefault);
+    dumpJsonBoolFuncIf(str, isGlobal);
     dumpJsonGen(str);
 }
 void AstConfig::dump(std::ostream& str) const {
@@ -1877,7 +1925,7 @@ void AstConfigRule::dump(std::ostream& str) const {
     if (isCell()) str << " [CELL]";
 }
 void AstConfigRule::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, isCell);
+    dumpJsonBoolFuncIf(str, isCell);
     dumpJsonGen(str);
 }
 void AstConfigUse::dump(std::ostream& str) const {
@@ -1885,7 +1933,7 @@ void AstConfigUse::dump(std::ostream& str) const {
     if (isConfig()) str << " [CONFIG]";
 }
 void AstConfigUse::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, isConfig);
+    dumpJsonBoolFuncIf(str, isConfig);
     dumpJsonGen(str);
 }
 void AstDisplay::dump(std::ostream& str) const {
@@ -1898,7 +1946,7 @@ void AstEnumDType::dump(std::ostream& str) const {
     str << " enum";
 }
 void AstEnumDType::dumpJson(std::ostream& str) const {
-    dumpJsonBool(str, "enum", 1);
+    dumpJsonBoolIf(str, "enum", 1);
     dumpJsonGen(str);
 }
 void AstEnumDType::dumpSmall(std::ostream& str) const {
@@ -1949,8 +1997,8 @@ void AstGenBlock::dump(std::ostream& str) const {
     if (unnamed()) str << " [UNNAMED]";
 }
 void AstGenBlock::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, implied);
-    dumpJsonBoolFunc(str, unnamed);
+    dumpJsonBoolFuncIf(str, implied);
+    dumpJsonBoolFuncIf(str, unnamed);
     dumpJsonGen(str);
 }
 
@@ -1972,8 +2020,8 @@ void AstIfaceRefDType::dump(std::ostream& str) const {
     }
 }
 void AstIfaceRefDType::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, isPortDecl);
-    dumpJsonBoolFunc(str, isVirtual);
+    dumpJsonBoolFuncIf(str, isPortDecl);
+    dumpJsonBoolFuncIf(str, isVirtual);
     dumpJsonStrFunc(str, cellName);
     dumpJsonStrFunc(str, ifaceName);
     dumpJsonStrFunc(str, modportName);
@@ -2090,7 +2138,7 @@ void AstMemberDType::dump(std::ostream& str) const {
 }
 
 void AstMemberDType::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, isConstrainedRand);
+    dumpJsonBoolFuncIf(str, isConstrainedRand);
     dumpJsonStrFunc(str, name);
     dumpJsonStrFunc(str, tag);
     dumpJsonGen(str);
@@ -2153,8 +2201,8 @@ void AstModportFTaskRef::dump(std::ostream& str) const {
     }
 }
 void AstModportFTaskRef::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, isExport);
-    dumpJsonBoolFunc(str, isImport);
+    dumpJsonBoolFuncIf(str, isExport);
+    dumpJsonBoolFuncIf(str, isImport);
     dumpJsonGen(str);
 }
 void AstModportVarRef::dump(std::ostream& str) const {
@@ -2178,9 +2226,9 @@ void AstModule::dump(std::ostream& str) const {
     if (hasGenericIface()) str << " [HASGENERICIFACE]";
 }
 void AstModule::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, isChecker);
-    dumpJsonBoolFunc(str, isProgram);
-    dumpJsonBoolFunc(str, hasGenericIface);
+    dumpJsonBoolFuncIf(str, isChecker);
+    dumpJsonBoolFuncIf(str, isProgram);
+    dumpJsonBoolFuncIf(str, hasGenericIface);
     dumpJsonGen(str);
 }
 void AstPin::dump(std::ostream& str) const {
@@ -2195,8 +2243,8 @@ void AstPin::dump(std::ostream& str) const {
     if (svImplicit()) str << " [.SV]";
 }
 void AstPin::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, svDotName);
-    dumpJsonBoolFunc(str, svImplicit);
+    dumpJsonBoolFuncIf(str, svDotName);
+    dumpJsonBoolFuncIf(str, svImplicit);
     dumpJsonGen(str);
 }
 string AstPin::prettyOperatorName() const {
@@ -2263,8 +2311,8 @@ void AstTypedef::dump(std::ostream& str) const {
 }
 void AstTypedef::dumpJson(std::ostream& str) const {
     // dumpJsonNumFunc(str, declTokenNum);  // Not dumped as adding token changes whole file
-    dumpJsonBoolFunc(str, attrPublic);
-    dumpJsonBoolFunc(str, isUnderClass);
+    dumpJsonBoolFuncIf(str, attrPublic);
+    dumpJsonBoolFuncIf(str, isUnderClass);
     dumpJsonGen(str);
 }
 void AstTypedefFwd::dump(std::ostream& str) const {
@@ -2291,7 +2339,7 @@ void AstRange::dump(std::ostream& str) const {
     if (ascending()) str << " [ASCENDING]";
 }
 void AstRSProdList::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, randJoin);
+    dumpJsonBoolFuncIf(str, randJoin);
     dumpJsonGen(str);
 }
 void AstRSProdList::dump(std::ostream& str) const {
@@ -2299,8 +2347,8 @@ void AstRSProdList::dump(std::ostream& str) const {
     if (randJoin()) str << " [RANDJOIN]";
 }
 void AstRange::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, ascending);
-    dumpJsonBoolFunc(str, fromBracket);
+    dumpJsonBoolFuncIf(str, ascending);
+    dumpJsonBoolFuncIf(str, fromBracket);
     dumpJsonGen(str);
 }
 void AstParamTypeDType::dump(std::ostream& str) const {
@@ -2352,9 +2400,23 @@ void AstNodeUOrStructDType::dump(std::ostream& str) const {
     if (classOrPackagep()) str << " pkg=" << nodeAddr(classOrPackagep());
 }
 void AstNodeUOrStructDType::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, packed);
-    dumpJsonBoolFunc(str, isFourstate);
+    dumpJsonBoolFuncIf(str, packed);
+    dumpJsonBoolFuncIf(str, isFourstate);
     dumpJsonGen(str);
+}
+void AstUnionDType::dump(std::ostream& str) const {
+    this->AstNodeUOrStructDType::dump(str);
+    if (isSoft()) str << " [soft]";
+    if (isTagged()) str << " [tagged]";
+}
+void AstUnionDType::dumpJson(std::ostream& str) const {
+    this->AstNodeUOrStructDType::dumpJson(str);
+    dumpJsonBoolFuncIf(str, isSoft);
+    dumpJsonBoolFuncIf(str, isTagged);
+}
+bool AstUnionDType::sameNode(const AstNode* samep) const {
+    const AstUnionDType* const asamep = VN_DBG_AS(samep, UnionDType);
+    return m_isSoft == asamep->m_isSoft && m_isTagged == asamep->m_isTagged;
 }
 string AstNodeUOrStructDType::prettyDTypeName(bool full) const {
     string result = verilogKwd() + "{";
@@ -2377,8 +2439,8 @@ void AstNodeDType::dump(std::ostream& str) const {
     }
 }
 void AstNodeDType::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, generic);
-    if (isSigned() && !isDouble()) dumpJsonBool(str, "signed", 1);
+    dumpJsonBoolFuncIf(str, generic);
+    if (isSigned() && !isDouble()) dumpJsonBoolIf(str, "signed", 1);
     dumpJsonGen(str);
 }
 void AstNodeDType::dumpSmall(std::ostream& str) const VL_MT_STABLE {
@@ -2404,7 +2466,7 @@ void AstNodeArrayDType::dump(std::ostream& str) const {
     str << " " << declRange();
 }
 void AstNodeArrayDType::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, isCompound);
+    dumpJsonBoolFuncIf(str, isCompound);
     dumpJsonStr(str, "declRange", cvtToStr(declRange()));
     dumpJsonGen(str);
 }
@@ -2485,6 +2547,13 @@ void AstNetlist::createTopScope(AstScope* scopep) {
     m_topScopep = new AstTopScope{scopep->modp()->fileline(), scopep};
     scopep->modp()->addStmtsp(v3Global.rootp()->topScopep());
 }
+AstVarScope* AstNetlist::stlFirstIterationp() {
+    if (!m_stlFirstIterationp) {
+        m_stlFirstIterationp = topScopep()->scopep()->createTemp("__VstlFirstIteration", 1);
+    }
+    AstVarScope* const vscp = m_stlFirstIterationp;
+    return vscp;
+}
 void AstNodeModule::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << "  L" << level();
@@ -2497,17 +2566,20 @@ void AstNodeModule::dump(std::ostream& str) const {
     } else if (recursive()) {
         str << " [RECURSIVE]";
     }
+    if (verilatorLib()) str << " [VERILATOR-LIB]";
     str << " [" << timeunit() << "]";
     if (libname() != "work") str << " libname=" << libname();
 }
 void AstNodeModule::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, origName);
+    dumpJsonStrFunc(str, verilogName);
     dumpJsonNumFunc(str, level);
-    dumpJsonBoolFunc(str, modPublic);
-    dumpJsonBoolFunc(str, inLibrary);
-    dumpJsonBoolFunc(str, dead);
-    dumpJsonBoolFunc(str, recursiveClone);
-    dumpJsonBoolFunc(str, recursive);
+    dumpJsonBoolFuncIf(str, modPublic);
+    dumpJsonBoolFuncIf(str, inLibrary);
+    dumpJsonBoolFuncIf(str, dead);
+    dumpJsonBoolFuncIf(str, recursiveClone);
+    dumpJsonBoolFuncIf(str, recursive);
+    dumpJsonBoolFuncIf(str, verilatorLib);
     dumpJsonStr(str, "timeunit", timeunit().ascii());
     if (libname() != "work") dumpJsonStr(str, "libname=", libname());
     dumpJsonGen(str);
@@ -2539,8 +2611,8 @@ void AstPatMember::dump(std::ostream& str) const {
     if (isDefault()) str << " [DEFAULT]";
 }
 void AstPatMember::dumpJson(std::ostream& str) const {
-    if (isConcat()) dumpJsonBoolFunc(str, isConcat);
-    if (isDefault()) dumpJsonBoolFunc(str, isDefault);
+    dumpJsonBoolFuncIf(str, isConcat);
+    dumpJsonBoolFuncIf(str, isDefault);
     dumpJsonGen(str);
 }
 void AstNodeTriop::dump(std::ostream& str) const { this->AstNodeExpr::dump(str); }
@@ -2680,7 +2752,7 @@ void AstVarScope::dump(std::ostream& str) const {
     }
 }
 void AstVarScope::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, isTrace);
+    dumpJsonBoolFuncIf(str, isTrace);
     dumpJsonGen(str);
 }
 bool AstVarScope::sameNode(const AstNode* samep) const {
@@ -2731,7 +2803,7 @@ void AstVarXRef::dump(std::ostream& str) const {
     }
 }
 void AstVarXRef::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, containsGenBlock);
+    dumpJsonBoolFuncIf(str, containsGenBlock);
     dumpJsonStrFunc(str, dotted);
     dumpJsonStrFunc(str, inlinedDots);
     dumpJsonGen(str);
@@ -2777,6 +2849,7 @@ void AstVar::dump(std::ostream& str) const {
     if (isLatched()) str << " [LATCHED]";
     if (isUsedLoopIdx()) str << " [LOOPIDX]";
     if (rand().isRandomizable()) str << " [" << rand() << "]";
+    if (noCReset()) str << " [!CRST]";
     if (noReset()) str << " [!RST]";
     if (attrIsolateAssign()) str << " [aISO]";
     if (attrFileDescr()) str << " [aFD]";
@@ -2785,6 +2858,7 @@ void AstVar::dump(std::ostream& str) const {
     } else if (isFuncLocal()) {
         str << " [FUNC]";
     }
+    if (hasUserInit()) str << " [UINIT]";
     if (isDpiOpenArray()) str << " [DPIOPENA]";
     if (ignorePostWrite()) str << " [IGNPWR]";
     if (ignoreSchedWrite()) str << " [IGNWR]";
@@ -2794,34 +2868,37 @@ void AstVar::dump(std::ostream& str) const {
 }
 void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, origName);
-    dumpJsonBoolFunc(str, isSc);
-    dumpJsonBoolFunc(str, isPrimaryIO);
-    dumpJsonBoolFunc(str, isPrimaryClock);
+    dumpJsonStrFunc(str, verilogName);
+    dumpJsonBoolFuncIf(str, isSc);
+    dumpJsonBoolFuncIf(str, isPrimaryIO);
+    dumpJsonBoolFuncIf(str, isPrimaryClock);
     dumpJsonStr(str, "direction", direction().ascii());
-    dumpJsonBoolFunc(str, isConst);
-    dumpJsonBoolFunc(str, isPullup);
-    dumpJsonBoolFunc(str, isPulldown);
-    dumpJsonBoolFunc(str, isSigPublic);
-    dumpJsonBoolFunc(str, isLatched);
-    dumpJsonBoolFunc(str, isUsedLoopIdx);
-    dumpJsonBoolFunc(str, noReset);
-    dumpJsonBoolFunc(str, attrIsolateAssign);
-    dumpJsonBoolFunc(str, attrFileDescr);
-    dumpJsonBoolFunc(str, isDpiOpenArray);
-    dumpJsonBoolFunc(str, isFuncReturn);
-    dumpJsonBoolFunc(str, isFuncLocal);
-    dumpJsonBoolFunc(str, isStdRandomizeArg);
+    dumpJsonBoolFuncIf(str, isConst);
+    dumpJsonBoolFuncIf(str, isPullup);
+    dumpJsonBoolFuncIf(str, isPulldown);
+    dumpJsonBoolFuncIf(str, isSigPublic);
+    dumpJsonBoolFuncIf(str, isLatched);
+    dumpJsonBoolFuncIf(str, isUsedLoopIdx);
+    dumpJsonBoolFuncIf(str, noCReset);
+    dumpJsonBoolFuncIf(str, noReset);
+    dumpJsonBoolFuncIf(str, attrIsolateAssign);
+    dumpJsonBoolFuncIf(str, attrFileDescr);
+    dumpJsonBoolFuncIf(str, isDpiOpenArray);
+    dumpJsonBoolFuncIf(str, isFuncReturn);
+    dumpJsonBoolFuncIf(str, isFuncLocal);
+    dumpJsonBoolFuncIf(str, isStdRandomizeArg);
     dumpJsonStr(str, "lifetime", lifetime().ascii());
     dumpJsonStr(str, "varType", varType().ascii());
     if (dtypep()) dumpJsonStr(str, "dtypeName", dtypep()->name());
-    dumpJsonBoolFunc(str, isSigUserRdPublic);
-    dumpJsonBoolFunc(str, isSigUserRWPublic);
-    dumpJsonBoolFunc(str, isGParam);
-    dumpJsonBoolFunc(str, isParam);
-    dumpJsonBoolFunc(str, attrScBv);
-    dumpJsonBoolFunc(str, attrSFormat);
-    dumpJsonBoolFunc(str, ignorePostWrite);
-    dumpJsonBoolFunc(str, ignoreSchedWrite);
+    dumpJsonBoolFuncIf(str, isSigUserRdPublic);
+    dumpJsonBoolFuncIf(str, isSigUserRWPublic);
+    dumpJsonBoolFuncIf(str, isGParam);
+    dumpJsonBoolFuncIf(str, isParam);
+    dumpJsonBoolFuncIf(str, attrScBv);
+    dumpJsonBoolFuncIf(str, attrSFormat);
+    dumpJsonBoolFuncIf(str, hasUserInit);
+    dumpJsonBoolFuncIf(str, ignorePostWrite);
+    dumpJsonBoolFuncIf(str, ignoreSchedWrite);
     dumpJsonGen(str);
 }
 void AstScope::dump(std::ostream& str) const {
@@ -2846,8 +2923,8 @@ void AstScopeName::dump(std::ostream& str) const {
     str << " scopeEntr=\"" << m_scopeEntr << "\"";
 }
 void AstScopeName::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, dpiExport);
-    dumpJsonBoolFunc(str, forFormat);
+    dumpJsonBoolFuncIf(str, dpiExport);
+    dumpJsonBoolFuncIf(str, forFormat);
     dumpJsonStr(str, "scopeAttr", m_scopeAttr);
     dumpJsonStr(str, "scopeEntr", m_scopeEntr);
     dumpJsonGen(str);
@@ -2857,7 +2934,7 @@ void AstSenTree::dump(std::ostream& str) const {
     if (isMulti()) str << " [MULTI]";
 }
 void AstSenTree::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, isMulti);
+    dumpJsonBoolFuncIf(str, isMulti);
     dumpJsonGen(str);
 }
 void AstSenItem::dump(std::ostream& str) const {
@@ -2911,7 +2988,7 @@ void AstDot::dump(std::ostream& str) const {
     if (colon()) str << " [::]";
 }
 void AstDot::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, colon);
+    dumpJsonBoolFuncIf(str, colon);
     dumpJsonGen(str);
 }
 void AstActive::dump(std::ostream& str) const {
@@ -2989,18 +3066,18 @@ bool AstNodeFTask::getPurityRecurse() const {
     return true;
 }
 void AstNodeFTask::dumpJson(std::ostream& str) const {
-    dumpJsonBool(str, "method", classMethod());
-    dumpJsonBoolFunc(str, dpiExport);
-    dumpJsonBoolFunc(str, dpiImport);
-    dumpJsonBoolFunc(str, dpiOpenChild);
-    dumpJsonBoolFunc(str, dpiOpenParent);
-    dumpJsonBoolFunc(str, isExternDef);
-    dumpJsonBoolFunc(str, isExternProto);
-    if (isVirtual()) dumpJsonBoolFunc(str, isVirtual);
-    if (needProcess()) dumpJsonBoolFunc(str, needProcess);
-    dumpJsonBoolFunc(str, prototype);
-    dumpJsonBoolFunc(str, recursive);
-    dumpJsonBoolFunc(str, taskPublic);
+    dumpJsonBoolIf(str, "method", classMethod());
+    dumpJsonBoolFuncIf(str, dpiExport);
+    dumpJsonBoolFuncIf(str, dpiImport);
+    dumpJsonBoolFuncIf(str, dpiOpenChild);
+    dumpJsonBoolFuncIf(str, dpiOpenParent);
+    dumpJsonBoolFuncIf(str, isExternDef);
+    dumpJsonBoolFuncIf(str, isExternProto);
+    dumpJsonBoolFuncIf(str, isVirtual);
+    dumpJsonBoolFuncIf(str, needProcess);
+    dumpJsonBoolFuncIf(str, prototype);
+    dumpJsonBoolFuncIf(str, recursive);
+    dumpJsonBoolFuncIf(str, taskPublic);
     if (baseOverride().isAny()) dumpJsonStr(str, "baseOverride", baseOverride().ascii());
     dumpJsonStrFunc(str, cname);
     dumpJsonGen(str);
@@ -3010,7 +3087,7 @@ void AstNodeBlock::dump(std::ostream& str) const {
     if (unnamed()) str << " [UNNAMED]";
 }
 void AstNodeBlock::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, unnamed);
+    dumpJsonBoolFuncIf(str, unnamed);
     dumpJsonGen(str);
 }
 void AstBegin::dump(std::ostream& str) const {
@@ -3019,8 +3096,8 @@ void AstBegin::dump(std::ostream& str) const {
     if (needProcess()) str << " [NPRC]";
 }
 void AstBegin::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, implied);
-    dumpJsonBoolFunc(str, needProcess);
+    dumpJsonBoolFuncIf(str, implied);
+    dumpJsonBoolFuncIf(str, needProcess);
     dumpJsonGen(str);
 }
 void AstNodeCoverDecl::dump(std::ostream& str) const {
@@ -3087,7 +3164,7 @@ void AstStop::dump(std::ostream& str) const {
     if (isFatal()) str << " [FATAL]";
 }
 void AstStop::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, isFatal);
+    dumpJsonBoolFuncIf(str, isFatal);
     dumpJsonGen(str);
 }
 void AstTraceDecl::dump(std::ostream& str) const {
@@ -3138,8 +3215,8 @@ void AstCFile::dump(std::ostream& str) const {
 }
 
 void AstCFile::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, source);
-    dumpJsonBoolFunc(str, slow);
+    dumpJsonBoolFuncIf(str, source);
+    dumpJsonBoolFuncIf(str, slow);
     dumpJsonGen(str);
 }
 void AstCFunc::dump(std::ostream& str) const {
@@ -3160,25 +3237,27 @@ void AstCFunc::dump(std::ostream& str) const {
     if (isCoroutine()) str << " [CORO]";
     if (needProcess()) str << " [NPRC]";
     if (entryPoint()) str << " [ENTRY]";
+    if (noLife()) str << " [NOLIFE]";
 }
 void AstCFunc::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, slow);
-    dumpJsonBoolFunc(str, isStatic);
-    dumpJsonBoolFunc(str, dpiExportDispatcher);
-    dumpJsonBoolFunc(str, dpiExportImpl);
-    dumpJsonBoolFunc(str, dpiImportPrototype);
-    dumpJsonBoolFunc(str, dpiImportWrapper);
-    dumpJsonBoolFunc(str, dpiContext);
-    dumpJsonBoolFunc(str, isConstructor);
-    dumpJsonBoolFunc(str, isDestructor);
-    dumpJsonBoolFunc(str, isVirtual);
-    dumpJsonBoolFunc(str, isCoroutine);
-    dumpJsonBoolFunc(str, needProcess);
+    dumpJsonBoolFuncIf(str, slow);
+    dumpJsonBoolFuncIf(str, isStatic);
+    dumpJsonBoolFuncIf(str, dpiExportDispatcher);
+    dumpJsonBoolFuncIf(str, dpiExportImpl);
+    dumpJsonBoolFuncIf(str, dpiImportPrototype);
+    dumpJsonBoolFuncIf(str, dpiImportWrapper);
+    dumpJsonBoolFuncIf(str, dpiContext);
+    dumpJsonBoolFuncIf(str, isConstructor);
+    dumpJsonBoolFuncIf(str, isDestructor);
+    dumpJsonBoolFuncIf(str, isVirtual);
+    dumpJsonBoolFuncIf(str, isCoroutine);
+    dumpJsonBoolFuncIf(str, needProcess);
+    dumpJsonBoolFuncIf(str, noLife);
     dumpJsonGen(str);
     // TODO: maybe try to shorten these flags somehow
 }
 void AstCAwait::dump(std::ostream& str) const {
-    this->AstNodeUniop::dump(str);
+    this->AstNodeStmt::dump(str);
     if (sentreep()) {
         str << " => ";
         sentreep()->dump(str);
@@ -3252,7 +3331,7 @@ void AstCgOptionAssign::dump(std::ostream& str) const {
     this->AstNode::dump(str);
 }
 void AstCgOptionAssign::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, typeOption);
+    dumpJsonBoolFuncIf(str, typeOption);
     dumpJsonGen(str);
 }
 void AstDelay::dump(std::ostream& str) const {
@@ -3260,7 +3339,7 @@ void AstDelay::dump(std::ostream& str) const {
     if (isCycleDelay()) str << " [CYCLE]";
 }
 void AstDelay::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, isCycleDelay);
+    dumpJsonBoolFuncIf(str, isCycleDelay);
     dumpJsonGen(str);
 }
 

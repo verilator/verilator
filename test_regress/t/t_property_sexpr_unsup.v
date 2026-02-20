@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2025 by Antmicro.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
 module t (  /*AUTOARG*/
@@ -41,16 +41,6 @@ module t (  /*AUTOARG*/
   assert property (@(posedge clk) ##1 1 |-> 0) $display("[%0t] disable iff with cond implication stmt, fileline:%d", $time, `__LINE__);
 
   assert property (@(posedge clk) (##1 val) |-> (##1 val)) $display("[%0t] two delays implication stmt, fileline:%d", $time, `__LINE__);
-
-  assert property (@(posedge clk) disable iff (cyc != 5) ##1 0) $display("[%0t] disable iff stmt, fileline:%d", $time, `__LINE__);
-
-  assume property (@(posedge clk) disable iff (cyc != 5) ##1 0) $display("[%0t] disable iff stmt, fileline:%d", $time, `__LINE__);
-
-  cover property (@(posedge clk) disable iff (cyc != 5) ##1 0) $display("[%0t] disable iff stmt, fileline:%d", $time, `__LINE__);
-
-  property prop_disableiff;
-    @(posedge clk) disable iff (cyc != 5) ##1 0;
-  endproperty
 
   property prop_implication;
     ##1 cyc == 4 |-> 1;

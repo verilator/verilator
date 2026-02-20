@@ -2,8 +2,8 @@
 //
 // This tests issue #508, bit select of constant fails
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2022 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2022 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 module t;

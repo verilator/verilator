@@ -6,3 +6,6 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      everything:
+        patterns: ["*"]

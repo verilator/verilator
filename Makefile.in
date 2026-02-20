@@ -7,10 +7,10 @@
 #
 #*****************************************************************************
 #
-# Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-# can redistribute it and/or modify it under the terms of either the GNU
-# Lesser General Public License Version 3 or the Perl Artistic License
-# Version 2.0.
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of either the GNU Lesser General Public License Version 3
+# or the Perl Artistic License Version 2.0.
+# SPDX-FileCopyrightText: 2025-2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 #
 #****************************************************************************/
@@ -578,6 +578,7 @@ MBAKE_FLAGS = format --config ./.bake.toml
 
 format-exec:
 	-chmod a+x test_regress/t/*.py
+	-chmod a-x test_regress/t/*.v
 
 format-make mbake:
 	$(MBAKE) --version
@@ -862,7 +863,8 @@ VENV_PATH ?= .venv
 venv:
 	# Create virtual environment using the python3 picked up by configure
 	[ -e $(VENV_PATH) ] || @PYTHON3@ -m venv --system-site-packages $(VENV_PATH)
-	# Install python3 dependencies
+	# Install python3 dependencies, with explicit retry
+	$(VENV_PATH)/bin/pip3 install -r python-dev-requirements.txt || \
 	$(VENV_PATH)/bin/pip3 install -r python-dev-requirements.txt
 	@echo
 	@echo "Installed Python virtual environment, in:"

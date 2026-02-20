@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -112,7 +112,7 @@ class InlineCFuncsVisitor final : public VNVisitor {
     }
 
     // Check if a function is eligible for inlining into caller
-    bool isInlineable(AstCFunc* callerp, AstCFunc* cfuncp) {
+    bool isInlineable(const AstCFunc* callerp, AstCFunc* cfuncp) {
         // Must be in the same scope (same class) to access the same members
         if (callerp->scopep() != cfuncp->scopep()) return false;
 
@@ -246,7 +246,7 @@ class InlineCFuncsVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit InlineCFuncsVisitor(AstNetlist* nodep)
+    explicit InlineCFuncsVisitor(const AstNetlist* nodep)
         : m_threshold1{v3Global.opt.inlineCFuncs()}
         , m_threshold2{v3Global.opt.inlineCFuncsProduct()} {
         // Don't inline when profiling or tracing

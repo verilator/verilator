@@ -2,8 +2,8 @@
 //
 // This is a compile only regression test of tristate handling for bug514
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2012 by Jeremy Bennett.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2012 Jeremy Bennett
 // SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/

@@ -3,9 +3,10 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2024 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU Lesser
-// General Public License Version 3 or the Perl Artistic License Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2001-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -27,6 +28,7 @@
 
 #include "verilated.h"
 
+#include <deque>
 #include <iomanip>
 #include <iostream>
 #include <ostream>
@@ -195,20 +197,29 @@ public:
 };
 
 //=============================================================================
-
 // Object holding constraints and variable references.
 class VlRandomizer VL_NOT_FINAL {
     // MEMBERS
     std::vector<std::string> m_constraints;  // Solver-dependent constraints
+    std::vector<std::string>
+        m_constraints_line;  // fileline content of the constraint for unsat constraints
     std::map<std::string, std::shared_ptr<const VlRandomVar>> m_vars;  // Solver-dependent
                                                                        // variables
     ArrayInfoMap m_arr_vars;  // Tracks each element in array structures for iteration
+    std::vector<std::string> m_unique_arrays;
+    std::map<std::string, uint32_t> m_unique_array_sizes;
     const VlQueue<CData>* m_randmodep = nullptr;  // rand_mode state;
     int m_index = 0;  // Internal counter for key generation
+    std::set<std::string> m_randcVarNames;  // Names of randc variables for cyclic tracking
+    std::map<std::string, std::deque<uint64_t>>
+        m_randcValueQueues;  // Remaining values per randc var (queue-based cycling)
+    size_t m_randcConstraintHash = 0;  // Hash of constraints when queues were built
 
     // PRIVATE METHODS
     void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
-    bool parseSolution(std::iostream& file);
+    bool parseSolution(std::iostream& file, bool log = false);
+    void enumerateRandcValues(const std::string& varName, VlRNG& rngr);
+    size_t hashConstraints() const;
 
 public:
     // CONSTRUCTORS
@@ -315,10 +326,10 @@ public:
     }
 
     // ---  write_var to register variables  ---
-
     // Register scalar variable (non-struct, basic type)
     template <typename T>
-    typename std::enable_if<!VlContainsCustomStruct<T>::value, void>::type
+    typename std::enable_if<!VlContainsCustomStruct<T>::value && !IsVlUnpacked<T>::value,
+                            void>::type
     write_var(T& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) != m_vars.end()) return;
@@ -356,21 +367,23 @@ public:
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (dimension > 0) record_struct_arr(var, name, dimension, {}, {});
     }
-
     // Register unpacked array of non-struct types
     template <typename T, std::size_t N_Depth>
     typename std::enable_if<!VlContainsCustomStruct<T>::value, void>::type
-    write_var(VlUnpacked<T, N_Depth>& var, int width, const char* name, int dimension,
+    write_var(VlUnpacked<T, N_Depth>& var, uint32_t width, const std::string& name,
+              uint32_t dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
+
         if (m_vars.find(name) != m_vars.end()) return;
+
         m_vars[name] = std::make_shared<const VlRandomArrayVarTemplate<VlUnpacked<T, N_Depth>>>(
             name, width, &var, dimension, randmodeIdx);
+
         if (dimension > 0) {
             m_index = 0;
             record_arr_table(var, name, dimension, {}, {});
         }
     }
-
     // Register unpacked array of structs
     template <typename T, std::size_t N_Depth>
     typename std::enable_if<VlContainsCustomStruct<T>::value, void>::type
@@ -412,6 +425,12 @@ public:
         const std::string key = generateKey(name, m_index);
         m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, m_index, indices, idxWidths);
         ++m_index;
+    }
+
+    // This is the "Sender" API for the generated code
+    void rand_unique(const std::string& name, uint32_t size) {
+        m_unique_arrays.push_back(name);
+        m_unique_array_sizes[name] = size;
     }
 
     // Recursively record all elements in an unpacked array
@@ -569,9 +588,11 @@ public:
                + std::to_string(idx);
     }
 
-    void hard(std::string&& constraint);
+    void hard(std::string&& constraint, const char* filename = "", uint32_t linenum = 0,
+              const char* source = "");
     void clearConstraints();
     void clearAll();  // Clear both constraints and variables
+    void markRandc(const char* name);  // Mark variable as randc for cyclic tracking
     void set_randmode(const VlQueue<CData>& randmode) { m_randmodep = &randmode; }
 #ifdef VL_DEBUG
     void dump() const;
@@ -626,6 +647,23 @@ public:
     template <typename T_Unpacked, std::size_t N_Depth>
     bool basicStdRandomization(VlUnpacked<T_Unpacked, N_Depth>& value, size_t width) {
         for (size_t i = 0; i < N_Depth; ++i) { basicStdRandomization(value.operator[](i), width); }
+        return true;
+    }
+
+    // Queue/dynamic array randomization
+    template <typename T_Value, size_t N_MaxSize>
+    bool basicStdRandomization(VlQueue<T_Value, N_MaxSize>& value, size_t width) {
+        for (int i = 0; i < value.size(); ++i) { basicStdRandomization(value.atWrite(i), width); }
+        return true;
+    }
+
+    // Associative array randomization
+    template <typename T_Key, typename T_Value>
+    bool basicStdRandomization(VlAssocArray<T_Key, T_Value>& value, size_t width) {
+        T_Key key;
+        for (int exists = value.first(key); exists; exists = value.next(key)) {
+            basicStdRandomization(value.at(key), width);
+        }
         return true;
     }
     bool next() { return VlRandomizer::next(m_rng); }

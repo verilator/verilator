@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2025 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2025 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 // The number of clocks in the clock vector
@@ -55,7 +55,7 @@ module top;
 
     // Conclude when all counters reach 10
     begin
-      static bit done = 1'b1;
+      automatic bit done = 1'b1;
       for (int i = 0; i < N; ++i) begin
         if (cnt[i] != 10) done = 1'b0;
       end
