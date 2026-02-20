@@ -11,23 +11,39 @@
 
 module t;
 
-  class AssocSizeTest;
+  // String-key associative array with size constraint
+  class StringKeyTest;
     rand int data[string];
     constraint c_size { data.size() == 3; }
   endclass
 
+  // Int-key associative array with size constraint
+  class IntKeyTest;
+    rand bit [7:0] values[int];
+    constraint c_size { values.size() == 2; }
+  endclass
+
   initial begin
-    automatic AssocSizeTest obj = new();
+    automatic StringKeyTest str_obj = new();
+    automatic IntKeyTest int_obj = new();
     automatic int rand_ok;
 
-    // Pre-populate with 3 entries to match the size constraint
-    obj.data["x"] = 0;
-    obj.data["y"] = 0;
-    obj.data["z"] = 0;
+    // String-key: pre-populate 3 entries to match constraint
+    str_obj.data["x"] = 0;
+    str_obj.data["y"] = 0;
+    str_obj.data["z"] = 0;
 
-    rand_ok = obj.randomize();
+    rand_ok = str_obj.randomize();
     `checkd(rand_ok, 1);
-    `checkd(obj.data.size(), 3);
+    `checkd(str_obj.data.size(), 3);
+
+    // Int-key: pre-populate 2 entries to match constraint
+    int_obj.values[10] = 0;
+    int_obj.values[20] = 0;
+
+    rand_ok = int_obj.randomize();
+    `checkd(rand_ok, 1);
+    `checkd(int_obj.values.size(), 2);
 
     $write("*-* All Finished *-*\n");
     $finish;
