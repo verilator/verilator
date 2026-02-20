@@ -5381,23 +5381,23 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 refParamp->refDTypep(paramp);
                 nodep->childDTypep(refParamp);
                 nodep->parameterized(true);
-                } else if (AstTypedef* const typedefp = VN_CAST(foundp->nodep(), Typedef)) {
-                    AstNodeDType* const unwrappedp = typedefp->subDTypep()->skipRefp(); // Unwrap typedef to get the underlying type
-                    if (AstClassRefDType* const classRefp = VN_CAST(unwrappedp, ClassRefDType)) {
-                        AstPin* paramsp = cpackagerefp->paramsp();
-                        if (paramsp) {
-                            paramsp = paramsp->cloneTree(true);
-                            nodep->parameterized(true);
-                        }
-                        nodep->childDTypep(new AstClassRefDType{nodep->fileline(), classRefp->classp(), paramsp});
-                        iterate(nodep->childDTypep());
+            } else if (AstTypedef* const typedefp = VN_CAST(foundp->nodep(), Typedef)) {
+                AstNodeDType* const unwrappedp = typedefp->subDTypep()->skipRefp(); // Unwrap typedef to get the underlying type
+                if (AstClassRefDType* const classRefp = VN_CAST(unwrappedp, ClassRefDType)) {
+                    AstPin* paramsp = cpackagerefp->paramsp();
+                    if (paramsp) {
+                        paramsp = paramsp->cloneTree(true);
+                        nodep->parameterized(true);
                     }
-                    else {
-                        nodep->v3warn(E_UNSUPPORTED,
-                            "Unsupported: " << foundp->nodep()->prettyTypeName()
-                                            << " in 'class extends'");
-                        return;
-                    }
+                    nodep->childDTypep(new AstClassRefDType{nodep->fileline(), classRefp->classp(), paramsp});
+                    iterate(nodep->childDTypep());
+                }
+                else {
+                    nodep->v3warn(E_UNSUPPORTED,
+                        "Unsupported: " << foundp->nodep()->prettyTypeName()
+                                        << " in 'class extends'");
+                    return;
+                }
             } else {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: " << foundp->nodep()->prettyTypeName()
                                                              << " in 'class extends'");
