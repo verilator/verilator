@@ -27,6 +27,7 @@
 
 #include "V3Task.h"
 
+#include "V3Ast.h"
 #include "V3Const.h"
 #include "V3Control.h"
 #include "V3EmitCBase.h"
@@ -1199,23 +1200,33 @@ class TaskVisitor final : public VNVisitor {
         }
 
         {  // Call the imported function
+            AstCExpr* const callImportp
+                = new AstCExpr{nodep->fileline(), "VerilatedDpi::callImport"};
+            AstCAwait* const awaitp = new AstCAwait{nodep->fileline(), callImportp};
+
             AstCCall* const callp = new AstCCall{nodep->fileline(), dpiFuncp};
             callp->dtypeSetVoid();
             callp->argTypes(args);
+
+            AstCStmt* const cstmtp = new AstCStmt{nodep->fileline()};
             if (rtnvscp) {
                 // If it has a return value, capture it
                 cfuncp->addStmtsp(createDpiTemp(rtnvscp->varp(), tmpSuffixp));
                 const std::string sel = rtnvscp->varp()->basicp()->isDpiPrimitive() ? "" : "[0]";
-                AstCStmt* const cstmtp = new AstCStmt{nodep->fileline()};
                 cstmtp->add(rtnvscp->varp()->name() + tmpSuffixp + sel);  // LHS
                 cstmtp->add(" = ");
                 cstmtp->add(callp);  // RHS
                 cstmtp->add(";");
-                cfuncp->addStmtsp(cstmtp);
             } else {
-                // Othervise just call it
-                cfuncp->addStmtsp(callp->makeStmt());
+                // Otherwise just call it
+                cstmtp->add(callp);
+                cstmtp->add(";");
             }
+            callImportp->add("([&]() {");
+            callImportp->add(cstmtp);
+            callImportp->add("})");
+            cfuncp->addStmtsp(awaitp);
+            cfuncp->rtnType("VlCoroutine");
         }
 
         // Convert output/inout arguments back to internal type

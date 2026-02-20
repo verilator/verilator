@@ -241,7 +241,10 @@ const std::string& V3Global::ptrToId(const void* p) {
 std::vector<std::string> V3Global::verilatedCppFiles() {
     std::vector<std::string> result;
     result.emplace_back("verilated.cpp");
-    if (v3Global.dpi()) result.emplace_back("verilated_dpi.cpp");
+    if (v3Global.dpi()) {
+        result.emplace_back("verilated_fiber.cpp");
+        result.emplace_back("verilated_dpi.cpp");
+    }
     if (v3Global.opt.vpi()) result.emplace_back("verilated_vpi.cpp");
     if (v3Global.opt.savable()) result.emplace_back("verilated_save.cpp");
     if (v3Global.opt.coverage()) result.emplace_back("verilated_cov.cpp");
@@ -250,10 +253,7 @@ std::vector<std::string> V3Global::verilatedCppFiles() {
     for (const string& base : v3Global.opt.traceSourceBases())
         result.emplace_back(base + "_c.cpp");
     if (v3Global.usesProbDist()) result.emplace_back("verilated_probdist.cpp");
-    if (v3Global.usesTiming()) {
-        result.emplace_back("verilated_fiber.cpp");
-        result.emplace_back("verilated_timing.cpp");
-    }
+    if (v3Global.usesTiming() || v3Global.dpi()) result.emplace_back("verilated_timing.cpp");
     if (v3Global.useRandomizeMethods()) result.emplace_back("verilated_random.cpp");
     result.emplace_back("verilated_threads.cpp");
     if (v3Global.opt.usesProfiler()) result.emplace_back("verilated_profiler.cpp");
