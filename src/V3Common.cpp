@@ -94,7 +94,7 @@ static void makeToString(AstClass* nodep) {
     AstCFunc* const funcp = new AstCFunc{nodep->fileline(), "to_string", nullptr, "std::string"};
     funcp->isConst(true);
     funcp->isStatic(false);
-    funcp->isOverride(true);
+    funcp->isVirtual(true);
     funcp->protect(false);
     AstCExpr* const exprp = new AstCExpr{nodep->fileline(), R"("'{"s + to_string_middle() + "}")"};
     exprp->dtypeSetString();
