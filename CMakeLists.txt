@@ -122,9 +122,12 @@ set(CXX ${CMAKE_CXX_COMPILER})
 set(AR ${CMAKE_AR})
 
 # Detect precompiled header include flag (matches configure.ac logic)
-execute_process(COMMAND ${CMAKE_CXX_COMPILER} --help
-    OUTPUT_VARIABLE _cxx_help OUTPUT_STRIP_TRAILING_WHITESPACE
-    ERROR_QUIET)
+execute_process(
+    COMMAND ${CMAKE_CXX_COMPILER} --help
+    OUTPUT_VARIABLE _cxx_help
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+)
 if(_cxx_help MATCHES "include-pch")
     # clang
     set(CFG_CXXFLAGS_PCH_I "-include-pch")
