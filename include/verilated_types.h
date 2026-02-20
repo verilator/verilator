@@ -1884,6 +1884,9 @@ public:
     VlClass() {}
     VlClass(const VlClass& copied) {}
     ~VlClass() override = default;
+    // METHODS
+    virtual const char* typeName() const { return "VlClass"; }
+    virtual std::string to_string() const { return ""; }
 };
 
 //===================================================================
@@ -2043,6 +2046,30 @@ template <typename T_Lhs>
 static inline bool VL_CAST_DYNAMIC(VlNull in, VlClassRef<T_Lhs>& outr) {
     outr = VlNull{};
     return true;
+}
+
+// For printing class references under a container, several choices:
+// 1. Dump recursively the pointed-to object.  Can be huge.  Might be circular.
+// 2. Print object type and pointer as C pointer.  Astable when rerun.
+// 3. Print object type and pointer as an incrementing number.  Needs num storage.
+// 4. Print object type alone.  Avoids above issues.
+template <typename T_Lhs>
+inline std::string VL_TO_STRING(const VlClassRef<T_Lhs>& obj) {
+    return obj ? obj->typeName() : "null";
+}
+// Entry point for string conversion (called from not under a container);
+// dereference VlClassRef objects to print members
+template <typename T_Lhs>  // Default if no specialization
+inline std::string VL_TO_STRING_DEREF(T_Lhs obj) {
+    return VL_TO_STRING(obj);
+}
+template <typename T_Lhs>  // Specialization
+inline std::string VL_TO_STRING_DEREF(const VlClassRef<T_Lhs>& obj) {
+    return obj ? obj->to_string() : "null";
+}
+template <typename T_Lhs>  // Specialization
+inline std::string VL_TO_STRING_DEREF(VlClassRef<T_Lhs>& obj) {
+    return obj ? obj->to_string() : "null";
 }
 
 //=============================================================================

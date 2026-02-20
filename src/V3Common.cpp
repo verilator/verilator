@@ -37,10 +37,6 @@ string V3Common::makeToStringCall(AstNodeDType* nodep, const std::string& lhs) {
         stmt += "VL_TO_STRING_W(";
         stmt += cvtToStr(nodep->widthWords());
         stmt += ", ";
-    } else if (VN_IS(nodep->skipRefp(), BasicDType) && nodep->isWide()) {
-        stmt += "VL_TO_STRING_W(";
-        stmt += cvtToStr(nodep->widthWords());
-        stmt += ", ";
     } else {
         stmt += "VL_TO_STRING(";
     }
@@ -49,20 +45,6 @@ string V3Common::makeToStringCall(AstNodeDType* nodep, const std::string& lhs) {
     return stmt;
 }
 
-static void makeVlToString(AstClass* nodep) {
-    AstCFunc* const funcp
-        = new AstCFunc{nodep->fileline(), "VL_TO_STRING", nullptr, "std::string"};
-    funcp->argTypes("const VlClassRef<" + EmitCUtil::prefixNameProtect(nodep) + ">& obj");
-    funcp->isMethod(false);
-    funcp->isConst(false);
-    funcp->isStatic(false);
-    funcp->protect(false);
-    AstNodeExpr* const exprp
-        = new AstCExpr{nodep->fileline(), "obj ? obj->to_string() : \"null\""};
-    exprp->dtypeSetString();
-    funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
-    nodep->addStmtsp(funcp);
-}
 static void makeVlToString(AstIface* nodep) {
     AstCFunc* const funcp
         = new AstCFunc{nodep->fileline(), "VL_TO_STRING", nullptr, "std::string"};
@@ -112,6 +94,7 @@ static void makeToString(AstClass* nodep) {
     AstCFunc* const funcp = new AstCFunc{nodep->fileline(), "to_string", nullptr, "std::string"};
     funcp->isConst(true);
     funcp->isStatic(false);
+    funcp->isOverride(true);
     funcp->protect(false);
     AstCExpr* const exprp = new AstCExpr{nodep->fileline(), R"("'{"s + to_string_middle() + "}")"};
     exprp->dtypeSetString();
@@ -128,10 +111,9 @@ static void makeToStringMiddle(AstClass* nodep) {
     std::string comma;
     for (AstNode* itemp = nodep->membersp(); itemp; itemp = itemp->nextp()) {
         if (const auto* const varp = VN_CAST(itemp, Var)) {
+            const AstBasicDType* const basicp = varp->dtypeSkipRefp()->basicp();
             if (!varp->isParam() && !varp->isInternal()
-                && !(varp->dtypeSkipRefp()->basicp()
-                     && (varp->dtypeSkipRefp()->basicp()->isRandomGenerator()
-                         || varp->dtypeSkipRefp()->basicp()->isStdRandomGenerator()))) {
+                && !(basicp && (basicp->isRandomGenerator() || basicp->isStdRandomGenerator()))) {
                 string stmt = "out += \"";
                 stmt += comma;
                 comma = ", ";
@@ -146,7 +128,7 @@ static void makeToStringMiddle(AstClass* nodep) {
     }
     if (nodep->extendsp()) {
         string stmt = "out += ";
-        if (!comma.empty()) stmt += "\", \"+ ";
+        if (!comma.empty()) stmt += "\", \" + ";
         // comma = ", ";  // Nothing further so not needed
         stmt += EmitCUtil::prefixNameProtect(nodep->extendsp()->dtypep());
         stmt += "::to_string_middle();";
@@ -174,7 +156,6 @@ void V3Common::commonAll() {
     for (AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
         if (AstClass* const classp = VN_CAST(nodep, Class)) {
             // Create ToString methods
-            makeVlToString(classp);
             makeToString(classp);
             makeToStringMiddle(classp);
         } else if (AstIface* const ifacep = VN_CAST(nodep, Iface)) {

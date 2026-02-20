@@ -114,6 +114,7 @@ Verilator 5.045 devel
 * Fix constant propagating DPI-written variables (#7074). [Geza Lore, Testorrent USA, Inc.]
 * Fix conditional expressions in constraints (#7087). [Ryszard Rozak, Antmicro Ltd.]
 * Fix time to not advance after `$finish` (#7095).
+* Fix circular class reference %p-printing causing infinite recursion (#7106).
 
 
 Verilator 5.044 2026-01-01

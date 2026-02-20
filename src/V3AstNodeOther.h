@@ -488,6 +488,7 @@ class AstCFunc final : public AstNode {
                          // an explicitly passed 'self' pointer as the first argument.  This can
                          // be slightly faster due to __restrict, and we do not declare in header
                          // so adding/removing loose functions doesn't recompile everything.
+    bool m_isOverride : 1;  // Override virtual function
     bool m_isVirtual : 1;  // Virtual function
     bool m_entryPoint : 1;  // User may call into this top level function
     bool m_dpiPure : 1;  // Pure DPI function
@@ -519,6 +520,7 @@ public:
         m_isDestructor = false;
         m_isMethod = true;
         m_isLoose = false;
+        m_isOverride = false;
         m_isVirtual = false;
         m_needProcess = false;
         m_entryPoint = false;
@@ -582,6 +584,11 @@ public:
     bool isLoose() const { return m_isLoose; }
     void isLoose(bool flag) { m_isLoose = flag; }
     bool isProperMethod() const { return isMethod() && !isLoose(); }
+    bool isOverride() const { return m_isOverride; }
+    void isOverride(bool flag) {
+        m_isOverride = flag;
+        if (flag) isVirtual(true);
+    }
     bool isVirtual() const { return m_isVirtual; }
     void isVirtual(bool flag) { m_isVirtual = flag; }
     bool needProcess() const { return m_needProcess; }
