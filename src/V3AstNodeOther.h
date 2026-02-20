@@ -500,6 +500,7 @@ class AstCFunc final : public AstNode {
     bool m_recursive : 1;  // Recursive or part of recursion
     bool m_noLife : 1;  // Disable V3Life on this function - has multiple calls, and reads Syms
                         // state
+    bool m_isCovergroupSample : 1;  // Automatic covergroup sample() function
     int m_cost;  // Function call cost
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType = "")
@@ -530,6 +531,7 @@ public:
         m_dpiImportWrapper = false;
         m_recursive = false;
         m_noLife = false;
+        m_isCovergroupSample = false;
         m_cost = v3Global.opt.instrCountDpi();  // As proxy for unknown general DPI cost
     }
     ASTGEN_MEMBERS_AstCFunc;
@@ -605,6 +607,8 @@ public:
     bool recursive() const { return m_recursive; }
     void noLife(bool flag) { m_noLife = flag; }
     bool noLife() const { return m_noLife; }
+    bool isCovergroupSample() const { return m_isCovergroupSample; }
+    void isCovergroupSample(bool flag) { m_isCovergroupSample = flag; }
     void cost(int cost) { m_cost = cost; }
     // Special methods
     bool emptyBody() const {
@@ -2567,6 +2571,8 @@ class AstClass final : public AstNodeModule {
     bool m_needRNG = false;  // Need RNG, uses srandom/randomize
     bool m_useVirtualPublic = false;  // Subclasses need virtual public as uses interface class
     bool m_virtual = false;  // Virtual class
+    // Covergroup options (when m_covergroup is true)
+    int m_cgAutoBinMax = -1;  // option.auto_bin_max value (-1 = not set, use default 64)
 
 public:
     AstClass(FileLine* fl, const string& name, const string& libname)
@@ -2594,6 +2600,9 @@ public:
     void needRNG(bool flag) { m_needRNG = flag; }
     bool useVirtualPublic() const { return m_useVirtualPublic; }
     void useVirtualPublic(bool flag) { m_useVirtualPublic = flag; }
+    // Covergroup options accessors
+    int cgAutoBinMax() const { return m_cgAutoBinMax; }
+    void cgAutoBinMax(int value) { m_cgAutoBinMax = value; }
     // Return true if this class is an extension of base class (SLOW)
     // Accepts nullptrs
     static bool isClassExtendedFrom(const AstClass* refClassp, const AstClass* baseClassp);

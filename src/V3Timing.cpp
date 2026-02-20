@@ -343,11 +343,30 @@ class TimingSuspendableVisitor final : public VNVisitor {
         }
     }
     void visit(AstNodeCCall* nodep) override {
-        new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(nodep->funcp()), getSuspendDepVtx(m_procp),
-                        P_CALL};
+        // Skip automatic covergroup sampling calls (marked with user3==1)
+        if (nodep->user3()) {
+            iterateChildren(nodep);
+            return;
+        }
 
-        new V3GraphEdge{&m_procGraph, getNeedsProcDepVtx(nodep->funcp()),
-                        getNeedsProcDepVtx(m_procp), P_CALL};
+        AstCFunc* funcp = nodep->funcp();
+        if (!funcp) {
+            iterateChildren(nodep);
+            return;
+        }
+
+        // Skip if we're not inside a function/procedure (m_procp would be null)
+        // This can happen for calls in Active nodes at module scope
+        if (!m_procp) {
+            iterateChildren(nodep);
+            return;
+        }
+
+        UINFO(9, "V3Timing: Processing CCall to " << funcp->name() << " in dependency graph\n");
+        new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(funcp), getSuspendDepVtx(m_procp), P_CALL};
+
+        new V3GraphEdge{&m_procGraph, getNeedsProcDepVtx(funcp), getNeedsProcDepVtx(m_procp),
+                        P_CALL};
 
         iterateChildren(nodep);
     }
@@ -914,8 +933,16 @@ class TimingControlVisitor final : public VNVisitor {
         }
     }
     void visit(AstNodeCCall* nodep) override {
-        if (nodep->funcp()->needProcess()) m_hasProcess = true;
-        if (hasFlags(nodep->funcp(), T_SUSPENDEE) && !nodep->user1SetOnce()) {  // If suspendable
+        AstCFunc* const funcp = nodep->funcp();
+
+        // Skip automatic covergroup sampling calls
+        if (funcp->isCovergroupSample()) {
+            iterateChildren(nodep);
+            return;
+        }
+
+        if (funcp->needProcess()) m_hasProcess = true;
+        if (hasFlags(funcp, T_SUSPENDEE) && !nodep->user1SetOnce()) {  // If suspendable
             // Calls to suspendables are always void return type, hence parent must be StmtExpr
             AstStmtExpr* const stmtp = VN_AS(nodep->backp(), StmtExpr);
             stmtp->replaceWith(new AstCAwait{nodep->fileline(), nodep->unlinkFrBack()});

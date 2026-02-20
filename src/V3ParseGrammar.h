@@ -15,11 +15,13 @@
 //*************************************************************************
 
 #include "V3Ast.h"
+#include "V3Const.h"
 #include "V3Control.h"
 #include "V3Global.h"
 #include "V3ParseImp.h"  // Defines YYTYPE; before including bison header
 
 #include <stack>
+#include <vector>
 
 class V3ParseGrammar final {
 public:
@@ -92,12 +94,56 @@ public:
         nodep->trace(singletonp()->allTracingOn(fileline));
         return nodep;
     }
-    void createCoverGroupMethods(AstClass* nodep, AstNode* sampleArgs) {
+    void createCoverGroupMethods(AstClass* nodep, AstNode* constructorArgs, AstNode* sampleArgs) {
         // Hidden static to take unspecified reference argument results
         AstVar* const defaultVarp
             = new AstVar{nodep->fileline(), VVarType::MEMBER, "__Vint", nodep->findIntDType()};
         defaultVarp->lifetime(VLifetime::STATIC_EXPLICIT);
         nodep->addStmtsp(defaultVarp);
+
+        // Handle constructor arguments - add function parameters and assignments
+        // Member variables have already been created in verilog.y
+        if (constructorArgs) {
+            // Find the 'new' function to add parameters to
+            AstFunc* newFuncp = nullptr;
+            for (AstNode* memberp = nodep->membersp(); memberp; memberp = memberp->nextp()) {
+                if (AstFunc* funcp = VN_CAST(memberp, Func)) {
+                    if (funcp->name() == "new") {
+                        newFuncp = funcp;
+                        break;
+                    }
+                }
+            }
+
+            if (newFuncp) {
+                // Save the existing body statements and unlink them
+                AstNode* const existingBodyp = newFuncp->stmtsp();
+                if (existingBodyp) existingBodyp->unlinkFrBackWithNext();
+
+                // Add function parameters and assignments
+                AstNode* nextArgp = nullptr;
+                for (AstNode* argp = constructorArgs; argp; argp = nextArgp) {
+                    nextArgp = argp->nextp();  // Save next before any modifications
+                    if (AstVar* const origVarp = VN_CAST(argp, Var)) {
+                        // Create a constructor parameter
+                        AstVar* const paramp = origVarp->cloneTree(false);
+                        paramp->funcLocal(true);
+                        paramp->direction(VDirection::INPUT);
+                        newFuncp->addStmtsp(paramp);
+
+                        // Create assignment: member = parameter
+                        AstNodeExpr* const lhsp
+                            = new AstParseRef{origVarp->fileline(), origVarp->name()};
+                        AstNodeExpr* const rhsp
+                            = new AstParseRef{paramp->fileline(), paramp->name()};
+                        newFuncp->addStmtsp(new AstAssign{origVarp->fileline(), lhsp, rhsp});
+                    }
+                }
+
+                // Finally, add back the existing body
+                if (existingBodyp) newFuncp->addStmtsp(existingBodyp);
+            }
+        }
 
         // IEEE: option
         {
@@ -123,10 +169,34 @@ public:
             nodep->addMembersp(varp);
         }
 
-        // IEEE: function void sample()
+        // IEEE: function void sample([arguments])
         {
             AstFunc* const funcp = new AstFunc{nodep->fileline(), "sample", nullptr, nullptr};
-            funcp->addStmtsp(sampleArgs);
+
+            // Add sample arguments as function parameters and assignments
+            // Member variables have already been created in verilog.y
+            if (sampleArgs) {
+                // Add function parameters and assignments
+                AstNode* nextArgp = nullptr;
+                for (AstNode* argp = sampleArgs; argp; argp = nextArgp) {
+                    nextArgp = argp->nextp();  // Save next before any modifications
+                    if (AstVar* const origVarp = VN_CAST(argp, Var)) {
+                        // Create a function parameter
+                        AstVar* const paramp = origVarp->cloneTree(false);
+                        paramp->funcLocal(true);
+                        paramp->direction(VDirection::INPUT);
+                        funcp->addStmtsp(paramp);
+
+                        // Create assignment: member = parameter
+                        AstNodeExpr* const lhsp
+                            = new AstParseRef{origVarp->fileline(), origVarp->name()};
+                        AstNodeExpr* const rhsp
+                            = new AstParseRef{paramp->fileline(), paramp->name()};
+                        funcp->addStmtsp(new AstAssign{origVarp->fileline(), lhsp, rhsp});
+                    }
+                }
+            }
+
             funcp->classMethod(true);
             funcp->dtypep(funcp->findVoidDType());
             nodep->addMembersp(funcp);
@@ -182,6 +252,70 @@ public:
             varp->direction(VDirection::INPUT);
             funcp->addStmtsp(varp);
         }
+
+        // The original arg lists were cloned above; delete the orphaned originals
+        if (constructorArgs) VL_DO_DANGLING(constructorArgs->deleteTree(), constructorArgs);
+        if (sampleArgs) VL_DO_DANGLING(sampleArgs->deleteTree(), sampleArgs);
+    }
+    // Helper to move bins from parser list to coverpoint
+    void addCoverpointBins(AstCoverpoint* cp, AstNode* binsList) {
+        if (!binsList) return;
+
+        // CRITICAL FIX: The parser creates a linked list of bins. When we try to move them
+        // to the coverpoint one by one while they're still linked, the addNext() logic
+        // that updates headtailp pointers creates circular references. We must fully
+        // unlink ALL bins before adding ANY to the coverpoint.
+        std::vector<AstCoverBin*> bins;
+        std::vector<AstCoverOption*> options;
+
+        // To unlink the head node (which has no backp), create a temporary parent
+        AstBegin* tempParent = new AstBegin{binsList->fileline(), "[TEMP]", nullptr, true};
+        tempParent->addStmtsp(binsList);  // Now binsList has a backp
+
+        // Now unlink all bins - they all have backp now
+        for (AstNode *binp = binsList, *nextp; binp; binp = nextp) {
+            nextp = binp->nextp();
+
+            if (AstCoverBin* cbinp = VN_CAST(binp, CoverBin)) {
+                cbinp->unlinkFrBack();  // Now this works for all bins including head
+                bins.push_back(cbinp);
+            } else if (AstCgOptionAssign* optp = VN_CAST(binp, CgOptionAssign)) {
+                optp->unlinkFrBack();
+                // Convert AstCgOptionAssign to AstCoverOption
+                VCoverOptionType optType = VCoverOptionType::COMMENT;  // default
+                if (optp->name() == "at_least") {
+                    optType = VCoverOptionType::AT_LEAST;
+                } else if (optp->name() == "weight") {
+                    optType = VCoverOptionType::WEIGHT;
+                } else if (optp->name() == "goal") {
+                    optType = VCoverOptionType::GOAL;
+                } else if (optp->name() == "auto_bin_max") {
+                    optType = VCoverOptionType::AUTO_BIN_MAX;
+                } else if (optp->name() == "per_instance") {
+                    optType = VCoverOptionType::PER_INSTANCE;
+                } else if (optp->name() == "comment") {
+                    optType = VCoverOptionType::COMMENT;
+                } else {
+                    optp->v3warn(COVERIGN,
+                                 "Ignoring unsupported coverage option: " + optp->name());
+                }
+                AstCoverOption* coverOptp = new AstCoverOption{optp->fileline(), optType,
+                                                               optp->valuep()->cloneTree(false)};
+                options.push_back(coverOptp);
+                VL_DO_DANGLING(optp->deleteTree(), optp);
+            } else {
+                binp->v3warn(COVERIGN,
+                             "Unexpected node in bins list, ignoring");  // LCOV_EXCL_LINE
+                VL_DO_DANGLING(binp->deleteTree(), binp);
+            }
+        }
+
+        // Delete the temporary parent
+        VL_DO_DANGLING(tempParent->deleteTree(), tempParent);
+
+        // Now add standalone bins and options to coverpoint
+        for (AstCoverBin* cbinp : bins) { cp->addBinsp(cbinp); }
+        for (AstCoverOption* optp : options) { cp->addOptionsp(optp); }
     }
     AstDisplay* createDisplayError(FileLine* fileline) {
         AstDisplay* nodep = new AstDisplay{fileline, VDisplayType::DT_ERROR, "", nullptr, nullptr};

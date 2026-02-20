@@ -129,8 +129,12 @@ verilator_coverage Arguments
 .. option:: --filter-type <regex>
 
    Skips records of coverage types that matches with <regex>
-   Possible values are `toggle`, `line`, `branch`, `expr`, `user` and
+   Possible values are `toggle`, `line`, `branch`, `expr`, `funccov`, `user` and
    a wildcard with `\*` or `?`. The default value is `\*`.
+
+   The `funccov` type represents SystemVerilog functional coverage including
+   covergroups, coverpoints, bins, and cross coverage as defined in IEEE
+   1800-2023 Section 19.
 
 .. option:: --help
 
