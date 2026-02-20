@@ -167,7 +167,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
         if (!m_inStdWith || !m_stdRandCallp) return false;
 
         for (AstNode* pinp = m_stdRandCallp->pinsp(); pinp; pinp = pinp->nextp()) {
-            if (VN_IS(pinp, With)) continue;
             const AstArg* const argp = VN_CAST(pinp, Arg);
             if (!argp) continue;
             const AstNodeExpr* exprp = argp->exprp();
@@ -693,11 +692,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
     void visit(AstWith* nodep) override {
         VL_RESTORER(m_withp);
         m_withp = nodep;
-        for (AstNode* pinp = m_stdRandCallp ? m_stdRandCallp->pinsp() : nullptr; pinp;
-             pinp = pinp->nextp()) {
-            AstWith* const withp = VN_CAST(pinp, With);
-            if (withp == nodep) m_inStdWith = true;
-        }
+        if (m_stdRandCallp && nodep == m_stdRandCallp->withp()) m_inStdWith = true;
         iterateChildrenConst(nodep);
         m_inStdWith = false;
     }
@@ -3646,10 +3641,7 @@ class RandomizeVisitor final : public VNVisitor {
                               new AstConst{nodep->fileline(), AstConst::WidthedValue{}, 32, 1}});
             std::unique_ptr<CaptureVisitor> withCapturep;
             int argn = 0;
-            AstWith* withp = nullptr;
-            for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
-                if ((withp = VN_CAST(pinp, With))) break;
-            }
+            AstWith* const withp = nodep->withp();
             for (const AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
                 const AstArg* const argp = VN_CAST(pinp, Arg);
                 if (!argp) continue;
@@ -3722,14 +3714,8 @@ class RandomizeVisitor final : public VNVisitor {
                     = new AstAnd{fl, new AstVarRef{fl, fvarp, VAccess::READ}, solverCallp};
                 randomizeFuncp->addStmtsp(
                     new AstAssign{fl, new AstVarRef{fl, fvarp, VAccess::WRITE}, andExprp});
-            }
-            // Remove With nodes from pins as they have been processed
-            for (AstNode* pinp = nodep->pinsp(); pinp;) {
-                AstNode* const nextp = pinp->nextp();
-                if (VN_IS(pinp, With)) {
-                    VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
-                }
-                pinp = nextp;
+                // Remove With nodes as processed
+                VL_DO_DANGLING(withp->unlinkFrBack()->deleteTree(), withp);
             }
             // Replace the node with a call to that function
             nodep->name(randomizeFuncp->name());
@@ -3743,7 +3729,7 @@ class RandomizeVisitor final : public VNVisitor {
         }
         handleRandomizeArgs(nodep);
 
-        AstWith* const withp = VN_CAST(nodep->pinsp(), With);
+        AstWith* const withp = nodep->withp();
         if (!withp) {
             iterateChildren(nodep);
             wrapRandomizeCallWithNullGuard(nodep);
