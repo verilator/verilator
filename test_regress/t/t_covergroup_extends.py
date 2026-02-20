@@ -11,6 +11,11 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile()
+# Covergroup inheritance with 'extends' is not yet supported
+test.compile(
+    fails=test.vlt_all,
+    expect=
+    r'%Error: t/t_covergroup_extends.v:\d+:\d+: Unsupported: covergroup inheritance \(extends\) is not implemented'
+)
 
 test.passes()

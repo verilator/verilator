@@ -206,6 +206,7 @@ RAW_OBJS = \
 
 RAW_OBJS_PCH_ASTMT = \
   V3Ast.o \
+  V3AstNodeFuncCov.o \
   V3AstNodes.o \
   V3Broken.o \
   V3Control.o \
@@ -248,6 +249,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Combine.o \
   V3Common.o \
   V3Coverage.o \
+  V3CoverageFunctional.o \
   V3CoverageJoin.o \
   V3Dead.o \
   V3Delayed.o \
@@ -358,6 +360,7 @@ NON_STANDALONE_HEADERS = \
   V3AstInlines.h \
   V3AstNodeDType.h \
   V3AstNodeExpr.h \
+  V3AstNodeFuncCov.h \
   V3AstNodeOther.h \
   V3AstNodeStmt.h \
   V3DfgVertices.h \
@@ -367,6 +370,7 @@ NON_STANDALONE_HEADERS = \
 AST_DEFS := \
   V3AstNodeDType.h \
   V3AstNodeExpr.h \
+  V3AstNodeFuncCov.h \
   V3AstNodeOther.h \
   V3AstNodeStmt.h \
 

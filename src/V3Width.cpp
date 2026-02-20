@@ -1675,8 +1675,32 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
     }
     void visit(AstCgOptionAssign* nodep) override {
-        // We report COVERIGN on the whole covergroup; if get more fine-grained add this
-        // nodep->v3warn(COVERIGN, "Ignoring unsupported: coverage option");
+        // Extract covergroup option values and store in AstClass before deleting
+        // Find parent covergroup (AstClass with isCovergroup() == true)
+        AstClass* cgClassp = nullptr;
+        for (AstNode* parentp = nodep->backp(); parentp; parentp = parentp->backp()) {
+            if (AstClass* classp = VN_CAST(parentp, Class)) {
+                if (classp->isCovergroup()) {
+                    cgClassp = classp;
+                    break;
+                }
+            }
+        }
+
+        if (cgClassp) {
+            // Process supported options
+            if (nodep->name() == "auto_bin_max" && !nodep->typeOption()) {
+                // Extract constant value
+                if (AstConst* constp = VN_CAST(nodep->valuep(), Const)) {
+                    cgClassp->cgAutoBinMax(constp->toSInt());
+                    UINFO(6, "  Covergroup " << cgClassp->name() << " option.auto_bin_max = "
+                                             << constp->toSInt() << endl);
+                }
+            }
+            // Add more options here as needed (weight, goal, at_least, per_instance, comment)
+        }
+
+        // Delete the assignment node (we've extracted the value)
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstPow* nodep) override {
@@ -3227,6 +3251,9 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstInsideRange* nodep) override {
         // Just do each side; AstInside will rip these nodes out later
+        // Constant-fold range bounds (e.g., NEGATE(100) becomes -100)
+        V3Const::constifyParamsEdit(nodep->lhsp());  // May relink pointed to node
+        V3Const::constifyParamsEdit(nodep->rhsp());  // May relink pointed to node
         userIterateAndNext(nodep->lhsp(), m_vup);
         userIterateAndNext(nodep->rhsp(), m_vup);
         nodep->dtypeFrom(nodep->lhsp());

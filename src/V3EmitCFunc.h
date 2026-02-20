@@ -1769,6 +1769,20 @@ public:
         iterateChildrenConst(nodep);
     }
 
+    // Functional coverage nodes - not yet implemented, just skip for now
+    void visit(AstCoverpoint* nodep) override {
+        // Functional coverage nodes are handled during the coverage transformation pass
+        // They should not reach the C++ emitter
+    }
+    void visit(AstCoverBin* nodep) override {
+        // Functional coverage nodes are handled during the coverage transformation pass
+        // They should not reach the C++ emitter
+    }
+    void visit(AstCoverCross* nodep) override {
+        // Functional coverage nodes are handled during the coverage transformation pass
+        // They should not reach the C++ emitter
+    }
+
     // Default
     void visit(AstNode* nodep) override {  // LCOV_EXCL_START
         putns(nodep, "\n???? // "s + nodep->prettyTypeName() + "\n");
