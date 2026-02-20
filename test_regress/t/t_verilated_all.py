@@ -48,6 +48,6 @@ for filename in sorted(hit.keys()):
             and not re.search(r'_sc', filename) and not re.search(r'_fst', filename)
             and not re.search(r'_saif', filename) and not re.search(r'_thread', filename)
             and (not re.search(r'_timing', filename) or test.have_coroutines)):
-        test.error("Include file not covered by t_verilated_all test: " + filename)
+        test.error("Include file not covered by t_verilated_all test: ", filename)
 
 test.passes()
