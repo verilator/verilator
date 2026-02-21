@@ -2686,7 +2686,7 @@ class VlTest:
         contents = self.file_contents(filename)
         if contents == "_Already_Errored_":
             return
-        count = len(re.findall(regexp, contents))
+        count = len(re.findall(regexp, contents, re.MULTILINE))
         if expcount != count:
             self.error("File_grep_count: " + filename + ": Got='" + str(count) + "' Expected='" +
                        str(expcount) + "' in regexp: '" + regexp + "'")
@@ -2696,7 +2696,7 @@ class VlTest:
             contents = self.file_contents(filename)
             if contents == "_Already_Errored_":
                 return
-            match = re.search(regexp, contents)
+            match = re.search(regexp, contents, re.MULTILINE)
             if match:
                 if expvalue is not None and str(expvalue) != match.group(1):
                     self.error("file_grep: " + filename + ": Got='" + match.group(1) +
