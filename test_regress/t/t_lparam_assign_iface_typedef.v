@@ -31,8 +31,8 @@ module top();
     .p_dwidth(8)
   ) if0();
 
-  localparam type p0_rq_t = if0.rq_t;
-  localparam type p0_rs_t = if0.rs_t;
+  localparam p0_rq_t = if0.rq_t;
+  localparam p0_rs_t = if0.rs_t;
 
   p0_rq_t rq;
   p0_rs_t rs;

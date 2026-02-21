@@ -28,8 +28,8 @@ endinterface
 module a_mod (
     bus_if bus_io
 );
-  localparam type bus_rq_t = bus_io.rq_t;
-  localparam type bus_rs_t = bus_io.rs_t;
+  localparam bus_rq_t = bus_io.rq_t;
+  localparam bus_rs_t = bus_io.rs_t;
   localparam p_awidth = bus_io.p_awidth;
   localparam p_dwidth = bus_io.p_dwidth;
 

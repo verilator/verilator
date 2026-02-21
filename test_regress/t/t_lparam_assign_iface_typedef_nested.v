@@ -37,7 +37,7 @@ module top();
     .p_dwidth(8)
   ) if0();
 
-  localparam type p0_rq2_t = if0.y_if0.rq2_t;
+  localparam p0_rq2_t = if0.y_if0.rq2_t;
 
   initial begin
     #1;

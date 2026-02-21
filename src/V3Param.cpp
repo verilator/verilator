@@ -2757,18 +2757,13 @@ class ParamVisitor final : public VNVisitor {
             AstCell* const cellp = VN_CAST(nodep, Cell);
             if (!cellParamsReferenceIfacePorts(cellp)) {
                 AstNodeModule* const srcModp = cellp->modp();
-                if (AstNodeModule* const newModp = m_processor.nodeDeparam(
-                        cellp, srcModp, m_modp, m_modp->someInstanceName())) {
-                    // For specialized interfaces, recursively process nested interface cells.
-                    // This ensures nested interfaces are already specialized when modules
-                    // using the interface are processed (parameter passthrough fix).
-                    // DISABLED: specializeNestedIfaceCells causes early nested
-                    // iface specialization where PARAMTYPEDTYPE child REFDTYPEs
-                    // point to template structs instead of clone structs,
-                    // destructively widthing the template with default (zero)
-                    // values. See t_interface_nested_struct_param.v.
-                    // if (newModp != srcModp) specializeNestedIfaceCells(newModp);
-                }
+                // DISABLED: specializeNestedIfaceCells causes early nested
+                // iface specialization where PARAMTYPEDTYPE child REFDTYPEs
+                // point to template structs instead of clone structs,
+                // destructively widthing the template with default (zero)
+                // values. See t_interface_nested_struct_param.v.
+                m_processor.nodeDeparam(cellp, srcModp, m_modp,
+                                        m_modp->someInstanceName());
             }
         }
 
