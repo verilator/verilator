@@ -20,7 +20,7 @@ endinterface
 module a_mod(
   bus_if bus_io
 );
-  localparam bus_rq_t = bus_io.rq_t;
+  localparam type bus_rq_t = bus_io.rq_t;
 endmodule
 
 module top();
