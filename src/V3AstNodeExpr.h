@@ -502,6 +502,24 @@ public:
 
 // === Concrete node types =====================================================
 
+// === AstNode ===
+class AstArg final : public AstNode {
+    // An argument to a function/task, which is either an expression, or is a placeholder for an
+    // omitted argument.
+    // @astgen op1 := exprp : Optional[AstNodeExpr] // nullptr if omitted
+    std::string m_name;  // Argument name, or "" for number based interconnect
+public:
+    AstArg(FileLine* fl, const std::string& name, AstNodeExpr* exprp)
+        : ASTGEN_SUPER_Arg(fl)
+        , m_name{name} {
+        this->exprp(exprp);
+    }
+    ASTGEN_MEMBERS_AstArg;
+    std::string name() const override VL_MT_STABLE { return m_name; }
+    void name(const std::string& name) override { m_name = name; }
+    bool emptyConnectNoNext() const { return !exprp() && name() == "" && !nextp(); }
+};
+
 // === AstNodeExpr ===
 class AstAddrOfCFunc final : public AstNodeExpr {
     // Get address of CFunc
@@ -521,28 +539,6 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
     AstCFunc* funcp() const { return m_funcp; }
-};
-class AstArg final : public AstNodeExpr {
-    // An argument to a function/task, which is either an expression, or is a placeholder for an
-    // omitted argument.
-    // TODO: AstArg should not be AstNodeExpr, but is currently used as such widely. Fix later.
-    // @astgen op1 := exprp : Optional[AstNodeExpr] // nullptr if omitted
-    string m_name;  // Pin name, or "" for number based interconnect
-public:
-    AstArg(FileLine* fl, const string& name, AstNodeExpr* exprp)
-        : ASTGEN_SUPER_Arg(fl)
-        , m_name{name} {
-        this->exprp(exprp);
-    }
-    ASTGEN_MEMBERS_AstArg;
-    bool hasDType() const override VL_MT_SAFE { return false; }
-    string name() const override VL_MT_STABLE { return m_name; }  // * = Pin name, ""=go by number
-    void name(const string& name) override { m_name = name; }
-    bool emptyConnectNoNext() const { return !exprp() && name() == "" && !nextp(); }
-
-    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { V3ERROR_NA_RETURN(true); }
 };
 class AstAttrOf final : public AstNodeExpr {
     // Return a value of a attribute, for example a LSB or array LSB of a signal
