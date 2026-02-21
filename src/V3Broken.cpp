@@ -190,8 +190,10 @@ private:
         }
         if (v3Global.assertDTypesResolved()) {
             if (nodep->hasDType()) {
-                UASSERT_OBJ(nodep->dtypep(), nodep,
-                            "No dtype on node with hasDType(): " << nodep->prettyTypeName());
+                if (!nodep->dtypep()) {
+                    UASSERT_OBJ(false, nodep,
+                                "No dtype on node with hasDType(): " << nodep->prettyTypeName());
+                }
             } else {
                 UASSERT_OBJ(!nodep->dtypep(), nodep,
                             "DType on node without hasDType(): " << nodep->prettyTypeName());

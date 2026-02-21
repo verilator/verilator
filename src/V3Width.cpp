@@ -72,6 +72,7 @@
 #include "V3Const.h"
 #include "V3Error.h"
 #include "V3Global.h"
+#include "V3LinkDotIfaceCapture.h"
 #include "V3LinkLValue.h"
 #include "V3MemberMap.h"
 #include "V3Number.h"
@@ -1006,8 +1007,33 @@ class WidthVisitor final : public VNVisitor {
                                << std::hex << width << std::dec);
             }
             // Note width() not set on range; use elementsConst()
+            const bool inDeadModule = m_modep && m_modep->dead();
+            // Suppress ASCRANGE in dead template modules whose parameter-dependent
+            // ranges haven't been resolved yet.  Dead modules are templates that
+            // have been superseded by specialized clones.
+            bool inParameterizedTemplate = false;
+            bool inTypeTable = false;
+            if (nodep->ascending()) {
+                bool foundModule = false;
+                for (AstNode* ap = nodep; ap; ap = ap->backp()) {
+                    if (const AstNodeModule* const modp = VN_CAST(ap, NodeModule)) {
+                        inParameterizedTemplate = modp->dead();
+                        foundModule = true;
+                        break;
+                    }
+                    if (VN_IS(ap, TypeTable)) {
+                        inTypeTable = true;
+                        break;
+                    }
+                }
+                // No module ancestor and not under type table - treat as
+                // type-table context (global dtype with no module provenance).
+                if (!foundModule && !inTypeTable) inTypeTable = true;
+            }
             if (nodep->ascending() && !VN_IS(nodep->backp(), UnpackArrayDType)
-                && !VN_IS(nodep->backp(), Cell)) {  // For cells we warn in V3Inst
+                && !VN_IS(nodep->backp(), Cell)  // For cells we warn in V3Inst
+                && !m_paramsOnly  // Skip during parameter evaluation
+                && !inDeadModule && !inParameterizedTemplate && !inTypeTable) {
                 nodep->v3warn(ASCRANGE, "Ascending bit range vector: left < right of bit range: ["
                                             << nodep->leftConst() << ":" << nodep->rightConst()
                                             << "]");
@@ -1035,6 +1061,18 @@ class WidthVisitor final : public VNVisitor {
             }
             UASSERT_OBJ(nodep->dtypep(), nodep, "dtype wasn't set");  // by V3WidthSel
 
+            // Suppress SELRANGE in dead template modules where
+            // parameter-dependent widths haven't been resolved yet.
+            bool inParameterizedTemplate = false;
+            const AstNodeModule* selrangeModp = nullptr;
+            for (AstNode* ap = nodep; ap; ap = ap->backp()) {
+                if (const AstNodeModule* const modp = VN_CAST(ap, NodeModule)) {
+                    selrangeModp = modp;
+                    inParameterizedTemplate = modp->dead();
+                    break;
+                }
+            }
+
             if (VN_IS(nodep->lsbp(), Const) && nodep->msbConst() < nodep->lsbConst()) {
                 // Likely impossible given above width check
                 nodep->v3warn(E_UNSUPPORTED,
@@ -1047,9 +1085,68 @@ class WidthVisitor final : public VNVisitor {
                 nodep->lsbp()->replaceWith(new AstConst{nodep->lsbp()->fileline(), 0});
             }
             // We're extracting, so just make sure the expression is at least wide enough.
-            if (nodep->fromp()->width() < width) {
+            if (nodep->fromp()->width() < width && !inParameterizedTemplate) {
                 nodep->v3warn(SELRANGE, "Extracting " << width << " bits from only "
                                                       << nodep->fromp()->width() << " bit number");
+                // DEBUG: dump AST context for SELRANGE diagnosis
+                if (VL_UNLIKELY(v3Global.opt.debugLevel("V3Width") >= 5)) {
+                    UINFO(5, "SELRANGE-DEBUG: fromp="
+                                 << nodep->fromp()->prettyTypeName()
+                                 << " width=" << nodep->fromp()->width()
+                                 << " dtypep=" << nodep->fromp()->dtypep()->prettyTypeName()
+                                 << " dtypeWidth=" << nodep->fromp()->dtypep()->width());
+                    // Walk the SEL chain to find the root VARREF
+                    AstNode* walkp = nodep->fromp();
+                    int depth = 0;
+                    while (walkp && depth < 10) {
+                        if (AstSel* selp = VN_CAST(walkp, Sel)) {
+                            UINFO(5, "SELRANGE-DEBUG:  chain["
+                                         << depth << "] SEL" << " w=" << selp->width() << " lsb="
+                                         << (VN_IS(selp->lsbp(), Const)
+                                                 ? std::to_string(
+                                                       VN_AS(selp->lsbp(), Const)->toSInt())
+                                                 : "?")
+                                         << " widthConst=" << selp->widthConst()
+                                         << " dtype=" << selp->dtypep()->prettyTypeName()
+                                         << " dtypeW=" << selp->dtypep()->width());
+                            walkp = selp->fromp();
+                        } else if (AstVarRef* vrp = VN_CAST(walkp, VarRef)) {
+                            UINFO(5, "SELRANGE-DEBUG:  chain["
+                                         << depth << "] VARREF" << " name="
+                                         << vrp->varp()->prettyName() << " w=" << vrp->width()
+                                         << " dtype=" << vrp->dtypep()->prettyTypeName()
+                                         << " dtypeW=" << vrp->dtypep()->width());
+                            // Show the var's dtype chain
+                            AstNodeDType* vdtp = vrp->varp()->dtypep();
+                            int di = 0;
+                            while (vdtp && di < 5) {
+                                UINFO(5, "SELRANGE-DEBUG:   varDtype[" << di << "] "
+                                                                       << vdtp->prettyTypeName()
+                                                                       << " w=" << vdtp->width());
+                                if (AstRefDType* rdtp = VN_CAST(vdtp, RefDType)) {
+                                    vdtp = rdtp->skipRefp();
+                                } else {
+                                    break;
+                                }
+                                di++;
+                            }
+                            walkp = nullptr;
+                        } else {
+                            UINFO(5, "SELRANGE-DEBUG:  chain[" << depth << "] "
+                                                               << walkp->prettyTypeName()
+                                                               << " w=" << walkp->width());
+                            walkp = nullptr;
+                        }
+                        depth++;
+                    }
+                    if (selrangeModp) {
+                        UINFO(5,
+                              "SELRANGE-DEBUG: modp=" << selrangeModp->prettyName()
+                                                      << " hasGParam=" << selrangeModp->hasGParam()
+                                                      << " origName=" << selrangeModp->origName());
+                    }
+                    UINFO(5, "SELRANGE-DEBUG: ---");
+                }
                 // Extend it.
                 AstNodeDType* const subDTypep
                     = nodep->findLogicDType(width, width, nodep->fromp()->dtypep()->numeric());
@@ -1102,7 +1199,7 @@ class WidthVisitor final : public VNVisitor {
                 AstNodeVarRef* lrefp = AstNodeVarRef::varRefLValueRecurse(nodep);
                 if (m_doGenerate) {
                     UINFO(5, "Selection index out of range inside generate");
-                } else {
+                } else if (!inParameterizedTemplate) {
                     nodep->v3warn(SELRANGE, "Selection index out of range: "
                                                 << nodep->msbConst() << ":" << nodep->lsbConst()
                                                 << " outside " << frommsb << ":" << fromlsb);
@@ -1196,11 +1293,21 @@ class WidthVisitor final : public VNVisitor {
                 if (VN_IS(nodep->bitp(), Const)
                     && (VN_AS(nodep->bitp(), Const)->toSInt() > (frommsb - fromlsb)
                         || VN_AS(nodep->bitp(), Const)->toSInt() < 0)) {
-                    nodep->v3warn(SELRANGE,
-                                  "Selection index out of range: "
-                                      << (VN_AS(nodep->bitp(), Const)->toSInt() + fromlsb)
-                                      << " outside " << frommsb << ":" << fromlsb);
-                    UINFO(1, "    Related node: " << nodep);
+                    // Suppress in dead template modules
+                    bool inParameterizedTemplate = false;
+                    for (AstNode* ap = nodep; ap; ap = ap->backp()) {
+                        if (const AstNodeModule* const modp = VN_CAST(ap, NodeModule)) {
+                            inParameterizedTemplate = modp->dead();
+                            break;
+                        }
+                    }
+                    if (!inParameterizedTemplate) {
+                        nodep->v3warn(SELRANGE,
+                                      "Selection index out of range: "
+                                          << (VN_AS(nodep->bitp(), Const)->toSInt() + fromlsb)
+                                          << " outside " << frommsb << ":" << fromlsb);
+                        UINFO(1, "    Related node: " << nodep);
+                    }
                 }
                 widthCheckSized(nodep, "Extract Range", nodep->bitp(), selwidthDTypep, EXTEND_EXP,
                                 false /*NOWARN*/);
@@ -1839,11 +1946,21 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH}.p());
         if (nodep->dimp()) userIterateAndNext(nodep->dimp(), WidthVP{SELF, BOTH}.p());
         // Don't iterate children, don't want to lose VarRef.
+        const auto fromDTypep = [&]() -> AstNodeDType* {
+            if (!nodep->fromp()) return nullptr;
+            if (AstNodeDType* const dtypep = nodep->fromp()->dtypep()) return dtypep;
+            if (AstRefDType* const rdp = VN_CAST(nodep->fromp(), RefDType)) {
+                if (AstNodeDType* const refDtp = rdp->refDTypep()) return refDtp;
+                if (AstTypedef* const tdp = rdp->typedefp()) return tdp->dtypep();
+            }
+            return nullptr;
+        };
         switch (nodep->attrType()) {
         case VAttrType::DIM_DIMENSIONS:
         case VAttrType::DIM_UNPK_DIMENSIONS: {
-            UASSERT_OBJ(nodep->fromp() && nodep->fromp()->dtypep(), nodep, "Unsized expression");
-            const std::pair<uint32_t, uint32_t> dim = nodep->fromp()->dtypep()->dimensions(true);
+            AstNodeDType* const dtypep = fromDTypep();
+            UASSERT_OBJ(dtypep, nodep, "Unsized expression");
+            const std::pair<uint32_t, uint32_t> dim = dtypep->dimensions(true);
             const int val
                 = (nodep->attrType() == VAttrType::DIM_UNPK_DIMENSIONS ? dim.second
                                                                        : (dim.first + dim.second));
@@ -1872,8 +1989,8 @@ class WidthVisitor final : public VNVisitor {
         case VAttrType::DIM_LOW:
         case VAttrType::DIM_RIGHT:
         case VAttrType::DIM_SIZE: {
-            UASSERT_OBJ(nodep->fromp() && nodep->fromp()->dtypep(), nodep, "Unsized expression");
-            AstNodeDType* const dtypep = nodep->fromp()->dtypep();
+            AstNodeDType* const dtypep = fromDTypep();
+            UASSERT_OBJ(dtypep, nodep, "Unsized expression");
             if (VN_IS(dtypep, QueueDType) || VN_IS(dtypep, DynArrayDType)) {
                 switch (nodep->attrType()) {
                 case VAttrType::DIM_SIZE: {
@@ -1940,9 +2057,11 @@ class WidthVisitor final : public VNVisitor {
                         nodep->replaceWith(newp);
                         VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     } else {
+                        AstNodeDType* const baseDTypep = dtypep->skipRefp();
+                        UASSERT_OBJ(baseDTypep, nodep, "Unsized expression");
                         const int dim = 1;
-                        AstConst* const newp
-                            = dimensionValue(nodep->fileline(), dtypep, nodep->attrType(), dim);
+                        AstConst* const newp = dimensionValue(nodep->fileline(), baseDTypep,
+                                                              nodep->attrType(), dim);
                         nodep->replaceWith(newp);
                         VL_DO_DANGLING(nodep->deleteTree(), nodep);
                     }
@@ -2031,6 +2150,36 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstText* nodep) override {
         // Only used in CStmts which don't care....
+    }
+
+    void visit(AstCellArrayRef* nodep) override {
+        if (nodep->didWidthAndSet()) return;
+        userIterateAndNext(nodep->selp(), WidthVP{SELF, PRELIM}.p());
+        userIterateAndNext(nodep->selp(), WidthVP{SELF, FINAL}.p());
+        nodep->dtypeSetVoid();  // placeholder; this node shouldnt survive beyond linking
+        nodep->didWidth(true);
+    }
+
+    void visit(AstCellRef* nodep) override {
+        if (nodep->didWidthAndSet()) return;
+
+        if (AstNodeExpr* const cellExprp = VN_CAST(nodep->cellp(), NodeExpr)) {
+            userIterateAndNext(cellExprp, WidthVP{SELF, PRELIM}.p());
+            userIterateAndNext(cellExprp, WidthVP{SELF, FINAL}.p());
+        }
+
+        if (AstNodeExpr* const exprp = VN_CAST(nodep->exprp(), NodeExpr)) {
+            userIterateAndNext(exprp, WidthVP{SELF, PRELIM}.p());
+            nodep->dtypeFrom(exprp);
+            userIterateAndNext(exprp, WidthVP{SELF, FINAL}.p());
+        } else if (AstNodeDType* const dtypep = VN_CAST(nodep->exprp(), NodeDType)) {
+            userIterateAndNext(dtypep, WidthVP{SELF, BOTH}.p());
+            nodep->dtypep(dtypep);
+        } else {
+            nodep->dtypeSetVoid();  // Fallback; should not normally occur
+        }
+
+        nodep->didWidth(true);
     }
 
     // DTYPES
@@ -2204,6 +2353,8 @@ class WidthVisitor final : public VNVisitor {
                 // It's directly a type, e.g. "type(int)"
                 typeofDtp = iterateEditMoveDTypep(nodep, typeofDtp);  // Changes typeofp
                 nodep->refDTypep(typeofDtp);
+                UINFO(9, "V3Width: RefDType (typeof) refDTypep set to "
+                             << cvtToHex(nodep->refDTypep()) << endl);
             } else {
                 // Type comes from expression's type, e.g. "type(variable)"
                 userIterateAndNext(nodep->typeofp(), WidthVP{SELF, BOTH}.p());
@@ -2226,6 +2377,27 @@ class WidthVisitor final : public VNVisitor {
         }
         // Effectively nodep->dtypeFrom(nodep->dtypeSkipRefp());
         // But might be recursive, so instead manually recurse into the referenced type
+        if (!nodep->subDTypep()) {
+            bool inTemplateModule = false;
+            bool hasOwnerModule = false;
+            for (AstNode* backp = nodep->backp(); backp; backp = backp->backp()) {
+                if (AstNodeModule* const modp = VN_CAST(backp, NodeModule)) {
+                    hasOwnerModule = true;
+                    if (modp->hasGParam() && modp->name().find("__") == string::npos) {
+                        inTemplateModule = true;
+                    }
+                    break;
+                }
+            }
+            if (!hasOwnerModule) inTemplateModule = true;
+            if (inTemplateModule) {
+                // Defer unlinked template-only RefDTypes until specialization resolves them.
+                // This aligns with DepGraph out-of-order resolution which may clear
+                // template typedefs during commit or move them to TYPETABLE.
+                nodep->doingWidth(false);
+                return;
+            }
+        }
         UASSERT_OBJ(nodep->subDTypep(), nodep, "Unlinked");
         nodep->dtypeFrom(nodep->subDTypep());
         nodep->widthFromSub(nodep->subDTypep());
@@ -2251,9 +2423,13 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstParamTypeDType* nodep) override {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
+
         nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         userIterateChildren(nodep, nullptr);
         nodep->widthFromSub(nodep->subDTypep());
+        // Clear childDTypep after dtypep is set to satisfy V3Broken invariant.
+        // The child dtype has been moved to the type table by iterateEditMoveDTypep.
+        if (nodep->dtypep() && nodep->childDTypep()) { nodep->childDTypep(nullptr); }
     }
     void visit(AstRequireDType* nodep) override {
         userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
@@ -2631,6 +2807,10 @@ class WidthVisitor final : public VNVisitor {
         const bool implicitParam = nodep->isParam() && bdtypep && bdtypep->implicit();
         if (implicitParam) {
             if (nodep->valuep()) {
+                // Remove blanket deferral. We must attempt to visit the value to determine
+                // type/deps. If it remains unresolved, specific node visitors (like AttrOf) should
+                // handle deferral by setting a placeholder type to prevent "No dtype" errors
+                // later.
                 userIterateAndNext(nodep->valuep(), WidthVP{nodep->dtypep(), PRELIM}.p());
                 UINFO(9, "implicitParamPRELIMIV " << nodep->valuep());
                 // Although nodep will get a different width for parameters
@@ -2645,7 +2825,11 @@ class WidthVisitor final : public VNVisitor {
                     VL_DANGLING(bdtypep);
                 } else {
                     int width = 0;
-                    const AstBasicDType* const valueBdtypep = nodep->valuep()->dtypep()->basicp();
+                    AstNodeDType* const valueDTypep = nodep->valuep()->dtypep();
+                    if (!valueDTypep) {
+                        nodep->valuep()->v3fatalSrc("Null dtype on implicit param value");
+                    }
+                    const AstBasicDType* const valueBdtypep = valueDTypep->basicp();
                     bool issigned = false;
                     if (bdtypep->isNosign()) {
                         if (valueBdtypep && valueBdtypep->isSigned()) issigned = true;
@@ -3278,6 +3462,28 @@ class WidthVisitor final : public VNVisitor {
         const bool isHardPackedUnion
             = nodep->packed() && VN_IS(nodep, UnionDType) && !VN_CAST(nodep, UnionDType)->isSoft();
 
+        // Check if this type is in a template module (hasGParam but no __ suffix).
+        // Template modules have unresolved parameters, so union member sizes may be incorrect.
+        // The specialized clones will be properly checked - suppress errors here.
+        bool inTemplateModule = false;
+        bool hasOwnerModule = false;
+        for (AstNode* backp = nodep->backp(); backp; backp = backp->backp()) {
+            if (AstNodeModule* const modp = VN_CAST(backp, NodeModule)) {
+                hasOwnerModule = true;
+                if (modp->hasGParam() && modp->name().find("__") == string::npos) {
+                    inTemplateModule = true;
+                }
+                break;
+            }
+        }
+        // If the union/struct was moved to TYPETABLE (no owning module), defer checks
+        // until specialization provides concrete member widths. This aligns with
+        // DepGraph's out-of-order resolution: types may be detached during commit and
+        // finalized only after specialization.
+        // TODO: Revisit this gate if DepGraph becomes the sole flow and widthing
+        // can assume all types are already specialized.
+        if (VN_IS(nodep, UnionDType) && !hasOwnerModule) inTemplateModule = true;
+
         // Determine bit assignments and width
         if (VN_IS(nodep, UnionDType) || nodep->packed()) {
             int lsb = 0;
@@ -3293,7 +3499,8 @@ class WidthVisitor final : public VNVisitor {
                 itemp->lsb(lsb);
                 if (VN_IS(nodep, UnionDType)) {
                     const int itemWidth = itemp->width();
-                    if (!first && isHardPackedUnion && itemWidth != width) {
+                    // Skip union size check for template modules with unresolved parameters
+                    if (!first && isHardPackedUnion && itemWidth != width && !inTemplateModule) {
                         itemp->v3error("Hard packed union members must have equal size "
                                        "(IEEE 1800-2023 7.3.1)");
                     }
@@ -7880,6 +8087,7 @@ class WidthVisitor final : public VNVisitor {
                     "Under node " << nodep->prettyTypeName()
                                   << " has no dtype?? Missing Visitor func?");
         if (expDTypep->basicp()->untyped() || nodep->dtypep()->basicp()->untyped()) return false;
+        // During DepGraph execution, expected width may be 0 if the type hasn't been
         UASSERT_OBJ(nodep->width() != 0, nodep,
                     "Under node " << nodep->prettyTypeName()
                                   << " has no expected width?? Missing Visitor func?");
@@ -8769,6 +8977,7 @@ class WidthVisitor final : public VNVisitor {
             UASSERT_OBJ(dtnodep->didWidth(), parentp,
                         "iterateEditMoveDTypep didn't get width resolution of "
                             << dtnodep->prettyTypeName());
+
             // Move to under netlist
             UINFO(9, "iterateEditMoveDTypep child moving " << dtnodep);
             dtnodep->unlinkFrBack();
