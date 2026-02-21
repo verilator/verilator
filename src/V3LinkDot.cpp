@@ -5389,13 +5389,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         paramsp = paramsp->cloneTree(true);
                         nodep->parameterized(true);
                     }
-                    nodep->childDTypep(new AstClassRefDType{nodep->fileline(), classRefp->classp(), paramsp});
+                    nodep->childDTypep(
+                        new AstClassRefDType{nodep->fileline(), classRefp->classp(), paramsp});
                     iterate(nodep->childDTypep());
-                }
-                else {
+                } else {
                     nodep->v3warn(E_UNSUPPORTED,
-                        "Unsupported: " << foundp->nodep()->prettyTypeName()
-                                        << " in 'class extends'");
+                                  "Unsupported: " << foundp->nodep()->prettyTypeName()
+                                                  << " in 'class extends'");
                     return;
                 }
             } else {
