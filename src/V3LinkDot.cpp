@@ -1984,18 +1984,21 @@ class LinkDotFindVisitor final : public VNVisitor {
         UASSERT_OBJ(funcrefp, nodep, "'with' only can operate on a function/task");
         string name = "item";
         FileLine* argFl = nodep->fileline();
-        AstArg* argp = VN_CAST(funcrefp->pinsp(), Arg);
-        if (argp) argp->unlinkFrBackWithNext();
-        if (argp && funcrefp->name() != "randomize") {
-            if (const auto parserefp = VN_CAST(argp->exprp(), ParseRef)) {
-                name = parserefp->name();
-                argFl = parserefp->fileline();
-            } else {
-                argp->v3error("'with' function expects simple variable name");
+        AstArg* const argsp = funcrefp->argsp();
+        if (argsp) {
+            argsp->unlinkFrBackWithNext();
+            if (funcrefp->name() != "randomize") {
+                if (const auto parserefp = VN_CAST(argsp->exprp(), ParseRef)) {
+                    name = parserefp->name();
+                    argFl = parserefp->fileline();
+                } else {
+                    argsp->v3error("'with' function expects simple variable name");
+                }
+                if (argsp->nextp()) {
+                    argsp->nextp()->v3error("'with' function expects only up to one argument");
+                }
+                VL_DO_DANGLING(argsp->deleteTree(), argsp);
             }
-            if (argp->nextp())
-                argp->nextp()->v3error("'with' function expects only up to one argument");
-            VL_DO_DANGLING(argp->deleteTree(), argp);
         }
         // Type depends on the method used, let V3Width figure it out later
         if (nodep->exprsp()
@@ -2018,7 +2021,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                 = new AstWith{nodep->fileline(), indexArgRefp, valueArgRefp, exprOrConstraintsp};
             funcrefp->withp(newp);
         }
-        funcrefp->addPinsp(argp);
+        funcrefp->addArgsp(argsp);
         nodep->replaceWith(nodep->funcrefp()->unlinkFrBack());
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
@@ -3060,9 +3063,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                          const AstClassExtends* const classExtendsp) {
         // Returns the added node
         FileLine* const fl = nodep->fileline();
-        AstNodeExpr* pinsp = nullptr;
-        if (classExtendsp->argsp()) pinsp = classExtendsp->argsp()->cloneTree(true);
-        AstNew* const newExprp = new AstNew{fl, pinsp};
+        AstArg* argsp = nullptr;
+        if (classExtendsp->argsp()) argsp = classExtendsp->argsp()->cloneTree(true);
+        AstNew* const newExprp = new AstNew{fl, argsp};
         newExprp->isImplicit(true);
         AstDot* const superNewp = new AstDot{fl, false, new AstParseRef{fl, "super"}, newExprp};
         AstNodeStmt* const superNewStmtp = superNewp->makeStmt();
@@ -3751,7 +3754,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     m_ds = lastStates;
                     // Resolve function args before bailing
                     if (AstNodeFTaskRef* const ftaskrefp = VN_CAST(nodep->rhsp(), NodeFTaskRef)) {
-                        iterateAndNextNull(ftaskrefp->pinsp());
+                        iterateAndNextNull(ftaskrefp->argsp());
                     }
                     return;
                 }
@@ -3779,7 +3782,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         // Resolve function args before bailing
                         if (AstNodeFTaskRef* const ftaskrefp
                             = VN_CAST(nodep->rhsp(), NodeFTaskRef)) {
-                            iterateAndNextNull(ftaskrefp->pinsp());
+                            iterateAndNextNull(ftaskrefp->argsp());
                         }
                         return;
                     }
@@ -3789,7 +3792,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     m_ds = lastStates;
                     // Resolve function args before bailing
                     if (AstNodeFTaskRef* const ftaskrefp = VN_CAST(nodep->rhsp(), NodeFTaskRef)) {
-                        iterateAndNextNull(ftaskrefp->pinsp());
+                        iterateAndNextNull(ftaskrefp->argsp());
                     }
                     return;
                 }
@@ -4150,9 +4153,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
             } else if (allowFTask && VN_IS(foundp->nodep(), NodeFTask)) {
                 AstNodeFTaskRef* taskrefp;
                 if (VN_IS(foundp->nodep(), Task)) {
-                    taskrefp = new AstTaskRef{nodep->fileline(), nodep->name(), nullptr};
+                    taskrefp = new AstTaskRef{nodep->fileline(), nodep->name()};
                 } else {
-                    taskrefp = new AstFuncRef{nodep->fileline(), nodep->name(), nullptr};
+                    taskrefp = new AstFuncRef{nodep->fileline(), nodep->name()};
                 }
                 nodep->replaceWith(taskrefp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -4340,7 +4343,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         // In these cases, the parentheses may be skipped.
                         // Also SV class methods can be called without parens
                         AstFuncRef* const funcRefp
-                            = new AstFuncRef{nodep->fileline(), nodep->name(), nullptr};
+                            = new AstFuncRef{nodep->fileline(), nodep->name()};
                         nodep->replaceWith(funcRefp);
                         VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     }
@@ -4765,7 +4768,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         VL_RESTORER(m_randMethodCallp);
         {
             m_ds.init(m_curSymp);
-            if (nodep->name() == "randomize" && (nodep->pinsp() || nodep->withp())) {
+            if (nodep->name() == "randomize" && (nodep->argsp() || nodep->withp())) {
                 m_randMethodCallp = nodep;
                 const AstNodeDType* fromDtp = nodep->fromp()->dtypep();
                 if (!fromDtp) {
@@ -4889,7 +4892,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             // Found a Var, everything following is method call.
             // {scope}.{var}.HERE {method} ( ARGS )
             AstNodeExpr* const varEtcp = VN_AS(m_ds.m_dotp->lhsp()->unlinkFrBack(), NodeExpr);
-            AstNodeExpr* const argsp = nodep->pinsp();
+            AstArg* const argsp = nodep->argsp();
             if (argsp) argsp->unlinkFrBackWithNext();
             AstMethodCall* const newp = new AstMethodCall{nodep->fileline(), varEtcp,
                                                           VFlagChildDType{}, nodep->name(), argsp};
@@ -4941,10 +4944,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 VSymEnt* const foundp = m_randSymp->findIdFlat(nodep->name());
                 if (foundp && m_inWith) {
                     UINFO(9, indent() << "randomize-with fromSym " << foundp->nodep());
-                    AstNodeExpr* argsp = nullptr;
-                    if (nodep->pinsp()) {
-                        iterateAndNextNull(nodep->pinsp());
-                        argsp = nodep->pinsp()->unlinkFrBackWithNext();
+                    AstArg* argsp = nullptr;
+                    if (nodep->argsp()) {
+                        iterateAndNextNull(nodep->argsp());
+                        argsp = nodep->argsp()->unlinkFrBackWithNext();
                     }
                     if (m_ds.m_dotPos != DP_NONE) m_ds.m_dotPos = DP_MEMBER;
                     AstNode* const newp = new AstMethodCall{
@@ -5045,15 +5048,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
                             if (VN_IS(nodep, FuncRef)) {
                                 newp = new AstConst{nodep->fileline(), AstConst::All0{}};
                             } else {
-                                AstNode* outp = nullptr;
-                                while (nodep->pinsp()) {
-                                    AstNode* const pinp = nodep->pinsp()->unlinkFrBack();
-                                    AstNode* addp = pinp;
-                                    if (AstArg* const argp = VN_CAST(pinp, Arg)) {
-                                        addp = argp->exprp()->unlinkFrBack();
-                                        VL_DO_DANGLING2(pushDeletep(pinp), pinp, argp);
-                                    }
-                                    outp = AstNode::addNext(outp, addp);
+                                AstNodeExpr* outp = nullptr;
+                                while (AstArg* const argp = nodep->argsp()) {
+                                    outp = AstNode::addNext(outp, argp->exprp()->unlinkFrBack());
+                                    VL_DO_DANGLING(pushDeletep(argp->unlinkFrBack()), argp);
                                 }
                                 newp = new AstSysIgnore{nodep->fileline(), outp};
                                 newp->dtypep(nodep->dtypep());

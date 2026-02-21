@@ -220,7 +220,7 @@ public:
 class AstNodeFTaskRef VL_NOT_FINAL : public AstNodeExpr {
     // A reference to a task (or function)
     // op1 used by some sub-types only
-    // @astgen op2 := pinsp : List[AstNodeExpr]
+    // @astgen op2 := argsp : List[AstArg]
     // @astgen op3 := withp : Optional[AstWith]
     // @astgen op4 := scopeNamep : Optional[AstScopeName]
     //
@@ -235,10 +235,10 @@ private:
     VIsCached m_purity;  // Pure state
 
 protected:
-    AstNodeFTaskRef(VNType t, FileLine* fl, const string& name, AstNodeExpr* pinsp)
+    AstNodeFTaskRef(VNType t, FileLine* fl, const string& name, AstArg* argsp)
         : AstNodeExpr{t, fl}
         , m_name{name} {
-        addPinsp(pinsp);
+        addArgsp(argsp);
     }
 
 public:
@@ -4494,9 +4494,9 @@ class AstFuncRef final : public AstNodeFTaskRef {
     // A reference to a function
     bool m_superReference = false;  // Called with super reference
 public:
-    inline AstFuncRef(FileLine* fl, AstFunc* taskp, AstNodeExpr* pinsp);
-    AstFuncRef(FileLine* fl, const string& name, AstNodeExpr* pinsp)
-        : ASTGEN_SUPER_FuncRef(fl, name, pinsp) {}
+    inline AstFuncRef(FileLine* fl, AstFunc* taskp, AstArg* argsp = nullptr);
+    AstFuncRef(FileLine* fl, const string& name, AstArg* argsp = nullptr)
+        : ASTGEN_SUPER_FuncRef(fl, name, argsp) {}
     ASTGEN_MEMBERS_AstFuncRef;
     bool superReference() const { return m_superReference; }
     void superReference(bool flag) { m_superReference = flag; }
@@ -4508,13 +4508,13 @@ class AstMethodCall final : public AstNodeFTaskRef {
     //
 public:
     AstMethodCall(FileLine* fl, AstNodeExpr* fromp, VFlagChildDType, const string& name,
-                  AstNodeExpr* pinsp)
-        : ASTGEN_SUPER_MethodCall(fl, name, pinsp) {
+                  AstArg* argsp = nullptr)
+        : ASTGEN_SUPER_MethodCall(fl, name, argsp) {
         this->fromp(fromp);
         dtypep(nullptr);  // V3Width will resolve
     }
-    AstMethodCall(FileLine* fl, AstNodeExpr* fromp, const string& name, AstNodeExpr* pinsp)
-        : ASTGEN_SUPER_MethodCall(fl, name, pinsp) {
+    AstMethodCall(FileLine* fl, AstNodeExpr* fromp, const string& name, AstArg* argsp = nullptr)
+        : ASTGEN_SUPER_MethodCall(fl, name, argsp) {
         this->fromp(fromp);
     }
     ASTGEN_MEMBERS_AstMethodCall;
@@ -4525,8 +4525,8 @@ class AstNew final : public AstNodeFTaskRef {
     bool m_isImplicit = false;  // Implicitly generated from extends args
     bool m_isScoped = false;  // Had :: scope when parsed
 public:
-    AstNew(FileLine* fl, AstNodeExpr* pinsp, bool isScoped = false)
-        : ASTGEN_SUPER_New(fl, "new", pinsp)
+    AstNew(FileLine* fl, AstArg* argsp = nullptr, bool isScoped = false)
+        : ASTGEN_SUPER_New(fl, "new", argsp)
         , m_isScoped{isScoped} {}
     ASTGEN_MEMBERS_AstNew;
     void dump(std::ostream& str = std::cout) const override;
@@ -4543,9 +4543,9 @@ class AstTaskRef final : public AstNodeFTaskRef {
     // A reference to a task
     bool m_superReference = false;  // Called with super reference
 public:
-    inline AstTaskRef(FileLine* fl, AstTask* taskp, AstNodeExpr* pinsp);
-    AstTaskRef(FileLine* fl, const string& name, AstNodeExpr* pinsp)
-        : ASTGEN_SUPER_TaskRef(fl, name, pinsp) {
+    inline AstTaskRef(FileLine* fl, AstTask* taskp, AstArg* argsp = nullptr);
+    AstTaskRef(FileLine* fl, const string& name, AstArg* argsp = nullptr)
+        : ASTGEN_SUPER_TaskRef(fl, name, argsp) {
         dtypeSetVoid();
     }
     ASTGEN_MEMBERS_AstTaskRef;

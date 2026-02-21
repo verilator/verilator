@@ -172,7 +172,7 @@ class LinkJumpVisitor final : public VNVisitor {
         AstClass* const processClassp
             = VN_AS(getMemberp(v3Global.rootp()->stdPackagep(), "process"), Class);
         AstFunc* const selfMethodp = VN_AS(getMemberp(processClassp, "self"), Func);
-        AstFuncRef* const processSelfp = new AstFuncRef{fl, selfMethodp, nullptr};
+        AstFuncRef* const processSelfp = new AstFuncRef{fl, selfMethodp};
         processSelfp->classOrPackagep(processClassp);
         return new AstStmtExpr{
             fl, new AstMethodCall{fl, queueRefp, "push_back", new AstArg{fl, "", processSelfp}}};

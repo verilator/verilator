@@ -657,7 +657,7 @@ class TaskVisitor final : public VNVisitor {
                 connectPort(portp, argp, namePrefix, beginp, true);
             }
         }
-        UASSERT_OBJ(!refp->pinsp(), refp, "Pin wasn't removed by above loop");
+        UASSERT_OBJ(!refp->argsp(), refp, "Arg wasn't removed by above loop");
         {
             AstNode* nextstmtp;
             for (AstNode* stmtp = beginp; stmtp; stmtp = nextstmtp) {
@@ -755,14 +755,10 @@ class TaskVisitor final : public VNVisitor {
             ccallp->addArgsp(new AstConst(flp, flp->lineno()));
         }
 
-        // Create connections
-        AstNode* nextpinp;
-        for (AstNode* pinp = refp->pinsp(); pinp; pinp = nextpinp) {
-            nextpinp = pinp->nextp();
-            // Move pin to the CCall, removing all Arg's
-            AstNodeExpr* const exprp = VN_AS(pinp, Arg)->exprp();
-            exprp->unlinkFrBack();
-            ccallp->addArgsp(exprp);
+        // Move artument expression to the CCall, without AstArg
+        for (AstArg *argp = refp->argsp(), *nextp; argp; argp = nextp) {
+            nextp = VN_AS(argp->nextp(), Arg);
+            ccallp->addArgsp(argp->exprp()->unlinkFrBack());
         }
 
         if (outvscp) ccallp->addArgsp(new AstVarRef{refp->fileline(), outvscp, VAccess::WRITE});
@@ -1471,10 +1467,9 @@ class TaskVisitor final : public VNVisitor {
         UINFOTREE(9, newp, "", "newfunc");
         m_insStmtp->addHereThisAsNext(newp);
     }
-    void processPins(AstNodeFTaskRef* nodep) {
+    void processArgs(AstNodeFTaskRef* nodep) {
         // Create a fresh variable for each concat array present in pins list
-        for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
-            AstArg* const argp = VN_AS(pinp, Arg);
+        for (AstArg* argp = nodep->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
             AstInitArray* const arrayp = VN_CAST(argp->exprp(), InitArray);
             if (!arrayp) continue;
 
@@ -1550,7 +1545,7 @@ class TaskVisitor final : public VNVisitor {
         AstNode* beginp;
         AstCNew* cnewp = nullptr;
         if (m_statep->ftaskNoInline(nodep->taskp())) {
-            processPins(nodep);
+            processArgs(nodep);
             // This may share VarScope's with a public task, if any.  Yuk.
             beginp = createNonInlinedFTask(nodep, namePrefix, outvscp, cnewp /*ref*/);
         } else {
@@ -1775,24 +1770,22 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
     // Find pins
     int ppinnum = 0;
     bool reorganize = false;
-    for (AstNode *nextp, *pinp = nodep->pinsp(); pinp; pinp = nextp) {
-        nextp = pinp->nextp();
-        AstArg* const argp = VN_AS(pinp, Arg);
-        UASSERT_OBJ(argp, pinp, "Non-arg under ftask reference");
-        if (argp->name() != "") {
+    for (AstArg *argp = nodep->argsp(), *nextp; argp; argp = nextp) {
+        nextp = VN_AS(argp->nextp(), Arg);
+        if (!argp->name().empty()) {
             // By name
             const auto it = nameToIndex.find(argp->name());
             if (it == nameToIndex.end()) {
                 if (makeChanges) {
-                    pinp->v3error("No such argument " << argp->prettyNameQ()
+                    argp->v3error("No such argument " << argp->prettyNameQ()
                                                       << " in function call to "
                                                       << nodep->taskp()->prettyTypeName());
                     // We'll just delete it; seems less error prone than making a false argument
-                    VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
+                    VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
                 }
             } else {
                 if (tconnects[it->second].second && makeChanges) {
-                    pinp->v3error("Duplicate argument " << argp->prettyNameQ()
+                    argp->v3error("Duplicate argument " << argp->prettyNameQ()
                                                         << " in function call to "
                                                         << nodep->taskp()->prettyTypeName());
                     tconnects[it->second].second->unlinkFrBack()->deleteTree();
@@ -1809,10 +1802,10 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
                     tconnects[ppinnum].second = argp;
                     ++tpinnum;
                 } else if (makeChanges) {
-                    pinp->v3error("Too many arguments in function call to "
+                    argp->v3error("Too many arguments in function call to "
                                   << nodep->taskp()->prettyTypeName());
                     // We'll just delete it; seems less error prone than making a false argument
-                    VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
+                    VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
                 }
             } else {
                 tconnects[ppinnum].second = argp;
@@ -1891,14 +1884,14 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
 
     if (reorganize) {
         // To simplify downstream, put argument list back into pure pinnumber ordering
-        while (nodep->pinsp()) {
+        while (nodep->argsp()) {
             // Must unlink each pin, not all pins linked together as one list
-            nodep->pinsp()->unlinkFrBack();
+            nodep->argsp()->unlinkFrBack();
         }
         for (int i = 0; i < tpinnum; ++i) {
             AstArg* const argp = tconnects[i].second;
             UASSERT_OBJ(argp, nodep, "Lost argument in func conversion");
-            nodep->addPinsp(argp);
+            nodep->addArgsp(argp);
         }
     }
 
@@ -1970,13 +1963,13 @@ AstNodeFTask* V3Task::taskConnectWrapNew(AstNodeFTask* taskp, const string& newn
         newFVarp->name(newTaskp->name());
         newTaskp->fvarp(newFVarp);
         newTaskp->dtypeFrom(newFVarp);
-        newCallp = new AstFuncRef{taskp->fileline(), VN_AS(taskp, Func), nullptr};
+        newCallp = new AstFuncRef{taskp->fileline(), VN_AS(taskp, Func)};
         newCallInsertp
             = new AstAssign{taskp->fileline(),
                             new AstVarRef{fvarp->fileline(), newFVarp, VAccess::WRITE}, newCallp};
         newCallInsertp->dtypeFrom(newFVarp);
     } else if (VN_IS(taskp, Task)) {
-        newCallp = new AstTaskRef{taskp->fileline(), VN_AS(taskp, Task), nullptr};
+        newCallp = new AstTaskRef{taskp->fileline(), VN_AS(taskp, Task)};
         newCallInsertp = new AstStmtExpr{taskp->fileline(), newCallp};
     } else {
         taskp->v3fatalSrc("Unsupported: Non-constant default value in missing argument in a "
@@ -2014,7 +2007,7 @@ AstNodeFTask* V3Task::taskConnectWrapNew(AstNodeFTask* taskp, const string& newn
         const VAccess pinAccess = portp->isWritable() ? VAccess::WRITE : VAccess::READ;
         AstArg* const newArgp = new AstArg{portp->fileline(), portp->name(),
                                            new AstVarRef{portp->fileline(), newPortp, pinAccess}};
-        newCallp->addPinsp(newArgp);
+        newCallp->addArgsp(newArgp);
     }
     // Create wrapper call to original, passing arguments, adding setting of return value
     newTaskp->addStmtsp(newCallInsertp);
