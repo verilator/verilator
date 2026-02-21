@@ -2762,7 +2762,10 @@ class ParamVisitor final : public VNVisitor {
                     // For specialized interfaces, recursively process nested interface cells.
                     // This ensures nested interfaces are already specialized when modules
                     // using the interface are processed (parameter passthrough fix).
-                    if (newModp != srcModp) specializeNestedIfaceCells(newModp);
+                    // TEMPORARILY DISABLED: specializeNestedIfaceCells causes
+                    // PARAMTYPEDTYPE child REFDTYPEs to point to template structs
+                    // instead of clone structs (Aerial build failure).
+                    // if (newModp != srcModp) specializeNestedIfaceCells(newModp);
                 }
             }
         }

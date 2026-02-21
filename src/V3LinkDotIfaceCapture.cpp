@@ -467,6 +467,12 @@ void V3LinkDotIfaceCapture::captureTypedefContext(
                             << " (no iface context)");
         return;
     }
+    // Skip internal interface typedef references (typedef used within its own interface)
+    if (ifaceCellp->modp() == modp) {
+        UINFO(9, indentFn() << "iface capture capture skipped typedef=" << refp
+                            << " (internal to interface " << modp->name() << ")");
+        return;
+    }
 
     // Use dotText as the hierarchical cellPath key component.
     // dotText is the full dot-separated path from the owning module to the
