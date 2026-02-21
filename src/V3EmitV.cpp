@@ -1014,6 +1014,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             puts("(");
             iterateAndNextConstNull(nodep->pinsp());
             puts(")");
+            iterateConstNull(nodep->withp());
         }
     }
     void visit(AstCCall* nodep) override {
@@ -1023,6 +1024,14 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts(")");
     }
     void visit(AstArg* nodep) override { iterateAndNextConstNull(nodep->exprp()); }
+    void visit(AstWith* nodep) override {
+        putfs(nodep, "with (");
+        iterateConstNull(nodep->exprp());
+        puts(") ");
+    }
+    void visit(AstLambdaArgRef* nodep) override {
+        putfs(nodep, nodep->name());
+    }
     void visit(AstPrintTimeScale* nodep) override {
         puts(nodep->verilogKwd());
         puts(";\n");
