@@ -43,7 +43,10 @@ Verilator 5.045 devel
 * Support `$get_initial_random_seed` (#7056) (#7069). [Srinivasan Venkataramanan]
 * Support unique constraint on explicit array element subsets (#7057) (#7064). [Yilou Wang]
 * Support force assignments to unpacked structs (#7060). [Ryszard Rozak, Antmicro Ltd.]
+* Support function calls with random arguments in constraints (#7061) (#7083). [Yilou Wang]
 * Support power expressions with constant exponent in constraints (#7073). [Kamil Danecki]
+* Support `disable iff` with sequences (#7090). [Ryszard Rozak, Antmicro Ltd.]
+* Support `this` keyword inside inline randomize() with {} constraint blocks (#7102) (#7113). [Yilou Wang]
 * Remove deprecated `--xml-only`.
 * Remove deprecated `--make cmake`.
 * Change JSON dumps to not include booleans that are false (#6977).
@@ -62,6 +65,7 @@ Verilator 5.045 devel
 * Optimize straight line code in DFG always (#7084). [Geza Lore, Testorrent USA, Inc.]
 * Optimize always blocks using local temporary variables in DFG (#7085). [Geza Lore, Testorrent USA, Inc.]
 * Optimize functions inlined from packages in DFG (#7091). [Geza Lore, Testorrent USA, Inc.]
+* Optimize continuous assignments with function on RHS in DFG (#7096). [Geza Lore, Testorrent USA, Inc.]
 * Fix MULTIDRIVEN with task and default driver (#4045) (#6858). [em2machine]
 * Fix parameterized virtual interface references that have no model references (#4286).
 * Fix hierarchical interface/modport issues (#5941) (#6997). [Leela Pakanati]
@@ -87,7 +91,7 @@ Verilator 5.045 devel
 * Fix interface internal type reference (#6920) (#6966). [Todd Strader]
 * Fix segfault after assignment pattern XOR error (#6928) (#6931). [emmettifelts]
 * Fix delayed initial assignment (#6929). [Todd Strader]
-* Fix event triggering (#6932) (#7072). [Igor Zaworski, Antmicro Ltd.]
+* Fix event triggering (#6932) (#7072) (#7101). [Igor Zaworski, Antmicro Ltd.]
 * Fix `--top-module` with underscores (#6940). [Christopher Batten]
 * Fix variable randomization to better differ by seed (#6945) (#6956). [Rodrigo Batista de Moraes]
 * Fix null pointer dereference in class member trigger expressions (#6946). [Cameron Waite]
@@ -113,7 +117,9 @@ Verilator 5.045 devel
 * Fix inside operator crash with impure expression and unsized range literals (#7063) (#7067). [Yilou Wang]
 * Fix constant propagating DPI-written variables (#7074). [Geza Lore, Testorrent USA, Inc.]
 * Fix conditional expressions in constraints (#7087). [Ryszard Rozak, Antmicro Ltd.]
+* Fix UNSUPPORTED on $sampled in sensitivity list (#7093). [Ryszard Rozak, Antmicro Ltd.]
 * Fix time to not advance after `$finish` (#7095).
+* Fix associative array size() constraint generating invalid resize() call (#7103) (#7112). [Yilou Wang]
 * Fix circular class reference %p-printing causing infinite recursion (#7106).
 
 
