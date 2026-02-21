@@ -320,6 +320,7 @@ public:
 // These require the class object to have the thread safety lock
 inline IData VL_RANDOM_RNG_I(VlRNG& rngr) VL_MT_UNSAFE { return rngr.rand64(); }
 inline QData VL_RANDOM_RNG_Q(VlRNG& rngr) VL_MT_UNSAFE { return rngr.rand64(); }
+extern double VL_RANDOM_RNG_D(VlRNG& rngr) VL_MT_UNSAFE;
 extern WDataOutP VL_RANDOM_RNG_W(VlRNG& rngr, int obits, WDataOutP outwp) VL_MT_UNSAFE;
 
 //===================================================================
