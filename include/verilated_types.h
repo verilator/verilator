@@ -1885,6 +1885,8 @@ public:
     VlClass() {}
     VlClass(const VlClass& copied) {}
     ~VlClass() override = default;
+    // Polymorphic shallow clone. Overridden in each generated concrete class.
+    virtual VlClass* vlClone() const { return nullptr; }
     // METHODS
     virtual const char* typeName() const { return "VlClass"; }
     virtual std::string to_string() const { return ""; }
@@ -2007,6 +2009,16 @@ public:
     template <typename T_OtherClass>
     VlClassRef<T_OtherClass> dynamicCast() const {
         return VlClassRef<T_OtherClass>{dynamic_cast<T_OtherClass*>(m_objp)};
+    }
+    // Polymorphic shallow clone (IEEE 1800-2017 8.7: new <handle> preserves runtime type)
+    VlClassRef vlClone(VlDeleter& deleter) const {
+        if (VL_UNLIKELY(!m_objp)) return {};
+        VlClass* clonedp = m_objp->vlClone();
+        if (VL_UNLIKELY(!clonedp)) return {};
+        clonedp->m_deleterp = &deleter;
+        VlClassRef result;
+        result.m_objp = dynamic_cast<T_Class*>(clonedp);
+        return result;
     }
     // Dereference operators
     T_Class& operator*() const { return *m_objp; }
