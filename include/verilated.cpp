@@ -442,9 +442,7 @@ WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp) VL_MT_SAFE {
     return outwp;
 }
 
-double VL_RANDOM_RNG_D(VlRNG& rngr) VL_MT_UNSAFE {
-    return VL_CVT_D_Q(VL_RANDOM_RNG_Q(rngr));
-}
+double VL_RANDOM_RNG_D(VlRNG& rngr) VL_MT_UNSAFE { return VL_CVT_D_Q(VL_RANDOM_RNG_Q(rngr)); }
 
 WDataOutP VL_RANDOM_RNG_W(VlRNG& rngr, int obits, WDataOutP outwp) VL_MT_UNSAFE {
     for (int i = 0; i < VL_WORDS_I(obits); ++i) outwp[i] = rngr.rand64();
