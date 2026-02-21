@@ -48,14 +48,14 @@ module t (  /*AUTOARG*/
       `checkh(bit_q[2], 1'b1);
       `checkh(bit_q[3], 1'b0);
 
-      bit_q  = bit_q_t'(4'h3);
+      bit_q = bit_q_t'(4'h3);
       bit_qq = bit_q;
       `checkh(bit_qq[0], 1'b0);
       `checkh(bit_qq[1], 1'b0);
       `checkh(bit_qq[2], 1'b1);
       `checkh(bit_qq[3], 1'b1);
 
-      bit_q  = bit_q_t'(4'h2);
+      bit_q = bit_q_t'(4'h2);
       bit_qq = bit_q_t'(bit_q);
       `checkh(bit_qq[0], 1'b0);
       `checkh(bit_qq[1], 1'b0);
@@ -256,7 +256,7 @@ module t (  /*AUTOARG*/
     begin
       byte_q_t bytq_init;
       byte_q_t bytq;
-      bit_q_t  bitq;
+      bit_q_t bitq;
 
       bytq_init.push_back(8'h84);
       bytq_init.push_back(8'haa);
@@ -269,8 +269,9 @@ module t (  /*AUTOARG*/
       bitq = {<<8{bit_q_t'({<<{bytq}})}};
       bytq = {<<8{bit_q_t'({<<{bitq}})}};
       s = $sformatf("bitq=%p", bitq);
-      `checks(s,
-              "bitq='{'h0, 'h0, 'h1, 'h0, 'h0, 'h0, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1}");
+      `checks(
+          s,
+          "bitq='{'h0, 'h0, 'h1, 'h0, 'h0, 'h0, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1}");
       s = $sformatf("bytq=%p", bytq);
       `checks(s, "bytq='{'h84, 'haa}");
 
@@ -403,7 +404,7 @@ module t (  /*AUTOARG*/
 
     // Test StreamR (>>) operations - fairly simple since this should maintain left-to-right order.
     begin
-      bit_q_t  bitq;
+      bit_q_t bitq;
       byte_q_t bytq;
 
       bitq = {1'b1, 1'b0, 1'b1, 1'b0, 1'b1, 1'b0, 1'b1, 1'b0};
@@ -414,8 +415,9 @@ module t (  /*AUTOARG*/
       bytq = {8'h84, 8'haa};
       bitq = {>>{bit_q_t'({<<{bytq}})}};
       s = $sformatf("bitq=%p", bitq);
-      `checks(s,
-              "bitq='{'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h0, 'h1, 'h0, 'h0, 'h0, 'h0, 'h1}");
+      `checks(
+          s,
+          "bitq='{'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h0, 'h1, 'h0, 'h0, 'h0, 'h0, 'h1}");
 
       bitq = {
         1'b1,
@@ -452,8 +454,9 @@ module t (  /*AUTOARG*/
       bytq = {8'h84, 8'haa};
       bitq = {>>{bit_q_t'({>>{bytq}})}};
       s = $sformatf("bitq=%p", bitq);
-      `checks(s,
-              "bitq='{'h1, 'h0, 'h0, 'h0, 'h0, 'h1, 'h0, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0}");
+      `checks(
+          s,
+          "bitq='{'h1, 'h0, 'h0, 'h0, 'h0, 'h1, 'h0, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0}");
 
       bitq = {
         1'b1,
@@ -481,6 +484,36 @@ module t (  /*AUTOARG*/
       bytq = {>>{byte_q_t'({>>{bytq}})}};
       s = $sformatf("bytq=%p", bytq);
       `checks(s, "bytq='{'h12, 'h34, 'h56}");
+    end
+
+    begin
+      bit wide_bits[];
+      bit [1023:0] wide_stream;
+      // verilator lint_off ASCRANGE
+      bit [0:1023] wide_streamr;
+      // verilator lint_on ASCRANGE
+
+      // verilog_format: off
+    wide_bits = '{1,0,1,0,1,0,1,1,0,0,1,1,0,0,0,1,0,1,0,1,0,1,1,0,1,1,0,1,0,1,0,0,
+      1,0,1,1,0,1,1,1,0,1,0,1,0,0,1,0,1,1,1,1,1,0,0,0,0,1,0,0,0,0,1,1,
+      0,1,0,1,0,0,1,1,0,1,1,1,1,1,0,1,0,1,1,0,1,0,0,0,1,1,0,1,1,1,1,1,
+      1,0,1,1,1,1,1,1,0,1,0,0,1,0,0,0,1,1,1,1,0,0,0,1,1,1,1,1,0,1,1,1,
+      1,0,0,0,1,0,1,0,1,1,1,1,0,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,
+      1,0,0,0,1,1,0,1,1,1,1,1,0,0,1,0,1,1,0,0,0,0,1,0,0,1,0,1,0,1,1,1,
+      1,1,0,0,1,1,0,1,0,1,1,0,1,1,1,1,1,0,1,0,0,1,1,1,1,1,0,0,0,1,1,1,
+      1,0,0,1,0,1,0,1,1,1,0,1,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+      1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0,0,1,0,1,1,0,1,1,1,0,1,1,
+      1,1,1,1,0,1,0,1,1,1,0,0,1,1,0,0};
+      // verilog_format: on
+
+      `checkh(wide_bits.size(), 432);
+      wide_stream = {>>bit{wide_bits}};
+      `checkh(wide_stream,
+              1024'hab3156d4b752f843537d68dfbf48f1f78af787ff8df2c257cd6fa7c795d300000000000000000000000000000000ffffffffa5bbf5cc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000);
     end
 
     $write("*-* All Finished *-*\n");

@@ -1718,24 +1718,33 @@ static inline QData VL_PACK_Q_UQ(int obits, int lbits, const VlUnpacked<QData, N
 static inline WDataOutP VL_PACK_W_RI(int obits, int lbits, WDataOutP owp,
                                      const VlQueue<CData>& q) {
     VL_MEMSET_ZERO_W(owp + 1, VL_WORDS_I(obits) - 1);
+    if (VL_UNLIKELY(obits < q.size() * lbits)) return owp;  // Though is illegal for q to be larger
+    const int offset = obits - q.size() * lbits;
     for (size_t i = 0; i < q.size(); ++i)
-        _vl_insert_WI(owp, q.at(q.size() - i - 1), i * lbits + lbits - 1, i * lbits);
+        _vl_insert_WI(owp, q.at(q.size() - i - 1), i * lbits + lbits - 1 + offset,
+                      i * lbits + offset);
     return owp;
 }
 
 static inline WDataOutP VL_PACK_W_RI(int obits, int lbits, WDataOutP owp,
                                      const VlQueue<SData>& q) {
     VL_MEMSET_ZERO_W(owp + 1, VL_WORDS_I(obits) - 1);
+    if (VL_UNLIKELY(obits < q.size() * lbits)) return owp;  // Though is illegal for q to be larger
+    const int offset = obits - q.size() * lbits;
     for (size_t i = 0; i < q.size(); ++i)
-        _vl_insert_WI(owp, q.at(q.size() - i - 1), i * lbits + lbits - 1, i * lbits);
+        _vl_insert_WI(owp, q.at(q.size() - i - 1), i * lbits + lbits - 1 + offset,
+                      i * lbits + offset);
     return owp;
 }
 
 static inline WDataOutP VL_PACK_W_RI(int obits, int lbits, WDataOutP owp,
                                      const VlQueue<IData>& q) {
     VL_MEMSET_ZERO_W(owp + 1, VL_WORDS_I(obits) - 1);
+    if (VL_UNLIKELY(obits < q.size() * lbits)) return owp;  // Though is illegal for q to be larger
+    const int offset = obits - q.size() * lbits;
     for (size_t i = 0; i < q.size(); ++i)
-        _vl_insert_WI(owp, q.at(q.size() - 1 - i), i * lbits + lbits - 1, i * lbits);
+        _vl_insert_WI(owp, q.at(q.size() - 1 - i), i * lbits + lbits - 1 + offset,
+                      i * lbits + offset);
     return owp;
 }
 
@@ -1769,8 +1778,11 @@ static inline WDataOutP VL_PACK_W_UI(int obits, int lbits, WDataOutP owp,
 static inline WDataOutP VL_PACK_W_RQ(int obits, int lbits, WDataOutP owp,
                                      const VlQueue<QData>& q) {
     VL_MEMSET_ZERO_W(owp + 1, VL_WORDS_I(obits) - 1);
+    if (VL_UNLIKELY(obits < q.size() * lbits)) return owp;  // Though is illegal for q to be larger
+    const int offset = obits - q.size() * lbits;
     for (size_t i = 0; i < q.size(); ++i)
-        _vl_insert_WQ(owp, q.at(q.size() - 1 - i), i * lbits + lbits - 1, i * lbits);
+        _vl_insert_WQ(owp, q.at(q.size() - 1 - i), i * lbits + lbits - 1 + offset,
+                      i * lbits + offset);
     return owp;
 }
 
@@ -1787,8 +1799,11 @@ template <std::size_t N_Words>
 static inline WDataOutP VL_PACK_W_RW(int obits, int lbits, WDataOutP owp,
                                      const VlQueue<VlWide<N_Words>>& q) {
     VL_MEMSET_ZERO_W(owp + 1, VL_WORDS_I(obits) - 1);
+    if (VL_UNLIKELY(obits < q.size() * lbits)) return owp;  // Though is illegal for q to be larger
+    const int offset = obits - q.size() * lbits;
     for (size_t i = 0; i < q.size(); ++i)
-        _vl_insert_WW(owp, q.at(q.size() - 1 - i), i * lbits + lbits - 1, i * lbits);
+        _vl_insert_WW(owp, q.at(q.size() - 1 - i), i * lbits + lbits - 1 + offset,
+                      i * lbits + offset);
     return owp;
 }
 
@@ -1796,8 +1811,10 @@ template <std::size_t N_Depth, std::size_t N_Words>
 static inline WDataOutP VL_PACK_W_UW(int obits, int lbits, WDataOutP owp,
                                      const VlUnpacked<VlWide<N_Words>, N_Depth>& q) {
     VL_MEMSET_ZERO_W(owp + 1, VL_WORDS_I(obits) - 1);
+    if (VL_UNLIKELY(obits < q.size() * lbits)) return owp;  // Though is illegal for q to be larger
+    const int offset = obits - q.size() * lbits;
     for (size_t i = 0; i < N_Depth; ++i)
-        _vl_insert_WW(owp, q[N_Depth - 1 - i], i * lbits + lbits - 1, i * lbits);
+        _vl_insert_WW(owp, q[N_Depth - 1 - i], i * lbits + lbits - 1 + offset, i * lbits + offset);
     return owp;
 }
 

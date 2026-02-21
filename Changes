@@ -121,6 +121,7 @@ Verilator 5.045 devel
 * Fix time to not advance after `$finish` (#7095).
 * Fix associative array size() constraint generating invalid resize() call (#7103) (#7112). [Yilou Wang]
 * Fix circular class reference %p-printing causing infinite recursion (#7106).
+* Fix too-short bit pack returning wrong value (#7111).
 * Fix randomize of real (#7115). [Srinivasan Venkataramanan]
 
 
