@@ -2248,6 +2248,37 @@ public:
             }
         });
 
+        // Relink RefDType nodes to point to parameterized classes' type parameters
+        netlistp->foreach([](AstRefDType* refdtypep) {
+            AstParamTypeDType* const paramtypep = VN_CAST(refdtypep->refDTypep(), ParamTypeDType);
+            if (!paramtypep) return;
+            AstClass* origClassp = nullptr;
+            for (AstNode* backp = paramtypep->backp(); backp; backp = backp->backp()) {
+                if (VN_IS(backp, Class)) {
+                    origClassp = VN_AS(backp, Class);
+                    break;
+                }
+            }
+            if (!origClassp) return;
+            if (origClassp->user3p()) return;  // will not get removed, no need to relink
+            AstClass* const parametrizedClassp = VN_CAST(origClassp->user4p(), Class);
+            if (!parametrizedClassp) return;
+            const string paramName = paramtypep->name();
+            AstParamTypeDType* newParamTypep = nullptr;
+            for (AstNode* stmtp = parametrizedClassp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                if (AstParamTypeDType* const ptp = VN_CAST(stmtp, ParamTypeDType)) {
+                    if (ptp->name() == paramName) {
+                        newParamTypep = ptp;
+                        break;
+                    }
+                }
+            }
+            if (newParamTypep) {
+                refdtypep->refDTypep(newParamTypep);
+                refdtypep->classOrPackagep(parametrizedClassp);
+            }
+        });
+
         relinkDots();
 
         resortNetlistModules(netlistp);
