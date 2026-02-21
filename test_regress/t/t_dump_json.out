@@ -1316,7 +1316,7 @@
             {"type":"PARSEREF","name":"m_queue","addr":"(WT)","loc":"d,45:14,45:21","dtypep":"UNLINKED","lhsp": [],"ftaskrefp": []}
           ],
            "rhsp": [
-            {"type":"FUNCREF","name":"size","addr":"(XT)","loc":"d,45:22,45:26","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"scopeNamep": []}
+            {"type":"FUNCREF","name":"size","addr":"(XT)","loc":"d,45:22,45:26","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"withp": [],"scopeNamep": []}
           ]}
         ]}
       ],"scopeNamep": []},
@@ -1348,7 +1348,7 @@
                   {"type":"PARSEREF","name":"m_queue","addr":"(JU)","loc":"d,50:30,50:37","dtypep":"UNLINKED","lhsp": [],"ftaskrefp": []}
                 ],
                  "rhsp": [
-                  {"type":"FUNCREF","name":"size","addr":"(KU)","loc":"d,50:38,50:42","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"scopeNamep": []}
+                  {"type":"FUNCREF","name":"size","addr":"(KU)","loc":"d,50:38,50:42","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"withp": [],"scopeNamep": []}
                 ]}
               ],
                "rhsp": [
@@ -1365,7 +1365,7 @@
                 {"type":"PARSEREF","name":"m_queue","addr":"(PU)","loc":"d,51:15,51:22","dtypep":"UNLINKED","lhsp": [],"ftaskrefp": []}
               ],
                "rhsp": [
-                {"type":"FUNCREF","name":"size","addr":"(QU)","loc":"d,51:23,51:27","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"scopeNamep": []}
+                {"type":"FUNCREF","name":"size","addr":"(QU)","loc":"d,51:23,51:27","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"withp": [],"scopeNamep": []}
               ]}
             ],
              "rhsp": [
@@ -1386,7 +1386,7 @@
                "exprp": [
                 {"type":"PARSEREF","name":"message","addr":"(YU)","loc":"d,52:25,52:32","dtypep":"UNLINKED","lhsp": [],"ftaskrefp": []}
               ]}
-            ],"scopeNamep": []}
+            ],"withp": [],"scopeNamep": []}
           ]}
         ]}
       ],"scopeNamep": []},
@@ -1414,7 +1414,7 @@
            "rhsp": [
             {"type":"LT","name":"","addr":"(IV)","loc":"d,57:33,57:34","dtypep":"(YE)",
              "lhsp": [
-              {"type":"FUNCREF","name":"num","addr":"(JV)","loc":"d,57:27,57:30","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"scopeNamep": []}
+              {"type":"FUNCREF","name":"num","addr":"(JV)","loc":"d,57:27,57:30","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"withp": [],"scopeNamep": []}
             ],
              "rhsp": [
               {"type":"PARSEREF","name":"m_bound","addr":"(KV)","loc":"d,57:35,57:42","dtypep":"UNLINKED","lhsp": [],"ftaskrefp": []}
@@ -1437,7 +1437,7 @@
                    "exprp": [
                     {"type":"PARSEREF","name":"message","addr":"(RV)","loc":"d,58:27,58:34","dtypep":"UNLINKED","lhsp": [],"ftaskrefp": []}
                   ]}
-                ],"scopeNamep": []}
+                ],"withp": [],"scopeNamep": []}
               ]}
             ]},
             {"type":"RETURN","name":"","addr":"(SV)","loc":"d,59:9,59:15",
@@ -1468,7 +1468,7 @@
                 {"type":"PARSEREF","name":"m_queue","addr":"(DW)","loc":"d,66:14,66:21","dtypep":"UNLINKED","lhsp": [],"ftaskrefp": []}
               ],
                "rhsp": [
-                {"type":"FUNCREF","name":"size","addr":"(EW)","loc":"d,66:22,66:26","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"scopeNamep": []}
+                {"type":"FUNCREF","name":"size","addr":"(EW)","loc":"d,66:22,66:26","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"withp": [],"scopeNamep": []}
               ]}
             ],
              "rhsp": [
@@ -1486,7 +1486,7 @@
                   {"type":"PARSEREF","name":"m_queue","addr":"(KW)","loc":"d,67:15,67:22","dtypep":"UNLINKED","lhsp": [],"ftaskrefp": []}
                 ],
                  "rhsp": [
-                  {"type":"FUNCREF","name":"size","addr":"(LW)","loc":"d,67:23,67:27","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"scopeNamep": []}
+                  {"type":"FUNCREF","name":"size","addr":"(LW)","loc":"d,67:23,67:27","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"withp": [],"scopeNamep": []}
                 ]}
               ],
                "rhsp": [
@@ -1502,7 +1502,7 @@
             {"type":"PARSEREF","name":"m_queue","addr":"(PW)","loc":"d,69:17,69:24","dtypep":"UNLINKED","lhsp": [],"ftaskrefp": []}
           ],
            "rhsp": [
-            {"type":"FUNCREF","name":"pop_front","addr":"(QW)","loc":"d,69:25,69:34","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"scopeNamep": []}
+            {"type":"FUNCREF","name":"pop_front","addr":"(QW)","loc":"d,69:25,69:34","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"withp": [],"scopeNamep": []}
           ]}
         ],
          "lhsp": [
@@ -1522,7 +1522,7 @@
          "condp": [
           {"type":"GT","name":"","addr":"(XW)","loc":"d,74:17,74:18","dtypep":"(YE)",
            "lhsp": [
-            {"type":"FUNCREF","name":"num","addr":"(YW)","loc":"d,74:11,74:14","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"scopeNamep": []}
+            {"type":"FUNCREF","name":"num","addr":"(YW)","loc":"d,74:11,74:14","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"withp": [],"scopeNamep": []}
           ],
            "rhsp": [
             {"type":"CONST","name":"?32?sh0","addr":"(ZW)","loc":"d,74:19,74:20","dtypep":"(N)"}
@@ -1538,7 +1538,7 @@
                 {"type":"PARSEREF","name":"m_queue","addr":"(DX)","loc":"d,75:19,75:26","dtypep":"UNLINKED","lhsp": [],"ftaskrefp": []}
               ],
                "rhsp": [
-                {"type":"FUNCREF","name":"pop_front","addr":"(EX)","loc":"d,75:27,75:36","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"scopeNamep": []}
+                {"type":"FUNCREF","name":"pop_front","addr":"(EX)","loc":"d,75:27,75:36","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"withp": [],"scopeNamep": []}
               ]}
             ],
              "lhsp": [
@@ -1572,7 +1572,7 @@
                 {"type":"PARSEREF","name":"m_queue","addr":"(RX)","loc":"d,83:14,83:21","dtypep":"UNLINKED","lhsp": [],"ftaskrefp": []}
               ],
                "rhsp": [
-                {"type":"FUNCREF","name":"size","addr":"(SX)","loc":"d,83:22,83:26","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"scopeNamep": []}
+                {"type":"FUNCREF","name":"size","addr":"(SX)","loc":"d,83:22,83:26","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"withp": [],"scopeNamep": []}
               ]}
             ],
              "rhsp": [
@@ -1590,7 +1590,7 @@
                   {"type":"PARSEREF","name":"m_queue","addr":"(YX)","loc":"d,84:15,84:22","dtypep":"UNLINKED","lhsp": [],"ftaskrefp": []}
                 ],
                  "rhsp": [
-                  {"type":"FUNCREF","name":"size","addr":"(ZX)","loc":"d,84:23,84:27","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"scopeNamep": []}
+                  {"type":"FUNCREF","name":"size","addr":"(ZX)","loc":"d,84:23,84:27","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"withp": [],"scopeNamep": []}
                 ]}
               ],
                "rhsp": [
@@ -1626,7 +1626,7 @@
          "condp": [
           {"type":"GT","name":"","addr":"(LY)","loc":"d,91:17,91:18","dtypep":"(YE)",
            "lhsp": [
-            {"type":"FUNCREF","name":"num","addr":"(MY)","loc":"d,91:11,91:14","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"scopeNamep": []}
+            {"type":"FUNCREF","name":"num","addr":"(MY)","loc":"d,91:11,91:14","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"withp": [],"scopeNamep": []}
           ],
            "rhsp": [
             {"type":"CONST","name":"?32?sh0","addr":"(NY)","loc":"d,91:19,91:20","dtypep":"(N)"}
@@ -1853,7 +1853,7 @@
           {"type":"REFDTYPE","name":"process","addr":"(YBB)","loc":"d,143:7,143:14","dtypep":"UNLINKED","typedefp":"UNLINKED","refDTypep":"UNLINKED","classOrPackagep":"UNLINKED","typeofp": [],"classOrPackageOpp": [],"paramsp": []}
         ],"delayp": [],
          "valuep": [
-          {"type":"NEW","name":"new","addr":"(ZBB)","loc":"d,143:19,143:22","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"scopeNamep": []}
+          {"type":"NEW","name":"new","addr":"(ZBB)","loc":"d,143:19,143:22","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"withp": [],"scopeNamep": []}
         ],"attrsp": []},
         {"type":"CSTMTUSER","name":"","addr":"(ACB)","loc":"d,145:7,145:9",
          "nodesp": [
@@ -1915,7 +1915,7 @@
              "exprp": [
               {"type":"PARSEREF","name":"KILLED","addr":"(BDB)","loc":"d,165:18,165:24","dtypep":"UNLINKED","lhsp": [],"ftaskrefp": []}
             ]}
-          ],"scopeNamep": []}
+          ],"withp": [],"scopeNamep": []}
         ]}
       ],"scopeNamep": []},
       {"type":"TASK","name":"suspend","addr":"(CDB)","loc":"d,168:19,168:26","cname":"suspend","fvarp": [],"classOrPackagep": [],
@@ -1939,7 +1939,7 @@
              "exprp": [
               {"type":"PARSEREF","name":"RUNNING","addr":"(MDB)","loc":"d,173:18,173:25","dtypep":"UNLINKED","lhsp": [],"ftaskrefp": []}
             ]}
-          ],"scopeNamep": []}
+          ],"withp": [],"scopeNamep": []}
         ]}
       ],"scopeNamep": []},
       {"type":"TASK","name":"await","addr":"(NDB)","loc":"d,176:10,176:15","cname":"await","fvarp": [],"classOrPackagep": [],
@@ -1950,7 +1950,7 @@
            "lhsp": [
             {"type":"EQ","name":"","addr":"(QDB)","loc":"d,178:22,178:24","dtypep":"(YE)",
              "lhsp": [
-              {"type":"FUNCREF","name":"status","addr":"(RDB)","loc":"d,178:13,178:19","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"scopeNamep": []}
+              {"type":"FUNCREF","name":"status","addr":"(RDB)","loc":"d,178:13,178:19","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"withp": [],"scopeNamep": []}
             ],
              "rhsp": [
               {"type":"PARSEREF","name":"FINISHED","addr":"(SDB)","loc":"d,178:25,178:33","dtypep":"UNLINKED","lhsp": [],"ftaskrefp": []}
@@ -1959,7 +1959,7 @@
            "rhsp": [
             {"type":"EQ","name":"","addr":"(TDB)","loc":"d,178:46,178:48","dtypep":"(YE)",
              "lhsp": [
-              {"type":"FUNCREF","name":"status","addr":"(UDB)","loc":"d,178:37,178:43","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"scopeNamep": []}
+              {"type":"FUNCREF","name":"status","addr":"(UDB)","loc":"d,178:37,178:43","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"withp": [],"scopeNamep": []}
             ],
              "rhsp": [
               {"type":"PARSEREF","name":"KILLED","addr":"(VDB)","loc":"d,178:49,178:55","dtypep":"UNLINKED","lhsp": [],"ftaskrefp": []}
@@ -1990,7 +1990,7 @@
                 {"type":"PARSEREF","name":"processQueue","addr":"(FEB)","loc":"d,184:14,184:26","dtypep":"UNLINKED","lhsp": [],"ftaskrefp": []}
               ],
                "rhsp": [
-                {"type":"FUNCREF","name":"size","addr":"(GEB)","loc":"d,184:27,184:31","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"scopeNamep": []}
+                {"type":"FUNCREF","name":"size","addr":"(GEB)","loc":"d,184:27,184:31","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"withp": [],"scopeNamep": []}
               ]}
             ],
              "rhsp": [
@@ -2008,11 +2008,11 @@
                   {"type":"PARSEREF","name":"processQueue","addr":"(MEB)","loc":"d,185:9,185:21","dtypep":"UNLINKED","lhsp": [],"ftaskrefp": []}
                 ],
                  "rhsp": [
-                  {"type":"FUNCREF","name":"pop_back","addr":"(NEB)","loc":"d,185:22,185:30","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"scopeNamep": []}
+                  {"type":"FUNCREF","name":"pop_back","addr":"(NEB)","loc":"d,185:22,185:30","dtypep":"UNLINKED","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"withp": [],"scopeNamep": []}
                 ]}
               ],
                "rhsp": [
-                {"type":"TASKREF","name":"kill","addr":"(OEB)","loc":"d,185:33,185:37","dtypep":"(WU)","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"scopeNamep": []}
+                {"type":"TASKREF","name":"kill","addr":"(OEB)","loc":"d,185:33,185:37","dtypep":"(WU)","dotted":"","taskp":"UNLINKED","classOrPackagep":"UNLINKED","pinsp": [],"withp": [],"scopeNamep": []}
               ]}
             ]}
           ]}

@@ -2016,7 +2016,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             AstLambdaArgRef* const valueArgRefp = new AstLambdaArgRef{argFl, name, false};
             AstWith* const newp
                 = new AstWith{nodep->fileline(), indexArgRefp, valueArgRefp, exprOrConstraintsp};
-            funcrefp->addPinsp(newp);
+            funcrefp->withp(newp);
         }
         funcrefp->addPinsp(argp);
         nodep->replaceWith(nodep->funcrefp()->unlinkFrBack());
@@ -4765,7 +4765,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         VL_RESTORER(m_randMethodCallp);
         {
             m_ds.init(m_curSymp);
-            if (nodep->name() == "randomize" && nodep->pinsp()) {
+            if (nodep->name() == "randomize" && (nodep->pinsp() || nodep->withp())) {
                 m_randMethodCallp = nodep;
                 const AstNodeDType* fromDtp = nodep->fromp()->dtypep();
                 if (!fromDtp) {
@@ -4775,7 +4775,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         fromDtp = getExprDTypep(nodep->fromp());
                     }
                     if (!fromDtp) {
-                        if (VN_IS(nodep->pinsp(), With)) {
+                        if (nodep->withp()) {
                             nodep->v3warn(
                                 E_UNSUPPORTED,
                                 "Unsupported: 'randomize() with' on complex expressions");
@@ -4889,10 +4889,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
             // Found a Var, everything following is method call.
             // {scope}.{var}.HERE {method} ( ARGS )
             AstNodeExpr* const varEtcp = VN_AS(m_ds.m_dotp->lhsp()->unlinkFrBack(), NodeExpr);
-            AstNodeExpr* argsp = nullptr;
-            if (nodep->pinsp()) argsp = nodep->pinsp()->unlinkFrBackWithNext();
-            AstNode* const newp = new AstMethodCall{nodep->fileline(), varEtcp, VFlagChildDType{},
-                                                    nodep->name(), argsp};
+            AstNodeExpr* const argsp = nodep->pinsp();
+            if (argsp) argsp->unlinkFrBackWithNext();
+            AstMethodCall* const newp = new AstMethodCall{nodep->fileline(), varEtcp,
+                                                          VFlagChildDType{}, nodep->name(), argsp};
+            if (AstWith* const withp = nodep->withp()) newp->withp(withp->unlinkFrBack());
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;

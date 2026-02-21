@@ -219,8 +219,9 @@ public:
 };
 class AstNodeFTaskRef VL_NOT_FINAL : public AstNodeExpr {
     // A reference to a task (or function)
-    // op2 used by some sub-types only
-    // @astgen op3 := pinsp : List[AstNodeExpr]
+    // op1 used by some sub-types only
+    // @astgen op2 := pinsp : List[AstNodeExpr]
+    // @astgen op3 := withp : Optional[AstWith]
     // @astgen op4 := scopeNamep : Optional[AstScopeName]
     //
     // @astgen ptr := m_taskp : Optional[AstNodeFTask]  // [AfterLink] Pointer to task referenced
@@ -4503,7 +4504,7 @@ public:
 class AstMethodCall final : public AstNodeFTaskRef {
     // A reference to a member task (or function)
     // Don't need the class we are extracting from, as the "fromp()"'s datatype can get us to it
-    // @astgen op2 := fromp : AstNodeExpr
+    // @astgen op1 := fromp : AstNodeExpr
     //
 public:
     AstMethodCall(FileLine* fl, AstNodeExpr* fromp, VFlagChildDType, const string& name,

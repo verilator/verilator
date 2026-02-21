@@ -505,6 +505,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             }
             m_foundTargetVar.clear();
         }
+        if (nodep->withp()) iterate(nodep->withp());
     }
     void visit(AstPin* nodep) override {
         UINFO(5, nodep->modVarp()->prettyNameQ() << " pin ");

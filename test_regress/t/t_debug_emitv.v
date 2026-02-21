@@ -229,6 +229,8 @@ module t (/*AUTOARG*/
       sum = $urandom;
       sum = $urandom(10);
 
+      sum = array.sum with (item * 2);
+
       if (Pkg::PKG_PARAM != 1) $stop;
       sub.r = 62.0;
 
