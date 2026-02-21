@@ -5382,7 +5382,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 nodep->childDTypep(refParamp);
                 nodep->parameterized(true);
             } else if (AstTypedef* const typedefp = VN_CAST(foundp->nodep(), Typedef)) {
-                AstNodeDType* const unwrappedp = typedefp->subDTypep()->skipRefp(); // Unwrap typedef to get the underlying type
+                AstNodeDType* const unwrappedp = typedefp->subDTypep()->skipRefp();
                 if (AstClassRefDType* const classRefp = VN_CAST(unwrappedp, ClassRefDType)) {
                     AstPin* paramsp = cpackagerefp->paramsp();
                     if (paramsp) {
