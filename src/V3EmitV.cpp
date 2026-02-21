@@ -1029,9 +1029,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         iterateConstNull(nodep->exprp());
         puts(") ");
     }
-    void visit(AstLambdaArgRef* nodep) override {
-        putfs(nodep, nodep->name());
-    }
+    void visit(AstLambdaArgRef* nodep) override { putfs(nodep, nodep->name()); }
     void visit(AstPrintTimeScale* nodep) override {
         puts(nodep->verilogKwd());
         puts(";\n");
