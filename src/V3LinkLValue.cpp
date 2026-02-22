@@ -336,6 +336,7 @@ class LinkLValueVisitor final : public VNVisitor {
                 iterate(pinp);
             }
         }
+        if (nodep->withp()) iterate(nodep->withp());
     }
     void visit(AstConstraint* nodep) override {
         VL_RESTORER(m_setIfRand);
