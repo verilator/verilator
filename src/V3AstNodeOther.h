@@ -768,7 +768,7 @@ class AstClassExtends final : public AstNode {
     // during early parse, then moves to dtype
     // @astgen op1 := childDTypep : Optional[AstNodeDType]
     // @astgen op2 := classOrPkgsp : Optional[AstNode]
-    // @astgen op3 := argsp : List[AstNodeExpr]
+    // @astgen op3 := argsp : List[AstArg]
     const bool m_isImplements;  // class implements
     bool m_parameterized = false;  // has parameters in its statement
 

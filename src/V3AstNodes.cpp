@@ -95,8 +95,8 @@ bool AstNodeFTaskRef::getPurityRecurse() const {
     // Unlinked yet, so treat as impure
     if (!taskp) return false;
     // First compute the purity of arguments
-    for (AstNode* pinp = this->pinsp(); pinp; pinp = pinp->nextp()) {
-        if (!pinp->isPure()) return false;
+    for (AstArg* argp = this->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
+        if (!argp->isPure()) return false;
     }
     return taskp->isPure();
 }

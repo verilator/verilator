@@ -3840,7 +3840,7 @@ class_new<nodeExprp>:    // IEEE: class_new
 
 class_newNoScope<nodeExprp>:    // IEEE: class_new but no packageClassScope
         //                      // Special precedence so (...) doesn't match expr
-                yNEW__ETC                               { $$ = new AstNew{$1,  nullptr}; }
+                yNEW__ETC                               { $$ = new AstNew{$1}; }
         |       yNEW__ETC expr                          { $$ = new AstNewCopy{$1, $2}; }
         |       yNEW__PAREN '(' list_of_argumentsE ')'  { $$ = new AstNew{$1, $3}; }
         ;
@@ -4114,7 +4114,7 @@ loop_variableE<nodep>:          // IEEE: part of loop_variables
 // Functions/tasks
 
 taskRef<nodeExprp>:            // IEEE: part of tf_call
-                id                                      { $$ = new AstTaskRef{$<fl>1, *$1, nullptr}; }
+                id                                      { $$ = new AstTaskRef{$<fl>1, *$1}; }
         |       id '(' list_of_argumentsE ')'           { $$ = new AstTaskRef{$<fl>1, *$1, $3}; }
         |       packageClassScope id '(' list_of_argumentsE ')'
                         { $$ = AstDot::newIfPkg($<fl>2, $1, new AstTaskRef{$<fl>2, *$2, $4}); }
@@ -4159,7 +4159,7 @@ task_subroutine_callNoMethod<nodeExprp>:    // function_subroutine_callNoMethod 
         //                      // funcref below not task ref to avoid conflict, must later handle either
         |       funcRef yWITH__PAREN '(' expr ')'       { $$ = new AstWithParse{$2, $1, $4}; }
         //                      // can call as method and yWITH without parenthesis
-        |       id yWITH__PAREN '(' expr ')'            { $$ = new AstWithParse{$2, new AstFuncRef{$<fl>1, *$1, nullptr}, $4}; }
+        |       id yWITH__PAREN '(' expr ')'            { $$ = new AstWithParse{$2, new AstFuncRef{$<fl>1, *$1}, $4}; }
         //                      // IEEE: method_call requires a "." so is in expr
         //                      // IEEE: ['std::'] not needed, as normal std package resolution will find it
         //                      // IEEE: randomize_call
@@ -4174,7 +4174,7 @@ function_subroutine_callNoMethod<nodeExprp>:        // IEEE: function_subroutine
                 funcRef                                 { $$ = $1; }
         |       funcRef yWITH__PAREN '(' expr ')'       { $$ = new AstWithParse{$2, $1, $4}; }
         //                      // can call as method and yWITH without parenthesis
-        |       id yWITH__PAREN '(' expr ')'            { $$ = new AstWithParse{$2, new AstFuncRef{$<fl>1, *$1, nullptr}, $4}; }
+        |       id yWITH__PAREN '(' expr ')'            { $$ = new AstWithParse{$2, new AstFuncRef{$<fl>1, *$1}, $4}; }
         |       system_f_only_expr_call                 { $$ = $1; }
         |       system_f_or_t_expr_call                 { $$ = $1; }
         //                      // IEEE: method_call requires a "." so is in expr
@@ -4601,10 +4601,10 @@ exprOrDataType<nodep>:          // expr | data_type: combined to prevent conflic
 //UNSUP |       exprOrDataTypeList ',' exprOrDataType   { $$ = addNextNull($1, $3); }
 //UNSUP ;
 
-list_of_argumentsE<nodeExprp>:  // IEEE: [list_of_arguments]
+list_of_argumentsE<argp>:  // IEEE: [list_of_arguments]
                 argsDottedList                          { $$ = $1; }
         |       argsExprListE
-                        { if (VN_IS($1, Arg) && VN_CAST($1, Arg)->emptyConnectNoNext()) {
+                        { if ($1->emptyConnectNoNext()) {
                               $1->deleteTree(); $$ = nullptr;  // Mis-created when have 'func()'
                           } else { $$ = $1; } }
         |       argsExprListE ',' argsDottedList        { $$ = addNextNull($1, $3); }
@@ -4876,10 +4876,10 @@ parenE:
 //                              //   method_call_root not needed, part of expr resolution
 //                              // What's left is below array_methodNoRoot
 array_methodNoRoot<nodeFTaskRefp>:
-                yOR                                     { $$ = new AstFuncRef{$1, "or", nullptr}; }
-        |       yAND                                    { $$ = new AstFuncRef{$1, "and", nullptr}; }
-        |       yXOR                                    { $$ = new AstFuncRef{$1, "xor", nullptr}; }
-        |       yUNIQUE                                 { $$ = new AstFuncRef{$1, "unique", nullptr}; }
+                yOR                                     { $$ = new AstFuncRef{$1, "or"}; }
+        |       yAND                                    { $$ = new AstFuncRef{$1, "and"}; }
+        |       yXOR                                    { $$ = new AstFuncRef{$1, "xor"}; }
+        |       yUNIQUE                                 { $$ = new AstFuncRef{$1, "unique"}; }
         ;
 
 array_methodWith<nodeExprp>:
@@ -4887,7 +4887,7 @@ array_methodWith<nodeExprp>:
         |       array_methodNoRoot parenE yWITH__PAREN '(' expr ')'
                         { $$ = new AstWithParse{$3, $1, $5}; }
         |       array_methodNoRoot '(' expr ')' yWITH__PAREN '(' expr ')'
-                        { $$ = new AstWithParse{$5, $1, $7}; $1->addPinsp(new AstArg{$<fl>3, "", $3}); }
+                        { $$ = new AstWithParse{$5, $1, $7}; $1->addArgsp(new AstArg{$<fl>3, "", $3}); }
         ;
 
 dpi_import_export<nodep>:       // ==IEEE: dpi_import_export
@@ -5406,7 +5406,7 @@ argsExprList<nodeExprp>:        // IEEE: part of list_of_arguments (used where ,
         |       argsExprList ',' expr                   { $$ = $1->addNext($3); }
         ;
 
-argsExprListE<nodeExprp>:       // IEEE: part of list_of_arguments
+argsExprListE<argp>:       // IEEE: part of list_of_arguments
                 argsExprOneE                            { $$ = $1; }
         |       argsExprListE ',' argsExprOneE          { $$ = $1->addNext($3); }
         ;
@@ -5416,7 +5416,7 @@ argsExprListE<nodeExprp>:       // IEEE: part of list_of_arguments
 //UNSUP |       pev_argsExprListE ',' pev_argsExprOneE  { $$ = addNextNull($1, $3); }
 //UNSUP ;
 
-argsExprOneE<nodeExprp>:        // IEEE: part of list_of_arguments
+argsExprOneE<argp>:        // IEEE: part of list_of_arguments
                 /*empty*/                               { $$ = new AstArg{CRELINE(), "", nullptr}; }
         |       expr                                    { $$ = new AstArg{$1->fileline(), "", $1}; }
         ;
@@ -5426,7 +5426,7 @@ argsExprOneE<nodeExprp>:        // IEEE: part of list_of_arguments
 //UNSUP |       pev_expr                                { $$ = $1; }
 //UNSUP ;
 
-argsDottedList<nodeExprp>:      // IEEE: part of list_of_arguments
+argsDottedList<argp>:      // IEEE: part of list_of_arguments
                 argsDotted                              { $$ = $1; }
         |       argsDottedList ',' argsDotted           { $$ = addNextNull($1, $3); }
         ;
@@ -5436,12 +5436,12 @@ argsDottedList<nodeExprp>:      // IEEE: part of list_of_arguments
 //UNSUP |       pev_argsDottedList ',' pev_argsDotted   { $$ = addNextNull($1, $3); }
 //UNSUP ;
 
-argsDotted<nodeExprp>:          // IEEE: part of list_of_arguments
+argsDotted<argp>:          // IEEE: part of list_of_arguments
                 '.' idAny '(' ')'                       { $$ = new AstArg{$<fl>2, *$2, nullptr}; }
         |       '.' idAny '(' expr ')'                  { $$ = new AstArg{$<fl>2, *$2, $4}; }
         ;
 
-//UNSUPpev_argsDotted<nodeExprp>:  // IEEE: part of list_of_arguments - pev_expr at bottom
+//UNSUPpev_argsDotted<argp>:  // IEEE: part of list_of_arguments - pev_expr at bottom
 //UNSUP         '.' idAny '(' ')'                       { $$ = new AstArg{$<fl>2, *$2, nullptr}; }
 //UNSUP |       '.' idAny '(' pev_expr ')'              { $$ = new AstArg{$<fl>2, *$2, $4}; }
 //UNSUP ;

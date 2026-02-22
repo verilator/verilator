@@ -920,11 +920,11 @@ public:
 };
 class AstRSProdItem final : public AstNodeStmt {
     // randomsquence production item
-    // @astgen op1 := argsp : List[AstNodeExpr]
+    // @astgen op1 := argsp : List[AstArg]
     // @astgen ptr := m_prodp : Optional[AstRSProd]  // Pointer to production
     string m_name;  // Name of block, or "" to use first production
 public:
-    AstRSProdItem(FileLine* fl, const string& name, AstNodeExpr* argsp)
+    AstRSProdItem(FileLine* fl, const string& name, AstArg* argsp)
         : ASTGEN_SUPER_RSProdItem(fl)
         , m_name{name} {
         addArgsp(argsp);
