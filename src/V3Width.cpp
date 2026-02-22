@@ -2232,10 +2232,6 @@ class WidthVisitor final : public VNVisitor {
         UINFO(4, "dtWidthed " << nodep);
         // No nodep->typedefp(nullptr) for now; V3WidthCommit needs to check accesses
         nodep->doingWidth(false);
-        // Reference resolved, delete explicit operand if remaining
-        if (AstNodeExpr* const clsOrPkgOpp = nodep->classOrPackageOpp()) {
-            VL_DO_DANGLING(clsOrPkgOpp->unlinkFrBack()->deleteTree(), clsOrPkgOpp);
-        }
     }
     void visit(AstTypedef* nodep) override {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed

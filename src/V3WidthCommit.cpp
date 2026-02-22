@@ -531,6 +531,10 @@ private:
         }
         editDType(nodep);
     }
+    void visit(AstClassOrPackageRef* nodep) override {
+        // Reference must have been resolved, can delete these
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+    }
     void visit(AstNode* nodep) override {
         iterateChildren(nodep);
         editDType(nodep);
