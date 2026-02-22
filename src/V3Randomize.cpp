@@ -699,6 +699,12 @@ class RandomizeMarkVisitor final : public VNVisitor {
                      || (nodep->op3p() && nodep->op3p()->user1())
                      || (nodep->op4p() && nodep->op4p()->user1()));
     }
+    void visit(AstArg* nodep) override {
+        iterateChildrenConst(nodep);
+        if (!m_constraintExprGenp && !m_inStdWith) return;
+        nodep->user1(nodep->exprp() && nodep->exprp()->user1());
+    }
+
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:

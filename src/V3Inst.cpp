@@ -566,7 +566,6 @@ private:
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
     void visit(AstNew* nodep) override { iterateChildren(nodep); }
     void visit(AstMethodCall* nodep) override { iterateChildren(nodep); }
-    void visit(AstArg* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
