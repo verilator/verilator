@@ -1536,10 +1536,22 @@ public:
         puts(")");
     }
     void visit(AstNewCopy* nodep) override {
-        // Polymorphic shallow clone: preserves runtime type via virtual vlClone()
-        putns(nodep, "(");
-        iterateAndNextConstNull(nodep->rhsp());
-        puts(").vlClone(vlSymsp->__Vm_deleter)");
+        // Polymorphic shallow clone: preserves runtime type via virtual clone()
+        // VL_NULL_CHECK enforces null check per IEEE 1800-2017 8.7
+        putns(nodep, "VL_NULL_CHECK(");
+        if (VN_IS(nodep->rhsp(), Const) && VN_AS(nodep->rhsp(), Const)->isNull()) {
+            // V3Const folded rhs to null: emit a typed empty ref so VL_NULL_CHECK fires
+            const AstClassRefDType* const refDTypep
+                = VN_CAST(nodep->dtypep()->skipRefp(), ClassRefDType);
+            puts(refDTypep->cType("", false, false) + "{}");
+        } else {
+            iterateAndNextConstNull(nodep->rhsp());
+        }
+        puts(", ");
+        putsQuoted(protect(nodep->fileline()->filename()));
+        puts(", ");
+        puts(cvtToStr(nodep->fileline()->lineno()));
+        puts(").clone(vlSymsp->__Vm_deleter)");
     }
     void visit(AstSel* nodep) override {
         // Note ASSIGN checks for this on a LHS

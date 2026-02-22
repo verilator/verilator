@@ -218,7 +218,7 @@ class EmitCHeader final : public EmitCConstInit {
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
             if (!classp->isInterfaceClass() && !classp->isVirtual()) {
                 decorateFirst(first, section);
-                putns(classp, "VlClass* vlClone() const { return new "
+                putns(classp, "VlClass* clone() const { return new "
                                   + EmitCUtil::prefixNameProtect(classp) + "(*this); }\n");
             }
         }
