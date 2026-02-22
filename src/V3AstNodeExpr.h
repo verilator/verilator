@@ -52,7 +52,7 @@ public:
     // METHODS
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
-    // Every expressio must have a data type after V3Width
+    // Every expression must have a data type after V3Width
     bool hasDType() const override final VL_MT_SAFE { return true; }
     virtual string emitVerilog() = 0;  /// Format string for verilog writing; see V3EmitV
     // For documentation on emitC format see EmitCFunc::emitOpName
