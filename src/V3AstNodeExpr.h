@@ -819,7 +819,6 @@ public:
     void classOrPackagep(AstNodeModule* nodep) {
         m_classOrPackageNodep = reinterpret_cast<AstNode*>(nodep);
     }
-    bool hasDType() const override VL_MT_SAFE { return false; }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(true); }
