@@ -16,4 +16,3 @@ test.compile(verilator_flags2=['--binary'])
 test.execute()
 
 test.passes()
-
