@@ -5,17 +5,17 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Base;
-   int value;
+  int value;
 endclass
 
 module t;
-   Base b;
-   Base a;
-   initial begin
-      b = null;
-      a = new b;  // BAD: null handle dereference (IEEE 8.7)
-      if (a != null) $write("unexpected clone\n");
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  Base b;
+  Base a;
+  initial begin
+    b = null;
+    a = new b;  // BAD: null handle dereference (IEEE 8.7)
+    if (a != null) $write("unexpected clone\n");
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

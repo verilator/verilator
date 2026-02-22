@@ -23,7 +23,7 @@ class FuncConstraintTest;
   endfunction
 
   constraint func_con {
-    mask inside {[8'h10:8'hF0]};
+    mask inside {[8'h10 : 8'hF0]};
     value >= get_min_value(mask);
     value <= get_max_value(mask);
   }

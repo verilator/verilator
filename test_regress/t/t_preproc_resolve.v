@@ -6,13 +6,13 @@
 
 `timescale 1ns/1ps
 module top(/*AUTOARG*/
-   input logic clk,
-   input logic rst,
-   output logic top_out
+    input logic clk,
+    input logic rst,
+    output logic top_out
 );
-   submod u_submod (/*AUTOINST*/
-      .clk (clk),
-      .rst (rst),
-      .out_signal(top_out)
-   );
+  submod u_submod (/*AUTOINST*/
+    .clk (clk),
+    .rst (rst),
+    .out_signal(top_out)
+  );
 endmodule

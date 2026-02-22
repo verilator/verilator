@@ -24,8 +24,8 @@ end
 
 class Cls;
   int d;
-  rand int  y;
-  rand bit  i;
+  rand int y;
+  rand bit i;
 
   constraint q {
     if (i) {

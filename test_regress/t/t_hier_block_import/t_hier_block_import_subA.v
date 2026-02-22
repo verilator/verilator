@@ -7,5 +7,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 module subA (output bit [31:0] out); /*verilator hier_block*/
-   subsub subsub(.out(out));
+  subsub subsub(.out(out));
 endmodule

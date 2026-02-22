@@ -9,8 +9,8 @@
 `include "../include/t_flag_relinc.vh"
 
 module t_flag_relinc_sub ();
-   initial begin
-      `all_finished;
-      $finish;
-   end
+  initial begin
+    `all_finished;
+    $finish;
+  end
 endmodule

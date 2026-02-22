@@ -8,5 +8,5 @@
 
 // Note: no hier_block pragma here to validate partial hier_block design
 module subB (output bit [31:0] out);
-   assign out = `VALUE_B;
+  assign out = `VALUE_B;
 endmodule

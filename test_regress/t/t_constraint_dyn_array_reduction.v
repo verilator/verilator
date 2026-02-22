@@ -17,50 +17,60 @@
 module t;
 
   class XorTest;
-    rand bit [7:0] data [];
+    rand bit [7:0] data[];
     rand bit [7:0] result;
-    function new(); data = new[4]; endfunction
-    constraint c_size { data.size() == 4; }
-    constraint c_xor  { result == data.xor(); }
+    function new();
+      data = new[4];
+    endfunction
+    constraint c_size {data.size() == 4;}
+    constraint c_xor {result == data.xor();}
   endclass
 
   class SumTest;
-    rand bit [7:0] data [];
+    rand bit [7:0] data[];
     rand bit [7:0] result;
-    function new(); data = new[4]; endfunction
-    constraint c_size { data.size() == 4; }
-    constraint c_sum  { result == data.sum(); }
+    function new();
+      data = new[4];
+    endfunction
+    constraint c_size {data.size() == 4;}
+    constraint c_sum {result == data.sum();}
   endclass
 
   class AndTest;
-    rand bit [7:0] data [];
+    rand bit [7:0] data[];
     rand bit [7:0] result;
-    function new(); data = new[4]; endfunction
-    constraint c_size { data.size() == 4; }
-    constraint c_and  { result == data.and(); }
+    function new();
+      data = new[4];
+    endfunction
+    constraint c_size {data.size() == 4;}
+    constraint c_and {result == data.and();}
   endclass
 
   class OrTest;
-    rand bit [7:0] data [];
+    rand bit [7:0] data[];
     rand bit [7:0] result;
-    function new(); data = new[4]; endfunction
-    constraint c_size { data.size() == 4; }
-    constraint c_or   { result == data.or(); }
+    function new();
+      data = new[4];
+    endfunction
+    constraint c_size {data.size() == 4;}
+    constraint c_or {result == data.or();}
   endclass
 
   class ProductTest;
-    rand bit [7:0] data [];
+    rand bit [7:0] data[];
     rand bit [7:0] result;
-    function new(); data = new[4]; endfunction
-    constraint c_size { data.size() == 4; }
-    constraint c_prod { result == data.product(); }
+    function new();
+      data = new[4];
+    endfunction
+    constraint c_size {data.size() == 4;}
+    constraint c_prod {result == data.product();}
   endclass
 
   initial begin
-    static XorTest     t_xor  = new();
-    static SumTest     t_sum  = new();
-    static AndTest     t_and  = new();
-    static OrTest      t_or   = new();
+    static XorTest t_xor = new();
+    static SumTest t_sum = new();
+    static AndTest t_and = new();
+    static OrTest t_or = new();
     static ProductTest t_prod = new();
 
     repeat (10) begin

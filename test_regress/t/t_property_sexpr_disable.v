@@ -20,7 +20,7 @@ module t (  /*AUTOARG*/
     int passs;
   } result_t;
 
-  result_t results [int];
+  result_t results[int];
   result_t expected[int];
 
   localparam MAX = 15;
@@ -41,9 +41,9 @@ module t (  /*AUTOARG*/
   always @(clk) begin
     ++cyc;
     if (cyc == MAX) begin
-       expected[1] = '{2, 3};
-       // expected[2] shouldn't be initialized
-       expected[3] = '{6, 0};
+      expected[1] = '{2, 3};
+      // expected[2] shouldn't be initialized
+      expected[3] = '{6, 0};
       `checkh(results, expected);
       $write("*-* All Finished *-*\n");
       $finish;
