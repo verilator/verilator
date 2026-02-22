@@ -138,17 +138,8 @@ public:
 
     using CapturedMap = std::unordered_map<CaptureKey, CapturedEntry, CaptureKeyHash>;
 
-    // Captured localparam expression for interfaces/classes
-    struct CapturedIfaceLocalparam final {
-        AstVar* varp = nullptr;  // The localparam variable
-        AstNode* origExprp = nullptr;  // Clone of original expression (before constification)
-        AstNodeModule* ownerModp = nullptr;  // Owning interface/class
-    };
-    using LocalparamMap = std::unordered_map<const AstVar*, CapturedIfaceLocalparam>;
-
 private:
     static CapturedMap s_map;
-    static LocalparamMap s_localparamMap;
     static bool s_enabled;
 
     static string extractIfacePortName(const string& dotText);
@@ -159,16 +150,10 @@ private:
 public:
     static void enable(bool flag) {
         s_enabled = flag;
-        if (!flag) {
-            s_map.clear();
-            s_localparamMap.clear();
-        }
+        if (!flag) { s_map.clear(); }
     }
     static bool enabled() { return s_enabled; }
-    static void reset() {
-        s_map.clear();
-        s_localparamMap.clear();
-    }
+    static void reset() { s_map.clear(); }
     static AstNodeModule* findOwnerModule(AstNode* nodep);
     // Extract the last dot-separated component from a cellPath
     static string lastPathComponent(const string& cellPath);
@@ -219,14 +204,6 @@ public:
                           AstNodeModule* modp, AstNode* nodep,
                           const std::function<bool(AstVar*, AstRefDType*)>& promoteVarCb,
                           const std::function<std::string()>& indentFn);
-
-    // Localparam expression capture
-    static void addLocalparam(AstVar* varp, AstNode* exprp, AstNodeModule* ownerModp);
-    static const CapturedIfaceLocalparam* findLocalparam(const AstVar* varp);
-    static void
-    forEachLocalparamOwned(const AstNodeModule* ownerModp,
-                           const std::function<void(const CapturedIfaceLocalparam&)>& fn);
-    static std::size_t localparamSize() { return s_localparamMap.size(); }
 
     // Null out ledger refp entries that point to freed nodes (not in the live AST).
     // Called once after V3Param completes, before any code touches the ledger.

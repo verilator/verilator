@@ -1271,31 +1271,6 @@ class ParamProcessor final {
         CloneMap* const clonemapp = &(iter->second.m_cloneMap);
         UINFO(4, "     De-parameterize to new: " << newModp);
 
-        // DEBUG: dump typedef BASICDTYPE range state right after clone creation
-        if (VN_IS(newModp, Iface)) {
-            for (AstNode* stmtp = newModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                if (AstTypedef* const tdp = VN_CAST(stmtp, Typedef)) {
-                    if (AstBasicDType* const bdtp = VN_CAST(tdp->childDTypep(), BasicDType)) {
-                        UINFO(1, "TYPEDEF-CLONE-DUMP "
-                                     << newModp->name() << "::" << tdp->name() << " BASICDTYPE <"
-                                     << AstNode::nodeAddr(bdtp) << ">" << " w=" << bdtp->width()
-                                     << " range=" << bdtp->declRange().left() << ":"
-                                     << bdtp->declRange().right() << " rangep="
-                                     << (bdtp->rangep() ? bdtp->rangep()->typeName() : "<null>")
-                                     << " rangep.leftp="
-                                     << (bdtp->rangep() && bdtp->rangep()->leftp()
-                                             ? bdtp->rangep()->leftp()->typeName()
-                                             : "<null>")
-                                     << " rangep.rightp="
-                                     << (bdtp->rangep() && bdtp->rangep()->rightp()
-                                             ? bdtp->rangep()->rightp()->typeName()
-                                             : "<null>")
-                                     << " didWidth=" << bdtp->didWidth() << endl);
-                    }
-                }
-            }
-        }
-
         // Grab all I/O so we can remap our pins later
         // Note we allow multiple users of a parameterized model,
         // thus we need to stash this info.
@@ -1365,25 +1340,12 @@ class ParamProcessor final {
                     = VN_CAST(ifErrorp, Cell) ? VN_AS(ifErrorp, Cell)->name() : "";
                 const string srcName = srcModp->name();
 
-                UINFO(1, "FIXUP-A: srcName=" << srcName << " cloneCP='" << cloneCP
+                UINFO(9, "iface capture FIXUP-A: srcName=" << srcName << " cloneCP='" << cloneCP
                                              << "' newModp=" << newModp->name() << endl);
 
                 V3LinkDotIfaceCapture::forEach(
                     [&](const V3LinkDotIfaceCapture::CapturedEntry& entry) {
                         if (!entry.refp) return;
-                        // Log entries that match srcName but may fail other filters
-                        if (entry.ownerModp && entry.ownerModp->name() == srcName) {
-                            const string& enm = srcName;
-                            if (enm.find("axi_to_axi_lite_wrap") != string::npos
-                                || enm.find("axi_dw_converter_wrap") != string::npos) {
-                                UINFO(1,
-                                      "FIXUP-A-ENTRY: ref="
-                                          << entry.refp->name() << " cellPath='" << entry.cellPath
-                                          << "' cloneCP='" << entry.cloneCellPath << "' wantCP='"
-                                          << cloneCP << "'" << " match="
-                                          << (entry.cloneCellPath == cloneCP ? "Y" : "N") << endl);
-                            }
-                        }
                         if (entry.cloneCellPath != cloneCP) return;
                         if (!entry.ownerModp || entry.ownerModp->name() != srcName) return;
                         if (entry.cellPath.empty()) return;
@@ -1579,121 +1541,6 @@ class ParamProcessor final {
                     modptp->childDTypep(dtypep->cloneTree(false));
                     // Later V3LinkDot will convert the ParamDType to a Typedef
                     // Not done here as may be localparams, etc, that also need conversion
-                }
-            }
-        }
-
-        // Restore captured localparam expressions for interfaces/classes
-        // After parameters are assigned, restore original expressions.
-        // Do NOT constify here - let the normal passes handle ordering.
-        if (VN_IS(newModp, Iface) || VN_IS(newModp, Class)) {
-            // Build a name-to-var map for the cloned module's vars
-            std::unordered_map<std::string, AstVar*> clonedVarsByName;
-            for (AstNode* stmtp = newModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                if (AstVar* const varp = VN_CAST(stmtp, Var)) {
-                    clonedVarsByName[varp->name()] = varp;
-                }
-            }
-
-            for (AstNode* stmtp = newModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                if (AstVar* const varp = VN_CAST(stmtp, Var)) {
-                    if (varp->varType() != VVarType::LPARAM) continue;
-                    // Find the original var in srcModp to look up captured expression
-                    AstVar* srcVarp = nullptr;
-                    for (AstNode* srcStmtp = srcModp->stmtsp(); srcStmtp;
-                         srcStmtp = srcStmtp->nextp()) {
-                        if (AstVar* const svp = VN_CAST(srcStmtp, Var)) {
-                            if (svp->name() == varp->name()) {
-                                srcVarp = svp;
-                                break;
-                            }
-                        }
-                    }
-                    if (!srcVarp) continue;
-                    const auto* captured = V3LinkDotIfaceCapture::findLocalparam(srcVarp);
-                    if (captured && captured->origExprp) {
-                        UINFO(5, "LOCALPARAM-RESTORE var=" << varp->name() << " in "
-                                                           << newModp->name() << endl);
-                        // Replace constified value with clone of original expression
-                        if (varp->valuep()) varp->valuep()->unlinkFrBack()->deleteTree();
-                        AstNode* newExprp = captured->origExprp->cloneTree(false);
-
-                        // Relink VarRefs in the cloned expression:
-                        // 1. First try clonemapp (for vars from source module)
-                        // 2. Then try name-based lookup (for vars within same interface)
-                        newExprp->foreach([&](AstVarRef* refp) {
-                            const auto it = clonemapp->find(refp->varp());
-                            if (it != clonemapp->end()) {
-                                refp->varp(VN_AS(it->second, Var));
-                            } else {
-                                // Try name-based lookup for same-interface vars
-                                const auto nameIt = clonedVarsByName.find(refp->varp()->name());
-                                if (nameIt != clonedVarsByName.end()) {
-                                    refp->varp(nameIt->second);
-                                }
-                            }
-                        });
-
-                        varp->valuep(newExprp);
-                        // Do NOT constify here - expressions may reference other
-                        // localparams that haven't been restored yet.
-                        // Mark for later constification.
-                    }
-                }
-            }
-
-            // Now constify all restored localparams in dependency order
-            // Use iterative approach: keep trying until no progress
-            bool progress = true;
-            while (progress) {
-                progress = false;
-                for (AstNode* stmtp = newModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                    if (AstVar* const varp = VN_CAST(stmtp, Var)) {
-                        if (varp->varType() != VVarType::LPARAM) continue;
-                        if (!varp->valuep()) continue;
-                        if (VN_IS(varp->valuep(), Const)) continue;  // Already done
-
-                        // Check if all referenced localparams are const
-                        bool allDepsConst = true;
-                        varp->valuep()->foreach([&](const AstVarRef* refp) {
-                            if (refp->varp()->varType() == VVarType::LPARAM
-                                && refp->varp()->valuep()
-                                && !VN_IS(refp->varp()->valuep(), Const)) {
-                                allDepsConst = false;
-                            }
-                        });
-
-                        if (allDepsConst) {
-                            V3Width::widthParamsEdit(varp);
-                            V3Const::constifyParamsEdit(varp);
-                            progress = true;
-                        }
-                    }
-                }
-            }
-        }
-
-        // DEBUG: dump typedef BASICDTYPE range state after LPARAM resolution
-        if (VN_IS(newModp, Iface)) {
-            for (AstNode* stmtp = newModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                if (AstTypedef* const tdp = VN_CAST(stmtp, Typedef)) {
-                    if (AstBasicDType* const bdtp = VN_CAST(tdp->childDTypep(), BasicDType)) {
-                        UINFO(1, "TYPEDEF-POST-LPARAM "
-                                     << newModp->name() << "::" << tdp->name() << " BASICDTYPE <"
-                                     << AstNode::nodeAddr(bdtp) << ">" << " w=" << bdtp->width()
-                                     << " range=" << bdtp->declRange().left() << ":"
-                                     << bdtp->declRange().right() << " rangep="
-                                     << (bdtp->rangep() ? bdtp->rangep()->typeName() : "<null>")
-                                     << " rangep.leftp="
-                                     << (bdtp->rangep() && bdtp->rangep()->leftp()
-                                             ? bdtp->rangep()->leftp()->typeName()
-                                             : "<null>")
-                                     << " rangep.rightp="
-                                     << (bdtp->rangep() && bdtp->rangep()->rightp()
-                                             ? bdtp->rangep()->rightp()->typeName()
-                                             : "<null>")
-                                     << " didWidth=" << bdtp->didWidth() << endl);
-                    }
                 }
             }
         }
@@ -2148,7 +1995,6 @@ class ParamProcessor final {
         // Returns new or reused module
         // Make sure constification worked
         // Must be a separate loop, as constant conversion may have changed some pointers.
-        // UINFOTREE(1, nodep, "", "cel2");
         string longname = srcModp->name() + "_";
         if (debug() >= 9 && paramsp) paramsp->dumpTreeAndNext(cout, "-  cellparams: ");
 

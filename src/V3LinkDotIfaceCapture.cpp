@@ -23,7 +23,6 @@
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 V3LinkDotIfaceCapture::CapturedMap V3LinkDotIfaceCapture::s_map{};
-V3LinkDotIfaceCapture::LocalparamMap V3LinkDotIfaceCapture::s_localparamMap{};
 bool V3LinkDotIfaceCapture::s_enabled = false;
 
 namespace {
@@ -81,7 +80,6 @@ void V3LinkDotIfaceCapture::purgeStaleRefs() {
 
 void V3LinkDotIfaceCapture::dumpEntries(const string& label) {
     UINFO(9, "========== iface capture dumpEntries: " << label << " (entries=" << s_map.size()
-                                                      << " localparams=" << s_localparamMap.size()
                                                       << ") ==========" << endl);
     int idx = 0;
     for (const auto& pair : s_map) {
@@ -100,12 +98,6 @@ void V3LinkDotIfaceCapture::dumpEntries(const string& label) {
                     << " ifacePortVarp="
                     << (entry.ifacePortVarp ? entry.ifacePortVarp->name() : "<null>") << endl);
         ++idx;
-    }
-    for (const auto& pair : s_localparamMap) {
-        const CapturedIfaceLocalparam& lp = pair.second;
-        UINFO(9, "  LP: var='" << (lp.varp ? lp.varp->name() : "<null>") << "'"
-                               << " ownerMod=" << (lp.ownerModp ? lp.ownerModp->name() : "<null>")
-                               << " origExprp=" << (lp.origExprp ? "yes" : "no") << endl);
     }
     UINFO(9, "========== end iface capture dumpEntries ==========" << endl);
 }
@@ -545,33 +537,6 @@ void V3LinkDotIfaceCapture::captureTypedefContext(
                         << enclosingVarp->prettyName());
 }
 
-void V3LinkDotIfaceCapture::addLocalparam(AstVar* varp, AstNode* exprp, AstNodeModule* ownerModp) {
-    if (!varp || !exprp) return;
-    // Only capture if not already captured
-    if (s_localparamMap.find(varp) != s_localparamMap.end()) return;
-    // Clone the expression to preserve it
-    AstNode* const clonedExprp = exprp->cloneTree(false);
-    s_localparamMap[varp] = CapturedIfaceLocalparam{varp, clonedExprp, ownerModp};
-    UINFO(9, "iface capture localparam: var=" << varp->name() << " owner="
-                                              << (ownerModp ? ownerModp->name() : "<null>")
-                                              << " expr=" << clonedExprp << endl);
-}
-const V3LinkDotIfaceCapture::CapturedIfaceLocalparam*
-V3LinkDotIfaceCapture::findLocalparam(const AstVar* varp) {
-    if (!varp) return nullptr;
-    const auto it = s_localparamMap.find(varp);
-    if (it == s_localparamMap.end()) return nullptr;
-    return &it->second;
-}
-void V3LinkDotIfaceCapture::forEachLocalparamOwned(
-    const AstNodeModule* ownerModp,
-    const std::function<void(const CapturedIfaceLocalparam&)>& fn) {
-    if (!ownerModp || !fn) return;
-    for (const auto& kv : s_localparamMap) {
-        if (kv.second.ownerModp == ownerModp) { fn(kv.second); }
-    }
-}
-
 void V3LinkDotIfaceCapture::addParamType(AstRefDType* refp, const string& cellPath,
                                          AstNodeModule* ownerModp, AstParamTypeDType* paramTypep,
                                          const string& paramTypeOwnerModName,
@@ -648,7 +613,7 @@ void V3LinkDotIfaceCapture::addParamType(AstRefDType* refp, const string& cellPa
                         }
                     }
                     if (nestedCellName.empty()) {
-                        UINFO(1, "addParamType WARNING: could not find cell for nested iface '"
+                        UINFO(9, "addParamType WARNING: could not find cell for nested iface '"
                                      << refOwnerModp->name() << "' in '"
                                      << (ptOwnerModp ? ptOwnerModp->name() : "<null>")
                                      << "' - using parent cellPath='" << cellPath << "'" << endl);
@@ -1242,7 +1207,7 @@ void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
 
         AstNodeModule* const rdOwnerBefore
             = (refp->refDTypep() ? findOwnerModule(refp->refDTypep()) : nullptr);
-        UINFO(1,
+        UINFO(9,
               "finalizeIfaceCapture Phase3 entry: refp="
                   << refp->name() << " (" << cvtToHex(refp) << ")"
                   << " ownerMod=" << ownerModp->name() << " (dead=" << ownerModp->dead() << ")"
@@ -1258,7 +1223,7 @@ void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
         AstNodeModule* correctModp = nullptr;
         if (!entry.cellPath.empty()) {
             correctModp = followCellPath(ownerModp, entry.cellPath);
-            UINFO(1, "  followCellPath('"
+            UINFO(9, "  followCellPath('"
                          << ownerModp->name() << "', '" << entry.cellPath
                          << "') = " << (correctModp ? correctModp->name() : "<null>")
                          << (correctModp ? (correctModp->dead() ? " (DEAD)" : " (live)") : "")
@@ -1457,31 +1422,7 @@ void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
     UINFO(4, "finalizeIfaceCapture: fixed " << wrongCloneFixed << " wrong-live-clone pointers"
                                             << endl);
 
-    // DEBUG: dump all ledger entries after Phase 3 resolution
-    UINFO(1, "finalizeIfaceCapture: ledger dump after Phase 3 (" << s_map.size()
-                                                                 << " entries):" << endl);
-    forEach([&](const CapturedEntry& entry) {
-        AstNodeModule* const refOwnerModp = entry.refp ? findOwnerModule(entry.refp) : nullptr;
-        UINFO(1, "  LEDGER: refp="
-                     << (entry.refp ? entry.refp->name() : "<null>") << " ("
-                     << cvtToHex(entry.refp) << ")"
-                     << " ownerMod=" << (entry.ownerModp ? entry.ownerModp->name() : "<null>")
-                     << " refOwnerMod=" << (refOwnerModp ? refOwnerModp->name() : "<null>")
-                     << " cellPath='" << entry.cellPath << "' cloneCellPath='"
-                     << entry.cloneCellPath << "'" << " refDTypep="
-                     << (entry.refp && entry.refp->refDTypep() ? entry.refp->refDTypep()->name()
-                                                               : "<null>")
-                     << " refDTypepOwner="
-                     << (entry.refp && entry.refp->refDTypep()
-                             ? (findOwnerModule(entry.refp->refDTypep())
-                                    ? findOwnerModule(entry.refp->refDTypep())->name()
-                                    : "<null>")
-                             : "N/A")
-                     << " typedefp="
-                     << (entry.refp && entry.refp->typedefp() ? entry.refp->typedefp()->name()
-                                                              : "<null>")
-                     << endl);
-    });
+    if (debug() >= 9) dumpEntries("after Phase 3");
 
     // Assert: no REFDTYPE in any live module should have typedefp or refDTypep
     // pointing to a dead module. If this fires, V3Param's cloneRelinkGen() failed
@@ -1498,7 +1439,7 @@ void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
                         forEach([&](const CapturedEntry& e) {
                             if (e.refp == refp) inLedger = true;
                         });
-                        UINFO(1, "VERIFY FAIL typedefp: refp="
+                        UINFO(9, "VERIFY FAIL typedefp: refp="
                                      << refp->name() << " (" << cvtToHex(refp) << ")" << " in mod="
                                      << modp->name() << " typedefp->owner=" << ownerModp->name()
                                      << " inLedger=" << inLedger << endl);
@@ -1517,7 +1458,7 @@ void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
                         forEach([&](const CapturedEntry& e) {
                             if (e.refp == refp) inLedger = true;
                         });
-                        UINFO(1, "VERIFY FAIL refDTypep: refp="
+                        UINFO(9, "VERIFY FAIL refDTypep: refp="
                                      << refp->name() << " (" << cvtToHex(refp) << ")" << " in mod="
                                      << modp->name() << " refDTypep->owner=" << ownerModp->name()
                                      << " inLedger=" << inLedger << endl);
