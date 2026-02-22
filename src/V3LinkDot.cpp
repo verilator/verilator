@@ -590,7 +590,7 @@ public:
                                         }
                                     }
                                 } else if (AstVarXRef* const xrefp = VN_CAST(exprp, VarXRef)) {
-                                    // Dotted reference like l4.l3 — use findDotted
+                                    // Dotted reference like l4.l3 - use findDotted
                                     // to resolve through the symbol table.
                                     // Start from the parent module scope (above the cell).
                                     VSymEnt* const lookupSymp = parentSymp->parentp();
@@ -624,7 +624,7 @@ public:
                                     ifacerefp->ifacep(newIfacep);
                                     repaired = true;
                                 } else if (newIfacep) {
-                                    // Pin connects to same interface — no repair needed
+                                    // Pin connects to same interface - no repair needed
                                     repaired = !isDead;
                                 }
                                 break;

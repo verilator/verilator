@@ -33,7 +33,7 @@ endpackage
 interface types_if #(
   parameter cfg_pkg::cfg_t cfg = '0
 )();
-  // Computed localparams — these use division and $clog2 of cfg fields.
+  // Computed localparams - these use division and $clog2 of cfg fields.
   // With default cfg='0, these produce X/undefined values.
   localparam int NUM_LINES     = cfg.Capacity / cfg.LineSize;
   localparam int LINES_PER_WAY = NUM_LINES / cfg.Associativity;
@@ -94,7 +94,7 @@ module inner_mod #(
   input logic clk,
   wrapper_if io
 );
-  // Local instantiation of types_if — same cfg, so gets same clone
+  // Local instantiation of types_if - same cfg, so gets same clone
   // as the one inside wrapper_if via "De-parameterize to prev"
   types_if #(cfg) types();
 
