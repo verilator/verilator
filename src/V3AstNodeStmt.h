@@ -216,7 +216,9 @@ public:
 class AstForeachHeader final : public AstNode {
     // Variable reference + index enumeration "ref [id, id, id]" for a foreach statement
     // @astgen op1 := fromp : AstNodeExpr
-    // @astgen op2 := elementsp : List[AstNode]
+    // @astgen op2 := elementsp : List[AstNode<AstNodeExpr|AstVar|AstEmpty>]
+    //             AstNodeExpr/AstEmpty during parsing (only AstParseRef/AstEmpty is well formed)
+    //             then AstVar/AstEmpty after LinkDot
 public:
     AstForeachHeader(FileLine* fl, AstNodeExpr* fromp, AstNode* elementsp)
         : ASTGEN_SUPER_ForeachHeader(fl) {
