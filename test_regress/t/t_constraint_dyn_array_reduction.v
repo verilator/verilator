@@ -12,55 +12,90 @@
 
 // Test dynamic array reduction methods (xor, sum, and, or, product)
 // without 'with' clause in constraints.
-// Fixed-size arrays expand reductions at compile time, but dynamic arrays
-// remain as AstCMethodHard nodes that need constraint solver support.
+// Each method is tested in a separate class to avoid conflicting constraints.
 
 module t;
 
-  class DynReductionTest;
+  class XorTest;
     rand bit [7:0] data [];
-    rand bit [7:0] xor_result;
-    rand bit [7:0] sum_result;
-    rand bit [7:0] and_result;
-    rand bit [7:0] or_result;
-    rand bit [7:0] prod_result;
-
-    function new();
-      data = new[4];
-    endfunction
-
+    rand bit [7:0] result;
+    function new(); data = new[4]; endfunction
     constraint c_size { data.size() == 4; }
-    constraint c_xor { xor_result == data.xor(); }
-    constraint c_sum { sum_result == data.sum(); }
-    constraint c_and { and_result == data.and(); }
-    constraint c_or { or_result == data.or(); }
-    constraint c_prod { prod_result == data.product(); }
+    constraint c_xor  { result == data.xor(); }
+  endclass
+
+  class SumTest;
+    rand bit [7:0] data [];
+    rand bit [7:0] result;
+    function new(); data = new[4]; endfunction
+    constraint c_size { data.size() == 4; }
+    constraint c_sum  { result == data.sum(); }
+  endclass
+
+  class AndTest;
+    rand bit [7:0] data [];
+    rand bit [7:0] result;
+    function new(); data = new[4]; endfunction
+    constraint c_size { data.size() == 4; }
+    constraint c_and  { result == data.and(); }
+  endclass
+
+  class OrTest;
+    rand bit [7:0] data [];
+    rand bit [7:0] result;
+    function new(); data = new[4]; endfunction
+    constraint c_size { data.size() == 4; }
+    constraint c_or   { result == data.or(); }
+  endclass
+
+  class ProductTest;
+    rand bit [7:0] data [];
+    rand bit [7:0] result;
+    function new(); data = new[4]; endfunction
+    constraint c_size { data.size() == 4; }
+    constraint c_prod { result == data.product(); }
   endclass
 
   initial begin
-    static DynReductionTest t = new();
-    repeat (3) begin
-      `checkd(t.randomize(), 1)
-      // Verify each reduction against computed value
-      begin
-        bit [7:0] exp_xor = 0;
-        bit [7:0] exp_sum = 0;
-        bit [7:0] exp_and = 8'hff;
-        bit [7:0] exp_or = 0;
-        bit [7:0] exp_prod = 8'd1;
-        foreach (t.data[i]) begin
-          exp_xor ^= t.data[i];
-          exp_sum += t.data[i];
-          exp_and &= t.data[i];
-          exp_or |= t.data[i];
-          exp_prod *= t.data[i];
-        end
-        `checkh(t.xor_result, exp_xor)
-        `checkh(t.sum_result, exp_sum)
-        `checkh(t.and_result, exp_and)
-        `checkh(t.or_result, exp_or)
-        `checkh(t.prod_result, exp_prod)
-      end
+    static XorTest     t_xor  = new();
+    static SumTest     t_sum  = new();
+    static AndTest     t_and  = new();
+    static OrTest      t_or   = new();
+    static ProductTest t_prod = new();
+
+    repeat (10) begin
+      bit [7:0] exp;
+      int i;
+
+      // Test xor
+      `checkd(t_xor.randomize(), 1)
+      exp = 0;
+      foreach (t_xor.data[i]) exp ^= t_xor.data[i];
+      `checkh(t_xor.result, exp)
+
+      // Test sum
+      `checkd(t_sum.randomize(), 1)
+      exp = 0;
+      foreach (t_sum.data[i]) exp += t_sum.data[i];
+      `checkh(t_sum.result, exp)
+
+      // Test and
+      `checkd(t_and.randomize(), 1)
+      exp = 8'hff;
+      foreach (t_and.data[i]) exp &= t_and.data[i];
+      `checkh(t_and.result, exp)
+
+      // Test or
+      `checkd(t_or.randomize(), 1)
+      exp = 0;
+      foreach (t_or.data[i]) exp |= t_or.data[i];
+      `checkh(t_or.result, exp)
+
+      // Test product
+      `checkd(t_prod.randomize(), 1)
+      exp = 8'd1;
+      foreach (t_prod.data[i]) exp *= t_prod.data[i];
+      `checkh(t_prod.result, exp)
     end
     $write("*-* All Finished *-*\n");
     $finish;
