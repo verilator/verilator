@@ -490,6 +490,9 @@ bool VlRandomizer::next(VlRNG& rngr) {
         queue.pop_front();
     }
 
+    // If solve-before constraints are present, use phased solving
+    if (!m_solveBefore.empty()) return nextPhased(rngr);
+
     std::iostream& os = getSolver();
     if (!os) return false;
 
@@ -723,6 +726,7 @@ void VlRandomizer::hard(std::string&& constraint, const char* filename, uint32_t
 void VlRandomizer::clearConstraints() {
     m_constraints.clear();
     m_constraints_line.clear();
+    m_solveBefore.clear();
     // Keep m_vars for class member randomization
 }
 
@@ -735,6 +739,222 @@ void VlRandomizer::clearAll() {
 }
 
 void VlRandomizer::markRandc(const char* name) { m_randcVarNames.insert(name); }
+
+void VlRandomizer::solveBefore(const char* beforeName, const char* afterName) {
+    m_solveBefore.emplace_back(std::string(beforeName), std::string(afterName));
+}
+
+bool VlRandomizer::nextPhased(VlRNG& rngr) {
+    // Phased solving for solve...before constraints.
+    // Variables are solved in layers determined by topological sort of the
+    // solve-before dependency graph. Each layer is solved with ALL constraints
+    // (preserving the solution space) but earlier layers' values are pinned.
+
+    // Step 1: Build dependency graph (before -> {after vars})
+    std::map<std::string, std::set<std::string>> graph;
+    std::map<std::string, int> inDegree;
+    std::set<std::string> solveBeforeVars;
+
+    for (const auto& pair : m_solveBefore) {
+        const std::string& before = pair.first;
+        const std::string& after = pair.second;
+        // Only consider variables that are actually registered
+        if (m_vars.find(before) == m_vars.end() || m_vars.find(after) == m_vars.end()) continue;
+        graph[before].insert(after);
+        solveBeforeVars.insert(before);
+        solveBeforeVars.insert(after);
+        if (inDegree.find(before) == inDegree.end()) inDegree[before] = 0;
+        if (inDegree.find(after) == inDegree.end()) inDegree[after] = 0;
+    }
+
+    // Compute in-degrees (after depends on before, so edge is before->after,
+    // but for solving order: before has no incoming edge from after)
+    // Actually: "solve x before y" means x should be solved first.
+    // Dependency: y depends on x. Edge: x -> y. in-degree of y increases.
+    for (const auto& entry : graph) {
+        for (const auto& to : entry.second) { inDegree[to]++; }
+    }
+
+    // Step 2: Topological sort into layers (Kahn's algorithm)
+    std::vector<std::vector<std::string>> layers;
+    std::set<std::string> remaining = solveBeforeVars;
+
+    while (!remaining.empty()) {
+        std::vector<std::string> currentLayer;
+        for (const auto& var : remaining) {
+            if (inDegree[var] == 0) currentLayer.push_back(var);
+        }
+        if (currentLayer.empty()) {
+            VL_WARN_MT("", 0, "randomize", "Circular dependency in solve-before constraints");
+            return false;
+        }
+        std::sort(currentLayer.begin(), currentLayer.end());
+        for (const auto& var : currentLayer) {
+            remaining.erase(var);
+            if (graph.count(var)) {
+                for (const auto& to : graph[var]) { inDegree[to]--; }
+            }
+        }
+        layers.push_back(std::move(currentLayer));
+    }
+
+    // If only one layer, no phased solving needed -- fall through to normal path
+    // (all solve_before vars are independent, no actual ordering required)
+    if (layers.size() <= 1) {
+        // Clear solve_before temporarily and call normal next()
+        const auto saved = std::move(m_solveBefore);
+        m_solveBefore.clear();
+        const bool result = next(rngr);
+        m_solveBefore = std::move(saved);
+        return result;
+    }
+
+    // Step 3: Solve phase by phase
+    std::map<std::string, std::string> solvedValues;  // varName -> SMT value literal
+
+    for (size_t phase = 0; phase < layers.size(); phase++) {
+        const bool isFinalPhase = (phase == layers.size() - 1);
+
+        std::iostream& os = getSolver();
+        if (!os) return false;
+
+        // Solver session setup
+        os << "(set-option :produce-models true)\n";
+        os << "(set-logic QF_ABV)\n";
+        os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
+        os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
+
+        // Declare ALL variables
+        for (const auto& var : m_vars) {
+            if (var.second->dimension() > 0) {
+                auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
+                var.second->setArrayInfo(arrVarsp);
+            }
+            os << "(declare-fun " << var.first << " () ";
+            var.second->emitType(os);
+            os << ")\n";
+        }
+
+        // Pin all previously solved variables
+        for (const auto& entry : solvedValues) {
+            os << "(assert (= " << entry.first << " " << entry.second << "))\n";
+        }
+
+        // Assert ALL constraints
+        for (const std::string& constraint : m_constraints) {
+            os << "(assert (= #b1 " << constraint << "))\n";
+        }
+
+        // Initial check-sat WITHOUT diversity (guaranteed sat if constraints are consistent)
+        os << "(check-sat)\n";
+
+        if (isFinalPhase) {
+            // Final phase: use parseSolution to write ALL values to memory
+            bool sat = parseSolution(os, true);
+            if (!sat) {
+                os << "(reset)\n";
+                return false;
+            }
+            // Diversity loop (same as normal next())
+            for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; ++i) {
+                os << "(assert ";
+                randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
+                os << ")\n";
+                os << "\n(check-sat)\n";
+                sat = parseSolution(os, false);
+                (void)sat;
+            }
+            os << "(reset)\n";
+        } else {
+            // Intermediate phase: extract values for current layer variables only
+            std::string satResponse;
+            do { std::getline(os, satResponse); } while (satResponse.empty());
+
+            if (satResponse != "sat") {
+                os << "(reset)\n";
+                return false;
+            }
+
+            // Build get-value variable list for this layer
+            const auto& layerVars = layers[phase];
+            auto getValueCmd = [&]() {
+                os << "(get-value (";
+                for (const auto& varName : layerVars) {
+                    if (m_vars.count(varName)) os << varName << " ";
+                }
+                os << "))\n";
+            };
+
+            // Helper to parse ((name1 value1) (name2 value2) ...) response
+            auto parseGetValue = [&]() -> bool {
+                char c;
+                os >> c;  // outer '('
+                while (true) {
+                    os >> c;
+                    if (c == ')') break;  // outer closing
+                    if (c != '(') return false;
+                    std::string name;
+                    os >> name;
+
+                    // Read value handling nested parens for (_ bvN W) format
+                    os >> std::ws;
+                    std::string value;
+                    char firstChar;
+                    os.get(firstChar);
+                    if (firstChar == '(') {
+                        // Compound value like (_ bv5 32)
+                        value = "(";
+                        int depth = 1;
+                        while (depth > 0) {
+                            os.get(c);
+                            value += c;
+                            if (c == '(')
+                                depth++;
+                            else if (c == ')')
+                                depth--;
+                        }
+                        // Read closing ')' of the pair
+                        os >> c;
+                    } else {
+                        // Atom value like #x00000005 or #b101
+                        value += firstChar;
+                        while (os.get(c) && c != ')') { value += c; }
+                        // Trim trailing whitespace
+                        const size_t end = value.find_last_not_of(" \t\n\r");
+                        if (end != std::string::npos) value = value.substr(0, end + 1);
+                    }
+
+                    solvedValues[name] = value;
+                }
+                return true;
+            };
+
+            // Get baseline values (deterministic, always valid)
+            getValueCmd();
+            if (!parseGetValue()) {
+                os << "(reset)\n";
+                return false;
+            }
+
+            // Try diversity: add random constraint, re-check. If sat, get
+            // updated (more diverse) values. If unsat, keep baseline values.
+            os << "(assert ";
+            randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
+            os << ")\n";
+            os << "(check-sat)\n";
+            satResponse.clear();
+            do { std::getline(os, satResponse); } while (satResponse.empty());
+            if (satResponse == "sat") {
+                getValueCmd();
+                parseGetValue();
+            }
+
+            os << "(reset)\n";
+        }
+    }
+
+    return true;
+}
 
 #ifdef VL_DEBUG
 void VlRandomizer::dump() const {
