@@ -26,6 +26,7 @@ Verilator 5.045 devel
 * Add VerilatedContext::useNumaAssign and set on threads() call (#6954). [Yangyu Chen]
 * Support modport expression syntax + nested (#2601) (#5581) (#7005). [Leela Pakanati]
 * Support nested interface as port connection (#5066) (#6986). [Leela Pakanati]
+* Support solve..before constraints (#5647) (#7123). [Yilou Wang]
 * Support structure initial values (#6130).
 * Support vpi_put/vpi_get forcing of signals (#5933) (#6704). [Christian Hecken]
 * Support detailed failure info for constraint violations (#6617) (#6883). [Yilou Wang]
@@ -47,6 +48,7 @@ Verilator 5.045 devel
 * Support power expressions with constant exponent in constraints (#7073). [Kamil Danecki]
 * Support `disable iff` with sequences (#7090). [Ryszard Rozak, Antmicro Ltd.]
 * Support `this` keyword inside inline randomize() with {} constraint blocks (#7102) (#7113). [Yilou Wang]
+* Support constraint dynamic array reduction methods without 'with' clause (#7104) (#7108). [Yilou Wang]
 * Remove deprecated `--xml-only`.
 * Remove deprecated `--make cmake`.
 * Change JSON dumps to not include booleans that are false (#6977).
@@ -69,6 +71,7 @@ Verilator 5.045 devel
 * Fix MULTIDRIVEN with task and default driver (#4045) (#6858). [em2machine]
 * Fix parameterized virtual interface references that have no model references (#4286).
 * Fix hierarchical interface/modport issues (#5941) (#6997). [Leela Pakanati]
+* Fix extending class by a typedef (#6679) (#6855). [Alex Zhou]
 * Fix variable reference lookup for module-level variables (#6741) (#6882). [Yilou Wang]
 * Fix false CASEOVERLAP case item expression lint (#6825) (#6886). [Luca Colagrande]
 * Fix virtual interface triggers (#6844). [Igor Zaworski, Antmicro Ltd.]
@@ -120,6 +123,7 @@ Verilator 5.045 devel
 * Fix UNSUPPORTED on $sampled in sensitivity list (#7093). [Ryszard Rozak, Antmicro Ltd.]
 * Fix time to not advance after `$finish` (#7095).
 * Fix associative array size() constraint generating invalid resize() call (#7103) (#7112). [Yilou Wang]
+* Fix `new` shallow copy to preserve polymorphic runtime type (#7105) (#7109). [Yilou Wang]
 * Fix circular class reference %p-printing causing infinite recursion (#7106).
 * Fix too-short bit pack returning wrong value (#7111).
 * Fix randomize of real (#7115). [Srinivasan Venkataramanan]
