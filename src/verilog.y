@@ -2927,48 +2927,48 @@ c_loop_generate_construct<nodep>:  // IEEE: loop_generate_construct (for checker
         ;
 
 genvar_initialization<nodep>:   // ==IEEE: genvar_initialization
-                varRefBase '=' expr                     { $$ = new AstAssign{$2, $1, $3}; }
+                parseRefBase '=' expr                     { $$ = new AstAssign{$2, $1, $3}; }
         |       yGENVAR genvar_identifierDecl '=' constExpr
                         { $$ = $2; AstNode::addNext<AstNode, AstNode>($$,
                                        new AstAssign{$3, new AstVarRef{$2->fileline(), $2, VAccess::WRITE}, $4}); }
         ;
 
 genvar_iteration<nodep>:        // ==IEEE: genvar_iteration
-                varRefBase '='          expr
+                parseRefBase '='          expr
                         { $$ = new AstAssign{$2, $1, $3}; }
-        |       varRefBase yP_PLUSEQ    expr
+        |       parseRefBase yP_PLUSEQ    expr
                         { $$ = new AstAssign{$2, $1, new AstAdd{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_MINUSEQ   expr
+        |       parseRefBase yP_MINUSEQ   expr
                         { $$ = new AstAssign{$2, $1, new AstSub{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_TIMESEQ   expr
+        |       parseRefBase yP_TIMESEQ   expr
                         { $$ = new AstAssign{$2, $1, new AstMul{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_DIVEQ     expr
+        |       parseRefBase yP_DIVEQ     expr
                         { $$ = new AstAssign{$2, $1, new AstDiv{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_MODEQ     expr
+        |       parseRefBase yP_MODEQ     expr
                         { $$ = new AstAssign{$2, $1, new AstModDiv{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_ANDEQ     expr
+        |       parseRefBase yP_ANDEQ     expr
                         { $$ = new AstAssign{$2, $1, new AstAnd{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_OREQ      expr
+        |       parseRefBase yP_OREQ      expr
                         { $$ = new AstAssign{$2, $1, new AstOr{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_XOREQ     expr
+        |       parseRefBase yP_XOREQ     expr
                         { $$ = new AstAssign{$2, $1, new AstXor{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_SLEFTEQ   expr
+        |       parseRefBase yP_SLEFTEQ   expr
                         { $$ = new AstAssign{$2, $1, new AstShiftL{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_SRIGHTEQ  expr
+        |       parseRefBase yP_SRIGHTEQ  expr
                         { $$ = new AstAssign{$2, $1, new AstShiftR{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_SSRIGHTEQ expr
+        |       parseRefBase yP_SSRIGHTEQ expr
                         { $$ = new AstAssign{$2, $1, new AstShiftRS{$2, $1->cloneTreePure(true), $3}}; }
         //                      // inc_or_dec_operator
-        |       yP_PLUSPLUS   varRefBase
+        |       yP_PLUSPLUS   parseRefBase
                         { $$ = new AstAssign{$1, $2, new AstAdd{$1, $2->cloneTreePure(true),
                                                                 new AstConst{$1, AstConst::StringToParse{}, "'b1"}}}; }
-        |       yP_MINUSMINUS varRefBase
+        |       yP_MINUSMINUS parseRefBase
                         { $$ = new AstAssign{$1, $2, new AstSub{$1, $2->cloneTreePure(true),
                                                                 new AstConst{$1, AstConst::StringToParse{}, "'b1"}}}; }
-        |       varRefBase yP_PLUSPLUS
+        |       parseRefBase yP_PLUSPLUS
                         { $$ = new AstAssign{$2, $1, new AstAdd{$2, $1->cloneTreePure(true),
                                                                 new AstConst{$2, AstConst::StringToParse{}, "'b1"}}}; }
-        |       varRefBase yP_MINUSMINUS
+        |       parseRefBase yP_MINUSMINUS
                         { $$ = new AstAssign{$2, $1, new AstSub{$2, $1->cloneTreePure(true),
                                                                 new AstConst{$2, AstConst::StringToParse{}, "'b1"}}}; }
         ;
@@ -4107,7 +4107,7 @@ loop_variables<nodep>:          // IEEE: loop_variables
 
 loop_variableE<nodep>:          // IEEE: part of loop_variables
                 /* empty */                             { $$ = new AstEmpty{CRELINE()}; }
-        |       varRefBase                              { $$ = $1; }
+        |       parseRefBase                            { $$ = $1; }
         ;
 
 //************************************************
@@ -6168,8 +6168,8 @@ idDottedForeach<foreachHeaderp>:
         ;
 
 idDottedMore<nodeExprp>:
-                varRefBase                              { $$ = $1; }
-        |       idDottedMore '.' varRefBase             { $$ = new AstDot{$2, false, $1, $3}; }
+                parseRefBase                            { $$ = $1; }
+        |       idDottedMore '.' parseRefBase           { $$ = new AstDot{$2, false, $1, $3}; }
         ;
 
 idDottedSelMore<nodeExprp>:
@@ -6200,20 +6200,20 @@ idArrayed<nodeExprp>:               // IEEE: id + select
         ;
 
 idArrayedForeach<foreachHeaderp>:    // IEEE: id + select (under foreach expression)
-                varRefBase  // Malformed, but accept for better error reporting
+                parseRefBase  // Malformed, but accept for better error reporting
                         { $$ = new AstForeachHeader{$<fl>1, $1, nullptr}; }
         |       idArrayed '[' expr ']'
                         { $$ = new AstForeachHeader{$2, $1, $3}; }
         |       idArrayed '[' ']'
                         { $$ = new AstForeachHeader{$2, $1, new AstEmpty{$3}}; }
-        |       idArrayed '[' varRefBase ',' loop_variables ']'
+        |       idArrayed '[' parseRefBase ',' loop_variables ']'
                         { $$ = new AstForeachHeader{$2, $1, addNextNull(static_cast<AstNode*>($3), $5)}; }
         |       idArrayed '[' ',' loop_variables ']'
                         { $$ = new AstForeachHeader{$2, $1, addNextNull(static_cast<AstNode*>(new AstEmpty{$3}), $4)}; }
         ;
 
-// VarRef without any dots or vectorizaion
-varRefBase<parseRefp>:
+// ParseRef without any dots or vectorizaion
+parseRefBase<parseRefp>:
                 id                                      { $$ = new AstParseRef{$<fl>1, *$1}; }
         ;
 
