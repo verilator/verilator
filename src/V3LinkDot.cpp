@@ -547,25 +547,104 @@ public:
                 } else {
                     ifacerefp->v3fatalSrc("Unlinked interface");
                 }
-            } else if (ifacerefp->ifaceViaCellp()->dead() && varp->isIfaceRef()) {
-                if (forPrimary() && !varp->isIfaceParent() && !v3Global.opt.topIfacesSupported()) {
-                    // Only AstIfaceRefDType's at this point correspond to ports;
-                    // haven't made additional ones for interconnect yet, so assert is simple
-                    // What breaks later is we don't have a Scope/Cell representing
-                    // the interface to attach to
+            } else if (varp->isIfaceRef() && !ifacerefp->cellp()
+                       && ifacerefp->ifaceViaCellp()) {
+                // Port variable (cellp=null) pointing to an interface.
+                // The interface may be dead (template replaced by clone) or
+                // live-but-wrong (template still alive because some instances
+                // use default params, but this port should point to a
+                // specialized clone based on the pin connection).
+                const bool isDead = ifacerefp->ifaceViaCellp()->dead();
+                if (isDead && forPrimary() && !varp->isIfaceParent()
+                    && !v3Global.opt.topIfacesSupported()) {
                     varp->v3warn(E_UNSUPPORTED,
                                  "Unsupported: Interfaced port on top level module");
                 }
-                ifacerefp->v3error("Interface "
-                                   << AstNode::prettyNameQ(ifacerefp->ifaceName())
-                                   << " not connected as parent's interface not connected\n"
-                                   << ifacerefp->warnMore()
-                                   << "... Perhaps caused by another error on the parent "
-                                      "interface that needs resolving\n"
-                                   << ifacerefp->warnMore()
-                                   << "... Or, perhaps intended an interface instantiation but "
-                                      "are missing parenthesis (IEEE 1800-2023 25.3)?");
-                continue;
+                // Attempt repair: trace through parent cell's pin to find
+                // the correct live interface for this port variable
+                bool repaired = false;
+                {
+                    VSymEnt* parentSymp = varSymp->parentp();
+                    AstCell* parentCellp = nullptr;
+                    for (int depth = 0; parentSymp && depth < 20; ++depth) {
+                        if (AstCell* const cp = VN_CAST(parentSymp->nodep(), Cell)) {
+                            parentCellp = cp;
+                            break;
+                        }
+                        parentSymp = parentSymp->parentp();
+                    }
+                    if (parentCellp) {
+                        for (AstPin* pinp = parentCellp->pinsp(); pinp;
+                             pinp = VN_AS(pinp->nextp(), Pin)) {
+                            if (pinp->modVarp() == varp || pinp->name() == varp->name()) {
+                                AstNode* const exprp = pinp->exprp();
+                                if (!exprp) break;
+                                AstIface* newIfacep = nullptr;
+                                if (AstVarRef* const refp = VN_CAST(exprp, VarRef)) {
+                                    if (AstVar* const pinVarp = refp->varp()) {
+                                        AstIfaceRefDType* const pinIrefp
+                                            = ifaceRefFromArray(pinVarp->subDTypep());
+                                        if (pinIrefp && pinIrefp->ifaceViaCellp()
+                                            && !pinIrefp->ifaceViaCellp()->dead()) {
+                                            newIfacep = pinIrefp->ifaceViaCellp();
+                                        }
+                                    }
+                                } else if (AstVarXRef* const xrefp = VN_CAST(exprp, VarXRef)) {
+                                    // Dotted reference like l4.l3 — use findDotted
+                                    // to resolve through the symbol table.
+                                    // Start from the parent module scope (above the cell).
+                                    VSymEnt* const lookupSymp = parentSymp->parentp();
+                                    string baddot;
+                                    VSymEnt* okSymp = nullptr;
+                                    const string dotpath
+                                        = xrefp->dotted() + "." + xrefp->name();
+                                    VSymEnt* const dotSymp
+                                        = lookupSymp
+                                              ? findDotted(xrefp->fileline(), lookupSymp,
+                                                           dotpath, baddot, okSymp, true)
+                                              : nullptr;
+                                    if (dotSymp) {
+                                        if (AstVar* const dotVarp
+                                            = VN_CAST(dotSymp->nodep(), Var)) {
+                                            AstIfaceRefDType* const dotIrefp
+                                                = ifaceRefFromArray(dotVarp->subDTypep());
+                                            if (dotIrefp && dotIrefp->ifaceViaCellp()
+                                                && !dotIrefp->ifaceViaCellp()->dead()) {
+                                                newIfacep = dotIrefp->ifaceViaCellp();
+                                            }
+                                        }
+                                    }
+                                }
+                                if (newIfacep
+                                    && newIfacep != ifacerefp->ifaceViaCellp()) {
+                                    UINFO(4, "  REPAIR-IFACE-REF var="
+                                                 << varp->name() << " old="
+                                                 << ifacerefp->ifacep()->name()
+                                                 << " new=" << newIfacep->name() << endl);
+                                    ifacerefp->ifacep(newIfacep);
+                                    repaired = true;
+                                } else if (newIfacep) {
+                                    // Pin connects to same interface — no repair needed
+                                    repaired = !isDead;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (!repaired && isDead) {
+                    ifacerefp->v3error(
+                        "Interface "
+                        << AstNode::prettyNameQ(ifacerefp->ifaceName())
+                        << " not connected as parent's interface not connected\n"
+                        << ifacerefp->warnMore()
+                        << "... Perhaps caused by another error on the parent "
+                           "interface that needs resolving\n"
+                        << ifacerefp->warnMore()
+                        << "... Or, perhaps intended an interface instantiation but "
+                           "are missing parenthesis (IEEE 1800-2023 25.3)?");
+                    continue;
+                }
             } else if (ifacerefp->ifaceViaCellp()->dead()
                        || !existsNodeSym(ifacerefp->ifaceViaCellp())) {
                 ifacerefp->ifaceViaCellp()->v3fatalSrc(
