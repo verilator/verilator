@@ -547,8 +547,7 @@ public:
                 } else {
                     ifacerefp->v3fatalSrc("Unlinked interface");
                 }
-            } else if (varp->isIfaceRef() && !ifacerefp->cellp()
-                       && ifacerefp->ifaceViaCellp()) {
+            } else if (varp->isIfaceRef() && !ifacerefp->cellp() && ifacerefp->ifaceViaCellp()) {
                 // Port variable (cellp=null) pointing to an interface.
                 // The interface may be dead (template replaced by clone) or
                 // live-but-wrong (template still alive because some instances
@@ -596,13 +595,11 @@ public:
                                     VSymEnt* const lookupSymp = parentSymp->parentp();
                                     string baddot;
                                     VSymEnt* okSymp = nullptr;
-                                    const string dotpath
-                                        = xrefp->dotted() + "." + xrefp->name();
+                                    const string dotpath = xrefp->dotted() + "." + xrefp->name();
                                     VSymEnt* const dotSymp
-                                        = lookupSymp
-                                              ? findDotted(xrefp->fileline(), lookupSymp,
-                                                           dotpath, baddot, okSymp, true)
-                                              : nullptr;
+                                        = lookupSymp ? findDotted(xrefp->fileline(), lookupSymp,
+                                                                  dotpath, baddot, okSymp, true)
+                                                     : nullptr;
                                     if (dotSymp) {
                                         if (AstVar* const dotVarp
                                             = VN_CAST(dotSymp->nodep(), Var)) {
@@ -615,11 +612,10 @@ public:
                                         }
                                     }
                                 }
-                                if (newIfacep
-                                    && newIfacep != ifacerefp->ifaceViaCellp()) {
+                                if (newIfacep && newIfacep != ifacerefp->ifaceViaCellp()) {
                                     UINFO(4, "  REPAIR-IFACE-REF var="
-                                                 << varp->name() << " old="
-                                                 << ifacerefp->ifacep()->name()
+                                                 << varp->name()
+                                                 << " old=" << ifacerefp->ifacep()->name()
                                                  << " new=" << newIfacep->name() << endl);
                                     ifacerefp->ifacep(newIfacep);
                                     repaired = true;
@@ -634,15 +630,14 @@ public:
                 }
                 if (!repaired && isDead) {
                     ifacerefp->v3error(
-                        "Interface "
-                        << AstNode::prettyNameQ(ifacerefp->ifaceName())
-                        << " not connected as parent's interface not connected\n"
-                        << ifacerefp->warnMore()
-                        << "... Perhaps caused by another error on the parent "
-                           "interface that needs resolving\n"
-                        << ifacerefp->warnMore()
-                        << "... Or, perhaps intended an interface instantiation but "
-                           "are missing parenthesis (IEEE 1800-2023 25.3)?");
+                        "Interface " << AstNode::prettyNameQ(ifacerefp->ifaceName())
+                                     << " not connected as parent's interface not connected\n"
+                                     << ifacerefp->warnMore()
+                                     << "... Perhaps caused by another error on the parent "
+                                        "interface that needs resolving\n"
+                                     << ifacerefp->warnMore()
+                                     << "... Or, perhaps intended an interface instantiation but "
+                                        "are missing parenthesis (IEEE 1800-2023 25.3)?");
                     continue;
                 }
             } else if (ifacerefp->ifaceViaCellp()->dead()

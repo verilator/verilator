@@ -1341,7 +1341,8 @@ class ParamProcessor final {
                 const string srcName = srcModp->name();
 
                 UINFO(9, "iface capture FIXUP-A: srcName=" << srcName << " cloneCP='" << cloneCP
-                                             << "' newModp=" << newModp->name() << endl);
+                                                           << "' newModp=" << newModp->name()
+                                                           << endl);
 
                 V3LinkDotIfaceCapture::forEach(
                     [&](const V3LinkDotIfaceCapture::CapturedEntry& entry) {
@@ -2608,8 +2609,7 @@ class ParamVisitor final : public VNVisitor {
                 // point to template structs instead of clone structs,
                 // destructively widthing the template with default (zero)
                 // values. See t_interface_nested_struct_param.v.
-                m_processor.nodeDeparam(cellp, srcModp, m_modp,
-                                        m_modp->someInstanceName());
+                m_processor.nodeDeparam(cellp, srcModp, m_modp, m_modp->someInstanceName());
             }
         }
 
