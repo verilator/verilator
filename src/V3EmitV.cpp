@@ -618,6 +618,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts("." + nodep->name() + "(");
         iterateAndCommaConstNull(nodep->pinsp());
         puts(")");
+        iterateConstNull(nodep->withp());
     }
     void visit(AstCMethodCall* nodep) override {
         iterateConst(nodep->fromp());
@@ -1025,7 +1026,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     }
     void visit(AstArg* nodep) override { iterateAndNextConstNull(nodep->exprp()); }
     void visit(AstWith* nodep) override {
-        putfs(nodep, "with (");
+        putfs(nodep, " with (");
         iterateConstNull(nodep->exprp());
         puts(") ");
     }

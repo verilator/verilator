@@ -519,6 +519,35 @@ public:
     void name(const std::string& name) override { m_name = name; }
     bool emptyConnectNoNext() const { return !exprp() && name() == "" && !nextp(); }
 };
+class AstWith final : public AstNode {
+    // Similar to AstArg, but this is essentially a lambda passed to a call.
+    // Not an AstNodeExpr as there is no concept of function values in Verilator
+    // The dtypep() contains the with lambda's return dtype, not a function type.
+    // Parents: NodeFTaskRef, CMethodHard
+    // Children: LambdaArgRef that declares the item variable
+    // Children: LambdaArgRef that declares the item.index variable
+    // Children: expression (equation establishing the with)
+    // @astgen op1 := indexArgRefp : AstLambdaArgRef
+    // @astgen op2 := valueArgRefp : AstLambdaArgRef
+    // @astgen op3 := exprp : List[AstNode]  // Pins, expression and constraints
+    // TODO: Separate expression and constraints
+public:
+    AstWith(FileLine* fl, AstLambdaArgRef* indexArgRefp, AstLambdaArgRef* valueArgRefp,
+            AstNode* exprp)
+        : ASTGEN_SUPER_With(fl) {
+        this->indexArgRefp(indexArgRefp);
+        this->valueArgRefp(valueArgRefp);
+        addExprp(exprp);
+    }
+    ASTGEN_MEMBERS_AstWith;
+    bool hasDType() const override { return true; }
+    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    const char* broken() const override {
+        BROKEN_RTN(!indexArgRefp());  // varp needed to know lambda's arg dtype
+        BROKEN_RTN(!valueArgRefp());  // varp needed to know lambda's arg dtype
+        return nullptr;
+    }
+};
 
 // === AstNodeExpr ===
 class AstAddrOfCFunc final : public AstNodeExpr {
@@ -639,6 +668,7 @@ class AstCMethodHard final : public AstNodeExpr {
     // PARENTS: stmt/expr
     // @astgen op1 := fromp : AstNodeExpr // Subject of method call
     // @astgen op2 := pinsp : List[AstNodeExpr] // Arguments
+    // @astgen op3 := withp : Optional[AstWith] // With clause
     VCMethod m_method;  // Which method to call
     bool m_pure = false;  // Pure optimizable
     bool m_usePtr = false;  // Use '->' not '.'
@@ -2598,37 +2628,6 @@ public:
     bool isSystemFunc() const override { return true; }
     bool cleanOut() const override { return true; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
-};
-class AstWith final : public AstNodeExpr {
-    // Used as argument to method, then to AstCMethodHard
-    // dtypep() contains the with lambda's return dtype
-    // Parents: funcref (similar to AstArg)
-    // Children: LambdaArgRef that declares the item variable
-    // Children: LambdaArgRef that declares the item.index variable
-    // Children: expression (equation establishing the with)
-    // @astgen op1 := indexArgRefp : AstLambdaArgRef
-    // @astgen op2 := valueArgRefp : AstLambdaArgRef
-    // @astgen op3 := exprp : List[AstNode]  // Pins, expression and constraints
-    // TODO: Separate expression and constraints
-public:
-    AstWith(FileLine* fl, AstLambdaArgRef* indexArgRefp, AstLambdaArgRef* valueArgRefp,
-            AstNode* exprp)
-        : ASTGEN_SUPER_With(fl) {
-        this->indexArgRefp(indexArgRefp);
-        this->valueArgRefp(valueArgRefp);
-        addExprp(exprp);
-    }
-    ASTGEN_MEMBERS_AstWith;
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
-    const char* broken() const override {
-        BROKEN_RTN(!indexArgRefp());  // varp needed to know lambda's arg dtype
-        BROKEN_RTN(!valueArgRefp());  // varp needed to know lambda's arg dtype
-        return nullptr;
-    }
-
-    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { V3ERROR_NA_RETURN(true); }
 };
 class AstWithParse final : public AstNodeExpr {
     // In early parse, FUNC(index) WITH equation-using-index
