@@ -1771,7 +1771,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
     void visit(AstConstraintBefore* nodep) override {
         // Generate solveBefore() calls for each (lhs, rhs) variable pair.
-        // Do NOT iterate children — these are variable references, not constraint expressions.
+        // Do NOT iterate children -- these are variable references, not constraint expressions.
         FileLine* const fl = nodep->fileline();
         AstNodeModule* const genModp = VN_AS(m_genp->user2p(), NodeModule);
 

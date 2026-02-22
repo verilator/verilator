@@ -798,7 +798,7 @@ bool VlRandomizer::nextPhased(VlRNG& rngr) {
         layers.push_back(std::move(currentLayer));
     }
 
-    // If only one layer, no phased solving needed — fall through to normal path
+    // If only one layer, no phased solving needed -- fall through to normal path
     // (all solve_before vars are independent, no actual ordering required)
     if (layers.size() <= 1) {
         // Clear solve_before temporarily and call normal next()
