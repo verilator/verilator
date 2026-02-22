@@ -2927,48 +2927,48 @@ c_loop_generate_construct<nodep>:  // IEEE: loop_generate_construct (for checker
         ;
 
 genvar_initialization<nodep>:   // ==IEEE: genvar_initialization
-                varRefBase '=' expr                     { $$ = new AstAssign{$2, $1, $3}; }
+                parseRefBase '=' expr                     { $$ = new AstAssign{$2, $1, $3}; }
         |       yGENVAR genvar_identifierDecl '=' constExpr
                         { $$ = $2; AstNode::addNext<AstNode, AstNode>($$,
                                        new AstAssign{$3, new AstVarRef{$2->fileline(), $2, VAccess::WRITE}, $4}); }
         ;
 
 genvar_iteration<nodep>:        // ==IEEE: genvar_iteration
-                varRefBase '='          expr
+                parseRefBase '='          expr
                         { $$ = new AstAssign{$2, $1, $3}; }
-        |       varRefBase yP_PLUSEQ    expr
+        |       parseRefBase yP_PLUSEQ    expr
                         { $$ = new AstAssign{$2, $1, new AstAdd{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_MINUSEQ   expr
+        |       parseRefBase yP_MINUSEQ   expr
                         { $$ = new AstAssign{$2, $1, new AstSub{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_TIMESEQ   expr
+        |       parseRefBase yP_TIMESEQ   expr
                         { $$ = new AstAssign{$2, $1, new AstMul{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_DIVEQ     expr
+        |       parseRefBase yP_DIVEQ     expr
                         { $$ = new AstAssign{$2, $1, new AstDiv{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_MODEQ     expr
+        |       parseRefBase yP_MODEQ     expr
                         { $$ = new AstAssign{$2, $1, new AstModDiv{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_ANDEQ     expr
+        |       parseRefBase yP_ANDEQ     expr
                         { $$ = new AstAssign{$2, $1, new AstAnd{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_OREQ      expr
+        |       parseRefBase yP_OREQ      expr
                         { $$ = new AstAssign{$2, $1, new AstOr{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_XOREQ     expr
+        |       parseRefBase yP_XOREQ     expr
                         { $$ = new AstAssign{$2, $1, new AstXor{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_SLEFTEQ   expr
+        |       parseRefBase yP_SLEFTEQ   expr
                         { $$ = new AstAssign{$2, $1, new AstShiftL{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_SRIGHTEQ  expr
+        |       parseRefBase yP_SRIGHTEQ  expr
                         { $$ = new AstAssign{$2, $1, new AstShiftR{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_SSRIGHTEQ expr
+        |       parseRefBase yP_SSRIGHTEQ expr
                         { $$ = new AstAssign{$2, $1, new AstShiftRS{$2, $1->cloneTreePure(true), $3}}; }
         //                      // inc_or_dec_operator
-        |       yP_PLUSPLUS   varRefBase
+        |       yP_PLUSPLUS   parseRefBase
                         { $$ = new AstAssign{$1, $2, new AstAdd{$1, $2->cloneTreePure(true),
                                                                 new AstConst{$1, AstConst::StringToParse{}, "'b1"}}}; }
-        |       yP_MINUSMINUS varRefBase
+        |       yP_MINUSMINUS parseRefBase
                         { $$ = new AstAssign{$1, $2, new AstSub{$1, $2->cloneTreePure(true),
                                                                 new AstConst{$1, AstConst::StringToParse{}, "'b1"}}}; }
-        |       varRefBase yP_PLUSPLUS
+        |       parseRefBase yP_PLUSPLUS
                         { $$ = new AstAssign{$2, $1, new AstAdd{$2, $1->cloneTreePure(true),
                                                                 new AstConst{$2, AstConst::StringToParse{}, "'b1"}}}; }
-        |       varRefBase yP_MINUSMINUS
+        |       parseRefBase yP_MINUSMINUS
                         { $$ = new AstAssign{$2, $1, new AstSub{$2, $1->cloneTreePure(true),
                                                                 new AstConst{$2, AstConst::StringToParse{}, "'b1"}}}; }
         ;
@@ -6125,17 +6125,18 @@ idClassSel<nodeExprp>:          // Misc Ref to dotted, and/or arrayed, and/or bi
         |       packageClassScope idDottedSel           { $$ = new AstDot{$<fl>2, true, $1, $2}; }
         ;
 
-idClassSelForeach<nodeExprp>:
+idClassSelForeach<foreachHeaderp>:
                 idDottedForeach                         { $$ = $1; }
         //                      // IEEE: [ implicit_class_handle . | package_scope ] hierarchical_variable_identifier select
         |       yTHIS '.' idDottedForeach
-                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, "this"}, $3}; }
+                        { $3->fromp(new AstDot{$2, false, new AstParseRef{$<fl>1, "this"}, $3->fromp()->unlinkFrBack()}); $$ = $3; }
         |       ySUPER '.' idDottedForeach
-                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, "super"}, $3}; }
+                        { $3->fromp(new AstDot{$2, false, new AstParseRef{$<fl>1, "super"}, $3->fromp()->unlinkFrBack()}); $$ = $3; }
         |       yTHIS '.' ySUPER '.' idDottedForeach
-                        { $$ = new AstDot{$4, false, new AstParseRef{$<fl>3, "super"}, $5}; }
+                        { $5->fromp(new AstDot{$4, false, new AstParseRef{$<fl>3, "super"}, $5->fromp()->unlinkFrBack()}); $$ = $5; }
         //                      // Expanded: package_scope idForeach
-        |       packageClassScope idDottedForeach       { $$ = new AstDot{$<fl>2, true, $1, $2}; }
+        |       packageClassScope idDottedForeach
+                       { $2->fromp(new AstDot{$<fl>2, true, $1, $2->fromp()->unlinkFrBack()}); $$ = $2; }
         ;
 
 
@@ -6160,15 +6161,15 @@ idDottedSel<nodeExprp>:
         |       idDottedSelMore                         { $$ = $1; }
         ;
 
-idDottedForeach<nodeExprp>:
+idDottedForeach<foreachHeaderp>:
                 yD_ROOT '.' idDottedMoreForeach
-                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, "$root"}, $3}; }
+                        { $3->fromp(new AstDot{$2, false, new AstParseRef{$<fl>1, "$root"}, $3->fromp()->unlinkFrBack()}); $$ = $3; }
         |       idDottedMoreForeach                     { $$ = $1; }
         ;
 
 idDottedMore<nodeExprp>:
-                varRefBase                              { $$ = $1; }
-        |       idDottedMore '.' varRefBase             { $$ = new AstDot{$2, false, $1, $3}; }
+                parseRefBase                            { $$ = $1; }
+        |       idDottedMore '.' parseRefBase           { $$ = new AstDot{$2, false, $1, $3}; }
         ;
 
 idDottedSelMore<nodeExprp>:
@@ -6176,9 +6177,10 @@ idDottedSelMore<nodeExprp>:
         |       idDottedSelMore '.' idArrayed           { $$ = new AstDot{$2, false, $1, $3}; }
         ;
 
-idDottedMoreForeach<nodeExprp>:
+idDottedMoreForeach<foreachHeaderp>:
                 idArrayedForeach                        { $$ = $1; }
-        |       idDottedMoreForeach '.' idArrayedForeach        { $$ = new AstDot{$2, false, $1, $3}; }
+        |       idDottedSelMore '.' idArrayedForeach
+                        { $3->fromp(new AstDot{$2, false, $1, $3->fromp()->unlinkFrBack()}); $$ = $3; }
         ;
 
 // Single component of dotted path, maybe [#].
@@ -6197,34 +6199,22 @@ idArrayed<nodeExprp>:               // IEEE: id + select
         |       idArrayed '[' expr yP_MINUSCOLON constExpr ']'  { $$ = new AstSelMinus{$2, $1, $3, $5}; }
         ;
 
-idArrayedForeach<nodeExprp>:    // IEEE: id + select (under foreach expression)
-                id
-                        { $$ = new AstParseRef{$<fl>1, *$1, nullptr, nullptr}; }
-        //                      // IEEE: id + part_select_range/constant_part_select_range
-        |       idArrayed '[' expr ']'                          { $$ = new AstSelBit{$2, $1, $3}; }  // Or AstArraySel, don't know yet.
-        |       idArrayed '[' constExpr ':' constExpr ']'       { $$ = new AstSelExtract{$2, $1, $3, $5}; }
-        //                      // IEEE: id + indexed_range/constant_indexed_range
-        |       idArrayed '[' expr yP_PLUSCOLON  constExpr ']'  { $$ = new AstSelPlus{$2, $1, $3, $5}; }
-        |       idArrayed '[' expr yP_MINUSCOLON constExpr ']'  { $$ = new AstSelMinus{$2, $1, $3, $5}; }
-        //                      // IEEE: loop_variables (under foreach expression)
-        //                      // To avoid conflicts we allow expr as first element, must post-check
+idArrayedForeach<foreachHeaderp>:    // IEEE: id + select (under foreach expression)
+                parseRefBase  // Malformed, but accept for better error reporting
+                        { $$ = new AstForeachHeader{$<fl>1, $1, nullptr}; }
+        |       idArrayed '[' expr ']'
+                        { $$ = new AstForeachHeader{$2, $1, $3}; }
         |       idArrayed '[' ']'
-                        { $$ = new AstSelLoopVars{$2, $1, new AstEmpty{$3}}; }
-        |       idArrayed '[' expr ',' loop_variables ']'
-                        { $$ = new AstSelLoopVars{$2, $1, addNextNull(static_cast<AstNode*>($3), $5)}; }
+                        { $$ = new AstForeachHeader{$2, $1, new AstEmpty{$3}}; }
+        |       idArrayed '[' parseRefBase ',' loop_variables ']'
+                        { $$ = new AstForeachHeader{$2, $1, addNextNull(static_cast<AstNode*>($3), $5)}; }
         |       idArrayed '[' ',' loop_variables ']'
-                        { $$ = new AstSelLoopVars{$2, $1, addNextNull(static_cast<AstNode*>(new AstEmpty{$3}), $4)}; }
+                        { $$ = new AstForeachHeader{$2, $1, addNextNull(static_cast<AstNode*>(new AstEmpty{$3}), $4)}; }
         ;
 
-// VarRef without any dots or vectorizaion
-varRefBase<parseRefp>:
+// ParseRef without any dots or vectorizaion
+parseRefBase<parseRefp>:
                 id                                      { $$ = new AstParseRef{$<fl>1, *$1}; }
-        ;
-
-// ParseRef
-parseRefBase<nodep>:
-                id
-                        { $$ = new AstParseRef{$<fl>1, *$1, nullptr, nullptr}; }
         ;
 
 // yaSTRING shouldn't be used directly, instead via an abstraction below

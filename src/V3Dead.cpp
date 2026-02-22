@@ -81,7 +81,7 @@ class DeadVisitor final : public VNVisitor {
     bool m_inAssign = false;  // Currently in an assign
     AstNodeDType* m_curDTypep = nullptr;  // Current NodeDType
     AstNodeModule* m_modp = nullptr;  // Current module
-    AstSelLoopVars* m_selloopvarsp = nullptr;  // Current loop vars
+    AstForeachHeader* m_foreachHeaderp = nullptr;  // Current foreach header
 
     // STATE - Statistic tracking
     VDouble0 m_statFTasksDeadified;
@@ -268,10 +268,10 @@ class DeadVisitor final : public VNVisitor {
         }
         checkAll(nodep);
     }
-    void visit(AstSelLoopVars* nodep) override {
-        // Var under a SelLoopVars means we haven't called V3Width to remove them yet
-        VL_RESTORER(m_selloopvarsp);
-        m_selloopvarsp = nodep;
+    void visit(AstForeachHeader* nodep) override {
+        // Var under a ForeachHeader means we haven't called V3Width to remove them yet
+        VL_RESTORER(m_foreachHeaderp);
+        m_foreachHeaderp = nodep;
         iterateChildren(nodep);
         checkAll(nodep);
     }
@@ -292,7 +292,7 @@ class DeadVisitor final : public VNVisitor {
     void visit(AstVar* nodep) override {
         iterateChildren(nodep);
         checkAll(nodep);
-        if (m_selloopvarsp) nodep->user1Inc();
+        if (m_foreachHeaderp) nodep->user1Inc();
         if (mightElimVar(nodep)) {
             m_varsp.push_back(nodep);
         } else {

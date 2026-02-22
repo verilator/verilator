@@ -193,6 +193,8 @@ private:
                 UASSERT_OBJ(nodep->dtypep(), nodep,
                             "No dtype on node with hasDType(): " << nodep->prettyTypeName());
             } else {
+                UASSERT_OBJ(!VN_IS(nodep, NodeExpr), nodep,
+                            "All AstNodeExpr must have a dtype post V3WidthCommit");
                 UASSERT_OBJ(!nodep->dtypep(), nodep,
                             "DType on node without hasDType(): " << nodep->prettyTypeName());
             }

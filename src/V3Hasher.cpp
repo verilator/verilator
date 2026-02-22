@@ -347,7 +347,7 @@ class HasherVisitor final : public VNVisitorConst {
     void visit(AstClassExtends* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, []() {});
     }
-    void visit(AstSelLoopVars* nodep) override {
+    void visit(AstForeachHeader* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, []() {});
     }
     void visit(AstDefParam* nodep) override {

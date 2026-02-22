@@ -126,13 +126,13 @@ public:
     }
 };
 class AstNodeForeach VL_NOT_FINAL : public AstNodeStmt {
-    // @astgen op1 := arrayp : AstNode
-    // @astgen op2 := stmtsp : List[AstNode]
+    // @astgen op1 := headerp : AstForeachHeader
+    // @astgen op2 := bodyp : List[AstNode]
 public:
-    AstNodeForeach(VNType t, FileLine* fl, AstNode* arrayp, AstNode* stmtsp)
+    AstNodeForeach(VNType t, FileLine* fl, AstForeachHeader* headerp, AstNode* bodyp)
         : AstNodeStmt(t, fl) {
-        this->arrayp(arrayp);
-        addStmtsp(stmtsp);
+        this->headerp(headerp);
+        addBodyp(bodyp);
     }
     ASTGEN_MEMBERS_AstNodeForeach;
     bool isGateOptimizable() const override { return false; }
@@ -211,6 +211,23 @@ public:
     ASTGEN_MEMBERS_AstCaseItem;
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
     bool isDefault() const { return condsp() == nullptr; }
+};
+
+class AstForeachHeader final : public AstNode {
+    // Variable reference + index enumeration "ref [id, id, id]" for a foreach statement
+    // @astgen op1 := fromp : AstNodeExpr
+    // @astgen op2 := elementsp : List[AstNode<AstNodeExpr|AstVar|AstEmpty>]
+    //             AstNodeExpr/AstEmpty during parsing (only AstParseRef/AstEmpty is well formed)
+    //             then AstVar/AstEmpty after LinkDot
+public:
+    AstForeachHeader(FileLine* fl, AstNodeExpr* fromp, AstNode* elementsp)
+        : ASTGEN_SUPER_ForeachHeader(fl) {
+        this->fromp(fromp);
+        addElementsp(elementsp);
+    }
+    ASTGEN_MEMBERS_AstForeachHeader;
+    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool maybePointedTo() const override VL_MT_SAFE { return false; }
 };
 
 // === AstNodeStmt ===
@@ -1485,14 +1502,14 @@ public:
 class AstConstraintForeach final : public AstNodeForeach {
     // Constraint foreach statement
 public:
-    AstConstraintForeach(FileLine* fl, AstNodeExpr* exprp, AstNode* bodysp)
-        : ASTGEN_SUPER_ConstraintForeach(fl, exprp, bodysp) {}
+    AstConstraintForeach(FileLine* fl, AstForeachHeader* headerp, AstNode* bodyp)
+        : ASTGEN_SUPER_ConstraintForeach(fl, headerp, bodyp) {}
     ASTGEN_MEMBERS_AstConstraintForeach;
 };
 class AstForeach final : public AstNodeForeach {
 public:
-    AstForeach(FileLine* fl, AstNode* arrayp, AstNode* stmtsp)
-        : ASTGEN_SUPER_Foreach(fl, arrayp, stmtsp) {}
+    AstForeach(FileLine* fl, AstForeachHeader* headerp, AstNode* stmtsp)
+        : ASTGEN_SUPER_Foreach(fl, headerp, stmtsp) {}
     ASTGEN_MEMBERS_AstForeach;
 };
 
