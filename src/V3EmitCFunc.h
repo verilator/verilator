@@ -763,6 +763,10 @@ public:
             comma = true;
             argNum++;
         }
+        if (nodep->withp()) {
+            if (comma) puts(", ");
+            iterateConst(nodep->withp());
+        }
         puts(")");
     }
     void visit(AstLambdaArgRef* nodep) override { putbs(nodep->nameProtect()); }

@@ -3857,7 +3857,8 @@ class WidthVisitor final : public VNVisitor {
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                      VCMethod::arrayMethod("r_" + nodep->name()), withp};
+                                      VCMethod::arrayMethod("r_" + nodep->name())};
+            newp->withp(withp);
             newp->dtypeFrom(withp ? withp->dtypep() : adtypep->subDTypep());
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "min" || nodep->name() == "max" || nodep->name() == "unique") {
@@ -3875,7 +3876,8 @@ class WidthVisitor final : public VNVisitor {
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                      VCMethod::arrayMethod(nodep->name()), withp};
+                                      VCMethod::arrayMethod(nodep->name())};
+            newp->withp(withp);
             newp->dtypep(queueDTypeIndexedBy(adtypep->subDTypep()));
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "map") {
@@ -3950,7 +3952,8 @@ class WidthVisitor final : public VNVisitor {
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                      VCMethod::arrayMethod("r_" + nodep->name()), withp};
+                                      VCMethod::arrayMethod("r_" + nodep->name())};
+            newp->withp(withp);
             newp->dtypeFrom(withp ? withp->dtypep() : adtypep->subDTypep());
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "min" || nodep->name() == "max" || nodep->name() == "unique"
@@ -3960,7 +3963,8 @@ class WidthVisitor final : public VNVisitor {
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                      VCMethod::arrayMethod(nodep->name()), withp};
+                                      VCMethod::arrayMethod(nodep->name())};
+            newp->withp(withp);
             if (nodep->name() == "unique_index") {
                 newp->dtypep(queueDTypeIndexedBy(adtypep->keyDTypep()));
             } else {
@@ -3974,7 +3978,8 @@ class WidthVisitor final : public VNVisitor {
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                      VCMethod::arrayMethod(nodep->name()), withp};
+                                      VCMethod::arrayMethod(nodep->name())};
+            newp->withp(withp);
             newp->dtypep(queueDTypeIndexedBy(adtypep->subDTypep()));
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "find_index" || nodep->name() == "find_first_index"
@@ -3984,7 +3989,8 @@ class WidthVisitor final : public VNVisitor {
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                      VCMethod::arrayMethod(nodep->name()), withp};
+                                      VCMethod::arrayMethod(nodep->name())};
+            newp->withp(withp);
             newp->dtypep(queueDTypeIndexedBy(adtypep->keyDTypep()));
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "map") {
@@ -4079,7 +4085,8 @@ class WidthVisitor final : public VNVisitor {
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                      VCMethod::arrayMethod(nodep->name()), withp};
+                                      VCMethod::arrayMethod(nodep->name())};
+            newp->withp(withp);
             newp->dtypeSetVoid();
         } else if (nodep->name() == "min" || nodep->name() == "max" || nodep->name() == "unique"
                    || nodep->name() == "unique_index") {
@@ -4088,7 +4095,8 @@ class WidthVisitor final : public VNVisitor {
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                      VCMethod::arrayMethod(nodep->name()), withp};
+                                      VCMethod::arrayMethod(nodep->name())};
+            newp->withp(withp);
             if (nodep->name() == "unique_index") {
                 newp->dtypep(newp->findQueueIndexDType());
             } else {
@@ -4103,7 +4111,8 @@ class WidthVisitor final : public VNVisitor {
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                      VCMethod::arrayMethod(nodep->name()), withp};
+                                      VCMethod::arrayMethod(nodep->name())};
+            newp->withp(withp);
             newp->dtypep(queueDTypeIndexedBy(adtypep->subDTypep()));
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "find_index" || nodep->name() == "find_first_index"
@@ -4114,7 +4123,8 @@ class WidthVisitor final : public VNVisitor {
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                      VCMethod::arrayMethod(nodep->name()), withp};
+                                      VCMethod::arrayMethod(nodep->name())};
+            newp->withp(withp);
             newp->dtypep(newp->findQueueIndexDType());
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "map") {
@@ -4159,7 +4169,8 @@ class WidthVisitor final : public VNVisitor {
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                      VCMethod::arrayMethod("r_" + nodep->name()), withp};
+                                      VCMethod::arrayMethod("r_" + nodep->name())};
+            newp->withp(withp);
             newp->dtypeFrom(adtypep->subDTypep());
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if ((newp = methodCallArray(nodep, adtypep))) {
@@ -4260,7 +4271,8 @@ class WidthVisitor final : public VNVisitor {
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                      VCMethod::arrayMethod("r_" + nodep->name()), withp};
+                                      VCMethod::arrayMethod("r_" + nodep->name())};
+            newp->withp(withp);
             newp->dtypeFrom(withp ? withp->dtypep() : adtypep->subDTypep());
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if ((newp = methodCallArray(nodep, adtypep))) {
@@ -4579,7 +4591,8 @@ class WidthVisitor final : public VNVisitor {
                 methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
                 AstCMethodHard* const newp
                     = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                         VCMethod::arrayMethod("r_" + nodep->name()), withp};
+                                         VCMethod::arrayMethod("r_" + nodep->name())};
+                newp->withp(withp);
                 newp->dtypeFrom(withp ? withp->dtypep() : adtypep->subDTypep());
                 if (!nodep->firstAbovep()) newp->dtypeSetVoid();
                 newp->protect(false);
