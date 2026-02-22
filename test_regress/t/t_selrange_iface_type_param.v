@@ -112,7 +112,7 @@ module axi_demux_simple #(
   output logic [AxiLookBits-1:0] id_out,
   output int unsigned req_bits_out
 );
-  // Extract ID from nested struct — triggers SELRANGE if axi_req_t
+  // Extract ID from nested struct - triggers SELRANGE if axi_req_t
   // is from wrong interface clone (id field narrower than AxiLookBits)
   assign id_out = slv_req_i.aw.id[0+:AxiLookBits];
   assign slv_resp_o = '0;
@@ -271,7 +271,7 @@ module axi_dw_upsizer #(
 endmodule
 
 //======================================================================
-// axi_dw_converter skeleton — generate if for upsize
+// axi_dw_converter skeleton - generate if for upsize
 //======================================================================
 module axi_dw_converter #(
   parameter int unsigned AxiSlvPortDataWidth = 8,
@@ -367,7 +367,7 @@ module axi_to_axi_lite #(
 endmodule
 
 //======================================================================
-// axi_to_axi_lite_wrap — non-parameterized wrapper (#()) with iface port
+// axi_to_axi_lite_wrap - non-parameterized wrapper (#()) with iface port
 //======================================================================
 module axi_to_axi_lite_wrap #()(
   input logic clk_i,
@@ -403,7 +403,7 @@ module axi_to_axi_lite_wrap #()(
 endmodule
 
 //======================================================================
-// axi_dw_converter_wrap — non-parameterized wrapper with TWO iface ports
+// axi_dw_converter_wrap - non-parameterized wrapper with TWO iface ports
 //======================================================================
 module axi_dw_converter_wrap #()(
   input logic clk_i,
