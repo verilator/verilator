@@ -594,18 +594,8 @@ class LinkParseVisitor final : public VNVisitor {
         //   4. DOT(DOT(first, second), ASTSELBIT(third, var0))
         VL_RESTORER(m_insideLoop);
         m_insideLoop = true;
-        AstNode* bracketp = nodep->arrayp();
-        while (AstDot* dotp = VN_CAST(bracketp, Dot)) bracketp = dotp->rhsp();
-        if (AstSelBit* const selp = VN_CAST(bracketp, SelBit)) {
-            // Convert to AstSelLoopVars so V3LinkDot knows what's being defined
-            AstNode* const newp
-                = new AstSelLoopVars{selp->fileline(), selp->fromp()->unlinkFrBack(),
-                                     selp->bitp()->unlinkFrBackWithNext()};
-            selp->replaceWith(newp);
-            VL_DO_DANGLING2(selp->deleteTree(), selp, bracketp);
-        } else if (VN_IS(bracketp, SelLoopVars)) {
-            // Ok
-        } else {
+        AstForeachHeader* const headerp = nodep->headerp();
+        if (!headerp->elementsp()) {
             nodep->v3error("Foreach missing bracketed loop variable is no-operation"
                            " (IEEE 1800-2023 12.7.3)");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);

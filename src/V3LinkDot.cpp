@@ -1910,29 +1910,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             m_curSymp = m_statep->insertBlock(m_curSymp, "__Vforeach" + cvtToStr(m_modWithNum),
                                               nodep, m_classOrPackagep);
             m_curSymp->fallbackp(VL_RESTORER_PREV(m_curSymp));
-            // DOT(x, SELLOOPVARS(var, loops)) -> SELLOOPVARS(DOT(x, var), loops)
-            if (AstDot* const dotp = VN_CAST(nodep->arrayp(), Dot)) {
-                AstDot* dotAbovep = dotp;
-                while (AstDot* const dotNextp = VN_CAST(dotAbovep->rhsp(), Dot)) {
-                    dotAbovep = dotNextp;
-                }
-                if (AstSelLoopVars* const loopvarsp = VN_CAST(dotAbovep->rhsp(), SelLoopVars)) {
-                    AstNodeExpr* const fromp = loopvarsp->fromp()->unlinkFrBack();
-                    loopvarsp->unlinkFrBack();
-                    dotp->replaceWith(loopvarsp);
-                    dotAbovep->rhsp(fromp);
-                    loopvarsp->fromp(dotp);
-                }
-            }
-            const auto loopvarsp = VN_CAST(nodep->arrayp(), SelLoopVars);
-            if (!loopvarsp) {
-                AstNode* const warnp = nodep->arrayp() ? nodep->arrayp() : nodep;
-                warnp->v3warn(E_UNSUPPORTED,
-                              "Unsupported (or syntax error): Foreach on this array's construct");
-                VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-                return;
-            }
-            for (AstNode *nextp, *argp = loopvarsp->elementsp(); argp; argp = nextp) {
+            for (AstNode *nextp, *argp = nodep->headerp()->elementsp(); argp; argp = nextp) {
                 nextp = argp->nextp();
                 AstVar* argrefp = nullptr;
                 if (AstParseRef* const parserefp = VN_CAST(argp, ParseRef)) {

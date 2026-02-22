@@ -471,9 +471,8 @@ static AstNode* createForeachLoopRanged(AstNodeForeach* nodep, AstNode* bodysp, 
 }
 AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
     // UINFOTREE(1, nodep, "", "foreach-old");
-    const AstSelLoopVars* const loopsp = VN_CAST(nodep->arrayp(), SelLoopVars);
-    UASSERT_OBJ(loopsp, nodep, "No loop variables under foreach");
-    AstNodeExpr* const fromp = loopsp->fromp();
+    const AstForeachHeader* const headerp = nodep->headerp();
+    AstNodeExpr* const fromp = headerp->fromp();
     UASSERT_OBJ(fromp->dtypep(), fromp, "Missing data type");
     AstNodeDType* fromDtp = fromp->dtypep()->skipRefp();
     // Split into for loop
@@ -486,7 +485,7 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
     // dyn-arr and associative-arr)
     AstNodeExpr* subfromp = fromp->cloneTreePure(false);
     // Major dimension first
-    for (AstNode *argsp = loopsp->elementsp(), *next_argsp; argsp; argsp = next_argsp) {
+    for (AstNode *argsp = headerp->elementsp(), *next_argsp; argsp; argsp = next_argsp) {
         next_argsp = argsp->nextp();
         const bool empty = VN_IS(argsp, Empty);
         AstVar* const varp = VN_CAST(argsp, Var);
@@ -578,7 +577,7 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
     }
     VL_DO_DANGLING(subfromp->deleteTree(), subfromp);
     // The parser validates we don't have "foreach (array[,,,])"
-    AstNode* const bodyp = nodep->stmtsp();
+    AstNode* const bodyp = nodep->bodyp();
     if (!newp) {
         nodep->v3warn(NOEFFECT, "foreach with no loop variable has no effect");
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);

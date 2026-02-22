@@ -89,7 +89,7 @@ class LinkJumpVisitor final : public VNVisitor {
             underp = fTaskp->stmtsp();
         } else if (AstForeach* const foreachp = VN_CAST(nodep, Foreach)) {
             if (endOfIter) {
-                underp = foreachp->stmtsp();
+                underp = foreachp->bodyp();
                 // Keep a LoopTest **at the front** outside the jump block
                 if (VN_IS(underp, LoopTest)) underp = underp->nextp();
             } else {
@@ -351,7 +351,7 @@ class LinkJumpVisitor final : public VNVisitor {
     void visit(AstNodeForeach* nodep) override {
         VL_RESTORER(m_loopp);
         m_loopp = nodep;
-        iterateAndNextNull(nodep->stmtsp());
+        iterateAndNextNull(nodep->bodyp());
     }
     void visit(AstReturn* nodep) override {
         iterateChildren(nodep);

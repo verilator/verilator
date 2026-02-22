@@ -1727,10 +1727,10 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Convert to plain foreach
         FileLine* const fl = nodep->fileline();
 
-        if (!nodep->stmtsp()) {
+        if (!nodep->bodyp()) {
             nodep->unlinkFrBack();
         } else if (m_wantSingle) {
-            AstNodeExpr* const itemp = editSingle(fl, nodep->stmtsp());
+            AstNodeExpr* const itemp = editSingle(fl, nodep->bodyp());
             AstCStmt* const cstmtp = new AstCStmt{fl};
             cstmtp->add("ret += \" \";\n");
             cstmtp->add("ret += ");
@@ -1740,16 +1740,15 @@ class ConstraintExprVisitor final : public VNVisitor {
             cexprp->dtypeSetString();
             cexprp->add("([&]{\nstd::string ret;\n");
             cexprp->add(new AstBegin{
-                fl, "", new AstForeach{fl, nodep->arrayp()->unlinkFrBack(), cstmtp}, true});
+                fl, "", new AstForeach{fl, nodep->headerp()->unlinkFrBack(), cstmtp}, true});
             cexprp->add("return ret.empty() ? \"#b1\" : \"(bvand\" + ret + \")\";\n})()");
             nodep->replaceWith(new AstSFormatF{fl, "%@", false, cexprp});
         } else {
-            iterateAndNextNull(nodep->stmtsp());
-            nodep->replaceWith(
-                new AstBegin{fl, "",
-                             new AstForeach{fl, nodep->arrayp()->unlinkFrBack(),
-                                            nodep->stmtsp()->unlinkFrBackWithNext()},
-                             true});
+            iterateAndNextNull(nodep->bodyp());
+            nodep->replaceWith(new AstBegin{fl, "",
+                                            new AstForeach{fl, nodep->headerp()->unlinkFrBack(),
+                                                           nodep->bodyp()->unlinkFrBackWithNext()},
+                                            true});
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
@@ -1917,8 +1916,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstVar* const newVarp
                 = new AstVar{fl, VVarType::BLOCKTEMP, "__Vinside", nodep->findSigned32DType()};
             AstNodeExpr* const idxRefp = new AstVarRef{nodep->fileline(), newVarp, VAccess::READ};
-            AstSelLoopVars* const arrayp
-                = new AstSelLoopVars{fl, nodep->fromp()->cloneTreePure(false), newVarp};
+            AstForeachHeader* const headerp
+                = new AstForeachHeader{fl, nodep->fromp()->cloneTreePure(false), newVarp};
             AstNodeExpr* const selp = newSel(nodep->fileline(), nodep->fromp(), idxRefp);
             selp->user1(randArr);
             AstNode* const itemp = new AstEq{fl, selp, nodep->pinsp()->unlinkFrBack()};
@@ -1932,7 +1931,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstCExpr* const cexprp = new AstCExpr{fl};
             cexprp->dtypeSetString();
             cexprp->add("([&]{\nstd::string ret;\n");
-            cexprp->add(new AstBegin{fl, "", new AstForeach{fl, arrayp, cstmtp}, true});
+            cexprp->add(new AstBegin{fl, "", new AstForeach{fl, headerp, cstmtp}, true});
             cexprp->add("return ret.empty() ? \"#b0\" : \"(bvor\" + ret + \")\";\n})()");
             nodep->replaceWith(new AstSFormatF{fl, "%@", false, cexprp});
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -1977,8 +1976,8 @@ class ConstraintExprVisitor final : public VNVisitor {
 
             AstVar* const newVarp
                 = new AstVar{fl, VVarType::BLOCKTEMP, "__Vreduce", nodep->findSigned32DType()};
-            AstSelLoopVars* const arrayp
-                = new AstSelLoopVars{fl, nodep->fromp()->cloneTreePure(false), newVarp};
+            AstForeachHeader* const headerp
+                = new AstForeachHeader{fl, nodep->fromp()->cloneTreePure(false), newVarp};
 
             // Foreach body: register element as scalar solver var + append name
             AstCStmt* const cstmtp = new AstCStmt{fl};
@@ -2000,7 +1999,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstCExpr* const cexprp = new AstCExpr{fl};
             cexprp->dtypeSetString();
             cexprp->add("([&]{\nstd::string ret;\n");
-            cexprp->add(new AstBegin{fl, "", new AstForeach{fl, arrayp, cstmtp}, true});
+            cexprp->add(new AstBegin{fl, "", new AstForeach{fl, headerp, cstmtp}, true});
 
             const char* smtOp = nullptr;
             std::string identity;
@@ -2198,7 +2197,7 @@ class CaptureVisitor final : public VNVisitor {
         const bool varIsFieldOfCaller = AstClass::isClassExtendedFrom(callerClassp, varClassp);
         const bool varIsParam = varRefp->varp()->isParam();
         const bool varIsConstraintIterator
-            = VN_IS(varRefp->varp()->firstAbovep(), SelLoopVars)
+            = VN_IS(varRefp->varp()->firstAbovep(), ForeachHeader)
               && VN_IS(varRefp->varp()->firstAbovep()->firstAbovep(), ConstraintForeach);
         if (refIsXref) return CaptureMode::CAP_VALUE | CaptureMode::CAP_F_XREF;
         if (varIsConstraintIterator) return CaptureMode::CAP_NO;
@@ -2894,12 +2893,12 @@ class RandomizeVisitor final : public VNVisitor {
             tempDTypep = tempDTypep->virtRefDTypep();
         }
 
-        AstSelLoopVars* const randLoopVarp
-            = new AstSelLoopVars{fl, exprp->cloneTree(false), randLoopIndxp};
+        AstForeachHeader* const headerp
+            = new AstForeachHeader{fl, exprp->cloneTree(false), randLoopIndxp};
         AstNodeStmt* const randStmtsp = newRandStmtsp(fl, tempElementp, nullptr, outputVarp);
         // TODO: we should just not clone in 'newRandStmtsp' if not necessary
         if (!tempElementp->backp()) VL_DO_DANGLING(pushDeletep(tempElementp), tempElementp);
-        return new AstForeach{fl, randLoopVarp, randStmtsp};
+        return new AstForeach{fl, headerp, randStmtsp};
     }
     AstNodeStmt* newRandStmtsp(FileLine* fl, AstNodeExpr* exprp, AstVar* randcVarp,
                                AstVar* const outputVarp, int offset = 0,

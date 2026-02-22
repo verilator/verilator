@@ -52,8 +52,8 @@ public:
     // METHODS
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
-    // TODO: The only AstNodeExpr without dtype is AstArg. Otherwise this could be final.
-    bool hasDType() const override VL_MT_SAFE { return true; }
+    // Every expressio must have a data type after V3Width
+    bool hasDType() const override final VL_MT_SAFE { return true; }
     virtual string emitVerilog() = 0;  /// Format string for verilog writing; see V3EmitV
     // For documentation on emitC format see EmitCFunc::emitOpName
     virtual string emitC() = 0;
@@ -746,7 +746,6 @@ public:
         this->rhsp(rhsp);
     }
     ASTGEN_MEMBERS_AstCastSize;
-    // No hasDType because widthing removes this node before the hasDType check
     string emitVerilog() override { return "((%r)'(%l))"; }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(true); }
@@ -2272,27 +2271,6 @@ public:
     string scopePrettySymName() const { return scopePrettyNameFormatter(m_scopeAttr); }
     // Name for __Vscopep variable including children
     string scopePrettyDpiName() const { return scopePrettyNameFormatter(m_scopeEntr); }
-};
-class AstSelLoopVars final : public AstNodeExpr {
-    // Parser only concept "[id, id, id]" for a foreach statement
-    // Unlike normal selects elements is a list
-    // TODO: Should not be an AstNodeExpr, model foreach better
-    // @astgen op1 := fromp : AstNodeExpr
-    // @astgen op2 := elementsp : List[AstNode]
-public:
-    AstSelLoopVars(FileLine* fl, AstNodeExpr* fromp, AstNode* elementsp)
-        : ASTGEN_SUPER_SelLoopVars(fl) {
-        this->fromp(fromp);
-        addElementsp(elementsp);
-    }
-    ASTGEN_MEMBERS_AstSelLoopVars;
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
-    bool maybePointedTo() const override VL_MT_SAFE { return false; }
-
-    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { V3ERROR_NA_RETURN(true); }
-    bool hasDType() const override VL_MT_SAFE { return false; }
 };
 class AstSetAssoc final : public AstNodeExpr {
     // Set an assoc array element and return object, '{}

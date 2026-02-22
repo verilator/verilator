@@ -5658,15 +5658,14 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstNodeForeach* nodep) override {
         if (nodep->didWidth()) return;
         nodep->didWidth(true);
-        const AstSelLoopVars* const loopsp = VN_CAST(nodep->arrayp(), SelLoopVars);
-        UASSERT_OBJ(loopsp, nodep, "No loop variables under foreach");
+        const AstForeachHeader* const headerp = nodep->headerp();
         // UINFOTREE(1, nodep, "", "foreach-old");
-        userIterateAndNext(loopsp->fromp(), WidthVP{SELF, BOTH}.p());
-        AstNodeExpr* const fromp = loopsp->fromp();
+        userIterateAndNext(headerp->fromp(), WidthVP{SELF, BOTH}.p());
+        AstNodeExpr* const fromp = headerp->fromp();
         UASSERT_OBJ(fromp->dtypep(), fromp, "Missing data type");
         AstNodeDType* fromDtp = fromp->dtypep()->skipRefp();
         // Major dimension first
-        for (AstNode *argsp = loopsp->elementsp(), *next_argsp; argsp; argsp = next_argsp) {
+        for (AstNode *argsp = headerp->elementsp(), *next_argsp; argsp; argsp = next_argsp) {
             next_argsp = argsp->nextp();
             const bool empty = VN_IS(argsp, Empty);
             AstVar* const varp = VN_CAST(argsp, Var);
@@ -5704,7 +5703,7 @@ class WidthVisitor final : public VNVisitor {
             fromDtp = fromDtp->subDTypep();
         }
         // The parser validates we don't have "foreach (array[,,,])"
-        AstNode* const bodyp = nodep->stmtsp();
+        AstNode* const bodyp = nodep->bodyp();
         userIterateAndNext(bodyp, nullptr);
         if (AstForeach* const loopp = VN_CAST(nodep, Foreach)) {
             VL_DO_DANGLING2(V3Begin::convertToWhile(loopp), loopp, nodep);
