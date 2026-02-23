@@ -2555,6 +2555,15 @@ bool vl_check_format(const VerilatedVpioVarBase* vop, const p_vpi_value valuep, 
         case VLVT_REAL: return status;
         default: status = false;  // LCOV_EXCL_LINE
         }
+    } else if (valuep->format == vpiScalarVal) {
+        switch (varp->vltype()) {
+        case VLVT_UINT8:
+        case VLVT_UINT16:
+        case VLVT_UINT32:
+        case VLVT_UINT64:
+        case VLVT_WDATA: return status;
+        default: status = false;  // LCOV_EXCL_LINE
+        }
     } else if (valuep->format == vpiSuppressVal) {
         return status;
     } else {
@@ -2895,6 +2904,9 @@ void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
             valuep->value.real = *vop->varRealDatap();
 
         return;
+    } else if (valuep->format == vpiScalarVal) {
+        valuep->value.scalar = get_word(vop, 32, 0) ? vpi1 : vpi0;
+        return;
     } else if (valuep->format == vpiSuppressVal) {
         return;
     }
@@ -3175,6 +3187,9 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                 *(valueVop->varRealDatap()) = valuep->value.real;
                 return object;
             }
+        } else if (valuep->format == vpiScalarVal) {
+            vl_vpi_put_word(valueVop, (valuep->value.scalar == vpi1 ? 1 : 0), 1, 0);
+            return object;
         }
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported format (%s) as requested for %s",
                       __func__, VerilatedVpiError::strFromVpiVal(valuep->format),

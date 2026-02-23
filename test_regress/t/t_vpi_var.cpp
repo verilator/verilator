@@ -420,18 +420,25 @@ int _mon_check_var() {
     }
 
     // other unsigned types
-    constexpr struct {
-        const char* name;
-        PLI_INT32 exp_type;
-    } uint_vars[] = {
-        // uvm_hdl_polling.v requires single bits return vpiBitVar
-        {"bit1", vpiBitVar},
-    };
-    for (const auto& s : uint_vars) {
-        TestVpiHandle vh101 = VPI_HANDLE(s.name);
-        CHECK_RESULT_NZ(vh101);
-        d = vpi_get(vpiType, vh101);
-        CHECK_RESULT(d, s.exp_type);
+    {
+        TestVpiHandle vh999 = VPI_HANDLE("bit1");
+        CHECK_RESULT_NZ(vh999);
+        d = vpi_get(vpiType, vh999);
+        CHECK_RESULT(d, vpiBitVar);  // Required by uvm_hdl_polling
+        for (PLI_INT32 i : {vpi0, vpi1, vpiX, vpiZ}) {
+            t_vpi_value value;
+            value.format = vpiScalarVal;
+            value.value.scalar = i;
+            vpi_put_value(vh999, &value, NULL, vpiNoDelay);
+            value.value.scalar = 9;
+            vpi_get_value(vh999, &value);
+#ifdef VERILATOR  // 2-state
+            const PLI_INT32 expv = (i == vpi1) ? vpi1 : vpi0;
+#else
+            const PLI_INT32 expv = i;
+#endif
+            TEST_CHECK_EQ(value.value.scalar, expv);
+        }
     }
 
     // other integer types
