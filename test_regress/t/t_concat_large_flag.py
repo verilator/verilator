@@ -10,8 +10,9 @@
 import vltest_bootstrap
 
 test.scenarios("simulator")
+test.top_filename = "t/t_concat_large.v"
 
-test.compile(verilator_flags2=["--Wno-WIDTHCONCAT"])
+test.compile(verilator_flags2=["--replication-limit 32768"])
 
 test.execute()
 

@@ -1516,6 +1516,14 @@ Summary:
    improve C++ compilation time on designs where these sequences are
    common; however, the effect on model performance requires benchmarking.
 
+.. option:: --replication-limit <value>
+
+   Set the limit for replication concatenation (e.g. {1024{1'b1}}). Also applies
+   to unsized literals (e.g. '0).
+
+   This option is on by default with a value of 8k. To disable, pass with a
+   value of 0.
+
 .. option:: --report-unoptflat
 
    Enable extra diagnostics for :option:`UNOPTFLAT` warnings. This

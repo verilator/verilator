@@ -1532,8 +1532,9 @@ V3Number& V3Number::opRepl(const V3Number& lhs,
     // i op repl, L(i)*value(rhs) bit return
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
-    if (rhsval > 8192) {
-        v3warn(WIDTHCONCAT, "More than a 8k bit replication is probably wrong: " << rhsval);
+    if (v3Global.opt.replicationLimit() && rhsval > (uint32_t)v3Global.opt.replicationLimit()) {
+        v3warn(WIDTHCONCAT, "Replication of more that --replication-limit "
+                                << v3Global.opt.replicationLimit() << " is suspect: " << rhsval);
     }
     setZero();
     int obit = 0;
