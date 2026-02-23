@@ -958,11 +958,11 @@ const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
         return nodep;
     }
     auto debug = []() -> int { return V3Error::debugDefault(); };  // EOM
-    UINFO(0, "skipRefIterp recursion: start=" << this << " type=" << prettyTypeName() << "\n");
+    UINFO(9, "skipRefIterp recursion: start=" << this << " type=" << prettyTypeName() << "\n");
     {
         const AstNodeDType* chainp = this;
         for (int i = 0; i < 20 && chainp; ++i) {
-            UINFO(0, "  chain[" << i << "]=" << chainp << " type=" << chainp->prettyTypeName()
+            UINFO(9, "  chain[" << i << "]=" << chainp << " type=" << chainp->prettyTypeName()
                                 << " sub=" << chainp->subDTypep() << "\n");
             chainp = chainp->subDTypep();
         }

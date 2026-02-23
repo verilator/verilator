@@ -3158,10 +3158,10 @@ public:
 void V3Param::param(AstNetlist* rootp) {
     UINFO(2, __FUNCTION__ << ":");
 
-    V3LinkDotIfaceCapture::dumpEntries("before V3Param");
+    if (dumpTreeEitherLevel() >= 9) V3LinkDotIfaceCapture::dumpEntries("before V3Param");
     { ParamTop{rootp}; }
     V3LinkDotIfaceCapture::purgeStaleRefs();
-    V3LinkDotIfaceCapture::dumpEntries("after V3Param");
+    if (dumpTreeEitherLevel() >= 9) V3LinkDotIfaceCapture::dumpEntries("after V3Param");
 
     V3Global::dumpCheckGlobalTree("param", 0, dumpTreeEitherLevel() >= 3);
 }

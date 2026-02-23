@@ -1089,8 +1089,8 @@ class WidthVisitor final : public VNVisitor {
                 nodep->v3warn(SELRANGE, "Extracting " << width << " bits from only "
                                                       << nodep->fromp()->width() << " bit number");
                 // DEBUG: dump AST context for SELRANGE diagnosis
-                if (VL_UNLIKELY(v3Global.opt.debugLevel("V3Width") >= 5)) {
-                    UINFO(5, "SELRANGE-DEBUG: fromp="
+                if (VL_UNLIKELY(v3Global.opt.debugLevel("V3Width") >= 9)) {
+                    UINFO(9, "SELRANGE-DEBUG: fromp="
                                  << nodep->fromp()->prettyTypeName()
                                  << " width=" << nodep->fromp()->width()
                                  << " dtypep=" << nodep->fromp()->dtypep()->prettyTypeName()
@@ -1100,7 +1100,7 @@ class WidthVisitor final : public VNVisitor {
                     int depth = 0;
                     while (walkp && depth < 10) {
                         if (AstSel* selp = VN_CAST(walkp, Sel)) {
-                            UINFO(5, "SELRANGE-DEBUG:  chain["
+                            UINFO(9, "SELRANGE-DEBUG:  chain["
                                          << depth << "] SEL" << " w=" << selp->width() << " lsb="
                                          << (VN_IS(selp->lsbp(), Const)
                                                  ? std::to_string(
@@ -1111,7 +1111,7 @@ class WidthVisitor final : public VNVisitor {
                                          << " dtypeW=" << selp->dtypep()->width());
                             walkp = selp->fromp();
                         } else if (AstVarRef* vrp = VN_CAST(walkp, VarRef)) {
-                            UINFO(5, "SELRANGE-DEBUG:  chain["
+                            UINFO(9, "SELRANGE-DEBUG:  chain["
                                          << depth << "] VARREF" << " name="
                                          << vrp->varp()->prettyName() << " w=" << vrp->width()
                                          << " dtype=" << vrp->dtypep()->prettyTypeName()
@@ -1120,7 +1120,7 @@ class WidthVisitor final : public VNVisitor {
                             AstNodeDType* vdtp = vrp->varp()->dtypep();
                             int di = 0;
                             while (vdtp && di < 5) {
-                                UINFO(5, "SELRANGE-DEBUG:   varDtype[" << di << "] "
+                                UINFO(9, "SELRANGE-DEBUG:   varDtype[" << di << "] "
                                                                        << vdtp->prettyTypeName()
                                                                        << " w=" << vdtp->width());
                                 if (AstRefDType* rdtp = VN_CAST(vdtp, RefDType)) {
@@ -1132,7 +1132,7 @@ class WidthVisitor final : public VNVisitor {
                             }
                             walkp = nullptr;
                         } else {
-                            UINFO(5, "SELRANGE-DEBUG:  chain[" << depth << "] "
+                            UINFO(9, "SELRANGE-DEBUG:  chain[" << depth << "] "
                                                                << walkp->prettyTypeName()
                                                                << " w=" << walkp->width());
                             walkp = nullptr;
@@ -1140,12 +1140,12 @@ class WidthVisitor final : public VNVisitor {
                         depth++;
                     }
                     if (selrangeModp) {
-                        UINFO(5,
+                        UINFO(9,
                               "SELRANGE-DEBUG: modp=" << selrangeModp->prettyName()
                                                       << " hasGParam=" << selrangeModp->hasGParam()
                                                       << " origName=" << selrangeModp->origName());
                     }
-                    UINFO(5, "SELRANGE-DEBUG: ---");
+                    UINFO(9, "SELRANGE-DEBUG: ---");
                 }
                 // Extend it.
                 AstNodeDType* const subDTypep
