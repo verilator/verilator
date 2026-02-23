@@ -118,7 +118,13 @@ private:
             AstNodeExpr* newValExprp = nullptr;
             if (const AstNodeAssign* const parentAssignp
                 = VN_CAST(nodep->backp(), NodeAssign)) {
-                if (parentAssignp->lhsp() == nodep) {
+                // Only apply conditional trigger for continuous assigns (AstAssignW).
+                // These are the only context where repeatedly writing the same value
+                // causes infinite ICO convergence loops. Procedural assigns (blocking
+                // and non-blocking) are clocked and don't have this problem; applying
+                // the conditional trigger to them introduces circular ordering
+                // dependencies that the scheduler cannot resolve.
+                if (VN_IS(parentAssignp, AssignW) && parentAssignp->lhsp() == nodep) {
                     // Clone nodep as a READ to capture the old value before the write.
                     T const clonedNodep = nodep->cloneTree(false);
                     clonedNodep->access(VAccess::READ);
@@ -131,24 +137,18 @@ private:
             VNRelinker relinker;
             nodep->unlinkFrBack(&relinker);
 
-            // Create the trigger write ref first (this ensures the trigger varscope exists)
+            // Create the trigger write ref (this also ensures the trigger varscope exists)
             AstVarRef* const trigWriteRefp
                 = createVirtIfaceMemberTriggerRefp(flp, ifacep, memberVarp);
-            // Now get the trigger varscope for the read ref (guaranteed to exist now)
-            AstVarScope* const trigVscp = m_triggers.findMemberTrigger(ifacep, memberVarp);
-            UASSERT(trigVscp, "Trigger varscope should exist after createVirtIfaceMemberTriggerRefp");
 
             AstNodeStmt* triggerStmtp = nullptr;
             if (oldValReadp && newValExprp) {
                 // Conditional trigger: only fire if the value is actually changing.
-                // Generated: trigger = trigger | (old_vif_read != new_value_expr)
+                // Generated: trigger = (old_vif_read != new_value_expr)
                 // This avoids infinite ICO/NBA convergence loops when combinational logic
                 // repeatedly writes the same value to a virtual interface signal.
-                AstVarRef* const trigReadp = new AstVarRef{flp, trigVscp, VAccess::READ};
                 AstNodeExpr* const changedExprp = new AstNeq{flp, oldValReadp, newValExprp};
-                AstNodeExpr* const triggerValp
-                    = new AstOr{flp, trigReadp, changedExprp};
-                triggerStmtp = new AstAssign{flp, trigWriteRefp, triggerValp};
+                triggerStmtp = new AstAssign{flp, trigWriteRefp, changedExprp};
             } else {
                 // Fall back to unconditional trigger if we can't determine the new value
                 triggerStmtp = new AstAssign{flp, trigWriteRefp,
