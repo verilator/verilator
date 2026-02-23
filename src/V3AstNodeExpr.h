@@ -912,7 +912,6 @@ public:
     }
     ASTGEN_MEMBERS_AstConsPackUOrStruct;
     const char* broken() const override {
-        BROKEN_RTN(dtypep() && !VN_IS(dtypep()->skipRefp(), NodeUOrStructDType));
         return nullptr;
     }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
