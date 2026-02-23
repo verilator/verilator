@@ -411,9 +411,9 @@ class TristateVisitor final : public TristateBaseVisitor {
 
     // TYPES
     struct RefStrength final {
-        AstVarRef* m_varrefp;
+        AstNodeVarRef* m_varrefp;
         VStrength m_strength;
-        RefStrength(AstVarRef* varrefp, VStrength strength)
+        RefStrength(AstNodeVarRef* varrefp, VStrength strength)
             : m_varrefp{varrefp}
             , m_strength{strength} {}
     };
@@ -471,7 +471,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     }
     AstNodeExpr* getEnp(AstNode* nodep) {
         if (nodep->user1p()) {
-            if (AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
+            if (AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef)) {
                 if (refp->varp()->isIO()) {
                     // When reading a tri-state port, we can always use the value
                     // because such port will have resolution logic in upper module.
@@ -561,7 +561,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         return newp;
     }
 
-    void mapInsertLhsVarRef(AstVarRef* nodep) {
+    void mapInsertLhsVarRef(AstNodeVarRef* nodep) {
         UINFO(9, "    mapInsertLhsVarRef " << nodep);
         AstVar* const key = nodep->varp();
         const auto pair = m_lhsmap.emplace(key, nullptr);
@@ -663,7 +663,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         AstNodeExpr* enp = nullptr;
 
         for (auto it = beginStrength; it != endStrength; it++) {
-            AstVarRef* refp = it->m_varrefp;
+            AstNodeVarRef* refp = it->m_varrefp;
 
             // create the new lhs driver for this var
             AstVar* const newLhsp = new AstVar{varp->fileline(), VVarType::MODULETEMP,
@@ -1752,7 +1752,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         }
     }
 
-    void visit(AstVarRef* nodep) override {
+    void handleNodeVarRef(AstNodeVarRef* nodep) {
         UINFO(9, dbgState() << nodep);
         if (m_graphing) {
             if (nodep->access().isWriteOrRW()) associateLogic(nodep, nodep->varp());
@@ -1793,6 +1793,9 @@ class TristateVisitor final : public TristateBaseVisitor {
             }
         }
     }
+
+    void visit(AstVarRef* nodep) override { handleNodeVarRef(nodep); }
+    void visit(AstVarXRef* nodep) override { handleNodeVarRef(nodep); }
 
     void visit(AstVar* nodep) override {
         iterateChildren(nodep);
