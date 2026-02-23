@@ -999,7 +999,7 @@ public:
     }
     void visit(AstFGetS* nodep) override {
         checkMaxWords(nodep);
-        emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nullptr);
+        emitOpName(nodep, nodep->emitC(), nodep->strgp(), nodep->filep(), nullptr);
     }
 
     void checkMaxWords(AstNode* nodep) {
