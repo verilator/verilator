@@ -109,12 +109,15 @@ constexpr IData VL_CLOG2_CE_Q(QData lhs) VL_PURE {
 
 // Metadata of processes
 using VlProcessRef = std::shared_ptr<VlProcess>;
+class VlForkSync;
 
 class VlProcess final {
     // MEMBERS
     int m_state;  // Current state of the process
     VlProcessRef m_parentp = nullptr;  // Parent process, if exists
     std::set<VlProcess*> m_children;  // Active child processes
+    VlForkSync* m_forkSyncOnKillp = nullptr;  // Optional fork..join counter to decrement on kill
+    bool m_forkSyncOnKillDone = false;  // Ensure on-kill callback fires only once
 
 public:
     // TYPES
@@ -145,7 +148,7 @@ public:
     void detach(VlProcess* childp) { m_children.erase(childp); }
 
     int state() const { return m_state; }
-    void state(int s) { m_state = s; }
+    void state(int s);
     void disable() {
         state(KILLED);
         disableFork();
@@ -153,6 +156,7 @@ public:
     void disableFork() {
         for (VlProcess* childp : m_children) childp->disable();
     }
+    void forkSyncOnKill(VlForkSync* forkSyncp);
     bool completed() const { return state() == FINISHED || state() == KILLED; }
     bool completedFork() const {
         for (const VlProcess* const childp : m_children)

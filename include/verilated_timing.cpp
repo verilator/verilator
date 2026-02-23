@@ -238,6 +238,26 @@ void VlDynamicTriggerScheduler::dump() const {
 //======================================================================
 // VlForkSync:: Methods
 
+void VlProcess::forkSyncOnKill(VlForkSync* forkSyncp) {
+    m_forkSyncOnKillp = forkSyncp;
+    m_forkSyncOnKillDone = false;
+}
+
+void VlProcess::state(int s) {
+    if (s == KILLED && m_state != KILLED && m_state != FINISHED && m_forkSyncOnKillp
+        && !m_forkSyncOnKillDone) {
+        m_forkSyncOnKillDone = true;
+        m_state = s;
+        m_forkSyncOnKillp->done();
+        return;
+    }
+    m_state = s;
+}
+
+void VlForkSync::onKill(VlProcessRef process) {
+    if (process) process->forkSyncOnKill(this);
+}
+
 void VlForkSync::done(const char* filename, int lineno) {
     VL_DEBUG_IF(VL_DBG_MSGF("             Process forked at %s:%d finished\n", filename, lineno););
     if (m_join->m_counter > 0) m_join->m_counter--;

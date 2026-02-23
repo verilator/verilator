@@ -397,6 +397,8 @@ class VlForkSync final {
 public:
     // Create the join object and set the counter to the specified number
     void init(size_t count, VlProcessRef process) { m_join.reset(new VlJoin{count, {process}}); }
+    // Register process kill callback so killed fork branches still decrement join counter
+    void onKill(VlProcessRef process);
     // Called whenever any of the forked processes finishes. If the join counter reaches 0, the
     // main process gets resumed
     void done(const char* filename = VL_UNKNOWN, int lineno = 0);
