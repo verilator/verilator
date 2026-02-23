@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["--binary", "--timing", "-Wno-UNOPTFLAT"])
+test.compile(verilator_flags2=["--binary", "-Wno-UNOPTFLAT"])
 
 test.execute()
 
