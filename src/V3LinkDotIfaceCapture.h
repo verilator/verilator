@@ -155,6 +155,12 @@ public:
     static bool enabled() { return s_enabled; }
     static void reset() { s_map.clear(); }
     static AstNodeModule* findOwnerModule(AstNode* nodep);
+    // Find a Typedef by name in a module's top-level statements
+    static AstTypedef* findTypedefInModule(AstNodeModule* modp, const string& name);
+    // Find a NodeDType by name and VNType in a module's top-level statements
+    static AstNodeDType* findDTypeInModule(AstNodeModule* modp, const string& name, VNType type);
+    // Find a ParamTypeDType by name in a module's top-level statements
+    static AstParamTypeDType* findParamTypeInModule(AstNodeModule* modp, const string& name);
     static void add(AstRefDType* refp, const string& cellPath, AstNodeModule* ownerModp,
                     AstTypedef* typedefp = nullptr, const string& typedefOwnerModName = "",
                     AstVar* ifacePortVarp = nullptr);

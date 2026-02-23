@@ -1054,28 +1054,24 @@ class ParamProcessor final {
                         // Owner won't be cloned - directly retarget now.
                         if (entry.refp->typedefp()) {
                             const string& tdName = entry.refp->typedefp()->name();
-                            for (AstNode* sp = newModp->stmtsp(); sp; sp = sp->nextp()) {
-                                if (AstTypedef* const tdp = VN_CAST(sp, Typedef)) {
-                                    if (tdp->name() == tdName) {
-                                        UINFO(9, "iface capture direct retarget typedefp: "
-                                                     << entry.refp->name() << " in "
-                                                     << entry.ownerModp->name() << " -> "
-                                                     << newModp->name() << " (+"
-                                                     << entry.extraRefps.size() << " extras)"
-                                                     << endl);
-                                        entry.refp->typedefp(tdp);
-                                        if (tdp->subDTypep()) {
-                                            entry.refp->refDTypep(tdp->subDTypep());
-                                            entry.refp->dtypep(tdp->subDTypep());
-                                        }
-                                        for (AstRefDType* const xrefp : entry.extraRefps) {
-                                            xrefp->typedefp(tdp);
-                                            if (tdp->subDTypep()) {
-                                                xrefp->refDTypep(tdp->subDTypep());
-                                                xrefp->dtypep(tdp->subDTypep());
-                                            }
-                                        }
-                                        break;
+                            if (AstTypedef* const tdp
+                                = V3LinkDotIfaceCapture::findTypedefInModule(newModp, tdName)) {
+                                UINFO(9, "iface capture direct retarget typedefp: "
+                                             << entry.refp->name() << " in "
+                                             << entry.ownerModp->name() << " -> "
+                                             << newModp->name() << " (+"
+                                             << entry.extraRefps.size() << " extras)"
+                                             << endl);
+                                entry.refp->typedefp(tdp);
+                                if (tdp->subDTypep()) {
+                                    entry.refp->refDTypep(tdp->subDTypep());
+                                    entry.refp->dtypep(tdp->subDTypep());
+                                }
+                                for (AstRefDType* const xrefp : entry.extraRefps) {
+                                    xrefp->typedefp(tdp);
+                                    if (tdp->subDTypep()) {
+                                        xrefp->refDTypep(tdp->subDTypep());
+                                        xrefp->dtypep(tdp->subDTypep());
                                     }
                                 }
                             }
@@ -1083,25 +1079,21 @@ class ParamProcessor final {
                             // PARAMTYPEDTYPE-based reference (e.g. $bits(wrap1.data_t))
                             // Find the matching PARAMTYPEDTYPE in the clone by name.
                             const string& ptName = entry.paramTypep->name();
-                            for (AstNode* sp = newModp->stmtsp(); sp; sp = sp->nextp()) {
-                                if (AstParamTypeDType* const ptp = VN_CAST(sp, ParamTypeDType)) {
-                                    if (ptp->name() == ptName) {
-                                        UINFO(9, "iface capture direct retarget paramTypep: "
-                                                     << entry.refp->name() << " in "
-                                                     << (actualOwnerp ? actualOwnerp->name()
-                                                                      : "<null>")
-                                                     << " -> " << newModp->name() << " cellPath='"
-                                                     << entry.cellPath << "'" << " (+"
-                                                     << entry.extraRefps.size() << " extras)"
-                                                     << endl);
-                                        entry.refp->refDTypep(ptp);
-                                        entry.refp->dtypep(ptp);
-                                        for (AstRefDType* const xrefp : entry.extraRefps) {
-                                            xrefp->refDTypep(ptp);
-                                            xrefp->dtypep(ptp);
-                                        }
-                                        break;
-                                    }
+                            if (AstParamTypeDType* const ptp
+                                = V3LinkDotIfaceCapture::findParamTypeInModule(newModp, ptName)) {
+                                UINFO(9, "iface capture direct retarget paramTypep: "
+                                             << entry.refp->name() << " in "
+                                             << (actualOwnerp ? actualOwnerp->name()
+                                                              : "<null>")
+                                             << " -> " << newModp->name() << " cellPath='"
+                                             << entry.cellPath << "'" << " (+"
+                                             << entry.extraRefps.size() << " extras)"
+                                             << endl);
+                                entry.refp->refDTypep(ptp);
+                                entry.refp->dtypep(ptp);
+                                for (AstRefDType* const xrefp : entry.extraRefps) {
+                                    xrefp->refDTypep(ptp);
+                                    xrefp->dtypep(ptp);
                                 }
                             }
                         }
@@ -1216,21 +1208,17 @@ class ParamProcessor final {
                 }
                 if (entry.refp->typedefp()) {
                     const string& tdName = entry.refp->typedefp()->name();
-                    for (AstNode* sp = newModp->stmtsp(); sp; sp = sp->nextp()) {
-                        if (AstTypedef* const tdp = VN_CAST(sp, Typedef)) {
-                            if (tdp->name() == tdName) {
-                                UINFO(9, "iface capture clone-entry retarget: "
-                                             << entry.refp->name() << " cloneCellPath='"
-                                             << entry.cloneCellPath
-                                             << "' actualOwner=" << actualOwnerp->name() << " -> "
-                                             << newModp->name() << endl);
-                                entry.refp->typedefp(tdp);
-                                if (tdp->subDTypep()) {
-                                    entry.refp->refDTypep(tdp->subDTypep());
-                                    entry.refp->dtypep(tdp->subDTypep());
-                                }
-                                break;
-                            }
+                    if (AstTypedef* const tdp
+                        = V3LinkDotIfaceCapture::findTypedefInModule(newModp, tdName)) {
+                        UINFO(9, "iface capture clone-entry retarget: "
+                                     << entry.refp->name() << " cloneCellPath='"
+                                     << entry.cloneCellPath
+                                     << "' actualOwner=" << actualOwnerp->name() << " -> "
+                                     << newModp->name() << endl);
+                        entry.refp->typedefp(tdp);
+                        if (tdp->subDTypep()) {
+                            entry.refp->refDTypep(tdp->subDTypep());
+                            entry.refp->dtypep(tdp->subDTypep());
                         }
                     }
                 }
@@ -1363,29 +1351,23 @@ class ParamProcessor final {
                         bool fixed = false;
                         if (refp->typedefp()) {
                             const string& tdName = refp->typedefp()->name();
-                            for (AstNode* sp = correctModp->stmtsp(); sp; sp = sp->nextp()) {
-                                if (AstTypedef* const newTdp = VN_CAST(sp, Typedef)) {
-                                    if (newTdp->name() == tdName) {
-                                        UINFO(9, "  typedefp -> " << correctModp->name() << endl);
-                                        refp->typedefp(newTdp);
-                                        fixed = true;
-                                        break;
-                                    }
-                                }
+                            if (AstTypedef* const newTdp
+                                = V3LinkDotIfaceCapture::findTypedefInModule(
+                                    correctModp, tdName)) {
+                                UINFO(9, "  typedefp -> " << correctModp->name() << endl);
+                                refp->typedefp(newTdp);
+                                fixed = true;
                             }
                         }
                         if (refp->refDTypep()) {
                             const string& rdName = refp->refDTypep()->name();
                             const VNType rdType = refp->refDTypep()->type();
-                            for (AstNode* sp = correctModp->stmtsp(); sp; sp = sp->nextp()) {
-                                if (AstNodeDType* const newDtp = VN_CAST(sp, NodeDType)) {
-                                    if (newDtp->name() == rdName && newDtp->type() == rdType) {
-                                        UINFO(9, "  refDTypep -> " << correctModp->name() << endl);
-                                        refp->refDTypep(newDtp);
-                                        fixed = true;
-                                        break;
-                                    }
-                                }
+                            if (AstNodeDType* const newDtp
+                                = V3LinkDotIfaceCapture::findDTypeInModule(
+                                    correctModp, rdName, rdType)) {
+                                UINFO(9, "  refDTypep -> " << correctModp->name() << endl);
+                                refp->refDTypep(newDtp);
+                                fixed = true;
                             }
                         }
                         if (fixed) ledgerFixed.insert(refp);
@@ -1446,20 +1428,16 @@ class ParamProcessor final {
                             const string& rOrigName
                                 = rModp->origName().empty() ? rModp->name() : rModp->origName();
                             if (rOrigName != wrongOrigName) continue;
-                            for (AstNode* sp = rModp->stmtsp(); sp; sp = sp->nextp()) {
-                                if (AstTypedef* const newTdp = VN_CAST(sp, Typedef)) {
-                                    if (newTdp->name() == tdName) {
-                                        UINFO(9, "iface capture reachable fixup: "
-                                                     << newModp->name() << " refp=" << refp->name()
-                                                     << " typedefp " << tdOwnerp->name() << " -> "
-                                                     << rModp->name() << endl);
-                                        refp->typedefp(newTdp);
-                                        found = true;
-                                        break;
-                                    }
-                                }
+                            if (AstTypedef* const newTdp
+                                = V3LinkDotIfaceCapture::findTypedefInModule(rModp, tdName)) {
+                                UINFO(9, "iface capture reachable fixup: "
+                                             << newModp->name() << " refp=" << refp->name()
+                                             << " typedefp " << tdOwnerp->name() << " -> "
+                                             << rModp->name() << endl);
+                                refp->typedefp(newTdp);
+                                found = true;
+                                break;
                             }
-                            if (found) break;
                         }
                         if (!found) {
                             UINFO(4, "iface capture hierarchy fixup WARNING: "
@@ -1489,20 +1467,17 @@ class ParamProcessor final {
                             const string& rOrigName
                                 = rModp->origName().empty() ? rModp->name() : rModp->origName();
                             if (rOrigName != wrongOrigName) continue;
-                            for (AstNode* sp = rModp->stmtsp(); sp; sp = sp->nextp()) {
-                                if (AstNodeDType* const newDtp = VN_CAST(sp, NodeDType)) {
-                                    if (newDtp->name() == rdName && newDtp->type() == rdType) {
-                                        UINFO(9, "iface capture reachable fixup: "
-                                                     << newModp->name() << " refp=" << refp->name()
-                                                     << " refDTypep " << rdOwnerp->name() << " -> "
-                                                     << rModp->name() << endl);
-                                        refp->refDTypep(newDtp);
-                                        found = true;
-                                        break;
-                                    }
-                                }
+                            if (AstNodeDType* const newDtp
+                                = V3LinkDotIfaceCapture::findDTypeInModule(
+                                    rModp, rdName, rdType)) {
+                                UINFO(9, "iface capture reachable fixup: "
+                                             << newModp->name() << " refp=" << refp->name()
+                                             << " refDTypep " << rdOwnerp->name() << " -> "
+                                             << rModp->name() << endl);
+                                refp->refDTypep(newDtp);
+                                found = true;
+                                break;
                             }
-                            if (found) break;
                         }
                         if (!found) {
                             UINFO(4, "iface capture hierarchy fixup WARNING: "
