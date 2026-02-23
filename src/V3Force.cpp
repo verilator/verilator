@@ -352,6 +352,7 @@ private:
                 }
                 for (const auto& memberp : enMemberDTypes) enStructp->addMembersp(memberp);
                 v3Global.rootp()->typeTablep()->addTypesp(enStructp);
+                enStructp->name(structp->name() + "__VforceEn_t");
                 enStructp->dtypep(enStructp);
                 enStructp->classOrPackagep(structp->classOrPackagep());
                 return enStructp;
