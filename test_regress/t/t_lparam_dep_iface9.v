@@ -1,8 +1,10 @@
 // DESCRIPTION: Verilator: Multiple dependent localparams in chain
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2024 by Todd Strader
-// SPDX-License-Identifier: CC0-1.0
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 // verilog_format: off
 `define stop $stop
