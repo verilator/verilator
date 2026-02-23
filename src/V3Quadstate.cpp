@@ -12,6 +12,9 @@ class QuadstateTypeReducerVisitor final : public VNVisitor {
         if (!dtypep) return nullptr;
         // FIXME: this is terrible since we call this for each Expr and this function in almost
         // each extp travels a whole subtree
+        if (const AstRefDType* const refDtypep = VN_CAST(dtypep, RefDType)) {
+            if (!refDtypep->typedefp() && !refDtypep->subDTypep()) return dtypep;
+        }
         {
             AstNodeDType* const newp = dtypep->skipRefp();
             if (dtypep != newp) {
@@ -23,33 +26,24 @@ class QuadstateTypeReducerVisitor final : public VNVisitor {
         }
         if (const AstBasicDType* const basicDtypep = VN_CAST(dtypep, BasicDType)) {
             if (!basicDtypep->isFourstate()) return dtypep;
+            VBasicDTypeKwd basicDTypeKwd;
             switch (basicDtypep->keyword()) {
-            case VBasicDTypeKwd::LOGIC:
-            case VBasicDTypeKwd::LOGIC_IMPLICIT: {
-                AstBasicDType* const newp = new AstBasicDType{
-                    dtypep->fileline(), VBasicDTypeKwd::BIT, basicDtypep->numeric(),
-                    basicDtypep->width(), basicDtypep->widthMin()};
-                dtypep->deleteTree();
-                return newp;
-            }
-            case VBasicDTypeKwd::INTEGER: {
-                AstBasicDType* const newp = new AstBasicDType{
-                    dtypep->fileline(), VBasicDTypeKwd::INT, basicDtypep->numeric(),
-                    basicDtypep->width(), basicDtypep->widthMin()};
-                dtypep->deleteTree();
-                return newp;
-            }
-            case VBasicDTypeKwd::TIME: {
-                AstBasicDType* const newp = new AstBasicDType{
-                    dtypep->fileline(), VBasicDTypeKwd::UINT64, basicDtypep->numeric(),
-                    basicDtypep->width(), basicDtypep->widthMin()};
-                dtypep->deleteTree();
-                return newp;
-            }
+            case VBasicDTypeKwd::LOGIC_IMPLICIT:
+                basicDTypeKwd = VBasicDTypeKwd::BIT_IMPLICIT;
+                break;
+            case VBasicDTypeKwd::LOGIC: basicDTypeKwd = VBasicDTypeKwd::BIT; break;
+            case VBasicDTypeKwd::INTEGER: basicDTypeKwd = VBasicDTypeKwd::UINT32; break;
+            case VBasicDTypeKwd::TIME: basicDTypeKwd = VBasicDTypeKwd::UINT64; break;
             default:
                 basicDtypep->v3fatalSrc(
                     "Unhandled four state variable type: " << basicDtypep->keyword().ascii());
             }
+            AstBasicDType* const newp
+                = new AstBasicDType{dtypep->fileline(), basicDTypeKwd, basicDtypep->numeric(),
+                                    basicDtypep->width(), basicDtypep->widthMin()};
+            if (basicDtypep->rangep()) newp->rangep(basicDtypep->rangep()->unlinkFrBack());
+            dtypep->deleteTree();
+            return newp;
         }
         if (AstNodeArrayDType* const arrayDtypep = VN_CAST(dtypep, NodeArrayDType)) {
             // AstNodeArrayDType* const newp = arrayDtypep->cloneTree(false);
@@ -125,7 +119,7 @@ class QuadstateTypeReducerVisitor final : public VNVisitor {
 
     void visit(AstVar* const nodep) override {
         iterateChildren(nodep);
-        if (!nodep->attrFourState() && nodep->varType() != VVarType::GENVAR) {
+        if (!nodep->attrFourState() && nodep->getChildDTypep()) {
             nodep->childDTypep(reduceTypeToTwoStateLogic(nodep->getChildDTypep()->unlinkFrBack()));
         }
     }
@@ -156,7 +150,7 @@ class QuadstateTypeReducerVisitor final : public VNVisitor {
     void visit(AstNode* const nodep) override { iterateChildren(nodep); }
 
 public:
-    explicit QuadstateTypeReducerVisitor(AstNetlist* nodep) { iterate(nodep); }
+    explicit QuadstateTypeReducerVisitor(AstNode* nodep) { iterate(nodep); }
     ~QuadstateTypeReducerVisitor() override = default;
 };
 
@@ -289,11 +283,10 @@ public:
     ~QuadstateVisitor() override = default;
 };
 
-void V3Quadstate::quadstateReduce(AstNetlist* nodep) {
+void V3Quadstate::quadstateReduce(AstNode* nodep) {
     if (!v3Global.opt.fourstate()) {
         UINFO(2, __FUNCTION__ << ":");
         QuadstateTypeReducerVisitor{nodep};
-        V3Global::dumpCheckGlobalTree("quadstate_reduce", 0, dumpTreeEitherLevel() >= 6);
     }
 }
 

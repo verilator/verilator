@@ -232,8 +232,7 @@ class UnknownVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstNodeFTaskRef* const nodep) override {
-        iterateNull(nodep->withp());
-        iterateAndNextNull(nodep->op2p());
+        iterateAndNextNull(nodep->op1p());
         {
             const AstNode* portp = nodep->taskp()->stmtsp();
             for (AstArg* argp = nodep->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
@@ -251,6 +250,7 @@ class UnknownVisitor final : public VNVisitor {
                 portp = portVarp->nextp();
             }
         }
+        iterateNull(nodep->withp());
         iterateNull(nodep->scopeNamep());
     }
     void visit(AstCaseItem* nodep) override {

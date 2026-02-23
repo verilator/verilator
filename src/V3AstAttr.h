@@ -444,6 +444,7 @@ public:
         UINT64,
         // Internal types, eliminated after parsing
         LOGIC_IMPLICIT,
+        BIT_IMPLICIT,
         // Leave last
         _ENUM_MAX
     };
@@ -477,6 +478,7 @@ public:
                                             "IData",
                                             "QData",
                                             "LOGIC_IMPLICIT",
+                                            "BIT_IMPLICIT",
                                             " MAX"};
         return names[m_e];
     }
@@ -509,6 +511,7 @@ public:
                                             "IData",
                                             "QData",
                                             "%E-logic-implct",
+                                            "%E-bit-implct",  //
                                             " MAX"};
         return names[m_e];
     }
@@ -648,6 +651,7 @@ public:
             /* UINT32:                    */ "BIT",
             /* UINT64:                    */ "BIT",
             /* LOGIC_IMPLICIT:            */ "",  // Should not be traced
+            /* BIT_IMPLICIT:              */ "",  // Should not be traced
         };
         return lut[m_e];
     }

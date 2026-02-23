@@ -75,6 +75,7 @@
 #include "V3LinkLValue.h"
 #include "V3MemberMap.h"
 #include "V3Number.h"
+#include "V3Quadstate.h"
 #include "V3Randomize.h"
 #include "V3String.h"
 #include "V3Task.h"
@@ -2044,7 +2045,10 @@ class WidthVisitor final : public VNVisitor {
                 UASSERT_OBJ(basicp->width() <= 1, basicp,
                             "must be 1 bit but actually " << basicp->width() << " bits");
                 AstBasicDType* const newp = new AstBasicDType{
-                    basicp->fileline(), VBasicDTypeKwd::LOGIC, basicp->numeric()};
+                    basicp->fileline(),
+                    basicp->keyword() == VBasicDTypeKwd::LOGIC_IMPLICIT ? VBasicDTypeKwd::LOGIC
+                                                                        : VBasicDTypeKwd::BIT,
+                    basicp->numeric()};
                 newp->widthForce(1, 1);
                 basicp->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(basicp), basicp);
@@ -2696,13 +2700,18 @@ class WidthVisitor final : public VNVisitor {
                 VL_DANGLING(bdtypep);
             }
         } else if (bdtypep && bdtypep->implicit()) {  // Implicits get converted to size 1
-            nodep->dtypeSetLogicSized(1, bdtypep->numeric());
+            if (bdtypep->keyword() == VBasicDTypeKwd::LOGIC_IMPLICIT) {
+                nodep->dtypeSetLogicSized(1, bdtypep->numeric());
+            } else {
+                nodep->dtypeSetBitSized(1, bdtypep->numeric());
+            }
             VL_DANGLING(bdtypep);
         }
         if (nodep->isNet()) {
             AstNodeDType* const badDtp = dtypeNot4StateIntegralRecurse(nodep->dtypep());
             if (badDtp)
-                nodep->v3error(
+                nodep->v3warn(
+                    EC_INFO,
                     "Net " << nodep->prettyNameQ()
                            << " data type must be 4-state integral or array/union/struct of such"
                            << " (IEEE 1800-2023 6.7.1)\n"
@@ -9341,11 +9350,12 @@ class WidthTypeFixer : public VNVisitor {
     }
     void visit(AstSel* const nodep) override {
         iterateChildren(nodep);
-        if (nodep->dtypep()->isFourstate() && !nodep->fromp()->dtypep()->isFourstate()
-            && !nodep->lsbp()->dtypep()->isFourstate()) {
-            nodep->dtypeSetBitUnsized(nodep->dtypep()->width(), nodep->dtypep()->widthMin(),
-                                      nodep->dtypep()->numeric());
-        }
+        // if (VN_IS(nodep->fromp()->dtypep(), BasicDType) && nodep->dtypep()->isFourstate()
+        //     && !nodep->fromp()->dtypep()->isFourstate()
+        //     && !nodep->lsbp()->dtypep()->isFourstate()) {
+        //     nodep->dtypeSetBitUnsized(nodep->dtypep()->width(), nodep->dtypep()->widthMin(),
+        //                               nodep->dtypep()->numeric());
+        // }
     }
     void visit(AstNode* const nodep) override { iterateChildren(nodep); }
 
@@ -9359,6 +9369,7 @@ public:
 
 void V3Width::width(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
+    V3Quadstate::quadstateReduce(nodep);
     {
         // We should do it in bottom-up module order, but it works in any order.
         const WidthClearVisitor cvisitor{nodep};
@@ -9374,6 +9385,7 @@ void V3Width::width(AstNetlist* nodep) {
 //! Smaller step... Only do a single node for parameter propagation
 AstNode* V3Width::widthParamsEdit(AstNode* nodep) {
     UINFO(4, __FUNCTION__ << ": " << nodep);
+    V3Quadstate::quadstateReduce(nodep);
     // We should do it in bottom-up module order, but it works in any order.
     {
         WidthVisitor visitor{true, false};
@@ -9396,6 +9408,7 @@ AstNode* V3Width::widthParamsEdit(AstNode* nodep) {
 AstNode* V3Width::widthGenerateParamsEdit(
     AstNode* nodep) {  //!< [in] AST whose parameters widths are to be analyzed.
     UINFO(4, __FUNCTION__ << ": " << nodep);
+    V3Quadstate::quadstateReduce(nodep);
     // We should do it in bottom-up module order, but it works in any order.
     {
         WidthVisitor visitor{true, true};

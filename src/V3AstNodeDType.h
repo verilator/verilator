@@ -499,7 +499,10 @@ public:
     int left() const { return ascending() ? lo() : hi(); }  // How to show a declaration
     int right() const { return ascending() ? hi() : lo(); }
     inline bool ascending() const;
-    bool implicit() const { return keyword() == VBasicDTypeKwd::LOGIC_IMPLICIT; }
+    bool implicit() const {
+        return keyword() == VBasicDTypeKwd::LOGIC_IMPLICIT
+               || keyword() == VBasicDTypeKwd::BIT_IMPLICIT;
+    }
     bool untyped() const { return keyword() == VBasicDTypeKwd::UNTYPED; }
     VNumRange declRange() const { return isRanged() ? VNumRange{left(), right()} : VNumRange{}; }
     void cvtRangeConst();  // Convert to smaller representation
