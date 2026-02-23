@@ -1,44 +1,4 @@
 //*************************************************************************
-// DESCRIPTION: Interface typedef capture helper.
-//
-// ARCHITECTURE - Separation of Concerns (do not change without reading):
-//
-//   The IfaceCapture system has three phases with strict responsibilities:
-//
-//   1. CAPTURE (V3LinkDot, primary pass):
-//      add() / addParamType() / addTypedef() record template entries.
-//      Template entries store the REFDTYPE, its cellPath, and the
-//      original paramTypep / typedefp from the template module.
-//      Template entries have cloneCellPath = "".
-//
-//   2. CLONE REGISTRATION (V3Param, deepCloneModule):
-//      propagateClone() creates clone entries in the ledger.
-//      ** LEDGER-ONLY - no target lookup, no AST mutation. **
-//      At this point the cloned module's cells still reference template
-//      interface modules (cell->modp() is stale).  Any attempt to walk
-//      cellPath here finds the wrong module.  Clone entries store the
-//      cloned REFDTYPE and cloneCellPath but clear paramTypep/typedefp
-//      so that stale template pointers are never carried forward.
-//
-//   3. TARGET RESOLUTION (finalizeIfaceCapture, after V3Param):
-//      Runs after all cloning is complete and cell pointers are wired
-//      to the correct interface clones.  For each entry, walks cellPath
-//      starting from the entry's owner module (using findOwnerModule(refp)
-//      for clone entries) to find the correct target module, then locates
-//      the PARAMTYPEDTYPE / TYPEDEF by name and applies it to the REFDTYPE.
-//      ** This is the ONLY place that resolves targets and mutates AST. **
-//
-//   KEY INVARIANT: The path {ownerModName, refName, cellPath, cloneCellPath}
-//   is the sole identity.  No clonep(), no pointer matching.  The path IS
-//   the disambiguation.
-//
-//   Template entries have cloneCellPath = ""; clone entries get it set by
-//   propagateClone.  TemplateKey (ownerModName, refName, cellPath) matches
-//   all entries regardless of cloneCellPath - used for propagation and debug.
-//
-// Code available from: https://verilator.org
-//
-//*************************************************************************
 //
 // Copyright 2003-2026 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
