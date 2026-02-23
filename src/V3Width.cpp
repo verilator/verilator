@@ -5243,7 +5243,7 @@ class WidthVisitor final : public VNVisitor {
         // UINFOTREE(9, newp, "", "apat-out");
     }
     void patternAssoc(AstPattern* nodep, AstAssocArrayDType* arrayDtp, AstPatMember* defaultp) {
-        AstNode* defaultValuep = nullptr;
+        AstNodeExpr* defaultValuep = nullptr;
         if (defaultp) {
             defaultp->dtypep(arrayDtp->subDTypep());
             defaultValuep = patternMemberValueIterate(defaultp);
@@ -5275,12 +5275,12 @@ class WidthVisitor final : public VNVisitor {
     }
     void patternWildcard(AstPattern* nodep, AstWildcardArrayDType* arrayDtp,
                          AstPatMember* defaultp) {
-        AstNode* defaultValuep = nullptr;
+        AstNodeExpr* defaultValuep = nullptr;
         if (defaultp) {
             defaultp->dtypep(arrayDtp->subDTypep());
             defaultValuep = patternMemberValueIterate(defaultp);
         }
-        AstNode* newp = new AstConsWildcard{nodep->fileline(), defaultValuep};
+        AstNodeExpr* newp = new AstConsWildcard{nodep->fileline(), defaultValuep};
         newp->dtypeFrom(arrayDtp);
         for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
              patp = VN_AS(patp->nextp(), PatMember)) {
@@ -5296,7 +5296,7 @@ class WidthVisitor final : public VNVisitor {
         // UINFOTREE(9, newp, "", "apat-out");
     }
     void patternDynArray(AstPattern* nodep, AstDynArrayDType* arrayp, AstPatMember* defaultp) {
-        AstNode* newp = new AstConsDynArray{nodep->fileline()};
+        AstNodeExpr* newp = new AstConsDynArray{nodep->fileline()};
         newp->dtypeFrom(arrayp);
         for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
              patp = VN_AS(patp->nextp(), PatMember)) {
@@ -5314,7 +5314,7 @@ class WidthVisitor final : public VNVisitor {
         // UINFOTREE(9, newp, "", "apat-out");
     }
     void patternQueue(AstPattern* nodep, AstQueueDType* arrayp, AstPatMember* defaultp) {
-        AstNode* newp = new AstConsQueue{nodep->fileline()};
+        AstNodeExpr* newp = new AstConsQueue{nodep->fileline()};
         newp->dtypeFrom(arrayp);
         for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
              patp = VN_AS(patp->nextp(), PatMember)) {

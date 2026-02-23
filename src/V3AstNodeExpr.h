@@ -854,9 +854,9 @@ public:
 };
 class AstConsAssoc final : public AstNodeExpr {
     // Construct an assoc array and return object, '{}
-    // @astgen op1 := defaultp : Optional[AstNode]
+    // @astgen op1 := defaultp : Optional[AstNodeExpr]
 public:
-    AstConsAssoc(FileLine* fl, AstNode* defaultp)
+    AstConsAssoc(FileLine* fl, AstNodeExpr* defaultp)
         : ASTGEN_SUPER_ConsAssoc(fl) {
         this->defaultp(defaultp);
     }
@@ -870,8 +870,8 @@ public:
 };
 class AstConsDynArray final : public AstNodeExpr {
     // Construct a queue and return object, '{}. '{lhs}, '{lhs. rhs}
-    // @astgen op1 := lhsp : Optional[AstNode]
-    // @astgen op2 := rhsp : Optional[AstNode]
+    // @astgen op1 := lhsp : Optional[AstNodeExpr]
+    // @astgen op2 := rhsp : Optional[AstNodeExpr]
     const bool m_lhsIsValue;  // LHS constructs value inside the queue, not concat
     const bool m_rhsIsValue;  // RHS constructs value inside the queue, not concat
 public:
@@ -879,8 +879,8 @@ public:
         : ASTGEN_SUPER_ConsDynArray(fl)
         , m_lhsIsValue{false}
         , m_rhsIsValue{false} {}
-    explicit AstConsDynArray(FileLine* fl, bool lhsIsValue, AstNode* lhsp, bool rhsIsValue,
-                             AstNode* rhsp)
+    explicit AstConsDynArray(FileLine* fl, bool lhsIsValue, AstNodeExpr* lhsp, bool rhsIsValue,
+                             AstNodeExpr* rhsp)
         : ASTGEN_SUPER_ConsDynArray(fl)
         , m_lhsIsValue{lhsIsValue}
         , m_rhsIsValue{rhsIsValue} {
@@ -949,8 +949,8 @@ public:
 };
 class AstConsQueue final : public AstNodeExpr {
     // Construct a queue and return object, '{}. '{lhs}, '{lhs. rhs}
-    // @astgen op1 := lhsp : Optional[AstNode]
-    // @astgen op2 := rhsp : Optional[AstNode]
+    // @astgen op1 := lhsp : Optional[AstNodeExpr]
+    // @astgen op2 := rhsp : Optional[AstNodeExpr]
     const bool m_lhsIsValue;  // LHS constructs value inside the queue, not concat
     const bool m_rhsIsValue;  // RHS constructs value inside the queue, not concat
 public:
@@ -958,8 +958,8 @@ public:
         : ASTGEN_SUPER_ConsQueue(fl)
         , m_lhsIsValue{false}
         , m_rhsIsValue{false} {}
-    explicit AstConsQueue(FileLine* fl, bool lhsIsValue, AstNode* lhsp, bool rhsIsValue,
-                          AstNode* rhsp)
+    explicit AstConsQueue(FileLine* fl, bool lhsIsValue, AstNodeExpr* lhsp, bool rhsIsValue,
+                          AstNodeExpr* rhsp)
         : ASTGEN_SUPER_ConsQueue(fl)
         , m_lhsIsValue{lhsIsValue}
         , m_rhsIsValue{rhsIsValue} {
@@ -983,9 +983,9 @@ public:
 };
 class AstConsWildcard final : public AstNodeExpr {
     // Construct a wildcard assoc array and return object, '{}
-    // @astgen op1 := defaultp : Optional[AstNode]
+    // @astgen op1 := defaultp : Optional[AstNodeExpr]
 public:
-    AstConsWildcard(FileLine* fl, AstNode* defaultp)
+    AstConsWildcard(FileLine* fl, AstNodeExpr* defaultp)
         : ASTGEN_SUPER_ConsWildcard(fl) {
         this->defaultp(defaultp);
     }
@@ -1395,10 +1395,10 @@ public:
     void hasResult(bool flag) { m_hasResult = flag; }
 };
 class AstFError final : public AstNodeExpr {
-    // @astgen op1 := filep : AstNode
-    // @astgen op2 := strp : AstNode
+    // @astgen op1 := filep : AstNodeExpr
+    // @astgen op2 := strp : AstNodeExpr
 public:
-    AstFError(FileLine* fl, AstNode* filep, AstNode* strp)
+    AstFError(FileLine* fl, AstNodeExpr* filep, AstNodeExpr* strp)
         : ASTGEN_SUPER_FError(fl) {
         this->filep(filep);
         this->strp(strp);
@@ -1455,12 +1455,12 @@ public:
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstFRead final : public AstNodeExpr {
-    // @astgen op1 := memp : AstNode // VarRef for result
-    // @astgen op2 := filep : AstNode // file (must be a VarRef)
-    // @astgen op3 := startp : Optional[AstNode] // Offset
-    // @astgen op4 := countp : Optional[AstNode] // Size
+    // @astgen op1 := memp : AstNodeExpr // VarRef for result
+    // @astgen op2 := filep : AstNodeExpr // file (must be a VarRef)
+    // @astgen op3 := startp : Optional[AstNodeExpr] // Offset
+    // @astgen op4 := countp : Optional[AstNodeExpr] // Size
 public:
-    AstFRead(FileLine* fl, AstNode* memp, AstNode* filep, AstNode* startp, AstNode* countp)
+    AstFRead(FileLine* fl, AstNodeExpr* memp, AstNodeExpr* filep, AstNodeExpr* startp, AstNodeExpr* countp)
         : ASTGEN_SUPER_FRead(fl) {
         this->memp(memp);
         this->filep(filep);
@@ -1480,9 +1480,9 @@ public:
     bool isSystemFunc() const override { return true; }
 };
 class AstFRewind final : public AstNodeExpr {
-    // @astgen op1 := filep : Optional[AstNode]
+    // @astgen op1 := filep : Optional[AstNodeExpr]
 public:
-    AstFRewind(FileLine* fl, AstNode* filep)
+    AstFRewind(FileLine* fl, AstNodeExpr* filep)
         : ASTGEN_SUPER_FRewind(fl) {
         this->filep(filep);
     }
@@ -1499,12 +1499,12 @@ public:
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstFScanF final : public AstNodeExpr {
-    // @astgen op1 := exprsp : List[AstNode] // VarRefs for results
-    // @astgen op2 := filep : Optional[AstNode] // file (must be a VarRef)
+    // @astgen op1 := exprsp : List[AstNodeExpr] // VarRefs for results
+    // @astgen op2 := filep : Optional[AstNodeExpr] // file (must be a VarRef)
     string m_text;
 
 public:
-    AstFScanF(FileLine* fl, const string& text, AstNode* filep, AstNode* exprsp)
+    AstFScanF(FileLine* fl, const string& text, AstNodeExpr* filep, AstNodeExpr* exprsp)
         : ASTGEN_SUPER_FScanF(fl)
         , m_text{text} {
         addExprsp(exprsp);
@@ -1528,11 +1528,11 @@ public:
     bool isSystemFunc() const override { return true; }
 };
 class AstFSeek final : public AstNodeExpr {
-    // @astgen op1 := filep : AstNode // file (must be a VarRef)
-    // @astgen op2 := offset : Optional[AstNode]
-    // @astgen op3 := operation : Optional[AstNode]
+    // @astgen op1 := filep : AstNodeExpr // file (must be a VarRef)
+    // @astgen op2 := offset : Optional[AstNodeExpr]
+    // @astgen op3 := operation : Optional[AstNodeExpr]
 public:
-    AstFSeek(FileLine* fl, AstNode* filep, AstNode* offset, AstNode* operation)
+    AstFSeek(FileLine* fl, AstNodeExpr* filep, AstNodeExpr* offset, AstNodeExpr* operation)
         : ASTGEN_SUPER_FSeek(fl) {
         this->filep(filep);
         this->offset(offset);
@@ -1551,9 +1551,9 @@ public:
     bool isSystemFunc() const override { return true; }
 };
 class AstFTell final : public AstNodeExpr {
-    // @astgen op1 := filep : AstNode // file (must be a VarRef)
+    // @astgen op1 := filep : AstNodeExpr // file (must be a VarRef)
 public:
-    AstFTell(FileLine* fl, AstNode* filep)
+    AstFTell(FileLine* fl, AstNodeExpr* filep)
         : ASTGEN_SUPER_FTell(fl) {
         this->filep(filep);
     }
@@ -1694,7 +1694,7 @@ class AstInitArray final : public AstNodeExpr {
     // Key values are C++ array style, with lo() at index 0
     // Parents: ASTVAR::init()
     // @astgen op1 := defaultp : Optional[AstNodeExpr] // Default, if sparse
-    // @astgen op2 := initsp : List[AstNode] // Initial value expressions
+    // @astgen op2 := initsp : List[AstInitItem] // Initial value expressions
     //
 public:
     using KeyItemMap = std::map<uint64_t, AstInitItem*>;
@@ -1893,13 +1893,13 @@ class AstParseRef final : public AstNodeExpr {
     // A reference to a variable, function or task
     // We don't know which at parse time due to bison constraints
     // The link stages will replace this with AstVarRef, or AstTaskRef, etc.
-    // @astgen op1 := lhsp : Optional[AstNode]
+    // @astgen op1 := lhsp : Optional[AstNodeExpr]
     // @astgen op2 := ftaskrefp : Optional[AstNodeFTaskRef]
 
     string m_name;
 
 public:
-    AstParseRef(FileLine* fl, const string& name, AstNode* lhsp = nullptr,
+    AstParseRef(FileLine* fl, const string& name, AstNodeExpr* lhsp = nullptr,
                 AstNodeFTaskRef* ftaskrefp = nullptr)
         : ASTGEN_SUPER_ParseRef(fl)
         , m_name{name} {
@@ -1921,10 +1921,10 @@ public:
 class AstPast final : public AstNodeExpr {
     // Verilog $past
     // @astgen op1 := exprp : AstNodeExpr
-    // @astgen op2 := ticksp : Optional[AstNode]
+    // @astgen op2 := ticksp : Optional[AstNodeExpr]
     // @astgen op3 := sentreep : Optional[AstSenTree]
 public:
-    AstPast(FileLine* fl, AstNodeExpr* exprp, AstNode* ticksp = nullptr,
+    AstPast(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* ticksp = nullptr,
             AstSenTree* sentreep = nullptr)
         : ASTGEN_SUPER_Past(fl) {
         this->exprp(exprp);
@@ -2022,11 +2022,11 @@ public:
 class AstRand final : public AstNodeExpr {
     // $random/$random(seed) or $urandom/$urandom(seed)
     // Return a random number, based upon width()
-    // @astgen op1 := seedp : Optional[AstNode]
+    // @astgen op1 := seedp : Optional[AstNodeExpr]
     const bool m_urandom;  // $urandom vs $random
 public:
     class Reset {};
-    AstRand(FileLine* fl, AstNode* seedp, bool urandom)
+    AstRand(FileLine* fl, AstNodeExpr* seedp, bool urandom)
         : ASTGEN_SUPER_Rand(fl)
         , m_urandom{urandom} {
         this->seedp(seedp);
@@ -2207,13 +2207,13 @@ public:
     bool isSystemFunc() const override { return true; }
 };
 class AstSScanF final : public AstNodeExpr {
-    // @astgen op1 := exprsp : List[AstNode] // VarRefs for results
-    // @astgen op2 := fromp : AstNode
+    // @astgen op1 := exprsp : List[AstNodeExpr] // VarRefs for results
+    // @astgen op2 := fromp : AstNodeExpr
     string m_text;
     VTimescale m_timeunit;  // Parent module time unit
 
 public:
-    AstSScanF(FileLine* fl, const string& text, AstNode* fromp, AstNode* exprsp)
+    AstSScanF(FileLine* fl, const string& text, AstNodeExpr* fromp, AstNodeExpr* exprsp)
         : ASTGEN_SUPER_SScanF(fl)
         , m_text{text} {
         addExprsp(exprsp);
@@ -2240,7 +2240,7 @@ public:
 };
 class AstSampled final : public AstNodeExpr {
     // Verilog $sampled
-    // @astgen op1 := exprp : AstNode // AstNodeExpr or AstPropSpec
+    // @astgen op1 := exprp : AstNode<AstNodeExpr|AstPropSpec>
 public:
     AstSampled(FileLine* fl, AstNode* exprp)
         : ASTGEN_SUPER_Sampled(fl) {
@@ -2304,11 +2304,11 @@ public:
 };
 class AstSetAssoc final : public AstNodeExpr {
     // Set an assoc array element and return object, '{}
-    // @astgen op1 := lhsp : AstNode
+    // @astgen op1 := lhsp : AstNodeExpr
     // @astgen op2 := keyp : Optional[AstNode]
     // @astgen op3 := valuep : AstNodeExpr
 public:
-    AstSetAssoc(FileLine* fl, AstNode* lhsp, AstNode* keyp, AstNodeExpr* valuep)
+    AstSetAssoc(FileLine* fl, AstNodeExpr* lhsp, AstNode* keyp, AstNodeExpr* valuep)
         : ASTGEN_SUPER_SetAssoc(fl) {
         this->lhsp(lhsp);
         this->keyp(keyp);
@@ -2324,11 +2324,11 @@ public:
 };
 class AstSetWildcard final : public AstNodeExpr {
     // Set a wildcard assoc array element and return object, '{}
-    // @astgen op1 := lhsp : AstNode
+    // @astgen op1 := lhsp : AstNodeExpr
     // @astgen op2 := keyp : Optional[AstNode]
     // @astgen op3 := valuep : AstNodeExpr
 public:
-    AstSetWildcard(FileLine* fl, AstNode* lhsp, AstNode* keyp, AstNodeExpr* valuep)
+    AstSetWildcard(FileLine* fl, AstNodeExpr* lhsp, AstNode* keyp, AstNodeExpr* valuep)
         : ASTGEN_SUPER_SetWildcard(fl) {
         this->lhsp(lhsp);
         this->keyp(keyp);
@@ -2426,9 +2426,9 @@ public:
     int instrCount() const override { return widthInstrs(); }
 };
 class AstSysIgnore final : public AstNodeExpr {
-    // @astgen op1 := exprsp : List[AstNode] // Expressions to output (???)
+    // @astgen op1 := exprsp : List[AstNodeExpr] // Expressions to output (???)
 public:
-    AstSysIgnore(FileLine* fl, AstNode* exprsp)
+    AstSysIgnore(FileLine* fl, AstNodeExpr* exprsp)
         : ASTGEN_SUPER_SysIgnore(fl) {
         addExprsp(exprsp);
     }
@@ -2446,9 +2446,9 @@ public:
 };
 class AstSystemF final : public AstNodeExpr {
     // $system used as function
-    // @astgen op1 := lhsp : AstNode
+    // @astgen op1 := lhsp : AstNodeExpr
 public:
-    AstSystemF(FileLine* fl, AstNode* lhsp)
+    AstSystemF(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_SystemF(fl) {
         this->lhsp(lhsp);
     }
@@ -2505,9 +2505,9 @@ public:
 };
 class AstTestPlusArgs final : public AstNodeExpr {
     // Search expression. If nullptr then this is a $test$plusargs instead of $value$plusargs.
-    // @astgen op1 := searchp : Optional[AstNode]
+    // @astgen op1 := searchp : Optional[AstNodeExpr]
 public:
-    AstTestPlusArgs(FileLine* fl, AstNode* searchp)
+    AstTestPlusArgs(FileLine* fl, AstNodeExpr* searchp)
         : ASTGEN_SUPER_TestPlusArgs(fl) {
         this->searchp(searchp);
     }
@@ -2610,10 +2610,10 @@ public:
 };
 class AstValuePlusArgs final : public AstNodeExpr {
     // Search expression. If nullptr then this is a $test$plusargs instead of $value$plusargs.
-    // @astgen op1 := searchp : Optional[AstNode]
-    // @astgen op2 := outp : AstNode // VarRef for result
+    // @astgen op1 := searchp : Optional[AstNodeExpr]
+    // @astgen op2 := outp : AstNodeExpr // VarRef for result
 public:
-    AstValuePlusArgs(FileLine* fl, AstNode* searchp, AstNode* outp)
+    AstValuePlusArgs(FileLine* fl, AstNodeExpr* searchp, AstNodeExpr* outp)
         : ASTGEN_SUPER_ValuePlusArgs(fl) {
         this->searchp(searchp);
         this->outp(outp);
@@ -2635,10 +2635,10 @@ class AstWithParse final : public AstNodeExpr {
     // Parents: expr|stmt
     // Children: funcref, expr
     // @astgen op1 := funcrefp : AstNodeExpr
-    // @astgen op3 := exprsp : List[AstNode]  // With's parenthesis part
+    // @astgen op3 := exprsp : List[AstNodeExpr]  // With's parenthesis part
     // @astgen op4 := constraintsp : List[AstNode]  // With's braces part
 public:
-    AstWithParse(FileLine* fl, AstNodeExpr* funcrefp, AstNode* exprsp,
+    AstWithParse(FileLine* fl, AstNodeExpr* funcrefp, AstNodeExpr* exprsp,
                  AstNode* constraintsp = nullptr)
         : ASTGEN_SUPER_WithParse(fl) {
         this->funcrefp(funcrefp);
@@ -2862,6 +2862,8 @@ public:
     bool sizeMattersRhs() const override { return false; }
 };
 class AstFGetS final : public AstNodeBiop {
+    // @astgen alias op1 := strgp
+    // @astgen alias op2 := filep
 public:
     AstFGetS(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_FGetS(fl, lhsp, rhsp) {}
@@ -2879,8 +2881,6 @@ public:
     bool sizeMattersRhs() const override { return false; }
     bool isSystemFunc() const override { return true; }
     int instrCount() const override { return widthInstrs() * 64; }
-    AstNode* strgp() const { return lhsp(); }
-    AstNode* filep() const { return rhsp(); }
 };
 class AstFUngetC final : public AstNodeBiop {
 public:
