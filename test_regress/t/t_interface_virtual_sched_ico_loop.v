@@ -18,7 +18,7 @@
 //     re-evaluation of all VIF-dependent logic in the ICO loop
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
-// SPDX-FileCopyrightText: 2026 Michael Rogenmoser
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 // Simple bus interface with request and response signals
