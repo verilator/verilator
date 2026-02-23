@@ -1778,6 +1778,15 @@ public:
         addAttrsp(attrsp);
         dtypep(nullptr);  // V3Width will resolve
     }
+    AstTypedef(FileLine* fl, const string& name, AstNodeDType* dtp, bool underClass)
+        : ASTGEN_SUPER_Typedef(fl)
+        , m_name{name}
+        , m_declTokenNum{fl->tokenNum()}
+        , m_isHideLocal{false}
+        , m_isHideProtected{false}
+        , m_isUnderClass{underClass} {
+        dtypep(dtp);
+    }
     ASTGEN_MEMBERS_AstTypedef;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;

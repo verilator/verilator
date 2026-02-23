@@ -288,8 +288,7 @@ private:
             return 1;
         }
     }
-    static AstNodeDType* getEnVarpDTypeRecursep(const AstVar* const varp,
-                                                AstNodeDType* const dtypep) {
+    static AstNodeDType* getEnVarpDTypeRecursep(AstVar* const varp, AstNodeDType* const dtypep) {
         if (dtypep->user1p()) return VN_AS(dtypep->user1p(), NodeDType);
         const size_t unpackElemNum = checkIfDTypeSupportedRecurse(dtypep, varp);
         if (unpackElemNum > ELEMENTS_MAX) {
@@ -361,6 +360,10 @@ private:
                 enStructp->dtypep(enStructp);
                 enStructp->classOrPackagep(structp->classOrPackagep());
                 dtypep->user1p(enStructp);
+                AstTypedef* const typedefp
+                    = new AstTypedef{enStructp->fileline(), enStructp->name(), enStructp,
+                                     VN_IS(enStructp->classOrPackagep(), Class)};
+                varp->addNextHere(typedefp);
                 return enStructp;
             } else {
                 for (const auto& memberp : enMemberDTypes) memberp->deleteTree();
