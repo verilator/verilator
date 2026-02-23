@@ -3057,23 +3057,11 @@ public:
             if (!ftaskp || !ftaskp->classMethod()) return;
             string funcName = ftaskp->name();
             // Find the nearest containing (ancestor) class for a node.
-            // backp() walks the sibling linked-list before reaching the
-            // true parent, so a naive backp() walk can land on a sibling
-            // class (e.g. a covergroup) instead of the enclosing class.
-            // Track the previous node so we can distinguish parent links
-            // (where prevp is a child of np) from sibling links (where
-            // prevp is a later sibling of np).
+            // Uses aboveLoopp() which correctly skips sibling links
+            // (e.g. covergroup classes) to find the true parent.
             const auto ancestorClassOf = [](AstNode* startp) -> AstClass* {
-                AstNode* prevp = startp;
-                for (AstNode* np = startp->backp(); np; prevp = np, np = np->backp()) {
-                    if (AstClass* const cp = VN_CAST(np, Class)) {
-                        // np is a true parent of prevp when prevp is one of
-                        // np's op children (not reached via nextp chain).
-                        // firstAbovep() returns backp() only for list heads.
-                        if (prevp->firstAbovep() == np) return cp;
-                        // Otherwise prevp is a later sibling - skip this class.
-                        continue;
-                    }
+                for (AstNode* np = startp->aboveLoopp(); np; np = np->aboveLoopp()) {
+                    if (AstClass* const cp = VN_CAST(np, Class)) return cp;
                 }
                 return nullptr;
             };
