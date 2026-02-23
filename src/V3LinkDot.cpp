@@ -1011,24 +1011,10 @@ public:
         VSymEnt* foundp;
         VSymEnt* searchSymp = lookSymp;
         if (searchSymp && VN_IS(searchSymp->nodep(), ParamTypeDType)) {
-            AstNode* childp = VN_AS(searchSymp->nodep(), ParamTypeDType)->childDTypep();
-            if (const AstRequireDType* const reqp = VN_CAST(childp, RequireDType))
-                childp = reqp->lhsp();
-            while (const AstRefDType* const refp = VN_CAST(childp, RefDType)) {
-                if (refp->typedefp()) {
-                    childp = refp->typedefp()->subDTypep();
-                } else if (refp->subDTypep()) {
-                    childp = refp->subDTypep();
-                } else {
-                    break;
-                }
-            }
-            if (const AstClassRefDType* const classrefp = VN_CAST(childp, ClassRefDType)) {
+            AstNodeDType* dtypep = VN_AS(searchSymp->nodep(), ParamTypeDType)->childDTypep();
+            if (AstNodeDType* const skipp = dtypep->skipRefOrNullp()) dtypep = skipp;
+            if (const AstClassRefDType* const classrefp = VN_CAST(dtypep, ClassRefDType)) {
                 if (AstClass* const classp = classrefp->classp()) searchSymp = getNodeSym(classp);
-            } else if (AstClass* const classp = VN_CAST(childp, Class)) {
-                searchSymp = getNodeSym(classp);
-            } else if (AstPackage* const pkgp = VN_CAST(childp, Package)) {
-                searchSymp = getNodeSym(pkgp);
             }
         }
         if (fallback) {
