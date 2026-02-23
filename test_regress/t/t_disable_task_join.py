@@ -16,4 +16,3 @@ test.compile(timing_loop=True, verilator_flags2=["--timing"])
 test.execute()
 
 test.passes()
-

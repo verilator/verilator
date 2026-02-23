@@ -746,11 +746,12 @@ class TimingControlVisitor final : public VNVisitor {
     void addForkOnKill(AstBegin* const beginp, AstVarScope* const forkVscp) const {
         if (!beginp->needProcess()) return;
         FileLine* const flp = beginp->fileline();
-        auto* const onKillp = new AstCMethodHard{
-            flp, new AstVarRef{flp, forkVscp, VAccess::WRITE}, VCMethod::FORK_ON_KILL};
+        auto* const onKillp = new AstCMethodHard{flp, new AstVarRef{flp, forkVscp, VAccess::WRITE},
+                                                 VCMethod::FORK_ON_KILL};
         onKillp->dtypeSetVoid();
         AstCExpr* const processp = new AstCExpr{flp, "vlProcess"};
-        processp->dtypeSetVoid();  // Opaque process reference; type is irrelevant for hardcoded emit
+        processp
+            ->dtypeSetVoid();  // Opaque process reference; type is irrelevant for hardcoded emit
         onKillp->addPinsp(processp);
         AstNodeStmt* const stmtp = onKillp->makeStmt();
         if (beginp->stmtsp()) {
