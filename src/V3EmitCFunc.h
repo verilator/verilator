@@ -1271,6 +1271,22 @@ public:
     }
     void visit(AstExprStmt* nodep) override {
         VL_RESTORER(m_createdScopeHash);
+        const bool containsAwait = nodep->exists([](AstCAwait*) -> bool { return true; });
+        if (containsAwait) {
+            UASSERT_OBJ(m_cfuncp && m_cfuncp->isCoroutine(), nodep,
+                        "AstExprStmt with CAwait must be in coroutine");
+            putnbs(nodep, "(co_await ([&]() -> VlCoroutine {\n");
+            iterateAndNextConstNull(nodep->stmtsp());
+            puts("co_return;\n");
+            if (!nodep->hasResult()) {
+                puts("}()))");
+                return;
+            }
+            puts("}()), ");
+            iterateAndNextConstNull(nodep->resultp());
+            puts(")");
+            return;
+        }
         // GCC allows compound statements in expressions, but this is not standard.
         // So we use an immediate-evaluation lambda and comma operator
         putnbs(nodep, "([&]() {\n");
