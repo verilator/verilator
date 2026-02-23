@@ -3117,7 +3117,7 @@ public:
                         // np's op children (not reached via nextp chain).
                         // firstAbovep() returns backp() only for list heads.
                         if (prevp->firstAbovep() == np) return cp;
-                        // Otherwise prevp is a later sibling — skip this class.
+                        // Otherwise prevp is a later sibling - skip this class.
                         continue;
                     }
                 }
