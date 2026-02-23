@@ -232,22 +232,22 @@ class UnknownVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstNodeFTaskRef* const nodep) override {
-        iterateNull(nodep->namep());
+        iterateNull(nodep->withp());
         iterateAndNextNull(nodep->op2p());
         {
             const AstNode* portp = nodep->taskp()->stmtsp();
-            for (AstNodeExpr* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), NodeExpr)) {
+            for (AstArg* argp = nodep->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
                 VL_RESTORER(m_constXCvt);
                 const AstVar* portVarp;
                 while (!(portVarp = VN_CAST(portp, Var))) {
-                    UASSERT_OBJ(portp, pinp, "No port for this var");
+                    UASSERT_OBJ(portp, argp, "No port for this var");
                     portp = portp->nextp();
                 }
                 m_constXCvt
                     = m_constXCvt && !v3Global.opt.fourstate()
                       && !(portVarp->direction().isNonOutput() && portVarp->attrFourState())
-                      && !pinp->isFourState();
-                iterate(pinp);
+                      && (!argp->exprp() || !argp->exprp()->isFourState());
+                iterate(argp);
                 portp = portVarp->nextp();
             }
         }
