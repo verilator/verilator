@@ -118,16 +118,13 @@ private:
             AstNodeExpr* newValExprp = nullptr;
             if (const AstNodeAssign* const parentAssignp
                 = VN_CAST(nodep->backp(), NodeAssign)) {
-                if (parentAssignp->lhsp() == static_cast<const AstNode*>(nodep)) {
+                if (parentAssignp->lhsp() == nodep) {
                     // Clone nodep as a READ to capture the old value before the write.
-                    // T is AstVarRef* or AstMemberSel*, both have access() setters.
-                    T const clonedNodep = static_cast<T>(nodep->cloneTree(false));
+                    T const clonedNodep = nodep->cloneTree(false);
                     clonedNodep->access(VAccess::READ);
                     oldValReadp = clonedNodep;
                     // Clone the RHS as new value expression
-                    AstNode* const clonedRhs = parentAssignp->rhsp()->cloneTree(false);
-                    newValExprp = VN_CAST(clonedRhs, NodeExpr);
-                    if (!newValExprp) VL_DO_DANGLING(clonedRhs->deleteTree(), clonedRhs);
+                    newValExprp = parentAssignp->rhsp()->cloneTree(false);
                 }
             }
 
@@ -154,8 +151,6 @@ private:
                 triggerStmtp = new AstAssign{flp, trigWriteRefp, triggerValp};
             } else {
                 // Fall back to unconditional trigger if we can't determine the new value
-                if (oldValReadp) VL_DO_DANGLING(oldValReadp->deleteTree(), oldValReadp);
-                if (newValExprp) VL_DO_DANGLING(newValExprp->deleteTree(), newValExprp);
                 triggerStmtp = new AstAssign{flp, trigWriteRefp,
                                              new AstConst{flp, AstConst::BitTrue{}}};
             }
