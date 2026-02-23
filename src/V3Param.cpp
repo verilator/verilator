@@ -1412,81 +1412,60 @@ class ParamProcessor final {
                 // Skip REFDTYPEs already fixed by path-based Phase A
                 if (ledgerFixed.count(refp)) continue;
 
+                // Helper: find a reachable module with matching origName
+                // whose owner is outside the reachable set.  Returns the
+                // matching reachable module, or nullptr if the target is
+                // already reachable or no match is found.
+                auto findReachableClone
+                    = [&](AstNode* targetp, const char* label) -> AstNodeModule* {
+                    AstNodeModule* const ownerp
+                        = V3LinkDotIfaceCapture::findOwnerModule(targetp);
+                    if (!ownerp || ownerp == newModp || VN_IS(ownerp, Package)
+                        || reachable.count(ownerp))
+                        return nullptr;
+                    const string& wrongOrigName = ownerp->origName().empty()
+                                                      ? ownerp->name()
+                                                      : ownerp->origName();
+                    for (AstNodeModule* const rModp : reachable) {
+                        if (rModp == newModp) continue;
+                        const string& rOrigName
+                            = rModp->origName().empty() ? rModp->name() : rModp->origName();
+                        if (rOrigName == wrongOrigName) return rModp;
+                    }
+                    UINFO(4, "iface capture hierarchy fixup WARNING: "
+                                 << newModp->name() << " refp=" << refp->name() << " " << label
+                                 << " owner=" << ownerp->name()
+                                 << (ownerp->dead() ? " (dead)" : " (live)")
+                                 << " not found in reachable set"
+                                 << " (reachable.size=" << reachable.size() << ")" << endl);
+                    return nullptr;
+                };
                 // Fix typedefp pointing outside reachable set
                 if (refp->typedefp()) {
-                    AstNodeModule* const tdOwnerp
-                        = V3LinkDotIfaceCapture::findOwnerModule(refp->typedefp());
-                    if (tdOwnerp && tdOwnerp != newModp && !VN_IS(tdOwnerp, Package)
-                        && reachable.find(tdOwnerp) == reachable.end()) {
-                        const string& tdName = refp->typedefp()->name();
-                        const string& wrongOrigName = tdOwnerp->origName().empty()
-                                                          ? tdOwnerp->name()
-                                                          : tdOwnerp->origName();
-                        bool found = false;
-                        for (AstNodeModule* const rModp : reachable) {
-                            if (rModp == newModp) continue;
-                            const string& rOrigName
-                                = rModp->origName().empty() ? rModp->name() : rModp->origName();
-                            if (rOrigName != wrongOrigName) continue;
-                            if (AstTypedef* const newTdp
-                                = V3LinkDotIfaceCapture::findTypedefInModule(rModp, tdName)) {
-                                UINFO(9, "iface capture reachable fixup: "
-                                             << newModp->name() << " refp=" << refp->name()
-                                             << " typedefp " << tdOwnerp->name() << " -> "
-                                             << rModp->name() << endl);
-                                refp->typedefp(newTdp);
-                                found = true;
-                                break;
-                            }
-                        }
-                        if (!found) {
-                            UINFO(4, "iface capture hierarchy fixup WARNING: "
+                    if (AstNodeModule* const rModp
+                        = findReachableClone(refp->typedefp(), "typedefp")) {
+                        if (AstTypedef* const newTdp
+                            = V3LinkDotIfaceCapture::findTypedefInModule(
+                                rModp, refp->typedefp()->name())) {
+                            UINFO(9, "iface capture reachable fixup: "
                                          << newModp->name() << " refp=" << refp->name()
-                                         << " typedefp owner=" << tdOwnerp->name()
-                                         << (tdOwnerp->dead() ? " (dead)" : " (live)") << " name='"
-                                         << tdName << "' not found in reachable set"
-                                         << " (reachable.size=" << reachable.size() << ")"
-                                         << endl);
+                                         << " typedefp -> " << rModp->name() << endl);
+                            refp->typedefp(newTdp);
                         }
                     }
                 }
                 // Fix refDTypep pointing outside reachable set
                 if (refp->refDTypep()) {
-                    AstNodeModule* const rdOwnerp
-                        = V3LinkDotIfaceCapture::findOwnerModule(refp->refDTypep());
-                    if (rdOwnerp && rdOwnerp != newModp && !VN_IS(rdOwnerp, Package)
-                        && reachable.find(rdOwnerp) == reachable.end()) {
-                        const string& rdName = refp->refDTypep()->name();
-                        const VNType rdType = refp->refDTypep()->type();
-                        const string& wrongOrigName = rdOwnerp->origName().empty()
-                                                          ? rdOwnerp->name()
-                                                          : rdOwnerp->origName();
-                        bool found = false;
-                        for (AstNodeModule* const rModp : reachable) {
-                            if (rModp == newModp) continue;
-                            const string& rOrigName
-                                = rModp->origName().empty() ? rModp->name() : rModp->origName();
-                            if (rOrigName != wrongOrigName) continue;
-                            if (AstNodeDType* const newDtp
-                                = V3LinkDotIfaceCapture::findDTypeInModule(
-                                    rModp, rdName, rdType)) {
-                                UINFO(9, "iface capture reachable fixup: "
-                                             << newModp->name() << " refp=" << refp->name()
-                                             << " refDTypep " << rdOwnerp->name() << " -> "
-                                             << rModp->name() << endl);
-                                refp->refDTypep(newDtp);
-                                found = true;
-                                break;
-                            }
-                        }
-                        if (!found) {
-                            UINFO(4, "iface capture hierarchy fixup WARNING: "
+                    if (AstNodeModule* const rModp
+                        = findReachableClone(refp->refDTypep(), "refDTypep")) {
+                        if (AstNodeDType* const newDtp
+                            = V3LinkDotIfaceCapture::findDTypeInModule(
+                                rModp, refp->refDTypep()->name(),
+                                refp->refDTypep()->type())) {
+                            UINFO(9, "iface capture reachable fixup: "
                                          << newModp->name() << " refp=" << refp->name()
-                                         << " refDTypep owner=" << rdOwnerp->name()
-                                         << (rdOwnerp->dead() ? " (dead)" : " (live)") << " name='"
-                                         << rdName << "' not found in reachable set"
-                                         << " (reachable.size=" << reachable.size() << ")"
-                                         << endl);
+                                         << " refDTypep -> " << rModp->name() << endl);
+                            refp->refDTypep(newDtp);
                         }
                     }
                 }

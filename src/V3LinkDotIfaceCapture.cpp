@@ -1222,134 +1222,94 @@ void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
             }
         }
 
+        // Disambiguate wrong-clone target: given the current owner of a
+        // target pointer (curOwnerp), determine the correct module to
+        // retarget to.  Uses cellPath when available, otherwise falls
+        // back to structural disambiguation via the reachable set.
+        // Returns nullptr when no fix is needed or cannot be resolved.
+        auto disambiguateTarget
+            = [&](AstNodeModule* curOwnerp, const char* label) -> AstNodeModule* {
+            if (!curOwnerp || curOwnerp == ownerModp || curOwnerp->dead()
+                || VN_IS(curOwnerp, Package))
+                return nullptr;
+            if (correctModp && correctModp != curOwnerp) {
+                UINFO(9, "finalizeIfaceCapture " << label << ": cellPath disambiguated"
+                         " refp=" << refp->name() << " cellPath='" << entry.cellPath
+                             << "' cloneCellPath='" << entry.cloneCellPath
+                             << "' owner=" << curOwnerp->name()
+                             << " -> correctMod=" << correctModp->name() << endl);
+                return correctModp;
+            }
+            if (correctModp && correctModp == curOwnerp) {
+                UINFO(9, "finalizeIfaceCapture " << label << ": already correct"
+                         " refp=" << refp->name() << " cellPath='" << entry.cellPath
+                             << "' cloneCellPath='" << entry.cloneCellPath
+                             << "' owner=" << curOwnerp->name() << endl);
+                return nullptr;
+            }
+            if (!correctModp && !entry.cellPath.empty()) {
+                UINFO(9, "finalizeIfaceCapture " << label
+                             << ": cellPath unresolved, skipping"
+                                " refp=" << refp->name() << " cellPath='" << entry.cellPath
+                             << "' cloneCellPath='" << entry.cloneCellPath
+                             << "' owner=" << curOwnerp->name() << endl);
+                return nullptr;
+            }
+            // No cellPath - fall back to structural disambiguation
+            UASSERT_OBJ(entry.cellPath.empty(), refp,
+                        "Unexpected state: correctModp=null but cellPath is non-empty");
+            const ReachableInfo& info = getReachable(ownerModp);
+            if (info.flat.count(curOwnerp)) return nullptr;
+            std::set<AstNodeModule*> visited;
+            AstNodeModule* fixModp = findCorrectClone(curOwnerp, info, visited);
+            UINFO(9, "finalizeIfaceCapture " << label << ": structural disambig"
+                     " refp=" << refp->name() << " cloneCellPath='" << entry.cloneCellPath
+                         << "' owner=" << curOwnerp->name() << " -> "
+                         << (fixModp ? fixModp->name() : "<null>") << endl);
+            return fixModp;
+        };
+
         // Fix typedefp pointing to wrong live clone
         if (refp->typedefp()) {
             AstNodeModule* const tdOwnerp = findOwnerModule(refp->typedefp());
-            if (tdOwnerp && tdOwnerp != ownerModp && !tdOwnerp->dead()
-                && !VN_IS(tdOwnerp, Package)) {
-                AstNodeModule* fixModp = nullptr;
-                if (correctModp && correctModp != tdOwnerp) {
-                    // cellPath says the target should be in correctModp, not tdOwnerp
-                    fixModp = correctModp;
-                    UINFO(9, "finalizeIfaceCapture typedefp: cellPath disambiguated"
-                             " refp="
-                                 << refp->name() << " cellPath='" << entry.cellPath
-                                 << "' cloneCellPath='" << entry.cloneCellPath
-                                 << "' tdOwner=" << tdOwnerp->name()
-                                 << " -> correctMod=" << correctModp->name() << endl);
-                } else if (correctModp && correctModp == tdOwnerp) {
-                    // cellPath confirms target is already correct - no fix needed
-                    UINFO(9, "finalizeIfaceCapture typedefp: already correct"
-                             " refp="
-                                 << refp->name() << " cellPath='" << entry.cellPath
-                                 << "' cloneCellPath='" << entry.cloneCellPath
-                                 << "' tdOwner=" << tdOwnerp->name() << endl);
-                } else if (!correctModp && !entry.cellPath.empty()) {
-                    // cellPath couldn't resolve - skip, already logged above
-                    UINFO(9, "finalizeIfaceCapture typedefp: cellPath unresolved, skipping"
-                             " refp="
-                                 << refp->name() << " cellPath='" << entry.cellPath
-                                 << "' cloneCellPath='" << entry.cloneCellPath
-                                 << "' tdOwner=" << tdOwnerp->name() << endl);
+            if (AstNodeModule* const fixModp
+                = disambiguateTarget(tdOwnerp, "typedefp")) {
+                const string& tdName = refp->typedefp()->name();
+                if (AstTypedef* const newTdp = findTypedefInModule(fixModp, tdName)) {
+                    UINFO(9, "finalizeIfaceCapture wrong-clone fixup: "
+                                 << ownerModp->name() << " refp=" << refp->name()
+                                 << " typedefp " << tdOwnerp->name() << " -> "
+                                 << fixModp->name() << endl);
+                    refp->typedefp(newTdp);
+                    ++wrongCloneFixed;
                 } else {
-                    // No cellPath - fall back to structural disambiguation
-                    UASSERT_OBJ(entry.cellPath.empty(), refp,
-                                "Unexpected state: correctModp=null but cellPath is non-empty");
-                    const ReachableInfo& info = getReachable(ownerModp);
-                    if (!info.flat.count(tdOwnerp)) {
-                        std::set<AstNodeModule*> visited;
-                        fixModp = findCorrectClone(tdOwnerp, info, visited);
-                        UINFO(9, "finalizeIfaceCapture typedefp: structural disambig"
-                                 " refp="
-                                     << refp->name() << " cloneCellPath='" << entry.cloneCellPath
-                                     << "' tdOwner=" << tdOwnerp->name() << " -> "
-                                     << (fixModp ? fixModp->name() : "<null>") << endl);
-                    }
-                }
-                if (fixModp) {
-                    const string& tdName = refp->typedefp()->name();
-                    if (AstTypedef* const newTdp = findTypedefInModule(fixModp, tdName)) {
-                        UINFO(9, "finalizeIfaceCapture wrong-clone fixup: "
-                                     << ownerModp->name() << " refp=" << refp->name()
-                                     << " cellPath='" << entry.cellPath
-                                     << "' cloneCellPath='" << entry.cloneCellPath
-                                     << "' typedefp " << tdOwnerp->name() << " -> "
-                                     << fixModp->name() << endl);
-                        refp->typedefp(newTdp);
-                        ++wrongCloneFixed;
-                    } else {
-                        UINFO(9, "finalizeIfaceCapture wrong-clone WARNING: "
-                                     << ownerModp->name() << " refp=" << refp->name()
-                                     << " cellPath='" << entry.cellPath << "' cloneCellPath='"
-                                     << entry.cloneCellPath << "' typedefp name='" << tdName
-                                     << "' not found in " << fixModp->name() << endl);
-                    }
+                    UINFO(9, "finalizeIfaceCapture wrong-clone WARNING: "
+                                 << ownerModp->name() << " refp=" << refp->name()
+                                 << " typedefp name='" << tdName
+                                 << "' not found in " << fixModp->name() << endl);
                 }
             }
         }
         // Fix refDTypep pointing to wrong live clone
         if (refp->refDTypep()) {
             AstNodeModule* const rdOwnerp = findOwnerModule(refp->refDTypep());
-            if (rdOwnerp && rdOwnerp != ownerModp && !rdOwnerp->dead()
-                && !VN_IS(rdOwnerp, Package)) {
-                AstNodeModule* fixModp = nullptr;
-                if (correctModp && correctModp != rdOwnerp) {
-                    fixModp = correctModp;
-                    UINFO(9, "finalizeIfaceCapture refDTypep: cellPath disambiguated"
-                             " refp="
-                                 << refp->name() << " cellPath='" << entry.cellPath
-                                 << "' cloneCellPath='" << entry.cloneCellPath
-                                 << "' rdOwner=" << rdOwnerp->name()
-                                 << " -> correctMod=" << correctModp->name() << endl);
-                } else if (correctModp && correctModp == rdOwnerp) {
-                    // cellPath confirms target is already correct - no fix needed
-                    UINFO(9, "finalizeIfaceCapture refDTypep: already correct"
-                             " refp="
-                                 << refp->name() << " cellPath='" << entry.cellPath
-                                 << "' cloneCellPath='" << entry.cloneCellPath
-                                 << "' rdOwner=" << rdOwnerp->name() << endl);
-                } else if (!correctModp && !entry.cellPath.empty()) {
-                    // cellPath couldn't resolve - skip, already logged above
-                    UINFO(9, "finalizeIfaceCapture refDTypep: cellPath unresolved, skipping"
-                             " refp="
-                                 << refp->name() << " cellPath='" << entry.cellPath
-                                 << "' cloneCellPath='" << entry.cloneCellPath
-                                 << "' rdOwner=" << rdOwnerp->name() << endl);
+            if (AstNodeModule* const fixModp
+                = disambiguateTarget(rdOwnerp, "refDTypep")) {
+                const string& rdName = refp->refDTypep()->name();
+                const VNType rdType = refp->refDTypep()->type();
+                if (AstNodeDType* const newDtp
+                    = findDTypeInModule(fixModp, rdName, rdType)) {
+                    UINFO(9, "finalizeIfaceCapture wrong-clone fixup: "
+                                 << ownerModp->name() << " refp=" << refp->name()
+                                 << " refDTypep " << rdOwnerp->name() << " -> "
+                                 << fixModp->name() << endl);
+                    refp->refDTypep(newDtp);
+                    ++wrongCloneFixed;
                 } else {
-                    // No cellPath - fall back to structural disambiguation
-                    UASSERT_OBJ(entry.cellPath.empty(), refp,
-                                "Unexpected state: correctModp=null but cellPath is non-empty");
-                    const ReachableInfo& info = getReachable(ownerModp);
-                    if (!info.flat.count(rdOwnerp)) {
-                        std::set<AstNodeModule*> visited;
-                        fixModp = findCorrectClone(rdOwnerp, info, visited);
-                        UINFO(9, "finalizeIfaceCapture refDTypep: structural disambig"
-                                 " refp="
-                                     << refp->name() << " cloneCellPath='" << entry.cloneCellPath
-                                     << "' rdOwner=" << rdOwnerp->name() << " -> "
-                                     << (fixModp ? fixModp->name() : "<null>") << endl);
-                    }
-                }
-                if (fixModp) {
-                    const string& rdName = refp->refDTypep()->name();
-                    const VNType rdType = refp->refDTypep()->type();
-                    if (AstNodeDType* const newDtp
-                        = findDTypeInModule(fixModp, rdName, rdType)) {
-                        UINFO(9, "finalizeIfaceCapture wrong-clone fixup: "
-                                     << ownerModp->name() << " refp=" << refp->name()
-                                     << " cellPath='" << entry.cellPath
-                                     << "' cloneCellPath='" << entry.cloneCellPath
-                                     << "' refDTypep " << rdOwnerp->name() << " -> "
-                                     << fixModp->name() << endl);
-                        refp->refDTypep(newDtp);
-                        ++wrongCloneFixed;
-                    } else {
-                        UINFO(9, "finalizeIfaceCapture wrong-clone WARNING: "
-                                     << ownerModp->name() << " refp=" << refp->name()
-                                     << " cellPath='" << entry.cellPath << "' cloneCellPath='"
-                                     << entry.cloneCellPath << "' refDTypep name='" << rdName
-                                     << "' not found in " << fixModp->name() << endl);
-                    }
+                    UINFO(9, "finalizeIfaceCapture wrong-clone WARNING: "
+                                 << ownerModp->name() << " refp=" << refp->name()
+                                 << " refDTypep name='" << rdName
+                                 << "' not found in " << fixModp->name() << endl);
                 }
             }
         }
