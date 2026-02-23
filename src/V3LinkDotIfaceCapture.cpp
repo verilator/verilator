@@ -1,4 +1,14 @@
 //*************************************************************************
+//
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+//
+//*************************************************************************
+
+//*************************************************************************
 // DESCRIPTION: Interface typedef capture helper.
 //
 // ARCHITECTURE - Separation of Concerns (do not change without reading):
@@ -37,15 +47,6 @@
 //   all entries regardless of cloneCellPath - used for propagation and debug.
 //
 // Code available from: https://verilator.org
-//*************************************************************************
-//
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
-// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
-//
-//*************************************************************************
 
 #include "V3LinkDotIfaceCapture.h"
 
