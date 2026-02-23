@@ -37,6 +37,11 @@ AstIfaceRefDType* ifaceRefFromVarDType(AstNodeDType* dtypep) {
             curp = unpackp->subDTypep();
             continue;
         }
+        // Skip through typedef/ref chains (e.g. typedef my_if my_if_t)
+        if (AstRefDType* const refp = VN_CAST(curp, RefDType)) {
+            curp = refp->subDTypep();
+            continue;
+        }
         break;
     }
     return nullptr;
