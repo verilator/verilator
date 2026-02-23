@@ -111,18 +111,6 @@ string V3LinkDotIfaceCapture::extractIfacePortName(const string& dotText) {
     return name;
 }
 
-string V3LinkDotIfaceCapture::lastPathComponent(const string& cellPath) {
-    UASSERT(!cellPath.empty(), "lastPathComponent called with empty cellPath");
-    const size_t dotPos = cellPath.rfind('.');
-    string result = (dotPos == string::npos) ? cellPath : cellPath.substr(dotPos + 1);
-    // Strip __BRA__...__KET__ array index suffixes.
-    // Interface arrays like subA_io[2] are encoded as subA_io__BRA__??__KET__
-    // in dotText, but the cell name remains subA_io.
-    const size_t braPos = result.find("__BRA__");
-    if (braPos != string::npos) result = result.substr(0, braPos);
-    UASSERT(!result.empty(), "lastPathComponent produced empty result from '" << cellPath << "'");
-    return result;
-}
 
 void V3LinkDotIfaceCapture::add(AstRefDType* refp, const string& cellPath,
                                 AstNodeModule* ownerModp, AstTypedef* typedefp,
@@ -190,27 +178,6 @@ const V3LinkDotIfaceCapture::CapturedEntry* V3LinkDotIfaceCapture::find(const Ca
     return &it->second;
 }
 
-const V3LinkDotIfaceCapture::CapturedEntry*
-V3LinkDotIfaceCapture::findByTemplate(const TemplateKey& tkey) {
-    for (const auto& kv : s_map) {
-        if (kv.first.ownerModName == tkey.ownerModName && kv.first.refName == tkey.refName
-            && kv.first.cellPath == tkey.cellPath) {
-            return &kv.second;
-        }
-    }
-    return nullptr;
-}
-
-void V3LinkDotIfaceCapture::forEachAtPath(const TemplateKey& tkey,
-                                          const std::function<void(CapturedEntry&)>& fn) {
-    if (!fn) return;
-    for (auto& kv : s_map) {
-        if (kv.first.ownerModName == tkey.ownerModName && kv.first.refName == tkey.refName
-            && kv.first.cellPath == tkey.cellPath) {
-            fn(kv.second);
-        }
-    }
-}
 
 bool V3LinkDotIfaceCapture::erase(const CaptureKey& key) {
     const auto it = s_map.find(key);
@@ -262,33 +229,6 @@ bool V3LinkDotIfaceCapture::replaceRef(const AstRefDType* oldRefp, AstRefDType* 
     return any;
 }
 
-bool V3LinkDotIfaceCapture::eraseByTemplate(const TemplateKey& tkey) {
-    bool any = false;
-    for (auto it = s_map.begin(); it != s_map.end();) {
-        if (it->first.ownerModName == tkey.ownerModName && it->first.refName == tkey.refName
-            && it->first.cellPath == tkey.cellPath) {
-            it = s_map.erase(it);
-            any = true;
-        } else {
-            ++it;
-        }
-    }
-    return any;
-}
-
-bool V3LinkDotIfaceCapture::replaceRef(const CaptureKey& oldKey, AstRefDType* newRefp) {
-    if (!newRefp) return false;
-    const auto it = s_map.find(oldKey);
-    if (it == s_map.end()) return false;
-    auto entry = it->second;
-    entry.refp = newRefp;
-    s_map.erase(it);
-    // Key stays the same (path-based) - only the entry's refp changes
-    const CaptureKey newKey{oldKey.ownerModName, newRefp->name(), oldKey.cellPath,
-                            oldKey.cloneCellPath};
-    s_map.emplace(newKey, entry);
-    return true;
-}
 
 // Walk a dot-separated cell path through the cell / IFACEREFDTYPE hierarchy
 // starting from startModp.  Returns the module at the end of the path, or

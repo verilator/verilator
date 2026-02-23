@@ -155,8 +155,6 @@ public:
     static bool enabled() { return s_enabled; }
     static void reset() { s_map.clear(); }
     static AstNodeModule* findOwnerModule(AstNode* nodep);
-    // Extract the last dot-separated component from a cellPath
-    static string lastPathComponent(const string& cellPath);
     static void add(AstRefDType* refp, const string& cellPath, AstNodeModule* ownerModp,
                     AstTypedef* typedefp = nullptr, const string& typedefOwnerModName = "",
                     AstVar* ifacePortVarp = nullptr);
@@ -169,20 +167,12 @@ public:
     static const CapturedEntry* find(const CaptureKey& key);
     // Pointer-based lookup: linear scan with early exit (no std::function overhead)
     static const CapturedEntry* find(const AstRefDType* refp);
-    // Lookup by template key (returns first match, for compat)
-    static const CapturedEntry* findByTemplate(const TemplateKey& tkey);
-    // Iterate all entries matching a template key (all clones + template)
-    static void forEachAtPath(const TemplateKey& tkey,
-                              const std::function<void(CapturedEntry&)>& fn);
     static bool erase(const CaptureKey& key);
     // Pointer-based erase: remove all entries whose refp matches
     static bool erase(const AstRefDType* refp);
-    // Erase all entries matching a template key
-    static bool eraseByTemplate(const TemplateKey& tkey);
     static void forEach(const std::function<void(const CapturedEntry&)>& fn);
     static void forEachOwned(const AstNodeModule* ownerModp,
                              const std::function<void(const CapturedEntry&)>& fn);
-    static bool replaceRef(const CaptureKey& oldKey, AstRefDType* newRefp);
     // Pointer-based replaceRef: retarget all entries whose refp matches oldRefp
     static bool replaceRef(const AstRefDType* oldRefp, AstRefDType* newRefp);
     static std::size_t size() { return s_map.size(); }
