@@ -4,42 +4,40 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-`define show(x) $display("oarray[%2d] is %2d", x, oarray[x])
-
 module t;
-   bit clk1 = 1'b0;
-   bit clk2 = 1'b0;
-   always #5 clk1 = ~clk1;
-   always #10 clk2 = ~clk2;
+  bit clk1 = 1'b0;
+  bit clk2 = 1'b0;
+  always #5 clk1 = ~clk1;
+  always #10 clk2 = ~clk2;
 
-   int iarray [63:0];
-   int oarray1 [63:0];
-   int oarray2 [63:0];
+  int iarray [63:0];
+  int oarray1 [63:0];
+  int oarray2 [63:0];
 
-   initial begin
-      for (int i = 0; i < 64 ; i = i + 1) begin
-        iarray[i] = i;
-      end
+  initial begin
+    for (int i = 0; i < 64 ; i = i + 1) begin
+      iarray[i] = i;
+    end
 
-      #100;
+    #100;
 
-      for (int i = 0; i < 64; i = i + 1) begin
-        $display("%d %d %d", i, oarray1[i], oarray2[i]);
-      end
+    for (int i = 0; i < 64; i = i + 1) begin
+      $display("%d %d %d", i, oarray1[i], oarray2[i]);
+    end
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
-   always @(posedge clk1) begin
-      for (int i = 0; i < 64 ; i = i + 1) begin
-        oarray1[i] = iarray[i];
-      end
-   end
-   always @(posedge clk2) begin
-      for (int i = 0; i < 64 ; i = i + 1) begin
-        oarray2[i] =iarray[i];
-      end
-   end
+  always @(posedge clk1) begin
+    for (int i = 0; i < 64 ; i = i + 1) begin
+      oarray1[i] = iarray[i];
+    end
+  end
+  always @(posedge clk2) begin
+    for (int i = 0; i < 64 ; i = i + 1) begin
+      oarray2[i] =iarray[i];
+    end
+  end
 
 endmodule
