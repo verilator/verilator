@@ -9,6 +9,11 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
+// verilog_format: on
+
 interface SimpleIf;
   logic [7:0] data;
 endinterface
@@ -39,10 +44,10 @@ module t;
   always @(posedge clk) begin
     cyc <= cyc + 1;
     case (cyc)
-      2: if (observed != 8'hAA) $stop;
-      3: if (observed != 8'hBB) $stop;
-      4: if (observed != 8'hCC) $stop;
-      5: if (observed != 8'hDD) $stop;
+      2: `checkh(observed, 8'hAA);
+      3: `checkh(observed, 8'hBB);
+      4: `checkh(observed, 8'hCC);
+      5: `checkh(observed, 8'hDD);
       6: begin
         $write("*-* All Finished *-*\n");
         $finish;
