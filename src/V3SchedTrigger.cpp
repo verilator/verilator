@@ -427,7 +427,7 @@ void TriggerKit::addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index, bo
 }
 
 void TriggerKit::addGatedExtraTriggerAssignment(AstVarScope* vscp, uint32_t index,
-                                                 AstVarScope* gatep) const {
+                                                AstVarScope* gatep) const {
     index += m_nSenseWords * WORD_SIZE;
     const uint32_t wordIndex = index / WORD_SIZE;
     const uint32_t bitIndex = index % WORD_SIZE;

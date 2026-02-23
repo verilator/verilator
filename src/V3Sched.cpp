@@ -396,17 +396,18 @@ void createFinal(AstNetlist* netlistp, const LogicClasses& logicClasses) {
 //============================================================================
 // Helper that creates virtual interface trigger resets
 
-std::vector<AstVarScope*> addVirtIfaceTriggerAssignments(
-    AstNetlist* netlistp, const VirtIfaceTriggers& virtIfaceTriggers, uint32_t vifTriggerIndex,
-    uint32_t vifMemberTriggerIndex, const TriggerKit& trigKit, const std::string& tag) {
+std::vector<AstVarScope*>
+addVirtIfaceTriggerAssignments(AstNetlist* netlistp, const VirtIfaceTriggers& virtIfaceTriggers,
+                               uint32_t vifTriggerIndex, uint32_t vifMemberTriggerIndex,
+                               const TriggerKit& trigKit, const std::string& tag) {
     AstScope* const scopeTopp = netlistp->topScopep()->scopep();
     std::vector<AstVarScope*> gateVscps;
     for (const auto& p : virtIfaceTriggers.m_memberTriggers) {
         // Create an "already fired" gate variable for this VIF trigger.
         // This prevents the same trigger from re-firing on subsequent convergence
         // iterations when the VIF member is written with the same value.
-        const std::string gateName = "__Vvif_" + tag + "_fired_"
-                                     + p.first.m_ifacep->name() + "_" + p.first.m_memberp->name();
+        const std::string gateName = "__Vvif_" + tag + "_fired_" + p.first.m_ifacep->name() + "_"
+                                     + p.first.m_memberp->name();
         AstVarScope* const gatep = scopeTopp->createTemp(gateName, 1);
         gateVscps.push_back(gatep);
         trigKit.addGatedExtraTriggerAssignment(p.second, vifMemberTriggerIndex, gatep);
@@ -531,9 +532,9 @@ IcoResult createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
     if (dpiExportTriggerVscp) {
         trigKit.addExtraTriggerAssignment(dpiExportTriggerVscp, dpiExportTriggerIndex);
     }
-    const auto icoGateVscps = addVirtIfaceTriggerAssignments(
-        netlistp, virtIfaceTriggers, firstVifTriggerIndex, firstVifMemberTriggerIndex, trigKit,
-        "ico");
+    const auto icoGateVscps
+        = addVirtIfaceTriggerAssignments(netlistp, virtIfaceTriggers, firstVifTriggerIndex,
+                                         firstVifMemberTriggerIndex, trigKit, "ico");
 
     // Remap sensitivities
     remapSensitivities(logic, trigKit.mapVec());
@@ -814,12 +815,8 @@ void createEval(AstNetlist* netlistp,  //
     if (v3Global.opt.profExec()) funcp->addStmtsp(AstCStmt::profExecSectionPush(flp, "eval"));
 
     // Clear the VIF trigger gate flags so triggers can fire in this eval
-    for (AstVarScope* const gatep : icoGateVscps) {
-        funcp->addStmtsp(util::setVar(gatep, 0));
-    }
-    for (AstVarScope* const gatep : actGateVscps) {
-        funcp->addStmtsp(util::setVar(gatep, 0));
-    }
+    for (AstVarScope* const gatep : icoGateVscps) { funcp->addStmtsp(util::setVar(gatep, 0)); }
+    for (AstVarScope* const gatep : actGateVscps) { funcp->addStmtsp(util::setVar(gatep, 0)); }
 
     // Start with the ico loop, if any
     if (icoLoop) funcp->addStmtsp(icoLoop);
@@ -990,9 +987,9 @@ void schedule(AstNetlist* netlistp) {
     if (dpiExportTriggerVscp) {
         trigKit.addExtraTriggerAssignment(dpiExportTriggerVscp, dpiExportTriggerIndex);
     }
-    const auto actGateVscps = addVirtIfaceTriggerAssignments(
-        netlistp, virtIfaceTriggers, firstVifTriggerIndex, firstVifMemberTriggerIndex, trigKit,
-        "act");
+    const auto actGateVscps
+        = addVirtIfaceTriggerAssignments(netlistp, virtIfaceTriggers, firstVifTriggerIndex,
+                                         firstVifMemberTriggerIndex, trigKit, "act");
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-triggers");
 
     // Note: Experiments so far show that running the Act (or Ico) regions on
