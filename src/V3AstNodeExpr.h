@@ -911,9 +911,7 @@ public:
         addMembersp(membersp);
     }
     ASTGEN_MEMBERS_AstConsPackUOrStruct;
-    const char* broken() const override {
-        return nullptr;
-    }
+    const char* broken() const override { return nullptr; }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }

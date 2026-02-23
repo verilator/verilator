@@ -772,8 +772,9 @@ class ParamProcessor final {
                 for (AstNode* stmtp = newIfacep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
                     if (AstVar* const newVarp = VN_CAST(stmtp, Var)) {
                         if (newVarp->name() == varp->name()) {
-                            UINFO(9, "VarXRef relink " << varp->prettyNameQ() << " in " << varModp->prettyNameQ()
-                                                       << " -> " << newIfacep->prettyNameQ() << endl);
+                            UINFO(9, "VarXRef relink " << varp->prettyNameQ() << " in "
+                                                       << varModp->prettyNameQ() << " -> "
+                                                       << newIfacep->prettyNameQ() << endl);
                             nodep->varp(newVarp);
                             break;
                         }
@@ -814,18 +815,20 @@ class ParamProcessor final {
                 srcModp, [&](const V3LinkDotIfaceCapture::CapturedEntry& entry) {
                     if (!entry.refp) return;
 
-                    UINFO(9, "iface capture entry: refp="
-                                 << entry.refp->prettyNameQ() << " cellPath='" << entry.cellPath << "'"
-                                 << " typedefp="
-                                 << (entry.typedefp ? entry.typedefp->prettyNameQ() : "'<null>'")
-                                 << " paramTypep="
-                                 << (entry.paramTypep ? entry.paramTypep->prettyNameQ() : "'<null>'")
-                                 << " ownerModp="
-                                 << (entry.ownerModp ? entry.ownerModp->prettyNameQ() : "'<null>'")
-                                 << " typedefOwnerModName='" << entry.typedefOwnerModName << "'"
-                                 << " ifacePortVarp="
-                                 << (entry.ifacePortVarp ? entry.ifacePortVarp->prettyNameQ() : "'<null>'")
-                                 << endl);
+                    UINFO(9,
+                          "iface capture entry: refp="
+                              << entry.refp->prettyNameQ() << " cellPath='" << entry.cellPath
+                              << "'" << " typedefp="
+                              << (entry.typedefp ? entry.typedefp->prettyNameQ() : "'<null>'")
+                              << " paramTypep="
+                              << (entry.paramTypep ? entry.paramTypep->prettyNameQ() : "'<null>'")
+                              << " ownerModp="
+                              << (entry.ownerModp ? entry.ownerModp->prettyNameQ() : "'<null>'")
+                              << " typedefOwnerModName='" << entry.typedefOwnerModName << "'"
+                              << " ifacePortVarp="
+                              << (entry.ifacePortVarp ? entry.ifacePortVarp->prettyNameQ()
+                                                      : "'<null>'")
+                              << endl);
 
                     // When cloning the interface that owns the typedef (matched via
                     // typedefOwnerModName), disambiguate using the FULL cellPath.
@@ -977,14 +980,15 @@ class ParamProcessor final {
                                     }
                                     prevModp = nxt;
                                 }
-                                UINFO(9, "cellPath walk STUCK in module " << stuckModp->prettyNameQ()
-                                                                           << " stmts:" << endl);
+                                UINFO(9, "cellPath walk STUCK in module "
+                                             << stuckModp->prettyNameQ() << " stmts:" << endl);
                                 for (AstNode* sp = stuckModp->stmtsp(); sp; sp = sp->nextp()) {
                                     if (AstCell* const c2 = VN_CAST(sp, Cell)) {
-                                        UINFO(9, "  CELL: " << c2->prettyNameQ() << " modp="
-                                                             << (c2->modp() ? c2->modp()->prettyNameQ()
-                                                                            : "'<null>'")
-                                                             << endl);
+                                        UINFO(9,
+                                              "  CELL: " << c2->prettyNameQ() << " modp="
+                                                         << (c2->modp() ? c2->modp()->prettyNameQ()
+                                                                        : "'<null>'")
+                                                         << endl);
                                     }
                                     if (AstVar* const v2 = VN_CAST(sp, Var)) {
                                         if (v2->isIfaceRef()) {
@@ -992,7 +996,8 @@ class ParamProcessor final {
                                                          << v2->prettyNameQ() << " subDType="
                                                          << v2->subDTypep()->typeName()
                                                          << " dtypeName="
-                                                         << v2->subDTypep()->prettyNameQ() << endl);
+                                                         << v2->subDTypep()->prettyNameQ()
+                                                         << endl);
                                         }
                                     }
                                 }
@@ -1060,8 +1065,7 @@ class ParamProcessor final {
                                              << entry.refp->prettyNameQ() << " in "
                                              << entry.ownerModp->prettyNameQ() << " -> "
                                              << newModp->prettyNameQ() << " (+"
-                                             << entry.extraRefps.size() << " extras)"
-                                             << endl);
+                                             << entry.extraRefps.size() << " extras)" << endl);
                                 entry.refp->typedefp(tdp);
                                 if (tdp->subDTypep()) {
                                     entry.refp->refDTypep(tdp->subDTypep());
@@ -1087,8 +1091,7 @@ class ParamProcessor final {
                                                               : "'<null>'")
                                              << " -> " << newModp->prettyNameQ() << " cellPath='"
                                              << entry.cellPath << "'" << " (+"
-                                             << entry.extraRefps.size() << " extras)"
-                                             << endl);
+                                             << entry.extraRefps.size() << " extras)" << endl);
                                 entry.refp->refDTypep(ptp);
                                 entry.refp->dtypep(ptp);
                                 for (AstRefDType* const xrefp : entry.extraRefps) {
@@ -1198,7 +1201,8 @@ class ParamProcessor final {
                         }
                         if (resolvedp != m_modp) {
                             UINFO(5, "iface capture clone-entry retarget SKIP (parent mismatch): "
-                                         << entry.refp->prettyNameQ() << " cellPath=" << entry.cellPath
+                                         << entry.refp->prettyNameQ()
+                                         << " cellPath=" << entry.cellPath
                                          << " cloneCP=" << entry.cloneCellPath << " resolved="
                                          << (resolvedp ? resolvedp->prettyNameQ() : "'<null>'")
                                          << " m_modp=" << m_modp->prettyNameQ() << endl);
@@ -1329,8 +1333,8 @@ class ParamProcessor final {
                 const string srcName = srcModp->name();
 
                 UINFO(9, "iface capture FIXUP-A: srcName=" << srcName << " cloneCP='" << cloneCP
-                                                           << "' newModp=" << newModp->prettyNameQ()
-                                                           << endl);
+                                                           << "' newModp="
+                                                           << newModp->prettyNameQ() << endl);
 
                 V3LinkDotIfaceCapture::forEach(
                     [&](const V3LinkDotIfaceCapture::CapturedEntry& entry) {
@@ -1345,15 +1349,16 @@ class ParamProcessor final {
                         UINFO(9, "iface capture path fixup: "
                                      << newModp->prettyNameQ() << " refp=" << refp->prettyNameQ()
                                      << " cellPath='" << entry.cellPath << "' -> "
-                                     << (correctModp ? correctModp->prettyNameQ() : "'<null>'") << endl);
+                                     << (correctModp ? correctModp->prettyNameQ() : "'<null>'")
+                                     << endl);
                         if (!correctModp || correctModp->dead()) return;
 
                         bool fixed = false;
                         if (refp->typedefp()) {
                             const string& tdName = refp->typedefp()->name();
                             if (AstTypedef* const newTdp
-                                = V3LinkDotIfaceCapture::findTypedefInModule(
-                                    correctModp, tdName)) {
+                                = V3LinkDotIfaceCapture::findTypedefInModule(correctModp,
+                                                                             tdName)) {
                                 UINFO(9, "  typedefp -> " << correctModp->prettyNameQ() << endl);
                                 refp->typedefp(newTdp);
                                 fixed = true;
@@ -1363,8 +1368,8 @@ class ParamProcessor final {
                             const string& rdName = refp->refDTypep()->name();
                             const VNType rdType = refp->refDTypep()->type();
                             if (AstNodeDType* const newDtp
-                                = V3LinkDotIfaceCapture::findDTypeInModule(
-                                    correctModp, rdName, rdType)) {
+                                = V3LinkDotIfaceCapture::findDTypeInModule(correctModp, rdName,
+                                                                           rdType)) {
                                 UINFO(9, "  refDTypep -> " << correctModp->prettyNameQ() << endl);
                                 refp->refDTypep(newDtp);
                                 fixed = true;
@@ -1396,8 +1401,8 @@ class ParamProcessor final {
             }
             collectReachable(newModp);
 
-            UINFO(9,
-                  "iface capture hierarchy fixup: newModp=" << newModp->prettyNameQ() << " reachable={");
+            UINFO(9, "iface capture hierarchy fixup: newModp=" << newModp->prettyNameQ()
+                                                               << " reachable={");
             for (AstNodeModule* const rModp : reachable) { UINFO(9, " " << rModp->prettyNameQ()); }
             UINFO(9, " }" << endl);
 
@@ -1418,14 +1423,12 @@ class ParamProcessor final {
                 // already reachable or no match is found.
                 auto findReachableClone
                     = [&](AstNode* targetp, const char* label) -> AstNodeModule* {
-                    AstNodeModule* const ownerp
-                        = V3LinkDotIfaceCapture::findOwnerModule(targetp);
+                    AstNodeModule* const ownerp = V3LinkDotIfaceCapture::findOwnerModule(targetp);
                     if (!ownerp || ownerp == newModp || VN_IS(ownerp, Package)
                         || reachable.count(ownerp))
                         return nullptr;
-                    const string& wrongOrigName = ownerp->origName().empty()
-                                                      ? ownerp->name()
-                                                      : ownerp->origName();
+                    const string& wrongOrigName
+                        = ownerp->origName().empty() ? ownerp->name() : ownerp->origName();
                     for (AstNodeModule* const rModp : reachable) {
                         if (rModp == newModp) continue;
                         const string& rOrigName
@@ -1433,8 +1436,8 @@ class ParamProcessor final {
                         if (rOrigName == wrongOrigName) return rModp;
                     }
                     UINFO(4, "iface capture hierarchy fixup WARNING: "
-                                 << newModp->prettyNameQ() << " refp=" << refp->prettyNameQ() << " " << label
-                                 << " owner=" << ownerp->prettyNameQ()
+                                 << newModp->prettyNameQ() << " refp=" << refp->prettyNameQ()
+                                 << " " << label << " owner=" << ownerp->prettyNameQ()
                                  << (ownerp->dead() ? " (dead)" : " (live)")
                                  << " not found in reachable set"
                                  << " (reachable.size=" << reachable.size() << ")" << endl);
@@ -1444,12 +1447,12 @@ class ParamProcessor final {
                 if (refp->typedefp()) {
                     if (AstNodeModule* const rModp
                         = findReachableClone(refp->typedefp(), "typedefp")) {
-                        if (AstTypedef* const newTdp
-                            = V3LinkDotIfaceCapture::findTypedefInModule(
+                        if (AstTypedef* const newTdp = V3LinkDotIfaceCapture::findTypedefInModule(
                                 rModp, refp->typedefp()->name())) {
                             UINFO(9, "iface capture reachable fixup: "
-                                         << newModp->prettyNameQ() << " refp=" << refp->prettyNameQ()
-                                         << " typedefp -> " << rModp->prettyNameQ() << endl);
+                                         << newModp->prettyNameQ()
+                                         << " refp=" << refp->prettyNameQ() << " typedefp -> "
+                                         << rModp->prettyNameQ() << endl);
                             refp->typedefp(newTdp);
                         }
                     }
@@ -1458,13 +1461,12 @@ class ParamProcessor final {
                 if (refp->refDTypep()) {
                     if (AstNodeModule* const rModp
                         = findReachableClone(refp->refDTypep(), "refDTypep")) {
-                        if (AstNodeDType* const newDtp
-                            = V3LinkDotIfaceCapture::findDTypeInModule(
-                                rModp, refp->refDTypep()->name(),
-                                refp->refDTypep()->type())) {
+                        if (AstNodeDType* const newDtp = V3LinkDotIfaceCapture::findDTypeInModule(
+                                rModp, refp->refDTypep()->name(), refp->refDTypep()->type())) {
                             UINFO(9, "iface capture reachable fixup: "
-                                         << newModp->prettyNameQ() << " refp=" << refp->prettyNameQ()
-                                         << " refDTypep -> " << rModp->prettyNameQ() << endl);
+                                         << newModp->prettyNameQ()
+                                         << " refp=" << refp->prettyNameQ() << " refDTypep -> "
+                                         << rModp->prettyNameQ() << endl);
                             refp->refDTypep(newDtp);
                         }
                     }
@@ -1550,7 +1552,8 @@ class ParamProcessor final {
             if (srcClassp && srcClassp->hasGParam()) {
                 // Specialize if the reference still points to the generic class
                 if (lhsClassp == srcClassp || !lhsClassp) {
-                    UINFO(9, "resolveDotToTypedef: specializing " << srcClassp->prettyNameQ() << endl);
+                    UINFO(9, "resolveDotToTypedef: specializing " << srcClassp->prettyNameQ()
+                                                                  << endl);
                     classRefDeparam(classRefp, srcClassp);
                     lhsClassp = VN_CAST(classRefp->classOrPackageSkipp(), Class);
                 }
@@ -1591,8 +1594,8 @@ class ParamProcessor final {
             } else {
                 UINFO(9, "iface capture cellPinCleanup: before constify pin="
                              << pinp->prettyNameQ() << " mod=" << srcModp->prettyNameQ()
-                             << " exprType=" << pinp->exprp()->typeName() << " modvar="
-                             << modvarp->prettyNameQ() << " modval="
+                             << " exprType=" << pinp->exprp()->typeName()
+                             << " modvar=" << modvarp->prettyNameQ() << " modval="
                              << (modvarp->valuep() ? modvarp->valuep()->typeName() : "null")
                              << (modvarp->valuep() && VN_IS(modvarp->valuep(), Const)
                                      ? string(" modvalNum=")
@@ -2028,10 +2031,10 @@ class ParamProcessor final {
         }
 
         const bool cloned = (newModp != srcModp);
-        UINFO(9, "iface capture module clone src=" << srcModp << " new=" << newModp << " name="
-                                                   << newModp->prettyNameQ() << " from cell=" << nodep
-                                                   << " cellName=" << nodep->prettyNameQ()
-                                                   << " cloned=" << cloned);
+        UINFO(9, "iface capture module clone src="
+                     << srcModp << " new=" << newModp << " name=" << newModp->prettyNameQ()
+                     << " from cell=" << nodep << " cellName=" << nodep->prettyNameQ()
+                     << " cloned=" << cloned);
 
         // Link source class to its specialized version for later relinking of method references
         if (defaultsResolved) srcModp->user4p(newModp);
@@ -2106,7 +2109,8 @@ class ParamProcessor final {
                 }
                 if (allOwnParams) {
                     UINFO(5, "ifaceRefDeparam: self-reference pattern detected in "
-                                 << ownerIfacep->prettyNameQ() << ", using owner interface" << endl);
+                                 << ownerIfacep->prettyNameQ() << ", using owner interface"
+                                 << endl);
                     nodep->ifacep(ownerIfacep);
                     if (nodep->paramsp()) nodep->paramsp()->unlinkFrBackWithNext()->deleteTree();
                     return ownerIfacep;
@@ -2136,8 +2140,8 @@ class ParamProcessor final {
                 = VN_CAST(m_memberMap.findMember(newClassp, refDTypep->name()), Typedef)) {
                 refDTypep->typedefp(typedefp);
                 refDTypep->classOrPackagep(newClassp);
-                UINFO(9, "Resolved parameterized class typedef: " << refDTypep->prettyNameQ() << " -> "
-                                                                  << typedefp << " in "
+                UINFO(9, "Resolved parameterized class typedef: " << refDTypep->prettyNameQ()
+                                                                  << " -> " << typedefp << " in "
                                                                   << newClassp->prettyNameQ());
             }
         }
@@ -2189,9 +2193,9 @@ public:
             = nodeName.empty() ? someInstanceName : (someInstanceName + "." + nodeName);
         srcModp->someInstanceName(instanceName);
         UINFO(9, "nodeDeparam SET-SRC-INST srcMod="
-                     << srcModp->prettyNameQ() << " someInstanceName='" << srcModp->someInstanceName()
-                     << "'" << " node=<" << AstNode::nodeAddr(nodep) << ">"
-                     << " nodeType=" << nodep->typeName() << endl);
+                     << srcModp->prettyNameQ() << " someInstanceName='"
+                     << srcModp->someInstanceName() << "'" << " node=<" << AstNode::nodeAddr(nodep)
+                     << ">" << " nodeType=" << nodep->typeName() << endl);
 
         AstNodeModule* newModp = nullptr;
         if (AstCell* const cellp = VN_CAST(nodep, Cell)) {
@@ -2435,7 +2439,8 @@ class ParamVisitor final : public VNVisitor {
                                  << " contextName="
                                  << (contextp ? contextp->prettyNameQ() : "'<null>'")
                                  << " leak=REFDTYPE typedef owner" << " ref=<"
-                                 << AstNode::nodeAddr(refp) << ">" << " refName=" << refp->prettyNameQ()
+                                 << AstNode::nodeAddr(refp) << ">"
+                                 << " refName=" << refp->prettyNameQ()
                                  << " ancestry=" << ancestryOf(refp) << endl);
                 }
             }
@@ -2451,7 +2456,8 @@ class ParamVisitor final : public VNVisitor {
                                  << " contextName="
                                  << (contextp ? contextp->prettyNameQ() : "'<null>'")
                                  << " leak=REFDTYPE refDType owner" << " ref=<"
-                                 << AstNode::nodeAddr(refp) << ">" << " refName=" << refp->prettyNameQ()
+                                 << AstNode::nodeAddr(refp) << ">"
+                                 << " refName=" << refp->prettyNameQ()
                                  << " ancestry=" << ancestryOf(refp) << endl);
                 }
             }
@@ -2464,19 +2470,19 @@ class ParamVisitor final : public VNVisitor {
             if (varOwnerp != templateModp) return;
             ++leakCount;
             UINFO(9, "TEMPLATE-LEAK "
-                         << stage << " parent=" << parentModp->prettyNameQ() << " template="
-                         << templateModp->prettyNameQ()
+                         << stage << " parent=" << parentModp->prettyNameQ()
+                         << " template=" << templateModp->prettyNameQ()
                          << " contextType=" << (contextp ? contextp->typeName() : string("<null>"))
                          << " contextName=" << (contextp ? contextp->prettyNameQ() : "'<null>'")
-                         << " leak=VARREF target owner" << " ref=<"
-                         << AstNode::nodeAddr(varrefp) << ">" << " var=" << varrefp->prettyNameQ()
+                         << " leak=VARREF target owner" << " ref=<" << AstNode::nodeAddr(varrefp)
+                         << ">" << " var=" << varrefp->prettyNameQ()
                          << " ancestry=" << ancestryOf(varrefp) << endl);
         });
 
         if (leakCount > 0) {
-            UINFO(9, "TEMPLATE-LEAK summary stage='" << stage << "' parent=" << parentModp->prettyNameQ()
-                                                     << " template=" << templateModp->prettyNameQ()
-                                                     << " count=" << leakCount << endl);
+            UINFO(9, "TEMPLATE-LEAK summary stage='"
+                         << stage << "' parent=" << parentModp->prettyNameQ() << " template="
+                         << templateModp->prettyNameQ() << " count=" << leakCount << endl);
         }
     }
 
@@ -2577,8 +2583,8 @@ class ParamVisitor final : public VNVisitor {
         if (nodep->recursiveClone()) nodep->dead(true);  // Fake, made for recursive elimination
         if (nodep->dead()) return;  // Marked by LinkDot (and above)
         UINFO(9, "V3Param: visit module name="
-                     << nodep->prettyNameQ() << " orig='" << nodep->origName() << "' someInstanceName='"
-                     << nodep->someInstanceName()
+                     << nodep->prettyNameQ() << " orig='" << nodep->origName()
+                     << "' someInstanceName='" << nodep->someInstanceName()
                      << "' hasGParam=" << (nodep->hasGParam() ? "yes" : "no")
                      << " user3p=" << (nodep->user3p() ? "set" : "null")
                      << " dead=" << (nodep->dead() ? "yes" : "no") << endl);
