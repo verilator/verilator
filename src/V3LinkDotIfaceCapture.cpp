@@ -413,7 +413,7 @@ void V3LinkDotIfaceCapture::captureTypedefContext(
     // (expected for PARAMTYPEDTYPE entries where dotText is not set).
     const string cellPath = dotText.empty() ? ifaceCellp->name() : dotText;
     if (dotText.empty()) {
-        UINFO(5, indentFn() << "iface capture using ifaceCellp->name() fallback: '" << cellPath
+        UINFO(9, indentFn() << "iface capture using ifaceCellp->name() fallback: '" << cellPath
                             << "' (dotText empty)" << endl);
     }
     UASSERT(!cellPath.empty(),
@@ -893,7 +893,7 @@ void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
                         return;
                     }
                 }
-                UINFO(4, "iface capture type table MEMBERDTYPE WARNING: "
+                UINFO(9, "iface capture type table MEMBERDTYPE WARNING: "
                              << memberp->name() << " dtypep points to dead " << dtOwnerp->name()
                              << " - could not fix" << endl);
             });
@@ -1064,7 +1064,7 @@ void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
         }
 
         if (!wrongParentp) {
-            UINFO(4, "finalizeIfaceCapture wrong-clone: cannot find parent of "
+            UINFO(9, "finalizeIfaceCapture wrong-clone: cannot find parent of "
                          << wrongOwnerp->name() << ", using first candidate" << endl);
             return candidates[0];
         }
@@ -1101,7 +1101,7 @@ void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
         for (AstNodeModule* const candp : candidates) {
             auto pit = info.parentMap.find(candp);
             if (pit != info.parentMap.end() && pit->second.parentp == correctParentp) {
-                UINFO(4, "finalizeIfaceCapture wrong-clone: parent-only match for "
+                UINFO(9, "finalizeIfaceCapture wrong-clone: parent-only match for "
                              << wrongOrigName << " -> " << candp->name() << " (conn mismatch: '"
                              << wrongConnName << "' vs '" << pit->second.connName << "')" << endl);
                 return candp;
@@ -1109,7 +1109,7 @@ void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
         }
 
         // Final fallback
-        UINFO(4, "finalizeIfaceCapture wrong-clone: could not disambiguate "
+        UINFO(9, "finalizeIfaceCapture wrong-clone: could not disambiguate "
                      << wrongOrigName << " among " << candidates.size()
                      << " candidates under parent " << correctParentp->name() << " conn='"
                      << wrongConnName << "'" << ", using first" << endl);
@@ -1235,7 +1235,7 @@ void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
                                  << "' tdOwner=" << tdOwnerp->name() << endl);
                 } else if (!correctModp && !entry.cellPath.empty()) {
                     // cellPath couldn't resolve - skip, already logged above
-                    UINFO(4, "finalizeIfaceCapture typedefp: cellPath unresolved, skipping"
+                    UINFO(9, "finalizeIfaceCapture typedefp: cellPath unresolved, skipping"
                              " refp="
                                  << refp->name() << " cellPath='" << entry.cellPath
                                  << "' cloneCellPath='" << entry.cloneCellPath
@@ -1275,7 +1275,7 @@ void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
                         }
                     }
                     if (!found) {
-                        UINFO(4, "finalizeIfaceCapture wrong-clone WARNING: "
+                        UINFO(9, "finalizeIfaceCapture wrong-clone WARNING: "
                                      << ownerModp->name() << " refp=" << refp->name()
                                      << " cellPath='" << entry.cellPath << "' cloneCellPath='"
                                      << entry.cloneCellPath << "' typedefp name='" << tdName
@@ -1307,7 +1307,7 @@ void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
                                  << "' rdOwner=" << rdOwnerp->name() << endl);
                 } else if (!correctModp && !entry.cellPath.empty()) {
                     // cellPath couldn't resolve - skip, already logged above
-                    UINFO(4, "finalizeIfaceCapture refDTypep: cellPath unresolved, skipping"
+                    UINFO(9, "finalizeIfaceCapture refDTypep: cellPath unresolved, skipping"
                              " refp="
                                  << refp->name() << " cellPath='" << entry.cellPath
                                  << "' cloneCellPath='" << entry.cloneCellPath
@@ -1348,7 +1348,7 @@ void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
                         }
                     }
                     if (!found) {
-                        UINFO(4, "finalizeIfaceCapture wrong-clone WARNING: "
+                        UINFO(9, "finalizeIfaceCapture wrong-clone WARNING: "
                                      << ownerModp->name() << " refp=" << refp->name()
                                      << " cellPath='" << entry.cellPath << "' cloneCellPath='"
                                      << entry.cloneCellPath << "' refDTypep name='" << rdName

@@ -977,18 +977,18 @@ class ParamProcessor final {
                                     }
                                     prevModp = nxt;
                                 }
-                                UINFO(0, "cellPath walk STUCK in module '" << stuckModp->name()
+                                UINFO(9, "cellPath walk STUCK in module '" << stuckModp->name()
                                                                            << "' stmts:" << endl);
                                 for (AstNode* sp = stuckModp->stmtsp(); sp; sp = sp->nextp()) {
                                     if (AstCell* const c2 = VN_CAST(sp, Cell)) {
-                                        UINFO(0, "  CELL: '" << c2->name() << "' modp="
+                                        UINFO(9, "  CELL: '" << c2->name() << "' modp="
                                                              << (c2->modp() ? c2->modp()->name()
                                                                             : "<null>")
                                                              << endl);
                                     }
                                     if (AstVar* const v2 = VN_CAST(sp, Var)) {
                                         if (v2->isIfaceRef()) {
-                                            UINFO(0, "  VAR(iface): '"
+                                            UINFO(9, "  VAR(iface): '"
                                                          << v2->name() << "' subDType="
                                                          << v2->subDTypep()->typeName()
                                                          << " dtypeName="
