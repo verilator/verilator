@@ -9,10 +9,10 @@ module t;
    reg [32767:0] a;
 
    initial begin
-      // verilator lint_off WIDTHCONCAT
       a = {32768{1'b1}};
-      // verilator lint_on WIDTHCONCAT
       if (a[32000] != 1'b1) $stop;
+      a = '0;
+      if (a[32000] != 1'b0) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
    end

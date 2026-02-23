@@ -7,6 +7,7 @@
 module t;
 
    wire [32767:0] a = {32768{1'b1}};
+   wire [32767:0] b = '0;
 
    initial begin
       $stop;

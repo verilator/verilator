@@ -13,7 +13,7 @@ test.scenarios('vlt')
 
 test.lint(verilator_flags2=[
     "--output-split-cfuncs -1", "--output-split-ctrace -1", "--preproc-token-limit 0",
-    "--reloop-limit -1"
+    "--reloop-limit -1", "--replication-limit -1"
 ],
           fails=True,
           expect_filename=test.golden_filename)
