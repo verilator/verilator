@@ -1,0 +1,11 @@
+%Error: t/t_disable_task_target_bad.v:21:13: Found definition of 'foo' as a VAR but expected a block/task
+   21 |     disable foo;
+      |             ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_disable_task_target_bad.v:22:13: Found definition of 'c' as a VAR but expected a block/task
+   22 |     disable c.run;
+      |             ^
+%Error: t/t_disable_task_target_bad.v:22:15: Can't find definition of block/task: 'run'
+   22 |     disable c.run;
+      |               ^~~
+%Error: Exiting due to
