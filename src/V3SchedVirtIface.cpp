@@ -109,13 +109,58 @@ private:
 
         if (ifacep && memberVarp) {
             FileLine* const flp = nodep->fileline();
+
+            // Try to find the RHS of the parent assignment so we can make the trigger
+            // conditional on the value actually changing. This avoids spurious ICO/NBA
+            // re-evaluations when combinational logic unconditionally writes the same value
+            // to a virtual interface signal (e.g. via continuous assign statements).
+            AstNodeExpr* oldValReadp = nullptr;
+            AstNodeExpr* newValExprp = nullptr;
+            if (const AstNodeAssign* const parentAssignp
+                = VN_CAST(nodep->backp(), NodeAssign)) {
+                if (parentAssignp->lhsp() == static_cast<const AstNode*>(nodep)) {
+                    // Clone nodep as a READ to capture the old value before the write.
+                    // T is AstVarRef* or AstMemberSel*, both have access() setters.
+                    T const clonedNodep = static_cast<T>(nodep->cloneTree(false));
+                    clonedNodep->access(VAccess::READ);
+                    oldValReadp = clonedNodep;
+                    // Clone the RHS as new value expression
+                    AstNode* const clonedRhs = parentAssignp->rhsp()->cloneTree(false);
+                    newValExprp = VN_CAST(clonedRhs, NodeExpr);
+                    if (!newValExprp) VL_DO_DANGLING(clonedRhs->deleteTree(), clonedRhs);
+                }
+            }
+
             VNRelinker relinker;
             nodep->unlinkFrBack(&relinker);
-            relinker.relink(new AstExprStmt{
-                flp,
-                new AstAssign{flp, createVirtIfaceMemberTriggerRefp(flp, ifacep, memberVarp),
-                              new AstConst{flp, AstConst::BitTrue{}}},
-                nodep});
+
+            // Create the trigger write ref first (this ensures the trigger varscope exists)
+            AstVarRef* const trigWriteRefp
+                = createVirtIfaceMemberTriggerRefp(flp, ifacep, memberVarp);
+            // Now get the trigger varscope for the read ref (guaranteed to exist now)
+            AstVarScope* const trigVscp = m_triggers.findMemberTrigger(ifacep, memberVarp);
+            UASSERT(trigVscp, "Trigger varscope should exist after createVirtIfaceMemberTriggerRefp");
+
+            AstNodeStmt* triggerStmtp = nullptr;
+            if (oldValReadp && newValExprp) {
+                // Conditional trigger: only fire if the value is actually changing.
+                // Generated: trigger = trigger | (old_vif_read != new_value_expr)
+                // This avoids infinite ICO/NBA convergence loops when combinational logic
+                // repeatedly writes the same value to a virtual interface signal.
+                AstVarRef* const trigReadp = new AstVarRef{flp, trigVscp, VAccess::READ};
+                AstNodeExpr* const changedExprp = new AstNeq{flp, oldValReadp, newValExprp};
+                AstNodeExpr* const triggerValp
+                    = new AstOr{flp, trigReadp, changedExprp};
+                triggerStmtp = new AstAssign{flp, trigWriteRefp, triggerValp};
+            } else {
+                // Fall back to unconditional trigger if we can't determine the new value
+                if (oldValReadp) VL_DO_DANGLING(oldValReadp->deleteTree(), oldValReadp);
+                if (newValExprp) VL_DO_DANGLING(newValExprp->deleteTree(), newValExprp);
+                triggerStmtp = new AstAssign{flp, trigWriteRefp,
+                                             new AstConst{flp, AstConst::BitTrue{}}};
+            }
+
+            relinker.relink(new AstExprStmt{flp, triggerStmtp, nodep});
         }
     }
 
