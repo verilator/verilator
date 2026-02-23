@@ -67,7 +67,7 @@ class ForceState final {
             , m_valVarp{new AstVar{varp->fileline(), VVarType::VAR, varp->name() + "__VforceVal",
                                    varp->dtypep()}}
             , m_enVarp{new AstVar{varp->fileline(), VVarType::VAR, varp->name() + "__VforceEn",
-                                  getEnVarpDTypeRecursep(varp, varp->dtypep())}} {
+                                  getEnVarpDTypeRecursep(varp, varp->dtypep()->skipRefp())}} {
             m_rdVarp->addNext(m_enVarp);
             m_rdVarp->addNext(m_valVarp);
             varp->addNextHere(m_rdVarp);
@@ -290,18 +290,16 @@ private:
     }
     static AstNodeDType* getEnVarpDTypeRecursep(const AstVar* const varp,
                                                 AstNodeDType* const dtypep) {
-        AstNodeDType* const origDTypep = dtypep->skipRefp();
-        if (origDTypep->user1p()) return VN_AS(origDTypep->user1p(), NodeDType);
-        const size_t unpackElemNum = checkIfDTypeSupportedRecurse(origDTypep, varp);
+        if (dtypep->user1p()) return VN_AS(dtypep->user1p(), NodeDType);
+        const size_t unpackElemNum = checkIfDTypeSupportedRecurse(dtypep, varp);
         if (unpackElemNum > ELEMENTS_MAX) {
             varp->v3warn(E_UNSUPPORTED, "Unsupported: Force of variable with "
                                         ">= "
                                             << ELEMENTS_MAX << " unpacked elements");
-            origDTypep->user1p(origDTypep);
             return dtypep;
         }
-        if (AstNodeArrayDType* const arrp = VN_CAST(origDTypep, NodeArrayDType)) {
-            AstNodeDType* const subDTypep = arrp->subDTypep();
+        if (AstNodeArrayDType* const arrp = VN_CAST(dtypep, NodeArrayDType)) {
+            AstNodeDType* const subDTypep = arrp->subDTypep()->skipRefp();
             AstNodeDType* const enSubDTypep = getEnVarpDTypeRecursep(varp, subDTypep);
             if (subDTypep != enSubDTypep) {
                 AstNodeArrayDType* enArrp;
@@ -313,32 +311,31 @@ private:
                                                    arrp->rangep()->cloneTree(false)};
                 } else {
                     varp->v3fatalSrc("Unsupported: Force of variable of unhandled data type");
-                    return origDTypep;
+                    return dtypep;
                 }
-                origDTypep->user1p(enArrp);
+                dtypep->user1p(enArrp);
                 v3Global.rootp()->typeTablep()->addTypesp(enArrp);
                 return enArrp;
             } else {
-                origDTypep->user1p(origDTypep);
+                dtypep->user1p(dtypep);
                 return dtypep;
             }
-        } else if (AstBasicDType* const basicp = VN_CAST(origDTypep, BasicDType)) {
+        } else if (AstBasicDType* const basicp = VN_CAST(dtypep, BasicDType)) {
             if (basicp->isBit()) {
-                origDTypep->user1p(origDTypep);
+                dtypep->user1p(dtypep);
                 return dtypep;
             } else {
-                AstNodeDType* const bitDtp = varp->findBitRangeDType(basicp->declRange(), basicp->widthMin(),
-                                               VSigning::UNSIGNED);
-                origDTypep->user1p(bitDtp);
+                AstNodeDType* const bitDtp = varp->findBitRangeDType(
+                    basicp->declRange(), basicp->widthMin(), VSigning::UNSIGNED);
+                dtypep->user1p(bitDtp);
                 return bitDtp;
             }
-        } else if (AstNodeUOrStructDType* const structp
-                   = VN_CAST(origDTypep, NodeUOrStructDType)) {
+        } else if (AstNodeUOrStructDType* const structp = VN_CAST(dtypep, NodeUOrStructDType)) {
             std::vector<AstMemberDType*> enMemberDTypes;
             bool changed = false;
             for (AstMemberDType* mdtp = structp->membersp(); mdtp;
                  mdtp = VN_AS(mdtp->nextp(), MemberDType)) {
-                AstNodeDType* const subMdtp = mdtp->subDTypep();
+                AstNodeDType* const subMdtp = mdtp->subDTypep()->skipRefp();
                 AstNodeDType* const enSubMdtp = getEnVarpDTypeRecursep(varp, subMdtp);
                 if (subMdtp != enSubMdtp) {
                     changed = true;
@@ -363,11 +360,11 @@ private:
                 enStructp->name(structp->name() + "__VforceEn_t");
                 enStructp->dtypep(enStructp);
                 enStructp->classOrPackagep(structp->classOrPackagep());
-                origDTypep->user1p(enStructp);
+                dtypep->user1p(enStructp);
                 return enStructp;
             } else {
                 for (const auto& memberp : enMemberDTypes) memberp->deleteTree();
-                origDTypep->user1p(origDTypep);
+                dtypep->user1p(dtypep);
                 return dtypep;
             }
         }
