@@ -16,8 +16,15 @@ module t (
 
   integer cyc = 0;
 
+  typedef union packed {
+    int        x;
+    bit [31:0] y;
+  } union_t;
+
   logic logic_arr[2][-2:2][-3:-5];
   int int_arr[-1:2][1][3];
+  bit [5:0] bit_arr[5];
+  union_t union_arr[4];
 
   // Test loop
   always @(posedge clk) begin
@@ -25,40 +32,52 @@ module t (
     if (cyc == 0) begin
       logic_arr[0][2][-4] <= 1;
       int_arr[0][0][2] <= 1;
-    end
-    else if (cyc == 1) begin
+      bit_arr[2][3] <= 1;
+      union_arr[1].x <= 1;
+    end else if (cyc == 1) begin
       `checkh(logic_arr[0][2][-4], 1);
       `checkh(int_arr[0][0][2], 1);
-    end
-    else if (cyc == 2) begin
+      `checkh(bit_arr[2][3], 1);
+      `checkh(union_arr[1].x, 1);
+    end else if (cyc == 2) begin
       force logic_arr[0][2][-4] = 0;
       force int_arr[0][0][2] = 0;
-    end
-    else if (cyc == 3) begin
+      force bit_arr[2][3] = 0;
+      force union_arr[1].y = 2;
+    end else if (cyc == 3) begin
       `checkh(logic_arr[0][2][-4], 0);
       logic_arr[0][2][-4] <= 1;
       `checkh(int_arr[0][0][2], 0);
       int_arr[0][0][2] <= 1;
-    end
-    else if (cyc == 4) begin
+      `checkh(bit_arr[2][3], 0);
+      bit_arr[2][3] <= 1;
+      `checkh(union_arr[1].x, 2);
+      union_arr[1].x <= 3;
+    end else if (cyc == 4) begin
       `checkh(logic_arr[0][2][-4], 0);
       `checkh(int_arr[0][0][2], 0);
-    end
-    else if (cyc == 5) begin
+      `checkh(bit_arr[2][3], 0);
+      `checkh(union_arr[1].y, 2);
+    end else if (cyc == 5) begin
       release logic_arr[0][2][-4];
       release int_arr[0][0][2];
-    end
-    else if (cyc == 6) begin
+      release bit_arr[2][3];
+      release union_arr[1].x;
+    end else if (cyc == 6) begin
       `checkh(logic_arr[0][2][-4], 0);
       logic_arr[0][2][-4] <= 1;
       `checkh(int_arr[0][0][2], 0);
       int_arr[0][0][2] <= 1;
-    end
-    else if (cyc == 7) begin
+      `checkh(bit_arr[2][3], 0);
+      bit_arr[2][3] <= 1;
+      `checkh(union_arr[1].x, 2);
+      union_arr[1].y <= 4;
+    end else if (cyc == 7) begin
       `checkh(logic_arr[0][2][-4], 1);
       `checkh(int_arr[0][0][2], 1);
-    end
-    else if (cyc == 8) begin
+      `checkh(bit_arr[2][3], 1);
+      `checkh(union_arr[1].x, 4);
+    end else if (cyc == 8) begin
       $write("*-* All Finished *-*\n");
       $finish;
     end
