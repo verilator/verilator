@@ -401,8 +401,10 @@
 -000001  point: comment=block hier=top.t
 %000001         automatic cls null_obj = null;
 -000001  point: comment=block hier=top.t
-                automatic int q[5];
-                automatic int qv[$];
+%000001         automatic int q[5];
+-000001  point: comment=block hier=top.t
+%000001         automatic int qv[$];
+-000001  point: comment=block hier=top.t
         
 %000001         q = '{1, 2, 2, 4, 3};
 -000001  point: comment=block hier=top.t

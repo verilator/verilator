@@ -182,6 +182,8 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     }
     void visit(AstInitialAutomatic* nodep) override { iterateChildrenConst(nodep); }
     void visit(AstInitialStatic* nodep) override { iterateChildrenConst(nodep); }
+    void visit(AstInitialAutomaticStmt* nodep) override { iterateChildrenConst(nodep); }
+    void visit(AstInitialStaticStmt* nodep) override { iterateChildrenConst(nodep); }
     void visit(AstAlways* nodep) override {
         if (const AstAssignW* const ap = VN_CAST(nodep->stmtsp(), AssignW)) {
             if (!ap->nextp()) {

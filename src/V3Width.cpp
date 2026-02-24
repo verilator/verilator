@@ -5503,6 +5503,18 @@ class WidthVisitor final : public VNVisitor {
         if (AstAssign* const aitemp = VN_CAST(nodep, Assign)) {
             if (VN_IS(aitemp->rhsp(), Const) || VN_IS(aitemp->rhsp(), CReset)) return true;
         }
+        if (AstInitialStaticStmt* const aitemp = VN_CAST(nodep, InitialStaticStmt)) {
+            for (AstNode* stmtp = aitemp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                if (!firstNewStatementOkRecurse(stmtp)) return false;
+            }
+            return true;
+        }
+        if (AstInitialAutomaticStmt* const aitemp = VN_CAST(nodep, InitialAutomaticStmt)) {
+            for (AstNode* stmtp = aitemp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                if (!firstNewStatementOkRecurse(stmtp)) return false;
+            }
+            return true;
+        }
         return false;
     }
 

@@ -31,9 +31,9 @@ test.compile(v_flags2=[
 
 if test.vltmt:
     test.file_grep(test.obj_dir + "/V" + test.name + "__hier.dir/V" + test.name + "__stats.txt",
-                   r'Optimizations, Thread schedule count\s+(\d+)', 4)
+                   r'Optimizations, Thread schedule count\s+(\d+)', 3)
     test.file_grep(test.obj_dir + "/V" + test.name + "__hier.dir/V" + test.name + "__stats.txt",
-                   r'Optimizations, Thread schedule total tasks\s+(\d+)', 6)
+                   r'Optimizations, Thread schedule total tasks\s+(\d+)', 5)
 
 test.execute()
 

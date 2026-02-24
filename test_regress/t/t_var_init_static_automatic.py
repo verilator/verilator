@@ -4,20 +4,15 @@
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
 # or the Perl Artistic License Version 2.0.
-# SPDX-FileCopyrightText: 2024 Wilson Snyder
+# SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(
-    # We have deep expressions we want to test
-    verilator_flags2=["--compiler msvc", "--stats"])
+test.compile(verilator_flags2=['--timing'])
 
 test.execute()
-
-if test.vlt:
-    test.file_grep(test.stats, r'Optimizations, Const bit op reduction\s+(\d+)', 3888)
 
 test.passes()
