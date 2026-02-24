@@ -162,7 +162,7 @@ module t (/*AUTOARG*/
     //
     // Branches which are statically impossible to reach are still reported.
     // E.g.
-    // -000000  point: comment=(t1=1 && t2=1 && 1'h0=1) => 1 hier=top.t
+    // -000000  point: type=expr comment=(t1=1 && t2=1 && 1'h0=1) => 1 hier=top.t
     // These could potentially be pruned, but they currently follow suit for
     // what branch coverage does.  Perhaps a switch should be added to not
     // count statically impossible things.
