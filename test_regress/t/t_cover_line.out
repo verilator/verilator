@@ -120,7 +120,7 @@
 %000001            begin
 -000001  point: type=line comment=elsif hier=top.t
 %000001               $write("");
--000001  point: type=branch comment=elsif hier=top.t
+-000001  point: type=line comment=elsif hier=top.t
                    end
 %000007          else if (cyc==5)
 -000001  point: type=branch comment=if hier=top.t
