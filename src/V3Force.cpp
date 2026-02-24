@@ -455,27 +455,23 @@ class ForceConvertVisitor final : public VNVisitor {
                 VL_DO_DANGLING(refp->deleteTree(), refp);
             }
         });
-        // Replace write refs on RHS
-        if (VN_IS(resetRdp->rhsp(), ArraySel) || VN_IS(resetRdp->rhsp(), StructSel)) {
-            AstVarRef* const refp
-                = VN_AS(AstNodeVarRef::varRefLValueRecurse(resetRdp->rhsp()), VarRef);
-            AstVarScope* const vscp = refp->varScopep();
+        // Replace write ref on RHS
+        AstVarRef* const refp
+            = VN_AS(AstNodeVarRef::varRefLValueRecurse(resetRdp->rhsp()), VarRef);
+        AstVarScope* const vscp = refp->varScopep();
+        if (refp->dtypep()->isIntegralOrPacked()) {
+            if (vscp->varp()->isContinuously()) {
+                refp->access(VAccess::READ);
+                ForceState::markNonReplaceable(refp);
+            } else {
+                refp->replaceWith(m_state.getForceComponents(vscp).forcedUpdate(vscp));
+                VL_DO_DANGLING(refp->deleteTree(), refp);
+            }
+        } else {
             AstNodeExpr* const origRhsp = resetRdp->rhsp();
             origRhsp->replaceWith(
                 m_state.getForceComponents(vscp).forcedUpdate(vscp, origRhsp, refp));
             VL_DO_DANGLING(origRhsp->deleteTree(), origRhsp);
-        } else {
-            resetRdp->rhsp()->foreach([this](AstVarRef* refp) {
-                if (refp->access() != VAccess::WRITE) return;
-                AstVarScope* const vscp = refp->varScopep();
-                if (vscp->varp()->isContinuously()) {
-                    refp->access(VAccess::READ);
-                    ForceState::markNonReplaceable(refp);
-                } else {
-                    refp->replaceWith(m_state.getForceComponents(vscp).forcedUpdate(vscp));
-                    VL_DO_DANGLING(refp->deleteTree(), refp);
-                }
-            });
         }
 
         resetRdp->addNext(resetEnp);
