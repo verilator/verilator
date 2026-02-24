@@ -57,10 +57,10 @@ endmodule
 
 module t();
   localparam scp::cfg_t sc_cfg = '{
-    Associativity : 2
-    ,Capacity : 1024
-    ,LineSize : 64
-    ,AddrBits : 64
+    Associativity : 2,
+    Capacity : 1024,
+    LineSize : 64,
+    AddrBits : 64
   };
 
   sc_if #(sc_cfg) sc_io ();

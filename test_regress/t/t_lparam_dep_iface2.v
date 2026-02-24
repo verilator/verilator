@@ -64,13 +64,13 @@ endmodule
 
 module t ();
   localparam p2::cfg_t mcfg = '{
-    CBits : 8
-    ,DBits : 16
+    CBits : 8,
+    DBits : 16
   };
 
   localparam p1::cfg_t cfg = '{
-    ABits : mcfg.CBits
-    ,BBits : mcfg.CBits + mcfg.DBits
+    ABits : mcfg.CBits,
+    BBits : mcfg.CBits + mcfg.DBits
   };
 
   io_if #(cfg) modA_io ();

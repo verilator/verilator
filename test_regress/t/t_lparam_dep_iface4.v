@@ -60,8 +60,8 @@ endmodule
 module t();
 
   localparam scp::cfg_t sc_cfg = '{
-    Capacity : 1024
-    ,LineSize : 64
+    Capacity : 1024,
+    LineSize : 64
   };
 
   sc_if #(sc_cfg) sc_io ();

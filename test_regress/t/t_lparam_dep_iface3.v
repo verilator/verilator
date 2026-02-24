@@ -122,16 +122,16 @@ endmodule
 module t();
 
   localparam sc::cfg_t sc_cfg = '{
-    CmdTagBits : $clog2(6)
-    ,Associativity : 2
-    ,Capacity : 1024
-    ,LineSize : 64
-    ,StateBits : 2
-    ,AddrBits : 64
-    ,MissQSize : 2
+    CmdTagBits : $clog2(6),
+    Associativity : 2,
+    Capacity : 1024,
+    LineSize : 64,
+    StateBits : 2,
+    AddrBits : 64,
+    MissQSize : 2,
 
-    ,FgWidth : 16
-    ,RefillWidth : 8
+    FgWidth : 16,
+    RefillWidth : 8
   };
 
   simple_cache_if #(sc_cfg) sc_io ();

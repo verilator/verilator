@@ -71,8 +71,8 @@ endmodule
 
 module t();
   localparam scp::cfg_t cfg = '{
-    ABits : 2
-    ,BBits : 3
+    ABits : 2,
+    BBits : 3
   };
 
   a_if #(cfg) a_io ();

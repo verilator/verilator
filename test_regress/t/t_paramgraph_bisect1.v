@@ -96,10 +96,10 @@ endmodule
 module rial_wrap();
 
   parameter rial::cfg_t aer_cfg = '{
-    NumDd : 3
+    NumDd : 3,
     // CC Parameters
-    ,DDNumStuff : 4
-    ,DDNumStuffThreads : 8
+    DDNumStuff : 4,
+    DDNumStuffThreads : 8
   };
 
 // DUT
