@@ -124,7 +124,7 @@
                    end
 %000007          else if (cyc==5)
 -000001  point: type=line comment=if hier=top.t
--000007  point: type=branch comment=else hier=top.t
+-000007  point: type=line comment=else hier=top.t
 %000001            begin
 -000001  point: type=branch comment=if hier=top.t
 %000001               $write("");
