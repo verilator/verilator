@@ -636,6 +636,15 @@ class TaskVisitor final : public VNVisitor {
         }
     }
 
+    bool hasRefArgument(AstNodeFTask* nodep) {
+        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (AstVar* const varp = VN_CAST(stmtp, Var)) {
+                if (varp->isRef() || varp->isConstRef()) return true;
+            }
+        }
+        return false;
+    }
+
     AstNode* createInlinedFTask(AstNodeFTaskRef* refp, const string& namePrefix,
                                 AstVarScope* outvscp) {
         // outvscp is the variable for functions only, if nullptr, it's a task
@@ -1537,9 +1546,25 @@ class TaskVisitor final : public VNVisitor {
         // Create output variable
         AstVarScope* outvscp = nullptr;
         if (nodep->taskp()->isFunction()) {
-            // Not that it's a FUNCREF, but that we're calling a function (perhaps as a task)
-            outvscp
-                = createVarScope(VN_AS(nodep->taskp()->fvarp(), Var), namePrefix + "__Vfuncout");
+            AstVar* const fvarp = VN_AS(nodep->taskp()->fvarp(), Var);
+            // If the call is on the RHS of a simple assignment 'lhs = call()',
+            // the LHS variable can be reused as the output variable iff it has
+            // the same type, and the function does not read the output variable itself.
+            // This can be proven cheaply if the LHS is an automatic variable and the
+            // function does not have any ref arguments. This arises a lot after V3LiftExpr.
+            if (AstAssign* const assignp = VN_CAST(nodep->backp(), Assign)) {
+                if (AstVarRef* const lhsp = VN_CAST(assignp->lhsp(), VarRef)) {
+                    AstVarScope* const vscp = lhsp->varScopep();
+                    if (vscp->varp()->lifetime().isAutomatic()
+                        && vscp->varp()->dtypep()->skipRefp()->sameTree(
+                            fvarp->dtypep()->skipRefp())
+                        && !hasRefArgument(nodep->taskp())) {
+                        outvscp = vscp;
+                    }
+                }
+            }
+            // Otherwise create a new variable for the result
+            if (!outvscp) outvscp = createVarScope(fvarp, namePrefix + "__Vfuncout");
         }
         // Create cloned statements
         AstNode* beginp;
