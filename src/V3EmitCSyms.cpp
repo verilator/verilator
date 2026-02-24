@@ -828,8 +828,9 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
             stmt += ", ";
             stmt += varp->vlEnumDir();  // VLVD_IN etc
             if (varp->dtypep()->skipRefp()->isSigned()) stmt += "|VLVF_SIGNED";
-            if (varp->dtypep()->skipRefp()->basicp()->keyword() == VBasicDTypeKwd::BIT)
-                stmt += "|VLVF_BITVAR";
+            if (AstBasicDType* const basicp = varp->dtypep()->skipRefp()->basicp()) {
+                if (basicp->keyword() == VBasicDTypeKwd::BIT) stmt += "|VLVF_BITVAR";
+            }
             stmt += ", ";
             stmt += std::to_string(udim);
             stmt += ", ";
