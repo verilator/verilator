@@ -157,15 +157,15 @@
                  //===
                  // Task and complicated
 %000001          if (cyc==3) begin
--000001  point: type=branch comment=elsif hier=top.t
+-000001  point: type=line comment=elsif hier=top.t
 %000001             toggle <= '1;
--000001  point: type=branch comment=elsif hier=top.t
+-000001  point: type=line comment=elsif hier=top.t
                  end
 %000001          else if (cyc==5) begin
--000001  point: type=branch comment=elsif hier=top.t
+-000001  point: type=line comment=elsif hier=top.t
         `ifdef VERILATOR
 %000001             $c("this->call_task();");
--000001  point: type=branch comment=elsif hier=top.t
+-000001  point: type=line comment=elsif hier=top.t
         `else
                     call_task();
         `endif
