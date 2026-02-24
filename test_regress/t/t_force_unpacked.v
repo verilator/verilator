@@ -26,13 +26,14 @@ module t (
   bit [5:0] bit_arr[5];
   union_t union_arr[4];
 
+  assign bit_arr[2][3] = 1;
+
   // Test loop
   always @(posedge clk) begin
     cyc <= cyc + 1;
     if (cyc == 0) begin
       logic_arr[0][2][-4] <= 1;
       int_arr[0][0][2] <= 1;
-      bit_arr[2][3] <= 1;
       union_arr[1].x <= 1;
     end else if (cyc == 1) begin
       `checkh(logic_arr[0][2][-4], 1);
@@ -50,13 +51,11 @@ module t (
       `checkh(int_arr[0][0][2], 0);
       int_arr[0][0][2] <= 1;
       `checkh(bit_arr[2][3], 0);
-      bit_arr[2][3] <= 1;
       `checkh(union_arr[1].x, 2);
       union_arr[1].x <= 3;
     end else if (cyc == 4) begin
       `checkh(logic_arr[0][2][-4], 0);
       `checkh(int_arr[0][0][2], 0);
-      `checkh(bit_arr[2][3], 0);
       `checkh(union_arr[1].y, 2);
     end else if (cyc == 5) begin
       release logic_arr[0][2][-4];
@@ -68,14 +67,12 @@ module t (
       logic_arr[0][2][-4] <= 1;
       `checkh(int_arr[0][0][2], 0);
       int_arr[0][0][2] <= 1;
-      `checkh(bit_arr[2][3], 0);
-      bit_arr[2][3] <= 1;
+      `checkh(bit_arr[2][3], 1);
       `checkh(union_arr[1].x, 2);
       union_arr[1].y <= 4;
     end else if (cyc == 7) begin
       `checkh(logic_arr[0][2][-4], 1);
       `checkh(int_arr[0][0][2], 1);
-      `checkh(bit_arr[2][3], 1);
       `checkh(union_arr[1].x, 4);
     end else if (cyc == 8) begin
       $write("*-* All Finished *-*\n");
