@@ -129,7 +129,7 @@ class CleanVisitor final : public VNVisitor {
         mask.setMask(nodep->widthMin());
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* maskExprp = new AstConst{flp, mask};
-        if (nodep->dtypep()->isFourstate()) {
+        if (v3Global.opt.fourstate() && nodep->dtypep()->isFourstate()) {
             if (AstSel* const selp = VN_CAST(nodep, Sel)) {
                 maskExprp = new AstCCast{flp, maskExprp, selp->fromp()};
             } else {

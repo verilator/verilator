@@ -3682,10 +3682,10 @@ public:
     }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override {
-        return dtypep()->isFourstate() ? "fourLogicBitSel(%li, %ri)"
-               : widthConst() == 1     ? "VL_BITSEL_%nq%lq%rqI(%lw, %P, %li, %ri)"
-               : isWide()              ? "VL_SEL_%nq%lq%rqI(%nw, %lw, %P, %li, %ri, %nw)"
-                                       : "VL_SEL_%nq%lq%rqI(%lw, %P, %li, %ri, %nw)";
+        return v3Global.opt.fourstate() && dtypep()->isFourstate() ? "fourLogicBitSel(%li, %ri)"
+               : widthConst() == 1 ? "VL_BITSEL_%nq%lq%rqI(%lw, %P, %li, %ri)"
+               : isWide()          ? "VL_SEL_%nq%lq%rqI(%nw, %lw, %P, %li, %ri, %nw)"
+                                   : "VL_SEL_%nq%lq%rqI(%lw, %P, %li, %ri, %nw)";
     }
     string emitSMT() const override { return "((_ extract %t %r) %l)"; }
     bool cleanOut() const override { return false; }
@@ -4191,11 +4191,14 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f& %r)"; }
     string emitC() override {
-        return dtypep()->isFourstate() ? "fourLogicAnd(%li, %ri)"
-                                       : "VL_AND_%lq(%lW, %P, %li, %ri)";
+        return v3Global.opt.fourstate() && dtypep()->isFourstate()
+                   ? "fourLogicAnd(%li, %ri)"
+                   : "VL_AND_%lq(%lW, %P, %li, %ri)";
     }
     string emitSMT() const override { return "(bvand %l %r)"; }
-    string emitSimpleOperator() override { return dtypep()->isFourstate() ? "" : "&"; }
+    string emitSimpleOperator() override {
+        return v3Global.opt.fourstate() && dtypep()->isFourstate() ? "" : "&";
+    }
     bool cleanOut() const override { V3ERROR_NA_RETURN(false); }
     bool cleanLhs() const override { return false; }
     bool cleanRhs() const override { return false; }
@@ -4283,10 +4286,14 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f| %r)"; }
     string emitC() override {
-        return dtypep()->isFourstate() ? "fourLogicOr(%li, %ri)" : "VL_OR_%lq(%lW, %P, %li, %ri)";
+        return v3Global.opt.fourstate() && dtypep()->isFourstate()
+                   ? "fourLogicOr(%li, %ri)"
+                   : "VL_OR_%lq(%lW, %P, %li, %ri)";
     }
     string emitSMT() const override { return "(bvor %l %r)"; }
-    string emitSimpleOperator() override { return dtypep()->isFourstate() ? "" : "|"; }
+    string emitSimpleOperator() override {
+        return v3Global.opt.fourstate() && dtypep()->isFourstate() ? "" : "|";
+    }
     bool cleanOut() const override { V3ERROR_NA_RETURN(false); }
     bool cleanLhs() const override { return false; }
     bool cleanRhs() const override { return false; }
@@ -4307,11 +4314,14 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f^ %r)"; }
     string emitC() override {
-        return dtypep()->isFourstate() ? "fourLogicXOr(%li, %ri)"
-                                       : "VL_XOR_%lq(%lW, %P, %li, %ri)";
+        return v3Global.opt.fourstate() && dtypep()->isFourstate()
+                   ? "fourLogicXOr(%li, %ri)"
+                   : "VL_XOR_%lq(%lW, %P, %li, %ri)";
     }
     string emitSMT() const override { return "(bvxor %l %r)"; }
-    string emitSimpleOperator() override { return dtypep()->isFourstate() ? "" : "^"; }
+    string emitSimpleOperator() override {
+        return v3Global.opt.fourstate() && dtypep()->isFourstate() ? "" : "^";
+    }
     bool cleanOut() const override { return false; }  // Lclean && Rclean
     bool cleanLhs() const override { return false; }
     bool cleanRhs() const override { return false; }
@@ -5412,10 +5422,13 @@ public:
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opNot(lhs); }
     string emitVerilog() override { return "%f(~ %l)"; }
     string emitC() override {
-        return dtypep()->isFourstate() ? "fourLogicNeg(%li)" : "VL_NOT_%lq(%lW, %P, %li)";
+        return v3Global.opt.fourstate() && dtypep()->isFourstate() ? "fourLogicNeg(%li)"
+                                                                   : "VL_NOT_%lq(%lW, %P, %li)";
     }
     string emitSMT() const override { return "(bvnot %l)"; }
-    string emitSimpleOperator() override { return dtypep()->isFourstate() ? "" : "~"; }
+    string emitSimpleOperator() override {
+        return v3Global.opt.fourstate() && dtypep()->isFourstate() ? "" : "~";
+    }
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return false; }
     bool sizeMattersLhs() const override { return true; }

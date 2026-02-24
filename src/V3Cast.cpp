@@ -393,7 +393,7 @@ public:
 
 void V3Cast::castAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    { CastQuadstateVisitor{nodep}; }  // Destruct before checking
+    if (v3Global.opt.fourstate()) { CastQuadstateVisitor{nodep}; }  // Destruct before checking
     { CastVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("cast", 0, dumpTreeEitherLevel() >= 3);
 }

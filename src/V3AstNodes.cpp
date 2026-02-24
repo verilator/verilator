@@ -1121,7 +1121,9 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
                                 || VString::startsWith(info.m_type, "VlWide");
         UASSERT_OBJ(!packed || packedType, this, "Unsupported type for packed struct or union");
 
-        if (bdtypep->isFourstate()) info.m_type = "FourStateLogicWrapper<" + info.m_type + ">";
+        if (v3Global.opt.fourstate() && bdtypep->isFourstate()) {
+            info.m_type = "FourStateLogicWrapper<" + info.m_type + ">";
+        }
 
     } else {
         v3fatalSrc("Unknown data type in var type emitter: " << dtypep->prettyName());

@@ -231,7 +231,7 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
             bool isFourState = false;
             if (fmt == 'd' || fmt == '#') {
                 if (AstNodeExpr* const exprp = VN_CAST(argp, NodeExpr)) {
-                    isFourState = exprp->isFourState();
+                    isFourState = v3Global.opt.fourstate() && exprp->isFourState();
                 }
             }
             if (func != "" || argp) {
@@ -286,8 +286,8 @@ std::pair<std::string, std::string> EmitCFunc::castExpr(const AstCCast* const no
     std::pair<std::string, std::string> result{"", ")"};
     // Extending a value of the same word width is just a NOP.
     AstConst* const constp = VN_CAST(nodep->lhsp(), Const);
-    const bool isLhsFourState
-        = nodep->lhsp()->dtypep()->isFourstate() && (!constp || constp->num().isAnyXZ());
+    const bool isLhsFourState = v3Global.opt.fourstate() && nodep->lhsp()->dtypep()->isFourstate()
+                                && (!constp || constp->num().isAnyXZ());
     if (const AstClassRefDType* const classDtypep
         = VN_CAST(nodep->dtypep()->skipRefp(), ClassRefDType)) {
         result.first += "(" + classDtypep->cType("", false, false) + ")(";
@@ -297,7 +297,7 @@ std::pair<std::string, std::string> EmitCFunc::castExpr(const AstCCast* const no
         result.first += ">(";
     } else {
         const char* const cdtypep = sizeToCDType(nodep->size());
-        if (nodep->dtypep()->isFourstate() && !isLhsFourState) {
+        if (v3Global.opt.fourstate() && nodep->dtypep()->isFourstate() && !isLhsFourState) {
             result.first += "FourStateLogicWrapper<";
             result.first += cdtypep;
             result.first += ">{";

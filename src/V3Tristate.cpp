@@ -1297,7 +1297,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     void visit(AstOr* nodep) override { visitAndOr(nodep, false); }
 
     void visitAssign(AstNodeAssign* nodep) {
-        if (nodep->lhsp()->isFourState()) return;
+        if (v3Global.opt.fourstate() && nodep->lhsp()->isFourState()) return;
         VL_RESTORER(m_alhs);
         VL_RESTORER(m_currentStrength);
         if (m_graphing) {

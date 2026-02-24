@@ -725,11 +725,14 @@ class EmitCTrace final : public EmitCFunc {
             stype = "Event";
             emitWidth = false;
         } else {
-            stype
-                = nodep->dtypep()->basicp()->keyword() == VBasicDTypeKwd::LOGIC ? "Logic" : "Bit";
+            stype = v3Global.opt.fourstate()
+                            && nodep->dtypep()->basicp()->keyword() == VBasicDTypeKwd::LOGIC
+                        ? "Logic"
+                        : "Bit";
             emitWidth = false;
         }
-        if (nodep->declp()->widthMin() > 1 && nodep->dtypep()->basicp()->isFourstate()) {
+        if (nodep->declp()->widthMin() > 1 && v3Global.opt.fourstate()
+            && nodep->dtypep()->basicp()->isFourstate()) {
             if (VL_UNLIKELY(nodep->isWide())) {
                 nodep->v3warn(E_UNSUPPORTED,
                               "Traces of wide vars (>64) for four state logic are unsupported");
@@ -741,7 +744,9 @@ class EmitCTrace final : public EmitCFunc {
         const uint32_t offset = (arrayindex < 0)
                                     ? 0
                                     : (arrayindex * nodep->declp()->widthWords()
-                                       * (1 + nodep->declp()->dtypep()->isFourstate()));
+                                       * (1
+                                          + static_cast<uint32_t>(v3Global.opt.fourstate())
+                                                * nodep->declp()->dtypep()->isFourstate()));
         const uint32_t code = nodep->declp()->code() + offset;
         // Note: Both VTraceType::CHANGE and VTraceType::FULL use the 'full' methods
         puts(v3Global.opt.useTraceOffload() && nodep->traceType() == VTraceType::CHANGE

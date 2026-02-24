@@ -9360,7 +9360,9 @@ class WidthTypeFixer : public VNVisitor {
     void visit(AstNode* const nodep) override { iterateChildren(nodep); }
 
 public:
-    explicit WidthTypeFixer(AstNode* const nodep) { iterate(nodep); }
+    explicit WidthTypeFixer(AstNode* const nodep) {
+        // iterate(nodep);
+    }
     ~WidthTypeFixer() override = default;
 };
 

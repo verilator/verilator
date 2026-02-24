@@ -476,9 +476,11 @@ TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords,
 AstAssign* TriggerKit::createSenTrigVecAssignment(AstVarScope* const target,
                                                   std::vector<AstNodeExpr*>& trigps) {
     FileLine* const flp = target->fileline();
-    for (size_t i = 0; i < trigps.size(); ++i) {
-        if (trigps[i]->isFourState()) {
-            trigps[i] = new AstCFuncHard{flp, VCFunc::FOUR_STATE_IS_TRUE, trigps[i]};
+    if (v3Global.opt.fourstate()) {
+        for (size_t i = 0; i < trigps.size(); ++i) {
+            if (trigps[i]->isFourState()) {
+                trigps[i] = new AstCFuncHard{flp, VCFunc::FOUR_STATE_IS_TRUE, trigps[i]};
+            }
         }
     }
     AstAssign* trigStmtsp = nullptr;

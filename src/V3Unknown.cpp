@@ -218,8 +218,9 @@ class UnknownVisitor final : public VNVisitor {
     void visit(AstAssignW* nodep) override {
         VL_RESTORER(m_timingControlp);
         VL_RESTORER(m_constXCvt);
-        m_constXCvt
-            = m_constXCvt && !nodep->lhsp()->isFourState() && !nodep->rhsp()->isFourState();
+        m_constXCvt = m_constXCvt
+                      && (v3Global.opt.fourstate()
+                          || (!nodep->lhsp()->isFourState() && !nodep->rhsp()->isFourState()));
         m_timingControlp = nodep->timingControlp();
         VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
     }

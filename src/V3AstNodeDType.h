@@ -557,7 +557,7 @@ public:
     int widthAlignBytes() const override { return 8; }  // Assume
     int widthTotalBytes() const override { return 8; }  // Assume
     bool isCompound() const override { return true; }
-    static string typeToHold(int width, bool fourState = false) {
+    static string typeToHold(int width) {
         if (width <= 8)
             return "CData";
         else if (width <= 16)

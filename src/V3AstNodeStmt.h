@@ -1255,8 +1255,10 @@ public:
     uint32_t codeInc() const {
         return (m_arrayRange.ranged() ? m_arrayRange.elements() : 1)
                * valuep()->dtypep()->widthWords()
-               * (1 + dtypep()->isFourstate())  // Fourstate variables take twise as much space as
-                                                // they are wide
+               * (1
+                  + static_cast<uint32_t>(v3Global.opt.fourstate())
+                        * dtypep()->isFourstate())  // Fourstate variables take twise as much space
+                                                    // as they are wide
                * (VL_EDATASIZE / 32);  // A code is always 32-bits
     }
     const VNumRange& bitRange() const { return m_bitRange; }

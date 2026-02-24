@@ -284,10 +284,10 @@ public:
 };
 
 void V3Quadstate::quadstateReduce(AstNode* nodep) {
-    if (!v3Global.opt.fourstate()) {
-        UINFO(2, __FUNCTION__ << ":");
-        QuadstateTypeReducerVisitor{nodep};
-    }
+    // if (!v3Global.opt.fourstate()) {
+    //     UINFO(2, __FUNCTION__ << ":");
+    //     QuadstateTypeReducerVisitor{nodep};
+    // }
 }
 
 void V3Quadstate::quadstateAll(AstNetlist* nodep) {
