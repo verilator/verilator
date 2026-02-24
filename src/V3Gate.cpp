@@ -429,11 +429,11 @@ class GateOkVisitor final : public VNVisitorConst {
 
         // We only allow a LHS ref for the var being set, and a RHS ref for
         // something else being read.
+        AstVarScope* const vscp = nodep->varScopep();
         if (nodep->access().isWriteOnly()) {
             if (m_lhsVarRef) clearSimple(">1 write refs");
             m_lhsVarRef = nodep;
         } else {
-            AstVarScope* const vscp = nodep->varScopep();
             // TODO: possible bug, should it be >= 1 as add is below?
             if (m_readVscps.size() > 1) {
                 if (m_buffersOnly) clearSimple(">1 rhs varRefs");

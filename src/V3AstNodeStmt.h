@@ -1217,6 +1217,9 @@ class AstTraceDecl final : public AstNodeStmt {
     // Parents:  {statement list}
     // Expression being traced - Moved to AstTraceInc by V3Trace
     // @astgen op1 := valuep : Optional[AstNodeExpr]
+    //
+    // @astgen ptr := m_dtypeCallp: Optional[AstCCall] // Type init function call
+    // @astgen ptr := m_dtypeDeclp: Optional[AstTraceDecl] // CCall TraceDecl which replaces this
     uint32_t m_code{std::numeric_limits<uint32_t>::max()};  // Trace identifier code
     uint32_t m_fidx{0};  // Trace function index
     const string m_showname;  // Name of variable
@@ -1224,18 +1227,23 @@ class AstTraceDecl final : public AstNodeStmt {
     const VNumRange m_arrayRange;  // Property of var the trace details
     const VVarType m_varType;  // Type of variable (for localparam vs. param)
     const VDirection m_declDirection;  // Declared direction input/output etc
+    const bool m_inDtypeFunc;  // Trace decl inside type init function
+    int m_codeInc{0};  // Code increment for type
 public:
     AstTraceDecl(FileLine* fl, const string& showname,
                  AstVar* varp,  // For input/output state etc
-                 AstNodeExpr* valuep, const VNumRange& bitRange, const VNumRange& arrayRange)
+                 AstNodeExpr* valuep, const VNumRange& bitRange, const VNumRange& arrayRange,
+                 AstCCall* const dtypeCallp, const bool inDtypeFunc)
         : ASTGEN_SUPER_TraceDecl(fl)
         , m_showname{showname}
         , m_bitRange{bitRange}
         , m_arrayRange{arrayRange}
         , m_varType{varp->varType()}
-        , m_declDirection{varp->declDirection()} {
+        , m_declDirection{varp->declDirection()}
+        , m_inDtypeFunc{inDtypeFunc} {
         dtypeFrom(valuep);
         this->valuep(valuep);
+        this->dtypeCallp(dtypeCallp);
     }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
@@ -1244,7 +1252,7 @@ public:
     string name() const override VL_MT_STABLE { return m_showname; }
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
     bool hasDType() const override VL_MT_SAFE { return true; }
-    bool sameNode(const AstNode* samep) const override { return false; }
+    bool sameNode(const AstNode* samep) const override { return true; }
     string showname() const { return m_showname; }  // * = Var name
     // Details on what we're tracing
     uint32_t code() const { return m_code; }
@@ -1252,7 +1260,9 @@ public:
     bool codeAssigned() const { return m_code != std::numeric_limits<uint32_t>::max(); }
     uint32_t fidx() const { return m_fidx; }
     void fidx(uint32_t fidx) { m_fidx = fidx; }
+    void codeInc(uint32_t codeInc) { m_codeInc = codeInc; }
     uint32_t codeInc() const {
+        if (m_codeInc) { return m_codeInc; }
         return (m_arrayRange.ranged() ? m_arrayRange.elements() : 1)
                * valuep()->dtypep()->widthWords()
                * (VL_EDATASIZE / 32);  // A code is always 32-bits
@@ -1261,6 +1271,11 @@ public:
     const VNumRange& arrayRange() const { return m_arrayRange; }
     VVarType varType() const { return m_varType; }
     VDirection declDirection() const { return m_declDirection; }
+    AstCCall* dtypeCallp() const { return m_dtypeCallp; }
+    void dtypeCallp(AstCCall* const callp) { m_dtypeCallp = callp; }
+    AstTraceDecl* dtypeDeclp() const { return m_dtypeDeclp; }
+    void dtypeDeclp(AstTraceDecl* const declp) { m_dtypeDeclp = declp; }
+    bool inDtypeFunc() const { return m_inDtypeFunc; }
 };
 class AstTraceInc final : public AstNodeStmt {
     // Trace point dump
@@ -1307,15 +1322,19 @@ public:
 class AstTracePushPrefix final : public AstNodeStmt {
     const string m_prefix;  // Prefix to add to signal names
     const VTracePrefixType m_prefixType;  // Type of prefix being pushed
+    const bool m_quotedPrefix;  // Quote prefix name
 public:
-    AstTracePushPrefix(FileLine* fl, const string& prefix, VTracePrefixType prefixType)
+    AstTracePushPrefix(FileLine* fl, const string& prefix, VTracePrefixType prefixType,
+                       bool quotedPrefix = true)
         : ASTGEN_SUPER_TracePushPrefix(fl)
         , m_prefix{prefix}
-        , m_prefixType{prefixType} {}
+        , m_prefixType{prefixType}
+        , m_quotedPrefix{quotedPrefix} {}
     ASTGEN_MEMBERS_AstTracePushPrefix;
     bool sameNode(const AstNode* samep) const override { return false; }
     string prefix() const { return m_prefix; }
     VTracePrefixType prefixType() const { return m_prefixType; }
+    bool quotedPrefix() const { return m_quotedPrefix; }
 };
 class AstWait final : public AstNodeStmt {
     // @astgen op1 := condp : AstNodeExpr
