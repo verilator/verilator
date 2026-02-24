@@ -6,9 +6,9 @@
 
 module t;
   initial begin
-    automatic int x = 0;
+    static int x = 0;
     while (x < 10) begin : outer_loop
-      automatic int y = 0;
+      static int y = 0;
       while (y < x) begin : inner_loop
         static int a = 0;
         a++;
@@ -16,7 +16,7 @@ module t;
       end
       x++;
     end
-    if (outer_loop.inner_loop.a != 45) $stop;
+    if (outer_loop.inner_loop.a != 9) $stop;
 
     $write("*-* All Finished *-*\n");
     $finish;
