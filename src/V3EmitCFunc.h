@@ -1176,8 +1176,10 @@ public:
     void visit(AstStmtExpr* nodep) override {
         if (VN_IS(nodep->exprp()->dtypep()->skipRefp(), VoidDType)) {
             putns(nodep, "");
+        } else if (VN_IS(nodep->exprp(), CExpr)) {
+            putns(nodep, "(void)");
         } else {
-            putns(nodep, "std::ignore = ");  // Prevent unused expression warning in C
+            putns(nodep, "std::ignore = ");
         }
         iterateConst(nodep->exprp());
         puts(";\n");
