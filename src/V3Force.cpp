@@ -325,7 +325,7 @@ private:
                 return dtypep;
             } else {
                 AstNodeDType* const bitDtp = varp->findBitRangeDType(
-                    basicp->declRange(), basicp->widthMin(), VSigning::UNSIGNED);
+                    basicp->declRange(), basicp->elements(), VSigning::UNSIGNED);
                 dtypep->user1p(bitDtp);
                 return bitDtp;
             }
