@@ -265,7 +265,7 @@ private:
         if (const AstUnpackArrayDType* const udtp = VN_CAST(dtp, UnpackArrayDType)) {
             const size_t elemsInSubDType = checkIfDTypeSupportedRecurse(udtp->subDTypep(), varp);
             return udtp->elementsConst() * elemsInSubDType;
-        } else if (const AstNodeUOrStructDType* const sdtp = VN_CAST(dtp, NodeUOrStructDType)) {
+        } else if (const AstStructDType* const sdtp = VN_CAST(dtp, StructDType)) {
             size_t elemCount = 0;
             for (const AstMemberDType* mdtp = sdtp->membersp(); mdtp;
                  mdtp = VN_AS(mdtp->nextp(), MemberDType)) {
