@@ -244,7 +244,7 @@
 -000002  point: type=branch comment=if hier=top.t.b*
               end
  000018       if (toggle) begin : block
-+000018  point: type=branch comment=else hier=top.t.b*
++000018  point: type=line comment=else hier=top.t.b*
                  // This doesn't
         `ifdef ATTRIBUTE
                  // verilator coverage_block_off
