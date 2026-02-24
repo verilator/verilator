@@ -444,32 +444,27 @@ class ForceConvertVisitor final : public VNVisitor {
         AstAssign* const resetRdp
             = new AstAssign{flp, lhsp->unlinkFrBack(), lhsp->cloneTreePure(false)};
         resetRdp->user2(true);
-        AstVarRef* const lhsRefp = VN_AS(AstNodeVarRef::varRefLValueRecurse(lhsp), VarRef);
-        AstVarScope* const vscp = lhsRefp->varScopep();
-        AstVarRef* const rhsRefp = lhsRefp->clonep();
+        AstVarRef* const refp = VN_AS(AstNodeVarRef::varRefLValueRecurse(lhsp), VarRef);
+        AstVarScope* const vscp = refp->varScopep();
+        AstVarRef* const rhsRefp = refp->clonep();
 
-        // Replace write ref on the LHS
         if (vscp->varp()->isContinuously()) {
-            AstVarRef* const newpRefp = new AstVarRef{
-                lhsRefp->fileline(), m_state.getForceComponents(vscp).m_rdVscp, VAccess::WRITE};
-            lhsRefp->replaceWith(newpRefp);
-            VL_DO_DANGLING(lhsRefp->deleteTree(), lhsRefp);
-        }
-
-        // Replace write ref on RHS
-        if (rhsRefp->dtypep()->skipRefp()->isIntegralOrPacked()) {
-            if (vscp->varp()->isContinuously()) {
-                rhsRefp->access(VAccess::READ);
-                ForceState::markNonReplaceable(rhsRefp);
-            } else {
+            AstVarRef* const lhsRefp = new AstVarRef{
+                refp->fileline(), m_state.getForceComponents(vscp).m_rdVscp, VAccess::WRITE};
+            refp->replaceWith(lhsRefp);
+            VL_DO_DANGLING(refp->deleteTree(), refp);
+            rhsRefp->access(VAccess::READ);
+            ForceState::markNonReplaceable(rhsRefp);
+        } else {
+            if (rhsRefp->dtypep()->skipRefp()->isIntegralOrPacked()) {
                 rhsRefp->replaceWith(m_state.getForceComponents(vscp).forcedUpdate(vscp));
                 VL_DO_DANGLING(rhsRefp->deleteTree(), rhsRefp);
+            } else {
+                AstNodeExpr* const origRhsp = resetRdp->rhsp();
+                origRhsp->replaceWith(
+                    m_state.getForceComponents(vscp).forcedUpdate(vscp, origRhsp, rhsRefp));
+                VL_DO_DANGLING(origRhsp->deleteTree(), origRhsp);
             }
-        } else {
-            AstNodeExpr* const origRhsp = resetRdp->rhsp();
-            origRhsp->replaceWith(
-                m_state.getForceComponents(vscp).forcedUpdate(vscp, origRhsp, rhsRefp));
-            VL_DO_DANGLING(origRhsp->deleteTree(), origRhsp);
         }
 
         resetRdp->addNext(resetEnp);
