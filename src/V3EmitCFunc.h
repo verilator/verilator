@@ -1177,7 +1177,7 @@ public:
         if (VN_IS(nodep->exprp()->dtypep()->skipRefp(), VoidDType)) {
             putns(nodep, "");
         } else {
-            putns(nodep, "(void)");  // Prevent unused expression warning in C
+            putns(nodep, "std::ignore = ");  // Prevent unused expression warning in C
         }
         iterateConst(nodep->exprp());
         puts(";\n");
