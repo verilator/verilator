@@ -206,7 +206,7 @@
                  // t.a1 and t.a2 collapse to a count of 2
               end
  000018       if (toggle) begin  // *** t_cover_line.vlt turns this off
-+000018  point: type=branch comment=else hier=top.t.a*
++000018  point: type=line comment=else hier=top.t.a*
                  $write("");  // CHECK_COVER_MISSING(0)
                  // This doesn't even get added
         `ifdef ATTRIBUTE
