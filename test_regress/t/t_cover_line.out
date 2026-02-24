@@ -109,7 +109,7 @@
                    end
                  //  multiline elseif
 %000001          if (cyc==3)
--000001  point: type=branch comment=elsif hier=top.t
+-000001  point: type=line comment=elsif hier=top.t
 %000001            begin
 -000001  point: type=branch comment=elsif hier=top.t
 %000001               $write("");
