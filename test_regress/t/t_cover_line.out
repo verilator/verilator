@@ -374,17 +374,17 @@
  000010       case (cyc4)
 +000010  point: type=line comment=block hier=top.t.tab1
 %000001         1: decoded = 10;
--000001  point: type=branch comment=case hier=top.t.tab1
+-000001  point: type=line comment=case hier=top.t.tab1
 %000001         2: decoded = 20;
--000001  point: type=branch comment=case hier=top.t.tab1
+-000001  point: type=line comment=case hier=top.t.tab1
 %000001         3: decoded = 30;
--000001  point: type=branch comment=case hier=top.t.tab1
+-000001  point: type=line comment=case hier=top.t.tab1
 %000001         4: decoded = 40;
--000001  point: type=branch comment=case hier=top.t.tab1
+-000001  point: type=line comment=case hier=top.t.tab1
 %000001         5: decoded = 50;
--000001  point: type=branch comment=case hier=top.t.tab1
+-000001  point: type=line comment=case hier=top.t.tab1
 %000005         default: decoded = 0;
--000005  point: type=branch comment=case hier=top.t.tab1
+-000005  point: type=line comment=case hier=top.t.tab1
               endcase
            end
         
