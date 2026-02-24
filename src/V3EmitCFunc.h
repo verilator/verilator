@@ -209,12 +209,13 @@ public:
                     AstNode* thsp);
     void emitCCallArgs(const AstNodeCCall* nodep, const string& selfPointer, bool inProcess);
     void emitDereference(AstNode* nodep, const string& pointer);
+    std::string dereferenceString(const std::string& pointer);
     void emitCvtPackStr(AstNode* nodep);
     void emitCvtWideArray(AstNode* nodep, AstNode* fromp);
     void emitConstant(AstConst* nodep);
     void emitConstantString(const AstConst* nodep);
     void emitSetVarConstant(const string& assignString, AstConst* constp);
-    void emitVarReset(AstVar* varp, bool constructing);
+    void emitVarReset(const string& prefix, AstVar* varp, bool constructing);
     string emitVarResetRecurse(const AstVar* varp, bool constructing,
                                const string& varNameProtected, AstNodeDType* dtypep, int depth,
                                const string& suffix, const AstNode* valuep);
@@ -526,8 +527,29 @@ public:
 
     void visit(AstNodeAssign* nodep) override {
         if (AstCReset* const resetp = VN_CAST(nodep->rhsp(), CReset)) {
-            AstVar* const varp = VN_AS(nodep->lhsp(), NodeVarRef)->varp();
-            emitVarReset(varp, resetp->constructing());
+            // TODO get rid of emitVarReset and instead let AstNodeAssign understand how to init
+            // anything
+            AstNode* fromp = nodep->lhsp();
+            // Fork needs to use a member select.  Nothing else should be possible before VarRef.
+            if (AstMemberSel* const sfromp = VN_CAST(fromp, MemberSel)) {
+                // Fork-DynScope generated pointer to previously automatic variable
+                AstVar* const memberVarp = sfromp->varp();
+                fromp = sfromp->fromp();
+                if (AstNullCheck* const sfromp = VN_CAST(fromp, NullCheck)) fromp = sfromp->lhsp();
+                AstNodeVarRef* const fromVarRefp = VN_AS(fromp, NodeVarRef);
+                emitVarReset(
+                    ("VL_NULL_CHECK("s
+                     + (fromVarRefp->selfPointer().isEmpty()
+                            ? ""
+                            : dereferenceString(fromVarRefp->selfPointerProtect(m_useSelfForThis)))
+                     + fromVarRefp->varp()->nameProtect() + ", \""
+                     + V3OutFormatter::quoteNameControls(protect(nodep->fileline()->filename()))
+                     + "\", " + std::to_string(nodep->fileline()->lineno()) + ")->"),
+                    memberVarp, resetp->constructing());
+            } else {
+                AstVar* const varp = VN_AS(fromp, NodeVarRef)->varp();
+                emitVarReset("", varp, resetp->constructing());
+            }
             return;
         }
         bool paren = true;

@@ -28,6 +28,7 @@ Verilator 5.045 devel
 * Support nested interface as port connection (#5066) (#6986). [Leela Pakanati]
 * Support solve..before constraints (#5647) (#7123). [Yilou Wang]
 * Support structure initial values (#6130).
+* Support proper automatic/static initialization, and remove STATICVAR warning (#6405).
 * Support vpi_put/vpi_get forcing of signals (#5933) (#6704). [Christian Hecken]
 * Support detailed failure info for constraint violations (#6617) (#6883). [Yilou Wang]
 * Support `unique` constraints (on 1D static arrays) (#6810) (#6878). [Srinivasan Venkataramanan]

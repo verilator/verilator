@@ -456,6 +456,13 @@ class GateOkVisitor final : public VNVisitorConst {
             clearSimple("Not a buffer (goes to a clock)");
         }
     }
+    void visit(AstCReset* nodep) override {
+        if (!m_isSimple) return;
+        // CReset is pure because we can optimize assignments, but if is
+        // the only assignment to a variable we still need to initial
+        // assign to get randomization etc
+        clearSimple("CReset");
+    }
     //--------------------
     void visit(AstNode* nodep) override {
         if (!m_isSimple) return;  // Fastpath

@@ -135,7 +135,7 @@ C 'ft/t_wrapper_context.vl17n23ttogglepagev_toggle/topocounter[9]:0-
 C 'ft/t_wrapper_context.vl17n23ttogglepagev_toggle/topocounter[9]:1->0htop0.top' 0
 C 'ft/t_wrapper_context.vl18n16ttogglepagev_toggle/topodone_o:0->1htop0.top' 1
 C 'ft/t_wrapper_context.vl18n16ttogglepagev_toggle/topodone_o:1->0htop0.top' 0
-C 'ft/t_wrapper_context.vl21n3tlinepagev_line/topoblockS21,24,28,30-32htop0.top' 1
+C 'ft/t_wrapper_context.vl21n3tlinepagev_line/topoblockS21-24,28,30-32htop0.top' 1
 C 'ft/t_wrapper_context.vl35n3tlinepagev_line/topoblockS35htop0.top' 11
 C 'ft/t_wrapper_context.vl36n5tbranchpagev_branch/topoifS36htop0.top' 1
 C 'ft/t_wrapper_context.vl36n6tbranchpagev_branch/topoelseS37htop0.top' 10

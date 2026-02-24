@@ -9,9 +9,11 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
-test.top_filename = "t/t_static_in_loop.v"
+test.scenarios('vlt_all')
+test.top_filename = 't/t_always_reorder.v'
 
-test.lint(fails=True, expect_filename=test.golden_filename)
+test.compile(verilator_flags2=["--stats", "-fno-acyc-simp"])
+
+test.execute()
 
 test.passes()
