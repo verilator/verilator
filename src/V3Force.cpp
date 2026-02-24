@@ -290,6 +290,7 @@ private:
     }
     static AstNodeDType* getEnVarpDTypep(AstVar* const varp) {
         AstNodeDType* const origDTypep = varp->dtypep()->skipRefp();
+        if (origDTypep->user1p()) return VN_AS(origDTypep->user1p(), NodeDType);
         const size_t unpackElemNum = checkIfDTypeSupportedRecurse(origDTypep, varp);
         if (unpackElemNum > ELEMENTS_MAX) {
             varp->v3warn(E_UNSUPPORTED, "Unsupported: Force of variable with "
