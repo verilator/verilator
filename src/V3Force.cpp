@@ -457,6 +457,7 @@ class ForceConvertVisitor final : public VNVisitor {
             ForceState::markNonReplaceable(rhsRefp);
         } else {
             if (rhsRefp->dtypep()->skipRefp()->isIntegralOrPacked()) {
+                // In this case var ref can be replaced with expression
                 rhsRefp->replaceWith(m_state.getForceComponents(vscp).forcedUpdate(vscp));
                 VL_DO_DANGLING(rhsRefp->deleteTree(), rhsRefp);
             } else {
