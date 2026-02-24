@@ -79,15 +79,15 @@
 -000008  point: type=branch comment=else hier=top.t
 -000001  point: type=branch comment=if hier=top.t
 %000001             if (intf_sel_ff.bar != 123) $stop();
--000001  point: type=branch comment=else hier=top.t
+-000001  point: type=line comment=else hier=top.t
 %000001             if (intf_sel_comb.bar != 456) $stop();
--000001  point: type=branch comment=else hier=top.t
+-000001  point: type=line comment=else hier=top.t
 %000001             if (intf_sel_assign.bar != 456) $stop();
--000001  point: type=branch comment=else hier=top.t
+-000001  point: type=line comment=else hier=top.t
 %000001             $write("*-* All Finished *-*\n");
--000001  point: type=branch comment=if hier=top.t
+-000001  point: type=line comment=if hier=top.t
 %000001             $finish;
--000001  point: type=branch comment=if hier=top.t
+-000001  point: type=line comment=if hier=top.t
                 end
             end
         endmodule
