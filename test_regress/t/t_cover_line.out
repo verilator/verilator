@@ -128,13 +128,13 @@
 %000001            begin
 -000001  point: type=line comment=if hier=top.t
 %000001               $write("");
--000001  point: type=branch comment=if hier=top.t
+-000001  point: type=line comment=if hier=top.t
                    end
                  else
 %000007            begin
--000007  point: type=branch comment=else hier=top.t
+-000007  point: type=line comment=else hier=top.t
 %000007               $write("");
--000007  point: type=branch comment=else hier=top.t
+-000007  point: type=line comment=else hier=top.t
                    end
                  // Single and multiline while
 %000000          while (0);
