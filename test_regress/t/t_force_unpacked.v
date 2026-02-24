@@ -61,6 +61,7 @@ module t (
       release logic_arr[0][2][-4];
       release int_arr[0][0][2];
       release bit_arr[2][3];
+      `checkh(bit_arr[2][3], 1);
       release union_arr[1].x;
     end else if (cyc == 6) begin
       `checkh(logic_arr[0][2][-4], 0);
