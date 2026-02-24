@@ -67,7 +67,7 @@ class ForceState final {
             , m_valVarp{new AstVar{varp->fileline(), VVarType::VAR, varp->name() + "__VforceVal",
                                    varp->dtypep()}}
             , m_enVarp{new AstVar{varp->fileline(), VVarType::VAR, varp->name() + "__VforceEn",
-                                  getEnVarpDTypeRecursep(varp, varp->dtypep()->skipRefp())}} {
+                                  getEnVarpDTypep(varp)}} {
             m_rdVarp->addNext(m_enVarp);
             m_rdVarp->addNext(m_valVarp);
             varp->addNextHere(m_rdVarp);
@@ -288,15 +288,19 @@ private:
             return 1;
         }
     }
-    static AstNodeDType* getEnVarpDTypeRecursep(AstVar* const varp, AstNodeDType* const dtypep) {
-        if (dtypep->user1p()) return VN_AS(dtypep->user1p(), NodeDType);
-        const size_t unpackElemNum = checkIfDTypeSupportedRecurse(dtypep, varp);
+    static AstNodeDType* getEnVarpDTypep(AstVar* const varp) {
+        AstNodeDType* const origDTypep = varp->dtypep()->skipRefp();
+        const size_t unpackElemNum = checkIfDTypeSupportedRecurse(origDTypep, varp);
         if (unpackElemNum > ELEMENTS_MAX) {
             varp->v3warn(E_UNSUPPORTED, "Unsupported: Force of variable with "
                                         ">= "
                                             << ELEMENTS_MAX << " unpacked elements");
-            return dtypep;
+            return origDTypep;
         }
+        return getEnVarpDTypeRecursep(varp, origDTypep);
+    }
+    static AstNodeDType* getEnVarpDTypeRecursep(AstVar* const varp, AstNodeDType* const dtypep) {
+        if (dtypep->user1p()) return VN_AS(dtypep->user1p(), NodeDType);
         if (AstNodeArrayDType* const arrp = VN_CAST(dtypep, NodeArrayDType)) {
             AstNodeDType* const subDTypep = arrp->subDTypep()->skipRefp();
             AstNodeDType* const enSubDTypep = getEnVarpDTypeRecursep(varp, subDTypep);
