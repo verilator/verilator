@@ -980,8 +980,8 @@ const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
             // Skip internal scaffolding nodes (e.g. REQUIREDTYPE) with no user-visible name
             if (chainp->name().empty()) continue;
             os << '\n'
-               << chainp->fileline()->warnOther() << "... Type chain: "
-               << chainp->prettyTypeName() << '\n'
+               << chainp->fileline()->warnOther() << "... Type chain: " << chainp->prettyTypeName()
+               << '\n'
                << (first ? chainp->fileline()->warnContextPrimary()
                          : chainp->fileline()->warnContextSecondary());
             first = false;
