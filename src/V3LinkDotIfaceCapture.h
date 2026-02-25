@@ -144,6 +144,11 @@ private:
     // Given a wrong-clone owner, find the correct clone in the reachable set
     static AstNodeModule* findCorrectClone(AstNodeModule* wrongOwnerp, const ReachableInfo& info,
                                            std::set<AstNodeModule*>& visited);
+    // Scan all live modules for a clone of deadTargetModp via cell hierarchy.
+    // Returns the clone, or nullptr.  If containerp is non-null, sets *containerp
+    // to the live module whose hierarchy contains the clone.
+    static AstNodeModule* findLiveCloneOf(AstNodeModule* deadTargetModp,
+                                          AstNodeModule** containerp = nullptr);
     // Fix a single REFDTYPE's dead-module pointers (typedefp, refDTypep, dtypep)
     static int fixDeadRefs(AstRefDType* refp, AstNodeModule* containingModp, const char* location);
 

@@ -400,6 +400,22 @@ int V3LinkDotIfaceCapture::fixDeadRefs(AstRefDType* refp, AstNodeModule* contain
     return fixed;
 }
 
+AstNodeModule* V3LinkDotIfaceCapture::findLiveCloneOf(AstNodeModule* deadTargetModp,
+                                                     AstNodeModule** containerp) {
+    for (AstNode* np = v3Global.rootp()->modulesp(); np; np = np->nextp()) {
+        if (AstNodeModule* const modp = VN_CAST(np, NodeModule)) {
+            if (modp->dead()) continue;
+            AstNodeModule* const found = findCloneViaHierarchy(modp, deadTargetModp);
+            if (found) {
+                if (containerp) *containerp = modp;
+                return found;
+            }
+        }
+    }
+    if (containerp) *containerp = nullptr;
+    return nullptr;
+}
+
 AstNodeModule* V3LinkDotIfaceCapture::findOwnerModule(AstNode* nodep) {
     for (AstNode* curp = nodep; curp; curp = curp->backp()) {
         // Guard against corrupted backp() chains (e.g. freed memory,
@@ -996,20 +1012,7 @@ void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
                     if (rdOwnerp && rdOwnerp->dead()) deadTargetModp = rdOwnerp;
                 }
                 if (deadTargetModp) {
-                    // Search all live modules for one that has a cell hierarchy
-                    // leading to a clone of the dead target
-                    for (AstNode* mnodep = v3Global.rootp()->modulesp(); mnodep;
-                         mnodep = mnodep->nextp()) {
-                        if (AstNodeModule* const modp = VN_CAST(mnodep, NodeModule)) {
-                            if (modp->dead()) continue;
-                            AstNodeModule* const found
-                                = findCloneViaHierarchy(modp, deadTargetModp, 0);
-                            if (found) {
-                                containingModp = modp;
-                                break;
-                            }
-                        }
-                    }
+                    findLiveCloneOf(deadTargetModp, &containingModp);
                 }
                 typeTableFixed += fixDeadRefs(refp, containingModp, "type table");
             });
@@ -1022,18 +1025,7 @@ void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
                 AstNodeModule* const dtOwnerp = findOwnerModule(memberp->dtypep());
                 if (!dtOwnerp || !dtOwnerp->dead()) return;
                 // Try to find the clone of the dead module
-                AstNodeModule* cloneModp = nullptr;
-                for (AstNode* mnodep = v3Global.rootp()->modulesp(); mnodep;
-                     mnodep = mnodep->nextp()) {
-                    if (AstNodeModule* const modp = VN_CAST(mnodep, NodeModule)) {
-                        if (modp->dead()) continue;
-                        AstNodeModule* const found = findCloneViaHierarchy(modp, dtOwnerp, 0);
-                        if (found) {
-                            cloneModp = found;
-                            break;
-                        }
-                    }
-                }
+                AstNodeModule* const cloneModp = findLiveCloneOf(dtOwnerp);
                 if (cloneModp) {
                     // Find matching type by name in the clone
                     const string& dtName = memberp->dtypep()->prettyName();
