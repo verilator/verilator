@@ -5,8 +5,8 @@
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_assignment_pin_bad.v:30:19: Illegal assignment: Array element types are not equivalent (IEEE 1800-2023 6.22.2)
                                       : ... note: In instance 't'
-                                      : ... PIN type: 'bit$[0:1]' (2-state)
-                                      : ... EXPR type: 'logic$[0:1]' (4-state)
+                                      : ... Pin data type: 'bit$[0:1]' (2-state)
+                                      : ... Expression data type: 'logic$[0:1]' (4-state)
    30 |   test2 i_test2 (.b);
       |                   ^
 %Error: Exiting due to
