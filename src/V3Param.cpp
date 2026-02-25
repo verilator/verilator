@@ -803,6 +803,10 @@ class ParamProcessor final {
         // clone exists.  This suppresses width/type errors on the unresolved template
         // during widthParamsEdit (which runs before V3LinkDot sets dead()).
         srcModp->parameterizedTemplate(true);
+        // The clone is a specialized instance, not a template.  Clear the flag in
+        // case it was inherited from a prior cloneTree (when srcModp was already
+        // marked by an earlier specialization).
+        newModp->parameterizedTemplate(false);
 
         // cloneTree(false) temporarily populates origNode->clonep() for every node under
         // srcModp.  The capture list still stores those orig AstRefDType* pointers, so walking
