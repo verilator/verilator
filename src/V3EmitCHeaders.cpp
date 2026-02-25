@@ -715,7 +715,7 @@ class EmitCHeader final : public EmitCConstInit {
         if (v3Global.opt.coverage() || v3Global.useCovergroup())
             puts("#include \"verilated_covergroup.h\"\n");
         if (v3Global.usesTiming()) puts("#include \"verilated_timing.h\"\n");
-        if (v3Global.dpi()) puts("#include \"verilated_dpi_fiber.h\"\n");
+        if (v3Global.dpi() && v3Global.usesTiming()) puts("#include \"verilated_dpi_fiber.h\"\n");
         if (v3Global.useRandomizeMethods()) puts("#include \"verilated_random.h\"\n");
         if (v3Global.usesForce()) puts("#include \"verilated_force.h\"\n");
 

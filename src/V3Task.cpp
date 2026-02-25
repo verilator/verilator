@@ -1200,10 +1200,6 @@ class TaskVisitor final : public VNVisitor {
         }
 
         {  // Call the imported function
-            AstCExpr* const callImportp
-                = new AstCExpr{nodep->fileline(), "VerilatedDpi::callImport"};
-            AstCAwait* const awaitp = new AstCAwait{nodep->fileline(), callImportp};
-
             AstCCall* const callp = new AstCCall{nodep->fileline(), dpiFuncp};
             callp->dtypeSetVoid();
             callp->argTypes(args);
@@ -1222,11 +1218,20 @@ class TaskVisitor final : public VNVisitor {
                 cstmtp->add(callp);
                 cstmtp->add(";");
             }
-            callImportp->add("([&]() {");
-            callImportp->add(cstmtp);
-            callImportp->add("})");
-            cfuncp->addStmtsp(awaitp);
-            cfuncp->rtnType("VlCoroutine");
+
+            // If timings are used, the DPI function has to be executed inside a fiber
+            if (v3Global.opt.timing()) {
+                AstCExpr* const callImportp
+                    = new AstCExpr{nodep->fileline(), "VerilatedDpi::callImport"};
+                AstCAwait* const awaitp = new AstCAwait{nodep->fileline(), callImportp};
+                callImportp->add("([&]() {");
+                callImportp->add(cstmtp);
+                callImportp->add("})");
+                cfuncp->addStmtsp(awaitp);
+                cfuncp->rtnType("VlCoroutine");
+            } else {
+                cfuncp->addStmtsp(cstmtp);
+            }
         }
 
         // Convert output/inout arguments back to internal type
