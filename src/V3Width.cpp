@@ -2793,9 +2793,8 @@ class WidthVisitor final : public VNVisitor {
                 } else {
                     int width = 0;
                     AstNodeDType* const valueDTypep = nodep->valuep()->dtypep();
-                    if (!valueDTypep) {
-                        nodep->valuep()->v3fatalSrc("Null dtype on implicit param value");
-                    }
+                    UASSERT_OBJ(valueDTypep, nodep->valuep(),
+                                "Null dtype on implicit param value");
                     const AstBasicDType* const valueBdtypep = valueDTypep->basicp();
                     bool issigned = false;
                     if (bdtypep->isNosign()) {
