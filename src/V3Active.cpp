@@ -634,7 +634,7 @@ class CovergroupSamplingVisitor final : public VNVisitor {
 
     // Helper to get the clocking event from a covergroup class
     AstSenTree* getCovergroupEvent(AstClass* classp) {
-        // The AstCovergroup (holding the SenTree) was left in membersp by V3CoverageFunctional
+        // The AstCovergroup (holding the SenTree) was left in membersp by V3Covergroup
         for (AstNode* memberp = classp->membersp(); memberp; memberp = memberp->nextp()) {
             if (AstCovergroup* const cgp = VN_CAST(memberp, Covergroup)) {
                 if (cgp->eventp()) return cgp->eventp();
