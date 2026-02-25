@@ -1923,19 +1923,14 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH}.p());
         if (nodep->dimp()) userIterateAndNext(nodep->dimp(), WidthVP{SELF, BOTH}.p());
         // Don't iterate children, don't want to lose VarRef.
-        const auto fromDTypep = [&]() -> AstNodeDType* {
-            if (!nodep->fromp()) return nullptr;
-            if (AstNodeDType* const dtypep = nodep->fromp()->dtypep()) return dtypep;
-            if (AstRefDType* const rdp = VN_CAST(nodep->fromp(), RefDType)) {
-                if (AstNodeDType* const refDtp = rdp->refDTypep()) return refDtp;
-                if (AstTypedef* const tdp = rdp->typedefp()) return tdp->dtypep();
-            }
-            return nullptr;
-        };
         switch (nodep->attrType()) {
         case VAttrType::DIM_DIMENSIONS:
         case VAttrType::DIM_UNPK_DIMENSIONS: {
-            AstNodeDType* const dtypep = fromDTypep();
+            // When fromp() is a DType (e.g. unlinked RefDType), resolve through
+            // the ref chain; when it's an expression, dtypep() is already resolved.
+            AstNodeDType* const dtypep = VN_CAST(nodep->fromp(), NodeDType)
+                                             ? VN_AS(nodep->fromp(), NodeDType)->skipRefOrNullp()
+                                             : nodep->fromp() ? nodep->fromp()->dtypep() : nullptr;
             UASSERT_OBJ(dtypep, nodep, "Unsized expression");
             const std::pair<uint32_t, uint32_t> dim = dtypep->dimensions(true);
             const int val
@@ -1966,7 +1961,9 @@ class WidthVisitor final : public VNVisitor {
         case VAttrType::DIM_LOW:
         case VAttrType::DIM_RIGHT:
         case VAttrType::DIM_SIZE: {
-            AstNodeDType* const dtypep = fromDTypep();
+            AstNodeDType* const dtypep = VN_CAST(nodep->fromp(), NodeDType)
+                                             ? VN_AS(nodep->fromp(), NodeDType)->skipRefOrNullp()
+                                             : nodep->fromp() ? nodep->fromp()->dtypep() : nullptr;
             UASSERT_OBJ(dtypep, nodep, "Unsized expression");
             if (VN_IS(dtypep, QueueDType) || VN_IS(dtypep, DynArrayDType)) {
                 switch (nodep->attrType()) {
