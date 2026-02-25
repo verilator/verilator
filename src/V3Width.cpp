@@ -5787,6 +5787,27 @@ class WidthVisitor final : public VNVisitor {
             // the element types shall be equivalent (IEEE 1800-2023 6.22.2).
             // Note: Streaming operators and string literals have implicit conversion rules.
             if (nodep->rhsp()->dtypep()) {  // May be null on earlier errors
+                const AstNodeDType* const lhsDtp = lhsDTypep->skipRefp();
+                const AstNodeDType* const rhsDtp = nodep->rhsp()->dtypep()->skipRefp();
+                // Only check if number of states match for unpacked array to unpacked array
+                // assignments
+                const bool lhsIsUnpackArray
+                    = VN_IS(lhsDtp, UnpackArrayDType) || VN_IS(lhsDtp, DynArrayDType)
+                      || VN_IS(lhsDtp, QueueDType) || VN_IS(lhsDtp, AssocArrayDType);
+                const bool rhsIsUnpackArray
+                    = VN_IS(rhsDtp, UnpackArrayDType) || VN_IS(rhsDtp, DynArrayDType)
+                      || VN_IS(rhsDtp, QueueDType) || VN_IS(rhsDtp, AssocArrayDType);
+                if (lhsIsUnpackArray && rhsIsUnpackArray) {
+                    if (lhsDtp->isFourstate() != rhsDtp->isFourstate()) {
+                        nodep->v3error("Assignment between 2-state and 4-state types requires "
+                                       "equivalent element types (IEEE 1800-2023 6.22.2, 7.6)\n"
+                                       << nodep->warnMore()
+                                       << "... Left-hand type: " << lhsDtp->prettyDTypeNameQ()
+                                       << lhsDtp->stateDTypeName() << "\n"
+                                       << nodep->warnMore() << "... Right-hand type: "
+                                       << rhsDtp->prettyDTypeNameQ() << rhsDtp->stateDTypeName());
+                    }
+                }
                 checkUnpackedArrayAssignmentCompatible<AstNodeVarRef, AstNodeVarRef>(
                     nodep, VN_CAST(nodep->lhsp(), NodeVarRef), VN_CAST(nodep->rhsp(), NodeVarRef));
             }
@@ -8029,7 +8050,7 @@ class WidthVisitor final : public VNVisitor {
         return false;
     }
     // Checks whether two types are assignment-compatible according to IEEE 1800-2023 7.6
-    // Currently, this function supports variables, which are of following types:
+    // Currently, this function only supports variables, which are of following types:
     // - Fixed-size unpacked array
     // - Dynamic unpacked array
     // - Associative array
@@ -8058,10 +8079,10 @@ class WidthVisitor final : public VNVisitor {
         if (isLhsAggregate ^ isRhsAggregate) {
             nodep->v3error(
                 "Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)\n"
-                << nodep->warnMore() << "... " << lhsName
-                << " data type: " << lhsDtp->prettyDTypeNameQ() << " " << lhsDtp->stateDTypeName() << "\n"
-                << nodep->warnMore() << "... " << rhsName
-                << " data type: " << rhsDtp->prettyDTypeNameQ() << " " << rhsDtp->stateDTypeName() << "\n");
+                << nodep->warnMore() << "... " << lhsName << " data type: "
+                << lhsDtp->prettyDTypeNameQ() << " " << lhsDtp->stateDTypeName() << "\n"
+                << nodep->warnMore() << "... " << rhsName << " data type: "
+                << rhsDtp->prettyDTypeNameQ() << " " << rhsDtp->stateDTypeName() << "\n");
             return;
         } else if (VN_IS(lhsDtp, QueueDType) && VN_IS(rhsDtp, EmptyQueueDType)) {
             return;
@@ -8106,8 +8127,9 @@ class WidthVisitor final : public VNVisitor {
                            "1800-2023 6.22.2)\n"
                            << nodep->warnMore() << "... " << lhsName << " data type: "
                            << lhsDtp->prettyDTypeNameQ() << " " << lhsDtp->stateDTypeName() << "\n"
-                           << nodep->warnMore() << "... " << rhsName << " data type: "
-                           << rhsDtp->prettyDTypeNameQ() << " " << rhsDtp->stateDTypeName() << "\n");
+                           << nodep->warnMore() << "... " << rhsName
+                           << " data type: " << rhsDtp->prettyDTypeNameQ() << " "
+                           << rhsDtp->stateDTypeName() << "\n");
         }
     }
     void checkClassAssign(const AstNode* nodep, const char* side, AstNode* rhsp,

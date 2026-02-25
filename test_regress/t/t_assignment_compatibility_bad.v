@@ -21,6 +21,9 @@ module t;
   logic nonAggregate;
   logic assocArrayA[string];
   logic queueA[$];
+  bit queueB[$];
+  logic unpackedF[3] = unpackedA;
+  bit unpackedG[2] = unpackedB[0:1];
 
   assign unpackedB = unpackedA;
   assign unpackedB = unpackedC;
@@ -28,4 +31,5 @@ module t;
   assign unpackedE = unpackedD;
   assign nonAggregate = unpackedA;
   assign unpackedA = assocArrayA;
+  assign queueA = queueB;
 endmodule
