@@ -6759,7 +6759,7 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         |       yEVENTUALLY anyrange pexpr  %prec yS_EVENTUALLY
                         { $$ = $3; BBUNSUP($1, "Unsupported: eventually[] (in property expression)"); DEL($2); }
         |       ~o~pexpr yUNTIL pexpr
-                        { $$ = $1; BBUNSUP($2, "Unsupported: until (in property expression)"); DEL($3); }
+                        { $$ = new AstUntil{$2, $1, $3}; }
         |       ~o~pexpr yS_UNTIL pexpr
                         { $$ = $1; BBUNSUP($2, "Unsupported: s_until (in property expression)"); DEL($3); }
         |       ~o~pexpr yUNTIL_WITH pexpr

@@ -27,10 +27,6 @@ module t (
     weak(a);
   endproperty
 
-  property p_until;
-    a until b;
-  endproperty
-
   property p_suntil;
     a s_until b;
   endproperty
