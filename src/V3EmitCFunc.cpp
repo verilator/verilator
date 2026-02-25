@@ -790,7 +790,8 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                 out += ";\n";
             } else if (zeroit) {
                 out += " = 0;\n";
-            } else if (varp->attrFourState()) {
+            } else if (varp->attrFourState()
+                       || (v3Global.opt.fourstate() && varp->dtypep()->isFourstate())) {
                 V3Number xNum{varp->fileline(), varp->width(), 0};
                 xNum.setAllBitsX();
                 out += " = ";

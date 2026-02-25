@@ -195,6 +195,129 @@ public:
     ~CastQuadstateVisitor() override = default;
 };
 
+class CastQuadstateVisitor2 : public VNVisitor {
+    // AstNodeExpr::user1()   -> bool whether it has been visited
+
+    VNUser1InUse m_user1;
+
+    static AstNodeDType* fourStateTypeFromTwoState(AstNodeDType* const nodep) {
+        if (nodep->isFourstate()) return nodep;
+        if (const AstBasicDType* const basicDTypep = VN_CAST(nodep, BasicDType)) {
+            switch (basicDTypep->keyword()) {
+            default:
+            case VBasicDTypeKwd::BIT:
+                return nodep->findLogicDType(basicDTypep->width(), basicDTypep->widthMin(),
+                                             basicDTypep->numeric());
+            case VBasicDTypeKwd::INT: return nodep->findSigned32DType();
+            }
+        }
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported 2-state type promotion to 4-state - " << nodep);
+        nodep->v3fatalSrc("Unsupported 2-state type promotion to 4-state - ");
+        return nullptr;
+    }
+
+    static AstCFuncHard* wrapExprpInCFuncHard(AstNodeExpr* const exprp, const VCFunc func) {
+        VNRelinker relinker;
+        exprp->unlinkFrBack(&relinker);
+        AstCFuncHard* const newp = new AstCFuncHard{exprp->fileline(), func, exprp};
+        relinker.relink(newp);
+        newp->user1(1);
+        return newp;
+    }
+
+    static void castFourToTwo(AstNodeExpr* const exprp) {
+        if (const AstConst* const constp = VN_CAST(exprp, Const)) {
+            if (!constp->num().isAnyXZ()) return;
+        } else if (!exprp->dtypep()->isFourstate()) {
+            return;
+        }
+        VNRelinker relinker;
+        exprp->unlinkFrBack(&relinker);
+        AstCCast* const newp = new AstCCast{exprp->fileline(), exprp, exprp};
+        newp->user1(1);
+        relinker.relink(newp);
+        newp->dtypeSetBitUnsized(exprp->dtypep()->width(), exprp->dtypep()->widthMin(),
+                                 exprp->dtypep()->numeric());
+    }
+
+    static void castTwoToFour(AstNodeExpr* const exprp) {
+        if (!VN_IS(exprp, Const) && exprp->dtypep()->isFourstate()) return;
+
+        // Casting from four to two and back has some side effects e.g.: x becomes 0
+        VNRelinker relinker;
+        exprp->unlinkFrBack(&relinker);
+        AstCCast* const newp
+            = new AstCCast{exprp->fileline(), exprp, fourStateTypeFromTwoState(exprp->dtypep())};
+        newp->user1(1);
+        relinker.relink(newp);
+    }
+
+    static void expectNState(AstNodeExpr* const exprp, bool fourState) {
+        if (exprp->dtypep()->isFourstate() == fourState) return;
+        if (exprp->dtypep()->isFourstate()) {
+            castFourToTwo(exprp);
+        } else {
+            castTwoToFour(exprp);
+        }
+    }
+
+    void visit(AstNodeAssign* const nodep) override {
+        if (nodep->user1SetOnce()) return;
+        iterateChildren(nodep);
+        expectNState(nodep->rhsp(), nodep->lhsp()->dtypep()->isFourstate());
+    }
+
+    void visit(AstNodeBiop* const nodep) override {
+        if (nodep->user1SetOnce()) return;
+        iterateChildren(nodep);
+        expectNState(nodep->lhsp(), nodep->dtypep()->isFourstate());
+        expectNState(nodep->rhsp(), nodep->dtypep()->isFourstate());
+    }
+    void visit(AstCFuncHard* const nodep) override {
+        if (nodep->user1SetOnce()) return;
+        iterateChildren(nodep);
+        switch (nodep->cfunc()) {
+        case VCFunc::FOUR_STATE_TRIOR_CONFLICT:
+        case VCFunc::FOUR_STATE_TRIOR_OR:
+        case VCFunc::FOUR_STATE_TRIAND_AND:
+        case VCFunc::FOUR_STATE_HAS_XZ:
+        case VCFunc::FOUR_STATE_TWO_STATE_VALUE:
+        case VCFunc::FOUR_STATE_TWO_STATE_VALUE_RAW:
+        case VCFunc::FOUR_STATE_TWO_STATE_XZ_RAW:
+        case VCFunc::FOUR_STATE_IS_TRUE:
+        case VCFunc::FOUR_STATE_EXPANDER:
+            for (AstNodeExpr* exprp = nodep->pinsp(); exprp;
+                 exprp = VN_AS(exprp->nextp(), NodeExpr)) {
+                expectNState(exprp, true);
+            }
+            break;
+        default: break;
+        }
+    }
+    void visit(AstConst* const nodep) override {
+        if (nodep->user1SetOnce()) return;
+        if (nodep->dtypep()->isFourstate() && !nodep->num().isAnyXZ()) {
+            castTwoToFour(nodep);
+        } else if (!nodep->dtypep()->isFourstate() && nodep->num().isAnyXZ()) {
+            nodep->dtypeSetLogicSized(nodep->width(), nodep->dtypep()->numeric());
+        }
+    }
+    void visit(AstTime* const nodep) override {
+        if (nodep->user1SetOnce()) return;
+        castTwoToFour(nodep);
+    }
+    void visit(AstNodeExpr* const nodep) override {
+        if (nodep->user1SetOnce()) return;
+        iterateChildren(nodep);
+    }
+    void visit(AstNode* const nodep) override { iterateChildren(nodep); }
+
+public:
+    // CONSTRUCTORS
+    explicit CastQuadstateVisitor2(AstNetlist* const nodep) { iterate(nodep); }
+    ~CastQuadstateVisitor2() override = default;
+};
+
 class CastVisitor final : public VNVisitor {
     // NODE STATE
     // Entire netlist:
@@ -393,7 +516,7 @@ public:
 
 void V3Cast::castAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    if (v3Global.opt.fourstate()) { CastQuadstateVisitor{nodep}; }  // Destruct before checking
+    if (v3Global.opt.fourstate()) { CastQuadstateVisitor2{nodep}; }  // Destruct before checking
     { CastVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("cast", 0, dumpTreeEitherLevel() >= 3);
 }

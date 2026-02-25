@@ -166,7 +166,8 @@ class QuadstateVisitor final : public VNVisitor {
                 AstNodeDType* const dtypep = exprps[i]->dtypep();
                 exprps[i] = new AstCFuncHard{exprps[i]->fileline(), reductor,
                                              exprps[i]->addNext(exprps.back())};
-                exprps[i]->dtypep(dtypep);
+                exprps[i]->dtypeSetLogicUnsized(dtypep->width(), dtypep->widthMin(),
+                                                dtypep->numeric());
                 exprps.pop_back();
             }
         }
@@ -210,7 +211,7 @@ class QuadstateVisitor final : public VNVisitor {
     void visit(AstAssignW* const nodep) override {
         if (const AstVarRef* const varRefp = VN_CAST(nodep->lhsp(), VarRef)) {
             const AstVar* const varp = varRefp->varp();
-            if (varp->attrFourState()) {
+            if (v3Global.opt.fourstate() || varp->attrFourState()) {
                 switch (varp->varType()) {
                 case VVarType::TRIOR: m_assignWToTrior[varp].push_back(nodep); break;
                 case VVarType::TRIAND: m_assignWToTriand[varp].push_back(nodep); break;
