@@ -156,6 +156,10 @@ private:
                                              AstNodeModule* correctModp, AstRefDType* refp,
                                              const CapturedEntry& entry,
                                              const ReachableInfo& reachable, const char* label);
+    // Capture REFDTYPEs nested inside a PARAMTYPEDTYPE's subDTypep chain
+    static void captureInnerParamTypeRefs(AstParamTypeDType* paramTypep, AstRefDType* refp,
+                                          const string& cellPath, const string& ownerModName,
+                                          const string& ptOwnerName);
     // Phase methods called by finalizeIfaceCapture
     static int fixDeadRefsInTypeTable();
     static int fixDeadRefsInModules();

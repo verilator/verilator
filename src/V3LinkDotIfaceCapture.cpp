@@ -908,6 +908,63 @@ void V3LinkDotIfaceCapture::captureTypedefContext(
                         << enclosingVarp->prettyName());
 }
 
+void V3LinkDotIfaceCapture::captureInnerParamTypeRefs(AstParamTypeDType* paramTypep,
+                                                      AstRefDType* refp, const string& cellPath,
+                                                      const string& ownerModName,
+                                                      const string& ptOwnerName) {
+    if (!paramTypep) return;
+    paramTypep->foreach([&](AstRefDType* innerRefp) {
+        if (innerRefp == refp) return;
+        if (!innerRefp->refDTypep()) return;
+
+        AstNodeModule* const refOwnerModp = findOwnerModule(innerRefp->refDTypep());
+        if (refOwnerModp && VN_IS(refOwnerModp, Iface)
+            && refOwnerModp->name() != ptOwnerName) {
+            AstNodeModule* const innerOwnerModp = findOwnerModule(innerRefp);
+            const string innerOwnerName
+                = innerOwnerModp ? innerOwnerModp->name() : ownerModName;
+            const CaptureKey innerKey{innerOwnerName, innerRefp->name(), cellPath, ""};
+            if (s_map.find(innerKey) == s_map.end()) {
+                // Find the cell name for the nested interface
+                string nestedCellName;
+                AstNodeModule* const ptOwnerModp = findOwnerModule(paramTypep);
+                if (ptOwnerModp) {
+                    for (AstNode* stmtp = ptOwnerModp->stmtsp(); stmtp;
+                         stmtp = stmtp->nextp()) {
+                        if (AstCell* const cp = VN_CAST(stmtp, Cell)) {
+                            if (cp->modp() == refOwnerModp) {
+                                nestedCellName = cp->name();
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (nestedCellName.empty()) {
+                    UINFO(9, "addParamType WARNING: could not find cell for nested iface '"
+                                 << refOwnerModp->prettyNameQ() << "' in '"
+                                 << (ptOwnerModp ? ptOwnerModp->prettyNameQ() : "<null>")
+                                 << "' - using parent cellPath='" << cellPath << "'" << endl);
+                }
+                UINFO(9, "addParamType: also capturing inner RefDType "
+                             << innerRefp << " refDTypep owner=" << refOwnerModp->prettyNameQ()
+                             << " nestedCellName='" << nestedCellName << "'" << endl);
+                s_map[innerKey]
+                    = CapturedEntry{CaptureType::IFACE,
+                                    innerRefp,
+                                    nestedCellName.empty() ? cellPath : nestedCellName,
+                                    /*cloneCellPath=*/"",
+                                    /*origClassp=*/nullptr,
+                                    ptOwnerModp,
+                                    innerRefp->typedefp(),
+                                    nullptr,
+                                    refOwnerModp->name(),
+                                    nullptr,
+                                    {}};
+            }
+        }
+    });
+}
+
 void V3LinkDotIfaceCapture::addParamType(AstRefDType* refp, const string& cellPath,
                                          AstNodeModule* ownerModp, AstParamTypeDType* paramTypep,
                                          const string& paramTypeOwnerModName,
@@ -957,58 +1014,7 @@ void V3LinkDotIfaceCapture::addParamType(AstRefDType* refp, const string& cellPa
     }
 
     // Also capture REFDTYPEs inside the PARAMTYPEDTYPE's subDTypep chain.
-    if (paramTypep) {
-        paramTypep->foreach([&](AstRefDType* innerRefp) {
-            if (innerRefp == refp) return;
-            if (!innerRefp->refDTypep()) return;
-
-            AstNodeModule* const refOwnerModp = findOwnerModule(innerRefp->refDTypep());
-            if (refOwnerModp && VN_IS(refOwnerModp, Iface)
-                && refOwnerModp->name() != ptOwnerName) {
-                AstNodeModule* const innerOwnerModp = findOwnerModule(innerRefp);
-                const string innerOwnerName
-                    = innerOwnerModp ? innerOwnerModp->name() : ownerModName;
-                const CaptureKey innerKey{innerOwnerName, innerRefp->name(), cellPath, ""};
-                if (s_map.find(innerKey) == s_map.end()) {
-                    // Find the cell name for the nested interface
-                    string nestedCellName;
-                    AstNodeModule* const ptOwnerModp = findOwnerModule(paramTypep);
-                    if (ptOwnerModp) {
-                        for (AstNode* stmtp = ptOwnerModp->stmtsp(); stmtp;
-                             stmtp = stmtp->nextp()) {
-                            if (AstCell* const cp = VN_CAST(stmtp, Cell)) {
-                                if (cp->modp() == refOwnerModp) {
-                                    nestedCellName = cp->name();
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    if (nestedCellName.empty()) {
-                        UINFO(9, "addParamType WARNING: could not find cell for nested iface '"
-                                     << refOwnerModp->prettyNameQ() << "' in '"
-                                     << (ptOwnerModp ? ptOwnerModp->prettyNameQ() : "<null>")
-                                     << "' - using parent cellPath='" << cellPath << "'" << endl);
-                    }
-                    UINFO(9, "addParamType: also capturing inner RefDType "
-                                 << innerRefp << " refDTypep owner=" << refOwnerModp->prettyNameQ()
-                                 << " nestedCellName='" << nestedCellName << "'" << endl);
-                    s_map[innerKey]
-                        = CapturedEntry{CaptureType::IFACE,
-                                        innerRefp,
-                                        nestedCellName.empty() ? cellPath : nestedCellName,
-                                        /*cloneCellPath=*/"",
-                                        /*origClassp=*/nullptr,
-                                        ptOwnerModp,
-                                        innerRefp->typedefp(),
-                                        nullptr,
-                                        refOwnerModp->name(),
-                                        nullptr,
-                                        {}};
-                }
-            }
-        });
-    }
+    captureInnerParamTypeRefs(paramTypep, refp, cellPath, ownerModName, ptOwnerName);
 }
 
 int V3LinkDotIfaceCapture::fixDeadRefsInTypeTable() {
