@@ -83,7 +83,8 @@ AstIfaceRefDType* ifaceRefFromVarDType(AstNodeDType* dtypep) {
     return nullptr;
 }
 const string& effectiveOrigName(const AstNodeModule* modp) {
-    return modp->origName().empty() ? modp->name() : modp->origName();
+    if (modp->origName().empty()) return modp->name();
+    return modp->origName();
 }
 // Resolve the owner module name for a typedef/paramType node.
 // Returns hint if non-empty, otherwise walks backp() to find the owner module name.
