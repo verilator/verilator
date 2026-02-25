@@ -144,6 +144,8 @@ private:
     // Given a wrong-clone owner, find the correct clone in the reachable set
     static AstNodeModule* findCorrectClone(AstNodeModule* wrongOwnerp, const ReachableInfo& info,
                                            std::set<AstNodeModule*>& visited);
+    // Fix a single REFDTYPE's dead-module pointers (typedefp, refDTypep, dtypep)
+    static int fixDeadRefs(AstRefDType* refp, AstNodeModule* containingModp, const char* location);
 
     template <typename FilterFn, typename Fn>
     static void forEachImpl(FilterFn&& filter, Fn&& fn);
