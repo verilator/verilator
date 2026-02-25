@@ -941,12 +941,21 @@ AstVar* AstVar::scVarRecurse(AstNode* nodep) {
 const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
                                                bool assertOn) const VL_MT_STABLE {
     static constexpr int MAX_TYPEDEF_DEPTH = 1000;
+    static constexpr int MAX_CHAIN_DISPLAY = 10;
     const AstNodeDType* nodep = this;
+    std::unordered_set<const AstNodeDType*> visited;
+    std::vector<const AstNodeDType*> chain;
+    bool isCycle = false;
     for (int depth = 0; depth < MAX_TYPEDEF_DEPTH; ++depth) {
         if (VN_IS(nodep, MemberDType) || VN_IS(nodep, ParamTypeDType) || VN_IS(nodep, RefDType)  //
             || VN_IS(nodep, RequireDType)  //
             || (VN_IS(nodep, ConstDType) && skipConst)  //
             || (VN_IS(nodep, EnumDType) && skipEnum)) {
+            if (!visited.emplace(nodep).second) {
+                isCycle = true;
+                break;
+            }
+            if (chain.size() < static_cast<size_t>(MAX_CHAIN_DISPLAY)) chain.push_back(nodep);
             if (const AstNodeDType* subp = nodep->subDTypep()) {
                 nodep = subp;
                 continue;
@@ -957,7 +966,33 @@ const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
         }
         return nodep;
     }
-    nodep->v3error("Recursive type definition, or over " << MAX_TYPEDEF_DEPTH << " types deep");
+    // Build user-facing error with type chain
+    V3Error::v3errorPrep(V3ErrorCode::EC_ERROR);
+    {
+        std::ostringstream& os = V3Error::v3errorStr();
+        if (isCycle) {
+            os << "Recursive type definition";
+        } else {
+            os << "Type definition over " << MAX_TYPEDEF_DEPTH << " types deep";
+        }
+        bool first = true;
+        for (const AstNodeDType* chainp : chain) {
+            // Skip internal scaffolding nodes (e.g. REQUIREDTYPE) with no user-visible name
+            if (chainp->name().empty()) continue;
+            os << '\n'
+               << chainp->fileline()->warnOther() << "... Type chain: " << chainp->prettyTypeName()
+               << '\n'
+               << (first ? chainp->fileline()->warnContextPrimary()
+                         : chainp->fileline()->warnContextSecondary());
+            first = false;
+        }
+        if (visited.size() > static_cast<size_t>(MAX_CHAIN_DISPLAY)) {
+            os << '\n'
+               << this->fileline()->warnMore() << "... and "
+               << (visited.size() - MAX_CHAIN_DISPLAY) << " more";
+        }
+    }
+    this->v3errorEnd(V3Error::v3errorStr());
     return nullptr;
 }
 
