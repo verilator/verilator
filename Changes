@@ -24,6 +24,7 @@ Verilator 5.045 devel
 * Add parsing of solve-before inside foreach (#6934). [Pawel Kojma, Antmicro Ltd.]
 * Add error when accessing a non-static class field from a static function (#6948). [Artur Bieniek, Antmicro Ltd.]
 * Add VerilatedContext::useNumaAssign and set on threads() call (#6954). [Yangyu Chen]
+* Add coverage type information to verilator_coverage annotation output (#7131) (#7133).
 * Support modport expression syntax + nested (#2601) (#5581) (#7005). [Leela Pakanati]
 * Support nested interface as port connection (#5066) (#6986). [Leela Pakanati]
 * Support solve..before constraints (#5647) (#7123). [Yilou Wang]

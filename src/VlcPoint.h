@@ -108,7 +108,7 @@ public:
     void dumpAnnotate(std::ostream& os, unsigned annotateMin) const {
         os << (ok(annotateMin) ? "+" : "-");
         os << std::setw(6) << std::setfill('0') << count();
-        os << "  point: comment=" << comment() << " hier=" << hier();
+        os << "  point: type=" << type() << " comment=" << comment() << " hier=" << hier();
         os << "\n";
     }
 };
