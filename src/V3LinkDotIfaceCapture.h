@@ -27,8 +27,11 @@
 
 #include <cstddef>
 #include <functional>
+#include <map>
+#include <set>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 class V3LinkDotIfaceCapture final {
 public:
@@ -107,6 +110,21 @@ public:
 
     using CapturedMap = std::unordered_map<CaptureKey, CapturedEntry, CaptureKeyHash>;
 
+    // Per-module edge in the reachable graph: parent + connection name.
+    struct ParentEdge final {
+        AstNodeModule* parentp;  // Module that instantiates this one
+        string connName;  // Cell instance name or port var name
+    };
+    // Data collected per-module during the reachable walk.
+    struct ReachableInfo final {
+        // origName -> vector of reachable modules with that origName
+        std::map<string, std::vector<AstNodeModule*>> byOrigName;
+        // For each reachable module, how it's connected to its parent
+        std::map<AstNodeModule*, ParentEdge> parentMap;
+        // Flat set for quick membership test
+        std::set<AstNodeModule*> flat;
+    };
+
 private:
     static CapturedMap s_map;
     static bool s_enabled;
@@ -116,6 +134,16 @@ private:
     static AstNodeDType* findDTypeByPrettyName(AstNodeModule* modp, const string& prettyName);
     // Find the cell/port name that connects parentModp to childModp
     static string findConnName(AstNodeModule* parentModp, AstNodeModule* childModp);
+    // Find a live clone of deadTargetModp in containingModp's cell hierarchy
+    static AstNodeModule* findCloneViaHierarchy(AstNodeModule* containingModp,
+                                                AstNodeModule* deadTargetModp, int depth = 0);
+    // Recursive walk helper for collectReachable
+    static void collectReachableWalk(AstNodeModule* curp, ReachableInfo& info);
+    // Collect all modules reachable from modp via cell/interface port hierarchy
+    static ReachableInfo collectReachable(AstNodeModule* modp);
+    // Given a wrong-clone owner, find the correct clone in the reachable set
+    static AstNodeModule* findCorrectClone(AstNodeModule* wrongOwnerp, const ReachableInfo& info,
+                                           std::set<AstNodeModule*>& visited);
 
     template <typename FilterFn, typename Fn>
     static void forEachImpl(FilterFn&& filter, Fn&& fn);

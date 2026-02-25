@@ -136,6 +136,152 @@ string V3LinkDotIfaceCapture::findConnName(AstNodeModule* parentModp, AstNodeMod
     return "";
 }
 
+AstNodeModule* V3LinkDotIfaceCapture::findCloneViaHierarchy(AstNodeModule* containingModp,
+                                                           AstNodeModule* deadTargetModp,
+                                                           int depth) {
+    if (depth > 20) return nullptr;  // Safety limit
+    for (AstNode* stmtp = containingModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        if (AstCell* const cellp = VN_CAST(stmtp, Cell)) {
+            AstNodeModule* const cellModp = cellp->modp();
+            if (!cellModp) continue;
+            if (!cellModp->dead()) {
+                // Check if cellModp is a clone of deadTargetModp by comparing
+                // the template name (part before "__")
+                const string& cellModName = cellModp->name();
+                const string& deadName = deadTargetModp->name();
+                const size_t pos = cellModName.find("__");
+                if (pos != string::npos && cellModName.substr(0, pos) == deadName) {
+                    return cellModp;
+                }
+            }
+            // Recurse into sub-cells
+            if (!cellModp->dead()) {
+                AstNodeModule* const found
+                    = findCloneViaHierarchy(cellModp, deadTargetModp, depth + 1);
+                if (found) return found;
+            }
+        }
+    }
+    return nullptr;
+}
+void V3LinkDotIfaceCapture::collectReachableWalk(AstNodeModule* curp, ReachableInfo& info) {
+    for (AstNode* sp = curp->stmtsp(); sp; sp = sp->nextp()) {
+        // Follow cell instantiations
+        if (AstCell* const cellp = VN_CAST(sp, Cell)) {
+            AstNodeModule* const cellModp = cellp->modp();
+            if (cellModp && info.flat.insert(cellModp).second) {
+                const string& origName
+                    = cellModp->origName().empty() ? cellModp->name() : cellModp->origName();
+                info.byOrigName[origName].push_back(cellModp);
+                info.parentMap[cellModp] = {curp, cellp->name()};
+                collectReachableWalk(cellModp, info);
+            }
+        }
+        // Follow IFACEREFDTYPE port connections
+        if (AstVar* const varp = VN_CAST(sp, Var)) {
+            if (varp->isIfaceRef() && varp->subDTypep()) {
+                if (AstIfaceRefDType* const irefp = ifaceRefFromVarDType(varp->subDTypep())) {
+                    AstIface* const ifacep = irefp->ifaceViaCellp();
+                    if (ifacep && info.flat.insert(ifacep).second) {
+                        const string& origName
+                            = ifacep->origName().empty() ? ifacep->name() : ifacep->origName();
+                        info.byOrigName[origName].push_back(ifacep);
+                        info.parentMap[ifacep] = {curp, varp->name()};
+                        collectReachableWalk(ifacep, info);
+                    }
+                }
+            }
+        }
+    }
+}
+V3LinkDotIfaceCapture::ReachableInfo
+V3LinkDotIfaceCapture::collectReachable(AstNodeModule* modp) {
+    ReachableInfo info;
+    info.flat.insert(modp);
+    const string& modOrigName = modp->origName().empty() ? modp->name() : modp->origName();
+    info.byOrigName[modOrigName].push_back(modp);
+    collectReachableWalk(modp, info);
+    return info;
+}
+AstNodeModule* V3LinkDotIfaceCapture::findCorrectClone(AstNodeModule* wrongOwnerp,
+                                                       const ReachableInfo& info,
+                                                       std::set<AstNodeModule*>& visited) {
+    const string& wrongOrigName
+        = wrongOwnerp->origName().empty() ? wrongOwnerp->name() : wrongOwnerp->origName();
+    auto it = info.byOrigName.find(wrongOrigName);
+    if (it == info.byOrigName.end()) return nullptr;
+    const auto& candidates = it->second;
+    if (candidates.size() == 1) return candidates[0];
+
+    // Multiple candidates - disambiguate by parent + connection name.
+    if (visited.count(wrongOwnerp)) return candidates[0];  // cycle guard
+    visited.insert(wrongOwnerp);
+
+    // Find W's instantiating parent and connection name by scanning all live modules
+    AstNodeModule* wrongParentp = nullptr;
+    string wrongConnName;
+    for (AstNode* np = v3Global.rootp()->modulesp(); np; np = np->nextp()) {
+        AstNodeModule* const scanModp = VN_CAST(np, NodeModule);
+        if (!scanModp || scanModp->dead()) continue;
+        wrongConnName = findConnName(scanModp, wrongOwnerp);
+        if (!wrongConnName.empty()) {
+            wrongParentp = scanModp;
+            break;
+        }
+    }
+
+    if (!wrongParentp) {
+        UINFO(9, "finalizeIfaceCapture wrong-clone: cannot find parent of "
+                     << wrongOwnerp->prettyNameQ() << ", using first candidate" << endl);
+        return candidates[0];
+    }
+
+    UINFO(9, "finalizeIfaceCapture disambiguate: wrong "
+                 << wrongOwnerp->prettyNameQ() << " parent=" << wrongParentp->prettyNameQ()
+                 << " conn='" << wrongConnName << "'" << endl);
+
+    // Recursively find the correct clone of W's parent
+    AstNodeModule* correctParentp = nullptr;
+    if (info.flat.count(wrongParentp)) {
+        correctParentp = wrongParentp;
+    } else {
+        correctParentp = findCorrectClone(wrongParentp, info, visited);
+    }
+    if (!correctParentp) return candidates[0];
+
+    // Pick the candidate connected to correctParentp via the same connection name
+    for (AstNodeModule* const candp : candidates) {
+        auto pit = info.parentMap.find(candp);
+        if (pit != info.parentMap.end() && pit->second.parentp == correctParentp
+            && pit->second.connName == wrongConnName) {
+            UINFO(9, "finalizeIfaceCapture disambiguate: resolved "
+                         << wrongOwnerp->prettyNameQ() << " -> " << candp->prettyNameQ()
+                         << " via parent=" << correctParentp->prettyNameQ() << " conn='"
+                         << wrongConnName << "'" << endl);
+            return candp;
+        }
+    }
+
+    // Fallback: try parent-only match
+    for (AstNodeModule* const candp : candidates) {
+        auto pit = info.parentMap.find(candp);
+        if (pit != info.parentMap.end() && pit->second.parentp == correctParentp) {
+            UINFO(9, "finalizeIfaceCapture wrong-clone: parent-only match for "
+                         << wrongOrigName << " -> " << candp->prettyNameQ()
+                         << " (conn mismatch: '" << wrongConnName << "' vs '"
+                         << pit->second.connName << "')" << endl);
+            return candp;
+        }
+    }
+
+    // Final fallback
+    UINFO(9, "finalizeIfaceCapture wrong-clone: could not disambiguate "
+                 << wrongOrigName << " among " << candidates.size()
+                 << " candidates under parent " << correctParentp->prettyNameQ() << " conn='"
+                 << wrongConnName << "'" << ", using first" << endl);
+    return candidates[0];
+}
+
 AstNodeModule* V3LinkDotIfaceCapture::findOwnerModule(AstNode* nodep) {
     for (AstNode* curp = nodep; curp; curp = curp->backp()) {
         // Guard against corrupted backp() chains (e.g. freed memory,
@@ -687,42 +833,6 @@ void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
     // with multi-instantiation), we walk the cell hierarchy of the containing
     // module to find the correct clone of the target interface.
 
-    // Helper: given a module and a dead target module, find the correct clone
-    // of the target by walking the containing module's cell hierarchy.
-    // For example, if refp is in cache_if__Cz3 and targetModp is dead
-    // cache_types_if, we look at cache_if__Cz3's cells to find which clone
-    // of cache_types_if it instantiates (cache_types_if__Cz3).
-    // This recurses through the hierarchy to handle arbitrary nesting depth.
-    std::function<AstNodeModule*(AstNodeModule*, AstNodeModule*, int)> findCloneViaHierarchy;
-    findCloneViaHierarchy = [&](AstNodeModule* containingModp, AstNodeModule* deadTargetModp,
-                                int depth) -> AstNodeModule* {
-        if (depth > 20) return nullptr;  // Safety limit
-        for (AstNode* stmtp = containingModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstCell* const cellp = VN_CAST(stmtp, Cell)) {
-                AstNodeModule* const cellModp = cellp->modp();
-                if (!cellModp) continue;
-                // Direct match: this cell points to a clone of the dead target
-                if (!cellModp->dead()) {
-                    // Check if cellModp is a clone of deadTargetModp by comparing
-                    // the template name (part before "__")
-                    const string& cellModName = cellModp->name();
-                    const string& deadName = deadTargetModp->name();
-                    const size_t pos = cellModName.find("__");
-                    if (pos != string::npos && cellModName.substr(0, pos) == deadName) {
-                        return cellModp;
-                    }
-                }
-                // Recurse into sub-cells
-                if (!cellModp->dead()) {
-                    AstNodeModule* const found
-                        = findCloneViaHierarchy(cellModp, deadTargetModp, depth + 1);
-                    if (found) return found;
-                }
-            }
-        }
-        return nullptr;
-    };
-
     // Helper: fix a single REFDTYPE's pointers if they point to dead modules.
     // containingModp is the live module that contains this REFDTYPE - used to
     // walk the cell hierarchy for context-aware clone resolution.
@@ -1009,174 +1119,6 @@ void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
     //
     // Fix: search the reachable set for a node with the same name and type.
     int wrongCloneFixed = 0;
-
-    // Per-module edge in the reachable graph: parent + connection name.
-    struct ParentEdge final {
-        AstNodeModule* parentp;  // Module that instantiates this one
-        string connName;  // Cell instance name or port var name
-    };
-
-    // Data collected per-module during the reachable walk.
-    struct ReachableInfo final {
-        // origName -> vector of reachable modules with that origName
-        std::map<string, std::vector<AstNodeModule*>> byOrigName;
-        // For each reachable module, how it's connected to its parent
-        std::map<AstNodeModule*, ParentEdge> parentMap;
-        // Flat set for quick membership test
-        std::set<AstNodeModule*> flat;
-    };
-
-    // Helper: collect all modules reachable from modp via cell hierarchy
-    // AND via IFACEREFDTYPE port connections.
-    // Both connection types are needed:
-    //   - Cells: direct sub-module instantiations
-    //   - IFACEREFDTYPE: interface port connections
-    // Builds origName map AND parent map (with connection names) for disambiguation.
-    // M itself is included in byOrigName so recursive parent-walk can terminate.
-    auto collectReachable = [](AstNodeModule* modp) -> ReachableInfo {
-        ReachableInfo info;
-        info.flat.insert(modp);
-        // Include M itself in byOrigName for recursive disambiguation
-        const string& modOrigName = modp->origName().empty() ? modp->name() : modp->origName();
-        info.byOrigName[modOrigName].push_back(modp);
-        std::function<void(AstNodeModule*)> walk;
-        walk = [&](AstNodeModule* curp) {
-            for (AstNode* sp = curp->stmtsp(); sp; sp = sp->nextp()) {
-                // Follow cell instantiations
-                if (AstCell* const cellp = VN_CAST(sp, Cell)) {
-                    AstNodeModule* const cellModp = cellp->modp();
-                    if (cellModp && info.flat.insert(cellModp).second) {
-                        const string& origName = cellModp->origName().empty()
-                                                     ? cellModp->name()
-                                                     : cellModp->origName();
-                        info.byOrigName[origName].push_back(cellModp);
-                        info.parentMap[cellModp] = {curp, cellp->name()};
-                        walk(cellModp);
-                    }
-                }
-                // Follow IFACEREFDTYPE port connections
-                if (AstVar* const varp = VN_CAST(sp, Var)) {
-                    if (varp->isIfaceRef() && varp->subDTypep()) {
-                        if (AstIfaceRefDType* const irefp
-                            = ifaceRefFromVarDType(varp->subDTypep())) {
-                            AstIface* const ifacep = irefp->ifaceViaCellp();
-                            if (ifacep && info.flat.insert(ifacep).second) {
-                                const string& origName = ifacep->origName().empty()
-                                                             ? ifacep->name()
-                                                             : ifacep->origName();
-                                info.byOrigName[origName].push_back(ifacep);
-                                info.parentMap[ifacep] = {curp, varp->name()};
-                                walk(ifacep);
-                            }
-                        }
-                    }
-                }
-            }
-        };
-        walk(modp);
-        return info;
-    };
-
-    // Helper: given a wrong target owner module W and the reachable info from M,
-    // find the correct clone C in M's hierarchy.
-    //
-    // Strategy: look up modules with matching origName. If exactly one, use it.
-    // If multiple (same interface template at different hierarchy levels), we
-    // disambiguate using the parent map and connection names.
-    //
-    // The key invariant: M and the wrong sibling are clones of the same
-    // template, so the structural path from M to C mirrors the path from
-    // the sibling to W. The path is defined by (parent origName, connection name)
-    // pairs at each level. Connection names (cell instance names, port var names)
-    // are preserved across clones because cloneTree copies them verbatim.
-    //
-    // Algorithm:
-    // 1. Find W's parent P_wrong and the connection name from P_wrong to W
-    //    (by scanning all live modules for a cell/port pointing to W).
-    // 2. Recursively find the correct clone of P_wrong in M's hierarchy.
-    // 3. Pick the candidate connected to the correct parent via the same
-    //    connection name.
-    std::function<AstNodeModule*(AstNodeModule*, const ReachableInfo&, std::set<AstNodeModule*>&)>
-        findCorrectClone;
-    findCorrectClone = [&](AstNodeModule* wrongOwnerp, const ReachableInfo& info,
-                           std::set<AstNodeModule*>& visited) -> AstNodeModule* {
-        const string& wrongOrigName
-            = wrongOwnerp->origName().empty() ? wrongOwnerp->name() : wrongOwnerp->origName();
-        auto it = info.byOrigName.find(wrongOrigName);
-        if (it == info.byOrigName.end()) return nullptr;
-        const auto& candidates = it->second;
-        if (candidates.size() == 1) return candidates[0];
-
-        // Multiple candidates - disambiguate by parent + connection name.
-        if (visited.count(wrongOwnerp)) return candidates[0];  // cycle guard
-        visited.insert(wrongOwnerp);
-
-        // Find W's instantiating parent and connection name by scanning all live modules
-        AstNodeModule* wrongParentp = nullptr;
-        string wrongConnName;
-        for (AstNode* np = v3Global.rootp()->modulesp(); np; np = np->nextp()) {
-            AstNodeModule* const scanModp = VN_CAST(np, NodeModule);
-            if (!scanModp || scanModp->dead()) continue;
-            wrongConnName = findConnName(scanModp, wrongOwnerp);
-            if (!wrongConnName.empty()) {
-                wrongParentp = scanModp;
-                break;
-            }
-        }
-
-        if (!wrongParentp) {
-            UINFO(9, "finalizeIfaceCapture wrong-clone: cannot find parent of "
-                         << wrongOwnerp->prettyNameQ() << ", using first candidate" << endl);
-            return candidates[0];
-        }
-
-        UINFO(9, "finalizeIfaceCapture disambiguate: wrong "
-                     << wrongOwnerp->prettyNameQ() << " parent=" << wrongParentp->prettyNameQ()
-                     << " conn='" << wrongConnName << "'" << endl);
-
-        // Recursively find the correct clone of W's parent
-        AstNodeModule* correctParentp = nullptr;
-        if (info.flat.count(wrongParentp)) {
-            // W's parent is already in M's reachable set - it IS the correct parent
-            correctParentp = wrongParentp;
-        } else {
-            correctParentp = findCorrectClone(wrongParentp, info, visited);
-        }
-        if (!correctParentp) return candidates[0];
-
-        // Pick the candidate connected to correctParentp via the same connection name
-        for (AstNodeModule* const candp : candidates) {
-            auto pit = info.parentMap.find(candp);
-            if (pit != info.parentMap.end() && pit->second.parentp == correctParentp
-                && pit->second.connName == wrongConnName) {
-                UINFO(9, "finalizeIfaceCapture disambiguate: resolved "
-                             << wrongOwnerp->prettyNameQ() << " -> " << candp->prettyNameQ()
-                             << " via parent=" << correctParentp->prettyNameQ() << " conn='"
-                             << wrongConnName << "'" << endl);
-                return candp;
-            }
-        }
-
-        // Fallback: try parent-only match (connection name might differ
-        // between cell and port representations)
-        for (AstNodeModule* const candp : candidates) {
-            auto pit = info.parentMap.find(candp);
-            if (pit != info.parentMap.end() && pit->second.parentp == correctParentp) {
-                UINFO(9, "finalizeIfaceCapture wrong-clone: parent-only match for "
-                             << wrongOrigName << " -> " << candp->prettyNameQ()
-                             << " (conn mismatch: '" << wrongConnName << "' vs '"
-                             << pit->second.connName << "')" << endl);
-                return candp;
-            }
-        }
-
-        // Final fallback
-        UINFO(9, "finalizeIfaceCapture wrong-clone: could not disambiguate "
-                     << wrongOrigName << " among " << candidates.size()
-                     << " candidates under parent " << correctParentp->prettyNameQ() << " conn='"
-                     << wrongConnName << "'" << ", using first" << endl);
-        return candidates[0];
-    };
 
     // Phase 3: TARGET RESOLUTION - the ONLY place that resolves targets and
     // mutates AST.  By this point all cloning is complete and cell pointers
