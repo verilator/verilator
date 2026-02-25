@@ -571,27 +571,27 @@ void VerilatedSaif::declDouble(const uint32_t code, const uint32_t fidx, const c
 }
 
 // versions to call when the sig is array member
-void VerilatedSaif::declEvent(const uint32_t code, const uint32_t fidx, const char* name,
+void VerilatedSaif::declEventArray(const uint32_t code, const uint32_t fidx, const char* name,
                               const int arraynum) {
     declare(code, fidx, name, "event", true, arraynum, false, 0, 0);
 }
-void VerilatedSaif::declBit(const uint32_t code, const uint32_t fidx, const char* name,
+void VerilatedSaif::declBitArray(const uint32_t code, const uint32_t fidx, const char* name,
                             const int arraynum) {
     declare(code, fidx, name, "wire", true, arraynum, false, 0, 0);
 }
-void VerilatedSaif::declBus(const uint32_t code, const uint32_t fidx, const char* name,
+void VerilatedSaif::declBusArray(const uint32_t code, const uint32_t fidx, const char* name,
                             const int arraynum, const int msb, const int lsb) {
     declare(code, fidx, name, "wire", true, arraynum, true, msb, lsb);
 }
-void VerilatedSaif::declQuad(const uint32_t code, const uint32_t fidx, const char* name,
+void VerilatedSaif::declQuadArray(const uint32_t code, const uint32_t fidx, const char* name,
                              const int arraynum, const int msb, const int lsb) {
     declare(code, fidx, name, "wire", true, arraynum, true, msb, lsb);
 }
-void VerilatedSaif::declWide(const uint32_t code, const uint32_t fidx, const char* name,
+void VerilatedSaif::declWideArray(const uint32_t code, const uint32_t fidx, const char* name,
                               const int arraynum, const int msb, const int lsb) {
     declare(code, fidx, name, "wire", true, arraynum, true, msb, lsb);
 }
-void VerilatedSaif::declDouble(const uint32_t code, const uint32_t fidx, const char* name,
+void VerilatedSaif::declDoubleArray(const uint32_t code, const uint32_t fidx, const char* name,
                                const int arraynum) {
     declare(code, fidx, name, "real", true, arraynum, false, 63, 0);
 }

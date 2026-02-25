@@ -155,43 +155,43 @@ public:
     void declDouble(uint32_t code, uint32_t fidx, const char* name);
 
     // versions to call when the sig is array member
-    void declEvent(uint32_t code, uint32_t fidx, const char* name, int arraynum);
-    void declBit(uint32_t code, uint32_t fidx, const char* name, int arraynum);
-    void declBus(uint32_t code, uint32_t fidx, const char* name, int arraynum, int msb, int lsb);
-    void declQuad(uint32_t code, uint32_t fidx, const char* name, int arraynum, int msb, int lsb);
-    void declWide(uint32_t code, uint32_t fidx, const char* name, int arraynum, int msb, int lsb);
-    void declDouble(uint32_t code, uint32_t fidx, const char* name, int arraynum);
+    void declEventArray(uint32_t code, uint32_t fidx, const char* name, int arraynum);
+    void declBitArray(uint32_t code, uint32_t fidx, const char* name, int arraynum);
+    void declBusArray(uint32_t code, uint32_t fidx, const char* name, int arraynum, int msb, int lsb);
+    void declQuadArray(uint32_t code, uint32_t fidx, const char* name, int arraynum, int msb, int lsb);
+    void declWideArray(uint32_t code, uint32_t fidx, const char* name, int arraynum, int msb, int lsb);
+    void declDoubleArray(uint32_t code, uint32_t fidx, const char* name, int arraynum);
 };
 
 // duck-typed interface to decl* methods
 // We use macros in order to strip out unused args at compile time.
 #define VL_TRACE_DECL_EVENT(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum) do { \
-    if constexpr(array) tracep->declEvent(code, fidx, name, arraynum); \
+    if constexpr(array) tracep->declEventArray(code, fidx, name, arraynum); \
     else tracep->declEvent(code, fidx, name); \
 } while(0)
 
 #define VL_TRACE_DECL_BIT(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum) do { \
-    if constexpr(array) tracep->declBit(code, fidx, name, arraynum); \
+    if constexpr(array) tracep->declBitArray(code, fidx, name, arraynum); \
     else tracep->declBit(code, fidx, name); \
 } while(0)
 
 #define VL_TRACE_DECL_BUS(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb) do { \
-    if constexpr(array) tracep->declBus(code, fidx, name, arraynum, msb, lsb); \
+    if constexpr(array) tracep->declBusArray(code, fidx, name, arraynum, msb, lsb); \
     else tracep->declBus(code, fidx, name, msb, lsb); \
 } while(0)
 
 #define VL_TRACE_DECL_QUAD(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb) do { \
-    if constexpr(array) tracep->declQuad(code, fidx, name, arraynum, msb, lsb); \
+    if constexpr(array) tracep->declQuadArray(code, fidx, name, arraynum, msb, lsb); \
     else tracep->declQuad(code, fidx, name, msb, lsb); \
 } while(0)
 
 #define VL_TRACE_DECL_WIDE(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb) do { \
-    if constexpr(array) tracep->declWide(code, fidx, name, arraynum, msb, lsb); \
+    if constexpr(array) tracep->declWideArray(code, fidx, name, arraynum, msb, lsb); \
     else tracep->declWide(code, fidx, name, msb, lsb); \
 } while(0)
 
 #define VL_TRACE_DECL_DOUBLE(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum) do { \
-    if constexpr(array) tracep->declDouble(code, fidx, name, arraynum); \
+    if constexpr(array) tracep->declDoubleArray(code, fidx, name, arraynum); \
     else tracep->declDouble(code, fidx, name); \
 } while(0)
 

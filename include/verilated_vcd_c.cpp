@@ -472,22 +472,22 @@ void VerilatedVcd::declDouble(uint32_t code, const char* name) {
 }
 
 // versions to call when the sig is array member
-void VerilatedVcd::declEvent(uint32_t code, const char* name, int arraynum) {
+void VerilatedVcd::declEventArray(uint32_t code, const char* name, int arraynum) {
     declare(code, name, "event", true, arraynum, false, 0, 0);
 }
-void VerilatedVcd::declBit(uint32_t code, const char* name, int arraynum) {
+void VerilatedVcd::declBitArray(uint32_t code, const char* name, int arraynum) {
     declare(code, name, "wire", true, arraynum, false, 0, 0);
 }
-void VerilatedVcd::declBus(uint32_t code, const char* name, int arraynum, int msb, int lsb) {
+void VerilatedVcd::declBusArray(uint32_t code, const char* name, int arraynum, int msb, int lsb) {
     declare(code, name, "wire", true, arraynum, true, msb, lsb);
 }
-void VerilatedVcd::declQuad(uint32_t code, const char* name, int arraynum, int msb, int lsb) {
+void VerilatedVcd::declQuadArray(uint32_t code, const char* name, int arraynum, int msb, int lsb) {
     declare(code, name, "wire", true, arraynum, true, msb, lsb);
 }
-void VerilatedVcd::declWide(uint32_t code, const char* name, int arraynum, int msb, int lsb) {
+void VerilatedVcd::declWideArray(uint32_t code, const char* name, int arraynum, int msb, int lsb) {
     declare(code, name, "wire", true, arraynum, true, msb, lsb);
 }
-void VerilatedVcd::declDouble(uint32_t code, const char* name, int arraynum) {
+void VerilatedVcd::declDoubleArray(uint32_t code, const char* name, int arraynum) {
     declare(code, name, "real", true, arraynum, false, 63, 0);
 }
 
