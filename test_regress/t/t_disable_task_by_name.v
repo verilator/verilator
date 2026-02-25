@@ -8,6 +8,7 @@
 
 int x = 0;
 int y = 0;
+int z = 0;
 
 int self_entry = 0;
 int self_after_disable = 0;
@@ -41,6 +42,10 @@ task increment_y;
   y++;
   #5;
   y++;
+endtask
+
+task finish_z;
+  z++;
 endtask
 
 task self_stop;
@@ -217,6 +222,10 @@ module t;
     join_none
     #10;
     if (x != 1) $stop;
+    // Re-disabling after prior disable (no active invocations) is a no-op
+    disable increment_x;
+    #1;
+    if (x != 1) $stop;
 
     // Another basic module-task disable-by-name case
     fork
@@ -225,6 +234,13 @@ module t;
     join_none
     #10;
     if (y != 1) $stop;
+
+    // Disabling a task after it already finished is a no-op
+    finish_z();
+    if (z != 1) $stop;
+    disable finish_z;
+    #1;
+    if (z != 1) $stop;
 
     // Self-disable in task by name
     self_stop();
