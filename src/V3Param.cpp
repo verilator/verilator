@@ -773,9 +773,9 @@ class ParamProcessor final {
                 for (AstNode* stmtp = newIfacep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
                     if (AstVar* const newVarp = VN_CAST(stmtp, Var)) {
                         if (newVarp->name() == varp->name()) {
-                            UINFO(9, "VarXRef relink " << varp->prettyNameQ() << " in "
-                                                       << varModp->prettyNameQ() << " -> "
-                                                       << newIfacep->prettyNameQ() << endl);
+                            UINFO(9, "VarXRef relink " << varp->name() << " in "
+                                                       << varModp->name() << " -> "
+                                                       << newIfacep->name() << endl);
                             nodep->varp(newVarp);
                             break;
                         }
@@ -1357,9 +1357,9 @@ class ParamProcessor final {
                         AstNodeModule* const correctModp
                             = V3LinkDotIfaceCapture::followCellPath(newModp, entry.cellPath);
                         UINFO(9, "iface capture path fixup: "
-                                     << newModp->prettyNameQ() << " refp=" << refp->prettyNameQ()
+                                     << newModp->name() << " refp=" << refp->name()
                                      << " cellPath='" << entry.cellPath << "' -> "
-                                     << (correctModp ? correctModp->prettyNameQ() : "'<null>'")
+                                     << (correctModp ? correctModp->name() : "<null>")
                                      << endl);
                         if (!correctModp || correctModp->dead()) return;
 
@@ -1369,7 +1369,7 @@ class ParamProcessor final {
                             if (AstTypedef* const newTdp
                                 = V3LinkDotIfaceCapture::findTypedefInModule(correctModp,
                                                                              tdName)) {
-                                UINFO(9, "  typedefp -> " << correctModp->prettyNameQ() << endl);
+                                UINFO(9, "  typedefp -> " << correctModp->name() << endl);
                                 refp->typedefp(newTdp);
                                 fixed = true;
                             }
@@ -1380,7 +1380,7 @@ class ParamProcessor final {
                             if (AstNodeDType* const newDtp
                                 = V3LinkDotIfaceCapture::findDTypeInModule(correctModp, rdName,
                                                                            rdType)) {
-                                UINFO(9, "  refDTypep -> " << correctModp->prettyNameQ() << endl);
+                                UINFO(9, "  refDTypep -> " << correctModp->name() << endl);
                                 refp->refDTypep(newDtp);
                                 fixed = true;
                             }
@@ -1411,9 +1411,9 @@ class ParamProcessor final {
             }
             collectReachable(newModp);
 
-            UINFO(9, "iface capture hierarchy fixup: newModp=" << newModp->prettyNameQ()
+            UINFO(9, "iface capture hierarchy fixup: newModp=" << newModp->name()
                                                                << " reachable={");
-            for (AstNodeModule* const rModp : reachable) { UINFO(9, " " << rModp->prettyNameQ()); }
+            for (AstNodeModule* const rModp : reachable) { UINFO(9, " " << rModp->name()); }
             UINFO(9, " }" << endl);
 
             // Walk only direct statement-level REFDTYPEs in newModp.
@@ -1562,7 +1562,7 @@ class ParamProcessor final {
             if (srcClassp && srcClassp->hasGParam()) {
                 // Specialize if the reference still points to the generic class
                 if (lhsClassp == srcClassp || !lhsClassp) {
-                    UINFO(9, "resolveDotToTypedef: specializing " << srcClassp->prettyNameQ()
+                    UINFO(9, "resolveDotToTypedef: specializing " << srcClassp->name()
                                                                   << endl);
                     classRefDeparam(classRefp, srcClassp);
                     lhsClassp = VN_CAST(classRefp->classOrPackageSkipp(), Class);
@@ -2149,9 +2149,9 @@ class ParamProcessor final {
                 = VN_CAST(m_memberMap.findMember(newClassp, refDTypep->name()), Typedef)) {
                 refDTypep->typedefp(typedefp);
                 refDTypep->classOrPackagep(newClassp);
-                UINFO(9, "Resolved parameterized class typedef: " << refDTypep->prettyNameQ()
+                UINFO(9, "Resolved parameterized class typedef: " << refDTypep->name()
                                                                   << " -> " << typedefp << " in "
-                                                                  << newClassp->prettyNameQ());
+                                                                  << newClassp->name());
             }
         }
         return newModp;
