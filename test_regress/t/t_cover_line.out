@@ -463,8 +463,6 @@
 +000010  point: type=line comment=block hier=top.t.cond1
  000010       return arr;
 +000010  point: type=line comment=block hier=top.t.cond1
- 000010       return arr;
-+000010  point: type=line comment=block hier=top.t.cond1
            endfunction
         
 ~000031    assign a = (cyc == 0) ? clk : 1'bz;
