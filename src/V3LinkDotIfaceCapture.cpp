@@ -82,6 +82,17 @@ AstIfaceRefDType* ifaceRefFromVarDType(AstNodeDType* dtypep) {
     }
     return nullptr;
 }
+const string& effectiveOrigName(const AstNodeModule* modp) {
+    return modp->origName().empty() ? modp->name() : modp->origName();
+}
+// Resolve the owner module name for a typedef/paramType node.
+// Returns hint if non-empty, otherwise walks backp() to find the owner module name.
+string resolveOwnerName(const string& hint, AstNode* nodep) {
+    if (!hint.empty()) return hint;
+    if (!nodep) return "";
+    AstNodeModule* const ownerp = V3LinkDotIfaceCapture::findOwnerModule(nodep);
+    return ownerp ? ownerp->name() : string{};
+}
 }  // namespace
 
 AstTypedef* V3LinkDotIfaceCapture::findTypedefInModule(AstNodeModule* modp, const string& name) {
@@ -143,23 +154,19 @@ AstNodeModule* V3LinkDotIfaceCapture::findCloneViaHierarchy(AstNodeModule* conta
     for (AstNode* stmtp = containingModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
         if (AstCell* const cellp = VN_CAST(stmtp, Cell)) {
             AstNodeModule* const cellModp = cellp->modp();
-            if (!cellModp) continue;
-            if (!cellModp->dead()) {
-                // Check if cellModp is a clone of deadTargetModp by comparing
-                // the template name (part before "__")
-                const string& cellModName = cellModp->name();
-                const string& deadName = deadTargetModp->name();
-                const size_t pos = cellModName.find("__");
-                if (pos != string::npos && cellModName.substr(0, pos) == deadName) {
-                    return cellModp;
-                }
+            if (!cellModp || cellModp->dead()) continue;
+            // Check if cellModp is a clone of deadTargetModp by comparing
+            // the template name (part before "__")
+            const string& cellModName = cellModp->name();
+            const string& deadName = deadTargetModp->name();
+            const size_t pos = cellModName.find("__");
+            if (pos != string::npos && cellModName.substr(0, pos) == deadName) {
+                return cellModp;
             }
             // Recurse into sub-cells
-            if (!cellModp->dead()) {
-                AstNodeModule* const found
-                    = findCloneViaHierarchy(cellModp, deadTargetModp, depth + 1);
-                if (found) return found;
-            }
+            AstNodeModule* const found
+                = findCloneViaHierarchy(cellModp, deadTargetModp, depth + 1);
+            if (found) return found;
         }
     }
     return nullptr;
@@ -170,8 +177,7 @@ void V3LinkDotIfaceCapture::collectReachableWalk(AstNodeModule* curp, ReachableI
         if (AstCell* const cellp = VN_CAST(sp, Cell)) {
             AstNodeModule* const cellModp = cellp->modp();
             if (cellModp && info.flat.insert(cellModp).second) {
-                const string& origName
-                    = cellModp->origName().empty() ? cellModp->name() : cellModp->origName();
+                const string& origName = effectiveOrigName(cellModp);
                 info.byOrigName[origName].push_back(cellModp);
                 info.parentMap[cellModp] = {curp, cellp->name()};
                 collectReachableWalk(cellModp, info);
@@ -183,8 +189,7 @@ void V3LinkDotIfaceCapture::collectReachableWalk(AstNodeModule* curp, ReachableI
                 if (AstIfaceRefDType* const irefp = ifaceRefFromVarDType(varp->subDTypep())) {
                     AstIface* const ifacep = irefp->ifaceViaCellp();
                     if (ifacep && info.flat.insert(ifacep).second) {
-                        const string& origName
-                            = ifacep->origName().empty() ? ifacep->name() : ifacep->origName();
+                        const string& origName = effectiveOrigName(ifacep);
                         info.byOrigName[origName].push_back(ifacep);
                         info.parentMap[ifacep] = {curp, varp->name()};
                         collectReachableWalk(ifacep, info);
@@ -198,7 +203,7 @@ V3LinkDotIfaceCapture::ReachableInfo
 V3LinkDotIfaceCapture::collectReachable(AstNodeModule* modp) {
     ReachableInfo info;
     info.flat.insert(modp);
-    const string& modOrigName = modp->origName().empty() ? modp->name() : modp->origName();
+    const string& modOrigName = effectiveOrigName(modp);
     info.byOrigName[modOrigName].push_back(modp);
     collectReachableWalk(modp, info);
     return info;
@@ -206,8 +211,7 @@ V3LinkDotIfaceCapture::collectReachable(AstNodeModule* modp) {
 AstNodeModule* V3LinkDotIfaceCapture::findCorrectClone(AstNodeModule* wrongOwnerp,
                                                        const ReachableInfo& info,
                                                        std::set<AstNodeModule*>& visited) {
-    const string& wrongOrigName
-        = wrongOwnerp->origName().empty() ? wrongOwnerp->name() : wrongOwnerp->origName();
+    const string& wrongOrigName = effectiveOrigName(wrongOwnerp);
     auto it = info.byOrigName.find(wrongOrigName);
     if (it == info.byOrigName.end()) return nullptr;
     const auto& candidates = it->second;
@@ -549,11 +553,7 @@ void V3LinkDotIfaceCapture::add(AstRefDType* refp, const string& cellPath,
     UASSERT(refp, "add() called with null refp");
     UASSERT(ownerModp, "add() called with null ownerModp for refp=" << refp->prettyNameQ());
     if (!typedefp) typedefp = refp->typedefp();
-    string tdOwnerName = typedefOwnerModName;
-    if (tdOwnerName.empty() && typedefp) {
-        AstNodeModule* const tdOwnerModp = findOwnerModule(typedefp);
-        if (tdOwnerModp) tdOwnerName = tdOwnerModp->name();
-    }
+    const string tdOwnerName = resolveOwnerName(typedefOwnerModName, typedefp);
     const string ownerModName = ownerModp->name();
     const CaptureKey key{ownerModName, refp->name(), cellPath, ""};
     auto it = s_map.find(key);
@@ -583,11 +583,7 @@ void V3LinkDotIfaceCapture::addClass(AstRefDType* refp, AstClass* origClassp,
     UASSERT(refp, "addClass() called with null refp");
     UASSERT(ownerModp, "addClass() called with null ownerModp");
     if (!typedefp) typedefp = refp->typedefp();
-    string tdOwnerName = typedefOwnerModName;
-    if (tdOwnerName.empty() && typedefp) {
-        AstNodeModule* const tdOwnerModp = findOwnerModule(typedefp);
-        if (tdOwnerModp) tdOwnerName = tdOwnerModp->name();
-    }
+    const string tdOwnerName = resolveOwnerName(typedefOwnerModName, typedefp);
     // For CLASS captures, use the class name as cellPath
     UASSERT_OBJ(origClassp, refp,
                 "addClass() called with null origClassp for refp=" << refp->prettyNameQ());
@@ -975,11 +971,7 @@ void V3LinkDotIfaceCapture::addParamType(AstRefDType* refp, const string& cellPa
     UASSERT_OBJ(paramTypep, refp,
                 "addParamType() called with null paramTypep for refp='" << refp->prettyNameQ()
                                                                         << "'");
-    string ptOwnerName = paramTypeOwnerModName;
-    if (ptOwnerName.empty() && paramTypep) {
-        AstNodeModule* const ptOwnerModp = findOwnerModule(paramTypep);
-        if (ptOwnerModp) ptOwnerName = ptOwnerModp->name();
-    }
+    const string ptOwnerName = resolveOwnerName(paramTypeOwnerModName, paramTypep);
     UINFO(9, "addParamType: refp=" << refp << " cellPath='" << cellPath << "'" << " ownerModp="
                                    << (ownerModp ? ownerModp->prettyNameQ() : "<null>")
                                    << " paramTypep=" << paramTypep << " paramTypeOwnerModName='"
@@ -1020,24 +1012,6 @@ void V3LinkDotIfaceCapture::addParamType(AstRefDType* refp, const string& cellPa
 int V3LinkDotIfaceCapture::fixDeadRefsInTypeTable() {
     int fixed = 0;
     if (!v3Global.rootp()->typeTablep()) return fixed;
-
-    // Build a map from type table REFDTYPE to the live module that uses it.
-    // This is needed because type table entries don't have a direct parent module.
-    std::unordered_map<const AstRefDType*, AstNodeModule*> typeTableRefOwners;
-    for (AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
-        if (AstNodeModule* const modp = VN_CAST(nodep, NodeModule)) {
-            if (modp->dead()) continue;
-            modp->foreach([&](AstRefDType* refp) {
-                if (refp->refDTypep()) {
-                    AstNodeModule* const ownerp = findOwnerModule(refp->refDTypep());
-                    if (!ownerp) {
-                        // Type table entry - record the containing module
-                        // (This is a heuristic; the first live module wins)
-                    }
-                }
-            });
-        }
-    }
 
     for (AstNode* nodep = v3Global.rootp()->typeTablep()->typesp(); nodep;
          nodep = nodep->nextp()) {
