@@ -295,12 +295,12 @@ combination was hit. Note that individual lines are not mutually exclusive.
 .. code-block::
 
    %000004         if ((~t1 && t2) || (~t3 && t4)) $write("");
-   -000002  point: comment=(t1==0 && t2==1) => 1 hier=top.t
-   -000002  point: comment=(t1==1 && t3==1) => 0 hier=top.t
-   -000004  point: comment=(t1==1 && t4==0) => 0 hier=top.t
-   -000002  point: comment=(t2==0 && t3==1) => 0 hier=top.t
-   -000003  point: comment=(t2==0 && t4==0) => 0 hier=top.t
-   -000002  point: comment=(t3==0 && t4==1) => 1 hier=top.t
+   -000002  point: type=expr comment=(t1==0 && t2==1) => 1 hier=top.t
+   -000002  point: type=expr comment=(t1==1 && t3==1) => 0 hier=top.t
+   -000004  point: type=expr comment=(t1==1 && t4==0) => 0 hier=top.t
+   -000002  point: type=expr comment=(t2==0 && t3==1) => 0 hier=top.t
+   -000003  point: type=expr comment=(t2==0 && t4==0) => 0 hier=top.t
+   -000002  point: type=expr comment=(t3==0 && t4==1) => 1 hier=top.t
 
 .. _suppressing coverage:
 
