@@ -24,7 +24,7 @@
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
-#include "V3CoverageFunctional.h"
+#include "V3Covergroup.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -1886,7 +1886,7 @@ public:
 //######################################################################
 // Functional coverage class functions
 
-void V3CoverageFunctional::coverageFunctional(AstNetlist* nodep) {
+void V3Covergroup::covergroup(AstNetlist* nodep) {
     UINFO(4, __FUNCTION__ << ": " << endl);
     { FunctionalCoverageVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("coveragefunc", 0, dumpTreeEitherLevel() >= 3);

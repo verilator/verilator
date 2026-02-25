@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Functional coverage implementation
+// DESCRIPTION: Verilator: Covergroup implementation
 //
 // Code available from: https://verilator.org
 //
@@ -14,17 +14,17 @@
 //
 //*************************************************************************
 
-#ifndef VERILATOR_V3COVERAGEFUNCTIONAL_H_
-#define VERILATOR_V3COVERAGEFUNCTIONAL_H_
+#ifndef VERILATOR_V3COVERGROUP_H_
+#define VERILATOR_V3COVERGROUP_H_
 
 #include "V3Ast.h"
 #include "V3Error.h"
 
 //============================================================================
 
-class V3CoverageFunctional final {
+class V3Covergroup final {
 public:
-    static void coverageFunctional(AstNetlist* nodep);
+    static void covergroup(AstNetlist* nodep);
 };
 
 #endif  // Guard

@@ -797,6 +797,7 @@ class CoverageVisitor final : public VNVisitor {
                         pair.first->second = varp;
                         if (m_ftaskp) {
                             varp->funcLocal(true);
+                            varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                             m_ftaskp->stmtsp()->addHereThisAsNext(varp);
                         } else {
                             m_modp->stmtsp()->addHereThisAsNext(varp);
