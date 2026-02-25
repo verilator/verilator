@@ -10,12 +10,12 @@ module t;
   always #5 clk1 = ~clk1;
   always #10 clk2 = ~clk2;
 
-  int iarray [63:0];
-  int oarray1 [63:0];
-  int oarray2 [63:0];
+  int iarray[63:0];
+  int oarray1[63:0];
+  int oarray2[63:0];
 
   initial begin
-    for (int i = 0; i < 64 ; i = i + 1) begin
+    for (int i = 0; i < 64; i = i + 1) begin
       iarray[i] = i;
     end
 
@@ -30,13 +30,13 @@ module t;
   end
 
   always @(posedge clk1) begin
-    for (int i = 0; i < 64 ; i = i + 1) begin
+    for (int i = 0; i < 64; i = i + 1) begin
       oarray1[i] = iarray[i];
     end
   end
   always @(posedge clk2) begin
-    for (int i = 0; i < 64 ; i = i + 1) begin
-      oarray2[i] =iarray[i];
+    for (int i = 0; i < 64; i = i + 1) begin
+      oarray2[i] = iarray[i];
     end
   end
 

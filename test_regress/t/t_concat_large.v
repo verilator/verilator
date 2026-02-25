@@ -6,15 +6,15 @@
 
 module t;
 
-   reg [32767:0] a;
+  reg [32767:0] a;
 
-   initial begin
-      a = {32768{1'b1}};
-      if (a[32000] != 1'b1) $stop;
-      a = '0;
-      if (a[32000] != 1'b0) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    a = {32768{1'b1}};
+    if (a[32000] != 1'b1) $stop;
+    a = '0;
+    if (a[32000] != 1'b0) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule
