@@ -82,7 +82,7 @@ AstIfaceRefDType* ifaceRefFromVarDType(AstNodeDType* dtypep) {
     }
     return nullptr;
 }
-const string& effectiveOrigName(const AstNodeModule* modp) {
+string effectiveOrigName(const AstNodeModule* modp) {
     if (modp->origName().empty()) return modp->name();
     return modp->origName();
 }
@@ -178,7 +178,7 @@ void V3LinkDotIfaceCapture::collectReachableWalk(AstNodeModule* curp, ReachableI
         if (AstCell* const cellp = VN_CAST(sp, Cell)) {
             AstNodeModule* const cellModp = cellp->modp();
             if (cellModp && info.flat.insert(cellModp).second) {
-                const string& origName = effectiveOrigName(cellModp);
+                const string origName = effectiveOrigName(cellModp);
                 info.byOrigName[origName].push_back(cellModp);
                 info.parentMap[cellModp] = {curp, cellp->name()};
                 collectReachableWalk(cellModp, info);
@@ -204,7 +204,7 @@ V3LinkDotIfaceCapture::ReachableInfo
 V3LinkDotIfaceCapture::collectReachable(AstNodeModule* modp) {
     ReachableInfo info;
     info.flat.insert(modp);
-    const string& modOrigName = effectiveOrigName(modp);
+    const string modOrigName = effectiveOrigName(modp);
     info.byOrigName[modOrigName].push_back(modp);
     collectReachableWalk(modp, info);
     return info;
@@ -212,7 +212,7 @@ V3LinkDotIfaceCapture::collectReachable(AstNodeModule* modp) {
 AstNodeModule* V3LinkDotIfaceCapture::findCorrectClone(AstNodeModule* wrongOwnerp,
                                                        const ReachableInfo& info,
                                                        std::set<AstNodeModule*>& visited) {
-    const string& wrongOrigName = effectiveOrigName(wrongOwnerp);
+    const string wrongOrigName = effectiveOrigName(wrongOwnerp);
     auto it = info.byOrigName.find(wrongOrigName);
     if (it == info.byOrigName.end()) return nullptr;
     const auto& candidates = it->second;
