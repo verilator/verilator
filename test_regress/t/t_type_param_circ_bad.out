@@ -1,9 +1,11 @@
 %Error: t/t_type_param_circ_bad.v:14:22: Recursive type definition
                                        : ... note: In instance 't'
         t/t_type_param_circ_bad.v:14:22: ... Type chain: PARAMTYPEDTYPE 'SZ'
-                                       :      # (parameter type SZ = SZ)
+   14 |    # (parameter type SZ = SZ)
+      |                      ^~
         t/t_type_param_circ_bad.v:14:27: ... Type chain: REFDTYPE 'SZ'
-                                       :      # (parameter type SZ = SZ)
+   14 |    # (parameter type SZ = SZ)
+      |                           ^~
    14 |    # (parameter type SZ = SZ)
       |                      ^~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
