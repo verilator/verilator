@@ -17,7 +17,7 @@ module t (
   integer cyc = 0;
 
   typedef union packed {
-    int        x;
+    int x;
     bit [31:0] y;
   } union_t;
 
@@ -35,17 +35,20 @@ module t (
       logic_arr[0][2][-4] <= 1;
       int_arr[0][0][2] <= 1;
       union_arr[1].x <= 1;
-    end else if (cyc == 1) begin
+    end
+    else if (cyc == 1) begin
       `checkh(logic_arr[0][2][-4], 1);
       `checkh(int_arr[0][0][2], 1);
       `checkh(bit_arr[2][3], 1);
       `checkh(union_arr[1].x, 1);
-    end else if (cyc == 2) begin
+    end
+    else if (cyc == 2) begin
       force logic_arr[0][2][-4] = 0;
       force int_arr[0][0][2] = 0;
       force bit_arr[2][3] = 0;
       force union_arr[1].y = 2;
-    end else if (cyc == 3) begin
+    end
+    else if (cyc == 3) begin
       `checkh(logic_arr[0][2][-4], 0);
       logic_arr[0][2][-4] <= 1;
       `checkh(int_arr[0][0][2], 0);
@@ -53,17 +56,20 @@ module t (
       `checkh(bit_arr[2][3], 0);
       `checkh(union_arr[1].x, 2);
       union_arr[1].x <= 3;
-    end else if (cyc == 4) begin
+    end
+    else if (cyc == 4) begin
       `checkh(logic_arr[0][2][-4], 0);
       `checkh(int_arr[0][0][2], 0);
       `checkh(union_arr[1].y, 2);
-    end else if (cyc == 5) begin
+    end
+    else if (cyc == 5) begin
       release logic_arr[0][2][-4];
       release int_arr[0][0][2];
       release bit_arr[2][3];
       `checkh(bit_arr[2][3], 1);
       release union_arr[1].x;
-    end else if (cyc == 6) begin
+    end
+    else if (cyc == 6) begin
       `checkh(logic_arr[0][2][-4], 0);
       logic_arr[0][2][-4] <= 1;
       `checkh(int_arr[0][0][2], 0);
@@ -71,11 +77,13 @@ module t (
       `checkh(bit_arr[2][3], 1);
       `checkh(union_arr[1].x, 2);
       union_arr[1].y <= 4;
-    end else if (cyc == 7) begin
+    end
+    else if (cyc == 7) begin
       `checkh(logic_arr[0][2][-4], 1);
       `checkh(int_arr[0][0][2], 1);
       `checkh(union_arr[1].x, 4);
-    end else if (cyc == 8) begin
+    end
+    else if (cyc == 8) begin
       $write("*-* All Finished *-*\n");
       $finish;
     end
