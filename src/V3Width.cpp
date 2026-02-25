@@ -1008,28 +1008,12 @@ class WidthVisitor final : public VNVisitor {
             }
             // Note width() not set on range; use elementsConst()
             const bool inDeadModule = m_modep && m_modep->dead();
-            // Suppress ASCRANGE in dead template modules whose parameter-dependent
-            // ranges haven't been resolved yet.  Dead modules are templates that
-            // have been superseded by specialized clones.
-            bool inParameterizedTemplate = false;
-            bool inTypeTable = false;
-            if (nodep->ascending()) {
-                bool foundModule = false;
-                for (AstNode* ap = nodep; ap; ap = ap->backp()) {
-                    if (const AstNodeModule* const modp = VN_CAST(ap, NodeModule)) {
-                        inParameterizedTemplate = modp->dead();
-                        foundModule = true;
-                        break;
-                    }
-                    if (VN_IS(ap, TypeTable)) {
-                        inTypeTable = true;
-                        break;
-                    }
-                }
-                // No module ancestor and not under type table - treat as
-                // type-table context (global dtype with no module provenance).
-                if (!foundModule && !inTypeTable) inTypeTable = true;
-            }
+            // Suppress ASCRANGE in parameterized template modules whose parameter-dependent
+            // ranges haven't been resolved yet, or when the type has no owning module
+            // (e.g. moved to TypeTable during DepGraph resolution).
+            const bool inParameterizedTemplate
+                = m_modep && (m_modep->dead() || m_modep->parameterizedTemplate());
+            const bool inTypeTable = !m_modep;
             if (nodep->ascending() && !VN_IS(nodep->backp(), UnpackArrayDType)
                 && !VN_IS(nodep->backp(), Cell)  // For cells we warn in V3Inst
                 && !m_paramsOnly  // Skip during parameter evaluation
@@ -1061,17 +1045,10 @@ class WidthVisitor final : public VNVisitor {
             }
             UASSERT_OBJ(nodep->dtypep(), nodep, "dtype wasn't set");  // by V3WidthSel
 
-            // Suppress SELRANGE in dead template modules where
+            // Suppress SELRANGE in parameterized template modules where
             // parameter-dependent widths haven't been resolved yet.
-            bool inParameterizedTemplate = false;
-            const AstNodeModule* selrangeModp = nullptr;
-            for (AstNode* ap = nodep; ap; ap = ap->backp()) {
-                if (const AstNodeModule* const modp = VN_CAST(ap, NodeModule)) {
-                    selrangeModp = modp;
-                    inParameterizedTemplate = modp->dead();
-                    break;
-                }
-            }
+            const bool inParameterizedTemplate
+                = m_modep && (m_modep->dead() || m_modep->parameterizedTemplate());
 
             if (VN_IS(nodep->lsbp(), Const) && nodep->msbConst() < nodep->lsbConst()) {
                 // Likely impossible given above width check
@@ -1139,11 +1116,11 @@ class WidthVisitor final : public VNVisitor {
                         }
                         depth++;
                     }
-                    if (selrangeModp) {
+                    if (m_modep) {
                         UINFO(9,
-                              "SELRANGE-DEBUG: modp=" << selrangeModp->prettyName()
-                                                      << " hasGParam=" << selrangeModp->hasGParam()
-                                                      << " origName=" << selrangeModp->origName());
+                              "SELRANGE-DEBUG: modp=" << m_modep->prettyName()
+                                                      << " hasGParam=" << m_modep->hasGParam()
+                                                      << " origName=" << m_modep->origName());
                     }
                     UINFO(9, "SELRANGE-DEBUG: ---");
                 }
@@ -2378,22 +2355,12 @@ class WidthVisitor final : public VNVisitor {
         // Effectively nodep->dtypeFrom(nodep->dtypeSkipRefp());
         // But might be recursive, so instead manually recurse into the referenced type
         if (!nodep->subDTypep()) {
-            bool inTemplateModule = false;
-            bool hasOwnerModule = false;
-            for (AstNode* backp = nodep->backp(); backp; backp = backp->backp()) {
-                if (AstNodeModule* const modp = VN_CAST(backp, NodeModule)) {
-                    hasOwnerModule = true;
-                    if (modp->hasGParam() && modp->name().find("__") == string::npos) {
-                        inTemplateModule = true;
-                    }
-                    break;
-                }
-            }
-            if (!hasOwnerModule) inTemplateModule = true;
+            // Defer unlinked RefDTypes in parameterized template modules (or types
+            // with no owning module, e.g. moved to TypeTable) until specialization
+            // resolves them.
+            const bool inTemplateModule
+                = !m_modep || m_modep->parameterizedTemplate();
             if (inTemplateModule) {
-                // Defer unlinked template-only RefDTypes until specialization resolves them.
-                // This aligns with DepGraph out-of-order resolution which may clear
-                // template typedefs during commit or move them to TYPETABLE.
                 nodep->doingWidth(false);
                 return;
             }
@@ -3462,27 +3429,14 @@ class WidthVisitor final : public VNVisitor {
         const bool isHardPackedUnion
             = nodep->packed() && VN_IS(nodep, UnionDType) && !VN_CAST(nodep, UnionDType)->isSoft();
 
-        // Check if this type is in a template module (hasGParam but no __ suffix).
-        // Template modules have unresolved parameters, so union member sizes may be incorrect.
-        // The specialized clones will be properly checked - suppress errors here.
-        bool inTemplateModule = false;
-        bool hasOwnerModule = false;
-        for (AstNode* backp = nodep->backp(); backp; backp = backp->backp()) {
-            if (AstNodeModule* const modp = VN_CAST(backp, NodeModule)) {
-                hasOwnerModule = true;
-                if (modp->hasGParam() && modp->name().find("__") == string::npos) {
-                    inTemplateModule = true;
-                }
-                break;
-            }
-        }
-        // If the union/struct was moved to TYPETABLE (no owning module), defer checks
-        // until specialization provides concrete member widths. This aligns with
-        // DepGraph's out-of-order resolution: types may be detached during commit and
-        // finalized only after specialization.
+        // Suppress union size errors in parameterized template modules where member
+        // widths depend on unresolved parameters.  Also suppress when the type has no
+        // owning module (e.g. moved to TypeTable during DepGraph resolution).
         // TODO: Revisit this gate if DepGraph becomes the sole flow and widthing
         // can assume all types are already specialized.
-        if (VN_IS(nodep, UnionDType) && !hasOwnerModule) inTemplateModule = true;
+        const bool inTemplateModule
+            = (m_modep && m_modep->parameterizedTemplate())
+              || (VN_IS(nodep, UnionDType) && !m_modep);
 
         // Determine bit assignments and width
         if (VN_IS(nodep, UnionDType) || nodep->packed()) {

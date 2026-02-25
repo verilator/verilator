@@ -799,6 +799,11 @@ class ParamProcessor final {
             newModp = srcModp->cloneTree(false);
         }
 
+        // Mark the source module as a parameterized template now that a specialized
+        // clone exists.  This suppresses width/type errors on the unresolved template
+        // during widthParamsEdit (which runs before V3LinkDot sets dead()).
+        srcModp->parameterizedTemplate(true);
+
         // cloneTree(false) temporarily populates origNode->clonep() for every node under
         // srcModp.  The capture list still stores those orig AstRefDType* pointers, so walking
         // it lets us follow clonep() into newModp and scrub each clone with the saved
@@ -1676,9 +1681,8 @@ class ParamProcessor final {
                 if (resolvedp && (VN_IS(resolvedp, StructDType) || VN_IS(resolvedp, UnionDType))) {
                     AstNodeModule* const ownerModp
                         = V3LinkDotIfaceCapture::findOwnerModule(resolvedp);
-                    // Skip if owned by a template (hasGParam, not yet specialized)
-                    if (ownerModp && ownerModp->hasGParam()
-                        && ownerModp->name().find("__") == string::npos) {
+                    // Skip if owned by a parameterized template (not yet specialized)
+                    if (ownerModp && ownerModp->parameterizedTemplate()) {
                         skipWidthForTemplateStruct = true;
                     }
                 }
