@@ -48,6 +48,7 @@
 //   Template entries have cloneCellPath = ""; clone entries get it set by
 //   propagateClone.  TemplateKey (ownerModName, refName, cellPath) matches
 //   all entries regardless of cloneCellPath - used for propagation and debug.
+//
 
 #include "V3LinkDotIfaceCapture.h"
 
