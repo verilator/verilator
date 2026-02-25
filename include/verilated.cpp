@@ -3464,11 +3464,10 @@ void Verilated::mkdir(const char* dirname) VL_MT_UNSAFE {
 
 void Verilated::quiesce() VL_MT_SAFE {
     // Wait until all threads under this evaluation are quiet
-    // THREADED-TODO
 }
 
 int Verilated::exportFuncNum(const char* namep) VL_MT_SAFE {
-    return VerilatedImp::exportFind(namep);
+    return VerilatedImp::exportFindNum(namep);
 }
 
 void Verilated::endOfThreadMTaskGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
@@ -3573,7 +3572,7 @@ VerilatedScope::~VerilatedScope() {
 void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE {
     // Slowpath - called once/scope*export at construction
     // Insert a exported function into scope table
-    const int funcnum = VerilatedImp::exportInsert(namep);
+    const int funcnum = VerilatedImp::exportInsert(namep, cb);
     if (!finalize) {
         // Need two passes so we know array size to create
         // Alternative is to dynamically stretch the array, which is more code, and slower.
@@ -3628,6 +3627,25 @@ VerilatedVar* VerilatedScope::varFind(const char* namep) const VL_MT_SAFE_POSTIN
         if (VL_LIKELY(it != m_varsp->end())) return &(it->second);
     }
     return nullptr;
+}
+
+void* VerilatedScope::exportFind(const VerilatedScope* scopep, int funcnum) VL_MT_SAFE {
+    if (VL_UNLIKELY(!scopep)) return exportFindNullError(funcnum);
+    // If function is registered only once across all scopes, fast path it.
+    // UVM for example expects to find uvm_polling_value_change_notify
+    // from a different scope than where decared.
+    VL_DEBUG_IFDEF(assert(funcnum < VerilatedImp::exportFlatCbs().size()););
+    {
+        void* const cbp = VerilatedImp::exportFlatCbs()[funcnum];
+        if (VL_LIKELY(cbp)) return cbp;
+    }
+    // Else specific scope-based export call
+    if (VL_LIKELY(funcnum < scopep->m_funcnumMax)) {
+        // m_callbacksp must be declared, as Max'es are > 0
+        void* const cbp = scopep->m_callbacksp[funcnum];
+        if (VL_LIKELY(cbp)) return cbp;
+    }
+    return scopep->exportFindError(funcnum);  // LCOV_EXCL_LINE
 }
 
 void* VerilatedScope::exportFindNullError(int funcnum) VL_MT_SAFE {

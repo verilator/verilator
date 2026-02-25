@@ -8,20 +8,12 @@
 
 module t;
   s s ();
-  other other ();
 
   import "DPI-C" context function void dpix_run_tests();
   initial dpix_run_tests();
 endmodule
 
 module s;
-  export "DPI-C" task dpix_task;
-  task dpix_task();
-    $write("Hello in %m\n");
-  endtask
-endmodule
-
-module other;
   export "DPI-C" task dpix_task;
   task dpix_task();
     $write("Hello in %m\n");
