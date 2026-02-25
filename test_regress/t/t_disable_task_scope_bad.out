@@ -1,20 +1,20 @@
-%Error: t/t_disable_task_scope_bad.v:34:18: Can't find definition of 'missing_task' in dotted block/task: 'ifc1.missing_task'
-   34 |     disable ifc1.missing_task;
+%Error: t/t_disable_task_scope_bad.v:36:18: Can't find definition of 'missing_task' in dotted block/task: 'ifc1.missing_task'
+   36 |     disable ifc1.missing_task;
       |                  ^~~~~~~~~~~~
         ... Known scopes under 'ifc1': <no instances found>
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_disable_task_scope_bad.v:35:19: Can't find definition of 'missing_task' in dotted block/task: 'prog1.missing_task'
-   35 |     disable prog1.missing_task;
+%Error: t/t_disable_task_scope_bad.v:37:19: Can't find definition of 'missing_task' in dotted block/task: 'prog1.missing_task'
+   37 |     disable prog1.missing_task;
       |                   ^~~~~~~~~~~~
         ... Known scopes under 'prog1': <no instances found>
-%Error: t/t_disable_task_scope_bad.v:36:26: Can't find definition of 'missing_task' in dotted block/task: 'outer1.inner.missing_task'
-   36 |     disable outer1.inner.missing_task;
+%Error: t/t_disable_task_scope_bad.v:38:26: Can't find definition of 'missing_task' in dotted block/task: 'outer1.inner.missing_task'
+   38 |     disable outer1.inner.missing_task;
       |                          ^~~~~~~~~~~~
         ... Known scopes under 'outer1.inner': <no instances found>
-%Error: t/t_disable_task_scope_bad.v:37:18: Found definition of 'ifc1.data' as a VAR but expected a block/task
-   37 |     disable ifc1.data;
+%Error: t/t_disable_task_scope_bad.v:39:18: Found definition of 'ifc1.data' as a VAR but expected a block/task
+   39 |     disable ifc1.data;
       |                  ^~~~
-%Error: t/t_disable_task_scope_bad.v:38:19: Found definition of 'prog1.data' as a VAR but expected a block/task
-   38 |     disable prog1.data;
+%Error: t/t_disable_task_scope_bad.v:40:19: Found definition of 'prog1.data' as a VAR but expected a block/task
+   40 |     disable prog1.data;
       |                   ^~~~
 %Error: Exiting due to

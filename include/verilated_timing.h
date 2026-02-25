@@ -393,8 +393,10 @@ class VlForkSync final {
 
     // The join info is shared among all forked processes
     std::shared_ptr<VlJoin> m_join;
+    std::vector<std::weak_ptr<VlProcess>> m_onKillProcessps;  // Branches registered for kill hooks
 
 public:
+    ~VlForkSync();
     // Create the join object and set the counter to the specified number
     void init(size_t count, VlProcessRef process) { m_join.reset(new VlJoin{count, {process}}); }
     // Register process kill callback so killed fork branches still decrement join counter

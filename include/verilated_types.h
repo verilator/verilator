@@ -157,6 +157,7 @@ public:
         for (VlProcess* childp : m_children) childp->disable();
     }
     void forkSyncOnKill(VlForkSync* forkSyncp);
+    void forkSyncOnKillClear(VlForkSync* forkSyncp);
     bool completed() const { return state() == FINISHED || state() == KILLED; }
     bool completedFork() const {
         for (const VlProcess* const childp : m_children)

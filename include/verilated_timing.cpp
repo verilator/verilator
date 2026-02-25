@@ -243,6 +243,12 @@ void VlProcess::forkSyncOnKill(VlForkSync* forkSyncp) {
     m_forkSyncOnKillDone = false;
 }
 
+void VlProcess::forkSyncOnKillClear(VlForkSync* forkSyncp) {
+    if (m_forkSyncOnKillp != forkSyncp) return;
+    m_forkSyncOnKillp = nullptr;
+    m_forkSyncOnKillDone = false;
+}
+
 void VlProcess::state(int s) {
     if (s == KILLED && m_state != KILLED && m_state != FINISHED && m_forkSyncOnKillp
         && !m_forkSyncOnKillDone) {
@@ -254,8 +260,16 @@ void VlProcess::state(int s) {
     m_state = s;
 }
 
+VlForkSync::~VlForkSync() {
+    for (std::weak_ptr<VlProcess>& weakp : m_onKillProcessps) {
+        if (VlProcessRef processp = weakp.lock()) processp->forkSyncOnKillClear(this);
+    }
+}
+
 void VlForkSync::onKill(VlProcessRef process) {
-    if (process) process->forkSyncOnKill(this);
+    if (!process) return;
+    m_onKillProcessps.emplace_back(process);
+    process->forkSyncOnKill(this);
 }
 
 void VlForkSync::done(const char* filename, int lineno) {
