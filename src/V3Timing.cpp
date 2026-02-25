@@ -746,7 +746,7 @@ class TimingControlVisitor final : public VNVisitor {
     void addForkOnKill(AstBegin* const beginp, AstVarScope* const forkVscp) const {
         if (!beginp->needProcess()) return;
         FileLine* const flp = beginp->fileline();
-        auto* const onKillp = new AstCMethodHard{flp, new AstVarRef{flp, forkVscp, VAccess::WRITE},
+        AstCMethodHard* const onKillp = new AstCMethodHard{flp, new AstVarRef{flp, forkVscp, VAccess::WRITE},
                                                  VCMethod::FORK_ON_KILL};
         onKillp->dtypeSetVoid();
         AstCExpr* const processp = new AstCExpr{flp, "vlProcess"};
