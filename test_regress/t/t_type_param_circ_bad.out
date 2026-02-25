@@ -6,7 +6,5 @@
         t/t_type_param_circ_bad.v:14:27: ... Type chain: REFDTYPE 'SZ'
    14 |    # (parameter type SZ = SZ)
       |                           ^~
-   14 |    # (parameter type SZ = SZ)
-      |                      ^~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

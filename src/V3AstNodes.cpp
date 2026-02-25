@@ -975,13 +975,16 @@ const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
         } else {
             os << "Type definition over " << MAX_TYPEDEF_DEPTH << " types deep";
         }
+        bool first = true;
         for (const AstNodeDType* chainp : chain) {
             // Skip internal scaffolding nodes (e.g. REQUIREDTYPE) with no user-visible name
             if (chainp->name().empty()) continue;
             os << '\n'
                << chainp->fileline()->warnOther() << "... Type chain: "
                << chainp->prettyTypeName() << '\n'
-               << chainp->fileline()->warnContextSecondary();
+               << (first ? chainp->fileline()->warnContextPrimary()
+                         : chainp->fileline()->warnContextSecondary());
+            first = false;
         }
         if (visited.size() > static_cast<size_t>(MAX_CHAIN_DISPLAY)) {
             os << '\n'

@@ -12,8 +12,6 @@
         t/t_recursive_typedef_bad.v:11:56: ... Type chain: REFDTYPE 'A'
    11 | module circ #(parameter type A = B, parameter type B = A)
       |                                                        ^
-   11 | module circ #(parameter type A = B, parameter type B = A)
-      |                              ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_recursive_typedef_bad.v:11:52: Recursive type definition
                                          : ... note: In instance 't.u_circ'
@@ -29,6 +27,4 @@
         t/t_recursive_typedef_bad.v:11:34: ... Type chain: REFDTYPE 'B'
    11 | module circ #(parameter type A = B, parameter type B = A)
       |                                  ^
-   11 | module circ #(parameter type A = B, parameter type B = A)
-      |                                                    ^
 %Error: Exiting due to
