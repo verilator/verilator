@@ -110,13 +110,15 @@ constexpr IData VL_CLOG2_CE_Q(QData lhs) VL_PURE {
 // Metadata of processes
 using VlProcessRef = std::shared_ptr<VlProcess>;
 class VlForkSync;
+class VlForkSyncState;
 
 class VlProcess final {
     // MEMBERS
     int m_state;  // Current state of the process
     VlProcessRef m_parentp = nullptr;  // Parent process, if exists
     std::set<VlProcess*> m_children;  // Active child processes
-    VlForkSync* m_forkSyncOnKillp = nullptr;  // Optional fork..join counter to decrement on kill
+    VlForkSyncState* m_forkSyncOnKillp
+        = nullptr;  // Optional fork..join counter to decrement on kill
     bool m_forkSyncOnKillDone = false;  // Ensure on-kill callback fires only once
 
 public:
@@ -154,10 +156,12 @@ public:
         disableFork();
     }
     void disableFork() {
-        for (VlProcess* childp : m_children) childp->disable();
+        // childp->disable() may resume coroutines and mutate m_children
+        const std::set<VlProcess*> children = m_children;
+        for (VlProcess* childp : children) childp->disable();
     }
-    void forkSyncOnKill(VlForkSync* forkSyncp);
-    void forkSyncOnKillClear(VlForkSync* forkSyncp);
+    void forkSyncOnKill(VlForkSyncState* forkSyncp);
+    void forkSyncOnKillClear(VlForkSyncState* forkSyncp);
     bool completed() const { return state() == FINISHED || state() == KILLED; }
     bool completedFork() const {
         for (const VlProcess* const childp : m_children)
@@ -1939,7 +1943,7 @@ public:
     VlClassRef() = default;
     // Init with nullptr
     // cppcheck-suppress noExplicitConstructor
-    VlClassRef(VlNull){};
+    VlClassRef(VlNull) {};
     template <typename... T_Args>
     VlClassRef(VlDeleter& deleter, T_Args&&... args)
         // () required here to avoid narrowing conversion warnings,

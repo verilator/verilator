@@ -129,8 +129,7 @@ void VlTriggerScheduler::moveToResumeQueue(const char* eventDescription) {
     if (!m_fired.empty()) {
         VL_DEBUG_IF(VL_DBG_MSGF("         Moving to resume queue processes waiting for %s:\n",
                                 eventDescription);
-                    for (const auto& susp
-                         : m_fired) {
+                    for (const auto& susp : m_fired) {
                         VL_DBG_MSGF("           - ");
                         susp.dump();
                     });
@@ -144,8 +143,7 @@ void VlTriggerScheduler::ready(const char* eventDescription) {
     if (!m_awaiting.empty()) {
         VL_DEBUG_IF(
             VL_DBG_MSGF("         Committing processes waiting for %s:\n", eventDescription);
-            for (const auto& susp
-                 : m_awaiting) {
+            for (const auto& susp : m_awaiting) {
                 VL_DBG_MSGF("           - ");
                 susp.dump();
             });
@@ -201,8 +199,7 @@ bool VlDynamicTriggerScheduler::evaluate() {
 void VlDynamicTriggerScheduler::doPostUpdates() {
     VL_DEBUG_IF(if (!m_post.empty())
                     VL_DBG_MSGF("         Doing post updates for processes:\n");  //
-                for (const auto& susp
-                     : m_post) {
+                for (const auto& susp : m_post) {
                     VL_DBG_MSGF("           - ");
                     susp.dump();
                 });
@@ -212,8 +209,7 @@ void VlDynamicTriggerScheduler::doPostUpdates() {
 
 void VlDynamicTriggerScheduler::resume() {
     VL_DEBUG_IF(if (!m_triggered.empty()) VL_DBG_MSGF("         Resuming processes:\n");  //
-                for (const auto& susp
-                     : m_triggered) {
+                for (const auto& susp : m_triggered) {
                     VL_DBG_MSGF("           - ");
                     susp.dump();
                 });
@@ -238,12 +234,12 @@ void VlDynamicTriggerScheduler::dump() const {
 //======================================================================
 // VlForkSync:: Methods
 
-void VlProcess::forkSyncOnKill(VlForkSync* forkSyncp) {
+void VlProcess::forkSyncOnKill(VlForkSyncState* forkSyncp) {
     m_forkSyncOnKillp = forkSyncp;
     m_forkSyncOnKillDone = false;
 }
 
-void VlProcess::forkSyncOnKillClear(VlForkSync* forkSyncp) {
+void VlProcess::forkSyncOnKillClear(VlForkSyncState* forkSyncp) {
     if (m_forkSyncOnKillp != forkSyncp) return;
     m_forkSyncOnKillp = nullptr;
     m_forkSyncOnKillDone = false;
@@ -260,22 +256,34 @@ void VlProcess::state(int s) {
     m_state = s;
 }
 
-VlForkSync::~VlForkSync() {
-    for (std::weak_ptr<VlProcess>& weakp : m_onKillProcessps) {
-        if (VlProcessRef processp = weakp.lock()) processp->forkSyncOnKillClear(this);
-    }
+VlForkSyncState::~VlForkSyncState() {
+    for (const VlProcessRef& processp : m_onKillProcessps) processp->forkSyncOnKillClear(this);
 }
 
 void VlForkSync::onKill(VlProcessRef process) {
     if (!process) return;
-    m_onKillProcessps.emplace_back(process);
-    process->forkSyncOnKill(this);
+    m_state->m_onKillProcessps.emplace_back(process);
+    process->forkSyncOnKill(m_state.get());
 }
 
-void VlForkSync::done(const char* filename, int lineno) {
+void VlForkSyncState::done(const char* filename, int lineno) {
     VL_DEBUG_IF(VL_DBG_MSGF("             Process forked at %s:%d finished\n", filename, lineno););
-    if (m_join->m_counter > 0) m_join->m_counter--;
-    if (m_join->m_counter == 0) m_join->m_susp.resume();
+    if (!m_inited) {
+        ++m_pendingDones;
+        return;
+    }
+    if (m_counter > 0) m_counter--;
+    if (m_counter != 0) return;
+    if (m_inDone) {
+        m_resumePending = true;
+        return;
+    }
+    m_inDone = true;
+    do {
+        m_resumePending = false;
+        m_susp.resume();
+    } while (m_resumePending && m_inited && m_counter == 0);
+    m_inDone = false;
 }
 
 //======================================================================
