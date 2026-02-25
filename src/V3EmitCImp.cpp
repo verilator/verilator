@@ -627,17 +627,17 @@ class EmitCTrace final : public EmitCFunc {
 
     void emitTraceInitOne(const AstTraceDecl* nodep, int enumNum) {
         if (nodep->dtypep()->basicp()->isDouble()) {
-            puts("DECL_DOUBLE(tracep");
+            puts("VL_TRACE_DECL_DOUBLE(tracep");
         } else if (nodep->isWide()) {
-            puts("DECL_ARRAY(tracep");
+            puts("VL_TRACE_DECL_ARRAY(tracep");
         } else if (nodep->isQuad()) {
-            puts("DECL_QUAD(tracep");
+            puts("VL_TRACE_DECL_QUAD(tracep");
         } else if (nodep->bitRange().ranged()) {
-            puts("DECL_BUS(tracep");
+            puts("VL_TRACE_DECL_BUS(tracep");
         } else if (nodep->dtypep()->basicp()->isEvent()) {
-            puts("DECL_EVENT(tracep");
+            puts("VL_TRACE_DECL_EVENT(tracep");
         } else {
-            puts("DECL_BIT(tracep");
+            puts("VL_TRACE_DECL_BIT(tracep");
         }
 
         // Code

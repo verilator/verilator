@@ -156,32 +156,32 @@ public:
 
 // duck-typed interface to decl* methods
 // We use macros in order to strip out unused args at compile time.
-#define DECL_EVENT(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum) do { \
+#define VL_TRACE_DECL_EVENT(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum) do { \
     if constexpr(array) tracep->declEvent(code, name, arraynum); \
     else tracep->declEvent(code, name); \
 } while(0)
 
-#define DECL_BIT(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum) do { \
+#define VL_TRACE_DECL_BIT(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum) do { \
     if constexpr(array) tracep->declBit(code, name, arraynum); \
     else tracep->declBit(code, name); \
 } while(0)
 
-#define DECL_BUS(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb) do { \
+#define VL_TRACE_DECL_BUS(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb) do { \
     if constexpr(array) tracep->declBus(code, name, arraynum, msb, lsb); \
     else tracep->declBus(code, name, msb, lsb); \
 } while(0)
 
-#define DECL_QUAD(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb) do { \
+#define VL_TRACE_DECL_QUAD(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb) do { \
     if constexpr(array) tracep->declQuad(code, name, arraynum, msb, lsb); \
     else tracep->declQuad(code, name, msb, lsb); \
 } while(0)
 
-#define DECL_ARRAY(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb) do { \
+#define VL_TRACE_DECL_ARRAY(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb) do { \
     if constexpr(array) tracep->declArray(code, name, arraynum, msb, lsb); \
     else tracep->declArray(code, name, msb, lsb); \
 } while(0)
 
-#define DECL_DOUBLE(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum) do { \
+#define VL_TRACE_DECL_DOUBLE(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum) do { \
     if constexpr(array) tracep->declDouble(code, name, arraynum); \
     else tracep->declDouble(code, name); \
 } while(0)
