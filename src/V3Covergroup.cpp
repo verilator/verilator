@@ -25,6 +25,7 @@
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Covergroup.h"
+#include "V3MemberMap.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -62,6 +63,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // Track sequence state variables for multi-value transition bins
     // Key is bin pointer, value is state position variable
     std::map<AstCoverBin*, AstVar*> m_seqStateVars;  // transition bin -> sequence state variable
+
+    VMemberMap m_memberMap;  // Member names cached for fast lookup
 
     // METHODS
     void clearBinInfos() {
@@ -1515,25 +1518,15 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     void generateCoverageComputationCode() {
         UINFO(4, "  Generating coverage computation code" << endl);
 
-        // Find get_coverage() and get_inst_coverage() methods
-        AstFunc* getCoveragep = nullptr;
-        AstFunc* getInstCoveragep = nullptr;
+        // Invalidate cache: addMembersp() calls in generateCoverpointCode/generateCrossCode
+        // have added new members since the last scan, so clear before re-querying.
+        m_memberMap.clear();
 
-        int memberCount = 0;
-        for (AstNode* itemp = m_covergroupp->membersp(); itemp; itemp = itemp->nextp()) {
-            if (++memberCount > 10000) {
-                m_covergroupp->v3error(
-                    "Too many members or infinite loop in membersp iteration (1)");
-                break;
-            }
-            if (AstFunc* funcp = VN_CAST(itemp, Func)) {
-                if (funcp->name() == "get_coverage") {
-                    getCoveragep = funcp;
-                } else if (funcp->name() == "get_inst_coverage") {
-                    getInstCoveragep = funcp;
-                }
-            }
-        }
+        // Find get_coverage() and get_inst_coverage() methods
+        AstFunc* const getCoveragep
+            = VN_CAST(m_memberMap.findMember(m_covergroupp, "get_coverage"), Func);
+        AstFunc* const getInstCoveragep
+            = VN_CAST(m_memberMap.findMember(m_covergroupp, "get_inst_coverage"), Func);
 
         if (!getCoveragep || !getInstCoveragep) {
             UINFO(4, "    Warning: Could not find get_coverage methods" << endl);
@@ -1839,22 +1832,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             if (hasUnsupportedEvent) return;
 
             // Find the sample() method and constructor
-            int findCount = 0;
-            for (AstNode* itemp = nodep->membersp(); itemp; itemp = itemp->nextp()) {
-                if (++findCount > 10000) {
-                    nodep->v3error("Too many members or infinite loop in membersp iteration (3)");
-                    break;
-                }
-                if (AstFunc* const funcp = VN_CAST(itemp, Func)) {
-                    if (funcp->name() == "sample") {
-                        m_sampleFuncp = funcp;
-                        UINFO(9, "Found sample() method" << endl);
-                    } else if (funcp->name() == "new") {
-                        m_constructorp = funcp;
-                        UINFO(9, "Found constructor" << endl);
-                    }
-                }
-            }
+            m_sampleFuncp = VN_CAST(m_memberMap.findMember(nodep, "sample"), Func);
+            m_constructorp = VN_CAST(m_memberMap.findMember(nodep, "new"), Func);
+            UINFO(9, "Found sample() method: " << (m_sampleFuncp ? "yes" : "no") << endl);
+            UINFO(9, "Found constructor: " << (m_constructorp ? "yes" : "no") << endl);
 
             iterateChildren(nodep);
             processCovergroup();
