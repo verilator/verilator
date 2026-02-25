@@ -1,3 +1,9 @@
+// -*- mode: C++; c-file-style: "cc-mode" -*-
+//*************************************************************************
+// DESCRIPTION: Verilator: Interface typedef capture helper
+//
+// Code available from: https://verilator.org
+//
 //*************************************************************************
 //
 // This program is free software; you can redistribute it and/or modify it
@@ -8,9 +14,6 @@
 //
 //*************************************************************************
 
-//*************************************************************************
-// DESCRIPTION: Interface typedef capture helper.
-//
 // ARCHITECTURE - Separation of Concerns (do not change without reading):
 //
 //   The IfaceCapture system has three phases with strict responsibilities:
@@ -45,8 +48,6 @@
 //   Template entries have cloneCellPath = ""; clone entries get it set by
 //   propagateClone.  TemplateKey (ownerModName, refName, cellPath) matches
 //   all entries regardless of cloneCellPath - used for propagation and debug.
-//
-// Code available from: https://verilator.org
 
 #include "V3LinkDotIfaceCapture.h"
 
