@@ -111,6 +111,31 @@ AstParamTypeDType* V3LinkDotIfaceCapture::findParamTypeInModule(AstNodeModule* m
     return nullptr;
 }
 
+AstNodeDType* V3LinkDotIfaceCapture::findDTypeByPrettyName(AstNodeModule* modp,
+                                                          const string& prettyName) {
+    for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        if (AstNodeDType* const dtp = VN_CAST(stmtp, NodeDType)) {
+            if (dtp->prettyName() == prettyName) return dtp;
+        }
+    }
+    return nullptr;
+}
+string V3LinkDotIfaceCapture::findConnName(AstNodeModule* parentModp, AstNodeModule* childModp) {
+    for (AstNode* sp = parentModp->stmtsp(); sp; sp = sp->nextp()) {
+        if (AstCell* const cellp = VN_CAST(sp, Cell)) {
+            if (cellp->modp() == childModp) return cellp->name();
+        }
+        if (AstVar* const varp = VN_CAST(sp, Var)) {
+            if (varp->isIfaceRef() && varp->subDTypep()) {
+                if (AstIfaceRefDType* const irefp = ifaceRefFromVarDType(varp->subDTypep())) {
+                    if (irefp->ifaceViaCellp() == childModp) return varp->name();
+                }
+            }
+        }
+    }
+    return "";
+}
+
 AstNodeModule* V3LinkDotIfaceCapture::findOwnerModule(AstNode* nodep) {
     for (AstNode* curp = nodep; curp; curp = curp->backp()) {
         // Guard against corrupted backp() chains (e.g. freed memory,
@@ -662,18 +687,6 @@ void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
     // with multi-instantiation), we walk the cell hierarchy of the containing
     // module to find the correct clone of the target interface.
 
-    // Helper: find a NodeDType by prettyName in a module (for type-table fixup
-    // where the stored name is a prettyName, not a raw name).
-    auto findDTypeByPrettyName
-        = [](AstNodeModule* modp, const string& prettyName) -> AstNodeDType* {
-        for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstNodeDType* const dtp = VN_CAST(stmtp, NodeDType)) {
-                if (dtp->prettyName() == prettyName) return dtp;
-            }
-        }
-        return nullptr;
-    };
-
     // Helper: given a module and a dead target module, find the correct clone
     // of the target by walking the containing module's cell hierarchy.
     // For example, if refp is in cache_if__Cz3 and targetModp is dead
@@ -1062,25 +1075,6 @@ void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
         };
         walk(modp);
         return info;
-    };
-
-    // Helper: find the cell/port name that connects parentModp to childModp.
-    // Scans parentModp's stmts for a cell or IFACEREFDTYPE port pointing to childModp.
-    // Returns empty string if not found.
-    auto findConnName = [](AstNodeModule* parentModp, AstNodeModule* childModp) -> string {
-        for (AstNode* sp = parentModp->stmtsp(); sp; sp = sp->nextp()) {
-            if (AstCell* const cellp = VN_CAST(sp, Cell)) {
-                if (cellp->modp() == childModp) return cellp->name();
-            }
-            if (AstVar* const varp = VN_CAST(sp, Var)) {
-                if (varp->isIfaceRef() && varp->subDTypep()) {
-                    if (AstIfaceRefDType* const irefp = ifaceRefFromVarDType(varp->subDTypep())) {
-                        if (irefp->ifaceViaCellp() == childModp) return varp->name();
-                    }
-                }
-            }
-        }
-        return "";
     };
 
     // Helper: given a wrong target owner module W and the reachable info from M,

@@ -112,6 +112,10 @@ private:
     static bool s_enabled;
 
     static string extractIfacePortName(const string& dotText);
+    // Find a NodeDType by prettyName in a module's top-level statements
+    static AstNodeDType* findDTypeByPrettyName(AstNodeModule* modp, const string& prettyName);
+    // Find the cell/port name that connects parentModp to childModp
+    static string findConnName(AstNodeModule* parentModp, AstNodeModule* childModp);
 
     template <typename FilterFn, typename Fn>
     static void forEachImpl(FilterFn&& filter, Fn&& fn);
