@@ -627,17 +627,23 @@ class EmitCTrace final : public EmitCFunc {
 
     void emitTraceInitOne(const AstTraceDecl* nodep, int enumNum) {
         if (nodep->dtypep()->basicp()->isDouble()) {
-            puts("VL_TRACE_DECL_DOUBLE(tracep");
+            puts("VL_TRACE_DECL_DOUBLE");
         } else if (nodep->isWide()) {
-            puts("VL_TRACE_DECL_WIDE(tracep");
+            puts("VL_TRACE_DECL_WIDE");
         } else if (nodep->isQuad()) {
-            puts("VL_TRACE_DECL_QUAD(tracep");
+            puts("VL_TRACE_DECL_QUAD");
         } else if (nodep->bitRange().ranged()) {
-            puts("VL_TRACE_DECL_BUS(tracep");
+            puts("VL_TRACE_DECL_BUS");
         } else if (nodep->dtypep()->basicp()->isEvent()) {
-            puts("VL_TRACE_DECL_EVENT(tracep");
+            puts("VL_TRACE_DECL_EVENT");
         } else {
-            puts("VL_TRACE_DECL_BIT(tracep");
+            puts("VL_TRACE_DECL_BIT");
+        }
+
+        if (nodep->arrayRange().ranged()) {
+            puts("_ARRAY(tracep");
+        } else {
+            puts("(tracep");
         }
 
         // Code
@@ -676,9 +682,7 @@ class EmitCTrace final : public EmitCFunc {
 
         // Array range
         if (nodep->arrayRange().ranged()) {
-            puts(", true,(i+" + cvtToStr(nodep->arrayRange().lo()) + ")");
-        } else {
-            puts(", false,-1");
+            puts(", (i+" + cvtToStr(nodep->arrayRange().lo()) + ")");
         }
 
         // Bit range
