@@ -1117,10 +1117,9 @@ class WidthVisitor final : public VNVisitor {
                         depth++;
                     }
                     if (m_modep) {
-                        UINFO(9,
-                              "SELRANGE-DEBUG: modp=" << m_modep->prettyName()
-                                                      << " hasGParam=" << m_modep->hasGParam()
-                                                      << " origName=" << m_modep->origName());
+                        UINFO(9, "SELRANGE-DEBUG: modp=" << m_modep->prettyName()
+                                                         << " hasGParam=" << m_modep->hasGParam()
+                                                         << " origName=" << m_modep->origName());
                     }
                     UINFO(9, "SELRANGE-DEBUG: ---");
                 }
@@ -1930,7 +1929,8 @@ class WidthVisitor final : public VNVisitor {
             // the ref chain; when it's an expression, dtypep() is already resolved.
             AstNodeDType* const dtypep = VN_CAST(nodep->fromp(), NodeDType)
                                              ? VN_AS(nodep->fromp(), NodeDType)->skipRefOrNullp()
-                                             : nodep->fromp() ? nodep->fromp()->dtypep() : nullptr;
+                                         : nodep->fromp() ? nodep->fromp()->dtypep()
+                                                          : nullptr;
             UASSERT_OBJ(dtypep, nodep, "Unsized expression");
             const std::pair<uint32_t, uint32_t> dim = dtypep->dimensions(true);
             const int val
@@ -1963,7 +1963,8 @@ class WidthVisitor final : public VNVisitor {
         case VAttrType::DIM_SIZE: {
             AstNodeDType* const dtypep = VN_CAST(nodep->fromp(), NodeDType)
                                              ? VN_AS(nodep->fromp(), NodeDType)->skipRefOrNullp()
-                                             : nodep->fromp() ? nodep->fromp()->dtypep() : nullptr;
+                                         : nodep->fromp() ? nodep->fromp()->dtypep()
+                                                          : nullptr;
             UASSERT_OBJ(dtypep, nodep, "Unsized expression");
             if (VN_IS(dtypep, QueueDType) || VN_IS(dtypep, DynArrayDType)) {
                 switch (nodep->attrType()) {
@@ -2355,8 +2356,7 @@ class WidthVisitor final : public VNVisitor {
             // Defer unlinked RefDTypes in parameterized template modules (or types
             // with no owning module, e.g. moved to TypeTable) until specialization
             // resolves them.
-            const bool inTemplateModule
-                = !m_modep || m_modep->parameterizedTemplate();
+            const bool inTemplateModule = !m_modep || m_modep->parameterizedTemplate();
             if (inTemplateModule) {
                 nodep->doingWidth(false);
                 return;
@@ -3430,9 +3430,8 @@ class WidthVisitor final : public VNVisitor {
         // owning module (e.g. moved to TypeTable during DepGraph resolution).
         // TODO: Revisit this gate if DepGraph becomes the sole flow and widthing
         // can assume all types are already specialized.
-        const bool inTemplateModule
-            = (m_modep && m_modep->parameterizedTemplate())
-              || (VN_IS(nodep, UnionDType) && !m_modep);
+        const bool inTemplateModule = (m_modep && m_modep->parameterizedTemplate())
+                                      || (VN_IS(nodep, UnionDType) && !m_modep);
 
         // Determine bit assignments and width
         if (VN_IS(nodep, UnionDType) || nodep->packed()) {

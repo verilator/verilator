@@ -5792,8 +5792,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
             UINFO(9, indent() << "iface capture captured typedef name=" << nodep->name()
                               << " typedef=" << nodep->typedefp() << " cell=" << capturedCellp);
             if (nodep->typedefp()) {
-                UINFO(9, indent() << "iface capture refresh typedef binding name="
-                                  << nodep->name() << " typedef=" << nodep->typedefp()
+                UINFO(9, indent() << "iface capture refresh typedef binding name=" << nodep->name()
+                                  << " typedef=" << nodep->typedefp()
                                   << " cell=" << capturedCellp);
                 nodep->typedefp(nullptr);
                 nodep->classOrPackagep(nullptr);
