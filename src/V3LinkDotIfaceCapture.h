@@ -151,6 +151,16 @@ private:
                                           AstNodeModule** containerp = nullptr);
     // Fix a single REFDTYPE's dead-module pointers (typedefp, refDTypep, dtypep)
     static int fixDeadRefs(AstRefDType* refp, AstNodeModule* containingModp, const char* location);
+    // Disambiguate a wrong-clone target pointer using cellPath or reachable set
+    static AstNodeModule* disambiguateTarget(AstNodeModule* curOwnerp, AstNodeModule* ownerModp,
+                                             AstNodeModule* correctModp, AstRefDType* refp,
+                                             const CapturedEntry& entry,
+                                             const ReachableInfo& reachable, const char* label);
+    // Phase methods called by finalizeIfaceCapture
+    static int fixDeadRefsInTypeTable();
+    static int fixDeadRefsInModules();
+    static int fixWrongCloneRefs();
+    static void verifyNoDeadRefs();
 
     template <typename FilterFn, typename Fn>
     static void forEachImpl(FilterFn&& filter, Fn&& fn);
