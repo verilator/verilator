@@ -308,7 +308,6 @@ class LinkIncVisitor final : public VNVisitor {
         AstVar* const varp = new AstVar{
             fl, VVarType::BLOCKTEMP, name, VFlagChildDType{},
             new AstRefDType{fl, AstRefDType::FlagTypeOfExpr{}, readp->cloneTree(true)}};
-        varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         if (m_ftaskp) varp->funcLocal(true);
 
         // Declare the variable
