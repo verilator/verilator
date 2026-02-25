@@ -283,7 +283,7 @@ void VerilatedFst::declQuad(uint32_t code, const char* name, int dtypenum,
                             int lsb) {
     declare(code, name, dtypenum, direction, kind, type, false, -1, true, msb, lsb);
 }
-void VerilatedFst::declArray(uint32_t code, const char* name, int dtypenum,
+void VerilatedFst::declWide(uint32_t code, const char* name, int dtypenum,
                              VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
                              VerilatedTraceSigType type, int msb,
                              int lsb) {
@@ -318,7 +318,7 @@ void VerilatedFst::declQuad(uint32_t code, const char* name, int dtypenum,
                             int lsb) {
     declare(code, name, dtypenum, direction, kind, type, true, arraynum, true, msb, lsb);
 }
-void VerilatedFst::declArray(uint32_t code, const char* name, int dtypenum,
+void VerilatedFst::declWide(uint32_t code, const char* name, int dtypenum,
                              VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
                              VerilatedTraceSigType type, int arraynum, int msb,
                              int lsb) {

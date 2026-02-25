@@ -464,7 +464,7 @@ void VerilatedVcd::declBus(uint32_t code, const char* name, int msb, int lsb) {
 void VerilatedVcd::declQuad(uint32_t code, const char* name, int msb, int lsb) {
     declare(code, name, "wire", false, -1, true, msb, lsb);
 }
-void VerilatedVcd::declArray(uint32_t code, const char* name, int msb, int lsb) {
+void VerilatedVcd::declWide(uint32_t code, const char* name, int msb, int lsb) {
     declare(code, name, "wire", false, -1, true, msb, lsb);
 }
 void VerilatedVcd::declDouble(uint32_t code, const char* name) {
@@ -484,7 +484,7 @@ void VerilatedVcd::declBus(uint32_t code, const char* name, int arraynum, int ms
 void VerilatedVcd::declQuad(uint32_t code, const char* name, int arraynum, int msb, int lsb) {
     declare(code, name, "wire", true, arraynum, true, msb, lsb);
 }
-void VerilatedVcd::declArray(uint32_t code, const char* name, int arraynum, int msb, int lsb) {
+void VerilatedVcd::declWide(uint32_t code, const char* name, int arraynum, int msb, int lsb) {
     declare(code, name, "wire", true, arraynum, true, msb, lsb);
 }
 void VerilatedVcd::declDouble(uint32_t code, const char* name, int arraynum) {

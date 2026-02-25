@@ -629,7 +629,7 @@ class EmitCTrace final : public EmitCFunc {
         if (nodep->dtypep()->basicp()->isDouble()) {
             puts("VL_TRACE_DECL_DOUBLE(tracep");
         } else if (nodep->isWide()) {
-            puts("VL_TRACE_DECL_ARRAY(tracep");
+            puts("VL_TRACE_DECL_WIDE(tracep");
         } else if (nodep->isQuad()) {
             puts("VL_TRACE_DECL_QUAD(tracep");
         } else if (nodep->bitRange().ranged()) {

@@ -562,7 +562,7 @@ void VerilatedSaif::declQuad(const uint32_t code, const uint32_t fidx, const cha
                              const int msb, const int lsb) {
     declare(code, fidx, name, "wire", false, -1, true, msb, lsb);
 }
-void VerilatedSaif::declArray(const uint32_t code, const uint32_t fidx, const char* name,
+void VerilatedSaif::declWide(const uint32_t code, const uint32_t fidx, const char* name,
                               const int msb, const int lsb) {
     declare(code, fidx, name, "wire", false, -1, true, msb, lsb);
 }
@@ -587,7 +587,7 @@ void VerilatedSaif::declQuad(const uint32_t code, const uint32_t fidx, const cha
                              const int arraynum, const int msb, const int lsb) {
     declare(code, fidx, name, "wire", true, arraynum, true, msb, lsb);
 }
-void VerilatedSaif::declArray(const uint32_t code, const uint32_t fidx, const char* name,
+void VerilatedSaif::declWide(const uint32_t code, const uint32_t fidx, const char* name,
                               const int arraynum, const int msb, const int lsb) {
     declare(code, fidx, name, "wire", true, arraynum, true, msb, lsb);
 }

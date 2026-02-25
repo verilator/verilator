@@ -124,7 +124,7 @@ public:
     void declQuad(uint32_t code, const char* name, int dtypenum,
                   VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
                   int msb, int lsb);
-    void declArray(uint32_t code, const char* name, int dtypenum,
+    void declWide(uint32_t code, const char* name, int dtypenum,
                    VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
                    int msb, int lsb);
     void declDouble(uint32_t code, const char* name, int dtypenum,
@@ -144,7 +144,7 @@ public:
     void declQuad(uint32_t code, const char* name, int dtypenum,
                   VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
                   int arraynum, int msb, int lsb);
-    void declArray(uint32_t code, const char* name, int dtypenum,
+    void declWide(uint32_t code, const char* name, int dtypenum,
                    VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
                    int arraynum, int msb, int lsb);
     void declDouble(uint32_t code, const char* name, int dtypenum,
@@ -177,9 +177,9 @@ public:
     else tracep->declQuad(code, name, dtypenum, sigDir, sigKind, sigType, msb, lsb); \
 } while(0)
 
-#define VL_TRACE_DECL_ARRAY(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb) do { \
-    if constexpr(array) tracep->declArray(code, name, dtypenum, sigDir, sigKind, sigType, arraynum, msb, lsb); \
-    else tracep->declArray(code, name, dtypenum, sigDir, sigKind, sigType, msb, lsb); \
+#define VL_TRACE_DECL_WIDE(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum, msb, lsb) do { \
+    if constexpr(array) tracep->declWide(code, name, dtypenum, sigDir, sigKind, sigType, arraynum, msb, lsb); \
+    else tracep->declWide(code, name, dtypenum, sigDir, sigKind, sigType, msb, lsb); \
 } while(0)
 
 #define VL_TRACE_DECL_DOUBLE(tracep, code, fidx, name, dtypenum, sigDir, sigKind, sigType, array, arraynum) do { \
