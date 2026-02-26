@@ -1959,6 +1959,7 @@ public:
         FOUR_STATE_TWO_STATE_XZ_RAW,
         FOUR_STATE_IS_TRUE,
         FOUR_STATE_EXPANDER,
+        FOUR_STATE_MASK,
         _END_SENTINEL
     };
     struct Properties final {
@@ -1983,6 +1984,7 @@ public:
             {FOUR_STATE_TWO_STATE_XZ_RAW, "fourLogicTwoStateXZRaw", true},
             {FOUR_STATE_IS_TRUE, "fourLogicIsTrue", true},
             {FOUR_STATE_EXPANDER, "fourStateLogicCast", true},
+            {FOUR_STATE_MASK, "fourLogicMask", true},
             //
         };
         static_assert(sizeof(properties) / sizeof(Properties)

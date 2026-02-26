@@ -689,16 +689,23 @@ class AstCFuncHard final : public AstNodeExpr {
     // @astgen op2 := pinsp : List[AstNodeExpr] // Arguments
     VCFunc m_cfunc;
 
+    void tryDeduceDtype() {
+        switch (m_cfunc) {
+        case VCFunc::FOUR_STATE_MASK:
+            if (AstNodeExpr* const pinp = pinsp()) dtypep(pinp->dtypep());
+            break;
+        case VCFunc::FOUR_STATE_HAS_XZ:
+        case VCFunc::FOUR_STATE_IS_TRUE: dtypeSetBit(); break;
+        default: break;
+        }
+    }
+
 public:
     AstCFuncHard(FileLine* flp, VCFunc cfunc, AstNodeExpr* pinsp)
         : ASTGEN_SUPER_CFuncHard(flp)
         , m_cfunc{cfunc} {
         addPinsp(pinsp);
-        switch (cfunc) {
-        case VCFunc::FOUR_STATE_HAS_XZ:
-        case VCFunc::FOUR_STATE_IS_TRUE: dtypeSetBit(); break;
-        default: break;
-        }
+        tryDeduceDtype();
     }
     ASTGEN_MEMBERS_AstCFuncHard;
     bool isPure() override { return m_cfunc.isPure(); }
@@ -2842,7 +2849,11 @@ public:
         out.opDiv(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f/ %r)"; }
-    string emitC() override { return "VL_DIV_%nq%lq%rq(%lw, %P, %li, %ri)"; }
+    string emitC() override {
+        return v3Global.opt.fourstate() && dtypep()->isFourstate()
+                   ? "fourLogicDiv(%li, %ri)"
+                   : "VL_DIV_%nq%lq%rq(%lw, %P, %li, %ri)";
+    }
     string emitSMT() const override { return "(bvudiv %l %r)"; }
     bool emitCheckMaxWords() override { return true; }
     bool cleanOut() const override { return false; }
@@ -3856,9 +3867,15 @@ public:
         out.opSub(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f- %r)"; }
-    string emitC() override { return "VL_SUB_%lq(%lW, %P, %li, %ri)"; }
+    string emitC() override {
+        return v3Global.opt.fourstate() && dtypep()->isFourstate()
+                   ? "fourLogicSub(%li, %ri)"
+                   : "VL_SUB_%lq(%lW, %P, %li, %ri)";
+    }
     string emitSMT() const override { return "(bvsub %l %r)"; }
-    string emitSimpleOperator() override { return "-"; }
+    string emitSimpleOperator() override {
+        return v3Global.opt.fourstate() && dtypep()->isFourstate() ? "" : "-";
+    }
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return false; }
     bool cleanRhs() const override { return false; }
@@ -4148,9 +4165,15 @@ public:
         out.opAdd(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f+ %r)"; }
-    string emitC() override { return "VL_ADD_%lq(%lW, %P, %li, %ri)"; }
+    string emitC() override {
+        return v3Global.opt.fourstate() && dtypep()->isFourstate()
+                   ? "fourLogicAdd(%li, %ri)"
+                   : "VL_ADD_%lq(%lW, %P, %li, %ri)";
+    }
     string emitSMT() const override { return "(bvadd %l %r)"; }
-    string emitSimpleOperator() override { return "+"; }
+    string emitSimpleOperator() override {
+        return v3Global.opt.fourstate() && dtypep()->isFourstate() ? "" : "+";
+    }
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return false; }
     bool cleanRhs() const override { return false; }
@@ -4218,9 +4241,15 @@ public:
         out.opMul(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f* %r)"; }
-    string emitC() override { return "VL_MUL_%lq(%lW, %P, %li, %ri)"; }
+    string emitC() override {
+        return v3Global.opt.fourstate() && dtypep()->isFourstate()
+                   ? "fourLogicMul(%li, %ri)"
+                   : "VL_MUL_%lq(%lW, %P, %li, %ri)";
+    }
     string emitSMT() const override { return "(bvmul %l %r)"; }
-    string emitSimpleOperator() override { return "*"; }
+    string emitSimpleOperator() override {
+        return v3Global.opt.fourstate() && dtypep()->isFourstate() ? "" : "*";
+    }
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return true; }
     bool cleanRhs() const override { return true; }

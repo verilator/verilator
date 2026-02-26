@@ -291,6 +291,14 @@ class CastQuadstateVisitor2 : public VNVisitor {
                 expectNState(exprp, true);
             }
             break;
+        case VCFunc::FOUR_STATE_MASK: {
+            AstNodeExpr* const pinp = nodep->pinsp();
+            UASSERT_OBJ(pinp && pinp->nextp() && !pinp->nextp()->nextp(), nodep,
+                        "FOUR_STATE_MASK shall have exactly two arguments");
+            expectNState(pinp, true);
+            expectNState(VN_AS(pinp->nextp(), NodeExpr), false);
+            break;
+        }
         default: break;
         }
     }

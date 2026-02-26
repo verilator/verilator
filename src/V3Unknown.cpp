@@ -194,7 +194,7 @@ class UnknownVisitor final : public VNVisitor {
         auto xrandNames = std::make_unique<V3UniqueNames>(s_xrandPrefix);
         {
             m_modp = nodep;
-            m_constXCvt = true;
+            m_constXCvt = !v3Global.opt.fourstate();
             // Class X randomization causes Vxrand in strange places, so disable
             if (VN_IS(nodep, Class)) m_allowXUnique = false;
             m_lvboundNames.reset();

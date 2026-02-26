@@ -1,0 +1,3 @@
+./obj_dir/
+*.log
+*.tmp

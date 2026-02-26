@@ -631,7 +631,10 @@ class DelayedVisitor final : public VNVisitor {
         vscpInfo.shadowVarMaskedKit().vscp = shadowVscp;
         // Create the makk variable
         const std::string maskName = "__VdlyMask__" + vscp->varp()->shortName();
-        AstVarScope* const maskVscp = createTemp(flp, scopep, maskName, vscp->dtypep());
+        AstVarScope* const maskVscp
+            = createTemp(flp, scopep, maskName,
+                         vscp->findBitDType(vscp->width(), vscp->dtypep()->widthMin(),
+                                            vscp->dtypep()->numeric()));
         maskVscp->varp()->setIgnorePostWrite();
         vscpInfo.shadowVarMaskedKit().maskp = maskVscp;
         // Create the AstActive for the Post logic
@@ -643,13 +646,19 @@ class DelayedVisitor final : public VNVisitor {
         AstAlwaysPost* const postp = new AstAlwaysPost{flp};
         activep->addStmtsp(postp);
         // Add the commit - vscp = (shadowVscp & maskVscp) | (vscp & ~maskVscp);
+        AstCFuncHard* const newp = new AstCFuncHard{flp, VCFunc::FOUR_STATE_MASK,
+                                                    new AstVarRef{flp, vscp, VAccess::READ}};
+        newp->addPinsp(new AstNot{flp, new AstVarRef{flp, maskVscp, VAccess::READ}});
         postp->addStmtsp(new AstAssign{
             flp, new AstVarRef{flp, vscp, VAccess::WRITE},
             new AstOr{flp,
-                      new AstAnd{flp, new AstVarRef{flp, shadowVscp, VAccess::READ},
-                                 new AstVarRef{flp, maskVscp, VAccess::READ}},
-                      new AstAnd{flp, new AstVarRef{flp, vscp, VAccess::READ},
-                                 new AstNot{flp, new AstVarRef{flp, maskVscp, VAccess::READ}}}}});
+                      new AstCFuncHard{
+                          flp,
+                          VCFunc::FOUR_STATE_MASK,
+                          AstNode::addNext(new AstVarRef{flp, shadowVscp, VAccess::READ},
+                                           new AstVarRef{flp, maskVscp, VAccess::READ}),
+                      },
+                      newp}});
         vscp->varp()->setIgnorePostRead();
         // Clar the mask - maskVscp = '0;
         postp->addStmtsp(

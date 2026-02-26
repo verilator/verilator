@@ -2206,6 +2206,47 @@ constexpr FourStateLogicWrapper<T> fourLogicBitShiftRight(const FourStateLogicWr
     return {static_cast<T>(a.value >> b), static_cast<T>(a.xz >> b)};
 }
 
+template <typename T>
+constexpr FourStateLogicWrapper<T> fourLogicAdd(const FourStateLogicWrapper<T>& a,
+                                                const FourStateLogicWrapper<T>& b) noexcept {
+    if (fourLogicHasXZ(a) || fourLogicHasXZ(b)) {
+        return {static_cast<T>(~static_cast<T>(0)), static_cast<T>(~static_cast<T>(0))};
+    }
+    return {static_cast<T>(a.value + b.value), static_cast<T>(0)};
+}
+
+template <typename T>
+constexpr FourStateLogicWrapper<T> fourLogicSub(const FourStateLogicWrapper<T>& a,
+                                                const FourStateLogicWrapper<T>& b) noexcept {
+    if (fourLogicHasXZ(a) || fourLogicHasXZ(b)) {
+        return {static_cast<T>(~static_cast<T>(0)), static_cast<T>(~static_cast<T>(0))};
+    }
+    return {static_cast<T>(a.value - b.value), static_cast<T>(0)};
+}
+
+template <typename T>
+constexpr FourStateLogicWrapper<T> fourLogicMul(const FourStateLogicWrapper<T>& a,
+                                                const FourStateLogicWrapper<T>& b) noexcept {
+    if (fourLogicHasXZ(a) || fourLogicHasXZ(b)) {
+        return {static_cast<T>(~static_cast<T>(0)), static_cast<T>(~static_cast<T>(0))};
+    }
+    return {static_cast<T>(a.value * b.value), static_cast<T>(0)};
+}
+
+template <typename T>
+constexpr FourStateLogicWrapper<T> fourLogicDiv(const FourStateLogicWrapper<T>& a,
+                                                const FourStateLogicWrapper<T>& b) noexcept {
+    if (fourLogicHasXZ(a) || fourLogicHasXZ(b) || b.value == 0) {
+        return {static_cast<T>(~static_cast<T>(0)), static_cast<T>(~static_cast<T>(0))};
+    }
+    return {static_cast<T>(a.value / b.value), static_cast<T>(0)};
+}
+
+template <typename T, typename Y>
+constexpr FourStateLogicWrapper<T> fourLogicMask(const FourStateLogicWrapper<T>& a, Y b) noexcept {
+    return {static_cast<T>(a.value & static_cast<T>(b)), static_cast<T>(a.xz & static_cast<T>(b))};
+}
+
 template <typename T, typename Y>
 constexpr FourStateLogicWrapper<T> fourLogicBitSel(const FourStateLogicWrapper<T>& a,
                                                    const FourStateLogicWrapper<Y>& b) noexcept {

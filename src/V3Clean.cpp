@@ -65,9 +65,10 @@ class CleanVisitor final : public VNVisitor {
         if (old_dtypep->width() != width) {
             // Since any given dtype's cppWidth() is the same, we can just
             // remember one conversion for each, and reuse it
-            if (AstNodeDType* const new_dtypep = VN_CAST(old_dtypep->user3p(), NodeDType)) {
-                nodep->dtypep(new_dtypep);
-            } else {
+            // if (AstNodeDType* const new_dtypep = VN_CAST(old_dtypep->user3p(), NodeDType)) {
+            //     nodep->dtypep(new_dtypep);
+            // } else
+            {
                 nodep->dtypeChgWidth(width, nodep->widthMin());
                 AstNodeDType* const new_dtypep2 = nodep->dtypep();
                 UASSERT_OBJ(new_dtypep2 != old_dtypep, nodep,
@@ -189,6 +190,14 @@ class CleanVisitor final : public VNVisitor {
         iterateChildren(nodep);
         computeCppWidth(nodep);
         if (nodep->cleanLhs()) ensureClean(nodep->lhsp());
+        setClean(nodep, nodep->cleanOut());
+    }
+    void visit(AstCFuncHard* nodep) override {
+        iterateChildren(nodep);
+        computeCppWidth(nodep);
+        for (AstNodeExpr* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), NodeExpr)) {
+            ensureClean(pinp);
+        }
         setClean(nodep, nodep->cleanOut());
     }
     void visit(AstNodeBiop* nodep) override {

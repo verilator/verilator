@@ -232,6 +232,12 @@ class QuadstateVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
+    void visit(AstCond* const nodep) override {
+        if (hasAttrFourState(nodep->condp())) {
+            wrapExprpInCFuncHard(nodep->condp(), VCFunc::FOUR_STATE_IS_TRUE);
+        }
+        iterateChildren(nodep);
+    }
     void visit(AstLoopTest* const nodep) override {
         iterateAndNextNull(nodep->condp());
         if (hasAttrFourState(nodep->condp())) {
