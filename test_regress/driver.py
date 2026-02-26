@@ -1416,7 +1416,8 @@ class VlTest:
                     entering=self.obj_dir,
                     cmd=[
                         os.environ['MAKE'],
-                        (("-j " + str(Args.driver_build_jobs)) if Args.driver_build_jobs else ""),
+                        (("-j " +
+                          str(Args.driver_build_jobs_n)) if Args.driver_build_jobs_n else ""),
                         "-C " + self.obj_dir,
                         "-f " + os.path.abspath(os.path.dirname(__file__)) + "/Makefile_obj",
                         ("" if self.verbose else "--no-print-directory"),
@@ -1672,6 +1673,10 @@ class VlTest:
             else:
                 VlTest._cached_aslr_off = ""
         return VlTest._cached_aslr_off
+
+    @property
+    def build_jobs(self) -> str:
+        return "--build-jobs " + str(Args.driver_build_jobs_n)
 
     @property
     def driver_verilator_flags(self) -> list:
@@ -3075,8 +3080,8 @@ if __name__ == '__main__':
 
     forker = Forker(Args.jobs)
 
-    Args.driver_build_jobs = None
     if len(Arg_Tests) >= 2 and Args.jobs >= 2:
+        Args.driver_build_jobs_n = 2
         # Read supported into master process, so don't call every subprocess
         Capabilities.warmup_cache()
         # Without this tests such as t_debug_sigsegv_bt_bad.py will occasionally
@@ -3086,6 +3091,6 @@ if __name__ == '__main__':
         sys.stdin = open("/dev/null", 'r', encoding="utf8")  # pylint: disable=consider-using-with
     else:
         # Speed up single-test makes
-        Args.driver_build_jobs = calc_jobs()
+        Args.driver_build_jobs_n = calc_jobs()
 
     run_them()
