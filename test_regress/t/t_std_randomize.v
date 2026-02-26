@@ -49,6 +49,8 @@ module t_scope_std_randomize;
     bit [94:0] limit_95bits[10];
     int x;
     int y = 50;
+    int arr1[2];
+    int arr2[2];
 
     function bit run();
         int ready;
@@ -129,6 +131,11 @@ module t_scope_std_randomize;
         if (x <= PARAM) $stop;
         void'(std::randomize(x) with { x < PARAM; x > y; });
         if (x >= PARAM || x <= y) $stop;
+
+        arr1[0] = 1000;
+        arr2[0] = 42;
+        void'(std::randomize(arr1[0]) with { arr1[0] == arr2[0]; });
+        if (arr1[0] != 42) $stop;
 
         $write("*-* All Finished *-*\n");
         $finish;
