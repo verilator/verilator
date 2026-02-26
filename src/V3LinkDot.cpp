@@ -5566,6 +5566,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     iterate(cpackagep);
                     return;
                 }
+                // Also defer if target is a typedef to a parameterized class (#5977)
+                if (m_statep->forPrimary() && isParamedClassRef(cpackagerefp)) {
+                    iterate(cpackagep);
+                    return;
+                }
                 if (!cpackagerefp->classOrPackageSkipp()) {
                     VSymEnt* const foundp = m_statep->resolveClassOrPackage(
                         m_ds.m_dotSymp, cpackagerefp, true, false, "class/package reference");
