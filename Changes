@@ -24,13 +24,13 @@ Verilator 5.045 devel
 * Add parsing of solve-before inside foreach (#6934). [Pawel Kojma, Antmicro Ltd.]
 * Add error when accessing a non-static class field from a static function (#6948). [Artur Bieniek, Antmicro Ltd.]
 * Add VerilatedContext::useNumaAssign and set on threads() call (#6954). [Yangyu Chen]
-* Add coverage type information to verilator_coverage annotation output (#7131) (#7133).
+* Add coverage type information to verilator_coverage annotation output (#7131) (#7133) (#7148).
 * Add --max-replication option (#7139). [Todd Strader]
 * Support modport expression syntax + nested (#2601) (#5581) (#7005). [Leela Pakanati]
 * Support nested interface as port connection (#5066) (#6986). [Leela Pakanati]
 * Support solve..before constraints (#5647) (#7123). [Yilou Wang]
 * Support structure initial values (#6130).
-* Support proper automatic/static initialization, and remove STATICVAR warning (#6405).
+* Support proper automatic/static initialization, and remove STATICVAR warning (#6405) (#7086).
 * Support vpi_put/vpi_get forcing of signals (#5933) (#6704). [Christian Hecken]
 * Support detailed failure info for constraint violations (#6617) (#6883). [Yilou Wang]
 * Support `unique` constraints (on 1D static arrays) (#6810) (#6878). [Srinivasan Venkataramanan]
@@ -58,6 +58,7 @@ Verilator 5.045 devel
 * Change metacomment extra underscore error to BADVLTPRAGMA warning (#6968). [Geza Lore, Testorrent USA, Inc.]
 * Change INITIALSTATIC to also report on processes, per IEEE (#7020).
 * Change automatic variables to not be traced.
+* Change type definition error to show type chain with source context (#7151).
 * Optimize string temporaries to not be localized (#6969). [Geza Lore, Testorrent USA, Inc.]
 * Optimize wide word shifts by multiple of word size (#6970). [Geza Lore, Testorrent USA, Inc.]
 * Optimize concatenations that produce unused bits in DFG (#6971). [Geza Lore, Testorrent USA, Inc.]
