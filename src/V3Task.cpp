@@ -451,6 +451,7 @@ class TaskVisitor final : public VNVisitor {
                 = new AstVar{invarp->fileline(), VVarType::BLOCKTEMP, name, invarp};
             newvarp->funcLocal(false);
             newvarp->propagateAttrFrom(invarp);
+            newvarp->isInternal(true);
             m_modp->addStmtsp(newvarp);
             AstVarScope* const newvscp = new AstVarScope{newvarp->fileline(), m_scopep, newvarp};
             m_scopep->addVarsp(newvscp);

@@ -107,7 +107,7 @@ static void makeToStringMiddle(AstClass* nodep) {
     funcp->isConst(true);
     funcp->isStatic(false);
     funcp->protect(false);
-    funcp->addStmtsp(new AstCStmt{nodep->fileline(), "std::string out;"});
+    AstNodeStmt* stmtsp = nullptr;
     std::string comma;
     for (AstNode* itemp = nodep->membersp(); itemp; itemp = itemp->nextp()) {
         if (const auto* const varp = VN_CAST(itemp, Var)) {
@@ -122,7 +122,7 @@ static void makeToStringMiddle(AstClass* nodep) {
                 stmt += V3Common::makeToStringCall(itemp->dtypep(), itemp->nameProtect());
                 stmt += ";";
                 nodep->user1(true);  // So what we extend dumps this
-                funcp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
+                stmtsp = AstNode::addNextNull(stmtsp, new AstCStmt{nodep->fileline(), stmt});
             }
         }
     }
@@ -133,11 +133,18 @@ static void makeToStringMiddle(AstClass* nodep) {
         stmt += EmitCUtil::prefixNameProtect(nodep->extendsp()->dtypep());
         stmt += "::to_string_middle();";
         nodep->user1(true);  // So what we extend dumps this
-        funcp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
+        stmtsp = AstNode::addNextNull(stmtsp, new AstCStmt{nodep->fileline(), stmt});
     }
 
-    AstCExpr* const exprp = new AstCExpr{nodep->fileline(), "out"};
-    exprp->dtypeSetString();
+    AstNodeExpr* exprp;
+    if (stmtsp) {
+        funcp->addStmtsp(new AstCStmt{nodep->fileline(), "std::string out;"});
+        funcp->addStmtsp(stmtsp);
+        exprp = new AstCExpr{nodep->fileline(), "out"};
+        exprp->dtypeSetString();
+    } else {  // Nothing to print, return ""
+        exprp = new AstConst{nodep->fileline(), AstConst::String{}, ""};
+    }
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
 
     nodep->addStmtsp(funcp);
