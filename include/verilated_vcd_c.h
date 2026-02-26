@@ -174,15 +174,17 @@ public:
     tracep->declEventArray(code, name, arraynum)
 #define VL_TRACE_DECL_BIT_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum) \
     tracep->declBitArray(code, name, arraynum)
-#define VL_TRACE_DECL_BUS_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum, msb, lsb) \
+#define VL_TRACE_DECL_BUS_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum, \
+                                msb, lsb) \
     tracep->declBusArray(code, name, arraynum, msb, lsb)
-#define VL_TRACE_DECL_QUAD_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum, msb, lsb) \
+#define VL_TRACE_DECL_QUAD_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum, \
+                                 msb, lsb) \
     tracep->declQuadArray(code, name, arraynum, msb, lsb)
-#define VL_TRACE_DECL_WIDE_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum, msb, lsb) \
+#define VL_TRACE_DECL_WIDE_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum, \
+                                 msb, lsb) \
     tracep->declWideArray(code, name, arraynum, msb, lsb)
 #define VL_TRACE_DECL_DOUBLE_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum) \
     tracep->declDoubleArray(code, name, arraynum)
-
 
 #ifndef DOXYGEN
 // Declare specialization here as it's used in VerilatedFstC just below

@@ -157,9 +157,12 @@ public:
     // versions to call when the sig is array member
     void declEventArray(uint32_t code, uint32_t fidx, const char* name, int arraynum);
     void declBitArray(uint32_t code, uint32_t fidx, const char* name, int arraynum);
-    void declBusArray(uint32_t code, uint32_t fidx, const char* name, int arraynum, int msb, int lsb);
-    void declQuadArray(uint32_t code, uint32_t fidx, const char* name, int arraynum, int msb, int lsb);
-    void declWideArray(uint32_t code, uint32_t fidx, const char* name, int arraynum, int msb, int lsb);
+    void declBusArray(uint32_t code, uint32_t fidx, const char* name, int arraynum, int msb,
+                      int lsb);
+    void declQuadArray(uint32_t code, uint32_t fidx, const char* name, int arraynum, int msb,
+                       int lsb);
+    void declWideArray(uint32_t code, uint32_t fidx, const char* name, int arraynum, int msb,
+                       int lsb);
     void declDoubleArray(uint32_t code, uint32_t fidx, const char* name, int arraynum);
 };
 
@@ -182,11 +185,14 @@ public:
     tracep->declEventArray(code, fidx, name, arraynum)
 #define VL_TRACE_DECL_BIT_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum) \
     tracep->declBitArray(code, fidx, name, arraynum)
-#define VL_TRACE_DECL_BUS_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum, msb, lsb) \
+#define VL_TRACE_DECL_BUS_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum, \
+                                msb, lsb) \
     tracep->declBusArray(code, fidx, name, arraynum, msb, lsb)
-#define VL_TRACE_DECL_QUAD_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum, msb, lsb) \
+#define VL_TRACE_DECL_QUAD_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum, \
+                                 msb, lsb) \
     tracep->declQuadArray(code, fidx, name, arraynum, msb, lsb)
-#define VL_TRACE_DECL_WIDE_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum, msb, lsb) \
+#define VL_TRACE_DECL_WIDE_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum, \
+                                 msb, lsb) \
     tracep->declWideArray(code, fidx, name, arraynum, msb, lsb)
 #define VL_TRACE_DECL_DOUBLE_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum) \
     tracep->declDoubleArray(code, fidx, name, arraynum)

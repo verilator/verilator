@@ -273,20 +273,17 @@ void VerilatedFst::declBit(uint32_t code, const char* name, int dtypenum,
 }
 void VerilatedFst::declBus(uint32_t code, const char* name, int dtypenum,
                            VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
-                           VerilatedTraceSigType type, int msb,
-                           int lsb) {
+                           VerilatedTraceSigType type, int msb, int lsb) {
     declare(code, name, dtypenum, direction, kind, type, false, -1, true, msb, lsb);
 }
 void VerilatedFst::declQuad(uint32_t code, const char* name, int dtypenum,
                             VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
-                            VerilatedTraceSigType type, int msb,
-                            int lsb) {
+                            VerilatedTraceSigType type, int msb, int lsb) {
     declare(code, name, dtypenum, direction, kind, type, false, -1, true, msb, lsb);
 }
 void VerilatedFst::declWide(uint32_t code, const char* name, int dtypenum,
-                             VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
-                             VerilatedTraceSigType type, int msb,
-                             int lsb) {
+                            VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
+                            VerilatedTraceSigType type, int msb, int lsb) {
     declare(code, name, dtypenum, direction, kind, type, false, -1, true, msb, lsb);
 }
 void VerilatedFst::declDouble(uint32_t code, const char* name, int dtypenum,
@@ -297,36 +294,34 @@ void VerilatedFst::declDouble(uint32_t code, const char* name, int dtypenum,
 
 // versions to call when the sig is array member
 void VerilatedFst::declEventArray(uint32_t code, const char* name, int dtypenum,
-                             VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
-                             VerilatedTraceSigType type, int arraynum) {
+                                  VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
+                                  VerilatedTraceSigType type, int arraynum) {
     declare(code, name, dtypenum, direction, kind, type, true, arraynum, false, 0, 0);
 }
 void VerilatedFst::declBitArray(uint32_t code, const char* name, int dtypenum,
-                           VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
-                           VerilatedTraceSigType type, int arraynum) {
+                                VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
+                                VerilatedTraceSigType type, int arraynum) {
     declare(code, name, dtypenum, direction, kind, type, true, arraynum, false, 0, 0);
 }
 void VerilatedFst::declBusArray(uint32_t code, const char* name, int dtypenum,
-                           VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
-                           VerilatedTraceSigType type, int arraynum, int msb,
-                           int lsb) {
+                                VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
+                                VerilatedTraceSigType type, int arraynum, int msb, int lsb) {
     declare(code, name, dtypenum, direction, kind, type, true, arraynum, true, msb, lsb);
 }
 void VerilatedFst::declQuadArray(uint32_t code, const char* name, int dtypenum,
-                            VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
-                            VerilatedTraceSigType type, int arraynum, int msb,
-                            int lsb) {
+                                 VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
+                                 VerilatedTraceSigType type, int arraynum, int msb, int lsb) {
     declare(code, name, dtypenum, direction, kind, type, true, arraynum, true, msb, lsb);
 }
 void VerilatedFst::declWideArray(uint32_t code, const char* name, int dtypenum,
-                             VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
-                             VerilatedTraceSigType type, int arraynum, int msb,
-                             int lsb) {
+                                 VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
+                                 VerilatedTraceSigType type, int arraynum, int msb, int lsb) {
     declare(code, name, dtypenum, direction, kind, type, true, arraynum, true, msb, lsb);
 }
 void VerilatedFst::declDoubleArray(uint32_t code, const char* name, int dtypenum,
-                              VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
-                              VerilatedTraceSigType type, int arraynum) {
+                                   VerilatedTraceSigDirection direction,
+                                   VerilatedTraceSigKind kind, VerilatedTraceSigType type,
+                                   int arraynum) {
     declare(code, name, dtypenum, direction, kind, type, true, arraynum, false, 63, 0);
 }
 //=============================================================================

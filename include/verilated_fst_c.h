@@ -114,42 +114,35 @@ public:
     void popPrefix();
 
     // versions to call when the sig is not array member
-    void declEvent(uint32_t code, const char* name, int dtypenum,
-                   VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType);
-    void declBit(uint32_t code, const char* name, int dtypenum,
-                 VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType);
-    void declBus(uint32_t code, const char* name, int dtypenum,
-                 VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
-                 int msb, int lsb);
-    void declQuad(uint32_t code, const char* name, int dtypenum,
-                  VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
-                  int msb, int lsb);
-    void declWide(uint32_t code, const char* name, int dtypenum,
-                   VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
-                   int msb, int lsb);
-    void declDouble(uint32_t code, const char* name, int dtypenum,
-                    VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType);
-
+    void declEvent(uint32_t code, const char* name, int dtypenum, VerilatedTraceSigDirection,
+                   VerilatedTraceSigKind, VerilatedTraceSigType);
+    void declBit(uint32_t code, const char* name, int dtypenum, VerilatedTraceSigDirection,
+                 VerilatedTraceSigKind, VerilatedTraceSigType);
+    void declBus(uint32_t code, const char* name, int dtypenum, VerilatedTraceSigDirection,
+                 VerilatedTraceSigKind, VerilatedTraceSigType, int msb, int lsb);
+    void declQuad(uint32_t code, const char* name, int dtypenum, VerilatedTraceSigDirection,
+                  VerilatedTraceSigKind, VerilatedTraceSigType, int msb, int lsb);
+    void declWide(uint32_t code, const char* name, int dtypenum, VerilatedTraceSigDirection,
+                  VerilatedTraceSigKind, VerilatedTraceSigType, int msb, int lsb);
+    void declDouble(uint32_t code, const char* name, int dtypenum, VerilatedTraceSigDirection,
+                    VerilatedTraceSigKind, VerilatedTraceSigType);
 
     // versions to call when the sig is array member
-    void declEventArray(uint32_t code, const char* name, int dtypenum,
-                   VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
-                   int arraynum);
-    void declBitArray(uint32_t code, const char* name, int dtypenum,
-                 VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
-                 int arraynum);
-    void declBusArray(uint32_t code, const char* name, int dtypenum,
-                 VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
-                 int arraynum, int msb, int lsb);
-    void declQuadArray(uint32_t code, const char* name, int dtypenum,
-                  VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
-                  int arraynum, int msb, int lsb);
-    void declWideArray(uint32_t code, const char* name, int dtypenum,
-                   VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
-                   int arraynum, int msb, int lsb);
-    void declDoubleArray(uint32_t code, const char* name, int dtypenum,
-                    VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
-                    int arraynum);
+    void declEventArray(uint32_t code, const char* name, int dtypenum, VerilatedTraceSigDirection,
+                        VerilatedTraceSigKind, VerilatedTraceSigType, int arraynum);
+    void declBitArray(uint32_t code, const char* name, int dtypenum, VerilatedTraceSigDirection,
+                      VerilatedTraceSigKind, VerilatedTraceSigType, int arraynum);
+    void declBusArray(uint32_t code, const char* name, int dtypenum, VerilatedTraceSigDirection,
+                      VerilatedTraceSigKind, VerilatedTraceSigType, int arraynum, int msb,
+                      int lsb);
+    void declQuadArray(uint32_t code, const char* name, int dtypenum, VerilatedTraceSigDirection,
+                       VerilatedTraceSigKind, VerilatedTraceSigType, int arraynum, int msb,
+                       int lsb);
+    void declWideArray(uint32_t code, const char* name, int dtypenum, VerilatedTraceSigDirection,
+                       VerilatedTraceSigKind, VerilatedTraceSigType, int arraynum, int msb,
+                       int lsb);
+    void declDoubleArray(uint32_t code, const char* name, int dtypenum, VerilatedTraceSigDirection,
+                         VerilatedTraceSigKind, VerilatedTraceSigType, int arraynum);
 
     void declDTypeEnum(int dtypenum, const char* name, uint32_t elements, unsigned int minValbits,
                        const char** itemNamesp, const char** itemValuesp);
@@ -174,11 +167,14 @@ public:
     tracep->declEventArray(code, name, dtypenum, dir, kind, type, arraynum)
 #define VL_TRACE_DECL_BIT_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum) \
     tracep->declBitArray(code, name, dtypenum, dir, kind, type, arraynum)
-#define VL_TRACE_DECL_BUS_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum, msb, lsb) \
+#define VL_TRACE_DECL_BUS_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum, \
+                                msb, lsb) \
     tracep->declBusArray(code, name, dtypenum, dir, kind, type, arraynum, msb, lsb)
-#define VL_TRACE_DECL_QUAD_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum, msb, lsb) \
+#define VL_TRACE_DECL_QUAD_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum, \
+                                 msb, lsb) \
     tracep->declQuadArray(code, name, dtypenum, dir, kind, type, arraynum, msb, lsb)
-#define VL_TRACE_DECL_WIDE_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum, msb, lsb) \
+#define VL_TRACE_DECL_WIDE_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum, \
+                                 msb, lsb) \
     tracep->declWideArray(code, name, dtypenum, dir, kind, type, arraynum, msb, lsb)
 #define VL_TRACE_DECL_DOUBLE_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum) \
     tracep->declDoubleArray(code, name, dtypenum, dir, kind, type, arraynum)
