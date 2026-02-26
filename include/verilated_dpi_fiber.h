@@ -45,9 +45,10 @@ private:
 public:
     // Run user C code in a fiber, wrapping it in a coroutine for scheduler integration
     // This allows the C code to call DPI exports with timing controls
-    template <typename Fn>
-    static VlCoroutine callImport(Fn&& fn) {
-        auto fiberp = VlFiber::create([captured = std::forward<Fn>(fn)]() mutable { captured(); });
+    template <typename Callable>
+    static VlCoroutine callImport(Callable&& fn) {
+        auto fiberp
+            = VlFiber::create([captured = std::forward<Callable>(fn)]() mutable { captured(); });
         while (!fiberp->isDone()) {
             fiberp->resume();
             if (!fiberp->isDone()) co_await FiberAwaitable{*fiberp};
@@ -57,18 +58,24 @@ public:
 
     // Suspend the current fiber until the DPI export coroutine completes
     // Must be called from within a fiber context (i.e., from C code called via DPI import)
-    static void awaitExport(VlCoroutine&& coro) {
-        VlCoroutine local = std::move(coro);
-        if (local.await_ready()) return;
+    template <typename Callable>
+    static void awaitExport(Callable&& coro) {
         VlFiber* const fiberp = VlFiber::current();
         if (VL_UNLIKELY(!fiberp)) {
             VL_FATAL_MT(__FILE__, __LINE__, "",
                         "DPI export with timing invoked outside of a fiber context");
         }
-        do {
-            local.setFiberContinuation(fiberp);
-            VlFiber::yield();
-        } while (!local.await_ready());
+        if VL_CONSTEXPR_CXX17 (std::is_same<std::result_of_t<Callable && ()>,
+                                            VlCoroutine>::value) {
+            VlCoroutine local{coro()};
+            if (local.await_ready()) return;
+            do {
+                local.setFiberContinuation(fiberp);
+                VlFiber::yield();
+            } while (!local.await_ready());
+        } else {
+            coro();
+        }
     }
 };
 

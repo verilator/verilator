@@ -12,6 +12,7 @@ module dpi_test ();
     forever #2 rtl_clk = ~rtl_clk;
   end
 
+
   export "DPI-C" v_export = task dpi_export;
   task dpi_export(input int unsigned i);
     @(posedge rtl_clk);

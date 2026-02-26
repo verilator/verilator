@@ -958,7 +958,7 @@ class TaskVisitor final : public VNVisitor {
         // but the compare is only done on first call then memoized, so
         // it's not worth optimizing.
 
-        // Peramble - fetch the exproted function from the scope table
+        // Peramble - fetch the exported function from the scope table
         AstCStmt* const prep = new AstCStmt{flp};
         funcp->addStmtsp(prep);
         // Static doesn't need save-restore as if below will re-fill proper value
@@ -1015,10 +1015,31 @@ class TaskVisitor final : public VNVisitor {
         }
         // Return value argument goes last
         if (rtnvarp) addFuncArg(rtnvarp);
-        // Close statement
-        callp->add(");");
-        // Call the user function
-        funcp->addStmtsp(callp);
+        // Close call expression
+        callp->add(")");
+        // The function has to be called by returning from fiber context first, if the timings are
+        // used
+        if (v3Global.opt.timing()) {
+            AstCExpr* const awaitExportp
+                = new AstCExpr{nodep->fileline(), "VerilatedDpi::awaitExport"};
+            AstExprStmt* const lambdap = new AstExprStmt{nodep->fileline(), callp, nullptr};
+            AstCStmt* const ifStmtp = new AstCStmt{nodep->fileline()};
+            ifStmtp->add("if VL_CONSTEXPR_CXX17 (std::is_same<decltype(");
+            ifStmtp->add(callp);
+            ifStmtp->add("),void>::value) {");
+            ifStmtp->add("return ");
+            ifStmtp->add(callp);
+            ifStmtp->add("} else {");
+            ifStmtp->add(callp);
+            ifStmtp->add("}");
+            awaitExportp->add("(");
+            awaitExportp->add(lambdap);
+            awaitExportp->add(");");
+            funcp->addStmtsp(awaitExportp);
+        } else {
+            callp->add(";");
+            funcp->addStmtsp(callp);
+        }
         // Convert output/inout arguments back to internal type
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVar* const portp = VN_CAST(stmtp, Var)) {
