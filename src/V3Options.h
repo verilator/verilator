@@ -254,6 +254,7 @@ private:
     bool m_emitAccessors = false;   // main switch: --emit-accessors
     bool m_exe = false;             // main switch: --exe
     bool m_flatten = false;         // main switch: --flatten
+    bool m_fourState = false;       // main switch: --four-state
     bool m_hierarchical = false;    // main switch: --hierarchical
     bool m_ignc = false;            // main switch: --ignc
     bool m_jsonOnly = false;        // main switch: --json-only
@@ -541,6 +542,7 @@ public:
     bool emitAccessors() const { return m_emitAccessors; }
     bool exe() const { return m_exe; }
     bool flatten() const { return m_flatten; }
+    bool fourState() const { return m_fourState; }
     bool gmake() const { return m_gmake; }
     bool makeJson() const { return m_makeJson; }
     bool threadsDpiPure() const { return m_threadsDpiPure; }
