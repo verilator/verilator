@@ -343,8 +343,10 @@ private:
                 AstNodeDType* const enSubMdtp = getEnVarpDTypeRecursep(varp, subMdtp);
                 if (subMdtp != enSubMdtp) {
                     changed = true;
-                    enMemberDTypes.push_back(
-                        new AstMemberDType{mdtp->fileline(), mdtp->name(), enSubMdtp});
+                    AstMemberDType* const enMdtp
+                        = new AstMemberDType{mdtp->fileline(), mdtp->name(), enSubMdtp};
+                    enMdtp->dtypep(enSubMdtp);
+                    enMemberDTypes.push_back(enMdtp);
                 } else {
                     enMemberDTypes.push_back(mdtp->cloneTreePure(false));
                 }
