@@ -8,14 +8,22 @@
 //     should produce a clear error with type chain display.
 
 // Circular: A defaults to B, B defaults to A
-module circ #(parameter type A = B, parameter type B = A)
-  (input A ai, output B bo);
+module circ #(
+    parameter type A = B,
+    parameter type B = A
+) (
+    input A ai,
+    output B bo
+);
   assign bo = ai;
 endmodule
 
-module t();
+module t ();
   logic [7:0] x, y;
-  circ u_circ(.ai(x), .bo(y));
+  circ u_circ (
+      .ai(x),
+      .bo(y)
+  );
   initial begin
     $finish;
   end
