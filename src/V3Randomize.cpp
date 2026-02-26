@@ -2329,7 +2329,7 @@ class RandomizeVisitor final : public VNVisitor {
                 const AstConst* const withIdxp = VN_AS(withASp->bitp(), Const);
                 const AstConst* const argIdxp = VN_AS(argASp->bitp(), Const);
                 return isSimilarNode(withASp->fromp(), argASp->fromp())
-                    && withIdxp->num().isCaseEq(argIdxp->num());
+                       && withIdxp->num().isCaseEq(argIdxp->num());
             }
             // Index must be Sel type, extract VarRef using fromp()
             if (!VN_IS(withASp->bitp(), Sel) || !VN_IS(argASp->bitp(), Sel)) return false;
