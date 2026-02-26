@@ -430,12 +430,8 @@ class DelayedVisitor final : public VNVisitor {
             }
             // In a suspendable of fork, we must use the unique flag scheme, TODO: why?
             if (vscpInfo.m_inSuspOrFork) return Scheme::FlagUnique;
-            // Otherwise if an array of packed/basic elements, use the shared flag scheme
-            if (basicp) return Scheme::FlagShared;
-            // Finally fall back on the shadow variable scheme, e.g. for
-            // arrays of unpacked structs. This will be slow.
             // TODO: generic LHS scheme as discussed in #5092
-            return Scheme::ShadowVar;
+            return Scheme::FlagShared;
         }
 
         // In a suspendable of fork, we must use the unique flag scheme, TODO: why?
