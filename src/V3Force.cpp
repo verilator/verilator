@@ -366,10 +366,20 @@ private:
                     varp->v3fatalSrc("Unsupported: Force of variable of unhandled data type");
                     return dtypep;
                 }
-                for (const auto& memberp : enMemberDTypes) enStructp->addMembersp(memberp);
+                int width = 0;
+                for (const auto& memberp : enMemberDTypes) {
+                    enStructp->addMembersp(memberp);
+                    const int memberWidth = memberp->width();
+                    if (VN_IS(structp, StructDType)) {
+                        width += memberWidth;
+                    } else {
+                        width = std::max(width, memberWidth);
+                    }
+                }
                 v3Global.rootp()->typeTablep()->addTypesp(enStructp);
                 enStructp->name(structp->name() + "__VforceEn_t");
                 enStructp->dtypep(enStructp);
+                enStructp->widthForce(width, width);
                 enStructp->classOrPackagep(structp->classOrPackagep());
                 dtypep->user1p(enStructp);
                 AstTypedef* const typedefp
