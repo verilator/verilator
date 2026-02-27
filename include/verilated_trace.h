@@ -533,7 +533,7 @@ public:
     }
     VL_ATTR_ALWINLINE void chgLogic(uint32_t* oldp, FourStateLogicWrapper<CData> newval) {
         const FourStateLogicWrapper<CData>& old
-            = static_cast<const FourStateLogicWrapper<CData>&>(*oldp);
+            = reinterpret_cast<const FourStateLogicWrapper<CData>&>(*oldp);
         const uint32_t diff = (old.value ^ newval.value) | (old.xz ^ newval.xz);
         if (VL_UNLIKELY(diff)) fullLogic(oldp, newval);
     }
@@ -544,7 +544,7 @@ public:
     VL_ATTR_ALWINLINE void chgCDataFourState(uint32_t* oldp, FourStateLogicWrapper<CData> newval,
                                              int bits) {
         const FourStateLogicWrapper<CData>& old
-            = static_cast<const FourStateLogicWrapper<CData>&>(*oldp);
+            = reinterpret_cast<const FourStateLogicWrapper<CData>&>(*oldp);
         const uint32_t diff = (old.value ^ newval.value) | (old.xz ^ newval.xz);
         if (VL_UNLIKELY(diff)) fullCDataFourState(oldp, newval, bits);
     }
@@ -555,7 +555,7 @@ public:
     VL_ATTR_ALWINLINE void chgSDataFourState(uint32_t* oldp, FourStateLogicWrapper<SData> newval,
                                              int bits) {
         const FourStateLogicWrapper<SData>& old
-            = static_cast<const FourStateLogicWrapper<SData>&>(*oldp);
+            = reinterpret_cast<const FourStateLogicWrapper<SData>&>(*oldp);
         const uint32_t diff = (old.value ^ newval.value) | (old.xz ^ newval.xz);
         if (VL_UNLIKELY(diff)) fullSDataFourState(oldp, newval, bits);
     }
@@ -566,7 +566,7 @@ public:
     VL_ATTR_ALWINLINE void chgIDataFourState(uint32_t* oldp, FourStateLogicWrapper<IData> newval,
                                              int bits) {
         const FourStateLogicWrapper<IData>& old
-            = static_cast<const FourStateLogicWrapper<IData>&>(*oldp);
+            = reinterpret_cast<const FourStateLogicWrapper<IData>&>(*oldp);
         const uint32_t diff = (old.value ^ newval.value) | (old.xz ^ newval.xz);
         if (VL_UNLIKELY(diff)) fullIDataFourState(oldp, newval, bits);
     }
@@ -579,7 +579,7 @@ public:
     VL_ATTR_ALWINLINE void chgQDataFourState(uint32_t* oldp, FourStateLogicWrapper<QData> newval,
                                              int bits) {
         const FourStateLogicWrapper<QData>& old
-            = static_cast<const FourStateLogicWrapper<QData>&>(*oldp);
+            = reinterpret_cast<const FourStateLogicWrapper<QData>&>(*oldp);
         const uint64_t diff = (old.value ^ newval.value) | (old.xz ^ newval.xz);
         if (VL_UNLIKELY(diff)) fullQDataFourState(oldp, newval, bits);
     }

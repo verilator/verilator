@@ -18,6 +18,7 @@ module tb_counter;
     $dumpvars();
     clk <= 0;
 
+    #20 rstn <= 1;
     #20 rstn <= 0;
     #10 rstn <= 1;
     #80 out <= 'x;
