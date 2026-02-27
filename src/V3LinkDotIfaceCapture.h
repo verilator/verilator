@@ -137,6 +137,8 @@ public:
     };
 
 private:
+    friend class TypeTableDeadRefVisitor;
+
     static CapturedMap s_map;
     static bool s_enabled;
 
