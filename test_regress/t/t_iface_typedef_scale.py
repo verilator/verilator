@@ -11,14 +11,15 @@
 # SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-import os
 import time
 
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.top_filename = test.obj_dir + "/t_iface_typedef_scale.sv"
 
-SCALES = [1000, 10000, 100000]
+N_TYPEDEFS = 5000
+MAX_COMPILE_SECS = 10  # Generous budget; catches O(N^2) explosion where 5k typedefs would take minutes without the cache
 
 
 def gen(filename, n):
@@ -58,24 +59,17 @@ def gen(filename, n):
         fh.write("endmodule\n")
 
 
-print("\n=== Interface typedef scaling benchmark ===")
-print("{:>10s}  {:>10s}  {:>10s}  {:>10s}".format(
-    "typedefs", "gen(s)", "compile(s)", "total(s)"))
+gen(test.top_filename, N_TYPEDEFS)
 
-for n in SCALES:
-    test.top_filename = test.obj_dir + "/t_iface_typedef_scale.sv"
+t0 = time.time()
+test.compile(verilator_flags2=["-x-assign fast --x-initial fast"])
+elapsed = time.time() - t0
 
-    t0 = time.time()
-    gen(test.top_filename, n)
-    t_gen = time.time() - t0
-
-    t1 = time.time()
-    test.compile(verilator_flags2=["-x-assign fast --x-initial fast"])
-    t_compile = time.time() - t1
-
-    t_total = time.time() - t0
-    print("{:>10d}  {:>10.3f}  {:>10.3f}  {:>10.3f}".format(
-        n, t_gen, t_compile, t_total))
+print("t_iface_typedef_scale: {} typedefs compiled in {:.3f}s (limit {:.1f}s)".format(
+    N_TYPEDEFS, elapsed, MAX_COMPILE_SECS))
+if elapsed > MAX_COMPILE_SECS:
+    test.error("Compile took {:.3f}s, exceeds {:.1f}s budget for {} typedefs".format(
+        elapsed, MAX_COMPILE_SECS, N_TYPEDEFS))
 
 test.execute()
 
