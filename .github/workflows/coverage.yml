@@ -5,6 +5,7 @@
 name: Code coverage
 
 on:
+  push:
   workflow_dispatch:
   schedule:
     - cron: '0 0 * * 0'  # weekly
