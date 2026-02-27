@@ -106,16 +106,23 @@ public:
         // The primary refp is stored above; extras are appended here so that
         // retargeting fixes ALL of them, not just the last-writer-wins primary.
         std::vector<AstRefDType*> extraRefps;
-        // Visit every AstNode* pointer field (analogous to AstNode::foreachLink)
+        // Visit every AstNode* pointer field (analogous to AstNode::foreachLink).
+        // The callback receives an AstNode* by reference; if it nulls the
+        // pointer the typed member is nulled accordingly.
         template <typename Fn>
         void foreachLink(Fn&& fn) {
-            fn(reinterpret_cast<AstNode*&>(refp));
-            fn(reinterpret_cast<AstNode*&>(ownerModp));
-            fn(reinterpret_cast<AstNode*&>(typedefp));
-            fn(reinterpret_cast<AstNode*&>(paramTypep));
-            fn(reinterpret_cast<AstNode*&>(ifacePortVarp));
-            fn(reinterpret_cast<AstNode*&>(origClassp));
-            for (auto& xrefp : extraRefps) fn(reinterpret_cast<AstNode*&>(xrefp));
+            auto visit = [&](auto*& ptr) {
+                AstNode* np = ptr;
+                fn(np);
+                if (!np) ptr = nullptr;
+            };
+            visit(refp);
+            visit(ownerModp);
+            visit(typedefp);
+            visit(paramTypep);
+            visit(ifacePortVarp);
+            visit(origClassp);
+            for (auto& xrefp : extraRefps) visit(xrefp);
         }
     };
 
