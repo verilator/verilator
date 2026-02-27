@@ -274,7 +274,8 @@ class WidthVisitor final : public VNVisitor {
     // When fromp() is a DType (e.g. unlinked RefDType), resolve through
     // the ref chain; when it's an expression, dtypep() is already resolved.
     static AstNodeDType* fromDTypep(AstNode* fromp) {
-        if (AstNodeDType* const dtypep = VN_CAST(fromp, NodeDType)) return dtypep->skipRefOrNullp();
+        if (AstNodeDType* const dtypep = VN_CAST(fromp, NodeDType))
+            return dtypep->skipRefOrNullp();
         return fromp ? fromp->dtypep() : nullptr;
     }
     // VISITORS
@@ -1219,8 +1220,7 @@ class WidthVisitor final : public VNVisitor {
                     && (VN_AS(nodep->bitp(), Const)->toSInt() > (frommsb - fromlsb)
                         || VN_AS(nodep->bitp(), Const)->toSInt() < 0)) {
                     // Suppress in dead/parameterized template modules
-                    if (!(m_modep
-                          && (m_modep->dead() || m_modep->parameterizedTemplate()))) {
+                    if (!(m_modep && (m_modep->dead() || m_modep->parameterizedTemplate()))) {
                         nodep->v3warn(SELRANGE,
                                       "Selection index out of range: "
                                           << (VN_AS(nodep->bitp(), Const)->toSInt() + fromlsb)

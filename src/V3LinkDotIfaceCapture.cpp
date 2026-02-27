@@ -1039,8 +1039,7 @@ class TypeTableDeadRefVisitor final : public VNVisitor {
     void visit(AstMemberDType* memberp) override {
         iterateChildren(memberp);
         if (!memberp->dtypep()) return;
-        AstNodeModule* const dtOwnerp
-            = V3LinkDotIfaceCapture::findOwnerModule(memberp->dtypep());
+        AstNodeModule* const dtOwnerp = V3LinkDotIfaceCapture::findOwnerModule(memberp->dtypep());
         if (!dtOwnerp || !dtOwnerp->dead()) return;
         // Try to find the clone of the dead module
         AstNodeModule* const cloneModp = V3LinkDotIfaceCapture::findLiveCloneOf(dtOwnerp);
@@ -1061,8 +1060,8 @@ class TypeTableDeadRefVisitor final : public VNVisitor {
                 if (AstTypedef* const tdp = VN_CAST(sp, Typedef)) {
                     if (tdp->subDTypep() && tdp->subDTypep()->prettyName() == dtName) {
                         UINFO(9, "iface capture type table MEMBERDTYPE fixup (via typedef): "
-                                     << memberp->name() << " dtypep " << dtOwnerp->name()
-                                     << " -> " << cloneModp->name() << endl);
+                                     << memberp->name() << " dtypep " << dtOwnerp->name() << " -> "
+                                     << cloneModp->name() << endl);
                         memberp->dtypep(tdp->subDTypep());
                         ++m_fixed;
                         return;

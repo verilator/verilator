@@ -3142,8 +3142,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
 
     // Capture a ParamTypeDType reference for interface typedef retargeting.
     // Called when a RefDType resolves to a ParamTypeDType owned by an interface.
-    void captureIfaceParamType(AstRefDType* nodep, AstParamTypeDType* defp,
-                               AstCell* capturedCellp,
+    void captureIfaceParamType(AstRefDType* nodep, AstParamTypeDType* defp, AstCell* capturedCellp,
                                const V3LinkDotIfaceCapture::CapturedEntry* capEntryp) {
         if (!V3LinkDotIfaceCapture::enabled() || !m_statep->forPrimary()) return;
         AstNodeModule* const defOwnerModp = V3LinkDotIfaceCapture::findOwnerModule(defp);
@@ -3152,8 +3151,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
             = capturedCellp ? capturedCellp
                             : (m_ds.m_dotSymp ? VN_CAST(m_ds.m_dotSymp->nodep(), Cell) : nullptr);
         if (!cellForCapture) return;
-        UINFO(9, indent() << "iface capture add paramtype " << nodep << " iface="
-                          << defOwnerModp->prettyNameQ() << endl);
+        UINFO(9, indent() << "iface capture add paramtype " << nodep
+                          << " iface=" << defOwnerModp->prettyNameQ() << endl);
         V3LinkDotIfaceCapture::addParamType(nodep, cellForCapture->name(), m_modp, defp,
                                             defOwnerModp->name(),
                                             capEntryp ? capEntryp->ifacePortVarp : nullptr);
