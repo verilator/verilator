@@ -1071,64 +1071,7 @@ class WidthVisitor final : public VNVisitor {
             if (nodep->fromp()->width() < width && !inParameterizedTemplate) {
                 nodep->v3warn(SELRANGE, "Extracting " << width << " bits from only "
                                                       << nodep->fromp()->width() << " bit number");
-                // DEBUG: dump AST context for SELRANGE diagnosis
-                if (VL_UNLIKELY(v3Global.opt.debugLevel("V3Width") >= 9)) {
-                    UINFO(9, "SELRANGE-DEBUG: fromp="
-                                 << nodep->fromp()->prettyTypeName()
-                                 << " width=" << nodep->fromp()->width()
-                                 << " dtypep=" << nodep->fromp()->dtypep()->prettyTypeName()
-                                 << " dtypeWidth=" << nodep->fromp()->dtypep()->width());
-                    // Walk the SEL chain to find the root VARREF
-                    AstNode* walkp = nodep->fromp();
-                    int depth = 0;
-                    while (walkp && depth < 10) {
-                        if (AstSel* selp = VN_CAST(walkp, Sel)) {
-                            UINFO(9, "SELRANGE-DEBUG:  chain["
-                                         << depth << "] SEL" << " w=" << selp->width() << " lsb="
-                                         << (VN_IS(selp->lsbp(), Const)
-                                                 ? std::to_string(
-                                                       VN_AS(selp->lsbp(), Const)->toSInt())
-                                                 : "?")
-                                         << " widthConst=" << selp->widthConst()
-                                         << " dtype=" << selp->dtypep()->prettyTypeName()
-                                         << " dtypeW=" << selp->dtypep()->width());
-                            walkp = selp->fromp();
-                        } else if (AstVarRef* vrp = VN_CAST(walkp, VarRef)) {
-                            UINFO(9, "SELRANGE-DEBUG:  chain["
-                                         << depth << "] VARREF" << " name="
-                                         << vrp->varp()->prettyName() << " w=" << vrp->width()
-                                         << " dtype=" << vrp->dtypep()->prettyTypeName()
-                                         << " dtypeW=" << vrp->dtypep()->width());
-                            // Show the var's dtype chain
-                            AstNodeDType* vdtp = vrp->varp()->dtypep();
-                            int di = 0;
-                            while (vdtp && di < 5) {
-                                UINFO(9, "SELRANGE-DEBUG:   varDtype[" << di << "] "
-                                                                       << vdtp->prettyTypeName()
-                                                                       << " w=" << vdtp->width());
-                                if (AstRefDType* rdtp = VN_CAST(vdtp, RefDType)) {
-                                    vdtp = rdtp->skipRefp();
-                                } else {
-                                    break;
-                                }
-                                di++;
-                            }
-                            walkp = nullptr;
-                        } else {
-                            UINFO(9, "SELRANGE-DEBUG:  chain[" << depth << "] "
-                                                               << walkp->prettyTypeName()
-                                                               << " w=" << walkp->width());
-                            walkp = nullptr;
-                        }
-                        depth++;
-                    }
-                    if (m_modep) {
-                        UINFO(9, "SELRANGE-DEBUG: modp=" << m_modep->prettyName()
-                                                         << " hasGParam=" << m_modep->hasGParam()
-                                                         << " origName=" << m_modep->origName());
-                    }
-                    UINFO(9, "SELRANGE-DEBUG: ---");
-                }
+                UINFO(1, "    Related node: " << nodep);
                 // Extend it.
                 AstNodeDType* const subDTypep
                     = nodep->findLogicDType(width, width, nodep->fromp()->dtypep()->numeric());
