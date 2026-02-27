@@ -175,13 +175,15 @@ private:
     static void forEachImpl(FilterFn&& filter, Fn&& fn);
 
 public:
-    static void enable(bool flag) {
+    // Emergency escape hatch — never called in normal operation.
+    // IfaceCapture defaults to always-on (s_enabled = true).
+    static void enable(bool flag) {  // LCOV_EXCL_START
         s_enabled = flag;
         if (!flag) {
             s_map.clear();
             clearModuleCache();
         }
-    }
+    }  // LCOV_EXCL_STOP
     static bool enabled() { return s_enabled; }
     static void reset() {
         s_map.clear();

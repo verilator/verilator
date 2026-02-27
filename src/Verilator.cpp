@@ -157,9 +157,6 @@ static void process() {
         // Convert parseref's to varrefs, and other directly post parsing fixups
         V3LinkParse::linkParse(v3Global.rootp());
         // Cross-link signal names
-        // Keep IfaceCapture enabled for AST pointer fixups.
-        V3LinkDotIfaceCapture::enable(true);
-
         // Cross-link dotted hierarchical references
         V3LinkDot::linkDotPrimary(v3Global.rootp());
         v3Global.checkTree();  // Force a check, as link is most likely place for problems

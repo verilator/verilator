@@ -222,12 +222,9 @@ public:
         V3Error::errorExitCb(preErrorDumpHandler);  // If get error, dump self
         const std::size_t capturedCount = V3LinkDotIfaceCapture::size();
         if (forPrimary()) {
-            V3LinkDotIfaceCapture::enable(true);
-            UINFO(9, "iface capture enabled for primary pass (persisting entries) size="
-                         << capturedCount);
+            UINFO(9, "iface capture primary pass (entries=" << capturedCount << ")");
         } else if (forParamed()) {
-            UINFO(9,
-                  "iface capture entering paramed pass captured typedef count=" << capturedCount);
+            UINFO(9, "iface capture paramed pass (entries=" << capturedCount << ")");
         }
         readModNames();
     }
