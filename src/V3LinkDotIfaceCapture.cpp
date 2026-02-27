@@ -55,12 +55,42 @@
 #include "V3Error.h"
 #include "V3Global.h"
 
+#include <unordered_map>
 #include <unordered_set>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 V3LinkDotIfaceCapture::CapturedMap V3LinkDotIfaceCapture::s_map{};
 bool V3LinkDotIfaceCapture::s_enabled = false;
+
+// Per-module cache of statement-level names to avoid O(N*M) linear scans.
+// Lazily built on first access for a given module; cleared at phase boundaries.
+// Uses vectors per name to handle rare cases where different node types share a name
+// (e.g. a Typedef and a ParamTypeDType both named 'sc_tag_status_t').
+namespace {
+struct StmtNameMap final {
+    std::unordered_map<string, std::vector<AstNode*>> m_byName;
+    std::unordered_map<string, std::vector<AstNodeDType*>> m_byPrettyName;
+};
+std::unordered_map<AstNodeModule*, StmtNameMap> s_moduleCache;
+
+const StmtNameMap& getOrBuild(AstNodeModule* modp) {
+    auto it = s_moduleCache.find(modp);
+    if (it != s_moduleCache.end()) return it->second;
+    StmtNameMap& cache = s_moduleCache[modp];
+    for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        const string& nm = stmtp->name();
+        if (!nm.empty()) cache.m_byName[nm].push_back(stmtp);
+        if (AstNodeDType* const dtp = VN_CAST(stmtp, NodeDType)) {
+            const string pn = dtp->prettyName();
+            if (!pn.empty()) cache.m_byPrettyName[pn].push_back(dtp);
+        }
+    }
+    return cache;
+}
+}  // namespace
+
+void V3LinkDotIfaceCapture::clearModuleCache() { s_moduleCache.clear(); }
 
 AstIfaceRefDType* V3LinkDotIfaceCapture::ifaceRefFromVarDType(AstNodeDType* dtypep) {
     for (AstNodeDType* curp = dtypep; curp;) {
@@ -99,39 +129,43 @@ string resolveOwnerName(const string& hint, AstNode* nodep) {
 }  // namespace
 
 AstTypedef* V3LinkDotIfaceCapture::findTypedefInModule(AstNodeModule* modp, const string& name) {
-    for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-        if (AstTypedef* const tdp = VN_CAST(stmtp, Typedef)) {
-            if (tdp->name() == name) return tdp;
-        }
+    const StmtNameMap& cache = getOrBuild(modp);
+    const auto it = cache.m_byName.find(name);
+    if (it == cache.m_byName.end()) return nullptr;
+    for (AstNode* nodep : it->second) {
+        if (AstTypedef* const tdp = VN_CAST(nodep, Typedef)) return tdp;
     }
     return nullptr;
 }
 AstNodeDType* V3LinkDotIfaceCapture::findDTypeInModule(AstNodeModule* modp, const string& name,
                                                        VNType type) {
-    for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-        if (AstNodeDType* const dtp = VN_CAST(stmtp, NodeDType)) {
-            if (dtp->name() == name && dtp->type() == type) return dtp;
+    const StmtNameMap& cache = getOrBuild(modp);
+    const auto it = cache.m_byName.find(name);
+    if (it == cache.m_byName.end()) return nullptr;
+    for (AstNode* nodep : it->second) {
+        if (AstNodeDType* const dtp = VN_CAST(nodep, NodeDType)) {
+            if (dtp->type() == type) return dtp;
         }
     }
     return nullptr;
 }
 AstParamTypeDType* V3LinkDotIfaceCapture::findParamTypeInModule(AstNodeModule* modp,
                                                                 const string& name) {
-    for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-        if (AstParamTypeDType* const ptdp = VN_CAST(stmtp, ParamTypeDType)) {
-            if (ptdp->name() == name) return ptdp;
-        }
+    const StmtNameMap& cache = getOrBuild(modp);
+    const auto it = cache.m_byName.find(name);
+    if (it == cache.m_byName.end()) return nullptr;
+    for (AstNode* nodep : it->second) {
+        if (AstParamTypeDType* const ptdp = VN_CAST(nodep, ParamTypeDType)) return ptdp;
     }
     return nullptr;
 }
 
 AstNodeDType* V3LinkDotIfaceCapture::findDTypeByPrettyName(AstNodeModule* modp,
                                                            const string& prettyName) {
-    for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-        if (AstNodeDType* const dtp = VN_CAST(stmtp, NodeDType)) {
-            if (dtp->prettyName() == prettyName) return dtp;
-        }
-    }
+    const StmtNameMap& cache = getOrBuild(modp);
+    const auto it = cache.m_byPrettyName.find(prettyName);
+    if (it == cache.m_byPrettyName.end()) return nullptr;
+    if (!it->second.empty()) return it->second.front();
     return nullptr;
 }
 string V3LinkDotIfaceCapture::findConnName(AstNodeModule* parentModp, AstNodeModule* childModp) {
@@ -1288,6 +1322,7 @@ void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
     if (!s_enabled) return;
     UINFO(4, "finalizeIfaceCapture: fixing remaining cross-interface refs" << endl);
     if (!v3Global.rootp()) return;
+    clearModuleCache();  // Ensure fresh view after all cloning/widthing
 
     const int typeTableFixed = fixDeadRefsInTypeTable();
     const int moduleFixed = fixDeadRefsInModules();

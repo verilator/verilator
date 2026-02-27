@@ -172,10 +172,17 @@ private:
 public:
     static void enable(bool flag) {
         s_enabled = flag;
-        if (!flag) { s_map.clear(); }
+        if (!flag) {
+            s_map.clear();
+            clearModuleCache();
+        }
     }
     static bool enabled() { return s_enabled; }
-    static void reset() { s_map.clear(); }
+    static void reset() {
+        s_map.clear();
+        clearModuleCache();
+    }
+    static void clearModuleCache();
     static AstNodeModule* findOwnerModule(AstNode* nodep);
     // Unwrap array types (BracketArray, UnpackArray, RefDType) to find AstIfaceRefDType
     static AstIfaceRefDType* ifaceRefFromVarDType(AstNodeDType* dtypep);
