@@ -1027,7 +1027,7 @@ class ParamProcessor final {
                         AstNodeModule* const actualOwnerp
                             = V3LinkDotIfaceCapture::findOwnerModule(entry.refp);
                         if (actualOwnerp && actualOwnerp->hasGParam()) return;
-                        // Owner won't be cloned — directly retarget now.
+                        // Owner won't be cloned - directly retarget now.
                         if (retargetRefToModule(entry, newModp)) {
                             UINFO(9, "iface capture direct retarget: " << entry.refp << " -> "
                                                                        << newModp->prettyNameQ()
