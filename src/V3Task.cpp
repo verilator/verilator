@@ -975,7 +975,7 @@ class TaskVisitor final : public VNVisitor {
             = VIdProtect::protect(v3Global.opt.prefix() + "__Vcb_" + nodep->cname() + "_t");
         prep->add(cbtype + " __Vcb = reinterpret_cast<" + cbtype
                   + ">(VerilatedScope::exportFind(__Vscopep, __Vfuncnum));");
-
+        
         // Convert input/inout DPI arguments to Internal types, and construct the call
         AstCExpr* const callp = new AstCExpr{flp};
         const auto addFuncArg = [&](AstVar* portp) -> AstVarScope* {
@@ -990,6 +990,7 @@ class TaskVisitor final : public VNVisitor {
             callp->add(new AstVarRef{portp->fileline(), vscp, access});
             return vscp;
         };
+
         if (v3Global.opt.timing()) {
             callp->add("__Vcb,");
         } else {
@@ -1028,8 +1029,9 @@ class TaskVisitor final : public VNVisitor {
             awaitExportp->add(");");
             funcp->addStmtsp(awaitExportp);
         } else {
-            callp->add(";");
-            funcp->addStmtsp(callp);
+            callp->add(");");
+            AstStmtExpr* const stmtp = new AstStmtExpr{nodep->fileline(), callp};
+            funcp->addStmtsp(stmtp);
         }
         // Convert output/inout arguments back to internal type
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
