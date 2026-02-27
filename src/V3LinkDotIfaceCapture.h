@@ -67,22 +67,7 @@ public:
         string ownerModName;
         string refName;
         string cellPath;
-        bool operator==(const TemplateKey& o) const {
-            return ownerModName == o.ownerModName && refName == o.refName
-                   && cellPath == o.cellPath;
-        }
     };
-    struct TemplateKeyHash final {
-        size_t operator()(const TemplateKey& k) const {
-            size_t h = std::hash<string>{}(k.ownerModName);
-            h ^= std::hash<string>{}(k.refName) + 0x9e3779b9 + (h << 6) + (h >> 2);
-            h ^= std::hash<string>{}(k.cellPath) + 0x9e3779b9 + (h << 6) + (h >> 2);
-            return h;
-        }
-    };
-    static TemplateKey templateKeyOf(const CaptureKey& k) {
-        return {k.ownerModName, k.refName, k.cellPath};
-    }
 
     struct CapturedEntry final {
         CaptureType captureType = CaptureType::IFACE;
@@ -224,7 +209,6 @@ public:
     static const CapturedEntry* find(const CaptureKey& key);
     // Pointer-based lookup: linear scan with early exit (no std::function overhead)
     static const CapturedEntry* find(const AstRefDType* refp);
-    static bool erase(const CaptureKey& key);
     // Pointer-based erase: remove all entries whose refp matches
     static bool erase(const AstRefDType* refp);
     static void forEach(const std::function<void(const CapturedEntry&)>& fn);

@@ -609,13 +609,6 @@ const V3LinkDotIfaceCapture::CapturedEntry* V3LinkDotIfaceCapture::find(const Ca
     return &it->second;
 }
 
-bool V3LinkDotIfaceCapture::erase(const CaptureKey& key) {
-    const auto it = s_map.find(key);
-    if (it == s_map.end()) return false;
-    s_map.erase(it);
-    return true;
-}
-
 const V3LinkDotIfaceCapture::CapturedEntry* V3LinkDotIfaceCapture::find(const AstRefDType* refp) {
     if (!refp || s_map.empty()) return nullptr;
     for (const auto& kv : s_map) {
@@ -1257,17 +1250,20 @@ void V3LinkDotIfaceCapture::verifyNoDeadRefs() {
             modp->foreach([&](AstRefDType* refp) {
                 if (refp->typedefp()) {
                     AstNodeModule* const ownerModp = findOwnerModule(refp->typedefp());
-                    if (ownerModp && ownerModp->dead()) {
+                    // Diagnostic block: only entered when fixup logic has a bug
+                    // and leaves a typedefp pointing to a dead module.
+                    if (ownerModp && ownerModp->dead()) {  // LCOV_EXCL_START
                         bool inLedger = false;
                         forEach([&](const CapturedEntry& e) {
                             if (e.refp == refp) inLedger = true;
                         });
                         UINFO(9, "VERIFY FAIL typedefp: refp="
-                                     << refp->name() << " (" << cvtToHex(refp) << ")" << " in mod="
+                                     << refp->name() << " (" << cvtToHex(refp) << ")"
+                                     << " in mod="
                                      << modp->name() << " typedefp->owner=" << ownerModp->name()
                                      << " inLedger=" << inLedger << endl);
-                    }
-                    UASSERT_OBJ(!ownerModp || !ownerModp->dead(), refp,
+                    }  // LCOV_EXCL_STOP
+                    UASSERT_OBJ(!ownerModp || !ownerModp->dead(), refp,  // LCOV_EXCL_LINE
                                 "REFDTYPE '" << refp->prettyNameQ() << "' in live module '"
                                              << modp->prettyNameQ()
                                              << "' has typedefp pointing to dead module '"
@@ -1275,17 +1271,20 @@ void V3LinkDotIfaceCapture::verifyNoDeadRefs() {
                 }
                 if (refp->refDTypep()) {
                     AstNodeModule* const ownerModp = findOwnerModule(refp->refDTypep());
-                    if (ownerModp && ownerModp->dead()) {
+                    // Diagnostic block: only entered when fixup logic has a bug
+                    // and leaves a refDTypep pointing to a dead module.
+                    if (ownerModp && ownerModp->dead()) {  // LCOV_EXCL_START
                         bool inLedger = false;
                         forEach([&](const CapturedEntry& e) {
                             if (e.refp == refp) inLedger = true;
                         });
                         UINFO(9, "VERIFY FAIL refDTypep: refp="
-                                     << refp->name() << " (" << cvtToHex(refp) << ")" << " in mod="
+                                     << refp->name() << " (" << cvtToHex(refp) << ")"
+                                     << " in mod="
                                      << modp->name() << " refDTypep->owner=" << ownerModp->name()
                                      << " inLedger=" << inLedger << endl);
-                    }
-                    UASSERT_OBJ(!ownerModp || !ownerModp->dead(), refp,
+                    }  // LCOV_EXCL_STOP
+                    UASSERT_OBJ(!ownerModp || !ownerModp->dead(), refp,  // LCOV_EXCL_LINE
                                 "REFDTYPE '" << refp->prettyNameQ() << "' in live module '"
                                              << modp->prettyNameQ()
                                              << "' has refDTypep pointing to dead module '"
@@ -1300,7 +1299,9 @@ void V3LinkDotIfaceCapture::verifyNoDeadRefs() {
             nodep->foreach([&](AstRefDType* refp) {
                 if (refp->typedefp()) {
                     AstNodeModule* const ownerModp = findOwnerModule(refp->typedefp());
-                    UASSERT_OBJ(!ownerModp || !ownerModp->dead(), refp,
+                    // Bug-only assertion: fires only if fixup logic fails to
+                    // resolve a type-table typedefp away from a dead module.
+                    UASSERT_OBJ(!ownerModp || !ownerModp->dead(), refp,  // LCOV_EXCL_LINE
                                 "REFDTYPE '"
                                     << refp->prettyNameQ()
                                     << "' in type table has typedefp pointing to dead module '"
@@ -1308,7 +1309,9 @@ void V3LinkDotIfaceCapture::verifyNoDeadRefs() {
                 }
                 if (refp->refDTypep()) {
                     AstNodeModule* const ownerModp = findOwnerModule(refp->refDTypep());
-                    UASSERT_OBJ(!ownerModp || !ownerModp->dead(), refp,
+                    // Bug-only assertion: fires only if fixup logic fails to
+                    // resolve a type-table refDTypep away from a dead module.
+                    UASSERT_OBJ(!ownerModp || !ownerModp->dead(), refp,  // LCOV_EXCL_LINE
                                 "REFDTYPE '"
                                     << refp->prettyNameQ()
                                     << "' in type table has refDTypep pointing to dead module '"
