@@ -2566,7 +2566,7 @@ void AstNodeModule::dump(std::ostream& str) const {
     } else if (recursive()) {
         str << " [RECURSIVE]";
     }
-    if (parameterizedTemplate()) str << " [PARAM-TEMPLATE]";
+    if (parameterizedTemplate()) str << " [PAR-TEMPL]";
     if (verilatorLib()) str << " [VERILATOR-LIB]";
     str << " [" << timeunit() << "]";
     if (libname() != "work") str << " libname=" << libname();
