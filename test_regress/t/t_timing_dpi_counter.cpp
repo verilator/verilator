@@ -6,15 +6,16 @@
 // SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-#include <cstdlib>
 #include <cstdio>
+#include <cstdlib>
 #include <svdpi.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern void v_export (unsigned int i);
+extern void v_export(unsigned int i);
+extern void v_export_void(unsigned int i);
 
 int dpi_import(unsigned int len) {
     printf("dpi_import: len=%d\n", len);
@@ -22,6 +23,7 @@ int dpi_import(unsigned int len) {
         printf("callling v_export: i=%d\n", i);
         v_export(i);
     }
+    v_export_void(42);
     return 0;
 }
 

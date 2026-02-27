@@ -19,6 +19,11 @@ module dpi_test ();
     $display("%t: v_export: i=%3d", $time, i);
   endtask
 
+  export "DPI-C" v_export_void = task dpi_export_void;
+  task dpi_export_void(input int unsigned i);
+    $display("%t: v_export_void: i=%3d", $time, i);
+  endtask
+
   import "DPI-C" context task dpi_import(input int unsigned n);
 
   integer n;

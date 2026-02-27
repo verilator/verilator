@@ -977,7 +977,7 @@ class TaskVisitor final : public VNVisitor {
                   + ">(VerilatedScope::exportFind(__Vscopep, __Vfuncnum));");
 
         // Convert input/inout DPI arguments to Internal types, and construct the call
-        AstCStmt* const callp = new AstCStmt{flp};
+        AstCExpr* const callp = new AstCExpr{flp};
         const auto addFuncArg = [&](AstVar* portp) -> AstVarScope* {
             // No createDpiTemp; we make a real internal variable instead
             AstVarScope* const vscp = createFuncVar(funcp, portp->name() + tmpSuffixp, portp);
@@ -990,8 +990,11 @@ class TaskVisitor final : public VNVisitor {
             callp->add(new AstVarRef{portp->fileline(), vscp, access});
             return vscp;
         };
-        // Call callback
-        callp->add("(*__Vcb)(");
+        if (v3Global.opt.timing()) {
+            callp->add("__Vcb,");
+        } else {
+            callp->add("(*__Vcb)(");
+        }
         // First argument is the Syms
         callp->add("(" + EmitCUtil::symClassName() + "*)(__Vscopep->symsp())");
         // Add function arguments
@@ -1015,25 +1018,13 @@ class TaskVisitor final : public VNVisitor {
         }
         // Return value argument goes last
         if (rtnvarp) addFuncArg(rtnvarp);
-        // Close call expression
-        callp->add(")");
         // The function has to be called by returning from fiber context first, if the timings are
         // used
         if (v3Global.opt.timing()) {
-            AstCExpr* const awaitExportp
-                = new AstCExpr{nodep->fileline(), "VerilatedDpi::awaitExport"};
-            AstExprStmt* const lambdap = new AstExprStmt{nodep->fileline(), callp, nullptr};
-            AstCStmt* const ifStmtp = new AstCStmt{nodep->fileline()};
-            ifStmtp->add("if VL_CONSTEXPR_CXX17 (std::is_same<decltype(");
-            ifStmtp->add(callp);
-            ifStmtp->add("),void>::value) {");
-            ifStmtp->add("return ");
-            ifStmtp->add(callp);
-            ifStmtp->add("} else {");
-            ifStmtp->add(callp);
-            ifStmtp->add("}");
+            AstCStmt* const awaitExportp
+                = new AstCStmt{nodep->fileline(), "VerilatedDpi::awaitExport"};
             awaitExportp->add("(");
-            awaitExportp->add(lambdap);
+            awaitExportp->add(callp);
             awaitExportp->add(");");
             funcp->addStmtsp(awaitExportp);
         } else {

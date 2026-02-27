@@ -58,23 +58,23 @@ public:
 
     // Suspend the current fiber until the DPI export coroutine completes
     // Must be called from within a fiber context (i.e., from C code called via DPI import)
-    template <typename Callable>
-    static void awaitExport(Callable&& coro) {
+    template <typename Callable, typename... Args>
+    static void awaitExport(Callable&& call, Args&&... args) {
         VlFiber* const fiberp = VlFiber::current();
         if (VL_UNLIKELY(!fiberp)) {
             VL_FATAL_MT(__FILE__, __LINE__, "",
                         "DPI export with timing invoked outside of a fiber context");
         }
-        if VL_CONSTEXPR_CXX17 (std::is_same<std::result_of_t<Callable && ()>,
+        if VL_CONSTEXPR_CXX17 (std::is_same<decltype(call(std::forward<Args>(args)...)),
                                             VlCoroutine>::value) {
-            VlCoroutine local{coro()};
+            VlCoroutine local{call(std::forward<Args>(args)...)};
             if (local.await_ready()) return;
             do {
                 local.setFiberContinuation(fiberp);
                 VlFiber::yield();
             } while (!local.await_ready());
         } else {
-            coro();
+            call(std::forward<Args>(args)...);
         }
     }
 };
