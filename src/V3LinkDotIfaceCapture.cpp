@@ -62,8 +62,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 V3LinkDotIfaceCapture::CapturedMap V3LinkDotIfaceCapture::s_map{};
 bool V3LinkDotIfaceCapture::s_enabled = false;
 
-namespace {
-AstIfaceRefDType* ifaceRefFromVarDType(AstNodeDType* dtypep) {
+AstIfaceRefDType* V3LinkDotIfaceCapture::ifaceRefFromVarDType(AstNodeDType* dtypep) {
     for (AstNodeDType* curp = dtypep; curp;) {
         if (AstIfaceRefDType* const irefp = VN_CAST(curp, IfaceRefDType)) return irefp;
         if (AstBracketArrayDType* const bracketp = VN_CAST(curp, BracketArrayDType)) {
@@ -83,6 +82,8 @@ AstIfaceRefDType* ifaceRefFromVarDType(AstNodeDType* dtypep) {
     }
     return nullptr;
 }
+
+namespace {
 string effectiveOrigName(const AstNodeModule* modp) {
     if (modp->origName().empty()) return modp->name();
     return modp->origName();

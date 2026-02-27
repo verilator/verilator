@@ -177,6 +177,8 @@ public:
     static bool enabled() { return s_enabled; }
     static void reset() { s_map.clear(); }
     static AstNodeModule* findOwnerModule(AstNode* nodep);
+    // Unwrap array types (BracketArray, UnpackArray, RefDType) to find AstIfaceRefDType
+    static AstIfaceRefDType* ifaceRefFromVarDType(AstNodeDType* dtypep);
     // Find a Typedef by name in a module's top-level statements
     static AstTypedef* findTypedefInModule(AstNodeModule* modp, const string& name);
     // Find a NodeDType by name and VNType in a module's top-level statements
