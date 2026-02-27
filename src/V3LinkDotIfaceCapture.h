@@ -106,6 +106,17 @@ public:
         // The primary refp is stored above; extras are appended here so that
         // retargeting fixes ALL of them, not just the last-writer-wins primary.
         std::vector<AstRefDType*> extraRefps;
+        // Visit every AstNode* pointer field (analogous to AstNode::foreachLink)
+        template <typename Fn>
+        void foreachLink(Fn&& fn) {
+            fn(reinterpret_cast<AstNode*&>(refp));
+            fn(reinterpret_cast<AstNode*&>(ownerModp));
+            fn(reinterpret_cast<AstNode*&>(typedefp));
+            fn(reinterpret_cast<AstNode*&>(paramTypep));
+            fn(reinterpret_cast<AstNode*&>(ifacePortVarp));
+            fn(reinterpret_cast<AstNode*&>(origClassp));
+            for (auto& xrefp : extraRefps) fn(reinterpret_cast<AstNode*&>(xrefp));
+        }
     };
 
     using CapturedMap = std::unordered_map<CaptureKey, CapturedEntry, CaptureKeyHash>;

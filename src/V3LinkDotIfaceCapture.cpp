@@ -512,21 +512,9 @@ void V3LinkDotIfaceCapture::purgeStaleRefs() {
     std::unordered_set<const AstNode*> liveNodes;
     v3Global.rootp()->foreach([&](AstNode* np) { liveNodes.insert(np); });
     for (auto& kv : s_map) {
-        CapturedEntry& e = kv.second;
-        if (e.refp && !liveNodes.count(e.refp)) {
-            UINFO(9, "purgeStaleRefs: refp=" << cvtToHex(e.refp) << " key={"
-                                             << kv.first.ownerModName << "," << kv.first.refName
-                                             << "}" << endl);
-            e.refp = nullptr;
-        }
-        if (e.ownerModp && !liveNodes.count(e.ownerModp)) e.ownerModp = nullptr;
-        if (e.typedefp && !liveNodes.count(e.typedefp)) e.typedefp = nullptr;
-        if (e.paramTypep && !liveNodes.count(e.paramTypep)) e.paramTypep = nullptr;
-        if (e.ifacePortVarp && !liveNodes.count(e.ifacePortVarp)) e.ifacePortVarp = nullptr;
-        if (e.origClassp && !liveNodes.count(e.origClassp)) e.origClassp = nullptr;
-        for (auto& xrefp : e.extraRefps) {
-            if (xrefp && !liveNodes.count(xrefp)) xrefp = nullptr;
-        }
+        kv.second.foreachLink([&](AstNode*& nodep) {
+            if (nodep && !liveNodes.count(nodep)) nodep = nullptr;
+        });
     }
 }
 
