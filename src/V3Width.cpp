@@ -1275,15 +1275,9 @@ class WidthVisitor final : public VNVisitor {
                 if (VN_IS(nodep->bitp(), Const)
                     && (VN_AS(nodep->bitp(), Const)->toSInt() > (frommsb - fromlsb)
                         || VN_AS(nodep->bitp(), Const)->toSInt() < 0)) {
-                    // Suppress in dead template modules
-                    bool inParameterizedTemplate = false;
-                    for (AstNode* ap = nodep; ap; ap = ap->backp()) {
-                        if (const AstNodeModule* const modp = VN_CAST(ap, NodeModule)) {
-                            inParameterizedTemplate = modp->dead();
-                            break;
-                        }
-                    }
-                    if (!inParameterizedTemplate) {
+                    // Suppress in dead/parameterized template modules
+                    if (!(m_modep
+                          && (m_modep->dead() || m_modep->parameterizedTemplate()))) {
                         nodep->v3warn(SELRANGE,
                                       "Selection index out of range: "
                                           << (VN_AS(nodep->bitp(), Const)->toSInt() + fromlsb)
