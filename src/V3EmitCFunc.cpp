@@ -788,8 +788,6 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                     varp->v3fatalSrc("Unexpected node in variable initializer: " << valuep);
                 }
                 out += ";\n";
-            } else if (zeroit) {
-                out += " = 0;\n";
             } else if (varp->attrFourState()
                        || (v3Global.opt.fourstate() && varp->dtypep()->isFourstate())) {
                 V3Number xNum{varp->fileline(), varp->width(), 0};
@@ -797,6 +795,8 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                 out += " = ";
                 out += xNum.emitC();
                 out += ";\n";
+            } else if (zeroit) {
+                out += " = 0;\n";
             } else {
                 emitVarResetScopeHash();
                 const uint64_t salt = VString::hashMurmur(varp->prettyName());

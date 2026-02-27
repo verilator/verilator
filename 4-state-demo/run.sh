@@ -22,4 +22,5 @@ if diff "${NAME}.log" "${NAME}.out"; then
     echo 'Demo Finished!'
 else
     echo 'Demo failed'
+    exit 1
 fi

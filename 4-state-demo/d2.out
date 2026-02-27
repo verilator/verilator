@@ -2,6 +2,7 @@
 [out]  x
 [out]  x
 [out]  x
+[out]  x
 [out]  0
 [out]  1
 [out]  2
@@ -10,6 +11,6 @@
 [out]  5
 [out]  6
 [out]  7
-[out]  x
-[out]  x
-- d2.sv:26: Verilog $finish
+[out]  8
+[out]  9
+- d2.sv:32: Verilog $finish

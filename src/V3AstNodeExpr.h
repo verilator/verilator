@@ -711,7 +711,7 @@ public:
     bool isPure() override { return m_cfunc.isPure(); }
     std::string emitC() override { V3ERROR_NA_RETURN(""); }
     std::string emitVerilog() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { return true; }
+    bool cleanOut() const override { return false; }
     void dump(std::ostream& str) const override;
     VCFunc cfunc() const { return m_cfunc; }
     const char* ascii() const { return m_cfunc.ascii(); }

@@ -130,14 +130,15 @@ class CleanVisitor final : public VNVisitor {
         mask.setMask(nodep->widthMin());
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* maskExprp = new AstConst{flp, mask};
+        setClean(maskExprp, true);
+        AstNodeExpr* cleanp;
         if (v3Global.opt.fourstate() && nodep->dtypep()->isFourstate()) {
-            if (AstSel* const selp = VN_CAST(nodep, Sel)) {
-                maskExprp = new AstCCast{flp, maskExprp, selp->fromp()};
-            } else {
-                maskExprp = new AstCCast{flp, maskExprp, nodep};
-            }
+            AstCFuncHard* funcp;
+            cleanp = funcp = new AstCFuncHard{flp, VCFunc::FOUR_STATE_MASK, nodep};
+            funcp->addPinsp(maskExprp);
+        } else {
+            cleanp = new AstAnd{flp, maskExprp, nodep};
         }
-        AstNode* const cleanp = new AstAnd{flp, maskExprp, nodep};
         cleanp->dtypeFrom(nodep);  // Otherwise the AND normally picks LHS
         relinkHandle.relink(cleanp);
     }
