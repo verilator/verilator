@@ -1849,6 +1849,14 @@ void AstCellInlineScope::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, origModName);
     dumpJsonGen(str);
 }
+void AstCExpr::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (m_pure) str << " [PURE]";
+}
+void AstCExpr::dumpJson(std::ostream& str) const {
+    dumpJsonBoolIf(str, "pure", m_pure);
+    dumpJsonGen(str);
+}
 bool AstClass::isCacheableChild(const AstNode* nodep) {
     return VN_IS(nodep, Var) || VN_IS(nodep, Typedef)
            || (VN_IS(nodep, Constraint) && !VN_AS(nodep, Constraint)->isExternProto())

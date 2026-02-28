@@ -765,7 +765,8 @@ class TaskVisitor final : public VNVisitor {
             // __Vscopep
             ccallp->addArgsp(snp);
             // __Vfilenamep
-            ccallp->addArgsp(new AstCExpr{flp, "\"" + flp->filenameEsc() + "\"", 64});
+            ccallp->addArgsp(
+                new AstCExpr{flp, AstCExpr::Pure{}, "\"" + flp->filenameEsc() + "\"", 64});
             // __Vlineno
             ccallp->addArgsp(new AstConst(flp, flp->lineno()));
         }
