@@ -184,7 +184,8 @@ Verilator supports adding code to the Verilated model to support
 SystemVerilog code coverage. With :vlopt:`--coverage`, Verilator enables
 all forms of coverage:
 
-- :ref:`User Coverage`
+- :ref:`Property Coverage`
+- :ref:`Covergroup Coverage`
 - :ref:`FSM Coverage`
 - :ref:`Line Coverage`
 - :ref:`Toggle Coverage`
@@ -193,19 +194,14 @@ When a model with coverage is executed, it will create a coverage file for
 collection and later analysis, see :ref:`Coverage Collection`.
 
 
-.. _user coverage:
+.. _property coverage:
 
-Functional Coverage
--------------------
+Property Coverage
+-----------------
 
 With :vlopt:`--coverage` or :vlopt:`--coverage-user`, Verilator will
-translate functional coverage points the user has inserted manually in
-SystemVerilog code through into the Verilated model. Verilator supports both
-simple coverage points and full covergroup-based functional coverage as
-defined in IEEE 1800-2023 Section 19.
-
-Simple Coverage Points
-^^^^^^^^^^^^^^^^^^^^^^
+translate property coverage points the user has inserted manually in
+SystemVerilog code into the Verilated model.
 
 For simple coverage points, use the ``cover property`` construct:
 
@@ -215,14 +211,15 @@ For simple coverage points, use the ``cover property`` construct:
 
 This adds a coverage point that tracks whether the condition has been observed.
 
-Covergroups
-^^^^^^^^^^^
+.. _covergroup coverage:
 
-Verilator supports SystemVerilog covergroups for comprehensive functional
-coverage. A covergroup defines a set of coverage points (coverpoints) with
-bins that track specific values or value ranges.
+Covergroup Coverage
+-------------------
 
-**Basic Example:**
+With :vlopt:`--coverage` or :vlopt:`--coverage-user`, Verilator will
+translate covergroup coverage points the user has inserted manually in
+SystemVerilog code into the Verilated model. Verilator supports 
+coverpoints with value and transition bins, and cross points.
 
 .. code-block:: sv
 
@@ -251,200 +248,26 @@ bins that track specific values or value ranges.
       end
    endmodule
 
-**Important:** Verilator requires explicit ``sample()`` calls. The automatic
-sampling syntax ``covergroup cg @(posedge clk);`` is parsed but the automatic
-sampling is not performed. Always call ``sample()`` explicitly in your code.
 
-Coverpoint Bins
-^^^^^^^^^^^^^^^
-
-Bins define which values to track for coverage. Verilator supports several bin types:
-
-**Value Bins:**
-
-.. code-block:: sv
-
-   coverpoint state {
-      bins idle   = {0};
-      bins active = {1, 2, 3};
-      bins error  = {4};
-   }
-
-**Range Bins:**
-
-.. code-block:: sv
-
-   coverpoint addr {
-      bins low    = {[0:63]};
-      bins medium = {[64:127]};
-      bins high   = {[128:255]};
-   }
-
-**Array Bins (Automatic):**
-
-.. code-block:: sv
-
-   coverpoint state {
-      bins state[] = {[0:3]};  // Creates bins: state[0], state[1], state[2], state[3]
-   }
-
-**Wildcard Bins:**
-
-.. code-block:: sv
-
-   coverpoint opcode {
-      wildcard bins load_ops  = {4'b00??};  // Matches 0000, 0001, 0010, 0011
-      wildcard bins store_ops = {4'b01??};  // Matches 0100, 0101, 0110, 0111
-   }
-
-**Special Bins:**
-
-.. code-block:: sv
-
-   coverpoint value {
-      bins valid[]   = {[0:10]};
-      ignore_bins unused = {11, 12, 13};  // Don't track these values
-      illegal_bins bad   = {[14:15]};     // Report error if seen
-   }
-
-The ``ignore_bins`` are excluded from coverage calculation, while ``illegal_bins``
-will cause a runtime error if sampled.
-
-**Default Bins:**
-
-.. code-block:: sv
-
-   coverpoint state {
-      bins defined = {0, 1, 2};
-      bins others = default;  // Catches all other values
-   }
-
-Cross Coverage
-^^^^^^^^^^^^^^
-
-Cross coverage tracks combinations of values from multiple coverpoints:
-
-.. code-block:: sv
-
-   covergroup cg;
-      cp_cmd:  coverpoint cmd;
-      cp_addr: coverpoint addr {
-         bins low  = {[0:127]};
-         bins high = {[128:255]};
-      }
-
-      // Cross coverage of command and address
-      cross_cmd_addr: cross cp_cmd, cp_addr;
-   endgroup
-
-The cross automatically creates bins for all combinations: ``(read, low)``,
-``(read, high)``, ``(write, low)``, ``(write, high)``.
-
-Verilator supports arbitrary N-way cross coverage.
-
-Transition Bins
-^^^^^^^^^^^^^^^
-
-Transition bins track sequences of values across multiple samples:
-
-.. code-block:: sv
-
-   covergroup cg;
-      coverpoint state {
-         bins trans_idle_active = (0 => 1);  // idle to active
-         bins trans_active_done = (1 => 2);  // active to done
-         bins trans_done_idle   = (2 => 0);  // done back to idle
-      }
-   endgroup
-
-**Supported Syntax:**
-
-Verilator supports multi-value transition sequences:
-
-.. code-block:: sv
-
-   coverpoint state {
-      // Two-value transitions
-      bins trans_2 = (0 => 1);
-
-      // Multi-value transitions
-      bins trans_3 = (0 => 1 => 2);
-      bins trans_4 = (0 => 1 => 2 => 3);
-
-      // Transitions with value sets
-      bins trans_set = (0, 1 => 2, 3);  // (0=>2), (0=>3), (1=>2), (1=>3)
-   }
-
-**Unsupported Repetition Operators:**
-
-Verilator does not currently support IEEE 1800-2023 transition bin repetition
-operators. The following syntax will generate a ``COVERIGN`` warning and be
-ignored:
-
-* **Consecutive repetition** ``[*N]`` - Repeat value N times consecutively
-
-  .. code-block:: sv
-
-     bins trans = (1 => 2 [*3] => 3);  // Unsupported: 1, 2, 2, 2, 3
-
-* **Goto repetition** ``[->N]`` - See value N times with any gaps, next value follows immediately
-
-  .. code-block:: sv
-
-     bins trans = (1 => 2 [->3] => 3);  // Unsupported: 1, 2, X, 2, Y, 2, 3
-
-* **Nonconsecutive repetition** ``[=N]`` - See value N times with gaps allowed everywhere
-
-  .. code-block:: sv
-
-     bins trans = (1 => 2 [=3] => 3);  // Unsupported: 1, 2, X, 2, Y, 2, Z, 3
-
-If you need repetition behavior, consider using multiple bins to represent the
-desired sequences explicitly.
-
-Bin Options
-^^^^^^^^^^^
-
-Individual bins can have options:
-
-.. code-block:: sv
-
-   coverpoint state {
-      bins idle = {0} with (option.at_least = 10);  // Must see 10 times
-   }
-
-Querying Coverage
-^^^^^^^^^^^^^^^^^
-
-To get the current coverage percentage:
-
-.. code-block:: sv
-
-   real cov = cg_inst.get_inst_coverage();
-   $display("Coverage: %0.1f%%", cov);
-
-The ``get_inst_coverage()`` method returns a real value from 0.0 to 100.0
-representing the percentage of bins that have been hit.
-
-Coverage Reports
-^^^^^^^^^^^^^^^^
-
-When running with :vlopt:`--coverage`, Verilator generates coverage data files
-that can be analyzed with the :ref:`verilator_coverage<Verilator Coverage>`
-tool:
-
-.. code-block:: bash
-
-   # Run simulation with coverage enabled
-   $ verilator --coverage --exe --build sim.cpp top.v
-   $ ./obj_dir/Vtop
-
-   # Generate coverage report
-   $ verilator_coverage --annotate coverage_report coverage.dat
-   $ verilator_coverage --write merged.dat coverage.dat
-
-The coverage data integrates with Verilator's existing coverage infrastructure,
-so you can view functional coverage alongside line and toggle coverage.
+Supported Features
+^^^^^^^^^^^^^^^^^^
+* Coverpoints on integral expressions with value, range, wildcard, and transition bins
+* Conditional coverpoint sampling (iff) 
+* Explicit and clocked sampling, with sample-function parameters
+* at_least and auto_bin_max options on covergroups and coverpoints
+* Cross points with auto-bins
+
+Unsupported Features
+^^^^^^^^^^^^^^^^^^^^
+
+* Coverpoints on real (floating-point) expressions
+* Coverpoint bin filtering (with)
+* Coverpoint bin conditional sampling (iff)
+* Transition bins with repetition operators ([\*N], [->N], [=N]) 
+* Explicitly-typed coverpoints
+* Block-event sampling
+* Covergroup inheritance (extends)
+* Cross points with user-defined bins
 
 Functional Coverage Data Format
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -477,143 +300,6 @@ with :command:`verilator_coverage`:
 
    # Exclude functional coverage
    $ verilator_coverage --filter-type '!funccov' --annotate report coverage.dat
-
-Covergroup Options
-^^^^^^^^^^^^^^^^^^
-
-Covergroups support various options:
-
-.. code-block:: sv
-
-   covergroup cg with function sample(logic [7:0] addr);
-      option.name = "my_covergroup";
-      option.comment = "Address coverage";
-
-      coverpoint addr;
-   endgroup
-
-Parameterized sampling allows passing values directly to ``sample()``:
-
-.. code-block:: sv
-
-   cg cg_inst = new;
-   cg_inst.sample(addr_value);
-
-Dynamic Covergroup Creation
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Covergroups can be created dynamically at runtime:
-
-.. code-block:: sv
-
-   cg cg_inst;
-
-   initial begin
-      if (enable_coverage) begin
-         cg_inst = new;
-      end
-   end
-
-Covergroups in Classes
-^^^^^^^^^^^^^^^^^^^^^^
-
-Covergroups can be defined inside classes:
-
-.. code-block:: sv
-
-   class MyClass;
-      logic [7:0] data;
-
-      covergroup cg;
-         coverpoint data;
-      endgroup
-
-      function new();
-         cg = new;
-      endfunction
-
-      task record();
-         cg.sample();
-      endtask
-   endclass
-
-Limitations and Unsupported Features
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-**Automatic Sampling:** The syntax ``covergroup cg @(posedge clk);`` is parsed
-but automatic sampling is not performed. Use explicit ``sample()`` calls:
-
-.. code-block:: sv
-
-   // Instead of this:
-   covergroup cg @(posedge clk);  // Automatic sampling not supported
-      ...
-   endgroup
-
-   // Do this:
-   covergroup cg;
-      ...
-   endgroup
-
-   cg cg_inst = new;
-   always @(posedge clk) cg_inst.sample();  // Explicit sampling
-
-**Covergroup Inheritance:** Covergroup inheritance using the ``extends`` keyword
-is not currently supported. This will generate an error:
-
-.. code-block:: sv
-
-   covergroup base_cg;
-      coverpoint value;
-   endgroup
-
-   covergroup derived_cg extends base_cg;  // Not supported
-      coverpoint other_value;
-   endgroup
-
-As a workaround, duplicate the coverpoint definitions in each covergroup.
-
-**Type-Level (Static) Coverage:** Aggregated type-level coverage using the
-static ``get_coverage()`` method is not currently supported. Only instance-level
-coverage via ``get_inst_coverage()`` is available:
-
-.. code-block:: sv
-
-   covergroup cg;
-      coverpoint value;
-   endgroup
-
-   cg cg1 = new;
-   cg cg2 = new;
-
-   // This works - instance-level coverage
-   real inst_cov = cg1.get_inst_coverage();
-
-   // This is not supported - type-level coverage
-   // real type_cov = cg::get_coverage();  // Will not aggregate across instances
-
-**Advanced Transition Features:** Complex transition patterns including
-multi-value transitions with more than 2 states may have incomplete case
-statement coverage in generated code. Simple 2-state transitions work correctly:
-
-.. code-block:: sv
-
-   coverpoint state {
-      // This works well
-      bins trans_2state = (0 => 1);
-
-      // This may generate incomplete case statements
-      bins trans_3state = (0 => 1 => 2);  // Limited support
-   }
-
-**Transition Bin Repetition Operators:** The repetition operators ``[*N]``,
-``[->N]``, and ``[=N]`` for transition bins are not supported. Use multiple
-explicit bins to represent repeated sequences. See the
-:ref:`Transition Bins<Transition Bins>` section for details.
-
-For a complete list of supported features and current implementation status,
-see the functional coverage plan in the Verilator source tree at
-``docs/functional_coverage_plan.md``.
 
 .. _fsm coverage:
 
@@ -655,7 +341,6 @@ those arcs in the printed summary and annotated output.
 Annotated output produced by :command:`verilator_coverage --annotate` will
 label FSM points with `fsm_state` and `fsm_arc`, and synthetic fallback
 transitions with `SYNTHETIC DEFAULT ARC`.
-
 
 .. _line coverage:
 

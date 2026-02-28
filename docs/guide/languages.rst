@@ -365,14 +365,14 @@ appropriate width.
 Assertions
 ----------
 
-Verilator is beginning to add support for assertions and functional coverage.
+Verilator partially supports assertions and functional coverage.
 Verilator currently converts assertions to simple ``if (...) error`` statements,
 and simple coverage statements to increment the line counters described in the
 :ref:`coverage section<Coverage>`.
 
 Verilator also partially supports SystemVerilog functional coverage with
 ``covergroup``, ``coverpoint``, bins, cross coverage, and transition bins. See
-the :ref:`Functional Coverage<user coverage>` section for details on using
+:ref:`Functional Coverage<user coverage>` for details on using
 covergroups for comprehensive coverage analysis.
 
 Verilator does not support SEREs yet. All assertion and coverage statements
