@@ -131,7 +131,10 @@ AstTypedef* V3LinkDotIfaceCapture::findTypedefInModule(AstNodeModule* modp, cons
     for (AstNode* nodep : it->second) {
         if (AstTypedef* const tdp = VN_CAST(nodep, Typedef)) return tdp;
     }
-    return nullptr;
+    // Cache has entry for this name but no Typedef - unexpected.
+    v3fatalSrc("findTypedefInModule: name '" << name << "' found in "
+               << modp->prettyNameQ() << " but no Typedef node");
+    return nullptr;  // LCOV_EXCL_LINE
 }
 AstNodeDType* V3LinkDotIfaceCapture::findDTypeInModule(AstNodeModule* modp, const string& name,
                                                        VNType type) {
@@ -143,7 +146,10 @@ AstNodeDType* V3LinkDotIfaceCapture::findDTypeInModule(AstNodeModule* modp, cons
             if (dtp->type() == type) return dtp;
         }
     }
-    return nullptr;
+    // Cache has entry for this name but no matching DType - unexpected.
+    v3fatalSrc("findDTypeInModule: name '" << name << "' found in "
+               << modp->prettyNameQ() << " but no matching DType");
+    return nullptr;  // LCOV_EXCL_LINE
 }
 AstParamTypeDType* V3LinkDotIfaceCapture::findParamTypeInModule(AstNodeModule* modp,
                                                                 const string& name) {
@@ -417,11 +423,14 @@ void V3LinkDotIfaceCapture::addClass(AstRefDType* refp, AstClass* origClassp,
                  << " ownerMod=" << (ownerModp ? ownerModp->name() : "<null>") << endl);
 }
 
-const V3LinkDotIfaceCapture::CapturedEntry* V3LinkDotIfaceCapture::find(const CaptureKey& key) {
+// Not called in production - retained as a diagnostic/debug entry point
+// for inspecting the capture ledger by key (e.g. from GDB or future code).
+const V3LinkDotIfaceCapture::CapturedEntry*  // LCOV_EXCL_START
+V3LinkDotIfaceCapture::find(const CaptureKey& key) {
     const auto it = s_map.find(key);
     if (VL_UNLIKELY(it == s_map.end())) return nullptr;
     return &it->second;
-}
+}  // LCOV_EXCL_STOP
 
 const V3LinkDotIfaceCapture::CapturedEntry* V3LinkDotIfaceCapture::find(const AstRefDType* refp) {
     if (!refp || s_map.empty()) return nullptr;
