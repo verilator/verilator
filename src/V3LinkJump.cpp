@@ -37,6 +37,7 @@
 #include "V3Error.h"
 #include "V3UniqueNames.h"
 
+#include <unordered_map>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -65,6 +66,7 @@ class LinkJumpVisitor final : public VNVisitor {
     std::vector<AstNodeBlock*> m_blockStack;  // All begin blocks above current node
     V3UniqueNames m_queueNames{
         "__VprocessQueue"};  // Names for queues needed for 'disable' handling
+    std::unordered_map<const AstTask*, AstVar*> m_taskDisableQueues;  // Per-task process queues
 
     // METHODS
     // Get (and create if necessary) the JumpBlock for this statement
@@ -177,6 +179,42 @@ class LinkJumpVisitor final : public VNVisitor {
         return new AstStmtExpr{
             fl, new AstMethodCall{fl, queueRefp, "push_back", new AstArg{fl, "", processSelfp}}};
     }
+    static AstStmtExpr* getQueueKillStmtp(FileLine* const fl, AstVar* const processQueuep) {
+        AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
+        AstClass* const processClassp
+            = VN_AS(getMemberp(v3Global.rootp()->stdPackagep(), "process"), Class);
+        AstVarRef* const queueRefp = new AstVarRef{fl, topPkgp, processQueuep, VAccess::READWRITE};
+        AstTaskRef* const killQueueCall
+            = new AstTaskRef{fl, VN_AS(getMemberp(processClassp, "killQueue"), Task),
+                             new AstArg{fl, "", queueRefp}};
+        killQueueCall->classOrPackagep(processClassp);
+        return new AstStmtExpr{fl, killQueueCall};
+    }
+    AstVar* getOrCreateTaskDisableQueuep(AstTask* const taskp, FileLine* const fl) {
+        const auto it = m_taskDisableQueues.find(taskp);
+        if (it != m_taskDisableQueues.end()) return it->second;
+
+        AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
+        AstClass* const processClassp
+            = VN_AS(getMemberp(v3Global.rootp()->stdPackagep(), "process"), Class);
+        AstVar* const processQueuep = new AstVar{
+            fl, VVarType::VAR, m_queueNames.get(taskp->name()), VFlagChildDType{},
+            new AstQueueDType{fl, VFlagChildDType{},
+                              new AstClassRefDType{fl, processClassp, nullptr}, nullptr}};
+        processQueuep->lifetime(VLifetime::STATIC_EXPLICIT);
+        topPkgp->addStmtsp(processQueuep);
+
+        AstVarRef* const queueWriteRefp
+            = new AstVarRef{fl, topPkgp, processQueuep, VAccess::WRITE};
+        AstStmtExpr* const pushCurrentProcessp = getQueuePushProcessSelfp(queueWriteRefp);
+        if (taskp->stmtsp()) {
+            taskp->stmtsp()->addHereThisAsNext(pushCurrentProcessp);
+        } else {
+            taskp->addStmtsp(pushCurrentProcessp);
+        }
+        m_taskDisableQueues.emplace(taskp, processQueuep);
+        return processQueuep;
+    }
     void handleDisableOnFork(AstDisable* const nodep, const std::vector<AstBegin*>& forks) {
         // The support utilizes the process::kill()` method. For each `disable` a queue of
         // processes is declared. At the beginning of each fork that can be disabled, its process
@@ -215,12 +253,7 @@ class LinkJumpVisitor final : public VNVisitor {
                 beginp->stmtsp()->addHereThisAsNext(pushCurrentProcessp);
             }
         }
-        AstVarRef* const queueRefp = new AstVarRef{fl, topPkgp, processQueuep, VAccess::READWRITE};
-        AstTaskRef* const killQueueCall
-            = new AstTaskRef{fl, VN_AS(getMemberp(processClassp, "killQueue"), Task),
-                             new AstArg{fl, "", queueRefp}};
-        killQueueCall->classOrPackagep(processClassp);
-        AstStmtExpr* const killStmtp = new AstStmtExpr{fl, killQueueCall};
+        AstStmtExpr* const killStmtp = getQueueKillStmtp(fl, processQueuep);
         nodep->addNextHere(killStmtp);
 
         // 'process::kill' does not immediately kill the current process
@@ -417,9 +450,23 @@ class LinkJumpVisitor final : public VNVisitor {
     void visit(AstDisable* nodep) override {
         UINFO(8, "   DISABLE " << nodep);
         AstNode* const targetp = nodep->targetp();
-        UASSERT_OBJ(targetp, nodep, "Unlinked disable statement");
-        if (VN_IS(targetp, Task)) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling task by name");
+        if (!targetp) {
+            // Linking errors on the disable target are already reported upstream.
+            // Drop this node to avoid cascading into an internal assertion.
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
+        if (AstTask* const taskp = VN_CAST(targetp, Task)) {
+            AstVar* const processQueuep = getOrCreateTaskDisableQueuep(taskp, nodep->fileline());
+            AstStmtExpr* const killStmtp = getQueueKillStmtp(nodep->fileline(), processQueuep);
+            nodep->addNextHere(killStmtp);
+
+            // process::kill does not terminate the currently running process immediately.
+            // If we disable the current task by name from inside itself, jump to its end.
+            if (m_ftaskp == taskp) {
+                AstJumpBlock* const blockp = getJumpBlock(taskp, false);
+                killStmtp->addNextHere(new AstJumpGo{nodep->fileline(), blockp});
+            }
         } else if (AstFork* const forkp = VN_CAST(targetp, Fork)) {
             std::vector<AstBegin*> forks;
             for (AstBegin* itemp = forkp->forksp(); itemp; itemp = VN_AS(itemp->nextp(), Begin)) {

@@ -238,10 +238,56 @@ void VlDynamicTriggerScheduler::dump() const {
 //======================================================================
 // VlForkSync:: Methods
 
-void VlForkSync::done(const char* filename, int lineno) {
+void VlProcess::forkSyncOnKill(VlForkSyncState* forkSyncp) {
+    m_forkSyncOnKillp = forkSyncp;
+    m_forkSyncOnKillDone = false;
+}
+
+void VlProcess::forkSyncOnKillClear(VlForkSyncState* forkSyncp) {
+    if (m_forkSyncOnKillp != forkSyncp) return;
+    m_forkSyncOnKillp = nullptr;
+    m_forkSyncOnKillDone = false;
+}
+
+void VlProcess::state(int s) {
+    if (s == KILLED && m_state != KILLED && m_state != FINISHED && m_forkSyncOnKillp
+        && !m_forkSyncOnKillDone) {
+        m_forkSyncOnKillDone = true;
+        m_state = s;
+        m_forkSyncOnKillp->done();
+        return;
+    }
+    m_state = s;
+}
+
+VlForkSyncState::~VlForkSyncState() {
+    for (const VlProcessRef& processp : m_onKillProcessps) processp->forkSyncOnKillClear(this);
+}
+
+void VlForkSync::onKill(VlProcessRef process) {
+    if (!process) return;
+    m_state->m_onKillProcessps.emplace_back(process);
+    process->forkSyncOnKill(m_state.get());
+}
+
+void VlForkSyncState::done(const char* filename, int lineno) {
     VL_DEBUG_IF(VL_DBG_MSGF("             Process forked at %s:%d finished\n", filename, lineno););
-    if (m_join->m_counter > 0) m_join->m_counter--;
-    if (m_join->m_counter == 0) m_join->m_susp.resume();
+    if (!m_inited) {
+        ++m_pendingDones;
+        return;
+    }
+    if (m_counter > 0) m_counter--;
+    if (m_counter != 0) return;
+    if (m_inDone) {
+        m_resumePending = true;
+        return;
+    }
+    m_inDone = true;
+    do {
+        m_resumePending = false;
+        m_susp.resume();
+    } while (m_resumePending && m_inited && m_counter == 0);
+    m_inDone = false;
 }
 
 //======================================================================

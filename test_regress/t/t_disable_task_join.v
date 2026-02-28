@@ -5,11 +5,18 @@
 // SPDX-License-Identifier: CC0-1.0
 
 int x = 0;
+int y = 0;
 
 task increment_x;
   x++;
   #2;
   x++;
+endtask
+
+task increment_y;
+  y++;
+  #2;
+  y++;
 endtask
 
 class driver;
@@ -57,6 +64,14 @@ module t;
     #20;
     if ($time != 52) $stop;
     if (c.m_time != 30) $stop;
+
+    // Additional regression: join_any should also complete when disable kills a forked task
+    fork
+      increment_y();
+      #1 disable increment_y;
+    join_any
+    #3;
+    if (y != 1) $stop;
 
     $write("*-* All Finished *-*\n");
     $finish;

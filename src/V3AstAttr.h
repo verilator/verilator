@@ -811,6 +811,7 @@ public:
         FORK_DONE,
         FORK_INIT,
         FORK_JOIN,
+        FORK_ON_KILL,
         RANDOMIZER_BASIC_STD_RANDOMIZATION,
         RANDOMIZER_CLEARCONSTRAINTS,
         RANDOMIZER_CLEARALL,
@@ -947,6 +948,7 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {FORK_DONE, "done", false}, \
            {FORK_INIT, "init", false}, \
            {FORK_JOIN, "join", false}, \
+           {FORK_ON_KILL, "onKill", false}, \
            {RANDOMIZER_BASIC_STD_RANDOMIZATION, "basicStdRandomization", false}, \
            {RANDOMIZER_CLEARCONSTRAINTS, "clearConstraints", false}, \
            {RANDOMIZER_CLEARALL, "clearAll", false}, \

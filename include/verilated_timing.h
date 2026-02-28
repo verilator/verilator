@@ -383,40 +383,59 @@ struct VlForever final {
 //=============================================================================
 // VlForkSync is used to manage fork..join and fork..join_any constructs.
 
-class VlForkSync final {
-    // VlJoin stores the handle of a suspended coroutine that did a fork..join or fork..join_any.
-    // If the counter reaches 0, the suspended coroutine shall be resumed.
-    struct VlJoin final {
-        size_t m_counter = 0;  // When reaches 0, resume suspended coroutine
-        VlCoroutineHandle m_susp;  // Coroutine to resume
-    };
+// Shared fork..join state, because VlForkSync is copied into generated coroutine frames.
+class VlForkSyncState final {
+public:
+    size_t m_counter = 0;  // When reaches 0, resume suspended coroutine
+    VlCoroutineHandle m_susp;  // Coroutine to resume
+    bool m_inited = false;
+    size_t m_pendingDones = 0;  // done() calls seen before init() (e.g. early killed branch)
+    bool m_inDone = false;  // Guard against re-entrant resume recursion from nested kills
+    bool m_resumePending = false;  // Join reached zero again while inside done()
+    std::vector<VlProcessRef> m_onKillProcessps;  // Branches registered for kill hooks
 
-    // The join info is shared among all forked processes
-    std::shared_ptr<VlJoin> m_join;
+    VlForkSyncState()  // Construct with a null coroutine handle
+        : m_susp{VlProcessRef{}} {}
+    ~VlForkSyncState();
+    void done(const char* filename = VL_UNKNOWN, int lineno = 0);
+};
+
+class VlForkSync final {
+    std::shared_ptr<VlForkSyncState> m_state{std::make_shared<VlForkSyncState>()};
 
 public:
     // Create the join object and set the counter to the specified number
-    void init(size_t count, VlProcessRef process) { m_join.reset(new VlJoin{count, {process}}); }
+    void init(size_t count, VlProcessRef process) {
+        const size_t pendingDones = m_state->m_pendingDones;
+        m_state->m_pendingDones = 0;
+        count = (pendingDones >= count) ? 0 : (count - pendingDones);
+        m_state->m_counter = count;
+        m_state->m_susp = {process};
+        m_state->m_inited = true;
+    }
+    // Register process kill callback so killed fork branches still decrement join counter
+    void onKill(VlProcessRef process);
     // Called whenever any of the forked processes finishes. If the join counter reaches 0, the
     // main process gets resumed
-    void done(const char* filename = VL_UNKNOWN, int lineno = 0);
+    void done(const char* filename = VL_UNKNOWN, int lineno = 0) {
+        m_state->done(filename, lineno);
+    }
     // Used by coroutines for co_awaiting a join
     auto join(VlProcessRef process, const char* filename = VL_UNKNOWN, int lineno = 0) {
-        assert(m_join);
         VL_DEBUG_IF(
             VL_DBG_MSGF("             Awaiting join of fork at: %s:%d\n", filename, lineno););
         struct Awaitable final {
             VlProcessRef process;  // Data of the suspended process, null if not needed
-            const std::shared_ptr<VlJoin> join;  // Join to await on
+            const std::shared_ptr<VlForkSyncState> state;  // Join to await on
             VlFileLineDebug fileline;
 
-            bool await_ready() { return join->m_counter == 0; }  // Suspend if join still exists
+            bool await_ready() { return state->m_counter == 0; }  // Suspend if join still exists
             void await_suspend(std::coroutine_handle<> coro) {
-                join->m_susp = {coro, process, fileline};
+                state->m_susp = {coro, process, fileline};
             }
             void await_resume() const {}
         };
-        return Awaitable{process, m_join, VlFileLineDebug{filename, lineno}};
+        return Awaitable{process, m_state, VlFileLineDebug{filename, lineno}};
     }
 };
 
