@@ -472,8 +472,8 @@ class TristateVisitor final : public TristateBaseVisitor {
         return newp;
     }
     // Create AstVarXRef with inlinedDots copied from a source xref
-    AstVarXRef* newVarXRef(FileLine* fl, AstVar* varp, const string& dotted,
-                           VAccess access, const string& inlinedDots) {
+    AstVarXRef* newVarXRef(FileLine* fl, AstVar* varp, const string& dotted, VAccess access,
+                           const string& inlinedDots) {
         AstVarXRef* const xrefp = new AstVarXRef{fl, varp, dotted, access};
         xrefp->inlinedDots(inlinedDots);
         return xrefp;
@@ -517,8 +517,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             AstModportVarRef* const mvrp = VN_CAST(mrp, ModportVarRef);
             if (mvrp && mvrp->varp() == varp) return;  // Already present
         }
-        AstModportVarRef* const mvrp
-            = new AstModportVarRef{varp->fileline(), varp->name(), dir};
+        AstModportVarRef* const mvrp = new AstModportVarRef{varp->fileline(), varp->name(), dir};
         mvrp->varp(varp);
         modportp->addVarsp(mvrp);
     }
@@ -706,8 +705,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                 // Check if the var is owned by a different module (cross-module reference).
                 // For interface vars this is expected; for regular modules it's unsupported.
                 AstNodeModule* const ownerModp = findParentModule(invarp);
-                const bool isCrossModule
-                    = ownerModp && ownerModp != nodep && !invarp->isIO();
+                const bool isCrossModule = ownerModp && ownerModp != nodep && !invarp->isIO();
                 const bool isIfaceTri = isCrossModule && VN_IS(ownerModp, Iface);
 
                 if (isCrossModule && !isIfaceTri) {
@@ -736,16 +734,14 @@ class TristateVisitor final : public TristateBaseVisitor {
                         if (AstVarXRef* const xrefp = VN_CAST(rs.m_varrefp, VarXRef)) {
                             PartitionInfo& pi = partitions[xrefp->dotted()];
                             pi.refs.push_back(rs);
-                            if (pi.inlinedDots.empty()) {
-                                pi.inlinedDots = xrefp->inlinedDots();
-                            }
+                            if (pi.inlinedDots.empty()) { pi.inlinedDots = xrefp->inlinedDots(); }
                         } else {
                             partitions[""].refs.push_back(rs);
                         }
                     }
                     for (auto& kv : partitions) {
-                        insertTristatesSignal(nodep, invarp, &kv.second.refs, true,
-                                              kv.first, kv.second.inlinedDots,
+                        insertTristatesSignal(nodep, invarp, &kv.second.refs, true, kv.first,
+                                              kv.second.inlinedDots,
                                               findModportForDotted(nodep, kv.first));
                     }
                 } else if (VN_IS(nodep, Iface)) {
@@ -785,7 +781,8 @@ class TristateVisitor final : public TristateBaseVisitor {
             // When retargeting a VarXRef to a local __out var, the dotted path
             // becomes inconsistent. Replace the VarXRef with a local VarRef.
             if (VN_IS(refp, VarXRef)) {
-                AstVarRef* const localRefp = new AstVarRef{refp->fileline(), newLhsp, VAccess::WRITE};
+                AstVarRef* const localRefp
+                    = new AstVarRef{refp->fileline(), newLhsp, VAccess::WRITE};
                 localRefp->user1p(refp->user1p());
                 refp->user1p(nullptr);
                 refp->replaceWith(localRefp);
@@ -834,9 +831,8 @@ class TristateVisitor final : public TristateBaseVisitor {
     // isIfaceTri: true when the var is a tristate in an interface module (local or external).
     // ifaceDottedPath/ifaceInlinedDots/ifaceModportp are non-empty only for external
     // (cross-module) drivers; empty for local drivers within the interface itself.
-    void insertTristatesSignal(AstNodeModule* nodep, AstVar* const invarp,
-                               RefStrengthVec* refsp, bool isIfaceTri,
-                               const string& ifaceDottedPath,
+    void insertTristatesSignal(AstNodeModule* nodep, AstVar* const invarp, RefStrengthVec* refsp,
+                               bool isIfaceTri, const string& ifaceDottedPath,
                                const string& ifaceInlinedDots, AstModport* ifaceModportp) {
         UINFO(8, "  TRISTATE EXPANDING:" << invarp);
         ++m_statTriSigs;
@@ -854,9 +850,8 @@ class TristateVisitor final : public TristateBaseVisitor {
         AstVar* envarp = nullptr;
         AstVar* outvarp = nullptr;  // __out
         AstVar* lhsp = invarp;  // Variable to assign drive-value to (<in> or __out)
-        const bool isTopInout
-            = !isIfaceTri && (invarp->direction() == VDirection::INOUT) && invarp->isIO()
-              && nodep->isTop();
+        const bool isTopInout = !isIfaceTri && (invarp->direction() == VDirection::INOUT)
+                                && invarp->isIO() && nodep->isTop();
         if (!isIfaceTri) {
             if ((v3Global.opt.pinsInoutEnables() && isTopInout)
                 || (!nodep->isTop() && invarp->isIO())) {
@@ -949,15 +944,13 @@ class TristateVisitor final : public TristateBaseVisitor {
             FileLine* const fl = invarp->fileline();
 
             // Create contribution vars in the interface module
-            AstVar* const contribOutp
-                = new AstVar{fl, VVarType::MODULETEMP,
-                             invarp->name() + "__out" + cvtToStr(contribIdx), invarp};
+            AstVar* const contribOutp = new AstVar{
+                fl, VVarType::MODULETEMP, invarp->name() + "__out" + cvtToStr(contribIdx), invarp};
             UINFO(9, "       iface contribOut " << contribOutp);
             ifaceModp->addStmtsp(contribOutp);
 
-            AstVar* const contribEnp
-                = new AstVar{fl, VVarType::MODULETEMP,
-                             invarp->name() + "__en" + cvtToStr(contribIdx), invarp};
+            AstVar* const contribEnp = new AstVar{
+                fl, VVarType::MODULETEMP, invarp->name() + "__en" + cvtToStr(contribIdx), invarp};
             UINFO(9, "       iface contribEn " << contribEnp);
             ifaceModp->addStmtsp(contribEnp);
 
@@ -974,24 +967,22 @@ class TristateVisitor final : public TristateBaseVisitor {
             // External drivers use VarXRef; local drivers use VarRef.
             {
                 AstNodeVarRef* const lhsp
-                    = ifaceDottedPath.empty()
-                          ? static_cast<AstNodeVarRef*>(
-                                new AstVarRef{fl, contribOutp, VAccess::WRITE})
-                          : static_cast<AstNodeVarRef*>(
-                                newVarXRef(fl, contribOutp, ifaceDottedPath, VAccess::WRITE,
-                                           ifaceInlinedDots));
+                    = ifaceDottedPath.empty() ? static_cast<AstNodeVarRef*>(
+                                                    new AstVarRef{fl, contribOutp, VAccess::WRITE})
+                                              : static_cast<AstNodeVarRef*>(
+                                                    newVarXRef(fl, contribOutp, ifaceDottedPath,
+                                                               VAccess::WRITE, ifaceInlinedDots));
                 AstAssignW* const assp = new AstAssignW{fl, lhsp, orp};
                 assp->user2Or(U2_BOTH);
                 nodep->addStmtsp(new AstAlways{assp});
             }
             {
                 AstNodeVarRef* const lhsp
-                    = ifaceDottedPath.empty()
-                          ? static_cast<AstNodeVarRef*>(
-                                new AstVarRef{fl, contribEnp, VAccess::WRITE})
-                          : static_cast<AstNodeVarRef*>(
-                                newVarXRef(fl, contribEnp, ifaceDottedPath, VAccess::WRITE,
-                                           ifaceInlinedDots));
+                    = ifaceDottedPath.empty() ? static_cast<AstNodeVarRef*>(
+                                                    new AstVarRef{fl, contribEnp, VAccess::WRITE})
+                                              : static_cast<AstNodeVarRef*>(
+                                                    newVarXRef(fl, contribEnp, ifaceDottedPath,
+                                                               VAccess::WRITE, ifaceInlinedDots));
                 AstAssignW* const assp = new AstAssignW{fl, lhsp, enp};
                 assp->user2Or(U2_BOTH);
                 nodep->addStmtsp(new AstAlways{assp});
@@ -2114,8 +2105,8 @@ class TristateVisitor final : public TristateBaseVisitor {
         // After all modules have been processed, combine per-module contributions
         // for each interface tristate signal into final resolution logic.
         // Key is the canonical AstVar in the interface module (shared across instances).
-        for (std::pair<AstVar* const, std::vector<std::pair<AstVar*, AstVar*>>>& kv
-             : m_ifaceContribs) {
+        for (std::pair<AstVar* const, std::vector<std::pair<AstVar*, AstVar*>>>& kv :
+             m_ifaceContribs) {
             AstVar* const invarp = kv.first;
             std::vector<std::pair<AstVar*, AstVar*>>& contribs = kv.second;
             AstNodeModule* const ifaceModp = findParentModule(invarp);
@@ -2151,8 +2142,8 @@ class TristateVisitor final : public TristateBaseVisitor {
             }
 
             // Assign combined enable
-            AstAssignW* const enAssp = new AstAssignW{
-                fl, new AstVarRef{fl, envarp, VAccess::WRITE}, enp};
+            AstAssignW* const enAssp
+                = new AstAssignW{fl, new AstVarRef{fl, envarp, VAccess::WRITE}, enp};
             UINFOTREE(9, enAssp, "", "iface-enAssp");
             ifaceModp->addStmtsp(new AstAlways{enAssp});
 
@@ -2160,8 +2151,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             const AstPull* const pullp = m_varAux(invarp).pullp;
             const bool pull1 = pullp && pullp->direction() == 1;  // Else default is down
 
-            AstNodeExpr* undrivenp
-                = new AstNot{fl, new AstVarRef{fl, envarp, VAccess::READ}};
+            AstNodeExpr* undrivenp = new AstNot{fl, new AstVarRef{fl, envarp, VAccess::READ}};
             undrivenp = new AstAnd{fl, undrivenp, newAllZerosOrOnes(invarp, pull1)};
             orp = new AstOr{fl, orp, undrivenp};
 
