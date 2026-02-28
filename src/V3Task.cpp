@@ -1419,15 +1419,22 @@ class TaskVisitor final : public VNVisitor {
             // Mark non-local variables written by the exported function
             bool writesNonLocals = false;
             cfuncp->foreach([&writesNonLocals](AstVarRef* refp) {
-                if (refp->access().isReadOnly()) return;  // Ignore read reference
                 AstVar* const varp = refp->varScopep()->varp();
                 // We are ignoring function locals as they should not be referenced anywhere
                 // outside the enclosing AstCFunc, hence they are irrelevant for code ordering.
                 if (varp->isFuncLocal()) return;
-                // Mark it as written by DPI export
-                varp->setWrittenByDpi();
-                // Remember we had some
-                writesNonLocals = true;
+                // Check if written
+                if (refp->access().isWriteOrRW()) {
+                    // Mark it as written by DPI export
+                    varp->setWrittenByDpi();
+                    // Remember we had some
+                    writesNonLocals = true;
+                }
+                // Check if read
+                if (refp->access().isReadOrRW()) {
+                    // Mark it as read by DPI export
+                    varp->setReadByDpi();
+                }
             });
 
             // If this DPI export writes some non-local variables, set the DPI Export Trigger flag

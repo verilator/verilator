@@ -2880,6 +2880,8 @@ void AstVar::dump(std::ostream& str) const {
     if (isSigPublic()) str << " [P]";
     if (isSigUserRdPublic()) str << " [PRD]";
     if (isSigUserRWPublic()) str << " [PWR]";
+    if (isReadByDpi()) str << " [DPIRD]";
+    if (isWrittenByDpi()) str << " [DPIWR]";
     if (isInternal()) str << " [INTERNAL]";
     if (isLatched()) str << " [LATCHED]";
     if (isUsedLoopIdx()) str << " [LOOPIDX]";
@@ -2927,6 +2929,8 @@ void AstVar::dumpJson(std::ostream& str) const {
     if (dtypep()) dumpJsonStr(str, "dtypeName", dtypep()->name());
     dumpJsonBoolFuncIf(str, isSigUserRdPublic);
     dumpJsonBoolFuncIf(str, isSigUserRWPublic);
+    dumpJsonBoolFuncIf(str, isReadByDpi);
+    dumpJsonBoolFuncIf(str, isWrittenByDpi);
     dumpJsonBoolFuncIf(str, isGParam);
     dumpJsonBoolFuncIf(str, isParam);
     dumpJsonBoolFuncIf(str, attrScBv);
