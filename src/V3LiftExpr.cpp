@@ -135,13 +135,16 @@ class LiftExprVisitor final : public VNVisitor {
         varp->isInternal(true);
         varp->noReset(true);
         varp->user1(1);  // Mark as lifted temporary so it can be reused
-        varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
 
         if (m_ftaskp) {
             varp->funcLocal(true);
             m_ftaskp->stmtsp()->addHereThisAsNext(varp);
+            varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         } else {
             m_modp->stmtsp()->addHereThisAsNext(varp);
+            // 'automatic' on a variable inside a class actually means 'member'
+            varp->lifetime(VN_IS(m_modp, Class) ? VLifetime::STATIC_EXPLICIT
+                                                : VLifetime::AUTOMATIC_EXPLICIT);
         }
         return varp;
     }

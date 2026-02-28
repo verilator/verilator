@@ -17,12 +17,19 @@ module t;
     return 1;
   endfunction
 
+  function automatic int two();
+    /* verilator no_inline_task */
+    return 2;
+  endfunction
+
   class C;
     static int i = one() + 1;
+    static int j = two() + 1;
   endclass
 
   initial begin
     `checkh(C::i, 2);
+    `checkh(C::j, 3);
     $write("*-* All Finished *-*\n");
     $finish;
   end
