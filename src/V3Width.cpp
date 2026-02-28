@@ -4504,7 +4504,7 @@ class WidthVisitor final : public VNVisitor {
                     = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                          VCMethod::RNG_SET_RANDSTATE, exprp->unlinkFrBack()};
                 newp->usePtr(true);
-                newp->dtypeSetString();
+                newp->dtypeSetVoid();
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
@@ -6994,7 +6994,7 @@ class WidthVisitor final : public VNVisitor {
                     = new AstCExpr{nodep->fileline(), "__Vm_rng.set_randstate(", 1};
                 newp->add(exprp->unlinkFrBack());
                 newp->add(")");
-                newp->dtypeSetString();
+                newp->dtypeSetVoid();
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
