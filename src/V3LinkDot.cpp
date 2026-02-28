@@ -5244,7 +5244,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         << classExtendsp->argsp()->warnContextSecondary());
                 }
                 if (classExtendsp && classExtendsp->classOrNullp()) {
-                    if (!m_explicitSuperNewp && m_statep->forParamed()) {
+                    if (!m_explicitSuperNewp && m_statep->forParamed()
+                        && !VN_AS(classExtendsp->childDTypep()->skipRefp(), ClassRefDType)
+                                ->classp()
+                                ->isInterfaceClass()) {
                         AstNodeStmt* const superNewp
                             = addImplicitSuperNewCall(VN_AS(nodep, Func), classExtendsp);
                         UINFO(9, "created super new " << superNewp);

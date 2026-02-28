@@ -149,6 +149,10 @@ class CCtorsVisitor final : public VNVisitor {
 
     // VISITORS
     void visit(AstNodeModule* nodep) override {
+        if (const AstClass* const classp = VN_CAST(nodep, Class)) {
+            // Interface class may only have pure virtuals and params which do not need cctor reset
+            if (classp->isInterfaceClass()) return;
+        }
         VL_RESTORER(m_modp);
         VL_RESTORER(m_varResetp);
         m_modp = nodep;
@@ -199,6 +203,8 @@ class CCtorsVisitor final : public VNVisitor {
                 m_varResetp->add(crstp);
             } else if (m_cfuncp) {
                 nodep->addNextHere(crstp);
+            } else {
+                nodep->v3fatalSrc("Var needs CReset but nowhere to place it");
             }
         }
     }
