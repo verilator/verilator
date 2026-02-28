@@ -907,49 +907,26 @@ class ParamProcessor final {
         }
         collectReachable(newModp);
 
-        // Walk only direct statement-level REFDTYPEs in newModp.
+        // Phase B (reachable-set fallback): Phase A (path-based ledger fixup)
+        // always resolves all statement-level REFDTYPEs for current tests and
+        // Aerial.  Assert if any REFDTYPE slips through so we can investigate.
         for (AstNode* stmtp = newModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             AstRefDType* const refp = VN_CAST(stmtp, RefDType);
             if (!refp) continue;
             if (ledgerFixed.count(refp)) continue;
-
-            // Find a reachable module with matching origName whose owner
-            // is outside the reachable set.
-            auto findReachableClone = [&](AstNode* targetp) -> AstNodeModule* {
+            // Check if typedefp or refDTypep points outside the reachable set
+            auto checkNotStale = [&](const char* label, AstNode* targetp) {
                 AstNodeModule* const ownerp = V3LinkDotIfaceCapture::findOwnerModule(targetp);
                 if (!ownerp || ownerp == newModp || VN_IS(ownerp, Package)
                     || reachable.count(ownerp))
-                    return nullptr;
-                const string& wrongOrigName
-                    = ownerp->origName().empty() ? ownerp->name() : ownerp->origName();
-                for (AstNodeModule* const rModp : reachable) {
-                    if (rModp == newModp) continue;
-                    const string& rOrigName
-                        = rModp->origName().empty() ? rModp->name() : rModp->origName();
-                    if (rOrigName == wrongOrigName) return rModp;
-                }
-                return nullptr;
+                    return;  // OK: owner is reachable or self
+                v3fatalSrc("Phase B reachable-set fallback triggered for "
+                           << refp->prettyNameQ() << " " << label
+                           << " owner=" << ownerp->prettyNameQ()
+                           << " in " << newModp->prettyNameQ());
             };
-            if (refp->typedefp()) {
-                if (AstNodeModule* const rModp = findReachableClone(refp->typedefp())) {
-                    if (AstTypedef* const newTdp = V3LinkDotIfaceCapture::findTypedefInModule(
-                            rModp, refp->typedefp()->name())) {
-                        UINFO(9, "iface capture reachable fixup: "
-                                     << refp << " typedefp -> " << rModp->prettyNameQ() << endl);
-                        refp->typedefp(newTdp);
-                    }
-                }
-            }
-            if (refp->refDTypep()) {
-                if (AstNodeModule* const rModp = findReachableClone(refp->refDTypep())) {
-                    if (AstNodeDType* const newDtp = V3LinkDotIfaceCapture::findDTypeInModule(
-                            rModp, refp->refDTypep()->name(), refp->refDTypep()->type())) {
-                        UINFO(9, "iface capture reachable fixup: "
-                                     << refp << " refDTypep -> " << rModp->prettyNameQ() << endl);
-                        refp->refDTypep(newDtp);
-                    }
-                }
-            }
+            if (refp->typedefp()) checkNotStale("typedefp", refp->typedefp());
+            if (refp->refDTypep()) checkNotStale("refDTypep", refp->refDTypep());
         }
     }
 

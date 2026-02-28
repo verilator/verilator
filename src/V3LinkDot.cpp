@@ -5725,16 +5725,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
 
         bool forcedIfaceDotScope = false;
         bool resolvedCapturedTypedef = false;
-        if (ifaceCaptured && m_statep->forParamed()) {
-            UINFO(9, indent() << "iface capture captured typedef name=" << nodep->name()
-                              << " typedef=" << nodep->typedefp() << " cell=" << capturedCellp);
-            if (nodep->typedefp()) {
-                UINFO(9, indent() << "iface capture refresh typedef binding name=" << nodep->name()
-                                  << " typedef=" << nodep->typedefp()
-                                  << " cell=" << capturedCellp);
-                nodep->typedefp(nullptr);
-                nodep->classOrPackagep(nullptr);
-            }
+        // user2p is not preserved across cloneTree (see note at line ~5887),
+        // so ifaceCaptured is always false in the paramed pass.  Assert to
+        // detect if this assumption is ever violated, then skip the block.
+        if (VL_UNLIKELY(ifaceCaptured && m_statep->forParamed())) {
+            v3fatalSrc("ifaceCaptured unexpectedly true in paramed pass for "
+                       << nodep->prettyNameQ());
         }
         if (m_ds.m_dotp && (m_ds.m_dotPos == DP_PACKAGE || m_ds.m_dotPos == DP_SCOPE)) {
             UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), ClassOrPackageRef), m_ds.m_dotp->lhsp(),
@@ -5762,23 +5758,19 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 m_ds.m_dotPos = DP_SCOPE;
             }
         } else {
-            UINFO(9, indent() << "iface capture consume captured iface context name="
-                              << nodep->prettyNameQ() << " cell=" << capturedCellp);
-            m_ds.m_dotPos = DP_SCOPE;
-            forcedIfaceDotScope = true;
-            // Set dotSymp to the cell's symbol entry so lookup happens in the interface scope
-            if (capturedCellp && m_statep->existsNodeSym(capturedCellp)) {
-                VSymEnt* const cellSymp = m_statep->getNodeSym(capturedCellp);
-                m_ds.m_dotSymp = cellSymp;
-                UINFO(9, indent() << "iface capture set dotSymp to cell scope cellSymp="
-                                  << cellSymp << " node=" << cellSymp->nodep());
-            }
+            // ifaceCaptured is always false (user2p not preserved across
+            // cloneTree), so this branch is dead.  Assert to detect if
+            // this assumption is ever violated.
+            v3fatalSrc("ifaceCaptured else-branch unexpectedly reached for "
+                       << nodep->prettyNameQ());
         }
         if (!nodep->typedefp() && !nodep->subDTypep()) {
-            if (ifaceCaptured) {
-                UINFO(9, indent() << "iface capture lookup start name=" << nodep->name()
-                                  << " dotPos=" << static_cast<int>(m_ds.m_dotPos) << " dotSym="
-                                  << m_ds.m_dotSymp << " classPkg=" << nodep->classOrPackagep());
+            // ifaceCaptured is always false (user2p not preserved across
+            // cloneTree), so these guards never fire.  Assert to detect if
+            // this assumption is ever violated.
+            if (VL_UNLIKELY(ifaceCaptured)) {
+                v3fatalSrc("ifaceCaptured unexpectedly true during lookup for "
+                           << nodep->prettyNameQ());
             }
             const VSymEnt* foundp;
             if (nodep->classOrPackagep()) {
@@ -5786,21 +5778,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
             } else if (m_ds.m_dotPos == DP_FIRST || m_ds.m_dotPos == DP_NONE) {
                 foundp = m_curSymp->findIdFallback(nodep->name());
             } else {
-                // Use dotSymp if set (e.g., for captured interface typedefs), else curSymp
-                VSymEnt* const lookupSymp = m_ds.m_dotSymp ? m_ds.m_dotSymp : m_curSymp;
-                foundp = lookupSymp->findIdFlat(nodep->name());
-            }
-            if (ifaceCaptured && capturedTypedefp) {
-                // When we have a captured interface typedef context, use the captured typedef
-                // instead of any local lookup result. This handles the case where the local
-                // typedef has the same name as the interface typedef (e.g., `typedef if0.rq_t
-                // rq_t;`)
-                UINFO(9, indent() << "iface capture binding via captured typedef fallback name="
-                                  << nodep->name() << " typedef=" << capturedTypedefp);
-                nodep->typedefp(capturedTypedefp);
-                nodep->classOrPackagep(capturedTypedefSymp ? capturedTypedefSymp->classOrPackagep()
-                                                           : nullptr);
-                resolvedCapturedTypedef = true;
+                // This else-branch was for captured interface typedef lookup
+                // (forcedIfaceDotScope sets DP_SCOPE).  Since ifaceCaptured
+                // is always false, forcedIfaceDotScope is never set.
+                v3fatalSrc("Unexpected dotPos=" << static_cast<int>(m_ds.m_dotPos)
+                           << " in RefDType lookup for " << nodep->prettyNameQ());
+                foundp = nullptr;  // unreachable, silence compiler
             }
             if (!resolvedCapturedTypedef && foundp) {
                 VSymEnt* const parentSymp = foundp->parentp();
@@ -5879,10 +5862,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 }
             }
         }
-        if (forcedIfaceDotScope && m_ds.m_dotPos == DP_SCOPE && !m_ds.m_dotp) {
-            UINFO(9, indent() << "iface capture reset dot state after captured typedef name="
-                              << nodep->name());
-            m_ds.init(m_curSymp);
+        // forcedIfaceDotScope is never set (ifaceCaptured is always false).
+        // Assert to detect if this assumption is ever violated.
+        if (VL_UNLIKELY(forcedIfaceDotScope)) {
+            v3fatalSrc("forcedIfaceDotScope unexpectedly true for "
+                       << nodep->prettyNameQ());
         }
         // Note: retireCapture/erase removed - user2p is not preserved across
         // cloneTree, so ifaceCaptured is always false in the paramed pass where
