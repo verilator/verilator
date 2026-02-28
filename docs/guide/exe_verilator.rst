@@ -694,6 +694,8 @@ Summary:
 
 .. option:: -fno-life-post
 
+.. option:: -fno-lift-expr
+
 .. option:: -fno-localize
 
 .. option:: -fno-merge-cond

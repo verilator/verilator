@@ -15,7 +15,8 @@ test.top_filename = "t/t_unopt_combo.v"
 out_filename = test.obj_dir + "/V" + test.name + ".tree.json"
 
 test.compile(verilator_flags2=[
-    "--no-json-edit-nums", "--stats", test.t_dir + "/t_unopt_combo_isolate.vlt", "-fno-dfg"
+    "--no-json-edit-nums", "--stats", test.t_dir +
+    "/t_unopt_combo_isolate.vlt", "-fno-dfg", "-fno-lift-expr"
 ])
 
 if test.vlt_all:
