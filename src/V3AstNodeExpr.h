@@ -690,6 +690,7 @@ public:
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
+    bool isExprCoverageEligible() const override { return false; }
     const char* broken() const override {
         BROKEN_RTN(!VN_IS(backp(), NodeAssign));  // V3Emit* assumption
         return nullptr;
