@@ -3343,58 +3343,54 @@ class ConstVisitor final : public VNVisitor {
     void visit(AstCvtArrayToArray* nodep) override {
         iterateChildren(nodep);
         // Handle the case where we have a stream operation inside a cast conversion
-        // To avoid infinite recursion, mark the node as processed by setting user1.
-        if (!nodep->user1()) {
-            nodep->user1(true);
-            // Check for both StreamL and StreamR operations
-            AstNodeStream* streamp = nullptr;
-            bool isReverse = false;
-            if (AstStreamL* const streamLp = VN_CAST(nodep->fromp(), StreamL)) {
-                streamp = streamLp;
-                isReverse = true;  // StreamL reverses the operation
-            } else if (AstStreamR* const streamRp = VN_CAST(nodep->fromp(), StreamR)) {
-                streamp = streamRp;
-                isReverse = false;  // StreamR doesn't reverse the operation
-            }
-            if (streamp) {
-                AstNodeExpr* srcp = streamp->lhsp();
-                const AstNodeDType* const srcDTypep = srcp->dtypep()->skipRefp();
-                AstNodeDType* const dstDTypep = nodep->dtypep()->skipRefp();
-                if (VN_IS(srcDTypep, QueueDType) && VN_IS(dstDTypep, QueueDType)) {
-                    int blockSize = 1;
-                    if (const AstConst* const constp = VN_CAST(streamp->rhsp(), Const)) {
-                        blockSize = constp->toSInt();
-                        if (VL_UNLIKELY(blockSize <= 0)) {
-                            // Not reachable due to higher level checks when parsing stream
-                            // operators commented out to not fail v3error-coverage-checks.
-                            // nodep->v3error("Stream block size must be positive, got " <<
-                            // blockSize);
-                            blockSize = 1;
-                        }
+        // Check for both StreamL and StreamR operations
+        AstNodeStream* streamp = nullptr;
+        bool isReverse = false;
+        if (AstStreamL* const streamLp = VN_CAST(nodep->fromp(), StreamL)) {
+            streamp = streamLp;
+            isReverse = true;  // StreamL reverses the operation
+        } else if (AstStreamR* const streamRp = VN_CAST(nodep->fromp(), StreamR)) {
+            streamp = streamRp;
+            isReverse = false;  // StreamR doesn't reverse the operation
+        }
+        if (streamp) {
+            AstNodeExpr* srcp = streamp->lhsp();
+            const AstNodeDType* const srcDTypep = srcp->dtypep()->skipRefp();
+            AstNodeDType* const dstDTypep = nodep->dtypep()->skipRefp();
+            if (VN_IS(srcDTypep, QueueDType) && VN_IS(dstDTypep, QueueDType)) {
+                int blockSize = 1;
+                if (const AstConst* const constp = VN_CAST(streamp->rhsp(), Const)) {
+                    blockSize = constp->toSInt();
+                    if (VL_UNLIKELY(blockSize <= 0)) {
+                        // Not reachable due to higher level checks when parsing stream
+                        // operators commented out to not fail v3error-coverage-checks.
+                        // nodep->v3error("Stream block size must be positive, got " <<
+                        // blockSize);
+                        blockSize = 1;
                     }
-                    // Not reachable due to higher level checks when parsing stream operators
-                    // commented out to not fail v3error-coverage-checks.
-                    // else {
-                    //    nodep->v3error("Stream block size must be constant (got " <<
-                    //    streamp->rhsp()->prettyTypeName() << ")");
-                    // }
-                    int srcElementBits = 0;
-                    if (const AstNodeDType* const elemDtp = srcDTypep->subDTypep()) {
-                        srcElementBits = elemDtp->width();
-                    }
-                    int dstElementBits = 0;
-                    if (const AstNodeDType* const elemDtp = dstDTypep->subDTypep()) {
-                        dstElementBits = elemDtp->width();
-                    }
-                    streamp->unlinkFrBack();
-                    AstNodeExpr* newp = new AstCvtArrayToArray{
-                        srcp->fileline(), srcp->unlinkFrBack(), dstDTypep,     isReverse,
-                        blockSize,        dstElementBits,       srcElementBits};
-                    nodep->replaceWith(newp);
-                    VL_DO_DANGLING(pushDeletep(streamp), streamp);
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                    return;
                 }
+                // Not reachable due to higher level checks when parsing stream operators
+                // commented out to not fail v3error-coverage-checks.
+                // else {
+                //    nodep->v3error("Stream block size must be constant (got " <<
+                //    streamp->rhsp()->prettyTypeName() << ")");
+                // }
+                int srcElementBits = 0;
+                if (const AstNodeDType* const elemDtp = srcDTypep->subDTypep()) {
+                    srcElementBits = elemDtp->width();
+                }
+                int dstElementBits = 0;
+                if (const AstNodeDType* const elemDtp = dstDTypep->subDTypep()) {
+                    dstElementBits = elemDtp->width();
+                }
+                streamp->unlinkFrBack();
+                AstNodeExpr* newp = new AstCvtArrayToArray{
+                    srcp->fileline(), srcp->unlinkFrBack(), dstDTypep,     isReverse,
+                    blockSize,        dstElementBits,       srcElementBits};
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(streamp), streamp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
             }
         }
     }
