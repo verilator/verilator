@@ -783,10 +783,10 @@ class CovergroupSamplingVisitor final : public VNVisitor {
                     UINFO(4, "Fixed VarRef in SenTree: " << refp->varp()->name() << " -> "
                                                          << vscp->name() << endl);
                 } else {
-                    UINFO(4, "WARNING: Could not find VarScope for "
-                                 << refp->varp()->name() << " in scope " << m_scopep->name()
-                                 << " - automatic sampling may not work for internal clocks"
-                                 << endl);
+                    refp->v3fatalSrc("Could not find VarScope for clock signal '"
+                                     << refp->varp()->name() << "' in scope "
+                                     << m_scopep->name()
+                                     << " when creating covergroup sampling active");
                 }
             }
         });

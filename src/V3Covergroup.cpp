@@ -544,7 +544,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
             // Note: Coverage database registration happens later via VL_COVER_INSERT
             // (see generateCoverageDeclarations() method around line 1164)
-            // Classes use "v_funccov/" hier prefix vs modules
+            // Classes use "v_covergroup/" hier prefix vs modules
 
             // Generate bin matching code in sample()
             // Handle transition bins specially
@@ -1745,15 +1745,15 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             }
             hierName += "." + binName;
 
-            // Generate: VL_COVER_INSERT(contextp, hier, &binVar, "page", "v_funccov/...", ...)
+            // Generate: VL_COVER_INSERT(contextp, hier, &binVar, "page", "v_covergroup/...", ...)
 
             UINFO(6, "    Registering bin: " << hierName << " -> " << varp->name() << endl);
 
             // Build the coverage insert as a C statement
             // The variable reference needs to be &this->varname, where varname gets mangled to
-            // __PVT__varname Use "page" field with v_funccov prefix so type is extracted correctly
+            // __PVT__varname Use "page" field with v_covergroup prefix so type is extracted correctly
             // (consistent with code coverage)
-            std::string pageName = "v_funccov/" + m_covergroupp->name();
+            std::string pageName = "v_covergroup/" + m_covergroupp->name();
             std::string insertCall = "VL_COVER_INSERT(vlSymsp->_vm_contextp__->coveragep(), ";
             insertCall += "\"" + hierName + "\", ";
             insertCall += "&(this->__PVT__" + varp->name() + "), ";
@@ -1840,6 +1840,16 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
             iterateChildren(nodep);
             processCovergroup();
+            // Remove lowered coverpoints/crosses from the class - they have been
+            // fully translated into C++ code and must not reach downstream passes
+            for (AstCoverpoint* cpp : m_coverpoints) {
+                cpp->unlinkFrBack();
+                VL_DO_DANGLING(cpp->deleteTree(), cpp);
+            }
+            for (AstCoverCross* crossp : m_coverCrosses) {
+                crossp->unlinkFrBack();
+                VL_DO_DANGLING(crossp->deleteTree(), crossp);
+            }
         } else {
             iterateChildren(nodep);
         }
