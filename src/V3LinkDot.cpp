@@ -5884,7 +5884,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                               << nodep->name());
             m_ds.init(m_curSymp);
         }
-        // Note: retireCapture/erase removed — user2p is not preserved across
+        // Note: retireCapture/erase removed - user2p is not preserved across
         // cloneTree, so ifaceCaptured is always false in the paramed pass where
         // retirement would fire.  Ledger cleanup happens in purgeStaleRefs().
         iterateChildren(nodep);

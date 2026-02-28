@@ -790,7 +790,7 @@ void V3LinkDotIfaceCapture::captureTypedefContext(
 
     // dotText is always non-empty for interface typedef captures.  If this
     // fires, the caller resolved to an interface Cell but did not accumulate
-    // a dotText path — investigate the dot-state in visitParseRef.
+    // a dotText path - investigate the dot-state in visitParseRef.
     UASSERT(!dotText.empty(),
             "captureTypedefContext: dotText empty for " << refp->prettyNameQ());
     const string cellPath = dotText;
