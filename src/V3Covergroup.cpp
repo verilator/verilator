@@ -1345,8 +1345,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                     refp->v3warn(COVERIGN,
                                  "Ignoring unsupported: cross references unknown coverpoint: "
                                      + refp->name());
-                    // Delete the entire cross since we can't generate it
-                    VL_DO_DANGLING(crossp->unlinkFrBack()->deleteTree(), crossp);
+                    // Don't delete crossp here - the caller's cleanup loop will delete it
                     return;
                 }
 
@@ -1830,7 +1829,19 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             }
 
             // If covergroup has unsupported clocking event, skip processing it
-            if (hasUnsupportedEvent) return;
+            // but still clean up coverpoints so they don't reach downstream passes
+            if (hasUnsupportedEvent) {
+                iterateChildren(nodep);
+                for (AstCoverpoint* cpp : m_coverpoints) {
+                    cpp->unlinkFrBack();
+                    VL_DO_DANGLING(cpp->deleteTree(), cpp);
+                }
+                for (AstCoverCross* crossp : m_coverCrosses) {
+                    crossp->unlinkFrBack();
+                    VL_DO_DANGLING(crossp->deleteTree(), crossp);
+                }
+                return;
+            }
 
             // Find the sample() method and constructor
             m_sampleFuncp = VN_CAST(m_memberMap.findMember(nodep, "sample"), Func);
