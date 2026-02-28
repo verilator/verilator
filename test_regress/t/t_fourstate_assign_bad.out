@@ -1,8 +1,14 @@
 %Error: t/t_fourstate_assign_bad.v:23:16: Assignment between 2-state and 4-state types requires equivalent element types (IEEE 1800-2023 6.22.2, 7.6)
                                         : ... note: In instance 't'
-                                        : ... LHS type: 'bit[7:0]$[3:0]' (2-state)
-                                        : ... RHS type: 'logic[7:0]$[3:0]' (4-state)
+                                        : ... Left-hand type: 'bit[7:0]$[3:0]'(2-state)
+                                        : ... Right-hand type: 'logic[7:0]$[3:0]'(4-state)
    23 |     arr_2state = arr_4state;
       |                ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_fourstate_assign_bad.v:23:16: Illegal assignment: Array element types are not equivalent (IEEE 1800-2023 6.22.2)
+                                        : ... note: In instance 't'
+                                        : ... Left-hand data type: 'bit[7:0]$[3:0]' (2-state)
+                                        : ... Right-hand data type: 'logic[7:0]$[3:0]' (4-state)
+   23 |     arr_2state = arr_4state;
+      |                ^
 %Error: Exiting due to

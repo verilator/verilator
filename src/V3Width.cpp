@@ -5797,13 +5797,12 @@ class WidthVisitor final : public VNVisitor {
 
             // IEEE 1800-2023 7.6: For unpacked arrays to be assignment compatible,
             // the element types shall be equivalent (IEEE 1800-2023 6.22.2).
-            // Check specifically for 2-state vs 4-state mismatch for unpacked array
-            // to unpacked array assignments, as this is a common IEEE compliance issue.
             // Note: Streaming operators and string literals have implicit conversion rules.
             if (nodep->rhsp()->dtypep()) {  // May be null on earlier errors
                 const AstNodeDType* const lhsDtp = lhsDTypep->skipRefp();
                 const AstNodeDType* const rhsDtp = nodep->rhsp()->dtypep()->skipRefp();
-                // Only check unpacked array to unpacked array assignments
+                // Only check if number of states match for unpacked array to unpacked array
+                // assignments
                 const bool lhsIsUnpackArray
                     = VN_IS(lhsDtp, UnpackArrayDType) || VN_IS(lhsDtp, DynArrayDType)
                       || VN_IS(lhsDtp, QueueDType) || VN_IS(lhsDtp, AssocArrayDType);
@@ -5812,15 +5811,17 @@ class WidthVisitor final : public VNVisitor {
                       || VN_IS(rhsDtp, QueueDType) || VN_IS(rhsDtp, AssocArrayDType);
                 if (lhsIsUnpackArray && rhsIsUnpackArray) {
                     if (lhsDtp->isFourstate() != rhsDtp->isFourstate()) {
-                        nodep->v3error(
-                            "Assignment between 2-state and 4-state types requires "
-                            "equivalent element types (IEEE 1800-2023 6.22.2, 7.6)\n"
-                            << nodep->warnMore() << "... LHS type: " << lhsDtp->prettyDTypeNameQ()
-                            << (lhsDtp->isFourstate() ? " (4-state)" : " (2-state)") << "\n"
-                            << nodep->warnMore() << "... RHS type: " << rhsDtp->prettyDTypeNameQ()
-                            << (rhsDtp->isFourstate() ? " (4-state)" : " (2-state)"));
+                        nodep->v3error("Assignment between 2-state and 4-state types requires "
+                                       "equivalent element types (IEEE 1800-2023 6.22.2, 7.6)\n"
+                                       << nodep->warnMore()
+                                       << "... Left-hand type: " << lhsDtp->prettyDTypeNameQ()
+                                       << lhsDtp->stateDTypeName() << "\n"
+                                       << nodep->warnMore() << "... Right-hand type: "
+                                       << rhsDtp->prettyDTypeNameQ() << rhsDtp->stateDTypeName());
                     }
                 }
+                checkUnpackedArrayAssignmentCompatible<AstNodeVarRef, AstNodeVarRef>(
+                    nodep, VN_CAST(nodep->lhsp(), NodeVarRef), VN_CAST(nodep->rhsp(), NodeVarRef));
             }
 
             iterateCheckAssign(nodep, "Assign RHS", nodep->rhsp(), FINAL, lhsDTypep);
@@ -6431,6 +6432,11 @@ class WidthVisitor final : public VNVisitor {
                         << nodep->prettyOperatorName() << "," << " mismatch between port which is"
                         << (modArrayp ? "" : " not") << " an array," << " and expression which is"
                         << (exprArrayp ? "" : " not") << " an array. (IEEE 1800-2023 7.6)");
+                    UINFO(1, "    Related lo: " << modDTypep);
+                    UINFO(1, "    Related hi: " << conDTypep);
+                } else {
+                    checkUnpackedArrayAssignmentCompatible<AstVar, AstNodeVarRef>(
+                        nodep, nodep->modVarp(), VN_CAST(nodep->exprp(), NodeVarRef));
                     UINFO(1, "    Related lo: " << modDTypep);
                     UINFO(1, "    Related hi: " << conDTypep);
                 }
@@ -8054,6 +8060,89 @@ class WidthVisitor final : public VNVisitor {
             if (isBaseClassRecurse(cls1p, cextp->classp())) return true;
         }
         return false;
+    }
+    // Checks whether two types are assignment-compatible according to IEEE 1800-2023 7.6
+    // Currently, this function only supports variables, which are of following types:
+    // - Fixed-size unpacked array
+    // - Dynamic unpacked array
+    // - Associative array
+    template <typename T, typename N>
+    void checkUnpackedArrayAssignmentCompatible(const AstNode* nodep, const T* const lhsRefp,
+                                                const N* const rhsRefp) {
+        static_assert(
+            (std::is_same<T, AstVar>::value || std::is_same<T, AstNodeVarRef>::value)
+                && (std::is_same<N, AstVar>::value || std::is_same<N, AstNodeVarRef>::value),
+            "Unsupported types provided.");
+        if (!lhsRefp || !rhsRefp) return;
+        string lhsName, rhsName;
+        if (VN_IS(nodep, Pin)) {
+            lhsName = std::string{"Pin"};
+            rhsName = std::string{"Expression"};
+        } else {
+            lhsName = std::string{"Left-hand"};
+            rhsName = std::string{"Right-hand"};
+        }
+
+        const AstNodeDType* const lhsDtp = lhsRefp->dtypep()->skipRefp();
+        const AstNodeDType* const rhsDtp = rhsRefp->dtypep()->skipRefp();
+        const bool isLhsAggregate = lhsDtp->isAggregateType();
+        const bool isRhsAggregate = rhsDtp->isAggregateType();
+        if (!isLhsAggregate && !isRhsAggregate) return;
+        if (isLhsAggregate ^ isRhsAggregate) {
+            nodep->v3error(
+                "Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)\n"
+                << nodep->warnMore() << "... " << lhsName << " data type: "
+                << lhsDtp->prettyDTypeNameQ() << " " << lhsDtp->stateDTypeName() << "\n"
+                << nodep->warnMore() << "... " << rhsName << " data type: "
+                << rhsDtp->prettyDTypeNameQ() << " " << rhsDtp->stateDTypeName() << "\n");
+            return;
+        } else if (VN_IS(lhsDtp, QueueDType) && VN_IS(rhsDtp, EmptyQueueDType)) {
+            return;
+        }
+        std::pair<uint32_t, uint32_t> lhsDim = lhsDtp->dimensions(false),
+                                      rhsDim = rhsDtp->dimensions(false);
+        // Check if unpacked array dimensions are matching
+        if (lhsDim.second != rhsDim.second) {
+            nodep->v3error("Illegal assignment: Unmatched number of unpacked dimensions "
+                           << "(" << lhsDim.second << " vs " << rhsDim.second << ")");
+            return;
+        }
+
+        const AstNodeDType* lhsDtpIterp = lhsDtp;
+        const AstNodeDType* rhsDtpIterp = rhsDtp;
+        // Sizes of fixed-size arrays should be the same
+        // Dynamic-sized arrays are always assignable
+        for (uint32_t dim = 0; dim < rhsDim.second; dim++) {
+            if (const AstNodeArrayDType* rhsArrayp = VN_CAST(rhsDtpIterp, NodeArrayDType)) {
+                if (const AstNodeArrayDType* lhsArrayp = VN_CAST(lhsDtpIterp, NodeArrayDType)) {
+                    if (lhsArrayp->elementsConst() != rhsArrayp->elementsConst()) {
+                        nodep->v3error("Illegal assignment: Unmatched array sizes in dimension "
+                                       << dim << " " << "(" << lhsArrayp->elementsConst() << " vs "
+                                       << rhsArrayp->elementsConst() << ")");
+                        return;
+                    }
+                }
+            }
+            // Associative arrays are compatible only with each other
+            if (VN_IS(lhsDtpIterp, AssocArrayDType) ^ VN_IS(rhsDtpIterp, AssocArrayDType)) {
+                nodep->v3error("Illegal assignment: Associative arrays are assignment compatible "
+                               "only with associative arrays (IEEE 1800-2023 7.6)");
+
+                return;
+            }
+            lhsDtpIterp = lhsDtpIterp->subDTypep();
+            rhsDtpIterp = rhsDtpIterp->subDTypep();
+        }
+        // Element types of source and target shall be equivalent
+        if (!isEquivalentDType(lhsDtpIterp, rhsDtpIterp)) {
+            nodep->v3error("Illegal assignment: Array element types are not equivalent (IEEE "
+                           "1800-2023 6.22.2)\n"
+                           << nodep->warnMore() << "... " << lhsName << " data type: "
+                           << lhsDtp->prettyDTypeNameQ() << " " << lhsDtp->stateDTypeName() << "\n"
+                           << nodep->warnMore() << "... " << rhsName
+                           << " data type: " << rhsDtp->prettyDTypeNameQ() << " "
+                           << rhsDtp->stateDTypeName() << "\n");
+        }
     }
     void checkClassAssign(const AstNode* nodep, const char* side, AstNode* rhsp,
                           AstNodeDType* const lhsDTypep) {

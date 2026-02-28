@@ -1,0 +1,64 @@
+%Error: t/t_assignment_compatibility_bad.v:25:24: Illegal assignment: Unmatched array sizes in dimension 0 (3 vs 2)
+                                                : ... note: In instance 't'
+   25 |   logic unpackedF[3] = unpackedA;
+      |                        ^~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_assignment_compatibility_bad.v:26:31: Assignment between 2-state and 4-state types requires equivalent element types (IEEE 1800-2023 6.22.2, 7.6)
+                                                : ... note: In instance 't'
+                                                : ... Left-hand type: 'bit$[0:1]'(2-state)
+                                                : ... Right-hand type: 'logic$[0:1]'(4-state)
+   26 |   bit unpackedG[2] = unpackedB[0:1];
+      |                               ^
+%Error: t/t_assignment_compatibility_bad.v:28:20: Illegal assignment: Unmatched array sizes in dimension 0 (3 vs 2)
+                                                : ... note: In instance 't'
+   28 |   assign unpackedB = unpackedA;
+      |                    ^
+%Error: t/t_assignment_compatibility_bad.v:29:20: Illegal assignment: Unmatched number of unpacked dimensions (1 vs 2)
+                                                : ... note: In instance 't'
+   29 |   assign unpackedB = unpackedC;
+      |                    ^
+%Error: t/t_assignment_compatibility_bad.v:30:20: Illegal assignment: Unmatched array sizes in dimension 0 (4 vs 3)
+                                                : ... note: In instance 't'
+   30 |   assign unpackedD = unpackedC;
+      |                    ^
+%Error: t/t_assignment_compatibility_bad.v:31:20: Assignment between 2-state and 4-state types requires equivalent element types (IEEE 1800-2023 6.22.2, 7.6)
+                                                : ... note: In instance 't'
+                                                : ... Left-hand type: 'struct{}$unit::struct_t$[0:3][0:1]'(2-state)
+                                                : ... Right-hand type: 'logic$[0:3][0:1]'(4-state)
+   31 |   assign unpackedE = unpackedD;
+      |                    ^
+%Error: t/t_assignment_compatibility_bad.v:31:20: Illegal assignment: Array element types are not equivalent (IEEE 1800-2023 6.22.2)
+                                                : ... note: In instance 't'
+                                                : ... Left-hand data type: 'struct{}$unit::struct_t$[0:3][0:1]' (2-state)
+                                                : ... Right-hand data type: 'logic$[0:3][0:1]' (4-state)
+   31 |   assign unpackedE = unpackedD;
+      |                    ^
+%Warning-WIDTHEXPAND: t/t_assignment_compatibility_bad.v:31:20: Operator ASSIGNW expects 64 bits on the Assign RHS, but Assign RHS's VARREF 'unpackedD' generates 1 bits.
+                                                              : ... note: In instance 't'
+   31 |   assign unpackedE = unpackedD;
+      |                    ^
+                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
+                      ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
+%Error: t/t_assignment_compatibility_bad.v:32:23: Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)
+                                                : ... note: In instance 't'
+                                                : ... Left-hand data type: 'logic' (4-state)
+                                                : ... Right-hand data type: 'logic$[0:1]' (4-state)
+   32 |   assign nonAggregate = unpackedA;
+      |                       ^
+%Error: t/t_assignment_compatibility_bad.v:33:20: Assignment between 2-state and 4-state types requires equivalent element types (IEEE 1800-2023 6.22.2, 7.6)
+                                                : ... note: In instance 't'
+                                                : ... Left-hand type: 'logic$[0:1]'(4-state)
+                                                : ... Right-hand type: 'logic$[string]'(2-state)
+   33 |   assign unpackedA = assocArrayA;
+      |                    ^
+%Error: t/t_assignment_compatibility_bad.v:33:20: Illegal assignment: Associative arrays are assignment compatible only with associative arrays (IEEE 1800-2023 7.6)
+                                                : ... note: In instance 't'
+   33 |   assign unpackedA = assocArrayA;
+      |                    ^
+%Error: t/t_assignment_compatibility_bad.v:34:17: Illegal assignment: Array element types are not equivalent (IEEE 1800-2023 6.22.2)
+                                                : ... note: In instance 't'
+                                                : ... Left-hand data type: 'logic$[$]' (2-state)
+                                                : ... Right-hand data type: 'bit$[$]' (2-state)
+   34 |   assign queueA = queueB;
+      |                 ^
+%Error: Exiting due to
