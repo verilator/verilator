@@ -3757,7 +3757,7 @@ statement_item<nodeStmtp>:          // IEEE: statement_item
         |       yWAIT_ORDER '(' vrdList ')' stmt yELSE stmt
                         { $$ = nullptr; BBUNSUP($4, "Unsupported: wait_order"); DEL($3, $5, $7);}
         |       yWAIT_ORDER '(' vrdList ')' yELSE stmt
-                        { $$ = nullptr; BBUNSUP($4, "Unsupported: wait_order"); DEL($6); }
+                        { $$ = nullptr; BBUNSUP($4, "Unsupported: wait_order"); DEL($3, $6); }
         //
         //                      // IEEE: procedural_assertion_statement
         |       procedural_assertion_statement          { $$ = $1; }
@@ -3774,7 +3774,7 @@ statement_item<nodeStmtp>:          // IEEE: statement_item
         |       yEXPECT '(' property_spec ')' stmt yELSE stmt
                         { $$ = nullptr; BBUNSUP($1, "Unsupported: expect"); DEL($3, $5, $7); }
         |       yEXPECT '(' property_spec ')' yELSE stmt
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: expect"); DEL($6); }
+                        { $$ = nullptr; BBUNSUP($1, "Unsupported: expect"); DEL($3, $6); }
         ;
 
 statementVerilatorPragmas<pragmap>:
@@ -6669,7 +6669,7 @@ property_exprCaseIf<nodeExprp>:  // IEEE: part of property_expr for if/case
         |       yIF '(' expr/*expression_or_dist*/ ')' pexpr  %prec prLOWER_THAN_ELSE
                         { $$ = $5; BBUNSUP($<fl>1, "Unsupported: property case expression"); DEL($3); }
         |       yIF '(' expr/*expression_or_dist*/ ')' pexpr yELSE pexpr
-                        { $$ = $5; BBUNSUP($<fl>1, "Unsupported: property case expression"); DEL($7); }
+                        { $$ = $5; BBUNSUP($<fl>1, "Unsupported: property case expression"); DEL($3, $7); }
         ;
 
 property_case_itemList<caseItemp>:  // IEEE: {property_case_item}
