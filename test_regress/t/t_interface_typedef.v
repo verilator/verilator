@@ -6,7 +6,7 @@
 
 // verilog_format: off
 `define stop $stop
-`define checkh(gotv, expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
+`define checkh(gotv, expv) do if ((gotv) !== (expv)) begin $write("%%Error: (%m) %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
 // verilog_format: on
 
 interface ifc #(
@@ -46,15 +46,15 @@ module sub #(
     input logic clk,
     ifc ifc_if
 );
-  typedef ifc_if.struct_t struct_t;
+  typedef ifc_if.struct_t my_struct_t;
 
   wire [EXP_WIDTH-1:0] expval = '1;
 
   initial begin
-    struct_t substruct;
+    my_struct_t substruct;
     #10;
     substruct.data = '1;
-    `checkh($bits(struct_t), EXP_WIDTH);
+    `checkh($bits(my_struct_t), EXP_WIDTH);
     `checkh(substruct.data, expval);
   end
 
