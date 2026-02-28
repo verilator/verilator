@@ -426,6 +426,34 @@ void TriggerKit::addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index, bo
     m_compVecp->addStmtsp(setp);
 }
 
+void TriggerKit::addGatedExtraTriggerAssignment(AstVarScope* vscp, uint32_t index,
+                                                AstVarScope* gatep) const {
+    index += m_nSenseWords * WORD_SIZE;
+    const uint32_t wordIndex = index / WORD_SIZE;
+    const uint32_t bitIndex = index % WORD_SIZE;
+    FileLine* const flp = vscp->fileline();
+    // Set the trigger bit, gated by the 'already fired' flag:
+    //   trigBit = vscp & ~gatep
+    AstVarRef* const refp = new AstVarRef{flp, m_vscp, VAccess::WRITE};
+    AstNodeExpr* const wordp = new AstArraySel{flp, refp, static_cast<int>(wordIndex)};
+    AstNodeExpr* const trigLhsp = new AstSel{flp, wordp, static_cast<int>(bitIndex), 1};
+    AstNodeExpr* const vscpReadp = new AstVarRef{flp, vscp, VAccess::READ};
+    AstNodeExpr* const gateReadp = new AstVarRef{flp, gatep, VAccess::READ};
+    AstNodeExpr* const trigRhsp = new AstAnd{flp, vscpReadp, new AstNot{flp, gateReadp}};
+    AstNode* const setp = new AstAssign{flp, trigLhsp, trigRhsp};
+    // Update the gate: gatep = gatep | vscp
+    setp->addNext(new AstAssign{flp, new AstVarRef{flp, gatep, VAccess::WRITE},
+                                new AstOr{flp, new AstVarRef{flp, gatep, VAccess::READ},
+                                          new AstVarRef{flp, vscp, VAccess::READ}}});
+    // Clear the input variable
+    setp->addNext(new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE},
+                                new AstConst{flp, AstConst::BitFalse{}}});
+    if (AstNode* const nodep = m_compVecp->stmtsp()) {
+        setp->addNext(setp, nodep->unlinkFrBackWithNext());
+    }
+    m_compVecp->addStmtsp(setp);
+}
+
 TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords,
                        uint32_t nExtraWords, uint32_t nPreWords,
                        std::unordered_map<VNRef<const AstSenItem>, size_t> senItem2TrigIdx,
