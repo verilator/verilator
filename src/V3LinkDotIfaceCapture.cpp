@@ -26,10 +26,7 @@ V3LinkDotIfaceCapture::CapturedMap V3LinkDotIfaceCapture::s_map{};
 bool V3LinkDotIfaceCapture::s_enabled = true;
 
 AstNodeModule* V3LinkDotIfaceCapture::findOwnerModule(AstNode* nodep) {
-    for (AstNode* curp = nodep; curp; curp = curp->backp()) {
-        if (AstNodeModule* const modp = VN_CAST(curp, NodeModule)) return modp;
-    }
-    return nullptr;
+    return findParentModule(nodep);  // Shared utility in V3AstInlines.h
 }
 
 bool V3LinkDotIfaceCapture::finalizeCapturedEntry(CapturedMap::iterator it, const char* reasonp) {

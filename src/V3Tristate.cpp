@@ -441,6 +441,8 @@ class TristateVisitor final : public TristateBaseVisitor {
                                                       // Used only on LHS of assignment
     const AstNode* m_logicp = nullptr;  // Current logic being built
     TristateGraph m_tgraph;  // Logic graph
+    // Map: interface AstVar* -> list of per-module (enVarp, outVarp) contribution pairs
+    std::map<AstVar*, std::vector<std::pair<AstVar*, AstVar*>>> m_ifaceContribs;
 
     // STATS
     VDouble0 m_statTriSigs;  // stat tracking
@@ -469,6 +471,29 @@ class TristateVisitor final : public TristateBaseVisitor {
         AstConst* const newp = new AstConst{nodep->fileline(), num};
         return newp;
     }
+    // Create AstVarXRef with inlinedDots copied from a source xref
+    AstVarXRef* newVarXRef(FileLine* fl, AstVar* varp, const string& dotted,
+                           VAccess access, const string& inlinedDots) {
+        AstVarXRef* const xrefp = new AstVarXRef{fl, varp, dotted, access};
+        xrefp->inlinedDots(inlinedDots);
+        return xrefp;
+    }
+    // Check if a module accesses an interface through a modport, by looking up
+    // the first component of the dotted path among the module's interface port vars.
+    // No symbol table is available at V3Tristate time, so linear scan is required.
+    AstModport* findModportForDotted(AstNodeModule* modp, const string& dottedPath) {
+        if (dottedPath.empty()) return nullptr;
+        const string firstComp = dottedPath.substr(0, dottedPath.find('.'));
+        for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            AstVar* const ivarp = VN_CAST(stmtp, Var);
+            if (!ivarp || ivarp->name() != firstComp) continue;
+            const AstIfaceRefDType* const ifaceDtp
+                = VN_CAST(ivarp->dtypep()->skipRefp(), IfaceRefDType);
+            if (ifaceDtp && ifaceDtp->modportp()) return ifaceDtp->modportp();
+            break;
+        }
+        return nullptr;
+    }
     AstNodeExpr* getEnp(AstNode* nodep) {
         if (nodep->user1p()) {
             if (AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef)) {
@@ -486,6 +511,17 @@ class TristateVisitor final : public TristateBaseVisitor {
         // Otherwise return the previous output enable
         return VN_AS(nodep->user1p(), NodeExpr);
     }
+    // Add a ModportVarRef for varp to modportp if not already present
+    void addModportVarRefIfMissing(AstModport* modportp, AstVar* varp, VDirection dir) {
+        for (AstNode* mrp = modportp->varsp(); mrp; mrp = mrp->nextp()) {
+            AstModportVarRef* const mvrp = VN_CAST(mrp, ModportVarRef);
+            if (mvrp && mvrp->varp() == varp) return;  // Already present
+        }
+        AstModportVarRef* const mvrp
+            = new AstModportVarRef{varp->fileline(), varp->name(), dir};
+        mvrp->varp(varp);
+        modportp->addVarsp(mvrp);
+    }
     AstVar* getCreateEnVarp(AstVar* invarp, bool isTop) {
         // Return the master __en for the specified input variable
         if (!invarp->user1p()) {
@@ -494,7 +530,27 @@ class TristateVisitor final : public TristateBaseVisitor {
                              invarp->name() + "__en", invarp};
             // Inherited VDirection::INPUT
             UINFO(9, "       newenv " << newp);
-            modAddStmtp(invarp, newp);
+            // If the variable belongs to a different module (e.g. interface),
+            // create __en in that module so VarXRefs with the same dotted path can reach it.
+            AstNodeModule* const ownerModp = findParentModule(invarp);
+            if (ownerModp && ownerModp != m_modp) {
+                ownerModp->addStmtsp(newp);
+                // Add __en to any modports that reference the original var,
+                // so VarXRefs through modport paths can resolve it.
+                for (AstNode* stmtp = ownerModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                    AstModport* const modportp = VN_CAST(stmtp, Modport);
+                    if (!modportp) continue;
+                    for (AstNode* mrp = modportp->varsp(); mrp; mrp = mrp->nextp()) {
+                        AstModportVarRef* const mvrp = VN_CAST(mrp, ModportVarRef);
+                        if (mvrp && mvrp->varp() == invarp) {
+                            addModportVarRefIfMissing(modportp, newp, VDirection::INPUT);
+                            break;
+                        }
+                    }
+                }
+            } else {
+                modAddStmtp(invarp, newp);
+            }
             invarp->user1p(newp);  // find envar given invarp
         }
         return VN_AS(invarp->user1p(), Var);
@@ -511,6 +567,10 @@ class TristateVisitor final : public TristateBaseVisitor {
         if (AstVarRef* const varrefp = VN_CAST(nodep, VarRef)) {
             return new AstVarRef{varrefp->fileline(), getCreateEnVarp(varrefp->varp(), false),
                                  VAccess::READ};
+        } else if (AstVarXRef* const xrefp = VN_CAST(nodep, VarXRef)) {
+            AstVar* const enVarp = getCreateEnVarp(xrefp->varp(), false);
+            return newVarXRef(xrefp->fileline(), enVarp, xrefp->dotted(), VAccess::READ,
+                              xrefp->inlinedDots());
         } else if (AstConst* const constp = VN_CAST(nodep, Const)) {
             return getNonZConstp(constp);
         } else if (AstExtend* const extendp = VN_CAST(nodep, Extend)) {
@@ -636,14 +696,65 @@ class TristateVisitor final : public TristateBaseVisitor {
         // Now go through the lhs driver map and generate the output
         // enable logic for any tristates.
         // Note there might not be any drivers.
-        for (auto varp : vars) {  // Use vector instead of m_lhsmap iteration for node stability
-            const auto it = m_lhsmap.find(varp);
+        for (AstVar* varp : vars) {  // Use vector instead of m_lhsmap iteration for stability
+            const std::map<AstVar*, RefStrengthVec*>::iterator it = m_lhsmap.find(varp);
             if (it == m_lhsmap.end()) continue;
             AstVar* const invarp = it->first;
             RefStrengthVec* refsp = it->second;
             // Figure out if this var needs tristate expanded.
             if (m_tgraph.isTristate(invarp)) {
-                insertTristatesSignal(nodep, invarp, refsp);
+                // Check if the var is owned by a different module (cross-module reference).
+                // For interface vars this is expected; for regular modules it's unsupported.
+                AstNodeModule* const ownerModp = findParentModule(invarp);
+                const bool isCrossModule
+                    = ownerModp && ownerModp != nodep && !invarp->isIO();
+                const bool isIfaceTri = isCrossModule && VN_IS(ownerModp, Iface);
+
+                if (isCrossModule && !isIfaceTri) {
+                    // Hierarchical writes to non-interface module tri wires are unsupported
+                    for (RefStrength& rs : *refsp) {
+                        if (VN_IS(rs.m_varrefp, VarXRef)) {
+                            rs.m_varrefp->v3warn(
+                                E_UNSUPPORTED,
+                                "Unsupported tristate construct: hierarchical driver"
+                                " of non-interface tri signal: "
+                                    << invarp->prettyNameQ());
+                            break;
+                        }
+                    }
+                } else if (isIfaceTri) {
+                    // Interface tristate vars: drivers from different interface instances
+                    // (different VarXRef dotted paths) must be processed separately.
+                    // E.g. io_ifc.d and io_ifc_local.d both target the same AstVar d in
+                    // the ifc interface, but each instance needs its own contribution slot.
+                    struct PartitionInfo {
+                        RefStrengthVec refs;
+                        string inlinedDots;
+                    };
+                    std::map<string, PartitionInfo> partitions;
+                    for (RefStrength& rs : *refsp) {
+                        if (AstVarXRef* const xrefp = VN_CAST(rs.m_varrefp, VarXRef)) {
+                            PartitionInfo& pi = partitions[xrefp->dotted()];
+                            pi.refs.push_back(rs);
+                            if (pi.inlinedDots.empty()) {
+                                pi.inlinedDots = xrefp->inlinedDots();
+                            }
+                        } else {
+                            partitions[""].refs.push_back(rs);
+                        }
+                    }
+                    for (auto& kv : partitions) {
+                        insertTristatesSignal(nodep, invarp, &kv.second.refs, true,
+                                              kv.first, kv.second.inlinedDots,
+                                              findModportForDotted(nodep, kv.first));
+                    }
+                } else if (VN_IS(nodep, Iface)) {
+                    // Local driver in an interface module — use contribution mechanism
+                    // so it can be combined with any external drivers later
+                    insertTristatesSignal(nodep, invarp, refsp, true, "", "", nullptr);
+                } else {
+                    insertTristatesSignal(nodep, invarp, refsp, false, "", "", nullptr);
+                }
             } else {
                 UINFO(8, "  NO TRISTATE ON:" << invarp);
             }
@@ -671,7 +782,19 @@ class TristateVisitor final : public TristateBaseVisitor {
                                                varp};  // 2-state ok; sep enable
             UINFO(9, "       newout " << newLhsp);
             nodep->addStmtsp(newLhsp);
-            refp->varp(newLhsp);
+            // When retargeting a VarXRef to a local __out var, the dotted path
+            // becomes inconsistent. Replace the VarXRef with a local VarRef.
+            if (VN_IS(refp, VarXRef)) {
+                AstVarRef* const localRefp = new AstVarRef{refp->fileline(), newLhsp, VAccess::WRITE};
+                localRefp->user1p(refp->user1p());
+                refp->user1p(nullptr);
+                refp->replaceWith(localRefp);
+                VL_DO_DANGLING(pushDeletep(refp), refp);
+                refp = localRefp;
+                it->m_varrefp = localRefp;
+            } else {
+                refp->varp(newLhsp);
+            }
 
             // create a new var for this drivers enable signal
             AstVar* const newEnLhsp
@@ -708,7 +831,13 @@ class TristateVisitor final : public TristateBaseVisitor {
         nodep->addStmtsp(new AstAlways{enAssp});
     }
 
-    void insertTristatesSignal(AstNodeModule* nodep, AstVar* const invarp, RefStrengthVec* refsp) {
+    // isIfaceTri: true when the var is a tristate in an interface module (local or external).
+    // ifaceDottedPath/ifaceInlinedDots/ifaceModportp are non-empty only for external
+    // (cross-module) drivers; empty for local drivers within the interface itself.
+    void insertTristatesSignal(AstNodeModule* nodep, AstVar* const invarp,
+                               RefStrengthVec* refsp, bool isIfaceTri,
+                               const string& ifaceDottedPath,
+                               const string& ifaceInlinedDots, AstModport* ifaceModportp) {
         UINFO(8, "  TRISTATE EXPANDING:" << invarp);
         ++m_statTriSigs;
         m_tgraph.didProcess(invarp);
@@ -721,29 +850,32 @@ class TristateVisitor final : public TristateBaseVisitor {
         // Or if this is a top-level inout, do tristate expand if requested
         // by pinsInoutEnables(). The resolution will be done outside of
         // verilator.
+        // Interface tristate vars skip port conversion (they use contribution vars instead).
         AstVar* envarp = nullptr;
         AstVar* outvarp = nullptr;  // __out
         AstVar* lhsp = invarp;  // Variable to assign drive-value to (<in> or __out)
-        bool isTopInout
-            = (invarp->direction() == VDirection::INOUT) && invarp->isIO() && nodep->isTop();
-        if ((v3Global.opt.pinsInoutEnables() && isTopInout)
-            || (!nodep->isTop() && invarp->isIO())) {
-            // This var becomes an input
-            invarp->varType2In();  // convert existing port to type input
-            // Create an output port (__out)
-            outvarp = getCreateOutVarp(invarp, isTopInout);
-            outvarp->varType2Out();
-            lhsp = outvarp;  // Must assign to __out, not to normal input signal
-            UINFO(9, "     TRISTATE propagates up with " << lhsp);
-            // Create an output enable port (__en)
-            // May already be created if have foo === 1'bz somewhere
-            envarp = getCreateEnVarp(invarp, isTopInout);  // direction to be set in visit(AstPin*)
-            //
-            outvarp->user1p(envarp);
-            m_varAux(outvarp).pullp = m_varAux(invarp).pullp;  // AstPull* propagation
-            if (m_varAux(invarp).pullp) UINFO(9, "propagate pull to " << outvarp);
-        } else if (invarp->user1p()) {
-            envarp = VN_AS(invarp->user1p(), Var);  // From CASEEQ, foo === 1'bz
+        const bool isTopInout
+            = !isIfaceTri && (invarp->direction() == VDirection::INOUT) && invarp->isIO()
+              && nodep->isTop();
+        if (!isIfaceTri) {
+            if ((v3Global.opt.pinsInoutEnables() && isTopInout)
+                || (!nodep->isTop() && invarp->isIO())) {
+                // This var becomes an input
+                invarp->varType2In();  // convert existing port to type input
+                // Create an output port (__out)
+                outvarp = getCreateOutVarp(invarp, isTopInout);
+                outvarp->varType2Out();
+                lhsp = outvarp;  // Must assign to __out, not to normal input signal
+                UINFO(9, "     TRISTATE propagates up with " << lhsp);
+                // Create an output enable port (__en)
+                // May already be created if have foo === 1'bz somewhere
+                envarp = getCreateEnVarp(invarp, isTopInout);  // dir set in visit(AstPin*)
+                outvarp->user1p(envarp);
+                m_varAux(outvarp).pullp = m_varAux(invarp).pullp;  // AstPull* propagation
+                if (m_varAux(invarp).pullp) UINFO(9, "propagate pull to " << outvarp);
+            } else if (invarp->user1p()) {
+                envarp = VN_AS(invarp->user1p(), Var);  // From CASEEQ, foo === 1'bz
+            }
         }
 
         AstNodeExpr* orp = nullptr;
@@ -752,15 +884,26 @@ class TristateVisitor final : public TristateBaseVisitor {
         std::sort(refsp->begin(), refsp->end(),
                   [](RefStrength a, RefStrength b) { return a.m_strength > b.m_strength; });
 
-        auto beginStrength = refsp->begin();
+        RefStrengthVec::iterator beginStrength = refsp->begin();
         while (beginStrength != refsp->end()) {
-            auto endStrength = beginStrength + 1;
+            RefStrengthVec::iterator endStrength = beginStrength + 1;
             while (endStrength != refsp->end()
                    && endStrength->m_strength == beginStrength->m_strength)
                 endStrength++;
 
             FileLine* const fl = beginStrength->m_varrefp->fileline();
-            const string strengthVarName = lhsp->name() + "__" + beginStrength->m_strength.ascii();
+            // For interface tristate vars, uniquify strength var names by including the
+            // interface instance path, since multiple interface instances may have
+            // identically-named tristate signals (e.g. io_ifc.d and io_ifc_mc.d both
+            // create d__strong in the driving module)
+            string strengthPrefix;
+            if (isIfaceTri && !ifaceDottedPath.empty()) {
+                strengthPrefix = ifaceDottedPath;
+                std::replace(strengthPrefix.begin(), strengthPrefix.end(), '.', '_');
+                strengthPrefix += "__";
+            }
+            const string strengthVarName
+                = strengthPrefix + lhsp->name() + "__" + beginStrength->m_strength.ascii();
 
             // var__strength variable
             AstVar* const varStrengthp = new AstVar{fl, VVarType::MODULETEMP, strengthVarName,
@@ -796,11 +939,73 @@ class TristateVisitor final : public TristateBaseVisitor {
             beginStrength = endStrength;
         }
 
+        // For interface tristate vars, store per-module contributions for later combining.
+        // The interface module owns the contribution vars; resolution happens in
+        // combineIfaceContribs() after all modules are processed.
+        if (isIfaceTri) {
+            AstNodeModule* const ifaceModp = findParentModule(invarp);
+            UASSERT_OBJ(ifaceModp, invarp, "Interface tristate var has no parent module");
+            const int contribIdx = static_cast<int>(m_ifaceContribs[invarp].size());
+            FileLine* const fl = invarp->fileline();
+
+            // Create contribution vars in the interface module
+            AstVar* const contribOutp
+                = new AstVar{fl, VVarType::MODULETEMP,
+                             invarp->name() + "__out" + cvtToStr(contribIdx), invarp};
+            UINFO(9, "       iface contribOut " << contribOutp);
+            ifaceModp->addStmtsp(contribOutp);
+
+            AstVar* const contribEnp
+                = new AstVar{fl, VVarType::MODULETEMP,
+                             invarp->name() + "__en" + cvtToStr(contribIdx), invarp};
+            UINFO(9, "       iface contribEn " << contribEnp);
+            ifaceModp->addStmtsp(contribEnp);
+
+            // If the driving module accesses the interface through a modport,
+            // add the new contribution vars to the modport so VarXRefs
+            // can be resolved by V3LinkDot through the modport path.
+            if (ifaceModportp) {
+                UINFO(9, "       adding to modport " << ifaceModportp->name());
+                addModportVarRefIfMissing(ifaceModportp, contribOutp, VDirection::OUTPUT);
+                addModportVarRefIfMissing(ifaceModportp, contribEnp, VDirection::OUTPUT);
+            }
+
+            // Assign drive value and enable to contribution vars.
+            // External drivers use VarXRef; local drivers use VarRef.
+            {
+                AstNodeVarRef* const lhsp
+                    = ifaceDottedPath.empty()
+                          ? static_cast<AstNodeVarRef*>(
+                                new AstVarRef{fl, contribOutp, VAccess::WRITE})
+                          : static_cast<AstNodeVarRef*>(
+                                newVarXRef(fl, contribOutp, ifaceDottedPath, VAccess::WRITE,
+                                           ifaceInlinedDots));
+                AstAssignW* const assp = new AstAssignW{fl, lhsp, orp};
+                assp->user2Or(U2_BOTH);
+                nodep->addStmtsp(new AstAlways{assp});
+            }
+            {
+                AstNodeVarRef* const lhsp
+                    = ifaceDottedPath.empty()
+                          ? static_cast<AstNodeVarRef*>(
+                                new AstVarRef{fl, contribEnp, VAccess::WRITE})
+                          : static_cast<AstNodeVarRef*>(
+                                newVarXRef(fl, contribEnp, ifaceDottedPath, VAccess::WRITE,
+                                           ifaceInlinedDots));
+                AstAssignW* const assp = new AstAssignW{fl, lhsp, enp};
+                assp->user2Or(U2_BOTH);
+                nodep->addStmtsp(new AstAlways{assp});
+            }
+
+            m_ifaceContribs[invarp].push_back({contribEnp, contribOutp});
+            return;
+        }
+
         if (!outvarp) {
             // This is the final pre-forced resolution of the tristate, so we apply
             // the pull direction to any undriven pins.
             const AstPull* const pullp = m_varAux(lhsp).pullp;
-            bool pull1 = pullp && pullp->direction() == 1;  // Else default is down
+            const bool pull1 = pullp && pullp->direction() == 1;  // Else default is down
 
             AstNodeExpr* undrivenp;
             if (envarp) {
@@ -1788,8 +1993,14 @@ class TristateVisitor final : public TristateBaseVisitor {
                        && m_tgraph.feedsTri(nodep)) {
                 // Then propagate the enable from the original variable
                 UINFO(9, "     Ref-to-tri " << nodep);
+                FileLine* const fl = nodep->fileline();
                 AstVar* const enVarp = getCreateEnVarp(nodep->varp(), false);
-                nodep->user1p(new AstVarRef{nodep->fileline(), enVarp, VAccess::READ});
+                if (AstVarXRef* const xrefp = VN_CAST(nodep, VarXRef)) {
+                    nodep->user1p(newVarXRef(fl, enVarp, xrefp->dotted(), VAccess::READ,
+                                             xrefp->inlinedDots()));
+                } else {
+                    nodep->user1p(new AstVarRef{fl, enVarp, VAccess::READ});
+                }
             }
         }
     }
@@ -1899,11 +2110,78 @@ class TristateVisitor final : public TristateBaseVisitor {
         checkUnhandled(nodep);
     }
 
+    void combineIfaceContribs() {
+        // After all modules have been processed, combine per-module contributions
+        // for each interface tristate signal into final resolution logic.
+        // Key is the canonical AstVar in the interface module (shared across instances).
+        for (std::pair<AstVar* const, std::vector<std::pair<AstVar*, AstVar*>>>& kv
+             : m_ifaceContribs) {
+            AstVar* const invarp = kv.first;
+            std::vector<std::pair<AstVar*, AstVar*>>& contribs = kv.second;
+            AstNodeModule* const ifaceModp = findParentModule(invarp);
+            UASSERT_OBJ(ifaceModp, invarp, "Interface tristate var has no parent module");
+            FileLine* const fl = invarp->fileline();
+
+            UINFO(8, "  IFACE COMBINE " << contribs.size() << " contribs for " << invarp);
+
+            // Build resolution: d = (out0 & en0) | (out1 & en1) | ... | (~combined_en & pull)
+            AstNodeExpr* orp = nullptr;
+            AstNodeExpr* enp = nullptr;
+
+            for (std::pair<AstVar*, AstVar*>& contrib : contribs) {
+                AstVar* const contribEnp = contrib.first;
+                AstVar* const contribOutp = contrib.second;
+
+                AstNodeExpr* const outRefp = new AstVarRef{fl, contribOutp, VAccess::READ};
+                AstNodeExpr* const enRefp = new AstVarRef{fl, contribEnp, VAccess::READ};
+                AstNodeExpr* const andp = new AstAnd{fl, outRefp, enRefp};
+
+                orp = (!orp) ? andp : new AstOr{fl, orp, andp};
+
+                AstNodeExpr* const enRef2p = new AstVarRef{fl, contribEnp, VAccess::READ};
+                enp = (!enp) ? enRef2p : new AstOr{fl, enp, enRef2p};
+            }
+
+            // Create or get __en var for this interface signal
+            AstVar* envarp = VN_CAST(invarp->user1p(), Var);
+            if (!envarp) {
+                envarp = new AstVar{fl, VVarType::MODULETEMP, invarp->name() + "__en", invarp};
+                ifaceModp->addStmtsp(envarp);
+                invarp->user1p(envarp);
+            }
+
+            // Assign combined enable
+            AstAssignW* const enAssp = new AstAssignW{
+                fl, new AstVarRef{fl, envarp, VAccess::WRITE}, enp};
+            UINFOTREE(9, enAssp, "", "iface-enAssp");
+            ifaceModp->addStmtsp(new AstAlways{enAssp});
+
+            // Pull resolution
+            const AstPull* const pullp = m_varAux(invarp).pullp;
+            const bool pull1 = pullp && pullp->direction() == 1;  // Else default is down
+
+            AstNodeExpr* undrivenp
+                = new AstNot{fl, new AstVarRef{fl, envarp, VAccess::READ}};
+            undrivenp = new AstAnd{fl, undrivenp, newAllZerosOrOnes(invarp, pull1)};
+            orp = new AstOr{fl, orp, undrivenp};
+
+            // Assign final value to invarp
+            AstAssignW* const assp
+                = new AstAssignW{fl, new AstVarRef{fl, invarp, VAccess::WRITE}, orp};
+            assp->user2Or(U2_BOTH);
+            UINFOTREE(9, assp, "", "iface-lhsp-eqn");
+            ifaceModp->addStmtsp(new AstAlways{assp});
+        }
+    }
+
 public:
     // CONSTRUCTORS
     explicit TristateVisitor(AstNetlist* netlistp) {
         m_tgraph.clearAndCheck();
         iterateChildrenBackwardsConst(netlistp);
+
+        // Combine interface tristate contributions after all modules processed
+        combineIfaceContribs();
 
 #ifdef VL_LEAK_CHECKS
         // It's a bit chaotic up there
