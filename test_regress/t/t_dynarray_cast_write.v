@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2024 by Antmicro.
+// This file ONLY is placed under the Creative Commons Public Domain
+// SPDX-FileCopyrightText: 2024 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
 class Foo;
@@ -16,10 +16,10 @@ endclass
 
 module t;
    initial begin
-      int sel_bit = 3;
-      Bar bar = new;
-      Foo foo = bar;
-      Bar bars[] = new[4];
+      automatic int sel_bit = 3;
+      automatic Bar bar = new;
+      automatic Foo foo = bar;
+      automatic Bar bars[] = new[4];
       $cast(bars[0], foo);
       if (bars[0].x != 2) $stop;
 

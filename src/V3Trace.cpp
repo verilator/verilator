@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -190,7 +190,6 @@ class TraceVisitor final : public VNVisitor {
 
     VDouble0 m_statSetters;  // Statistic tracking
     VDouble0 m_statSettersSlow;  // Statistic tracking
-    VDouble0 m_statUniqCodes;  // Statistic tracking
     VDouble0 m_statUniqSigs;  // Statistic tracking
 
     // All activity numbers applying to a given trace
@@ -595,19 +594,18 @@ class TraceVisitor final : public VNVisitor {
                 // no need to create a TraceInc node.
                 const AstTraceDecl* const canonDeclp = canonVtxp->nodep();
                 UASSERT_OBJ(!canonVtxp->duplicatep(), canonDeclp, "Canonical node is a duplicate");
-                UASSERT_OBJ(canonDeclp->code() != 0, canonDeclp,
+                UASSERT_OBJ(canonDeclp->codeAssigned(), canonDeclp,
                             "Canonical node should have code assigned already");
                 declp->code(canonDeclp->code());
                 continue;
             }
 
             // This is a canonical trace node. Assign trace code (signal number).
-            UASSERT_OBJ(declp->code() == 0, declp,
+            UASSERT_OBJ(!declp->codeAssigned(), declp,
                         "Canonical node should not have code assigned yet");
             declp->code(m_code);
             const uint32_t codeInc = declp->codeInc();
             m_code += codeInc;
-            m_statUniqCodes += codeInc;
             ++m_statUniqSigs;
 
             // If this is a const signal, add the AstTraceInc
@@ -839,9 +837,6 @@ class TraceVisitor final : public VNVisitor {
 
     // VISITORS
     void visit(AstNetlist* nodep) override {
-        m_code = 1;  // Multiple TopScopes will require fixing how code#s
-        // are assigned as duplicate varscopes must result in the same tracing code#.
-
         // Add vertexes for all TraceDecl, and edges from VARs each trace looks at
         m_finding = false;
         iterateChildren(nodep);
@@ -852,6 +847,9 @@ class TraceVisitor final : public VNVisitor {
 
         // Create the trace functions and insert them into the tree
         createTraceFunctions();
+
+        // Save number of trace codes used
+        nodep->nTraceCodes(m_code);
     }
     void visit(AstNodeModule* nodep) override {
         if (nodep->isTop()) m_topModp = nodep;
@@ -945,7 +943,7 @@ public:
     ~TraceVisitor() override {
         V3Stats::addStat("Tracing, Activity setters", m_statSetters);
         V3Stats::addStat("Tracing, Activity slow blocks", m_statSettersSlow);
-        V3Stats::addStat("Tracing, Unique trace codes", m_statUniqCodes);
+        V3Stats::addStat("Tracing, Unique trace codes", m_code);
         V3Stats::addStat("Tracing, Unique traced signals", m_statUniqSigs);
     }
 };

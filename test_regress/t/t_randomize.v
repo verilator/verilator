@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2020 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2020 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 class Packet;
@@ -56,8 +56,8 @@ module t;
 
    initial begin
 
-      int v;
-      bit if_4 = '0;
+      automatic int v;
+      automatic bit if_4 = '0;
       // TODO not testing constrained values
       v = p.randomize();
       if (v != 1) $stop;

@@ -14,8 +14,8 @@
 //
 // This test is added to facilitate experiments with solutions.
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2013 by Jeremy Bennett <jeremy.bennett@embecosm.com>.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2013 Jeremy Bennett <jeremy.bennett@embecosm.com>
 // SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/

@@ -12,8 +12,8 @@
 // terminate called without an active exception
 // %Error: Verilator aborted.  Consider trying --debug --gdbbt
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2012 by Jie Xu.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2012 Jie Xu
 // SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/

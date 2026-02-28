@@ -3,10 +3,10 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //=========================================================================
@@ -69,6 +69,7 @@
 # include <direct.h>  // mkdir
 #endif
 #ifdef __GLIBC__
+# include <cxxabi.h>
 # include <execinfo.h>
 # define _VL_HAVE_STACKTRACE
 #endif
@@ -113,14 +114,43 @@ VerilatedContext* Verilated::s_lastContextp = nullptr;
 thread_local Verilated::ThreadLocal Verilated::t_s;
 
 //===========================================================================
+// Warning print helper
+
+void vl_print_warn_error(const char* prefix, const char* filename, int linenum,
+                         const char* msg) VL_MT_UNSAFE {
+    // A msg of "ERRORCODE: ..." is a code that changes to a prefix, e.g. "%Error-ERRORCODE: ..."
+    // This avoids changing public API of the vl_stop and related functions.
+    const char* msgNoCp = msg;
+    for (; isupper(*msgNoCp); ++msgNoCp);
+    if (msgNoCp[0] == ':' && msgNoCp[1] == ' ') {
+        const int codeWidth = static_cast<int>(msgNoCp - msg);
+        msgNoCp += 2;
+        if (filename && filename[0]) {
+            VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
+                "%s-%.*s: %s:%d: %s\n", prefix, codeWidth, msg, filename, linenum, msgNoCp);
+        } else {
+            VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
+                "%s-%.*s: %s\n", prefix, codeWidth, msg, msgNoCp);
+        }
+    } else {
+        if (filename && filename[0]) {
+            VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
+                "%s: %s:%d: %s\n", prefix, filename, linenum, msg);
+        } else {
+            VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
+                "%s: %s\n", prefix, msg);
+        }
+    }
+}
+
+//===========================================================================
 // User definable functions
 // Note a TODO is a future version of the API will pass a structure so that
 // the calling arguments allow for extension
 
 #ifndef VL_USER_FINISH  ///< Define this to override the vl_finish function
 void vl_finish(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
-    // hier is unused in the default implementation.
-    (void)hier;
+    (void)hier;  // hier is unused in the default implementation.
     VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
         "- %s:%d: Verilog $finish\n", filename, linenum);
     Verilated::threadContextp()->gotFinish(true);
@@ -130,18 +160,14 @@ void vl_finish(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE
 #ifndef VL_USER_STOP  ///< Define this to override the vl_stop function
 void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
     // $stop or $fatal reporting; would break current API to add param as to which
+    if (Verilated::threadContextp()->gotFinish()) return;
     const char* const msg = "Verilog $stop";
     Verilated::threadContextp()->gotError(true);
     Verilated::threadContextp()->gotFinish(true);
     if (Verilated::threadContextp()->fatalOnError()) {
         vl_fatal(filename, linenum, hier, msg);
     } else {
-        if (filename && filename[0]) {
-            // Not VL_PRINTF_MT, already on main thread
-            VL_PRINTF("%%Error: %s:%d: %s\n", filename, linenum, msg);
-        } else {
-            VL_PRINTF("%%Error: %s\n", msg);
-        }
+        vl_print_warn_error("%Error", filename, linenum, msg);
         Verilated::runFlushCallbacks();
     }
 }
@@ -149,16 +175,10 @@ void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
 
 #ifndef VL_USER_FATAL  ///< Define this to override the vl_fatal function
 void vl_fatal(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_UNSAFE {
-    // hier is unused in the default implementation.
-    (void)hier;
+    (void)hier;  // hier is unused in the default implementation.
     Verilated::threadContextp()->gotError(true);
     Verilated::threadContextp()->gotFinish(true);
-    if (filename && filename[0]) {
-        // Not VL_PRINTF_MT, already on main thread
-        VL_PRINTF("%%Error: %s:%d: %s\n", filename, linenum, msg);
-    } else {
-        VL_PRINTF("%%Error: %s\n", msg);
-    }
+    vl_print_warn_error("%Error", filename, linenum, msg);
     Verilated::runFlushCallbacks();
 
     VL_PRINTF("Aborting...\n");  // Not VL_PRINTF_MT, already on main thread
@@ -185,9 +205,8 @@ void vl_stop_maybe(const char* filename, int linenum, const char* hier, bool may
         && Verilated::threadContextp()->errorCount() < Verilated::threadContextp()->errorLimit()) {
         // Do just once when cross error limit
         if (Verilated::threadContextp()->errorCount() == 1) {
-            VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
-                "-Info: %s:%d: %s\n", filename, linenum,
-                "Verilog $stop, ignored due to +verilator+error+limit");
+            vl_print_warn_error("-Info", filename, linenum,
+                                "Verilog $stop, ignored due to +verilator+error+limit");
         }
     } else {
         vl_stop(filename, linenum, hier);
@@ -197,14 +216,8 @@ void vl_stop_maybe(const char* filename, int linenum, const char* hier, bool may
 
 #ifndef VL_USER_WARN  ///< Define this to override the vl_warn function
 void vl_warn(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_UNSAFE {
-    // hier is unused in the default implementation.
-    (void)hier;
-    if (filename && filename[0]) {
-        // Not VL_PRINTF_MT, already on main thread
-        VL_PRINTF("%%Warning: %s:%d: %s\n", filename, linenum, msg);
-    } else {
-        VL_PRINTF("%%Warning: %s\n", msg);
-    }
+    (void)hier;  // hier is unused in the default implementation.
+    vl_print_warn_error("%Warning", filename, linenum, msg);
     Verilated::runFlushCallbacks();
 }
 #endif
@@ -307,42 +320,72 @@ void VlProcess::randstate(const std::string& state) VL_MT_UNSAFE {
 //===========================================================================
 // Random -- Mostly called at init time, so not inline.
 
-VlRNG::VlRNG() VL_MT_SAFE {
-    // Starting point for this new class comes from the global RNG
-    VlRNG& fromr = vl_thread_rng();
-    m_state = fromr.m_state;
-    // Advance the *source* so it can later generate a new number
-    // Xoroshiro128+ algorithm
-    fromr.m_state[1] ^= fromr.m_state[0];
-    fromr.m_state[0] = (((fromr.m_state[0] << 55) | (fromr.m_state[0] >> 9)) ^ fromr.m_state[1]
-                        ^ (fromr.m_state[1] << 14));
-    fromr.m_state[1] = (fromr.m_state[1] << 36) | (fromr.m_state[1] >> 28);
+static std::pair<uint64_t, uint64_t> vl_splitmix64(uint64_t x) VL_PURE {
+    // SplitMix64 algorithm, copied under public domain from
+    // https://prng.di.unimi.it/splitmix64.c
+    // by Sebastiano Vigna
+    uint64_t z = (x += 0x9e3779b97f4a7c15ULL);
+    z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
+    return {x, z ^ (z >> 31)};
 }
+
+// Xoroshiro128** algorithm, copied under public domain from
+// https://xoshiro.di.unimi.it/xoroshiro128starstar.c
+// by David Blackman and Sebastiano Vigna
+
+static uint64_t vl_rolt(const uint64_t x, int k) VL_PURE { return (x << k) | (x >> (64 - k)); }
+
+static std::array<uint64_t, 2> vl_rng_state_from_seed(uint64_t seed) VL_PURE {
+    const auto split1 = vl_splitmix64(seed);
+    const auto split2 = vl_splitmix64(split1.first);
+    return {split1.second, split2.second};
+}
+
+static uint64_t vl_rng_result(const std::array<uint64_t, 2>& state) VL_PURE {
+    const uint64_t s0 = state[0];
+    return vl_rolt(s0 * 5, 7) * 9;
+}
+
+static std::array<uint64_t, 2>
+vl_rng_compute_new_state(const std::array<uint64_t, 2>& current_state) VL_PURE {
+    const uint64_t s0 = current_state[0];
+    uint64_t s1 = current_state[1];
+
+    s1 ^= s0;
+    const uint64_t new_s0 = vl_rolt(s0, 24) ^ s1 ^ (s1 << 16);  // a, b
+    const uint64_t new_s1 = vl_rolt(s1, 37);  // c
+
+    return {new_s0, new_s1};
+}
+
+VlRNG::VlRNG() VL_MT_SAFE {
+    VlRNG& fromr = vl_thread_rng();
+
+    const uint64_t s0 = vl_rng_result(fromr.m_state);
+    fromr.m_state = vl_rng_compute_new_state(fromr.m_state);
+
+    const uint64_t s1 = vl_rng_result(fromr.m_state);
+    fromr.m_state = vl_rng_compute_new_state(fromr.m_state);
+
+    m_state = {s0, s1};
+}
+
+VlRNG::VlRNG(uint64_t seed) VL_PURE { m_state = vl_rng_state_from_seed(seed); }
+void VlRNG::srandom(uint64_t n) VL_MT_UNSAFE { m_state = vl_rng_state_from_seed(n); }
+
 uint64_t VlRNG::rand64() VL_MT_UNSAFE {
-    // Xoroshiro128+ algorithm
-    const uint64_t result = m_state[0] + m_state[1];
-    m_state[1] ^= m_state[0];
-    m_state[0] = (((m_state[0] << 55) | (m_state[0] >> 9)) ^ m_state[1] ^ (m_state[1] << 14));
-    m_state[1] = (m_state[1] << 36) | (m_state[1] >> 28);
+    const uint64_t result = vl_rng_result(m_state);
+    m_state = vl_rng_compute_new_state(m_state);
     return result;
 }
 uint64_t VlRNG::vl_thread_rng_rand64() VL_MT_SAFE {
     VlRNG& fromr = vl_thread_rng();
-    const uint64_t result = fromr.m_state[0] + fromr.m_state[1];
-    fromr.m_state[1] ^= fromr.m_state[0];
-    fromr.m_state[0] = (((fromr.m_state[0] << 55) | (fromr.m_state[0] >> 9)) ^ fromr.m_state[1]
-                        ^ (fromr.m_state[1] << 14));
-    fromr.m_state[1] = (fromr.m_state[1] << 36) | (fromr.m_state[1] >> 28);
+    const uint64_t result = vl_rng_result(fromr.m_state);
+    fromr.m_state = vl_rng_compute_new_state(fromr.m_state);
     return result;
 }
-void VlRNG::srandom(uint64_t n) VL_MT_UNSAFE {
-    m_state[0] = n;
-    m_state[1] = m_state[0];
-    // Fix state as algorithm is slow to randomize if many zeros
-    // This causes a loss of ~ 1 bit of seed entropy, no big deal
-    if (VL_COUNTONES_I(m_state[0]) < 10) m_state[0] = ~m_state[0];
-    if (VL_COUNTONES_I(m_state[1]) < 10) m_state[1] = ~m_state[1];
-}
+
 std::string VlRNG::get_randstate() const VL_MT_UNSAFE {
     // Though not stated in IEEE, assumption is the string must be printable
     const char* const stateCharsp = reinterpret_cast<const char*>(&m_state);
@@ -387,13 +430,8 @@ VlRNG& VlRNG::vl_thread_rng() VL_MT_SAFE {
     if (VL_UNLIKELY(t_seedEpoch != VerilatedContextImp::randSeedEpoch())) {
         // Set epoch before state, to avoid race case with new seeding
         t_seedEpoch = VerilatedContextImp::randSeedEpoch();
-        // Same as srandom() but here as needs to be VL_MT_SAFE
-        t_rng.m_state[0] = Verilated::threadContextp()->impp()->randSeedDefault64();
-        t_rng.m_state[1] = t_rng.m_state[0];
-        // Fix state as algorithm is slow to randomize if many zeros
-        // This causes a loss of ~ 1 bit of seed entropy, no big deal
-        if (VL_COUNTONES_I(t_rng.m_state[0]) < 10) t_rng.m_state[0] = ~t_rng.m_state[0];
-        if (VL_COUNTONES_I(t_rng.m_state[1]) < 10) t_rng.m_state[1] = ~t_rng.m_state[1];
+        t_rng.m_state
+            = vl_rng_state_from_seed(Verilated::threadContextp()->impp()->randSeedDefault64());
     }
     return t_rng;
 }
@@ -403,6 +441,8 @@ WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp) VL_MT_SAFE {
     // Last word is unclean
     return outwp;
 }
+
+double VL_RANDOM_RNG_D(VlRNG& rngr) VL_MT_UNSAFE { return VL_CVT_D_Q(VL_RANDOM_RNG_Q(rngr)); }
 
 WDataOutP VL_RANDOM_RNG_W(VlRNG& rngr, int obits, WDataOutP outwp) VL_MT_UNSAFE {
     for (int i = 0; i < VL_WORDS_I(obits); ++i) outwp[i] = rngr.rand64();
@@ -1882,27 +1922,68 @@ IData VL_FREAD_I(int width, int array_lsb, int array_size, void* memp, IData fpi
     return read_count;
 }
 
+#ifdef _VL_HAVE_STACKTRACE
+static std::string _vl_stacktrace_demangle(const std::string& input) VL_MT_SAFE {
+    static VerilatedMutex s_demangleMutex;
+    const VerilatedLockGuard lock{s_demangleMutex};
+
+    std::string result;
+    result.reserve(input.size());
+
+    std::string word;
+    for (const char c : input) {
+        if (std::isalpha(c) || c == '_') {
+            word += c;
+        } else if (!word.empty() && std::isdigit(c)) {
+            word += c;
+        } else {
+            if (!word.empty()) {
+                // abi::__cxa_demangle mallocs demangled_name
+                int status = 0;
+                char* const demangled_name
+                    = abi::__cxa_demangle(word.c_str(), NULL, NULL, &status);
+                if (status == 0) {
+                    result += std::string{demangled_name};
+                    std::free(demangled_name);  // Free the allocated memory
+                } else {
+                    result += word;
+                }
+                word.clear();
+            }
+            result += c;
+        }
+    }
+    // input requires final newline, so last word can't be symbol
+    result += word;
+    return result;
+}
+#endif
+
 std::string VL_STACKTRACE_N() VL_MT_SAFE {
     static VerilatedMutex s_stackTraceMutex;
     const VerilatedLockGuard lock{s_stackTraceMutex};
 
+#ifdef _VL_HAVE_STACKTRACE
     int nptrs = 0;
     char** strings = nullptr;
 
-#ifdef _VL_HAVE_STACKTRACE
     constexpr int BT_BUF_SIZE = 100;
     void* buffer[BT_BUF_SIZE];
     nptrs = backtrace(buffer, BT_BUF_SIZE);
     strings = backtrace_symbols(buffer, nptrs);
-#endif
 
     // cppcheck-suppress knownConditionTrueFalse
-    if (!strings) return "Unable to backtrace\n";
+    if (!strings) return "Unable to backtrace, call failed\n";
 
     std::string result = "Backtrace:\n";
-    for (int j = 0; j < nptrs; ++j) result += std::string{strings[j]} + "\n"s;
+    for (int j = 0; j < nptrs; ++j)
+        result += _vl_stacktrace_demangle(std::string{strings[j]} + "\n"s);
+
     free(strings);
     return result;
+#else
+    return "Unable to backtrace; not supported\n";
+#endif
 }
 
 void VL_STACKTRACE() VL_MT_SAFE {
@@ -2805,6 +2886,7 @@ void VerilatedContext::threads(unsigned n) {
             "%Error: Cannot set simulation threads after the thread pool has been created.");
     }
 
+    m_useNumaAssign = true;
     if (m_threads == n) return;  // To avoid unnecessary warnings
     m_threads = n;
     const unsigned threadsAvailableToProcess = VlOs::getProcessDefaultParallelism();
@@ -2814,6 +2896,8 @@ void VerilatedContext::threads(unsigned n) {
                      threadsAvailableToProcess, m_threads);
     }
 }
+
+void VerilatedContext::useNumaAssign(bool flag) { m_useNumaAssign = flag; }
 
 void VerilatedContext::commandArgs(int argc, const char** argv) VL_MT_SAFE_EXCLUDES(m_argMutex) {
     // Not locking m_argMutex here, it is done in impp()->commandArgsAddGuts
@@ -3002,6 +3086,8 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
             quiet(true);
         } else if (commandArgVlUint64(arg, "+verilator+rand+reset+", u64, 0, 2)) {
             randReset(static_cast<int>(u64));
+        } else if (commandArgVlUint64(arg, "+verilator+wno+unsatconstr+", u64, 0, 1)) {
+            warnUnsatConstr(u64 == 0);  // wno means disable, so invert
         } else if (commandArgVlUint64(arg, "+verilator+seed+", u64, 1,
                                       std::numeric_limits<int>::max())) {
             randSeed(static_cast<int>(u64));
@@ -3105,7 +3191,7 @@ void VerilatedContext::statsPrintSummary() VL_MT_UNSAFE {
     uint64_t memPeak, memCurrent;
     VlOs::memUsageBytes(memPeak /*ref*/, memCurrent /*ref*/);
     const double modelMB = memPeak / 1024.0 / 1024.0;
-    VL_PRINTF("- Verilator: cpu %0.3f s on %u threads; alloced %0.0f MB\n", cputime,
+    VL_PRINTF("- Verilator: cpu %0.3f s on %u threads; allocated %0.0f MB\n", cputime,
               threadsInModels(), modelMB);
 }
 
@@ -3378,11 +3464,10 @@ void Verilated::mkdir(const char* dirname) VL_MT_UNSAFE {
 
 void Verilated::quiesce() VL_MT_SAFE {
     // Wait until all threads under this evaluation are quiet
-    // THREADED-TODO
 }
 
 int Verilated::exportFuncNum(const char* namep) VL_MT_SAFE {
-    return VerilatedImp::exportFind(namep);
+    return VerilatedImp::exportFindNum(namep);
 }
 
 void Verilated::endOfThreadMTaskGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
@@ -3487,7 +3572,7 @@ VerilatedScope::~VerilatedScope() {
 void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE {
     // Slowpath - called once/scope*export at construction
     // Insert a exported function into scope table
-    const int funcnum = VerilatedImp::exportInsert(namep);
+    const int funcnum = VerilatedImp::exportInsert(namep, cb);
     if (!finalize) {
         // Need two passes so we know array size to create
         // Alternative is to dynamically stretch the array, which is more code, and slower.
@@ -3542,6 +3627,25 @@ VerilatedVar* VerilatedScope::varFind(const char* namep) const VL_MT_SAFE_POSTIN
         if (VL_LIKELY(it != m_varsp->end())) return &(it->second);
     }
     return nullptr;
+}
+
+void* VerilatedScope::exportFind(const VerilatedScope* scopep, int funcnum) VL_MT_SAFE {
+    if (VL_UNLIKELY(!scopep)) return exportFindNullError(funcnum);
+    // If function is registered only once across all scopes, fast path it.
+    // UVM for example expects to find uvm_polling_value_change_notify
+    // from a different scope than where decared.
+    VL_DEBUG_IFDEF(assert(funcnum < VerilatedImp::exportFlatCbs().size()););
+    {
+        void* const cbp = VerilatedImp::exportFlatCbs()[funcnum];
+        if (VL_LIKELY(cbp)) return cbp;
+    }
+    // Else specific scope-based export call
+    if (VL_LIKELY(funcnum < scopep->m_funcnumMax)) {
+        // m_callbacksp must be declared, as Max'es are > 0
+        void* const cbp = scopep->m_callbacksp[funcnum];
+        if (VL_LIKELY(cbp)) return cbp;
+    }
+    return scopep->exportFindError(funcnum);  // LCOV_EXCL_LINE
 }
 
 void* VerilatedScope::exportFindNullError(int funcnum) VL_MT_SAFE {

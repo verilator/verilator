@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2023 by Antmicro Ltd.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2023 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
 typedef class Foo;
@@ -29,7 +29,7 @@ endclass
 
 module test();
   initial begin
-    Foo foo = new;
+    automatic Foo foo = new;
 
     for (int i = 0; i < 10; i++) begin
       logic [3:0] v;

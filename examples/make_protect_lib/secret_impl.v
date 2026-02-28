@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: --protect-lib example secret module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2019 by Todd Strader.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2017 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 // This module will be used as libsecret.a or libsecret.so without

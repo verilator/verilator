@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2025 by Antmicro.
+// This file ONLY is placed under the Creative Commons Public Domain
+// SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
 class NodeList;
@@ -46,14 +46,14 @@ endclass
 
 module t;
     initial begin
-        NodeList n = new;
-        NodeList::Node n1 = new;
-        NodeList::Node n2 = new;
-        NodeTree tr = new;
-        NodeTree::Node t1 = new;
-        NodeTree::Node t2 = new;
-        Outer o = new;
-        Outer::Inner i = new;
+        automatic NodeList n = new;
+        automatic NodeList::Node n1 = new;
+        automatic NodeList::Node n2 = new;
+        automatic NodeTree tr = new;
+        automatic NodeTree::Node t1 = new;
+        automatic NodeTree::Node t2 = new;
+        automatic Outer o = new;
+        automatic Outer::Inner i = new;
 
         i.innerMethod(o);
 

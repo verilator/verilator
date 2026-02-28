@@ -6,10 +6,10 @@
  *
  **************************************************************************
  *
- * Copyright 2003-2026 by Wilson Snyder.  Verilator is free software; you
- * can redistribute it and/or modify it under the terms of either the
- * GNU Lesser General Public License Version 3 or the Perl Artistic License
- * Version 2.0.
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of either the GNU Lesser General Public License Version 3
+ * or the Perl Artistic License Version 2.0.
+ * SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
  * SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
  *
  *************************************************************************/
@@ -161,6 +161,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "timing_on"           { FL; return yVLT_TIMING_ON; }
   "tracing_off"         { FL; return yVLT_TRACING_OFF; }
   "tracing_on"          { FL; return yVLT_TRACING_ON; }
+  "verilator_lib"       { FL; return yVLT_VERILATOR_LIB; }
 
   -?"-block"            { FL; return yVLT_D_BLOCK; }
   -?"-contents"         { FL; return yVLT_D_CONTENTS; }
@@ -527,6 +528,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$fell"               { FL; return yD_FELL; }
   "$fell_gclk"          { FL; return yD_FELL_GCLK; }
   "$future_gclk"        { FL; return yD_FUTURE_GCLK; }
+  "$get_initial_random_seed" { FL; return yD_GET_INITIAL_RANDOM_SEED; }
   "$get_coverage"       { FL; STR; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
   "$high"               { FL; return yD_HIGH; }
   "$increment"          { FL; return yD_INCREMENT; }
@@ -639,7 +641,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "string"              { FL; return ySTRING; }
   "struct"              { FL; return ySTRUCT; }
   "super"               { FL; return ySUPER; }
-  "tagged"              { FL; return yTAGGED; }
+  "tagged"              { FL; return yTAGGED__LEX; }
   "this"                { FL; return yTHIS; }
   "throughout"          { FL; return yTHROUGHOUT; }
   "timeprecision"       { FL; return yTIMEPRECISION; }

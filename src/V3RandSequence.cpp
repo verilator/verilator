@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -91,7 +91,7 @@ class RandSequenceVisitor final : public VNVisitor {
     void findLocalizes(AstRandSequence* nodep) {
         std::set<AstVar*> localVars;
         nodep->foreach([&](AstNode* const nodep) {
-            if (AstVarRef* const anodep = VN_CAST(nodep, VarRef)) {
+            if (const AstVarRef* const anodep = VN_CAST(nodep, VarRef)) {
                 m_localizes.emplace(anodep->varp());
             } else if (AstVar* const anodep = VN_CAST(nodep, Var)) {
                 localVars.emplace(anodep);
@@ -116,7 +116,7 @@ class RandSequenceVisitor final : public VNVisitor {
                                     new AstConst{fl, AstConst::BitFalse{}}});
 
         // Also add arguments as next's
-        for (auto& itr : m_localizeNames) {
+        for (const auto& itr : m_localizeNames) {
             const AstVar* const lvarp = itr.second;
             AstVar* const iovarp
                 = new AstVar{fl, VVarType::PORT, "__Vrsarg_" + lvarp->name(), lvarp};
@@ -154,7 +154,7 @@ class RandSequenceVisitor final : public VNVisitor {
         FileLine* const fl = nodep->fileline();
         AstArg* const argsp
             = new AstArg{fl, breakVarp->name(), new AstVarRef{fl, breakVarp, VAccess::WRITE}};
-        for (auto& itr : m_localizeNames) {
+        for (const auto& itr : m_localizeNames) {
             const AstVar* const lvarp = itr.second;
             AstVar* const iovarp = m_localizeRemaps[lvarp];
             UASSERT_OBJ(iovarp, nodep, "No new port variable for local variable" << lvarp);
@@ -188,7 +188,7 @@ class RandSequenceVisitor final : public VNVisitor {
         for (AstRSProdItem* proditemp = VN_AS(prodlistp->prodsp(), RSProdItem); proditemp;
              proditemp = VN_AS(proditemp->nextp(), RSProdItem)) {
             lists.push_back(proditemp);
-            AstRSProd* const subProdp = proditemp->prodp();
+            const AstRSProd* const subProdp = proditemp->prodp();
             if (!subProdp) continue;
             if (!subProdp->rulesp()) continue;
             if (!subProdp->rulesp()->prodlistsp()) continue;
@@ -202,7 +202,8 @@ class RandSequenceVisitor final : public VNVisitor {
         UINFO(9, "RandJoin productions called:");
         for (AstRSProdItem* proditemp : lists) {
             UINFO(9, "  list " << proditemp);
-            for (AstNodeStmt* prodp : listStmts[proditemp]) UINFO(9, "    calls " << prodp);
+            for (const AstNodeStmt* prodip : listStmts[proditemp])
+                UINFO(9, "    calls " << prodip);
         }
 
         // Need to clone all nodes used
@@ -353,12 +354,12 @@ class RandSequenceVisitor final : public VNVisitor {
                         //     "case 2 / * N(a)  * /: {statement}; break;"
                         //     "case 1 / * N(a) - 1 * /: {statement}; break;"
                         uint32_t j = static_cast<uint32_t>(listStmts[proditemp].size());
-                        for (AstNodeStmt* prodp : listStmts[proditemp]) {
+                        for (AstNodeStmt* iprodp : listStmts[proditemp]) {
                             jIfp->addThensp(new AstIf{
                                 fl,
                                 new AstEq{fl, new AstConst{fl, AstConst::WidthedValue{}, 32, j},
                                           new AstVarRef{fl, nleftVarps[i], VAccess::READ}},
-                                prodp->cloneTree(false)});
+                                iprodp->cloneTree(false)});
                             --j;
                         }
 
@@ -431,7 +432,7 @@ class RandSequenceVisitor final : public VNVisitor {
         UINFOTREE(9, nodep, "RS Tree pre-it", "-");
         std::unordered_set<AstRSProd*> prodHasRandJoin;
         for (AstRSProd* prodp = nodep->prodsp(); prodp; prodp = VN_AS(prodp->nextp(), RSProd)) {
-            prodp->foreach([&](AstRSProdList* const prodlistp) {
+            prodp->foreach([&](const AstRSProdList* const prodlistp) {
                 if (prodlistp->randJoin()) prodHasRandJoin.emplace(prodp);
             });
         }
@@ -501,7 +502,7 @@ class RandSequenceVisitor final : public VNVisitor {
             iterateAndNextNull(itemsp);
         } else if (!nodep->rulesp()->nextp()) {  // Single rule/list, can just do it
             // RSPROD(RSRULE(weight, stmt)) -> IF(weight != 0, stmt)
-            AstRSRule* const rulep = nodep->rulesp();
+            const AstRSRule* const rulep = nodep->rulesp();
             AstNode* itemsp = nullptr;
             if (rulep->weightStmtsp()) itemsp = rulep->weightStmtsp()->unlinkFrBackWithNext();
             if (rulep->prodlistsp())

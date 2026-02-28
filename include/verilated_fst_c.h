@@ -3,10 +3,10 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2001-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2001-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //=============================================================================
@@ -53,7 +53,7 @@ private:
 
     fstWriterContext* m_fst = nullptr;
     std::map<uint32_t, vlFstHandle> m_code2symbol;
-    std::map<int, vlFstEnumHandle> m_local2fstdtype;
+    std::map<void*, std::map<int, vlFstEnumHandle>> m_local2fstdtype;
     vlFstHandle* m_symbolp = nullptr;  // same as m_code2symbol, but as an array
     char* m_strbufp = nullptr;  // String buffer long enough to hold maxBits() chars
     uint64_t m_timeui = 0;  // Time to emit, 0 = not needed

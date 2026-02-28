@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2024 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2024 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 class cls;
@@ -128,10 +128,10 @@ module t (/*AUTOARG*/
 
     logic ta, tb, tc;
     initial begin
-        cls obj = new;
-        cls null_obj = null;
-        int q[5];
-        int qv[$];
+        automatic cls obj = new;
+        automatic cls null_obj = null;
+        automatic int q[5];
+        automatic int qv[$];
 
         q = '{1, 2, 2, 4, 3};
         // lambas not handled
@@ -162,7 +162,7 @@ module t (/*AUTOARG*/
     //
     // Branches which are statically impossible to reach are still reported.
     // E.g.
-    // -000000  point: comment=(t1=1 && t2=1 && 1'h0=1) => 1 hier=top.t
+    // -000000  point: type=expr comment=(t1=1 && t2=1 && 1'h0=1) => 1 hier=top.t
     // These could potentially be pruned, but they currently follow suit for
     // what branch coverage does.  Perhaps a switch should be added to not
     // count statically impossible things.

@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2024 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2024 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
@@ -37,8 +37,8 @@ module t;
    endfunction
 
    initial begin
-      string raw_filter = "parta-partb";
-      filter_expression_parts_t parts = get_filter_expression_parts(raw_filter);
+      automatic string raw_filter = "parta-partb";
+      automatic filter_expression_parts_t parts = get_filter_expression_parts(raw_filter);
       $display("%p", parts);
       if (parts.positive != "parta") $stop;
       if (parts.negative != "partb") $stop;

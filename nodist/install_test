@@ -122,12 +122,13 @@ parser = argparse.ArgumentParser(
     description="""install_test performs several make-and-install iterations to verify the
 Verilator kit.  It isn't part of the normal "make test" due to the number
 of builds required.""",
-    epilog="""Copyright 2009-2026 by Wilson Snyder. This program is free software; you
-can redistribute it and/or modify it under the terms of either the GNU
-Lesser General Public License Version 3 or the Perl Artistic License
-Version 2.0.
+    epilog="""This program is free software; you can redistribute it and/or modify it
+under the terms of either the GNU Lesser General Public License Version 3
+or the Perl Artistic License Version 2.0.
 
-SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0""")
+SPDX-FileCopyrightText: 2009-2026 Wilson Snyder
+SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+""")
 parser.add_argument('--debug', action='store_const', const=9, help='enable debug')
 parser.add_argument('--stage',
                     type=int,

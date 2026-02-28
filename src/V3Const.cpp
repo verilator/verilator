@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -931,7 +931,7 @@ class ConstVisitor final : public VNVisitor {
     bool m_underRecFunc = false;  // Under a recursive function
     AstNodeModule* m_modp = nullptr;  // Current module
     const AstArraySel* m_selp = nullptr;  // Current select
-    const AstNode* m_scopep = nullptr;  // Current scope
+    const AstScope* m_scopep = nullptr;  // Current scope
     const AstAttrOf* m_attrp = nullptr;  // Current attribute
     VDouble0 m_statBitOpReduction;  // Ops reduced in ConstBitOpTreeVisitor
     VDouble0 m_statConcatMerge;  // Concat merges
@@ -944,6 +944,20 @@ class ConstVisitor final : public VNVisitor {
     std::unordered_set<AstJumpBlock*> m_usedJumpBlocks;  // JumpBlocks used by some JumpGo
 
     // METHODS
+
+    void deleteVarScopesUnder(AstNode* subtreep) {
+        if (!subtreep) return;
+        if (!m_scopep) return;
+        std::unordered_set<AstVar*> varps;
+        subtreep->foreachAndNext([&](AstVar* varp) { varps.insert(varp); });
+        if (varps.empty()) return;
+        for (AstVarScope *vscp = m_scopep->varsp(), *nextp; vscp; vscp = nextp) {
+            nextp = VN_AS(vscp->nextp(), VarScope);
+            if (varps.find(vscp->varp()) != varps.end()) {
+                VL_DO_DANGLING(pushDeletep(vscp->unlinkFrBack()), vscp);
+            }
+        }
+    }
 
     V3Number constNumV(AstNode* nodep) {
         // Contract C width to V width (if needed, else just direct copy)
@@ -2977,14 +2991,9 @@ class ConstVisitor final : public VNVisitor {
             // UINFOTREE(1, valuep, "", "visitvaref");
             iterateAndNextNull(nodep->varp()->valuep());  // May change nodep->varp()->valuep()
             AstNode* const valuep = nodep->varp()->valuep();
-            if (nodep->access().isReadOnly()
+            if (nodep->access().isReadOnly() && valuep
                 && ((!m_params  // Can reduce constant wires into equations
-                     && m_doNConst
-                     && v3Global.opt.fConst()
-                     // Default value, not a "known" constant for this usage
-                     && !nodep->varp()->isClassMember() && !nodep->varp()->sensIfacep()
-                     && !(nodep->varp()->isFuncLocal() && nodep->varp()->isNonOutput())
-                     && !nodep->varp()->noSubst() && !nodep->varp()->isSigPublic())
+                     && m_doNConst && v3Global.opt.fConst() && nodep->varp()->isConst())
                     || nodep->varp()->isParam())) {
                 if (operandConst(valuep)) {
                     const V3Number& num = VN_AS(valuep, Const)->num();
@@ -3031,6 +3040,7 @@ class ConstVisitor final : public VNVisitor {
     void visit(AstExprStmt* nodep) override {
         iterateChildren(nodep);
         if (!AstNode::afterCommentp(nodep->stmtsp())) {
+            deleteVarScopesUnder(nodep->stmtsp());
             UINFO(8, "ExprStmt(...) " << nodep << " " << nodep->resultp());
             nodep->replaceWith(nodep->resultp()->unlinkFrBack());
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -3315,8 +3325,20 @@ class ConstVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(procp), procp);
             // Set the initial value right in the variable so we can constant propagate
             AstNode* const initvaluep = exprp->cloneTree(false);
+            varrefp->varp()->isConst(true);
             varrefp->varp()->valuep(initvaluep);
         }
+    }
+    void visit(AstCReset* nodep) override {
+        iterateChildren(nodep);
+        if (!m_doNConst) return;
+        const AstBasicDType* const bdtypep = VN_CAST(nodep->dtypep()->skipRefp(), BasicDType);
+        if (!bdtypep) return;
+        if (!bdtypep->isZeroInit()) return;
+        AstConst* const newp = new AstConst{nodep->fileline(), V3Number{nodep, bdtypep}};
+        UINFO(9, "CRESET(0) => CONST(0) " << nodep);
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstCvtArrayToArray* nodep) override {
         iterateChildren(nodep);
@@ -3395,21 +3417,31 @@ class ConstVisitor final : public VNVisitor {
         if (m_doNConst) {
             if (const AstConst* const constp = VN_CAST(nodep->condp(), Const)) {
                 AstNode* keepp = nullptr;
+                AstNode* delp = nullptr;
                 if (constp->isZero()) {
                     UINFO(4, "IF(0,{any},{x}) => {x}: " << nodep);
                     keepp = nodep->elsesp();
+                    delp = nodep->thensp();
                 } else if (!m_doV || constp->isNeqZero()) {  // Might be X in Verilog
                     UINFO(4, "IF(!0,{x},{any}) => {x}: " << nodep);
                     keepp = nodep->thensp();
+                    delp = nodep->elsesp();
                 } else {
                     UINFO(4, "IF condition is X, retaining: " << nodep);
                     return;
                 }
+
+                // If we delete a branch that contains variable declarations, also delete the
+                // corresponding varscopes so we don't leave dangling AstVarScope::m_varp pointers.
+                deleteVarScopesUnder(delp);
+
                 if (keepp) {
                     keepp->unlinkFrBackWithNext();
                     nodep->replaceWith(keepp);
                 } else {
                     nodep->unlinkFrBack();
+                    deleteVarScopesUnder(nodep->thensp());
+                    deleteVarScopesUnder(nodep->elsesp());
                 }
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
 

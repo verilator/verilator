@@ -7,6 +7,11 @@
  * routine declarations used by the SystemVerilog Verification Procedural
  * Interface (VPI) access routines.
  *
+ * This file is from the SystemVerilog IEEE 1800-2023 Annex K,
+ * and is placed here as mandatory interface material, permitted under IEEE
+ * implementation permission doctrine.
+ * SPDX-FileCopyrightText: 2024 The Institute of Electrical and Electronics Engineers, Inc.
+ * SPDX-License-Identifier: LicenseRef-IEEE-1800
  ******************************************************************************/
 
 /*******************************************************************************

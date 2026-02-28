@@ -1,0 +1,6 @@
+%Error: t/t_assign_cont_automatic_bad.v:14:26: Automatic lifetime variable not allowed in continuous assignment (IEEE 1800-2023 6.21): 'l'
+                                             : ... note: In instance 't'
+   14 |       assign g = signed'(l);   
+      |                          ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

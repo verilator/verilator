@@ -1,9 +1,9 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// Copyright 2010 by Wilson Snyder. This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2010 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 `ifdef USE_VPI_NOT_DPI
@@ -37,6 +37,7 @@ extern "C" int mon_check();
 
    // verilator lint_off ASCRANGE
    reg [0:61]   quads[2:3]      /*verilator public_flat_rw @(posedge clk) */;
+   reg [8:19]   rev   /*verilator public_flat_rw @(posedge clk) */;
    // verilator lint_on ASCRANGE
 
    reg [31:0]      count        /*verilator public_flat */;
@@ -53,6 +54,7 @@ extern "C" int mon_check();
 
    integer        status;
 
+   bit            bit1           /*verilator public_flat_rw */;
    integer        integer1       /*verilator public_flat_rw */;
    byte           byte1          /*verilator public_flat_rw */;
    shortint       short1         /*verilator public_flat_rw */;
@@ -81,6 +83,7 @@ extern "C" int mon_check();
       text = "Verilog Test module";
       too_big = "some text";
 
+      bit1 = 1;
       integer1 = 123;
       byte1 = 123;
       short1 = 123;
@@ -88,6 +91,8 @@ extern "C" int mon_check();
       long1 = 123;
       real1 = 1.0;
       str1 = "hello";
+
+      rev = 12'habc;
 
 `ifdef VERILATOR
       status = $c32("mon_check()");

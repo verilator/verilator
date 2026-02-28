@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2010-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2010-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -466,7 +466,7 @@ public:
         IgnIndices data;
         std::vector<std::pair<int, int>> points
             = {{10, 10}, {20, 20}, {40, 40}, {10, 30}, {20, 40}};
-        for (auto& it : points) {
+        for (const auto& it : points) {
             controlIgnLines.emplace_back(
                 V3ControlIgnoresLine{V3ErrorCode::I_LINT, it.first, it.second, true});
             data.emplace_back(static_cast<uint32_t>(controlIgnLines.size() - 1));
@@ -514,7 +514,7 @@ public:
         UASSERT_SELFTEST(int, nextChange, std::numeric_limits<int>::max());
         //
         points = {{0, 0}};
-        for (auto& it : points) {
+        for (const auto& it : points) {
             controlIgnLines.emplace_back(
                 V3ControlIgnoresLine{V3ErrorCode::I_LINT, it.first, it.second, true});
             data.emplace_back(static_cast<uint32_t>(controlIgnLines.size() - 1));

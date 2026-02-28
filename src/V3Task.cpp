@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -32,6 +32,7 @@
 #include "V3EmitCBase.h"
 #include "V3Graph.h"
 #include "V3Stats.h"
+#include "V3UniqueNames.h"
 
 #include <tuple>
 
@@ -209,9 +210,11 @@ private:
         // Find all var->varscope mappings, for later cleanup
         for (AstNode* stmtp = nodep->varsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVarScope* const vscp = VN_CAST(stmtp, VarScope)) {
-                if (vscp->varp()->isFuncLocal() || vscp->varp()->isUsedLoopIdx()) {
+                AstVar* const varp = vscp->varp();
+                if (varp->isFuncLocal() || varp->isUsedLoopIdx()
+                    || varp->lifetime().isAutomatic()) {
                     UINFO(9, "   funcvsc " << vscp);
-                    m_varToScopeMap.emplace(std::make_pair(nodep, vscp->varp()), vscp);
+                    m_varToScopeMap.emplace(std::make_pair(nodep, varp), vscp);
                 }
             }
         }
@@ -288,18 +291,23 @@ private:
             iterateChildren(nodep);
         }
         UASSERT_OBJ(m_ctorp, nodep, "class constructor missing");  // LinkDot always makes it
+        AstNode* insertp = nullptr;
         for (AstInitialAutomatic* initialp : m_initialps) {
-            if (AstNode* const newp = initialp->stmtsp()) {
-                newp->unlinkFrBackWithNext();
-                if (!m_ctorp->stmtsp()) {
-                    m_ctorp->addStmtsp(newp);
-                } else {
-                    m_ctorp->stmtsp()->addHereThisAsNext(newp);
-                }
+            if (AstNode* const movep = initialp->stmtsp()) {
+                movep->unlinkFrBackWithNext();
+                // Next InitialAutomatic must go in order after what we inserted
+                insertp = AstNode::addNextNull(insertp, movep);
             }
             VL_DO_DANGLING(pushDeletep(initialp->unlinkFrBack()), initialp);
         }
         m_initialps.clear();
+        if (insertp) {
+            if (!m_ctorp->stmtsp()) {
+                m_ctorp->addStmtsp(insertp);
+            } else {
+                m_ctorp->stmtsp()->addHereThisAsNext(insertp);
+            }
+        }
     }
     void visit(AstInitialAutomatic* nodep) override {
         m_initialps.push_back(nodep);
@@ -371,6 +379,7 @@ struct TaskDpiUtils final {
                               : dtypep->width() <= 16 ? 'S'
                                                       : *dtypep->charIQWN();
         const std::string& size = std::to_string(dtypep->width());
+        // cppcheck-suppress strPlusChar
         return {"VL_SET_"s + sizeChar + "_" + vecType + "(" + size + ", ", true};
     }
 };
@@ -393,6 +402,8 @@ class TaskVisitor final : public VNVisitor {
 
     // STATE
     TaskStateVisitor* const m_statep;  // Common state between visitors
+    V3UniqueNames m_initArrayTmpNames;  // For generating unique temporary variable names for
+                                        // arguments being AstInitArray
     AstNodeModule* m_modp = nullptr;  // Current module
     AstTopScope* const m_topScopep = v3Global.rootp()->topScopep();  // The AstTopScope
     AstScope* m_scopep = nullptr;  // Current scope
@@ -400,6 +411,7 @@ class TaskVisitor final : public VNVisitor {
     bool m_inSensesp = false;  // Are we under a senitem?
     bool m_inNew = false;  // Are we under a constructor?
     int m_modNCalls = 0;  // Incrementing func # for making symbols
+    int m_unconVarNum = 0;  // Unique bad connection variable
 
     // STATE - across all visitors
     DpiCFuncs m_dpiNames;  // Map of all created DPI functions
@@ -439,6 +451,7 @@ class TaskVisitor final : public VNVisitor {
                 = new AstVar{invarp->fileline(), VVarType::BLOCKTEMP, name, invarp};
             newvarp->funcLocal(false);
             newvarp->propagateAttrFrom(invarp);
+            newvarp->isInternal(true);
             m_modp->addStmtsp(newvarp);
             AstVarScope* const newvscp = new AstVarScope{newvarp->fileline(), m_scopep, newvarp};
             m_scopep->addVarsp(newvscp);
@@ -504,9 +517,19 @@ class TaskVisitor final : public VNVisitor {
         return assp;
     }
 
+    void changeAtWriteRecurse(AstNodeExpr* const exprp) {
+        // Change nested at methods to writable variant
+        if (AstCMethodHard* const cMethodp = VN_CAST(exprp, CMethodHard)) {
+            if (cMethodp->method() == VCMethod::ARRAY_AT) {
+                cMethodp->method(VCMethod::ARRAY_AT_WRITE);
+            }
+            changeAtWriteRecurse(cMethodp->fromp());
+        }
+    }
+
     void connectPort(AstVar* portp, AstArg* argp, const string& namePrefix, AstNode* beginp,
                      bool inlineTask) {
-        AstNodeExpr* const pinp = argp->exprp();
+        AstNodeExpr* pinp = argp->exprp();
         if (inlineTask) {
             portp->unlinkFrBack();
             pushDeletep(portp);  // Remove it from the clone (not original)
@@ -516,15 +539,28 @@ class TaskVisitor final : public VNVisitor {
         } else {
             UINFO(9, "     Port " << portp);
             UINFO(9, "      pin " << pinp);
-            if (inlineTask) {
-                pushDeletep(pinp->unlinkFrBack());  // Cloned in assignment below
-                VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);  // Args no longer needed
-            }
             if (portp->isWritable() && VN_IS(pinp, Const)) {
                 pinp->v3error("Function/task " + portp->direction().prettyName()  // e.g. "output"
                               + " connected to constant instead of variable: "
                               + portp->prettyNameQ());
-            } else if (portp->isRef() || portp->isConstRef()) {
+                // Make temp pin to tie it off
+                AstVar* const varp = new AstVar{pinp->fileline(), VVarType::STMTTEMP,
+                                                "__VfuncUnconn_" + portp->name() + "__"
+                                                    + std::to_string(m_unconVarNum++),
+                                                portp->dtypep()};
+                m_modp->addStmtsp(varp);
+                AstVarScope* const newvscp = new AstVarScope{pinp->fileline(), m_scopep, varp};
+                m_scopep->addVarsp(newvscp);
+                AstVarRef* const repp = new AstVarRef{pinp->fileline(), newvscp, VAccess::WRITE};
+                pinp->replaceWith(repp);
+                pushDeletep(pinp);
+                pinp = repp;
+            }
+            if (inlineTask) {
+                pushDeletep(pinp->unlinkFrBack());  // Cloned in assignment below
+                VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);  // Args no longer needed
+            }
+            if (portp->isRef() || portp->isConstRef()) {
                 bool refArgOk = false;
                 if (VN_IS(pinp, VarRef) || VN_IS(pinp, MemberSel) || VN_IS(pinp, StructSel)
                     || VN_IS(pinp, ArraySel)) {
@@ -534,8 +570,8 @@ class TaskVisitor final : public VNVisitor {
                         refArgOk = cMethodp->method() == VCMethod::DYN_AT_WRITE_APPEND
                                    || cMethodp->method() == VCMethod::DYN_AT_WRITE_APPEND_BACK;
                     } else {
-                        refArgOk = cMethodp->method() == VCMethod::ARRAY_AT
-                                   || cMethodp->method() == VCMethod::ARRAY_AT_BACK;
+                        changeAtWriteRecurse(cMethodp);
+                        refArgOk = cMethodp->method() == VCMethod::ARRAY_AT_WRITE;
                     }
                 }
                 if (refArgOk) {
@@ -627,7 +663,7 @@ class TaskVisitor final : public VNVisitor {
                 connectPort(portp, argp, namePrefix, beginp, true);
             }
         }
-        UASSERT_OBJ(!refp->pinsp(), refp, "Pin wasn't removed by above loop");
+        UASSERT_OBJ(!refp->argsp(), refp, "Arg wasn't removed by above loop");
         {
             AstNode* nextstmtp;
             for (AstNode* stmtp = beginp; stmtp; stmtp = nextstmtp) {
@@ -642,9 +678,11 @@ class TaskVisitor final : public VNVisitor {
                         if (portp->needsCReset() && portp->lifetime().isAutomatic()
                             && !portp->valuep()) {
                             // Reset automatic var to its default, on each invocation of function
-                            AstVarRef* const vrefp
-                                = new AstVarRef{portp->fileline(), portp, VAccess::WRITE};
-                            portp->replaceWith(new AstCReset{portp->fileline(), vrefp, false});
+                            AstNode* const crstp = new AstAssign{
+                                portp->fileline(),
+                                new AstVarRef{portp->fileline(), portp, VAccess::WRITE},
+                                new AstCReset{portp->fileline(), portp, false}};
+                            portp->replaceWith(crstp);
                         } else {
                             portp->unlinkFrBack();
                         }
@@ -723,14 +761,10 @@ class TaskVisitor final : public VNVisitor {
             ccallp->addArgsp(new AstConst(flp, flp->lineno()));
         }
 
-        // Create connections
-        AstNode* nextpinp;
-        for (AstNode* pinp = refp->pinsp(); pinp; pinp = nextpinp) {
-            nextpinp = pinp->nextp();
-            // Move pin to the CCall, removing all Arg's
-            AstNodeExpr* const exprp = VN_AS(pinp, Arg)->exprp();
-            exprp->unlinkFrBack();
-            ccallp->addArgsp(exprp);
+        // Move artument expression to the CCall, without AstArg
+        for (AstArg *argp = refp->argsp(), *nextp; argp; argp = nextp) {
+            nextp = VN_AS(argp->nextp(), Arg);
+            ccallp->addArgsp(argp->exprp()->unlinkFrBack());
         }
 
         if (outvscp) ccallp->addArgsp(new AstVarRef{refp->fileline(), outvscp, VAccess::WRITE});
@@ -1222,6 +1256,7 @@ class TaskVisitor final : public VNVisitor {
             unlinkAndClone(nodep, portp, false);
             rtnvarp = portp;
             rtnvarp->funcLocal(true);
+            rtnvarp->noCReset(true);  // As made for port in V3LinkResolve
             rtnvarp->name(rtnvarp->name()
                           + "__Vfuncrtn");  // Avoid conflict with DPI function name
             if (nodep->dpiImport() || nodep->dpiExport()) rtnvarp->protect(false);
@@ -1438,6 +1473,28 @@ class TaskVisitor final : public VNVisitor {
         UINFOTREE(9, newp, "", "newfunc");
         m_insStmtp->addHereThisAsNext(newp);
     }
+    void processArgs(AstNodeFTaskRef* nodep) {
+        // Create a fresh variable for each concat array present in pins list
+        for (AstArg* argp = nodep->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
+            AstInitArray* const arrayp = VN_CAST(argp->exprp(), InitArray);
+            if (!arrayp) continue;
+
+            FileLine* const flp = arrayp->fileline();
+            const std::string tempName = m_initArrayTmpNames.get(argp);
+            AstVar* const substp = new AstVar{flp, VVarType::VAR, tempName, arrayp->dtypep()};
+            substp->funcLocal(true);
+            AstVarScope* const substvscp = createVarScope(substp, tempName);
+
+            AstAssign* const assignp
+                = new AstAssign{flp, new AstVarRef{arrayp->fileline(), substvscp, VAccess::WRITE},
+                                arrayp->unlinkFrBack()};
+
+            AstExprStmt* const exprstmtp = new AstExprStmt{
+                flp, substp, new AstVarRef{arrayp->fileline(), substvscp, VAccess::READ}};
+            exprstmtp->stmtsp()->addNext(assignp);
+            argp->exprp(exprstmtp);
+        }
+    }
 
     // VISITORS
     void visit(AstNodeModule* nodep) override {
@@ -1494,6 +1551,7 @@ class TaskVisitor final : public VNVisitor {
         AstNode* beginp;
         AstCNew* cnewp = nullptr;
         if (m_statep->ftaskNoInline(nodep->taskp())) {
+            processArgs(nodep);
             // This may share VarScope's with a public task, if any.  Yuk.
             beginp = createNonInlinedFTask(nodep, namePrefix, outvscp, cnewp /*ref*/);
         } else {
@@ -1669,7 +1727,8 @@ class TaskVisitor final : public VNVisitor {
 public:
     // CONSTRUCTORS
     TaskVisitor(AstNetlist* nodep, TaskStateVisitor* statep)
-        : m_statep{statep} {
+        : m_statep{statep}
+        , m_initArrayTmpNames{"__VInitArrayTemp"} {
         iterate(nodep);
     }
     ~TaskVisitor() {
@@ -1717,25 +1776,22 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
     // Find pins
     int ppinnum = 0;
     bool reorganize = false;
-    for (AstNode *nextp, *pinp = nodep->pinsp(); pinp; pinp = nextp) {
-        nextp = pinp->nextp();
-        if (VN_IS(pinp, With)) continue;
-        AstArg* const argp = VN_AS(pinp, Arg);
-        UASSERT_OBJ(argp, pinp, "Non-arg under ftask reference");
-        if (argp->name() != "") {
+    for (AstArg *argp = nodep->argsp(), *nextp; argp; argp = nextp) {
+        nextp = VN_AS(argp->nextp(), Arg);
+        if (!argp->name().empty()) {
             // By name
             const auto it = nameToIndex.find(argp->name());
             if (it == nameToIndex.end()) {
                 if (makeChanges) {
-                    pinp->v3error("No such argument " << argp->prettyNameQ()
+                    argp->v3error("No such argument " << argp->prettyNameQ()
                                                       << " in function call to "
                                                       << nodep->taskp()->prettyTypeName());
                     // We'll just delete it; seems less error prone than making a false argument
-                    VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
+                    VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
                 }
             } else {
                 if (tconnects[it->second].second && makeChanges) {
-                    pinp->v3error("Duplicate argument " << argp->prettyNameQ()
+                    argp->v3error("Duplicate argument " << argp->prettyNameQ()
                                                         << " in function call to "
                                                         << nodep->taskp()->prettyTypeName());
                     tconnects[it->second].second->unlinkFrBack()->deleteTree();
@@ -1752,10 +1808,10 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
                     tconnects[ppinnum].second = argp;
                     ++tpinnum;
                 } else if (makeChanges) {
-                    pinp->v3error("Too many arguments in function call to "
+                    argp->v3error("Too many arguments in function call to "
                                   << nodep->taskp()->prettyTypeName());
                     // We'll just delete it; seems less error prone than making a false argument
-                    VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
+                    VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
                 }
             } else {
                 tconnects[ppinnum].second = argp;
@@ -1834,14 +1890,14 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
 
     if (reorganize) {
         // To simplify downstream, put argument list back into pure pinnumber ordering
-        while (nodep->pinsp()) {
+        while (nodep->argsp()) {
             // Must unlink each pin, not all pins linked together as one list
-            nodep->pinsp()->unlinkFrBack();
+            nodep->argsp()->unlinkFrBack();
         }
         for (int i = 0; i < tpinnum; ++i) {
             AstArg* const argp = tconnects[i].second;
             UASSERT_OBJ(argp, nodep, "Lost argument in func conversion");
-            nodep->addPinsp(argp);
+            nodep->addArgsp(argp);
         }
     }
 
@@ -1913,13 +1969,13 @@ AstNodeFTask* V3Task::taskConnectWrapNew(AstNodeFTask* taskp, const string& newn
         newFVarp->name(newTaskp->name());
         newTaskp->fvarp(newFVarp);
         newTaskp->dtypeFrom(newFVarp);
-        newCallp = new AstFuncRef{taskp->fileline(), VN_AS(taskp, Func), nullptr};
+        newCallp = new AstFuncRef{taskp->fileline(), VN_AS(taskp, Func)};
         newCallInsertp
             = new AstAssign{taskp->fileline(),
                             new AstVarRef{fvarp->fileline(), newFVarp, VAccess::WRITE}, newCallp};
         newCallInsertp->dtypeFrom(newFVarp);
     } else if (VN_IS(taskp, Task)) {
-        newCallp = new AstTaskRef{taskp->fileline(), VN_AS(taskp, Task), nullptr};
+        newCallp = new AstTaskRef{taskp->fileline(), VN_AS(taskp, Task)};
         newCallInsertp = new AstStmtExpr{taskp->fileline(), newCallp};
     } else {
         taskp->v3fatalSrc("Unsupported: Non-constant default value in missing argument in a "
@@ -1957,7 +2013,7 @@ AstNodeFTask* V3Task::taskConnectWrapNew(AstNodeFTask* taskp, const string& newn
         const VAccess pinAccess = portp->isWritable() ? VAccess::WRITE : VAccess::READ;
         AstArg* const newArgp = new AstArg{portp->fileline(), portp->name(),
                                            new AstVarRef{portp->fileline(), newPortp, pinAccess}};
-        newCallp->addPinsp(newArgp);
+        newCallp->addArgsp(newArgp);
     }
     // Create wrapper call to original, passing arguments, adding setting of return value
     newTaskp->addStmtsp(newCallInsertp);

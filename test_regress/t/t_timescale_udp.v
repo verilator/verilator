@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under The Creative Commons Public Domain, for
-// any use, without warranty, 2021 by Wilson Snyder.
+// This file ONLY is placed under The Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2021 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 `timescale 1ns/1ns

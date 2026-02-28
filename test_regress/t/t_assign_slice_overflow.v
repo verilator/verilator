@@ -19,8 +19,8 @@
 //  - Select offset is non-constant, destination is wide, bit-select width != 1
 //  - Select offset is non-constant, destination is narrow
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2021 by David Turner.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2021 David Turner
 // SPDX-License-Identifier: CC0-1.0
 
 module t(/*AUTOARG*/

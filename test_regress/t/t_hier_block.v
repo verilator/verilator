@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2020 by Yutetsu TAKATSUKASA
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2020 Yutetsu TAKATSUKASA
 // SPDX-License-Identifier: Unlicense
 
 `ifdef USE_VLT
@@ -12,6 +12,17 @@
 
 `ifdef SHOW_TIMESCALE
 `timescale 1ns/1ps
+`endif
+
+package stateless_pkg;
+  localparam int ONE = 1;
+endpackage
+
+`ifdef STATEFUL_PKG
+// This is in the $unit package, and will have a copy in every library, which
+// is functionally incorrect, but testing it here to make sure it's at least
+// traced properly.
+logic global_flag = 1'b0;
 `endif
 
 interface byte_ifs(input clk);
@@ -26,6 +37,13 @@ typedef enum logic [1:0] {
   enum_val_2 = 2'd2,
   enum_val_3 = 2'd3
 } enum_t;
+
+typedef enum logic [1:0] {
+  alt_enum_0 = 2'd0,
+  alt_enum_1 = 2'd1,
+  alt_enum_2 = 2'd2,
+  alt_enum_3 = 2'd3
+} alt_enum_t;
 
 `ifdef AS_PROT_LIB
 module secret (
@@ -87,6 +105,9 @@ module t #(
          end
       end
       count <= count + 1;
+`ifdef STATEFUL_PKG
+      global_flag <= ~global_flag;
+`endif
    end
 
 `ifdef CPP_MACRO
@@ -126,21 +147,33 @@ module sub0(
    input wire clk,
    input wire [7:0] in,
    output wire [7:0] out); `HIER_BLOCK
+`ifdef NO_INLINE
+   /* verilator no_inline_module */
+`endif
 
    logic [7:0] ff;
 
    always_ff @(posedge clk) ff <= in;
    assign out = ff;
+
+`ifdef STATEFUL_PKG
+   always_ff @(posedge clk) if (ff[0]) global_flag <= ff[1];
+`endif
 endmodule
 
 module sub1(
    input wire clk,
    input wire [11:4] in,  // Uses higher LSB to cover bug3539
    output wire [7:0] out); `HIER_BLOCK
+`ifdef NO_INLINE
+   /* verilator no_inline_module */
+`endif
 
    logic [7:0] ff;
+   enum_t enum_v;
 
-   always_ff @(posedge clk) ff <= in + 1;
+   always_ff @(posedge clk) ff <= in + 8'(stateless_pkg::ONE);
+   always_ff @(posedge clk) enum_v <= enum_v.next();
    assign out = ff;
 endmodule
 
@@ -150,6 +183,7 @@ module sub2(
    output wire [7:0] out); `HIER_BLOCK
 
    logic [7:0] ff;
+   alt_enum_t alt_enum_v;
 
    // dpi_import_func returns (dpi_eport_func(v) -1)
    import "DPI-C" context function int dpi_import_func(int v);
@@ -160,6 +194,7 @@ module sub2(
    endfunction
 
    always_ff @(posedge clk) ff <= 8'(dpi_import_func({24'b0, in})) + 8'd2;
+   always_ff @(posedge clk) alt_enum_v <= alt_enum_v.next();
 
    byte_ifs in_ifs(.clk(clk));
    byte_ifs out_ifs(.clk(clk));
@@ -202,6 +237,9 @@ module sub3 #(
    input wire clk,
    input wire [7:0] in,
    output wire [7:0] out); `HIER_BLOCK
+`ifdef NO_INLINE
+   /* verilator no_inline_module */
+`endif
 
    initial $display("P0:%d UNUSED:%d %s %d", P0, UNUSED, STR, ENUM);
 
@@ -233,6 +271,9 @@ module sub4 #(
    input wire clk,
    input wire [7:0] in,
    output wire[7:0] out); `HIER_BLOCK
+`ifdef NO_INLINE
+   /* verilator no_inline_module */
+`endif
 
    initial begin
       if (P1 == 2) begin
@@ -296,6 +337,9 @@ module sub4 #(
 endmodule
 
 module sub5 (input wire clk, input wire [127:0] in[2][3], output logic [7:0] out[2][3]); `HIER_BLOCK
+`ifdef NO_INLINE
+   /* verilator no_inline_module */
+`endif
 
    int count = 0;
    always @(posedge clk) begin
@@ -349,6 +393,9 @@ module sub5 (input wire clk, input wire [127:0] in[2][3], output logic [7:0] out
 endmodule
 
 module sub6 #(parameter P0 = 1, parameter P1 = 2) (output wire [7:0] out[2]); `HIER_BLOCK
+`ifdef NO_INLINE
+   /* verilator no_inline_module */
+`endif
    assign out[0] = 8'(P0);
    assign out[1] = 8'(P1);
 endmodule

@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2025 by Antmicro.
+// This file ONLY is placed under the Creative Commons Public Domain
+// SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
 class Class1;
@@ -10,10 +10,10 @@ endclass
 
 module t;
    initial begin
-      int i = 0;
+      int i;
       Class1 q[15];
       for (int j = 0; j < 15; j = j + 1) begin
-         Class1 x = new;
+         automatic Class1 x = new;
          q[j] = x;
       end
       while (i < 15) begin

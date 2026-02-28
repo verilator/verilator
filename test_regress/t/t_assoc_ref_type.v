@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2023 by Antmicro Ltd.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2023 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
 class Foo1;
@@ -66,13 +66,13 @@ module t;
    localparam string str_key = "the_key";
 
    initial begin
-      Bar bar_i = new;
-      Baz baz_1_i = new;
-      Baz #(Foo2) baz_2_i = new;
-      Bum bum_i;
+      automatic Bar bar_i = new;
+      automatic Baz baz_1_i = new;
+      automatic Baz #(Foo2) baz_2_i = new;
+      automatic Bum bum_i;
 
-      Wrapper#(wrap_map_t) wrap_map = new();
-      Wrapper#(wrap_queue_t) wrap_queue = new();
+      automatic Wrapper#(wrap_map_t) wrap_map = new();
+      automatic Wrapper#(wrap_queue_t) wrap_queue = new();
 
       bar_i.set(1);
       baz_1_i.set(2);

@@ -1,13 +1,13 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2024 by Antmicro Ltd.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2024 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
 `define check_rand(cl, field, constr, cond) \
 begin \
-   longint prev_result; \
-   int ok = 0; \
+   automatic longint prev_result; \
+   automatic int ok; \
    if (!bit'(cl.randomize() with { constr; })) $stop; \
    prev_result = longint'(field); \
    if (!(cond)) $stop; \
@@ -30,8 +30,8 @@ endclass
 
 module t;
    initial begin
-      Cls#() cd = new;
-      Cls#(5) c5 = new;
+      automatic Cls#() cd = new;
+      automatic Cls#(5) c5 = new;
 
       `check_rand(cd, cd.x, x > 0, cd.x > 0 && cd.x <= 3);
       `check_rand(cd, cd.x, x > y, cd.x > -100 && cd.x <= 3);

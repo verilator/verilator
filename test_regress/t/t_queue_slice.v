@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2019 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2019 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 `define stop $stop
@@ -77,7 +77,7 @@ module t;
       `checkp(q, "'{\"a\", \"b\", \"a\", \"b\"}");
 
       begin
-         string ai[$] = '{ "Foo", "Bar" };
+         static string ai[$] = '{ "Foo", "Bar" };
          q = ai;  // Copy
          i = q.size(); `checkh(i, 2);
          v = q.pop_front(); `checks(v, "Foo");

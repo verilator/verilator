@@ -4,8 +4,8 @@
 // definitions in wildcard imported packages (section 26.3). Thus the code
 // below is valid SystemVerilog.
 //
-// This file ONLY is placed into the Public Domain, for any use, without
-// warranty, 2013 by Jie Xu.
+// This file ONLY is placed into the Public Domain.
+// SPDX-FileCopyrightText: 2013 Jie Xu
 // SPDX-License-Identifier: CC0-1.0
 
 package defs;

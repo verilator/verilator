@@ -3,8 +3,8 @@
 // This mode performs signed number computations in the case of a particular
 // interface definition.
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2022 by Raynard Qiao.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2022 Raynard Qiao
 // SPDX-License-Identifier: CC0-1.0
 
 // issure 3294

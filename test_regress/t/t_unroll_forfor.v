@@ -3,8 +3,8 @@
 // This files is used to generated the following error:
 // %Error: Internal Error: t/t_unroll_forfor.v:27: ../V3Simulate.h:177: No value found for node.
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2016 by Jan Egil Ruud.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2016 Jan Egil Ruud
 // SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/

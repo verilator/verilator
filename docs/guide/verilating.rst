@@ -1,4 +1,4 @@
-.. Copyright 2003-2026 by Wilson Snyder.
+.. SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 **********
@@ -285,6 +285,13 @@ schedules threads using multiple hyperthreads within the same physical
 core. If there is no affinity already set, on Linux only, Verilator
 attempts to set thread-to-processor affinity in a reasonable way.
 
+Some newer Linux kernels handle thread assignment well. If running
+Verilator on such a system, automatic thread affinity may not be
+beneficial and may even reduce performance. In this case, environment
+variable :vlopt:`VERILATOR_NUMA_STRATEGY` may be set to ``none`` to
+disable automatic thread affinity. For more information, refer to
+:ref:`Environment`.
+
 For best performance, use the :command:`numactl` program to (when the
 threading count fits) select unique physical cores on the same socket. The
 same applies for :vlopt:`--trace-threads` as well.
@@ -311,6 +318,15 @@ adjusted if you want another simulator to use, e.g., socket 1, or if you
 Verilated with a different number of threads. To see what CPUs are actually
 used, use :vlopt:`--prof-exec`.
 
+On Systems with multiple L3 clusters per socket (e.g., AMD EPYC or Ryzen),
+consider using :command:`lstopo` to determine the L3 cluster topology of
+the current system and :command:`numactl` to bind CPUs within a single L3
+cluster. This can improve performance for minimal communication latency
+between threads. Sometimes, for model's thread counts that are more than
+the core count per L3 cluster, using SMTs (hyperthreads) within a single L3
+cluster can have better performance than spreading across multiple L3
+clusters using physical cores only. Experimentation is recommended to find
+the best settings for underlying hardware and model characteristics.
 
 Multithreaded Verilog and Library Support
 -----------------------------------------
@@ -564,7 +580,7 @@ will print a report to stdout summarizing the build. For example:
    - Verilator: Built from 354 MB sources in 247 modules,
        into 74 MB in 89 C++ files needing 0.192 MB
    - Verilator: Walltime 26.580 s (elab=2.096, cvt=18.268,
-       bld=2.100); cpu 26.548 s on 1 threads; alloced 2894.672 MB
+       bld=2.100); cpu 26.548 s on 1 threads; allocated 2894.672 MB
 
 The information in this report is:
 
@@ -619,7 +635,7 @@ The information in this report is:
 
    Number of simultaneous threads used.
 
-.. describe:: "alloced 123 MB"
+.. describe:: "allocated 123 MB"
 
    Total memory used during build by Verilator executable (excludes
    :vlopt:`--build` compiler's usage) in megabytes.

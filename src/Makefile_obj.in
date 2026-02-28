@@ -7,10 +7,10 @@
 #
 #*****************************************************************************
 #
-# Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-# can redistribute it and/or modify it under the terms of either the GNU
-# Lesser General Public License Version 3 or the Perl Artistic License
-# Version 2.0.
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of either the GNU Lesser General Public License Version 3
+# or the Perl Artistic License Version 2.0.
+# SPDX-FileCopyrightText: 2025-2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 #
 #****************************************************************************/
@@ -266,17 +266,16 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3DfgOptimizer.o \
   V3DfgPasses.o \
   V3DfgPeephole.o \
+  V3DfgPushDownSels.o \
   V3DfgRegularize.o \
   V3DfgSynthesize.o \
   V3DiagSarif.o \
   V3DupFinder.o \
   V3EmitCMain.o \
-  V3EmitCMake.o \
   V3EmitCModel.o \
   V3EmitCSyms.o \
   V3EmitMk.o \
   V3EmitMkJson.o \
-  V3EmitXml.o \
   V3ExecGraph.o \
   V3Expand.o \
   V3Force.o \
@@ -315,6 +314,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3RandSequence.o \
   V3Randomize.o \
   V3Reloop.o \
+  V3Reorder.o \
   V3Sampled.o \
   V3Sched.o \
   V3SchedAcyclic.o \
@@ -341,6 +341,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Tristate.o \
   V3Udp.o \
   V3Undriven.o \
+  V3UndrivenCapture.o \
   V3Unknown.o \
   V3Unroll.o \
   V3UnrollGen.o \

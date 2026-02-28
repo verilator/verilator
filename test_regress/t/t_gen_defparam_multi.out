@@ -1,18 +1,17 @@
-%Error-UNSUPPORTED: t/t_gen_defparam_multi.v:14:17: Unsupported: defparam with no dot
-   14 |    defparam PAR = 5;
-      |                 ^
+%Error-UNSUPPORTED: t/t_gen_defparam_multi.v:12:16: Unsupported: defparam with no dot
+   12 |   defparam PAR = 5;
+      |                ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_gen_defparam_multi.v:39:24: Unsupported: defparam with more than one dot
-   39 |          defparam m2.m3.PAR3 = 80;
-      |                        ^
-%Error: t/t_gen_defparam_multi.v:39:25: syntax error, unexpected IDENTIFIER, expecting ',' or ';'
-   39 |          defparam m2.m3.PAR3 = 80;
-      |                         ^~~~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error-UNSUPPORTED: t/t_gen_defparam_multi.v:44:24: Unsupported: defparam with more than one dot
-   44 |          defparam m2.m3.PAR3 = 40;
-      |                        ^
-%Error: t/t_gen_defparam_multi.v:44:25: syntax error, unexpected IDENTIFIER, expecting ',' or ';'
-   44 |          defparam m2.m3.PAR3 = 40;
-      |                         ^~~~
+%Error-UNSUPPORTED: t/t_gen_defparam_multi.v:28:19: Unsupported: defparam with arrayed instance
+   28 |       defparam blk[i].u_m3.PAR3 = i;
+      |                   ^
+%Error-UNSUPPORTED: t/t_gen_defparam_multi.v:28:27: Unsupported: defparam with more than one dot
+   28 |       defparam blk[i].u_m3.PAR3 = i;
+      |                           ^
+%Error-UNSUPPORTED: t/t_gen_defparam_multi.v:51:43: Unsupported: defparam with more than one dot
+   51 |       defparam m2.PAR2 = 8; defparam m2.m3.PAR3 = 80;
+      |                                           ^
+%Error-UNSUPPORTED: t/t_gen_defparam_multi.v:55:43: Unsupported: defparam with more than one dot
+   55 |       defparam m2.PAR2 = 4; defparam m2.m3.PAR3 = 40;
+      |                                           ^
 %Error: Exiting due to

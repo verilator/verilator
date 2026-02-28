@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2021 Yutetsu TAKATSUKASA.
+// SPDX-FileCopyrightText: 2021 Yutetsu TAKATSUKASA
 // SPDX-License-Identifier: CC0-1.0
 
 // This function always returns 0, so safe to take bitwise OR with any value.

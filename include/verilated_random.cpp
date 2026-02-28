@@ -3,9 +3,10 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2024 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU Lesser
-// General Public License Version 3 or the Perl Artistic License Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2001-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //=========================================================================
@@ -22,6 +23,7 @@
 
 #include "verilated_random.h"
 
+#include <algorithm>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -366,8 +368,131 @@ void VlRandomizer::randomConstraint(std::ostream& os, VlRNG& rngr, int bits) {
     os << ')';
 }
 
+size_t VlRandomizer::hashConstraints() const {
+    size_t h = 0;
+    for (const auto& c : m_constraints) {
+        h ^= std::hash<std::string>{}(c) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    }
+    return h;
+}
+
+void VlRandomizer::enumerateRandcValues(const std::string& varName, VlRNG& rngr) {
+    std::vector<uint64_t> values;
+    const auto varIt = m_vars.find(varName);
+    if (varIt == m_vars.end()) return;
+    const int width = varIt->second->width();
+
+    std::iostream& os = getSolver();
+    if (!os) return;
+
+    // Set up a single incremental solver session for enumeration
+    os << "(set-option :produce-models true)\n";
+    os << "(set-logic QF_ABV)\n";
+    os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
+    os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
+
+    // Declare all variables (solver needs full context for cross-var constraints)
+    for (const auto& var : m_vars) {
+        if (var.second->dimension() > 0) {
+            auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
+            var.second->setArrayInfo(arrVarsp);
+        }
+        os << "(declare-fun " << var.first << " () ";
+        var.second->emitType(os);
+        os << ")\n";
+    }
+
+    // Assert all user constraints
+    for (const std::string& constraint : m_constraints) {
+        os << "(assert (= #b1 " << constraint << "))\n";
+    }
+
+    // Incrementally enumerate all valid values for this randc variable
+    while (true) {
+        os << "(check-sat)\n";
+        std::string sat;
+        do { std::getline(os, sat); } while (sat.empty());
+        if (sat != "sat") break;
+
+        // Read just this variable's value
+        os << "(get-value (" << varName << "))\n";
+        char c;
+        os >> c;  // '('
+        os >> c;  // '('
+        std::string name, value;
+        os >> name;  // Consume variable name token from solver output
+        (void)name;
+        std::getline(os, value, ')');
+        os >> c;  // ')'
+
+        // Parse the SMT value to uint64_t
+        VlWide<VL_WQ_WORDS_E> qowp;
+        VL_SET_WQ(qowp, 0ULL);
+        if (!parseSMTNum(width, qowp, value)) break;
+        const uint64_t numVal = (width <= 32) ? qowp[0] : VL_SET_QW(qowp);
+
+        values.push_back(numVal);
+
+        // Exclude this value for next iteration (incremental)
+        os << "(assert (not (= " << varName << " (_ bv" << numVal << " " << width << "))))\n";
+    }
+
+    os << "(reset)\n";
+
+    // Shuffle using Fisher-Yates
+    for (size_t i = values.size(); i > 1; --i) {
+        const size_t j = VL_RANDOM_RNG_I(rngr) % i;
+        std::swap(values[i - 1], values[j]);
+    }
+
+    m_randcValueQueues[varName] = std::deque<uint64_t>(values.begin(), values.end());
+}
+
 bool VlRandomizer::next(VlRNG& rngr) {
-    if (m_vars.empty()) return true;
+    if (m_vars.empty() && m_unique_arrays.empty()) return true;
+    for (const std::string& baseName : m_unique_arrays) {
+        const auto it = m_vars.find(baseName);
+        const uint32_t size = m_unique_array_sizes.at(baseName);
+
+        if (it != m_vars.end()) {
+            std::string distinctExpr = "(__Vbv (distinct";
+            for (uint32_t i = 0; i < size; ++i) {
+                char hexIdx[12];
+                sprintf(hexIdx, "#x%08x", i);
+                distinctExpr += " (select " + it->first + " " + hexIdx + ")";
+            }
+            distinctExpr += "))";
+            m_constraints.push_back(distinctExpr);
+        }
+    }
+
+    // Randc queue-based cycling: enumerate valid values once, then pop per call
+    if (!m_randcVarNames.empty()) {
+        const size_t currentHash = hashConstraints();
+        // Invalidate queues if constraints changed (e.g., constraint_mode toggled)
+        if (currentHash != m_randcConstraintHash) {
+            m_randcValueQueues.clear();
+            m_randcConstraintHash = currentHash;
+        }
+        // Refill empty queues (start of new cycle)
+        for (const auto& name : m_randcVarNames) {
+            auto& queue = m_randcValueQueues[name];
+            if (queue.empty()) enumerateRandcValues(name, rngr);
+        }
+    }
+
+    // Pop randc values from queues (will be pinned in solver)
+    std::map<std::string, uint64_t> randcPinned;
+    for (const auto& name : m_randcVarNames) {
+        auto& queue = m_randcValueQueues[name];
+        if (queue.empty()) return false;  // No valid values exist
+        randcPinned[name] = queue.front();
+        queue.pop_front();
+    }
+
+    // If solve-before constraints are present, use phased solving
+    if (!m_solveBefore.empty()) return nextPhased(rngr);
+
     std::iostream& os = getSolver();
     if (!os) return false;
 
@@ -384,13 +509,44 @@ bool VlRandomizer::next(VlRNG& rngr) {
         var.second->emitType(os);
         os << ")\n";
     }
+
     for (const std::string& constraint : m_constraints) {
         os << "(assert (= #b1 " << constraint << "))\n";
     }
+
+    // Pin randc values from pre-enumerated queues
+    for (const auto& pair : randcPinned) {
+        const int w = m_vars.at(pair.first)->width();
+        os << "(assert (= " << pair.first << " (_ bv" << pair.second << " " << w << ")))\n";
+    }
+
     os << "(check-sat)\n";
 
-    bool sat = parseSolution(os);
+    bool sat = parseSolution(os, true);
     if (!sat) {
+        // If unsat, use named assertions to get unsat-core
+        os << "(reset)\n";
+        os << "(set-option :produce-unsat-cores true)\n";
+        os << "(set-logic QF_ABV)\n";
+        os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
+        os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
+        for (const auto& var : m_vars) {
+            if (var.second->dimension() > 0) {
+                auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
+                var.second->setArrayInfo(arrVarsp);
+            }
+            os << "(declare-fun " << var.first << " () ";
+            var.second->emitType(os);
+            os << ")\n";
+        }
+        int j = 0;
+        for (const std::string& constraint : m_constraints) {
+            os << "(assert (! (= #b1 " << constraint << ") :named cons" << j << "))\n";
+            j++;
+        }
+        os << "(check-sat)\n";
+        sat = parseSolution(os, true);
+        (void)sat;
         os << "(reset)\n";
         return false;
     }
@@ -399,18 +555,68 @@ bool VlRandomizer::next(VlRNG& rngr) {
         randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
         os << ")\n";
         os << "\n(check-sat)\n";
-        sat = parseSolution(os);
+        sat = parseSolution(os, false);
+        (void)sat;
     }
 
     os << "(reset)\n";
     return true;
 }
 
-bool VlRandomizer::parseSolution(std::iostream& os) {
+bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
     std::string sat;
     do { std::getline(os, sat); } while (sat == "");
-
-    if (sat == "unsat") return false;
+    if (sat == "unsat") {
+        if (!log) return false;
+        os << "(get-unsat-core) \n";
+        sat.clear();
+        std::getline(os, sat);
+        std::vector<int> numbers;
+        std::string currentNum;
+        for (char c : sat) {
+            if (std::isdigit(c)) {
+                currentNum += c;
+                numbers.push_back(std::stoi(currentNum));
+                currentNum.clear();
+            }
+        }
+        if (Verilated::threadContextp()->warnUnsatConstr()) {
+            for (int n : numbers) {
+                if (n < m_constraints_line.size()) {
+                    const std::string& constraint_info = m_constraints_line[n];
+                    // Parse "filename:linenum   source" format
+                    size_t colon_pos = constraint_info.find(':');
+                    if (colon_pos != std::string::npos) {
+                        std::string filename = constraint_info.substr(0, colon_pos);
+                        size_t space_pos = constraint_info.find("   ", colon_pos);
+                        std::string linenum_str;
+                        std::string source;
+                        if (space_pos != std::string::npos) {
+                            linenum_str
+                                = constraint_info.substr(colon_pos + 1, space_pos - colon_pos - 1);
+                            source = constraint_info.substr(space_pos + 3);
+                        } else {
+                            linenum_str = constraint_info.substr(colon_pos + 1);
+                        }
+                        const int linenum = std::stoi(linenum_str);
+                        std::string msg = "UNSATCONSTR: Unsatisfied constraint";
+                        if (!source.empty()) {
+                            // Trim leading whitespace and add quotes
+                            size_t start = source.find_first_not_of(" \t");
+                            if (start != std::string::npos) {
+                                msg += ": '" + source.substr(start) + "'";
+                            }
+                        }
+                        VL_WARN_MT(filename.c_str(), linenum, "", msg.c_str());
+                    } else {
+                        VL_PRINTF("%%Warning-UNSATCONSTR: Unsatisfied constraint: %s\n",
+                                  constraint_info.c_str());
+                    }
+                }
+            }
+        }
+        return false;
+    }
     if (sat != "sat") {
         std::stringstream msg;
         msg << "Internal: Solver error: " << sat;
@@ -501,18 +707,253 @@ bool VlRandomizer::parseSolution(std::iostream& os) {
     return true;
 }
 
-void VlRandomizer::hard(std::string&& constraint) {
+void VlRandomizer::hard(std::string&& constraint, const char* filename, uint32_t linenum,
+                        const char* source) {
     m_constraints.emplace_back(std::move(constraint));
+    // Format constraint location: "filename:linenum   source"
+    if (filename[0] != '\0' || source[0] != '\0') {
+        std::string line;
+        if (filename[0] != '\0') {
+            line = std::string(filename) + ":" + std::to_string(linenum);
+            if (source[0] != '\0') line += "   " + std::string(source);
+        } else {
+            line = source;
+        }
+        m_constraints_line.emplace_back(std::move(line));
+    }
 }
 
 void VlRandomizer::clearConstraints() {
     m_constraints.clear();
+    m_constraints_line.clear();
+    m_solveBefore.clear();
     // Keep m_vars for class member randomization
 }
 
 void VlRandomizer::clearAll() {
     m_constraints.clear();
     m_vars.clear();
+    m_randcVarNames.clear();
+    m_randcValueQueues.clear();
+    m_randcConstraintHash = 0;
+}
+
+void VlRandomizer::markRandc(const char* name) { m_randcVarNames.insert(name); }
+
+void VlRandomizer::solveBefore(const char* beforeName, const char* afterName) {
+    m_solveBefore.emplace_back(std::string(beforeName), std::string(afterName));
+}
+
+bool VlRandomizer::nextPhased(VlRNG& rngr) {
+    // Phased solving for solve...before constraints.
+    // Variables are solved in layers determined by topological sort of the
+    // solve-before dependency graph. Each layer is solved with ALL constraints
+    // (preserving the solution space) but earlier layers' values are pinned.
+
+    // Step 1: Build dependency graph (before -> {after vars})
+    std::map<std::string, std::set<std::string>> graph;
+    std::map<std::string, int> inDegree;
+    std::set<std::string> solveBeforeVars;
+
+    for (const auto& pair : m_solveBefore) {
+        const std::string& before = pair.first;
+        const std::string& after = pair.second;
+        // Only consider variables that are actually registered
+        if (m_vars.find(before) == m_vars.end() || m_vars.find(after) == m_vars.end()) continue;
+        graph[before].insert(after);
+        solveBeforeVars.insert(before);
+        solveBeforeVars.insert(after);
+        if (inDegree.find(before) == inDegree.end()) inDegree[before] = 0;
+        if (inDegree.find(after) == inDegree.end()) inDegree[after] = 0;
+    }
+
+    // Compute in-degrees (after depends on before, so edge is before->after,
+    // but for solving order: before has no incoming edge from after)
+    // Actually: "solve x before y" means x should be solved first.
+    // Dependency: y depends on x. Edge: x -> y. in-degree of y increases.
+    for (const auto& entry : graph) {
+        for (const auto& to : entry.second) { inDegree[to]++; }
+    }
+
+    // Step 2: Topological sort into layers (Kahn's algorithm)
+    std::vector<std::vector<std::string>> layers;
+    std::set<std::string> remaining = solveBeforeVars;
+
+    while (!remaining.empty()) {
+        std::vector<std::string> currentLayer;
+        for (const auto& var : remaining) {
+            if (inDegree[var] == 0) currentLayer.push_back(var);
+        }
+        if (currentLayer.empty()) {
+            VL_WARN_MT("", 0, "randomize", "Circular dependency in solve-before constraints");
+            return false;
+        }
+        std::sort(currentLayer.begin(), currentLayer.end());
+        for (const auto& var : currentLayer) {
+            remaining.erase(var);
+            if (graph.count(var)) {
+                for (const auto& to : graph[var]) { inDegree[to]--; }
+            }
+        }
+        layers.push_back(std::move(currentLayer));
+    }
+
+    // If only one layer, no phased solving needed -- fall through to normal path
+    // (all solve_before vars are independent, no actual ordering required)
+    if (layers.size() <= 1) {
+        // Clear solve_before temporarily and call normal next()
+        const auto saved = std::move(m_solveBefore);
+        m_solveBefore.clear();
+        const bool result = next(rngr);
+        m_solveBefore = std::move(saved);
+        return result;
+    }
+
+    // Step 3: Solve phase by phase
+    std::map<std::string, std::string> solvedValues;  // varName -> SMT value literal
+
+    for (size_t phase = 0; phase < layers.size(); phase++) {
+        const bool isFinalPhase = (phase == layers.size() - 1);
+
+        std::iostream& os = getSolver();
+        if (!os) return false;
+
+        // Solver session setup
+        os << "(set-option :produce-models true)\n";
+        os << "(set-logic QF_ABV)\n";
+        os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
+        os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
+
+        // Declare ALL variables
+        for (const auto& var : m_vars) {
+            if (var.second->dimension() > 0) {
+                auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
+                var.second->setArrayInfo(arrVarsp);
+            }
+            os << "(declare-fun " << var.first << " () ";
+            var.second->emitType(os);
+            os << ")\n";
+        }
+
+        // Pin all previously solved variables
+        for (const auto& entry : solvedValues) {
+            os << "(assert (= " << entry.first << " " << entry.second << "))\n";
+        }
+
+        // Assert ALL constraints
+        for (const std::string& constraint : m_constraints) {
+            os << "(assert (= #b1 " << constraint << "))\n";
+        }
+
+        // Initial check-sat WITHOUT diversity (guaranteed sat if constraints are consistent)
+        os << "(check-sat)\n";
+
+        if (isFinalPhase) {
+            // Final phase: use parseSolution to write ALL values to memory
+            bool sat = parseSolution(os, true);
+            if (!sat) {
+                os << "(reset)\n";
+                return false;
+            }
+            // Diversity loop (same as normal next())
+            for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; ++i) {
+                os << "(assert ";
+                randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
+                os << ")\n";
+                os << "\n(check-sat)\n";
+                sat = parseSolution(os, false);
+                (void)sat;
+            }
+            os << "(reset)\n";
+        } else {
+            // Intermediate phase: extract values for current layer variables only
+            std::string satResponse;
+            do { std::getline(os, satResponse); } while (satResponse.empty());
+
+            if (satResponse != "sat") {
+                os << "(reset)\n";
+                return false;
+            }
+
+            // Build get-value variable list for this layer
+            const auto& layerVars = layers[phase];
+            auto getValueCmd = [&]() {
+                os << "(get-value (";
+                for (const auto& varName : layerVars) {
+                    if (m_vars.count(varName)) os << varName << " ";
+                }
+                os << "))\n";
+            };
+
+            // Helper to parse ((name1 value1) (name2 value2) ...) response
+            auto parseGetValue = [&]() -> bool {
+                char c;
+                os >> c;  // outer '('
+                while (true) {
+                    os >> c;
+                    if (c == ')') break;  // outer closing
+                    if (c != '(') return false;
+                    std::string name;
+                    os >> name;
+
+                    // Read value handling nested parens for (_ bvN W) format
+                    os >> std::ws;
+                    std::string value;
+                    char firstChar;
+                    os.get(firstChar);
+                    if (firstChar == '(') {
+                        // Compound value like (_ bv5 32)
+                        value = "(";
+                        int depth = 1;
+                        while (depth > 0) {
+                            os.get(c);
+                            value += c;
+                            if (c == '(')
+                                depth++;
+                            else if (c == ')')
+                                depth--;
+                        }
+                        // Read closing ')' of the pair
+                        os >> c;
+                    } else {
+                        // Atom value like #x00000005 or #b101
+                        value += firstChar;
+                        while (os.get(c) && c != ')') { value += c; }
+                        // Trim trailing whitespace
+                        const size_t end = value.find_last_not_of(" \t\n\r");
+                        if (end != std::string::npos) value = value.substr(0, end + 1);
+                    }
+
+                    solvedValues[name] = value;
+                }
+                return true;
+            };
+
+            // Get baseline values (deterministic, always valid)
+            getValueCmd();
+            if (!parseGetValue()) {
+                os << "(reset)\n";
+                return false;
+            }
+
+            // Try diversity: add random constraint, re-check. If sat, get
+            // updated (more diverse) values. If unsat, keep baseline values.
+            os << "(assert ";
+            randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
+            os << ")\n";
+            os << "(check-sat)\n";
+            satResponse.clear();
+            do { std::getline(os, satResponse); } while (satResponse.empty());
+            if (satResponse == "sat") {
+                getValueCmd();
+                parseGetValue();
+            }
+
+            os << "(reset)\n";
+        }
+    }
+
+    return true;
 }
 
 #ifdef VL_DEBUG

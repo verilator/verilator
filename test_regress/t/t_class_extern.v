@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2020 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2020 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 class Cls;
@@ -87,8 +87,8 @@ endtask
 
 module t;
    initial begin
-      Cls c = new;
-      Cls::SubCls subc = new;
+      automatic Cls c = new;
+      automatic Cls::SubCls subc = new;
       c.ext_t_i(2);
       if (c.ext_f_np() != 1) $stop;
       if (c.ext_f_p() != 2) $stop;

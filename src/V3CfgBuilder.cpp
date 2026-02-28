@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -81,7 +81,6 @@ class CfgBuilder final : public VNVisitorConst {
     // Non-representable statements
     void visit(AstAssignDly* nodep) override { nonRepresentable(nodep); }
     void visit(AstCase* nodep) override { nonRepresentable(nodep); }  // V3Case will eliminate
-    void visit(AstCReset* nodep) override { nonRepresentable(nodep); }
     void visit(AstDelay* nodep) override { nonRepresentable(nodep); }
 
     // Representable non control-flow statements

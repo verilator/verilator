@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_lint_unsup_deassign.v:19:8: Unsupported: Verilog 1995 deassign
+   19 |        deassign q;
+      |        ^~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

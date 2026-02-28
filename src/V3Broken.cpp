@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -193,6 +193,8 @@ private:
                 UASSERT_OBJ(nodep->dtypep(), nodep,
                             "No dtype on node with hasDType(): " << nodep->prettyTypeName());
             } else {
+                UASSERT_OBJ(!VN_IS(nodep, NodeExpr), nodep,
+                            "All AstNodeExpr must have a dtype post V3WidthCommit");
                 UASSERT_OBJ(!nodep->dtypep(), nodep,
                             "DType on node without hasDType(): " << nodep->prettyTypeName());
             }
@@ -234,9 +236,8 @@ private:
         const size_t nWriteRefs = m_nWriteRefs;
         const size_t nCalls = m_nCalls;
         iterateConst(nodep->lhsp());
-        // TODO: Enable this when #6756 is fixed
         // Only check if there are no calls on the LHS, as calls might return an LValue
-        if (false && v3Global.assertDTypesResolved() && m_nCalls == nCalls) {
+        if (v3Global.assertDTypesResolved() && m_nCalls == nCalls) {
             UASSERT_OBJ(m_nWriteRefs > nWriteRefs, nodep, "No write refs on LHS of assignment");
         }
         processExit(nodep);
@@ -275,6 +276,8 @@ private:
         UASSERT_OBJ(
             !(v3Global.assertScoped() && m_inScope && nodep->varp() && !nodep->varScopep()), nodep,
             "VarRef missing VarScope pointer");
+        UASSERT_OBJ(!v3Global.assertScoped() || !nodep->classOrPackagep(), nodep,
+                    "VarRef classOrPackagep must be nullptr after V3Scope");
         if (m_cfuncp) {
             // Check if variable is an in-scope local, otherwise mark as suspect
             if (const AstVar* const varp = nodep->varp()) {

@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2009 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2009 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 typedef int unit_type_t;
@@ -66,7 +66,7 @@ module t2;
    package_type_t vp;
    package2_type_t vp2;
    initial begin
-      bit x = realCompare(1.0);
+      automatic bit x = realCompare(1.0);
       if (plusone(1) !== 2) $stop;
       if (plustwo(1) !== 3) $stop;
       if (p::pi !== 123 && p::pi !== 124) $stop;  // may race with other initial, so either value

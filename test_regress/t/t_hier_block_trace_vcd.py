@@ -1,34 +1,73 @@
 #!/usr/bin/env python3
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
-# Copyright 2024 by Wilson Snyder. This program is free software; you can
-# redistribute it and/or modify it under the terms of either the GNU
-# Lesser General Public License Version 3 or the Perl Artistic License
-# Version 2.0.
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of either the GNU Lesser General Public License Version 3
+# or the Perl Artistic License Version 2.0.
+# SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
 
-test.priority(30)
+import re
+
+noinline = "noinl" in test.name
+if not noinline:
+    test.priority(30)
 test.scenarios('vlt_all')
 test.top_filename = "t/t_hier_block.v"
 
-# CI environment offers 2 VCPUs, 2 thread setting causes the following warning.
-# %Warning-UNOPTTHREADS: Thread scheduler is unable to provide requested parallelism; consider asking for fewer threads.
-# So use 6 threads here though it's not optimal in performance, but ok.
+verilator_common_flags = [
+    't/t_hier_block.cpp',
+    '--Wno-TIMESCALEMOD',
+    '--trace-vcd',
+    '--trace-underscore',  # Should not trace handle
+    "--trace-max-width",
+    "0",
+    "--trace-max-array",
+    "0",
+    "--trace-structs",
+]
 
-test.compile(
-    v_flags2=['t/t_hier_block.cpp'],
-    verilator_flags2=[
-        '--hierarchical',
-        '--Wno-TIMESCALEMOD',
-        '--trace-vcd',
-        '--no-trace-underscore',  # To avoid handle mismatches
-    ],
-    threads=(6 if test.vltmt else 1))
+verilator_hier_flags = verilator_common_flags + ['--hierarchical']
+if noinline:
+    verilator_hier_flags.extend(["+define+NO_INLINE"])
 
-test.execute()
+# Compile hierarchically
+test.vm_prefix = "Vhier"
+test.main_filename = test.obj_dir + "/Vhier__main.cpp"
+test.compile(verilator_flags2=verilator_hier_flags)
 
-test.vcd_identical(test.trace_filename, test.golden_filename)
+# Compile non hierarchically
+test.vm_prefix = "Vnonh"
+test.main_filename = test.obj_dir + "/Vnonh__main.cpp"
+test.compile(verilator_flags2=verilator_common_flags)
+
+trace_hier = test.trace_filename.replace("simx", "hier")
+trace_nonh = test.trace_filename.replace("simx", "nonh")
+
+# Run the hierarchical model
+test.execute(executable=test.obj_dir + "/Vhier")
+test.run(cmd=["mv", test.trace_filename, trace_hier])
+# Run the non hierarchical model
+test.execute(executable=test.obj_dir + "/Vnonh")
+test.run(cmd=["mv", test.trace_filename, trace_nonh])
+
+# Scope structure must match exactly
+with open(trace_nonh, 'r', encoding='utf8') as fnonh, open(trace_hier, 'r',
+                                                           encoding='utf8') as fhier:
+    for la, lb in zip(fnonh, fhier):
+        la = re.sub(r'^(\s*\$var\s+\S+\s+\S+\s+)\S+(.*)$', r'\1CODE\2', la)
+        lb = re.sub(r'^(\s*\$var\s+\S+\s+\S+\s+)\S+(.*)$', r'\1CODE\2', lb)
+        if la != lb:
+            test.error_keep_going("VCD header mismatch: '{}' !~ '{}'".format(
+                la.strip(), lb.strip()))
+        if "enddefinitions" in la:
+            break
+
+# The two models must match
+test.vcd_identical(trace_hier, trace_nonh)
+# The hierarchical must match the reference
+test.vcd_identical(trace_hier, test.golden_filename.replace("_noinl", ""))
 
 test.passes()

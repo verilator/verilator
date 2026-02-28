@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -32,6 +32,9 @@ bool AstNode::width1() const {  // V3Const uses to know it can optimize
 }
 int AstNode::widthInstrs() const {
     return (!dtypep() ? 1 : (dtypep()->isWide() ? dtypep()->widthWords() : 1));
+}
+bool AstNode::isCHandle() const VL_MT_STABLE {
+    return dtypep() && dtypep()->basicp() && dtypep()->basicp()->isCHandle();
 }
 bool AstNode::isDouble() const VL_MT_STABLE {
     return dtypep() && dtypep()->basicp() && dtypep()->basicp()->isDouble();
@@ -77,8 +80,8 @@ int AstNodeArrayDType::lo() const VL_MT_STABLE { return rangep()->loConst(); }
 int AstNodeArrayDType::elementsConst() const VL_MT_STABLE { return rangep()->elementsConst(); }
 VNumRange AstNodeArrayDType::declRange() const VL_MT_STABLE { return VNumRange{left(), right()}; }
 
-AstFuncRef::AstFuncRef(FileLine* fl, AstFunc* taskp, AstNodeExpr* pinsp)
-    : ASTGEN_SUPER_FuncRef(fl, taskp->name(), pinsp) {
+AstFuncRef::AstFuncRef(FileLine* fl, AstFunc* taskp, AstArg* argsp)
+    : ASTGEN_SUPER_FuncRef(fl, taskp->name(), argsp) {
     this->taskp(taskp);
     dtypeFrom(taskp);
 }
@@ -126,8 +129,8 @@ int AstQueueDType::boundConst() const VL_MT_STABLE {
     return (constp ? constp->toSInt() : 0);
 }
 
-AstTaskRef::AstTaskRef(FileLine* fl, AstTask* taskp, AstNodeExpr* pinsp)
-    : ASTGEN_SUPER_TaskRef(fl, taskp->name(), pinsp) {
+AstTaskRef::AstTaskRef(FileLine* fl, AstTask* taskp, AstArg* argsp)
+    : ASTGEN_SUPER_TaskRef(fl, taskp->name(), argsp) {
     this->taskp(taskp);
     dtypeSetVoid();
 }

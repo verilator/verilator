@@ -1,17 +1,6 @@
-%Warning-PROCASSINIT: t/t_cover_assert.v:13:18: Procedural assignment to declaration with initial value: 'cyc'
-                                              : ... note: In instance 't'
-                                              : ... Location of variable initialization
-   13 |    integer cyc = 0;
-      |                  ^
-                      t/t_cover_assert.v:19:7: ... Location of variable process write
-                                             : ... Perhaps should initialize instead using a reset in this process
-   19 |       cyc <= cyc + 1;
-      |       ^~~
-                      ... For warning description see https://verilator.org/warn/PROCASSINIT?v=latest
-                      ... Use "/* verilator lint_off PROCASSINIT */" and lint_on around source to disable this message.
-%Error-UNSUPPORTED: t/t_cover_assert.v:39:11: Unsupported: Procedural concurrent assertion with clocking event inside always (IEEE 1800-2023 16.14.6)
-                                            : ... note: In instance 't'
-   39 |       C1: cover property(a)
-      |           ^~~~~
+%Error-UNSUPPORTED: t/t_cover_assert.v:38:5: Unsupported: Procedural concurrent assertion with clocking event inside always (IEEE 1800-2023 16.14.6)
+                                           : ... note: In instance 't'
+   38 |     cover property (a) begin
+      |     ^~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

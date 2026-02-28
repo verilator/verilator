@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_forceable_unpacked_bad.v:8:9: Unsupported: Forcing unpacked arrays: t__DOT__unpacked
+    8 |   logic unpacked[1]  /*verilator forceable*/;
+      |         ^~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

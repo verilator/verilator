@@ -7,8 +7,8 @@
                                      : ... note: In instance 't'
    17 |       txn_type_t copy = new txn;
       |                         ^~~
-%Error: t/t_class_new_ref_bad.v:26:21: Assign RHS expects a CLASSREFDTYPE 'Base', got BASICDTYPE 'int'
+%Error: t/t_class_new_ref_bad.v:26:31: Assign RHS expects a CLASSREFDTYPE 'Base', got BASICDTYPE 'int'
                                      : ... note: In instance 't'
-   26 |       Base b = Cls::generate_txn();
-      |                     ^~~~~~~~~~~~
+   26 |       automatic Base b = Cls::generate_txn();
+      |                               ^~~~~~~~~~~~
 %Error: Exiting due to

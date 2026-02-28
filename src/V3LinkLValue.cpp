@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -39,6 +39,7 @@ class LinkLValueVisitor final : public VNVisitor {
     bool m_setStrengthSpecified = false;  // Set that var has assignment with strength specified.
     bool m_inFunc = false;  // Set if inside AstNodeFTask
     bool m_inInitialStatic = false;  // Set if inside AstInitialStatic
+    bool m_inInitialStaticStmt = false;  // Set if inside AstInitialStaticStmt
     VAccess m_setRefLvalue;  // Set VarRefs to lvalues for pin assignments
 
     // VISITORS
@@ -113,7 +114,7 @@ class LinkLValueVisitor final : public VNVisitor {
             iterateAndNextNull(nodep->rhsp());
         }
 
-        if (m_inInitialStatic && m_inFunc) {
+        if ((m_inInitialStatic || m_inInitialStaticStmt) && m_inFunc) {
             const bool rhsHasIO = nodep->rhsp()->exists([](const AstNodeVarRef* const refp) {
                 // Exclude module I/O referenced from a function/task.
                 return refp->varp() && refp->varp()->isIO()
@@ -145,6 +146,11 @@ class LinkLValueVisitor final : public VNVisitor {
     void visit(AstInitialStatic* nodep) override {
         VL_RESTORER(m_inInitialStatic);
         m_inInitialStatic = true;
+        iterateChildren(nodep);
+    }
+    void visit(AstInitialStaticStmt* nodep) override {
+        VL_RESTORER(m_inInitialStaticStmt);
+        m_inInitialStaticStmt = true;
         iterateChildren(nodep);
     }
     void visit(AstRelease* nodep) override {
@@ -336,6 +342,7 @@ class LinkLValueVisitor final : public VNVisitor {
                 iterate(pinp);
             }
         }
+        if (nodep->withp()) iterate(nodep->withp());
     }
     void visit(AstConstraint* nodep) override {
         VL_RESTORER(m_setIfRand);

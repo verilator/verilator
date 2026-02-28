@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -154,6 +154,8 @@ void EmitCBaseVisitorConst::emitCFuncDecl(const AstCFunc* funcp, const AstNodeMo
     if (funcp->isVirtual()) {
         UASSERT_OBJ(funcp->isProperMethod(), funcp, "Virtual function is not a proper method");
         putns(funcp, "virtual ");
+        // Intentionally no emit for "override" instead, as clang will then enable warning
+        // on other methods where virtual vs override is needed, and this is not tracked yet
     }
     emitCFuncHeader(funcp, modp, /* withScope: */ false);
     if (funcp->emptyBody() && !funcp->isLoose() && !cLinkage) {
@@ -176,7 +178,7 @@ void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
         }
     };
 
-    if (nodep->isIO() && nodep->isSc()) {
+    if (nodep->isPrimaryIO() && nodep->isSc()) {
         UASSERT_OBJ(basicp, nodep, "Unimplemented: Outputting this data type");
         if (nodep->isInout()) {
             putns(nodep, "sc_core::sc_inout<");
@@ -197,7 +199,7 @@ void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
         if (asRef && refNeedParens) puts(")");
         emitDeclArrayBrackets(nodep);
         puts(";\n");
-    } else if (nodep->isIO() && basicp && !basicp->isOpaque()) {
+    } else if (nodep->isPrimaryIO() && basicp && !basicp->isOpaque()) {
         if (nodep->isInout()) {
             putns(nodep, "VL_INOUT");
         } else if (nodep->isWritable()) {

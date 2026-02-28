@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -144,6 +144,8 @@ class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
     } m_emitDispState;
 
 protected:
+    VL_DEFINE_DEBUG_FUNCTIONS;
+
     EmitCLazyDecls m_lazyDecls{*this};  // Visitor for emitting lazy declarations
     bool m_useSelfForThis = false;  // Replace "this" with "vlSelf"
     bool m_usevlSelfRef = false;  // Use vlSelfRef reference instead of vlSelf pointer
@@ -207,15 +209,16 @@ public:
                     AstNode* thsp);
     void emitCCallArgs(const AstNodeCCall* nodep, const string& selfPointer, bool inProcess);
     void emitDereference(AstNode* nodep, const string& pointer);
+    std::string dereferenceString(const std::string& pointer);
     void emitCvtPackStr(AstNode* nodep);
     void emitCvtWideArray(AstNode* nodep, AstNode* fromp);
     void emitConstant(AstConst* nodep);
     void emitConstantString(const AstConst* nodep);
     void emitSetVarConstant(const string& assignString, AstConst* constp);
-    void emitVarReset(AstVar* varp, bool constructing);
+    void emitVarReset(const string& prefix, AstVar* varp, bool constructing);
     string emitVarResetRecurse(const AstVar* varp, bool constructing,
                                const string& varNameProtected, AstNodeDType* dtypep, int depth,
-                               const string& suffix);
+                               const string& suffix, const AstNode* valuep);
     void emitVarResetScopeHash();
     void emitChangeDet();
     void emitConstInit(AstNode* initp) { iterateConst(initp); }
@@ -478,7 +481,7 @@ public:
         if (nodep->isCoroutine()) {
             // Sometimes coroutines don't have co_awaits,
             // so emit a co_return at the end to avoid compile errors.
-            puts("co_return;");
+            puts("co_return;\n");
         }
 
         puts("}\n");
@@ -523,6 +526,32 @@ public:
     }
 
     void visit(AstNodeAssign* nodep) override {
+        if (AstCReset* const resetp = VN_CAST(nodep->rhsp(), CReset)) {
+            // TODO get rid of emitVarReset and instead let AstNodeAssign understand how to init
+            // anything
+            AstNode* fromp = nodep->lhsp();
+            // Fork needs to use a member select.  Nothing else should be possible before VarRef.
+            if (AstMemberSel* const sfromp = VN_CAST(fromp, MemberSel)) {
+                // Fork-DynScope generated pointer to previously automatic variable
+                AstVar* const memberVarp = sfromp->varp();
+                fromp = sfromp->fromp();
+                if (AstNullCheck* const sfromp = VN_CAST(fromp, NullCheck)) fromp = sfromp->lhsp();
+                AstNodeVarRef* const fromVarRefp = VN_AS(fromp, NodeVarRef);
+                emitVarReset(
+                    ("VL_NULL_CHECK("s
+                     + (fromVarRefp->selfPointer().isEmpty()
+                            ? ""
+                            : dereferenceString(fromVarRefp->selfPointerProtect(m_useSelfForThis)))
+                     + fromVarRefp->varp()->nameProtect() + ", \""
+                     + V3OutFormatter::quoteNameControls(protect(nodep->fileline()->filename()))
+                     + "\", " + std::to_string(nodep->fileline()->lineno()) + ")->"),
+                    memberVarp, resetp->constructing());
+            } else {
+                AstVar* const varp = VN_AS(fromp, NodeVarRef)->varp();
+                emitVarReset("", varp, resetp->constructing());
+            }
+            return;
+        }
         bool paren = true;
         bool decind = false;
         bool rhs = true;
@@ -702,6 +731,7 @@ public:
     void visit(AstCAwait* nodep) override {
         putns(nodep, "co_await ");
         iterateConst(nodep->exprp());
+        puts(";\n");
     }
     void visit(AstCNew* nodep) override {
         if (VN_IS(nodep->dtypep(), VoidDType)) {
@@ -720,15 +750,44 @@ public:
         putns(nodep, nodep->name());
         puts("(");
         bool comma = false;
+        int argNum = 0;
         for (AstNode* subnodep = nodep->pinsp(); subnodep; subnodep = subnodep->nextp()) {
             if (comma) puts(", ");
             // handle wide arguments to the queues
             if (VN_IS(nodep->fromp()->dtypep(), QueueDType) && subnodep->dtypep()->isWide()) {
                 emitCvtWideArray(subnodep, nodep->fromp());
+            } else if (nodep->method() == VCMethod::RANDOMIZER_HARD && argNum == 1) {
+                // For RANDOMIZER_HARD's filename argument (2nd arg after constraint),
+                // apply protect() similar to VL_STOP to handle --protected flag
+                if (const AstCExpr* const cexprp = VN_CAST(subnodep, CExpr)) {
+                    // Extract filename from the CExpr (which contains "filename")
+                    std::string filename;
+                    for (const AstNode* textnodep = cexprp->nodesp(); textnodep;
+                         textnodep = textnodep->nextp()) {
+                        if (const AstText* const textp = VN_CAST(textnodep, Text)) {
+                            filename = textp->text();
+                            break;
+                        }
+                    }
+                    // Remove surrounding quotes if present
+                    if (filename.size() >= 2 && filename.front() == '"'
+                        && filename.back() == '"') {
+                        filename = filename.substr(1, filename.size() - 2);
+                    }
+                    // Emit with protect()
+                    putsQuoted(protect(filename));
+                } else {
+                    iterateConst(subnodep);
+                }
             } else {
                 iterateConst(subnodep);
             }
             comma = true;
+            argNum++;
+        }
+        if (nodep->withp()) {
+            if (comma) puts(", ");
+            iterateConst(nodep->withp());
         }
         puts(")");
     }
@@ -962,7 +1021,7 @@ public:
     }
     void visit(AstFGetS* nodep) override {
         checkMaxWords(nodep);
-        emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nullptr);
+        emitOpName(nodep, nodep->emitC(), nodep->strgp(), nodep->filep(), nullptr);
     }
 
     void checkMaxWords(AstNode* nodep) {
@@ -1308,6 +1367,9 @@ public:
                       / v3Global.rootp()->timeprecision().multiplier()));
         puts(")");
     }
+    void visit(AstGetInitialRandomSeed* nodep) override {
+        putns(nodep, "vlSymsp->_vm_contextp__->randSeed()");
+    }
     void visit(AstTimeFormat* nodep) override {
         putns(nodep, "VL_TIMEFORMAT_IINI(");
         if (nodep->unitsp()) {
@@ -1500,10 +1562,22 @@ public:
         puts(")");
     }
     void visit(AstNewCopy* nodep) override {
-        putns(nodep, "VL_NEW(" + EmitCUtil::prefixNameProtect(nodep->dtypep()));
-        puts(", *");  // i.e. make into a reference
-        iterateAndNextConstNull(nodep->rhsp());
-        puts(")");
+        // Polymorphic shallow clone: preserves runtime type via virtual clone()
+        // VL_NULL_CHECK enforces null check per IEEE 1800-2017 8.7
+        putns(nodep, "VL_NULL_CHECK(");
+        if (VN_IS(nodep->rhsp(), Const) && VN_AS(nodep->rhsp(), Const)->isNull()) {
+            // V3Const folded rhs to null: emit a typed empty ref so VL_NULL_CHECK fires
+            const AstClassRefDType* const refDTypep
+                = VN_CAST(nodep->dtypep()->skipRefp(), ClassRefDType);
+            puts(refDTypep->cType("", false, false) + "{}");
+        } else {
+            iterateAndNextConstNull(nodep->rhsp());
+        }
+        puts(", ");
+        putsQuoted(protect(nodep->fileline()->filename()));
+        puts(", ");
+        puts(cvtToStr(nodep->fileline()->lineno()));
+        puts(").clone(vlSymsp->__Vm_deleter)");
     }
     void visit(AstSel* nodep) override {
         // Note ASSIGN checks for this on a LHS
@@ -1621,6 +1695,22 @@ public:
         puts(VSelfPointerText::replaceThis(m_useSelfForThis, "this"));
         puts("}");
     }
+    void visit(AstNodeSel* nodep) override {
+        if (!VN_IS(nodep, ArraySel) && !VN_IS(nodep, WordSel)) {
+            visit(static_cast<AstNodeBiop*>(nodep));
+            return;
+        }
+        // ArraySel or WordSel
+        iterateAndNextConstNull(nodep->fromp());
+        // Special case constant index for readability
+        if (AstConst* const idxp = VN_CAST(nodep->bitp(), Const)) {
+            puts("[" + std::to_string(idxp->toUInt()) + "U]");
+            return;
+        }
+        putbs("[");
+        iterateAndNextConstNull(nodep->bitp());
+        puts("]");
+    }
 
     //
     void visit(AstConsAssoc* nodep) override {
@@ -1710,10 +1800,6 @@ public:
             iterateAndNextConstNull(nodep->rhsp());
             puts(")");
         }
-    }
-    void visit(AstCReset* nodep) override {
-        AstVar* const varp = nodep->varrefp()->varp();
-        emitVarReset(varp, nodep->constructing());
     }
     void visit(AstExecGraph* nodep) override {
         // The location of the AstExecGraph within the containing AstCFunc is where we want to

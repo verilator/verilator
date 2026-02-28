@@ -1,8 +1,10 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2024 by Antmicro.
+// This file ONLY is placed under the Creative Commons Public Domain
+// SPDX-FileCopyrightText: 2024 Antmicro
 // SPDX-License-Identifier: CC0-1.0
+
+// verilator lint_off NORETURN
 
 function static func_stat;
   input logic in;
@@ -63,8 +65,8 @@ module no_warn#(PARAM = 1)(input in, input clk);
 
   // Do not warn on constant assignments.
   function static func_param;
-    static logic func_var = PARAM;
-    static logic func_enum = A;
+    static bit func_var = PARAM != 0;
+    static bit func_enum = A != B;
   endfunction
 
   // Do not warn on assignment referencing module I/O.
@@ -87,7 +89,7 @@ module no_warn#(PARAM = 1)(input in, input clk);
 
   // Do not warn on variables under blocks.
   initial begin
-    logic init_tmp = in;
+    static logic init_tmp = in;
   end
 
   always @(posedge clk) begin
@@ -98,12 +100,12 @@ endmodule
 module t(input clk);
   function static func_stat;
     input logic in;
-    logic tmp = in;
+    /*static*/ logic tmp = in;
   endfunction
 
   task static task_stat;
     input logic in;
-    logic tmp = in;
+    /*static*/ logic tmp = in;
   endtask
 
   function automatic func_auto_with_static;

@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -68,6 +68,7 @@ class ReloopVisitor final : public VNVisitor {
         const string newvarname{"__Vilp" + std::to_string(cfuncp->user1Inc() + 1)};
         AstVar* const varp
             = new AstVar{fl, VVarType::STMTTEMP, newvarname, VFlagLogicPacked{}, 32};
+        cfuncp->addVarsp(varp);
         return varp;
     }
     void mergeEnd() {
@@ -105,8 +106,7 @@ class ReloopVisitor final : public VNVisitor {
                 AstLoop* const loopp = new AstLoop{fl};
                 loopp->addStmtsp(new AstLoopTest{fl, loopp, condp});
                 initp->addNext(loopp);
-                itp->AstNode::addNext(initp);
-                bodyp->replaceWith(itp);
+                bodyp->replaceWith(initp);
                 loopp->addStmtsp(bodyp);
                 loopp->addStmtsp(incp);
 

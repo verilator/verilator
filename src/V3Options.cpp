@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -948,14 +948,14 @@ void V3Options::notify() VL_MT_DISABLED {
     if (!outFormatOk() && v3Global.opt.main()) ccSet();  // --main implies --cc if not provided
     if (!outFormatOk() && !dpiHdrOnly() && !lintOnly() && !preprocOnly() && !serializeOnly()) {
         v3fatal("verilator: Need --binary, --cc, --sc, --dpi-hdr-only, --lint-only, "
-                "--xml-only, --json-only or --E option");
+                "--json-only or --E option");
     }
 
-    if (m_build && (m_gmake || m_cmake || m_makeJson)) {
+    if (m_build && (m_gmake || m_makeJson)) {
         cmdfl->v3error("--make cannot be used together with --build. Suggest see manual");
     }
 
-    // m_build, m_preprocOnly, m_dpiHdrOnly, m_lintOnly, m_jsonOnly and m_xmlOnly are mutually
+    // m_build, m_preprocOnly, m_dpiHdrOnly, m_lintOnly, and m_jsonOnly are mutually
     // exclusive
     std::vector<std::string> backendFlags;
     if (m_build) {
@@ -967,7 +967,6 @@ void V3Options::notify() VL_MT_DISABLED {
     if (m_preprocOnly) backendFlags.push_back("-E");
     if (m_dpiHdrOnly) backendFlags.push_back("--dpi-hdr-only");
     if (m_lintOnly) backendFlags.push_back("--lint-only");
-    if (m_xmlOnly) backendFlags.push_back("--xml-only");
     if (m_jsonOnly) backendFlags.push_back("--json-only");
     if (backendFlags.size() > 1) {
         std::string backendFlagsString = backendFlags.front();
@@ -983,7 +982,7 @@ void V3Options::notify() VL_MT_DISABLED {
     }
 
     // Make sure at least one make system is enabled
-    if (!m_gmake && !m_cmake && !m_makeJson) m_gmake = true;
+    if (!m_gmake && !m_makeJson) m_gmake = true;
 
     if (m_hierarchical && (m_hierChild || !m_hierBlocks.empty())) {
         cmdfl->v3error(
@@ -1039,8 +1038,7 @@ void V3Options::notify() VL_MT_DISABLED {
             && !v3Global.opt.serializeOnly());
     }
 
-    if (m_timing.isDefault()
-        && (v3Global.opt.jsonOnly() || v3Global.opt.lintOnly() || v3Global.opt.xmlOnly()))
+    if (m_timing.isDefault() && (v3Global.opt.jsonOnly() || v3Global.opt.lintOnly()))
         v3Global.opt.m_timing.setTrueOrFalse(true);
 
     if (trace()) {
@@ -1162,8 +1160,8 @@ void V3Options::parseOpts(FileLine* fl, int argc, char** argv) VL_MT_DISABLED {
     // Default certain options and error check
     // Detailed error, since this is what we often get when run with minimal arguments
     if (vFiles().empty()) {
-        v3fatal("verilator: No Input Verilog file specified on command line, "
-                "see verilator --help for more information\n");
+        v3fatal("verilator: No input Verilog file specified on command line, "
+                "see 'verilator --help' for more information\n");
     }
 
     // Default prefix to the filename
@@ -1466,6 +1464,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
     DECL_OPTION("-fdfg-pre-inline", FOnOff, &m_fDfgPreInline);
     DECL_OPTION("-fdfg-post-inline", FOnOff, &m_fDfgPostInline);
+    DECL_OPTION("-fdfg-push-down-sels", FOnOff, &m_fDfgPushDownSels);
     DECL_OPTION("-fdfg-scoped", FOnOff, &m_fDfgScoped);
     DECL_OPTION("-fdfg-synthesize-all", FOnOff, &m_fDfgSynthesizeAll);
     DECL_OPTION("-fexpand", FOnOff, &m_fExpand);
@@ -1585,11 +1584,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-main", OnOff, &m_main);
     DECL_OPTION("-main-top-name", Set, &m_mainTopName);
     DECL_OPTION("-make", CbVal, [this, fl](const char* valp) {
-        if (!std::strcmp(valp, "cmake")) {
-            m_cmake = true;
-            fl->v3warn(DEPRECATED,
-                       "Option '--make cmake' is deprecated, use '--make json' instead");
-        } else if (!std::strcmp(valp, "gmake")) {
+        if (!std::strcmp(valp, "gmake")) {
             m_gmake = true;
         } else if (!std::strcmp(valp, "json")) {
             m_makeJson = true;
@@ -1705,6 +1700,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         if (m_reloopLimit < 2) fl->v3error("--reloop-limit must be >= 2: " << valp);
     });
     DECL_OPTION("-report-unoptflat", OnOff, &m_reportUnoptflat);
+    DECL_OPTION("-replication-limit", CbVal, [this, fl](const char* valp) {
+        m_replicationLimit = std::atoi(valp);
+        if (m_replicationLimit < 0) fl->v3error("--replication-limit must be >= 0: " << valp);
+    });
     DECL_OPTION("-rr", CbCall, []() {});  // Processed only in bin/verilator shell
     DECL_OPTION("-runtime-debug", CbCall, [this, fl]() {
         decorations(fl, "node");
@@ -1721,6 +1720,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_outFormatOk = true;
         m_systemC = true;
     });
+    DECL_OPTION("-sched-zero-delay", OnOff, &m_schedZeroDelay);
     DECL_OPTION("-skip-identical", OnOff, &m_skipIdentical);
     DECL_OPTION("-stats", OnOff, &m_stats);
     DECL_OPTION("-stats-vars", CbOnOff, [this](bool flag) {
@@ -1795,8 +1795,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         }
     });
     DECL_OPTION("-timing", OnOff, &m_timing);
-    DECL_OPTION("-top", Set, &m_topModule);
-    DECL_OPTION("-top-module", Set, &m_topModule);
+    DECL_OPTION("-top", CbVal,
+                [this](const std::string& flag) { m_topModule = AstNode::encodeName(flag); });
+    DECL_OPTION("-top-module", CbVal,
+                [this](const std::string& flag) { m_topModule = AstNode::encodeName(flag); });
+    DECL_OPTION("-top-module-encoded", Set, &m_topModule).undocumented();
     DECL_OPTION("-trace", OnOff, &m_trace);
     DECL_OPTION("-trace-saif", CbCall, [this]() { m_traceEnabledSaif = true; });
     DECL_OPTION("-trace-coverage", OnOff, &m_traceCoverage);
@@ -1839,7 +1842,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
     DECL_OPTION("-v", CbVal, [this, &optdir](const char* valp) {
         V3Options::addLibraryFile(parseFileArg(optdir, valp), work());
-    });
+    }).notForRerun();
     DECL_OPTION("-valgrind", CbCall, []() {});  // Processed only in bin/verilator shell
     DECL_OPTION("-verilate", OnOff, &m_verilate);
     DECL_OPTION("-verilate-jobs", CbVal, [this, fl](const char* valp) {
@@ -1944,17 +1947,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         }
     });
     DECL_OPTION("-x-initial-edge", OnOff, &m_xInitialEdge);
-    DECL_OPTION("-xml-only", CbOnOff, [this, fl](bool flag) {
-        if (!m_xmlOnly && flag)
-            fl->v3warn(DEPRECATED, "Option --xml-only is deprecated, move to --json-only");
-        m_xmlOnly = flag;
-    });
-    DECL_OPTION("-xml-output", CbVal, [this, fl](const char* valp) {
-        if (!m_xmlOnly)
-            fl->v3warn(DEPRECATED, "Option --xml-only is deprecated, move to --json-only");
-        m_xmlOutput = valp;
-        m_xmlOnly = true;
-    });
 
     DECL_OPTION("-y", CbVal, [this, &optdir](const char* valp) {
         addIncDirUser(parseFileArg(optdir, string{valp}));

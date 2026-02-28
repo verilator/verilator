@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2004-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -182,6 +182,8 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     }
     void visit(AstInitialAutomatic* nodep) override { iterateChildrenConst(nodep); }
     void visit(AstInitialStatic* nodep) override { iterateChildrenConst(nodep); }
+    void visit(AstInitialAutomaticStmt* nodep) override { iterateChildrenConst(nodep); }
+    void visit(AstInitialStaticStmt* nodep) override { iterateChildrenConst(nodep); }
     void visit(AstAlways* nodep) override {
         if (const AstAssignW* const ap = VN_CAST(nodep->stmtsp(), AssignW)) {
             if (!ap->nextp()) {
@@ -225,12 +227,6 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         iterateAndNextConstNull(nodep->rhsp());
         if (!m_suppressSemi) puts(";\n");
     }
-    void visit(AstAssignDly* nodep) override {
-        iterateAndNextConstNull(nodep->lhsp());
-        putfs(nodep, " <= ");
-        iterateAndNextConstNull(nodep->rhsp());
-        puts(";\n");
-    }
     void visit(AstAlias* nodep) override {
         putbs("alias ");
         iterateConst(nodep->itemsp());
@@ -271,6 +267,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         if (nodep->sensp()) puts(" ");
         iterateChildrenConst(nodep);
     }
+    void visit(AstCReset* nodep) override { puts("/*CRESET*/"); }
     void visit(AstCase* nodep) override {
         putfs(nodep, "");
         if (nodep->priorityPragma()) puts("priority ");
@@ -614,6 +611,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         putfs(nodep, "$_EXPRSTMT(\n");
         iterateAndNextConstNull(nodep->stmtsp());
         putbs(", ");
+        iterateAndNextConstNull(nodep->resultp());
         puts(");\n");
     }
 
@@ -622,6 +620,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts("." + nodep->name() + "(");
         iterateAndCommaConstNull(nodep->pinsp());
         puts(")");
+        iterateConstNull(nodep->withp());
     }
     void visit(AstCMethodCall* nodep) override {
         iterateConst(nodep->fromp());
@@ -1016,8 +1015,9 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
         if (!VN_IS(nodep->taskp(), Property)) {
             puts("(");
-            iterateAndNextConstNull(nodep->pinsp());
+            iterateAndNextConstNull(nodep->argsp());
             puts(")");
+            iterateConstNull(nodep->withp());
         }
     }
     void visit(AstCCall* nodep) override {
@@ -1027,6 +1027,12 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts(")");
     }
     void visit(AstArg* nodep) override { iterateAndNextConstNull(nodep->exprp()); }
+    void visit(AstWith* nodep) override {
+        putfs(nodep, " with (");
+        iterateConstNull(nodep->exprp());
+        puts(") ");
+    }
+    void visit(AstLambdaArgRef* nodep) override { putfs(nodep, nodep->name()); }
     void visit(AstPrintTimeScale* nodep) override {
         puts(nodep->verilogKwd());
         puts(";\n");
@@ -1220,6 +1226,12 @@ void V3EmitV::verilogForTree(const AstNode* nodep, std::ostream& os) {
 
 void V3EmitV::debugVerilogForTree(const AstNode* nodep, std::ostream& os) {
     { EmitVStreamVisitor{nodep, os, /* tracking: */ true, true}; }
+}
+
+std::string V3EmitV::debugVerilogForTree(const AstNode* nodep) {
+    std::stringstream ss;
+    debugVerilogForTree(nodep, ss);
+    return ss.str();
 }
 
 void V3EmitV::emitvFiles() {

@@ -1,0 +1,14 @@
+%Error-UNSUPPORTED: t/t_tagged_if.v:216:37: Unsupported: &&& expression
+  216 |     if (instr matches tagged Jmp .j &&&
+      |                                     ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_tagged_if.v:226:35: Unsupported: &&& expression
+  226 |     if (v matches tagged Valid .n &&& (n > 50))
+      |                                   ^~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:235:35: Unsupported: &&& expression
+  235 |     if (v matches tagged Valid .n &&& (n > 50))
+      |                                   ^~~
+%Error-UNSUPPORTED: t/t_tagged_if.v:264:37: Unsupported: &&& expression
+  264 |     if (instr matches tagged Jmp .j &&&
+      |                                     ^~~
+%Error: Exiting due to

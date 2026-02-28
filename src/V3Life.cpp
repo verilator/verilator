@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -46,13 +46,11 @@ class LifeState final {
 public:
     VDouble0 m_statAssnDel;  // Statistic tracking
     VDouble0 m_statAssnCon;  // Statistic tracking
-    VDouble0 m_statCResetDel;  // Statistic tracking
 
     // CONSTRUCTORS
     LifeState() = default;
     ~LifeState() {
         V3Stats::addStatSum("Optimizations, Lifetime assign deletions", m_statAssnDel);
-        V3Stats::addStatSum("Optimizations, Lifetime creset deletions", m_statCResetDel);
         V3Stats::addStatSum("Optimizations, Lifetime constant prop", m_statAssnCon);
     }
 };
@@ -86,12 +84,6 @@ public:
         m_constp = nullptr;
         m_everSet = true;
         if (VN_IS(nodep->rhsp(), Const)) m_constp = VN_AS(nodep->rhsp(), Const);
-    }
-    void resetStatement(AstCReset* nodep) {  // New CReset(A) assignment
-        UASSERT_OBJ(!m_isNew, nodep, "Uninitialized new entry");
-        m_assignp = nodep;
-        m_constp = nullptr;
-        m_everSet = true;
     }
     void complexAssign() {  // A[x]=... or some complicated assignment
         UASSERT(!m_isNew, "Uninitialized new entry");
@@ -148,25 +140,8 @@ public:
         UINFOTREE(7, oldassp, "", "REMOVE/SAMEBLK");
         entr.complexAssign();
         oldassp->unlinkFrBack();
-        if (VN_IS(oldassp, CReset)) {
-            ++m_statep->m_statCResetDel;
-        } else {
-            ++m_statep->m_statAssnDel;
-        }
+        ++m_statep->m_statAssnDel;
         VL_DO_DANGLING(m_deleter.pushDeletep(oldassp), oldassp);
-    }
-    void resetStatement(AstVarScope* nodep, AstCReset* rstp) {
-        // Do we have a old assignment we can nuke?
-        UINFO(4, "     CRESETof: " << nodep);
-        UINFO(7, "       new: " << rstp);
-        LifeVarEntry& entr = m_map[nodep];
-        if (entr.isNew()) {
-            entr.init(true);
-        } else {
-            checkRemoveAssign(nodep, entr);
-        }
-        entr.resetStatement(rstp);
-        // lifeDump();
     }
     void simpleAssign(AstVarScope* nodep, AstNodeAssign* assp) {
         // Do we have a old assignment we can nuke?
@@ -196,7 +171,8 @@ public:
             entr.init(false);
         } else {
             if (AstConst* const constp = entr.constNodep()) {
-                if (!varrefp->varp()->isSigPublic() && !varrefp->varp()->sensIfacep()) {
+                if (!varrefp->varp()->isSigPublic() && !varrefp->varp()->isWrittenByDpi()
+                    && !varrefp->varp()->isVirtIface()) {
                     // Aha, variable is constant; substitute in.
                     // We'll later constant propagate
                     UINFO(4, "     replaceconst: " << varrefp);
@@ -333,15 +309,6 @@ class LifeVisitor final : public VNVisitor {
             iterateAndNextNull(nodep->lhsp());
         }
     }
-    void visit(AstCReset* nodep) override {
-        if (!m_noopt) {
-            AstVarScope* const vscp = nodep->varrefp()->varScopep();
-            UASSERT_OBJ(vscp, nodep, "Scope lost on variable");
-            m_lifep->resetStatement(vscp, nodep);
-        } else {
-            iterateAndNextNull(nodep->varrefp());
-        }
-    }
     void visit(AstAssignDly* nodep) override {
         // V3Life doesn't understand time sense
         if (nodep->isTimingControl()) {
@@ -431,6 +398,7 @@ class LifeVisitor final : public VNVisitor {
         if (!m_tracingCall && !nodep->entryPoint()) return;
         m_tracingCall = false;
         if (nodep->recursive()) setNoopt();
+        if (nodep->noLife()) setNoopt();
         if (nodep->dpiImportPrototype() && !nodep->dpiPure()) {
             m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
         }

@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -35,14 +35,17 @@
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
+#include "V3EmitV.h"
+#include "V3File.h"
 #include "V3Graph.h"
 #include "V3Sched.h"
 #include "V3SenTree.h"
 #include "V3SplitVar.h"
 #include "V3Stats.h"
 
-#include <tuple>
+#include <map>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -222,13 +225,31 @@ bool isCut(const SchedAcyclicVarVertex* vtxp) {
 }
 
 std::vector<SchedAcyclicVarVertex*> findCutVertices(Graph* graphp) {
+    // List of cut vertices being computed here
     std::vector<SchedAcyclicVarVertex*> result;
     const VNUser1InUse user1InUse;  // bool: already added to result
+
+    // Statistics
+    size_t nCyclicVtxs = 0;  // Number of vertices that are part of an SCC (cycle)
+    size_t nCyclicVars = 0;  // Number of variables that are part of an SCC (cycle)
+    std::unordered_set<uint32_t> sccs;  // Unique SCC colors
+
     for (V3GraphVertex& vtx : graphp->vertices()) {
+        if (!vtx.color()) continue;  // Not part of an SCC (cycle), can ignore
+        ++nCyclicVtxs;
         if (SchedAcyclicVarVertex* const vvtxp = vtx.cast<SchedAcyclicVarVertex>()) {
+            ++nCyclicVars;
             if (!vvtxp->vscp()->user1SetOnce() && isCut(vvtxp)) result.push_back(vvtxp);
         }
+        // Don't bother counting if not dumping statistics
+        if (v3Global.opt.stats()) sccs.insert(vtx.color());
     }
+
+    V3Stats::addStat("Scheduling, Cycles, cyclic variables", nCyclicVars);
+    V3Stats::addStat("Scheduling, Cycles, cyclic logic blocks", nCyclicVtxs - nCyclicVars);
+    V3Stats::addStat("Scheduling, Cycles, unique SCCs", sccs.size());
+    V3Stats::addStat("Scheduling, Cycles, cut variables", result.size());
+
     return result;
 }
 
@@ -367,6 +388,61 @@ void reportCycles(Graph* graphp, const std::vector<SchedAcyclicVarVertex*>& cutV
     }
 }
 
+void dumpSccs(V3Graph* graphp) {
+    // Map from SCC color to vertices in that SCC
+    std::map<uint32_t, std::vector<V3GraphVertex*>> scc2Vtxps;
+
+    // Gather all vertices in each SCC
+    for (V3GraphVertex& vtx : graphp->vertices()) {
+        if (!vtx.color()) continue;
+        scc2Vtxps[vtx.color()].push_back(&vtx);
+    }
+
+    // Dump Verilog for each SCC into separate files
+    for (const auto& pair : scc2Vtxps) {
+        const uint32_t color = pair.first;
+        const std::vector<V3GraphVertex*>& vtxps = pair.second;
+
+        // Open dump file
+        const std::string fname
+            = v3Global.debugFilename("sched_scc_" + std::to_string(color) + ".v");
+        const std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(fname)};
+        if (ofp->fail()) v3fatal("Can't write file: " << fname);
+
+        // Write header
+        *ofp << "// SCC " << color << ", size: " << vtxps.size() << "\n\n";
+
+        // Dump variables
+        *ofp << "//////////////////////////////////////////////////////////////////////\n";
+        *ofp << "// Variables\n";
+        *ofp << "//////////////////////////////////////////////////////////////////////\n";
+        *ofp << "\n";
+        for (V3GraphVertex* vtxp : vtxps) {
+            const SchedAcyclicVarVertex* const vvtxp = vtxp->cast<SchedAcyclicVarVertex>();
+            if (!vvtxp) continue;
+            AstVarScope* const vscp = vvtxp->vscp();
+            *ofp << "// " << vscp->fileline()->ascii() << "\n";
+            *ofp << "// " << vscp->prettyName() << "\n";
+            V3EmitV::debugVerilogForTree(vscp->varp(), *ofp);
+            *ofp << "\n";
+        }
+
+        // Dump logic
+        *ofp << "\n";
+        *ofp << "//////////////////////////////////////////////////////////////////////\n";
+        *ofp << "// Logic\n";
+        *ofp << "//////////////////////////////////////////////////////////////////////\n";
+        *ofp << "\n";
+        for (V3GraphVertex* vtxp : vtxps) {
+            const SchedAcyclicLogicVertex* const lvtxp = vtxp->cast<SchedAcyclicLogicVertex>();
+            if (!lvtxp) continue;
+            *ofp << "// " << lvtxp->logicp()->fileline()->ascii() << "\n";
+            V3EmitV::debugVerilogForTree(lvtxp->logicp(), *ofp);
+            *ofp << "\n";
+        }
+    }
+}
+
 LogicByScope fixCuts(AstNetlist* netlistp,
                      const std::vector<SchedAcyclicVarVertex*>& cutVertices) {
     // For all logic that reads a cut vertex, build a map from logic -> list of cut AstVarScope
@@ -438,6 +514,9 @@ LogicByScope breakCycles(AstNetlist* netlistp, const LogicByScope& combinational
 
     // Report warnings/diagnostics
     reportCycles(graphp.get(), cutVertices);
+
+    // Debug dump
+    if (dumpLevel() >= 6) dumpSccs(graphp.get());
 
     // Fix cuts by converting dependent logic to use hybrid sensitivities
     return fixCuts(netlistp, cutVertices);

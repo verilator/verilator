@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -136,6 +136,7 @@ const VBasicDTypeKwd LOGIC_IMPLICIT = VBasicDTypeKwd::LOGIC_IMPLICIT;
 
 #define DEL(...) \
     { \
+        /* cppcheck-suppress constVariable */ \
         AstNode* const nodeps[] = {__VA_ARGS__}; \
         for (AstNode* const nodep : nodeps) \
             if (nodep) nodep->deleteTree(); \
@@ -170,8 +171,7 @@ void yyerror(const char* errmsg) { PARSEP->bisonLastFileline()->v3error(errmsg);
 
 template <typename T_Node, typename T_Next>
 static T_Node* addNextNull(T_Node* nodep, T_Next* nextp) {
-    if (!nextp) return nodep;
-    return AstNode::addNext<T_Node, T_Next>(nodep, nextp);
+    return AstNode::addNextNull<T_Node, T_Next>(nodep, nextp);
 }
 
 //======================================================================
@@ -270,6 +270,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_TIMING_ON              "timing_on"
 %token<fl>              yVLT_TRACING_OFF            "tracing_off"
 %token<fl>              yVLT_TRACING_ON             "tracing_on"
+%token<fl>              yVLT_VERILATOR_LIB          "verilator_lib"
 
 %token<fl>              yVLT_D_BLOCK    "--block"
 %token<fl>              yVLT_D_CONTENTS "--contents"
@@ -539,6 +540,8 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yS_UNTIL_WITH   "s_until_with"
 %token<fl>              yTABLE          "table"
 %token<fl>              yTAGGED         "tagged"
+%token<fl>              yTAGGED__LEX    "tagged-in-lex"
+%token<fl>              yTAGGED__NONPRIMARY   "tagged-nonprimary"
 %token<fl>              yTASK           "task"
 %token<fl>              yTHIS           "this"
 %token<fl>              yTHROUGHOUT     "throughout"
@@ -686,6 +689,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_FWRITEB      "$fwriteb"
 %token<fl>              yD_FWRITEH      "$fwriteh"
 %token<fl>              yD_FWRITEO      "$fwriteo"
+%token<fl>              yD_GET_INITIAL_RANDOM_SEED "$get_initial_random_seed"
 %token<fl>              yD_GLOBAL_CLOCK "$global_clock"
 %token<fl>              yD_HIGH         "$high"
 %token<fl>              yD_HYPOT        "$hypot"
@@ -1209,7 +1213,8 @@ module_declaration:             // ==IEEE: module_declaration
                           GRAMMARP->endLabel($<fl>6, $1, $6); }
         //
         |       yEXTERN modFront parameter_port_listE portsStarE ';'
-                        { BBUNSUP($<fl>1, "Unsupported: extern module"); }
+                        { DEL($2->unlinkFrBack()); }
+                        // We allow modules to be declared after instantiations, so harmless
         ;
 
 modFront<nodeModulep>:
@@ -1393,9 +1398,9 @@ port<nodep>:                    // ==IEEE: port
         //                      // IEEE: ansi_port_declaration, with [port_direction] removed
         //                      //   IEEE: [ net_port_header | interface_port_header ]
         //                      //         port_identifier { unpacked_dimension } [ '=' constant_expression ]
-        //                      //   IEEE: [ net_port_header | variable_port_header ] '.' port_identifier '(' [ expression ] ')'
         //                      //   IEEE: [ variable_port_header ] port_identifier
         //                      //              { variable_dimension } [ '=' constant_expression ]
+        //                      //   IEEE: '.' port_identifier '(' [ expression ] ')'
         //                      //   Substitute net_port_header = [ port_direction ] net_port_type
         //                      //   Substitute variable_port_header = [ port_direction ] variable_port_type
         //                      //   Substitute net_port_type = [ net_type ] data_type_or_implicit
@@ -1470,6 +1475,13 @@ port<nodep>:                    // ==IEEE: port
         |       portDirNetE /*implicit*/        portSig variable_dimensionListE sigAttrListE '=' constExpr
                         { $$ = $2; /*VARDTYPE-same*/
                           if (AstVar* vp = VARDONEP($$, $3, $4)) { addNextNull($$, vp); vp->valuep($6); } }
+        //                      //   IEEE: '.' port_identifier '(' [ expression ] ')'
+        |       portDirNetE /*implicit*/ '.' portSig '(' expr ')'
+                        { $$ = $3; DEL($5);
+                          BBUNSUP($<fl>2, "Unsupported: complex ports (IEEE 1800-2017 23.2.2.1/2)"); }
+        //                      // IEEE: part of (non-ansi) port_reference
+        |       '{' port_expressionList '}'
+                        { $$ = $2; }
         ;
 
 portDirNetE:                    // IEEE: part of port, optional net type and/or direction
@@ -1493,6 +1505,18 @@ portSig<nodep>:
                         { $$ = new AstPort{$<fl>1, PINNUMINC(), *$1}; }
         ;
 
+port_expressionList<nodep>:  // IEEE: part of (non-ansi) port_reference
+                port_reference                          { $$ = $1; }
+        |       port_expressionList ',' port_reference  { $$ = addNextNull($1, $3); }
+        ;
+
+port_reference<nodep>:  // IEEE: (non-ansi) port-reference
+        //                      // IEEE: port_identifier constant_select
+        //                      // constant_select ::= [ '[' constant_part_select_range ']' ]
+                id/*port_identifier*/                   { $$ = nullptr; }  // UNSUP above here
+        |       id/*port_identifier*/ part_select_range  { $$ = nullptr; DEL($2); }  // UNSUP above here
+        ;
+
 //**********************************************************************
 // Interface headers
 
@@ -1505,7 +1529,8 @@ interface_declaration:          // IEEE: interface_declaration + interface_nonan
                           if ($5) $1->addStmtsp($5);
                           $1->hasParameterList($<flag>2); }
         |       yEXTERN intFront parameter_port_listE portsStarE ';'
-                        { BBUNSUP($<fl>1, "Unsupported: extern interface"); }
+                        { DEL($2->unlinkFrBack()); }
+                        // We allow interfaces to be declared after instantiations, so harmless
         ;
 
 intFront<nodeModulep>:
@@ -1595,7 +1620,8 @@ program_declaration:            // IEEE: program_declaration + program_nonansi_h
                           if ($5) $1->addStmtsp($5);
                           GRAMMARP->endLabel($<fl>7, $1, $7); }
         |       yEXTERN pgmFront parameter_port_listE portsStarE ';'
-                        { BBUNSUP($<fl>1, "Unsupported: extern program"); }
+                        { DEL($2->unlinkFrBack()); }
+                        // We allow programs to be declared after instantiations, so harmless
         ;
 
 pgmFront<nodeModulep>:
@@ -2103,8 +2129,7 @@ data_typeVirtual<nodeDTypep>:           // ==IEEE: data_type after yVIRTUAL [ yI
 data_type_or_void<nodeDTypep>:  // ==IEEE: data_type_or_void
                 data_typeAny                            { $$ = $1; }
         |       yVOID
-                        { $$ = new AstBasicDType{$1, LOGIC_IMPLICIT};
-                          BBUNSUP($1, "Unsupported: void (for tagged unions)"); }
+                        { $$ = new AstBasicDType{$1, VBasicDTypeKwd::CVOID}; }
         ;
 
 var_data_type<nodeDTypep>:              // ==IEEE: var_data_type
@@ -2135,7 +2160,7 @@ struct_unionDecl<nodeUOrStructDTypep>:  // IEEE: part of data_type
         /*cont*/    struct_union_memberListEnd
                         { $$ = $<nodeUOrStructDTypep>4; $$->addMembersp($5); }
         |       yUNION taggedSoftE packedSigningE '{'
-        /*mid*/         { $<nodeUOrStructDTypep>$ = new AstUnionDType{$1, $2, $3}; }
+        /*mid*/         { $<nodeUOrStructDTypep>$ = new AstUnionDType{$1, $2 == tagged_SOFT, $2 == tagged_TAGGED, $3}; }
         /*cont*/    struct_union_memberListEnd
                         { $$ = $<nodeUOrStructDTypep>5; $$->addMembersp($6); }
         ;
@@ -2273,10 +2298,10 @@ random_qualifier<qualifiers>:   // ==IEEE: random_qualifier
         |       yRANDC                                  { $$ = VMemberQualifiers::none(); $$.m_randc = true; }
         ;
 
-taggedSoftE<cbool>:
-                /*empty*/                               { $$ = false; }
-        |       ySOFT                                   { $$ = true; }
-        |       yTAGGED                                 { $$ = false; BBUNSUP($<fl>1, "Unsupported: tagged union"); }
+taggedSoftE<taggedstate>:
+                /*empty*/                               { $$ = tagged_NONE; }
+        |       ySOFT                                   { $$ = tagged_SOFT; }
+        |       yTAGGED                                 { $$ = tagged_TAGGED; }
         ;
 
 packedSigningE<signstate>:
@@ -2902,48 +2927,48 @@ c_loop_generate_construct<nodep>:  // IEEE: loop_generate_construct (for checker
         ;
 
 genvar_initialization<nodep>:   // ==IEEE: genvar_initialization
-                varRefBase '=' expr                     { $$ = new AstAssign{$2, $1, $3}; }
+                parseRefBase '=' expr                     { $$ = new AstAssign{$2, $1, $3}; }
         |       yGENVAR genvar_identifierDecl '=' constExpr
                         { $$ = $2; AstNode::addNext<AstNode, AstNode>($$,
                                        new AstAssign{$3, new AstVarRef{$2->fileline(), $2, VAccess::WRITE}, $4}); }
         ;
 
 genvar_iteration<nodep>:        // ==IEEE: genvar_iteration
-                varRefBase '='          expr
+                parseRefBase '='          expr
                         { $$ = new AstAssign{$2, $1, $3}; }
-        |       varRefBase yP_PLUSEQ    expr
+        |       parseRefBase yP_PLUSEQ    expr
                         { $$ = new AstAssign{$2, $1, new AstAdd{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_MINUSEQ   expr
+        |       parseRefBase yP_MINUSEQ   expr
                         { $$ = new AstAssign{$2, $1, new AstSub{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_TIMESEQ   expr
+        |       parseRefBase yP_TIMESEQ   expr
                         { $$ = new AstAssign{$2, $1, new AstMul{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_DIVEQ     expr
+        |       parseRefBase yP_DIVEQ     expr
                         { $$ = new AstAssign{$2, $1, new AstDiv{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_MODEQ     expr
+        |       parseRefBase yP_MODEQ     expr
                         { $$ = new AstAssign{$2, $1, new AstModDiv{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_ANDEQ     expr
+        |       parseRefBase yP_ANDEQ     expr
                         { $$ = new AstAssign{$2, $1, new AstAnd{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_OREQ      expr
+        |       parseRefBase yP_OREQ      expr
                         { $$ = new AstAssign{$2, $1, new AstOr{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_XOREQ     expr
+        |       parseRefBase yP_XOREQ     expr
                         { $$ = new AstAssign{$2, $1, new AstXor{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_SLEFTEQ   expr
+        |       parseRefBase yP_SLEFTEQ   expr
                         { $$ = new AstAssign{$2, $1, new AstShiftL{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_SRIGHTEQ  expr
+        |       parseRefBase yP_SRIGHTEQ  expr
                         { $$ = new AstAssign{$2, $1, new AstShiftR{$2, $1->cloneTreePure(true), $3}}; }
-        |       varRefBase yP_SSRIGHTEQ expr
+        |       parseRefBase yP_SSRIGHTEQ expr
                         { $$ = new AstAssign{$2, $1, new AstShiftRS{$2, $1->cloneTreePure(true), $3}}; }
         //                      // inc_or_dec_operator
-        |       yP_PLUSPLUS   varRefBase
+        |       yP_PLUSPLUS   parseRefBase
                         { $$ = new AstAssign{$1, $2, new AstAdd{$1, $2->cloneTreePure(true),
                                                                 new AstConst{$1, AstConst::StringToParse{}, "'b1"}}}; }
-        |       yP_MINUSMINUS varRefBase
+        |       yP_MINUSMINUS parseRefBase
                         { $$ = new AstAssign{$1, $2, new AstSub{$1, $2->cloneTreePure(true),
                                                                 new AstConst{$1, AstConst::StringToParse{}, "'b1"}}}; }
-        |       varRefBase yP_PLUSPLUS
+        |       parseRefBase yP_PLUSPLUS
                         { $$ = new AstAssign{$2, $1, new AstAdd{$2, $1->cloneTreePure(true),
                                                                 new AstConst{$2, AstConst::StringToParse{}, "'b1"}}}; }
-        |       varRefBase yP_MINUSMINUS
+        |       parseRefBase yP_MINUSMINUS
                         { $$ = new AstAssign{$2, $1, new AstSub{$2, $1->cloneTreePure(true),
                                                                 new AstConst{$2, AstConst::StringToParse{}, "'b1"}}}; }
         ;
@@ -3176,11 +3201,27 @@ list_of_defparam_assignments<nodep>:    //== IEEE: list_of_defparam_assignments
         ;
 
 defparam_assignment<nodep>:     // ==IEEE: defparam_assignment
-                idAny '.' idAny '=' expr                { $$ = new AstDefParam{$4, *$1, *$3, $5}; }
-        |       idAny '=' expr
-                        { $$ = nullptr; BBUNSUP($2, "Unsupported: defparam with no dot"); DEL($3); }
-        |       idAny '.' idAny '.'
-                        { $$ = nullptr; BBUNSUP($4, "Unsupported: defparam with more than one dot"); }
+                defparamIdRange '.' defparamIdRange '=' expr
+                        { $$ = new AstDefParam{$4, *$1, *$3, $5}; }
+        |       defparamIdRange '=' expr
+                        { $$ = nullptr; BBUNSUP($2, "Unsupported: defparam with no dot");
+                          DEL($3); }
+        |       defparamIdRange '.' defparamIdRange '.' defparamIdRangeList '=' expr
+                        { $$ = nullptr; BBUNSUP($4, "Unsupported: defparam with more than one dot");
+                          DEL($7); }
+        ;
+
+defparamIdRangeList<strp>:  // IEEE: part of defparam_assignment
+                defparamIdRange                         { $$ = $1; }
+        |       defparamIdRangeList '.' defparamIdRange  { $$ = $3; }
+        ;
+
+defparamIdRange<strp>:  // IEEE: part of defparam_assignment
+                idAny
+                        { $$ = $1; }
+        |       idAny part_select_rangeList
+                        { $$ = $1; BBUNSUP($2, "Unsupported: defparam with arrayed instance");
+                          DEL($2); }
         ;
 
 //************************************************
@@ -3452,23 +3493,23 @@ par_blockJoin<joinType>:
         |       yJOIN_NONE  { $$ = VJoinType::JOIN_NONE; }
         ;
 
-par_block<nodeStmtp>:               // ==IEEE: par_block
+par_block<forkp>:               // ==IEEE: par_block
                 yFORK startLabelE blockDeclListE stmtListE par_blockJoin endLabelE
                         {
-                            AstFork* const forkp = new AstFork{$1, $5, $2 ? *$2 : ""};
-                            GRAMMARP->endLabel($<fl>6, forkp, $6);
-                            forkp->addDeclsp($3);
-                            $$ = V3ParseGrammar::wrapFork(PARSEP, forkp, $4);
+                            $$ = new AstFork{$1, $5, $2 ? *$2 : ""};
+                            GRAMMARP->endLabel($<fl>6, $$, $6);
+                            $$->addDeclsp($3);
+                            $$->addForksp(V3ParseGrammar::wrapInBegin($4));
                         }
         ;
 
-par_blockPreId<nodeStmtp>:          // ==IEEE: par_block but called with leading ID
+par_blockPreId<forkp>:          // ==IEEE: par_block but called with leading ID
                 id yP_COLON__FORK yFORK blockDeclListE stmtListE par_blockJoin endLabelE
                         {
-                            AstFork* const forkp = new AstFork{$3, $6, *$1};
-                            GRAMMARP->endLabel($<fl>7, forkp, $7);
-                            forkp->addDeclsp($4);
-                            $$ = V3ParseGrammar::wrapFork(PARSEP, forkp, $5);
+                            $$ = new AstFork{$3, $6, *$1};
+                            GRAMMARP->endLabel($<fl>7, $$, $7);
+                            $$->addDeclsp($4);
+                            $$->addForksp(V3ParseGrammar::wrapInBegin($5));
                         }
             ;
 
@@ -3496,7 +3537,7 @@ stmtList<nodeStmtp>:
         |       stmtList error ';'                      { $$ = $1; }  // LCOV_EXCL_LINE
         ;
 
-stmt<nodeStmtp>:                    // IEEE: statement + seq_block + par_block
+stmt<nodeStmtp>:                    // IEEE: statement + statement_or_null + seq_block + par_block
                 statement_item                          { $$ = $1; }
         //                      // S05 block creation rule
         |       id/*block_identifier*/ ':' statement_item       { $$ = new AstBegin{$<fl>1, *$1, $3, false}; }
@@ -3527,7 +3568,7 @@ statement_item<nodeStmtp>:          // IEEE: statement_item
                         { $$ = new AstAssignDly{$2, $1, $4, $3}; }
         //UNSUP cycle_delay fexprLvalue yP_LTE ';'      { UNSUP }
         |       yASSIGN idClassSel '=' delay_or_event_controlE expr ';'
-                        { $$ = new AstAssign{$1, $2, $5, $4}; }
+                        { $$ = new AstAssignCont{$1, $2, $5, $4}; }
         |       yDEASSIGN variable_lvalue ';'
                         { $$ = nullptr; BBUNSUP($1, "Unsupported: Verilog 1995 deassign"); DEL($2); }
         |       yFORCE variable_lvalue '=' expr ';'
@@ -3541,9 +3582,13 @@ statement_item<nodeStmtp>:          // IEEE: statement_item
                           if ($1 == uniq_UNIQUE) $2->uniquePragma(true);
                           if ($1 == uniq_UNIQUE0) $2->unique0Pragma(true);
                           if ($1 == uniq_PRIORITY) $2->priorityPragma(true); }
-        // &&& is part of expr so case_patternList aliases to case_itemList
-        |       unique_priorityE caseStart caseAttrE yMATCHES case_itemList yENDCASE
-                        { $$ = nullptr; BBUNSUP($4, "Unsupported: matches (for tagged union)"); DEL($2, $5); }
+        // case matches uses patterns, not expressions
+        |       unique_priorityE caseStart caseAttrE yMATCHES case_matches_itemList yENDCASE
+                        { $$ = $2; if ($5) $2->addItemsp($5);
+                          $2->caseMatchesSet();
+                          if ($1 == uniq_UNIQUE) $2->uniquePragma(true);
+                          if ($1 == uniq_UNIQUE0) $2->unique0Pragma(true);
+                          if ($1 == uniq_PRIORITY) $2->priorityPragma(true); }
         |       unique_priorityE caseStart caseAttrE yINSIDE case_inside_itemList yENDCASE
                         { $$ = $2; if ($5) $2->addItemsp($5);
                           if (!$2->caseSimple()) $4->v3error("Illegal to have inside on a casex/casez");
@@ -3795,7 +3840,7 @@ class_new<nodeExprp>:    // IEEE: class_new
 
 class_newNoScope<nodeExprp>:    // IEEE: class_new but no packageClassScope
         //                      // Special precedence so (...) doesn't match expr
-                yNEW__ETC                               { $$ = new AstNew{$1,  nullptr}; }
+                yNEW__ETC                               { $$ = new AstNew{$1}; }
         |       yNEW__ETC expr                          { $$ = new AstNewCopy{$1, $2}; }
         |       yNEW__PAREN '(' list_of_argumentsE ')'  { $$ = new AstNew{$1, $3}; }
         ;
@@ -3848,6 +3893,21 @@ case_inside_itemList<caseItemp>:        // IEEE: { case_inside_item + range_list
         |       case_inside_itemList yDEFAULT colon stmt   { $$ = $1->addNext(new AstCaseItem{$2, nullptr, $4}); }
         ;
 
+case_matches_itemList<caseItemp>:    // IEEE: { case_pattern_item + ... }
+        //                      // IEEE: case_pattern_item ::= pattern [&&& expr] : stmt
+        //                      // pattern includes expr for tagged void members (tagged id)
+                patternNoExpr colon stmt                   { $$ = new AstCaseItem{$2, $1, $3}; }
+        |       expr colon stmt                            { $$ = new AstCaseItem{$2, $1, $3}; }
+        |       yDEFAULT colon stmt                        { $$ = new AstCaseItem{$1, nullptr, $3}; }
+        |       yDEFAULT stmt                              { $$ = new AstCaseItem{$1, nullptr, $2}; }
+        |       case_matches_itemList patternNoExpr colon stmt
+                        { $$ = $1->addNext(new AstCaseItem{$3, $2, $4}); }
+        |       case_matches_itemList expr colon stmt
+                        { $$ = $1->addNext(new AstCaseItem{$3, $2, $4}); }
+        |       case_matches_itemList yDEFAULT stmt        { $$ = $1->addNext(new AstCaseItem{$2, nullptr, $3}); }
+        |       case_matches_itemList yDEFAULT colon stmt  { $$ = $1->addNext(new AstCaseItem{$2, nullptr, $4}); }
+        ;
+
 rand_case_itemList<caseItemp>:       // IEEE: { rand_case_item + ... }
         //                      // Randcase syntax doesn't have default, or expression lists
                 expr colon stmt                            { $$ = new AstCaseItem{$2, $1, $3}; }
@@ -3893,15 +3953,19 @@ caseCondList<nodeExprp>:        // IEEE: part of case_item
         |       caseCondList ',' exprTypeCompare        { $$ = $1->addNext($3); }
         ;
 
-patternNoExpr<nodep>:           // IEEE: pattern **Excluding Expr*
+patternNoExpr<nodeExprp>:       // IEEE: pattern **Excluding Expr*
                 '.' idAny/*variable*/
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: '{} tagged patterns"); }
+                        { $$ = new AstPatternVar{$1, *$2}; }
         |       yP_DOTSTAR
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: '{} tagged patterns"); }
+                        { $$ = new AstPatternStar{$1}; }
         //                      // IEEE: "expr" excluded; expand in callers
-        //                      // "yTAGGED idAny [expr]" Already part of expr
+        //                      // IEEE: tagged member_identifier [ pattern ]
+        //                      // Standalone "yTAGGED__NONPRIMARY idAny" is handled via expr in patternOne
+        //                      // Here, we need to treat yTAGGED and yTAGGED__NONPRIMARY identically.
         |       yTAGGED idAny/*member_identifier*/ patternNoExpr
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: '{} tagged patterns"); DEL($3); }
+                        { $$ = new AstTaggedPattern{$1, *$2, $3}; }
+        |       yTAGGED__NONPRIMARY idAny/*member_identifier*/ patternNoExpr
+                        { $$ = new AstTaggedPattern{$1, *$2, $3}; }
         //                      // "yP_TICKBRA patternList '}'" part of expr under assignment_pattern
         ;
 
@@ -3924,10 +3988,10 @@ patternMemberList<nodep>:       // IEEE: part of pattern and assignment_pattern
 
 patternMemberOne<patMemberp>:   // IEEE: part of pattern and assignment_pattern
                 patternKey ':' expr                     { $$ = new AstPatMember{$1->fileline(), $3, $1, nullptr}; }
-        |       patternKey ':' patternNoExpr            { $$ = nullptr; BBUNSUP($2, "Unsupported: '{} .* patterns"); DEL($1, $3); }
+        |       patternKey ':' patternNoExpr            { $$ = new AstPatMember{$1->fileline(), $3, $1, nullptr}; }
         //                      // From assignment_pattern_key
         |       yDEFAULT ':' expr                       { $$ = new AstPatMember{$1, $3, nullptr, nullptr}; $$->isDefault(true); }
-        |       yDEFAULT ':' patternNoExpr              { $$ = nullptr; BBUNSUP($2, "Unsupported: '{} .* patterns"); DEL($3); }
+        |       yDEFAULT ':' patternNoExpr              { AstPatMember* const patp = new AstPatMember{$1, $3, nullptr, nullptr}; patp->isDefault(true); $$ = patp; }
         ;
 
 patternKey<nodep>:              // IEEE: merge structure_pattern_key, array_pattern_key, assignment_pattern_key
@@ -4037,17 +4101,20 @@ for_step_assignment<nodep>:     // ==IEEE: for_step_assignment
         ;
 
 loop_variables<nodep>:          // IEEE: loop_variables
-                parseRefBase                            { $$ = $1; }
-        |       loop_variables ',' parseRefBase         { $$ = $1->addNext($3); }
-        |       ',' parseRefBase                        { $$ = new AstEmpty{$1}; $$->addNext($2); }
-        |       ','                                     { $$ = new AstEmpty{$1}; }
+                loop_variableE                          { $$ = $1; }
+        |       loop_variables ',' loop_variableE       { $$ = $1->addNext($3); }
+        ;
+
+loop_variableE<nodep>:          // IEEE: part of loop_variables
+                /* empty */                             { $$ = new AstEmpty{CRELINE()}; }
+        |       parseRefBase                            { $$ = $1; }
         ;
 
 //************************************************
 // Functions/tasks
 
 taskRef<nodeExprp>:            // IEEE: part of tf_call
-                id                                      { $$ = new AstTaskRef{$<fl>1, *$1, nullptr}; }
+                id                                      { $$ = new AstTaskRef{$<fl>1, *$1}; }
         |       id '(' list_of_argumentsE ')'           { $$ = new AstTaskRef{$<fl>1, *$1, $3}; }
         |       packageClassScope id '(' list_of_argumentsE ')'
                         { $$ = AstDot::newIfPkg($<fl>2, $1, new AstTaskRef{$<fl>2, *$2, $4}); }
@@ -4092,7 +4159,7 @@ task_subroutine_callNoMethod<nodeExprp>:    // function_subroutine_callNoMethod 
         //                      // funcref below not task ref to avoid conflict, must later handle either
         |       funcRef yWITH__PAREN '(' expr ')'       { $$ = new AstWithParse{$2, $1, $4}; }
         //                      // can call as method and yWITH without parenthesis
-        |       id yWITH__PAREN '(' expr ')'            { $$ = new AstWithParse{$2, new AstFuncRef{$<fl>1, *$1, nullptr}, $4}; }
+        |       id yWITH__PAREN '(' expr ')'            { $$ = new AstWithParse{$2, new AstFuncRef{$<fl>1, *$1}, $4}; }
         //                      // IEEE: method_call requires a "." so is in expr
         //                      // IEEE: ['std::'] not needed, as normal std package resolution will find it
         //                      // IEEE: randomize_call
@@ -4107,7 +4174,7 @@ function_subroutine_callNoMethod<nodeExprp>:        // IEEE: function_subroutine
                 funcRef                                 { $$ = $1; }
         |       funcRef yWITH__PAREN '(' expr ')'       { $$ = new AstWithParse{$2, $1, $4}; }
         //                      // can call as method and yWITH without parenthesis
-        |       id yWITH__PAREN '(' expr ')'            { $$ = new AstWithParse{$2, new AstFuncRef{$<fl>1, *$1, nullptr}, $4}; }
+        |       id yWITH__PAREN '(' expr ')'            { $$ = new AstWithParse{$2, new AstFuncRef{$<fl>1, *$1}, $4}; }
         |       system_f_only_expr_call                 { $$ = $1; }
         |       system_f_or_t_expr_call                 { $$ = $1; }
         //                      // IEEE: method_call requires a "." so is in expr
@@ -4391,6 +4458,7 @@ system_f_or_t_expr_call<nodeExprp>:  // IEEE: part of system_tf_call (can be tas
         |       yD_FSCANF '(' expr ',' str commaVRDListE ')'    { $$ = new AstFScanF{$1, *$5, $3, $6}; }
         |       yD_FSEEK '(' expr ',' expr ',' expr ')' { $$ = new AstFSeek{$1, $3, $5, $7}; }
         |       yD_FTELL '(' expr ')'                   { $$ = new AstFTell{$1, $3}; }
+        |       yD_GET_INITIAL_RANDOM_SEED parenE      { $$ = new AstGetInitialRandomSeed{$1}; }
         |       yD_GLOBAL_CLOCK parenE                  { $$ = GRAMMARP->createGlobalClockParseRef($1); }
         |       yD_HIGH '(' exprOrDataType ')'          { $$ = new AstAttrOf{$1, VAttrType::DIM_HIGH, $3, nullptr}; }
         |       yD_HIGH '(' exprOrDataType ',' expr ')' { $$ = new AstAttrOf{$1, VAttrType::DIM_HIGH, $3, $5}; }
@@ -4533,10 +4601,10 @@ exprOrDataType<nodep>:          // expr | data_type: combined to prevent conflic
 //UNSUP |       exprOrDataTypeList ',' exprOrDataType   { $$ = addNextNull($1, $3); }
 //UNSUP ;
 
-list_of_argumentsE<nodeExprp>:  // IEEE: [list_of_arguments]
+list_of_argumentsE<argp>:  // IEEE: [list_of_arguments]
                 argsDottedList                          { $$ = $1; }
         |       argsExprListE
-                        { if (VN_IS($1, Arg) && VN_CAST($1, Arg)->emptyConnectNoNext()) {
+                        { if ($1->emptyConnectNoNext()) {
                               $1->deleteTree(); $$ = nullptr;  // Mis-created when have 'func()'
                           } else { $$ = $1; } }
         |       argsExprListE ',' argsDottedList        { $$ = addNextNull($1, $3); }
@@ -4808,10 +4876,10 @@ parenE:
 //                              //   method_call_root not needed, part of expr resolution
 //                              // What's left is below array_methodNoRoot
 array_methodNoRoot<nodeFTaskRefp>:
-                yOR                                     { $$ = new AstFuncRef{$1, "or", nullptr}; }
-        |       yAND                                    { $$ = new AstFuncRef{$1, "and", nullptr}; }
-        |       yXOR                                    { $$ = new AstFuncRef{$1, "xor", nullptr}; }
-        |       yUNIQUE                                 { $$ = new AstFuncRef{$1, "unique", nullptr}; }
+                yOR                                     { $$ = new AstFuncRef{$1, "or"}; }
+        |       yAND                                    { $$ = new AstFuncRef{$1, "and"}; }
+        |       yXOR                                    { $$ = new AstFuncRef{$1, "xor"}; }
+        |       yUNIQUE                                 { $$ = new AstFuncRef{$1, "unique"}; }
         ;
 
 array_methodWith<nodeExprp>:
@@ -4819,7 +4887,7 @@ array_methodWith<nodeExprp>:
         |       array_methodNoRoot parenE yWITH__PAREN '(' expr ')'
                         { $$ = new AstWithParse{$3, $1, $5}; }
         |       array_methodNoRoot '(' expr ')' yWITH__PAREN '(' expr ')'
-                        { $$ = new AstWithParse{$5, $1, $7}; $1->addPinsp(new AstArg{$<fl>3, "", $3}); }
+                        { $$ = new AstWithParse{$5, $1, $7}; $1->addArgsp(new AstArg{$<fl>3, "", $3}); }
         ;
 
 dpi_import_export<nodep>:       // ==IEEE: dpi_import_export
@@ -5001,9 +5069,34 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         |       ~l~expr yINSIDE '{' range_list '}'      { $$ = new AstInside{$2, $1, $4}; }
         //
         //                      // IEEE: tagged_union_expression
-        //UNSUP yTAGGED id/*member*/ %prec prTAGGED             { $$ = $2; BBUNSUP("tagged reference"); }
-        //                      // Spec only allows primary
-        //UNSUP yTAGGED id/*member*/ %prec prTAGGED expr /*primary*/     { $$ = $2; BBUNSUP("tagged reference"); }
+        //                      // yTAGGED__NONPRIMARY = tokenPipeline determined no primary follows
+        |       yTAGGED__NONPRIMARY idAny/*member*/ %prec prTAGGED
+                        { $$ = new AstTaggedExpr{$1, *$2, nullptr}; }
+        //                      // yTAGGED = primary follows; handle specific primary types
+        //                      // Parenthesized expression
+        |       yTAGGED idAny/*member*/ '(' expr ')' %prec prTAGGED
+                        { $$ = new AstTaggedExpr{$1, *$2, $4}; }
+        //                      // Assignment patterns like tagged Add '{a, b, c}
+        |       yTAGGED idAny/*member*/ assignment_pattern %prec prTAGGED
+                        { $$ = new AstTaggedExpr{$1, *$2, $3}; }
+        //                      // Integer literal
+        |       yTAGGED idAny/*member*/ yaINTNUM %prec prTAGGED
+                        { $$ = new AstTaggedExpr{$1, *$2, new AstConst{$<fl>3, *$3}}; }
+        //                      // Float literal
+        |       yTAGGED idAny/*member*/ yaFLOATNUM %prec prTAGGED
+                        { $$ = new AstTaggedExpr{$1, *$2, new AstConst{$<fl>3, AstConst::RealDouble{}, $3}}; }
+        //                      // String literal
+        |       yTAGGED idAny/*member*/ yaSTRING %prec prTAGGED
+                        { $$ = new AstTaggedExpr{$1, *$2, new AstConst{$<fl>3, AstConst::VerilogStringLiteral{}, *$3}}; }
+        //                      // null literal
+        |       yTAGGED idAny/*member*/ yNULL %prec prTAGGED
+                        { $$ = new AstTaggedExpr{$1, *$2, new AstConst{$3, AstConst::Null{}}}; }
+        //                      // Identifier as value
+        |       yTAGGED idAny/*member*/ idAny %prec prTAGGED
+                        { $$ = new AstTaggedExpr{$1, *$2, new AstParseRef{$<fl>3, *$3, nullptr, nullptr}}; }
+        //                      // Concatenation
+        |       yTAGGED idAny/*member*/ '{' cateList '}' %prec prTAGGED
+                        { $$ = new AstTaggedExpr{$1, *$2, $4}; }
         //
         //======================// IEEE: primary/constant_primary
         //
@@ -5109,10 +5202,8 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         //                      // IEEE: cond_pattern - here to avoid reduce problems
         //                      // "expr yMATCHES pattern"
         //                      // IEEE: pattern - expanded here to avoid conflicts
-        |       ~l~expr yMATCHES patternNoExpr          { $$ = new AstConst{$2, AstConst::BitFalse{}};
-                                                          BBUNSUP($<fl>2, "Unsupported: matches operator"); }
-        |       ~l~expr yMATCHES ~r~expr                { $$ = new AstConst{$2, AstConst::BitFalse{}};
-                                                          BBUNSUP($<fl>2, "Unsupported: matches operator"); }
+        |       ~l~expr yMATCHES patternNoExpr          { $$ = new AstMatches{$2, $1, $3}; }
+        |       ~l~expr yMATCHES ~r~expr                { $$ = new AstMatches{$2, $1, $3}; }
         //
         //                      // IEEE: expression_or_dist - here to avoid reduce problems
         //                      // "expr yDIST '{' dist_list '}'"
@@ -5295,7 +5386,7 @@ exprDispList<nodeExprp>:            // exprList for within $display
                         { $$ = $1->addNext(new AstConst{$<fl>2, AstConst::VerilogStringLiteral{}, " "}); }
         ;
 
-vrdList<nodep>:
+vrdList<nodeExprp>:
                 idClassSel                              { $$ = $1; }
         |       vrdList ',' idClassSel                  { $$ = $1->addNext($3); }
         ;
@@ -5305,7 +5396,7 @@ commasE:
         |       ',' commasE                             { } /* ignored */
         ;
 
-commaVRDListE<nodep>:
+commaVRDListE<nodeExprp>:
                 /* empty */                             { $$ = nullptr; }
         |       ',' vrdList                             { $$ = $2; }
         ;
@@ -5315,7 +5406,7 @@ argsExprList<nodeExprp>:        // IEEE: part of list_of_arguments (used where ,
         |       argsExprList ',' expr                   { $$ = $1->addNext($3); }
         ;
 
-argsExprListE<nodeExprp>:       // IEEE: part of list_of_arguments
+argsExprListE<argp>:       // IEEE: part of list_of_arguments
                 argsExprOneE                            { $$ = $1; }
         |       argsExprListE ',' argsExprOneE          { $$ = $1->addNext($3); }
         ;
@@ -5325,7 +5416,7 @@ argsExprListE<nodeExprp>:       // IEEE: part of list_of_arguments
 //UNSUP |       pev_argsExprListE ',' pev_argsExprOneE  { $$ = addNextNull($1, $3); }
 //UNSUP ;
 
-argsExprOneE<nodeExprp>:        // IEEE: part of list_of_arguments
+argsExprOneE<argp>:        // IEEE: part of list_of_arguments
                 /*empty*/                               { $$ = new AstArg{CRELINE(), "", nullptr}; }
         |       expr                                    { $$ = new AstArg{$1->fileline(), "", $1}; }
         ;
@@ -5335,7 +5426,7 @@ argsExprOneE<nodeExprp>:        // IEEE: part of list_of_arguments
 //UNSUP |       pev_expr                                { $$ = $1; }
 //UNSUP ;
 
-argsDottedList<nodeExprp>:      // IEEE: part of list_of_arguments
+argsDottedList<argp>:      // IEEE: part of list_of_arguments
                 argsDotted                              { $$ = $1; }
         |       argsDottedList ',' argsDotted           { $$ = addNextNull($1, $3); }
         ;
@@ -5345,12 +5436,12 @@ argsDottedList<nodeExprp>:      // IEEE: part of list_of_arguments
 //UNSUP |       pev_argsDottedList ',' pev_argsDotted   { $$ = addNextNull($1, $3); }
 //UNSUP ;
 
-argsDotted<nodeExprp>:          // IEEE: part of list_of_arguments
+argsDotted<argp>:          // IEEE: part of list_of_arguments
                 '.' idAny '(' ')'                       { $$ = new AstArg{$<fl>2, *$2, nullptr}; }
         |       '.' idAny '(' expr ')'                  { $$ = new AstArg{$<fl>2, *$2, $4}; }
         ;
 
-//UNSUPpev_argsDotted<nodeExprp>:  // IEEE: part of list_of_arguments - pev_expr at bottom
+//UNSUPpev_argsDotted<argp>:  // IEEE: part of list_of_arguments - pev_expr at bottom
 //UNSUP         '.' idAny '(' ')'                       { $$ = new AstArg{$<fl>2, *$2, nullptr}; }
 //UNSUP |       '.' idAny '(' pev_expr ')'              { $$ = new AstArg{$<fl>2, *$2, $4}; }
 //UNSUP ;
@@ -6034,17 +6125,18 @@ idClassSel<nodeExprp>:          // Misc Ref to dotted, and/or arrayed, and/or bi
         |       packageClassScope idDottedSel           { $$ = new AstDot{$<fl>2, true, $1, $2}; }
         ;
 
-idClassSelForeach<nodeExprp>:
+idClassSelForeach<foreachHeaderp>:
                 idDottedForeach                         { $$ = $1; }
         //                      // IEEE: [ implicit_class_handle . | package_scope ] hierarchical_variable_identifier select
         |       yTHIS '.' idDottedForeach
-                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, "this"}, $3}; }
+                        { $3->fromp(new AstDot{$2, false, new AstParseRef{$<fl>1, "this"}, $3->fromp()->unlinkFrBack()}); $$ = $3; }
         |       ySUPER '.' idDottedForeach
-                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, "super"}, $3}; }
+                        { $3->fromp(new AstDot{$2, false, new AstParseRef{$<fl>1, "super"}, $3->fromp()->unlinkFrBack()}); $$ = $3; }
         |       yTHIS '.' ySUPER '.' idDottedForeach
-                        { $$ = new AstDot{$4, false, new AstParseRef{$<fl>3, "super"}, $5}; }
+                        { $5->fromp(new AstDot{$4, false, new AstParseRef{$<fl>3, "super"}, $5->fromp()->unlinkFrBack()}); $$ = $5; }
         //                      // Expanded: package_scope idForeach
-        |       packageClassScope idDottedForeach       { $$ = new AstDot{$<fl>2, true, $1, $2}; }
+        |       packageClassScope idDottedForeach
+                       { $2->fromp(new AstDot{$<fl>2, true, $1, $2->fromp()->unlinkFrBack()}); $$ = $2; }
         ;
 
 
@@ -6069,15 +6161,15 @@ idDottedSel<nodeExprp>:
         |       idDottedSelMore                         { $$ = $1; }
         ;
 
-idDottedForeach<nodeExprp>:
+idDottedForeach<foreachHeaderp>:
                 yD_ROOT '.' idDottedMoreForeach
-                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, "$root"}, $3}; }
+                        { $3->fromp(new AstDot{$2, false, new AstParseRef{$<fl>1, "$root"}, $3->fromp()->unlinkFrBack()}); $$ = $3; }
         |       idDottedMoreForeach                     { $$ = $1; }
         ;
 
 idDottedMore<nodeExprp>:
-                varRefBase                              { $$ = $1; }
-        |       idDottedMore '.' varRefBase             { $$ = new AstDot{$2, false, $1, $3}; }
+                parseRefBase                            { $$ = $1; }
+        |       idDottedMore '.' parseRefBase           { $$ = new AstDot{$2, false, $1, $3}; }
         ;
 
 idDottedSelMore<nodeExprp>:
@@ -6085,9 +6177,10 @@ idDottedSelMore<nodeExprp>:
         |       idDottedSelMore '.' idArrayed           { $$ = new AstDot{$2, false, $1, $3}; }
         ;
 
-idDottedMoreForeach<nodeExprp>:
+idDottedMoreForeach<foreachHeaderp>:
                 idArrayedForeach                        { $$ = $1; }
-        |       idDottedMoreForeach '.' idArrayedForeach        { $$ = new AstDot{$2, false, $1, $3}; }
+        |       idDottedSelMore '.' idArrayedForeach
+                        { $3->fromp(new AstDot{$2, false, $1, $3->fromp()->unlinkFrBack()}); $$ = $3; }
         ;
 
 // Single component of dotted path, maybe [#].
@@ -6106,34 +6199,22 @@ idArrayed<nodeExprp>:               // IEEE: id + select
         |       idArrayed '[' expr yP_MINUSCOLON constExpr ']'  { $$ = new AstSelMinus{$2, $1, $3, $5}; }
         ;
 
-idArrayedForeach<nodeExprp>:    // IEEE: id + select (under foreach expression)
-                id
-                        { $$ = new AstParseRef{$<fl>1, *$1, nullptr, nullptr}; }
-        //                      // IEEE: id + part_select_range/constant_part_select_range
-        |       idArrayed '[' expr ']'                          { $$ = new AstSelBit{$2, $1, $3}; }  // Or AstArraySel, don't know yet.
-        |       idArrayed '[' constExpr ':' constExpr ']'       { $$ = new AstSelExtract{$2, $1, $3, $5}; }
-        //                      // IEEE: id + indexed_range/constant_indexed_range
-        |       idArrayed '[' expr yP_PLUSCOLON  constExpr ']'  { $$ = new AstSelPlus{$2, $1, $3, $5}; }
-        |       idArrayed '[' expr yP_MINUSCOLON constExpr ']'  { $$ = new AstSelMinus{$2, $1, $3, $5}; }
-        //                      // IEEE: loop_variables (under foreach expression)
-        //                      // To avoid conflicts we allow expr as first element, must post-check
+idArrayedForeach<foreachHeaderp>:    // IEEE: id + select (under foreach expression)
+                parseRefBase  // Malformed, but accept for better error reporting
+                        { $$ = new AstForeachHeader{$<fl>1, $1, nullptr}; }
+        |       idArrayed '[' expr ']'
+                        { $$ = new AstForeachHeader{$2, $1, $3}; }
         |       idArrayed '[' ']'
-                        { $$ = new AstSelLoopVars{$2, $1, new AstEmpty{$3}}; }
-        |       idArrayed '[' expr ',' loop_variables ']'
-                        { $$ = new AstSelLoopVars{$2, $1, addNextNull(static_cast<AstNode*>($3), $5)}; }
+                        { $$ = new AstForeachHeader{$2, $1, new AstEmpty{$3}}; }
+        |       idArrayed '[' parseRefBase ',' loop_variables ']'
+                        { $$ = new AstForeachHeader{$2, $1, addNextNull(static_cast<AstNode*>($3), $5)}; }
         |       idArrayed '[' ',' loop_variables ']'
-                        { $$ = new AstSelLoopVars{$2, $1, addNextNull(static_cast<AstNode*>(new AstEmpty{$3}), $4)}; }
+                        { $$ = new AstForeachHeader{$2, $1, addNextNull(static_cast<AstNode*>(new AstEmpty{$3}), $4)}; }
         ;
 
-// VarRef without any dots or vectorizaion
-varRefBase<parseRefp>:
+// ParseRef without any dots or vectorizaion
+parseRefBase<parseRefp>:
                 id                                      { $$ = new AstParseRef{$<fl>1, *$1}; }
-        ;
-
-// ParseRef
-parseRefBase<nodep>:
-                id
-                        { $$ = new AstParseRef{$<fl>1, *$1, nullptr, nullptr}; }
         ;
 
 // yaSTRING shouldn't be used directly, instead via an abstraction below
@@ -6353,11 +6434,11 @@ concurrent_assertion_statement<nodeStmtp>:  // ==IEEE: concurrent_assertion_stat
         //                      // IEEE: assume_property_statement
         //                      // action_block expanded here
                 assertOrAssume yPROPERTY '(' property_spec ')' stmt %prec prLOWER_THAN_ELSE
-                        { $$ = new AstAssert{$<fl>1, new AstSampled{$<fl>1, $4}, $6, nullptr, VAssertType::CONCURRENT, $1}; }
+                        { $$ = new AstAssert{$<fl>1, $4, $6, nullptr, VAssertType::CONCURRENT, $1}; }
         |       assertOrAssume yPROPERTY '(' property_spec ')' stmt yELSE stmt
-                        { $$ = new AstAssert{$<fl>1, new AstSampled{$<fl>1, $4}, $6, $8, VAssertType::CONCURRENT, $1}; }
+                        { $$ = new AstAssert{$<fl>1, $4, $6, $8, VAssertType::CONCURRENT, $1}; }
         |       assertOrAssume yPROPERTY '(' property_spec ')' yELSE stmt
-                        { $$ = new AstAssert{$<fl>1, new AstSampled{$<fl>1, $4}, nullptr, $7, VAssertType::CONCURRENT, $1}; }
+                        { $$ = new AstAssert{$<fl>1, $4, nullptr, $7, VAssertType::CONCURRENT, $1}; }
         //                      // IEEE: cover_property_statement
         |       yCOVER yPROPERTY '(' property_spec ')' stmt
                         { $$ = new AstCover{$1, $4, $6, VAssertType::CONCURRENT}; }
@@ -6539,27 +6620,7 @@ property_spec<propSpecp>:               // IEEE: property_spec
         |       pexpr                                   { $$ = new AstPropSpec{$1->fileline(), nullptr, nullptr, $1}; }
         ;
 
-//UNSUPproperty_statement_spec<nodep>:  // ==IEEE: property_statement_spec
-//UNSUP //                      // IEEE: [ clocking_event ] [ yDISABLE yIFF '(' expression_or_dist ')' ] property_statement
-//UNSUP         property_statement                      { $$ = $1; }
-//UNSUP |       yDISABLE yIFF '(' expr/*expression_or_dist*/ ')' property_statement     { }
-//UNSUP //                      // IEEE: clocking_event property_statement
-//UNSUP //                      // IEEE: clocking_event yDISABLE yIFF '(' expr/*expression_or_dist*/ ')' property_statement
-//UNSUP //                      // Both overlap pexpr:"clocking_event pexpr"  the difference is
-//UNSUP //                      // property_statement:property_statementCaseIf so replicate it
-//UNSUP |       clocking_event property_statementCaseIf { }
-//UNSUP |       clocking_event yDISABLE yIFF '(' expr/*expression_or_dist*/ ')' property_statementCaseIf        { }
-//UNSUP ;
-
-//UNSUPproperty_statement<nodep>:  // ==IEEE: property_statement
-//UNSUP //                      // Doesn't make sense to have "pexpr ;" in pexpr rule itself, so we split out case/if
-//UNSUP         pexpr ';'                               { $$ = $1; }
-//UNSUP //                      // Note this term replicated in property_statement_spec
-//UNSUP //                      // If committee adds terms, they may need to be there too.
-//UNSUP |       property_statementCaseIf                { $$ = $1; }
-//UNSUP ;
-
-property_statementCaseIf<nodeExprp>:  // IEEE: property_statement - minus pexpr
+property_exprCaseIf<nodeExprp>:  // IEEE: part of property_expr for if/case
                 yCASE '(' expr/*expression_or_dist*/ ')' property_case_itemList yENDCASE
                         { $$ = new AstConst{$1, AstConst::BitFalse{}};
                           BBUNSUP($<fl>1, "Unsupported: property case expression");
@@ -6640,7 +6701,7 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         //
         //                      // IEEE-2009: property_statement
         //                      // IEEE-2012: yIF and yCASE
-        |       property_statementCaseIf                { $$ = $1; }
+        |       property_exprCaseIf                     { $$ = $1; }
         //
         |       ~o~pexpr/*sexpr*/ yP_POUNDMINUSPD pexpr
                         { $$ = $1; BBUNSUP($2, "Unsupported: #-# (in property expression)"); DEL($3); }
@@ -6695,7 +6756,8 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         //                      // property_statement_spec: clocking_event property_statement
         //
         //                      // Include property_specDisable to match property_spec rule
-        //UNSUP clocking_event yDISABLE yIFF '(' expr ')' pexpr %prec prSEQ_CLOCKING    { }
+        //UNSUP clocking_event ~p~sexpr %prec prSEQ_CLOCKING
+        //UNSUP         { $$ = $2; BBUNSUP($2, "Unsupported: clocking event (in sequence expression)"); DEL($1); }
         //
         //============= sexpr rules copied for property_expr
         |       BISONPRE_COPY_ONCE(sexpr,{s/~p~s/p/g; })        // {copied}
@@ -6963,6 +7025,8 @@ bins_or_options<nodep>:  // ==IEEE: bins_or_options
                         { $$ = nullptr; BBCOVERIGN($<fl>4, "Ignoring unsupported: cover bin specification"); DEL($3, $6, $8); }
         |       bins_keyword idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' yWITH__PAREN '(' cgexpr ')' iffE
                         { $$ = nullptr; BBCOVERIGN($<fl>8, "Ignoring unsupported: cover bin 'with' specification"); DEL($3, $6, $10, $12); }
+        |       bins_keyword idAny/*bin_identifier*/ bins_orBraE '=' id/*cover_point_id*/ yWITH__PAREN '(' cgexpr ')' iffE
+                        { $$ = nullptr; BBCOVERIGN($<fl>6, "Ignoring unsupported: cover bin 'with' specification"); DEL($3, $8, $10); }
         |       yWILDCARD bins_keyword idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' iffE
                         { $$ = nullptr; BBCOVERIGN($<fl>5, "Ignoring unsupported: cover bin 'wildcard' specification"); DEL($4, $7, $9); }
         |       yWILDCARD bins_keyword idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' yWITH__PAREN '(' cgexpr ')' iffE
@@ -7779,7 +7843,13 @@ constraint_primary<nodeExprp>:  // ==IEEE: constraint_primary
 
 constraint_expressionList<nodep>:  // ==IEEE: { constraint_expression }
                 constraint_expression                           { $$ = $1; }
+        |       ySOLVE solve_before_list yBEFORE solve_before_list ';'
+                        { ($<fl>1)->v3warn(CONSTRAINTIGN, "Ignoring unsupported: solve-before only supported as top-level constraint statement");
+                          $$ = nullptr; DEL($2, $4); }
         |       constraint_expressionList constraint_expression { $$ = addNextNull($1, $2); }
+        |       constraint_expressionList ySOLVE solve_before_list yBEFORE solve_before_list ';'
+                        { ($<fl>2)->v3warn(CONSTRAINTIGN, "Ignoring unsupported: solve-before only supported as top-level constraint statement");
+                          $$ = $1; DEL($3, $5); }
         ;
 
 constraint_expression<nodep>:  // ==IEEE: constraint_expression
@@ -8121,6 +8191,8 @@ vltItem:
                         { V3Control::addProfileData($<fl>1, *$2, $3->toUQuad()); }
         |       yVLT_PROFILE_DATA vltDModel vltDMtask vltDCost
                         { V3Control::addProfileData($<fl>1, *$2, *$3, $4->toUQuad()); }
+        |       yVLT_VERILATOR_LIB vltDModule
+                        { V3Control::addModulePragma(*$2, VPragmaType::VERILATOR_LIB); }
         ;
 
 vltOffFront<errcodeen>:

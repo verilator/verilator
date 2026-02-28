@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
-# Copyright 2018-present, Bryan Gillespie
+# SPDX-FileCopyrightText: 2018 Bryan Gillespie
 """
     Author: Bryan Gillespie
     https://github.com/RPGillespie6/fastcov

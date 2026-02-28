@@ -5,8 +5,8 @@
 # This calls the object directory makefile.  That allows the objects to
 # be placed in the "current directory" which simplifies the Makefile.
 #
-# This file ONLY is placed under the Creative Commons Public Domain, for
-# any use, without warranty, 2020 by Wilson Snyder.
+# This file ONLY is placed under the Creative Commons Public Domain
+# SPDX-FileCopyrightText: 2020 Wilson Snyder
 # SPDX-License-Identifier: CC0-1.0
 #
 ######################################################################

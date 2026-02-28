@@ -1,4 +1,4 @@
-.. Copyright 2003-2026 by Wilson Snyder.
+.. SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 ######################
@@ -32,6 +32,7 @@ Verilator User's Guide
 
    languages.rst
    extensions.rst
+   control.rst
    executables.rst
    warnings.rst
    files.rst

@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -126,13 +126,13 @@ public:
     }
 };
 class AstNodeForeach VL_NOT_FINAL : public AstNodeStmt {
-    // @astgen op1 := arrayp : AstNode
-    // @astgen op2 := stmtsp : List[AstNode]
+    // @astgen op1 := headerp : AstForeachHeader
+    // @astgen op2 := bodyp : List[AstNode]
 public:
-    AstNodeForeach(VNType t, FileLine* fl, AstNode* arrayp, AstNode* stmtsp)
+    AstNodeForeach(VNType t, FileLine* fl, AstForeachHeader* headerp, AstNode* bodyp)
         : AstNodeStmt(t, fl) {
-        this->arrayp(arrayp);
-        addStmtsp(stmtsp);
+        this->headerp(headerp);
+        addBodyp(bodyp);
     }
     ASTGEN_MEMBERS_AstNodeForeach;
     bool isGateOptimizable() const override { return false; }
@@ -213,6 +213,23 @@ public:
     bool isDefault() const { return condsp() == nullptr; }
 };
 
+class AstForeachHeader final : public AstNode {
+    // Variable reference + index enumeration "ref [id, id, id]" for a foreach statement
+    // @astgen op1 := fromp : AstNodeExpr
+    // @astgen op2 := elementsp : List[AstNode<AstNodeExpr|AstVar|AstEmpty>]
+    //             AstNodeExpr/AstEmpty during parsing (only AstParseRef/AstEmpty is well formed)
+    //             then AstVar/AstEmpty after LinkDot
+public:
+    AstForeachHeader(FileLine* fl, AstNodeExpr* fromp, AstNode* elementsp)
+        : ASTGEN_SUPER_ForeachHeader(fl) {
+        this->fromp(fromp);
+        addElementsp(elementsp);
+    }
+    ASTGEN_MEMBERS_AstForeachHeader;
+    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool maybePointedTo() const override VL_MT_SAFE { return false; }
+};
+
 // === AstNodeStmt ===
 class AstAssertCtl final : public AstNodeStmt {
     // @astgen op1 := controlTypep : AstNodeExpr
@@ -253,25 +270,25 @@ public:
     string verilogKwd() const override { return "break"; }
     bool isBrancher() const override { V3ERROR_NA_RETURN(true); }  // Node removed early
 };
-class AstCReset final : public AstNodeStmt {
-    // Reset variable at startup
-    // @astgen op1 := varrefp : AstVarRef
-    const bool m_constructing;  // Previously cleared by constructor
+class AstCAwait final : public AstNodeStmt {
+    // C++'s co_await. While this is an expression in C++, in Verilator it is only used
+    // with void result types and always appears in statement position. There must never
+    // be a suspendable process that returns a value, so modeling as a statement instead.
+    // @astgen op1 := exprp : AstNodeExpr
+    //
+    // @astgen ptr := m_sentreep : Optional[AstSenTree]  // Sentree related to this await
 public:
-    AstCReset(FileLine* fl, AstVarRef* varrefp, bool constructing)
-        : ASTGEN_SUPER_CReset(fl)
-        , m_constructing{constructing} {
-        this->varrefp(varrefp);
+    AstCAwait(FileLine* fl, AstNodeExpr* exprp, AstSenTree* sentreep = nullptr)
+        : ASTGEN_SUPER_CAwait(fl)
+        , m_sentreep{sentreep} {
+        this->exprp(exprp);
     }
-    ASTGEN_MEMBERS_AstCReset;
+    ASTGEN_MEMBERS_AstCAwait;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
-    bool isGateOptimizable() const override { return false; }
-    bool isPredictOptimizable() const override { return false; }
-    bool sameNode(const AstNode* samep) const override {
-        return constructing() == VN_DBG_AS(samep, CReset)->constructing();
-    }
-    bool constructing() const { return m_constructing; }
+    bool isTimingControl() const override { return true; }
+    AstSenTree* sentreep() const { return m_sentreep; }
+    void clearSentreep() { m_sentreep = nullptr; }
 };
 class AstCReturn final : public AstNodeStmt {
     // C++ return from a function
@@ -391,8 +408,10 @@ public:
     bool casex() const { return m_casex == VCaseType::CT_CASEX; }
     bool casez() const { return m_casex == VCaseType::CT_CASEZ; }
     bool caseInside() const { return m_casex == VCaseType::CT_CASEINSIDE; }
+    bool caseMatches() const { return m_casex == VCaseType::CT_CASEMATCHES; }
     bool caseSimple() const { return m_casex == VCaseType::CT_CASE; }
     void caseInsideSet() { m_casex = VCaseType::CT_CASEINSIDE; }
+    void caseMatchesSet() { m_casex = VCaseType::CT_CASEMATCHES; }
     bool fullPragma() const { return m_fullPragma; }
     void fullPragma(bool flag) { m_fullPragma = flag; }
     bool parallelPragma() const { return m_parallelPragma; }
@@ -737,6 +756,38 @@ public:
     ASTGEN_MEMBERS_AstFireEvent;
     bool isDelayed() const { return m_delayed; }
 };
+class AstInitialAutomaticStmt final : public AstNodeStmt {
+    // Automatic variable initialization in a statement position
+    // Used during early stages to record an initial initialization of a variable
+    // Moves later to an appropriate constructor, or AstInitialAutomatic, or
+    // AstCFunc normal statement
+    // Children: {statement list usually only with assignments}
+    // @astgen op1 := stmtsp : List[AstNode]
+public:
+    AstInitialAutomaticStmt(FileLine* fl, AstNode* stmtsp)
+        : ASTGEN_SUPER_InitialAutomaticStmt(fl) {
+        addStmtsp(stmtsp);
+    }
+    ASTGEN_MEMBERS_AstInitialAutomaticStmt;
+    int instrCount() const override { return 0; }
+    bool isPure() override { return true; }
+};
+class AstInitialStaticStmt final : public AstNodeStmt {
+    // Static variable initialization in a statement position
+    // Used during early stages to record a static initialization of a variable
+    // Moves later to an appropriate constructor, or AstInitialStatic, or
+    // AstCFunc normal statement
+    // Children: {statement list usually only with assignments}
+    // @astgen op1 := stmtsp : List[AstNode]
+public:
+    AstInitialStaticStmt(FileLine* fl, AstNode* stmtsp)
+        : ASTGEN_SUPER_InitialStaticStmt(fl) {
+        addStmtsp(stmtsp);
+    }
+    ASTGEN_MEMBERS_AstInitialStaticStmt;
+    int instrCount() const override { return 0; }
+    bool isPure() override { return true; }
+};
 class AstJumpBlock final : public AstNodeStmt {
     // Block of code that might contain AstJumpGo statements as children,
     // which when exectued branch to right after the referenced AstJumpBlock.
@@ -918,11 +969,11 @@ public:
 };
 class AstRSProdItem final : public AstNodeStmt {
     // randomsquence production item
-    // @astgen op1 := argsp : List[AstNodeExpr]
+    // @astgen op1 := argsp : List[AstArg]
     // @astgen ptr := m_prodp : Optional[AstRSProd]  // Pointer to production
     string m_name;  // Name of block, or "" to use first production
 public:
-    AstRSProdItem(FileLine* fl, const string& name, AstNodeExpr* argsp)
+    AstRSProdItem(FileLine* fl, const string& name, AstArg* argsp)
         : ASTGEN_SUPER_RSProdItem(fl)
         , m_name{name} {
         addArgsp(argsp);
@@ -1198,7 +1249,7 @@ class AstTraceDecl final : public AstNodeStmt {
     // Parents:  {statement list}
     // Expression being traced - Moved to AstTraceInc by V3Trace
     // @astgen op1 := valuep : Optional[AstNodeExpr]
-    uint32_t m_code{0};  // Trace identifier code
+    uint32_t m_code{std::numeric_limits<uint32_t>::max()};  // Trace identifier code
     uint32_t m_fidx{0};  // Trace function index
     const string m_showname;  // Name of variable
     const VNumRange m_bitRange;  // Property of var the trace details
@@ -1230,6 +1281,7 @@ public:
     // Details on what we're tracing
     uint32_t code() const { return m_code; }
     void code(uint32_t code) { m_code = code; }
+    bool codeAssigned() const { return m_code != std::numeric_limits<uint32_t>::max(); }
     uint32_t fidx() const { return m_fidx; }
     void fidx(uint32_t fidx) { m_fidx = fidx; }
     uint32_t codeInc() const {
@@ -1332,6 +1384,20 @@ public:
         return new AstAssign{fileline(), lhsp, rhsp, controlp};
     }
 };
+class AstAssignCont final : public AstNodeAssign {
+    // Continuous procedural 'assign'.  See AstAssignW for non-procedural version.
+public:
+    AstAssignCont(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
+                  AstNode* timingControlp = nullptr)
+        : ASTGEN_SUPER_AssignCont(fl, lhsp, rhsp, timingControlp) {
+        dtypeFrom(lhsp);
+    }
+    ASTGEN_MEMBERS_AstAssignCont;
+    AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
+        AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
+        return new AstAssignCont{fileline(), lhsp, rhsp, controlp};
+    }
+};
 class AstAssignDly final : public AstNodeAssign {
 public:
     AstAssignDly(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
@@ -1404,7 +1470,6 @@ class AstFork final : public AstNodeBlock {
     // be executed sequentially within each fork branch.
     //
     // @astgen op3 := forksp : List[AstBegin]
-    // @astgen op4 := parentProcessp : Optional[AstVarRef]
     const VJoinType m_joinType;  // Join keyword type
 public:
     AstFork(FileLine* fl, VJoinType joinType, const string& name = "")
@@ -1469,14 +1534,14 @@ public:
 class AstConstraintForeach final : public AstNodeForeach {
     // Constraint foreach statement
 public:
-    AstConstraintForeach(FileLine* fl, AstNodeExpr* exprp, AstNode* bodysp)
-        : ASTGEN_SUPER_ConstraintForeach(fl, exprp, bodysp) {}
+    AstConstraintForeach(FileLine* fl, AstForeachHeader* headerp, AstNode* bodyp)
+        : ASTGEN_SUPER_ConstraintForeach(fl, headerp, bodyp) {}
     ASTGEN_MEMBERS_AstConstraintForeach;
 };
 class AstForeach final : public AstNodeForeach {
 public:
-    AstForeach(FileLine* fl, AstNode* arrayp, AstNode* stmtsp)
-        : ASTGEN_SUPER_Foreach(fl, arrayp, stmtsp) {}
+    AstForeach(FileLine* fl, AstForeachHeader* headerp, AstNode* stmtsp)
+        : ASTGEN_SUPER_Foreach(fl, headerp, stmtsp) {}
     ASTGEN_MEMBERS_AstForeach;
 };
 

@@ -1,0 +1,5 @@
+%Error-BADVLTPRAGMA: t/t_pp_underline_bad.v:8:4: Extra underscore in meta-comment, ignoring comment; use /*verilator {...}*/ not /*verilator_{...}*/
+    8 |    // verilator_no_inline_module
+      |    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                     ... For error description see https://verilator.org/warn/BADVLTPRAGMA?v=latest
+%Error: Exiting due to

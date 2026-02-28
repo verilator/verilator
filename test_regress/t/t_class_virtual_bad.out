@@ -1,6 +1,6 @@
-%Error: t/t_class_virtual_bad.v:12:17: Illegal to call 'new' using an abstract virtual class 'VBase' (IEEE 1800-2023 8.21)
+%Error: t/t_class_virtual_bad.v:12:27: Illegal to call 'new' using an abstract virtual class 'VBase' (IEEE 1800-2023 8.21)
                                      : ... note: In instance 't'
-   12 |       VBase b = new;   
-      |                 ^~~
+   12 |       automatic VBase b = new;   
+      |                           ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

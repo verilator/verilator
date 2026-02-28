@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -184,10 +184,12 @@ struct LogicReplicas final {
 // "Extra" triggers, with "Sense" triggers taking up the bulk of the bits.
 //
 class TriggerKit final {
+public:
     // Triggers are storead as an UnpackedArray with a fixed word size
     static constexpr uint32_t WORD_SIZE_LOG2 = 6;  // 64-bits / VL_QUADSIZE
     static constexpr uint32_t WORD_SIZE = 1 << WORD_SIZE_LOG2;
 
+private:
     const std::string m_name;  // TriggerKit name
     const bool m_slow;  // TriggerKit is for schedulign 'slow' code
     const uint32_t m_nSenseWords;  // Number of words for Sense triggers
@@ -195,6 +197,8 @@ class TriggerKit final {
     const uint32_t m_nPreWords;  // Number of words for 'pre' part
     const uint32_t m_nVecWords = m_nSenseWords + m_nExtraWords;  // Number of words in 'vec' part
 
+    // SenItems to corresponding bit indexes
+    std::unordered_map<VNRef<const AstSenItem>, size_t> m_senItem2TrigIdx;
     // Data type of a single trigger word
     AstNodeDType* m_wordDTypep = nullptr;
     // Data type of a trigger vector holding one copy of all triggers
@@ -204,8 +208,14 @@ class TriggerKit final {
     AstUnpackArrayDType* m_trigExtDTypep = nullptr;
     // The AstVarScope representing the extended trigger vector
     AstVarScope* m_vscp = nullptr;
-    // The AstCFunc that computes the current active triggers
-    AstCFunc* m_compp = nullptr;
+    // The AstVarScope representing the trigger accumulator vector
+    // It is used to accumulate triggers that were found fired and cleared in beforeTrigger's
+    // in current 'act' region iteration
+    AstVarScope* m_vscAccp = nullptr;
+    // The AstCFunc that computes the current active base triggers
+    AstCFunc* m_compVecp = nullptr;
+    // The AstCFunc that computes the current active extended triggers
+    AstCFunc* m_compExtp = nullptr;
     // The AstCFunc that dumps a trigger vector
     AstCFunc* m_dumpp = nullptr;
     // The AstCFunc that dumps an exended trigger vector - create lazily
@@ -214,8 +224,7 @@ class TriggerKit final {
     mutable AstCFunc* m_anySetVecp = nullptr;
     mutable AstCFunc* m_anySetExtp = nullptr;
     // The AstCFunc setting bits in a trigger vector that are set in another - create lazily
-    mutable AstCFunc* m_orIntoVecp = nullptr;
-    mutable AstCFunc* m_orIntoExtp = nullptr;
+    mutable std::array<AstCFunc*, 4> m_orIntoVecps = {nullptr};
     // The AstCFunc setting a trigger vector to all zeroes - create lazily
     mutable AstCFunc* m_clearp = nullptr;
 
@@ -228,13 +237,15 @@ class TriggerKit final {
     AstCFunc* createDumpExtFunc() const;
     AstCFunc* createAnySetFunc(AstUnpackArrayDType* const dtypep) const;
     AstCFunc* createClearFunc() const;
-    AstCFunc* createOrIntoFunc(AstUnpackArrayDType* const iDtypep) const;
+    AstCFunc* createOrIntoFunc(AstUnpackArrayDType* const oDtypep,
+                               AstUnpackArrayDType* const iDtypep) const;
 
     // Create an AstSenTree that is sensitive to the given trigger indices
     AstSenTree* newTriggerSenTree(AstVarScope* vscp, const std::vector<uint32_t>& indices) const;
 
     TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords, uint32_t nExtraWords,
-               uint32_t nPreWords);
+               uint32_t nPreWords,
+               std::unordered_map<VNRef<const AstSenItem>, size_t> senItem2TrigIdx, bool useAcc);
     VL_UNCOPYABLE(TriggerKit);
     TriggerKit& operator=(TriggerKit&&) = delete;
 
@@ -258,6 +269,9 @@ public:
         }
         uint32_t size() const { return m_descriptions.size(); }
     };
+    // Generates list of assignments that fills
+    static AstAssign* createSenTrigVecAssignment(AstVarScope* const target,
+                                                 std::vector<AstNodeExpr*>& trigps);
 
     // Create a TriggerKit for the given AstSenTree vector
     static TriggerKit create(AstNetlist* netlistp,  //
@@ -267,11 +281,17 @@ public:
                              const std::vector<const AstSenTree*>& senTreeps,  //
                              const string& name,  //
                              const ExtraTriggers& extraTriggers,  //
-                             bool slow);
+                             bool slow,  //
+                             bool useAcc);
 
     // ACCESSORS
     AstVarScope* vscp() const { return m_vscp; }
-    AstCFunc* compp() const { return m_compp; }
+    AstVarScope* vscAccp() const { return m_vscAccp; }
+    size_t senItem2TrigIdx(const AstSenItem* senItemp) const {
+        return m_senItem2TrigIdx.at(*senItemp);
+    }
+    AstCFunc* compBasep() const { return m_compVecp; }
+    const std::string& name() const { return m_name; }
     const std::unordered_map<const AstSenTree*, AstSenTree*>& mapPre() const { return m_mapPre; }
     const std::unordered_map<const AstSenTree*, AstSenTree*>& mapVec() const { return m_mapVec; }
 
@@ -281,7 +301,8 @@ public:
     AstNodeStmt* newClearCall(AstVarScope* vscp) const;
     AstNodeStmt* newOrIntoCall(AstVarScope* op, AstVarScope* ip) const;
     // Helpers for code generation
-    AstNodeStmt* newCompCall(AstVarScope* vscp = nullptr) const;
+    AstNodeStmt* newCompBaseCall() const;
+    AstNodeStmt* newCompExtCall(AstVarScope* vscp) const;
     AstNodeStmt* newDumpCall(AstVarScope* vscp, const std::string& tag, bool debugOnly) const;
     // Create a new (non-extended) trigger vector - might return nullptr if there are no triggers
     AstVarScope* newTrigVec(const std::string& name) const;
@@ -290,13 +311,13 @@ public:
     AstSenTree* newExtraTriggerSenTree(AstVarScope* vscp, uint32_t index) const;
 
     // Set then extra trigger bit at 'index' to the value of 'vscp', then set 'vscp' to 0
-    void addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index) const;
+    void addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index, bool clear = true) const;
 };
 
 // Everything needed for combining timing with static scheduling.
 class TimingKit final {
     AstCFunc* m_resumeFuncp = nullptr;  // Global timing resume function
-    AstCFunc* m_commitFuncp = nullptr;  // Global timing commit function
+    AstCFunc* m_readyFuncp = nullptr;  // Global timing ready function
 
     // Additional var sensitivities for V3Order
     std::map<const AstVarScope*, std::set<AstSenTree*>> m_externalDomains;
@@ -308,10 +329,12 @@ public:
     // Remaps external domains using the specified trigger map
     std::map<const AstVarScope*, std::vector<AstSenTree*>> remapDomains(
         const std::unordered_map<const AstSenTree*, AstSenTree*>& trigMap) const VL_MT_DISABLED;
+    // Get the delay scheduler variable
+    AstVarScope* getDelayScheduler(AstNetlist* const netlistp) VL_MT_DISABLED;
     // Creates a timing resume call (if needed, else returns null)
     AstCCall* createResume(AstNetlist* const netlistp) VL_MT_DISABLED;
-    // Creates a timing commit call (if needed, else returns null)
-    AstCCall* createCommit(AstNetlist* const netlistp) VL_MT_DISABLED;
+    // Creates a timing ready call (if needed, else returns null)
+    AstCCall* createReady(AstNetlist* const netlistp) VL_MT_DISABLED;
 
     TimingKit() = default;
     TimingKit(LogicByScope&& lbs, AstNodeStmt* postUpdates,
@@ -338,15 +361,10 @@ class VirtIfaceTriggers final {
     };
 
 public:
-    using IfaceSensMap = std::map<const AstIface*, AstSenTree*>;
     using IfaceMemberSensMap = std::map<IfaceMember, AstSenTree*>;
 
-    std::vector<std::pair<const AstIface*, AstVarScope*>> m_ifaceTriggers;
     std::vector<std::pair<IfaceMember, AstVarScope*>> m_memberTriggers;
 
-    void addIfaceTrigger(const AstIface* ifacep, AstVarScope* vscp) {
-        m_ifaceTriggers.emplace_back(ifacep, vscp);
-    }
     void addMemberTrigger(const AstIface* ifacep, const AstVar* memberp, AstVarScope* vscp) {
         m_memberTriggers.emplace_back(IfaceMember{ifacep, memberp}, vscp);
     }
@@ -361,9 +379,6 @@ public:
 
     IfaceMemberSensMap makeMemberToSensMap(const TriggerKit& trigKit, uint32_t vifTriggerIndex,
                                            AstVarScope* trigVscp) const;
-
-    IfaceSensMap makeIfaceToSensMap(const TriggerKit& trigKit, uint32_t vifTriggerIndex,
-                                    AstVarScope* trigVscp) const;
 
     VL_UNCOPYABLE(VirtIfaceTriggers);
     VirtIfaceTriggers() = default;
@@ -410,6 +425,9 @@ void splitCheck(AstCFunc* ofuncp);
 // Build an AstIf conditional on the given SenTree being triggered
 AstIf* createIfFromSenTree(AstSenTree* senTreep);
 }  // namespace util
+
+void beforeTrigVisitor(AstNetlist* netlistp, SenExprBuilder& senExprBuilder,
+                       const TriggerKit& trigKit);
 
 }  // namespace V3Sched
 

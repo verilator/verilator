@@ -8,6 +8,133 @@ The changes in each Verilator version are described below.  The
 contributors that suggested or implemented a given issue are shown in []. Thanks!
 
 
+Verilator 5.046 2026-02-28
+==========================
+
+**Important:**
+
+* Support #0 delays with IEEE-1800 compliant semantics (#7079). [Geza Lore, Testorrent USA, Inc.]
+  This may require `-no-sched-zero-delay` to maintain performance vs. previous versions.
+
+**Other:**
+
+* Add IEEE 4-state type lint checks (#3645 partial) (#6895). [Jose Drowne]
+* Add VERILATOR_NUMA_STRATEGY environment variable (#6826) (#6880). [Yangyu Chen]
+* Add decoded Verilog name in JSON output (#6919) (#6995). [Oleh Maksymenko]
+* Add parsing of solve-before inside foreach (#6934). [Pawel Kojma, Antmicro Ltd.]
+* Add error when accessing a non-static class field from a static function (#6948). [Artur Bieniek, Antmicro Ltd.]
+* Add VerilatedContext::useNumaAssign and set on threads() call (#6954). [Yangyu Chen]
+* Add coverage type information to verilator_coverage annotation output (#7131) (#7133) (#7148).
+* Add --max-replication option (#7139). [Todd Strader]
+* Support modport expression syntax + nested (#2601) (#5581) (#7005). [Leela Pakanati]
+* Support nested interface as port connection (#5066) (#6986). [Leela Pakanati]
+* Support solve..before constraints (#5647) (#7123). [Yilou Wang]
+* Support structure initial values (#6130).
+* Support proper automatic/static initialization, and remove STATICVAR warning (#6405) (#7086).
+* Support vpi_put/vpi_get forcing of signals (#5933) (#6704). [Christian Hecken]
+* Support detailed failure info for constraint violations (#6617) (#6883). [Yilou Wang]
+* Support `unique` constraints (on 1D static arrays) (#6810) (#6878). [Srinivasan Venkataramanan]
+* Support complex expressions as std::randomize arguments (#6860). [Jakub Wasilewski, Antmicro Ltd.]
+* Support dynamic array elements in std::randomize (#6896). [Ryszard Rozak, Antmicro Ltd.]
+* Support unbounded '$' in inside range expressions (#6935) (#6938). [Wei-Lun Chiu]
+* Support `extern module` as a forward-declaration that is ignored.
+* Support `foreach` with nested dots (#6991). [Krzysztof Bieganski, Antmicro Ltd.]
+* Support signed multiplication in constraints (#7008). [Pawel Kojma, Antmicro Ltd.]
+* Support constraint_mode() on static constraints (#7027) (#7038). [Yilou Wang]
+* Support some system functions in constraint blocks (#7028) (#7036). [Yilou Wang]
+* Support std::randomize() for queue, dynamic array, and associative array variables (#7044). [Yilou Wang]
+* Support inherited and nested pre/post_randomize callbacks (#7049) (#7053). [Yilou Wang]
+* Support `$get_initial_random_seed` (#7056) (#7069). [Srinivasan Venkataramanan]
+* Support unique constraint on explicit array element subsets (#7057) (#7064). [Yilou Wang]
+* Support force assignments to unpacked structs (#7060). [Ryszard Rozak, Antmicro Ltd.]
+* Support function calls with random arguments in constraints (#7061) (#7083). [Yilou Wang]
+* Support power expressions with constant exponent in constraints (#7073). [Kamil Danecki]
+* Support `disable iff` with sequences (#7090). [Ryszard Rozak, Antmicro Ltd.]
+* Support `this` keyword inside inline randomize() with {} constraint blocks (#7102) (#7113). [Yilou Wang]
+* Support constraint dynamic array reduction methods without 'with' clause (#7104) (#7108). [Yilou Wang]
+* Remove deprecated `--xml-only`.
+* Remove deprecated `--make cmake`.
+* Change JSON dumps to not include booleans that are false (#6977).
+* Change metacomment extra underscore error to BADVLTPRAGMA warning (#6968). [Geza Lore, Testorrent USA, Inc.]
+* Change INITIALSTATIC to also report on processes, per IEEE (#7020).
+* Change automatic variables to not be traced.
+* Change type definition error to show type chain with source context (#7151).
+* Optimize string temporaries to not be localized (#6969). [Geza Lore, Testorrent USA, Inc.]
+* Optimize wide word shifts by multiple of word size (#6970). [Geza Lore, Testorrent USA, Inc.]
+* Optimize concatenations that produce unused bits in DFG (#6971). [Geza Lore, Testorrent USA, Inc.]
+* Optimize more wide operation temporaries with substitution (#6972). [Geza Lore, Testorrent USA, Inc.]
+* Optimize right shifts as clean (#6981). [Geza Lore, Testorrent USA, Inc.]
+* Optimize temporary insertion for concatenations in DFG (#7013). [Geza Lore, Testorrent USA, Inc.]
+* Optimize removing redundant variables during DFG Peephole pass (#7076). [Geza Lore, Testorrent USA, Inc.]
+* Optimize additional DFG peephole Shift and Concat patterns (#7077). [Geza Lore, Testorrent USA, Inc.]
+* Optimize logic and variable removal early in DFG (#7081). [Geza Lore, Testorrent USA, Inc.]
+* Optimize straight line code in DFG always (#7084). [Geza Lore, Testorrent USA, Inc.]
+* Optimize always blocks using local temporary variables in DFG (#7085). [Geza Lore, Testorrent USA, Inc.]
+* Optimize functions inlined from packages in DFG (#7091). [Geza Lore, Testorrent USA, Inc.]
+* Optimize continuous assignments with function on RHS in DFG (#7096). [Geza Lore, Testorrent USA, Inc.]
+* Fix MULTIDRIVEN with task and default driver (#4045) (#6858). [em2machine]
+* Fix parameterized virtual interface references that have no model references (#4286).
+* Fix hierarchical interface/modport issues (#5941) (#6997). [Leela Pakanati]
+* Fix extending class by a typedef (#6679) (#6855). [Alex Zhou]
+* Fix variable reference lookup for module-level variables (#6741) (#6882). [Yilou Wang]
+* Fix false CASEOVERLAP case item expression lint (#6825) (#6886). [Luca Colagrande]
+* Fix virtual interface triggers (#6844). [Igor Zaworski, Antmicro Ltd.]
+* Fix use-after-free error (#6846). [Matthew Ballance]
+* Fix dynamic scheduler temporary variable locations (#6859) (#6926). [Igor Zaworski, Antmicro Ltd.]
+* Fix dynamic array elements passed to ref argument (#6877). [Ryszard Rozak, Antmicro Ltd.]
+* Fix large debug_str for emitted Syms headers (#6889). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix `disable iff` in simple properties (#6890). [Ryszard Rozak, Antmicro Ltd.]
+* Fix #0 delays to control fork scheduling (#6891). [Artur Bieniek, Antmicro Ltd.]
+* Fix member-selected randomization assignments (#6892). [Yilou Wang]
+* Fix WIDTHEXTEND suppression on add/sub with single-bit signal. [Dan Katz]
+* Fix segfault in V3Slice (#6899). [Pawel Kojma, Antmicro Ltd.]
+* Fix unpacked array concatenation function arguments (#6900). [Pawel Kojma, Antmicro Ltd.]
+* Fix signedness of packed array (#6901) (#6902). [Yutetsu TAKATSUKASA]
+* Fix assignment of queue from unpacked array (#6906).
+* Fix `foreach` with mid-index empty commas (#6910).
+* Fix internal error when fork under always expression (#6911).
+* Fix error when calling non-static method (#6916). [Artur Bieniek, Antmicro Ltd.]
+* Fix memory leak in vpi_put_value and vpi_get_value (#6917). [Christian Hecken]
+* Fix interface internal type reference (#6920) (#6966). [Todd Strader]
+* Fix segfault after assignment pattern XOR error (#6928) (#6931). [emmettifelts]
+* Fix delayed initial assignment (#6929). [Todd Strader]
+* Fix event triggering (#6932) (#7072) (#7101). [Igor Zaworski, Antmicro Ltd.]
+* Fix `--top-module` with underscores (#6940). [Christopher Batten]
+* Fix variable randomization to better differ by seed (#6945) (#6956). [Rodrigo Batista de Moraes]
+* Fix null pointer dereference in class member trigger expressions (#6946). [Cameron Waite]
+* Fix type assignments for arrays of parameter types (#6955). [Todd Strader]
+* Fix accessing non-rand struct member in constraints (#6960). [Pawel Kojma, Antmicro Ltd.]
+* Fix associative array of events causes C++ compile error (#6962).
+* Fix UNUSED / UNDRIVEN for unused functions (#6967). [Todd Strader]
+* Fix non-inlined function return value clearing (#6982).
+* Fix parameterized class typedef as interface type parameter (#6983) (#6984). [Leela Pakanati]
+* Fix virtual interface not found internal error (#7010). [Igor Zaworski, Antmicro Ltd.]
+* Fix multidimensional dynamic array elements passed to ref argument (#7023). [Ryszard Rozak, Antmicro Ltd.]
+* Fix randomize() null pointer dereference (#7026). [Artur Bieniek, Antmicro Ltd.]
+* Fix randc cyclic behavior broken with constraints (#7029) (#7035). [Yilou Wang]
+* Fix inline foreach constraints on dynamic arrays of class objects (#7030) (#7037). [Yilou Wang]
+* Fix rand_mode() on nested object variables causing Z3 solver error (#7031) (#7034). [Yilou Wang]
+* Fix non-member identifiers used inside constraints (#7033). [Pawel Kojma, Antmicro Ltd.]
+* Fix tracing without module inlining to match with inlining (#7041). [Geza Lore, Testorrent USA, Inc.]
+* Fix scope tree in traces in hierarchical mode (#7042). [Geza Lore, Testorrent USA, Inc.]
+* Fix rand_mode()/constraint_mode() when used as function arguments (#7051) (#7055). [Yilou Wang]
+* Fix constraint_mode()/rand_mode() in constructor being overwritten (#7054). [Yilou Wang]
+* Fix enum variables in constraint solver producing invalid enum values (#7058) (#7065). [Yilou Wang]
+* Fix randomize() on null object handle crashing instead of returning 0 (#7059) (#7066). [Yilou Wang]
+* Fix inside operator crash with impure expression and unsized range literals (#7063) (#7067). [Yilou Wang]
+* Fix constant propagating DPI-written variables (#7074). [Geza Lore, Testorrent USA, Inc.]
+* Fix conditional expressions in constraints (#7087). [Ryszard Rozak, Antmicro Ltd.]
+* Fix UNSUPPORTED on $sampled in sensitivity list (#7093). [Ryszard Rozak, Antmicro Ltd.]
+* Fix time to not advance after `$finish` (#7095).
+* Fix associative array size() constraint generating invalid resize() call (#7103) (#7112). [Yilou Wang]
+* Fix `new` shallow copy to preserve polymorphic runtime type (#7105) (#7109). [Yilou Wang]
+* Fix circular class reference %p-printing causing infinite recursion (#7106).
+* Fix too-short bit pack returning wrong value (#7111).
+* Fix randomize of real (#7115). [Srinivasan Venkataramanan]
+* Fix inlining of C functions with reloop locals (#7132). [Geza Lore, Testorrent USA, Inc.]
+* Fix segfault in EmitCSyms (#7142) (#7143). [Gilberto Abram]
+
+
 Verilator 5.044 2026-01-01
 ==========================
 
@@ -361,6 +488,8 @@ Verilator 5.040 2025-08-30
 * Fix wide select expansion and substitution (#6341) (#6345). [Geza Lore]
 * Fix upcasting class type parameters (#6344). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix undefined weak link for Apple GCC etc (#6348). [Congcong Cai]
+* Fix emitting unbounded parameters (#6912).
+* Fix syntax error on unsupported defparam array (#6915).
 
 
 Verilator 5.038 2025-07-08
@@ -5520,9 +5649,9 @@ Verilator 0.0 1994-07-08
 Copyright
 =========
 
-Copyright 2001-2026 by Wilson Snyder. This program is free software; you
-can redistribute it and/or modify it under the terms of either the GNU
-Lesser General Public License Version 3 or the Perl Artistic License
-Version 2.0.
+This program is free software; you can redistribute it and/or modify it
+under the terms of either the GNU Lesser General Public License Version 3
+or the Perl Artistic License Version 2.0.
 
+SPDX-FileCopyrightText: 2001-2025 Wilson Snyder
 SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0

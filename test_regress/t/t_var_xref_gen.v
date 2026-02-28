@@ -3,8 +3,8 @@
 // This is to test the handling of VarXRef when the referenced VAR is
 // under a generate construction.
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2015 by Jie Xu and Roland Kruse.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2015 Jie Xu and Roland Kruse
 // SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/

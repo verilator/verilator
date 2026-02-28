@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -51,32 +51,37 @@ public:
         , m_emit{emit} {}
 
     // Emit Prefix adjustments until the current path is 'newPath'
-    void adjust(const string& newPath) {
+    void adjust(const string& newPath, AstCell* cellp, AstVarScope* vscp) {
         // Move up to enclosing path
-        unsigned toPop = 0;
         while (!VString::startsWith(newPath, m_stack.back())) {
-            ++toPop;
+            m_emit(new AstTracePopPrefix{m_flp});
             m_stack.pop_back();
         }
-        while (toPop--) m_emit(new AstTracePopPrefix{m_flp});
+
+        if (newPath == m_stack.back()) return;
+
+        const VTracePrefixType lastScopeType =  //
+            (cellp && VN_IS(cellp->modp(), Iface))
+                    || (vscp && VN_IS(vscp->dtypep(), IfaceRefDType))
+                ? VTracePrefixType::SCOPE_INTERFACE
+                : VTracePrefixType::SCOPE_MODULE;
+        const std::string extraPrefix = newPath.substr(m_stack.back().size());
+        size_t begin = 0;
+        size_t last = extraPrefix.rfind(SEPARATOR);
         // Move down, one path element at a time
-        if (newPath != m_stack.back()) {
-            const string& extraPrefix = newPath.substr(m_stack.back().size());
-            size_t begin = 0;
-            while (true) {
-                const size_t end = extraPrefix.find(SEPARATOR, begin);
-                if (end == string::npos) break;
-                const string& extra = extraPrefix.substr(begin, end - begin);
+        while (true) {
+            const size_t end = extraPrefix.find(SEPARATOR, begin);
+            if (end == string::npos) break;
+            const string& extra = extraPrefix.substr(begin, end - begin);
+            if (end == last) {
+                m_emit(new AstTracePushPrefix{m_flp, extra, lastScopeType});
+            } else {
                 m_emit(new AstTracePushPrefix{m_flp, extra, VTracePrefixType::SCOPE_MODULE});
-                m_stack.push_back(m_stack.back() + extra + SEPARATOR);
-                begin = end + 1;
             }
-            const string& extra = extraPrefix.substr(begin);
-            if (!extra.empty()) {
-                m_emit(new AstTracePushPrefix{m_flp, extra, VTracePrefixType::SCOPE_MODULE});
-                m_stack.push_back(m_stack.back() + extra);
-            }
+            m_stack.push_back(m_stack.back() + extra + SEPARATOR);
+            begin = end + 1;
         }
+        UASSERT(begin == extraPrefix.size(), "Should have consumed all of extraPrefix");
     }
 
     // Emit Prefix adjustments to unwind the path back to its original state
@@ -89,8 +94,6 @@ public:
 // TraceDecl state, as a visitor of each AstNode
 
 class TraceDeclVisitor final : public VNVisitor {
-    // NODE STATE
-
     // STATE
     AstTopScope* const m_topScopep;  // The singleton AstTopScope
     const AstScope* m_currScopep = nullptr;  // Current scope being visited
@@ -124,29 +127,55 @@ class TraceDeclVisitor final : public VNVisitor {
         AstCell* m_cellp = nullptr;  // Sub scope (as AstCell) under scope being traced
         std::string m_path;  // Path to enclosing module in original hierarchy
         std::string m_name;  // Name of signal/subscope
-        bool m_rootio = false;  // Is part of $rootio, if model at runtime uses name()=""
 
-        void init(const std::string& name) {
+        void init(const std::string& name, AstNode* nodep, bool inTopScope) {
             // Compute path in hierarchy and item name
             const std::string& vcdName = AstNode::vcdName(name);
-            const size_t pos = vcdName.rfind(' ');
-            const size_t pathLen = pos == std::string::npos ? 0 : pos + 1;
-            m_path = vcdName.substr(0, pathLen);
-            m_name = vcdName.substr(pathLen);
+            AstVar* const varp = VN_CAST(nodep, Var);
+            if (VN_IS(nodep, Cell) || VN_IS(varp->dtypep(), IfaceRefDType)) {
+                // Cell or interface reference
+                m_path = vcdName + " ";
+                m_name.clear();
+            } else if (varp->isPrimaryIO()) {
+                // Primary IO variable
+                m_path = "$rootio ";
+                m_name = vcdName;
+            } else {
+                // Other Variable
+                const size_t pos = vcdName.rfind(' ');
+                const size_t pathLen = pos == std::string::npos ? 0 : pos + 1;
+                m_path = vcdName.substr(0, pathLen);
+                m_name = vcdName.substr(pathLen);
+            }
+
+            // When creating a --lib-create library, drop the name of the top module (l2 name).
+            // This will be replaced by the instance name in the model that uses the library.
+            // This would be a bit murky when there are other top level entities ($unit,
+            // packages, which have an instance in all libs - a problem on its own). If
+            // --top-module was explicitly specified, then we will drop the prefix only for the
+            // actual top level module, and wrap the rest in '$libroot'. This way at least we get a
+            // usable dump of everything, with library instances showing in a right place, without
+            // pollution from other top level entities.
+            if (inTopScope && !v3Global.opt.libCreate().empty()) {
+                const size_t start = m_path.find(' ');
+                // Must have a prefix in the top scope with lib, as top wrapper signals not traced
+                UASSERT_OBJ(start != std::string::npos, nodep, "No prefix with --lib-create");
+                const std::string prefix = m_path.substr(0, start);
+                m_path = m_path.substr(start + 1);
+                if (v3Global.opt.topModule() != prefix) m_path = "$libroot " + m_path;
+            }
         }
 
     public:
-        explicit TraceEntry(AstVarScope* vscp)
+        explicit TraceEntry(const AstScope* scopep, AstVarScope* vscp)
             : m_vscp{vscp} {
-            init(vscp->varp()->name());
+            init(vscp->varp()->name(), vscp->varp(), scopep->isTop());
         }
-        explicit TraceEntry(AstCell* cellp)
+        explicit TraceEntry(const AstScope* scopep, AstCell* cellp)
             : m_cellp{cellp} {
-            init(cellp->name());
+            init(cellp->name(), cellp, scopep->isTop());
         }
         int operatorCompare(const TraceEntry& b) const {
-            if (rootio() && !b.rootio()) return true;
-            if (!rootio() && b.rootio()) return false;
             if (const int cmp = path().compare(b.path())) return cmp < 0;
             if (const int cmp = fileline().operatorCompare(b.fileline())) return cmp < 0;
             return name() < b.name();
@@ -157,8 +186,6 @@ class TraceDeclVisitor final : public VNVisitor {
         void path(const std::string& path) { m_path = path; }
         const std::string& name() const { return m_name; }
         FileLine& fileline() const { return m_vscp ? *m_vscp->fileline() : *m_cellp->fileline(); }
-        bool rootio() const { return m_rootio; }
-        void rootio(bool flag) { m_rootio = flag; }
     };
     std::vector<TraceEntry> m_entries;  // Trace entries under current scope
     AstVarScope* m_traVscp = nullptr;  // Current AstVarScope we are constructing AstTraceDecls for
@@ -176,6 +203,12 @@ class TraceDeclVisitor final : public VNVisitor {
         const AstVar* const varp = nodep->varp();
         if (!varp->isTrace()) return "Verilator trace_off";
         if (!nodep->isTrace()) return "Verilator instance trace_off";
+        // Automatics (typically, excluding forks) have no persistance over
+        // time, and may optimize differently when multithreadeded or hierarchical.
+        // Class automatics refer to being in a class but might still be pointed
+        // to by a static, so are ok.
+        if (varp->lifetime().isAutomatic() && !varp->isClassMember() && !varp->isParam())
+            return "Automatic variable";
 
         const int width = recurseDTypeWidth(nodep->varp()->dtypep());
         if (v3Global.opt.traceMaxWidth() && width > v3Global.opt.traceMaxWidth())
@@ -262,43 +295,41 @@ class TraceDeclVisitor final : public VNVisitor {
         // Find the scope for the path. As we are working based on cell names,
         // it is possible there is no corresponding scope (e.g.: for an empty
         // module).
-        const auto it = m_pathToScopep.find(path);
+        const auto it = m_pathToScopep.find(AstNode::prettyName(path));
         if (it != m_pathToScopep.end()) {
             const AstScope* const scopep = it->second;
             FileLine* const flp = placeholderp->fileline();
 
-            // Pick up the last path element. The prefixes have already been pushed
-            // when building the initialization functions
-            const size_t pos = path.rfind('.');
-            const std::string name = path.substr(pos == string::npos ? 0 : pos + 1);
-
-            // Compute the type of the scope being fixed up
-            const AstCell* const cellp = scopep->aboveCellp();
-            const VTracePrefixType scopeType
-                = cellp ? (VN_IS((cellp->modp()), Iface) ? VTracePrefixType::SCOPE_INTERFACE
-                                                         : VTracePrefixType::SCOPE_MODULE)
-                        : VTracePrefixType::SCOPE_MODULE;
-
-            // Push the scope prefix
-            AstNodeStmt* const pushp = new AstTracePushPrefix{flp, name, scopeType};
-
             // Call the initialization functions for the scope
+            AstNode* stmtp = nullptr;
             for (AstCFunc* const subFuncp : m_scopeInitFuncps.at(scopep)) {
                 AstCCall* const callp = new AstCCall{flp, subFuncp};
                 callp->dtypeSetVoid();
                 callp->argTypes("tracep");
-                pushp->addNext(callp->makeStmt());
+                stmtp = AstNode::addNext(stmtp, callp->makeStmt());
             }
 
-            // Pop the scope prefix
-            pushp->addNext(new AstTracePopPrefix{flp});
-
             // Add after the placeholder
-            placeholderp->addNextHere(pushp);
+            if (stmtp) placeholderp->addNextHere(stmtp);
         }
         // Delete the placeholder
         placeholderp->unlinkFrBack();
         VL_DO_DANGLING(placeholderp->deleteTree(), placeholderp);
+    }
+
+    void fixupLibStub(const std::string& path, AstNodeStmt* placeholderp) {
+        FileLine* const flp = placeholderp->fileline();
+
+        // Call the initialization function for the library instance
+        AstCStmt* const initp = new AstCStmt{flp};
+        initp->add("tracep->initLib(vlSymsp->name() + ");
+        initp->add(new AstConst{flp, AstConst::String{}, "." + AstNode::prettyName(path)});
+        initp->add(");\n");
+
+        placeholderp->addNextHere(initp);
+        // Delete the placeholder
+        VL_DO_DANGLING(placeholderp->unlinkFrBack()->deleteTree(), placeholderp);
+        return;
     }
 
     void fixupPlaceholders() {
@@ -308,15 +339,19 @@ class TraceDeclVisitor final : public VNVisitor {
             const AstScope* const parentp = std::get<0>(item);
             const AstCell* const cellp = std::get<1>(item);
             AstNodeStmt* const placeholderp = std::get<2>(item);
-            const std::string path = AstNode::prettyName(parentp->name() + "." + cellp->name());
-            fixupPlaceholder(path, placeholderp);
+            const std::string path = parentp->name() + "__DOT__" + cellp->name();
+            if (cellp->modp()->verilatorLib()) {
+                fixupLibStub(path, placeholderp);
+            } else {
+                fixupPlaceholder(path, placeholderp);
+            }
         }
 
         // Fix up interface reference initialization placeholders
         for (const auto& item : m_ifaceRefInitPlaceholders) {
             const AstVarScope* const vscp = std::get<0>(item);
             AstNodeStmt* const placeholderp = std::get<1>(item);
-            const std::string path = vscp->prettyName();
+            const std::string path = vscp->scopep()->name() + "__DOT__" + vscp->varp()->name();
             fixupPlaceholder(path, placeholderp);
         }
     }
@@ -369,6 +404,9 @@ class TraceDeclVisitor final : public VNVisitor {
         UASSERT_OBJ(!m_traValuep, nodep, "Should not nest");
         UASSERT_OBJ(m_traName.empty(), nodep, "Should not nest");
 
+        // If this is a stub for a --lib-create library, skip.
+        if (nodep->modp()->verilatorLib()) return;
+
         VL_RESTORER(m_currScopep);
         m_currScopep = nodep;
 
@@ -377,20 +415,12 @@ class TraceDeclVisitor final : public VNVisitor {
 
         // Gather cells under this scope
         for (AstNode* stmtp = nodep->modp()->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstCell* const cellp = VN_CAST(stmtp, Cell)) m_entries.emplace_back(cellp);
+            if (AstCell* const cellp = VN_CAST(stmtp, Cell)) m_entries.emplace_back(nodep, cellp);
         }
 
         if (!m_entries.empty()) {
-            if (nodep->name() == "TOP") {
-                UINFO(9, " Add $rootio " << nodep);
-                for (TraceEntry& entry : m_entries) {
-                    if (entry.path() == "" && entry.vscp()) entry.rootio(true);
-                }
-            }
-
-            // Sort trace entries, first by if a $root io, then by enclosing instance
-            // (necessary for single traversal of hierarchy during initialization), then
-            // by source location, then by name.
+            // Sort trace entries, by enclosing instance (necessary for single traversal of
+            // hierarchy during initialization), then by source location, then by name.
             std::stable_sort(
                 m_entries.begin(), m_entries.end(),
                 [](const TraceEntry& a, const TraceEntry& b) { return a.operatorCompare(b); });
@@ -403,7 +433,7 @@ class TraceDeclVisitor final : public VNVisitor {
                 UINFO(9, "path='" << entry.path() << "' name='" << entry.name() << "' "
                                   << (entry.cellp() ? static_cast<AstNode*>(entry.cellp())
                                                     : static_cast<AstNode*>(entry.vscp())));
-                pathAdjustor.adjust(entry.rootio() ? "$rootio" : entry.path());
+                pathAdjustor.adjust(entry.path(), entry.cellp(), entry.vscp());
 
                 m_traName = entry.name();
 
@@ -496,8 +526,16 @@ class TraceDeclVisitor final : public VNVisitor {
         if (nodep->varp()->isClassMember()) return;
         if (nodep->varp()->isFuncLocal()) return;
 
+        // When creating a --lib-create library ...
+        if (!v3Global.opt.libCreate().empty()) {
+            // Ignore the wrapper created primary IO ports
+            if (nodep->varp()->isPrimaryIO()) return;
+            // Ignore parameters in packages. These will be traced at the top level.
+            if (nodep->varp()->isParam() && VN_IS(nodep->scopep()->modp(), Package)) return;
+        }
+
         // Add to traced signal list
-        m_entries.emplace_back(nodep);
+        m_entries.emplace_back(m_currScopep, nodep);
     }
 
     // VISITORS - Data types when tracing

@@ -1,0 +1,29 @@
+#!/bin/bash
+# DESCRIPTION: Verilator: Format Verilog files in standard way.
+#
+# Usage: nodist/verilog_format <file-list.v>
+#
+# This is currently only intended to be manually called
+# to reformat on new Verilog files.
+# due to verible-verilog-format issues, it is acceptable to commit
+# indentation that is different from what this recommends/changes.
+#
+# This file ONLY is placed under the Creative Commons Public Domain.
+# SPDX-FileCopyrightText: 2026 Wilson Snyder
+# SPDX-License-Identifier: CC0-1.0
+
+verible-verilog-format \
+    --inplace \
+    --wrap_end_else_clauses  \
+    --assignment_statement_alignment=flush-left \
+    --case_items_alignment=flush-left \
+    --class_member_variable_alignment=flush-left \
+    --distribution_items_alignment=flush-left \
+    --enum_assignment_statement_alignment=flush-left \
+    --formal_parameters_alignment=flush-left \
+    --module_net_variable_alignment=flush-left \
+    --named_parameter_alignment=flush-left \
+    --named_port_alignment=flush-left \
+    --port_declarations_alignment=flush-left \
+    --struct_union_members_alignment=flush-left \
+    $*

@@ -1,4 +1,4 @@
-.. Copyright 2003-2026 by Wilson Snyder.
+.. SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 ***************
@@ -120,11 +120,6 @@ as well as all flavors of ``fork``.
 
 Compiling a Verilated design that uses these features requires a compiler
 with C++20 coroutine support, e.g. Clang 5, GCC 10, or newer.
-
-``#0`` delays cause Verilator to issue the :option:`ZERODLY` warning, as
-they work differently than described in the LRM. They do not schedule
-process resumption in the Inactive region, though the process will get
-resumed in the same time slot.
 
 Rising/falling/turn-off delays are currently unsupported and cause the
 :option:`RISEFALLDLY` warning.
@@ -527,6 +522,12 @@ $readmemb, $readmemh
    Read memory commands are supported. Verilator and the Verilog
    specification do not include support for readmem to multi-dimensional
    arrays.
+
+$stacktrace
+   The `$stacktrace` system call will show the C++ stack, not the Verilog
+   call stack, though the function names typically correlate. To get
+   symbolic names, the model must have debug symbols, e.g. compile with
+   `-CFLAGS -ggdb -LDFLAGS -ggdb -LDFLAGS -rdynamic`.
 
 $test$plusargs, $value$plusargs
    Supported, but the instantiating C++/SystemC wrapper must call

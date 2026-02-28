@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2019 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2019 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 virtual class VBase;
@@ -72,12 +72,12 @@ endclass
 
 module t;
    initial begin
-      VA va = new;
-      VB vb = new;
-      VA::VNested vna = new;
-      VB::VNested vnb = new;
-      VBase b;
-      VBase::VNested bn;
+      automatic VA va = new;
+      automatic VB vb = new;
+      automatic VA::VNested vna = new;
+      automatic VB::VNested vnb = new;
+      automatic VBase b;
+      automatic VBase::VNested bn;
 
       uvm_build_phase ph;
       ExtendsCls ec;

@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -540,6 +540,7 @@ public:
     AstNode* nextp() const VL_MT_STABLE { return m_nextp; }
     AstNode* backp() const VL_MT_STABLE { return m_backp; }
     AstNode* abovep() const;  // Get parent node above, only for list head and tail
+    AstNode* aboveLoopp() const;  // Get parent node above, may have performance issues as loops
     AstNode* op1p() const VL_MT_STABLE { return m_op1p; }
     AstNode* op2p() const VL_MT_STABLE { return m_op2p; }
     AstNode* op3p() const VL_MT_STABLE { return m_op3p; }
@@ -609,6 +610,7 @@ public:
     static string vcdName(const string& namein);  // Name for printing out to vcd files
     string prettyName() const { return prettyName(name()); }
     string prettyNameQ() const { return prettyNameQ(name()); }
+    string verilogName() const { return vpiName(origName()); }  // Decoded original Verilog name
     // "VARREF" for error messages (NOT dtype's pretty name)
     string prettyTypeName() const;
     virtual string prettyOperatorName() const { return "operator " + prettyTypeName(); }
@@ -637,6 +639,7 @@ public:
     int widthWords() const { return VL_WORDS_I(width()); }
     bool isQuad() const VL_MT_STABLE { return (width() > VL_IDATASIZE && width() <= VL_QUADSIZE); }
     bool isWide() const VL_MT_STABLE { return (width() > VL_QUADSIZE); }
+    inline bool isCHandle() const VL_MT_STABLE;
     inline bool isDouble() const VL_MT_STABLE;
     inline bool isSigned() const VL_MT_STABLE;
     inline bool isString() const VL_MT_STABLE;
@@ -653,8 +656,9 @@ public:
     void user1p(void* userp) { user1u(VNUser{userp}); }
     void user1(int val) { user1u(VNUser{val}); }
     int user1() const { return user1u().toInt(); }
-    int user1Inc(int val = 1) { int v = user1(); user1(v + val); return v; }
-    int user1SetOnce() { int v = user1(); if (!v) user1(1); return v; }  // Better for cache than user1Inc()
+    int user1Inc(int val = 1) { const int v = user1(); user1(v + val); return v; }
+    int user1Or(int val) { const int v = user1(); user1(v | val); return v; }
+    int user1SetOnce() { const int v = user1(); if (!v) user1(1); return v; }  // Better for cache than user1Inc()
     static void user1ClearTree() { VNUser1InUse::clear(); }  // Clear userp()'s across the entire tree
 
     VNUser user2u() const VL_MT_STABLE {
@@ -667,8 +671,9 @@ public:
     void user2p(void* userp) { user2u(VNUser{userp}); }
     void user2(int val) { user2u(VNUser{val}); }
     int user2() const { return user2u().toInt(); }
-    int user2Inc(int val = 1) { int v = user2(); user2(v + val); return v; }
-    int user2SetOnce() { int v = user2(); if (!v) user2(1); return v; }  // Better for cache than user2Inc()
+    int user2Inc(int val = 1) { const int v = user2(); user2(v + val); return v; }
+    int user2Or(int val) { const int v = user2(); user2(v | val); return v; }
+    int user2SetOnce() { const int v = user2(); if (!v) user2(1); return v; }  // Better for cache than user2Inc()
     static void user2ClearTree() { VNUser2InUse::clear(); }  // Clear userp()'s across the entire tree
 
     VNUser user3u() const VL_MT_STABLE {
@@ -681,8 +686,9 @@ public:
     void user3p(void* userp) { user3u(VNUser{userp}); }
     void user3(int val) { user3u(VNUser{val}); }
     int user3() const { return user3u().toInt(); }
-    int user3Inc(int val = 1) { int v = user3(); user3(v + val); return v; }
-    int user3SetOnce() { int v = user3(); if (!v) user3(1); return v; }  // Better for cache than user3Inc()
+    int user3Inc(int val = 1) { const int v = user3(); user3(v + val); return v; }
+    int user3Or(int val) { const int v = user3(); user3(v | val); return v; }
+    int user3SetOnce() { const int v = user3(); if (!v) user3(1); return v; }  // Better for cache than user3Inc()
     static void user3ClearTree() { VNUser3InUse::clear(); }  // Clear userp()'s across the entire tree
 
     VNUser user4u() const VL_MT_STABLE {
@@ -695,8 +701,9 @@ public:
     void user4p(void* userp) { user4u(VNUser{userp}); }
     void user4(int val) { user4u(VNUser{val}); }
     int user4() const { return user4u().toInt(); }
-    int user4Inc(int val = 1) { int v = user4(); user4(v + val); return v; }
-    int user4SetOnce() { int v = user4(); if (!v) user4(1); return v; }  // Better for cache than user4Inc()
+    int user4Or(int val) { const int v = user4(); user4(v | val); return v; }
+    int user4Inc(int val = 1) { const int v = user4(); user4(v + val); return v; }
+    int user4SetOnce() { const int v = user4(); if (!v) user4(1); return v; }  // Better for cache than user4Inc()
     static void user4ClearTree() { VNUser4InUse::clear(); }  // Clear userp()'s across the entire tree
     // clang-format on
 
@@ -775,6 +782,11 @@ public:
     AstNodeDType* findVoidDType() const;
     AstNodeDType* findBitDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findLogicDType(int width, int widthMin, VSigning numeric) const;
+    AstNodeDType* findBitOrLogicDType(int width, int widthMin, VSigning numeric,
+                                      bool isFourstate) const {
+        return isFourstate ? findLogicDType(width, widthMin, numeric)
+                           : findBitDType(width, widthMin, numeric);
+    }
     AstNodeDType* findLogicRangeDType(const VNumRange& range, int widthMin,
                                       VSigning numeric) const VL_MT_STABLE;
     AstNodeDType* findBitRangeDType(const VNumRange& range, int widthMin,
@@ -813,6 +825,16 @@ public:
         static_assert(std::is_base_of<T_NodeResult, T_NodeNext>::value,
                       "'T_NodeNext' must be a subtype of 'T_NodeResult'");
         if (!newp) return nodep;
+        return static_cast<T_NodeResult*>(addNext<AstNode, AstNode>(nodep, newp));
+    }
+    template <typename T_NodeResult, typename T_NodeNext>
+    static T_NodeResult* addNextNull(T_NodeResult* nodep, T_NodeNext* newp) {
+        static_assert(std::is_base_of<AstNode, T_NodeResult>::value,
+                      "'T_NodeResult' must be a subtype of AstNode");
+        static_assert(std::is_base_of<T_NodeResult, T_NodeNext>::value,
+                      "'T_NodeNext' must be a subtype of 'T_NodeResult'");
+        if (!newp) return nodep;
+        if (!nodep) return newp;
         return static_cast<T_NodeResult*>(addNext<AstNode, AstNode>(nodep, newp));
     }
     inline AstNode* addNext(AstNode* newp);

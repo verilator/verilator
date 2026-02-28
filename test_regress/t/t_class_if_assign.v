@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2023 by Antmicro Ltd.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2023 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
 class Cls;
@@ -25,9 +25,9 @@ endclass
 
 module t;
    initial begin
-      Cls cls = new;
-      ExtendCls ext_cls = new;
-      AnotherExtendCls an_ext_cls = new;
+      automatic Cls cls = new;
+      automatic ExtendCls ext_cls = new;
+      automatic AnotherExtendCls an_ext_cls = new;
 
       if (cls.x == 1) cls = ext_cls;
       else cls = an_ext_cls;

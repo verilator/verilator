@@ -1,0 +1,17 @@
+%Warning-ZERODLY: t/t_flag_sched_zero_delay_none_bad.v:12:5: Value of # delay control statically unknown. Assuming it can be #0.
+                                                           : ... If all # delays are non-zero at runtime,
+                                                           : ... use '--no-sched-zero-delay' for improved performance.
+                                                           : ... If a real #0 is expected at runtime,
+                                                           : ... use '--sched-zero-delay' to suppress this warning.
+   12 |     #a;
+      |     ^
+                  ... For warning description see https://verilator.org/warn/ZERODLY?v=latest
+                  ... Use "/* verilator lint_off ZERODLY */" and lint_on around source to disable this message.
+%Warning-ZERODLY: t/t_flag_sched_zero_delay_none_bad.v:14:5: Value of # delay control statically unknown. Assuming it can be #0.
+                                                           : ... If all # delays are non-zero at runtime,
+                                                           : ... use '--no-sched-zero-delay' for improved performance.
+                                                           : ... If a real #0 is expected at runtime,
+                                                           : ... use '--sched-zero-delay' to suppress this warning.
+   14 |     #a;
+      |     ^
+%Error: Exiting due to

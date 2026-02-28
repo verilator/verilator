@@ -9,8 +9,8 @@
 // AstVarScope was missing an appropriate same method and is tickled by the LLVM
 // libcxx library.
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2023 by John Wehle.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2023 John Wehle
 // SPDX-License-Identifier: CC0-1.0
 
 module t;

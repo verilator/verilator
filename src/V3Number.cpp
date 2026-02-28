@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -116,12 +116,15 @@ V3Number::V3Number(AstNode* nodep, VerilogStringLiteral, const string& str) {
 }
 
 V3Number::V3Number(AstNode* nodep, const AstNodeDType* nodedtypep) {
-    if (nodedtypep->isString()) {
+    if (nodedtypep->isCHandle()) {
         init(nodep);
-        setString("");
+        setNull();
     } else if (nodedtypep->isDouble()) {
         init(nodep, 64);
         setDouble(0.0);
+    } else if (nodedtypep->isString()) {
+        init(nodep);
+        setString("");
     } else {
         init(nodep, nodedtypep->width(), nodedtypep->widthSized());
     }
@@ -1529,8 +1532,9 @@ V3Number& V3Number::opRepl(const V3Number& lhs,
     // i op repl, L(i)*value(rhs) bit return
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
-    if (rhsval > 8192) {
-        v3warn(WIDTHCONCAT, "More than a 8k bit replication is probably wrong: " << rhsval);
+    if (v3Global.opt.replicationLimit() && rhsval > (uint32_t)v3Global.opt.replicationLimit()) {
+        v3warn(WIDTHCONCAT, "Replication of more that --replication-limit "
+                                << v3Global.opt.replicationLimit() << " is suspect: " << rhsval);
     }
     setZero();
     int obit = 0;

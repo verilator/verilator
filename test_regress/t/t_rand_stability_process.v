@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2025 by Aleksander Kiryk.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2025 Aleksander Kiryk
 // SPDX-License-Identifier: CC0-1.0
 
 // This test checks if calls to get_randstate don't affect

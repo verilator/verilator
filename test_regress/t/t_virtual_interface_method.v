@@ -1,7 +1,7 @@
-// Copyright 2003 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 // Create stimulus and Drive the interface
 class DriverStim;
@@ -122,8 +122,8 @@ module t;
 
 
   initial begin: main
-    DriverStim   driverStim = new();
-    MonitorCheck monitorCheck = new();
+    static DriverStim driverStim = new();
+    static MonitorCheck monitorCheck = new();
 
     driverStim.bind_if(example_if_inst);
     monitorCheck.bind_if(example_if_inst);

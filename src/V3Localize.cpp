@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -69,6 +69,11 @@ class LocalizeVisitor final : public VNVisitor {
     bool isOptimizable(AstVarScope* nodep) {
         // Don't want to malloc/free the backing store all the time
         if (VN_IS(nodep->dtypep(), NBACommitQueueDType)) return false;
+        // Do not localize strings. They result in unnecessary initialization
+        // and bloated code size due to destructor calls when unused.
+        // TODO: Local variables should be pushed into the narrowest scope rather
+        // than emitted at the top of the function. See discussion in #6969.
+        if (nodep->dtypep()->skipRefp()->isString()) return false;
         // Variables used in super constructor call can't be localized, because
         // in C++ there is no way to declare them before base class constructor call
         if (nodep->user4()) return false;

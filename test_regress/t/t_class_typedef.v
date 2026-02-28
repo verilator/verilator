@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2020 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2020 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 class uvm_resource_types;
@@ -23,7 +23,7 @@ endclass
 
 module t;
    initial begin
-      uvm_resource_pool pool = new;
+      automatic uvm_resource_pool pool = new;
       typedef logic [7:0] t_t0;
       C#(t_t0,3)::t_vector v0;
       C#(t_t0,3)::t_array a0;

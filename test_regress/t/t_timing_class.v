@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2022 by Antmicro Ltd.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2022 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
 `ifdef TEST_VERBOSE
@@ -193,12 +193,12 @@ module t;
     endclass
 
     initial begin
-        DelayClass dc;
-        Delay10 d10 = new;
-        Delay20 d20 = new;
-        Delay40 d40 = new;
-        NoDelay dNo = new;
-        AssignDelayClass dAsgn = new;
+        static DelayClass dc;
+        static Delay10 d10 = new;
+        static Delay20 d20 = new;
+        static Delay40 d40 = new;
+        static NoDelay dNo = new;
+        static AssignDelayClass dAsgn = new;
         `WRITE_VERBOSE(("I'm at time %0t\n", $time));
         dc = d10;
         dc.do_delay;
@@ -266,7 +266,7 @@ module t;
     endclass
 
     initial begin
-        ForkClass fc = new;
+        automatic ForkClass fc = new;
         fc.do_fork;
         if (fc.done != 4 || $time != 70) $stop;
     end

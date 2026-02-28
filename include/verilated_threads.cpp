@@ -3,10 +3,10 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2012-2026 by Wilson Snyder. This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2012-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //=============================================================================
@@ -137,7 +137,7 @@ VlThreadPool::VlThreadPool(VerilatedContext* contextp, unsigned nThreads) {
         m_workers.push_back(new VlWorkerThread{contextp});
         m_unassignedWorkers.push(i);
     }
-    m_numaStatus = numaAssign();
+    m_numaStatus = numaAssign(contextp);
 }
 
 VlThreadPool::~VlThreadPool() {
@@ -145,8 +145,15 @@ VlThreadPool::~VlThreadPool() {
     for (auto& i : m_workers) delete i;
 }
 
-std::string VlThreadPool::numaAssign() {
+std::string VlThreadPool::numaAssign(VerilatedContext* contextp) {
 #if defined(__linux) || defined(CPU_ZERO) || defined(VL_CPPCHECK)  // Linux-like pthreads
+    if (contextp && !contextp->useNumaAssign()) { return "NUMA assignment not requested"; }
+    std::string numa_strategy = VlOs::getenvStr("VERILATOR_NUMA_STRATEGY", "default");
+    if (numa_strategy == "none") {
+        return "no NUMA assignment requested";
+    } else if (numa_strategy != "default" && numa_strategy != "") {
+        return "%Warning: unknown VERILATOR_NUMA_STRATEGY value '" + numa_strategy + "'";
+    }
     // Get number of processor available to the current process
     const unsigned num_proc = VlOs::getProcessAvailableParallelism();
     if (!num_proc) return "Can't determine number of available threads";

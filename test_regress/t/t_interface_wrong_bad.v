@@ -1,8 +1,8 @@
 // DESCRIPTION: Verilator: Using the wrong kind of interface in a portmap
 // should cause an error
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2018 by Todd Strader.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2018 Todd Strader
 // SPDX-License-Identifier: CC0-1.0
 
 interface foo_intf;

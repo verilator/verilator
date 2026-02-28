@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -81,7 +81,7 @@ class DeadVisitor final : public VNVisitor {
     bool m_inAssign = false;  // Currently in an assign
     AstNodeDType* m_curDTypep = nullptr;  // Current NodeDType
     AstNodeModule* m_modp = nullptr;  // Current module
-    AstSelLoopVars* m_selloopvarsp = nullptr;  // Current loop vars
+    AstForeachHeader* m_foreachHeaderp = nullptr;  // Current foreach header
 
     // STATE - Statistic tracking
     VDouble0 m_statFTasksDeadified;
@@ -268,10 +268,10 @@ class DeadVisitor final : public VNVisitor {
         }
         checkAll(nodep);
     }
-    void visit(AstSelLoopVars* nodep) override {
-        // Var under a SelLoopVars means we haven't called V3Width to remove them yet
-        VL_RESTORER(m_selloopvarsp);
-        m_selloopvarsp = nodep;
+    void visit(AstForeachHeader* nodep) override {
+        // Var under a ForeachHeader means we haven't called V3Width to remove them yet
+        VL_RESTORER(m_foreachHeaderp);
+        m_foreachHeaderp = nodep;
         iterateChildren(nodep);
         checkAll(nodep);
     }
@@ -292,9 +292,12 @@ class DeadVisitor final : public VNVisitor {
     void visit(AstVar* nodep) override {
         iterateChildren(nodep);
         checkAll(nodep);
-        if (nodep->isSigPublic() && m_modp && VN_IS(m_modp, Package)) m_modp->user1Inc();
-        if (m_selloopvarsp) nodep->user1Inc();
-        if (mightElimVar(nodep)) m_varsp.push_back(nodep);
+        if (m_foreachHeaderp) nodep->user1Inc();
+        if (mightElimVar(nodep)) {
+            m_varsp.push_back(nodep);
+        } else {
+            if (m_modp && VN_IS(m_modp, Package)) m_modp->user1Inc();
+        }
     }
     void visit(AstNodeAssign* nodep) override {
         // See if simple assignments to variables may be eliminated because

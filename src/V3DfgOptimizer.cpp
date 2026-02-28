@@ -6,10 +6,10 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2026 by Wilson Snyder. This program is free software; you
-// can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License
-// Version 2.0.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
@@ -204,6 +204,7 @@ class DataflowExtractVisitor final : public VNVisitor {
     }
 
     void visit(AstNodeExpr* nodep) override { iterateChildrenConst(nodep); }
+    void visit(AstArg* nodep) override { iterateChildrenConst(nodep); }
 
     void visit(AstNodeVarRef* nodep) override {
         if (nodep->access().isWriteOrRW()) {
@@ -218,8 +219,7 @@ class DataflowExtractVisitor final : public VNVisitor {
     }
 
     void visit(AstNode* nodep) override {
-        // Conservatively assume unhandled nodes are impure. This covers all AstNodeFTaskRef
-        // as AstNodeFTaskRef are sadly not AstNodeExpr.
+        // Conservatively assume unhandled nodes are impure.
         m_impure = true;
         // Still need to gather all references/force/release, etc.
         iterateChildrenConst(nodep);
@@ -313,6 +313,10 @@ class DataflowOptimize final {
     void optimize(DfgGraph& dfg) {
         // Dump the initial graph for debugging
         if (dumpDfgLevel() >= 8) dfg.dumpDotFilePrefixed(m_ctx.prefix() + "dfg-in");
+
+        // Remove unobservable variabels and logic that drives only such variables
+        V3DfgPasses::removeUnobservable(dfg, m_ctx);
+        if (dumpDfgLevel() >= 8) dfg.dumpDotFilePrefixed(m_ctx.prefix() + "pruned");
 
         // Synthesize DfgLogic vertices
         V3DfgPasses::synthesize(dfg, m_ctx);

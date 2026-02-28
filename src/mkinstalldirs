@@ -3,6 +3,8 @@
 # Author: Noah Friedman <friedman@prep.ai.mit.edu>
 # Created: 1993-05-16
 # Public domain
+# SPDX-FileCopyrightText: 1993 Noah Friedman <friedman@prep.ai.mit.edu>
+# SPDX-License-Identifier: CC0-1.0
 
 errstatus=0
 

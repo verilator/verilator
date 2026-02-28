@@ -1,5 +1,5 @@
 $date
-	Tue Jun 10 19:02:40 2025
+	Tue Feb 17 01:32:41 2026
 
 $end
 $version
@@ -95,19 +95,11 @@ $var logic 8 J unpacked_array[-2] [7:0] $end
 $var logic 8 K unpacked_array[-1] [7:0] $end
 $var logic 8 L unpacked_array[0] [7:0] $end
 $var bit 1 M LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND $end
-$scope module unnamedblk1 $end
-$var integer 32 N b [31:0] $end
-$scope module unnamedblk2 $end
-$var integer 32 O a [31:0] $end
-$upscope $end
-$upscope $end
 $upscope $end
 $upscope $end
 $enddefinitions $end
 #0
 $dumpvars
-b00000000000000000000000000000000 O
-b00000000000000000000000000000000 N
 0M
 b00000000 L
 b00000000 K
@@ -186,8 +178,6 @@ b00000000000000000000000000000001 D
 b00000000000000000000000000000001 E
 b00000000000000000000000000000010 F
 b111 G
-b00000000000000000000000000000101 N
-b00000000000000000000000000000101 O
 #15
 0!
 #20

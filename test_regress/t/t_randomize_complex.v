@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2025 by Antmicro.
+// This file ONLY is placed under the Creative Commons Public Domain
+// SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
 class SubClass;
@@ -34,8 +34,8 @@ endclass
 
 module t;
   initial begin
-    WeNeedToGoDeeper cl_inst = new;
-    MyClass cl_inst2 = new;
+    automatic WeNeedToGoDeeper cl_inst = new;
+    automatic MyClass cl_inst2 = new;
     repeat (10) begin
       if (cl_inst.sc_inst.sc_inst1.sc_inst2.randomize() with {field inside {1, 2, 3};} == 0) begin
         $stop;

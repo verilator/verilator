@@ -1,8 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 // Ref. to  IEEE Std 1800-2017  11.4.14 & A.8.1
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2020 by Victor Besyakov.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2020 Victor Besyakov
 // SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/

@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2008 by Lane Brooks.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2008 Lane Brooks
 // SPDX-License-Identifier: CC0-1.0
 
 #include VM_PREFIX_INCLUDE

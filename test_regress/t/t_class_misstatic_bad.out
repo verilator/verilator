@@ -1,14 +1,22 @@
-%Error: t/t_class_misstatic_bad.v:31:5: Cannot call non-static member function 'nonstatic' without object (IEEE 1800-2023 8.10)
-                                      : ... note: In instance 't'
-   31 |     nonstatic();   
-      |     ^~~~~~~~~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_class_misstatic_bad.v:38:10: Cannot call non-static member function 'nonstatic' without object (IEEE 1800-2023 8.10)
+%Error: t/t_class_misstatic_bad.v:23:10: Cannot call non-static member function 'nonstatic' without object (IEEE 1800-2023 8.10)
                                        : ... note: In instance 't'
-   38 |     Cls::nonstatic();   
+   23 |     Cls::nonstatic();   
       |          ^~~~~~~~~
-%Error: t/t_class_misstatic_bad.v:44:10: Cannot call non-static member function 'nonstatic' without object (IEEE 1800-2023 8.10)
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_class_misstatic_bad.v:24:10: Cannot call non-static member function 'nonstatic_retcls' without object (IEEE 1800-2023 8.10)
                                        : ... note: In instance 't'
-   44 |     Cls::nonstatic();   
+   24 |     Cls::nonstatic_retcls();   
+      |          ^~~~~~~~~~~~~~~~
+%Error: t/t_class_misstatic_bad.v:35:5: Cannot call non-static member function 'nonstatic' without object (IEEE 1800-2023 8.10)
+                                      : ... note: In instance 't'
+   35 |     nonstatic();   
+      |     ^~~~~~~~~
+%Error: t/t_class_misstatic_bad.v:45:10: Cannot call non-static member function 'nonstatic' without object (IEEE 1800-2023 8.10)
+                                       : ... note: In instance 't'
+   45 |     Cls::nonstatic();   
+      |          ^~~~~~~~~
+%Error: t/t_class_misstatic_bad.v:51:10: Cannot call non-static member function 'nonstatic' without object (IEEE 1800-2023 8.10)
+                                       : ... note: In instance 't'
+   51 |     Cls::nonstatic();   
       |          ^~~~~~~~~
 %Error: Exiting due to

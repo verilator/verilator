@@ -17,11 +17,17 @@
                                                : ... Suggested alternative: 'exists'
    21 |         .nexist(i2)   
       |          ^~~~~~
+                                               : ... Location of instance's module declaration
+   26 | module sub
+      |        ^~~
                     ... For error description see https://verilator.org/warn/PINNOTFOUND?v=latest
 %Error-PINNOTFOUND: t/t_lint_pindup_bad.v:15:9: Parameter not found: 'NEXIST'
                                               : ... Suggested alternative: 'EXIST'
    15 |      #(.NEXIST(1),   
       |         ^~~~~~
+                                              : ... Location of instance's module declaration
+   26 | module sub
+      |        ^~~
 %Error: t/t_lint_pindup_bad.v:17:9: Duplicate parameter connection: 'P'
    17 |        .P(3))   
       |         ^

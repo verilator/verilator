@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2020 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2020 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 module t();
@@ -13,6 +13,22 @@ module t();
 `endif
       q.push_back(42);
       if (q.size() != 1) $stop;
+   endfunction
+
+   // verilator lint_off NORETURN
+   function int get_noreturn();
+`ifdef TEST_NOINLINE
+      // verilator no_inline_task
+`endif
+   endfunction
+   // verilator lint_on NORETURN
+
+   function int get_uninit();
+`ifdef TEST_NOINLINE
+      // verilator no_inline_task
+`endif
+     int uninit;
+     return get_uninit;
    endfunction
 
    function void queue_check_nref(q_t q);
@@ -49,6 +65,9 @@ module t();
 
       iq = queue_ret();
       if (iq[0] != 101) $stop;
+
+      if (get_noreturn() != 0) $stop;
+      if (get_uninit() != 0) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

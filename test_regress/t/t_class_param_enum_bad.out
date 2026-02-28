@@ -1,7 +1,7 @@
-%Error: t/t_class_param_enum_bad.v:20:31: Assign RHS expects a CLASSREFDTYPE 'Converter__Tz2', got CLASSREFDTYPE 'Converter__Tz1'
+%Error: t/t_class_param_enum_bad.v:20:41: Assign RHS expects a CLASSREFDTYPE 'Converter__Tz2', got CLASSREFDTYPE 'Converter__Tz1'
                                         : ... note: In instance 't'
-   20 |       Converter#(bit) conv2 = conv1;
-      |                               ^~~~~
+   20 |       automatic Converter#(bit) conv2 = conv1;
+      |                                         ^~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error-ENUMVALUE: t/t_class_param_enum_bad.v:21:19: Implicit conversion to enum 'enum{}$unit::enum_t' from 'logic[31:0]' (IEEE 1800-2023 6.19.3)
                                                   : ... note: In instance 't'
