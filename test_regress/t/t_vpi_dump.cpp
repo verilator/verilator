@@ -159,7 +159,7 @@ void vpi_compat_bootstrap(void) {
 
     // We're able to call vpi_main() here on Verilator/Xcelium,
     // but Icarus complains (rightfully so)
-    s_cb_data cb_data;
+    s_cb_data cb_data{};
     s_vpi_time vpi_time;
 
     vpi_time.high = 0;

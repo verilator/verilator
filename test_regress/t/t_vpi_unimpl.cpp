@@ -81,7 +81,7 @@ int _mon_check_unimpl(p_cb_data cb_data) {
 
         handle = vpi_register_cb(NULL);
         CHECK_RESULT(handle, 0);
-        s_cb_data cb_data_s;
+        s_cb_data cb_data_s{};
         cb_data_s.reason = 0;  // Bad
         handle = vpi_register_cb(&cb_data_s);
         CHECK_RESULT(handle, 0);

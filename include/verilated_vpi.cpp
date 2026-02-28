@@ -716,7 +716,7 @@ public:
     // cppcheck-suppress uninitVar  // m_value
     VerilatedVpiCbHolder(uint64_t id, const s_cb_data* cbDatap, const VerilatedVpioVar* varop)
         : m_id{id}
-        , m_cbData{*cbDatap}
+        , m_cbData{*cbDatap}  // vpi_register_cb checks cbDatap is non-null
         , m_varo{varop} {
         m_value.format = cbDatap->value ? cbDatap->value->format : vpiSuppressVal;
         m_cbData.value = &m_value;

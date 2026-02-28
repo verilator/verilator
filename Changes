@@ -13,6 +13,7 @@ Verilator 5.047 devel
 
 **Other:**
 
+* Add VPI callback support to --main (#7145).
 * Fix wide conditional short circuiting (#7155).
 
 

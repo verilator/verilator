@@ -4,19 +4,16 @@
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
 # or the Perl Artistic License Version 2.0.
-# SPDX-FileCopyrightText: 2024 Wilson Snyder
+# SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('vlt')
 
-test.compile(make_top_shell=False,
-             make_pli=True,
-             verilator_flags2=["--binary --vpi", test.pli_filename],
-             iv_flags2=["-g2005-sv -D USE_VPI_NOT_DPI -DIVERILOG"],
-             v_flags2=["+define+USE_VPI_NOT_DPI"])
+# Checks that --vpi without a C file doesn't break builds
+test.compile(verilator_flags2=["--binary --vpi"])
 
-test.execute(check_finished=True, use_libvpi=True)
+test.execute()
 
 test.passes()

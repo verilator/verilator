@@ -12,20 +12,9 @@
 // Setup multiple one-time callbacks with different time delays.
 // Ensure they are not called before the delay has elapsed.
 
-#ifdef IS_VPI
-
 #include "vpi_user.h"
 
 #include <cstdlib>
-
-#else
-
-#include "verilated.h"
-#include "verilated_vpi.h"
-
-#include VM_PREFIX_INCLUDE
-
-#endif
 
 // These require the above. Comment prevents clang-format moving them
 #include "TestSimulator.h"
@@ -45,7 +34,7 @@ typedef struct {
 
 static cb_stats CallbackStats[cbAtEndOfSimTime + 1];
 
-bool got_error = false;
+int errors = 0;
 
 static vpiHandle ValueHandle, ToggleHandle, ClockHandle;
 
@@ -80,28 +69,40 @@ bool cb_time_is_delay(int cb_name) {
     return false;
 }
 
+vpiHandle test_vpi_register_cb(p_cb_data cb_datap) {
+    if (verbose)
+        vpi_printf(const_cast<char*>("- test_vpi_register_cb(%s @%d)\n"),
+                   strFromVpiCallbackReason(cb_datap->reason),
+                   (cb_datap->time ? cb_datap->time->low : 0));
+    return vpi_register_cb(cb_datap);
+}
+
 // forward declaration
 static PLI_INT32 TheCallback(s_cb_data* data);
 
 static PLI_INT32 AtEndOfSimTimeCallback(s_cb_data* data) {
     s_vpi_time t;
 
+    CHECK_RESULT(data->reason, cbAtEndOfSimTime);
     cb_stats* stats = &CallbackStats[data->reason];
 
     t.type = vpiSimTime;
     vpi_get_time(0, &t);
 
-    if (verbose) vpi_printf(const_cast<char*>("- [@%d] AtEndOfSimTime Callback\n"), t.low);
+    if (verbose)
+        vpi_printf(const_cast<char*>("- [@%d] AtEndOfSimTime Callback (count=%d)\n"), t.low,
+                   stats->count);
 
+    CHECK_RESULT(stats->count < stats->number_of_exp_times, 1);
     CHECK_RESULT(t.low, stats->exp_times[stats->count]);
     stats->count += 1;
 
-    s_cb_data cb_data;
+    s_cb_data cb_data{};
     s_vpi_time time = {vpiSimTime, 0, 417, 0};  // non-zero time to check that it's ignored
     cb_data.time = &time;
     cb_data.reason = cbNextSimTime;
     cb_data.cb_rtn = TheCallback;
-    vpiHandle Handle = vpi_register_cb(&cb_data);
+    vpiHandle Handle = test_vpi_register_cb(&cb_data);
     CHECK_RESULT_NZ(Handle);
 
     return 0;
@@ -116,16 +117,17 @@ static PLI_INT32 TheCallback(s_cb_data* data) {
     vpi_get_time(0, &t);
 
     if (verbose) {
-        vpi_printf(const_cast<char*>("- [@%d] %s Callback\n"), t.low,
-                   cb_reason_to_string(data->reason));
+        vpi_printf(const_cast<char*>("- [@%d] %s Callback (count=%d)\n"), t.low,
+                   cb_reason_to_string(data->reason), stats->count);
     }
 
+    CHECK_RESULT(stats->count < stats->number_of_exp_times, 1);
     CHECK_RESULT(t.low, stats->exp_times[stats->count]);
     stats->count += 1;
 
     if (stats->count >= stats->number_of_exp_times) return 0;
 
-    s_cb_data cb_data;
+    s_cb_data cb_data{};
     PLI_UINT32 next_time;
 
     if (data->reason == cbNextSimTime) {
@@ -150,14 +152,14 @@ static PLI_INT32 TheCallback(s_cb_data* data) {
 
     s_vpi_time time = {vpiSimTime, 0, next_time, 0};
     cb_data.time = &time;
-    vpiHandle Handle = vpi_register_cb(&cb_data);
+    vpiHandle Handle = test_vpi_register_cb(&cb_data);
     CHECK_RESULT_NZ(Handle);
 
     return 0;
 }
 
 static PLI_INT32 StartOfSimulationCallback(s_cb_data* data) {
-    s_cb_data cb_data;
+    s_cb_data cb_data{};
     s_vpi_time timerec = {vpiSimTime, 0, 0, 0};
 
     s_vpi_time t;
@@ -179,32 +181,33 @@ static PLI_INT32 StartOfSimulationCallback(s_cb_data* data) {
     CallbackStats[cbAtStartOfSimTime].number_of_exp_times = 3;
     timerec.low = 5;
     cb_data.reason = cbAtStartOfSimTime;
-    vpiHandle ASOSHandle = vpi_register_cb(&cb_data);
+    vpiHandle ASOSHandle = test_vpi_register_cb(&cb_data);
     CHECK_RESULT_NZ(ASOSHandle);
 
     CallbackStats[cbReadWriteSynch].exp_times = new PLI_UINT32[3]{6, 16, 21};
     CallbackStats[cbReadWriteSynch].number_of_exp_times = 3;
     timerec.low = 6;
     cb_data.reason = cbReadWriteSynch;
-    vpiHandle RWHandle = vpi_register_cb(&cb_data);
+    vpiHandle RWHandle = test_vpi_register_cb(&cb_data);
     CHECK_RESULT_NZ(RWHandle);
 
     CallbackStats[cbReadOnlySynch].exp_times = new PLI_UINT32[3]{7, 17, 22};
     CallbackStats[cbReadOnlySynch].number_of_exp_times = 3;
     timerec.low = 7;
     cb_data.reason = cbReadOnlySynch;
-    vpiHandle ROHandle = vpi_register_cb(&cb_data);
+    vpiHandle ROHandle = test_vpi_register_cb(&cb_data);
     CHECK_RESULT_NZ(ROHandle);
 
-    CallbackStats[cbNextSimTime].exp_times = new PLI_UINT32[9]{5, 6, 7, 15, 16, 17, 20, 21, 22};
-    CallbackStats[cbNextSimTime].number_of_exp_times = 9;
+    CallbackStats[cbNextSimTime].exp_times
+        = new PLI_UINT32[10]{5, 6, 7, 10, 15, 16, 17, 20, 21, 22};
+    CallbackStats[cbNextSimTime].number_of_exp_times = 10;
     timerec.low = 8;
     cb_data.reason = cbNextSimTime;
-    vpiHandle NSTHandle = vpi_register_cb(&cb_data);
+    vpiHandle NSTHandle = test_vpi_register_cb(&cb_data);
     CHECK_RESULT_NZ(NSTHandle);
 
-    CallbackStats[cbAtEndOfSimTime].exp_times = new PLI_UINT32[8]{5, 6, 7, 15, 16, 17, 20, 21};
-    CallbackStats[cbAtEndOfSimTime].number_of_exp_times = 8;
+    CallbackStats[cbAtEndOfSimTime].exp_times = new PLI_UINT32[9]{5, 6, 7, 10, 15, 16, 17, 20, 21};
+    CallbackStats[cbAtEndOfSimTime].number_of_exp_times = 9;
 
     return (0);
 }
@@ -223,23 +226,26 @@ static int EndOfSimulationCallback(p_cb_data cb_data) {
 
     CHECK_RESULT(CallbackStats[cbStartOfSimulation].count, 1);
     CHECK_RESULT(CallbackStats[cbAtStartOfSimTime].count, 3);
-    CHECK_RESULT(CallbackStats[cbNextSimTime].count, 9);
+    CHECK_RESULT(CallbackStats[cbNextSimTime].count, 10);
     CHECK_RESULT(CallbackStats[cbReadWriteSynch].count, 3);
     CHECK_RESULT(CallbackStats[cbReadOnlySynch].count, 3);
-    CHECK_RESULT(CallbackStats[cbAtEndOfSimTime].count, 8);
+    CHECK_RESULT(CallbackStats[cbAtEndOfSimTime].count, 9);
     CHECK_RESULT(CallbackStats[cbEndOfSimulation].count, 1);
 
-    if (!got_error) printf("*-* All Finished *-*\n");
+    if (!errors) printf("*-* All Finished *-*\n");
+
     return 0;
 }
 
 // cver entry
 static void VPIRegister(void) {
+    if (verbose) vpi_printf(const_cast<char*>("- VPIRegister callback\n"));
+
     // Clear stats
     for (int cb = 1; cb <= cbAtEndOfSimTime; cb++) CallbackStats[cb].count = 0;
     CallbackStats[cbStartOfSimulation].exp_times = new PLI_UINT32(0);
-    CallbackStats[cbEndOfSimulation].exp_times = new PLI_UINT32(22);
-    s_cb_data cb_data;
+    CallbackStats[cbEndOfSimulation].exp_times = new PLI_UINT32(100);
+    s_cb_data cb_data{};
     s_vpi_time timerec = {vpiSuppressTime, 0, 0, 0};
 
     cb_data.time = &timerec;
@@ -248,80 +254,12 @@ static void VPIRegister(void) {
     cb_data.obj = 0;
     cb_data.reason = cbStartOfSimulation;
     cb_data.cb_rtn = StartOfSimulationCallback;
-
-    vpi_register_cb(&cb_data);
+    test_vpi_register_cb(&cb_data);
 
     cb_data.reason = cbEndOfSimulation;
     cb_data.cb_rtn = EndOfSimulationCallback;
-    vpi_register_cb(&cb_data);
+    test_vpi_register_cb(&cb_data);
 }
 
-#ifdef IS_VPI
-
-// icarus entry
+// simulator entry
 void (*vlog_startup_routines[])(void) = {VPIRegister, 0};
-
-#else
-
-int main(int argc, char** argv, char** env) {
-    double sim_time = 100;
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
-
-    bool cbs_called;
-    contextp->commandArgs(argc, argv);
-    // contextp->debug(9);
-
-    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(),
-                                                        // Note null name - we're flattening it out
-                                                        ""}};
-
-    topp->clk = 1;
-
-    // StartOfSimulationCallback(nullptr);
-    VPIRegister();
-
-    VerilatedVpi::callCbs(cbStartOfSimulation);
-
-    topp->clk = 0;
-    topp->eval();
-
-    while (contextp->time() < sim_time && !contextp->gotFinish()) {
-        VerilatedVpi::callTimedCbs();
-        VerilatedVpi::callCbs(cbNextSimTime);
-        VerilatedVpi::callCbs(cbAtStartOfSimTime);
-
-        topp->eval();
-
-        VerilatedVpi::callValueCbs();
-        VerilatedVpi::callCbs(cbReadWriteSynch);
-        VerilatedVpi::callCbs(cbReadOnlySynch);
-        VerilatedVpi::callCbs(cbAtEndOfSimTime);
-
-        const uint64_t next_time = VerilatedVpi::cbNextDeadline();
-        if (next_time != -1) contextp->time(next_time);
-        if (verbose)
-            vpi_printf(const_cast<char*>("- [@%" PRId64 "] time change\n"), contextp->time());
-        if (next_time == -1 && !contextp->gotFinish()) {
-            if (got_error) {
-                vl_stop(__FILE__, __LINE__, "TOP-cpp");
-            } else {
-                VerilatedVpi::callCbs(cbEndOfSimulation);
-                contextp->gotFinish(true);
-            }
-        }
-
-        // Count updates on rising edge, so cycle through falling edge as well
-        topp->clk = !topp->clk;
-        topp->eval();
-        topp->clk = !topp->clk;
-    }
-
-    if (!contextp->gotFinish()) {
-        vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
-    }
-    topp->final();
-
-    exit(0L);
-}
-
-#endif
