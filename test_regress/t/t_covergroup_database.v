@@ -5,10 +5,10 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // Test that functional coverage is properly written to coverage database
-// Checks that coverage.dat contains funccov entries with correct format
+// Checks that coverage.dat contains covergroup entries with correct format
 
 // Expected coverage database entries will contain:
-// - Type "funccov"
+// - Type "covergroup"
 // - Bin names ("low", "high")
 // - Hierarchy ("cg.cp.low", "cg.cp.high")
 

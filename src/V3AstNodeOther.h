@@ -1030,32 +1030,6 @@ public:
 class AstCoverTransSet;
 class AstCoverSelectExpr;
 
-enum class VCoverBinsType : uint8_t {
-    USER,
-    ARRAY,
-    AUTO,
-    BINS_IGNORE,  // Renamed to avoid Windows macro conflict
-    BINS_ILLEGAL,  // Renamed to avoid Windows macro conflict
-    DEFAULT,
-    BINS_WILDCARD,  // Renamed to avoid Windows macro conflict
-    TRANSITION
-};
-
-enum class VCoverOptionType : uint8_t {
-    WEIGHT,
-    GOAL,
-    AT_LEAST,
-    AUTO_BIN_MAX,
-    PER_INSTANCE,
-    COMMENT
-};
-
-enum class VTransRepType : uint8_t {
-    NONE,  // No repetition
-    CONSEC,  // Consecutive repetition [*]
-    GOTO,  // Goto repetition [->]
-    NONCONS  // Nonconsecutive repetition [=]
-};
 
 class AstCoverBin final : public AstNode {
     // @astgen op1 := rangesp : List[AstNode]
