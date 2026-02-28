@@ -72,6 +72,10 @@ extern std::string VL_TO_STRING(SData lhs);
 extern std::string VL_TO_STRING(IData lhs);
 extern std::string VL_TO_STRING(QData lhs);
 extern std::string VL_TO_STRING(double lhs);
+extern std::string VL_TO_STRING(CData4 lhs);
+extern std::string VL_TO_STRING(SData4 lhs);
+extern std::string VL_TO_STRING(IData4 lhs);
+extern std::string VL_TO_STRING(QData4 lhs);
 inline std::string VL_TO_STRING(const std::string& obj) { return "\"" + obj + "\""; }
 extern std::string VL_TO_STRING_W(int words, const WDataInP obj);
 
@@ -83,6 +87,37 @@ extern std::string VL_TO_STRING_W(int words, const WDataInP obj);
 #define VL_SIG64(name, msb, lsb) QData name  ///< Declare signal, 33-64 bits
 #define VL_SIG(name, msb, lsb) IData name  ///< Declare signal, 17-32 bits
 #define VL_SIGW(name, msb, lsb, words) VlWide<words> name  ///< Declare signal, 65+ bits
+// Four-state signal macros (2 bits per logic bit)
+#define VL_SIG4_1(name, msb, lsb) CData4 name  ///< Declare four-state signal, 1 bit
+#define VL_SIG4_2(name, msb, lsb) CData4 name  ///< Declare four-state signal, 2 bits
+#define VL_SIG4_4(name, msb, lsb) CData4 name  ///< Declare four-state signal, 3-4 bits
+#define VL_SIG4_8(name, msb, lsb) SData4 name  ///< Declare four-state signal, 5-8 bits
+#define VL_SIG4_16(name, msb, lsb) IData4 name  ///< Declare four-state signal, 9-16 bits
+#define VL_SIG4_32(name, msb, lsb) QData4 name  ///< Declare four-state signal, 17-32 bits
+#define VL_SIG4_64(name, msb, lsb, words) VlWide<words> name  ///< Declare four-state signal, 33-64 bits (wide)
+#define VL_SIG4_W(name, msb, lsb, words) VlWide<words> name  ///< Declare four-state signal, 65+ bits
+// Four-state input/output macros
+#define VL_IN4_1(name, msb, lsb) CData4 name  ///< Declare four-state input, 1 bit
+#define VL_IN4_2(name, msb, lsb) CData4 name  ///< Declare four-state input, 2 bits
+#define VL_IN4_4(name, msb, lsb) CData4 name  ///< Declare four-state input, 3-4 bits
+#define VL_IN4_8(name, msb, lsb) SData4 name  ///< Declare four-state input, 5-8 bits
+#define VL_IN4_16(name, msb, lsb) IData4 name  ///< Declare four-state input, 9-16 bits
+#define VL_IN4_32(name, msb, lsb) QData4 name  ///< Declare four-state input, 17-32 bits
+#define VL_IN4_W(name, msb, lsb, words) VlWide<words> name  ///< Declare four-state input, 18+ bits
+#define VL_OUT4_1(name, msb, lsb) CData4 name  ///< Declare four-state output, 1 bit
+#define VL_OUT4_2(name, msb, lsb) CData4 name  ///< Declare four-state output, 2 bits
+#define VL_OUT4_4(name, msb, lsb) CData4 name  ///< Declare four-state output, 3-4 bits
+#define VL_OUT4_8(name, msb, lsb) SData4 name  ///< Declare four-state output, 5-8 bits
+#define VL_OUT4_16(name, msb, lsb) IData4 name  ///< Declare four-state output, 9-16 bits
+#define VL_OUT4_32(name, msb, lsb) QData4 name  ///< Declare four-state output, 17-32 bits
+#define VL_OUT4_W(name, msb, lsb, words) VlWide<words> name  ///< Declare four-state output, 18+ bits
+#define VL_INOUT4_1(name, msb, lsb) CData4 name  ///< Declare four-state inout, 1 bit
+#define VL_INOUT4_2(name, msb, lsb) CData4 name  ///< Declare four-state inout, 2 bits
+#define VL_INOUT4_4(name, msb, lsb) CData4 name  ///< Declare four-state inout, 3-4 bits
+#define VL_INOUT4_8(name, msb, lsb) SData4 name  ///< Declare four-state inout, 5-8 bits
+#define VL_INOUT4_16(name, msb, lsb) IData4 name  ///< Declare four-state inout, 9-16 bits
+#define VL_INOUT4_32(name, msb, lsb) QData4 name  ///< Declare four-state inout, 17-32 bits
+#define VL_INOUT4_W(name, msb, lsb, words) VlWide<words> name  ///< Declare four-state inout, 18+ bits
 #define VL_IN8(name, msb, lsb) CData name  ///< Declare input signal, 1-8 bits
 #define VL_IN16(name, msb, lsb) SData name  ///< Declare input signal, 9-16 bits
 #define VL_IN64(name, msb, lsb) QData name  ///< Declare input signal, 33-64 bits

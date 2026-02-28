@@ -278,6 +278,26 @@ void EmitCFunc::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const 
             // Technically legal, but surely not what the user intended.
             argp->v3warn(WIDTHTRUNC, dispp->verilogKwd() << "of %c format of > 8 bit value");
         }
+
+        // Handle four-state display - use special four-state output functions
+        if (argp->dtypep()->isFourstate() && v3Global.opt.xFourState()) {
+            if (fmtLetter == 'b') {
+                // Use four-state binary output function
+                const int width = argp->widthMin();
+                string func;
+                if (width <= 4) {
+                    func = "VL_WRITEF_4STATE_BIN_C";
+                } else if (width <= 8) {
+                    func = "VL_WRITEF_4STATE_BIN_S";
+                } else if (width <= 16) {
+                    func = "VL_WRITEF_4STATE_BIN_I";
+                } else {
+                    func = "VL_WRITEF_4STATE_BIN_Q";
+                }
+                m_emitDispState.pushArg(' ', argp, func);
+                return;
+            }
+        }
     }
     // string pfmt = "%"+displayFormat(argp, vfmt, fmtLetter)+fmtLetter;
     string pfmt;
@@ -684,6 +704,8 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                        ? (v3Global.opt.xAssign() != "unique")
                        : (v3Global.opt.xInitial() == "fast" || v3Global.opt.xInitial() == "0")));
         const bool slow = !varp->isFuncLocal() && !varp->isClassMember();
+        // Four-state initialization with --x-sim: initialize to X instead of random
+        const bool fourStateInit = dtypep->isFourstate() && v3Global.opt.xFourState();
         splitSizeInc(1);
         if (dtypep->isWide()) {  // Handle unpacked; not basicp->isWide
             string out;
@@ -694,6 +716,11 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                     out += varNameProtected + suffix + "[" + cvtToStr(w) + "] = ";
                     out += cvtToStr(constp->num().edataWord(w)) + "U;\n";
                 }
+            } else if (fourStateInit) {
+                out += "VL_X_RESET_4STATE_W(";
+                out += cvtToStr(dtypep->widthMin());
+                out += ", " + varNameProtected + suffix;
+                out += ");\n";
             } else {
                 out += zeroit ? (slow ? "VL_ZERO_RESET_W(" : "VL_ZERO_W(")
                               : (varp->isXTemp() ? "VL_SCOPED_RAND_RESET_ASSIGN_W("
@@ -721,6 +748,19 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                 const AstConst* const constp = VN_AS(valuep, Const);
                 UASSERT_OBJ(constp, varp, "non-const initializer for variable");
                 out += cvtToStr(constp->num().edataWord(0)) + "U;\n";
+                out += ";\n";
+            } else if (fourStateInit) {
+                // Initialize four-state signals to X
+                out += " = ";
+                if (dtypep->widthMin() <= 4) {
+                    out += "VL_X_RESET_4STATE_C()";
+                } else if (dtypep->widthMin() <= 8) {
+                    out += "VL_X_RESET_4STATE_S()";
+                } else if (dtypep->widthMin() <= 16) {
+                    out += "VL_X_RESET_4STATE_I()";
+                } else {
+                    out += "VL_X_RESET_4STATE_Q()";
+                }
                 out += ";\n";
             } else if (zeroit) {
                 out += " = 0;\n";

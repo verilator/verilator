@@ -544,6 +544,37 @@ WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
 }
 
 //===========================================================================
+// Four-state reset functions - initialize to X (unknown)
+
+// Set four-state value to all X (0xAAAAAAAA... in 2-bit encoding)
+static inline CData4 VL_X_RESET_4STATE_C() VL_MT_SAFE {
+    return 0xAA;  // 0b10101010 - X in each nibble
+}
+
+static inline SData4 VL_X_RESET_4STATE_S() VL_MT_SAFE {
+    return 0xAAAA;  // X in each nibble
+}
+
+static inline IData4 VL_X_RESET_4STATE_I() VL_MT_SAFE {
+    return 0xAAAAAAAAUL;  // X in each nibble
+}
+
+static inline QData4 VL_X_RESET_4STATE_Q() VL_MT_SAFE {
+    return 0xAAAAAAAAAAAAAAAALL;  // X in each nibble
+}
+
+// Wide four-state reset to X
+WDataOutP VL_X_RESET_4STATE_W(int obits, WDataOutP owp) VL_MT_SAFE {
+    const int words = (obits + 31) / 32;
+    for (int i = 0; i < words; ++i) owp[i] = 0xAAAAAAAAUL;
+    // Mask the last word to only valid bits
+    if (obits % 32) {
+        owp[words - 1] &= (1UL << ((obits % 32) * 2)) - 1;
+    }
+    return owp;
+}
+
+//===========================================================================
 // Debug
 
 void _vl_debug_print_w(int lbits, const WDataInP iwp) VL_MT_SAFE {
@@ -1765,6 +1796,30 @@ void VL_WRITEF_NX(const std::string& format, int argc, ...) VL_MT_SAFE {
     VL_PRINTF_MT("%s", t_output.c_str());
 }
 
+void VL_WRITEF_4STATE_BIN_C(const std::string& format, int lbits, CData4 data) VL_MT_SAFE {
+    std::string output;
+    _vl_toStringFourStateBinary_C(output, lbits, data);
+    VL_PRINTF_MT("%s", output.c_str());
+}
+
+void VL_WRITEF_4STATE_BIN_S(const std::string& format, int lbits, SData4 data) VL_MT_SAFE {
+    std::string output;
+    _vl_toStringFourStateBinary_S(output, lbits, data);
+    VL_PRINTF_MT("%s", output.c_str());
+}
+
+void VL_WRITEF_4STATE_BIN_I(const std::string& format, int lbits, IData4 data) VL_MT_SAFE {
+    std::string output;
+    _vl_toStringFourStateBinary_I(output, lbits, data);
+    VL_PRINTF_MT("%s", output.c_str());
+}
+
+void VL_WRITEF_4STATE_BIN_Q(const std::string& format, int lbits, QData4 data) VL_MT_SAFE {
+    std::string output;
+    _vl_toStringFourStateBinary_Q(output, lbits, data);
+    VL_PRINTF_MT("%s", output.c_str());
+}
+
 void VL_FWRITEF_NX(IData fpi, const std::string& format, int argc, ...) VL_MT_SAFE {
     // While threadsafe, each thread can only access different file handles
     static thread_local std::string t_output;  // static only for speed
@@ -2131,8 +2186,106 @@ std::string VL_TO_STRING(SData lhs) { return VL_SFORMATF_N_NX("'h%0x", 0, 16, lh
 std::string VL_TO_STRING(IData lhs) { return VL_SFORMATF_N_NX("'h%0x", 0, 32, lhs); }
 std::string VL_TO_STRING(QData lhs) { return VL_SFORMATF_N_NX("'h%0x", 0, 64, lhs); }
 std::string VL_TO_STRING(double lhs) { return VL_SFORMATF_N_NX("%g", 0, 64, lhs); }
+
+namespace {
+char fourStateNibble(char nibble) {
+    // Convert 2-bit encoding to character: 00->0, 01->1, 10->x, 11->z
+    switch (nibble & 3) {
+    case 0: return '0';
+    case 1: return '1';
+    case 2: return 'x';
+    case 3: return 'z';
+    default: return '?';
+    }
+}
+}
+
+std::string VL_TO_STRING(CData4 lhs) {
+    // Convert 4-state nibble-packed value to binary string representation
+    std::string result;
+    result.reserve(4);
+    for (int i = 3; i >= 0; --i) {
+        result += fourStateNibble((lhs >> (i * 2)) & 0x3);
+    }
+    return result;
+}
+std::string VL_TO_STRING(SData4 lhs) {
+    std::string result;
+    result.reserve(8);
+    for (int i = 7; i >= 0; --i) {
+        result += fourStateNibble((lhs >> (i * 2)) & 0x3);
+    }
+    return result;
+}
+std::string VL_TO_STRING(IData4 lhs) {
+    std::string result;
+    result.reserve(16);
+    for (int i = 15; i >= 0; --i) {
+        result += fourStateNibble((lhs >> (i * 2)) & 0x3);
+    }
+    return result;
+}
+std::string VL_TO_STRING(QData4 lhs) {
+    std::string result;
+    result.reserve(32);
+    for (int i = 31; i >= 0; --i) {
+        result += fourStateNibble((lhs >> (i * 2)) & 0x3);
+    }
+    return result;
+}
 std::string VL_TO_STRING_W(int words, const WDataInP obj) {
     return VL_SFORMATF_N_NX("'h%0x", 0, words * VL_EDATASIZE, obj);
+}
+
+//===========================================================================
+// Four-state to string helpers for $display
+
+static inline void _vl_toStringFourStateBinary_C(std::string& output, int lbits, CData4 ld) {
+    for (int i = lbits - 1; i >= 0; --i) {
+        const uint8_t val = (ld >> (i * 2)) & 3;
+        switch (val) {
+        case 0: output += '0'; break;
+        case 1: output += '1'; break;
+        case 2: output += 'x'; break;
+        case 3: output += 'z'; break;
+        }
+    }
+}
+
+static inline void _vl_toStringFourStateBinary_S(std::string& output, int lbits, SData4 ld) {
+    for (int i = lbits - 1; i >= 0; --i) {
+        const uint8_t val = (ld >> (i * 2)) & 3;
+        switch (val) {
+        case 0: output += '0'; break;
+        case 1: output += '1'; break;
+        case 2: output += 'x'; break;
+        case 3: output += 'z'; break;
+        }
+    }
+}
+
+static inline void _vl_toStringFourStateBinary_I(std::string& output, int lbits, IData4 ld) {
+    for (int i = lbits - 1; i >= 0; --i) {
+        const uint8_t val = (ld >> (i * 2)) & 3;
+        switch (val) {
+        case 0: output += '0'; break;
+        case 1: output += '1'; break;
+        case 2: output += 'x'; break;
+        case 3: output += 'z'; break;
+        }
+    }
+}
+
+static inline void _vl_toStringFourStateBinary_Q(std::string& output, int lbits, QData4 ld) {
+    for (int i = lbits - 1; i >= 0; --i) {
+        const uint8_t val = (ld >> (i * 2)) & 3;
+        switch (val) {
+        case 0: output += '0'; break;
+        case 1: output += '1'; break;
+        case 2: output += 'x'; break;
+        case 3: output += 'z'; break;
+        }
+    }
 }
 
 std::string VL_TOLOWER_NN(const std::string& ld) VL_PURE {
