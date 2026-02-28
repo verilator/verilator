@@ -610,30 +610,6 @@ const V3LinkDotIfaceCapture::CapturedEntry* V3LinkDotIfaceCapture::find(const As
     return nullptr;
 }
 
-bool V3LinkDotIfaceCapture::erase(const AstRefDType* refp) {
-    // Believed unreachable: erase is only called from the visitRefDType
-    // captured-typedef retirement path (retireCapture lambda).
-    v3fatalSrc("erase(AstRefDType*) called - believed unreachable");
-    if (!refp || s_map.empty()) return false;
-    bool any = false;
-    for (auto it = s_map.begin(); it != s_map.end();) {
-        if (it->second.refp == refp) {
-            it = s_map.erase(it);
-            any = true;
-        } else {
-            ++it;
-        }
-    }
-    return any;
-}
-
-bool V3LinkDotIfaceCapture::replaceRef(const AstRefDType* oldRefp, AstRefDType* newRefp) {
-    // Only caller is promoteVarToParamType, which is believed unreachable
-    // in legal SystemVerilog.  Assert to verify this assumption.
-    v3fatalSrc("replaceRef called - believed unreachable (promoteVarToParamType)");
-    // v3fatalSrc is [[noreturn]]
-    VL_UNREACHABLE;
-}
 
 // Walk a dot-separated cell path through the cell / IFACEREFDTYPE hierarchy
 // starting from startModp.  Returns the module at the end of the path, or
@@ -786,10 +762,9 @@ void V3LinkDotIfaceCapture::forEachOwned(const AstNodeModule* ownerModp,
 
 // replaces the lambda used in V3LinkDot.cpp for iface capture
 void V3LinkDotIfaceCapture::captureTypedefContext(
-    AstRefDType* refp, const char* stageLabel, int dotPos, bool dotIsFinal,
+    AstRefDType* refp, const char* stageLabel, int dotPos, bool /*dotIsFinal*/,
     const std::string& dotText, VSymEnt* dotSymp, VSymEnt* curSymp, AstNodeModule* modp,
-    AstNode* nodep, const std::function<bool(AstVar*, AstRefDType*)>& promoteVarCb,
-    const std::function<std::string()>& indentFn) {
+    AstNode* /*nodep*/, const std::function<std::string()>& indentFn) {
     if (!enabled() || !refp) return;
 
     UINFO(9, indentFn() << "iface capture capture request stage=" << stageLabel
@@ -813,23 +788,15 @@ void V3LinkDotIfaceCapture::captureTypedefContext(
         return;
     }
 
-    // Use dotText as the hierarchical cellPath key component.
-    // dotText is the full dot-separated path from the owning module to the
-    // interface cell (e.g. "a_inst", "wif.a_inst", "outer.mid.inner").
-    // Fall back to ifaceCellp->name() only when dotText is empty
-    // (expected for PARAMTYPEDTYPE entries where dotText is not set).
-    const string cellPath = dotText.empty() ? ifaceCellp->name() : dotText;
-    if (dotText.empty()) {
-        // Believed unreachable: dotText is always set by the caller for
-        // interface typedef captures.
-        v3fatalSrc("captureTypedefContext: dotText empty for refp="
-                   << refp->prettyNameQ());
-    }
-    UASSERT(!cellPath.empty(),
-            "captureTypedefContext: cellPath is empty for refp='" << refp->prettyNameQ() << "'");
+    // dotText is always non-empty for interface typedef captures.  If this
+    // fires, the caller resolved to an interface Cell but did not accumulate
+    // a dotText path — investigate the dot-state in visitParseRef.
+    UASSERT(!dotText.empty(),
+            "captureTypedefContext: dotText empty for " << refp->prettyNameQ());
+    const string cellPath = dotText;
 
     AstVar* ifacePortVarp = nullptr;
-    if (!dotText.empty() && curSymp) {
+    if (curSymp) {
         const std::string portName = extractIfacePortName(dotText);
         if (VSymEnt* const portSymp = curSymp->findIdFallback(portName)) {
             ifacePortVarp = VN_CAST(portSymp->nodep(), Var);
@@ -849,43 +816,10 @@ void V3LinkDotIfaceCapture::captureTypedefContext(
                         << " cell=" << ifaceCellp << " cellPath='" << cellPath << "'"
                         << " mod=" << (ifaceCellp->modp() ? ifaceCellp->modp()->name() : "<null>")
                         << " dotPos=" << dotPos);
-    if (!dotIsFinal) return;
-
-    AstVar* enclosingVarp = nullptr;
-    for (AstNode* curp = nodep; curp; curp = curp->backp()) {
-        if (AstVar* const varp = VN_CAST(curp, Var)) {
-            enclosingVarp = varp;
-            break;
-        }
-        if (VN_IS(curp, ParamTypeDType)) break;
-        if (VN_IS(curp, NodeModule)) break;
-    }
-    if (!enclosingVarp || enclosingVarp->user3SetOnce()) return;
-    UINFO(9, indentFn() << "iface capture typedef owner var=" << enclosingVarp
-                        << " name=" << enclosingVarp->name());
-
-    // Do NOT promote interface parent VARs - they have VARREFs pointing to them from interface
-    // port connections. Deleting these VARs would leave dangling VARREFs.
-    if (enclosingVarp->isIfaceParent()) {
-        UINFO(9, indentFn() << "iface capture skipping isIfaceParent var promotion");
-        return;
-    }
-
-    // Do NOT promote value parameters (LPARAM/GPARAM) to PARAMTYPEDTYPE.
-    // A value param like 'localparam cb::cfg_t cb_cfg = '{XdatSize:$bits(cmd_beat_t)}'
-    // merely references an interface typedef in its value expression - it is NOT
-    // itself a type alias and must not be converted to a type parameter.
-    if (enclosingVarp->isParam()) {
-        UINFO(9, indentFn() << "iface capture skipping value param promotion name="
-                            << enclosingVarp->name());
-        return;
-    }
-
-    // Believed unreachable: in legal SV, a typedef referencing an interface
-    // type creates a ParamTypeDType, not a Var.  The isIfaceParent and isParam
-    // checks above handle the only known Var patterns.
-    v3fatalSrc("captureTypedefContext: unexpected non-param non-ifaceParent Var '"
-               << enclosingVarp->prettyNameQ() << "' containing interface RefDType");
+    // Note: the enclosingVar walk + promoteVarToParamType callback was removed.
+    // It supported 'localparam xyz_t = iface.rq_t;' without the 'type' keyword,
+    // which was never valid SystemVerilog.  CI-CD with v3fatalSrc asserts on
+    // the promoteVarCb path and replaceRef confirmed this was dead code.
 }
 
 void V3LinkDotIfaceCapture::captureInnerParamTypeRefs(AstParamTypeDType* paramTypep,

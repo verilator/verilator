@@ -211,14 +211,9 @@ public:
     static const CapturedEntry* find(const CaptureKey& key);
     // Pointer-based lookup: linear scan with early exit (no std::function overhead)
     static const CapturedEntry* find(const AstRefDType* refp);
-    // Pointer-based erase: remove all entries whose refp matches
-    static bool erase(const AstRefDType* refp);
     static void forEach(const std::function<void(const CapturedEntry&)>& fn);
     static void forEachOwned(const AstNodeModule* ownerModp,
                              const std::function<void(const CapturedEntry&)>& fn);
-    // Pointer-based replaceRef: retarget all entries whose refp matches oldRefp.
-    // Only caller is promoteVarToParamType which is unreachable in legal SV.
-    static bool replaceRef(const AstRefDType* oldRefp, AstRefDType* newRefp);
     static std::size_t size() { return s_map.size(); }
 
     // Walk a dot-separated cell path (e.g. "cca_io.tlb_io") starting from
@@ -236,7 +231,6 @@ public:
     captureTypedefContext(AstRefDType* refp, const char* stageLabel, int dotPos, bool dotIsFinal,
                           const std::string& dotText, VSymEnt* dotSymp, VSymEnt* curSymp,
                           AstNodeModule* modp, AstNode* nodep,
-                          const std::function<bool(AstVar*, AstRefDType*)>& promoteVarCb,
                           const std::function<std::string()>& indentFn);
 
     // Null out ledger refp entries that point to freed nodes (not in the live AST).

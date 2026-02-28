@@ -3235,56 +3235,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                         << origp->warnContextSecondary());
         }
     }
-    // This helper clones the RefDType (including the user2 context), wraps it in a ParamTypeDType
-    // with the original var name, and returns the new dtype so the caller can ultimately replace
-    // the var and continue typedef retargeting.  (used in cases like: localparam rq_t =
-    // bus_io.rq_t;)
-    AstParamTypeDType* promoteVarToParamType(AstVar* varp, AstRefDType* typedefRefp) {
-        if (!varp || !typedefRefp) return nullptr;
-        VSymEnt* const varSymp = varp->user1u().toSymEnt();
-        if (!varSymp) return nullptr;
-        VSymEnt* const parentSymp = varSymp->parentp();
-        if (!parentSymp) return nullptr;
-        UINFO(9, indent() << "iface capture promote var to ParamType name=" << varp->name()
-                          << " dotState(before)=" << m_ds.ascii());
-        AstParamTypeDType* const newTypep = new AstParamTypeDType{
-            varp->fileline(), varp->varType(),   VFwdType::NONE,
-            varp->name(),     VFlagChildDType{}, typedefRefp->cloneTree(false)};
-        if (AstRefDType* const clonedRefp = VN_CAST(newTypep->childDTypep(), RefDType)) {
-            clonedRefp->user2p(typedefRefp->user2p());
-            if (V3LinkDotIfaceCapture::enabled()) {
-                // replaceRef for all entries that match this refp pointer
-                const bool replaced = V3LinkDotIfaceCapture::replaceRef(typedefRefp, clonedRefp);
-                if (replaced) {
-                    UINFO(9, indent() << "iface capture retarget captured typedef var="
-                                      << varp->prettyName() << " orig=" << typedefRefp
-                                      << " clone=" << clonedRefp);
-                }
-                if (typedefRefp->user2p()) {
-                    UINFO(9, indent() << "iface capture capture recorded owner var="
-                                      << varp->prettyName() << " typedef=" << clonedRefp
-                                      << " cell=" << clonedRefp->user2p());
-                }
-            }
-        }
-        VSymEnt* const newSymEntp = new VSymEnt{m_statep->symsp(), newTypep};
-        newSymEntp->parentp(parentSymp);
-        newSymEntp->fallbackp(varSymp->fallbackp());
-        newSymEntp->classOrPackagep(varSymp->classOrPackagep());
-        newSymEntp->exported(varSymp->exported());
-        newSymEntp->imported(varSymp->imported());
-        newTypep->user1p(newSymEntp);
-        parentSymp->reinsert(varp->name(), newSymEntp);
-        varp->replaceWith(newTypep);
-        // This conversion happens while linkDot is in the middle of a dotted lookup (e.g.
-        // bus_io.rq_t). Reset the dot state so subsequent symbols in this scope do not inherit the
-        // pending dot.
-        m_ds.init(m_curSymp);
-        UINFO(9, indent() << "iface capture converted owner var to ParamType name="
-                          << varp->prettyName() << " dotState(after-reset)=" << m_ds.ascii());
-        VL_DO_DANGLING(pushDeletep(varp), varp);
-        return newTypep;
-    }
     VSymEnt* getCreateClockingEventSymEnt(AstClocking* clockingp) {
         AstVar* const eventp = clockingp->ensureEventp(true);
         if (!eventp->user1p()) eventp->user1p(new VSymEnt{m_statep->symsp(), eventp});
@@ -4485,9 +4435,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     V3LinkDotIfaceCapture::captureTypedefContext(
                         refp, "typedef", static_cast<int>(m_ds.m_dotPos),
                         m_ds.m_dotPos == DP_FINAL, m_ds.m_dotText, m_ds.m_dotSymp, m_curSymp,
-                        m_modp, nodep,
-                        [this](AstVar* v, AstRefDType* r) { return promoteVarToParamType(v, r); },
-                        [this]() { return indent(); });
+                        m_modp, nodep, [this]() { return indent(); });
 
                     if (VN_IS(nodep->backp(), SelExtract)) {
                         m_packedArrayDtp = refp;
@@ -4506,9 +4454,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     V3LinkDotIfaceCapture::captureTypedefContext(
                         refp, "paramtype", static_cast<int>(m_ds.m_dotPos),
                         m_ds.m_dotPos == DP_FINAL, m_ds.m_dotText, m_ds.m_dotSymp, m_curSymp,
-                        m_modp, nodep,
-                        [this](AstVar* v, AstRefDType* r) { return promoteVarToParamType(v, r); },
-                        [this]() { return indent(); });
+                        m_modp, nodep, [this]() { return indent(); });
 
                     if (VN_IS(nodep->backp(), SelExtract)) {
                         m_packedArrayDtp = refp;
@@ -5779,18 +5725,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
 
         bool forcedIfaceDotScope = false;
         bool resolvedCapturedTypedef = false;
-        bool captureEntryRetired = false;
-        const auto retireCapture = [&](const char* reason) {
-            if (!ifaceCaptured || captureEntryRetired) return;
-            UINFO(9, indent() << "iface capture retire captured typedef reason=" << reason
-                              << " name=" << nodep->name() << " pass=" << passLabel
-                              << " user2=" << nodep->user2p());
-            // Erase all entries matching this refp pointer
-            const bool erased = V3LinkDotIfaceCapture::erase(nodep);
-            captureEntryRetired = true;
-            UINFO(9, indent() << "iface capture retire erase result name=" << nodep->name()
-                              << " erased=" << erased);
-        };
         if (ifaceCaptured && m_statep->forParamed()) {
             UINFO(9, indent() << "iface capture captured typedef name=" << nodep->name()
                               << " typedef=" << nodep->typedefp() << " cell=" << capturedCellp);
@@ -5930,7 +5864,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         = new AstClassRefDType{nodep->fileline(), defp, paramsp};
                     newp->classOrPackagep(foundp->classOrPackagep());
                     resolvedCapturedTypedef = true;
-                    retireCapture("resolved");  // Must retire before replacing node
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return;
@@ -5951,7 +5884,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                               << nodep->name());
             m_ds.init(m_curSymp);
         }
-        if (ifaceCaptured && resolvedCapturedTypedef) { retireCapture("resolved"); }
+        // Note: retireCapture/erase removed — user2p is not preserved across
+        // cloneTree, so ifaceCaptured is always false in the paramed pass where
+        // retirement would fire.  Ledger cleanup happens in purgeStaleRefs().
         iterateChildren(nodep);
     }
     void visit(AstRequireDType* nodep) override {
