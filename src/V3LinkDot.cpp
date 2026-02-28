@@ -239,11 +239,11 @@ public:
         } else if (forParamed()) {
             UINFO(9,
                   "iface capture leaving paramed pass captured typedef count=" << capturedCount);
-            if (capturedCount != 0) {
-                UINFO(9, "iface capture warning: leftover captured typedef entries="
-                             << capturedCount);
-            }
-            V3LinkDotIfaceCapture::reset();
+            // Do NOT call reset() here.  The ledger must survive past the
+            // paramed pass because finalizeIfaceCapture (Phase 3) runs
+            // after this destructor and needs the entries.
+            // finalizeIfaceCapture calls reset() when it is done.
+            // See V3LinkDotIfaceCapture.h ARCHITECTURE comment.
         }
         V3Error::errorExitCb(nullptr);
         s_errorThisp = nullptr;
@@ -547,25 +547,99 @@ public:
                 } else {
                     ifacerefp->v3fatalSrc("Unlinked interface");
                 }
-            } else if (ifacerefp->ifaceViaCellp()->dead() && varp->isIfaceRef()) {
-                if (forPrimary() && !varp->isIfaceParent() && !v3Global.opt.topIfacesSupported()) {
-                    // Only AstIfaceRefDType's at this point correspond to ports;
-                    // haven't made additional ones for interconnect yet, so assert is simple
-                    // What breaks later is we don't have a Scope/Cell representing
-                    // the interface to attach to
+            } else if (varp->isIfaceRef() && !ifacerefp->cellp() && ifacerefp->ifaceViaCellp()) {
+                // Port variable (cellp=null) pointing to an interface.
+                // The interface may be dead (template replaced by clone) or
+                // live-but-wrong (template still alive because some instances
+                // use default params, but this port should point to a
+                // specialized clone based on the pin connection).
+                const bool isDead = ifacerefp->ifaceViaCellp()->dead();
+                if (isDead && forPrimary() && !varp->isIfaceParent()
+                    && !v3Global.opt.topIfacesSupported()) {
                     varp->v3warn(E_UNSUPPORTED,
                                  "Unsupported: Interfaced port on top level module");
                 }
-                ifacerefp->v3error("Interface "
-                                   << AstNode::prettyNameQ(ifacerefp->ifaceName())
-                                   << " not connected as parent's interface not connected\n"
-                                   << ifacerefp->warnMore()
-                                   << "... Perhaps caused by another error on the parent "
-                                      "interface that needs resolving\n"
-                                   << ifacerefp->warnMore()
-                                   << "... Or, perhaps intended an interface instantiation but "
-                                      "are missing parenthesis (IEEE 1800-2023 25.3)?");
-                continue;
+                // Attempt repair: trace through parent cell's pin to find
+                // the correct live interface for this port variable
+                bool repaired = false;
+                {
+                    VSymEnt* parentSymp = varSymp->parentp();
+                    AstCell* parentCellp = nullptr;
+                    for (int depth = 0; parentSymp && depth < 20; ++depth) {
+                        if (AstCell* const cp = VN_CAST(parentSymp->nodep(), Cell)) {
+                            parentCellp = cp;
+                            break;
+                        }
+                        parentSymp = parentSymp->parentp();
+                    }
+                    if (parentCellp) {
+                        for (AstPin* pinp = parentCellp->pinsp(); pinp;
+                             pinp = VN_AS(pinp->nextp(), Pin)) {
+                            if (pinp->modVarp() == varp || pinp->name() == varp->name()) {
+                                AstNode* const exprp = pinp->exprp();
+                                if (!exprp) break;
+                                AstIface* newIfacep = nullptr;
+                                if (AstVarRef* const refp = VN_CAST(exprp, VarRef)) {
+                                    if (AstVar* const pinVarp = refp->varp()) {
+                                        AstIfaceRefDType* const pinIrefp
+                                            = ifaceRefFromArray(pinVarp->subDTypep());
+                                        if (pinIrefp && pinIrefp->ifaceViaCellp()
+                                            && !pinIrefp->ifaceViaCellp()->dead()) {
+                                            newIfacep = pinIrefp->ifaceViaCellp();
+                                        }
+                                    }
+                                } else if (AstVarXRef* const xrefp = VN_CAST(exprp, VarXRef)) {
+                                    // Dotted reference like l4.l3 - use findDotted
+                                    // to resolve through the symbol table.
+                                    // Start from the parent module scope (above the cell).
+                                    VSymEnt* const lookupSymp = parentSymp->parentp();
+                                    string baddot;
+                                    VSymEnt* okSymp = nullptr;
+                                    const string dotpath = xrefp->dotted() + "." + xrefp->name();
+                                    VSymEnt* const dotSymp
+                                        = lookupSymp ? findDotted(xrefp->fileline(), lookupSymp,
+                                                                  dotpath, baddot, okSymp, true)
+                                                     : nullptr;
+                                    if (dotSymp) {
+                                        if (AstVar* const dotVarp
+                                            = VN_CAST(dotSymp->nodep(), Var)) {
+                                            AstIfaceRefDType* const dotIrefp
+                                                = ifaceRefFromArray(dotVarp->subDTypep());
+                                            if (dotIrefp && dotIrefp->ifaceViaCellp()
+                                                && !dotIrefp->ifaceViaCellp()->dead()) {
+                                                newIfacep = dotIrefp->ifaceViaCellp();
+                                            }
+                                        }
+                                    }
+                                }
+                                if (newIfacep && newIfacep != ifacerefp->ifaceViaCellp()) {
+                                    UINFO(4, "  REPAIR-IFACE-REF var="
+                                                 << varp->prettyNameQ()
+                                                 << " old=" << ifacerefp->ifacep()->prettyNameQ()
+                                                 << " new=" << newIfacep->prettyNameQ() << endl);
+                                    ifacerefp->ifacep(newIfacep);
+                                    repaired = true;
+                                } else if (newIfacep) {
+                                    // Pin connects to same interface - no repair needed
+                                    repaired = !isDead;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (!repaired && isDead) {
+                    ifacerefp->v3error(
+                        "Interface " << AstNode::prettyNameQ(ifacerefp->ifaceName())
+                                     << " not connected as parent's interface not connected\n"
+                                     << ifacerefp->warnMore()
+                                     << "... Perhaps caused by another error on the parent "
+                                        "interface that needs resolving\n"
+                                     << ifacerefp->warnMore()
+                                     << "... Or, perhaps intended an interface instantiation but "
+                                        "are missing parenthesis (IEEE 1800-2023 25.3)?");
+                    continue;
+                }
             } else if (ifacerefp->ifaceViaCellp()->dead()
                        || !existsNodeSym(ifacerefp->ifaceViaCellp())) {
                 ifacerefp->ifaceViaCellp()->v3fatalSrc(
@@ -915,8 +989,10 @@ public:
         };
 
         if (const AstTypedef* const typedefp = VN_CAST(symp->nodep(), Typedef)) {
-            if (VN_IS(typedefp->childDTypep(), ClassRefDType)) return true;
-            if (checkUnresolvedRef(VN_CAST(typedefp->childDTypep(), RefDType))) return true;
+            const AstNodeDType* dtypep = typedefp->subDTypep();
+            if (!dtypep) dtypep = typedefp->childDTypep();
+            if (VN_IS(dtypep, ClassRefDType)) return true;
+            if (checkUnresolvedRef(VN_CAST(dtypep, RefDType))) return true;
         } else if (const AstParamTypeDType* const paramTypep
                    = VN_CAST(symp->nodep(), ParamTypeDType)) {
             // ParamTypeDType child may be wrapped in RequireDType or unwrapped
@@ -933,15 +1009,23 @@ public:
                                    bool classOnly, const string& forWhat) {
         if (nodep->classOrPackageSkipp()) return getNodeSym(nodep->classOrPackageSkipp());
         VSymEnt* foundp;
+        VSymEnt* searchSymp = lookSymp;
+        if (searchSymp && VN_IS(searchSymp->nodep(), ParamTypeDType)) {
+            AstNodeDType* dtypep = VN_AS(searchSymp->nodep(), ParamTypeDType)->childDTypep();
+            if (AstNodeDType* const skipp = dtypep->skipRefOrNullp()) dtypep = skipp;
+            if (const AstClassRefDType* const classrefp = VN_CAST(dtypep, ClassRefDType)) {
+                if (AstClass* const classp = classrefp->classp()) searchSymp = getNodeSym(classp);
+            }
+        }
         if (fallback) {
-            VSymEnt* currentLookSymp = lookSymp;
+            VSymEnt* currentLookSymp = searchSymp;
             do {
                 foundp = currentLookSymp->findIdFlat(nodep->name());
                 if (foundp && !checkIfClassOrPackage(foundp)) foundp = nullptr;
                 if (!foundp) currentLookSymp = currentLookSymp->fallbackp();
             } while (!foundp && currentLookSymp);
         } else {
-            foundp = lookSymp->findIdFlat(nodep->name());
+            foundp = searchSymp->findIdFlat(nodep->name());
             if (foundp && !checkIfClassOrPackage(foundp)) foundp = nullptr;
         }
         if (!foundp && v3Global.rootp()->stdPackagep()) {  // Look under implied std::
@@ -3037,6 +3121,24 @@ class LinkDotResolveVisitor final : public VNVisitor {
         return nullptr;
     }
 
+    // Capture a ParamTypeDType reference for interface typedef retargeting.
+    // Called when a RefDType resolves to a ParamTypeDType owned by an interface.
+    void captureIfaceParamType(AstRefDType* nodep, AstParamTypeDType* defp, AstCell* capturedCellp,
+                               const V3LinkDotIfaceCapture::CapturedEntry* capEntryp) {
+        if (!V3LinkDotIfaceCapture::enabled() || !m_statep->forPrimary()) return;
+        AstNodeModule* const defOwnerModp = V3LinkDotIfaceCapture::findOwnerModule(defp);
+        if (!defOwnerModp || !VN_IS(defOwnerModp, Iface)) return;
+        AstCell* const cellForCapture
+            = capturedCellp ? capturedCellp
+                            : (m_ds.m_dotSymp ? VN_CAST(m_ds.m_dotSymp->nodep(), Cell) : nullptr);
+        if (!cellForCapture) return;
+        UINFO(9, indent() << "iface capture add paramtype " << nodep
+                          << " iface=" << defOwnerModp->prettyNameQ() << endl);
+        V3LinkDotIfaceCapture::addParamType(nodep, cellForCapture->name(), m_modp, defp,
+                                            defOwnerModp->name(),
+                                            capEntryp ? capEntryp->ifacePortVarp : nullptr);
+    }
+
     AstNodeStmt* addImplicitSuperNewCall(AstFunc* const nodep,
                                          const AstClassExtends* const classExtendsp) {
         // Returns the added node
@@ -3127,7 +3229,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (!varSymp) return nullptr;
         VSymEnt* const parentSymp = varSymp->parentp();
         if (!parentSymp) return nullptr;
-        UINFO(9, indent() << "iface capture promote var to ParamType name=" << varp->prettyName()
+        UINFO(9, indent() << "iface capture promote var to ParamType name=" << varp->name()
                           << " dotState(before)=" << m_ds.ascii());
         AstParamTypeDType* const newTypep = new AstParamTypeDType{
             varp->fileline(), varp->varType(),   VFwdType::NONE,
@@ -3135,7 +3237,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (AstRefDType* const clonedRefp = VN_CAST(newTypep->childDTypep(), RefDType)) {
             clonedRefp->user2p(typedefRefp->user2p());
             if (V3LinkDotIfaceCapture::enabled()) {
-                if (V3LinkDotIfaceCapture::replaceRef(typedefRefp, clonedRefp)) {
+                // replaceRef for all entries that match this refp pointer
+                const bool replaced = V3LinkDotIfaceCapture::replaceRef(typedefRefp, clonedRefp);
+                if (replaced) {
                     UINFO(9, indent() << "iface capture retarget captured typedef var="
                                       << varp->prettyName() << " orig=" << typedefRefp
                                       << " clone=" << clonedRefp);
@@ -4037,16 +4141,23 @@ class LinkDotResolveVisitor final : public VNVisitor {
             } else {
                 foundp = m_ds.m_dotSymp->findIdFlat(nodep->name());
             }
-            // If not found in modport, check interface fallback for parameters.
-            // Parameters are always visible through a modport (IEEE 1800-2023 25.5).
+            // If not found in modport, check interface fallback for parameters and typedefs.
+            // Parameters and typedefs are always visible through a modport (IEEE 1800-2023 25.5).
             // This mirrors the VarXRef modport parameter fallback in visit(AstVarXRef).
             if (!foundp && VN_IS(m_ds.m_dotSymp->nodep(), Modport)
                 && m_ds.m_dotSymp->fallbackp()) {
-                VSymEnt* const ifaceFoundp
-                    = m_ds.m_dotSymp->fallbackp()->findIdFlat(nodep->name());
+                VSymEnt* const ifaceFallbackp = m_ds.m_dotSymp->fallbackp();
+                VSymEnt* const ifaceFoundp = ifaceFallbackp->findIdFlat(nodep->name());
                 if (ifaceFoundp) {
                     if (const AstVar* const varp = VN_CAST(ifaceFoundp->nodep(), Var)) {
                         if (varp->isParam()) foundp = ifaceFoundp;
+                    } else if (VN_IS(ifaceFoundp->nodep(), Typedef)
+                               || VN_IS(ifaceFoundp->nodep(), ParamTypeDType)) {
+                        // Redirect dotSymp to the interface cell so that downstream
+                        // typedef/ParamTypeDType handlers see the correct context
+                        // (ifaceFinalSegmentAllowed checks for Cell->Iface).
+                        m_ds.m_dotSymp = ifaceFallbackp;
+                        foundp = ifaceFoundp;
                     }
                 }
             }
@@ -4119,7 +4230,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                 m_ds.m_dotText = "";
                             }
                         } else {
-                            newp = new AstVarRef{nodep->fileline(), ifaceRefVarp, VAccess::READ};
+                            AstVarRef* const refp
+                                = new AstVarRef{nodep->fileline(), ifaceRefVarp, VAccess::READ};
+                            newp = refp;
                         }
                         nodep->replaceWith(newp);
                         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -4159,8 +4272,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     }
                     m_ds.m_dotPos = DP_SCOPE;
                     ok = true;
-                    AstNode* const newp = new AstVarRef{nodep->fileline(), varp, VAccess::READ};
-                    nodep->replaceWith(newp);
+
+                    AstVarRef* const refp = new AstVarRef{nodep->fileline(), varp, VAccess::READ};
+                    nodep->replaceWith(refp);
+
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 } else if (allowVar) {
                     AstNode* newp;
@@ -4249,8 +4364,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     m_ds.m_dotPos = DP_SCOPE;
                     UINFO(9, indent() << "modport -> iface varref " << foundp->nodep());
                     // We lose the modport name here, so we cannot detect mismatched modports.
-                    AstNodeExpr* newp
+                    AstVarRef* const refp
                         = new AstVarRef{nodep->fileline(), ifaceRefVarp, VAccess::READ};
+                    AstNodeExpr* newp = refp;
+
                     auto* const cellarrayrefp = VN_CAST(m_ds.m_unlinkedScopep, CellArrayRef);
                     if (cellarrayrefp) {
                         // iface[vec].modport became CellArrayRef(iface, lsb)
@@ -4329,14 +4446,17 @@ class LinkDotResolveVisitor final : public VNVisitor {
             } else if (AstTypedef* const defp = VN_CAST(foundp->nodep(), Typedef)) {
                 const bool ifaceFinalSegmentAllowed
                     = (m_ds.m_dotPos == DP_FINAL) && m_ds.m_dotSymp
-                      && VN_IS(m_ds.m_dotSymp->nodep(), Cell)
-                      && VN_CAST(m_ds.m_dotSymp->nodep(), Cell)->modp()
-                      && VN_IS(VN_CAST(m_ds.m_dotSymp->nodep(), Cell)->modp(), Iface);
+                      && (VN_IS(m_ds.m_dotSymp->nodep(), Modport)
+                          || (VN_IS(m_ds.m_dotSymp->nodep(), Cell)
+                              && VN_CAST(m_ds.m_dotSymp->nodep(), Cell)->modp()
+                              && VN_IS(VN_CAST(m_ds.m_dotSymp->nodep(), Cell)->modp(), Iface)));
+                // Allow interface typedef references even without IfaceCapture
+                // The dependency graph handles resolution when IfaceCapture is disabled
                 ok = (m_ds.m_dotPos == DP_NONE || m_ds.m_dotPos == DP_SCOPE
-                      || (V3LinkDotIfaceCapture::enabled() && ifaceFinalSegmentAllowed));
-                if (V3LinkDotIfaceCapture::enabled() && ifaceFinalSegmentAllowed) {
-                    UINFO(9, indent() << "iface capture allow final-segment typedef name="
-                                      << nodep->name() << " dotText='" << m_ds.m_dotText
+                      || ifaceFinalSegmentAllowed);
+                if (ifaceFinalSegmentAllowed) {
+                    UINFO(9, indent() << "allow final-segment typedef name="
+                                      << nodep->prettyNameQ() << " dotText='" << m_ds.m_dotText
                                       << "' dotSym=" << m_ds.m_dotSymp);
                 }
                 if (ok) {
@@ -4361,7 +4481,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     }
                 }
             } else if (AstParamTypeDType* const defp = VN_CAST(foundp->nodep(), ParamTypeDType)) {
-                ok = (m_ds.m_dotPos == DP_NONE || m_ds.m_dotPos == DP_SCOPE);
+                ok = (m_ds.m_dotPos == DP_NONE || m_ds.m_dotPos == DP_SCOPE
+                      || m_ds.m_dotPos == DP_FINAL);
                 if (ok) {
                     AstRefDType* const refp = new AstRefDType{nodep->fileline(), nodep->name()};
                     refp->refDTypep(defp);
@@ -5521,13 +5642,20 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 // If the resolved dtype is a RefDType with an interface typedef,
                 // ensure it's captured for re-resolution during paramed pass
-                if (AstRefDType* const resolvedRefp = VN_CAST(resolvedDTypep, RefDType)) {
-                    if (resolvedRefp->user2p() && !V3LinkDotIfaceCapture::find(resolvedRefp)) {
-                        AstCell* const cellp = VN_AS(resolvedRefp->user2p(), Cell);
-                        UINFO(9, indent() << "iface capture re-capture resolved RefDType="
-                                          << resolvedRefp << " cell=" << cellp << "\n");
-                        V3LinkDotIfaceCapture::add(resolvedRefp, cellp, m_modp,
-                                                   resolvedRefp->typedefp());
+                if (V3LinkDotIfaceCapture::enabled()) {
+                    if (AstRefDType* const resolvedRefp = VN_CAST(resolvedDTypep, RefDType)) {
+                        if (AstCell* const cellp = VN_CAST(resolvedRefp->user2p(), Cell)) {
+                            const string cellPath = cellp->name();
+                            const V3LinkDotIfaceCapture::CaptureKey findKey{
+                                m_modp ? m_modp->name() : "", resolvedRefp->name(), cellPath, ""};
+                            if (!V3LinkDotIfaceCapture::find(findKey)) {
+                                UINFO(9, indent() << "iface capture re-capture resolved RefDType="
+                                                  << resolvedRefp << " cellPath='" << cellPath
+                                                  << "'\n");
+                                V3LinkDotIfaceCapture::add(resolvedRefp, cellPath, m_modp,
+                                                           resolvedRefp->typedefp());
+                            }
+                        }
                     }
                 }
             }
@@ -5550,6 +5678,21 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (V3LinkDotIfaceCapture::enabled() && nodep->user2p()) {
                 UINFO(9, indent() << "iface capture skip revisit name=" << nodep->name()
                                   << " already user3 and captured cell=" << nodep->user2p());
+            }
+            if (m_statep->forParamed()) {
+                if (AstNode* const cpackagep = nodep->classOrPackageOpp()) {
+                    if (AstClassOrPackageRef* const cpackagerefp
+                        = VN_CAST(cpackagep, ClassOrPackageRef)) {
+                        if (!cpackagerefp->classOrPackageSkipp()) {
+                            VSymEnt* const foundp = m_statep->resolveClassOrPackage(
+                                m_ds.m_dotSymp, cpackagerefp, true, false,
+                                "class/package reference");
+                            if (!foundp) return;
+                        }
+                        nodep->classOrPackagep(cpackagerefp->classOrPackageSkipp());
+                    }
+                    VL_DO_DANGLING(pushDeletep(cpackagep->unlinkFrBack()), cpackagep);
+                }
             }
             return;
         }
@@ -5595,21 +5738,22 @@ class LinkDotResolveVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(cpackagep->unlinkFrBack()), cpackagep);
         }
 
-        const bool capEnable = V3LinkDotIfaceCapture::enabled();
-        const auto* const capEntryp = capEnable ? V3LinkDotIfaceCapture::find(nodep) : nullptr;
+        const V3LinkDotIfaceCapture::CapturedEntry* capEntryp = V3LinkDotIfaceCapture::find(nodep);
         const bool captureMapHit = capEntryp != nullptr;
-        AstCell* const captureEntryCellp = capEntryp ? capEntryp->cellp : nullptr;
         AstTypedef* const capturedTypedefp = capEntryp ? capEntryp->typedefp : nullptr;
         const VSymEnt* const capturedTypedefSymp
-            = capturedTypedefp ? m_statep->getNodeSym(capturedTypedefp) : nullptr;
+            = (capturedTypedefp && m_statep->existsNodeSym(capturedTypedefp))
+                  ? m_statep->getNodeSym(capturedTypedefp)
+                  : nullptr;
 
-        const bool ifaceCaptured = capEnable && nodep->user2p();
+        const bool ifaceCaptured = V3LinkDotIfaceCapture::enabled() && nodep->user2p();
         const bool missingIfaceContext = captureMapHit && !ifaceCaptured;
         const char* const passLabel = m_statep->forParamed() ? "paramed" : "primary";
         if (missingIfaceContext) {
             UINFO(9, indent() << "iface capture captured typedef missing user2 name="
-                              << nodep->name() << " ref=" << nodep << " pass=" << passLabel
-                              << " entryCell=" << captureEntryCellp);
+                              << nodep->prettyNameQ() << " ref=" << nodep << " pass=" << passLabel
+                              << " cellPath='" << (capEntryp ? capEntryp->cellPath : "<none>")
+                              << "'");
         }
         AstCell* const capturedCellp = ifaceCaptured ? VN_CAST(nodep->user2p(), Cell) : nullptr;
 
@@ -5618,11 +5762,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
         bool captureEntryRetired = false;
         const auto retireCapture = [&](const char* reason) {
             if (!ifaceCaptured || captureEntryRetired) return;
-            const auto* entry = V3LinkDotIfaceCapture::find(nodep);
-            AstCell* const entryCell = entry ? entry->cellp : nullptr;
             UINFO(9, indent() << "iface capture retire captured typedef reason=" << reason
                               << " name=" << nodep->name() << " pass=" << passLabel
-                              << " user2=" << nodep->user2p() << " entryCell=" << entryCell);
+                              << " user2=" << nodep->user2p());
+            // Erase all entries matching this refp pointer
             const bool erased = V3LinkDotIfaceCapture::erase(nodep);
             captureEntryRetired = true;
             UINFO(9, indent() << "iface capture retire erase result name=" << nodep->name()
@@ -5648,10 +5791,25 @@ class LinkDotResolveVisitor final : public VNVisitor {
             nodep->classOrPackagep(cpackagerefp->classOrPackageSkipp());
             m_ds.m_dotPos = DP_SCOPE;
         } else if (!ifaceCaptured) {
-            checkNoDot(nodep);
+            // Allow REFDTYPE under DOT when referencing interface typedefs
+            // This is needed for patterns like: typedef iface.a_t a_t;
+            // The dependency graph handles resolution when IfaceCapture is disabled
+            const bool ifaceFinalSegmentAllowed
+                = (m_ds.m_dotPos == DP_FINAL) && m_ds.m_dotSymp
+                  && VN_IS(m_ds.m_dotSymp->nodep(), Cell)
+                  && VN_CAST(m_ds.m_dotSymp->nodep(), Cell)->modp()
+                  && VN_IS(VN_CAST(m_ds.m_dotSymp->nodep(), Cell)->modp(), Iface);
+            if (!ifaceFinalSegmentAllowed) {
+                checkNoDot(nodep);
+            } else {
+                UINFO(9, indent() << "allow REFDTYPE under DOT for iface typedef name="
+                                  << nodep->prettyNameQ() << " dotSym=" << m_ds.m_dotSymp);
+                // Clear the dot state so we don't propagate errors
+                m_ds.m_dotPos = DP_SCOPE;
+            }
         } else {
             UINFO(9, indent() << "iface capture consume captured iface context name="
-                              << nodep->name() << " cell=" << capturedCellp);
+                              << nodep->prettyNameQ() << " cell=" << capturedCellp);
             m_ds.m_dotPos = DP_SCOPE;
             forcedIfaceDotScope = true;
             // Set dotSymp to the cell's symbol entry so lookup happens in the interface scope
@@ -5710,19 +5868,26 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     // class capture: capture typedef references inside parameterized classes
                     // Only capture if we're referencing from OUTSIDE the class (not
                     // self-references)
-                    if (m_statep->forPrimary()) {
+                    if (V3LinkDotIfaceCapture::enabled() && m_statep->forPrimary()) {
                         AstClass* const classp = VN_CAST(nodep->classOrPackagep(), Class);
                         if (classp && classp->hasGParam() && classp != m_modp) {
-                            UINFO(9, indent()
-                                         << "class capture add typedef name=" << nodep->name()
-                                         << " class=" << classp->name() << " typedef=" << defp);
+                            UINFO(9, indent() << "class capture add typedef name="
+                                              << nodep->prettyNameQ() << " class="
+                                              << classp->prettyNameQ() << " typedef=" << defp);
                             V3LinkDotIfaceCapture::addClass(nodep, classp, m_modp, defp);
                         }
                     }
 
                 } else if (AstParamTypeDType* const defp
                            = foundp ? VN_CAST(foundp->nodep(), ParamTypeDType) : nullptr) {
-                    if (defp == nodep->backp()) {  // Where backp is typically typedef
+                    // A PARAMTYPEDTYPE's child REFDTYPE referencing itself is the normal
+                    // AST structure for type parameters (e.g., "type T = base" has a child
+                    // REFDTYPE for the default type). Only error on true recursion where
+                    // a TYPEDEF contains a reference back to itself.
+                    const bool isParamTypeChild = (defp == nodep->backp());
+                    const bool isTypedefRecursion
+                        = isParamTypeChild && VN_IS(defp->backp(), Typedef);
+                    if (isTypedefRecursion) {
                         nodep->v3error("Reference to '"
                                        << m_ds.m_dotText << (m_ds.m_dotText == "" ? "" : ".")
                                        << nodep->prettyName() << "'"
@@ -5732,6 +5897,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         nodep->refDTypep(defp);
                         nodep->classOrPackagep(foundp->classOrPackagep());
                         resolvedCapturedTypedef = true;
+                        captureIfaceParamType(nodep, defp, capturedCellp, capEntryp);
                     }
                 } else if (AstClass* const defp
                            = foundp ? VN_CAST(foundp->nodep(), Class) : nullptr) {
@@ -5927,12 +6093,10 @@ public:
         : m_statep{statep} {
         UINFO(4, __FUNCTION__ << ": ");
 
-        if (m_statep->forParamed()) {
-            V3LinkDotIfaceCapture::forEach(
-                [](const V3LinkDotIfaceCapture::CapturedIfaceTypedef& entry) {
-                    if (AstRefDType* const refp = entry.refp) refp->user3(false);
-                });
-        }
+        // Note: no need to clear user3 on ledger entries here.
+        // VNUser3InUse (m_inuser3) already logically clears user3 on all
+        // nodes via the generation counter.  The ledger may also hold stale
+        // refp pointers to deleted AST nodes, so iterating it is unsafe.
 
         iterate(rootp);
         std::map<std::string, AstNodeModule*> modulesToRevisit = std::move(m_modulesToRevisit);
