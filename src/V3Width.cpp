@@ -4970,6 +4970,38 @@ class WidthVisitor final : public VNVisitor {
                 }
                 patp = nextp;
             }
+            // Handle recursive default expansion (e.g. multidim unpacked array assignment)
+            if (defaultp && nodep->dtypep()) {
+                // The type of the pattern itself
+                AstNodeDType* patternDType = nodep->dtypep()->skipRefp();
+                // Check if we are targeting an array
+                if (AstNodeArrayDType* arrayDType = VN_CAST(patternDType, NodeArrayDType)) {
+                    AstNodeDType* elementTypep = arrayDType->subDTypep()->skipRefp();
+                    // If the element type is ALSO an array, but our default value is NOT a pattern
+                    if (VN_IS(elementTypep, NodeArrayDType) && !VN_IS(defaultp->lhssp(), Pattern)) {
+                        UINFO(4, "Synthesizing recursive default pattern for " << nodep << endl);
+                        // Get the current value (e.g. '0)
+                        AstNodeExpr* valueToWrapp = defaultp->lhssp();
+                        // Clone it
+                        AstNodeExpr* clonedValuep = valueToWrapp->cloneTree(true);
+                        // Create the wrapper pattern: '{ default: <clonedValuep> }
+                        AstPattern* innerPatternp
+                            = new AstPattern(valueToWrapp->fileline(), nullptr);
+                        // Create the member, default: <clonedValuep>
+                        // AstPatMember ( fileline, value_expr, key_node, rep_node )
+                        AstPatMember* innerMemberp = new AstPatMember(
+                            valueToWrapp->fileline(), clonedValuep, nullptr, nullptr);
+                        innerMemberp->isDefault(true);
+                        // Add member to pattern
+                        innerPatternp->addItemsp(innerMemberp);
+                        // Replace the original '0 with the new '{default: '0}
+                        valueToWrapp->replaceWith(innerPatternp);
+                        // Cleanup the original value node. It is now detached so delete it.
+                        VL_DO_DANGLING(valueToWrapp->deleteTree(), valueToWrapp);
+                    }
+                }
+            }
+            //*/
             while (const AstConstDType* const vdtypep = VN_CAST(dtypep, ConstDType)) {
                 dtypep = vdtypep->subDTypep()->skipRefp();
             }
