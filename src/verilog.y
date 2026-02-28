@@ -6944,6 +6944,7 @@ covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
         /*cont*/ yENDGROUP endLabelE
                         { AstClass *cgClassp = new AstClass{$<fl>2, *$2, PARSEP->libname()};
                           cgClassp->isCovergroup(true);
+                          v3Global.useCovergroup(true);
 
                           AstNode* sampleArgs = nullptr;
 
