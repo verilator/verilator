@@ -244,6 +244,9 @@ V3LinkDotIfaceCapture::ReachableInfo V3LinkDotIfaceCapture::collectReachable(Ast
 AstNodeModule* V3LinkDotIfaceCapture::findCorrectClone(AstNodeModule* wrongOwnerp,
                                                        const ReachableInfo& info,
                                                        std::set<AstNodeModule*>& visited) {
+    // Believed unreachable: only called from disambiguateTarget structural
+    // disambig path, which is asserted unreachable (all entries have cellPath).
+    v3fatalSrc("findCorrectClone called - believed unreachable");
     const string wrongOrigName = effectiveOrigName(wrongOwnerp);
     auto it = info.byOrigName.find(wrongOrigName);
     if (it == info.byOrigName.end()) return nullptr;
@@ -325,23 +328,19 @@ V3LinkDotIfaceCapture::disambiguateTarget(AstNodeModule* curOwnerp, AstNodeModul
     if (!curOwnerp || curOwnerp == ownerModp || curOwnerp->dead() || VN_IS(curOwnerp, Package))
         return nullptr;
     if (correctModp && correctModp != curOwnerp) {
-        UINFO(9, "finalizeIfaceCapture " << label
-                                         << ": cellPath disambiguated"
-                                            " refp="
-                                         << refp->name() << " cellPath='" << entry.cellPath
-                                         << "' cloneCellPath='" << entry.cloneCellPath
-                                         << "' owner=" << curOwnerp->name()
-                                         << " -> correctMod=" << correctModp->name() << endl);
-        return correctModp;
+        // Believed unreachable: followCellPath resolves to the correct owner,
+        // so correctModp never differs from curOwnerp in practice.
+        v3fatalSrc("disambiguateTarget: cellPath disambiguated path reached for "
+                   << refp->prettyNameQ() << " in " << curOwnerp->prettyNameQ());
+        return correctModp;  // LCOV_EXCL_LINE
     }
     if (correctModp && correctModp == curOwnerp) {
-        UINFO(9, "finalizeIfaceCapture " << label
-                                         << ": already correct"
-                                            " refp="
-                                         << refp->name() << " cellPath='" << entry.cellPath
-                                         << "' cloneCellPath='" << entry.cloneCellPath
-                                         << "' owner=" << curOwnerp->name() << endl);
-        return nullptr;
+        // Believed unreachable: followCellPath resolves to the owner module,
+        // which matches curOwnerp, but this is filtered by the first
+        // condition (curOwnerp == ownerModp) above.
+        v3fatalSrc("disambiguateTarget: already-correct path reached for "
+                   << refp->prettyNameQ() << " in " << curOwnerp->prettyNameQ());
+        return nullptr;  // LCOV_EXCL_LINE
     }
     if (!correctModp && !entry.cellPath.empty()) {
         UINFO(9, "finalizeIfaceCapture " << label
@@ -352,19 +351,13 @@ V3LinkDotIfaceCapture::disambiguateTarget(AstNodeModule* curOwnerp, AstNodeModul
                                          << "' owner=" << curOwnerp->name() << endl);
         return nullptr;
     }
-    // No cellPath - fall back to structural disambiguation
+    // No cellPath - fall back to structural disambiguation.
+    // Believed unreachable: all captured entries have non-empty cellPath.
     UASSERT_OBJ(entry.cellPath.empty(), refp,
                 "Unexpected state: correctModp=null but cellPath is non-empty");
-    if (reachable.flat.count(curOwnerp)) return nullptr;
-    std::set<AstNodeModule*> visited;
-    AstNodeModule* fixModp = findCorrectClone(curOwnerp, reachable, visited);
-    UINFO(9, "finalizeIfaceCapture " << label
-                                     << ": structural disambig"
-                                        " refp="
-                                     << refp->name() << " cloneCellPath='" << entry.cloneCellPath
-                                     << "' owner=" << curOwnerp->name() << " -> "
-                                     << (fixModp ? fixModp->name() : "<null>") << endl);
-    return fixModp;
+    v3fatalSrc("disambiguateTarget: structural disambig fallback reached for "
+               << refp->prettyNameQ() << " in " << curOwnerp->prettyNameQ());
+    return nullptr;  // LCOV_EXCL_LINE
 }
 
 int V3LinkDotIfaceCapture::fixDeadRefs(AstRefDType* refp, AstNodeModule* containingModp,
@@ -454,6 +447,10 @@ int V3LinkDotIfaceCapture::fixDeadRefs(AstRefDType* refp, AstNodeModule* contain
             }
             // Try refDTypep if we just fixed it
             if (!newDtp && refp->refDTypep()) {
+                // Believed unreachable: typedef subDTypep path above always succeeds.
+                // If this fires, the assumption is wrong and we need a test.
+                v3fatalSrc("fixDeadRefs dtypep: refDTypep fallback reached for "
+                           << refp->prettyNameQ());
                 newDtp = refp->refDTypep();
                 AstNodeModule* const newDtOwnerp = findOwnerModule(newDtp);
                 if (newDtOwnerp && newDtOwnerp->dead()) newDtp = nullptr;
@@ -465,12 +462,9 @@ int V3LinkDotIfaceCapture::fixDeadRefs(AstRefDType* refp, AstNodeModule* contain
                 refp->dtypep(newDtp);
                 ++fixed;
             } else {
-                // Last resort: clear dtypep to avoid dangling pointer
-                UINFO(9, "iface capture finalizeCapture ("
-                             << location << "): clearing dead dtypep refp=" << refp
-                             << " dead=" << dtOwnerp->name() << endl);
-                refp->dtypep(nullptr);
-                ++fixed;
+                // Believed unreachable: one of the above derivations always succeeds.
+                v3fatalSrc("fixDeadRefs dtypep: could not derive live dtypep for "
+                           << refp->prettyNameQ() << " dead owner=" << dtOwnerp->name());
             }
         }
     }
@@ -617,6 +611,9 @@ const V3LinkDotIfaceCapture::CapturedEntry* V3LinkDotIfaceCapture::find(const As
 }
 
 bool V3LinkDotIfaceCapture::erase(const AstRefDType* refp) {
+    // Believed unreachable: erase is only called from the visitRefDType
+    // captured-typedef retirement path (retireCapture lambda).
+    v3fatalSrc("erase(AstRefDType*) called - believed unreachable");
     if (!refp || s_map.empty()) return false;
     bool any = false;
     for (auto it = s_map.begin(); it != s_map.end();) {
@@ -631,24 +628,11 @@ bool V3LinkDotIfaceCapture::erase(const AstRefDType* refp) {
 }
 
 bool V3LinkDotIfaceCapture::replaceRef(const AstRefDType* oldRefp, AstRefDType* newRefp) {
-    if (!oldRefp || !newRefp || s_map.empty()) return false;
-    std::vector<CaptureKey> keys;
-    for (const auto& kv : s_map) {
-        if (kv.second.refp == oldRefp) keys.push_back(kv.first);
-    }
-    bool any = false;
-    for (const auto& oldKey : keys) {
-        auto mit = s_map.find(oldKey);
-        if (mit == s_map.end()) continue;
-        auto entry = mit->second;
-        entry.refp = newRefp;
-        s_map.erase(mit);
-        const CaptureKey newKey{oldKey.ownerModName, newRefp->name(), oldKey.cellPath,
-                                oldKey.cloneCellPath};
-        s_map.emplace(newKey, entry);
-        any = true;
-    }
-    return any;
+    // Only caller is promoteVarToParamType, which is believed unreachable
+    // in legal SystemVerilog.  Assert to verify this assumption.
+    v3fatalSrc("replaceRef called - believed unreachable (promoteVarToParamType)");
+    // v3fatalSrc is [[noreturn]]
+    VL_UNREACHABLE;
 }
 
 // Walk a dot-separated cell path through the cell / IFACEREFDTYPE hierarchy
@@ -726,10 +710,12 @@ void V3LinkDotIfaceCapture::propagateClone(const TemplateKey& tkey, AstRefDType*
         const CaptureKey emptyKey{tkey.ownerModName, tkey.refName, "", ""};
         it = s_map.find(emptyKey);
         if (it == s_map.end()) {
-            UINFO(9, "propagateClone: no entry for tkey={"
-                         << tkey.ownerModName << "," << tkey.refName << "," << tkey.cellPath
-                         << "} cloneCellPath='" << cloneCellPath << "' - skipping" << endl);
-            return;
+            // Believed unreachable: propagateClone is called for entries
+            // that were captured, so the template should always exist.
+            v3fatalSrc("propagateClone: no entry for tkey={"
+                       << tkey.ownerModName << "," << tkey.refName << "," << tkey.cellPath
+                       << "} cloneCellPath='" << cloneCellPath << "'");
+            return;  // LCOV_EXCL_LINE
         }
     }
 
@@ -834,8 +820,10 @@ void V3LinkDotIfaceCapture::captureTypedefContext(
     // (expected for PARAMTYPEDTYPE entries where dotText is not set).
     const string cellPath = dotText.empty() ? ifaceCellp->name() : dotText;
     if (dotText.empty()) {
-        UINFO(9, indentFn() << "iface capture using ifaceCellp->name() fallback: '" << cellPath
-                            << "' (dotText empty)" << endl);
+        // Believed unreachable: dotText is always set by the caller for
+        // interface typedef captures.
+        v3fatalSrc("captureTypedefContext: dotText empty for refp="
+                   << refp->prettyNameQ());
     }
     UASSERT(!cellPath.empty(),
             "captureTypedefContext: cellPath is empty for refp='" << refp->prettyNameQ() << "'");
@@ -893,9 +881,11 @@ void V3LinkDotIfaceCapture::captureTypedefContext(
         return;
     }
 
-    if (promoteVarCb && promoteVarCb(enclosingVarp, refp)) return;
-    UINFO(9, indentFn() << "iface capture failed to convert owner var name="
-                        << enclosingVarp->name());
+    // Believed unreachable: in legal SV, a typedef referencing an interface
+    // type creates a ParamTypeDType, not a Var.  The isIfaceParent and isParam
+    // checks above handle the only known Var patterns.
+    v3fatalSrc("captureTypedefContext: unexpected non-param non-ifaceParent Var '"
+               << enclosingVarp->prettyNameQ() << "' containing interface RefDType");
 }
 
 void V3LinkDotIfaceCapture::captureInnerParamTypeRefs(AstParamTypeDType* paramTypep,
@@ -927,10 +917,11 @@ void V3LinkDotIfaceCapture::captureInnerParamTypeRefs(AstParamTypeDType* paramTy
                     }
                 }
                 if (nestedCellName.empty()) {
-                    UINFO(9, "addParamType WARNING: could not find cell for nested iface '"
-                                 << refOwnerModp->name() << "' in '"
-                                 << (ptOwnerModp ? ptOwnerModp->name() : "<null>")
-                                 << "' - using parent cellPath='" << cellPath << "'" << endl);
+                    // Believed unreachable: the nested interface cell should
+                    // always be found in the owner module's statements.
+                    v3fatalSrc("captureInnerParamTypeRefs: could not find cell for nested iface '"
+                               << refOwnerModp->prettyNameQ() << "' in '"
+                               << (ptOwnerModp ? ptOwnerModp->prettyNameQ() : "<null>") << "'");
                 }
                 UINFO(9, "addParamType: also capturing inner RefDType "
                              << innerRefp << " refDTypep owner=" << refOwnerModp->name()
@@ -1061,24 +1052,11 @@ class TypeTableDeadRefVisitor final : public VNVisitor {
                 }
             }
         }
-        // If we can't find the clone, try deriving from the member's
-        // subDTypep which may have been fixed already
-        if (memberp->subDTypep()) {
-            AstNodeDType* const subDtp = memberp->subDTypep();
-            AstNodeModule* const subOwnerp = V3LinkDotIfaceCapture::findOwnerModule(subDtp);
-            if (!subOwnerp || !subOwnerp->dead()) {
-                // subDTypep is live - use it as dtypep
-                UINFO(9, "iface capture type table MEMBERDTYPE fixup (from subDTypep): "
-                             << memberp->name() << " dtypep " << dtOwnerp->name()
-                             << " -> subDTypep" << endl);
-                memberp->dtypep(subDtp);
-                ++m_fixed;
-                return;
-            }
-        }
-        UINFO(9, "iface capture type table MEMBERDTYPE WARNING: "
-                     << memberp->name() << " dtypep points to dead " << dtOwnerp->name()
-                     << " - could not fix" << endl);
+        // Believed unreachable: one of the above fixup paths (prettyName or
+        // typedef) always succeeds when cloneModp is found, and cloneModp is
+        // always found when the member's dtypep points to a dead template.
+        v3fatalSrc("MemberDType fixup: could not fix member '"
+                   << memberp->name() << "' dtypep points to dead " << dtOwnerp->name());
     }
 
     void visit(AstNode* nodep) override { iterateChildren(nodep); }

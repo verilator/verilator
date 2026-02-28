@@ -216,7 +216,8 @@ public:
     static void forEach(const std::function<void(const CapturedEntry&)>& fn);
     static void forEachOwned(const AstNodeModule* ownerModp,
                              const std::function<void(const CapturedEntry&)>& fn);
-    // Pointer-based replaceRef: retarget all entries whose refp matches oldRefp
+    // Pointer-based replaceRef: retarget all entries whose refp matches oldRefp.
+    // Only caller is promoteVarToParamType which is unreachable in legal SV.
     static bool replaceRef(const AstRefDType* oldRefp, AstRefDType* newRefp);
     static std::size_t size() { return s_map.size(); }
 
