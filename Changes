@@ -13,6 +13,7 @@ Verilator 5.047 devel
 
 **Other:**
 
+* Fix wide conditional short circuiting (#7155).
 
 
 Verilator 5.046 2026-02-28

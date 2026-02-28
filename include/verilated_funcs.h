@@ -2792,10 +2792,9 @@ static inline void VL_SELASSIGN_WW(int rbits, int obits, WDataOutP iowp, WDataIn
 //======================================================================
 // Triops
 
-static inline WDataOutP VL_COND_WIWW(int obits, WDataOutP owp, int cond, WDataInP const w1p,
-                                     WDataInP const w2p) VL_MT_SAFE {
-    return VL_MEMCPY_W(owp, cond ? w1p : w2p, VL_WORDS_I(obits));
-}
+// This must be a macro in order for short-circuiting of the values to work.
+#define VL_COND_WIWW(obits, owp, cond, w1p, w2p) \
+    VL_MEMCPY_W(owp, (cond) ? (w1p) : (w2p), VL_WORDS_I(obits))
 
 //======================================================================
 // Constification
