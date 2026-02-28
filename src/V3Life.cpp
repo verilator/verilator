@@ -129,6 +129,7 @@ public:
         const AstVar* const varp = vscp->varp();
         // We don't optimize any public sigs
         if (varp->isSigPublic()) return;
+        if (varp->isReadByDpi()) return;
         if (varp->sensIfacep()) return;
         // Check the var entry, and remove if appropriate
         AstNodeStmt* const oldassp = entr.assignp();

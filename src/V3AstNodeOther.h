@@ -1933,6 +1933,7 @@ class AstVar final : public AstNode {
     bool m_isLatched : 1;  // Not assigned in all control paths of combo always
     bool m_isForceable : 1;  // May be forced/released externally from user C code
     bool m_isForcedByCode : 1;  // May be forced/released from AstAssignForce/AstRelease
+    bool m_isReadByDpi : 1;  // This variable can be read by a DPI Export
     bool m_isWrittenByDpi : 1;  // This variable can be written by a DPI Export
     bool m_isWrittenBySuspendable : 1;  // This variable can be written by a suspendable process
     bool m_ignorePostRead : 1;  // Ignore reads in 'Post' blocks during ordering
@@ -1987,6 +1988,7 @@ class AstVar final : public AstNode {
         m_isLatched = false;
         m_isForceable = false;
         m_isForcedByCode = false;
+        m_isReadByDpi = false;
         m_isWrittenByDpi = false;
         m_isWrittenBySuspendable = false;
         m_ignorePostRead = false;
@@ -2152,6 +2154,8 @@ public:
     void setForceable() { m_isForceable = true; }
     void setForcedByCode() { m_isForcedByCode = true; }
     bool isForced() const { return m_isForceable || m_isForcedByCode; }
+    bool isReadByDpi() const { return m_isReadByDpi; }
+    void setReadByDpi() { m_isReadByDpi = true; }
     bool isWrittenByDpi() const { return m_isWrittenByDpi; }
     void setWrittenByDpi() { m_isWrittenByDpi = true; }
     bool isWrittenBySuspendable() const { return m_isWrittenBySuspendable; }
