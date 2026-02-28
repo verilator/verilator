@@ -80,6 +80,7 @@
 #endif
 
 #include "verilated_threads.h"
+#include "verilated_threading_advisor.h"
 // clang-format on
 
 #include "verilated_trace.h"
@@ -2965,7 +2966,14 @@ void VerilatedContext::addModel(const VerilatedModel* modelp) {
 
 VerilatedVirtualBase* VerilatedContext::threadPoolp() {
     if (m_threads == 1) return nullptr;
-    if (!m_threadPool) m_threadPool.reset(new VlThreadPool{this, m_threads - 1});
+    if (!m_threadPool) {
+        m_threadPool.reset(new VlThreadPool{this, m_threads - 1});
+        // Run threading advisor if enabled via +verilator+threading+advisor
+        if (threadingAdvisor()) {
+            static VlThreadingAdvisor advisor;
+            advisor.analyze(m_threads, quiet());
+        }
+    }
     return m_threadPool.get();
 }
 
@@ -3082,6 +3090,8 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
             profExecFilename(str);
         } else if (commandArgVlString(arg, "+verilator+prof+vlt+file+", str)) {
             profVltFilename(str);
+        } else if (arg == "+verilator+threading+advisor") {
+            threadingAdvisor(true);
         } else if (arg == "+verilator+quiet") {
             quiet(true);
         } else if (commandArgVlUint64(arg, "+verilator+rand+reset+", u64, 0, 2)) {

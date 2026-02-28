@@ -410,6 +410,7 @@ protected:
         // Fast path
         uint64_t m_profExecStart = 1;  // +prof+exec+start time
         uint32_t m_profExecWindow = 2;  // +prof+exec+window size
+        bool m_threadingAdvisor = false;  // +threading+advisor enabled
         // Slow path
         std::string m_coverageFilename;  // +coverage+file filename
         std::string m_profExecFilename;  // +prof+exec+file filename
@@ -660,6 +661,10 @@ public:
     void profExecFilename(const std::string& flag) VL_MT_SAFE;
     std::string profVltFilename() const VL_MT_SAFE;
     void profVltFilename(const std::string& flag) VL_MT_SAFE;
+
+    // Internal: Threading advisor
+    bool threadingAdvisor() const VL_MT_SAFE { return m_ns.m_threadingAdvisor; }
+    void threadingAdvisor(bool flag) VL_MT_SAFE { m_ns.m_threadingAdvisor = flag; }
 
     // Internal: SMT solver program
     std::string solverProgram() const VL_MT_SAFE;
