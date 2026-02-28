@@ -267,33 +267,26 @@ int V3LinkDotIfaceCapture::fixDeadRefs(AstRefDType* refp, AstNodeModule* contain
         AstNodeModule* const dtOwnerp = findOwnerModule(refp->dtypep());
         if (dtOwnerp && dtOwnerp->dead()) {
             AstNodeDType* newDtp = nullptr;
-            // Try to derive from the fixed typedef's subDTypep
+            // Derive from the fixed typedef's subDTypep.  This always succeeds
+            // because the typedefp was fixed above to point to a clone's typedef
+            // whose subDTypep is a live type-table entry or clone-owned dtype.
+            // If this fires, either typedefp was not fixed or subDTypep is stale.
+            // Dump refp->typedefp() and dtOwnerp to diagnose.
             if (refp->typedefp() && refp->typedefp()->subDTypep()) {
                 newDtp = refp->typedefp()->subDTypep();
                 AstNodeModule* const newDtOwnerp = findOwnerModule(newDtp);
                 if (newDtOwnerp && newDtOwnerp->dead()) newDtp = nullptr;
             }
-            // Try refDTypep if we just fixed it
-            if (!newDtp && refp->refDTypep()) {
-                // Believed unreachable: typedef subDTypep path above always succeeds.
-                // If this fires, the assumption is wrong and we need a test.
-                v3fatalSrc("fixDeadRefs dtypep: refDTypep fallback reached for "
-                           << refp->prettyNameQ());
-                newDtp = refp->refDTypep();
-                AstNodeModule* const newDtOwnerp = findOwnerModule(newDtp);
-                if (newDtOwnerp && newDtOwnerp->dead()) newDtp = nullptr;
-            }
-            if (newDtp) {
-                UINFO(9, "iface capture finalizeCapture ("
-                             << location << "): fixing dtypep refp=" << refp
-                             << " dead=" << dtOwnerp->name() << " -> " << newDtp << endl);
-                refp->dtypep(newDtp);
-                ++fixed;
-            } else {
-                // Believed unreachable: one of the above derivations always succeeds.
-                v3fatalSrc("fixDeadRefs dtypep: could not derive live dtypep for "
-                           << refp->prettyNameQ() << " dead owner=" << dtOwnerp->name());
-            }
+            UASSERT_OBJ(newDtp, refp,
+                        "fixDeadRefs dtypep: could not derive live dtypep for "
+                            << refp->prettyNameQ() << " dead owner=" << dtOwnerp->name()
+                            << " typedefp="
+                            << (refp->typedefp() ? refp->typedefp()->name() : "<null>"));
+            UINFO(9, "iface capture finalizeCapture ("
+                         << location << "): fixing dtypep refp=" << refp
+                         << " dead=" << dtOwnerp->name() << " -> " << newDtp << endl);
+            refp->dtypep(newDtp);
+            ++fixed;
         }
     }
 
@@ -506,29 +499,23 @@ AstNodeModule* V3LinkDotIfaceCapture::followCellPath(AstNodeModule* startModp,
 void V3LinkDotIfaceCapture::propagateClone(const TemplateKey& tkey, AstRefDType* newRefp,
                                            const string& cloneCellPath) {
     UASSERT(newRefp, "propagateClone() called with null newRefp");
-    // Find the template entry by path
+    // Find the template entry by exact key.  The entry was captured during
+    // the primary LinkDot pass, so it must exist.  If this fires, either the
+    // capture was missed or the key components (ownerModName, refName,
+    // cellPath) diverged between capture and clone time.
     const CaptureKey templateKey{tkey.ownerModName, tkey.refName, tkey.cellPath, ""};
     auto it = s_map.find(templateKey);
-    if (it == s_map.end()) {
-        // Try empty cellPath as fallback (PARAMTYPEDTYPE entries may have empty cellPath)
-        const CaptureKey emptyKey{tkey.ownerModName, tkey.refName, "", ""};
-        it = s_map.find(emptyKey);
-        if (it == s_map.end()) {
-            // Believed unreachable: propagateClone is called for entries
-            // that were captured, so the template should always exist.
-            v3fatalSrc("propagateClone: no entry for tkey={"
-                       << tkey.ownerModName << "," << tkey.refName << "," << tkey.cellPath
-                       << "} cloneCellPath='" << cloneCellPath << "'");
-            return;  // LCOV_EXCL_LINE
-        }
-    }
+    UASSERT(it != s_map.end(),
+            "propagateClone: no template entry for tkey={"
+                << tkey.ownerModName << "," << tkey.refName << "," << tkey.cellPath
+                << "} cloneCellPath='" << cloneCellPath << "'");
 
     // Create a new clone entry - ledger only.
     // Target resolution (paramTypep/typedefp) happens in finalizeIfaceCapture
     // where cell pointers are already wired to the correct interface clones.
     CapturedEntry newEntry = it->second;
     newEntry.refp = newRefp;
-    newEntry.cellPath = tkey.cellPath;  // ensure cellPath is set (empty-key fallback)
+    newEntry.cellPath = tkey.cellPath;
     newEntry.cloneCellPath = cloneCellPath;
     // Clear stale template targets - finalizeIfaceCapture will find the
     // correct ones by walking cellPath in the clone's owner module.
@@ -679,8 +666,10 @@ void V3LinkDotIfaceCapture::captureInnerParamTypeRefs(AstParamTypeDType* paramTy
                     }
                 }
                 if (nestedCellName.empty()) {
-                    // Believed unreachable: the nested interface cell should
-                    // always be found in the owner module's statements.
+                    // The nested interface cell should always be found in the
+                    // owner module's statements.  If this fires, either
+                    // ptOwnerModp is wrong (findOwnerModule returned the wrong
+                    // module) or the cell was pruned before capture.
                     v3fatalSrc("captureInnerParamTypeRefs: could not find cell for nested iface '"
                                << refOwnerModp->prettyNameQ() << "' in '"
                                << (ptOwnerModp ? ptOwnerModp->prettyNameQ() : "<null>") << "'");
@@ -814,11 +803,14 @@ class TypeTableDeadRefVisitor final : public VNVisitor {
                 }
             }
         }
-        // Believed unreachable: one of the above fixup paths (prettyName or
-        // typedef) always succeeds when cloneModp is found, and cloneModp is
-        // always found when the member's dtypep points to a dead template.
+        // One of the above fixup paths (prettyName or typedef) always succeeds
+        // when cloneModp is found.  If this fires, either cloneModp is null
+        // (findLiveCloneOf failed - check that the dead template has a clone)
+        // or the dtype name doesn't match any statement in the clone (check
+        // memberp->dtypep()->prettyName() against cloneModp's statements).
         v3fatalSrc("MemberDType fixup: could not fix member '"
-                   << memberp->name() << "' dtypep points to dead " << dtOwnerp->name());
+                   << memberp->name() << "' dtypep points to dead " << dtOwnerp->name()
+                   << " cloneModp=" << (cloneModp ? cloneModp->name() : "<null>"));
     }
 
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
