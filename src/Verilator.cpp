@@ -420,12 +420,13 @@ static void process() {
 
             // Gate-based logic elimination; eliminate signals and push constant across cell
             // boundaries Instant propagation makes lots-o-constant reduction possibilities.
-            if (v3Global.opt.fGate()) {
-                V3Gate::gateAll(v3Global.rootp());
-                // V3Gate calls constant propagation itself.
-            } else {
-                v3info("Command Line disabled gate optimization with -fno-gate.  "
-                       "This may cause ordering problems.");
+            // Always run gateAll to perform critical downstream normalizations
+            // (like GateInline) even if fGate is false.
+            V3Gate::gateAll(v3Global.rootp());
+
+            if (!v3Global.opt.fGate()) {
+                v3info("Command Line disabled gate optimization with -fno-gate. "
+                       "Only critical normalizations will be performed.");
             }
 
             // Combine COVERINCs with duplicate terms

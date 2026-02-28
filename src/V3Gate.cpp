@@ -1291,26 +1291,33 @@ void V3Gate::gateAll(AstNetlist* netlistp) {
         graphp->removeRedundantEdgesSum(&V3GraphEdge::followAlwaysTrue);
         if (dumpGraphLevel() >= 6) graphp->dumpDotFilePrefixed("gate_simp");
 
-        // Inline variables
+        // Inline variables (CRITICAL for downstream scheduling)
         GateInline::apply(*graphp);
         if (dumpGraphLevel() >= 6) graphp->dumpDotFilePrefixed("gate_inline");
 
-        // Remove redundant logic
-        if (v3Global.opt.fDedupe()) {
-            GateDedupe::apply(*graphp);
-            if (dumpGraphLevel() >= 6) graphp->dumpDotFilePrefixed("gate_dedup");
-        }
+        // --- NON-CRITICAL OPTIMIZATIONS ---
+        // Only run these aggressive logic reducers if gate optimization is enabled
+        if (v3Global.opt.fGate()) {
 
-        // Merge assignments
-        if (v3Global.opt.fAssemble()) {
-            GateMergeAssignments::apply(*graphp);
-            if (dumpGraphLevel() >= 6) graphp->dumpDotFilePrefixed("gate_merge");
-        }
+            // Remove redundant logic
+            if (v3Global.opt.fDedupe()) {
+                GateDedupe::apply(*graphp);
+                if (dumpGraphLevel() >= 6) graphp->dumpDotFilePrefixed("gate_dedup");
+            }
 
-        // Remove unused logic
-        GateUnused::apply(*graphp);
-        if (dumpGraphLevel() >= 3) graphp->dumpDotFilePrefixed("gate_final");
+            // Merge assignments
+            if (v3Global.opt.fAssemble()) {
+                GateMergeAssignments::apply(*graphp);
+                if (dumpGraphLevel() >= 6) graphp->dumpDotFilePrefixed("gate_merge");
+            }
+
+            // Remove unused logic
+            GateUnused::apply(*graphp);
+            if (dumpGraphLevel() >= 3) graphp->dumpDotFilePrefixed("gate_final");
+
+        } // End of fGate() check
     }
 
     V3Global::dumpCheckGlobalTree("gate", 0, dumpTreeEitherLevel() >= 3);
 }
+
