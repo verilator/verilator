@@ -299,12 +299,6 @@ class CodeMotionAnalysisVisitor final : public VNVisitorConst {
         iterateChildrenConst(nodep);
     }
 
-    // VISITORS
-    void visit(AstCoverpoint* nodep) override {
-        // Coverpoints are not statements, so don't analyze their expressions
-        // They will be handled during code generation
-        // Just skip them to avoid null pointer access in m_propsp
-    }
     void visit(AstNode* nodep) override {
         // Push a new stack entry at the start of a list, but only if the list is not a
         // single element (this saves a lot of allocations in expressions)
