@@ -114,10 +114,6 @@ AstIfaceRefDType* V3LinkDotIfaceCapture::ifaceRefFromVarDType(AstNodeDType* dtyp
 }
 
 namespace {
-string effectiveOrigName(const AstNodeModule* modp) {
-    if (modp->origName().empty()) return modp->name();
-    return modp->origName();
-}
 // Resolve the owner module name for a typedef/paramType node.
 // Returns hint if non-empty, otherwise walks backp() to find the owner module name.
 string resolveOwnerName(const string& hint, AstNode* nodep) {
@@ -167,21 +163,6 @@ AstNodeDType* V3LinkDotIfaceCapture::findDTypeByPrettyName(AstNodeModule* modp,
     if (it == cache.m_byPrettyName.end()) return nullptr;
     return it->second.front();
 }
-string V3LinkDotIfaceCapture::findConnName(AstNodeModule* parentModp, AstNodeModule* childModp) {
-    for (AstNode* sp = parentModp->stmtsp(); sp; sp = sp->nextp()) {
-        if (AstCell* const cellp = VN_CAST(sp, Cell)) {
-            if (cellp->modp() == childModp) return cellp->name();
-        }
-        if (AstVar* const varp = VN_CAST(sp, Var)) {
-            if (varp->isIfaceRef() && varp->subDTypep()) {
-                if (AstIfaceRefDType* const irefp = ifaceRefFromVarDType(varp->subDTypep())) {
-                    if (irefp->ifaceViaCellp() == childModp) return varp->name();
-                }
-            }
-        }
-    }
-    return "";
-}
 
 AstNodeModule* V3LinkDotIfaceCapture::findCloneViaHierarchy(AstNodeModule* containingModp,
                                                             AstNodeModule* deadTargetModp,
@@ -205,160 +186,7 @@ AstNodeModule* V3LinkDotIfaceCapture::findCloneViaHierarchy(AstNodeModule* conta
     }
     return nullptr;
 }
-void V3LinkDotIfaceCapture::collectReachableWalk(AstNodeModule* curp, ReachableInfo& info) {
-    for (AstNode* sp = curp->stmtsp(); sp; sp = sp->nextp()) {
-        // Follow cell instantiations
-        if (AstCell* const cellp = VN_CAST(sp, Cell)) {
-            AstNodeModule* const cellModp = cellp->modp();
-            if (cellModp && info.flat.insert(cellModp).second) {
-                const string origName = effectiveOrigName(cellModp);
-                info.byOrigName[origName].push_back(cellModp);
-                info.parentMap[cellModp] = {curp, cellp->name()};
-                collectReachableWalk(cellModp, info);
-            }
-        }
-        // Follow IFACEREFDTYPE port connections
-        if (AstVar* const varp = VN_CAST(sp, Var)) {
-            if (varp->isIfaceRef() && varp->subDTypep()) {
-                if (AstIfaceRefDType* const irefp = ifaceRefFromVarDType(varp->subDTypep())) {
-                    AstIface* const ifacep = irefp->ifaceViaCellp();
-                    if (ifacep && info.flat.insert(ifacep).second) {
-                        const string& origName = effectiveOrigName(ifacep);
-                        info.byOrigName[origName].push_back(ifacep);
-                        info.parentMap[ifacep] = {curp, varp->name()};
-                        collectReachableWalk(ifacep, info);
-                    }
-                }
-            }
-        }
-    }
-}
-V3LinkDotIfaceCapture::ReachableInfo V3LinkDotIfaceCapture::collectReachable(AstNodeModule* modp) {
-    ReachableInfo info;
-    info.flat.insert(modp);
-    const string modOrigName = effectiveOrigName(modp);
-    info.byOrigName[modOrigName].push_back(modp);
-    collectReachableWalk(modp, info);
-    return info;
-}
-AstNodeModule* V3LinkDotIfaceCapture::findCorrectClone(AstNodeModule* wrongOwnerp,
-                                                       const ReachableInfo& info,
-                                                       std::set<AstNodeModule*>& visited) {
-    // Believed unreachable: only called from disambiguateTarget structural
-    // disambig path, which is asserted unreachable (all entries have cellPath).
-    v3fatalSrc("findCorrectClone called - believed unreachable");
-    const string wrongOrigName = effectiveOrigName(wrongOwnerp);
-    auto it = info.byOrigName.find(wrongOrigName);
-    if (it == info.byOrigName.end()) return nullptr;
-    const auto& candidates = it->second;
-    if (candidates.size() == 1) return candidates[0];
 
-    // Multiple candidates - disambiguate by parent + connection name.
-    if (visited.count(wrongOwnerp)) return candidates[0];  // cycle guard
-    visited.insert(wrongOwnerp);
-
-    // Find W's instantiating parent and connection name by scanning all live modules
-    AstNodeModule* wrongParentp = nullptr;
-    string wrongConnName;
-    for (AstNode* np = v3Global.rootp()->modulesp(); np; np = np->nextp()) {
-        AstNodeModule* const scanModp = VN_CAST(np, NodeModule);
-        if (!scanModp || scanModp->dead()) continue;
-        wrongConnName = findConnName(scanModp, wrongOwnerp);
-        if (!wrongConnName.empty()) {
-            wrongParentp = scanModp;
-            break;
-        }
-    }
-
-    if (!wrongParentp) {
-        UINFO(9, "finalizeIfaceCapture wrong-clone: cannot find parent of "
-                     << wrongOwnerp->name() << ", using first candidate" << endl);
-        return candidates[0];
-    }
-
-    UINFO(9, "finalizeIfaceCapture disambiguate: wrong "
-                 << wrongOwnerp->name() << " parent=" << wrongParentp->name() << " conn='"
-                 << wrongConnName << "'" << endl);
-
-    // Recursively find the correct clone of W's parent
-    AstNodeModule* correctParentp = nullptr;
-    if (info.flat.count(wrongParentp)) {
-        correctParentp = wrongParentp;
-    } else {
-        correctParentp = findCorrectClone(wrongParentp, info, visited);
-    }
-    if (!correctParentp) return candidates[0];
-
-    // Pick the candidate connected to correctParentp via the same connection name
-    for (AstNodeModule* const candp : candidates) {
-        auto pit = info.parentMap.find(candp);
-        if (pit != info.parentMap.end() && pit->second.parentp == correctParentp
-            && pit->second.connName == wrongConnName) {
-            UINFO(9, "finalizeIfaceCapture disambiguate: resolved "
-                         << wrongOwnerp->name() << " -> " << candp->name() << " via parent="
-                         << correctParentp->name() << " conn='" << wrongConnName << "'" << endl);
-            return candp;
-        }
-    }
-
-    // Fallback: try parent-only match
-    for (AstNodeModule* const candp : candidates) {
-        auto pit = info.parentMap.find(candp);
-        if (pit != info.parentMap.end() && pit->second.parentp == correctParentp) {
-            UINFO(9, "finalizeIfaceCapture wrong-clone: parent-only match for "
-                         << wrongOrigName << " -> " << candp->name() << " (conn mismatch: '"
-                         << wrongConnName << "' vs '" << pit->second.connName << "')" << endl);
-            return candp;
-        }
-    }
-
-    // Final fallback
-    UINFO(9, "finalizeIfaceCapture wrong-clone: could not disambiguate "
-                 << wrongOrigName << " among " << candidates.size() << " candidates under parent "
-                 << correctParentp->name() << " conn='" << wrongConnName << "'" << ", using first"
-                 << endl);
-    return candidates[0];
-}
-
-AstNodeModule*
-V3LinkDotIfaceCapture::disambiguateTarget(AstNodeModule* curOwnerp, AstNodeModule* ownerModp,
-                                          AstNodeModule* correctModp, AstRefDType* refp,
-                                          const CapturedEntry& entry,
-                                          const ReachableInfo& reachable, const char* label) {
-    if (!curOwnerp || curOwnerp == ownerModp || curOwnerp->dead() || VN_IS(curOwnerp, Package))
-        return nullptr;
-    if (correctModp && correctModp != curOwnerp) {
-        // Believed unreachable: followCellPath resolves to the correct owner,
-        // so correctModp never differs from curOwnerp in practice.
-        v3fatalSrc("disambiguateTarget: cellPath disambiguated path reached for "
-                   << refp->prettyNameQ() << " in " << curOwnerp->prettyNameQ());
-        return correctModp;  // LCOV_EXCL_LINE
-    }
-    if (correctModp && correctModp == curOwnerp) {
-        // Believed unreachable: followCellPath resolves to the owner module,
-        // which matches curOwnerp, but this is filtered by the first
-        // condition (curOwnerp == ownerModp) above.
-        v3fatalSrc("disambiguateTarget: already-correct path reached for "
-                   << refp->prettyNameQ() << " in " << curOwnerp->prettyNameQ());
-        return nullptr;  // LCOV_EXCL_LINE
-    }
-    if (!correctModp && !entry.cellPath.empty()) {
-        UINFO(9, "finalizeIfaceCapture " << label
-                                         << ": cellPath unresolved, skipping"
-                                            " refp="
-                                         << refp->name() << " cellPath='" << entry.cellPath
-                                         << "' cloneCellPath='" << entry.cloneCellPath
-                                         << "' owner=" << curOwnerp->name() << endl);
-        return nullptr;
-    }
-    // No cellPath - fall back to structural disambiguation.
-    // Believed unreachable: all captured entries have non-empty cellPath.
-    UASSERT_OBJ(entry.cellPath.empty(), refp,
-                "Unexpected state: correctModp=null but cellPath is non-empty");
-    v3fatalSrc("disambiguateTarget: structural disambig fallback reached for "
-               << refp->prettyNameQ() << " in " << curOwnerp->prettyNameQ());
-    return nullptr;  // LCOV_EXCL_LINE
-}
 
 int V3LinkDotIfaceCapture::fixDeadRefs(AstRefDType* refp, AstNodeModule* containingModp,
                                        const char* location) {
@@ -1028,12 +856,6 @@ int V3LinkDotIfaceCapture::fixWrongCloneRefs() {
     // cellPath from the owner module to find the correct target module, then
     // locate the PARAMTYPEDTYPE / TYPEDEF by name.
     // See V3LinkDotIfaceCapture.h ARCHITECTURE comment for the full picture.
-    //
-    // For entries WITH cellPath: use followCellPath to find the correct target module.
-    // For entries WITHOUT cellPath: use collectReachable + findCorrectClone.
-    //
-    // We cache ReachableInfo per owner module to avoid redundant walks.
-    std::unordered_map<AstNodeModule*, ReachableInfo> reachableCache;
 
     forEach([&](const CapturedEntry& entry) {
         AstRefDType* const refp = entry.refp;
@@ -1099,54 +921,12 @@ int V3LinkDotIfaceCapture::fixWrongCloneRefs() {
             }
         }
 
-        // Get or build the reachable set for this owner module
-        auto cacheIt = reachableCache.find(ownerModp);
-        if (cacheIt == reachableCache.end()) {
-            cacheIt = reachableCache.emplace(ownerModp, collectReachable(ownerModp)).first;
-        }
-        const ReachableInfo& reachable = cacheIt->second;
-
-        // Fix typedefp pointing to wrong live clone
-        if (refp->typedefp()) {
-            AstNodeModule* const tdOwnerp = findOwnerModule(refp->typedefp());
-            if (AstNodeModule* const fixModp = disambiguateTarget(
-                    tdOwnerp, ownerModp, correctModp, refp, entry, reachable, "typedefp")) {
-                const string& tdName = refp->typedefp()->name();
-                if (AstTypedef* const newTdp = findTypedefInModule(fixModp, tdName)) {
-                    UINFO(9, "finalizeIfaceCapture wrong-clone fixup: "
-                                 << ownerModp->name() << " refp=" << refp->name() << " typedefp "
-                                 << tdOwnerp->name() << " -> " << fixModp->name() << endl);
-                    refp->typedefp(newTdp);
-                    ++fixed;
-                } else {
-                    UINFO(9, "finalizeIfaceCapture wrong-clone WARNING: "
-                                 << ownerModp->name() << " refp=" << refp->name()
-                                 << " typedefp name='" << tdName << "' not found in "
-                                 << fixModp->name() << endl);
-                }
-            }
-        }
-        // Fix refDTypep pointing to wrong live clone
-        if (refp->refDTypep()) {
-            AstNodeModule* const rdOwnerp = findOwnerModule(refp->refDTypep());
-            if (AstNodeModule* const fixModp = disambiguateTarget(
-                    rdOwnerp, ownerModp, correctModp, refp, entry, reachable, "refDTypep")) {
-                const string& rdName = refp->refDTypep()->name();
-                const VNType rdType = refp->refDTypep()->type();
-                if (AstNodeDType* const newDtp = findDTypeInModule(fixModp, rdName, rdType)) {
-                    UINFO(9, "finalizeIfaceCapture wrong-clone fixup: "
-                                 << ownerModp->name() << " refp=" << refp->name() << " refDTypep "
-                                 << rdOwnerp->name() << " -> " << fixModp->name() << endl);
-                    refp->refDTypep(newDtp);
-                    ++fixed;
-                } else {
-                    UINFO(9, "finalizeIfaceCapture wrong-clone WARNING: "
-                                 << ownerModp->name() << " refp=" << refp->name()
-                                 << " refDTypep name='" << rdName << "' not found in "
-                                 << fixModp->name() << endl);
-                }
-            }
-        }
+        // Note: the structural disambiguation infrastructure (collectReachable,
+        // findCorrectClone, wrong-clone fixup blocks) was removed.  All captured
+        // entries have non-empty cellPath, and disambiguateTarget always returns
+        // nullptr through the "cellPath unresolved" path.  The wrong-clone fixup
+        // blocks were dead code - CI-CD with v3fatalSrc asserts confirmed this.
+        // Unresolved entries are fixed by fixDeadRefs in a later phase.
     });
 
     return fixed;
