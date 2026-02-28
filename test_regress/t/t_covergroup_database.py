@@ -16,8 +16,8 @@ test.compile(verilator_flags2=['--coverage'])
 test.execute()
 
 # Check that coverage database contains functional coverage entries
-# Format uses control characters as delimiters: C '^At^Bfunccov^Apage...bin^Blow...h^Bcg.cp.low' count
-test.file_grep(test.coverage_filename, r'funccov')
+# Format uses control characters as delimiters: C '^At^Bcovergroup^Apage...bin^Blow...h^Bcg.cp.low' count
+test.file_grep(test.coverage_filename, r'covergroup')
 test.file_grep(test.coverage_filename, r'bin.{0,2}low')  # binlow with possible delimiter
 test.file_grep(test.coverage_filename, r'bin.{0,2}high')  # binhigh with possible delimiter
 test.file_grep(test.coverage_filename, r'cg\.cp\.low')
