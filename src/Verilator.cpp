@@ -233,7 +233,7 @@ static void process() {
 
         // Functional coverage code generation
         //    Generate code for covergroups/coverpoints
-        V3Covergroup::covergroup(v3Global.rootp());
+        if (v3Global.useCovergroup()) V3Covergroup::covergroup(v3Global.rootp());
 
         // Resolve randsequence if they are used by the design
         if (v3Global.useRandSequence()) V3RandSequence::randSequenceNetlist(v3Global.rootp());
