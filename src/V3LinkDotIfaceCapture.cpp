@@ -784,15 +784,6 @@ class TypeTableDeadRefVisitor final : public VNVisitor {
         if (cloneModp) {
             // Find matching type by name in the clone
             const string& dtName = memberp->dtypep()->prettyName();
-            if (AstNodeDType* const newDtp
-                = V3LinkDotIfaceCapture::findDTypeByPrettyName(cloneModp, dtName)) {
-                UINFO(9, "iface capture type table MEMBERDTYPE fixup: "
-                             << memberp->name() << " dtypep " << dtOwnerp->name() << " -> "
-                             << cloneModp->name() << endl);
-                memberp->dtypep(newDtp);
-                ++m_fixed;
-                return;
-            }
             // Try typedef children
             for (AstNode* sp = cloneModp->stmtsp(); sp; sp = sp->nextp()) {
                 if (AstTypedef* const tdp = VN_CAST(sp, Typedef)) {
