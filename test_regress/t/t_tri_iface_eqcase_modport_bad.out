@@ -1,0 +1,6 @@
+%Error: t/t_tri_iface_eqcase_modport_bad.v:23:26: Can't find definition of 'd' in dotted variable/method: 'io_ifc.d'
+   23 |    assign is_z = (io_ifc.d === 8'hzz);
+      |                          ^
+        ... Known scopes under 'io_ifc': <no instances found>
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

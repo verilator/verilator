@@ -24,6 +24,25 @@ module counter_ansi
    end
 endmodule : counter_ansi
 
+// Issue 3466: inout inside interface modport
+interface inout_if;
+   wire we;
+   wire d;
+   modport ctrl (output we, inout d);
+   modport prph (input we, inout d);
+endinterface
+
+module inout_mod(inout_if.prph io_if);
+   assign io_if.d = io_if.we ? 1'b1 : 1'bz;
+endmodule
+
+module inout_mod_wrap(input we, inout d);
+   inout_if io_if();
+   assign io_if.we = we;
+   assign io_if.d = d;
+   inout_mod prph (.*);
+endmodule
+
 module t (/*AUTOARG*/
    // Inputs
    clk
@@ -52,11 +71,16 @@ module t (/*AUTOARG*/
                        .c_data(c4_data),
                        .i_value(4'h4));
 
+   logic inout_we;
+   tri inout_d;
+   inout_mod_wrap inout_u (.we(inout_we), .d(inout_d));
+
    initial begin
       c1_data.value = 4'h4;
       c2_data.value = 4'h5;
       c3_data.value = 4'h6;
       c4_data.value = 4'h7;
+      inout_we = 1'b0;
    end
 
    always @ (posedge clk) begin
