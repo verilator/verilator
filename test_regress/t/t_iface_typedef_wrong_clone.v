@@ -48,7 +48,6 @@ interface sc_if #(parameter sc_cfg_t cfg = 0)();
 endinterface
 
 // Wrapper module that uses the cache interface
-// The consumer references the sc_io sub-interface's typedefs
 module sc_wrap #(parameter sc_cfg_t cfg = 0)();
     sc_if #(cfg) cache();
 
