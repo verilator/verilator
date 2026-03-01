@@ -3139,14 +3139,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
 
     // Capture a ParamTypeDType reference for interface typedef retargeting.
     // Called when a RefDType resolves to a ParamTypeDType owned by an interface.
-    void captureIfaceParamType(AstRefDType* nodep, AstParamTypeDType* defp, AstCell* capturedCellp,
+    void captureIfaceParamType(AstRefDType* nodep, AstParamTypeDType* defp,
                                const V3LinkDotIfaceCapture::CapturedEntry* capEntryp) {
         if (!V3LinkDotIfaceCapture::enabled() || !m_statep->forPrimary()) return;
         AstNodeModule* const defOwnerModp = V3LinkDotIfaceCapture::findOwnerModule(defp);
         if (!defOwnerModp || !VN_IS(defOwnerModp, Iface)) return;
         AstCell* const cellForCapture
-            = capturedCellp ? capturedCellp
-                            : (m_ds.m_dotSymp ? VN_CAST(m_ds.m_dotSymp->nodep(), Cell) : nullptr);
+            = m_ds.m_dotSymp ? VN_CAST(m_ds.m_dotSymp->nodep(), Cell) : nullptr;
         if (!cellForCapture) return;
         UINFO(9, indent() << "iface capture add paramtype " << nodep
                           << " iface=" << defOwnerModp->prettyNameQ() << endl);
@@ -5705,34 +5704,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
 
         const V3LinkDotIfaceCapture::CapturedEntry* capEntryp = V3LinkDotIfaceCapture::find(nodep);
-        const bool captureMapHit = capEntryp != nullptr;
-        AstTypedef* const capturedTypedefp = capEntryp ? capEntryp->typedefp : nullptr;
-        const VSymEnt* const capturedTypedefSymp
-            = (capturedTypedefp && m_statep->existsNodeSym(capturedTypedefp))
-                  ? m_statep->getNodeSym(capturedTypedefp)
-                  : nullptr;
-        (void)capturedTypedefSymp;
 
-        const bool ifaceCaptured = V3LinkDotIfaceCapture::enabled() && nodep->user2p();
-        const bool missingIfaceContext = captureMapHit && !ifaceCaptured;
-        const char* const passLabel = m_statep->forParamed() ? "paramed" : "primary";
-        if (missingIfaceContext) {
-            UINFO(9, indent() << "iface capture captured typedef missing user2 name="
-                              << nodep->prettyNameQ() << " ref=" << nodep << " pass=" << passLabel
-                              << " cellPath='" << (capEntryp ? capEntryp->cellPath : "<none>")
-                              << "'");
-        }
-        AstCell* const capturedCellp = ifaceCaptured ? VN_CAST(nodep->user2p(), Cell) : nullptr;
-
-        bool forcedIfaceDotScope = false;
-        bool resolvedCapturedTypedef = false;
-        // user2p is not preserved across cloneTree (see note at line ~5887),
-        // so ifaceCaptured is always false in the paramed pass.  Assert to
-        // detect if this assumption is ever violated, then skip the block.
-        if (VL_UNLIKELY(ifaceCaptured && m_statep->forParamed())) {
-            v3fatalSrc("ifaceCaptured unexpectedly true in paramed pass for "
-                       << nodep->prettyNameQ());
-        }
         if (m_ds.m_dotp && (m_ds.m_dotPos == DP_PACKAGE || m_ds.m_dotPos == DP_SCOPE)) {
             UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), ClassOrPackageRef), m_ds.m_dotp->lhsp(),
                         "Bad package link");
@@ -5741,7 +5713,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         "Bad package link");
             nodep->classOrPackagep(cpackagerefp->classOrPackageSkipp());
             m_ds.m_dotPos = DP_SCOPE;
-        } else if (!ifaceCaptured) {
+        } else {
             // Allow REFDTYPE under DOT when referencing interface typedefs
             // This is needed for patterns like: typedef iface.a_t a_t;
             // The dependency graph handles resolution when IfaceCapture is disabled
@@ -5758,41 +5730,18 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // Clear the dot state so we don't propagate errors
                 m_ds.m_dotPos = DP_SCOPE;
             }
-        } else {
-            // ifaceCaptured is always false (user2p not preserved across
-            // cloneTree), so this branch is dead.  Assert to detect if
-            // this assumption is ever violated.
-            v3fatalSrc("ifaceCaptured else-branch unexpectedly reached for "
-                       << nodep->prettyNameQ());
         }
         if (!nodep->typedefp() && !nodep->subDTypep()) {
-            // ifaceCaptured is always false (user2p not preserved across
-            // cloneTree), so these guards never fire.  Assert to detect if
-            // this assumption is ever violated.
-            if (VL_UNLIKELY(ifaceCaptured)) {
-                v3fatalSrc("ifaceCaptured unexpectedly true during lookup for "
-                           << nodep->prettyNameQ());
-            }
             const VSymEnt* foundp;
             if (nodep->classOrPackagep()) {
                 foundp = m_statep->getNodeSym(nodep->classOrPackagep())->findIdFlat(nodep->name());
             } else if (m_ds.m_dotPos == DP_FIRST || m_ds.m_dotPos == DP_NONE) {
                 foundp = m_curSymp->findIdFallback(nodep->name());
             } else {
-                // This else-branch was for captured interface typedef lookup
-                // (forcedIfaceDotScope sets DP_SCOPE).  Since ifaceCaptured
-                // is always false, forcedIfaceDotScope is never set.
-                v3fatalSrc("Unexpected dotPos=" << static_cast<int>(m_ds.m_dotPos)
-                           << " in RefDType lookup for " << nodep->prettyNameQ());
-                foundp = nullptr;  // unreachable, silence compiler
+                checkNoDot(nodep);
+                foundp = nullptr;
             }
-            if (!resolvedCapturedTypedef && foundp) {
-                VSymEnt* const parentSymp = foundp->parentp();
-                UINFO(9, indent() << "iface capture resolved typedef name=" << nodep->name()
-                                  << " foundNode=" << foundp->nodep() << " parentNode="
-                                  << (parentSymp ? parentSymp->nodep() : nullptr));
-            }
-            if (!resolvedCapturedTypedef) {
+            {
                 if (AstTypedef* const defp
                     = foundp ? VN_CAST(foundp->nodep(), Typedef) : nullptr) {
                     // Don't check if typedef is to a <type T>::<reference> as might not be
@@ -5801,8 +5750,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         checkDeclOrder(nodep, defp);
                     nodep->typedefp(defp);
                     nodep->classOrPackagep(foundp->classOrPackagep());
-                    resolvedCapturedTypedef = true;
-
                     // class capture: capture typedef references inside parameterized classes
                     // Only capture if we're referencing from OUTSIDE the class (not
                     // self-references)
@@ -5834,8 +5781,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     } else {
                         nodep->refDTypep(defp);
                         nodep->classOrPackagep(foundp->classOrPackagep());
-                        resolvedCapturedTypedef = true;
-                        captureIfaceParamType(nodep, defp, capturedCellp, capEntryp);
+                        captureIfaceParamType(nodep, defp, capEntryp);
                     }
                 } else if (AstClass* const defp
                            = foundp ? VN_CAST(foundp->nodep(), Class) : nullptr) {
@@ -5847,7 +5793,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     AstClassRefDType* const newp
                         = new AstClassRefDType{nodep->fileline(), defp, paramsp};
                     newp->classOrPackagep(foundp->classOrPackagep());
-                    resolvedCapturedTypedef = true;
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return;
@@ -5863,15 +5808,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 }
             }
         }
-        // forcedIfaceDotScope is never set (ifaceCaptured is always false).
-        // Assert to detect if this assumption is ever violated.
-        if (VL_UNLIKELY(forcedIfaceDotScope)) {
-            v3fatalSrc("forcedIfaceDotScope unexpectedly true for "
-                       << nodep->prettyNameQ());
-        }
-        // Note: retireCapture/erase removed - user2p is not preserved across
-        // cloneTree, so ifaceCaptured is always false in the paramed pass where
-        // retirement would fire.  Ledger cleanup happens in purgeStaleRefs().
         iterateChildren(nodep);
     }
     void visit(AstRequireDType* nodep) override {
