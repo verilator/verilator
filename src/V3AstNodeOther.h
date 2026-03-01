@@ -1163,13 +1163,17 @@ class AstCovergroup final : public AstNode {
     // @astgen op1 := argsp : List[AstVar]
     // @astgen op2 := membersp : List[AstNode]
     // @astgen op3 := eventp : Optional[AstSenTree]
+    // @astgen op4 := sampleArgsp : List[AstVar]
     string m_name;
     bool m_isClass = false;
 
 public:
-    AstCovergroup(FileLine* fl, const string& name, AstNode* membersp, AstSenTree* eventp)
+    AstCovergroup(FileLine* fl, const string& name, AstVar* argsp, AstVar* sampleArgsp,
+                  AstNode* membersp, AstSenTree* eventp)
         : ASTGEN_SUPER_Covergroup(fl)
         , m_name{name} {
+        if (argsp) addArgsp(argsp);
+        if (sampleArgsp) addSampleArgsp(sampleArgsp);
         if (membersp) addMembersp(membersp);
         this->eventp(eventp);
     }
