@@ -55,6 +55,7 @@
 #include "V3Error.h"
 #include "V3Global.h"
 #include "V3Stats.h"
+#include "V3SymTable.h"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -63,6 +64,21 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 V3LinkDotIfaceCapture::CapturedMap V3LinkDotIfaceCapture::s_map{};
 bool V3LinkDotIfaceCapture::s_enabled = true;
+
+// LCOV_EXCL_START
+void V3LinkDotIfaceCapture::enable(bool flag) {
+    s_enabled = flag;
+    if (!flag) {
+        s_map.clear();
+        clearModuleCache();
+    }
+}
+// LCOV_EXCL_STOP
+
+void V3LinkDotIfaceCapture::reset() {
+    s_map.clear();
+    clearModuleCache();
+}
 
 // Per-module cache of statement-level names to avoid O(N*M) linear scans.
 // Lazily built on first access for a given module; cleared at phase boundaries.

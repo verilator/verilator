@@ -23,15 +23,14 @@
 #include "config_build.h"
 
 #include "V3Ast.h"
-#include "V3SymTable.h"
 
 #include <cstddef>
 #include <functional>
-#include <map>
-#include <set>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+class VSymEnt;
 
 class V3LinkDotIfaceCapture final {
 public:
@@ -119,51 +118,31 @@ private:
     static CapturedMap s_map;
     static bool s_enabled;
 
+    // --- Internal-only methods (not called outside V3LinkDotIfaceCapture.cpp) ---
+    static void enable(bool flag);  // LCOV_EXCL_LINE
+    static void reset();
+    static void clearModuleCache();
+    static AstIfaceRefDType* ifaceRefFromVarDType(AstNodeDType* dtypep);
     static string extractIfacePortName(const string& dotText);
-    // Find a NodeDType by prettyName in a module's top-level statements
     static AstNodeDType* findDTypeByPrettyName(AstNodeModule* modp, const string& prettyName);
-    // Find a live clone of deadTargetModp in containingModp's cell hierarchy
     static AstNodeModule* findCloneViaHierarchy(AstNodeModule* containingModp,
                                                 AstNodeModule* deadTargetModp, int depth = 0);
-    // Scan all live modules for a clone of deadTargetModp via cell hierarchy.
-    // Returns the clone, or nullptr.  If containerp is non-null, sets *containerp
-    // to the live module whose hierarchy contains the clone.
     static AstNodeModule* findLiveCloneOf(AstNodeModule* deadTargetModp,
                                           AstNodeModule** containerp = nullptr);
-    // Fix a single REFDTYPE's dead-module pointers (typedefp, refDTypep, dtypep)
     static int fixDeadRefs(AstRefDType* refp, AstNodeModule* containingModp, const char* location);
-    // Capture REFDTYPEs nested inside a PARAMTYPEDTYPE's subDTypep chain
     static void captureInnerParamTypeRefs(AstParamTypeDType* paramTypep, AstRefDType* refp,
                                           const string& cellPath, const string& ownerModName,
                                           const string& ptOwnerName);
-    // Phase methods called by finalizeIfaceCapture
     static int fixDeadRefsInTypeTable();
     static int fixDeadRefsInModules();
     static int fixWrongCloneRefs();
     static void verifyNoDeadRefs();
-
     template <typename T_FilterFn, typename T_Fn>
     static void forEachImpl(T_FilterFn&& filter, T_Fn&& fn);
 
 public:
-    // Emergency escape hatch - never called in normal operation.
-    // IfaceCapture defaults to always-on (s_enabled = true).
-    static void enable(bool flag) {  // LCOV_EXCL_START
-        s_enabled = flag;
-        if (!flag) {
-            s_map.clear();
-            clearModuleCache();
-        }
-    }  // LCOV_EXCL_STOP
     static bool enabled() { return s_enabled; }
-    static void reset() {
-        s_map.clear();
-        clearModuleCache();
-    }
-    static void clearModuleCache();
     static AstNodeModule* findOwnerModule(AstNode* nodep);
-    // Unwrap array types (BracketArray, UnpackArray, RefDType) to find AstIfaceRefDType
-    static AstIfaceRefDType* ifaceRefFromVarDType(AstNodeDType* dtypep);
     // Find a Typedef by name in a module's top-level statements
     static AstTypedef* findTypedefInModule(AstNodeModule* modp, const string& name);
     // Find a NodeDType by name and VNType in a module's top-level statements
