@@ -57,8 +57,7 @@ interface simple_cache_types_if #(
   } sc_tag_addr_t;
 endinterface
 
-module child(simple_cache_types_if types, output int tag_bits_o,
-             output int tag_addr_bits_o, output int drow_bits_o);
+module child(simple_cache_types_if types, output int tag_bits_o, output int tag_addr_bits_o, output int drow_bits_o);
   typedef types.tag_t tag_t;
   typedef types.sc_tag_addr_t sc_tag_addr_t;
   typedef types.drow_addr_t drow_addr_t;
