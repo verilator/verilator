@@ -6933,89 +6933,23 @@ covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
                  yCOVERGROUP idAny cgPortListE coverage_eventE ';'
         /*cont*/    coverage_spec_or_optionListE
         /*cont*/ yENDGROUP endLabelE
-                        { AstClass *cgClassp = new AstClass{$<fl>2, *$2, PARSEP->libname()};
-                          cgClassp->isCovergroup(true);
-                          v3Global.useCovergroup(true);
-
-                          AstNode* sampleArgs = nullptr;
-
-                          // coverage_eventE can be either a clocking event or sample arguments
+                        { AstSenTree* clockp = nullptr;
+                          AstNode* sampleArgsp = nullptr;
                           if ($4) {
-                              if (VN_IS($4, SenItem)) {
-                                  // Clocking event: @(posedge clk)
-                                  // Create an AstCovergroup node to hold the clocking event
-                                  AstSenTree* senTreep = new AstSenTree{$<fl>1, VN_AS($4, SenItem)};
-                                  AstCovergroup* const cgNodep = new AstCovergroup{$<fl>1, *$2, nullptr, senTreep};
-                                  cgClassp->addMembersp(cgNodep);
-                              } else {
-                                  // Sample arguments: with function sample(...)
-                                  sampleArgs = $4;
-                              }
+                              if (VN_IS($4, SenItem))
+                                  clockp = new AstSenTree{$<fl>1, VN_AS($4, SenItem)};
+                              else
+                                  sampleArgsp = $4;
                           }
-
-                          // Convert constructor parameters to member variables
-                          // This must happen BEFORE the covergroup body is added,
-                          // so coverpoints can reference these members
-                          // We iterate carefully to avoid issues with modified AST
-                          if ($3) {
-                              AstNode* nextArgp = nullptr;
-                              for (AstNode* argp = $3; argp; argp = nextArgp) {
-                                  nextArgp = argp->nextp();  // Save next before any modifications
-                                  if (AstVar* origVarp = VN_CAST(argp, Var)) {
-                                      AstVar* memberp = origVarp->cloneTree(false);
-                                      memberp->varType(VVarType::MEMBER);
-                                      memberp->funcLocal(false);
-                                      memberp->direction(VDirection::NONE);
-                                      cgClassp->addMembersp(memberp);
-                                  }
-                              }
-                          }
-
-                          // Convert sample parameters to member variables
-                          if (sampleArgs) {
-                              AstNode* nextArgp = nullptr;
-                              for (AstNode* argp = sampleArgs; argp; argp = nextArgp) {
-                                  nextArgp = argp->nextp();  // Save next before any modifications
-                                  if (AstVar* origVarp = VN_CAST(argp, Var)) {
-                                      AstVar* memberp = origVarp->cloneTree(false);
-                                      memberp->varType(VVarType::MEMBER);
-                                      memberp->funcLocal(false);
-                                      memberp->direction(VDirection::NONE);
-                                      cgClassp->addMembersp(memberp);
-                                  }
-                              }
-                          }
-
-                          AstFunc* const newp = new AstFunc{$<fl>1, "new", nullptr, nullptr};
-                          newp->fileline()->warnOff(V3ErrorCode::NORETURN, true);
-                          newp->classMethod(true);
-                          newp->isConstructor(true);
-                          newp->dtypep(cgClassp->dtypep());
-                          newp->addStmtsp($6);
-                          cgClassp->addMembersp(newp);
-                          GRAMMARP->createCoverGroupMethods(cgClassp, $3, sampleArgs);
-
-                          $$ = cgClassp;
-                          GRAMMARP->endLabel($<fl>8, $$, $8);
-                        }
+                          $$ = new AstCovergroup{$<fl>2, *$2, static_cast<AstVar*>($3),
+                                                 static_cast<AstVar*>(sampleArgsp), $6, clockp};
+                          GRAMMARP->endLabel($<fl>8, $$, $8); }
         |        yCOVERGROUP yEXTENDS idAny ';'
         /*cont*/     coverage_spec_or_optionListE
         /*cont*/ yENDGROUP endLabelE
                         { BBCOVERIGN($1, "Ignoring unsupported: covergroup inheritance (extends)");
-                          AstClass *cgClassp = new AstClass{$<fl>3, *$3, PARSEP->libname()};
-                          cgClassp->isCovergroup(true);
-                          AstFunc* const newp = new AstFunc{$<fl>1, "new", nullptr, nullptr};
-                          newp->fileline()->warnOff(V3ErrorCode::NORETURN, true);
-                          newp->classMethod(true);
-                          newp->isConstructor(true);
-                          newp->dtypep(cgClassp->dtypep());
-                          newp->addStmtsp($5);
-                          cgClassp->addMembersp(newp);
-                          GRAMMARP->createCoverGroupMethods(cgClassp, nullptr, nullptr);
-
-                          $$ = cgClassp;
-                          GRAMMARP->endLabel($<fl>7, $$, $7);
-                        }
+                          $$ = new AstCovergroup{$<fl>3, *$3, nullptr, nullptr, $5, nullptr};
+                          GRAMMARP->endLabel($<fl>7, $$, $7); }
         ;
 
 cgPortListE<nodep>:
@@ -7062,43 +6996,43 @@ coverage_option<nodep>:  // ==IEEE: coverage_option
 cover_point<nodep>:  // ==IEEE: cover_point
         //              // [ [ data_type_or_implicit ] cover_point_identifier ':' ] yCOVERPOINT
                 yCOVERPOINT expr iffE bins_or_empty
-                        { auto* cp = new AstCoverpoint{$<fl>1, "", $2};
+                        { AstCoverpoint* const cp = new AstCoverpoint{$<fl>1, "", $2};
                           if ($3) cp->iffp(VN_AS($3, NodeExpr));
                           GRAMMARP->addCoverpointBins(cp, $4);
                           $$ = cp; }
         //                      // IEEE-2012: class_scope before an ID
         |       id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
-                        { auto* cp = new AstCoverpoint{$<fl>3, *$1, $4};
+                        { AstCoverpoint* const cp = new AstCoverpoint{$<fl>3, *$1, $4};
                           if ($5) cp->iffp(VN_AS($5, NodeExpr));
                           GRAMMARP->addCoverpointBins(cp, $6);
                           $$ = cp; }
         //                      // data_type_or_implicit expansion
         |       data_type id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
-                        { auto* cp = new AstCoverpoint{$<fl>4, *$2, $5};
+                        { AstCoverpoint* const cp = new AstCoverpoint{$<fl>4, *$2, $5};
                           if ($6) cp->iffp(VN_AS($6, NodeExpr));
                           GRAMMARP->addCoverpointBins(cp, $7);
                           $$ = cp;
                           DEL($1); }
         |       yVAR data_type id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
-                        { auto* cp = new AstCoverpoint{$<fl>5, *$3, $6};
+                        { AstCoverpoint* const cp = new AstCoverpoint{$<fl>5, *$3, $6};
                           if ($7) cp->iffp(VN_AS($7, NodeExpr));
                           GRAMMARP->addCoverpointBins(cp, $8);
                           $$ = cp;
                           DEL($2); }
         |       yVAR implicit_typeE id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
-                        { auto* cp = new AstCoverpoint{$<fl>5, *$3, $6};
+                        { AstCoverpoint* const cp = new AstCoverpoint{$<fl>5, *$3, $6};
                           if ($7) cp->iffp(VN_AS($7, NodeExpr));
                           GRAMMARP->addCoverpointBins(cp, $8);
                           $$ = cp;
                           DEL($2); }
         |       signingE rangeList id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
-                        { auto* cp = new AstCoverpoint{$<fl>5, *$3, $6};
+                        { AstCoverpoint* const cp = new AstCoverpoint{$<fl>5, *$3, $6};
                           if ($7) cp->iffp(VN_AS($7, NodeExpr));
                           GRAMMARP->addCoverpointBins(cp, $8);
                           $$ = cp;
                           DEL($2); }
         |       signing id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
-                        { auto* cp = new AstCoverpoint{$<fl>4, *$2, $5};
+                        { AstCoverpoint* const cp = new AstCoverpoint{$<fl>4, *$2, $5};
                           if ($6) cp->iffp(VN_AS($6, NodeExpr));
                           GRAMMARP->addCoverpointBins(cp, $7);
                           $$ = cp; }
@@ -7189,23 +7123,17 @@ bins_or_options<nodep>:  // ==IEEE: bins_or_options
         //
         //                      // cgexpr part of trans_list
         |       yBINS idAny/*bin_identifier*/ bins_orBraE '=' trans_list iffE
-                        {
-                                FileLine* isArray = $<fl>3;
-                                $$ = new AstCoverBin{$<fl>2, *$2, static_cast<AstCoverTransSet*>($5), false, false, isArray != nullptr};
-                                DEL($6);
-                        }
+                        { FileLine* isArray = $<fl>3;
+                          $$ = new AstCoverBin{$<fl>2, *$2, static_cast<AstCoverTransSet*>($5), false, false, isArray != nullptr};
+                          DEL($6); }
         |       yIGNORE_BINS idAny/*bin_identifier*/ bins_orBraE '=' trans_list iffE
-                        {
-                                FileLine* isArray = $<fl>3;
-                                $$ = new AstCoverBin{$<fl>2, *$2, static_cast<AstCoverTransSet*>($5), true, false, isArray != nullptr};
-                                DEL($6);
-                        }
+                        { FileLine* isArray = $<fl>3;
+                          $$ = new AstCoverBin{$<fl>2, *$2, static_cast<AstCoverTransSet*>($5), true, false, isArray != nullptr};
+                          DEL($6); }
         |       yILLEGAL_BINS idAny/*bin_identifier*/ bins_orBraE '=' trans_list iffE
-                        {
-                                FileLine* isArray = $<fl>3;
-                                $$ = new AstCoverBin{$<fl>2, *$2, static_cast<AstCoverTransSet*>($5), false, true, isArray != nullptr};
-                                DEL($6);
-                        }
+                        { FileLine* isArray = $<fl>3;
+                          $$ = new AstCoverBin{$<fl>2, *$2, static_cast<AstCoverTransSet*>($5), false, true, isArray != nullptr};
+                          DEL($6); }
         |       yWILDCARD yBINS idAny/*bin_identifier*/ bins_orBraE '=' trans_list iffE
                         { $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: cover bin 'wildcard' trans list"); DEL($6, $7);}
         |       yWILDCARD yIGNORE_BINS idAny/*bin_identifier*/ bins_orBraE '=' trans_list iffE
