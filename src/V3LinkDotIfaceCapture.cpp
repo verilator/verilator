@@ -534,8 +534,8 @@ void V3LinkDotIfaceCapture::propagateClone(const TemplateKey& tkey, AstRefDType*
                                       << " cloneCellPath='" << cloneCellPath << "'" << endl);
 }
 
-template <typename FilterFn, typename Fn>
-void V3LinkDotIfaceCapture::forEachImpl(FilterFn&& filter, Fn&& fn) {
+template <typename T_FilterFn, typename T_Fn>
+void V3LinkDotIfaceCapture::forEachImpl(T_FilterFn&& filter, T_Fn&& fn) {
     if (s_map.empty()) return;
     std::vector<CaptureKey> keys;
     keys.reserve(s_map.size());

@@ -94,20 +94,20 @@ public:
         // Visit every AstNode* pointer field (analogous to AstNode::foreachLink).
         // The callback receives an AstNode* by reference; if it nulls the
         // pointer the typed member is nulled accordingly.
-        template <typename Fn>
-        void foreachLink(Fn&& fn) {
-            auto visit = [&](auto*& ptr) {
+        template <typename T_func>
+        void foreachLink(T_func&& fn) {
+            auto callOnNode = [&](auto*& ptr) {
                 AstNode* np = ptr;
                 fn(np);
                 if (!np) ptr = nullptr;
             };
-            visit(refp);
-            visit(ownerModp);
-            visit(typedefp);
-            visit(paramTypep);
-            visit(ifacePortVarp);
-            visit(origClassp);
-            for (auto& xrefp : extraRefps) visit(xrefp);
+            callOnNode(refp);
+            callOnNode(ownerModp);
+            callOnNode(typedefp);
+            callOnNode(paramTypep);
+            callOnNode(ifacePortVarp);
+            callOnNode(origClassp);
+            for (auto& xrefp : extraRefps) callOnNode(xrefp);
         }
     };
 
@@ -142,8 +142,8 @@ private:
     static int fixWrongCloneRefs();
     static void verifyNoDeadRefs();
 
-    template <typename FilterFn, typename Fn>
-    static void forEachImpl(FilterFn&& filter, Fn&& fn);
+    template <typename T_FilterFn, typename T_Fn>
+    static void forEachImpl(T_FilterFn&& filter, T_Fn&& fn);
 
 public:
     // Emergency escape hatch - never called in normal operation.
