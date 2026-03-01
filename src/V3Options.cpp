@@ -18,6 +18,7 @@
 
 #include "V3Options.h"
 
+#include "V3Container.h"
 #include "V3Error.h"
 #include "V3File.h"
 #include "V3Global.h"
@@ -70,30 +71,26 @@ public:
     std::list<string> m_lineArgs;  // List of command line argument encountered
     // List of arguments encounterd, and a bool in needed for rerunning --dump-inputs
     std::list<std::pair<std::list<std::string>, bool>> m_allArgs;
-    std::list<string> m_incDirUsers;  // Include directories (ordered)
-    std::set<string> m_incDirUserSet;  // Include directories (for removing duplicates)
+    VInsertionSet<std::string> m_incDirUsers;  // Include directories (ordered)
     std::list<string> m_incDirFallbacks;  // Include directories (ordered)
     std::set<string> m_incDirFallbackSet;  // Include directories (for removing duplicates)
     std::map<const string, V3LangCode> m_langExts;  // Language extension map
-    std::list<string> m_libExtVs;  // Library extensions (ordered)
-    std::set<string> m_libExtVSet;  // Library extensions (for removing duplicates)
+    VInsertionSet<std::string> m_libExtVs;  // Library extensions (ordered)
     DirMap m_dirMap;  // Directory listing
 
     // ACCESSOR METHODS
     void addIncDirUser(const string& incdir) {
         const string& dir = V3Os::filenameCleanup(incdir);
-        const auto itFoundPair = m_incDirUserSet.insert(dir);
-        if (itFoundPair.second) {
+        const bool inserted = m_incDirUsers.insert(dir);
+        if (inserted) {
             // cppcheck-suppress stlFindInsert  // cppcheck 1.90 bug
-            m_incDirUsers.push_back(dir);
             m_incDirFallbacks.remove(dir);  // User has priority over Fallback
             m_incDirFallbackSet.erase(dir);  // User has priority over Fallback
         }
     }
     void addIncDirFallback(const string& incdir) {
         const string& dir = V3Os::filenameCleanup(incdir);
-        if (m_incDirUserSet.find(dir)
-            == m_incDirUserSet.end()) {  // User has priority over Fallback
+        if (!m_incDirUsers.exists(dir)) {  // User has priority over Fallback
             const auto itFoundPair = m_incDirFallbackSet.insert(dir);
             if (itFoundPair.second) m_incDirFallbacks.push_back(dir);
         }
@@ -106,10 +103,7 @@ public:
         m_langExts[addext] = lc;
     }
 
-    void addLibExtV(const string& libext) {
-        const auto itFoundPair = m_libExtVSet.insert(libext);
-        if (itFoundPair.second) m_libExtVs.push_back(libext);
-    }
+    void addLibExtV(const string& libext) { m_libExtVs.insert(libext); }
     V3OptionsImp() = default;
     ~V3OptionsImp() = default;
 };

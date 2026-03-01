@@ -21,6 +21,7 @@
 #include "verilatedos.h"
 
 #include "V3Ast.h"
+#include "V3Container.h"
 #include "V3Error.h"
 
 #include <utility>
@@ -58,10 +59,10 @@ public:
                                        bool makeChanges = true) VL_MT_DISABLED;
     static void taskConnectWrap(AstNodeFTaskRef* nodep, const V3TaskConnects& tconnects,
                                 V3TaskConnectState* statep,
-                                const std::set<const AstVar*>& argWrap) VL_MT_DISABLED;
-    static AstNodeFTask* taskConnectWrapNew(AstNodeFTask* taskp, const string& newname,
-                                            const V3TaskConnects& tconnects,
-                                            const std::set<const AstVar*>& argWrap) VL_MT_DISABLED;
+                                const VInsertionSet<const AstVar*>& argWrap) VL_MT_DISABLED;
+    static AstNodeFTask*
+    taskConnectWrapNew(AstNodeFTask* taskp, const string& newname, const V3TaskConnects& tconnects,
+                       const VInsertionSet<const AstVar*>& argWrap) VL_MT_DISABLED;
     static string assignInternalToDpi(AstVar* portp, bool isPtr, const string& frSuffix,
                                       const string& toSuffix,
                                       const string& frPrefix = "") VL_MT_DISABLED;
