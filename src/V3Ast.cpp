@@ -23,9 +23,6 @@
 #include <memory>
 #include <sstream>
 
-#ifdef VL_ALLOC_RANDOM_CHECKS
-#include "V3Ast__gen_sizeof.h"
-#endif
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -998,6 +995,15 @@ void AstNode::operator delete(void* objp, size_t size) {
 
 #ifdef VL_ALLOC_RANDOM_CHECKS
 void* AstNode::operator new(size_t size) {  // VL_MT_SAFE
+    // Compute the maximum node size once and cache it
+    static const size_t ASTGEN_MAX_NODE_SIZE = []() {
+        size_t maxSize = 0;
+        for (size_t t = 0; t < VNType::NUM_TYPES(); ++t) {
+            maxSize = std::max(maxSize, VNType::typeInfo(static_cast<VNType::en>(t)).m_sizeof);
+        }
+        return maxSize;
+    }();
+
     // Make the following small to debug this routine, larger for performance and better random
     constexpr size_t POOL_SIZE = 65536;  // Ideally large enough to fit all nodes used in tests
     // Randomly select from a large pool (POOL_SIZE) of max-node sized (MAX_NODE_SIZE) pointers

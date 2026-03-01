@@ -935,16 +935,6 @@ def write_ast_type_info(filename):
                 ))
 
 
-def write_ast_sizeof(filename):
-    with open_file(filename) as fh:
-        fh.write("static constexpr size_t ASTGEN_MAX_NODE_SIZE =\n")
-        paren = ""
-        for node in AstNodeList:
-            fh.write("    std::max(sizeof(Ast{n}),\n".format(n=node.name))
-            paren += ")"
-        fh.write("    static_cast<size_t>(0)" + paren + ";\n")
-
-
 def write_ast_impl(filename):
     with open_file(filename) as fh:
 
@@ -1594,7 +1584,6 @@ if Args.classes:
     write_ast_impl("V3Ast__gen_impl.h")
     write_ast_macros("V3Ast__gen_macros.h")
     write_ast_yystype("V3Ast__gen_yystype.h")
-    write_ast_sizeof("V3Ast__gen_sizeof.h")
     # Write Dfg code
     write_forward_class_decls("Dfg", DfgVertexList)
     write_visitor_decls("Dfg", DfgVertexList)
