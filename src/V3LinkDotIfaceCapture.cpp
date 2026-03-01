@@ -103,7 +103,7 @@ AstIfaceRefDType* V3LinkDotIfaceCapture::ifaceRefFromVarDType(AstNodeDType* dtyp
         } else if (AstUnpackArrayDType* const unpackp = VN_CAST(curp, UnpackArrayDType)) {
             curp = unpackp->subDTypep();
         } else {
-            break;
+            v3fatalSrc("ifaceRefFromVarDType: unexpected dtype " << curp->prettyTypeName() << " in chain");
         }
     }
     return resultp;
