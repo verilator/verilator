@@ -245,17 +245,10 @@ int V3LinkDotIfaceCapture::fixDeadRefs(AstRefDType* refp, AstNodeModule* contain
                     AstNodeModule* const derivedOwnerp = findOwnerModule(derivedp);
                     if (derivedOwnerp && derivedOwnerp->dead()) { derivedp = nullptr; }
                 }
-                if (derivedp) {
-                    UINFO(9, "iface capture finalizeCapture ("
-                                 << location << "): deriving refDTypep from typedefp refp=" << refp
-                                 << " dead=" << targetModp->name() << " derived=" << derivedp);
-                    refp->refDTypep(derivedp);
-                } else {
-                    UINFO(9, "iface capture finalizeCapture ("
-                                 << location << "): clearing dead refDTypep refp=" << refp
-                                 << " dead=" << targetModp->name());
-                    refp->refDTypep(nullptr);
-                }
+                UINFO(9, "iface capture finalizeCapture ("
+                              << location << "): deriving refDTypep from typedefp refp=" << refp
+                              << " dead=" << targetModp->name() << " derived=" << derivedp);
+                refp->refDTypep(derivedp);
                 ++fixed;
             }
         }
