@@ -5711,6 +5711,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             = (capturedTypedefp && m_statep->existsNodeSym(capturedTypedefp))
                   ? m_statep->getNodeSym(capturedTypedefp)
                   : nullptr;
+        (void)capturedTypedefSymp;
 
         const bool ifaceCaptured = V3LinkDotIfaceCapture::enabled() && nodep->user2p();
         const bool missingIfaceContext = captureMapHit && !ifaceCaptured;
