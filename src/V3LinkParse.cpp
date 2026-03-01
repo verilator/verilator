@@ -1274,9 +1274,8 @@ class LinkParseVisitor final : public VNVisitor {
         // Clocking event: unlink before deleteTree, attach as AstCovergroup child on class
         if (AstSenTree* const eventp = nodep->eventp()) {
             eventp->unlinkFrBack();
-            AstCovergroup* const cgNodep
-                = new AstCovergroup{nodep->fileline(), nodep->name(),
-                                    nullptr, nullptr, nullptr, eventp};
+            AstCovergroup* const cgNodep = new AstCovergroup{
+                nodep->fileline(), nodep->name(), nullptr, nullptr, nullptr, eventp};
             cgClassp->addMembersp(cgNodep);
         }
 
