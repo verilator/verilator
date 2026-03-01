@@ -674,7 +674,7 @@ void V3LinkDotIfaceCapture::captureInnerParamTypeRefs(AstParamTypeDType* paramTy
                         }
                     }
                 }
-                if (nestedCellName.empty()) {
+                if (VL_UNCOVERABLE(nestedCellName.empty())) {
                     // The nested interface cell should always be found in the
                     // owner module's statements.  If this fires, either
                     // ptOwnerModp is wrong (findOwnerModule returned the wrong
