@@ -784,8 +784,7 @@ class CovergroupSamplingVisitor final : public VNVisitor {
                                                          << vscp->name() << endl);
                 } else {
                     refp->v3fatalSrc("Could not find VarScope for clock signal '"
-                                     << refp->varp()->name() << "' in scope "
-                                     << m_scopep->name()
+                                     << refp->varp()->name() << "' in scope " << m_scopep->name()
                                      << " when creating covergroup sampling active");
                 }
             }
