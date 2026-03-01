@@ -566,10 +566,9 @@ public:
             if (!exprp) return false;
             AstIface* const newIfacep = liveIfaceFromPinExpr(exprp, parentSymp);
             if (newIfacep && newIfacep != ifacerefp->ifaceViaCellp()) {
-                UINFO(4, "  REPAIR-IFACE-REF var="
-                             << varp->prettyNameQ()
-                             << " old=" << ifacerefp->ifacep()->prettyNameQ()
-                             << " new=" << newIfacep->prettyNameQ() << endl);
+                UINFO(4, "  REPAIR-IFACE-REF var=" << varp->prettyNameQ()
+                                                   << " old=" << ifacerefp->ifacep()->prettyNameQ()
+                                                   << " new=" << newIfacep->prettyNameQ() << endl);
                 ifacerefp->ifacep(newIfacep);
                 return true;
             }

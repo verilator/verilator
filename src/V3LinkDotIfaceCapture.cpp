@@ -241,8 +241,8 @@ int V3LinkDotIfaceCapture::fixDeadRefs(AstRefDType* refp, AstNodeModule* contain
                 const string& targetName = refp->refDTypep()->prettyName();
                 if (AstNodeDType* const newDtp = findDTypeByPrettyName(cloneModp, targetName)) {
                     UINFO(9, "iface capture finalizeCapture ("
-                                 << location << "): fixing refDTypep refp=" << refp << " dead="
-                                 << targetModp->name() << " -> " << cloneModp->name());
+                                 << location << "): fixing refDTypep refp=" << refp
+                                 << " dead=" << targetModp->name() << " -> " << cloneModp->name());
                     refp->refDTypep(newDtp);
                     ++fixed;
                     foundByName = true;
@@ -263,8 +263,8 @@ int V3LinkDotIfaceCapture::fixDeadRefs(AstRefDType* refp, AstNodeModule* contain
                     if (derivedOwnerp && derivedOwnerp->dead()) { derivedp = nullptr; }
                 }
                 UINFO(9, "iface capture finalizeCapture ("
-                              << location << "): deriving refDTypep from typedefp refp=" << refp
-                              << " dead=" << targetModp->name() << " derived=" << derivedp);
+                             << location << "): deriving refDTypep from typedefp refp=" << refp
+                             << " dead=" << targetModp->name() << " derived=" << derivedp);
                 refp->refDTypep(derivedp);
                 ++fixed;
             }
@@ -389,19 +389,18 @@ void V3LinkDotIfaceCapture::add(AstRefDType* refp, const string& cellPath,
     if (it != s_map.end()) {
         // Key already exists - append this refp as an extra
         it->second.extraRefps.push_back(refp);
-        UINFO(9, "iface capture add (extra): refp=" << refp->name() << " cellPath='" << cellPath
-                                                    << "'" << " ownerMod=" << ownerModName
-                                                    << " extraRefps.size="
-                                                    << it->second.extraRefps.size());
+        UINFO(9, "iface capture add (extra): refp="
+                     << refp->name() << " cellPath='" << cellPath << "'" << " ownerMod="
+                     << ownerModName << " extraRefps.size=" << it->second.extraRefps.size());
     } else {
         s_map[key] = CapturedEntry{
             CaptureType::IFACE,     refp,      cellPath,
             /*cloneCellPath=*/"",
             /*origClassp=*/nullptr, ownerModp, typedefp, nullptr, tdOwnerName, ifacePortVarp, {}};
-        UINFO(9, "iface capture add: refp="
-                     << refp->name() << " cellPath='" << cellPath << "'" << " ownerMod="
-                     << ownerModName << " typedefp=" << (typedefp ? typedefp->name() : "<null>")
-                     << " typedefOwnerModName='" << tdOwnerName << "'");
+        UINFO(9, "iface capture add: refp=" << refp->name() << " cellPath='" << cellPath << "'"
+                                            << " ownerMod=" << ownerModName << " typedefp="
+                                            << (typedefp ? typedefp->name() : "<null>")
+                                            << " typedefOwnerModName='" << tdOwnerName << "'");
     }
 }
 
@@ -413,19 +412,17 @@ void V3LinkDotIfaceCapture::addClass(AstRefDType* refp, AstClass* origClassp,
     if (!typedefp) typedefp = refp->typedefp();
     const string tdOwnerName = resolveOwnerName(typedefOwnerModName, typedefp);
     // For CLASS captures, use the class name as cellPath
-    UASSERT_OBJ(origClassp, refp,
-                "addClass() called with null origClassp for refp=" << refp);
+    UASSERT_OBJ(origClassp, refp, "addClass() called with null origClassp for refp=" << refp);
     const string cellPath = origClassp->name();
-    UASSERT_OBJ(!cellPath.empty(), origClassp,
-                "addClass() produced empty cellPath");
+    UASSERT_OBJ(!cellPath.empty(), origClassp, "addClass() produced empty cellPath");
     const string ownerModName = ownerModp->name();
     const CaptureKey key{ownerModName, refp->name(), cellPath, ""};
     s_map[key] = CapturedEntry{CaptureType::CLASS,   refp,       cellPath,
                                /*cloneCellPath=*/"", origClassp, ownerModp, typedefp, nullptr,
                                tdOwnerName,          nullptr,    {}};
-    UINFO(9, "iface capture addClass: refp="
-                 << refp->name() << " cellPath='" << cellPath << "'"
-                 << " ownerMod=" << (ownerModp ? ownerModp->name() : "<null>"));
+    UINFO(9, "iface capture addClass: refp=" << refp->name() << " cellPath='" << cellPath << "'"
+                                             << " ownerMod="
+                                             << (ownerModp ? ownerModp->name() : "<null>"));
 }
 
 // Not called in production - retained as a diagnostic/debug entry point
@@ -564,7 +561,8 @@ void V3LinkDotIfaceCapture::forEachOwned(const AstNodeModule* ownerModp,
                                          const std::function<void(const CapturedEntry&)>& fn) {
     if (!ownerModp || !fn || s_map.empty()) return;
     const string ownerName = ownerModp->name();
-    UINFO(9, "iface capture forEachOwned: ownerModp=" << ownerName << " map size=" << s_map.size());
+    UINFO(9,
+          "iface capture forEachOwned: ownerModp=" << ownerName << " map size=" << s_map.size());
     forEachImpl(
         [ownerModp, &ownerName](const CapturedEntry& e) {
             // Only match template entries (cloneCellPath='').
@@ -733,10 +731,9 @@ void V3LinkDotIfaceCapture::addParamType(AstRefDType* refp, const string& cellPa
     if (it != s_map.end()) {
         // Key already exists - append this refp as an extra
         it->second.extraRefps.push_back(refp);
-        UINFO(9, "addParamType (extra): refp=" << refp->name() << " cellPath='" << cellPath << "'"
-                                               << " ownerMod=" << ownerModName
-                                               << " extraRefps.size="
-                                               << it->second.extraRefps.size());
+        UINFO(9, "addParamType (extra): refp="
+                     << refp->name() << " cellPath='" << cellPath << "'" << " ownerMod="
+                     << ownerModName << " extraRefps.size=" << it->second.extraRefps.size());
     } else {
         s_map[key]
             = CapturedEntry{CaptureType::IFACE,     refp,      cellPath,
