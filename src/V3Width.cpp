@@ -1072,7 +1072,6 @@ class WidthVisitor final : public VNVisitor {
             if (nodep->fromp()->width() < width && !inParameterizedTemplate) {
                 nodep->v3warn(SELRANGE, "Extracting " << width << " bits from only "
                                                       << nodep->fromp()->width() << " bit number");
-                UINFO(1, "    Related node: " << nodep);
                 // Extend it.
                 AstNodeDType* const subDTypep
                     = nodep->findLogicDType(width, width, nodep->fromp()->dtypep()->numeric());
@@ -1225,7 +1224,6 @@ class WidthVisitor final : public VNVisitor {
                                       "Selection index out of range: "
                                           << (VN_AS(nodep->bitp(), Const)->toSInt() + fromlsb)
                                           << " outside " << frommsb << ":" << fromlsb);
-                        UINFO(1, "    Related node: " << nodep);
                     }
                 }
                 widthCheckSized(nodep, "Extract Range", nodep->bitp(), selwidthDTypep, EXTEND_EXP,
