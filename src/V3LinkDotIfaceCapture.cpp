@@ -205,7 +205,7 @@ int V3LinkDotIfaceCapture::fixDeadRefs(AstRefDType* refp, AstNodeModule* contain
                 if (AstTypedef* const newTdp = findTypedefInModule(cloneModp, tdName)) {
                     UINFO(9, "iface capture finalizeCapture ("
                                  << location << "): fixing typedefp refp=" << refp << " dead="
-                                 << typedefModp->name() << " -> " << cloneModp->name() << endl);
+                                 << typedefModp->name() << " -> " << cloneModp->name());
                     refp->typedefp(newTdp);
                     ++fixed;
                 }
@@ -225,7 +225,7 @@ int V3LinkDotIfaceCapture::fixDeadRefs(AstRefDType* refp, AstNodeModule* contain
                 if (AstNodeDType* const newDtp = findDTypeByPrettyName(cloneModp, targetName)) {
                     UINFO(9, "iface capture finalizeCapture ("
                                  << location << "): fixing refDTypep refp=" << refp << " dead="
-                                 << targetModp->name() << " -> " << cloneModp->name() << endl);
+                                 << targetModp->name() << " -> " << cloneModp->name());
                     refp->refDTypep(newDtp);
                     ++fixed;
                     foundByName = true;
@@ -248,13 +248,12 @@ int V3LinkDotIfaceCapture::fixDeadRefs(AstRefDType* refp, AstNodeModule* contain
                 if (derivedp) {
                     UINFO(9, "iface capture finalizeCapture ("
                                  << location << "): deriving refDTypep from typedefp refp=" << refp
-                                 << " dead=" << targetModp->name() << " derived=" << derivedp
-                                 << endl);
+                                 << " dead=" << targetModp->name() << " derived=" << derivedp);
                     refp->refDTypep(derivedp);
                 } else {
                     UINFO(9, "iface capture finalizeCapture ("
                                  << location << "): clearing dead refDTypep refp=" << refp
-                                 << " dead=" << targetModp->name() << endl);
+                                 << " dead=" << targetModp->name());
                     refp->refDTypep(nullptr);
                 }
                 ++fixed;
@@ -286,7 +285,7 @@ int V3LinkDotIfaceCapture::fixDeadRefs(AstRefDType* refp, AstNodeModule* contain
                             << (refp->typedefp() ? refp->typedefp()->name() : "<null>"));
             UINFO(9, "iface capture finalizeCapture ("
                          << location << "): fixing dtypep refp=" << refp
-                         << " dead=" << dtOwnerp->name() << " -> " << newDtp << endl);
+                         << " dead=" << dtOwnerp->name() << " -> " << newDtp);
             refp->dtypep(newDtp);
             ++fixed;
         }
@@ -336,7 +335,7 @@ void V3LinkDotIfaceCapture::purgeStaleRefs() {
 
 void V3LinkDotIfaceCapture::dumpEntries(const string& label) {
     UINFO(9, "========== iface capture dumpEntries: " << label << " (entries=" << s_map.size()
-                                                      << ") ==========" << endl);
+                                                      << ") ==========");
     int idx = 0;
     for (const auto& pair : s_map) {
         const CaptureKey& key = pair.first;
@@ -352,10 +351,10 @@ void V3LinkDotIfaceCapture::dumpEntries(const string& label) {
                     << " typedefOwnerModName='" << entry.typedefOwnerModName << "'"
                     << " paramTypep=" << (entry.paramTypep ? entry.paramTypep->name() : "<null>")
                     << " ifacePortVarp="
-                    << (entry.ifacePortVarp ? entry.ifacePortVarp->name() : "<null>") << endl);
+                    << (entry.ifacePortVarp ? entry.ifacePortVarp->name() : "<null>"));
         ++idx;
     }
-    UINFO(9, "========== end iface capture dumpEntries ==========" << endl);
+    UINFO(9, "========== end iface capture dumpEntries ==========");
 }
 
 string V3LinkDotIfaceCapture::extractIfacePortName(const string& dotText) {
@@ -383,7 +382,7 @@ void V3LinkDotIfaceCapture::add(AstRefDType* refp, const string& cellPath,
         UINFO(9, "iface capture add (extra): refp=" << refp->name() << " cellPath='" << cellPath
                                                     << "'" << " ownerMod=" << ownerModName
                                                     << " extraRefps.size="
-                                                    << it->second.extraRefps.size() << endl);
+                                                    << it->second.extraRefps.size());
     } else {
         s_map[key] = CapturedEntry{
             CaptureType::IFACE,     refp,      cellPath,
@@ -392,7 +391,7 @@ void V3LinkDotIfaceCapture::add(AstRefDType* refp, const string& cellPath,
         UINFO(9, "iface capture add: refp="
                      << refp->name() << " cellPath='" << cellPath << "'" << " ownerMod="
                      << ownerModName << " typedefp=" << (typedefp ? typedefp->name() : "<null>")
-                     << " typedefOwnerModName='" << tdOwnerName << "'" << endl);
+                     << " typedefOwnerModName='" << tdOwnerName << "'");
     }
 }
 
@@ -416,7 +415,7 @@ void V3LinkDotIfaceCapture::addClass(AstRefDType* refp, AstClass* origClassp,
                                tdOwnerName,          nullptr,    {}};
     UINFO(9, "iface capture addClass: refp="
                  << refp->name() << " cellPath='" << cellPath << "'"
-                 << " ownerMod=" << (ownerModp ? ownerModp->name() : "<null>") << endl);
+                 << " ownerMod=" << (ownerModp ? ownerModp->name() : "<null>"));
 }
 
 // Not called in production - retained as a diagnostic/debug entry point
@@ -531,7 +530,7 @@ void V3LinkDotIfaceCapture::propagateClone(const TemplateKey& tkey, AstRefDType*
 
     UINFO(9, "propagateClone: tkey={" << tkey.ownerModName << "," << tkey.refName << ","
                                       << tkey.cellPath << "} refp=" << newRefp->name()
-                                      << " cloneCellPath='" << cloneCellPath << "'" << endl);
+                                      << " cloneCellPath='" << cloneCellPath << "'");
 }
 
 template <typename T_FilterFn, typename T_Fn>
@@ -559,8 +558,7 @@ void V3LinkDotIfaceCapture::forEachOwned(const AstNodeModule* ownerModp,
                                          const std::function<void(const CapturedEntry&)>& fn) {
     if (!ownerModp || !fn || s_map.empty()) return;
     const string ownerName = ownerModp->name();
-    UINFO(9, "iface capture forEachOwned: ownerModp=" << ownerName << " map size=" << s_map.size()
-                                                      << endl);
+    UINFO(9, "iface capture forEachOwned: ownerModp=" << ownerName << " map size=" << s_map.size());
     forEachImpl(
         [ownerModp, &ownerName](const CapturedEntry& e) {
             // Only match template entries (cloneCellPath='').
@@ -573,7 +571,7 @@ void V3LinkDotIfaceCapture::forEachOwned(const AstNodeModule* ownerModp,
                          << (e.refp ? e.refp->name() : "<null>") << " cellPath='" << e.cellPath
                          << "' ownerMod=" << (e.ownerModp ? e.ownerModp->name() : "<null>")
                          << " typedefOwnerModName='" << e.typedefOwnerModName
-                         << "' matches=" << matches << endl);
+                         << "' matches=" << matches);
             return matches;
         },
         fn);
@@ -681,7 +679,7 @@ void V3LinkDotIfaceCapture::captureInnerParamTypeRefs(AstParamTypeDType* paramTy
                 }
                 UINFO(9, "addParamType: also capturing inner RefDType "
                              << innerRefp << " refDTypep owner=" << refOwnerModp->name()
-                             << " nestedCellName='" << nestedCellName << "'" << endl);
+                             << " nestedCellName='" << nestedCellName << "'");
                 s_map[innerKey] = CapturedEntry{CaptureType::IFACE,
                                                 innerRefp,
                                                 nestedCellName.empty() ? cellPath : nestedCellName,
@@ -712,16 +710,15 @@ void V3LinkDotIfaceCapture::addParamType(AstRefDType* refp, const string& cellPa
     UINFO(9, "addParamType: refp=" << refp << " cellPath='" << cellPath << "'"
                                    << " ownerModp=" << (ownerModp ? ownerModp->name() : "<null>")
                                    << " paramTypep=" << paramTypep << " paramTypeOwnerModName='"
-                                   << ptOwnerName << "'" << endl);
+                                   << ptOwnerName << "'");
     if (paramTypep) {
-        UINFO(9, "addParamType: paramTypep subDTypep chain:" << endl);
+        UINFO(9, "addParamType: paramTypep subDTypep chain:");
         paramTypep->foreach([&](AstRefDType* innerRefp) {
             UINFO(9,
                   "  inner RefDType: "
                       << innerRefp << " refDTypep=" << innerRefp->refDTypep()
                       << (innerRefp->refDTypep() ? " refDTypep->name=" : "")
-                      << (innerRefp->refDTypep() ? innerRefp->refDTypep()->prettyTypeName() : "")
-                      << endl);
+                      << (innerRefp->refDTypep() ? innerRefp->refDTypep()->prettyTypeName() : ""));
         });
     }
     const string ownerModName = ownerModp->name();
@@ -733,7 +730,7 @@ void V3LinkDotIfaceCapture::addParamType(AstRefDType* refp, const string& cellPa
         UINFO(9, "addParamType (extra): refp=" << refp->name() << " cellPath='" << cellPath << "'"
                                                << " ownerMod=" << ownerModName
                                                << " extraRefps.size="
-                                               << it->second.extraRefps.size() << endl);
+                                               << it->second.extraRefps.size());
     } else {
         s_map[key]
             = CapturedEntry{CaptureType::IFACE,     refp,      cellPath,
@@ -791,7 +788,7 @@ class TypeTableDeadRefVisitor final : public VNVisitor {
                     if (tdp->subDTypep() && tdp->subDTypep()->prettyName() == dtName) {
                         UINFO(9, "iface capture type table MEMBERDTYPE fixup (via typedef): "
                                      << memberp->name() << " dtypep " << dtOwnerp->name() << " -> "
-                                     << cloneModp->name() << endl);
+                                     << cloneModp->name());
                         memberp->dtypep(tdp->subDTypep());
                         ++m_fixed;
                         return;
@@ -867,7 +864,7 @@ int V3LinkDotIfaceCapture::fixWrongCloneRefs() {
                   << "' typedefp=" << (refp->typedefp() ? refp->typedefp()->name() : "<null>")
                   << " refDTypep=" << (refp->refDTypep() ? refp->refDTypep()->name() : "<null>")
                   << " refDTypepOwner=" << (rdOwnerBefore ? rdOwnerBefore->name() : "<null>")
-                  << " refDTypepDead=" << (rdOwnerBefore ? rdOwnerBefore->dead() : 0) << endl);
+                  << " refDTypepDead=" << (rdOwnerBefore ? rdOwnerBefore->dead() : 0));
 
         // Determine the correct target module using cellPath
         AstNodeModule* correctModp = nullptr;
@@ -876,8 +873,7 @@ int V3LinkDotIfaceCapture::fixWrongCloneRefs() {
             UINFO(9, "  followCellPath('"
                          << ownerModp->name() << "', '" << entry.cellPath
                          << "') = " << (correctModp ? correctModp->name() : "<null>")
-                         << (correctModp ? (correctModp->dead() ? " (DEAD)" : " (live)") : "")
-                         << endl);
+                         << (correctModp ? (correctModp->dead() ? " (DEAD)" : " (live)") : ""));
             if (correctModp && correctModp->dead()) { correctModp = nullptr; }
         }
 
@@ -893,7 +889,7 @@ int V3LinkDotIfaceCapture::fixWrongCloneRefs() {
                 UINFO(9, "finalizeIfaceCapture Phase3: resolved paramTypep '"
                              << refName << "' in " << correctModp->name() << " for refp in "
                              << ownerModp->name() << " cloneCellPath='" << entry.cloneCellPath
-                             << "'" << endl);
+                             << "'");
             } else if (AstTypedef* const tdp = findTypedefInModule(correctModp, refName)) {
                 refp->typedefp(tdp);
                 refp->user3(true);
@@ -901,7 +897,7 @@ int V3LinkDotIfaceCapture::fixWrongCloneRefs() {
                 UINFO(9, "finalizeIfaceCapture Phase3: resolved typedefp '"
                              << refName << "' in " << correctModp->name() << " for refp in "
                              << ownerModp->name() << " cloneCellPath='" << entry.cloneCellPath
-                             << "'" << endl);
+                             << "'");
             }
             if (resolved) {
                 ++fixed;
@@ -939,7 +935,7 @@ void V3LinkDotIfaceCapture::verifyNoDeadRefs() {
                         UINFO(9, "VERIFY FAIL typedefp: refp="
                                      << refp->name() << " (" << cvtToHex(refp) << ")" << " in mod="
                                      << modp->name() << " typedefp->owner=" << ownerModp->name()
-                                     << " inLedger=" << inLedger << endl);
+                                     << " inLedger=" << inLedger);
                     }  // LCOV_EXCL_STOP
                     UASSERT_OBJ(!ownerModp || !ownerModp->dead(), refp,  // LCOV_EXCL_LINE
                                 "REFDTYPE '" << refp->prettyNameQ() << "' in live module '"
@@ -959,7 +955,7 @@ void V3LinkDotIfaceCapture::verifyNoDeadRefs() {
                         UINFO(9, "VERIFY FAIL refDTypep: refp="
                                      << refp->name() << " (" << cvtToHex(refp) << ")" << " in mod="
                                      << modp->name() << " refDTypep->owner=" << ownerModp->name()
-                                     << " inLedger=" << inLedger << endl);
+                                     << " inLedger=" << inLedger);
                     }  // LCOV_EXCL_STOP
                     UASSERT_OBJ(!ownerModp || !ownerModp->dead(), refp,  // LCOV_EXCL_LINE
                                 "REFDTYPE '" << refp->prettyNameQ() << "' in live module '"
@@ -1001,18 +997,17 @@ void V3LinkDotIfaceCapture::verifyNoDeadRefs() {
 
 void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
     if (!s_enabled) return;
-    UINFO(4, "finalizeIfaceCapture: fixing remaining cross-interface refs" << endl);
+    UINFO(4, "finalizeIfaceCapture: fixing remaining cross-interface refs");
     if (!v3Global.rootp()) return;
     clearModuleCache();  // Ensure fresh view after all cloning/widthing
 
     const int typeTableFixed = fixDeadRefsInTypeTable();
     const int moduleFixed = fixDeadRefsInModules();
     UINFO(4, "finalizeIfaceCapture: fixed " << typeTableFixed << " in type table, " << moduleFixed
-                                            << " in modules (dead refs)" << endl);
+                                            << " in modules (dead refs)");
 
     const int wrongCloneFixed = fixWrongCloneRefs();
-    UINFO(4, "finalizeIfaceCapture: fixed " << wrongCloneFixed << " wrong-live-clone pointers"
-                                            << endl);
+    UINFO(4, "finalizeIfaceCapture: fixed " << wrongCloneFixed << " wrong-live-clone pointers");
 
     if (debug() >= 9) dumpEntries("after finalizeIfaceCapture");
 
