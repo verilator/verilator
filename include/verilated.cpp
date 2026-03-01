@@ -2200,13 +2200,74 @@ char fourStateNibble(char nibble) {
 }
 }
 
+// Helper functions for four-state string conversion
+static inline void _vl_toStringFourStateBinary_C(std::string& output, int lbits, CData4 data) {
+    output.reserve(lbits);
+    for (int i = lbits - 1; i >= 0; --i) {
+        output += fourStateNibble((data >> (i * 2)) & 0x3);
+    }
+}
+static inline void _vl_toStringFourStateBinary_S(std::string& output, int lbits, SData4 data) {
+    output.reserve(lbits);
+    for (int i = lbits - 1; i >= 0; --i) {
+        output += fourStateNibble((data >> (i * 2)) & 0x3);
+    }
+}
+static inline void _vl_toStringFourStateBinary_I(std::string& output, int lbits, IData4 data) {
+    output.reserve(lbits);
+    for (int i = lbits - 1; i >= 0; --i) {
+        output += fourStateNibble((data >> (i * 2)) & 0x3);
+    }
+}
+static inline void _vl_toStringFourStateBinary_Q(std::string& output, int lbits, QData4 data) {
+    output.reserve(lbits);
+    for (int i = lbits - 1; i >= 0; --i) {
+        output += fourStateNibble((data >> (i * 2)) & 0x3);
+    }
+}
+
+// String conversion functions
 std::string VL_TO_STRING(CData4 lhs) {
-    // Convert 4-state nibble-packed value to binary string representation
     std::string result;
     result.reserve(4);
     for (int i = 3; i >= 0; --i) {
         result += fourStateNibble((lhs >> (i * 2)) & 0x3);
     }
+    return result;
+}
+
+std::string VL_TO_STRING(SData4 lhs) {
+    std::string result;
+    result.reserve(8);
+    for (int i = 7; i >= 0; --i) {
+        result += fourStateNibble((lhs >> (i * 2)) & 0x3);
+    }
+    return result;
+}
+
+std::string VL_TO_STRING(IData4 lhs) {
+    std::string result;
+    result.reserve(16);
+    for (int i = 15; i >= 0; --i) {
+        result += fourStateNibble((lhs >> (i * 2)) & 0x3);
+    }
+    return result;
+}
+
+std::string VL_TO_STRING(QData4 lhs) {
+    std::string result;
+    result.reserve(32);
+    for (int i = 31; i >= 0; --i) {
+        result += fourStateNibble((lhs >> (i * 2)) & 0x3);
+    }
+    return result;
+}
+
+// Original string conversion functions (renamed to avoid redefinition)
+std::string VL_TO_STRING_3STATE_CData(CData lhs) { return VL_SFORMATF_N_NX("'h%0x", 0, 8, lhs); }
+std::string VL_TO_STRING_3STATE_SData(SData lhs) { return VL_SFORMATF_N_NX("'h%0x", 0, 16, lhs); }
+std::string VL_TO_STRING_3STATE_IData(IData lhs) { return VL_SFORMATF_N_NX("'h%0x", 0, 32, lhs); }
+std::string VL_TO_STRING_3STATE_QData(QData lhs) { return VL_SFORMATF_N_NX("'h%0x", 0, 64, lhs); }
     return result;
 }
 std::string VL_TO_STRING(SData4 lhs) {

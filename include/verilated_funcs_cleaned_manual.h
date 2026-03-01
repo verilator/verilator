@@ -1166,14 +1166,6 @@ static inline bool VL_EQ_4STATE_S(SData4 lhs, SData4 rhs) {
     if (_vl4_anyXZ_S(lhs) || _vl4_anyXZ_S(rhs)) return false;
     return (lhs & 0x5555555555555555ULL) == (rhs & 0x5555555555555555ULL);
 }
-static inline bool VL_EQ_4STATE_I(IData4 lhs, IData4 rhs) {
-    if (_vl4_anyXZ_I(lhs) || _vl4_anyXZ_I(rhs)) return false;
-    return (lhs & 0x5555555555555555ULL) == (rhs & 0x5555555555555555ULL);
-}
-static inline bool VL_EQ_4STATE_Q(QData4 lhs, QData4 rhs) {
-    if (_vl4_anyXZ_Q(lhs) || _vl4_anyXZ_Q(rhs)) return false;
-    return (lhs & 0x5555555555555555ULL) == (rhs & 0x5555555555555555ULL);
-}
 
 static inline bool VL_EQ_4STATE_I(IData4 lhs, IData4 rhs) {
     if (_vl4_anyXZ_I(lhs) || _vl4_anyXZ_I(rhs)) return false;
@@ -1197,12 +1189,6 @@ static inline bool VL_NEQ_4STATE_C(CData4 lhs, CData4 rhs) {
 }
 static inline bool VL_NEQ_4STATE_S(SData4 lhs, SData4 rhs) {
     return !VL_EQ_4STATE_S(lhs, rhs);
-}
-static inline bool VL_NEQ_4STATE_I(IData4 lhs, IData4 rhs) {
-    return !VL_EQ_4STATE_I(lhs, rhs);
-}
-static inline bool VL_NEQ_4STATE_Q(QData4 lhs, QData4 rhs) {
-    return !VL_EQ_4STATE_Q(lhs, rhs);
 }
 static inline bool VL_NEQ_4STATE_I(IData4 lhs, IData4 rhs) {
     return !VL_EQ_4STATE_I(lhs, rhs);

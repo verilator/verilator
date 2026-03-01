@@ -1166,14 +1166,6 @@ static inline bool VL_EQ_4STATE_S(SData4 lhs, SData4 rhs) {
     if (_vl4_anyXZ_S(lhs) || _vl4_anyXZ_S(rhs)) return false;
     return (lhs & 0x5555555555555555ULL) == (rhs & 0x5555555555555555ULL);
 }
-static inline bool VL_EQ_4STATE_I(IData4 lhs, IData4 rhs) {
-    if (_vl4_anyXZ_I(lhs) || _vl4_anyXZ_I(rhs)) return false;
-    return (lhs & 0x5555555555555555ULL) == (rhs & 0x5555555555555555ULL);
-}
-static inline bool VL_EQ_4STATE_Q(QData4 lhs, QData4 rhs) {
-    if (_vl4_anyXZ_Q(lhs) || _vl4_anyXZ_Q(rhs)) return false;
-    return (lhs & 0x5555555555555555ULL) == (rhs & 0x5555555555555555ULL);
-}
 
 static inline bool VL_EQ_4STATE_I(IData4 lhs, IData4 rhs) {
     if (_vl4_anyXZ_I(lhs) || _vl4_anyXZ_I(rhs)) return false;
@@ -1185,11 +1177,35 @@ static inline bool VL_EQ_4STATE_Q(QData4 lhs, QData4 rhs) {
     return (lhs & 0x5555555555555555ULL) == (rhs & 0x5555555555555555ULL);
 }
 
+static inline bool VL_EQ_4STATE_S(SData4 lhs, SData4 rhs) {
+    if (_vl4_anyXZ_S(lhs) || _vl4_anyXZ_S(rhs)) return false;
+    return (lhs & 0x5555555555555555ULL) == (rhs & 0x5555555555555555ULL);
+}
 
+static inline bool VL_EQ_4STATE_I(IData4 lhs, IData4 rhs) {
+    if (_vl4_anyXZ_I(lhs) || _vl4_anyXZ_I(rhs)) return false;
+    return (lhs & 0x5555555555555555ULL) == (rhs & 0x5555555555555555ULL);
+}
 
+static inline bool VL_EQ_4STATE_Q(QData4 lhs, QData4 rhs) {
+    if (_vl4_anyXZ_Q(lhs) || _vl4_anyXZ_Q(rhs)) return false;
+    return (lhs & 0x5555555555555555ULL) == (rhs & 0x5555555555555555ULL);
+}
 
+static inline bool VL_EQ_4STATE_S(SData4 lhs, SData4 rhs) {
+    if (_vl4_anyXZ_S(lhs) || _vl4_anyXZ_S(rhs)) return false;
+    return (lhs & 0x5555555555555555ULL) == (rhs & 0x5555555555555555ULL);
+}
 
+static inline bool VL_EQ_4STATE_I(IData4 lhs, IData4 rhs) {
+    if (_vl4_anyXZ_I(lhs) || _vl4_anyXZ_I(rhs)) return false;
+    return (lhs & 0x5555555555555555ULL) == (rhs & 0x5555555555555555ULL);
+}
 
+static inline bool VL_EQ_4STATE_Q(QData4 lhs, QData4 rhs) {
+    if (_vl4_anyXZ_Q(lhs) || _vl4_anyXZ_Q(rhs)) return false;
+    return (lhs & 0x5555555555555555ULL) == (rhs & 0x5555555555555555ULL);
+}
 
 // Four-state NEQ
 static inline bool VL_NEQ_4STATE_C(CData4 lhs, CData4 rhs) {
@@ -1204,15 +1220,18 @@ static inline bool VL_NEQ_4STATE_I(IData4 lhs, IData4 rhs) {
 static inline bool VL_NEQ_4STATE_Q(QData4 lhs, QData4 rhs) {
     return !VL_EQ_4STATE_Q(lhs, rhs);
 }
+
+static inline bool VL_NEQ_4STATE_S(SData4 lhs, SData4 rhs) {
+    return !VL_EQ_4STATE_S(lhs, rhs);
+}
+
 static inline bool VL_NEQ_4STATE_I(IData4 lhs, IData4 rhs) {
     return !VL_EQ_4STATE_I(lhs, rhs);
 }
+
 static inline bool VL_NEQ_4STATE_Q(QData4 lhs, QData4 rhs) {
     return !VL_EQ_4STATE_Q(lhs, rhs);
 }
-
-
-
 
 //=========================================================================
 // Logical comparisons
@@ -1531,9 +1550,33 @@ static inline bool _vl4_isXZ(uint8_t val) {
 }
 
 // Helper: Check if any bit in a four-state value is X or Z
+static inline bool _vl4_anyXZ_C(CData4 val) {
+    return (val & 0x55) != 0;  // Check if any bit is 01 (X) or 11 (Z)
+}
+static inline bool _vl4_anyXZ_S(SData4 val) {
+    return (val & 0x5555) != 0;
+}
+static inline bool _vl4_anyXZ_I(IData4 val) {
+    return (val & 0x55555555) != 0;
+}
+static inline bool _vl4_anyXZ_Q(QData4 val) {
+    return (val & 0x5555555555555555LL) != 0;
+}
+static inline bool _vl4_anyXZ_S(SData4 val) {
+    return (val & 0xAAAAAAAAAAAAAAAAULL) != 0;
+}
+static inline bool _vl4_anyXZ_I(IData4 val) {
+    return (val & 0xAAAAAAAAAAAAAAAAULL) != 0;
+}
+static inline bool _vl4_anyXZ_Q(QData4 val) {
+    return (val & 0xAAAAAAAAAAAAAAAAULL) != 0;
+}
 
 // Four-state ADD: if any operand has X/Z, result is X
 static inline CData4 VL_ADD_4STATE_C(CData4 lhs, CData4 rhs) {
+    if (_vl4_anyXZ_C(lhs) || _vl4_anyXZ_C(rhs)) {
+        return 0xAAAAAAAA;  // All X (2 in each nibble = 0b10101010)
+    }
     // Extract clean values and add
     CData4 result = 0;
     uint8_t carry = 0;
@@ -1548,6 +1591,9 @@ static inline CData4 VL_ADD_4STATE_C(CData4 lhs, CData4 rhs) {
 }
 
 static inline SData4 VL_ADD_4STATE_S(SData4 lhs, SData4 rhs) {
+    if (_vl4_anyXZ_S(lhs) || _vl4_anyXZ_S(rhs)) {
+        return 0xAAAAAAAAAAAAAAAALL;  // All X
+    }
     SData4 result = 0;
     uint8_t carry = 0;
     for (int i = 0; i < 8; i++) {
@@ -1562,12 +1608,20 @@ static inline SData4 VL_ADD_4STATE_S(SData4 lhs, SData4 rhs) {
     return false;
 }
 
+static inline bool _vl4_anyXZ_S(SData4 val) {
+    for (int i = 0; i < 8; i++) {
+        if (_vl4_isXZ((val >> (i * 2)) & 3)) return true;
+    }
     return false;
 }
 
 
 
 // Four-state ADD: if any operand has X/Z, result is X
+static inline CData4 VL_ADD_4STATE_C(CData4 lhs, CData4 rhs) {
+    if (_vl4_anyXZ_C(lhs) || _vl4_anyXZ_C(rhs)) {
+        return 0xAAAAAAAA;  // All X (2 in each nibble = 0b10101010)
+    }
     // Extract clean values and add
     CData4 result = 0;
     uint8_t carry = 0;
@@ -1581,6 +1635,10 @@ static inline SData4 VL_ADD_4STATE_S(SData4 lhs, SData4 rhs) {
     return result;
 }
 
+static inline SData4 VL_ADD_4STATE_S(SData4 lhs, SData4 rhs) {
+    if (_vl4_anyXZ_S(lhs) || _vl4_anyXZ_S(rhs)) {
+        return 0xAAAAAAAAAAAAAAAALL;  // All X
+    }
     SData4 result = 0;
     uint8_t carry = 0;
     for (int i = 0; i < 8; i++) {
@@ -1594,6 +1652,9 @@ static inline SData4 VL_ADD_4STATE_S(SData4 lhs, SData4 rhs) {
 }
 
 static inline IData4 VL_ADD_4STATE_I(IData4 lhs, IData4 rhs) {
+    if (_vl4_anyXZ_I(lhs) || _vl4_anyXZ_I(rhs)) {
+        return 0xAAAAAAAAAAAAAAAALL;  // All X
+    }
     IData4 result = 0;
     uint8_t carry = 0;
     for (int i = 0; i < 16; i++) {
@@ -1607,6 +1668,9 @@ static inline IData4 VL_ADD_4STATE_I(IData4 lhs, IData4 rhs) {
 }
 
 static inline QData4 VL_ADD_4STATE_Q(QData4 lhs, QData4 rhs) {
+    if (_vl4_anyXZ_Q(lhs) || _vl4_anyXZ_Q(rhs)) {
+        return 0xAAAAAAAAAAAAAAAALL;  // All X
+    }
     QData4 result = 0;
     uint8_t carry = 0;
     for (int i = 0; i < 32; i++) {
@@ -1621,15 +1685,27 @@ static inline QData4 VL_ADD_4STATE_Q(QData4 lhs, QData4 rhs) {
 
 // Four-state SUB
 static inline CData4 VL_SUB_4STATE_C(CData4 lhs, CData4 rhs) {
+    if (_vl4_anyXZ_C(lhs) || _vl4_anyXZ_C(rhs)) {
+        return 0xAAAAAAAA;  // All X
+    }
     return lhs - rhs;
 }
 static inline SData4 VL_SUB_4STATE_S(SData4 lhs, SData4 rhs) {
+    if (_vl4_anyXZ_S(lhs) || _vl4_anyXZ_S(rhs)) {
+        return 0xAAAAAAAAAAAAAAAALL;  // All X
+    }
     return lhs - rhs;
 }
 static inline IData4 VL_SUB_4STATE_I(IData4 lhs, IData4 rhs) {
+    if (_vl4_anyXZ_I(lhs) || _vl4_anyXZ_I(rhs)) {
+        return 0xAAAAAAAAAAAAAAAALL;  // All X
+    }
     return lhs - rhs;
 }
 static inline QData4 VL_SUB_4STATE_Q(QData4 lhs, QData4 rhs) {
+    if (_vl4_anyXZ_Q(lhs) || _vl4_anyXZ_Q(rhs)) {
+        return 0xAAAAAAAAAAAAAAAALL;  // All X
+    }
     return lhs - rhs;
 }
     CData4 result = 0;
@@ -1649,6 +1725,10 @@ static inline QData4 VL_SUB_4STATE_Q(QData4 lhs, QData4 rhs) {
     return result;
 }
 
+static inline SData4 VL_SUB_4STATE_S(SData4 lhs, SData4 rhs) {
+    if (_vl4_anyXZ_S(lhs) || _vl4_anyXZ_S(rhs)) {
+        return 0xAAAAAAAAAAAAAAAALL;
+    }
     SData4 result = 0;
     uint8_t borrow = 0;
     for (int i = 0; i < 8; i++) {
@@ -1666,6 +1746,10 @@ static inline QData4 VL_SUB_4STATE_Q(QData4 lhs, QData4 rhs) {
     return result;
 }
 
+static inline IData4 VL_SUB_4STATE_I(IData4 lhs, IData4 rhs) {
+    if (_vl4_anyXZ_I(lhs) || _vl4_anyXZ_I(rhs)) {
+        return 0xAAAAAAAAAAAAAAAALL;
+    }
     IData4 result = 0;
     uint8_t borrow = 0;
     for (int i = 0; i < 16; i++) {
@@ -1683,6 +1767,10 @@ static inline QData4 VL_SUB_4STATE_Q(QData4 lhs, QData4 rhs) {
     return result;
 }
 
+static inline QData4 VL_SUB_4STATE_Q(QData4 lhs, QData4 rhs) {
+    if (_vl4_anyXZ_Q(lhs) || _vl4_anyXZ_Q(rhs)) {
+        return 0xAAAAAAAAAAAAAAAALL;
+    }
     QData4 result = 0;
     uint8_t borrow = 0;
     for (int i = 0; i < 32; i++) {
@@ -2733,6 +2821,13 @@ static inline QData4 VL_SHIFTL_4STATE_Q(QData4 lhs, int shift) {
 // Four-state right shift
 static inline CData4 VL_SHIFTR_4STATE_C(CData4 lhs, int shift) {
     if (shift >= 4) return 0;
+    if (_vl4_anyXZ_C(lhs)) {
+        CData4 result = 0;
+        for (int i = shift; i < 4; i++) {
+            uint8_t val = (lhs >> (i * 2)) & 3;
+            if (val != 0) {
+                result |= (static_cast<CData4>(val) << ((i - shift) * 2));
+            }
         }
         return result;
     }
@@ -2741,6 +2836,13 @@ static inline CData4 VL_SHIFTR_4STATE_C(CData4 lhs, int shift) {
 
 static inline SData4 VL_SHIFTR_4STATE_S(SData4 lhs, int shift) {
     if (shift >= 8) return 0;
+    if (_vl4_anyXZ_S(lhs)) {
+        SData4 result = 0;
+        for (int i = shift; i < 8; i++) {
+            uint8_t val = (lhs >> (i * 2)) & 3;
+            if (val != 0) {
+                result |= (static_cast<SData4>(val) << ((i - shift) * 2));
+            }
         }
         return result;
     }
@@ -2749,6 +2851,13 @@ static inline SData4 VL_SHIFTR_4STATE_S(SData4 lhs, int shift) {
 
 static inline IData4 VL_SHIFTR_4STATE_I(IData4 lhs, int shift) {
     if (shift >= 16) return 0;
+    if (_vl4_anyXZ_I(lhs)) {
+        IData4 result = 0;
+        for (int i = shift; i < 16; i++) {
+            uint8_t val = (lhs >> (i * 2)) & 3;
+            if (val != 0) {
+                result |= (static_cast<IData4>(val) << ((i - shift) * 2));
+            }
         }
         return result;
     }
@@ -2757,6 +2866,13 @@ static inline IData4 VL_SHIFTR_4STATE_I(IData4 lhs, int shift) {
 
 static inline QData4 VL_SHIFTR_4STATE_Q(QData4 lhs, int shift) {
     if (shift >= 32) return 0;
+    if (_vl4_anyXZ_Q(lhs)) {
+        QData4 result = 0;
+        for (int i = shift; i < 32; i++) {
+            uint8_t val = (lhs >> (i * 2)) & 3;
+            if (val != 0) {
+                result |= (static_cast<QData4>(val) << ((i - shift) * 2));
+            }
         }
         return result;
     }
