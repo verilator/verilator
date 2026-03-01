@@ -61,15 +61,14 @@ def gen(filename, n):
 
 gen(test.top_filename, N_TYPEDEFS)
 
+test.timeout(MAX_COMPILE_SECS)
+
 t0 = time.time()
 test.compile(verilator_flags2=["-x-assign fast --x-initial fast"])
 elapsed = time.time() - t0
 
 print("t_iface_typedef_scale: {} typedefs compiled in {:.3f}s (limit {:.1f}s)".format(
     N_TYPEDEFS, elapsed, MAX_COMPILE_SECS))
-if elapsed > MAX_COMPILE_SECS:
-    test.error("Compile took {:.3f}s, exceeds {:.1f}s budget for {} typedefs".format(
-        elapsed, MAX_COMPILE_SECS, N_TYPEDEFS))
 
 test.execute()
 
