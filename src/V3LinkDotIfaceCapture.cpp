@@ -397,7 +397,7 @@ void V3LinkDotIfaceCapture::addClass(AstRefDType* refp, AstClass* origClassp,
     const string tdOwnerName = resolveOwnerName(typedefOwnerModName, typedefp);
     // For CLASS captures, use the class name as cellPath
     UASSERT_OBJ(origClassp, refp,
-                "addClass() called with null origClassp for refp=" << refp->prettyNameQ());
+                "addClass() called with null origClassp for refp=" << refp);
     const string cellPath = origClassp->name();
     UASSERT(!cellPath.empty(),
             "addClass() produced empty cellPath from class=" << origClassp->prettyNameQ());
