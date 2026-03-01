@@ -1047,7 +1047,6 @@ public:
 class AstCoverTransSet;
 class AstCoverSelectExpr;
 
-
 class AstCoverBin final : public AstNode {
     // @astgen op1 := rangesp : List[AstNode]
     // @astgen op2 := iffp : Optional[AstNodeExpr]

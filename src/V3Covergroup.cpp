@@ -1750,8 +1750,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
             // Build the coverage insert as a C statement
             // The variable reference needs to be &this->varname, where varname gets mangled to
-            // __PVT__varname Use "page" field with v_covergroup prefix so type is extracted correctly
-            // (consistent with code coverage)
+            // __PVT__varname Use "page" field with v_covergroup prefix so type is extracted
+            // correctly (consistent with code coverage)
             std::string pageName = "v_covergroup/" + m_covergroupp->name();
             std::string insertCall = "VL_COVER_INSERT(vlSymsp->_vm_contextp__->coveragep(), ";
             insertCall += "\"" + hierName + "\", ";
