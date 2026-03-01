@@ -421,7 +421,7 @@ V3LinkDotIfaceCapture::find(const CaptureKey& key) {
 }  // LCOV_EXCL_STOP
 
 const V3LinkDotIfaceCapture::CapturedEntry* V3LinkDotIfaceCapture::find(const AstRefDType* refp) {
-    if (!refp || s_map.empty()) return nullptr;
+    if (!refp) return nullptr;
     for (const auto& kv : s_map) {
         if (kv.second.refp == refp) return &kv.second;
     }
