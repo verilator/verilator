@@ -23,7 +23,6 @@
 #include <memory>
 #include <sstream>
 
-
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //======================================================================
