@@ -201,6 +201,58 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
             puts(",");
         } else if (const AstDisplay* const dispp = VN_CAST(nodep, Display)) {
             isStmt = true;
+            // Check if we have custom formatter functions (e.g., four-state)
+            bool hasCustomFmt = false;
+            for (unsigned i = 0; i < m_emitDispState.m_argsp.size(); i++) {
+                if (m_emitDispState.m_argsFunc[i] != "") {
+                    hasCustomFmt = true;
+                    break;
+                }
+            }
+            if (hasCustomFmt) {
+                // For custom formatters: emit each four-state arg as a direct call
+                // First, print the format text manually
+                puts("{\n");
+                // Print the literal parts of the format, inserting function calls at %b positions
+                string remaining = m_emitDispState.m_format;
+                size_t pos = 0;
+                int argIdx = 0;
+                while ((pos = remaining.find("%b")) != string::npos) {
+                    string literal = remaining.substr(0, pos);
+                    remaining = remaining.substr(pos + 2);
+                    // Print literal part (escaped)
+                    if (!literal.empty()) {
+                        puts("VL_PRINTF_MT(");
+                        ofp()->putsQuoted(literal);
+                        puts(");\n");
+                    }
+                    // Find the corresponding argument
+                    if (argIdx < (int)m_emitDispState.m_argsp.size()) {
+                        AstNode* const argp = m_emitDispState.m_argsp[argIdx];
+                        const string func = m_emitDispState.m_argsFunc[argIdx];
+                        if (func != "") {
+                            puts("VL_PRINTF_MT(\"%s\", ");
+                            puts(func);
+                            puts("(");
+                            if (argp) {
+                                iterateConst(argp);
+                                emitDatap(argp);
+                            }
+                            puts(").c_str());\n");
+                        }
+                    }
+                    argIdx++;
+                }
+                // Print any remaining literal
+                if (!remaining.empty()) {
+                    puts("VL_PRINTF_MT(");
+                    ofp()->putsQuoted(remaining);
+                    puts(");\n");
+                }
+                puts("}\n");
+                m_emitDispState.clear();
+                return;
+            }
             if (dispp->filep()) {
                 putns(nodep, "VL_FWRITEF_NX(");
                 iterateConst(dispp->filep());
