@@ -921,9 +921,8 @@ class ParamProcessor final {
                     || reachable.count(ownerp))
                     return;  // OK: owner is reachable or self
                 v3fatalSrc("Phase B reachable-set fallback triggered for "
-                           << refp->prettyNameQ() << " " << label
-                           << " owner=" << ownerp->prettyNameQ()
-                           << " in " << newModp->prettyNameQ());
+                           << refp->prettyNameQ() << " " << label << " owner="
+                           << ownerp->prettyNameQ() << " in " << newModp->prettyNameQ());
             };
             if (refp->typedefp()) checkNotStale("typedefp", refp->typedefp());
             if (refp->refDTypep()) checkNotStale("refDTypep", refp->refDTypep());

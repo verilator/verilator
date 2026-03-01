@@ -127,8 +127,8 @@ AstTypedef* V3LinkDotIfaceCapture::findTypedefInModule(AstNodeModule* modp, cons
         if (AstTypedef* const tdp = VN_CAST(nodep, Typedef)) return tdp;
     }
     // Cache has entry for this name but no Typedef - unexpected.
-    v3fatalSrc("findTypedefInModule: name '" << name << "' found in "
-               << modp->prettyNameQ() << " but no Typedef node");
+    v3fatalSrc("findTypedefInModule: name '" << name << "' found in " << modp->prettyNameQ()
+                                             << " but no Typedef node");
     return nullptr;  // LCOV_EXCL_LINE
 }
 AstNodeDType* V3LinkDotIfaceCapture::findDTypeInModule(AstNodeModule* modp, const string& name,
@@ -142,8 +142,8 @@ AstNodeDType* V3LinkDotIfaceCapture::findDTypeInModule(AstNodeModule* modp, cons
         }
     }
     // Cache has entry for this name but no matching DType - unexpected.
-    v3fatalSrc("findDTypeInModule: name '" << name << "' found in "
-               << modp->prettyNameQ() << " but no matching DType");
+    v3fatalSrc("findDTypeInModule: name '" << name << "' found in " << modp->prettyNameQ()
+                                           << " but no matching DType");
     return nullptr;  // LCOV_EXCL_LINE
 }
 AstParamTypeDType* V3LinkDotIfaceCapture::findParamTypeInModule(AstNodeModule* modp,
@@ -187,7 +187,6 @@ AstNodeModule* V3LinkDotIfaceCapture::findCloneViaHierarchy(AstNodeModule* conta
     }
     return nullptr;
 }
-
 
 int V3LinkDotIfaceCapture::fixDeadRefs(AstRefDType* refp, AstNodeModule* containingModp,
                                        const char* location) {
@@ -435,7 +434,6 @@ const V3LinkDotIfaceCapture::CapturedEntry* V3LinkDotIfaceCapture::find(const As
     return nullptr;
 }
 
-
 // Walk a dot-separated cell path through the cell / IFACEREFDTYPE hierarchy
 // starting from startModp.  Returns the module at the end of the path, or
 // nullptr if any component cannot be resolved.
@@ -509,10 +507,10 @@ void V3LinkDotIfaceCapture::propagateClone(const TemplateKey& tkey, AstRefDType*
     // cellPath) diverged between capture and clone time.
     const CaptureKey templateKey{tkey.ownerModName, tkey.refName, tkey.cellPath, ""};
     auto it = s_map.find(templateKey);
-    UASSERT(it != s_map.end(),
-            "propagateClone: no template entry for tkey={"
-                << tkey.ownerModName << "," << tkey.refName << "," << tkey.cellPath
-                << "} cloneCellPath='" << cloneCellPath << "'");
+    UASSERT(it != s_map.end(), "propagateClone: no template entry for tkey={"
+                                   << tkey.ownerModName << "," << tkey.refName << ","
+                                   << tkey.cellPath << "} cloneCellPath='" << cloneCellPath
+                                   << "'");
 
     // Create a new clone entry - ledger only.
     // Target resolution (paramTypep/typedefp) happens in finalizeIfaceCapture
@@ -580,10 +578,12 @@ void V3LinkDotIfaceCapture::forEachOwned(const AstNodeModule* ownerModp,
 }
 
 // replaces the lambda used in V3LinkDot.cpp for iface capture
-void V3LinkDotIfaceCapture::captureTypedefContext(
-    AstRefDType* refp, const char* stageLabel, int dotPos, bool /*dotIsFinal*/,
-    const std::string& dotText, VSymEnt* dotSymp, VSymEnt* curSymp, AstNodeModule* modp,
-    AstNode* /*nodep*/, const std::function<std::string()>& indentFn) {
+void V3LinkDotIfaceCapture::captureTypedefContext(AstRefDType* refp, const char* stageLabel,
+                                                  int dotPos, bool /*dotIsFinal*/,
+                                                  const std::string& dotText, VSymEnt* dotSymp,
+                                                  VSymEnt* curSymp, AstNodeModule* modp,
+                                                  AstNode* /*nodep*/,
+                                                  const std::function<std::string()>& indentFn) {
     if (!enabled() || !refp) return;
 
     UINFO(9, indentFn() << "iface capture capture request stage=" << stageLabel
@@ -610,8 +610,7 @@ void V3LinkDotIfaceCapture::captureTypedefContext(
     // dotText is always non-empty for interface typedef captures.  If this
     // fires, the caller resolved to an interface Cell but did not accumulate
     // a dotText path - investigate the dot-state in visitParseRef.
-    UASSERT(!dotText.empty(),
-            "captureTypedefContext: dotText empty for " << refp->prettyNameQ());
+    UASSERT(!dotText.empty(), "captureTypedefContext: dotText empty for " << refp->prettyNameQ());
     const string cellPath = dotText;
 
     AstVar* ifacePortVarp = nullptr;
@@ -936,8 +935,7 @@ void V3LinkDotIfaceCapture::verifyNoDeadRefs() {
                             if (e.refp == refp) inLedger = true;
                         });
                         UINFO(9, "VERIFY FAIL typedefp: refp="
-                                     << refp->name() << " (" << cvtToHex(refp) << ")"
-                                     << " in mod="
+                                     << refp->name() << " (" << cvtToHex(refp) << ")" << " in mod="
                                      << modp->name() << " typedefp->owner=" << ownerModp->name()
                                      << " inLedger=" << inLedger << endl);
                     }  // LCOV_EXCL_STOP
@@ -957,8 +955,7 @@ void V3LinkDotIfaceCapture::verifyNoDeadRefs() {
                             if (e.refp == refp) inLedger = true;
                         });
                         UINFO(9, "VERIFY FAIL refDTypep: refp="
-                                     << refp->name() << " (" << cvtToHex(refp) << ")"
-                                     << " in mod="
+                                     << refp->name() << " (" << cvtToHex(refp) << ")" << " in mod="
                                      << modp->name() << " refDTypep->owner=" << ownerModp->name()
                                      << " inLedger=" << inLedger << endl);
                     }  // LCOV_EXCL_STOP

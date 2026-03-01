@@ -16,17 +16,11 @@ test.scenarios('vlt')
 
 test.top_filename = "t/t_selrange_iface_type_param.v"
 
-test.compile(
-    v_flags2=[
-        "--binary --debug --debugi 0 --debugi-V3LinkDotIfaceCapture 9"
-    ])
+test.compile(v_flags2=["--binary --debug --debugi 0 --debugi-V3LinkDotIfaceCapture 9"])
 
-test.file_grep(test.compile_log_filename,
-               r"propagateClone:")
-test.file_grep(test.compile_log_filename,
-               r"iface capture add:")
-test.file_grep(test.compile_log_filename,
-               r"iface capture dumpEntries:")
+test.file_grep(test.compile_log_filename, r"propagateClone:")
+test.file_grep(test.compile_log_filename, r"iface capture add:")
+test.file_grep(test.compile_log_filename, r"iface capture dumpEntries:")
 
 test.execute()
 

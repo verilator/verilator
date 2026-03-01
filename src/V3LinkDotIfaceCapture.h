@@ -198,11 +198,11 @@ public:
     static void propagateClone(const TemplateKey& tkey, AstRefDType* newRefp,
                                const string& cloneCellPath);
 
-    static void
-    captureTypedefContext(AstRefDType* refp, const char* stageLabel, int dotPos, bool dotIsFinal,
-                          const std::string& dotText, VSymEnt* dotSymp, VSymEnt* curSymp,
-                          AstNodeModule* modp, AstNode* nodep,
-                          const std::function<std::string()>& indentFn);
+    static void captureTypedefContext(AstRefDType* refp, const char* stageLabel, int dotPos,
+                                      bool dotIsFinal, const std::string& dotText,
+                                      VSymEnt* dotSymp, VSymEnt* curSymp, AstNodeModule* modp,
+                                      AstNode* nodep,
+                                      const std::function<std::string()>& indentFn);
 
     // Null out ledger refp entries that point to freed nodes (not in the live AST).
     // Called once after V3Param completes, before any code touches the ledger.

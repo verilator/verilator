@@ -17,17 +17,11 @@ test.scenarios('vlt')
 
 test.top_filename = "t/t_paramgraph_iface_template_nested.v"
 
-test.compile(
-    v_flags2=[
-        "--binary --debug --debugi 0 --debugi-V3LinkDotIfaceCapture 9"
-    ])
+test.compile(v_flags2=["--binary --debug --debugi 0 --debugi-V3LinkDotIfaceCapture 9"])
 
-test.file_grep(test.compile_log_filename,
-               r"propagateClone:")
-test.file_grep(test.compile_log_filename,
-               r"iface capture capture success typedef=")
-test.file_grep(test.compile_log_filename,
-               r"iface capture dumpEntries:")
+test.file_grep(test.compile_log_filename, r"propagateClone:")
+test.file_grep(test.compile_log_filename, r"iface capture capture success typedef=")
+test.file_grep(test.compile_log_filename, r"iface capture dumpEntries:")
 
 test.execute()
 
