@@ -910,10 +910,13 @@ class ParamProcessor final {
         // Phase B (reachable-set fallback): Phase A (path-based ledger fixup)
         // always resolves all statement-level REFDTYPEs for current tests and
         // Aerial.  Assert if any REFDTYPE slips through so we can investigate.
+        // The loop body is assert-only (no mutations); LCOV_EXCL because
+        // Phase A always resolves everything and ledgerFixed catches all refs.
         for (AstNode* stmtp = newModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             AstRefDType* const refp = VN_CAST(stmtp, RefDType);
             if (!refp) continue;
-            if (ledgerFixed.count(refp)) continue;
+            if (ledgerFixed.count(refp)) continue;  // LCOV_EXCL_LINE
+            // LCOV_EXCL_START
             // Check if typedefp or refDTypep points outside the reachable set
             auto checkNotStale = [&](const char* label, AstNode* targetp) {
                 AstNodeModule* const ownerp = V3LinkDotIfaceCapture::findOwnerModule(targetp);
@@ -926,6 +929,7 @@ class ParamProcessor final {
             };
             if (refp->typedefp()) checkNotStale("typedefp", refp->typedefp());
             if (refp->refDTypep()) checkNotStale("refDTypep", refp->refDTypep());
+            // LCOV_EXCL_STOP
         }
     }
 

@@ -5738,8 +5738,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
             } else if (m_ds.m_dotPos == DP_FIRST || m_ds.m_dotPos == DP_NONE) {
                 foundp = m_curSymp->findIdFallback(nodep->name());
             } else {
-                checkNoDot(nodep);
-                foundp = nullptr;
+                // Defensive: dotPos should be DP_FIRST/DP_NONE or classOrPackagep set.
+                v3fatalSrc("Unexpected dotPos=" << static_cast<int>(m_ds.m_dotPos)  // LCOV_EXCL_LINE
+                           << " in RefDType lookup for " << nodep->prettyNameQ());  // LCOV_EXCL_LINE
+                foundp = nullptr;  // LCOV_EXCL_LINE
             }
             {
                 if (AstTypedef* const defp
