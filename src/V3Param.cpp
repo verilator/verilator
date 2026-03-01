@@ -885,6 +885,7 @@ class ParamProcessor final {
                 }
                 if (fixed) ledgerFixed.insert(refp);
             });
+            V3Stats::addStatSum("IfaceCapture, Ledger fixups in V3Param", ledgerFixed.size());
         }
 
         // Phase B: reachable-set fallback for REFDTYPEs not handled by ledger

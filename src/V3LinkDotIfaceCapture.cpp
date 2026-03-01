@@ -54,6 +54,7 @@
 
 #include "V3Error.h"
 #include "V3Global.h"
+#include "V3Stats.h"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -1009,6 +1010,23 @@ void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
     UINFO(4, "finalizeIfaceCapture: fixed " << wrongCloneFixed << " wrong-live-clone pointers");
 
     if (debug() >= 9) dumpEntries("after finalizeIfaceCapture");
+
+    // Emit statistics for --stats
+    int templates = 0;
+    int clones = 0;
+    for (const auto& kv : s_map) {
+        if (kv.first.cloneCellPath.empty()) {
+            ++templates;
+        } else {
+            ++clones;
+        }
+    }
+    V3Stats::addStat("IfaceCapture, Entries total", s_map.size());
+    V3Stats::addStat("IfaceCapture, Entries template", templates);
+    V3Stats::addStat("IfaceCapture, Entries cloned", clones);
+    V3Stats::addStat("IfaceCapture, Dead refs fixed in type table", typeTableFixed);
+    V3Stats::addStat("IfaceCapture, Dead refs fixed in modules", moduleFixed);
+    V3Stats::addStat("IfaceCapture, Wrong-clone refs fixed", wrongCloneFixed);
 
     verifyNoDeadRefs();
     reset();
