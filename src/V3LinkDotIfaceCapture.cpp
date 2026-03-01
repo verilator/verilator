@@ -736,8 +736,14 @@ void V3LinkDotIfaceCapture::addParamType(AstRefDType* refp, const string& cellPa
     captureInnerParamTypeRefs(paramTypep, refp, cellPath, ownerModName, ptOwnerName);
 }
 
-// Single-pass visitor for fixDeadRefsInTypeTable: handles both AstRefDType
-// and AstMemberDType in one traversal instead of two separate foreach calls.
+// Visitor that fixes dead references in the global type table.
+//
+// When interface templates are cloned, REFDTYPEs in the global type table may
+// still point to the dead template module. This visitor traverses the type
+// table and redirects those references to the appropriate live clone.
+//
+// Handles both AstRefDType (direct typedef references) and AstMemberDType
+// (struct/union member types) in a single traversal for efficiency.
 class TypeTableDeadRefVisitor final : public VNVisitor {
     int m_fixed = 0;
 
