@@ -399,8 +399,8 @@ void V3LinkDotIfaceCapture::addClass(AstRefDType* refp, AstClass* origClassp,
     UASSERT_OBJ(origClassp, refp,
                 "addClass() called with null origClassp for refp=" << refp);
     const string cellPath = origClassp->name();
-    UASSERT(!cellPath.empty(),
-            "addClass() produced empty cellPath from class=" << origClassp->prettyNameQ());
+    UASSERT_OBJ(!cellPath.empty(), origClassp,
+                "addClass() produced empty cellPath");
     const string ownerModName = ownerModp->name();
     const CaptureKey key{ownerModName, refp->name(), cellPath, ""};
     s_map[key] = CapturedEntry{CaptureType::CLASS,   refp,       cellPath,
@@ -603,7 +603,7 @@ void V3LinkDotIfaceCapture::captureTypedefContext(AstRefDType* refp, const char*
     // dotText is always non-empty for interface typedef captures.  If this
     // fires, the caller resolved to an interface Cell but did not accumulate
     // a dotText path - investigate the dot-state in visitParseRef.
-    UASSERT(!dotText.empty(), "captureTypedefContext: dotText empty for " << refp->prettyNameQ());
+    UASSERT_OBJ(!dotText.empty(), refp, "captureTypedefContext: dotText empty");
     const string cellPath = dotText;
 
     AstVar* ifacePortVarp = nullptr;
