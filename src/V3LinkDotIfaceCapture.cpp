@@ -530,11 +530,7 @@ void V3LinkDotIfaceCapture::propagateClone(const TemplateKey& tkey, AstRefDType*
     newEntry.refp = newRefp;
     newEntry.cellPath = tkey.cellPath;
     newEntry.cloneCellPath = cloneCellPath;
-    // Clear stale template targets - finalizeIfaceCapture will find the
-    // correct ones by walking cellPath in the clone's owner module.
-    newEntry.paramTypep = nullptr;
-    newEntry.typedefp = nullptr;
-    newEntry.extraRefps.clear();  // Template's extras are stale in clone context
+    newEntry.clearStaleRefs();
     const CaptureKey newKey{tkey.ownerModName, tkey.refName, tkey.cellPath, cloneCellPath};
     s_map[newKey] = newEntry;
 

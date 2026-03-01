@@ -90,6 +90,13 @@ public:
         // The primary refp is stored above; extras are appended here so that
         // retargeting fixes ALL of them, not just the last-writer-wins primary.
         std::vector<AstRefDType*> extraRefps;
+        // Clear template-specific targets that are stale in a clone context.
+        // Called by propagateClone before inserting a clone entry.
+        void clearStaleRefs() {
+            paramTypep = nullptr;
+            typedefp = nullptr;
+            extraRefps.clear();
+        }
         // Visit every AstNode* pointer field (analogous to AstNode::foreachLink).
         // The callback receives an AstNode* by reference; if it nulls the
         // pointer the typed member is nulled accordingly.
