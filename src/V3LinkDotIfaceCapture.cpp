@@ -93,18 +93,20 @@ const StmtNameMap& getOrBuild(AstNodeModule* modp) {
 void V3LinkDotIfaceCapture::clearModuleCache() { s_moduleCache.clear(); }
 
 AstIfaceRefDType* V3LinkDotIfaceCapture::ifaceRefFromVarDType(AstNodeDType* dtypep) {
+    AstIfaceRefDType* resultp = nullptr;
     for (AstNodeDType* curp = dtypep; curp;) {
-        if (AstIfaceRefDType* const irefp = VN_CAST(curp, IfaceRefDType)) return irefp;
-        if (AstBracketArrayDType* const bracketp = VN_CAST(curp, BracketArrayDType)) {
+        if (AstIfaceRefDType* const irefp = VN_CAST(curp, IfaceRefDType)) {
+            resultp = irefp;
+            break;
+        } else if (AstBracketArrayDType* const bracketp = VN_CAST(curp, BracketArrayDType)) {
             curp = bracketp->subDTypep();
-            continue;
-        }
-        if (AstUnpackArrayDType* const unpackp = VN_CAST(curp, UnpackArrayDType)) {
+        } else if (AstUnpackArrayDType* const unpackp = VN_CAST(curp, UnpackArrayDType)) {
             curp = unpackp->subDTypep();
-            continue;
+        } else {
+            break;
         }
     }
-    return nullptr;
+    return resultp;
 }
 
 namespace {
