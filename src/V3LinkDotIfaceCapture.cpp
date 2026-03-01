@@ -103,7 +103,6 @@ AstIfaceRefDType* V3LinkDotIfaceCapture::ifaceRefFromVarDType(AstNodeDType* dtyp
             curp = unpackp->subDTypep();
             continue;
         }
-        break;
     }
     return nullptr;
 }
