@@ -519,6 +519,66 @@ public:
         }
         return ifacerefp;
     }
+    // Given a pin expression, resolve it to a live AstIface* (or nullptr).
+    // Handles both simple VarRef and dotted VarXRef pin connections.
+    AstIface* liveIfaceFromPinExpr(AstNode* exprp, VSymEnt* parentSymp) {
+        AstVar* resolvedVarp = nullptr;
+        if (AstVarRef* const refp = VN_CAST(exprp, VarRef)) {
+            resolvedVarp = refp->varp();
+        } else if (AstVarXRef* const xrefp = VN_CAST(exprp, VarXRef)) {
+            VSymEnt* const lookupSymp = parentSymp ? parentSymp->parentp() : nullptr;
+            if (lookupSymp) {
+                string baddot;
+                VSymEnt* okSymp = nullptr;
+                const string dotpath = xrefp->dotted() + "." + xrefp->name();
+                VSymEnt* const dotSymp
+                    = findDotted(xrefp->fileline(), lookupSymp, dotpath, baddot, okSymp, true);
+                if (dotSymp) resolvedVarp = VN_CAST(dotSymp->nodep(), Var);
+            }
+        }
+        if (!resolvedVarp) return nullptr;
+        AstIfaceRefDType* const irefp = ifaceRefFromArray(resolvedVarp->subDTypep());
+        if (irefp && irefp->ifaceViaCellp() && !irefp->ifaceViaCellp()->dead()) {
+            return irefp->ifaceViaCellp();
+        }
+        return nullptr;
+    }
+
+    // Attempt to repair a port's AstIfaceRefDType by tracing through the
+    // parent cell's pin connection to find the correct live interface.
+    // Returns true if repaired or already correct; false if unresolvable.
+    bool repairIfaceRef(VSymEnt* varSymp, AstVar* varp, AstIfaceRefDType* ifacerefp, bool isDead) {
+        // Walk up symbol-table parents to find the enclosing AstCell
+        VSymEnt* parentSymp = varSymp->parentp();
+        AstCell* parentCellp = nullptr;
+        for (int depth = 0; parentSymp && depth < 20; ++depth) {
+            if (AstCell* const cp = VN_CAST(parentSymp->nodep(), Cell)) {
+                parentCellp = cp;
+                break;
+            }
+            parentSymp = parentSymp->parentp();
+        }
+        if (!parentCellp) return false;
+        // Scan pins to find the one connected to this port variable
+        for (AstPin* pinp = parentCellp->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+            if (pinp->modVarp() != varp && pinp->name() != varp->name()) continue;
+            AstNode* const exprp = pinp->exprp();
+            if (!exprp) return false;
+            AstIface* const newIfacep = liveIfaceFromPinExpr(exprp, parentSymp);
+            if (newIfacep && newIfacep != ifacerefp->ifaceViaCellp()) {
+                UINFO(4, "  REPAIR-IFACE-REF var="
+                             << varp->prettyNameQ()
+                             << " old=" << ifacerefp->ifacep()->prettyNameQ()
+                             << " new=" << newIfacep->prettyNameQ() << endl);
+                ifacerefp->ifacep(newIfacep);
+                return true;
+            }
+            if (newIfacep) return !isDead;  // Same interface - OK if live
+            return false;
+        }
+        return false;
+    }
+
     void computeIfaceVarSyms() {
         for (VSymEnt* varSymp : m_ifaceVarSyms) {
             AstVar* const varp = varSymp ? VN_AS(varSymp->nodep(), Var) : nullptr;
@@ -558,73 +618,7 @@ public:
                 }
                 // Attempt repair: trace through parent cell's pin to find
                 // the correct live interface for this port variable
-                bool repaired = false;
-                {
-                    VSymEnt* parentSymp = varSymp->parentp();
-                    AstCell* parentCellp = nullptr;
-                    for (int depth = 0; parentSymp && depth < 20; ++depth) {
-                        if (AstCell* const cp = VN_CAST(parentSymp->nodep(), Cell)) {
-                            parentCellp = cp;
-                            break;
-                        }
-                        parentSymp = parentSymp->parentp();
-                    }
-                    if (parentCellp) {
-                        for (AstPin* pinp = parentCellp->pinsp(); pinp;
-                             pinp = VN_AS(pinp->nextp(), Pin)) {
-                            if (pinp->modVarp() == varp || pinp->name() == varp->name()) {
-                                AstNode* const exprp = pinp->exprp();
-                                if (!exprp) break;
-                                AstIface* newIfacep = nullptr;
-                                if (AstVarRef* const refp = VN_CAST(exprp, VarRef)) {
-                                    if (AstVar* const pinVarp = refp->varp()) {
-                                        AstIfaceRefDType* const pinIrefp
-                                            = ifaceRefFromArray(pinVarp->subDTypep());
-                                        if (pinIrefp && pinIrefp->ifaceViaCellp()
-                                            && !pinIrefp->ifaceViaCellp()->dead()) {
-                                            newIfacep = pinIrefp->ifaceViaCellp();
-                                        }
-                                    }
-                                } else if (AstVarXRef* const xrefp = VN_CAST(exprp, VarXRef)) {
-                                    // Dotted reference like l4.l3 - use findDotted
-                                    // to resolve through the symbol table.
-                                    // Start from the parent module scope (above the cell).
-                                    VSymEnt* const lookupSymp = parentSymp->parentp();
-                                    string baddot;
-                                    VSymEnt* okSymp = nullptr;
-                                    const string dotpath = xrefp->dotted() + "." + xrefp->name();
-                                    VSymEnt* const dotSymp
-                                        = lookupSymp ? findDotted(xrefp->fileline(), lookupSymp,
-                                                                  dotpath, baddot, okSymp, true)
-                                                     : nullptr;
-                                    if (dotSymp) {
-                                        if (AstVar* const dotVarp
-                                            = VN_CAST(dotSymp->nodep(), Var)) {
-                                            AstIfaceRefDType* const dotIrefp
-                                                = ifaceRefFromArray(dotVarp->subDTypep());
-                                            if (dotIrefp && dotIrefp->ifaceViaCellp()
-                                                && !dotIrefp->ifaceViaCellp()->dead()) {
-                                                newIfacep = dotIrefp->ifaceViaCellp();
-                                            }
-                                        }
-                                    }
-                                }
-                                if (newIfacep && newIfacep != ifacerefp->ifaceViaCellp()) {
-                                    UINFO(4, "  REPAIR-IFACE-REF var="
-                                                 << varp->prettyNameQ()
-                                                 << " old=" << ifacerefp->ifacep()->prettyNameQ()
-                                                 << " new=" << newIfacep->prettyNameQ() << endl);
-                                    ifacerefp->ifacep(newIfacep);
-                                    repaired = true;
-                                } else if (newIfacep) {
-                                    // Pin connects to same interface - no repair needed
-                                    repaired = !isDead;
-                                }
-                                break;
-                            }
-                        }
-                    }
-                }
+                const bool repaired = repairIfaceRef(varSymp, varp, ifacerefp, isDead);
                 if (!repaired && isDead) {
                     ifacerefp->v3error(
                         "Interface " << AstNode::prettyNameQ(ifacerefp->ifaceName())
