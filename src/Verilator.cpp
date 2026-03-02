@@ -155,7 +155,10 @@ static void process() {
         }
 
         // Convert parseref's to varrefs, and other directly post parsing fixups
+        // Note: must run before removeStd() as it may create std:: references (e.g. covergroups)
         V3LinkParse::linkParse(v3Global.rootp());
+        // Remove std package if unused (must be after V3LinkParse which may set usesStdPackage)
+        v3Global.removeStd();
         // Cross-link signal names
         // Cross-link dotted hierarchical references
         V3LinkDot::linkDotPrimary(v3Global.rootp());
@@ -731,7 +734,6 @@ static bool verilate(const string& argString) {
 
     // Read first filename
     v3Global.readFiles();
-    v3Global.removeStd();
 
     // Link, etc, if needed
     if (!v3Global.opt.preprocOnly()) {  //
