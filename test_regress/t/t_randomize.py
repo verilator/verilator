@@ -9,8 +9,13 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('simulator')
 
-test.lint()
+if not test.have_solver:
+    test.skip("No constraint solver installed")
+
+test.compile()
+
+test.execute()
 
 test.passes()

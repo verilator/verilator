@@ -25,6 +25,11 @@ class DistZeroWeight;
   constraint c { x dist { 8'd0 := 0, 8'd1 := 1, 8'd2 := 1 }; }
 endclass
 
+class DistAllZeroWeight;
+  rand bit [7:0] x;
+  constraint c { x dist { 8'd0 := 0, 8'd1 := 0, 8'd2 := 0 }; }
+endclass
+
 class DistVarWeight;
   rand bit [7:0] x;
   int w1, w2;
@@ -42,6 +47,7 @@ module t;
     DistScalar sc;
     DistRange rg;
     DistZeroWeight zw;
+    DistAllZeroWeight azw;
     DistVarWeight vw;
     DistVarWeightRange vwr;
     int count_high;
@@ -58,7 +64,7 @@ module t;
       if (sc.x == 8'd255) count_high++;
       else `checkd(sc.x, 0);
     end
-    `check_range(count_high, 1200, 1800);
+    `check_range(count_high, total * 60 / 100, total * 90 / 100);
 
     // :/ range weights: expect ~75% in [10:19]
     rg = new;
@@ -71,7 +77,7 @@ module t;
         `stop;
       end
     end
-    `check_range(count_range_high, 1200, 1800);
+    `check_range(count_range_high, total * 60 / 100, total * 90 / 100);
 
     // Zero weight: value 0 must never appear
     zw = new;
@@ -84,6 +90,12 @@ module t;
       `check_range(zw.x, 1, 2);
     end
 
+    // All-zero weights: dist constraint is effectively unconstrained, randomize succeeds
+    azw = new;
+    repeat (20) begin
+      `checkd(azw.randomize(), 1);
+    end
+
     // Variable := scalar weights: w1=1, w2=3 => expect ~75% for value 255
     vw = new;
     vw.w1 = 1;
@@ -94,7 +106,7 @@ module t;
       if (vw.x == 8'd255) count_high++;
       else `checkd(vw.x, 0);
     end
-    `check_range(count_high, 1200, 1800);
+    `check_range(count_high, total * 60 / 100, total * 90 / 100);
 
     // Variable :/ range weights: w1=1, w2=3 => expect ~75% in [10:19]
     vwr = new;
@@ -109,7 +121,7 @@ module t;
         `stop;
       end
     end
-    `check_range(count_range_high, 1200, 1800);
+    `check_range(count_range_high, total * 60 / 100, total * 90 / 100);
 
     $write("*-* All Finished *-*\n");
     $finish;

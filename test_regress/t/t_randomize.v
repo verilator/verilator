@@ -11,7 +11,7 @@ class Packet;
    rand bit if_4;
    rand bit iff_5_6;
 
-   /*rand*/ int array[2];  // 2,4,6  // TODO: add rand when supported
+   rand int array[2];  // 2,4,6
 
    constraint empty {}
 
@@ -58,7 +58,7 @@ module t;
 
       automatic int v;
       automatic bit if_4 = '0;
-      // TODO not testing constrained values
+      p = new;
       v = p.randomize();
       if (v != 1) $stop;
       v = p.randomize() with {};

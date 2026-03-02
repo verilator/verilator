@@ -3534,7 +3534,14 @@ class RandomizeVisitor final : public VNVisitor {
                 buckets.push_back({ditemp->rangep(), weightExprp});
             }
 
-            if (buckets.empty()) continue;
+            if (buckets.empty()) {
+                // All weights are zero: dist is vacuously true (unconstrained)
+                AstConstraintExpr* const truep
+                    = new AstConstraintExpr{fl, new AstConst{fl, AstConst::BitTrue{}}};
+                constrExprp->replaceWith(truep);
+                VL_DO_DANGLING(pushDeletep(constrExprp), constrExprp);
+                continue;
+            }
 
             // Build totalWeight expression: w[0] + w[1] + ... + w[N-1]
             AstNodeExpr* totalWeightExprp = nullptr;
@@ -3556,6 +3563,7 @@ class RandomizeVisitor final : public VNVisitor {
             totalVarp->noSubst(true);
             totalVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             totalVarp->funcLocal(true);
+            totalVarp->isInternal(true);
             taskp->addStmtsp(totalVarp);
             taskp->addStmtsp(
                 new AstAssign{fl, new AstVarRef{fl, totalVarp, VAccess::WRITE}, totalWeightExprp});
@@ -3567,6 +3575,7 @@ class RandomizeVisitor final : public VNVisitor {
             bucketVarp->noSubst(true);
             bucketVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             bucketVarp->funcLocal(true);
+            bucketVarp->isInternal(true);
             taskp->addStmtsp(bucketVarp);
 
             AstNodeExpr* randp = new AstRand{fl, nullptr, false};
@@ -3629,16 +3638,16 @@ class RandomizeVisitor final : public VNVisitor {
 
             if (chainp) {
                 constrExprp->replaceWith(chainp);
-                VL_DO_DANGLING(constrExprp->deleteTree(), constrExprp);
+                VL_DO_DANGLING(pushDeletep(constrExprp), constrExprp);
             }
 
             // Clean up nodes used only as clone templates (never inserted into tree)
             for (auto& bucket : buckets) {
-                VL_DO_DANGLING(bucket.weightExprp->deleteTree(), bucket.weightExprp);
+                VL_DO_DANGLING(pushDeletep(bucket.weightExprp), bucket.weightExprp);
             }
-            VL_DO_DANGLING(runningSump->deleteTree(), runningSump);
+            VL_DO_DANGLING(pushDeletep(runningSump), runningSump);
             // Last cumSum is unused (last bucket is unconditional default)
-            VL_DO_DANGLING(cumSums.back()->deleteTree(), cumSums.back());
+            pushDeletep(cumSums.back());
         }
     }
 
@@ -3658,6 +3667,7 @@ class RandomizeVisitor final : public VNVisitor {
     void visit(AstClass* nodep) override {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_randCaseNum);
+        VL_RESTORER(m_distNum);
         m_modp = nodep;
         m_randCaseNum = 0;
         m_distNum = 0;
