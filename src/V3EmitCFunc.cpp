@@ -204,11 +204,20 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
             // Check if we have custom formatter functions (e.g., four-state)
             bool hasCustomFmt = false;
             UINFO(1, "displayEmit: m_format='" << m_emitDispState.m_format << "' args.size=" << m_emitDispState.m_argsp.size() << "\n");
-            for (unsigned i = 0; i < m_emitDispState.m_argsp.size(); i++) {
-                UINFO(1, "  arg[" << i << "] func='" << m_emitDispState.m_argsFunc[i] << "'\n");
-                if (m_emitDispState.m_argsFunc[i] != "") {
+            // Only use custom formatter if ALL arguments use the four-state format
+            // This avoids issues with mixed format specifiers
+            if (m_emitDispState.m_argsp.size() > 0) {
+                bool allFourState = true;
+                for (unsigned i = 0; i < m_emitDispState.m_argsp.size(); i++) {
+                    UINFO(1, "  arg[" << i << "] func='" << m_emitDispState.m_argsFunc[i] << "'\n");
+                    // Check for VL_WRITEF_4STATE_* functions specifically
+                    if (m_emitDispState.m_argsFunc[i].find("VL_WRITEF_4STATE_") != 0) {
+                        allFourState = false;
+                        break;
+                    }
+                }
+                if (allFourState) {
                     hasCustomFmt = true;
-                    break;
                 }
             }
             if (hasCustomFmt) {
