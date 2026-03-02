@@ -218,7 +218,7 @@ Covergroup Coverage
 
 With :vlopt:`--coverage` or :vlopt:`--coverage-user`, Verilator will
 translate covergroup coverage points the user has inserted manually in
-SystemVerilog code into the Verilated model. Verilator supports 
+SystemVerilog code into the Verilated model. Verilator supports
 coverpoints with value and transition bins, and cross points.
 
 .. code-block:: sv
@@ -252,7 +252,7 @@ coverpoints with value and transition bins, and cross points.
 Supported Features
 ^^^^^^^^^^^^^^^^^^
 * Coverpoints on integral expressions with value, range, wildcard, and transition bins
-* Conditional coverpoint sampling (iff) 
+* Conditional coverpoint sampling (iff)
 * Explicit and clocked sampling, with sample-function parameters
 * at_least and auto_bin_max options on covergroups and coverpoints
 * Cross points with auto-bins
@@ -263,7 +263,7 @@ Unsupported Features
 * Coverpoints on real (floating-point) expressions
 * Coverpoint bin filtering (with)
 * Coverpoint bin conditional sampling (iff)
-* Transition bins with repetition operators ([\*N], [->N], [=N]) 
+* Transition bins with repetition operators ([\*N], [->N], [=N])
 * Explicitly-typed coverpoints
 * Block-event sampling
 * Covergroup inheritance (extends)
