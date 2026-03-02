@@ -259,7 +259,6 @@ class ScopeVisitor final : public VNVisitor {
             clonep = nodep->cloneTree(false);
         }
         nodep->user2p(clonep);
-        clonep->user2p(clonep);  // For recursive self-references after cloneTree
         m_scopep->addBlocksp(clonep);
         // We iterate under the *clone*
         iterateChildren(clonep);
