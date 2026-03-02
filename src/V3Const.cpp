@@ -4193,12 +4193,6 @@ class ConstVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(crp), crp);
                 }
                 return;
-            } else if (AstCellArrayRef* const car = VN_CAST(nodep, CellArrayRef)) {
-                iterate(car->selp());
-                nodep->v3error("Expecting expression to be constant, but can't convert a "
-                               << nodep->prettyTypeName()
-                               << " (cell array reference) to constant.");
-                return;
             } else {
                 nodep->v3error("Expecting expression to be constant, but can't convert a "
                                << nodep->prettyTypeName() << " to constant.");

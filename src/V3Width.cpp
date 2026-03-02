@@ -2080,11 +2080,9 @@ class WidthVisitor final : public VNVisitor {
             userIterateAndNext(exprp, WidthVP{SELF, PRELIM}.p());
             nodep->dtypeFrom(exprp);
             userIterateAndNext(exprp, WidthVP{SELF, FINAL}.p());
-        } else if (AstNodeDType* const dtypep = VN_CAST(nodep->exprp(), NodeDType)) {
-            userIterateAndNext(dtypep, WidthVP{SELF, BOTH}.p());
-            nodep->dtypep(dtypep);
         } else {
-            nodep->dtypeSetVoid();  // Fallback; should not normally occur
+            nodep->v3fatalSrc("CellRef exprp is not a NodeExpr: "  // LCOV_EXCL_LINE
+                              << nodep->exprp()->prettyTypeName());
         }
 
         nodep->didWidth(true);
