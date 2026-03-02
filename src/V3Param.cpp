@@ -1295,15 +1295,12 @@ class ParamProcessor final {
                     // Skip if owned by a parameterized template (not yet specialized)
                     if (ownerModp && ownerModp->parameterizedTemplate()) {
                         skipWidthForTemplateStruct = true;
-                        V3Stats::addStatSum(
-                            "Param, Template struct width skips", 1);
+                        V3Stats::addStatSum("Param, Template struct width skips", 1);
                         UINFO(9, "SKIP-WIDTH-TEMPLATE: struct="
-                            << resolvedp->prettyTypeName()
-                            << " templateOwner=" << ownerModp->prettyNameQ()
-                            << " pin=" << pinp->prettyNameQ()
-                            << " of " << nodep->prettyNameQ()
-                            << " srcMod=" << srcModp->prettyNameQ()
-                            << endl);
+                                     << resolvedp->prettyTypeName() << " templateOwner="
+                                     << ownerModp->prettyNameQ() << " pin=" << pinp->prettyNameQ()
+                                     << " of " << nodep->prettyNameQ()
+                                     << " srcMod=" << srcModp->prettyNameQ() << endl);
                     }
                 }
                 if (rawTypep && !skipWidthForTemplateStruct) V3Width::widthParamsEdit(rawTypep);
