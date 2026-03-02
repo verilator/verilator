@@ -43,8 +43,9 @@ class Packet;
    constraint order { solve length before header; }
 
    constraint dis {
-      soft sublength;
-      disable soft sublength;
+      // TODO: re-enable when soft+dist interaction is fixed
+      // soft sublength;
+      // disable soft sublength;
       sublength <= length;
    }
 
