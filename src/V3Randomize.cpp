@@ -1021,19 +1021,23 @@ class ConstraintExprVisitor final : public VNVisitor {
             // For global constraints, delete nodep after processing
             if (isGlobalConstrained && !nodep->backp()) VL_DO_DANGLING(pushDeletep(nodep), nodep);
 
+            bool isClassRefArray = false;
             bool isUnpackedClassRefArray = false;
             AstClassRefDType* elemClassRefDtp = nullptr;
             {
                 AstNodeDType* varDtp = varp->dtypep()->skipRefp();
-                if (VN_IS(varDtp, UnpackArrayDType)) {
+                if (VN_IS(varDtp, DynArrayDType) || VN_IS(varDtp, QueueDType)
+                    || VN_IS(varDtp, UnpackArrayDType) || VN_IS(varDtp, AssocArrayDType)) {
                     AstNodeDType* const elemDtp = varDtp->subDTypep()->skipRefp();
                     elemClassRefDtp = VN_CAST(elemDtp, ClassRefDType);
-                    if (elemClassRefDtp) isUnpackedClassRefArray = true;
+                    if (elemClassRefDtp) {
+                        isClassRefArray = true;
+                        isUnpackedClassRefArray = VN_IS(varDtp, UnpackArrayDType);
+                    }
                 }
             }
 
-            if (isUnpackedClassRefArray && !membersel) {
-                // Register each rand member of class ref array elements
+            if (isClassRefArray && !membersel) {
                 FileLine* const fl = varp->fileline();
                 AstClass* const elemClassp = elemClassRefDtp->classp();
                 AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
@@ -1047,19 +1051,36 @@ class ConstraintExprVisitor final : public VNVisitor {
                 stmtsp->addNext(new AstAssign{fl, new AstVarRef{fl, iterVarp, VAccess::WRITE},
                                               new AstConst{fl, 0}});
 
-                const int arraySize
-                    = VN_AS(varp->dtypep()->skipRefp(), UnpackArrayDType)->elementsConst();
-                AstNodeExpr* const sizep = new AstConst{fl, static_cast<uint32_t>(arraySize)};
+                AstNodeExpr* sizep;
+                if (isUnpackedClassRefArray) {
+                    const int arraySize
+                        = VN_AS(varp->dtypep()->skipRefp(), UnpackArrayDType)->elementsConst();
+                    sizep = new AstConst{fl, static_cast<uint32_t>(arraySize)};
+                } else {
+                    AstVarRef* const arraySizeRef
+                        = new AstVarRef{fl, varClassp, varp, VAccess::READ};
+                    arraySizeRef->classOrPackagep(classOrPackagep);
+                    AstCMethodHard* const dynSizep
+                        = new AstCMethodHard{fl, arraySizeRef, VCMethod::DYN_SIZE, nullptr};
+                    dynSizep->dtypeSetUInt32();
+                    sizep = dynSizep;
+                }
 
                 AstLoop* const loopp = new AstLoop{fl};
                 stmtsp->addNext(loopp);
                 loopp->addStmtsp(new AstLoopTest{
                     fl, loopp, new AstLt{fl, new AstVarRef{fl, iterVarp, VAccess::READ}, sizep}});
 
-                AstVarRef* const arrayRef = new AstVarRef{fl, varClassp, varp, VAccess::READ};
-                arrayRef->classOrPackagep(classOrPackagep);
-                AstNodeExpr* const atReadp
-                    = new AstArraySel{fl, arrayRef, new AstVarRef{fl, iterVarp, VAccess::READ}};
+                AstVarRef* const arrayReadRef = new AstVarRef{fl, varClassp, varp, VAccess::READ};
+                arrayReadRef->classOrPackagep(classOrPackagep);
+                AstNodeExpr* atReadp;
+                if (isUnpackedClassRefArray) {
+                    atReadp = new AstArraySel{fl, arrayReadRef,
+                                              new AstVarRef{fl, iterVarp, VAccess::READ}};
+                } else {
+                    atReadp = new AstCMethodHard{fl, arrayReadRef, VCMethod::ARRAY_AT,
+                                                 new AstVarRef{fl, iterVarp, VAccess::READ}};
+                }
                 atReadp->dtypep(elemClassRefDtp);
                 AstIf* const ifNonNullp = new AstIf{
                     fl, new AstNeq{fl, atReadp, new AstConst{fl, AstConst::Null{}}}, nullptr};
@@ -1067,6 +1088,10 @@ class ConstraintExprVisitor final : public VNVisitor {
 
                 AstCStmt* const bufDeclp = new AstCStmt{fl, "char __Vn[256];\n"};
                 ifNonNullp->addThensp(bufDeclp);
+
+                // 32-bit index hex chars for SMT name formatting
+                constexpr int idxWidth = 32;
+                const int fmtWidth = VL_WORDS_I(idxWidth) * 8;
 
                 for (const AstClass* cp = elemClassp; cp;
                      cp = cp->extendsp() ? cp->extendsp()->classp() : nullptr) {
@@ -1081,8 +1106,14 @@ class ConstraintExprVisitor final : public VNVisitor {
                         const int memberWidth = memberDtp->width();
 
                         AstCStmt* const fmtp = new AstCStmt{fl};
-                        fmtp->add("VL_SNPRINTF(__Vn, sizeof(__Vn), \"" + smtName + ".%x."
-                                  + memberVarp->name() + "\", (unsigned)");
+                        if (isUnpackedClassRefArray) {
+                            fmtp->add("VL_SNPRINTF(__Vn, sizeof(__Vn), \"" + smtName + ".%x."
+                                      + memberVarp->name() + "\", (unsigned)");
+                        } else {
+                            fmtp->add("VL_SNPRINTF(__Vn, sizeof(__Vn), \"" + smtName + ".%0"
+                                      + std::to_string(fmtWidth) + "x." + memberVarp->name()
+                                      + "\", (unsigned)");
+                        }
                         fmtp->add(new AstVarRef{fl, iterVarp, VAccess::READ});
                         fmtp->add(");\n");
                         ifNonNullp->addThensp(fmtp);
@@ -1090,8 +1121,15 @@ class ConstraintExprVisitor final : public VNVisitor {
                         AstVarRef* const arrayWrRef
                             = new AstVarRef{fl, varClassp, varp, VAccess::WRITE};
                         arrayWrRef->classOrPackagep(classOrPackagep);
-                        AstNodeExpr* const atWritep = new AstArraySel{
-                            fl, arrayWrRef, new AstVarRef{fl, iterVarp, VAccess::READ}};
+                        AstNodeExpr* atWritep;
+                        if (isUnpackedClassRefArray) {
+                            atWritep = new AstArraySel{
+                                fl, arrayWrRef, new AstVarRef{fl, iterVarp, VAccess::READ}};
+                        } else {
+                            atWritep = new AstCMethodHard{
+                                fl, arrayWrRef, VCMethod::ARRAY_AT_WRITE,
+                                new AstVarRef{fl, iterVarp, VAccess::READ}};
+                        }
                         atWritep->dtypep(elemClassRefDtp);
                         AstMemberSel* const memberSelp
                             = new AstMemberSel{fl, atWritep, memberVarp};
