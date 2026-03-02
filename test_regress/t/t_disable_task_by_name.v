@@ -17,6 +17,10 @@ int self_after_disable = 0;
 int par_started = 0;
 int par_finished = 0;
 int par_parent_continued = 0;
+int named_block_fork_fail = 0;
+int task_named_block_fork_fail = 0;
+event named_block_fork_ev;
+event task_named_block_fork_ev;
 
 class StaticCls;
   static int ticks = 0;
@@ -73,6 +77,23 @@ task parent_disables_worker;
   #5;
   disable worker;
   par_parent_continued = 1;
+endtask
+
+task task_named_block_fork_disable;
+  begin : t_named_block
+    fork
+      begin
+        #5;
+        task_named_block_fork_fail = 1;
+      end
+      begin
+        @task_named_block_fork_ev;
+        disable t_named_block;
+        task_named_block_fork_fail = 2;
+      end
+    join
+    task_named_block_fork_fail = 3;
+  end
 endtask
 
 class Cls;
@@ -248,6 +269,37 @@ module t;
     join_none
     #10;
     if (y != 1) $stop;
+
+    // Disable named block containing fork from inside a fork branch
+    fork
+      begin : named_block_under_test
+        fork
+          begin
+            #5;
+            named_block_fork_fail = 1;
+          end
+          begin
+            @named_block_fork_ev;
+            disable named_block_under_test;
+            named_block_fork_fail = 2;
+          end
+        join
+        named_block_fork_fail = 3;
+      end
+    join_none
+    #2;
+    ->named_block_fork_ev;
+    #10;
+    if (named_block_fork_fail != 0) $stop;
+
+    // Same case as above, but with the named block inside a task
+    fork
+      task_named_block_fork_disable();
+    join_none
+    #2;
+    ->task_named_block_fork_ev;
+    #10;
+    if (task_named_block_fork_fail != 0) $stop;
 
     // Disabling a task after it already finished is a no-op
     finish_z();
