@@ -263,7 +263,7 @@ class DelayedVisitor final : public VNVisitor {
     AstUser3Allocator<AstVarScope, std::vector<WriteReference>> m_writeRefs;
 
     // STATE - across all visitors
-    std::set<AstSenTree*> m_timingDomains;  // Timing resume domains
+    VInsertionSet<AstSenTree*> m_timingDomains;  // Timing resume domains
 
     // STATE - for current visit position (use VL_RESTORER)
     AstActive* m_activep = nullptr;  // Current activate

@@ -734,8 +734,8 @@ public:
         puts(";\n");
     }
     void visit(AstCNew* nodep) override {
-        if (VN_IS(nodep->dtypep(), VoidDType)) {
-            // super.new case
+        if (VN_IS(nodep->dtypep(), VoidDType)) {  // super.new case
+            putsDecoration(nodep, "/*super.new*/");
             return;
         }
         // assignment case;

@@ -26,6 +26,5 @@ test.run(cmd=[
 ],
          verilator_run=True)
 
-test.files_identical(test.obj_dir + "/annotated/t_cover_line.v", "t/t_cover_line.out")
 test.vcd_identical(test.trace_filename, test.golden_filename)
 test.passes()

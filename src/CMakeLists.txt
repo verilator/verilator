@@ -65,8 +65,9 @@ set(HEADERS
     V3Clock.h
     V3Combine.h
     V3Common.h
-    V3Control.h
     V3Const.h
+    V3Container.h
+    V3Control.h
     V3Coverage.h
     V3CoverageJoin.h
     V3Dead.h
