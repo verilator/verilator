@@ -352,29 +352,33 @@ private:
                 }
             }
             if (changed) {
+                const bool packed = structp->packed();
                 AstNodeUOrStructDType* enStructp;
                 if (VN_IS(structp, StructDType)) {
-                    enStructp = new AstStructDType{structp->fileline(), structp->packed()
-                                                                            ? VSigning::SIGNED
-                                                                            : VSigning::NOSIGN};
+                    enStructp = new AstStructDType{structp->fileline(),
+                                                   packed ? VSigning::SIGNED : VSigning::NOSIGN};
                 } else if (VN_IS(structp, UnionDType) && structp->packed()) {
                     const AstUnionDType* const unionp = VN_AS(structp, UnionDType);
-                    enStructp = new AstUnionDType{
-                        unionp->fileline(), unionp->isSoft(), unionp->isTagged(),
-                        unionp->packed() ? VSigning::SIGNED : VSigning::NOSIGN};
+                    enStructp = new AstUnionDType{unionp->fileline(), unionp->isSoft(),
+                                                  unionp->isTagged(),
+                                                  packed ? VSigning::SIGNED : VSigning::NOSIGN};
                 } else {
                     varp->v3fatalSrc("Unsupported: Force of variable of unhandled data type");
                     return dtypep;
                 }
                 int width = 0;
-                for (const auto& memberp : enMemberDTypes) {
-                    enStructp->addMembersp(memberp);
-                    const int memberWidth = memberp->width();
-                    if (VN_IS(structp, StructDType)) {
-                        width += memberWidth;
-                    } else {
-                        width = std::max(width, memberWidth);
+                if (packed) {
+                    for (const auto& memberp : enMemberDTypes) {
+                        enStructp->addMembersp(memberp);
+                        const int memberWidth = memberp->width();
+                        if (VN_IS(structp, StructDType)) {
+                            width += memberWidth;
+                        } else {
+                            width = std::max(width, memberWidth);
+                        }
                     }
+                } else {
+                    width = 1;
                 }
                 v3Global.rootp()->typeTablep()->addTypesp(enStructp);
                 enStructp->name(structp->name() + "__VforceEn_t");
