@@ -14,8 +14,7 @@ test.top_filename = "t/t_trace_type_dupes.v"
 
 test.compile(
     # artificially low trace splitting for force cross-split type function usage
-    verilator_flags2=["--trace", "--trace-structs", "--output-split-ctrace 10"]
-)
+    verilator_flags2=["--trace", "--trace-structs", "--output-split-ctrace 10"])
 
 test.execute()
 
