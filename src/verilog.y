@@ -6913,7 +6913,7 @@ covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
                               else
                                   sampleArgsp = $4;
                           }
-                          $$ = new AstCovergroup{$<fl>2, *$2, static_cast<AstVar*>($3),
+                          $$ = new AstCovergroup{$<fl>1, *$2, static_cast<AstVar*>($3),
                                                  static_cast<AstVar*>(sampleArgsp), $6, clockp};
                           GRAMMARP->endLabel($<fl>8, $$, $8); }
         |        yCOVERGROUP yEXTENDS idAny ';'
