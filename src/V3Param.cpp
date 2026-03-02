@@ -1274,13 +1274,14 @@ class ParamProcessor final {
             resolveDotToTypedef(pinp->exprp());
 
             AstNodeDType* rawTypep = VN_CAST(pinp->exprp(), NodeDType);
+            // Guard against widthing a struct/union still owned by a
+            // parameterized template interface (not yet specialized).
             // widthParamsEdit is destructive: it evaluates range expressions,
-            // sets didWidth=1, and removes Range nodes. When the REFDTYPE chain
-            // reaches into a template interface (e.g., struct types derived from
-            // parameterized interfaces), this mutates the template's BASICDTYPEs,
-            // corrupting all subsequent clones. Only skip widthing when the
-            // resolved type is a struct/union owned by a template interface.
-            // Local structs with parameter-dependent widths still need widthing.
+            // sets didWidth=1, and removes Range nodes, which would corrupt
+            // the template's BASICDTYPEs for all subsequent clones.
+            // Triggered by deeply nested parameterized interfaces (e.g.
+            // outer_if containing inner_if with struct typedefs) when the
+            // inner interface hasn't been specialized yet.
             bool skipWidthForTemplateStruct = false;
             {
                 // Use non-asserting skip: before widthParamsEdit, type(expr)
@@ -1292,6 +1293,15 @@ class ParamProcessor final {
                     // Skip if owned by a parameterized template (not yet specialized)
                     if (ownerModp && ownerModp->parameterizedTemplate()) {
                         skipWidthForTemplateStruct = true;
+                        V3Stats::addStatSum(
+                            "Param, Template struct width skips", 1);
+                        UINFO(9, "SKIP-WIDTH-TEMPLATE: struct="
+                            << resolvedp->prettyTypeName()
+                            << " templateOwner=" << ownerModp->prettyNameQ()
+                            << " pin=" << pinp->prettyNameQ()
+                            << " of " << nodep->prettyNameQ()
+                            << " srcMod=" << srcModp->prettyNameQ()
+                            << endl);
                     }
                 }
                 if (rawTypep && !skipWidthForTemplateStruct) V3Width::widthParamsEdit(rawTypep);
