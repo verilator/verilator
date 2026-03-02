@@ -423,8 +423,10 @@ class ParamProcessor final {
         // Using V3Hasher::uncachedHash includes AST node pointer which differs for equivalent
         // types represented by different AST nodes (e.g., parameterized class specializations).
         // For value parameters, we can still use the AST hash for better collision resistance.
-        if (AstRefDType* const refp = VN_CAST(nodep, RefDType)) {
-            nodep = refp->skipRefToNonRefp();
+        // All call sites resolve through skipRefToNonRefp() or pass non-DType
+        // nodes, so nodep should never be a bare RefDType here.
+        if (VN_IS(nodep, RefDType)) {  // LCOV_EXCL_LINE
+            nodep->v3fatalSrc("Unexpected RefDType in paramValueNumber");  // LCOV_EXCL_LINE
         }
         const string paramStr = paramValueString(nodep);
         V3Hash hash;
