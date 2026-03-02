@@ -666,14 +666,16 @@ class ParamProcessor final {
             // Also update FuncRef/TaskRef packagep to point to new class
             // This fixes static method calls through typedefs in parameterized classes
             if (ftaskRefp->classOrPackagep() == oldClassp) ftaskRefp->classOrPackagep(newClassp);
-            // Also update taskp if it points to a function in the old class
+            // Also update taskp if it points to a function in the old class.
+            // AstNodeFTask::classOrPackagep() (op2) holds a parse-time
+            // Dot/ClassOrPackageRef for extern declarations, which is deleted
+            // in LinkDot::moveExternFuncDecl before V3Param runs. For inline
+            // class methods op2 is nullptr. So this should never match.
             if (AstNodeFTask* const oldTaskp = ftaskRefp->taskp()) {
                 if (oldTaskp->classOrPackagep() == oldClassp) {
-                    // Find the corresponding function in the new class
-                    if (AstNodeFTask* const newTaskp = VN_CAST(
-                            m_memberMap.findMember(newClassp, oldTaskp->name()), NodeFTask)) {
-                        ftaskRefp->taskp(newTaskp);
-                    }
+                    oldTaskp->v3fatalSrc(  // LCOV_EXCL_LINE
+                        "FTask classOrPackagep unexpectedly matches old class "
+                        << oldClassp->prettyNameQ());
                 }
             }
         }
