@@ -104,7 +104,7 @@ public:
         m_classOrPackagep = reinterpret_cast<AstNodeModule*>(1);
 #endif
     }
-#if defined(VL_DEBUG) && !defined(VL_LEAK_CHECKS)
+#if (defined(VL_DEBUG) || defined(VL_ALLOC_RANDOM_CHECKS)) && !defined(VL_LEAK_CHECKS)
     // For testing, leak so above destructor 1 assignments work
     void* operator new(size_t size) { return std::malloc(size); }
     void operator delete(void* objp, size_t size) {}

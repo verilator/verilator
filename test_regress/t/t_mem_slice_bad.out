@@ -23,4 +23,8 @@
                                  : ... note: In instance 't'
    51 |       active_command4[7:0] <= command_A4[8:0];
       |                                         ^
+%Error: t/t_mem_slice_bad.v:56:28: Illegal assignment: Unmatched array sizes in dimension 0 (9 vs 8)
+                                 : ... note: In instance 't'
+   56 |       active_command5[8:0] = command_A5[7:0];
+      |                            ^
 %Error: Exiting due to

@@ -560,7 +560,7 @@ public:
     // Perform a function on every link in a node
     virtual void foreachLink(std::function<void(AstNode** linkpp, const char* namep)> f) = 0;
 
-#ifdef VL_LEAK_CHECKS
+#if defined(VL_LEAK_CHECKS) || defined(VL_ALLOC_RANDOM_CHECKS)
     static void* operator new(size_t size);
     static void operator delete(void* obj, size_t size);
 #endif

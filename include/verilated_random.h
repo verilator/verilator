@@ -200,9 +200,10 @@ public:
 // Object holding constraints and variable references.
 class VlRandomizer VL_NOT_FINAL {
     // MEMBERS
-    std::vector<std::string> m_constraints;  // Solver-dependent constraints
+    std::vector<std::string> m_constraints;  // Solver-dependent hard constraints
     std::vector<std::string>
         m_constraints_line;  // fileline content of the constraint for unsat constraints
+    std::vector<std::string> m_softConstraints;  // Soft constraints
     std::map<std::string, std::shared_ptr<const VlRandomVar>> m_vars;  // Solver-dependent
                                                                        // variables
     ArrayInfoMap m_arr_vars;  // Tracks each element in array structures for iteration
@@ -214,12 +215,15 @@ class VlRandomizer VL_NOT_FINAL {
     std::map<std::string, std::deque<uint64_t>>
         m_randcValueQueues;  // Remaining values per randc var (queue-based cycling)
     size_t m_randcConstraintHash = 0;  // Hash of constraints when queues were built
+    std::vector<std::pair<std::string, std::string>>
+        m_solveBefore;  // Solve-before ordering pairs (beforeVar, afterVar)
 
     // PRIVATE METHODS
     void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
     bool parseSolution(std::iostream& file, bool log = false);
     void enumerateRandcValues(const std::string& varName, VlRNG& rngr);
     size_t hashConstraints() const;
+    bool nextPhased(VlRNG& rngr);  // Phased solving for solve...before
 
 public:
     // CONSTRUCTORS
@@ -590,9 +594,13 @@ public:
 
     void hard(std::string&& constraint, const char* filename = "", uint32_t linenum = 0,
               const char* source = "");
+    void soft(std::string&& constraint, const char* filename = "", uint32_t linenum = 0,
+              const char* source = "");
     void clearConstraints();
     void clearAll();  // Clear both constraints and variables
     void markRandc(const char* name);  // Mark variable as randc for cyclic tracking
+    void solveBefore(const char* beforeName,
+                     const char* afterName);  // Register solve-before ordering
     void set_randmode(const VlQueue<CData>& randmode) { m_randmodep = &randmode; }
 #ifdef VL_DEBUG
     void dump() const;

@@ -827,10 +827,18 @@ std::unordered_map<const AstSenTree*, AstSenTree*>
 cloneMapWithNewTriggerReferences(const std::unordered_map<const AstSenTree*, AstSenTree*>& map,
                                  AstVarScope* vscp) {
     AstTopScope* const topScopep = v3Global.rootp()->topScopep();
-    // Copy map
-    std::unordered_map<const AstSenTree*, AstSenTree*> newMap{map};
+    // Label global SenTrees by the order they are in the Ast
+    const VNUser1InUse user1InUse;
+    int n = 0;
+    for (AstNode* nodep = topScopep->senTreesp(); nodep; nodep = nodep->nextp()) nodep->user1(++n);
+    // Sort map by key order for determinism
+    using Pair = std::pair<const AstSenTree*, AstSenTree*>;
+    std::vector<Pair> pairs{map.begin(), map.end()};
+    std::sort(pairs.begin(), pairs.end(), [](const Pair& a, const Pair& b) {  //
+        return a.first->user1() < b.first->user1();
+    });
     // Replace references in each mapped value with a reference to the given vscp
-    for (auto& pair : newMap) {
+    for (Pair& pair : pairs) {
         pair.second = pair.second->cloneTree(false);
         pair.second->foreach([&](AstVarRef* refp) {
             UASSERT_OBJ(refp->access() == VAccess::READ, refp, "Should be read ref");
@@ -839,7 +847,8 @@ cloneMapWithNewTriggerReferences(const std::unordered_map<const AstSenTree*, Ast
         });
         topScopep->addSenTreesp(pair.second);
     }
-    return newMap;
+    // Convert back to map
+    return std::unordered_map<const AstSenTree*, AstSenTree*>{pairs.begin(), pairs.end()};
 }
 
 //============================================================================

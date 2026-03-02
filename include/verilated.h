@@ -744,15 +744,7 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
     void scopeDump() const;
     void* exportFindError(int funcnum) const VL_MT_SAFE;
     static void* exportFindNullError(int funcnum) VL_MT_SAFE;
-    static void* exportFind(const VerilatedScope* scopep, int funcnum) VL_MT_SAFE {
-        if (VL_UNLIKELY(!scopep)) return exportFindNullError(funcnum);
-        if (VL_LIKELY(funcnum < scopep->m_funcnumMax)) {
-            // m_callbacksp must be declared, as Max'es are > 0
-            return scopep->m_callbacksp[funcnum];
-        } else {  // LCOV_EXCL_LINE
-            return scopep->exportFindError(funcnum);  // LCOV_EXCL_LINE
-        }
-    }
+    static void* exportFind(const VerilatedScope* scopep, int funcnum) VL_MT_SAFE;
     Type type() const { return m_type; }
 };
 

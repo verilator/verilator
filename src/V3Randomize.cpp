@@ -166,10 +166,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
     bool isVarInStdRandomizeArgs(const AstVar* varp) const {
         if (!m_inStdWith || !m_stdRandCallp) return false;
 
-        for (AstNode* pinp = m_stdRandCallp->pinsp(); pinp; pinp = pinp->nextp()) {
-            if (VN_IS(pinp, With)) continue;
-            const AstArg* const argp = VN_CAST(pinp, Arg);
-            if (!argp) continue;
+        for (AstArg* argp = m_stdRandCallp->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
             const AstNodeExpr* exprp = argp->exprp();
             // Traverse through expression to find the base variable
             while (exprp) {
@@ -439,7 +436,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     methodHardp->v3fatalSrc("Unknown rand_mode() receiver");
                 }
             }
-            if (!nodep->pinsp() && VN_IS(nodep->backp(), StmtExpr)
+            if (!nodep->argsp() && VN_IS(nodep->backp(), StmtExpr)
                 && !nodep->backp()->fileline()->warnIsOff(V3ErrorCode::IGNOREDRETURN)) {
                 nodep->v3warn(
                     IGNOREDRETURN,
@@ -449,14 +446,14 @@ class RandomizeMarkVisitor final : public VNVisitor {
             if (valid) {
                 const RandModeTarget randModeTarget = RandModeTarget::get(fromp, m_classp);
                 if ((!randModeTarget.receiverp || !randModeTarget.receiverp->isRand())
-                    && !nodep->pinsp()) {
+                    && !nodep->argsp()) {
                     nodep->v3error(
                         "Cannot call 'rand_mode()' as a function on non-random variable");
                     valid = false;
                 } else if (!randModeTarget.classp) {
                     nodep->v3error("Cannot call 'rand_mode()' on non-random, non-class variable");
                     valid = false;
-                } else if (nodep->pinsp() && !VN_IS(nodep->backp(), StmtExpr)) {
+                } else if (nodep->argsp() && !VN_IS(nodep->backp(), StmtExpr)) {
                     nodep->v3error("'rand_mode()' with arguments cannot be called as a function");
                     valid = false;
                 } else if (randModeTarget.receiverp
@@ -485,7 +482,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 }
             }
             if (!valid) {
-                if (!nodep->pinsp() && !VN_IS(nodep->backp(), StmtExpr)) {
+                if (!nodep->argsp() && !VN_IS(nodep->backp(), StmtExpr)) {
                     nodep->replaceWith(new AstConst{nodep->fileline(), 0});
                     VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 } else {
@@ -497,11 +494,11 @@ class RandomizeMarkVisitor final : public VNVisitor {
 
         if (nodep->name() == "constraint_mode") {
             bool valid = true;
-            if (nodep->pinsp() && !VN_IS(nodep->backp(), StmtExpr)) {
+            if (nodep->argsp() && !VN_IS(nodep->backp(), StmtExpr)) {
                 nodep->v3error(
                     "'constraint_mode()' with arguments cannot be called as a function");
                 valid = false;
-            } else if (!nodep->pinsp() && VN_IS(nodep->backp(), StmtExpr)
+            } else if (!nodep->argsp() && VN_IS(nodep->backp(), StmtExpr)
                        && !nodep->backp()->fileline()->warnIsOff(V3ErrorCode::IGNOREDRETURN)) {
                 nodep->v3warn(
                     IGNOREDRETURN,
@@ -523,7 +520,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     valid = false;
                 }
             }
-            if (!nodep->pinsp() && !constrp) {
+            if (!nodep->argsp() && !constrp) {
                 nodep->v3error("Cannot call 'constraint_mode()' as a function on a variable");
                 valid = false;
             }
@@ -538,7 +535,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     });
                 }
             } else {
-                if (!nodep->pinsp() && !VN_IS(nodep->backp(), StmtExpr)) {
+                if (!nodep->argsp() && !VN_IS(nodep->backp(), StmtExpr)) {
                     nodep->replaceWith(new AstConst{nodep->fileline(), 0});
                     VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 } else {
@@ -591,16 +588,12 @@ class RandomizeMarkVisitor final : public VNVisitor {
         }
         if (nodep->classOrPackagep()->name() == "std") {
             m_stdRandCallp = nullptr;
-            for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
-                AstArg* const argp = VN_CAST(pinp, Arg);
-                if (!argp) continue;
+            for (AstArg* argp = nodep->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
                 handleRandomizeArgument(argp->exprp(), nullptr, true);
             }
             return;
         }
-        for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
-            AstArg* const argp = VN_CAST(pinp, Arg);
-            if (!argp) continue;
+        for (AstArg* argp = nodep->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
             classp->user1(IS_RANDOMIZED_INLINE);
             AstVar* fromVarp = nullptr;  // If nodep is a method call, this is its receiver
             if (AstMethodCall* methodCallp = VN_CAST(nodep, MethodCall)) {
@@ -693,11 +686,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
     void visit(AstWith* nodep) override {
         VL_RESTORER(m_withp);
         m_withp = nodep;
-        for (AstNode* pinp = m_stdRandCallp ? m_stdRandCallp->pinsp() : nullptr; pinp;
-             pinp = pinp->nextp()) {
-            AstWith* const withp = VN_CAST(pinp, With);
-            if (withp == nodep) m_inStdWith = true;
-        }
+        if (m_stdRandCallp && nodep == m_stdRandCallp->withp()) m_inStdWith = true;
         iterateChildrenConst(nodep);
         m_inStdWith = false;
     }
@@ -710,6 +699,12 @@ class RandomizeMarkVisitor final : public VNVisitor {
                      || (nodep->op3p() && nodep->op3p()->user1())
                      || (nodep->op4p() && nodep->op4p()->user1()));
     }
+    void visit(AstArg* nodep) override {
+        iterateChildrenConst(nodep);
+        if (!m_constraintExprGenp && !m_inStdWith) return;
+        nodep->user1(nodep->exprp() && nodep->exprp()->user1());
+    }
+
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
@@ -755,6 +750,17 @@ class ConstraintExprVisitor final : public VNVisitor {
             return buildMemberPath(selp) + "." + memberSelp->name();
         }
         memberSelp->v3fatalSrc("Unexpected node type in MemberSel chain");
+        return "";
+    }
+
+    // Extract SMT variable name from a solve-before expression.
+    // Returns empty string if the expression is not a simple variable reference.
+    std::string extractSolveBeforeVarName(AstNodeExpr* exprp) {
+        if (const AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
+            return buildMemberPath(memberSelp);
+        } else if (const AstVarRef* const varrefp = VN_CAST(exprp, VarRef)) {
+            return varrefp->name();
+        }
         return "";
     }
 
@@ -1732,10 +1738,10 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Convert to plain foreach
         FileLine* const fl = nodep->fileline();
 
-        if (!nodep->stmtsp()) {
+        if (!nodep->bodyp()) {
             nodep->unlinkFrBack();
         } else if (m_wantSingle) {
-            AstNodeExpr* const itemp = editSingle(fl, nodep->stmtsp());
+            AstNodeExpr* const itemp = editSingle(fl, nodep->bodyp());
             AstCStmt* const cstmtp = new AstCStmt{fl};
             cstmtp->add("ret += \" \";\n");
             cstmtp->add("ret += ");
@@ -1745,21 +1751,54 @@ class ConstraintExprVisitor final : public VNVisitor {
             cexprp->dtypeSetString();
             cexprp->add("([&]{\nstd::string ret;\n");
             cexprp->add(new AstBegin{
-                fl, "", new AstForeach{fl, nodep->arrayp()->unlinkFrBack(), cstmtp}, true});
+                fl, "", new AstForeach{fl, nodep->headerp()->unlinkFrBack(), cstmtp}, true});
             cexprp->add("return ret.empty() ? \"#b1\" : \"(bvand\" + ret + \")\";\n})()");
             nodep->replaceWith(new AstSFormatF{fl, "%@", false, cexprp});
         } else {
-            iterateAndNextNull(nodep->stmtsp());
-            nodep->replaceWith(
-                new AstBegin{fl, "",
-                             new AstForeach{fl, nodep->arrayp()->unlinkFrBack(),
-                                            nodep->stmtsp()->unlinkFrBackWithNext()},
-                             true});
+            iterateAndNextNull(nodep->bodyp());
+            nodep->replaceWith(new AstBegin{fl, "",
+                                            new AstForeach{fl, nodep->headerp()->unlinkFrBack(),
+                                                           nodep->bodyp()->unlinkFrBackWithNext()},
+                                            true});
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstConstraintBefore* nodep) override {
-        nodep->v3warn(CONSTRAINTIGN, "Constraint expression ignored (imperfect distribution)");
+        // Generate solveBefore() calls for each (lhs, rhs) variable pair.
+        // Do NOT iterate children -- these are variable references, not constraint expressions.
+        FileLine* const fl = nodep->fileline();
+        AstNodeModule* const genModp = VN_AS(m_genp->user2p(), NodeModule);
+
+        for (AstNodeExpr* lhsp = nodep->lhssp(); lhsp; lhsp = VN_CAST(lhsp->nextp(), NodeExpr)) {
+            const std::string lhsName = extractSolveBeforeVarName(lhsp);
+            if (lhsName.empty()) {
+                lhsp->v3warn(CONSTRAINTIGN,
+                             "Unsupported: non-variable expression in solve...before");
+                continue;
+            }
+            for (AstNodeExpr* rhsp = nodep->rhssp(); rhsp;
+                 rhsp = VN_CAST(rhsp->nextp(), NodeExpr)) {
+                const std::string rhsName = extractSolveBeforeVarName(rhsp);
+                if (rhsName.empty()) {
+                    rhsp->v3warn(CONSTRAINTIGN,
+                                 "Unsupported: non-variable expression in solve...before");
+                    continue;
+                }
+                AstCMethodHard* const callp = new AstCMethodHard{
+                    fl, new AstVarRef{fl, genModp, m_genp, VAccess::READWRITE},
+                    VCMethod::RANDOMIZER_SOLVE_BEFORE};
+                callp->dtypeSetVoid();
+                AstNodeExpr* const beforeNamep
+                    = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + lhsName + "\""};
+                beforeNamep->dtypeSetUInt32();
+                AstNodeExpr* const afterNamep
+                    = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + rhsName + "\""};
+                afterNamep->dtypeSetUInt32();
+                callp->addPinsp(beforeNamep);
+                callp->addPinsp(afterNamep);
+                nodep->addHereThisAsNext(callp->makeStmt());
+            }
+        }
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     void visit(AstConstraintUnique* nodep) override {
@@ -1867,12 +1906,14 @@ class ConstraintExprVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
-        // Only hard constraints are currently supported
+        // Emit as soft or hard constraint per IEEE 1800-2017 18.5.13
+        const VCMethod method
+            = nodep->isSoft() ? VCMethod::RANDOMIZER_SOFT : VCMethod::RANDOMIZER_HARD;
         AstCMethodHard* const callp = new AstCMethodHard{
             nodep->fileline(),
             new AstVarRef{nodep->fileline(), VN_AS(m_genp->user2p(), NodeModule), m_genp,
                           VAccess::READWRITE},
-            VCMethod::RANDOMIZER_HARD, nodep->exprp()->unlinkFrBack()};
+            method, nodep->exprp()->unlinkFrBack()};
         callp->dtypeSetVoid();
         // Pass filename, lineno, and source as separate arguments
         // This allows EmitC to call protect() on filename, similar to VL_STOP
@@ -1922,8 +1963,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstVar* const newVarp
                 = new AstVar{fl, VVarType::BLOCKTEMP, "__Vinside", nodep->findSigned32DType()};
             AstNodeExpr* const idxRefp = new AstVarRef{nodep->fileline(), newVarp, VAccess::READ};
-            AstSelLoopVars* const arrayp
-                = new AstSelLoopVars{fl, nodep->fromp()->cloneTreePure(false), newVarp};
+            AstForeachHeader* const headerp
+                = new AstForeachHeader{fl, nodep->fromp()->cloneTreePure(false), newVarp};
             AstNodeExpr* const selp = newSel(nodep->fileline(), nodep->fromp(), idxRefp);
             selp->user1(randArr);
             AstNode* const itemp = new AstEq{fl, selp, nodep->pinsp()->unlinkFrBack()};
@@ -1937,8 +1978,101 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstCExpr* const cexprp = new AstCExpr{fl};
             cexprp->dtypeSetString();
             cexprp->add("([&]{\nstd::string ret;\n");
-            cexprp->add(new AstBegin{fl, "", new AstForeach{fl, arrayp, cstmtp}, true});
+            cexprp->add(new AstBegin{fl, "", new AstForeach{fl, headerp, cstmtp}, true});
             cexprp->add("return ret.empty() ? \"#b0\" : \"(bvor\" + ret + \")\";\n})()");
+            nodep->replaceWith(new AstSFormatF{fl, "%@", false, cexprp});
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            return;
+        }
+
+        // Array reduction without 'with' clause (sum, product, and, or, xor)
+        // For dynamic arrays, V3Width keeps these as AstCMethodHard.
+        // Register each element as individual scalar solver variable at constraint
+        // setup time, then build SMT reduction expression over those variables.
+        if (nodep->fromp()->user1()
+            && (nodep->method() == VCMethod::ARRAY_R_SUM
+                || nodep->method() == VCMethod::ARRAY_R_PRODUCT
+                || nodep->method() == VCMethod::ARRAY_R_AND
+                || nodep->method() == VCMethod::ARRAY_R_OR
+                || nodep->method() == VCMethod::ARRAY_R_XOR)) {
+
+            AstVarRef* const arrRefp = VN_CAST(nodep->fromp(), VarRef);
+            UASSERT_OBJ(arrRefp, nodep, "Array reduction in constraint has non-VarRef source");
+            AstVar* const arrVarp = arrRefp->varp();
+            const std::string smtArrayName = arrVarp->name();
+
+            // Get element width
+            AstNodeDType* elemDtp = arrVarp->dtypep()->skipRefp()->subDTypep();
+            const int elemWidth = elemDtp->width();
+
+            // Compute correctly-sized identity value for empty array case
+            const int hexDigits = (elemWidth + 3) / 4;
+            std::string zeroIdentity = "#x" + std::string(hexDigits, '0');
+            std::string oneIdentity = "#x" + std::string(hexDigits - 1, '0') + "1";
+            std::string allOnesIdentity = "#x" + std::string(hexDigits, 'f');
+
+            // Class module for generating VarRefs
+            AstNodeModule* const classModulep = m_classp ? static_cast<AstNodeModule*>(m_classp)
+                                                         : VN_AS(m_genp->user2p(), NodeModule);
+
+            // Mark array as handled so BasicRand skips it. Solver controls
+            // element values via per-element write_var calls in the foreach below.
+            // Don't generate constructor write_var with dimension>0: dynamic arrays
+            // are empty at construction, so record_arr_table finds no elements.
+            arrVarp->user3(true);
+
+            AstVar* const newVarp
+                = new AstVar{fl, VVarType::BLOCKTEMP, "__Vreduce", nodep->findSigned32DType()};
+            AstForeachHeader* const headerp
+                = new AstForeachHeader{fl, nodep->fromp()->cloneTreePure(false), newVarp};
+
+            // Foreach body: register element as scalar solver var + append name
+            AstCStmt* const cstmtp = new AstCStmt{fl};
+            // char __Vn[128]; VL_SNPRINTF(__Vn, ..., "arrayname_%x", idx);
+            cstmtp->add("{\nchar __Vn[128];\nVL_SNPRINTF(__Vn, sizeof(__Vn), \"" + smtArrayName
+                        + "_%x\", (unsigned)");
+            cstmtp->add(new AstVarRef{fl, newVarp, VAccess::READ});
+            cstmtp->add(");\n");
+            // constraint.write_var(array.atWrite(idx), width, __Vn, 0);
+            cstmtp->add(new AstVarRef{fl, classModulep, m_genp, VAccess::READWRITE});
+            cstmtp->add(".write_var(");
+            cstmtp->add(new AstVarRef{fl, classModulep, arrVarp, VAccess::READWRITE});
+            cstmtp->add(".atWrite(");
+            cstmtp->add(new AstVarRef{fl, newVarp, VAccess::READ});
+            cstmtp->add("), " + std::to_string(elemWidth) + "ULL, __Vn, 0ULL);\n");
+            // ret += " "; ret += __Vn;
+            cstmtp->add("ret += \" \";\nret += __Vn;\n}\n");
+
+            AstCExpr* const cexprp = new AstCExpr{fl};
+            cexprp->dtypeSetString();
+            cexprp->add("([&]{\nstd::string ret;\n");
+            cexprp->add(new AstBegin{fl, "", new AstForeach{fl, headerp, cstmtp}, true});
+
+            const char* smtOp = nullptr;
+            std::string identity;
+            if (nodep->method() == VCMethod::ARRAY_R_SUM) {
+                smtOp = "bvadd";
+                identity = zeroIdentity;
+            } else if (nodep->method() == VCMethod::ARRAY_R_PRODUCT) {
+                smtOp = "bvmul";
+                identity = oneIdentity;
+            } else if (nodep->method() == VCMethod::ARRAY_R_AND) {
+                smtOp = "bvand";
+                identity = allOnesIdentity;
+            } else if (nodep->method() == VCMethod::ARRAY_R_OR) {
+                smtOp = "bvor";
+                identity = zeroIdentity;
+            } else if (nodep->method() == VCMethod::ARRAY_R_XOR) {
+                smtOp = "bvxor";
+                identity = zeroIdentity;
+            } else {
+                nodep->v3fatalSrc("Unhandled reduction method");
+            }
+
+            cexprp->add(std::string("return ret.empty() ? \"") + identity + "\" : \"(" + smtOp
+                        + "\" + ret + \")\";\n})()");
+            // Unlink fromp before replacing (newSel already unlinked it in v1,
+            // but here we used cloneTreePure, so fromp is still linked)
             nodep->replaceWith(new AstSFormatF{fl, "%@", false, cexprp});
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
@@ -2056,7 +2190,7 @@ class CaptureVisitor final : public VNVisitor {
             newVarp->fileline(fileline);
             newVarp->varType(VVarType::BLOCKTEMP);
             newVarp->funcLocal(true);
-            newVarp->direction(m_targetp ? VDirection::INPUT : VDirection::REF);
+            newVarp->direction(VDirection::INPUT);
             newVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             m_varCloneMap.emplace(varrefp->varp(), newVarp);
             varp = newVarp;
@@ -2110,7 +2244,7 @@ class CaptureVisitor final : public VNVisitor {
         const bool varIsFieldOfCaller = AstClass::isClassExtendedFrom(callerClassp, varClassp);
         const bool varIsParam = varRefp->varp()->isParam();
         const bool varIsConstraintIterator
-            = VN_IS(varRefp->varp()->firstAbovep(), SelLoopVars)
+            = VN_IS(varRefp->varp()->firstAbovep(), ForeachHeader)
               && VN_IS(varRefp->varp()->firstAbovep()->firstAbovep(), ConstraintForeach);
         if (refIsXref) return CaptureMode::CAP_VALUE | CaptureMode::CAP_F_XREF;
         if (varIsConstraintIterator) return CaptureMode::CAP_NO;
@@ -2186,14 +2320,14 @@ class CaptureVisitor final : public VNVisitor {
         }
         AstClass* classp = VN_CAST(nodep->taskp()->user2p(), Class);
         if ((classp == m_callerp) && VN_IS(m_callerp, Class)) {
-            AstNodeExpr* const pinsp = nodep->pinsp();
-            if (pinsp) pinsp->unlinkFrBack();
+            AstArg* const argsp = nodep->argsp();
+            if (argsp) argsp->unlinkFrBack();  // TODO: should this be unlinkFrBackWithNext?
             AstVar* const thisp = importThisp(nodep->fileline());
             AstVarRef* const thisRefp = new AstVarRef{
                 nodep->fileline(), thisp, nodep->isPure() ? VAccess::READ : VAccess::READWRITE};
             m_ignore.emplace(thisRefp);
             AstMethodCall* const methodCallp
-                = new AstMethodCall{nodep->fileline(), thisRefp, thisp->name(), pinsp};
+                = new AstMethodCall{nodep->fileline(), thisRefp, thisp->name(), argsp};
             methodCallp->taskp(nodep->taskp());
             methodCallp->dtypep(nodep->dtypep());
             nodep->replaceWith(methodCallp);
@@ -2219,14 +2353,16 @@ class CaptureVisitor final : public VNVisitor {
             iterateChildren(nodep);
             return;
         }
-        AstNodeExpr* const pinsp
-            = nodep->pinsp() ? nodep->pinsp()->unlinkFrBackWithNext() : nullptr;
+        AstArg* const argsp = nodep->argsp();
+        if (argsp) argsp->unlinkFrBackWithNext();
         AstNodeFTaskRef* taskRefp = nullptr;
-        if (AstTask* const taskp = VN_CAST(nodep->taskp(), Task))
-            taskRefp = new AstTaskRef{nodep->fileline(), taskp, pinsp};
-        else if (AstFunc* const taskp = VN_CAST(nodep->taskp(), Func))
-            taskRefp = new AstFuncRef{nodep->fileline(), taskp, pinsp};
-        UASSERT_OBJ(taskRefp, nodep, "Node needs to point to regular method");
+        if (AstTask* const taskp = VN_CAST(nodep->taskp(), Task)) {
+            taskRefp = new AstTaskRef{nodep->fileline(), taskp, argsp};
+        } else if (AstFunc* const taskp = VN_CAST(nodep->taskp(), Func)) {
+            taskRefp = new AstFuncRef{nodep->fileline(), taskp, argsp};
+        } else {
+            nodep->v3fatalSrc("Node needs to point to regular method");
+        }
         fixupClassOrPackage(nodep->taskp(), taskRefp);
         taskRefp->user1(nodep->user1());
         nodep->replaceWith(taskRefp);
@@ -2324,6 +2460,13 @@ class RandomizeVisitor final : public VNVisitor {
         if (VN_IS(argExpr, ArraySel) && VN_IS(withExpr, ArraySel)) {
             const AstArraySel* const withASp = VN_AS(withExpr, ArraySel);
             const AstArraySel* const argASp = VN_AS(argExpr, ArraySel);
+            // Before checking Sel type index, check if both are Const
+            if (VN_IS(withASp->bitp(), Const) && VN_IS(argASp->bitp(), Const)) {
+                const AstConst* const withIdxp = VN_AS(withASp->bitp(), Const);
+                const AstConst* const argIdxp = VN_AS(argASp->bitp(), Const);
+                return isSimilarNode(withASp->fromp(), argASp->fromp())
+                       && withIdxp->num().isCaseEq(argIdxp->num());
+            }
             // Index must be Sel type, extract VarRef using fromp()
             if (!VN_IS(withASp->bitp(), Sel) || !VN_IS(argASp->bitp(), Sel)) return false;
             const AstNodeExpr* const withIdxp = VN_AS(withASp->bitp(), Sel)->fromp();
@@ -2804,12 +2947,12 @@ class RandomizeVisitor final : public VNVisitor {
             tempDTypep = tempDTypep->virtRefDTypep();
         }
 
-        AstSelLoopVars* const randLoopVarp
-            = new AstSelLoopVars{fl, exprp->cloneTree(false), randLoopIndxp};
+        AstForeachHeader* const headerp
+            = new AstForeachHeader{fl, exprp->cloneTree(false), randLoopIndxp};
         AstNodeStmt* const randStmtsp = newRandStmtsp(fl, tempElementp, nullptr, outputVarp);
         // TODO: we should just not clone in 'newRandStmtsp' if not necessary
         if (!tempElementp->backp()) VL_DO_DANGLING(pushDeletep(tempElementp), tempElementp);
-        return new AstForeach{fl, randLoopVarp, randStmtsp};
+        return new AstForeach{fl, headerp, randStmtsp};
     }
     AstNodeStmt* newRandStmtsp(FileLine* fl, AstNodeExpr* exprp, AstVar* randcVarp,
                                AstVar* const outputVarp, int offset = 0,
@@ -2846,7 +2989,7 @@ class RandomizeVisitor final : public VNVisitor {
         } else if (const AstClassRefDType* const classRefDtp = VN_CAST(memberDtp, ClassRefDType)) {
             AstFunc* const memberFuncp
                 = V3Randomize::newRandomizeFunc(m_memberMap, classRefDtp->classp());
-            AstMethodCall* const callp = new AstMethodCall{fl, exprp, "randomize", nullptr};
+            AstMethodCall* const callp = new AstMethodCall{fl, exprp, "randomize"};
             callp->taskp(memberFuncp);
             callp->dtypeFrom(memberFuncp);
             AstAssign* const assignp = new AstAssign{
@@ -2918,7 +3061,7 @@ class RandomizeVisitor final : public VNVisitor {
     }
     void addPrePostCall(AstClass* const classp, AstFunc* const funcp, const string& name) {
         if (AstTask* const userFuncp = findPrePostTask(classp, name)) {
-            AstTaskRef* const callp = new AstTaskRef{userFuncp->fileline(), userFuncp, nullptr};
+            AstTaskRef* const callp = new AstTaskRef{userFuncp->fileline(), userFuncp};
             funcp->addStmtsp(callp->makeStmt());
         }
     }
@@ -2964,8 +3107,7 @@ class RandomizeVisitor final : public VNVisitor {
             // 1. Call member.pre/post_randomize() if exists in hierarchy
             if (AstTask* const userFuncp = findPrePostTask(memberClassp, cbName)) {
                 AstMethodCall* const callp = new AstMethodCall{
-                    fl, new AstVarRef{fl, ownerClassp, memberVarp, VAccess::WRITE}, cbName,
-                    nullptr};
+                    fl, new AstVarRef{fl, ownerClassp, memberVarp, VAccess::WRITE}, cbName};
                 callp->taskp(userFuncp);
                 callp->dtypeSetVoid();
                 stmtsp = AstNode::addNext(stmtsp, callp->makeStmt());
@@ -2977,7 +3119,7 @@ class RandomizeVisitor final : public VNVisitor {
                 AstTask* const nestedTaskp = getCreateNestedCallbackTask(memberClassp, suffix);
                 AstMethodCall* const recurseCallp = new AstMethodCall{
                     fl, new AstVarRef{fl, ownerClassp, memberVarp, VAccess::WRITE},
-                    nestedTaskp->name(), nullptr};
+                    nestedTaskp->name()};
                 recurseCallp->taskp(nestedTaskp);
                 recurseCallp->dtypeSetVoid();
                 stmtsp = AstNode::addNext(stmtsp, recurseCallp->makeStmt());
@@ -3160,10 +3302,10 @@ class RandomizeVisitor final : public VNVisitor {
                           ? new AstMethodCall{fl,
                                               new AstVarRef{fl, classp, memberVarp,
                                                             VAccess::WRITE},
-                                              BASIC_RANDOMIZE_FUNC_NAME, nullptr}
+                                              BASIC_RANDOMIZE_FUNC_NAME}
                           : new AstMethodCall{
                                 fl, new AstVarRef{fl, classp, memberVarp, VAccess::WRITE},
-                                "randomize", nullptr};
+                                "randomize"};
                 callp->taskp(memberFuncp);
                 callp->dtypeFrom(memberFuncp);
                 AstVarRef* const basicFvarRefReadp = basicFvarRefp->cloneTree(false);
@@ -3211,9 +3353,9 @@ class RandomizeVisitor final : public VNVisitor {
     void replaceWithModeAssign(AstNodeFTaskRef* const ftaskRefp, AstNode* const receiverp,
                                AstNodeExpr* const lhsp) {
         FileLine* const fl = ftaskRefp->fileline();
-        if (ftaskRefp->pinsp()) {
+        if (ftaskRefp->argsp()) {
             UASSERT_OBJ(VN_IS(ftaskRefp->backp(), StmtExpr), ftaskRefp, "Should be a statement");
-            AstNodeExpr* const rhsp = VN_AS(ftaskRefp->pinsp(), Arg)->exprp()->unlinkFrBack();
+            AstNodeExpr* const rhsp = ftaskRefp->argsp()->exprp()->unlinkFrBack();
             if (receiverp) {
                 // Called on a rand member variable/constraint. Set the variable/constraint's
                 // mode
@@ -3262,33 +3404,29 @@ class RandomizeVisitor final : public VNVisitor {
 
     // Handle inline random variable control. After this, the randomize() call has no args
     void handleRandomizeArgs(AstNodeFTaskRef* const nodep) {
-        if (!nodep->pinsp()) return;
+        if (!nodep->argsp()) return;
         // This assumes arguments to always be a member sel from nodep->fromp(), if applicable
         // e.g. LinkDot transformed a.randomize(b, a.c) -> a.randomize(a.b, a.c)
         // Merge pins with common prefixes so that setting their rand mode doesn't interfere
         // with each other.
         // e.g. a.randomize(a.b, a.c, a.b.d) -> a.randomize(a.b, a.c)
-        for (AstNode *pinp = nodep->pinsp(), *nextp = nullptr; pinp; pinp = nextp) {
-            nextp = pinp->nextp();
-            AstArg* const argp = VN_CAST(pinp, Arg);
-            if (!argp) continue;
-            AstNode* otherNextp = nullptr;
-            for (AstNode* otherPinp = nextp; otherPinp; otherPinp = otherNextp) {
-                otherNextp = otherPinp->nextp();
-                AstArg* const otherArgp = VN_CAST(otherPinp, Arg);
-                if (!otherArgp) continue;
+        for (AstArg *argp = nodep->argsp(), *nextp = nullptr; argp; argp = nextp) {
+            nextp = VN_AS(argp->nextp(), Arg);
+            for (AstArg *otherArgp = nextp, *otherNextp = nullptr; otherArgp;
+                 otherArgp = otherNextp) {
+                otherNextp = VN_AS(otherArgp->nextp(), Arg);
                 if (AstNodeExpr* const prefixp
                     = sliceToCommonPrefix(argp->exprp(), otherArgp->exprp())) {
                     if (prefixp == argp->exprp()) {
-                        if (nextp == otherPinp) nextp = nextp->nextp();
-                        VL_DO_DANGLING(otherPinp->unlinkFrBack()->deleteTree(), otherPinp);
+                        if (nextp == otherArgp) nextp = VN_AS(nextp->nextp(), Arg);
+                        VL_DO_DANGLING(otherArgp->unlinkFrBack()->deleteTree(), otherArgp);
                         continue;
                     }
                 }
                 if (AstNodeExpr* const prefixp
                     = sliceToCommonPrefix(otherArgp->exprp(), argp->exprp())) {
                     if (prefixp == otherArgp->exprp()) {
-                        VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
+                        VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
                         break;
                     }
                 }
@@ -3300,11 +3438,9 @@ class RandomizeVisitor final : public VNVisitor {
         AstNode* storeStmtsp = nullptr;
         AstNode* setStmtsp = nullptr;
         AstNodeStmt* restoreStmtsp = nullptr;
-        for (AstNode *pinp = nodep->pinsp(), *nextp = nullptr; pinp; pinp = nextp) {
-            nextp = pinp->nextp();
-            AstArg* const argp = VN_CAST(pinp, Arg);
-            if (!argp) continue;
-            AstNodeExpr* exprp = VN_AS(pinp, Arg)->exprp();
+        for (AstArg *argp = nodep->argsp(), *nextp = nullptr; argp; argp = nextp) {
+            nextp = VN_AS(argp->nextp(), Arg);
+            AstNodeExpr* exprp = argp->exprp();
             AstNodeExpr* const commonPrefixp = sliceToCommonPrefix(exprp, nodep);
             UASSERT_OBJ(commonPrefixp != exprp, nodep,
                         "Common prefix should be different than pin");
@@ -3329,7 +3465,7 @@ class RandomizeVisitor final : public VNVisitor {
                     = AstNode::addNext(setStmtsp, new AstAssign{fl, setp, new AstConst{fl, 1}});
                 exprp = getFromp(exprp);
             }
-            pinp->unlinkFrBack()->deleteTree();
+            argp->unlinkFrBack()->deleteTree();
         }
         if (tmpVarps) {
             UASSERT_OBJ(storeStmtsp && setStmtsp && restoreStmtsp, nodep, "Should have stmts");
@@ -3379,7 +3515,7 @@ class RandomizeVisitor final : public VNVisitor {
         if (classHasRandClassMembers(nodep)) {
             AstTask* const preTaskp = getCreateNestedCallbackTask(nodep, "pre");
             populateNestedCallbackTask(preTaskp, nodep, "pre_randomize");
-            randomizep->addStmtsp((new AstTaskRef{fl, preTaskp, nullptr})->makeStmt());
+            randomizep->addStmtsp((new AstTaskRef{fl, preTaskp})->makeStmt());
         }
 
         // Both IS_RANDOMIZED and IS_RANDOMIZED_GLOBAL classes need full constraint support
@@ -3393,8 +3529,7 @@ class RandomizeVisitor final : public VNVisitor {
                     taskp = newSetupConstraintTask(classp, constrp->name());
                     constrp->user2p(taskp);
                 }
-                AstTaskRef* const setupTaskRefp
-                    = new AstTaskRef{constrp->fileline(), taskp, nullptr};
+                AstTaskRef* const setupTaskRefp = new AstTaskRef{constrp->fileline(), taskp};
                 setupTaskRefp->classOrPackagep(classp);
 
                 AstTask* const setupAllTaskp = getCreateConstraintSetupFunc(nodep);
@@ -3404,7 +3539,7 @@ class RandomizeVisitor final : public VNVisitor {
                 if (AstTask* const resizeTaskp = VN_CAST(constrp->user3p(), Task)) {
                     AstTask* const resizeAllTaskp = getCreateAggrResizeTask(nodep);
                     AstTaskRef* const resizeTaskRefp
-                        = new AstTaskRef{constrp->fileline(), resizeTaskp, nullptr};
+                        = new AstTaskRef{constrp->fileline(), resizeTaskp};
                     resizeTaskRefp->classOrPackagep(classp);
                     resizeAllTaskp->addStmtsp(resizeTaskRefp->makeStmt());
                 }
@@ -3474,7 +3609,7 @@ class RandomizeVisitor final : public VNVisitor {
             }
 
             AstTask* setupAllTaskp = getCreateConstraintSetupFunc(nodep);
-            AstTaskRef* const setupTaskRefp = new AstTaskRef{fl, setupAllTaskp, nullptr};
+            AstTaskRef* const setupTaskRefp = new AstTaskRef{fl, setupAllTaskp};
             randomizep->addStmtsp(setupTaskRefp->makeStmt());
 
             AstNodeModule* const genModp = VN_AS(genp->user2p(), NodeModule);
@@ -3500,7 +3635,7 @@ class RandomizeVisitor final : public VNVisitor {
 
         if (AstTask* const resizeAllTaskp
             = VN_AS(m_memberMap.findMember(nodep, "__Vresize_constrained_arrays"), Task)) {
-            AstTaskRef* const resizeTaskRefp = new AstTaskRef{fl, resizeAllTaskp, nullptr};
+            AstTaskRef* const resizeTaskRefp = new AstTaskRef{fl, resizeAllTaskp};
             randomizep->addStmtsp(resizeTaskRefp->makeStmt());
         }
 
@@ -3510,7 +3645,7 @@ class RandomizeVisitor final : public VNVisitor {
         AstFunc* const basicRandomizep
             = V3Randomize::newRandomizeFunc(m_memberMap, nodep, BASIC_RANDOMIZE_FUNC_NAME);
         addBasicRandomizeBody(basicRandomizep, nodep, randModeVarp);
-        AstFuncRef* const basicRandomizeCallp = new AstFuncRef{fl, basicRandomizep, nullptr};
+        AstFuncRef* const basicRandomizeCallp = new AstFuncRef{fl, basicRandomizep};
         randomizep->addStmtsp(new AstAssign{fl, fvarRefp->cloneTree(false),
                                             new AstAnd{fl, fvarRefReadp, basicRandomizeCallp}});
 
@@ -3518,7 +3653,7 @@ class RandomizeVisitor final : public VNVisitor {
         if (classHasRandClassMembers(nodep)) {
             AstTask* const postTaskp = getCreateNestedCallbackTask(nodep, "post");
             populateNestedCallbackTask(postTaskp, nodep, "post_randomize");
-            randomizep->addStmtsp((new AstTaskRef{fl, postTaskp, nullptr})->makeStmt());
+            randomizep->addStmtsp((new AstTaskRef{fl, postTaskp})->makeStmt());
         }
 
         addPrePostCall(nodep, randomizep, "post_randomize");
@@ -3646,14 +3781,9 @@ class RandomizeVisitor final : public VNVisitor {
                               new AstConst{nodep->fileline(), AstConst::WidthedValue{}, 32, 1}});
             std::unique_ptr<CaptureVisitor> withCapturep;
             int argn = 0;
-            AstWith* withp = nullptr;
-            for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
-                if ((withp = VN_CAST(pinp, With))) break;
-            }
-            for (const AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
-                const AstArg* const argp = VN_CAST(pinp, Arg);
-                if (!argp) continue;
-                AstNodeExpr* exprp = argp->exprp();
+            AstWith* const withp = nodep->withp();
+            for (const AstArg* argp = nodep->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
+                AstNodeExpr* const exprp = argp->exprp();
                 AstCMethodHard* const basicMethodp = new AstCMethodHard{
                     nodep->fileline(),
                     new AstVarRef{nodep->fileline(), stdrand, VAccess::READWRITE},
@@ -3722,28 +3852,22 @@ class RandomizeVisitor final : public VNVisitor {
                     = new AstAnd{fl, new AstVarRef{fl, fvarp, VAccess::READ}, solverCallp};
                 randomizeFuncp->addStmtsp(
                     new AstAssign{fl, new AstVarRef{fl, fvarp, VAccess::WRITE}, andExprp});
-            }
-            // Remove With nodes from pins as they have been processed
-            for (AstNode* pinp = nodep->pinsp(); pinp;) {
-                AstNode* const nextp = pinp->nextp();
-                if (VN_IS(pinp, With)) {
-                    VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
-                }
-                pinp = nextp;
+                // Remove With nodes as processed
+                VL_DO_DANGLING(withp->unlinkFrBack()->deleteTree(), withp);
             }
             // Replace the node with a call to that function
             nodep->name(randomizeFuncp->name());
             nodep->taskp(randomizeFuncp);
             nodep->dtypeFrom(randomizeFuncp->dtypep());
             if (VN_IS(m_modp, Class)) nodep->classOrPackagep(m_modp);
-            if (withCapturep) nodep->addPinsp(withCapturep->getArgs());
+            if (withCapturep) nodep->addArgsp(withCapturep->getArgs());
             UINFOTREE(9, nodep, "", "std::rnd-call");
             UINFOTREE(9, randomizeFuncp, "", "std::rnd-func");
             return;
         }
         handleRandomizeArgs(nodep);
 
-        AstWith* const withp = VN_CAST(nodep->pinsp(), With);
+        AstWith* const withp = nodep->withp();
         if (!withp) {
             iterateChildren(nodep);
             wrapRandomizeCallWithNullGuard(nodep);
@@ -3792,8 +3916,7 @@ class RandomizeVisitor final : public VNVisitor {
             if (!preTaskp->stmtsp()) {
                 populateNestedCallbackTask(preTaskp, classp, "pre_randomize");
             }
-            randomizeFuncp->addStmtsp(
-                (new AstTaskRef{nodep->fileline(), preTaskp, nullptr})->makeStmt());
+            randomizeFuncp->addStmtsp((new AstTaskRef{nodep->fileline(), preTaskp})->makeStmt());
         }
 
         // Detach the expression and prepare variable copies
@@ -3829,12 +3952,12 @@ class RandomizeVisitor final : public VNVisitor {
         AstFunc* const basicRandomizeFuncp
             = V3Randomize::newRandomizeFunc(m_memberMap, classp, BASIC_RANDOMIZE_FUNC_NAME);
         AstFuncRef* const basicRandomizeFuncCallp
-            = new AstFuncRef{nodep->fileline(), basicRandomizeFuncp, nullptr};
+            = new AstFuncRef{nodep->fileline(), basicRandomizeFuncp};
 
         // Copy (derive) class constraints if present
         if (classGenp) {
             AstTask* const constrSetupFuncp = getCreateConstraintSetupFunc(classp);
-            AstTaskRef* const callp = new AstTaskRef{nodep->fileline(), constrSetupFuncp, nullptr};
+            AstTaskRef* const callp = new AstTaskRef{nodep->fileline(), constrSetupFuncp};
             randomizeFuncp->addStmtsp(callp->makeStmt());
             randomizeFuncp->addStmtsp(new AstAssign{
                 nodep->fileline(), new AstVarRef{nodep->fileline(), localGenp, VAccess::WRITE},
@@ -3871,15 +3994,14 @@ class RandomizeVisitor final : public VNVisitor {
             if (!postTaskp->stmtsp()) {
                 populateNestedCallbackTask(postTaskp, classp, "post_randomize");
             }
-            randomizeFuncp->addStmtsp(
-                (new AstTaskRef{nodep->fileline(), postTaskp, nullptr})->makeStmt());
+            randomizeFuncp->addStmtsp((new AstTaskRef{nodep->fileline(), postTaskp})->makeStmt());
         }
 
         addPrePostCall(classp, randomizeFuncp, "post_randomize");
 
         // Replace the node with a call to that function
         nodep->name(randomizeFuncp->name());
-        nodep->addPinsp(captured.getArgs());
+        nodep->addArgsp(captured.getArgs());
         nodep->taskp(randomizeFuncp);
         nodep->dtypeFrom(randomizeFuncp->dtypep());
         nodep->classOrPackagep(classp);

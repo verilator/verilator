@@ -456,20 +456,21 @@ void EmitCFunc::emitCCallArgs(const AstNodeCCall* nodep, const string& selfPoint
     puts(")");
 }
 
-void EmitCFunc::emitDereference(AstNode* nodep, const string& pointer) {
+std::string EmitCFunc::dereferenceString(const std::string& pointer) {
     if (pointer[0] == '(' && pointer[1] == '&') {
         // remove "address of" followed by immediate dereference
         // Note: this relies on only the form '(&OBJECT)' being used by Verilator
-        putns(nodep, pointer.substr(2, pointer.length() - 3));
-        puts(".");
+        return pointer.substr(2, pointer.length() - 3) + '.';
     } else {
         if (pointer == "vlSelf" && m_usevlSelfRef) {
-            puts("vlSelfRef.");
+            return "vlSelfRef.";
         } else {
-            putns(nodep, pointer);
-            puts("->");
+            return pointer + "->";
         }
     }
+}
+void EmitCFunc::emitDereference(AstNode* nodep, const string& pointer) {
+    putns(nodep, dereferenceString(pointer));
 }
 
 void EmitCFunc::emitCvtPackStr(AstNode* nodep) {
@@ -527,13 +528,16 @@ void EmitCFunc::emitSetVarConstant(const string& assignString, AstConst* constp)
     puts(";\n");
 }
 
-void EmitCFunc::emitVarReset(AstVar* varp, bool constructing) {
-    // 'constructing' indicates that the object was just constructed, so no need to clear it also
+void EmitCFunc::emitVarReset(const string& prefix, AstVar* varp, bool constructing) {
+    // 'constructing' indicates that the object was just constructed, so if it is a string or
+    // something that starts off clear already, no need to clear it again
     AstNodeDType* const dtypep = varp->dtypep()->skipRefp();
     const string vlSelf = VSelfPointerText::replaceThis(m_useSelfForThis, "this->");
-    const string varNameProtected = (VN_IS(m_modp, Class) || varp->isFuncLocal())
-                                        ? varp->nameProtect()
-                                        : vlSelf + varp->nameProtect();
+    const string varNameProtected
+        = ((VN_IS(m_modp, Class) || varp->isFuncLocal()) || !prefix.empty())
+              ? varp->nameProtect()
+              : vlSelf + varp->nameProtect();
+    const string newPrefix = prefix + varNameProtected;
     if (varp->isIO() && m_modp->isTop() && optSystemC()) {
         // System C top I/O doesn't need loading, as the lower level subinst code does it.}
     } else if (varp->isParam()) {
@@ -546,47 +550,45 @@ void EmitCFunc::emitVarReset(AstVar* varp, bool constructing) {
         // TODO merge this functionality with V3EmitCConstInit.h visitors
         if (VN_IS(dtypep, AssocArrayDType)) {
             if (initarp->defaultp()) {
-                emitSetVarConstant(varNameProtected + ".atDefault()",
-                                   VN_AS(initarp->defaultp(), Const));
+                emitSetVarConstant(newPrefix + ".atDefault()", VN_AS(initarp->defaultp(), Const));
             }
             if (!constructing) puts(varNameProtected + ".clear();");
             const auto& mapr = initarp->map();
             for (const auto& itr : mapr) {
                 AstNode* const valuep = itr.second->valuep();
-                emitSetVarConstant(varNameProtected + ".at(" + cvtToStr(itr.first) + ")",
+                emitSetVarConstant(newPrefix + ".at(" + cvtToStr(itr.first) + ")",
                                    VN_AS(valuep, Const));
             }
         } else if (VN_IS(dtypep, WildcardArrayDType)) {
             if (initarp->defaultp()) {
-                emitSetVarConstant(varNameProtected + ".atDefault()",
-                                   VN_AS(initarp->defaultp(), Const));
+                emitSetVarConstant(newPrefix + ".atDefault()", VN_AS(initarp->defaultp(), Const));
             }
-            if (!constructing) puts(varNameProtected + ".clear();");
+            if (!constructing) puts(newPrefix + ".clear();");
             const auto& mapr = initarp->map();
             for (const auto& itr : mapr) {
                 AstNode* const valuep = itr.second->valuep();
-                emitSetVarConstant(varNameProtected + ".at(" + cvtToStr(itr.first) + ")",
+                emitSetVarConstant(newPrefix + ".at(" + cvtToStr(itr.first) + ")",
                                    VN_AS(valuep, Const));
             }
         } else if (AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
             if (initarp->defaultp()) {
                 puts("for (int __Vi = 0; __Vi < " + cvtToStr(adtypep->elementsConst()));
                 puts("; ++__Vi) {\n");
-                emitSetVarConstant(varNameProtected + "[__Vi]", VN_AS(initarp->defaultp(), Const));
+                emitSetVarConstant(newPrefix + "[__Vi]", VN_AS(initarp->defaultp(), Const));
                 puts("}\n");
             }
             const auto& mapr = initarp->map();
             for (const auto& itr : mapr) {
                 AstNode* const valuep = itr.second->valuep();
-                emitSetVarConstant(varNameProtected + "[" + cvtToStr(itr.first) + "]",
+                emitSetVarConstant(newPrefix + "[" + cvtToStr(itr.first) + "]",
                                    VN_AS(valuep, Const));
             }
         } else {
             varp->v3fatalSrc("InitArray under non-arrayed var");
         }
     } else {
-        putns(varp, emitVarResetRecurse(varp, constructing, varNameProtected, dtypep, 0, "",
-                                        varp->valuep()));
+        putns(varp,
+              emitVarResetRecurse(varp, constructing, newPrefix, dtypep, 0, "", varp->valuep()));
     }
 }
 

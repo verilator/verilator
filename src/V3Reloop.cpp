@@ -68,6 +68,7 @@ class ReloopVisitor final : public VNVisitor {
         const string newvarname{"__Vilp" + std::to_string(cfuncp->user1Inc() + 1)};
         AstVar* const varp
             = new AstVar{fl, VVarType::STMTTEMP, newvarname, VFlagLogicPacked{}, 32};
+        cfuncp->addVarsp(varp);
         return varp;
     }
     void mergeEnd() {
@@ -105,8 +106,7 @@ class ReloopVisitor final : public VNVisitor {
                 AstLoop* const loopp = new AstLoop{fl};
                 loopp->addStmtsp(new AstLoopTest{fl, loopp, condp});
                 initp->addNext(loopp);
-                itp->AstNode::addNext(initp);
-                bodyp->replaceWith(itp);
+                bodyp->replaceWith(initp);
                 loopp->addStmtsp(bodyp);
                 loopp->addStmtsp(incp);
 

@@ -9,13 +9,11 @@ class Cls;
   rand bit [7:0] y;
 
   function bit [7:0] complex_func(bit [7:0] m);
-    if (m > 128)
-      return m;
-    else
-      return m + 1;
+    if (m > 128) return m;
+    else return m + 1;
   endfunction
 
-  constraint c { x <= complex_func(y); }
+  constraint c {x <= complex_func(y);}
 endclass
 
 module t;

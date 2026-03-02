@@ -182,6 +182,8 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     }
     void visit(AstInitialAutomatic* nodep) override { iterateChildrenConst(nodep); }
     void visit(AstInitialStatic* nodep) override { iterateChildrenConst(nodep); }
+    void visit(AstInitialAutomaticStmt* nodep) override { iterateChildrenConst(nodep); }
+    void visit(AstInitialStaticStmt* nodep) override { iterateChildrenConst(nodep); }
     void visit(AstAlways* nodep) override {
         if (const AstAssignW* const ap = VN_CAST(nodep->stmtsp(), AssignW)) {
             if (!ap->nextp()) {
@@ -618,6 +620,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts("." + nodep->name() + "(");
         iterateAndCommaConstNull(nodep->pinsp());
         puts(")");
+        iterateConstNull(nodep->withp());
     }
     void visit(AstCMethodCall* nodep) override {
         iterateConst(nodep->fromp());
@@ -1012,8 +1015,9 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
         if (!VN_IS(nodep->taskp(), Property)) {
             puts("(");
-            iterateAndNextConstNull(nodep->pinsp());
+            iterateAndNextConstNull(nodep->argsp());
             puts(")");
+            iterateConstNull(nodep->withp());
         }
     }
     void visit(AstCCall* nodep) override {
@@ -1023,6 +1027,12 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts(")");
     }
     void visit(AstArg* nodep) override { iterateAndNextConstNull(nodep->exprp()); }
+    void visit(AstWith* nodep) override {
+        putfs(nodep, " with (");
+        iterateConstNull(nodep->exprp());
+        puts(") ");
+    }
+    void visit(AstLambdaArgRef* nodep) override { putfs(nodep, nodep->name()); }
     void visit(AstPrintTimeScale* nodep) override {
         puts(nodep->verilogKwd());
         puts(";\n");

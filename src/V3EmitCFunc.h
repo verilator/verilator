@@ -209,12 +209,13 @@ public:
                     AstNode* thsp);
     void emitCCallArgs(const AstNodeCCall* nodep, const string& selfPointer, bool inProcess);
     void emitDereference(AstNode* nodep, const string& pointer);
+    std::string dereferenceString(const std::string& pointer);
     void emitCvtPackStr(AstNode* nodep);
     void emitCvtWideArray(AstNode* nodep, AstNode* fromp);
     void emitConstant(AstConst* nodep);
     void emitConstantString(const AstConst* nodep);
     void emitSetVarConstant(const string& assignString, AstConst* constp);
-    void emitVarReset(AstVar* varp, bool constructing);
+    void emitVarReset(const string& prefix, AstVar* varp, bool constructing);
     string emitVarResetRecurse(const AstVar* varp, bool constructing,
                                const string& varNameProtected, AstNodeDType* dtypep, int depth,
                                const string& suffix, const AstNode* valuep);
@@ -526,8 +527,29 @@ public:
 
     void visit(AstNodeAssign* nodep) override {
         if (AstCReset* const resetp = VN_CAST(nodep->rhsp(), CReset)) {
-            AstVar* const varp = VN_AS(nodep->lhsp(), NodeVarRef)->varp();
-            emitVarReset(varp, resetp->constructing());
+            // TODO get rid of emitVarReset and instead let AstNodeAssign understand how to init
+            // anything
+            AstNode* fromp = nodep->lhsp();
+            // Fork needs to use a member select.  Nothing else should be possible before VarRef.
+            if (AstMemberSel* const sfromp = VN_CAST(fromp, MemberSel)) {
+                // Fork-DynScope generated pointer to previously automatic variable
+                AstVar* const memberVarp = sfromp->varp();
+                fromp = sfromp->fromp();
+                if (AstNullCheck* const sfromp = VN_CAST(fromp, NullCheck)) fromp = sfromp->lhsp();
+                AstNodeVarRef* const fromVarRefp = VN_AS(fromp, NodeVarRef);
+                emitVarReset(
+                    ("VL_NULL_CHECK("s
+                     + (fromVarRefp->selfPointer().isEmpty()
+                            ? ""
+                            : dereferenceString(fromVarRefp->selfPointerProtect(m_useSelfForThis)))
+                     + fromVarRefp->varp()->nameProtect() + ", \""
+                     + V3OutFormatter::quoteNameControls(protect(nodep->fileline()->filename()))
+                     + "\", " + std::to_string(nodep->fileline()->lineno()) + ")->"),
+                    memberVarp, resetp->constructing());
+            } else {
+                AstVar* const varp = VN_AS(fromp, NodeVarRef)->varp();
+                emitVarReset("", varp, resetp->constructing());
+            }
             return;
         }
         bool paren = true;
@@ -763,6 +785,10 @@ public:
             comma = true;
             argNum++;
         }
+        if (nodep->withp()) {
+            if (comma) puts(", ");
+            iterateConst(nodep->withp());
+        }
         puts(")");
     }
     void visit(AstLambdaArgRef* nodep) override { putbs(nodep->nameProtect()); }
@@ -995,7 +1021,7 @@ public:
     }
     void visit(AstFGetS* nodep) override {
         checkMaxWords(nodep);
-        emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nullptr);
+        emitOpName(nodep, nodep->emitC(), nodep->strgp(), nodep->filep(), nullptr);
     }
 
     void checkMaxWords(AstNode* nodep) {
@@ -1173,7 +1199,7 @@ public:
         if (VN_IS(nodep->exprp()->dtypep()->skipRefp(), VoidDType)) {
             putns(nodep, "");
         } else {
-            putns(nodep, "(void)");  // Prevent unused expression warning in C
+            putns(nodep, "std::ignore = ");
         }
         iterateConst(nodep->exprp());
         puts(";\n");
@@ -1267,6 +1293,22 @@ public:
     }
     void visit(AstExprStmt* nodep) override {
         VL_RESTORER(m_createdScopeHash);
+        const bool containsAwait = nodep->exists([](AstCAwait*) -> bool { return true; });
+        if (containsAwait) {
+            UASSERT_OBJ(m_cfuncp && m_cfuncp->isCoroutine(), nodep,
+                        "AstExprStmt with CAwait must be in coroutine");
+            putnbs(nodep, "(co_await ([&]() -> VlCoroutine {\n");
+            iterateAndNextConstNull(nodep->stmtsp());
+            puts("co_return;\n");
+            if (!nodep->hasResult()) {
+                puts("}()))");
+                return;
+            }
+            puts("}()), ");
+            iterateAndNextConstNull(nodep->resultp());
+            puts(")");
+            return;
+        }
         // GCC allows compound statements in expressions, but this is not standard.
         // So we use an immediate-evaluation lambda and comma operator
         putnbs(nodep, "([&]() {\n");
@@ -1536,10 +1578,22 @@ public:
         puts(")");
     }
     void visit(AstNewCopy* nodep) override {
-        putns(nodep, "VL_NEW(" + EmitCUtil::prefixNameProtect(nodep->dtypep()));
-        puts(", *");  // i.e. make into a reference
-        iterateAndNextConstNull(nodep->rhsp());
-        puts(")");
+        // Polymorphic shallow clone: preserves runtime type via virtual clone()
+        // VL_NULL_CHECK enforces null check per IEEE 1800-2017 8.7
+        putns(nodep, "VL_NULL_CHECK(");
+        if (VN_IS(nodep->rhsp(), Const) && VN_AS(nodep->rhsp(), Const)->isNull()) {
+            // V3Const folded rhs to null: emit a typed empty ref so VL_NULL_CHECK fires
+            const AstClassRefDType* const refDTypep
+                = VN_CAST(nodep->dtypep()->skipRefp(), ClassRefDType);
+            puts(refDTypep->cType("", false, false) + "{}");
+        } else {
+            iterateAndNextConstNull(nodep->rhsp());
+        }
+        puts(", ");
+        putsQuoted(protect(nodep->fileline()->filename()));
+        puts(", ");
+        puts(cvtToStr(nodep->fileline()->lineno()));
+        puts(").clone(vlSymsp->__Vm_deleter)");
     }
     void visit(AstSel* nodep) override {
         // Note ASSIGN checks for this on a LHS

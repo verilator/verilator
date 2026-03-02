@@ -204,6 +204,7 @@ class DataflowExtractVisitor final : public VNVisitor {
     }
 
     void visit(AstNodeExpr* nodep) override { iterateChildrenConst(nodep); }
+    void visit(AstArg* nodep) override { iterateChildrenConst(nodep); }
 
     void visit(AstNodeVarRef* nodep) override {
         if (nodep->access().isWriteOrRW()) {
@@ -218,8 +219,7 @@ class DataflowExtractVisitor final : public VNVisitor {
     }
 
     void visit(AstNode* nodep) override {
-        // Conservatively assume unhandled nodes are impure. This covers all AstNodeFTaskRef
-        // as AstNodeFTaskRef are sadly not AstNodeExpr.
+        // Conservatively assume unhandled nodes are impure.
         m_impure = true;
         // Still need to gather all references/force/release, etc.
         iterateChildrenConst(nodep);

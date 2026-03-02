@@ -95,8 +95,8 @@ bool AstNodeFTaskRef::getPurityRecurse() const {
     // Unlinked yet, so treat as impure
     if (!taskp) return false;
     // First compute the purity of arguments
-    for (AstNode* pinp = this->pinsp(); pinp; pinp = pinp->nextp()) {
-        if (!pinp->isPure()) return false;
+    for (AstArg* argp = this->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
+        if (!argp->isPure()) return false;
     }
     return taskp->isPure();
 }
@@ -941,12 +941,21 @@ AstVar* AstVar::scVarRecurse(AstNode* nodep) {
 const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
                                                bool assertOn) const VL_MT_STABLE {
     static constexpr int MAX_TYPEDEF_DEPTH = 1000;
+    static constexpr int MAX_CHAIN_DISPLAY = 10;
     const AstNodeDType* nodep = this;
+    std::unordered_set<const AstNodeDType*> visited;
+    std::vector<const AstNodeDType*> chain;
+    bool isCycle = false;
     for (int depth = 0; depth < MAX_TYPEDEF_DEPTH; ++depth) {
         if (VN_IS(nodep, MemberDType) || VN_IS(nodep, ParamTypeDType) || VN_IS(nodep, RefDType)  //
             || VN_IS(nodep, RequireDType)  //
             || (VN_IS(nodep, ConstDType) && skipConst)  //
             || (VN_IS(nodep, EnumDType) && skipEnum)) {
+            if (!visited.emplace(nodep).second) {
+                isCycle = true;
+                break;
+            }
+            if (chain.size() < static_cast<size_t>(MAX_CHAIN_DISPLAY)) chain.push_back(nodep);
             if (const AstNodeDType* subp = nodep->subDTypep()) {
                 nodep = subp;
                 continue;
@@ -957,7 +966,33 @@ const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
         }
         return nodep;
     }
-    nodep->v3error("Recursive type definition, or over " << MAX_TYPEDEF_DEPTH << " types deep");
+    // Build user-facing error with type chain
+    V3Error::v3errorPrep(V3ErrorCode::EC_ERROR);
+    {
+        std::ostringstream& os = V3Error::v3errorStr();
+        if (isCycle) {
+            os << "Recursive type definition";
+        } else {
+            os << "Type definition over " << MAX_TYPEDEF_DEPTH << " types deep";
+        }
+        bool first = true;
+        for (const AstNodeDType* chainp : chain) {
+            // Skip internal scaffolding nodes (e.g. REQUIREDTYPE) with no user-visible name
+            if (chainp->name().empty()) continue;
+            os << '\n'
+               << chainp->fileline()->warnOther() << "... Type chain: " << chainp->prettyTypeName()
+               << '\n'
+               << (first ? chainp->fileline()->warnContextPrimary()
+                         : chainp->fileline()->warnContextSecondary());
+            first = false;
+        }
+        if (visited.size() > static_cast<size_t>(MAX_CHAIN_DISPLAY)) {
+            os << '\n'
+               << this->fileline()->warnMore() << "... and "
+               << (visited.size() - MAX_CHAIN_DISPLAY) << " more";
+        }
+    }
+    this->v3errorEnd(V3Error::v3errorStr());
     return nullptr;
 }
 
@@ -1756,6 +1791,26 @@ string AstBasicDType::prettyDTypeName(bool) const {
 
 void AstNodeExpr::dump(std::ostream& str) const { this->AstNode::dump(str); }
 void AstNodeExpr::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
+
+bool AstNodeExpr::isLValue() const {
+    if (const AstNodeVarRef* const varrefp = VN_CAST(this, NodeVarRef)) {
+        return varrefp->access().isWriteOrRW();
+    } else if (const AstMemberSel* const memberselp = VN_CAST(this, MemberSel)) {
+        return memberselp->access().isWriteOrRW();
+    } else if (const AstSel* const selp = VN_CAST(this, Sel)) {
+        return selp->fromp()->isLValue();
+    } else if (const AstNodeSel* const nodeSelp = VN_CAST(this, NodeSel)) {
+        return nodeSelp->fromp()->isLValue();
+    } else if (const AstConcat* const concatp = VN_CAST(this, Concat)) {
+        // Enough to check only one side, as both must be same otherwise malformed
+        return concatp->lhsp()->isLValue();
+    } else if (const AstCMethodHard* const cMethodHardp = VN_CAST(this, CMethodHard)) {
+        // Used for things like Queue/AssocArray/DynArray
+        return cMethodHardp->fromp()->isLValue();
+    }
+    return false;
+}
+
 void AstNodeUniop::dump(std::ostream& str) const { this->AstNodeExpr::dump(str); }
 void AstNodeUniop::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 
@@ -1812,6 +1867,14 @@ void AstCellInlineScope::dump(std::ostream& str) const {
 }
 void AstCellInlineScope::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, origModName);
+    dumpJsonGen(str);
+}
+void AstCExpr::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (m_pure) str << " [PURE]";
+}
+void AstCExpr::dumpJson(std::ostream& str) const {
+    dumpJsonBoolIf(str, "pure", m_pure);
     dumpJsonGen(str);
 }
 bool AstClass::isCacheableChild(const AstNode* nodep) {
@@ -2846,6 +2909,8 @@ void AstVar::dump(std::ostream& str) const {
     if (isSigPublic()) str << " [P]";
     if (isSigUserRdPublic()) str << " [PRD]";
     if (isSigUserRWPublic()) str << " [PWR]";
+    if (isReadByDpi()) str << " [DPIRD]";
+    if (isWrittenByDpi()) str << " [DPIWR]";
     if (isInternal()) str << " [INTERNAL]";
     if (isLatched()) str << " [LATCHED]";
     if (isUsedLoopIdx()) str << " [LOOPIDX]";
@@ -2893,6 +2958,8 @@ void AstVar::dumpJson(std::ostream& str) const {
     if (dtypep()) dumpJsonStr(str, "dtypeName", dtypep()->name());
     dumpJsonBoolFuncIf(str, isSigUserRdPublic);
     dumpJsonBoolFuncIf(str, isSigUserRWPublic);
+    dumpJsonBoolFuncIf(str, isReadByDpi);
+    dumpJsonBoolFuncIf(str, isWrittenByDpi);
     dumpJsonBoolFuncIf(str, isGParam);
     dumpJsonBoolFuncIf(str, isParam);
     dumpJsonBoolFuncIf(str, attrScBv);

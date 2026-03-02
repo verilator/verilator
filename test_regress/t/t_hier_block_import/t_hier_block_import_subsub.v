@@ -6,10 +6,10 @@
 // SPDX-FileCopyrightText: 2024 Antmicro
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-module subsub
-#(
-   `include "t_hier_block_import.vh"
-)
-(output bit [31:0] out); /*verilator hier_block*/
-   assign out = pt.PARAM_VALUE;
+module subsub #(
+    `include "t_hier_block_import.vh"
+) (
+    output bit [31:0] out
+);  /*verilator hier_block*/
+  assign out = pt.PARAM_VALUE;
 endmodule

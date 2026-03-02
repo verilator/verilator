@@ -67,6 +67,7 @@
 #include "V3LibMap.h"
 #include "V3Life.h"
 #include "V3LifePost.h"
+#include "V3LiftExpr.h"
 #include "V3LinkDot.h"
 #include "V3LinkDotIfaceCapture.h"
 #include "V3LinkInc.h"
@@ -290,6 +291,9 @@ static void process() {
         }
 
         if (!v3Global.opt.serializeOnly()) {
+            // Lift expressions out of statements.
+            if (v3Global.opt.fLiftExpr()) V3LiftExpr::liftExprAll(v3Global.rootp());
+
             // Move assignments from X into MODULE temps.
             // (Before flattening, so each new X variable is shared between all scopes of that
             // module.)
@@ -533,7 +537,8 @@ static void process() {
             // Bits between widthMin() and width() are irrelevant, but may be non zero.
             v3Global.widthMinUsage(VWidthMinUsage::VERILOG_WIDTH);
 
-            // Make all expressions either 8, 16, 32 or 64 bits
+            // Make all expressions 32, 64, or 32*N bits
+            // Variables and selects-of-variables remain verilog-width
             V3Clean::cleanAll(v3Global.rootp());
 
             // Move wide constants to BLOCK temps / ConstPool.

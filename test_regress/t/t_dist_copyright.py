@@ -67,43 +67,36 @@ for filename in files:
     open_filename = os.path.join(test.root, filename)
     if not os.path.exists(open_filename):
         continue
+
+    if "test_regress/t" in filename:
+        yeardash = str(year)
+    else:
+        yeardash = str(year) + '-' + str(year)
+
     with open(open_filename, 'r', encoding="utf8") as fh:
         spdx = None
         copyright_msg = None
-        release = False
         for line in fh:
             line = line.rstrip()
             if 'SP' + 'DX-License-Identifier:' in line:
                 spdx = line
-            elif re.search(r'(Copyright 20[0-9][0-9]|SPDX-FileCopyrightText: 20[0-9][0-9])', line):
+            elif re.search(r'(SP()DX-FileCopyrightText: 20[0-9][0-9])', line):
                 copyright_msg = line
                 if 'Wilson Snyder' in line:
-                    pass
-                elif re.search(r'\.pl$', filename):
                     pass
                 elif re.search(EXEMPT_AUTHOR_RE, filename):
                     pass
                 else:
-                    if "test_regress/t" in filename:
-                        yeardash = str(year)
-                    else:
-                        yeardash = str(year) + '-' + str(year)
                     print("   " + copyright_msg)
-                    test.error_keep_going(filename + ": Please use standard 'Copyright " +
-                                          yeardash + " by Wilson Snyder'")
-            elif (('Creative Commons Public Domain' in line)
-                  or ('freely copied and/or distributed' in line)
-                  or ('placed into the Public Domain' in line)):
-                release = True
+                    test.error_keep_going(filename + ": Please use standard 'SP" +
+                                          "DX-FileCopyrightText: " + yeardash + " Wilson Snyder'")
 
-        release_note = ""
-        if not re.search(RELEASE_OK_RE, filename):
-            release_note = " (has copyright release, but not part of " + RELEASE_OK_RE + ")"
-        if not copyright_msg and (not release or release_note):
-            test.error_keep_going(filename + ": Please add standard 'Copyright " + str(year) +
-                                  " ...', similar to in other files" + release_note)
+        if not copyright_msg:
+            test.error_keep_going(filename + ": Please add standard 'SP" +
+                                  "DX-FileCopyrightText: " + yeardash +
+                                  " ...', similar to in other files")
         if not spdx:
-            test.error_keep_going(filename + ": Please add standard 'SP"
+            test.error_keep_going(filename + ": Please add standard 'SP" +
                                   "DX-License-Identifier: ...', similar to in other files")
 
 test.passes()

@@ -18,6 +18,7 @@
 
 #include "V3Options.h"
 
+#include "V3Container.h"
 #include "V3Error.h"
 #include "V3File.h"
 #include "V3Global.h"
@@ -70,30 +71,26 @@ public:
     std::list<string> m_lineArgs;  // List of command line argument encountered
     // List of arguments encounterd, and a bool in needed for rerunning --dump-inputs
     std::list<std::pair<std::list<std::string>, bool>> m_allArgs;
-    std::list<string> m_incDirUsers;  // Include directories (ordered)
-    std::set<string> m_incDirUserSet;  // Include directories (for removing duplicates)
+    VInsertionSet<std::string> m_incDirUsers;  // Include directories (ordered)
     std::list<string> m_incDirFallbacks;  // Include directories (ordered)
     std::set<string> m_incDirFallbackSet;  // Include directories (for removing duplicates)
     std::map<const string, V3LangCode> m_langExts;  // Language extension map
-    std::list<string> m_libExtVs;  // Library extensions (ordered)
-    std::set<string> m_libExtVSet;  // Library extensions (for removing duplicates)
+    VInsertionSet<std::string> m_libExtVs;  // Library extensions (ordered)
     DirMap m_dirMap;  // Directory listing
 
     // ACCESSOR METHODS
     void addIncDirUser(const string& incdir) {
         const string& dir = V3Os::filenameCleanup(incdir);
-        const auto itFoundPair = m_incDirUserSet.insert(dir);
-        if (itFoundPair.second) {
+        const bool inserted = m_incDirUsers.insert(dir);
+        if (inserted) {
             // cppcheck-suppress stlFindInsert  // cppcheck 1.90 bug
-            m_incDirUsers.push_back(dir);
             m_incDirFallbacks.remove(dir);  // User has priority over Fallback
             m_incDirFallbackSet.erase(dir);  // User has priority over Fallback
         }
     }
     void addIncDirFallback(const string& incdir) {
         const string& dir = V3Os::filenameCleanup(incdir);
-        if (m_incDirUserSet.find(dir)
-            == m_incDirUserSet.end()) {  // User has priority over Fallback
+        if (!m_incDirUsers.exists(dir)) {  // User has priority over Fallback
             const auto itFoundPair = m_incDirFallbackSet.insert(dir);
             if (itFoundPair.second) m_incDirFallbacks.push_back(dir);
         }
@@ -106,10 +103,7 @@ public:
         m_langExts[addext] = lc;
     }
 
-    void addLibExtV(const string& libext) {
-        const auto itFoundPair = m_libExtVSet.insert(libext);
-        if (itFoundPair.second) m_libExtVs.push_back(libext);
-    }
+    void addLibExtV(const string& libext) { m_libExtVs.insert(libext); }
     V3OptionsImp() = default;
     ~V3OptionsImp() = default;
 };
@@ -1375,6 +1369,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-debug-abort", CbCall, []() {
         V3Error::vlAbort();  // LCOV_EXCL_LINE
     }).undocumented();  // See also --debug-sigseg
+#ifdef VL_ALLOC_RANDOM_CHECKS
+    DECL_OPTION("-debug-alloc-random", Set, &m_debugAllocRandom).undocumented();
+#endif
     DECL_OPTION("-debug-check", OnOff, &m_debugCheck);
     DECL_OPTION("-debug-collision", OnOff, &m_debugCollision).undocumented();
     DECL_OPTION("-debug-emitv", OnOff, &m_debugEmitV).undocumented();
@@ -1480,6 +1477,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-finline-funcs-eager", FOnOff, &m_fInlineFuncsEager);
     DECL_OPTION("-flife", FOnOff, &m_fLife);
     DECL_OPTION("-flife-post", FOnOff, &m_fLifePost);
+    DECL_OPTION("-flift-expr", FOnOff, &m_fLiftExpr);
     DECL_OPTION("-flocalize", FOnOff, &m_fLocalize);
     DECL_OPTION("-fmerge-cond", FOnOff, &m_fMergeCond);
     DECL_OPTION("-fmerge-cond-motion", FOnOff, &m_fMergeCondMotion);
@@ -1700,6 +1698,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         if (m_reloopLimit < 2) fl->v3error("--reloop-limit must be >= 2: " << valp);
     });
     DECL_OPTION("-report-unoptflat", OnOff, &m_reportUnoptflat);
+    DECL_OPTION("-replication-limit", CbVal, [this, fl](const char* valp) {
+        m_replicationLimit = std::atoi(valp);
+        if (m_replicationLimit < 0) fl->v3error("--replication-limit must be >= 0: " << valp);
+    });
     DECL_OPTION("-rr", CbCall, []() {});  // Processed only in bin/verilator shell
     DECL_OPTION("-runtime-debug", CbCall, [this, fl]() {
         decorations(fl, "node");

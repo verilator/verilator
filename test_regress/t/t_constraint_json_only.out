@@ -36,14 +36,14 @@
         {"type":"VAR","name":"b","addr":"(DB)","loc":"d,61:48,61:49","dtypep":"(M)","origName":"b","verilogName":"b","direction":"INPUT","isFuncLocal":true,"lifetime":"VAUTOMI","varType":"PORT","dtypeName":"string","sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
         {"type":"ASSIGN","name":"","addr":"(EB)","loc":"d,61:17,61:30","dtypep":"(U)",
          "rhsp": [
-          {"type":"CRESET","name":"","addr":"(FB)","loc":"d,61:17,61:30","dtypep":"(U)"}
+          {"type":"CONST","name":"1'h0","addr":"(FB)","loc":"d,61:17,61:30","dtypep":"(GB)"}
         ],
          "lhsp": [
-          {"type":"VARREF","name":"strings_equal","addr":"(GB)","loc":"d,61:17,61:30","dtypep":"(U)","access":"WR","varp":"(BB)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}
+          {"type":"VARREF","name":"strings_equal","addr":"(HB)","loc":"d,61:17,61:30","dtypep":"(U)","access":"WR","varp":"(BB)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}
         ],"timingControlp": []},
-        {"type":"ASSIGN","name":"","addr":"(HB)","loc":"d,62:7,62:13","dtypep":"(U)",
+        {"type":"ASSIGN","name":"","addr":"(IB)","loc":"d,62:7,62:13","dtypep":"(U)",
          "rhsp": [
-          {"type":"EQN","name":"","addr":"(IB)","loc":"d,62:16,62:18","dtypep":"(JB)",
+          {"type":"EQN","name":"","addr":"(JB)","loc":"d,62:16,62:18","dtypep":"(GB)",
            "lhsp": [
             {"type":"VARREF","name":"a","addr":"(KB)","loc":"d,62:14,62:15","dtypep":"(M)","access":"RD","varp":"(CB)","varScopep":"UNLINKED","classOrPackagep":"(O)"}
           ],
@@ -63,7 +63,7 @@
  "miscsp": [
   {"type":"TYPETABLE","name":"","addr":"(C)","loc":"a,0:0,0:0","constraintRefp":"UNLINKED","emptyQueuep":"UNLINKED","queueIndexp":"UNLINKED","streamp":"UNLINKED","voidp":"(OB)",
    "typesp": [
-    {"type":"BASICDTYPE","name":"logic","addr":"(JB)","loc":"d,22:14,22:15","dtypep":"(JB)","keyword":"logic","generic":true,"rangep": []},
+    {"type":"BASICDTYPE","name":"logic","addr":"(GB)","loc":"d,22:14,22:15","dtypep":"(GB)","keyword":"logic","generic":true,"rangep": []},
     {"type":"BASICDTYPE","name":"logic","addr":"(RB)","loc":"d,25:21,25:22","dtypep":"(RB)","keyword":"logic","range":"31:0","generic":true,"rangep": []},
     {"type":"BASICDTYPE","name":"string","addr":"(M)","loc":"d,73:7,73:13","dtypep":"(M)","keyword":"string","generic":true,"rangep": []},
     {"type":"BASICDTYPE","name":"int","addr":"(Q)","loc":"d,8:9,8:12","dtypep":"(Q)","keyword":"int","range":"31:0","generic":true,"signed":true,"rangep": []},

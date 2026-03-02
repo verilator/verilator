@@ -126,6 +126,7 @@ module Vt_debug_emitv_t;
     initial begin
         begin : unnamedblk1
             int signed other;
+            other = /*CRESET*/;
             begin
                 begin : unnamedblk2
                     int signed i;
@@ -291,6 +292,7 @@ module Vt_debug_emitv_t;
             sum = $random('sha);
             sum = $urandom();
             sum = $urandom('sha);
+            sum = array.r_sum() with ((item * 'sh2)) ;
             if ((PKG_PARAM != 'sh1)) begin
                 $stop;
             end
@@ -689,6 +691,7 @@ module Vt_debug_emitv_sub;
     task inc;
         input int signed i;
         output int signed o;
+        o = /*CRESET*/;
         o = ({32'h1{{1'h0, i[31:1]}}} + 32'h1);
     endtask
     function f;

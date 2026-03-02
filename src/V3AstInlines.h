@@ -80,8 +80,8 @@ int AstNodeArrayDType::lo() const VL_MT_STABLE { return rangep()->loConst(); }
 int AstNodeArrayDType::elementsConst() const VL_MT_STABLE { return rangep()->elementsConst(); }
 VNumRange AstNodeArrayDType::declRange() const VL_MT_STABLE { return VNumRange{left(), right()}; }
 
-AstFuncRef::AstFuncRef(FileLine* fl, AstFunc* taskp, AstNodeExpr* pinsp)
-    : ASTGEN_SUPER_FuncRef(fl, taskp->name(), pinsp) {
+AstFuncRef::AstFuncRef(FileLine* fl, AstFunc* taskp, AstArg* argsp)
+    : ASTGEN_SUPER_FuncRef(fl, taskp->name(), argsp) {
     this->taskp(taskp);
     dtypeFrom(taskp);
 }
@@ -129,8 +129,8 @@ int AstQueueDType::boundConst() const VL_MT_STABLE {
     return (constp ? constp->toSInt() : 0);
 }
 
-AstTaskRef::AstTaskRef(FileLine* fl, AstTask* taskp, AstNodeExpr* pinsp)
-    : ASTGEN_SUPER_TaskRef(fl, taskp->name(), pinsp) {
+AstTaskRef::AstTaskRef(FileLine* fl, AstTask* taskp, AstArg* argsp)
+    : ASTGEN_SUPER_TaskRef(fl, taskp->name(), argsp) {
     this->taskp(taskp);
     dtypeSetVoid();
 }

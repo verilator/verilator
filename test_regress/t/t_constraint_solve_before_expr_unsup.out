@@ -1,0 +1,7 @@
+%Warning-CONSTRAINTIGN: t/t_constraint_solve_before_expr_unsup.v:12:27: Unsupported: non-variable expression in solve...before
+                                                                      : ... note: In instance 't'
+   12 |   constraint c { solve arr[0] before y; }   
+      |                           ^
+                        ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
+                        ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
+%Error: Exiting due to

@@ -191,6 +191,8 @@ private:
         if (v3Global.assertDTypesResolved()) {
             if (nodep->hasDType()) {
             } else {
+                UASSERT_OBJ(!VN_IS(nodep, NodeExpr), nodep,
+                            "All AstNodeExpr must have a dtype post V3WidthCommit");
                 UASSERT_OBJ(!nodep->dtypep(), nodep,
                             "DType on node without hasDType(): " << nodep->prettyTypeName());
             }

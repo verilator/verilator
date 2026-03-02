@@ -14,13 +14,13 @@ module t;
   // String-key associative array with size constraint
   class StringKeyTest;
     rand int data[string];
-    constraint c_size { data.size() == 3; }
+    constraint c_size {data.size() == 3;}
   endclass
 
   // Int-key associative array with size constraint
   class IntKeyTest;
     rand bit [7:0] values[int];
-    constraint c_size { values.size() == 2; }
+    constraint c_size {values.size() == 2;}
   endclass
 
   initial begin

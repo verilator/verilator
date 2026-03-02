@@ -91,6 +91,8 @@ class PremitVisitor final : public VNVisitor {
             // Keep as local temporary.
             const std::string name = "__Vtemp_" + std::to_string(++m_tmpVarCnt);
             varp = new AstVar{flp, VVarType::STMTTEMP, name, nodep->dtypep()};
+            varp->funcLocal(true);
+            varp->noReset(true);
             m_cfuncp->addVarsp(varp);
             ++m_temporaryVarsCreated;
 

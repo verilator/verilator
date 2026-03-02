@@ -627,21 +627,27 @@ class EmitCTrace final : public EmitCFunc {
 
     void emitTraceInitOne(const AstTraceDecl* nodep, int enumNum) {
         if (nodep->dtypep()->basicp()->isDouble()) {
-            puts("tracep->declDouble(");
+            puts("VL_TRACE_DECL_DOUBLE");
         } else if (nodep->isWide()) {
-            puts("tracep->declArray(");
+            puts("VL_TRACE_DECL_WIDE");
         } else if (nodep->isQuad()) {
-            puts("tracep->declQuad(");
+            puts("VL_TRACE_DECL_QUAD");
         } else if (nodep->bitRange().ranged()) {
-            puts("tracep->declBus(");
+            puts("VL_TRACE_DECL_BUS");
         } else if (nodep->dtypep()->basicp()->isEvent()) {
-            puts("tracep->declEvent(");
+            puts("VL_TRACE_DECL_EVENT");
         } else {
-            puts("tracep->declBit(");
+            puts("VL_TRACE_DECL_BIT");
+        }
+
+        if (nodep->arrayRange().ranged()) {
+            puts("_ARRAY(tracep");
+        } else {
+            puts("(tracep");
         }
 
         // Code
-        puts("c+" + cvtToStr(nodep->code()));
+        puts(",c+" + cvtToStr(nodep->code()));
         if (nodep->arrayRange().ranged()) puts("+i*" + cvtToStr(nodep->widthWords()));
 
         // Function index
@@ -676,9 +682,7 @@ class EmitCTrace final : public EmitCFunc {
 
         // Array range
         if (nodep->arrayRange().ranged()) {
-            puts(", true,(i+" + cvtToStr(nodep->arrayRange().lo()) + ")");
-        } else {
-            puts(", false,-1");
+            puts(", (i+" + cvtToStr(nodep->arrayRange().lo()) + ")");
         }
 
         // Bit range
