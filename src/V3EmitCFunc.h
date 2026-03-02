@@ -331,31 +331,11 @@ public:
     }
 
     void putConstructorSubinit(const AstClass* classp, AstCFunc* cfuncp) {
-        // Virtual bases in depth-first left-to-right order
-        std::vector<AstClass*> virtualBases;
-        std::unordered_set<AstClass*> doneClasses;
-        collectVirtualBasesRecursep(classp, virtualBases);
-        for (AstClass* vbase : virtualBases) {
-            if (vbase->isInterfaceClass()) continue;
-            if (doneClasses.count(vbase)) continue;
-            doneClasses.emplace(vbase);
-            puts(EmitCUtil::prefixNameProtect(vbase));
-            puts("::init");
-            if (constructorNeedsProcess(vbase)) {
-                puts("(vlProcess, vlSymsp);");
-            } else {
-                puts("(vlSymsp);");
-            }
-            puts("\n");
-        }
-        const AstCNew* const superNewCallp = getSuperNewCallRecursep(cfuncp->stmtsp());
         // Direct non-virtual bases in declaration order
         for (const AstClassExtends* extp = classp->extendsp(); extp;
              extp = VN_AS(extp->nextp(), ClassExtends)) {
             if (extp->classp()->isInterfaceClass()) continue;
             if (extp->classp()->useVirtualPublic()) continue;
-            if (doneClasses.count(extp->classp())) continue;
-            doneClasses.emplace(extp->classp());
             puts(EmitCUtil::prefixNameProtect(extp->classp()));
             puts("::init");
             if (constructorNeedsProcess(extp->classp())) {
@@ -364,26 +344,14 @@ public:
                 puts("(vlSymsp");
             }
             // Handle super.new() args for the concrete parent
-            if (!extp->classp()->isInterfaceClass() && superNewCallp) {
+            if (const AstCNew* const superNewCallp = getSuperNewCallRecursep(cfuncp->stmtsp())) {
                 putCommaIterateNext(superNewCallp->argsp(), true);
             }
             puts(");\n");
-        }
-    }
-    void collectVirtualBasesRecursep(const AstClass* classp,
-                                     std::vector<AstClass*>& virtualBases) {
-        std::set<const AstClass*> visited;
-        collectVirtualBasesRecursep(classp, virtualBases /*ref*/, visited /*ref*/);
-    }
-    void collectVirtualBasesRecursep(const AstClass* classp, std::vector<AstClass*>& virtualBases,
-                                     std::set<const AstClass*>& visited) {
-        if (visited.count(classp)) return;
-        visited.emplace(classp);
-        for (const AstClassExtends* extp = classp->extendsp(); extp;
-             extp = VN_AS(extp->nextp(), ClassExtends)) {
-            // Depth-first: recurse into this base first
-            collectVirtualBasesRecursep(extp->classp(), virtualBases, visited);
-            if (extp->classp()->useVirtualPublic()) { virtualBases.push_back(extp->classp()); }
+            // Since SystemVerilog allows only for extending from one class, for sure there won't
+            // be any more constructors to be called. Even if there are some classes which are
+            // "implemented", those are interface classes which do not have constructors.
+            break;
         }
     }
 
