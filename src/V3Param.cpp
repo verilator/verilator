@@ -391,15 +391,10 @@ class ParamProcessor final {
                              << " classHasGParam=" << classRefp->classp()->hasGParam() << endl);
 
                 if (classRefp->paramsp()) {
-                    // Has explicit type parameters - use origName + params
-                    key = origName;
-                    key += "#(";
-                    for (AstPin* pinp = classRefp->paramsp(); pinp;
-                         pinp = VN_AS(pinp->nextp(), Pin)) {
-                        if (pinp != classRefp->paramsp()) key += ",";
-                        if (pinp->exprp()) { key += paramValueString(pinp->exprp()); }
-                    }
-                    key += ")";
+                    // ClassRefDType should have been deparameterized (paramsp
+                    // consumed) before cellPinCleanup calls paramValueString.
+                    classRefp->v3fatalSrc(  // LCOV_EXCL_LINE
+                        "ClassRefDType still has paramsp in paramValueString");
                 } else if (isSpecialized) {
                     // Already specialized class (e.g., c1__Tz1_TBz1) - use full name
                     // This ensures different specializations are distinguished
@@ -409,7 +404,10 @@ class ParamProcessor final {
                     key = origName;
                 }
             } else {
-                key += classRefp->prettyDTypeName(true);
+                // classp() should always be set; unresolved class refs
+                // would have errored in LinkDot.
+                classRefp->v3fatalSrc(  // LCOV_EXCL_LINE
+                    "ClassRefDType has null classp in paramValueString");
             }
         } else if (const AstNodeDType* const dtypep = VN_CAST(nodep, NodeDType)) {
             key += dtypep->prettyDTypeName(true);
