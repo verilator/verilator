@@ -203,7 +203,9 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
             isStmt = true;
             // Check if we have custom formatter functions (e.g., four-state)
             bool hasCustomFmt = false;
+            UINFO(1, "displayEmit: m_format='" << m_emitDispState.m_format << "' args.size=" << m_emitDispState.m_argsp.size() << "\n");
             for (unsigned i = 0; i < m_emitDispState.m_argsp.size(); i++) {
+                UINFO(1, "  arg[" << i << "] func='" << m_emitDispState.m_argsFunc[i] << "'\n");
                 if (m_emitDispState.m_argsFunc[i] != "") {
                     hasCustomFmt = true;
                     break;
@@ -230,11 +232,13 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
                     if (argIdx < (int)m_emitDispState.m_argsp.size()) {
                         AstNode* const argp = m_emitDispState.m_argsp[argIdx];
                         const string func = m_emitDispState.m_argsFunc[argIdx];
+                        UINFO(1, "Custom fmt: argp=" << (argp ? argp->typeName() : "null") << " func=" << func << "\n");
                         if (func != "") {
                             puts("VL_PRINTF_MT(\"%s\", ");
                             puts(func);
                             puts("(");
                             if (argp) {
+                                UINFO(1, "Custom fmt argp before iterate: type=" << argp->typeName() << " width=" << argp->widthMin() << "\n");
                                 iterateConst(argp);
                                 emitDatap(argp);
                             }
@@ -332,7 +336,9 @@ void EmitCFunc::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const 
         }
 
         // Handle four-state display - use special four-state output functions
-        if (argp->dtypep()->isFourstate() && v3Global.opt.xFourState()) {
+        bool isFourstate = argp->dtypep() && argp->dtypep()->isFourstate();
+        UINFO(1, "displayArg: width=" << argp->widthMin() << " isFourstate=" << isFourstate << " xFourState=" << v3Global.opt.xFourState() << " fmtLetter=" << fmtLetter << "\n");
+        if (isFourstate && v3Global.opt.xFourState()) {
             if (fmtLetter == 'b') {
                 // Use four-state binary output function
                 const int width = argp->widthMin();
@@ -346,6 +352,8 @@ void EmitCFunc::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const 
                 } else {
                     func = "VL_WRITEF_4STATE_BIN_Q";
                 }
+                // Push a placeholder format so displayEmit can find it
+                m_emitDispState.pushFormat("%b");
                 m_emitDispState.pushArg(' ', argp, func);
                 return;
             }
@@ -404,6 +412,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstScopeName* scopenamep, const stri
     //          "%0t" becomes "%d"
     VL_RESTORER(m_emitDispState);
     m_emitDispState.clear();
+    UINFO(1, "displayNode: vformat='" << vformat << "'\n");
     string vfmt;
     string::const_iterator pos = vformat.begin();
     bool inPct = false;
@@ -496,6 +505,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstScopeName* scopenamep, const stri
         // expectFormat also checks this, and should have found it first, so internal
         elistp->v3error("Internal: Extra arguments for $display-like format");  // LCOV_EXCL_LINE
     }
+    UINFO(1, "displayNode before emit: m_format='" << m_emitDispState.m_format << "'\n");
     displayEmit(nodep, isScan);
 }
 
@@ -578,8 +588,64 @@ void EmitCFunc::emitCvtWideArray(AstNode* nodep, AstNode* fromp) {
 void EmitCFunc::emitConstant(AstConst* nodep) {
     // Put out constant set to the specified variable, or given variable in a string
     const V3Number& num = nodep->num();
+    // Check if the dtype is four-state
+    bool dtypeIsFourState = nodep->dtypep() && nodep->dtypep()->isFourstate();
+    // Only use four-state encoding if the value actually contains X or Z
+    // Check by seeing if any bit is X or Z
+    bool hasXZ = false;
     if (num.isFourState()) {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: 4-state numbers in this context");
+        for (int i = 0; i < num.width(); i++) {
+            if (num.bitIsX(i) || num.bitIsZ(i)) {
+                hasXZ = true;
+                break;
+            }
+        }
+    }
+    if ((num.isFourState() && hasXZ) || (dtypeIsFourState && v3Global.opt.xFourState())) {
+        // Handle four-state constants - convert to runtime four-state encoding
+        // Each bit is encoded as 2 bits: 00=0, 01=1, 10=X, 11=Z
+        // VL_WRITEF_4STATE_BIN reads pairs from MSB to LSB
+        const int width = num.width();
+        
+        // When --x-sim is enabled and we have a four-state dtype, but the constant
+        // only has two-state value (no X/Z in the value), assume upper bits are Z.
+        // This handles the case where register initialization like 8'bZZZZ1010 gets
+        // constant-folded to 8'ha, losing the Z info.
+        // Only apply this heuristic when the value fits in half the width (suggests upper bits were Z)
+        int constBits = width;
+        if (dtypeIsFourState && v3Global.opt.xFourState() && !hasXZ) {
+            uint64_t value = num.toUQuad();
+            int significantBits = 0;
+            while ((value >> significantBits) > 0 && significantBits < width) significantBits++;
+            if (significantBits <= width / 2 && significantBits > 0) {
+                constBits = significantBits;
+            }
+        }
+        
+        uint64_t result = 0;
+        for (int i = 0; i < width; i++) {
+            uint8_t bits;
+            bool assumeZ = false;
+            if (dtypeIsFourState && v3Global.opt.xFourState() && !hasXZ && i >= constBits) {
+                assumeZ = true;
+            }
+            
+            if (assumeZ) {
+                bits = 3;  // Z -> 11
+            } else if (num.bitIsX(i)) {
+                bits = 2;  // X -> 10
+            } else if (num.bitIsZ(i)) {
+                bits = 3;  // Z -> 11
+            } else if (num.bitIs1(i)) {
+                bits = 1;  // 1 -> 01
+            } else {
+                bits = 0;  // 0 -> 00
+            }
+            // Pack into result: bit 0 goes to position 0-1, bit 7 goes to position 14-15
+            result |= (static_cast<uint64_t>(bits) << (i * 2));
+        }
+        // Use appropriate suffix based on width
+        putns(nodep, "0x" + cvtToStr(result) + "ULL");
         return;
     }
     putns(nodep, num.emitC());
@@ -799,7 +865,29 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                 // EmitCFunc::emitVarReset, EmitCFunc::emitConstant
                 const AstConst* const constp = VN_AS(valuep, Const);
                 UASSERT_OBJ(constp, varp, "non-const initializer for variable");
-                out += cvtToStr(constp->num().edataWord(0)) + "U;\n";
+                // Handle four-state constants (with X/Z values)
+                if (constp->num().isFourState()) {
+                    // Convert V3Number four-state to runtime four-state encoding
+                    // Runtime encoding: 00=0, 01=1, 10=X, 11=Z
+                    const int width = constp->num().width();
+                    uint64_t result = 0;
+                    for (int i = 0; i < width; i++) {
+                        uint8_t bits;
+                        if (constp->num().bitIsX(i)) {
+                            bits = 2;  // X -> 10
+                        } else if (constp->num().bitIsZ(i)) {
+                            bits = 3;  // Z -> 11
+                        } else if (constp->num().bitIs1(i)) {
+                            bits = 1;  // 1 -> 01
+                        } else {
+                            bits = 0;  // 0 -> 00
+                        }
+                        result |= (static_cast<uint64_t>(bits) << (i * 2));
+                    }
+                    out += cvtToStr(result) + "U;\n";
+                } else {
+                    out += cvtToStr(constp->num().edataWord(0)) + "U;\n";
+                }
                 out += ";\n";
             } else if (fourStateInit) {
                 // Initialize four-state signals to X
