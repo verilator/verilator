@@ -9,6 +9,7 @@
 int x = 0;
 int y = 0;
 int z = 0;
+int always_value = 0;
 
 int self_entry = 0;
 int self_after_disable = 0;
@@ -46,6 +47,10 @@ endtask
 
 task finish_z;
   z++;
+endtask
+
+task always_foo;
+  always_value = #2 1;
 endtask
 
 task self_stop;
@@ -198,6 +203,8 @@ module t;
   Prog prog1();
   WorkerMod mod1();
 
+  always #6 disable always_foo;
+
   initial begin
     automatic Cls c = new;
     automatic NamedA a = new;
@@ -214,6 +221,13 @@ module t;
     int ifc_before;
     int prog_before;
     int pkg_before;
+
+    // Disable task by name from an external always block while task executes
+    always_value = 0;
+    #5;
+    always_foo;
+    #4;
+    if (always_value != 0) $stop;
 
     // Module task disabled by sibling process in a fork
     fork

@@ -67,6 +67,8 @@ class LinkJumpVisitor final : public VNVisitor {
     V3UniqueNames m_queueNames{
         "__VprocessQueue"};  // Names for queues needed for 'disable' handling
     std::unordered_map<const AstTask*, AstVar*> m_taskDisableQueues;  // Per-task process queues
+    std::unordered_map<const AstTask*, AstBegin*>
+        m_taskDisableBegins;  // Per-task process wrappers
 
     // METHODS
     // Get (and create if necessary) the JumpBlock for this statement
@@ -190,6 +192,20 @@ class LinkJumpVisitor final : public VNVisitor {
         killQueueCall->classOrPackagep(processClassp);
         return new AstStmtExpr{fl, killQueueCall};
     }
+    AstBegin* getOrCreateTaskDisableBeginp(AstTask* const taskp, FileLine* const fl) {
+        const auto it = m_taskDisableBegins.find(taskp);
+        if (it != m_taskDisableBegins.end()) return it->second;
+
+        AstBegin* const taskBodyp = new AstBegin{fl, "", nullptr, false};
+        if (taskp->stmtsp()) taskBodyp->addStmtsp(taskp->stmtsp()->unlinkFrBackWithNext());
+
+        AstFork* const forkp = new AstFork{fl, VJoinType::JOIN};
+        forkp->addForksp(taskBodyp);
+        taskp->addStmtsp(forkp);
+
+        m_taskDisableBegins.emplace(taskp, taskBodyp);
+        return taskBodyp;
+    }
     AstVar* getOrCreateTaskDisableQueuep(AstTask* const taskp, FileLine* const fl) {
         const auto it = m_taskDisableQueues.find(taskp);
         if (it != m_taskDisableQueues.end()) return it->second;
@@ -207,10 +223,11 @@ class LinkJumpVisitor final : public VNVisitor {
         AstVarRef* const queueWriteRefp
             = new AstVarRef{fl, topPkgp, processQueuep, VAccess::WRITE};
         AstStmtExpr* const pushCurrentProcessp = getQueuePushProcessSelfp(queueWriteRefp);
-        if (taskp->stmtsp()) {
-            taskp->stmtsp()->addHereThisAsNext(pushCurrentProcessp);
+        AstBegin* const taskBodyp = getOrCreateTaskDisableBeginp(taskp, fl);
+        if (taskBodyp->stmtsp()) {
+            taskBodyp->stmtsp()->addHereThisAsNext(pushCurrentProcessp);
         } else {
-            taskp->addStmtsp(pushCurrentProcessp);
+            taskBodyp->addStmtsp(pushCurrentProcessp);
         }
         m_taskDisableQueues.emplace(taskp, processQueuep);
         return processQueuep;
@@ -464,7 +481,10 @@ class LinkJumpVisitor final : public VNVisitor {
             // process::kill does not terminate the currently running process immediately.
             // If we disable the current task by name from inside itself, jump to its end.
             if (m_ftaskp == taskp) {
-                AstJumpBlock* const blockp = getJumpBlock(taskp, false);
+                AstNode* jumpTargetp = taskp;
+                const auto it = m_taskDisableBegins.find(taskp);
+                if (it != m_taskDisableBegins.end()) jumpTargetp = it->second;
+                AstJumpBlock* const blockp = getJumpBlock(jumpTargetp, false);
                 killStmtp->addNextHere(new AstJumpGo{nodep->fileline(), blockp});
             }
         } else if (AstFork* const forkp = VN_CAST(targetp, Fork)) {
