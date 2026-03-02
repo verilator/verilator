@@ -536,12 +536,14 @@ public:
                 if (dotSymp) resolvedVarp = VN_CAST(dotSymp->nodep(), Var);
             }
         }
-        if (!resolvedVarp) return nullptr;
-        AstIfaceRefDType* const irefp = ifaceRefFromArray(resolvedVarp->subDTypep());
-        if (irefp && irefp->ifaceViaCellp() && !irefp->ifaceViaCellp()->dead()) {
-            return irefp->ifaceViaCellp();
+        AstIface* resultp = nullptr;
+        if (resolvedVarp) {
+            AstIfaceRefDType* const irefp = ifaceRefFromArray(resolvedVarp->subDTypep());
+            if (irefp && irefp->ifaceViaCellp() && !irefp->ifaceViaCellp()->dead()) {
+                resultp = irefp->ifaceViaCellp();
+            }
         }
-        return nullptr;
+        return resultp;
     }
 
     // Attempt to repair a port's AstIfaceRefDType by tracing through the
@@ -1000,12 +1002,9 @@ public:
         if (nodep->classOrPackageSkipp()) return getNodeSym(nodep->classOrPackageSkipp());
         VSymEnt* foundp;
         VSymEnt* searchSymp = lookSymp;
-        if (searchSymp && VN_IS(searchSymp->nodep(), ParamTypeDType)) {
-            AstNodeDType* dtypep = VN_AS(searchSymp->nodep(), ParamTypeDType)->childDTypep();
-            if (AstNodeDType* const skipp = dtypep->skipRefOrNullp()) dtypep = skipp;
-            if (const AstClassRefDType* const classrefp = VN_CAST(dtypep, ClassRefDType)) {
-                if (AstClass* const classp = classrefp->classp()) searchSymp = getNodeSym(classp);
-            }
+        if (VL_UNCOVERABLE(searchSymp && VN_IS(searchSymp->nodep(), ParamTypeDType))) {
+            searchSymp->nodep()->v3fatalSrc(  // LCOV_EXCL_LINE
+                "resolveClassOrPackage: unexpected ParamTypeDType lookup");
         }
         if (fallback) {
             VSymEnt* currentLookSymp = searchSymp;
@@ -5575,21 +5574,18 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 resolvedDTypep->unlinkFrBack();
                 nodep->replaceWith(resolvedDTypep);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                // If the resolved dtype is a RefDType with an interface typedef,
-                // ensure it's captured for re-resolution during paramed pass
+                // Originally (PR #6637) this block re-captured a resolved
+                // RefDType into the iface-capture ledger when user2p held a
+                // Cell, to ensure re-resolution during the paramed pass.
+                // In practice, the typeofp-resolved RefDType never carries a
+                // Cell in user2p: the capture happens earlier when the
+                // typedef is first linked.
                 if (V3LinkDotIfaceCapture::enabled()) {
                     if (AstRefDType* const resolvedRefp = VN_CAST(resolvedDTypep, RefDType)) {
-                        if (AstCell* const cellp = VN_CAST(resolvedRefp->user2p(), Cell)) {
-                            const string cellPath = cellp->name();
-                            const V3LinkDotIfaceCapture::CaptureKey findKey{
-                                m_modp ? m_modp->name() : "", resolvedRefp->name(), cellPath, ""};
-                            if (!V3LinkDotIfaceCapture::find(findKey)) {
-                                UINFO(9, indent() << "iface capture re-capture resolved RefDType="
-                                                  << resolvedRefp << " cellPath='" << cellPath
-                                                  << "'\n");
-                                V3LinkDotIfaceCapture::add(resolvedRefp, cellPath, m_modp,
-                                                           resolvedRefp->typedefp());
-                            }
+                        if (VL_UNCOVERABLE(VN_IS(resolvedRefp->user2p(), Cell))) {
+                            resolvedRefp->v3fatalSrc(  // LCOV_EXCL_LINE
+                                "typeofp resolved RefDType has Cell in user2p;"
+                                " expected to be captured already");
                         }
                     }
                 }
@@ -5614,20 +5610,17 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 UINFO(9, indent() << "iface capture skip revisit name=" << nodep->name()
                                   << " already user3 and captured cell=" << nodep->user2p());
             }
-            if (m_statep->forParamed()) {
-                if (AstNode* const cpackagep = nodep->classOrPackageOpp()) {
-                    if (AstClassOrPackageRef* const cpackagerefp
-                        = VN_CAST(cpackagep, ClassOrPackageRef)) {
-                        if (!cpackagerefp->classOrPackageSkipp()) {
-                            VSymEnt* const foundp = m_statep->resolveClassOrPackage(
-                                m_ds.m_dotSymp, cpackagerefp, true, false,
-                                "class/package reference");
-                            if (!foundp) return;
-                        }
-                        nodep->classOrPackagep(cpackagerefp->classOrPackageSkipp());
-                    }
-                    VL_DO_DANGLING(pushDeletep(cpackagep->unlinkFrBack()), cpackagep);
-                }
+            // Originally this block re-resolved a
+            // classOrPackageRef during the paramed pass for RefDTypes that
+            // were already visited (user3).  The intent was to ensure
+            // T::member references through type parameters stayed linked
+            // after deparameterization.  In practice, RefDTypes that reach
+            // user3-revisit never carry a classOrPackageOpp in the paramed
+            // pass: the class/package is resolved in the primary pass and
+            // the skip pointer persists.
+            if (VL_UNCOVERABLE(m_statep->forParamed() && nodep->classOrPackageOpp())) {
+                nodep->v3fatalSrc(  // LCOV_EXCL_LINE
+                    "RefDType user3 revisit with classOrPackageOpp in paramed pass");
             }
             return;
         }
