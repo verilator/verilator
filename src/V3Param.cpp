@@ -1713,6 +1713,7 @@ class ParamProcessor final {
                     UINFO(5, "ifaceRefDeparam: self-reference pattern detected in "
                                  << ownerIfacep->prettyNameQ() << ", using owner interface"
                                  << endl);
+                    V3Stats::addStatSum("Param, Self-reference iface typedefs", 1);
                     nodep->ifacep(ownerIfacep);
                     if (nodep->paramsp()) nodep->paramsp()->unlinkFrBackWithNext()->deleteTree();
                     return ownerIfacep;
@@ -2011,10 +2012,17 @@ class ParamVisitor final : public VNVisitor {
         return dotted.substr(0, dotted.find('.'));
     }
 
+    // Debug-only diagnostic (requires --debugi-V3Param 9).
+    // Walks parentModp looking for RefDTypes or VarRefs whose typedef,
+    // refDType, or variable target is still owned by templateModp (the
+    // unspecialized interface template).  Any such "leak" indicates a
+    // pointer that was not properly redirected to the clone during
+    // deparameterization.  Logs each leak with ancestry for triage.
     void logTemplateLeakRefs(AstNodeModule* parentModp, AstNodeModule* templateModp,
                              const char* stage, AstNode* contextp) {
         if (debug() < 9 || !parentModp || !templateModp) return;
         if (!VN_IS(templateModp, Iface)) return;
+        // LCOV_EXCL_START  // Debug-only diagnostic
         int leakCount = 0;
         const auto ancestryOf = [](const AstNode* nodep) {
             string ancestry;
@@ -2086,6 +2094,7 @@ class ParamVisitor final : public VNVisitor {
                          << stage << "' parent=" << parentModp->prettyNameQ() << " template="
                          << templateModp->prettyNameQ() << " count=" << leakCount << endl);
         }
+        // LCOV_EXCL_STOP
     }
 
     void checkParamNotHier(AstNode* valuep) {
