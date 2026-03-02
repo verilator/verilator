@@ -2259,8 +2259,6 @@ class WidthVisitor final : public VNVisitor {
                 // It's directly a type, e.g. "type(int)"
                 typeofDtp = iterateEditMoveDTypep(nodep, typeofDtp);  // Changes typeofp
                 nodep->refDTypep(typeofDtp);
-                UINFO(9, "V3Width: RefDType (typeof) refDTypep set to "
-                             << cvtToHex(nodep->refDTypep()) << endl);
             } else {
                 // Type comes from expression's type, e.g. "type(variable)"
                 userIterateAndNext(nodep->typeofp(), WidthVP{SELF, BOTH}.p());
