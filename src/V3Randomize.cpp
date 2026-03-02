@@ -1123,12 +1123,12 @@ class ConstraintExprVisitor final : public VNVisitor {
                         arrayWrRef->classOrPackagep(classOrPackagep);
                         AstNodeExpr* atWritep;
                         if (isUnpackedClassRefArray) {
-                            atWritep = new AstArraySel{
-                                fl, arrayWrRef, new AstVarRef{fl, iterVarp, VAccess::READ}};
+                            atWritep = new AstArraySel{fl, arrayWrRef,
+                                                       new AstVarRef{fl, iterVarp, VAccess::READ}};
                         } else {
-                            atWritep = new AstCMethodHard{
-                                fl, arrayWrRef, VCMethod::ARRAY_AT_WRITE,
-                                new AstVarRef{fl, iterVarp, VAccess::READ}};
+                            atWritep
+                                = new AstCMethodHard{fl, arrayWrRef, VCMethod::ARRAY_AT_WRITE,
+                                                     new AstVarRef{fl, iterVarp, VAccess::READ}};
                         }
                         atWritep->dtypep(elemClassRefDtp);
                         AstMemberSel* const memberSelp
