@@ -1146,7 +1146,8 @@ private:
         if (funcp->recursive()) {
             if (m_recurseCount >= v3Global.opt.funcRecursionDepth()) {
                 clearOptimizable(funcp, "Constant function recursed more than "s
-                                            + std::to_string(v3Global.opt.funcRecursionDepth()) + " times");
+                                            + std::to_string(v3Global.opt.funcRecursionDepth())
+                                            + " times");
                 return;
             }
             ++m_recurseCount;
