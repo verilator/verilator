@@ -1264,7 +1264,7 @@ class LinkParseVisitor final : public VNVisitor {
 
     void visit(AstCovergroup* nodep) override {
         // If we're already inside a covergroup class, this is the sentinel AstCovergroup
-        // node carrying the clocking event for V3Covergroup — don't re-transform it.
+        // node carrying the clocking event for V3Covergroup - don't re-transform it.
         if (m_modp && VN_IS(m_modp, Class) && VN_CAST(m_modp, Class)->isCovergroup()) return;
 
         // Transform raw parse-time AstCovergroup into a fully-formed AstClass
