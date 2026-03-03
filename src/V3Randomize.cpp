@@ -1785,6 +1785,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             newp = new AstLogIf{fl, new AstNot{fl, nodep->condp()->unlinkFrBack()}, elsep};
         }
         if (newp) {
+            newp->dtypeSetBit();  // Result is boolean (prevents bare-var != 0 wrapping)
             newp->user1(true);  // Assume result-dependent
             nodep->replaceWith(new AstConstraintExpr{fl, newp});
         } else {
@@ -1963,6 +1964,45 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
 
     void visit(AstConstraintExpr* nodep) override {
+        // IEEE 1800-2017 18.5.13: "disable soft" removes all soft constraints
+        // referencing the specified variable. Pass the variable name directly
+        // instead of going through SMT lowering.
+        if (nodep->isDisableSoft()) {
+            // Extract variable name from expression (VarRef or MemberSel)
+            std::string varName;
+            if (const AstNodeVarRef* const vrefp = VN_CAST(nodep->exprp(), NodeVarRef)) {
+                varName = vrefp->name();
+            } else if (const AstMemberSel* const mselp = VN_CAST(nodep->exprp(), MemberSel)) {
+                varName = mselp->name();
+            } else {
+                nodep->v3fatalSrc("Unexpected expression type in disable soft");
+                return;
+            }
+            AstCMethodHard* const callp = new AstCMethodHard{
+                nodep->fileline(),
+                new AstVarRef{nodep->fileline(), VN_AS(m_genp->user2p(), NodeModule), m_genp,
+                              VAccess::READWRITE},
+                VCMethod::RANDOMIZER_DISABLE_SOFT,
+                new AstConst{nodep->fileline(), AstConst::String{}, varName}};
+            callp->dtypeSetVoid();
+            nodep->replaceWith(callp->makeStmt());
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            return;
+        }
+        // IEEE 1800-2017 18.5.1: A bare expression used as a constraint is
+        // implicitly treated as "expr != 0" when wider than 1 bit.
+        // Must wrap before iterateChildren, which converts to SMT format.
+        {
+            AstNodeExpr* const exprp = nodep->exprp();
+            if (exprp->width() > 1) {
+                FileLine* const fl = exprp->fileline();
+                V3Number numZero{fl, exprp->width(), 0};
+                AstNodeExpr* const neqp
+                    = new AstNeq{fl, exprp->unlinkFrBack(), new AstConst{fl, numZero}};
+                neqp->user1(true);  // Mark as rand-dependent for SMT path
+                nodep->exprp(neqp);
+            }
+        }
         iterateChildren(nodep);
         if (m_wantSingle) {
             nodep->replaceWith(nodep->exprp()->unlinkFrBack());
@@ -2506,6 +2546,7 @@ class RandomizeVisitor final : public VNVisitor {
     AstDynArrayDType* m_dynarrayDtp = nullptr;  // Dynamic array type (for rand mode)
     size_t m_enumValueTabCount = 0;  // Number of tables with enum values created
     int m_randCaseNum = 0;  // Randcase number within a module for var naming
+    int m_distNum = 0;  // Dist bucket variable counter within a module for var naming
     std::map<std::string, AstCDType*> m_randcDtypes;  // RandC data type deduplication
     AstConstraint* m_constraintp = nullptr;  // Current constraint
     std::set<std::string> m_writtenVars;  // Track write_var calls per class to avoid duplicates
@@ -3551,6 +3592,178 @@ class RandomizeVisitor final : public VNVisitor {
         }
     }
 
+    // Replace AstDist with weighted bucket selection via AstConstraintIf chain.
+    // Supports both constant and variable weight expressions.
+    void lowerDistConstraints(AstTask* taskp, AstNode* constrItemsp) {
+        for (AstNode *nextip, *itemp = constrItemsp; itemp; itemp = nextip) {
+            nextip = itemp->nextp();
+            AstConstraintExpr* const constrExprp = VN_CAST(itemp, ConstraintExpr);
+            if (!constrExprp) continue;
+            AstDist* const distp = VN_CAST(constrExprp->exprp(), Dist);
+            if (!distp) continue;
+
+            FileLine* const fl = distp->fileline();
+
+            struct BucketInfo final {
+                AstNodeExpr* rangep;
+                AstNodeExpr* weightExprp;  // Effective weight as AST expression
+            };
+            std::vector<BucketInfo> buckets;
+
+            for (AstDistItem* ditemp = distp->itemsp(); ditemp;
+                 ditemp = VN_AS(ditemp->nextp(), DistItem)) {
+                // Skip compile-time zero weights
+                if (const AstConst* const constp = VN_CAST(ditemp->weightp(), Const)) {
+                    if (constp->toUQuad() == 0) continue;
+                }
+
+                // Clone and extend weight to 64-bit
+                AstNodeExpr* weightExprp
+                    = new AstExtend{fl, ditemp->weightp()->cloneTreePure(false), 64};
+
+                // := is per-value weight; for ranges multiply by range size
+                if (!ditemp->isWhole()) {
+                    if (const AstInsideRange* const irp = VN_CAST(ditemp->rangep(), InsideRange)) {
+                        const AstConst* const lop = VN_CAST(irp->lhsp(), Const);
+                        const AstConst* const hip = VN_CAST(irp->rhsp(), Const);
+                        AstNodeExpr* rangeSizep;
+                        if (lop && hip) {
+                            const uint64_t rangeSize = hip->toUQuad() - lop->toUQuad() + 1;
+                            rangeSizep = new AstConst{fl, AstConst::Unsized64{}, rangeSize};
+                        } else {
+                            // Variable range bounds: (hi - lo + 1) at runtime
+                            rangeSizep = new AstAdd{
+                                fl, new AstConst{fl, AstConst::Unsized64{}, 1},
+                                new AstSub{
+                                    fl, new AstExtend{fl, irp->rhsp()->cloneTreePure(false), 64},
+                                    new AstExtend{fl, irp->lhsp()->cloneTreePure(false), 64}}};
+                            rangeSizep->dtypeSetUInt64();
+                        }
+                        weightExprp = new AstMul{fl, weightExprp, rangeSizep};
+                        weightExprp->dtypeSetUInt64();
+                    }
+                }
+
+                buckets.push_back({ditemp->rangep(), weightExprp});
+            }
+
+            if (buckets.empty()) {
+                // All weights are zero: dist is vacuously true (unconstrained)
+                AstConstraintExpr* const truep
+                    = new AstConstraintExpr{fl, new AstConst{fl, AstConst::BitTrue{}}};
+                constrExprp->replaceWith(truep);
+                VL_DO_DANGLING(pushDeletep(constrExprp), constrExprp);
+                continue;
+            }
+
+            // Build totalWeight expression: w[0] + w[1] + ... + w[N-1]
+            AstNodeExpr* totalWeightExprp = nullptr;
+            for (auto& bucket : buckets) {
+                if (!totalWeightExprp) {
+                    totalWeightExprp = bucket.weightExprp->cloneTreePure(false);
+                } else {
+                    totalWeightExprp = new AstAdd{fl, totalWeightExprp,
+                                                  bucket.weightExprp->cloneTreePure(false)};
+                    totalWeightExprp->dtypeSetUInt64();
+                }
+            }
+
+            // Store totalWeight in temp var (evaluated once, used twice)
+            const int distId = m_distNum++;
+            const std::string totalName = "__Vdist_total" + cvtToStr(distId);
+            AstVar* const totalVarp
+                = new AstVar{fl, VVarType::BLOCKTEMP, totalName, taskp->findUInt64DType()};
+            totalVarp->noSubst(true);
+            totalVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+            totalVarp->funcLocal(true);
+            totalVarp->isInternal(true);
+            taskp->addStmtsp(totalVarp);
+            taskp->addStmtsp(
+                new AstAssign{fl, new AstVarRef{fl, totalVarp, VAccess::WRITE}, totalWeightExprp});
+
+            // bucketVar = (rand64() % totalWeight) + 1
+            const std::string bucketName = "__Vdist_bucket" + cvtToStr(distId);
+            AstVar* const bucketVarp
+                = new AstVar{fl, VVarType::BLOCKTEMP, bucketName, taskp->findUInt64DType()};
+            bucketVarp->noSubst(true);
+            bucketVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+            bucketVarp->funcLocal(true);
+            bucketVarp->isInternal(true);
+            taskp->addStmtsp(bucketVarp);
+
+            AstNodeExpr* randp = new AstRand{fl, nullptr, false};
+            randp->dtypeSetUInt64();
+            taskp->addStmtsp(new AstAssign{
+                fl, new AstVarRef{fl, bucketVarp, VAccess::WRITE},
+                new AstAdd{
+                    fl, new AstConst{fl, AstConst::Unsized64{}, 1},
+                    new AstModDiv{fl, randp, new AstVarRef{fl, totalVarp, VAccess::READ}}}});
+
+            // Build cumulative sum expressions forward: cumSum[i] = w[0]+...+w[i]
+            std::vector<AstNodeExpr*> cumSums;
+            AstNodeExpr* runningSump = nullptr;
+            for (size_t i = 0; i < buckets.size(); ++i) {
+                if (!runningSump) {
+                    runningSump = buckets[i].weightExprp->cloneTreePure(false);
+                } else {
+                    runningSump = new AstAdd{fl, runningSump,
+                                             buckets[i].weightExprp->cloneTreePure(false)};
+                    runningSump->dtypeSetUInt64();
+                }
+                cumSums.push_back(runningSump->cloneTreePure(true));
+            }
+
+            // Build ConstraintIf chain backward (last bucket is unconditional default)
+            AstNode* chainp = nullptr;
+            for (int i = static_cast<int>(buckets.size()) - 1; i >= 0; --i) {
+                AstNodeExpr* constraintExprp;
+                if (const AstInsideRange* const irp = VN_CAST(buckets[i].rangep, InsideRange)) {
+                    AstNodeExpr* const exprCopy1p = distp->exprp()->cloneTreePure(false);
+                    exprCopy1p->user1(true);
+                    AstNodeExpr* const exprCopy2p = distp->exprp()->cloneTreePure(false);
+                    exprCopy2p->user1(true);
+                    AstGte* const gtep
+                        = new AstGte{fl, exprCopy1p, irp->lhsp()->cloneTreePure(false)};
+                    gtep->user1(true);
+                    AstLte* const ltep
+                        = new AstLte{fl, exprCopy2p, irp->rhsp()->cloneTreePure(false)};
+                    ltep->user1(true);
+                    constraintExprp = new AstLogAnd{fl, gtep, ltep};
+                    constraintExprp->user1(true);
+                } else {
+                    AstNodeExpr* const exprCopyp = distp->exprp()->cloneTreePure(false);
+                    exprCopyp->user1(true);
+                    constraintExprp
+                        = new AstEq{fl, exprCopyp, buckets[i].rangep->cloneTreePure(false)};
+                    constraintExprp->user1(true);
+                }
+
+                AstConstraintExpr* const thenp = new AstConstraintExpr{fl, constraintExprp};
+
+                if (!chainp) {
+                    chainp = thenp;
+                } else {
+                    AstNodeExpr* const condp
+                        = new AstLte{fl, new AstVarRef{fl, bucketVarp, VAccess::READ}, cumSums[i]};
+                    chainp = new AstConstraintIf{fl, condp, thenp, chainp};
+                }
+            }
+
+            if (chainp) {
+                constrExprp->replaceWith(chainp);
+                VL_DO_DANGLING(pushDeletep(constrExprp), constrExprp);
+            }
+
+            // Clean up nodes used only as clone templates (never inserted into tree)
+            for (auto& bucket : buckets) {
+                VL_DO_DANGLING(pushDeletep(bucket.weightExprp), bucket.weightExprp);
+            }
+            VL_DO_DANGLING(pushDeletep(runningSump), runningSump);
+            // Last cumSum is unused (last bucket is unconditional default)
+            pushDeletep(cumSums.back());
+        }
+    }
+
     // VISITORS
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
@@ -3567,8 +3780,10 @@ class RandomizeVisitor final : public VNVisitor {
     void visit(AstClass* nodep) override {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_randCaseNum);
+        VL_RESTORER(m_distNum);
         m_modp = nodep;
         m_randCaseNum = 0;
+        m_distNum = 0;
         m_writtenVars.clear();  // Each class has its own set of written variables
 
         iterateChildren(nodep);
@@ -3616,6 +3831,7 @@ class RandomizeVisitor final : public VNVisitor {
                 }
 
                 if (constrp->itemsp()) expandUniqueElementList(constrp->itemsp());
+                if (constrp->itemsp()) lowerDistConstraints(taskp, constrp->itemsp());
                 ConstraintExprVisitor{classp, m_memberMap,  constrp->itemsp(), nullptr,
                                       genp,   randModeVarp, m_writtenVars};
                 if (constrp->itemsp()) {

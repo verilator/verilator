@@ -3126,7 +3126,7 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstDist* nodep) override {
         //  x dist {a :/ p, b :/ q} --> (p > 0 && x == a) || (q > 0 && x == b)
-        nodep->v3warn(CONSTRAINTIGN, "Constraint expression ignored (imperfect distribution)");
+        // (only outside constraints; inside constraints V3Randomize handles weighted selection)
         userIterateAndNext(nodep->exprp(), WidthVP{CONTEXT_DET, PRELIM}.p());
         for (AstNode *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
             nextip = itemp->nextp();  // iterate may cause the node to get replaced
@@ -3163,6 +3163,23 @@ class WidthVisitor final : public VNVisitor {
             if (!VN_IS(itemp, InsideRange))
                 iterateCheck(nodep, "Dist Item", itemp, CONTEXT_DET, FINAL, subDTypep, EXTEND_EXP);
         }
+
+        // Inside a constraint, V3Randomize handles dist lowering with proper weights,
+        // but only for simple scalar/range items. Container-type items (queues, arrays)
+        // must be lowered here via insideItem() which knows how to expand them.
+        if (m_constraintp) {
+            bool canLower = true;
+            for (AstDistItem* ditemp = nodep->itemsp(); ditemp;
+                 ditemp = VN_AS(ditemp->nextp(), DistItem)) {
+                if (!VN_IS(ditemp->rangep(), Const) && !VN_IS(ditemp->rangep(), InsideRange)) {
+                    canLower = false;
+                    break;
+                }
+            }
+            if (canLower) return;
+        }
+
+        // Outside constraint: lower to inside (ignores weights)
         AstNodeExpr* newp = nullptr;
         for (AstDistItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), DistItem)) {

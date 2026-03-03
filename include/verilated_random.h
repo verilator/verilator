@@ -596,6 +596,7 @@ public:
               const char* source = "");
     void soft(std::string&& constraint, const char* filename = "", uint32_t linenum = 0,
               const char* source = "");
+    void disable_soft(const std::string& varName);
     void clearConstraints();
     void clearAll();  // Clear both constraints and variables
     void markRandc(const char* name);  // Mark variable as randc for cyclic tracking
