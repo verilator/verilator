@@ -1912,7 +1912,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             } else if (const AstMemberSel* const mselp = VN_CAST(nodep->exprp(), MemberSel)) {
                 varName = mselp->name();
             } else {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported expression in disable soft");
+                nodep->v3fatalSrc("Unexpected expression type in disable soft");
                 return;
             }
             AstCMethodHard* const callp = new AstCMethodHard{
