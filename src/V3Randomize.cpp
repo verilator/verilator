@@ -1900,6 +1900,31 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
 
     void visit(AstConstraintExpr* nodep) override {
+        // IEEE 1800-2017 18.5.13: "disable soft" removes all soft constraints
+        // referencing the specified variable. Pass the variable name directly
+        // instead of going through SMT lowering.
+        if (nodep->isDisableSoft()) {
+            // Extract variable name from expression (VarRef or MemberSel)
+            std::string varName;
+            if (const AstNodeVarRef* const vrefp = VN_CAST(nodep->exprp(), NodeVarRef)) {
+                varName = vrefp->name();
+            } else if (const AstMemberSel* const mselp = VN_CAST(nodep->exprp(), MemberSel)) {
+                varName = mselp->name();
+            } else {
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported expression in disable soft");
+                return;
+            }
+            AstCMethodHard* const callp = new AstCMethodHard{
+                nodep->fileline(),
+                new AstVarRef{nodep->fileline(), VN_AS(m_genp->user2p(), NodeModule), m_genp,
+                              VAccess::READWRITE},
+                VCMethod::RANDOMIZER_DISABLE_SOFT,
+                new AstConst{nodep->fileline(), AstConst::String{}, varName}};
+            callp->dtypeSetVoid();
+            nodep->replaceWith(callp->makeStmt());
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            return;
+        }
         // IEEE 1800-2017 18.5.1: A bare expression used as a constraint is
         // implicitly treated as "expr != 0" when wider than 1 bit.
         // Must wrap before iterateChildren, which converts to SMT format.
@@ -1920,38 +1945,35 @@ class ConstraintExprVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
-        // Emit as soft, hard, or disable_soft per IEEE 1800-2017 18.5.13
-        const VCMethod method = nodep->isDisableSoft() ? VCMethod::RANDOMIZER_DISABLE_SOFT
-                                : nodep->isSoft()      ? VCMethod::RANDOMIZER_SOFT
-                                                        : VCMethod::RANDOMIZER_HARD;
+        // Emit as soft or hard constraint per IEEE 1800-2017 18.5.13
+        const VCMethod method
+            = nodep->isSoft() ? VCMethod::RANDOMIZER_SOFT : VCMethod::RANDOMIZER_HARD;
         AstCMethodHard* const callp = new AstCMethodHard{
             nodep->fileline(),
             new AstVarRef{nodep->fileline(), VN_AS(m_genp->user2p(), NodeModule), m_genp,
                           VAccess::READWRITE},
             method, nodep->exprp()->unlinkFrBack()};
         callp->dtypeSetVoid();
-        if (!nodep->isDisableSoft()) {
-            // Pass filename, lineno, and source as separate arguments
-            // This allows EmitC to call protect() on filename, similar to VL_STOP
-            // Add filename parameter
-            callp->addPinsp(new AstCExpr{nodep->fileline(), AstCExpr::Pure{},
-                                         "\"" + nodep->fileline()->filename() + "\""});
-            // Add line number parameter
-            const uint32_t lineno = static_cast<uint32_t>(nodep->fileline()->lineno());
-            callp->addPinsp(new AstConst{nodep->fileline(), lineno});
-            // Add source text parameter (empty if --protect-ids to avoid source leakage)
-            std::string prettyText;
-            if (!v3Global.opt.protectIds()) {
-                prettyText = nodep->fileline()->prettySource();
-                size_t pos = 0;
-                while ((pos = prettyText.find('"', pos)) != std::string::npos) {
-                    prettyText.insert(pos, "\\");
-                    pos += std::strlen("\\\"");
-                }
+        // Pass filename, lineno, and source as separate arguments
+        // This allows EmitC to call protect() on filename, similar to VL_STOP
+        // Add filename parameter
+        callp->addPinsp(new AstCExpr{nodep->fileline(), AstCExpr::Pure{},
+                                     "\"" + nodep->fileline()->filename() + "\""});
+        // Add line number parameter
+        const uint32_t lineno = static_cast<uint32_t>(nodep->fileline()->lineno());
+        callp->addPinsp(new AstConst{nodep->fileline(), lineno});
+        // Add source text parameter (empty if --protect-ids to avoid source leakage)
+        std::string prettyText;
+        if (!v3Global.opt.protectIds()) {
+            prettyText = nodep->fileline()->prettySource();
+            size_t pos = 0;
+            while ((pos = prettyText.find('"', pos)) != std::string::npos) {
+                prettyText.insert(pos, "\\");
+                pos += std::strlen("\\\"");
             }
-            callp->addPinsp(
-                new AstCExpr{nodep->fileline(), AstCExpr::Pure{}, "\"" + prettyText + "\""});
         }
+        callp->addPinsp(
+            new AstCExpr{nodep->fileline(), AstCExpr::Pure{}, "\"" + prettyText + "\""});
         nodep->replaceWith(callp->makeStmt());
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }

@@ -746,9 +746,11 @@ void VlRandomizer::soft(std::string&& constraint, const char* /*filename*/, uint
     m_softConstraints.emplace_back(std::move(constraint));
 }
 
-void VlRandomizer::disable_soft(std::string&& constraint) {
+void VlRandomizer::disable_soft(const std::string& varName) {
+    // IEEE 1800-2017 18.5.13: Remove all soft constraints referencing the variable
     m_softConstraints.erase(
-        std::remove(m_softConstraints.begin(), m_softConstraints.end(), constraint),
+        std::remove_if(m_softConstraints.begin(), m_softConstraints.end(),
+                        [&](const std::string& c) { return c.find(varName) != std::string::npos; }),
         m_softConstraints.end());
 }
 
