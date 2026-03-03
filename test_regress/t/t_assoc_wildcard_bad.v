@@ -7,41 +7,41 @@
 typedef class Cls;
 
 class Cls;
-   integer imembera;
-   integer imemberb;
+  integer imembera;
+  integer imemberb;
 endclass : Cls
 
 module t;
 
-   initial begin
-      string a [*];
-      string k;
-      string v;
+  initial begin
+    string a [*];
+    string k;
+    string v;
 
-      Cls x;
+    Cls x;
 
-      v = a.num("badarg");
-      v = a.size("badarg");
-      v = a.exists();  // Bad
-      v = a.exists(k, "bad2");
-      a.delete(k, "bad2");
+    v = a.num("badarg");
+    v = a.size("badarg");
+    v = a.exists();  // Bad
+    v = a.exists(k, "bad2");
+    a.delete(k, "bad2");
 
-      a.sort;  // Not legal on assoc
-      a.rsort;  // Not legal on assoc
-      a.reverse;  // Not legal on assoc
-      a.shuffle;  // Not legal on assoc
+    a.sort;  // Not legal on assoc
+    a.rsort;  // Not legal on assoc
+    a.reverse;  // Not legal on assoc
+    a.shuffle;  // Not legal on assoc
 
-      a.first;  // Not legal on wildcard
-      a.last;  // Not legal on wildcard
-      a.next;  // Not legal on wildcard
-      a.prev;  // Not legal on wildcard
-      a.unique_index;  // Not legal on wildcard
-      a.find_index;  // Not legal on wildcard
-      a.find_first_index;  // Not legal on wildcard
-      a.find_last_index;  // Not legal on wildcard
+    a.first;  // Not legal on wildcard
+    a.last;  // Not legal on wildcard
+    a.next;  // Not legal on wildcard
+    a.prev;  // Not legal on wildcard
+    a.unique_index;  // Not legal on wildcard
+    a.find_index;  // Not legal on wildcard
+    a.find_first_index;  // Not legal on wildcard
+    a.find_last_index;  // Not legal on wildcard
 
-      a[x] = "bad";
+    a[x] = "bad";
 
-      a.bad_not_defined();
-   end
+    a.bad_not_defined();
+  end
 endmodule

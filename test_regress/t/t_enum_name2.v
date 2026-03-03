@@ -13,7 +13,7 @@ package our_pkg;
                                } T_Opcode;
 endpackage : our_pkg
 
-module t ();
+module t;
    our our ();
 endmodule
 

@@ -992,6 +992,54 @@ void AstNode::operator delete(void* objp, size_t size) {
 }
 #endif
 
+#ifdef VL_ALLOC_RANDOM_CHECKS
+void* AstNode::operator new(size_t size) {  // VL_MT_SAFE
+    // Compute the maximum node size once and cache it
+    static const size_t ASTGEN_MAX_NODE_SIZE = []() {
+        size_t maxSize = 0;
+        for (size_t t = 0; t < VNType::NUM_TYPES(); ++t) {
+            maxSize = std::max(maxSize, VNType::typeInfo(static_cast<VNType::en>(t)).m_sizeof);
+        }
+        return maxSize;
+    }();
+
+    // Make the following small to debug this routine, larger for performance and better random
+    constexpr size_t POOL_SIZE = 65536;  // Ideally large enough to fit all nodes used in tests
+    // Randomly select from a large pool (POOL_SIZE) of max-node sized (MAX_NODE_SIZE) pointers
+    static uint64_t s_lfsr = 0;  // LFSR, 0 = didn't initialize yet
+    if (int seed = v3Global.opt.debugAllocRandom()) {
+        static V3Mutex s_mutex;
+        const V3LockGuard lock{s_mutex};
+        static std::array<void*, POOL_SIZE> s_nodePool VL_GUARDED_BY(s_mutex);
+        constexpr uint64_t POLYNOMIAL = 0x80000000000019e2ULL;
+        UASSERT_STATIC(size <= ASTGEN_MAX_NODE_SIZE, "fix ASTGEN_MAX_NODE_SIZE");
+        if (!s_lfsr) {
+            s_lfsr = seed;
+            if (!s_lfsr) s_lfsr = ~s_lfsr;
+            for (size_t i = 0; i < POOL_SIZE; ++i) {
+                s_nodePool[i] = ::operator new(ASTGEN_MAX_NODE_SIZE + 64);
+            }
+            // Sort, just to make it more obvious we are properly randomizing
+            std::sort(std::begin(s_nodePool), std::end(s_nodePool));
+        }
+        // Xoroshiro128+ algorithm
+        s_lfsr = (s_lfsr & 1ULL) ? ((s_lfsr >> 1ULL) ^ POLYNOMIAL) : (s_lfsr >> 1ULL);
+        const size_t index = s_lfsr % POOL_SIZE;
+        AstNode* const objp = static_cast<AstNode*>(s_nodePool[index]);
+        s_nodePool[index] = ::operator new(ASTGEN_MAX_NODE_SIZE + 64);  // For later new()
+        return objp;
+    } else {
+        AstNode* const objp = static_cast<AstNode*>(::operator new(size));
+        return objp;
+    }
+}
+void AstNode::operator delete(void* objp, size_t size) {
+    // Leak due to size difference between true node and MAX_NODE_SIZE
+    (void)objp;
+    (void)size;
+}
+#endif
+
 //======================================================================
 // Iterators
 

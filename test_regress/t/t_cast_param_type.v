@@ -20,7 +20,7 @@ function automatic letters_t lfunc(int a);
     return letters_t'(1);
 endfunction
 
-module t ();
+module t;
    localparam FMT = lfunc(1);
 
    SubA suba0 ();

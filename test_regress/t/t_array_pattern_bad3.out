@@ -1,14 +1,14 @@
-%Error: t/t_array_pattern_bad3.v:20:15: Assignment pattern key used multiple times: 1
-                                      : ... note: In instance 't'
-   20 |               1: '1};   
-      |               ^
+%Error: t/t_array_pattern_bad3.v:19:9: Assignment pattern key used multiple times: 1
+                                     : ... note: In instance 't'
+   19 |         1: '1
+      |         ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_array_pattern_bad3.v:21:13: Assignment pattern with too many elements
+%Error: t/t_array_pattern_bad3.v:21:11: Assignment pattern with too many elements
                                       : ... note: In instance 't'
-   21 |       arr = '{'0, '1, '0, '1};   
-      |             ^~
-%Error: t/t_array_pattern_bad3.v:22:13: Assignment pattern missed initializing elements: 2
+   21 |     arr = '{'0, '1, '0, '1};   
+      |           ^~
+%Error: t/t_array_pattern_bad3.v:22:11: Assignment pattern missed initializing elements: 2
                                       : ... note: In instance 't'
-   22 |       arr = '{'0, '1};   
-      |             ^~
+   22 |     arr = '{'0, '1};   
+      |           ^~
 %Error: Exiting due to

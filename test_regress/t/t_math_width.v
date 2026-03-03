@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2014 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t ();
+module t;
 
    // See also t_lint_width
 

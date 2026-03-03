@@ -1,0 +1,5 @@
+%Error: t/t_lparam_assign_iface_typedef_bad.v:28:3: Expecting a data type: 'p0_rq_t'
+   28 |   p0_rq_t rq;   
+      |   ^~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

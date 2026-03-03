@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2024 Liam Braun
 // SPDX-License-Identifier: CC0-1.0
 
-module t();
+module t;
     semaphore s;
 
     // Stand-in for a task that should only be run by one thread at a time

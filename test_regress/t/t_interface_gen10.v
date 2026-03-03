@@ -19,7 +19,7 @@ module t1(intf mod_intf);
    end
 endmodule
 
-module t();
+module t;
    generate
       begin : TestIf
          intf #(.PARAM(1)) my_intf [0:0] ();

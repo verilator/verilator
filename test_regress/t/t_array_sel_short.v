@@ -6,12 +6,12 @@
 
 module t;
 
-   logic [15:0] foo [8];
+  logic [15:0] foo[8];
 
-   initial begin
-      if (foo[1] != foo[1]) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    if (foo[1] != foo[1]) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

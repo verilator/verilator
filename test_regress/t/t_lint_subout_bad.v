@@ -6,7 +6,7 @@
 
 // verilator lint_off UNDRIVEN
 
-module t();
+module t;
    wire sig;
    sub sub0(.out(33'b0));
    sub sub1(.out({32'b0, sig}));

@@ -7,7 +7,7 @@
 // Check that we report warnings only once on parameterized modules
 // Also check that we don't suppress warnings on the same line
 
-module t ();
+module t;
    sub #(.A(1)) sub1();
    sub #(.A(2)) sub2();
    sub #(.A(3)) sub3();

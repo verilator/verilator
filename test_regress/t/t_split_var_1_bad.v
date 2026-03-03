@@ -12,7 +12,7 @@ interface ifs;
    logic [7:0] should_show_warning_ifs1 [1:0] /* verilator split_var */;
 endinterface
 
-module t();
+module t;
    // The following variables can not be splitted. will see warnings.
    real should_show_warning0                  /*verilator split_var*/;
    string should_show_warning1                /*verilator split_var*/;

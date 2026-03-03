@@ -6,20 +6,20 @@
 
 // bug1364
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk, res
-   );
-   input clk;
-   input res;
+module t (
+    input clk,
+    input res
+);
 
-   int   arr[3];
-   initial begin
-      arr = '{default: '0,
-              1: '0,
-              1: '1};  // Bad
-      arr = '{'0, '1, '0, '1};  // Bad, too many
-      arr = '{'0, '1};  // Bad, too few
-   end
+  int arr[3];
+  initial begin
+    arr = '{
+        default: '0,  //
+        1: '0,  //
+        1: '1
+    };  // Bad
+    arr = '{'0, '1, '0, '1};  // Bad, too many
+    arr = '{'0, '1};  // Bad, too few
+  end
 
 endmodule

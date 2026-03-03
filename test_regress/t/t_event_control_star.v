@@ -6,7 +6,7 @@
 
 // Based on ivtest's nested_impl_event1.v by Martin Whitaker.
 
-module t();
+module t;
 
    reg a;
    reg b;

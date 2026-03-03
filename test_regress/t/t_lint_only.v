@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2006 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t ();
+module t;
    initial begin
       $stop;
    end

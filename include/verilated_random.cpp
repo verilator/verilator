@@ -496,6 +496,9 @@ bool VlRandomizer::next(VlRNG& rngr) {
     std::iostream& os = getSolver();
     if (!os) return false;
 
+    // Soft constraint relaxation (IEEE 1800-2017 18.5.13, last-wins priority):
+    // Try hard + soft[0..N-1], then hard + soft[1..N-1], ..., then hard only.
+    // First SAT phase wins. If hard-only is UNSAT, report via unsat-core.
     os << "(set-option :produce-models true)\n";
     os << "(set-logic QF_ABV)\n";
     os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
@@ -520,9 +523,20 @@ bool VlRandomizer::next(VlRNG& rngr) {
         os << "(assert (= " << pair.first << " (_ bv" << pair.second << " " << w << ")))\n";
     }
 
-    os << "(check-sat)\n";
+    const size_t nSoft = m_softConstraints.size();
+    bool sat = false;
+    for (size_t phase = 0; phase <= nSoft && !sat; ++phase) {
+        const bool hasSoft = (phase < nSoft);
+        if (hasSoft) {
+            os << "(push 1)\n";
+            for (size_t i = phase; i < nSoft; ++i)
+                os << "(assert (= #b1 " << m_softConstraints[i] << "))\n";
+        }
+        os << "(check-sat)\n";
+        sat = parseSolution(os, /*log=*/phase == nSoft);
+        if (!sat && hasSoft) os << "(pop 1)\n";
+    }
 
-    bool sat = parseSolution(os, true);
     if (!sat) {
         // If unsat, use named assertions to get unsat-core
         os << "(reset)\n";
@@ -541,8 +555,11 @@ bool VlRandomizer::next(VlRNG& rngr) {
         }
         int j = 0;
         for (const std::string& constraint : m_constraints) {
-            os << "(assert (! (= #b1 " << constraint << ") :named cons" << j << "))\n";
-            j++;
+            os << "(assert (! (= #b1 " << constraint << ") :named cons" << j++ << "))\n";
+        }
+        for (const auto& pair : randcPinned) {
+            const int w = m_vars.at(pair.first)->width();
+            os << "(assert (= " << pair.first << " (_ bv" << pair.second << " " << w << ")))\n";
         }
         os << "(check-sat)\n";
         sat = parseSolution(os, true);
@@ -550,6 +567,7 @@ bool VlRandomizer::next(VlRNG& rngr) {
         os << "(reset)\n";
         return false;
     }
+
     for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; ++i) {
         os << "(assert ";
         randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
@@ -723,15 +741,22 @@ void VlRandomizer::hard(std::string&& constraint, const char* filename, uint32_t
     }
 }
 
+void VlRandomizer::soft(std::string&& constraint, const char* /*filename*/, uint32_t /*linenum*/,
+                        const char* /*source*/) {
+    m_softConstraints.emplace_back(std::move(constraint));
+}
+
 void VlRandomizer::clearConstraints() {
     m_constraints.clear();
     m_constraints_line.clear();
     m_solveBefore.clear();
+    m_softConstraints.clear();
     // Keep m_vars for class member randomization
 }
 
 void VlRandomizer::clearAll() {
     m_constraints.clear();
+    m_softConstraints.clear();
     m_vars.clear();
     m_randcVarNames.clear();
     m_randcValueQueues.clear();

@@ -11,25 +11,31 @@
 // verilog_format: on
 
 class X;
-   typedef enum int {
-        INITIAL, RUNNING, SUSPENDED, COMPLETING, DONE
-   } state_t;
+  typedef enum int {
+    INITIAL,
+    RUNNING,
+    SUSPENDED,
+    COMPLETING,
+    DONE
+  } state_t;
 
-   static string state_names[state_t] = '{
-        INITIAL:    "INITIAL",
-        RUNNING:    "RUNNING",
-        SUSPENDED:  "SUSPENDED",
-        COMPLETING: "COMPLETING",
-        DONE:       "DONE"
-   };
-   protected state_t state;
+  static
+  string
+  state_names[state_t] = '{
+      INITIAL: "INITIAL",
+      RUNNING: "RUNNING",
+      SUSPENDED: "SUSPENDED",
+      COMPLETING: "COMPLETING",
+      DONE: "DONE"
+  };
+  protected state_t state;
 
-   function new();
-      this.state = INITIAL;
-      `checks(state_names[this.state], "INITIAL");
-      this.state = RUNNING;
-      `checks(state_names[this.state], "RUNNING");
-   endfunction
+  function new();
+    this.state = INITIAL;
+    `checks(state_names[this.state], "INITIAL");
+    this.state = RUNNING;
+    `checks(state_names[this.state], "RUNNING");
+  endfunction
 
 endclass
 

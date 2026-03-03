@@ -8,11 +8,11 @@
 
 module t;
 
-   // a and b are arrays of length 1.
-   wire  a[0:0];  // Array of nets
-   wire  b[0:0];
+  // a and b are arrays of length 1.
+  wire a[0:0];  // Array of nets
+  wire b[0:0];
 
-   assign a = 1'b0;  // Only net assignment allowed
-   assign b = a[0];  // Only net assignment allowed
+  assign a = 1'b0;  // Only net assignment allowed
+  assign b = a[0];  // Only net assignment allowed
 
 endmodule

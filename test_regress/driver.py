@@ -2685,7 +2685,7 @@ class VlTest:
             self.error("File_grep: " + filename + ": Got='" + match.group(1) + "' Expected='" +
                        str(expvalue) + "' in regexp: '" + regexp + "'")
             return None
-        return [match.groups()]
+        return match.groups()
 
     def file_grep_count(self, filename: str, regexp, expcount: int) -> None:
         contents = self.file_contents(filename)

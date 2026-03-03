@@ -102,6 +102,7 @@ LIBS = $(CFG_LIBS) -lm
 CPPFLAGS += -DVERILATOR_INTERNAL_
 CPPFLAGS += -MMD
 CPPFLAGS += -I. -I$(bldsrc) -I$(srcdir) -I$(incdir) -I../../include
+#CPPFLAGS += -DVL_ALLOC_RANDOM_CHECKS  # To allow --debug-new-random
 #CPPFLAGS += -DVL_LEAK_CHECKS  # If running valgrind or other hunting tool
 CPPFLAGS += -MP # Only works on recent GCC versions
 ifeq ($(CFG_WITH_CCWARN),yes)  # Local... Else don't burden users
@@ -290,6 +291,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3LibMap.o \
   V3Life.o \
   V3LifePost.o \
+  V3LiftExpr.o \
   V3LinkCells.o \
   V3LinkDot.o \
   V3LinkDotIfaceCapture.o \

@@ -5,19 +5,19 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Cls;
-   task bar;
-      static int qux;
-      qux <= '1;
-      // Use qux to prevent V3Dead optimizations
-      $display("qux = %d\n", qux);
-   endtask
+  task bar;
+    static int qux;
+    qux <= '1;
+    // Use qux to prevent V3Dead optimizations
+    $display("qux = %d\n", qux);
+  endtask
 endclass
 
 module t;
-   initial begin
-      Cls c;
-      c.bar();
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    Cls c;
+    c.bar();
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

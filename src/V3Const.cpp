@@ -106,6 +106,9 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
         // CONSTRUCTORS
         LeafInfo() = default;
         LeafInfo(const LeafInfo& other) = default;
+        LeafInfo& operator=(const LeafInfo& other) = default;
+        LeafInfo(LeafInfo&& other) = default;
+        LeafInfo& operator=(LeafInfo&& other) = default;
         explicit LeafInfo(int lsb)
             : m_lsb{lsb} {}
 
@@ -1623,7 +1626,11 @@ class ConstVisitor final : public VNVisitor {
         if (!thensp->rhsp()->gateTree()) return false;
         if (!elsesp->rhsp()->gateTree()) return false;
         if (m_underRecFunc) return false;  // This optimization may lead to infinite recursion
-        return true;
+        // Only do it if not calls and both pure, otherwise undoes V3LiftExpr
+        return !VN_IS(thensp->rhsp(), NodeFTaskRef)  //
+               && !VN_IS(elsesp->rhsp(), NodeFTaskRef)  //
+               && thensp->rhsp()->isPure()  //
+               && elsesp->rhsp()->isPure();
     }
     bool operandIfIf(const AstNodeIf* nodep) {
         if (nodep->elsesp()) return false;
@@ -2940,6 +2947,16 @@ class ConstVisitor final : public VNVisitor {
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             }
         }
+        // Handle ARRAYSEL directly on InitArray (not through VarRef)
+        else if (VN_IS(nodep->bitp(), Const) && VN_IS(nodep->fromp(), InitArray)) {
+            const AstInitArray* const initarp = VN_AS(nodep->fromp(), InitArray);
+            const uint32_t bit = VN_AS(nodep->bitp(), Const)->toUInt();
+            const AstNode* const itemp = initarp->getIndexDefaultedValuep(bit);
+            if (VN_IS(itemp, Const)) {
+                const V3Number& num = VN_AS(itemp, Const)->num();
+                VL_DO_DANGLING(replaceNum(nodep, num), nodep);
+            }
+        }
         m_selp = nullptr;
     }
 
@@ -4168,7 +4185,14 @@ class ConstVisitor final : public VNVisitor {
         if (m_required) {
             if (VN_IS(nodep, NodeDType) || VN_IS(nodep, Range) || VN_IS(nodep, SliceSel)
                 || VN_IS(nodep, Dot)) {
-                // Ignore dtypes for parameter type pins
+                // ignore
+            } else if (AstCellRef* const crp = VN_CAST(nodep, CellRef)) {
+                iterate(crp->exprp());
+                if (AstNode* const newp = crp->exprp()) {
+                    crp->replaceWithKeepDType(newp->unlinkFrBack());
+                    VL_DO_DANGLING(pushDeletep(crp), crp);
+                }
+                return;
             } else {
                 nodep->v3error("Expecting expression to be constant, but can't convert a "
                                << nodep->prettyTypeName() << " to constant.");

@@ -26,7 +26,7 @@ module parent
    child c ();
 endmodule
 
-module t ();
+module t;
    // The parameter must be anything other than the default
    parent #( 1 ) p ();
 endmodule

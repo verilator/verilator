@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2020 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t();
+module t;
    typedef integer q_t[$];
 
    function void queue_set(ref q_t q);

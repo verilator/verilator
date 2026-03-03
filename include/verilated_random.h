@@ -200,9 +200,10 @@ public:
 // Object holding constraints and variable references.
 class VlRandomizer VL_NOT_FINAL {
     // MEMBERS
-    std::vector<std::string> m_constraints;  // Solver-dependent constraints
+    std::vector<std::string> m_constraints;  // Solver-dependent hard constraints
     std::vector<std::string>
         m_constraints_line;  // fileline content of the constraint for unsat constraints
+    std::vector<std::string> m_softConstraints;  // Soft constraints
     std::map<std::string, std::shared_ptr<const VlRandomVar>> m_vars;  // Solver-dependent
                                                                        // variables
     ArrayInfoMap m_arr_vars;  // Tracks each element in array structures for iteration
@@ -592,6 +593,8 @@ public:
     }
 
     void hard(std::string&& constraint, const char* filename = "", uint32_t linenum = 0,
+              const char* source = "");
+    void soft(std::string&& constraint, const char* filename = "", uint32_t linenum = 0,
               const char* source = "");
     void clearConstraints();
     void clearAll();  // Clear both constraints and variables

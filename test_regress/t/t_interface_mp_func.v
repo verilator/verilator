@@ -18,7 +18,7 @@ interface pads_if();
    endtask
 endinterface
 
-module t();
+module t;
    pads_if padsif[1:0]();
    pads_if padsif_arr[1:0]();
    initial begin

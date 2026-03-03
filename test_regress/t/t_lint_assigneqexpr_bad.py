@@ -18,7 +18,7 @@ test.lint(verilator_flags2=['-Wall -Wno-DECLFILENAME'],
 
 test.extract(in_filename=test.top_filename,
              out_filename=test.root + "/docs/gen/ex_ASSIGNEQEXPR_faulty.rst",
-             lines="26-29")
+             lines="31-36")
 
 test.extract(in_filename=test.golden_filename,
              out_filename=test.root + "/docs/gen/ex_ASSIGNEQEXPR_msg.rst",

@@ -1,0 +1,15 @@
+---
+# Block PRs against stable branch
+name: "Check PR not against 'stable'"
+on:
+  pull_request:
+    branches: [stable]
+
+jobs:
+  block-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail and block PR
+        run: |-
+          echo "Error: Pull requests directly to 'stable' are not allowed. Please PR against 'master'."
+          exit 1

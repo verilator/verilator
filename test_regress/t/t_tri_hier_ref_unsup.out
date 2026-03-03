@@ -1,12 +1,10 @@
-%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:34:16: Unsupported LHS tristate construct: VARXREF 'bus'
+%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:34:16: Unsupported tristate construct: hierarchical driver of non-interface tri signal: 'bus'
                                                   : ... note: In instance 't'
    34 |   assign u_sub.bus = hier_we ? 8'hBB : 8'hzz;
       |                ^~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:42:19: Unsupported tristate construct: VARXREF 'bus' in function getEnExprBasedOnOriginalp
-   42 |     do if ((u_sub.bus) !== (8'hzz)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_tri_hier_ref_unsup.v",42, (u_sub.bus), (8'hzz)); $stop; end while(0);;
-      |                   ^~~
-%Error: Internal Error: t/t_tri_hier_ref_unsup.v:42:24: ../V3Ast.cpp:#: Null item passed to setOp2p
-   42 |     do if ((u_sub.bus) !== (8'hzz)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_tri_hier_ref_unsup.v",42, (u_sub.bus), (8'hzz)); $stop; end while(0);;
-      |                        ^~~
-                        ... This fatal error may be caused by the earlier error(s); resolve those first.
+%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:23:13: Unsupported tristate construct (in graph; not converted): VAR 'bus'
+                                                  : ... note: In instance 't.u_sub'
+   23 |   tri [7:0] bus;
+      |             ^~~
+%Error: Exiting due to

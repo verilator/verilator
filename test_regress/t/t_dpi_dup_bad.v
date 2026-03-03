@@ -6,7 +6,7 @@
 // SPDX-FileCopyrightText: 2009 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-module t ();
+module t;
 
    // Same name w/ different args
    import "DPI-C" dpii_fa_bit =  function int oth_f_int1(input int i);

@@ -1,6 +1,6 @@
-%Error: t/t_bitsel_wire_array_bad.v:16:16: Illegal assignment of constant to unpacked array
+%Error: t/t_bitsel_wire_array_bad.v:16:15: Illegal assignment of constant to unpacked array
                                          : ... note: In instance 't'
-   16 |    assign b = a[0];   
-      |                ^
+   16 |   assign b = a[0];   
+      |               ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

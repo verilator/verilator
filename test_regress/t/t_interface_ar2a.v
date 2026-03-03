@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2020 Thierry Tambe
 // SPDX-License-Identifier: CC0-1.0
 
-module t ();
+module t;
 
    ahb_slave_intf AHB_S[1]();
 

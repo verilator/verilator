@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2004 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t ();
+module t;
 
    logic [2:0] a;
    logic [2:0] b;

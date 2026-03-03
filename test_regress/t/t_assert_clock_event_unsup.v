@@ -4,34 +4,33 @@
 // SPDX-FileCopyrightText: 2022 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-      clk
-   );
+module t (
+    input clk
+);
 
-   input clk;
-   int cyc = 0;
-   logic val = 0;
+  int cyc = 0;
+  logic val = 0;
 
-   always @(posedge clk) begin
-      cyc <= cyc + 1;
-      val = ~val;
-   end
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+    val = ~val;
+  end
 
-   property check(int cyc_mod_2, logic expected);
-      @(posedge clk)
-        cyc % 2 == cyc_mod_2 |=> val == expected;
-   endproperty
+  property check(int cyc_mod_2, logic expected);
+    @(posedge clk) cyc % 2 == cyc_mod_2 |=> val == expected;
+  endproperty
 
-   property check_if_1(int cyc_mod_2);
-      @(negedge clk)
-        check(cyc_mod_2, 1);
-   endproperty
+  property check_if_1(int cyc_mod_2);
+    @(negedge clk) check(
+        cyc_mod_2, 1
+    );
+  endproperty
 
-   assert property(check_if_1(1))
-     else begin
-        // Assertion should fail
-        $write("*-* All Finished *-*\n");
-        $finish;
-     end
+  assert property (check_if_1(1))
+  else begin
+    // Assertion should fail
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

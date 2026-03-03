@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2023 Alex Mykyta
 // SPDX-License-Identifier: CC0-1.0
 
-module t();
+module t;
    logic clk = 0;
    logic x;
    logic y;

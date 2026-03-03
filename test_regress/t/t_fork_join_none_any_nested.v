@@ -25,7 +25,7 @@ class Foo;
   endtask
 endclass
 
-module t();
+module t;
   reg a, b, c;
 
   initial begin

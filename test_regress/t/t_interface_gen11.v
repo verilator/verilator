@@ -27,7 +27,7 @@ module t2(intf mod_intfs [1:0]);
     endgenerate
 endmodule
 
-module t();
+module t;
 
    intf #(.PARAM(1)) my_intf [1:0] ();
 

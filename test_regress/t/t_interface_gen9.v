@@ -12,7 +12,7 @@ module t1(input logic foo);
    end
 endmodule
 
-module t();
+module t;
 
    logic [1:0] my_foo;
 

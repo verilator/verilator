@@ -12,7 +12,7 @@ interface intf
    logic val;
 endinterface
 
-module t();
+module t;
 
    generate
       if (1) begin

@@ -8,7 +8,7 @@
 int evt_recv_cnt;
 int new_evt_recv_cnt;
 
-module t();
+module t;
 
   class Foo;
     event evt1;

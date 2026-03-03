@@ -15,7 +15,7 @@ class Foo;
   endtask
 endclass
 
-module t();
+module t;
   initial begin
     Foo::do_something();
     $write("*-* All Finished *-*\n");

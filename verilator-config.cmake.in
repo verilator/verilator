@@ -121,7 +121,7 @@ endif()
 
 if(APPLE)
     add_link_options(
-        -Wl,-U,__Z15vl_time_stamp64v,-U,__Z13sc_time_stampv,-U,vlog_startup_routines
+        -Wl,-U,__Z15vl_time_stamp64v,-U,__Z13sc_time_stampv,-U,_vlog_startup_routines
     )
 endif()
 

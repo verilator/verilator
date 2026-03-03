@@ -7,41 +7,41 @@
 //bug991
 module t;
 
-   logic [31:0] array_assign [3:0];
-   logic [31:0] array_other [3:0];
+  logic [31:0] array_assign[3:0];
+  logic [31:0] array_other[3:0];
 
-   logic [31:0] larray_assign [0:3];
-   logic [31:0] larray_other [0:3];
+  logic [31:0] larray_assign[0:3];
+  logic [31:0] larray_other[0:3];
 
-   logic [31:0] array_neg [-1:1];
+  logic [31:0] array_neg[-1:1];
 
-   initial begin
-      array_assign[0] = 32'd1;
-      array_assign[3:1] = '{32'd4, 32'd3, 32'd2};
+  initial begin
+    array_assign[0] = 32'd1;
+    array_assign[3:1] = '{32'd4, 32'd3, 32'd2};
 
-      array_other[0] = array_assign[0]+10;
-      array_other[3:1] = array_assign[3:1];
-      if (array_other[0] != 11) $stop;
-      if (array_other[1] != 2) $stop;
-      if (array_other[2] != 3) $stop;
-      if (array_other[3] != 4) $stop;
+    array_other[0] = array_assign[0] + 10;
+    array_other[3:1] = array_assign[3:1];
+    if (array_other[0] != 11) $stop;
+    if (array_other[1] != 2) $stop;
+    if (array_other[2] != 3) $stop;
+    if (array_other[3] != 4) $stop;
 
-      larray_assign[0] = 32'd1;
-      larray_assign[1:3] = '{32'd4, 32'd3, 32'd2};
+    larray_assign[0] = 32'd1;
+    larray_assign[1:3] = '{32'd4, 32'd3, 32'd2};
 
-      larray_other[0] = larray_assign[0]+10;
-      larray_other[1:3] = larray_assign[1:3];
-      if (larray_other[0] != 11) $stop;
-      if (larray_other[1] != 4) $stop;
-      if (larray_other[2] != 3) $stop;
-      if (larray_other[3] != 2) $stop;
+    larray_other[0] = larray_assign[0] + 10;
+    larray_other[1:3] = larray_assign[1:3];
+    if (larray_other[0] != 11) $stop;
+    if (larray_other[1] != 4) $stop;
+    if (larray_other[2] != 3) $stop;
+    if (larray_other[3] != 2) $stop;
 
-      array_neg = '{-1: 5, 1: 7, default: 'd6};
-      if (array_neg[-1] != 5) $stop;
-      if (array_neg[0] != 6) $stop;
-      if (array_neg[1] != 7) $stop;
+    array_neg = '{-1: 5, 1: 7, default: 'd6};
+    if (array_neg[-1] != 5) $stop;
+    if (array_neg[0] != 6) $stop;
+    if (array_neg[1] != 7) $stop;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

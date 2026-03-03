@@ -6,13 +6,13 @@
 
 module t;
 
-    // "unbased_unsized_literal" is SystemVerilog only
-    // Should fail with "NEWERSTD"
-    wire [127:0] FOO1 = '0;
-    wire [127:0] FOO2 = '1;
-    wire [127:0] FOO3 = 'x;
-    wire [127:0] FOO4 = 'X;
-    wire [127:0] FOO5 = 'z;
-    wire [127:0] FOO6 = 'Z;
+  // "unbased_unsized_literal" is SystemVerilog only
+  // Should fail with "NEWERSTD"
+  wire [127:0] FOO1 = '0;
+  wire [127:0] FOO2 = '1;
+  wire [127:0] FOO3 = 'x;
+  wire [127:0] FOO4 = 'X;
+  wire [127:0] FOO5 = 'z;
+  wire [127:0] FOO6 = 'Z;
 
 endmodule

@@ -28,6 +28,7 @@
 
 #include "V3Ast.h"
 #include "V3Broken.h"
+#include "V3Container.h"
 #include "V3Error.h"
 #include "V3FileLine.h"
 #include "V3FunctionTraits.h"

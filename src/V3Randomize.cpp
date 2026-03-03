@@ -1021,8 +1021,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             // For global constraints, delete nodep after processing
             if (isGlobalConstrained && !nodep->backp()) VL_DO_DANGLING(pushDeletep(nodep), nodep);
 
-            // Detect if variable is an array of class references
             bool isClassRefArray = false;
+            bool isUnpackedClassRefArray = false;
             AstClassRefDType* elemClassRefDtp = nullptr;
             {
                 AstNodeDType* varDtp = varp->dtypep()->skipRefp();
@@ -1030,12 +1030,14 @@ class ConstraintExprVisitor final : public VNVisitor {
                     || VN_IS(varDtp, UnpackArrayDType) || VN_IS(varDtp, AssocArrayDType)) {
                     AstNodeDType* const elemDtp = varDtp->subDTypep()->skipRefp();
                     elemClassRefDtp = VN_CAST(elemDtp, ClassRefDType);
-                    if (elemClassRefDtp) isClassRefArray = true;
+                    if (elemClassRefDtp) {
+                        isClassRefArray = true;
+                        isUnpackedClassRefArray = VN_IS(varDtp, UnpackArrayDType);
+                    }
                 }
             }
 
             if (isClassRefArray && !membersel) {
-                // Per-member registration loop for class ref arrays
                 FileLine* const fl = varp->fileline();
                 AstClass* const elemClassp = elemClassRefDtp->classp();
                 AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
@@ -1049,22 +1051,36 @@ class ConstraintExprVisitor final : public VNVisitor {
                 stmtsp->addNext(new AstAssign{fl, new AstVarRef{fl, iterVarp, VAccess::WRITE},
                                               new AstConst{fl, 0}});
 
-                AstVarRef* const arraySizeRef = new AstVarRef{fl, varClassp, varp, VAccess::READ};
-                arraySizeRef->classOrPackagep(classOrPackagep);
-                AstCMethodHard* const sizep
-                    = new AstCMethodHard{fl, arraySizeRef, VCMethod::DYN_SIZE, nullptr};
-                sizep->dtypeSetUInt32();
+                AstNodeExpr* sizep;
+                if (isUnpackedClassRefArray) {
+                    const int arraySize
+                        = VN_AS(varp->dtypep()->skipRefp(), UnpackArrayDType)->elementsConst();
+                    sizep = new AstConst{fl, static_cast<uint32_t>(arraySize)};
+                } else {
+                    AstVarRef* const arraySizeRef
+                        = new AstVarRef{fl, varClassp, varp, VAccess::READ};
+                    arraySizeRef->classOrPackagep(classOrPackagep);
+                    AstCMethodHard* const dynSizep
+                        = new AstCMethodHard{fl, arraySizeRef, VCMethod::DYN_SIZE, nullptr};
+                    dynSizep->dtypeSetUInt32();
+                    sizep = dynSizep;
+                }
 
                 AstLoop* const loopp = new AstLoop{fl};
                 stmtsp->addNext(loopp);
                 loopp->addStmtsp(new AstLoopTest{
                     fl, loopp, new AstLt{fl, new AstVarRef{fl, iterVarp, VAccess::READ}, sizep}});
 
-                AstVarRef* const arrayAtRef = new AstVarRef{fl, varClassp, varp, VAccess::READ};
-                arrayAtRef->classOrPackagep(classOrPackagep);
-                AstCMethodHard* const atReadp
-                    = new AstCMethodHard{fl, arrayAtRef, VCMethod::ARRAY_AT,
-                                         new AstVarRef{fl, iterVarp, VAccess::READ}};
+                AstVarRef* const arrayReadRef = new AstVarRef{fl, varClassp, varp, VAccess::READ};
+                arrayReadRef->classOrPackagep(classOrPackagep);
+                AstNodeExpr* atReadp;
+                if (isUnpackedClassRefArray) {
+                    atReadp = new AstArraySel{fl, arrayReadRef,
+                                              new AstVarRef{fl, iterVarp, VAccess::READ}};
+                } else {
+                    atReadp = new AstCMethodHard{fl, arrayReadRef, VCMethod::ARRAY_AT,
+                                                 new AstVarRef{fl, iterVarp, VAccess::READ}};
+                }
                 atReadp->dtypep(elemClassRefDtp);
                 AstIf* const ifNonNullp = new AstIf{
                     fl, new AstNeq{fl, atReadp, new AstConst{fl, AstConst::Null{}}}, nullptr};
@@ -1090,9 +1106,14 @@ class ConstraintExprVisitor final : public VNVisitor {
                         const int memberWidth = memberDtp->width();
 
                         AstCStmt* const fmtp = new AstCStmt{fl};
-                        fmtp->add("VL_SNPRINTF(__Vn, sizeof(__Vn), \"" + smtName + ".%0"
-                                  + std::to_string(fmtWidth) + "x." + memberVarp->name()
-                                  + "\", (unsigned)");
+                        if (isUnpackedClassRefArray) {
+                            fmtp->add("VL_SNPRINTF(__Vn, sizeof(__Vn), \"" + smtName + ".%x."
+                                      + memberVarp->name() + "\", (unsigned)");
+                        } else {
+                            fmtp->add("VL_SNPRINTF(__Vn, sizeof(__Vn), \"" + smtName + ".%0"
+                                      + std::to_string(fmtWidth) + "x." + memberVarp->name()
+                                      + "\", (unsigned)");
+                        }
                         fmtp->add(new AstVarRef{fl, iterVarp, VAccess::READ});
                         fmtp->add(");\n");
                         ifNonNullp->addThensp(fmtp);
@@ -1100,9 +1121,15 @@ class ConstraintExprVisitor final : public VNVisitor {
                         AstVarRef* const arrayWrRef
                             = new AstVarRef{fl, varClassp, varp, VAccess::WRITE};
                         arrayWrRef->classOrPackagep(classOrPackagep);
-                        AstCMethodHard* const atWritep
-                            = new AstCMethodHard{fl, arrayWrRef, VCMethod::ARRAY_AT_WRITE,
-                                                 new AstVarRef{fl, iterVarp, VAccess::READ}};
+                        AstNodeExpr* atWritep;
+                        if (isUnpackedClassRefArray) {
+                            atWritep = new AstArraySel{fl, arrayWrRef,
+                                                       new AstVarRef{fl, iterVarp, VAccess::READ}};
+                        } else {
+                            atWritep
+                                = new AstCMethodHard{fl, arrayWrRef, VCMethod::ARRAY_AT_WRITE,
+                                                     new AstVarRef{fl, iterVarp, VAccess::READ}};
+                        }
                         atWritep->dtypep(elemClassRefDtp);
                         AstMemberSel* const memberSelp
                             = new AstMemberSel{fl, atWritep, memberVarp};
@@ -1635,10 +1662,46 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstNode* rootNode = nodep->fromp();
             while (const AstMemberSel* const selp = VN_CAST(rootNode, MemberSel))
                 rootNode = selp->fromp();
-            // Detect array/assoc array access in global constraints
-            if (VN_IS(rootNode, ArraySel) || VN_IS(rootNode, AssocSel)) {
+            if (AstArraySel* const arraySelp = VN_CAST(rootNode, ArraySel)) {
+                AstNodeDType* const arrayDtp = arraySelp->fromp()->dtypep()->skipRefp();
+                AstNodeDType* const elemDtp
+                    = arrayDtp->subDTypep() ? arrayDtp->subDTypep()->skipRefp() : nullptr;
+                if (elemDtp && VN_IS(elemDtp, ClassRefDType)) {
+                    // Nested class ref arrays not yet supported
+                    const bool isSimple
+                        = nodep->fromp() == rootNode && VN_IS(arraySelp->fromp(), VarRef);
+                    if (!isSimple) {
+                        nodep->v3warn(
+                            E_UNSUPPORTED,
+                            "Unsupported: Nested array element access in global constraint");
+                        return;
+                    }
+                    VL_RESTORER(m_structSel);
+                    m_structSel = true;
+                    nodep->user1(true);
+                    arraySelp->user1(true);
+                    iterateChildren(nodep);
+                    FileLine* const fl = nodep->fileline();
+                    AstSFormatF* newp = nullptr;
+                    if (AstSFormatF* const fromp = VN_CAST(nodep->fromp(), SFormatF)) {
+                        if (fromp->name() == "%@.%@") {
+                            newp = new AstSFormatF{fl, "%@.%@." + nodep->name(), false,
+                                                   fromp->exprsp()->cloneTreePure(true)};
+                        } else {
+                            newp = new AstSFormatF{fl, fromp->name() + "." + nodep->name(), false,
+                                                   nullptr};
+                        }
+                    } else {
+                        newp = new AstSFormatF{fl, nodep->name(), false, nullptr};
+                    }
+                    nodep->replaceWith(newp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
+                }
+            }
+            if (VN_IS(rootNode, AssocSel) || VN_IS(rootNode, ArraySel)) {
                 nodep->v3warn(E_UNSUPPORTED,
-                              "Unsupported: Array element access in global constraint ");
+                              "Unsupported: Array element access in global constraint");
             }
             // Check if the root variable participates in global constraints
             if (const AstVarRef* const varRefp = VN_CAST(rootNode, VarRef)) {
@@ -1906,12 +1969,14 @@ class ConstraintExprVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
-        // Only hard constraints are currently supported
+        // Emit as soft or hard constraint per IEEE 1800-2017 18.5.13
+        const VCMethod method
+            = nodep->isSoft() ? VCMethod::RANDOMIZER_SOFT : VCMethod::RANDOMIZER_HARD;
         AstCMethodHard* const callp = new AstCMethodHard{
             nodep->fileline(),
             new AstVarRef{nodep->fileline(), VN_AS(m_genp->user2p(), NodeModule), m_genp,
                           VAccess::READWRITE},
-            VCMethod::RANDOMIZER_HARD, nodep->exprp()->unlinkFrBack()};
+            method, nodep->exprp()->unlinkFrBack()};
         callp->dtypeSetVoid();
         // Pass filename, lineno, and source as separate arguments
         // This allows EmitC to call protect() on filename, similar to VL_STOP
@@ -2178,6 +2243,7 @@ class CaptureVisitor final : public VNVisitor {
     std::map<const AstVar*, AstVar*> m_varCloneMap;  // Map original var nodes to their clones
     std::set<AstNode*> m_ignore;  // Nodes to ignore for capturing
     AstVar* m_thisp = nullptr;  // Variable for outer context's object, if necessary
+    bool m_staticContext = false;  // True when capturing from a static function context
 
     // METHODS
 
@@ -2250,6 +2316,11 @@ class CaptureVisitor final : public VNVisitor {
         if (varIsParam) return CaptureMode::CAP_VALUE;
         // Static var in function (will not be inlined, because it's in class)
         if (callerIsClass && varIsFuncLocal) return CaptureMode::CAP_VALUE;
+        // Static class members in static context don't need 'this' capture;
+        // V3Class will move both the function and the member to __Vclpkg
+        if (m_staticContext && callerIsClass && varIsFieldOfCaller
+            && varRefp->varp()->lifetime().isStatic())
+            return CaptureMode::CAP_NO;
         if (callerIsClass && varIsFieldOfCaller) return CaptureMode::CAP_THIS;
         UASSERT_OBJ(!callerIsClass, varRefp, "Invalid reference?");
         return CaptureMode::CAP_VALUE;
@@ -2370,10 +2441,12 @@ class CaptureVisitor final : public VNVisitor {
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
-    explicit CaptureVisitor(AstNode* const nodep, AstNodeModule* callerp, AstClass* const targetp)
+    explicit CaptureVisitor(AstNode* const nodep, AstNodeModule* callerp, AstClass* const targetp,
+                            bool staticContext = false)
         : m_argsp{nullptr}
         , m_callerp{callerp}
-        , m_targetp{targetp} {
+        , m_targetp{targetp}
+        , m_staticContext{staticContext} {
         iterateAndNextNull(nodep);
     }
 
@@ -3769,9 +3842,16 @@ class RandomizeVisitor final : public VNVisitor {
         if (nodep->classOrPackagep() && nodep->classOrPackagep()->name() == "std") {
             // Handle std::randomize; create wrapper function that calls basicStdRandomization on
             // each varref argument, then transform nodep to call that wrapper
+            const bool inStaticContext = m_ftaskp && m_ftaskp->isStatic();
             AstVar* const stdrand = createStdRandomGenerator(m_modp);
             AstFunc* const randomizeFuncp = V3Randomize::newRandomizeStdFunc(
                 m_memberMap, m_modp, m_inlineUniqueStdName.get(nodep));
+            // When called from a static function, mark helper and stdrand as static
+            // so V3Class moves them to __Vclpkg alongside the calling function
+            if (inStaticContext) {
+                stdrand->lifetime(VLifetime::STATIC_EXPLICIT);
+                randomizeFuncp->isStatic(true);
+            }
             randomizeFuncp->addStmtsp(
                 new AstAssign{nodep->fileline(),
                               new AstVarRef{nodep->fileline(), VN_AS(randomizeFuncp->fvarp(), Var),
@@ -3827,7 +3907,8 @@ class RandomizeVisitor final : public VNVisitor {
             }
             if (withp) {
                 FileLine* const fl = nodep->fileline();
-                withCapturep = std::make_unique<CaptureVisitor>(withp->exprp(), m_modp, nullptr);
+                withCapturep = std::make_unique<CaptureVisitor>(withp->exprp(), m_modp, nullptr,
+                                                                inStaticContext);
                 withCapturep->addFunctionArguments(randomizeFuncp);
                 // Clear old constraints and variables for std::randomize with clause
                 if (stdrand) {

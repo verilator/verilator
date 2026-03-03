@@ -6,7 +6,7 @@
 
 // See bug569
 
-module t();
+module t;
 `ifdef T_FUNC_V_NOINL
    // verilator no_inline_module
 `endif

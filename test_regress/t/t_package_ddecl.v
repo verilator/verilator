@@ -14,7 +14,7 @@ package functions;
    endtask
 endpackage
 
-module t ();
+module t;
    // synthesis translate off
    import functions::*;
    // synthesis translate on

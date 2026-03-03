@@ -10,7 +10,7 @@ module dut
    assign x = P[2];
 endmodule
 
-module t();
+module t;
    int o;
    dut #(.P('{1, 2, 3, 4, 5})) u_dut(.x(o));
 

@@ -12,7 +12,7 @@
 `define name3(p)        ```p``_SUFFIX
 `define stringify(text) `"text`"
 
-module t();
+module t;
    initial begin
       // Another simulator gives:
       //  `PREFIX_my_suffix

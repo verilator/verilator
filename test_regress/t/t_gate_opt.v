@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // bug5101
-module t ();
+module t;
 
    logic [1:0] in0, in1, out;
    logic sel;

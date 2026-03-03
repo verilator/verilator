@@ -64,6 +64,7 @@ public:
     // Someday we will generically support data types on every expr node
     // Until then isOpaque indicates we shouldn't constant optimize this node type
     bool isOpaque() const { return VN_IS(this, CvtPackString); }
+    bool isLValue() const;
 
     // Wrap This expression into an AstStmtExpr to denote it occurs in statement position
     inline AstStmtExpr* makeStmt();
@@ -620,6 +621,8 @@ public:
         init(text, setwidth);
     }
     ASTGEN_MEMBERS_AstCExpr;
+    void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
     // METHODS
     bool cleanOut() const override { return true; }
     std::string emitC() override { V3ERROR_NA_RETURN(""); }
@@ -936,10 +939,7 @@ public:
         addMembersp(membersp);
     }
     ASTGEN_MEMBERS_AstConsPackUOrStruct;
-    const char* broken() const override {
-        BROKEN_RTN(dtypep() && !VN_IS(dtypep(), NodeUOrStructDType));
-        return nullptr;
-    }
+    const char* broken() const override { return nullptr; }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }

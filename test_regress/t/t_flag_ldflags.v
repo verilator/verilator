@@ -10,7 +10,7 @@ import "DPI-C" pure function void dpii_a_library();
 import "DPI-C" pure function void dpii_c_library();
 import "DPI-C" pure function void dpii_so_library();
 
-module t ();
+module t;
    initial begin
       dpii_a_library();  // From .a file
       dpii_c_library();  // From .cpp file

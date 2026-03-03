@@ -6,7 +6,7 @@
 // SPDX-FileCopyrightText: 2009 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-module t ();
+module t;
 
    sub a (.inst(1));
    sub b (.inst(2));

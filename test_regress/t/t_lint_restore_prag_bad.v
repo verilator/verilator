@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2007 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t ();
+module t;
 
    // No matching save
    // verilator lint_restore

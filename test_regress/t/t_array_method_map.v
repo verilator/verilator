@@ -11,15 +11,15 @@
 
 module t;
 
-   initial begin
-      automatic int res[];
-      automatic int a[3] = '{100, 200, 300};
+  initial begin
+    automatic int res[];
+    automatic int a[3] = '{100, 200, 300};
 
-      // TODO results not known to be correct
-      res = a.map(el) with (el == 200);
-      `checkh(res.size, 3);
-      `checkh(res[0], 0);
-      `checkh(res[1], 1);
-      `checkh(res[2], 0);
-   end
+    // TODO results not known to be correct
+    res = a.map(el) with (el == 200);
+    `checkh(res.size, 3);
+    `checkh(res[0], 0);
+    `checkh(res[1], 1);
+    `checkh(res[2], 0);
+  end
 endmodule

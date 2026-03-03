@@ -8,7 +8,7 @@
 `define WIDE_WIDTH 128
 `endif
 
-module t ();
+module t;
     typedef struct {
         bit [`WIDE_WIDTH-1:0] data;
     } wide_t;
