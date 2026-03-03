@@ -69,6 +69,7 @@
 #include "V3LifePost.h"
 #include "V3LiftExpr.h"
 #include "V3LinkDot.h"
+#include "V3LinkDotIfaceCapture.h"
 #include "V3LinkInc.h"
 #include "V3LinkJump.h"
 #include "V3LinkLValue.h"
@@ -178,9 +179,14 @@ static void process() {
         //   This requires some width calculations and constant propagation
         // No more AstGenCase/AstGenFor/AstGenIf after this
         V3Param::param(v3Global.rootp());
+
         V3LinkDot::linkDotParamed(v3Global.rootp());  // Cleanup as made new modules
         V3LinkLValue::linkLValue(v3Global.rootp());  // Resolve new VarRefs
         V3Error::abortIfErrors();
+
+        // Fix any remaining cross-interface refs created during V3Width::widthParamsEdit
+        // that weren't captured earlier. Must run before V3Dead deletes template modules.
+        V3LinkDotIfaceCapture::finalizeIfaceCapture();
 
         // Remove any modules that were parameterized and are no longer referenced.
         V3Dead::deadifyModules(v3Global.rootp());
