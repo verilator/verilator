@@ -862,9 +862,8 @@ class AstToDfgSynthesize final {
                 const bool iTri = containsTriLoweredVar(iD.m_vtxp);
                 const bool jTri = containsTriLoweredVar(jD.m_vtxp);
                 const bool triPair = iTri && jTri;
-                const bool triAndBridge
-                    = (iTri && isDirectVarDriver(jD.m_vtxp))
-                      || (jTri && isDirectVarDriver(iD.m_vtxp));
+                const bool triAndBridge = (iTri && isDirectVarDriver(jD.m_vtxp))
+                                          || (jTri && isDirectVarDriver(iD.m_vtxp));
                 if (triPair || triAndBridge) continue;
             }
 
