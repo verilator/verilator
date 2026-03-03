@@ -725,7 +725,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                     // (different VarXRef dotted paths) must be processed separately.
                     // E.g. io_ifc.d and io_ifc_local.d both target the same AstVar d in
                     // the ifc interface, but each instance needs its own contribution slot.
-                    struct PartitionInfo {
+                    struct PartitionInfo final {
                         RefStrengthVec refs;
                         string inlinedDots;
                     };
@@ -745,7 +745,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                                               findModportForDotted(nodep, kv.first));
                     }
                 } else if (VN_IS(nodep, Iface)) {
-                    // Local driver in an interface module — use contribution mechanism
+                    // Local driver in an interface module - use contribution mechanism
                     // so it can be combined with any external drivers later
                     insertTristatesSignal(nodep, invarp, refsp, true, "", "", nullptr);
                 } else {
