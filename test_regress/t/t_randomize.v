@@ -44,8 +44,7 @@ class Packet;
 
    constraint dis {
       soft sublength;
-      // TODO: disable soft not yet supported, treated as hard constraint
-      // disable soft sublength;
+      disable soft sublength;
       sublength <= length;
    }
 

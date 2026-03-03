@@ -746,6 +746,12 @@ void VlRandomizer::soft(std::string&& constraint, const char* /*filename*/, uint
     m_softConstraints.emplace_back(std::move(constraint));
 }
 
+void VlRandomizer::disable_soft(std::string&& constraint) {
+    m_softConstraints.erase(
+        std::remove(m_softConstraints.begin(), m_softConstraints.end(), constraint),
+        m_softConstraints.end());
+}
+
 void VlRandomizer::clearConstraints() {
     m_constraints.clear();
     m_constraints_line.clear();
