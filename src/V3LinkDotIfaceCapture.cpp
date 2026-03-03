@@ -139,41 +139,52 @@ string resolveOwnerName(const string& hint, AstNode* nodep) {
 }  // namespace
 
 AstTypedef* V3LinkDotIfaceCapture::findTypedefInModule(AstNodeModule* modp, const string& name) {
+    AstTypedef* resultp = nullptr;
     const StmtNameMap& cache = getOrBuild(modp);
     const auto it = cache.m_byName.find(name);
-    if (it == cache.m_byName.end()) return nullptr;
-    for (AstNode* nodep : it->second) {
-        if (AstTypedef* const tdp = VN_CAST(nodep, Typedef)) return tdp;
+    if (!(it == cache.m_byName.end())) {
+        for (AstNode* nodep : it->second) {
+            if (AstTypedef* const tdp = VN_CAST(nodep, Typedef)) {
+                resultp = tdp;
+                break;
+            }
+        }
     }
-    // Cache has entry for this name but no Typedef - unexpected.
-    v3fatalSrc("findTypedefInModule: name '" << name << "' found in " << modp->prettyNameQ()
-                                             << " but no Typedef node");
-    return nullptr;  // LCOV_EXCL_LINE
+    return resultp;
 }
 AstNodeDType* V3LinkDotIfaceCapture::findDTypeInModule(AstNodeModule* modp, const string& name,
                                                        VNType type) {
+
+    AstNodeDType* resultp = nullptr;
     const StmtNameMap& cache = getOrBuild(modp);
     const auto it = cache.m_byName.find(name);
-    if (it == cache.m_byName.end()) return nullptr;
-    for (AstNode* nodep : it->second) {
-        if (AstNodeDType* const dtp = VN_CAST(nodep, NodeDType)) {
-            if (dtp->type() == type) return dtp;
+    if (!(it == cache.m_byName.end())) {
+        for (AstNode* nodep : it->second) {
+            if (AstNodeDType* const dtp = VN_CAST(nodep, NodeDType)) {
+                if (dtp->type() == type) {
+                    resultp = dtp;
+                    break;
+                }
+            }
         }
     }
-    // Cache has entry for this name but no matching DType - unexpected.
-    v3fatalSrc("findDTypeInModule: name '" << name << "' found in " << modp->prettyNameQ()
-                                           << " but no matching DType");
-    return nullptr;  // LCOV_EXCL_LINE
+    return resultp;
 }
 AstParamTypeDType* V3LinkDotIfaceCapture::findParamTypeInModule(AstNodeModule* modp,
                                                                 const string& name) {
+
+    AstParamTypeDType* resultp = nullptr;
     const StmtNameMap& cache = getOrBuild(modp);
     const auto it = cache.m_byName.find(name);
-    if (it == cache.m_byName.end()) return nullptr;
-    for (AstNode* nodep : it->second) {
-        if (AstParamTypeDType* const ptdp = VN_CAST(nodep, ParamTypeDType)) return ptdp;
+    if (!(it == cache.m_byName.end())) {
+        for (AstNode* nodep : it->second) {
+            if (AstParamTypeDType* const ptdp = VN_CAST(nodep, ParamTypeDType)) {
+                resultp = ptdp;
+                break;
+            }
+        }
     }
-    return nullptr;
+    return resultp;
 }
 
 AstNodeDType* V3LinkDotIfaceCapture::findDTypeByPrettyName(AstNodeModule* modp,
