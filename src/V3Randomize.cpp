@@ -565,6 +565,18 @@ class RandomizeMarkVisitor final : public VNVisitor {
         if (classp) {
             if (!classp->user1()) classp->user1(IS_RANDOMIZED);
             markMembers(classp);
+            // Mark all ancestor classes as IS_RANDOMIZED so they get
+            // randomize() methods (needed for write_var insertion on
+            // inherited rand members accessed via membersel)
+            for (AstClass* basep
+                 = classp->extendsp() ? classp->extendsp()->classp() : nullptr;
+                 basep;
+                 basep = basep->extendsp() ? basep->extendsp()->classp() : nullptr) {
+                if (!basep->user1()) {
+                    basep->user1(IS_RANDOMIZED);
+                    markMembers(basep);
+                }
+            }
             // Clone constraints from all IS_RANDOMIZED_GLOBAL members
             classp->foreachMember([&](AstClass* const, AstVar* const memberVarp) {
                 if (!memberVarp->rand().isRandomizable()) return;
