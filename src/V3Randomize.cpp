@@ -3809,18 +3809,14 @@ class RandomizeVisitor final : public VNVisitor {
         AstNodeExpr* beginValp = nullptr;
         AstVar* genp = getRandomGenerator(nodep);
         if (genp) {
+            // Phase 1: Process all constraints (create tasks, run ConstraintExprVisitor)
+            // Setup task refs are NOT added to setupAllTaskp here — done in phase 2
             nodep->foreachMember([&](AstClass* const classp, AstConstraint* const constrp) {
                 AstTask* taskp = VN_AS(constrp->user2p(), Task);
                 if (!taskp) {
                     taskp = newSetupConstraintTask(classp, constrp->name());
                     constrp->user2p(taskp);
                 }
-                AstTaskRef* const setupTaskRefp = new AstTaskRef{constrp->fileline(), taskp};
-                setupTaskRefp->classOrPackagep(classp);
-
-                AstTask* const setupAllTaskp = getCreateConstraintSetupFunc(nodep);
-
-                setupAllTaskp->addStmtsp(setupTaskRefp->makeStmt());
 
                 if (AstTask* const resizeTaskp = VN_CAST(constrp->user3p(), Task)) {
                     AstTask* const resizeAllTaskp = getCreateAggrResizeTask(nodep);
@@ -3839,6 +3835,38 @@ class RandomizeVisitor final : public VNVisitor {
                         nodep, constrp, constrp->itemsp()->unlinkFrBackWithNext()));
                 }
             });
+
+            // Phase 2: Add setup task refs in depth order (deepest first = lowest priority)
+            // Ensures outer-scope soft constraints override inner-scope (IEEE 18.5.13)
+            {
+                // Count nesting depth by GLOBAL_CONSTRAINT_SEPARATOR occurrences
+                const auto constraintDepth = [](const AstConstraint* constrp) {
+                    int depth = 0;
+                    size_t pos = 0;
+                    while ((pos = constrp->name().find(GLOBAL_CONSTRAINT_SEPARATOR, pos))
+                           != std::string::npos) {
+                        ++depth;
+                        pos += std::strlen(GLOBAL_CONSTRAINT_SEPARATOR);
+                    }
+                    return depth;
+                };
+                int maxDepth = 0;
+                nodep->foreachMember([&](AstClass* const, AstConstraint* const constrp) {
+                    maxDepth = std::max(maxDepth, constraintDepth(constrp));
+                });
+                AstTask* const setupAllTaskp = getCreateConstraintSetupFunc(nodep);
+                for (int d = maxDepth; d >= 0; --d) {
+                    nodep->foreachMember(
+                        [&](AstClass* const classp, AstConstraint* const constrp) {
+                            if (constraintDepth(constrp) != d) return;
+                            AstTask* const taskp = VN_AS(constrp->user2p(), Task);
+                            AstTaskRef* const setupTaskRefp
+                                = new AstTaskRef{constrp->fileline(), taskp};
+                            setupTaskRefp->classOrPackagep(classp);
+                            setupAllTaskp->addStmtsp(setupTaskRefp->makeStmt());
+                        });
+                }
+            }
             // For derived classes: clone write_var calls from parent's randomize()
             if (nodep->extendsp()) {
                 AstClass* parentClassp = nodep->extendsp()->classp();
