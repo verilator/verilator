@@ -797,8 +797,8 @@ class LinkParseVisitor final : public VNVisitor {
         // IEEE 1800-2017 6.21: Variables in always_comb/always_ff/always_latch
         // default to automatic lifetime.  Initial/Final are static (run once).
         VL_RESTORER(m_lifetime);
-        if (!VN_IS(nodep, Initial) && !VN_IS(nodep, Final)
-            && !VN_IS(nodep, InitialStatic) && !VN_IS(nodep, InitialAutomatic)) {
+        if (!VN_IS(nodep, Initial) && !VN_IS(nodep, Final) && !VN_IS(nodep, InitialStatic)
+            && !VN_IS(nodep, InitialAutomatic)) {
             m_lifetime = VLifetime::AUTOMATIC_IMPLICIT;
         }
         visitIterateNoValueMod(nodep);

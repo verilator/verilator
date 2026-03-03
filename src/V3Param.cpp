@@ -1712,15 +1712,15 @@ class ParamProcessor final {
                                 = V3LinkDotIfaceCapture::findOwnerModule(ptdp);
                             if (ptdOwnerp != m_modp) allOwnParams = false;
                         } else {
-                            pinp->v3error(// LCOV_EXCL_LINE
+                            pinp->v3error(  // LCOV_EXCL_LINE
                                 "Self-referencing interface typedef "
-                                          "parameter is not a type parameter of "
-                                          "the enclosing interface");
+                                "parameter is not a type parameter of "
+                                "the enclosing interface");
                         }
                     } else {
-                        pinp->v3error(// LCOV_EXCL_LINE
+                        pinp->v3error(  // LCOV_EXCL_LINE
                             "Self-referencing interface typedef "
-                                      "parameter is not a type reference");
+                            "parameter is not a type reference");
                     }
                 }
                 if (allOwnParams) {
