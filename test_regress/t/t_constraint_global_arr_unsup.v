@@ -52,6 +52,12 @@ class Outer;
   constraint c_multi_array {
     m_mid_arr[1].m_arr[2].m_y == 400;
   }
+
+  // Case 5: Associative array element member access
+  rand Inner m_assoc[int];
+  constraint c_assoc {
+    m_assoc[0].m_x == 500;
+  }
 endclass
 
 module t_constraint_global_arr_unsup;
