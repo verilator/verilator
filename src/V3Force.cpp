@@ -357,11 +357,10 @@ private:
                 if (VN_IS(structp, StructDType)) {
                     enStructp = new AstStructDType{structp->fileline(),
                                                    packed ? VSigning::SIGNED : VSigning::NOSIGN};
-                } else if (VN_IS(structp, UnionDType) && structp->packed()) {
+                } else if (VN_IS(structp, UnionDType) && packed) {
                     const AstUnionDType* const unionp = VN_AS(structp, UnionDType);
                     enStructp = new AstUnionDType{unionp->fileline(), unionp->isSoft(),
-                                                  unionp->isTagged(),
-                                                  packed ? VSigning::SIGNED : VSigning::NOSIGN};
+                                                  unionp->isTagged(), VSigning::SIGNED};
                 } else {
                     varp->v3fatalSrc("Unsupported: Force of variable of unhandled data type");
                     return dtypep;
