@@ -10,6 +10,8 @@ uvm_dpi_get_tool_name_c() = Verilator
 = uvm_hdl_deposit multi-bit
 = uvm_hdl_read/deposit wide decending
 = uvm_hdl_read/deposit wide ascending
+= uvm_hdl_read/deposit 1D memory
+= uvm_hdl_read/deposit 2D memory
 = uvm_hdl_deposit bad ranges
 ===
 UVM Report expected on next line:

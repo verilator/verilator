@@ -178,7 +178,6 @@ module t;
       `checkh(wide_asc, 80'h1234_56789abc_dcb0ffe5);
     end
 
-`ifndef VERILATOR  // Unsupported
     begin : memory_1d
       $display("= uvm_hdl_read/deposit 1D memory");
       i = uvm_hdl_check_path("t.mem1d[0]");
@@ -221,7 +220,6 @@ module t;
       `checkh(i, 1);
       `checkh(mem2d[2][3], 32'h2300);
     end
-`endif
 
     begin : t_deposit_bad
       $display("= uvm_hdl_deposit bad ranges");
