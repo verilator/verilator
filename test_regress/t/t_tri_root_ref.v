@@ -15,37 +15,37 @@
 // verilog_format: on
 
 module sub_root_reader (
-   output logic [7:0] val
+  output logic [7:0] val
 );
-   assign val = $root.t.root_bus;
+  assign val = $root.t.root_bus;
 endmodule
 
 module t;
-   tri [7:0] root_bus;
-   logic root_we;
-   assign root_bus = root_we ? 8'hCC : 8'hzz;
+  tri [7:0] root_bus;
+  logic root_we;
+  assign root_bus = root_we ? 8'hCC : 8'hzz;
 
-   logic [7:0] root_readback;
-   sub_root_reader u_reader(.val(root_readback));
+  logic [7:0] root_readback;
+  sub_root_reader u_reader(.val(root_readback));
 
-   initial begin
-      #1;
-      root_we = 1'b0;
-      #1;
-      `checkh(root_readback, 8'hzz);
+  initial begin
+    #1;
+    root_we = 1'b0;
+    #1;
+    `checkh(root_readback, 8'hzz);
 
-      #1;
-      root_we = 1'b1;
-      #1;
-      `checkh(root_readback, 8'hCC);
+    #1;
+    root_we = 1'b1;
+    #1;
+    `checkh(root_readback, 8'hCC);
 
-      #1;
-      root_we = 1'b0;
-      #1;
-      `checkh(root_readback, 8'hzz);
+    #1;
+    root_we = 1'b0;
+    #1;
+    `checkh(root_readback, 8'hzz);
 
-      #1;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    #1;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule
