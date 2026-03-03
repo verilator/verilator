@@ -44,6 +44,14 @@ extern "C" int mon_check();
    reg [31:0]      half_count;
    reg [31:0]      delayed;
    reg [31:0]      delayed_mem [16];
+   reg [7:0]       mem_2d[3:0][7:0];  // Descending indices
+   // verilator lint_off ASCRANGE
+   reg [0:95]      mem_3d[0:1][1:0][0:1];  // Mixed: asc, desc, asc
+   // verilator lint_on ASCRANGE
+
+   // Signal with multiple packed dimensions
+   reg [3:0] [7:0] multi_packed[2:0];
+   reg             unpacked_only[7:0];
 
    reg [7:0]       text_byte;
    reg [15:0]      text_half;
@@ -90,6 +98,26 @@ extern "C" int mon_check();
       str1 = "hello";
 
       rev = 12'habc;
+
+      for (int i = 0; i < 4; i++) begin
+         for (int j = 0; j < 8; j++) begin
+            mem_2d[i][j] = 8'(((i * 8) + j));
+         end
+      end
+
+      for (int i = 0; i < 2; i++) begin
+         for (int j = 0; j < 2; j++) begin
+            for (int k = 0; k < 2; k++) begin
+               mem_3d[i][j][k] = 96'(((i * 4) + (j * 2) + k));
+            end
+         end
+      end
+
+      for (int i = 0; i < 3; i++) begin
+         for (int j = 0; j < 4; j++) begin
+            multi_packed[i][j] = 8'((i * 4) + j);
+         end
+      end
 
 `ifdef VERILATOR
       status = $c32("mon_check()");
