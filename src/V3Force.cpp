@@ -378,6 +378,7 @@ private:
                         }
                     }
                 } else {
+                    for (const auto& memberp : enMemberDTypes) enStructp->addMembersp(memberp);
                     width = 1;
                 }
                 v3Global.rootp()->typeTablep()->addTypesp(enStructp);
