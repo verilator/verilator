@@ -55,26 +55,26 @@ module t;
       #1 disable increment_x;
     join
 
-    if (x != 1) $stop;
+    if (x != 1) $fatal(1, "x=%0d expected 1", x);
 
     c = new;
     fork
       c.get_and_send;
     join_none
-    if (c.m_time != 0) $stop;
+    if (c.m_time != 0) $fatal(1, "c.m_time=%0d expected 0 before first delay", c.m_time);
 
     #11;
-    if ($time != 12) $stop;
-    if (c.m_time != 10) $stop;
+    if ($time != 12) $fatal(1, "$time=%0t expected 12", $time);
+    if (c.m_time != 10) $fatal(1, "c.m_time=%0d expected 10 after 11 ticks", c.m_time);
 
     #20;
-    if ($time != 32) $stop;
-    if (c.m_time != 30) $stop;
+    if ($time != 32) $fatal(1, "$time=%0t expected 32", $time);
+    if (c.m_time != 30) $fatal(1, "c.m_time=%0d expected 30 before disable", c.m_time);
     c.post_shutdown_phase;
 
     #20;
-    if ($time != 52) $stop;
-    if (c.m_time != 30) $stop;
+    if ($time != 52) $fatal(1, "$time=%0t expected 52", $time);
+    if (c.m_time != 30) $fatal(1, "c.m_time=%0d expected 30 after disable", c.m_time);
 
     // Additional regression: join_any should also complete when disable kills a forked task
     fork
@@ -82,7 +82,7 @@ module t;
       #1 disable increment_y;
     join_any
     #3;
-    if (y != 1) $stop;
+    if (y != 1) $fatal(1, "y=%0d expected 1", y);
 
     // Additional regression: named-block disable with join
     fork
@@ -93,7 +93,7 @@ module t;
       end
       #1 disable worker_join;
     join
-    if (z != 1) $stop;
+    if (z != 1) $fatal(1, "z=%0d expected 1", z);
 
     // Additional regression: named-block disable with join_any
     fork
@@ -105,7 +105,7 @@ module t;
       #1 disable worker_join_any;
     join_any
     #3;
-    if (w != 1) $stop;
+    if (w != 1) $fatal(1, "w=%0d expected 1", w);
 
     // disable fork from inside a join_any branch
     fork
@@ -128,7 +128,7 @@ module t;
       end
     join_any
     #6;
-    if (jf != 1) $stop;
+    if (jf != 1) $fatal(1, "jf=%0d expected 1", jf);
 
     // multiple sequential disables of the same target under join
     fork
@@ -141,7 +141,7 @@ module t;
         #1 disable twice_join;
       end
     join
-    if (ddj != 0) $stop;
+    if (ddj != 0) $fatal(1, "ddj=%0d expected 0", ddj);
 
     // multiple sequential disables of the same target under join_any
     fork
@@ -155,7 +155,7 @@ module t;
       end
     join_any
     #6;
-    if (ddja != 0) $stop;
+    if (ddja != 0) $fatal(1, "ddja=%0d expected 0", ddja);
 
     // multiple sequential disables of the same target under join_none
     begin
@@ -169,7 +169,7 @@ module t;
       #1 disable twice_join_none;
       #6;
     end
-    if (ddjn != 0) $stop;
+    if (ddjn != 0) $fatal(1, "ddjn=%0d expected 0", ddjn);
 
     // disable after target is already finished (join)
     fork
@@ -179,7 +179,7 @@ module t;
       end
     join
     disable done_join;
-    if (dj_done != 1) $stop;
+    if (dj_done != 1) $fatal(1, "dj_done=%0d expected 1", dj_done);
 
     // disable after target is already finished (join_any)
     fork
@@ -191,7 +191,7 @@ module t;
     join_any
     #2;
     disable done_join_any;
-    if (dja_done != 1) $stop;
+    if (dja_done != 1) $fatal(1, "dja_done=%0d expected 1", dja_done);
 
     // disable after target is already finished (join_none)
     begin
@@ -205,7 +205,7 @@ module t;
       disable done_join_none;
       #1;
     end
-    if (djn_done != 1) $stop;
+    if (djn_done != 1) $fatal(1, "djn_done=%0d expected 1", djn_done);
 
     // competing disables in the same time slot targeting the same block
     fork
@@ -216,7 +216,7 @@ module t;
       #1 disable race_target;
       #1 disable race_target;
     join
-    if (race_disable != 0) $stop;
+    if (race_disable != 0) $fatal(1, "race_disable=%0d expected 0", race_disable);
 
     // nested descendants are disabled and outer join resumes
     begin : nested_disable
@@ -244,7 +244,7 @@ module t;
       nd += 1000;
     end
     #8;
-    if (nd != 1) $stop;
+    if (nd != 1) $fatal(1, "nd=%0d expected 1", nd);
 
     $write("*-* All Finished *-*\n");
     $finish;
