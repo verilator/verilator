@@ -776,6 +776,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             AstVar* const newLhsp = new AstVar{varp->fileline(), VVarType::MODULETEMP,
                                                varp->name() + "__out" + cvtToStr(m_unique),
                                                varp};  // 2-state ok; sep enable
+            newLhsp->setDfgTriLowered();
             UINFO(9, "       newout " << newLhsp);
             nodep->addStmtsp(newLhsp);
             // When retargeting a VarXRef to a local __out var, the dotted path
@@ -797,6 +798,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             AstVar* const newEnLhsp
                 = new AstVar{varp->fileline(), VVarType::MODULETEMP,
                              varp->name() + "__en" + cvtToStr(m_unique++), envarp};  // 2-state ok
+            newEnLhsp->setDfgTriLowered();
             UINFO(9, "       newenlhsp " << newEnLhsp);
             nodep->addStmtsp(newEnLhsp);
 
@@ -903,12 +905,14 @@ class TristateVisitor final : public TristateBaseVisitor {
             // var__strength variable
             AstVar* const varStrengthp = new AstVar{fl, VVarType::MODULETEMP, strengthVarName,
                                                     invarp};  // 2-state ok; sep enable;
+            varStrengthp->setDfgTriLowered();
             UINFO(9, "       newstrength " << varStrengthp);
             nodep->addStmtsp(varStrengthp);
 
             // var__strength__en variable
             AstVar* const enVarStrengthp = new AstVar{
                 fl, VVarType::MODULETEMP, strengthVarName + "__en", invarp};  // 2-state ok;
+            enVarStrengthp->setDfgTriLowered();
             UINFO(9, "       newenstrength " << enVarStrengthp);
             nodep->addStmtsp(enVarStrengthp);
 
@@ -938,6 +942,9 @@ class TristateVisitor final : public TristateBaseVisitor {
         // The interface module owns the contribution vars; resolution happens in
         // combineIfaceContribs() after all modules are processed.
         if (isIfaceTri) {
+            // This net intentionally has multiple contributors; DFG should not emit
+            // MULTIDRIVEN warnings for this lowered tristate pattern.
+            invarp->setDfgAllowMultidriveTri();
             AstNodeModule* const ifaceModp = findParentModule(invarp);
             UASSERT_OBJ(ifaceModp, invarp, "Interface tristate var has no parent module");
             const int contribIdx = static_cast<int>(m_ifaceContribs[invarp].size());
@@ -946,11 +953,13 @@ class TristateVisitor final : public TristateBaseVisitor {
             // Create contribution vars in the interface module
             AstVar* const contribOutp = new AstVar{
                 fl, VVarType::MODULETEMP, invarp->name() + "__out" + cvtToStr(contribIdx), invarp};
+            contribOutp->setDfgTriLowered();
             UINFO(9, "       iface contribOut " << contribOutp);
             ifaceModp->addStmtsp(contribOutp);
 
             AstVar* const contribEnp = new AstVar{
                 fl, VVarType::MODULETEMP, invarp->name() + "__en" + cvtToStr(contribIdx), invarp};
+            contribEnp->setDfgTriLowered();
             UINFO(9, "       iface contribEn " << contribEnp);
             ifaceModp->addStmtsp(contribEnp);
 
@@ -2137,6 +2146,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             AstVar* envarp = VN_CAST(invarp->user1p(), Var);
             if (!envarp) {
                 envarp = new AstVar{fl, VVarType::MODULETEMP, invarp->name() + "__en", invarp};
+                envarp->setDfgTriLowered();
                 ifaceModp->addStmtsp(envarp);
                 invarp->user1p(envarp);
             }
