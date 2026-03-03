@@ -1712,10 +1712,15 @@ class ParamProcessor final {
                                 = V3LinkDotIfaceCapture::findOwnerModule(ptdp);
                             if (ptdOwnerp != m_modp) allOwnParams = false;
                         } else {
-                            allOwnParams = false;
+                            pinp->v3error(// LCOV_EXCL_LINE
+                                "Self-referencing interface typedef "
+                                          "parameter is not a type parameter of "
+                                          "the enclosing interface");
                         }
                     } else {
-                        allOwnParams = false;
+                        pinp->v3error(// LCOV_EXCL_LINE
+                            "Self-referencing interface typedef "
+                                      "parameter is not a type reference");
                     }
                 }
                 if (allOwnParams) {
@@ -2029,8 +2034,7 @@ class ParamVisitor final : public VNVisitor {
     // deparameterization.  Logs each leak with ancestry for triage.
     void logTemplateLeakRefs(AstNodeModule* parentModp, AstNodeModule* templateModp,
                              const char* stage, AstNode* contextp) {
-        if (debug() < 9 || !parentModp || !templateModp) return;
-        if (!VN_IS(templateModp, Iface)) return;
+        if (debug() < 9 || !parentModp || !templateModp || !VN_IS(templateModp, Iface)) return;
         // LCOV_EXCL_START  // Debug-only diagnostic
         int leakCount = 0;
         const auto ancestryOf = [](const AstNode* nodep) {
