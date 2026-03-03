@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2010 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t ();
+module t;
 
    // This isn't a width violation, as +/- 1'b1 is a common idiom
    // that's fairly harmless

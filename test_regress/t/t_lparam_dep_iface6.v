@@ -19,32 +19,34 @@ package scp;
 endpackage
 
 interface a_if #(
-  parameter a_p = 0
-)();
-  localparam int  LP0 = a_p;
+    parameter a_p = 0
+) ();
+  localparam int LP0 = a_p;
   typedef logic [LP0-1:0] a_t;
 endinterface
 
 interface sct_if #(
-  parameter scp::cfg_t cfg = 0
-)();
+    parameter scp::cfg_t cfg = 0
+) ();
   // this is intentional as I want all the dependencies to be resolved
-  localparam int  LP0 = cfg.ABits * cfg.BBits;
+  localparam int LP0 = cfg.ABits * cfg.BBits;
 
-  a_if #(LP0) a_if0();
+  a_if #(LP0) a_if0 ();
   typedef a_if0.a_t a_t;
 endinterface
 
 interface sc_if #(
-  parameter scp::cfg_t cfg = 0
-)();
-  sct_if #(cfg) types();
+    parameter scp::cfg_t cfg = 0
+) ();
+  sct_if #(cfg) types ();
 
   typedef types.a_t a_t;
 endinterface
 
-module sc #(parameter scp::cfg_t cfg=0) (
-  sc_if io
+module sc #(
+    parameter scp::cfg_t cfg = 0
+) (
+    sc_if io
 );
 
   typedef io.a_t a_t;
@@ -56,17 +58,12 @@ module sc #(parameter scp::cfg_t cfg=0) (
   end
 endmodule
 
-module t();
-  localparam scp::cfg_t sc_cfg = '{
-    ABits : 2,
-    BBits : 3
-  };
+module t;
+  localparam scp::cfg_t sc_cfg = '{ABits : 2, BBits : 3};
 
   sc_if #(sc_cfg) sc_io ();
 
-  sc #(sc_cfg) sc(
-    .io(sc_io)
-  );
+  sc #(sc_cfg) sc (.io(sc_io));
 
   initial begin
     #2;

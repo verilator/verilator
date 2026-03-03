@@ -10,7 +10,7 @@
 import "DPI-C" dpii_sys_task = function void \$dpii_sys (int i);
 import "DPI-C" dpii_sys_func = function int \$dpii_func (int i);
 
-module t ();
+module t;
 
 `ifndef verilator
    `error "Only Verilator supports PLI-ish DPI calls."

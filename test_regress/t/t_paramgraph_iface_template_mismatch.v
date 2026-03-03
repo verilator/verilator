@@ -22,15 +22,17 @@ package axi4l;
   } cfg_t;
 endpackage
 
-interface axi4l_if #(parameter axi4l::cfg_t cfg = '0)();
+interface axi4l_if #(
+    parameter axi4l::cfg_t cfg = '0
+) ();
   typedef logic [cfg.AddrBits-1:0] addr_t;
   typedef logic [cfg.DataBits-1:0] data_t;
   typedef logic [cfg.DataBits/8-1:0] strb_t;
   typedef logic [cfg.UserBits-1:0] user_t;
 endinterface
 
-module ccom_to_axi(
-  axi4l_if axil_tgt_io
+module ccom_to_axi (
+    axi4l_if axil_tgt_io
 );
   typedef axil_tgt_io.addr_t addr_t;
   typedef axil_tgt_io.data_t data_t;
@@ -41,21 +43,23 @@ module ccom_to_axi(
   strb_t strb_q;
 endmodule
 
-module dummy_consumer(axi4l_if axil_io);
+module dummy_consumer (
+    axi4l_if axil_io
+);
   typedef axil_io.data_t data_t;
   data_t sink;
 endmodule
 
 module top;
-  localparam axi4l::cfg_t cfg = '{AddrBits:32, DataBits:64, UserBits:2};
+  localparam axi4l::cfg_t cfg = '{AddrBits: 32, DataBits: 64, UserBits: 2};
 
   // Live specialized instance used elsewhere.
-  axi4l_if #(.cfg(cfg)) axil_live();
-  dummy_consumer u_consume(.axil_io(axil_live));
+  axi4l_if #(.cfg(cfg)) axil_live ();
+  dummy_consumer u_consume (.axil_io(axil_live));
 
   // Template/default instance used in ccom_to_axi.
-  axi4l_if #(cfg) axil_tgt_io();
-  ccom_to_axi u_ccom_to_axi(.axil_tgt_io(axil_tgt_io));
+  axi4l_if #(cfg) axil_tgt_io ();
+  ccom_to_axi u_ccom_to_axi (.axil_tgt_io(axil_tgt_io));
 
   initial begin
     #1;

@@ -12,18 +12,20 @@
 // verilog_format: on
 
 typedef struct {
-    int BAR_INT;
-    bit BAR_BIT;
-    byte BAR_ARRAY [0:3];
+  int BAR_INT;
+  bit BAR_BIT;
+  byte BAR_ARRAY[0:3];
 } foo_t;
 
-interface intf
-  #(parameter foo_t FOO = '{4, 1'b1, '{8'd1, 8'd2, 8'd4, 8'd8}})
-    ();
+interface intf #(
+    parameter foo_t FOO = '{4, 1'b1, '{8'd1, 8'd2, 8'd4, 8'd8}}
+) ();
 endinterface
 
-module sub (intf single_intf_port);
-  localparam byte  single_foo_bar_byte = single_intf_port.FOO.BAR_ARRAY[3];
+module sub (
+    intf single_intf_port
+);
+  localparam byte single_foo_bar_byte = single_intf_port.FOO.BAR_ARRAY[3];
 
   initial begin
     #1;
@@ -31,13 +33,10 @@ module sub (intf single_intf_port);
   end
 endmodule
 
-module t ();
+module t;
   intf single_intf ();
 
-  sub
-  the_sub (
-      .single_intf_port(single_intf)
-  );
+  sub the_sub (.single_intf_port(single_intf));
 
   initial begin
     #2;

@@ -29,37 +29,39 @@ package sc;
 endpackage
 
 interface simple_cache_types_if #(
-  parameter sc::cfg_t cfg = 0
-)();
+    parameter sc::cfg_t cfg = 0
+) ();
 
-  localparam int  SC_NUM_LINES = cfg.Capacity / cfg.LineSize;
-  localparam int  SC_LINES_PER_WAY = SC_NUM_LINES / cfg.Associativity;
-  localparam int  SC_BLOCK_BITS = $clog2(cfg.LineSize);
-  localparam int  SC_ROW_BITS = $clog2(SC_LINES_PER_WAY);
-  localparam int  SC_TAG_BITS = cfg.AddrBits - SC_ROW_BITS - SC_BLOCK_BITS;
-  localparam int  SC_DROWS_PER_LINE = cfg.LineSize / cfg.FgWidth;
-  localparam int  SC_NUM_DROWS = SC_NUM_LINES * SC_DROWS_PER_LINE;
+  localparam int SC_NUM_LINES = cfg.Capacity / cfg.LineSize;
+  localparam int SC_LINES_PER_WAY = SC_NUM_LINES / cfg.Associativity;
+  localparam int SC_BLOCK_BITS = $clog2(cfg.LineSize);
+  localparam int SC_ROW_BITS = $clog2(SC_LINES_PER_WAY);
+  localparam int SC_TAG_BITS = cfg.AddrBits - SC_ROW_BITS - SC_BLOCK_BITS;
+  localparam int SC_DROWS_PER_LINE = cfg.LineSize / cfg.FgWidth;
+  localparam int SC_NUM_DROWS = SC_NUM_LINES * SC_DROWS_PER_LINE;
 
 endinterface
 
 interface simple_cache_if #(
-  parameter sc::cfg_t cfg = 0
-)();
-  simple_cache_types_if #(cfg) types();
+    parameter sc::cfg_t cfg = 0
+) ();
+  simple_cache_types_if #(cfg) types ();
 
 endinterface
 
-module simple_cache #(parameter sc::cfg_t cfg=0) (
-  simple_cache_if io
+module simple_cache #(
+    parameter sc::cfg_t cfg = 0
+) (
+    simple_cache_if io
 );
 
   localparam num_rld_beats = cfg.LineSize / cfg.RefillWidth;
   localparam num_arrays = cfg.FgWidth / cfg.RefillWidth;
-  localparam dat_array_width = cfg.RefillWidth*8;
-  localparam int  SC_DROWS_PER_LINE = io.types.SC_DROWS_PER_LINE;
-  localparam int  SC_NUM_LINES = io.types.SC_NUM_LINES;
-  localparam int  SC_LINES_PER_WAY = io.types.SC_LINES_PER_WAY;
-  localparam int  SC_NUM_DROWS = io.types.SC_NUM_DROWS;
+  localparam dat_array_width = cfg.RefillWidth * 8;
+  localparam int SC_DROWS_PER_LINE = io.types.SC_DROWS_PER_LINE;
+  localparam int SC_NUM_LINES = io.types.SC_NUM_LINES;
+  localparam int SC_LINES_PER_WAY = io.types.SC_LINES_PER_WAY;
+  localparam int SC_NUM_DROWS = io.types.SC_NUM_DROWS;
 
   initial begin
     #1;
@@ -75,28 +77,26 @@ module simple_cache #(parameter sc::cfg_t cfg=0) (
 endmodule
 
 
-module t();
+module t;
 
   localparam sc::cfg_t sc_cfg = '{
-    CmdTagBits : $clog2(6),
-    Associativity : 2,
-    Capacity : 1024,
-    LineSize : 64,
-    StateBits : 2,
-    AddrBits : 64,
-    MissQSize : 2,
+      CmdTagBits : $clog2(6),
+      Associativity : 2,
+      Capacity : 1024,
+      LineSize : 64,
+      StateBits : 2,
+      AddrBits : 64,
+      MissQSize : 2,
 
-    FgWidth : 16,
-    RefillWidth : 8
+      FgWidth : 16,
+      RefillWidth : 8
   };
 
   simple_cache_if #(sc_cfg) sc_io ();
 
-  simple_cache #(sc_cfg) simple_cache(
-    .io(sc_io)
-  );
+  simple_cache #(sc_cfg) simple_cache (.io(sc_io));
 
-  localparam int  SC_DROWS_PER_LINE = sc_io.types.SC_DROWS_PER_LINE;
+  localparam int SC_DROWS_PER_LINE = sc_io.types.SC_DROWS_PER_LINE;
 
   initial begin
     #2;

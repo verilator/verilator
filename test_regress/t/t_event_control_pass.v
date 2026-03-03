@@ -24,7 +24,7 @@ endclass
 
 bit got_event;
 
-module t();
+module t;
 
   initial begin
     Bar bar;

@@ -19,10 +19,10 @@ package scp;
 endpackage
 
 interface sct_if #(
-  parameter scp::cfg_t cfg = 0
-)();
+    parameter scp::cfg_t cfg = 0
+) ();
 
-  localparam int  SC_NUM_LINES = cfg.Capacity / cfg.LineSize;
+  localparam int SC_NUM_LINES = cfg.Capacity / cfg.LineSize;
 
   typedef logic [(cfg.Capacity / cfg.LineSize)-1:0] sc_num_lines_t;
 
@@ -31,17 +31,19 @@ interface sct_if #(
 endinterface
 
 interface sc_if #(
-  parameter scp::cfg_t cfg = 0
-)();
-  sct_if #(cfg) types();
+    parameter scp::cfg_t cfg = 0
+) ();
+  sct_if #(cfg) types ();
 
 endinterface
 
-module sc #(parameter scp::cfg_t cfg=0) (
-  sc_if io
+module sc #(
+    parameter scp::cfg_t cfg = 0
+) (
+    sc_if io
 );
 
-  localparam int  SC_NUM_LINES = io.types.SC_NUM_LINES;
+  localparam int SC_NUM_LINES = io.types.SC_NUM_LINES;
 
   typedef io.types.sc_num_lines_t sc_num_lines_t;
   typedef io.types.sc_num_lines_2_t sc_num_lines_2_t;
@@ -57,18 +59,13 @@ module sc #(parameter scp::cfg_t cfg=0) (
   end
 endmodule
 
-module t();
+module t;
 
-  localparam scp::cfg_t sc_cfg = '{
-    Capacity : 1024,
-    LineSize : 64
-  };
+  localparam scp::cfg_t sc_cfg = '{Capacity : 1024, LineSize : 64};
 
   sc_if #(sc_cfg) sc_io ();
 
-  sc #(sc_cfg) simple_cache(
-    .io(sc_io)
-  );
+  sc #(sc_cfg) simple_cache (.io(sc_io));
 
   initial begin
     #2;

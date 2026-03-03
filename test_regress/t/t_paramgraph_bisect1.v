@@ -17,7 +17,7 @@
 
 package rial;
 
-// Configuration structure
+  // Configuration structure
   typedef struct packed {
     // CCA Parameters
     int unsigned NumDd;
@@ -29,16 +29,18 @@ endpackage
 
 package cb;
   typedef struct packed {
-    int unsigned XdatSize;     // raw packet data size
+    int unsigned XdatSize;  // raw packet data size
   } cfg_t;
 endpackage
 
-interface ccia_types_if #(parameter rial::cfg_t cfg=0)();
+interface ccia_types_if #(
+    parameter rial::cfg_t cfg = 0
+) ();
 
   // 'base' types
   typedef logic [$clog2(cfg.DDNumStuff)-1:0] wave_index_t;
 
-// types for tb
+  // types for tb
   typedef struct packed {
     logic [3:0] e_cmd;
     logic en;
@@ -48,39 +50,31 @@ interface ccia_types_if #(parameter rial::cfg_t cfg=0)();
     logic [64-(4+1+1+$clog2(cfg.DDNumStuff)+12)-1:0] pad0;
   } tl_reg_cmd_t;
 
-  typedef struct packed {
-    logic [63:0] raw;
-  } tl_addr_cmd_t;
+  typedef struct packed {logic [63:0] raw;} tl_addr_cmd_t;
 
   typedef union packed {
     tl_reg_cmd_t rcmd;
     tl_addr_cmd_t acmd;
   } tl_data_fld_t;
 
-  typedef union packed {
-    tl_data_fld_t [cfg.DDNumStuffThreads-1:0] d_a;
-  } cmd_data_t;
+  typedef union packed {tl_data_fld_t [cfg.DDNumStuffThreads-1:0] d_a;} cmd_data_t;
 
-  typedef struct packed {
-    cmd_data_t d;
-  } cmd_beat_t;
+  typedef struct packed {cmd_data_t d;} cmd_beat_t;
 
 endinterface
 
 module rial_top #(
-  parameter rial::cfg_t aer_cfg=0
-)();
+    parameter rial::cfg_t aer_cfg = 0
+) ();
 
-// for the types
-  ccia_types_if #(aer_cfg) ccia_types();
+  // for the types
+  ccia_types_if #(aer_cfg) ccia_types ();
 
-// genvars and locally defined types
+  // genvars and locally defined types
   typedef ccia_types.cmd_beat_t cmd_beat_t;
 
   // CB and RBUS
-  localparam cb::cfg_t cb_cfg = '{
-    XdatSize:$bits(cmd_beat_t)
-  };
+  localparam cb::cfg_t cb_cfg = '{XdatSize: $bits(cmd_beat_t)};
 
   initial begin
     #1;
@@ -93,19 +87,18 @@ module rial_top #(
 endmodule
 
 // SOC Top w/IO and SOC configuration
-module rial_wrap();
+module rial_wrap ();
 
   parameter rial::cfg_t aer_cfg = '{
-    NumDd : 3,
-    // CC Parameters
-    DDNumStuff : 4,
-    DDNumStuffThreads : 8
+      NumDd : 3,
+      // CC Parameters
+      DDNumStuff :
+      4,
+      DDNumStuffThreads : 8
   };
 
-// DUT
-  rial_top #(
-    .aer_cfg(aer_cfg)
-  ) rial_top();
+  // DUT
+  rial_top #(.aer_cfg(aer_cfg)) rial_top ();
 
   initial begin
     #2;

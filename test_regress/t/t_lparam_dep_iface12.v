@@ -20,40 +20,42 @@ endpackage
 
 // Level 4: innermost interface
 interface d_if #(
-  parameter d_p = 0
-)();
+    parameter d_p = 0
+) ();
   localparam int LP0 = d_p + 1;
   typedef logic [LP0-1:0] d_t;
 endinterface
 
 // Level 3
 interface c_if #(
-  parameter c_p = 0
-)();
+    parameter c_p = 0
+) ();
   localparam int LP0 = c_p * 2;
-  d_if #(LP0) d_inst();
+  d_if #(LP0) d_inst ();
   typedef d_inst.d_t c_t;
 endinterface
 
 // Level 2
 interface b_if #(
-  parameter scp::cfg_t cfg = 0
-)();
+    parameter scp::cfg_t cfg = 0
+) ();
   localparam int LP0 = cfg.ABits * cfg.BBits;
-  c_if #(LP0) c_inst();
+  c_if #(LP0) c_inst ();
   typedef c_inst.c_t b_t;
 endinterface
 
 // Level 1: outermost interface
 interface a_if #(
-  parameter scp::cfg_t cfg = 0
-)();
-  b_if #(cfg) b_inst();
+    parameter scp::cfg_t cfg = 0
+) ();
+  b_if #(cfg) b_inst ();
   typedef b_inst.b_t a_t;
 endinterface
 
-module m #(parameter scp::cfg_t cfg=0) (
-  a_if io
+module m #(
+    parameter scp::cfg_t cfg = 0
+) (
+    a_if io
 );
 
   typedef io.a_t a_t;
@@ -69,17 +71,12 @@ module m #(parameter scp::cfg_t cfg=0) (
   end
 endmodule
 
-module t();
-  localparam scp::cfg_t cfg = '{
-    ABits : 2,
-    BBits : 3
-  };
+module t;
+  localparam scp::cfg_t cfg = '{ABits : 2, BBits : 3};
 
   a_if #(cfg) a_io ();
 
-  m #(cfg) m_inst(
-    .io(a_io)
-  );
+  m #(cfg) m_inst (.io(a_io));
 
   initial begin
     #2;

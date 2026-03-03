@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2013 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t ();
+module t;
 
    for (genvar g = 0; g < 2; ++g) begin : genfor
       typedef struct packed {

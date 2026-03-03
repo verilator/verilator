@@ -22,12 +22,16 @@ package aerial;
   } cfg_t;
 endpackage
 
-interface aicc_types_if #(parameter aerial::cfg_t cfg = '0)();
+interface aicc_types_if #(
+    parameter aerial::cfg_t cfg = '0
+) ();
   typedef logic [$clog2(cfg.NumCc)-1:0] cc_index_t;
   typedef logic [$clog2(cfg.CCNumIds)-1:0] trans_id_t;
 endinterface
 
-module child(aicc_types_if types);
+module child (
+    aicc_types_if types
+);
   localparam type cc_index_t = types.cc_index_t;
   localparam type trans_id_t = types.trans_id_t;
   cc_index_t cc_idx;
@@ -35,9 +39,9 @@ module child(aicc_types_if types);
 endmodule
 
 module top;
-  localparam aerial::cfg_t aer_cfg = '{NumCc:4, CCNumWaves:2, CCNumIds:8};
-  aicc_types_if #(.cfg(aer_cfg)) types();
-  child u_child(.types(types));
+  localparam aerial::cfg_t aer_cfg = '{NumCc: 4, CCNumWaves: 2, CCNumIds: 8};
+  aicc_types_if #(.cfg(aer_cfg)) types ();
+  child u_child (.types(types));
 
   initial begin
     #2;

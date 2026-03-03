@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2007 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t ();
+module t;
 
    reg [3:0] four;
    reg [4:0] five;

@@ -32,7 +32,9 @@ package a_pkg;
   } cfg_t;
 endpackage
 
-interface other_types_if #(parameter a_pkg::cfg_t cfg=0)();
+interface other_types_if #(
+    parameter a_pkg::cfg_t cfg = 0
+) ();
   // Create a struct that results in 525 bits
   typedef struct packed {
     logic [cfg.p_a-1:0] field1;
@@ -42,7 +44,9 @@ interface other_types_if #(parameter a_pkg::cfg_t cfg=0)();
 endinterface
 
 // Simple interface that takes a parameter
-interface simple_if #(parameter cb::cfg_t cfg=0)();
+interface simple_if #(
+    parameter cb::cfg_t cfg = 0
+) ();
   logic [cfg.Rids-1:0] rids;
   logic [cfg.Pids-1:0] pids;
   logic [cfg.Fnum-1:0] fnum;
@@ -50,25 +54,22 @@ interface simple_if #(parameter cb::cfg_t cfg=0)();
 endinterface
 
 module TestMod;
-  localparam a_pkg::cfg_t ot_cfg = '{
-    p_a : 8,
-    p_b : 4
-  };
+  localparam a_pkg::cfg_t ot_cfg = '{p_a : 8, p_b : 4};
 
-  other_types_if #(ot_cfg) other_types();
+  other_types_if #(ot_cfg) other_types ();
 
   typedef other_types.cmd_beat_t cmd_beat_t;
 
   // This pattern assignment should work correctly
   localparam cb::cfg_t cb_cfg = '{
-    Rids : 32'h1,
-    Pids : 32'h2,
-    Fnum : 32'h3,
-    XdatSize : $bits(cmd_beat_t)
+      Rids : 32'h1,
+      Pids : 32'h2,
+      Fnum : 32'h3,
+      XdatSize : $bits(cmd_beat_t)
   };
 
   // This should trigger the error - cb_cfg is not recognized as constant
-  simple_if#(cb_cfg) cb_vc0_io();
+  simple_if #(cb_cfg) cb_vc0_io ();
 
   initial begin
     `checkd(cb_cfg.XdatSize, 12);

@@ -34,9 +34,7 @@ module t;
     static function instr_name_t get_rand_instr();
       instr_name_t name;
       int ok;
-      ok = std::randomize(name) with {
-        name inside {allowed_instrs};
-      };
+      ok = std::randomize(name) with {name inside {allowed_instrs};};
       `checkd(ok, 1);
       return name;
     endfunction
@@ -49,8 +47,9 @@ module t;
 
     repeat (20) begin
       result = instr_base::get_rand_instr();
-      `checkd(result == INSTR_ADD || result == INSTR_SUB
-              || result == INSTR_MUL || result == INSTR_AND, 1);
+      `checkd(
+          result == INSTR_ADD || result == INSTR_SUB || result == INSTR_MUL || result == INSTR_AND,
+          1);
     end
 
     $write("*-* All Finished *-*\n");

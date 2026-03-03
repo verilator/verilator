@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2025 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t ();
+module t;
 class SuperCls;
    int s = 2;
    function new(int def = 3);

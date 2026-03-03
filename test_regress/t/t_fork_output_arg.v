@@ -20,7 +20,7 @@ task automatic test;
    if (o != 100) $stop;
 endtask
 
-module t();
+module t;
    initial begin
       test();
       $write("*-* All Finished *-*\n");

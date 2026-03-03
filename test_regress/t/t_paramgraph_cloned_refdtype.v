@@ -14,7 +14,10 @@
 //
 
 // A registry class that returns its own type
-class uvm_object_registry #(type T = int, string Tname = "<unknown>");
+class uvm_object_registry #(
+    type T = int,
+    string Tname = "<unknown>"
+);
   typedef uvm_object_registry#(T, Tname) this_type;
 
   static function this_type get();
@@ -26,7 +29,9 @@ endclass
 
 // A pool class that has a nested type_id typedef pointing to the registry
 // The key pattern: type_id is a typedef to uvm_object_registry parameterized with THIS class
-class uvm_object_string_pool #(type T = int);
+class uvm_object_string_pool #(
+    type T = int
+);
   typedef uvm_object_string_pool#(T) this_type;
   typedef uvm_object_registry#(uvm_object_string_pool#(T)) type_id;
 
@@ -49,10 +54,14 @@ class uvm_object_string_pool #(type T = int);
 endclass
 
 // Simple wrapper classes to create different specializations
-class uvm_queue #(type T = int);
+class uvm_queue #(
+    type T = int
+);
 endclass
 
-class uvm_event #(type T = int);
+class uvm_event #(
+    type T = int
+);
 endclass
 
 // Create two different specializations of uvm_object_string_pool
@@ -66,8 +75,8 @@ module t;
     // Before the fix, both would incorrectly return the same registry type
     // After the fix, each returns its own correctly-specialized registry
 
-    uvm_object_registry#(uvm_object_string_pool#(uvm_event#(int))) event_reg;
-    uvm_object_registry#(uvm_object_string_pool#(uvm_queue#(string))) queue_reg;
+    uvm_object_registry #(uvm_object_string_pool #(uvm_event #(int))) event_reg;
+    uvm_object_registry #(uvm_object_string_pool #(uvm_queue #(string))) queue_reg;
 
     event_reg = uvm_event_pool::get_type();
     queue_reg = uvm_queue_pool::get_type();

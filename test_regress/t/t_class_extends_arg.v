@@ -26,7 +26,7 @@ class Cls5Imp extends Base(5);
    // Implicit new
 endclass
 
-module t ();
+module t;
 
    Cls5Exp ce;
    Cls5Imp ci;

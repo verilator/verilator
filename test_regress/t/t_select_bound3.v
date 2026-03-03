@@ -10,7 +10,7 @@ class cls;
    int m_field;
 endclass
 
-module t();
+module t;
    cls inst[2];
 
    initial begin

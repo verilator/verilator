@@ -9,19 +9,19 @@ endinterface
 
 module t;
 
-   sub sub();
+  sub sub ();
 
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule
 
 module sub_ext;
-   bind sub_inst bound_if i_bound();
+  bind sub_inst bound_if i_bound ();
 endmodule
 
 module sub;
-   sub_ext sub_ext();
+  sub_ext sub_ext ();
 endmodule

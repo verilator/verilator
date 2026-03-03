@@ -9,48 +9,50 @@
 // SPDX-FileCopyrightText: 2013 Jie Xu
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 module t;
 
-   typedef struct packed {
-       logic [15:0] channel;
-       logic [15:0] others;
-   } buss_t;
+  typedef struct packed {
+    logic [15:0] channel;
+    logic [15:0] others;
+  } buss_t;
 
-   buss_t     b;
+  buss_t b;
 
-   reg [7:0]  a;
-   reg [7:0]  c;
-   reg [7:0]  d;
+  reg [7:0] a;
+  reg [7:0] c;
+  reg [7:0] d;
 
-   union      packed {
-      logic [31:0] [7:0] idx;
-      struct                 packed {
-         logic [15:0]      z, y, x;
-         logic [25:0] [7:0] r;
-      } nam;
-   } gpr;
+  union packed {
+    logic [31:0][7:0] idx;
+    struct packed {
+      logic [15:0] z, y, x;
+      logic [25:0][7:0] r;
+    } nam;
+  } gpr;
 
-   reg [14:0] gpr_a;
+  reg [14:0] gpr_a;
 
-   initial begin
-      b = {16'h8765,16'h4321};
-      a = b[19:12];                     // This works
-      c = b[8+:8];                      // This fails
-      d = b[11-:8];                     // This fails
-      `checkh(a, 8'h54);
-      `checkh(c, 8'h43);
-      `checkh(d, 8'h32);
+  initial begin
+    b = {16'h8765, 16'h4321};
+    a = b[19:12];  // This works
+    c = b[8+:8];  // This fails
+    d = b[11-:8];  // This fails
+    `checkh(a, 8'h54);
+    `checkh(c, 8'h43);
+    `checkh(d, 8'h32);
 
-      gpr = 256'h12346789_abcdef12_3456789a_bcdef123_456789ab_cdef1234_56789abc_def12345;
-      `checkh (gpr[255:255-14], 15'h091a);
-      gpr_a = gpr.nam.z[15:1];
-      `checkh (gpr_a, 15'h091a);
+    gpr = 256'h12346789_abcdef12_3456789a_bcdef123_456789ab_cdef1234_56789abc_def12345;
+    `checkh(gpr[255:255-14], 15'h091a);
+    gpr_a = gpr.nam.z[15:1];
+    `checkh(gpr_a, 15'h091a);
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

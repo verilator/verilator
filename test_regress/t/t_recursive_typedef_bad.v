@@ -18,7 +18,7 @@ module circ #(
   assign bo = ai;
 endmodule
 
-module t ();
+module t;
   logic [7:0] x, y;
   circ u_circ (
       .ai(x),

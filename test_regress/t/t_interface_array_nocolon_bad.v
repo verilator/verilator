@@ -16,7 +16,7 @@ module foo_subm
    );
 endmodule
 
-module t ();
+module t;
 
    localparam N = 3;
 

@@ -26,7 +26,9 @@ typedef struct packed {
 } axi_cfg_t;
 
 // INNERMOST: Parameterized interface with typedefs
-interface axi4_if #(parameter axi_cfg_t cfg = 0)();
+interface axi4_if #(
+    parameter axi_cfg_t cfg = 0
+) ();
   localparam int unsigned AddrBits = cfg.AddrBits * 2;
   localparam int unsigned DataBits = cfg.DataBits * 2;
   localparam int unsigned IdBits = cfg.IdBits * 2;
@@ -36,22 +38,24 @@ interface axi4_if #(parameter axi_cfg_t cfg = 0)();
   typedef logic [IdBits-1:0] id_t;
 
   typedef struct packed {
-    id_t     id;
-    addr_t   addr;
+    id_t id;
+    addr_t addr;
   } ar_chan_t;
 
   typedef struct packed {
-    id_t     id;
-    data_t   data;
+    id_t id;
+    data_t data;
   } r_chan_t;
 
   ar_chan_t ar;
-  r_chan_t  r;
+  r_chan_t r;
 endinterface
 
 // MIDDLE: Interface that wraps axi4_if and re-exports its typedefs
-interface tlb_io_if #(parameter axi_cfg_t axi_cfg = 0)();
-  axi4_if #(.cfg(axi_cfg)) axi_tlb_io();
+interface tlb_io_if #(
+    parameter axi_cfg_t axi_cfg = 0
+) ();
+  axi4_if #(.cfg(axi_cfg)) axi_tlb_io ();
 
   // Re-export typedefs from nested interface
   typedef axi_tlb_io.r_chan_t r_chan_t;
@@ -61,12 +65,12 @@ endinterface
 // OUTER: Interface with TWO SIBLING tlb_io_if instances with DIFFERENT params
 // This is the BLENDED pattern: sibling cells + nested chains
 interface cca_io_if #(
-  parameter axi_cfg_t axi_cfg_a = 0,
-  parameter axi_cfg_t axi_cfg_b = 0
-)();
+    parameter axi_cfg_t axi_cfg_a = 0,
+    parameter axi_cfg_t axi_cfg_b = 0
+) ();
   // SIBLING CELLS - same interface type, DIFFERENT params
-  tlb_io_if #(.axi_cfg(axi_cfg_a)) tlb_io_a();
-  tlb_io_if #(.axi_cfg(axi_cfg_b)) tlb_io_b();
+  tlb_io_if #(.axi_cfg(axi_cfg_a)) tlb_io_a ();
+  tlb_io_if #(.axi_cfg(axi_cfg_b)) tlb_io_b ();
 
   // Re-export from each sibling (these should be DIFFERENT types)
   typedef tlb_io_a.r_chan_t r_chan_a_t;
@@ -76,7 +80,7 @@ endinterface
 // MODULE: Accesses typedefs from BOTH sibling nested chains via interface port
 // This is the CRITICAL test - must distinguish between tlb_io_a and tlb_io_b
 module cca_xbar (
-  cca_io_if cca_io
+    cca_io_if cca_io
 );
   // Access typedefs through SIBLING nested interface chains
   // These MUST resolve to DIFFERENT types based on the different params
@@ -105,12 +109,15 @@ module cca_xbar (
 endmodule
 
 // TOP MODULE
-module t();
+module t;
   localparam axi_cfg_t cfg_a = '{AddrBits: 32, DataBits: 64, IdBits: 4};
   localparam axi_cfg_t cfg_b = '{AddrBits: 40, DataBits: 128, IdBits: 8};
 
-  cca_io_if #(.axi_cfg_a(cfg_a), .axi_cfg_b(cfg_b)) cca_io();
-  cca_xbar xbar(.cca_io(cca_io));
+  cca_io_if #(
+      .axi_cfg_a(cfg_a),
+      .axi_cfg_b(cfg_b)
+  ) cca_io ();
+  cca_xbar xbar (.cca_io(cca_io));
 
   initial begin
     #2;

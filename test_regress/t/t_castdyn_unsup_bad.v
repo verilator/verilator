@@ -6,11 +6,11 @@
 
 module t;
 
-   string q[$];
-   int aarray[string];
+  string q[$];
+  int aarray[string];
 
-   initial begin
-      $cast(q, aarray);
-   end
+  initial begin
+    $cast(q, aarray);
+  end
 
 endmodule

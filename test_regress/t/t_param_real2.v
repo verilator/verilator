@@ -9,7 +9,7 @@ module foo
 
 endmodule
 
-module t();
+module t;
 
    genvar m, r;
    generate

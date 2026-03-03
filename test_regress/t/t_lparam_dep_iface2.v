@@ -25,7 +25,9 @@ package p2;
   } cfg_t;
 endpackage
 
-interface types_if #(parameter p1::cfg_t cfg=0)();
+interface types_if #(
+    parameter p1::cfg_t cfg = 0
+) ();
   localparam int ABits = cfg.ABits;
   localparam int BBits = cfg.BBits;
 
@@ -35,7 +37,9 @@ interface types_if #(parameter p1::cfg_t cfg=0)();
   } a_t;
 endinterface
 
-interface io_if #(parameter p1::cfg_t cfg=0)();
+interface io_if #(
+    parameter p1::cfg_t cfg = 0
+) ();
 
   localparam int ABits = cfg.ABits;
   localparam int BBits = cfg.BBits;
@@ -44,8 +48,8 @@ interface io_if #(parameter p1::cfg_t cfg=0)();
   typedef types.a_t a_t;
 endinterface
 
-module modA(
-  io_if io
+module modA (
+    io_if io
 );
 
   localparam int ABits = io.types.ABits;
@@ -62,24 +66,16 @@ module modA(
 
 endmodule
 
-module t ();
-  localparam p2::cfg_t mcfg = '{
-    CBits : 8,
-    DBits : 16
-  };
+module t;
+  localparam p2::cfg_t mcfg = '{CBits : 8, DBits : 16};
 
-  localparam p1::cfg_t cfg = '{
-    ABits : mcfg.CBits,
-    BBits : mcfg.CBits + mcfg.DBits
-  };
+  localparam p1::cfg_t cfg = '{ABits : mcfg.CBits, BBits : mcfg.CBits + mcfg.DBits};
 
   io_if #(cfg) modA_io ();
 
   typedef modA_io.types.a_t a_t;
 
-  modA modA_inst (
-    .io(modA_io)
-  );
+  modA modA_inst (.io(modA_io));
 
   initial begin
     #2;

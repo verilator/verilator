@@ -11,19 +11,19 @@
 
 module t;
 
-   typedef struct packed {
-       logic [1:0][15:0] channel;
-       logic others;
-   } buss_t;
+  typedef struct packed {
+    logic [1:0][15:0] channel;
+    logic others;
+  } buss_t;
 
-   buss_t b;
-   reg [7:0] a;
+  buss_t b;
+  reg [7:0] a;
 
-   initial begin
-      b = {16'h8765,16'h4321,1'b1};
-      a = b.channel[0][8+:8];
-      if (a != 8'h43) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    b = {16'h8765, 16'h4321, 1'b1};
+    a = b.channel[0][8+:8];
+    if (a != 8'h43) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

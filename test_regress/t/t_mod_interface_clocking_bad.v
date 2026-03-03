@@ -27,7 +27,7 @@ module sub (
 
 endmodule
 
-module t ();
+module t;
   logic clk = 0;
 
   mem_if m_if (clk);

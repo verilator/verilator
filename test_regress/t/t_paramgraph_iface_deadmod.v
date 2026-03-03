@@ -18,7 +18,9 @@ package axi4;
   } cfg_t;
 endpackage
 
-interface axi4_if #(parameter axi4::cfg_t cfg = '0)();
+interface axi4_if #(
+    parameter axi4::cfg_t cfg = '0
+) ();
   typedef logic [cfg.AddrBits-1:0] addr_t;
   typedef logic [cfg.DataBits-1:0] data_t;
   typedef logic [cfg.DataBits/8-1:0] strb_t;
@@ -32,8 +34,8 @@ interface axi4_if #(parameter axi4::cfg_t cfg = '0)();
   } aw_chan_t;
 endinterface
 
-module dead_mod(
-  axi4_if axi_io
+module dead_mod (
+    axi4_if axi_io
 );
   typedef axi_io.addr_t addr_t;
   typedef axi_io.data_t data_t;
@@ -45,14 +47,14 @@ module dead_mod(
 endmodule
 
 module dead_top;
-  localparam axi4::cfg_t cfg = '{IdBits:4, AddrBits:32, DataBits:64, UserBits:2};
-  axi4_if #(.cfg(cfg)) axi_io();
+  localparam axi4::cfg_t cfg = '{IdBits: 4, AddrBits: 32, DataBits: 64, UserBits: 2};
+  axi4_if #(.cfg(cfg)) axi_io ();
 
-  dead_mod u_dead(.axi_io(axi_io));
+  dead_mod u_dead (.axi_io(axi_io));
 endmodule
 
 module top;
-  dead_top dead_top();
+  dead_top dead_top ();
   initial begin
     #1;
     $write("*-* All Finished *-*\n");

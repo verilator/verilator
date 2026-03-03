@@ -11,12 +11,12 @@
 // verilog_format: on
 
 package paramgraph_pkg;
-  typedef struct packed {
-    int unsigned a;
-  } cfg_t;
+  typedef struct packed {int unsigned a;} cfg_t;
 endpackage
 
-interface paramgraph_if #(paramgraph_pkg::cfg_t cfg=0)();
+interface paramgraph_if #(
+    paramgraph_pkg::cfg_t cfg = 0
+) ();
   typedef logic [cfg.a-1:0] byte_t;
   typedef struct packed {
     byte_t a;
@@ -25,11 +25,9 @@ interface paramgraph_if #(paramgraph_pkg::cfg_t cfg=0)();
 endinterface
 
 module t_paramgraph_member_refdtype_pkg_iface;
-  localparam paramgraph_pkg::cfg_t cfg = '{
-    a: 8
-  };
+  localparam paramgraph_pkg::cfg_t cfg = '{a: 8};
 
-  paramgraph_if #(cfg) ifc();
+  paramgraph_if #(cfg) ifc ();
 
   typedef ifc.byte_t byte_t;
   typedef ifc.pair_t pair_t;

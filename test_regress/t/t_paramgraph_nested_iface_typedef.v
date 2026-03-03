@@ -24,7 +24,9 @@ typedef struct packed {
 } axi_cfg_t;
 
 // Innermost interface - like axi4_if.sv in the real design
-interface axi4_if #(parameter axi_cfg_t cfg = '{32, 64, 4, 0})();
+interface axi4_if #(
+    parameter axi_cfg_t cfg = '{32, 64, 4, 0}
+) ();
   typedef logic [cfg.AddrBits-1:0] addr_t;
   typedef logic [cfg.DataBits-1:0] data_t;
   typedef logic [cfg.IdBits-1:0] id_t;
@@ -33,25 +35,27 @@ interface axi4_if #(parameter axi_cfg_t cfg = '{32, 64, 4, 0})();
 
   // AXI channel typedef
   typedef struct packed {
-    id_t     id;
-    addr_t   addr;
+    id_t id;
+    addr_t addr;
     logic [7:0] len;
   } ar_chan_t;
 
   typedef struct packed {
-    id_t     id;
-    data_t   data;
+    id_t id;
+    data_t data;
     logic [1:0] resp;
-    logic    last;
+    logic last;
   } r_chan_t;
 
   ar_chan_t ar;
-  r_chan_t  r;
+  r_chan_t r;
 endinterface
 
 // Middle interface - wraps the AXI interface
-interface tlb_io_if #(parameter axi_cfg_t axi_cfg = '{32, 64, 4, 0})();
-  axi4_if #(.cfg(axi_cfg)) axi_tlb_io();
+interface tlb_io_if #(
+    parameter axi_cfg_t axi_cfg = '{32, 64, 4, 0}
+) ();
+  axi4_if #(.cfg(axi_cfg)) axi_tlb_io ();
 
   // Capture typedef from nested interface
   typedef axi_tlb_io.r_chan_t r_chan_t;
@@ -59,8 +63,10 @@ interface tlb_io_if #(parameter axi_cfg_t axi_cfg = '{32, 64, 4, 0})();
 endinterface
 
 // Outer interface - contains the middle interface
-interface cca_io_if #(parameter axi_cfg_t axi_cfg = '{32, 64, 4, 0})();
-  tlb_io_if #(.axi_cfg(axi_cfg)) tlb_io();
+interface cca_io_if #(
+    parameter axi_cfg_t axi_cfg = '{32, 64, 4, 0}
+) ();
+  tlb_io_if #(.axi_cfg(axi_cfg)) tlb_io ();
 
   // Capture typedef from doubly-nested interface
   typedef tlb_io.r_chan_t r_chan_t;
@@ -68,8 +74,10 @@ interface cca_io_if #(parameter axi_cfg_t axi_cfg = '{32, 64, 4, 0})();
 endinterface
 
 // Module that uses the doubly-nested typedef - this is where the error occurred
-module cca_xbar #(parameter axi_cfg_t axi_cfg = '{32, 64, 4, 0})(
-  cca_io_if cca_io
+module cca_xbar #(
+    parameter axi_cfg_t axi_cfg = '{32, 64, 4, 0}
+) (
+    cca_io_if cca_io
 );
   // This line was causing "Internal Error: Unlinked" before the fix
   // because cca_io.tlb_io.r_chan_t references a typedef from a nested interface
@@ -92,17 +100,17 @@ module cca_xbar #(parameter axi_cfg_t axi_cfg = '{32, 64, 4, 0})(
   end
 endmodule
 
-module t();
+module t;
   localparam axi_cfg_t cfg1 = '{AddrBits: 32, DataBits: 64, IdBits: 4, UserBits: 2};
   localparam axi_cfg_t cfg2 = '{AddrBits: 40, DataBits: 128, IdBits: 8, UserBits: 4};
 
   // Instantiate outer interface
-  cca_io_if #(.axi_cfg(cfg1)) cca_io1();
-  cca_io_if #(.axi_cfg(cfg2)) cca_io2();
+  cca_io_if #(.axi_cfg(cfg1)) cca_io1 ();
+  cca_io_if #(.axi_cfg(cfg2)) cca_io2 ();
 
   // Instantiate modules that use doubly-nested typedefs
-  cca_xbar #(.axi_cfg(cfg1)) xbar1(.cca_io(cca_io1));
-  cca_xbar #(.axi_cfg(cfg2)) xbar2(.cca_io(cca_io2));
+  cca_xbar #(.axi_cfg(cfg1)) xbar1 (.cca_io(cca_io1));
+  cca_xbar #(.axi_cfg(cfg2)) xbar2 (.cca_io(cca_io2));
 
   // Also test direct typedef access in top module
   typedef cca_io1.tlb_io.r_chan_t top_r_chan_t;

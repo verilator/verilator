@@ -7,12 +7,14 @@
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 // Self-referential typedef: typedef iface#(T) this_type inside interface iface
-interface my_iface #(type T = logic);
-  typedef my_iface #(T) self_t;
+interface my_iface #(
+    type T = logic
+);
+  typedef my_iface#(T) self_t;
   T data;
 endinterface
 
-module t ();
+module t;
   my_iface #(logic [7:0]) if0 ();
 
   initial begin

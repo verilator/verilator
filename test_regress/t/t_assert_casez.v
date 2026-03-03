@@ -6,25 +6,25 @@
 
 module t;
 
-   reg [1:0] value;
+  reg [1:0] value;
 
-   initial begin
-      value = 2'b00;
-      unique casez (value)
-        2'b00 : ;
-        2'b01 : ;
-        2'b1? : ;
-      endcase
-      value = 2'b11;
-      unique casez (value)
-        2'b00 : ;
-        2'b01 : ;
-        2'b1? : ;
-      endcase
-      unique casez (1'b1)
-        default: ;
-      endcase
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    value = 2'b00;
+    unique casez (value)
+      2'b00: ;
+      2'b01: ;
+      2'b1?: ;
+    endcase
+    value = 2'b11;
+    unique casez (value)
+      2'b00: ;
+      2'b01: ;
+      2'b1?: ;
+    endcase
+    unique casez (1'b1)
+      default: ;
+    endcase
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

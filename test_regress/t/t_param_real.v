@@ -14,7 +14,7 @@ module mod #(
    end
 endmodule
 
-module t();
+module t;
    mod #(.HZ(123.45)) mod1();
    mod #(.HZ(24.45)) mod2();
 

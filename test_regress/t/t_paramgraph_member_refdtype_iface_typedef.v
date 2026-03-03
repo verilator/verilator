@@ -15,7 +15,7 @@ interface depgraph_if;
 endinterface
 
 module t_paramgraph_member_refdtype_iface_typedef;
-  depgraph_if ifc();
+  depgraph_if ifc ();
 
   typedef ifc.byte_t byte_t;
   typedef struct packed {

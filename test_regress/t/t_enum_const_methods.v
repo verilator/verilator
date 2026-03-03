@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2022 Todd Strader
 // SPDX-License-Identifier: CC0-1.0
 
-module t ();
+module t;
 
    typedef enum [1:0] {E0, E1, E2} enm_t;
 

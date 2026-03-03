@@ -15,33 +15,42 @@
 // verilog_format: on
 
 package acme_pkg;
-  typedef struct packed {
-    int DataBits;
-  } cfg_t;
+  typedef struct packed {int DataBits;} cfg_t;
 endpackage
 
-interface acme_if #(parameter acme_pkg::cfg_t cfg = '0)();
+interface acme_if #(
+    parameter acme_pkg::cfg_t cfg = '0
+) ();
   typedef logic [cfg.DataBits-1:0] data_t;
 endinterface
 
-module child(acme_if io, output int width_o);
+module child (
+    acme_if io,
+    output int width_o
+);
   typedef io.data_t data_t;
   data_t payload;
   assign width_o = $bits(data_t);
 endmodule
 
 module top;
-  localparam acme_pkg::cfg_t cfg0 = '{DataBits:32};
-  localparam acme_pkg::cfg_t cfg1 = '{DataBits:64};
+  localparam acme_pkg::cfg_t cfg0 = '{DataBits: 32};
+  localparam acme_pkg::cfg_t cfg1 = '{DataBits: 64};
 
-  acme_if #(cfg0) io0();
-  acme_if #(cfg1) io1();
+  acme_if #(cfg0) io0 ();
+  acme_if #(cfg1) io1 ();
 
   int width0;
   int width1;
 
-  child u0(.io(io0), .width_o(width0));
-  child u1(.io(io1), .width_o(width1));
+  child u0 (
+      .io(io0),
+      .width_o(width0)
+  );
+  child u1 (
+      .io(io1),
+      .width_o(width1)
+  );
 
   initial begin
     #1;

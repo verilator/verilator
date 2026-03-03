@@ -19,41 +19,45 @@ typedef struct packed {
   int unsigned BBits;
 } scp_cfg_t;
 
-interface a_if #(parameter a_p = 0)();
+interface a_if #(
+    parameter a_p = 0
+) ();
   localparam int LP0 = a_p;
   typedef logic [LP0-1:0] a_t;
 endinterface
 
-interface sct_if #(parameter scp_cfg_t cfg = 0)();
+interface sct_if #(
+    parameter scp_cfg_t cfg = 0
+) ();
   localparam int LP0 = cfg.ABits * cfg.BBits;
-  a_if #(LP0) a_if0();
+  a_if #(LP0) a_if0 ();
   typedef a_if0.a_t a_t;
 endinterface
 
-interface sc_if #(parameter scp_cfg_t cfg = 0)();
-  sct_if #(cfg) types();
+interface sc_if #(
+    parameter scp_cfg_t cfg = 0
+) ();
+  sct_if #(cfg) types ();
   typedef types.a_t a_t;
 endinterface
 
 interface intf #(
-  parameter type data_t = bit,
-  parameter int arr[2][4]
+    parameter type data_t = bit,
+    parameter int arr[2][4]
 ) ();
   data_t data;
   logic [$bits(data)-1:0] other_data;
 endinterface
 
 module sub #(
-  parameter int width,
-  parameter int arr[2][4]
+    parameter int width,
+    parameter int arr[2][4]
 ) ();
-  typedef struct packed {
-    logic [3:3] [0:0] [width-1:0] field;
-  } user_type_t;
+  typedef struct packed {logic [3:3][0:0][width-1:0] field;} user_type_t;
 
   intf #(
-    .data_t(user_type_t),
-    .arr(arr)
+      .data_t(user_type_t),
+      .arr(arr)
   ) the_intf ();
 
   logic [width-1:0] signal;
@@ -64,8 +68,10 @@ module sub #(
   end
 endmodule
 
-module sc #(parameter scp_cfg_t cfg=0) (
-  sc_if io
+module sc #(
+    parameter scp_cfg_t cfg = 0
+) (
+    sc_if io
 );
   typedef io.a_t a_t;
 
@@ -75,14 +81,20 @@ module sc #(parameter scp_cfg_t cfg=0) (
   end
 endmodule
 
-module t ();
+module t;
   localparam scp_cfg_t sc_cfg = '{ABits: 2, BBits: 3};
 
   sc_if #(sc_cfg) sc_io ();
   sc #(sc_cfg) sc_inst (.io(sc_io));
 
-  sub #(.width(8), .arr('{'{8, 2, 3, 4}, '{1, 2, 3, 4}})) sub8 ();
-  sub #(.width(16), .arr('{'{16, 2, 3, 4}, '{1, 2, 3, 4}})) sub16 ();
+  sub #(
+      .width(8),
+      .arr('{'{8, 2, 3, 4}, '{1, 2, 3, 4}})
+  ) sub8 ();
+  sub #(
+      .width(16),
+      .arr('{'{16, 2, 3, 4}, '{1, 2, 3, 4}})
+  ) sub16 ();
 
   typedef sc_io.types.a_if0.a_t inner_t;
   typedef sc_io.types.a_t mid_t;

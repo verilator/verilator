@@ -33,24 +33,24 @@ endpackage
 
 // Nested types interface: derives struct typedef from computed localparams
 interface types_if #(
-  parameter cfg_pkg::cfg_t cfg = '0
-)();
+    parameter cfg_pkg::cfg_t cfg = '0
+) ();
   // Computed localparams - these use division and $clog2 of cfg fields.
   // With default cfg='0, these produce X/undefined values.
-  localparam int NUM_LINES     = cfg.Capacity / cfg.LineSize;
+  localparam int NUM_LINES = cfg.Capacity / cfg.LineSize;
   localparam int LINES_PER_WAY = NUM_LINES / cfg.Associativity;
-  localparam int BLOCK_BITS    = $clog2(cfg.LineSize);
-  localparam int ROW_BITS      = $clog2(LINES_PER_WAY);
-  localparam int TAG_BITS      = cfg.AddrBits - ROW_BITS - BLOCK_BITS;
+  localparam int BLOCK_BITS = $clog2(cfg.LineSize);
+  localparam int ROW_BITS = $clog2(LINES_PER_WAY);
+  localparam int TAG_BITS = cfg.AddrBits - ROW_BITS - BLOCK_BITS;
 
   typedef logic [TAG_BITS-1:0] tag_t;
   typedef logic [ROW_BITS-1:0] row_t;
   typedef logic [BLOCK_BITS-1:0] block_t;
 
   typedef struct packed {
-    logic  vld;
-    tag_t  tag;
-    row_t  row;
+    logic vld;
+    tag_t tag;
+    row_t row;
     block_t block;
   } entry_t;
 endinterface
@@ -58,28 +58,28 @@ endinterface
 // Wrapper interface: instantiates types_if as a nested cell
 // (mirrors simple_cache_if which instantiates simple_cache_types_if)
 interface wrapper_if #(
-  parameter cfg_pkg::cfg_t cfg = '0
-)();
-  types_if #(cfg) types();
+    parameter cfg_pkg::cfg_t cfg = '0
+) ();
+  types_if #(cfg) types ();
 
-  typedef types.tag_t   tag_t;
+  typedef types.tag_t tag_t;
 
-  logic  req_vld;
-  tag_t  req_tag;
+  logic req_vld;
+  tag_t req_tag;
 endinterface
 
 // Sub-module parameterized by entry width
 // (mirrors flop_nr / sram_generic_1r1w parameterized by $bits(sc_tag_t))
 module entry_store #(
-  parameter int ENTRY_WIDTH = 8,
-  parameter int DEPTH = 4
-)(
-  input  logic clk,
-  input  logic wr_en,
-  input  logic [ENTRY_WIDTH-1:0] wr_data,
-  output logic [ENTRY_WIDTH-1:0] rd_data
+    parameter int ENTRY_WIDTH = 8,
+    parameter int DEPTH = 4
+) (
+    input logic clk,
+    input logic wr_en,
+    input logic [ENTRY_WIDTH-1:0] wr_data,
+    output logic [ENTRY_WIDTH-1:0] rd_data
 );
-  logic [ENTRY_WIDTH-1:0] mem [DEPTH];
+  logic [ENTRY_WIDTH-1:0] mem[DEPTH];
   always_ff @(posedge clk) begin
     if (wr_en) mem[0] <= wr_data;
   end
@@ -91,14 +91,14 @@ endmodule
 // (mirrors simple_cache which receives simple_cache_if, instantiates
 //  simple_cache_types_if, and uses types.sc_tag_t)
 module inner_mod #(
-  parameter cfg_pkg::cfg_t cfg = '0
-)(
-  input logic clk,
-  wrapper_if io
+    parameter cfg_pkg::cfg_t cfg = '0
+) (
+    input logic clk,
+    wrapper_if io
 );
   // Local instantiation of types_if - same cfg, so gets same clone
   // as the one inside wrapper_if via "De-parameterize to prev"
-  types_if #(cfg) types();
+  types_if #(cfg) types ();
 
   typedef types.entry_t entry_t;
   typedef types.tag_t tag_t;
@@ -106,37 +106,37 @@ module inner_mod #(
   entry_t wr_entry;
   entry_t rd_entry;
 
-  assign wr_entry.vld   = io.req_vld;
-  assign wr_entry.tag   = io.req_tag;
-  assign wr_entry.row   = '0;
+  assign wr_entry.vld = io.req_vld;
+  assign wr_entry.tag = io.req_tag;
+  assign wr_entry.row = '0;
   assign wr_entry.block = '0;
 
   // Use $bits of the struct typedef as a value parameter to sub-module.
   // This is the critical pattern: $bits(entry_t) must resolve using the
   // clone's struct (correct width), not the template's (zero/X width).
   entry_store #(
-    .ENTRY_WIDTH($bits(entry_t)),
-    .DEPTH(8)
+      .ENTRY_WIDTH($bits(entry_t)),
+      .DEPTH(8)
   ) u_store (
-    .clk(clk),
-    .wr_en(io.req_vld),
-    .wr_data(wr_entry),
-    .rd_data(rd_entry)
+      .clk(clk),
+      .wr_en(io.req_vld),
+      .wr_data(wr_entry),
+      .rd_data(rd_entry)
   );
 endmodule
 
 // Outer wrapper module: instantiates wrapper_if and inner_mod
 // (mirrors mblit_simple_cache_wrap)
 module outer_mod #(
-  parameter cfg_pkg::cfg_t cfg = '0
-)(
-  input logic clk
+    parameter cfg_pkg::cfg_t cfg = '0
+) (
+    input logic clk
 );
-  wrapper_if #(cfg) wif();
+  wrapper_if #(cfg) wif ();
 
   inner_mod #(cfg) u_inner (
-    .clk(clk),
-    .io(wif)
+      .clk(clk),
+      .io(wif)
   );
 endmodule
 
@@ -155,10 +155,10 @@ module t;
   //   TAG_BITS = 64 - 3 - 6 = 55
   //   entry_t = 1 + 55 + 3 + 6 = 65 bits
   localparam cfg_pkg::cfg_t MY_CFG = '{
-    AddrBits: 64,
-    Capacity: 1024,
-    LineSize: 64,
-    Associativity: 2
+      AddrBits: 64,
+      Capacity: 1024,
+      LineSize: 64,
+      Associativity: 2
   };
 
   outer_mod #(.cfg(MY_CFG)) u_outer (.clk(clk));
@@ -172,8 +172,7 @@ module t;
     if (cyc > 5) begin
       // Verify the struct round-trips correctly
       if (u_outer.u_inner.rd_entry.vld !== 1'b1 && cyc > 10) begin
-        $display("FAIL cyc=%0d: rd_entry.vld=%b expected 1",
-                 cyc, u_outer.u_inner.rd_entry.vld);
+        $display("FAIL cyc=%0d: rd_entry.vld=%b expected 1", cyc, u_outer.u_inner.rd_entry.vld);
         $stop;
       end
     end

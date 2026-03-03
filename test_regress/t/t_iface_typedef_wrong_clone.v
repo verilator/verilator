@@ -26,7 +26,9 @@ typedef struct packed {
 } sc_cfg_t;
 
 // Inner types interface - parameterized with struct typedef
-interface sc_types_if #(parameter sc_cfg_t cfg = 0)();
+interface sc_types_if #(
+    parameter sc_cfg_t cfg = 0
+) ();
   typedef logic [cfg.AddrBits-1:0] addr_t;
   typedef logic [cfg.DataBits-1:0] data_t;
 
@@ -37,25 +39,29 @@ interface sc_types_if #(parameter sc_cfg_t cfg = 0)();
 endinterface
 
 // Cache interface - wraps types interface and re-exports typedefs
-interface sc_if #(parameter sc_cfg_t cfg = 0)();
-  sc_types_if #(cfg) sc_io();
+interface sc_if #(
+    parameter sc_cfg_t cfg = 0
+) ();
+  sc_types_if #(cfg) sc_io ();
 
   typedef sc_io.addr_t addr_t;
   typedef sc_io.data_t data_t;
-  typedef sc_io.pkt_t  pkt_t;
+  typedef sc_io.pkt_t pkt_t;
 
   addr_t rq_addr_i;
 endinterface
 
 // Wrapper module that uses the cache interface
-module sc_wrap #(parameter sc_cfg_t cfg = 0)();
-  sc_if #(cfg) cache();
+module sc_wrap #(
+    parameter sc_cfg_t cfg = 0
+) ();
+  sc_if #(cfg) cache ();
 
   typedef cache.addr_t addr_t;
-  typedef cache.pkt_t  pkt_t;
+  typedef cache.pkt_t pkt_t;
 
   addr_t local_addr;
-  pkt_t  local_pkt;
+  pkt_t local_pkt;
 
   assign cache.rq_addr_i = local_addr;
 endmodule
@@ -64,10 +70,10 @@ endmodule
 // This creates two clones of sc_if (and sc_types_if) with different params
 module t;
   localparam sc_cfg_t cfg_narrow = '{AddrBits: 16, DataBits: 32};
-  localparam sc_cfg_t cfg_wide   = '{AddrBits: 32, DataBits: 64};
+  localparam sc_cfg_t cfg_wide = '{AddrBits: 32, DataBits: 64};
 
-  sc_wrap #(.cfg(cfg_narrow)) narrow();
-  sc_wrap #(.cfg(cfg_wide))   wide();
+  sc_wrap #(.cfg(cfg_narrow)) narrow ();
+  sc_wrap #(.cfg(cfg_wide)) wide ();
 
   initial begin
     #1;

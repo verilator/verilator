@@ -19,7 +19,7 @@ interface depgraph_if;
 endinterface
 
 module depgraph_top;
-  depgraph_if ifc();
+  depgraph_if ifc ();
 
   typedef ifc.nibble_t nibble_t;
 

@@ -8,20 +8,20 @@
 //     Correct syntax is: localparam type p0_rq_t = if0.rq_t;
 
 interface x_if #(
-  parameter int p_awidth = 4,
-  parameter int p_dwidth = 7
-)();
+    parameter int p_awidth = 4,
+    parameter int p_dwidth = 7
+) ();
   typedef struct packed {
     logic [p_awidth-1:0] addr;
     logic [p_dwidth-1:0] data;
   } rq_t;
 endinterface
 
-module t();
+module t;
   x_if #(
-    .p_awidth(16),
-    .p_dwidth(8)
-  ) if0();
+      .p_awidth(16),
+      .p_dwidth(8)
+  ) if0 ();
 
   localparam p0_rq_t = if0.rq_t;  // Bad: missing 'type' keyword
 

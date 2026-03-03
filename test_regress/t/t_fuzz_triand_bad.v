@@ -4,6 +4,6 @@
 // SPDX-FileCopyrightText: 2019 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t ();
+module t;
    tri g=g.and.g;
 endmodule

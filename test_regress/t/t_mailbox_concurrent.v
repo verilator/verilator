@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2024 Liam Braun
 // SPDX-License-Identifier: CC0-1.0
 
-module t();
+module t;
     mailbox #(int) m;
 
     task automatic test_get;

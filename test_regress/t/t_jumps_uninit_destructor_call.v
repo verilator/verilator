@@ -26,14 +26,14 @@ class Foo;
     // without having it initialized first.
   endtask
   task automatic return_before_select(bit b, int idx);
-    if (b) return; // goto
+    if (b) return;  // goto
     // This will create two temporary strings used to select from `arrb` and assign to it.
     arrb[arra[idx]] = #10 "yah!";
     // jump here
   endtask
 endclass
 
-module t();
+module t;
   initial begin
     Foo foo;
     foo = new;

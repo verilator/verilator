@@ -12,7 +12,7 @@ class item;
     bit [`WIDTH-1:0] data;
 endclass
 
-module t ();
+module t;
     logic [`WIDTH-1:0] data;
     item item0 = new;
 

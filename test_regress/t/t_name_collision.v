@@ -9,7 +9,7 @@ module HasNameParam
    ();
 endmodule
 
-module t ();
+module t;
    HasNameParam a();
    initial begin
       $write("*-* All Finished *-*\n");

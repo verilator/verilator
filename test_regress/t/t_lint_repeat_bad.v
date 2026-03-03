@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2012 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t ();
+module t;
 
    sub #(.Z(0)) sub1 ();
    sub #(.Z(1)) sub2 ();

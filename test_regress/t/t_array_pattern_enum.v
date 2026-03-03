@@ -5,28 +5,24 @@
 // SPDX-License-Identifier: CC0-1.0
 
 package Pkg;
-   typedef enum {
-      RED=0,
-      GREEN=1,
-      BLUE=2
-   } color_t;
+  typedef enum {
+    RED = 0,
+    GREEN = 1,
+    BLUE = 2
+  } color_t;
 
-   typedef struct {
-      color_t pixels[32];
-   } line_t;
+  typedef struct {color_t pixels[32];} line_t;
 
-   typedef struct {
-      line_t line[32];
-   } screen_t;
+  typedef struct {line_t line[32];} screen_t;
 endpackage
 
 module t;
-   Pkg::screen_t screen;
+  Pkg::screen_t screen;
 
-   initial begin
-      screen = '{ default: '0, Pkg::color_t: Pkg::RED};
-      $display("%p", screen);
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    screen = '{default: '0, Pkg::color_t: Pkg::RED};
+    $display("%p", screen);
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

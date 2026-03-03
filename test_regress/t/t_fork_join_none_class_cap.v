@@ -40,7 +40,7 @@ class Foo;
   endtask
 endclass
 
-module t();
+module t;
   initial begin
     Foo foo;
     foo = new;

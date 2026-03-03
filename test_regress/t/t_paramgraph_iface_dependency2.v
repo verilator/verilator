@@ -11,18 +11,16 @@
 // verilog_format: on
 
 package a_pkg;
-  typedef struct packed {
-    int unsigned a;
-  } cfg_t;
+  typedef struct packed {int unsigned a;} cfg_t;
 endpackage
 
 package b_pkg;
-  typedef struct packed {
-    int unsigned a;
-  } cfg_t;
+  typedef struct packed {int unsigned a;} cfg_t;
 endpackage
 
-interface depgraph_if #(a_pkg::cfg_t cfg=0)();
+interface depgraph_if #(
+    a_pkg::cfg_t cfg = 0
+) ();
   typedef logic [cfg.a-1:0] byte_t;
   typedef logic [cfg.a*2-1:0] half_t;
   typedef struct packed {
@@ -35,18 +33,14 @@ interface depgraph_if #(a_pkg::cfg_t cfg=0)();
   } pair_u_t;
 endinterface
 
-module t();
-  localparam a_pkg::cfg_t cfg = '{
-    a: 8
-  };
+module t;
+  localparam a_pkg::cfg_t cfg = '{a: 8};
 
-  depgraph_if #(cfg) ifc();
+  depgraph_if #(cfg) ifc ();
 
   typedef ifc.pair_u_t pair_u_t;
 
-  localparam b_pkg::cfg_t cfg_b = '{
-    a:$bits(pair_u_t)
-  };
+  localparam b_pkg::cfg_t cfg_b = '{a: $bits(pair_u_t)};
 
   initial begin
     #2;

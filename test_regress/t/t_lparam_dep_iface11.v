@@ -19,33 +19,35 @@ package scp;
 endpackage
 
 interface a_if #(
-  parameter a_p = 0
-)();
+    parameter a_p = 0
+) ();
   localparam int LP0 = a_p * 2;
   typedef logic [LP0-1:0] a_t;
 endinterface
 
 interface b_if #(
-  parameter b_p = 0
-)();
+    parameter b_p = 0
+) ();
   localparam int LP0 = b_p + 3;
   typedef logic [LP0-1:0] b_t;
 endinterface
 
 interface sc_if #(
-  parameter scp::cfg_t cfg = 0
-)();
+    parameter scp::cfg_t cfg = 0
+) ();
   localparam int LP0 = cfg.ABits * cfg.BBits;
 
-  a_if #(LP0) a_inst();
-  b_if #(LP0) b_inst();
+  a_if #(LP0) a_inst ();
+  b_if #(LP0) b_inst ();
 
   typedef a_inst.a_t a_t;
   typedef b_inst.b_t b_t;
 endinterface
 
-module sc #(parameter scp::cfg_t cfg=0) (
-  sc_if io
+module sc #(
+    parameter scp::cfg_t cfg = 0
+) (
+    sc_if io
 );
 
   typedef io.a_t a_t;
@@ -61,17 +63,12 @@ module sc #(parameter scp::cfg_t cfg=0) (
   end
 endmodule
 
-module t();
-  localparam scp::cfg_t sc_cfg = '{
-    ABits : 2,
-    BBits : 3
-  };
+module t;
+  localparam scp::cfg_t sc_cfg = '{ABits : 2, BBits : 3};
 
   sc_if #(sc_cfg) sc_io ();
 
-  sc #(sc_cfg) sc(
-    .io(sc_io)
-  );
+  sc #(sc_cfg) sc (.io(sc_io));
 
   initial begin
     #2;

@@ -9,7 +9,7 @@ module foo
    ();
 endmodule
 
-module t();
+module t;
    genvar m, r;
    generate
       for (m = 10; m <= 20; m+=10) begin : gen_m

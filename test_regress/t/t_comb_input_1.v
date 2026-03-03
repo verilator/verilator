@@ -7,9 +7,9 @@
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 
-module top(
-  clk,
-  inc
+module top (
+    clk,
+    inc
 );
 
   input clk;
@@ -28,7 +28,7 @@ module top(
 
   always @(posedge clk) begin
     $display("cyc: %d sum: %d", cyc, sum);
-    if (sum != 2*cyc + 1) $stop;
+    if (sum != 2 * cyc + 1) $stop;
     cyc <= cyc + 1;
     if (cyc == 100) begin
       $write("*-* All Finished *-*\n");

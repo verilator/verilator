@@ -12,7 +12,7 @@
 `define IMPURE_ONE (|($random | $random))
 `endif
 
-module t ();
+module t;
 
    logic clk /* verilator public_flat_rw */;
    int count;

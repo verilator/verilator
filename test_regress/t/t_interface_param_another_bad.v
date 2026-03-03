@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2017 Johan Bjork
 // SPDX-License-Identifier: CC0-1.0
 
-module t ();
+module t;
   simple_bus sb_intf ();
   simple_bus #(.PARAMETER(sb_intf.dummy)) simple ();
   initial begin

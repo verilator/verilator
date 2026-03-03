@@ -14,7 +14,7 @@ module imply(input logic p, input logic q, output logic r);
    end
 endmodule
 
-module t();
+module t;
    logic p;
    logic q;
    logic r;

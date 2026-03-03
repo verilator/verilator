@@ -15,7 +15,7 @@ package functions;
    endfunction
 endpackage
 
-module t ();
+module t;
    import functions::*;
    localparam P = 1;
    generate

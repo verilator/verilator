@@ -24,7 +24,7 @@ class container_a;
   rand item_t items[4];
   constraint val_c {
     foreach (items[i]) {
-      items[i].value inside {[10:200]};
+      items[i].value inside {[10 : 200]};
     }
   }
   function new();
@@ -37,9 +37,7 @@ class container_b;
   rand item_t items[4];
   constraint order_c {
     foreach (items[i]) {
-      if (i != 0) {
-        items[i].value > items[i-1].value;
-      }
+      if (i != 0) {items[i].value > items[i-1].value;}
     }
   }
   function new();
@@ -81,7 +79,7 @@ module t;
       for (int i = 1; i < 4; i++) begin
         if (cb.items[i].value <= cb.items[i-1].value) begin
           $write("%%Error: %s:%0d: ordering violated: items[%0d]=%0d <= items[%0d]=%0d\n",
-                 `__FILE__, `__LINE__, i, cb.items[i].value, i-1, cb.items[i-1].value);
+                 `__FILE__, `__LINE__, i, cb.items[i].value, i - 1, cb.items[i-1].value);
           `stop;
         end
       end
@@ -92,7 +90,7 @@ module t;
       for (int i = 1; i < 4; i++) begin
         if (cc.items[i].value <= cc.items[i-1].value) begin
           $write("%%Error: %s:%0d: ordering violated: items[%0d]=%0d <= items[%0d]=%0d\n",
-                 `__FILE__, `__LINE__, i, cc.items[i].value, i-1, cc.items[i-1].value);
+                 `__FILE__, `__LINE__, i, cc.items[i].value, i - 1, cc.items[i-1].value);
           `stop;
         end
       end

@@ -46,7 +46,7 @@ module Core(
    end
 endmodule
 
-module t();
+module t;
 
    SimpleIntf intf();
 

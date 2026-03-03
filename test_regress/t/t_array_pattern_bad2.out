@@ -1,6 +1,6 @@
-%Error: t/t_array_pattern_bad2.v:22:16: Multiple '{ default: } clauses
+%Error: t/t_array_pattern_bad2.v:20:24: Multiple '{ default: } clauses
                                       : ... note: In instance 't'
-   22 |       myinfo = '{default: '0,
-      |                ^~
+   20 |   always_comb myinfo = '{default: '0, default: '1};   
+      |                        ^~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

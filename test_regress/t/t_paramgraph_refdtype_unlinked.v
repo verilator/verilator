@@ -18,7 +18,9 @@ package Include;
   typedef logic [11:0] mbox_addr_t;
 endpackage
 
-interface mbox_if #(parameter int WIDTH = 0);
+interface mbox_if #(
+    parameter int WIDTH = 0
+);
   typedef Include::mbox_addr_t mbox_addr_t;
 
   typedef struct packed {
@@ -27,8 +29,10 @@ interface mbox_if #(parameter int WIDTH = 0);
   } RFTag;
 endinterface
 
-module mbox #(parameter int WIDTH = 0);
-  mbox_if #(WIDTH) if_inst();
+module mbox #(
+    parameter int WIDTH = 0
+);
+  mbox_if #(WIDTH) if_inst ();
 
   // This should reproduce the REFDTYPE UNLINKED error
   // Using a type cast of an interface typedef in a parameter
@@ -42,5 +46,5 @@ module mbox #(parameter int WIDTH = 0);
 endmodule
 
 module top;
-  mbox #(.WIDTH(14)) u_mbox();
+  mbox #(.WIDTH(14)) u_mbox ();
 endmodule

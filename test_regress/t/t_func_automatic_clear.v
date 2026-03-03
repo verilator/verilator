@@ -13,7 +13,7 @@
 // Bug5747: Make sure that a variable with automatic storage is freshly
 // allocated when entering the function.
 
-module t();
+module t;
    function automatic int ts_queue();
       static int qs[$];
       qs.push_back(0);

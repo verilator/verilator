@@ -11,50 +11,50 @@
 //   unless they are of a named type declared as signed.
 
 module t;
-   typedef logic signed [2:0] named_t;
-   typedef named_t [1:0] named_named_t;
-   typedef logic signed [1:0][2:0] named_unnamed_t;
+  typedef logic signed [2:0] named_t;
+  typedef named_t [1:0] named_named_t;
+  typedef logic signed [1:0][2:0] named_unnamed_t;
 
-   named_named_t [1:0] named_named;
-   named_unnamed_t [1:0] named_unnamed;
-   logic signed [1:0][1:0][2:0] unnamed;
+  named_named_t [1:0] named_named;
+  named_unnamed_t [1:0] named_unnamed;
+  logic signed [1:0][1:0][2:0] unnamed;
 
-   initial begin
-      // Set 1 to MSB(=sign bit)
-      named_named = 12'b100000_000000;
-      named_unnamed = 12'b100000_000000;
-      unnamed = 12'b100000_000000;
+  initial begin
+    // Set 1 to MSB(=sign bit)
+    named_named = 12'b100000_000000;
+    named_unnamed = 12'b100000_000000;
+    unnamed = 12'b100000_000000;
 
-      if ($signed((named_named >>> 1) >> 11) != 0) begin
-         $stop;
-      end
-      if ($signed((named_named[1] >>> 1) >> 5) != 0) begin
-         $stop;
-      end
-      if ($signed((named_named[1][1] >>> 1) >> 2) != 1) begin
-         $stop;
-      end
+    if ($signed((named_named >>> 1) >> 11) != 0) begin
+      $stop;
+    end
+    if ($signed((named_named[1] >>> 1) >> 5) != 0) begin
+      $stop;
+    end
+    if ($signed((named_named[1][1] >>> 1) >> 2) != 1) begin
+      $stop;
+    end
 
-      if ($signed((named_unnamed >>> 1) >> 11) != 0) begin
-         $stop;
-      end
-      if ($signed((named_unnamed[1] >>> 1) >> 5) != 1) begin
-         $stop;
-      end
-      if ($signed((named_unnamed[1][1] >>> 1) >> 2) != 0) begin
-         $stop;
-      end
+    if ($signed((named_unnamed >>> 1) >> 11) != 0) begin
+      $stop;
+    end
+    if ($signed((named_unnamed[1] >>> 1) >> 5) != 1) begin
+      $stop;
+    end
+    if ($signed((named_unnamed[1][1] >>> 1) >> 2) != 0) begin
+      $stop;
+    end
 
-      if ($signed((unnamed >>> 1) >> 11) != 1) begin
-          $stop;//
-      end
-      if ($signed((unnamed[1] >>> 1) >> 5) != 0) begin
-         $stop;
-      end
-      if ($signed((unnamed[1][1] >>> 1) >> 2) != 0) begin
-         $stop;
-      end
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    if ($signed((unnamed >>> 1) >> 11) != 1) begin
+      $stop;  //
+    end
+    if ($signed((unnamed[1] >>> 1) >> 5) != 0) begin
+      $stop;
+    end
+    if ($signed((unnamed[1][1] >>> 1) >> 2) != 0) begin
+      $stop;
+    end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

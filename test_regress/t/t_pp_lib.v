@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 `include "t_pp_lib_inc.vh"
-module t();
+module t;
    wire [`WIDTH-1:0] a;
    library_cell n1(a);
 endmodule

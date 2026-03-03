@@ -6,7 +6,7 @@
 
 // bug475
 
-module t();
+module t;
 
    function real get_real_one;
       input           ignored;

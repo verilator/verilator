@@ -42,7 +42,7 @@ module m8 #(parameter int N = 4)
 
 endmodule
 
-module t ();
+module t;
    reg [5:0] i0, i1, i2, i3;
    reg [1:0] S;
    wire [5:0] Y;

@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2023 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
-module t();
+module t;
    std::process proc;
    logic clk = 0;
    logic b = 0;

@@ -12,17 +12,20 @@
 //
 
 // Simple type flop - parameterized by type T with default = logic
-module tflop #(parameter type T = logic) (
-  input logic clk,
-  input logic reset,
-  input T reset_strap_i,
-  output T q_o,
-  input T d_i
+module tflop #(
+    parameter type T = logic
+) (
+    input logic clk,
+    input logic reset,
+    input T reset_strap_i,
+    output T q_o,
+    input T d_i
 );
   always_ff @(posedge clk) begin
     if (reset) begin
       q_o <= reset_strap_i;
-    end else begin
+    end
+    else begin
       q_o <= d_i;
     end
   end
@@ -30,19 +33,19 @@ endmodule
 
 // Module that uses tflop with DEFAULT type parameter (T = logic)
 module user_mod (
-  input logic clk,
-  input logic reset
+    input logic clk,
+    input logic reset
 );
   logic d_in, d_out;
 
   // Use tflop with default type parameter T = logic
   // This should NOT create a specialized clone - it reuses the template
   tflop vld_reg (
-    .clk(clk),
-    .reset(reset),
-    .reset_strap_i(1'b0),
-    .q_o(d_out),
-    .d_i(d_in)
+      .clk(clk),
+      .reset(reset),
+      .reset_strap_i(1'b0),
+      .q_o(d_out),
+      .d_i(d_in)
   );
 
   initial begin
@@ -58,7 +61,10 @@ module t;
   logic clk = 0;
   logic reset = 1;
 
-  user_mod uut (.clk(clk), .reset(reset));
+  user_mod uut (
+      .clk(clk),
+      .reset(reset)
+  );
 
   initial begin
     #5 reset = 0;

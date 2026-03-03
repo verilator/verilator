@@ -10,47 +10,47 @@
 // verilog_format: on
 
 class Cls;
-   int m_index;
+  int m_index;
 
-   function automatic int get_index();
-      int rtn;
-      rtn = m_index;
-      ++m_index;
+  function automatic int get_index();
+    int rtn;
+    rtn = m_index;
+    ++m_index;
 `ifdef VERILATOR
-      return $c(rtn);  // Avoid optimizations
+    return $c(rtn);  // Avoid optimizations
 `else
-      return rtn;
+    return rtn;
 `endif
-   endfunction
+  endfunction
 endclass
 
 module t;
 
-   Cls cls;
-   int array[10];
+  Cls cls;
+  int array[10];
 
-   initial begin
-      cls = new;
-      // Common UVM construct 'id_cnt[get_id()]++;'
-      // Properly avoid/handle SIDEEFF warnings
-      cls.m_index = 5;
-      array[5] = 50;
-      array[6] = 60;
-      array[7] = 70;
-      array[8] = 80;
+  initial begin
+    cls = new;
+    // Common UVM construct 'id_cnt[get_id()]++;'
+    // Properly avoid/handle SIDEEFF warnings
+    cls.m_index = 5;
+    array[5] = 50;
+    array[6] = 60;
+    array[7] = 70;
+    array[8] = 80;
 
-      array[cls.get_index()]++;
-      `checkd(array[5], 51);
-      array[cls.get_index()]++;
-      `checkd(array[6], 61);
+    array[cls.get_index()]++;
+    `checkd(array[5], 51);
+    array[cls.get_index()]++;
+    `checkd(array[6], 61);
 
-      ++array[cls.get_index()];
-      `checkd(array[7], 71);
-      ++array[cls.get_index()];
-      `checkd(array[8], 81);
+    ++array[cls.get_index()];
+    `checkd(array[7], 71);
+    ++array[cls.get_index()];
+    `checkd(array[8], 81);
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

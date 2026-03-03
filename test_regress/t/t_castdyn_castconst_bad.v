@@ -8,20 +8,20 @@ class Base;
 endclass
 class Other;
 endclass
-enum { ZERO } e;
+enum {ZERO} e;
 
 module t;
 
-   int i;
-   int v;
-   Base b;
-   Other o;
-   initial begin
-      i = $cast(v, 1);  // 1
-      i = $cast(b, b);  // 1
-      i = $cast(b, o);  // 0
-      i = $cast(e, 0);  // 1
-      i = $cast(e, 10);  // 0
-   end
+  int i;
+  int v;
+  Base b;
+  Other o;
+  initial begin
+    i = $cast(v, 1);  // 1
+    i = $cast(b, b);  // 1
+    i = $cast(b, o);  // 0
+    i = $cast(e, 0);  // 1
+    i = $cast(e, 10);  // 0
+  end
 
 endmodule

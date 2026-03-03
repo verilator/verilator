@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2023 Jomit626
 // SPDX-License-Identifier: CC0-1.0
 
-module t ();
+module t;
     logic clk = 0;
     logic data = 0;
 

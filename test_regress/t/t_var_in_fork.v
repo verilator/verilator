@@ -6,7 +6,7 @@
 
 int static_var;
 
-module t();
+module t;
   event evt;
   task send_event();
     ->evt;

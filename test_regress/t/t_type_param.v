@@ -25,7 +25,7 @@ module foo_wrapper
 
 endmodule
 
-module t();
+module t;
    logic [7:0] qux1;
    int bar_size1;
 

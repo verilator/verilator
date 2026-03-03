@@ -28,8 +28,8 @@ package sc_pkg;
 endpackage
 
 interface simple_cache_types_if #(
-  parameter sc_pkg::cfg_t cfg = '0
-)();
+    parameter sc_pkg::cfg_t cfg = '0
+) ();
   localparam int SC_NUM_LINES = cfg.Capacity / cfg.LineSize;
   localparam int SC_LINES_PER_WAY = SC_NUM_LINES / cfg.Associativity;
   localparam int SC_BLOCK_BITS = $clog2(cfg.LineSize);
@@ -57,7 +57,12 @@ interface simple_cache_types_if #(
   } sc_tag_addr_t;
 endinterface
 
-module child(simple_cache_types_if types, output int tag_bits_o, output int tag_addr_bits_o, output int drow_bits_o);
+module child (
+    simple_cache_types_if types,
+    output int tag_bits_o,
+    output int tag_addr_bits_o,
+    output int drow_bits_o
+);
   typedef types.tag_t tag_t;
   typedef types.sc_tag_addr_t sc_tag_addr_t;
   typedef types.drow_addr_t drow_addr_t;
@@ -68,16 +73,28 @@ endmodule
 
 module top;
   localparam sc_pkg::cfg_t cfg0 = '{
-    Capacity:1024, LineSize:64, Associativity:4, AddrBits:32,
-    FgWidth:32, StateBits:2, CmdTagBits:5, MissQSize:8
+      Capacity: 1024,
+      LineSize: 64,
+      Associativity: 4,
+      AddrBits: 32,
+      FgWidth: 32,
+      StateBits: 2,
+      CmdTagBits: 5,
+      MissQSize: 8
   };
   localparam sc_pkg::cfg_t cfg1 = '{
-    Capacity:2048, LineSize:32, Associativity:2, AddrBits:36,
-    FgWidth:16, StateBits:3, CmdTagBits:7, MissQSize:16
+      Capacity: 2048,
+      LineSize: 32,
+      Associativity: 2,
+      AddrBits: 36,
+      FgWidth: 16,
+      StateBits: 3,
+      CmdTagBits: 7,
+      MissQSize: 16
   };
 
-  simple_cache_types_if #(cfg0) types0();
-  simple_cache_types_if #(cfg1) types1();
+  simple_cache_types_if #(cfg0) types0 ();
+  simple_cache_types_if #(cfg1) types1 ();
 
   int tag_bits0;
   int tag_addr_bits0;
@@ -86,10 +103,18 @@ module top;
   int tag_addr_bits1;
   int drow_bits1;
 
-  child u0(.types(types0), .tag_bits_o(tag_bits0), .tag_addr_bits_o(tag_addr_bits0),
-           .drow_bits_o(drow_bits0));
-  child u1(.types(types1), .tag_bits_o(tag_bits1), .tag_addr_bits_o(tag_addr_bits1),
-           .drow_bits_o(drow_bits1));
+  child u0 (
+      .types(types0),
+      .tag_bits_o(tag_bits0),
+      .tag_addr_bits_o(tag_addr_bits0),
+      .drow_bits_o(drow_bits0)
+  );
+  child u1 (
+      .types(types1),
+      .tag_bits_o(tag_bits1),
+      .tag_addr_bits_o(tag_addr_bits1),
+      .drow_bits_o(drow_bits1)
+  );
 
   initial begin
     #1;

@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2021 Donald Owen
 // SPDX-License-Identifier: CC0-1.0
 
-module t ();
+module t;
    import "DPI-C" function int dpiFunc();
    localparam PARAM = dpiFunc();
 endmodule

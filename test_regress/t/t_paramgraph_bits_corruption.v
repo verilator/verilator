@@ -35,7 +35,7 @@ package TestPkg;
     logic [31:0] field14;
     logic [31:0] field15;
     logic [31:0] field16;
-    logic [12:0]  field17;  // 525 bits total (16*32 + 13)
+    logic [12:0] field17;  // 525 bits total (16*32 + 13)
   } cmd_beat_t;
 
   typedef struct packed {
@@ -50,10 +50,10 @@ package TestPkg;
   // where the pattern literal gets a 128-bit constant instead of proper 32-bit assignment
   // Note: cmd_beat_t is referenced directly, not through a localparam type alias
   localparam cfg_t cb_cfg = '{
-    Rids : 32'h1,
-    Pids : 32'h2,
-    Fnum : 32'h3,
-    XdatSize : $bits(cmd_beat_t)  // Should be 525, but gets corrupted
+      Rids : 32'h1,
+      Pids : 32'h2,
+      Fnum : 32'h3,
+      XdatSize : $bits(cmd_beat_t)  // Should be 525, but gets corrupted
   };
 endpackage
 

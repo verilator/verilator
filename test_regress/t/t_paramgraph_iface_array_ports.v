@@ -22,7 +22,9 @@ package axi_pkg;
   } cfg_t;
 endpackage
 
-interface axi4_if #(parameter axi_pkg::cfg_t cfg = '0)();
+interface axi4_if #(
+    parameter axi_pkg::cfg_t cfg = '0
+) ();
   typedef logic [cfg.IdBits-1:0] id_t;
   typedef logic [cfg.DataBits-1:0] data_t;
   typedef logic [cfg.UserBits-1:0] user_t;
@@ -34,16 +36,20 @@ interface axi4_if #(parameter axi_pkg::cfg_t cfg = '0)();
   } req_t;
 endinterface
 
-module sink #(parameter int N = 1)(axi4_if tgt_ports [N-1:0]);
+module sink #(
+    parameter int N = 1
+) (
+    axi4_if tgt_ports[N-1:0]
+);
   localparam type req_t = tgt_ports[0].req_t;
   req_t rq;
 endmodule
 
 module top;
-  localparam axi_pkg::cfg_t cfg = '{IdBits:4, DataBits:32, UserBits:2};
-  axi4_if #(.cfg(cfg)) tgt_ports [1:0]();
+  localparam axi_pkg::cfg_t cfg = '{IdBits: 4, DataBits: 32, UserBits: 2};
+  axi4_if #(.cfg(cfg)) tgt_ports[1:0] ();
 
-  sink #(.N(2)) u_sink(.tgt_ports(tgt_ports));
+  sink #(.N(2)) u_sink (.tgt_ports(tgt_ports));
 
   initial begin
     #1;

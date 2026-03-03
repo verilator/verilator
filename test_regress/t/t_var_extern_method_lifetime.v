@@ -20,7 +20,7 @@ task automatic Foo::add_in_fork_delayed(int delay, Foo arg);
   join_none
 endtask
 
-module t();
+module t;
   initial begin
     Foo foo1, foo2;
     foo1 = new(1);
