@@ -139,7 +139,7 @@ string resolveOwnerName(const string& hint, AstNode* nodep) {
 }  // namespace
 
 AstTypedef* V3LinkDotIfaceCapture::findTypedefInModule(AstNodeModule* modp, const string& name) {
-    AstTypedef *resultp = nullptr;
+    AstTypedef* resultp = nullptr;
     const StmtNameMap& cache = getOrBuild(modp);
     const auto it = cache.m_byName.find(name);
     if (!(it == cache.m_byName.end())) {
@@ -155,7 +155,7 @@ AstTypedef* V3LinkDotIfaceCapture::findTypedefInModule(AstNodeModule* modp, cons
 AstNodeDType* V3LinkDotIfaceCapture::findDTypeInModule(AstNodeModule* modp, const string& name,
                                                        VNType type) {
 
-    AstNodeDType *resultp = nullptr;
+    AstNodeDType* resultp = nullptr;
     const StmtNameMap& cache = getOrBuild(modp);
     const auto it = cache.m_byName.find(name);
     if (!(it == cache.m_byName.end())) {
@@ -173,7 +173,7 @@ AstNodeDType* V3LinkDotIfaceCapture::findDTypeInModule(AstNodeModule* modp, cons
 AstParamTypeDType* V3LinkDotIfaceCapture::findParamTypeInModule(AstNodeModule* modp,
                                                                 const string& name) {
 
-    AstParamTypeDType *resultp = nullptr;
+    AstParamTypeDType* resultp = nullptr;
     const StmtNameMap& cache = getOrBuild(modp);
     const auto it = cache.m_byName.find(name);
     if (!(it == cache.m_byName.end())) {

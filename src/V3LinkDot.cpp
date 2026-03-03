@@ -5582,7 +5582,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // typedef is first linked.
                 if (V3LinkDotIfaceCapture::enabled()) {
                     if (AstRefDType* const resolvedRefp = VN_CAST(resolvedDTypep, RefDType)) {
-                        if (VL_UNCOVERABLE(VN_IS(resolvedRefp->user2p(), Cell))) { // LCOV_EXCL_LINE
+                        if (VL_UNCOVERABLE(
+                                VN_IS(resolvedRefp->user2p(), Cell))) {  // LCOV_EXCL_LINE
                             resolvedRefp->v3fatalSrc(  // LCOV_EXCL_LINE
                                 "typeofp resolved RefDType has Cell in user2p;"
                                 " expected to be captured already");
