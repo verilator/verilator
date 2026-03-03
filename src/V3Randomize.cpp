@@ -1900,6 +1900,20 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
 
     void visit(AstConstraintExpr* nodep) override {
+        // IEEE 1800-2017 18.5.1: A bare expression used as a constraint is
+        // implicitly treated as "expr != 0" when wider than 1 bit.
+        // Must wrap before iterateChildren, which converts to SMT format.
+        {
+            AstNodeExpr* const exprp = nodep->exprp();
+            if (exprp->width() > 1) {
+                FileLine* const fl = exprp->fileline();
+                V3Number numZero{fl, exprp->width(), 0};
+                AstNodeExpr* const neqp
+                    = new AstNeq{fl, exprp->unlinkFrBack(), new AstConst{fl, numZero}};
+                neqp->user1(true);  // Mark as rand-dependent for SMT path
+                nodep->exprp(neqp);
+            }
+        }
         iterateChildren(nodep);
         if (m_wantSingle) {
             nodep->replaceWith(nodep->exprp()->unlinkFrBack());
