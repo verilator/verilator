@@ -18,7 +18,7 @@ module t (
 
   typedef struct {int x;} struct_t;
   typedef union {
-    int   x;
+    int x;
     logic y;
   } union_t;
 
@@ -33,41 +33,49 @@ module t (
       big_array[1][2][3] <= 1;
       s_array[1].x <= 1;
       my_union.x <= 1;
-    end else if (cyc == 1) begin
+    end
+    else if (cyc == 1) begin
       `checkr(big_array[1][2][3], 1);
       `checkh(s_array[1].x, 1);
       `checkh(my_union.x, 1);
-    end else if (cyc == 2) begin
+    end
+    else if (cyc == 2) begin
       force big_array[1][2][3] = 0;
       force s_array[1].x = 0;
       force my_union.x = 0;
-    end else if (cyc == 3) begin
+    end
+    else if (cyc == 3) begin
       `checkr(big_array[1][2][3], 0);
       big_array[1][2][3] <= 1;
       `checkh(s_array[1].x, 0);
       s_array[1].x <= 1;
       `checkh(my_union.x, 0);
       my_union.x <= 1;
-    end else if (cyc == 4) begin
+    end
+    else if (cyc == 4) begin
       `checkr(big_array[1][2][3], 0);
       `checkh(s_array[1].x, 0);
       `checkh(my_union.x, 0);
-    end else if (cyc == 5) begin
+    end
+    else if (cyc == 5) begin
       release big_array[1][2][3];
       release s_array[1].x;
       release my_union.x;
-    end else if (cyc == 6) begin
+    end
+    else if (cyc == 6) begin
       `checkr(big_array[1][2][3], 0);
       big_array[1][2][3] <= 1;
       `checkh(s_array[1].x, 0);
       s_array[1].x <= 1;
       `checkh(my_union.x, 0);
       my_union.x <= 1;
-    end else if (cyc == 7) begin
+    end
+    else if (cyc == 7) begin
       `checkr(big_array[1][2][3], 1);
       `checkh(s_array[1].x, 1);
       `checkh(my_union.x, 1);
-    end else if (cyc == 8) begin
+    end
+    else if (cyc == 8) begin
       $write("*-* All Finished *-*\n");
       $finish;
     end
