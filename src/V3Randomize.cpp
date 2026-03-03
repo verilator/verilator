@@ -1722,6 +1722,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             newp = new AstLogIf{fl, new AstNot{fl, nodep->condp()->unlinkFrBack()}, elsep};
         }
         if (newp) {
+            newp->dtypeSetBit();  // Result is boolean (prevents bare-var != 0 wrapping)
             newp->user1(true);  // Assume result-dependent
             nodep->replaceWith(new AstConstraintExpr{fl, newp});
         } else {
