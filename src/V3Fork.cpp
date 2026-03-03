@@ -608,7 +608,7 @@ class ForkVisitor final : public VNVisitor {
         }
         if (insertBeforep == firstStmtp->nextp()) return;
 
-        AstNode* const delayp = firstStmtp->unlinkFrBackWithNext();
+        AstNode* const delayp = firstStmtp->unlinkFrBack();
         if (insertBeforep) {
             insertBeforep->addHereThisAsNext(delayp);
         } else {
