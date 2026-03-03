@@ -1,0 +1,30 @@
+%Error: t/t_recursive_typedef_bad.v:12:20: Recursive type definition
+                                         : ... note: In instance 't.u_circ'
+        t/t_recursive_typedef_bad.v:12:20: ... Type chain: PARAMTYPEDTYPE 'A'
+   12 |     parameter type A = B,
+      |                    ^
+        t/t_recursive_typedef_bad.v:12:24: ... Type chain: REFDTYPE 'B'
+   12 |     parameter type A = B,
+      |                        ^
+        t/t_recursive_typedef_bad.v:13:20: ... Type chain: PARAMTYPEDTYPE 'B'
+   13 |     parameter type B = A
+      |                    ^
+        t/t_recursive_typedef_bad.v:13:24: ... Type chain: REFDTYPE 'A'
+   13 |     parameter type B = A
+      |                        ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_recursive_typedef_bad.v:13:20: Recursive type definition
+                                         : ... note: In instance 't.u_circ'
+        t/t_recursive_typedef_bad.v:13:20: ... Type chain: PARAMTYPEDTYPE 'B'
+   13 |     parameter type B = A
+      |                    ^
+        t/t_recursive_typedef_bad.v:13:24: ... Type chain: REFDTYPE 'A'
+   13 |     parameter type B = A
+      |                        ^
+        t/t_recursive_typedef_bad.v:12:20: ... Type chain: PARAMTYPEDTYPE 'A'
+   12 |     parameter type A = B,
+      |                    ^
+        t/t_recursive_typedef_bad.v:12:24: ... Type chain: REFDTYPE 'B'
+   12 |     parameter type A = B,
+      |                        ^
+%Error: Exiting due to

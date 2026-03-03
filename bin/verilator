@@ -482,6 +482,7 @@ detailed descriptions of these arguments.
     --quiet-stats               Don't print statistics
     --relative-includes         Resolve includes relative to current file
     --reloop-limit <value>      Minimum iterations for forming loops
+    --replication-limit <value> Replication concatenation limit (default: 8k)
     --report-unoptflat          Extra diagnostics for UNOPTFLAT
     --rr                        Run Verilator and record with rr
     --runtime-debug             Enable model runtime debugging

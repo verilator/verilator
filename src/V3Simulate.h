@@ -574,6 +574,14 @@ private:
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
     }
+    void visit(AstInitialAutomaticStmt* nodep) override {
+        checkNodeInfo(nodep);
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstInitialStaticStmt* nodep) override {
+        checkNodeInfo(nodep);
+        iterateChildrenConst(nodep);
+    }
     void visit(AstInitialStatic* nodep) override {
         if (jumpingOver()) return;
         if (!m_params) {

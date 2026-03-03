@@ -1982,13 +1982,10 @@ List Of Warnings
 
 .. option:: STATICVAR
 
-   Warns that a static variable declared in a loop with declaration assignment
-   was converted to automatic. Often such variables were intended to
-   instead be declared "automatic".
+   Historical, never issued since version 5.046.
 
-   Ignoring this warning may make Verilator differ from other simulators,
-   which will treat the variable as static. Verilator may in future versions also
-   treat the variable as static.
+   Warned that a static variable was declared in a loop with declaration
+   assignment, and Verilator converted it to an "automatic".
 
 
 .. option:: STMTDLY

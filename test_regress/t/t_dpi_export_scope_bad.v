@@ -7,15 +7,23 @@
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 module t;
-   s s();
+  s s ();
+  other other ();
 
-   import "DPI-C" context function void dpix_run_tests();
-   initial dpix_run_tests();
+  import "DPI-C" context function void dpix_run_tests();
+  initial dpix_run_tests();
 endmodule
 
 module s;
-   export "DPI-C" task dpix_task;
-   task dpix_task();
-      $write("Hello in %m\n");
-   endtask
+  export "DPI-C" task dpix_task;
+  task dpix_task();
+    $write("Hello in %m\n");
+  endtask
+endmodule
+
+module other;
+  export "DPI-C" task dpix_task;
+  task dpix_task();
+    $write("Hello in %m\n");
+  endtask
 endmodule

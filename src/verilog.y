@@ -5386,7 +5386,7 @@ exprDispList<nodeExprp>:            // exprList for within $display
                         { $$ = $1->addNext(new AstConst{$<fl>2, AstConst::VerilogStringLiteral{}, " "}); }
         ;
 
-vrdList<nodep>:
+vrdList<nodeExprp>:
                 idClassSel                              { $$ = $1; }
         |       vrdList ',' idClassSel                  { $$ = $1->addNext($3); }
         ;
@@ -5396,7 +5396,7 @@ commasE:
         |       ',' commasE                             { } /* ignored */
         ;
 
-commaVRDListE<nodep>:
+commaVRDListE<nodeExprp>:
                 /* empty */                             { $$ = nullptr; }
         |       ',' vrdList                             { $$ = $2; }
         ;

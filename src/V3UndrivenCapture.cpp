@@ -34,6 +34,7 @@ public:
 class CaptureVisitor final : public VNVisitorConst {
     V3UndrivenCapture& m_cap;
     const AstNodeFTask* m_curTaskp = nullptr;  // Current task
+    bool m_inInitialSetup = false;  // In InitialAutomatic*/InitialStatic* assignment LHS
 
 public:
     explicit CaptureVisitor(V3UndrivenCapture& cap, AstNetlist* netlistp)
@@ -51,8 +52,28 @@ private:
         iterateAndNextConstNull(nodep->stmtsp());
     }
 
+    void visit(AstInitialAutomaticStmt* nodep) override {
+        VL_RESTORER(m_inInitialSetup);
+        m_inInitialSetup = true;
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstInitialStaticStmt* nodep) override {
+        VL_RESTORER(m_inInitialSetup);
+        m_inInitialSetup = true;
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstAssign* nodep) override {
+        {
+            VL_RESTORER(m_inInitialSetup);
+            m_inInitialSetup = false;
+            iterateConst(nodep->rhsp());
+        }
+        iterateConst(nodep->lhsp());
+    }
+
     void visit(AstNodeVarRef* nodep) override {
-        if (m_curTaskp && nodep->access().isWriteOrRW()) {
+        if (m_curTaskp && nodep->access().isWriteOrRW()
+            && (nodep->varp()->hasUserInit() || !m_inInitialSetup)) {
             UINFO(9, "undriven capture direct write in " << CaptureUtil::taskNameQ(m_curTaskp)
                                                          << " var=" << nodep->varp()->prettyNameQ()
                                                          << " at " << nodep->fileline());
@@ -163,7 +184,7 @@ void V3UndrivenCapture::noteDirectWrite(const AstNodeFTask* taskp, AstVar* varp)
     if (retVarp && varp == retVarp) return;
 
     // Filter out duplicates.
-    if (info.directWritesSet.insert(varp).second) { info.directWrites.push_back(varp); }
+    if (info.directWritesSet.insert(varp).second) info.directWrites.push_back(varp);
 }
 
 void V3UndrivenCapture::noteCallEdge(const AstNodeFTask* callerp, const AstNodeFTask* calleep) {

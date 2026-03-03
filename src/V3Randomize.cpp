@@ -2188,7 +2188,7 @@ class CaptureVisitor final : public VNVisitor {
             newVarp->fileline(fileline);
             newVarp->varType(VVarType::BLOCKTEMP);
             newVarp->funcLocal(true);
-            newVarp->direction(m_targetp ? VDirection::INPUT : VDirection::REF);
+            newVarp->direction(VDirection::INPUT);
             newVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             m_varCloneMap.emplace(varrefp->varp(), newVarp);
             varp = newVarp;
@@ -2458,6 +2458,13 @@ class RandomizeVisitor final : public VNVisitor {
         if (VN_IS(argExpr, ArraySel) && VN_IS(withExpr, ArraySel)) {
             const AstArraySel* const withASp = VN_AS(withExpr, ArraySel);
             const AstArraySel* const argASp = VN_AS(argExpr, ArraySel);
+            // Before checking Sel type index, check if both are Const
+            if (VN_IS(withASp->bitp(), Const) && VN_IS(argASp->bitp(), Const)) {
+                const AstConst* const withIdxp = VN_AS(withASp->bitp(), Const);
+                const AstConst* const argIdxp = VN_AS(argASp->bitp(), Const);
+                return isSimilarNode(withASp->fromp(), argASp->fromp())
+                       && withIdxp->num().isCaseEq(argIdxp->num());
+            }
             // Index must be Sel type, extract VarRef using fromp()
             if (!VN_IS(withASp->bitp(), Sel) || !VN_IS(argASp->bitp(), Sel)) return false;
             const AstNodeExpr* const withIdxp = VN_AS(withASp->bitp(), Sel)->fromp();

@@ -1700,6 +1700,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         if (m_reloopLimit < 2) fl->v3error("--reloop-limit must be >= 2: " << valp);
     });
     DECL_OPTION("-report-unoptflat", OnOff, &m_reportUnoptflat);
+    DECL_OPTION("-replication-limit", CbVal, [this, fl](const char* valp) {
+        m_replicationLimit = std::atoi(valp);
+        if (m_replicationLimit < 0) fl->v3error("--replication-limit must be >= 0: " << valp);
+    });
     DECL_OPTION("-rr", CbCall, []() {});  // Processed only in bin/verilator shell
     DECL_OPTION("-runtime-debug", CbCall, [this, fl]() {
         decorations(fl, "node");

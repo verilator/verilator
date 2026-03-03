@@ -79,18 +79,18 @@ verilator_coverage Arguments
 
    .. code-block::
 
-      100000  input logic a;      // Begins with whitespace, because
-                                  // number of hits (100000) is above the min.
-     +100000  point: comment=a    // Begins with +, because
-                                  // number of hits (100000) is above the min.
-     %000000  input logic b;      // Begins with %, because
-                                  // number of hits (0) is below the min.
-     -000000  point: comment=b    // Begins with -, because
-                                  // number of hits (0) is below the min.
-     ~000010  if (cyc!=0) begin   // Begins with ~, because
-                                  // branches are below and above the min.
-     +000010  point: comment=if   // The if branch is above the min.
-     -000000  point: comment=else // The else branch is below the min.
+      100000  input logic a;                  // Begins with whitespace, because
+                                              // number of hits (100000) is above the min.
+     +100000  point: type=line comment=a      // Begins with +, because
+                                              // number of hits (100000) is above the min.
+     %000000  input logic b;                  // Begins with %, because
+                                              // number of hits (0) is below the min.
+     -000000  point: type=line comment=b      // Begins with -, because
+                                              // number of hits (0) is below the min.
+     ~000010  if (cyc!=0) begin               // Begins with ~, because
+                                              // branches are below and above the min.
+     +000010  point: type=branch comment=if   // The if branch is above the min.
+     -000000  point: type=branch comment=else // The else branch is below the min.
 
 .. option:: --annotate-all
 
@@ -119,9 +119,9 @@ verilator_coverage Arguments
    .. code-block::
 
      100000  input logic a, b, c;
-    +100000 point: comment=a  // These lines are only shown
-    +200000 point: comment=b  // with option --annotate-points
-    +300000 point: comment=c  // enabled.
+    +100000 point: type=line comment=a  // These lines are only shown
+    +200000 point: type=line comment=b  // with option --annotate-points
+    +300000 point: type=line comment=c  // enabled.
 
 
    This option should be used together with :option:`--annotate`.

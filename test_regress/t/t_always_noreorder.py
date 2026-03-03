@@ -10,7 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt_all')
-test.top_filename = "t/t_alw_reorder.v"
+test.top_filename = "t/t_always_reorder.v"
 test.compile(verilator_flags2=["--stats -fno-reorder"])
 
 test.file_grep(test.stats, r'Optimizations, Split always\s+(\d+)', 0)

@@ -527,7 +527,8 @@ static void process() {
             // Bits between widthMin() and width() are irrelevant, but may be non zero.
             v3Global.widthMinUsage(VWidthMinUsage::VERILOG_WIDTH);
 
-            // Make all expressions either 8, 16, 32 or 64 bits
+            // Make all expressions 32, 64, or 32*N bits
+            // Variables and selects-of-variables remain verilog-width
             V3Clean::cleanAll(v3Global.rootp());
 
             // Move wide constants to BLOCK temps / ConstPool.

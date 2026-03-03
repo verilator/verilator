@@ -114,7 +114,7 @@ CPPFLAGS += $(OPT)
 # On macOS, specify all weak symbols as dynamic_lookup.
 # Otherwise, you get undefined symbol errors.
 ifeq ($(UNAME_S),Darwin)
-  LDFLAGS += -Wl,-U,__Z15vl_time_stamp64v,-U,__Z13sc_time_stampv
+  LDFLAGS += -Wl,-U,__Z15vl_time_stamp64v,-U,__Z13sc_time_stampv,-U,vlog_startup_routines
 endif
 
 # Allow upper level user makefiles to specify flags they want.

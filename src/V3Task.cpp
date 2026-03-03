@@ -291,18 +291,23 @@ private:
             iterateChildren(nodep);
         }
         UASSERT_OBJ(m_ctorp, nodep, "class constructor missing");  // LinkDot always makes it
+        AstNode* insertp = nullptr;
         for (AstInitialAutomatic* initialp : m_initialps) {
-            if (AstNode* const newp = initialp->stmtsp()) {
-                newp->unlinkFrBackWithNext();
-                if (!m_ctorp->stmtsp()) {
-                    m_ctorp->addStmtsp(newp);
-                } else {
-                    m_ctorp->stmtsp()->addHereThisAsNext(newp);
-                }
+            if (AstNode* const movep = initialp->stmtsp()) {
+                movep->unlinkFrBackWithNext();
+                // Next InitialAutomatic must go in order after what we inserted
+                insertp = AstNode::addNextNull(insertp, movep);
             }
             VL_DO_DANGLING(pushDeletep(initialp->unlinkFrBack()), initialp);
         }
         m_initialps.clear();
+        if (insertp) {
+            if (!m_ctorp->stmtsp()) {
+                m_ctorp->addStmtsp(insertp);
+            } else {
+                m_ctorp->stmtsp()->addHereThisAsNext(insertp);
+            }
+        }
     }
     void visit(AstInitialAutomatic* nodep) override {
         m_initialps.push_back(nodep);
@@ -446,6 +451,7 @@ class TaskVisitor final : public VNVisitor {
                 = new AstVar{invarp->fileline(), VVarType::BLOCKTEMP, name, invarp};
             newvarp->funcLocal(false);
             newvarp->propagateAttrFrom(invarp);
+            newvarp->isInternal(true);
             m_modp->addStmtsp(newvarp);
             AstVarScope* const newvscp = new AstVarScope{newvarp->fileline(), m_scopep, newvarp};
             m_scopep->addVarsp(newvscp);
@@ -634,6 +640,15 @@ class TaskVisitor final : public VNVisitor {
                 beginp->addNext(preassp);
             }
         }
+    }
+
+    bool hasRefArgument(AstNodeFTask* nodep) {
+        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (AstVar* const varp = VN_CAST(stmtp, Var)) {
+                if (varp->isRef() || varp->isConstRef()) return true;
+            }
+        }
+        return false;
     }
 
     AstNode* createInlinedFTask(AstNodeFTaskRef* refp, const string& namePrefix,
@@ -1413,15 +1428,22 @@ class TaskVisitor final : public VNVisitor {
             // Mark non-local variables written by the exported function
             bool writesNonLocals = false;
             cfuncp->foreach([&writesNonLocals](AstVarRef* refp) {
-                if (refp->access().isReadOnly()) return;  // Ignore read reference
                 AstVar* const varp = refp->varScopep()->varp();
                 // We are ignoring function locals as they should not be referenced anywhere
                 // outside the enclosing AstCFunc, hence they are irrelevant for code ordering.
                 if (varp->isFuncLocal()) return;
-                // Mark it as written by DPI export
-                varp->setWrittenByDpi();
-                // Remember we had some
-                writesNonLocals = true;
+                // Check if written
+                if (refp->access().isWriteOrRW()) {
+                    // Mark it as written by DPI export
+                    varp->setWrittenByDpi();
+                    // Remember we had some
+                    writesNonLocals = true;
+                }
+                // Check if read
+                if (refp->access().isReadOrRW()) {
+                    // Mark it as read by DPI export
+                    varp->setReadByDpi();
+                }
             });
 
             // If this DPI export writes some non-local variables, set the DPI Export Trigger flag
@@ -1537,9 +1559,25 @@ class TaskVisitor final : public VNVisitor {
         // Create output variable
         AstVarScope* outvscp = nullptr;
         if (nodep->taskp()->isFunction()) {
-            // Not that it's a FUNCREF, but that we're calling a function (perhaps as a task)
-            outvscp
-                = createVarScope(VN_AS(nodep->taskp()->fvarp(), Var), namePrefix + "__Vfuncout");
+            AstVar* const fvarp = VN_AS(nodep->taskp()->fvarp(), Var);
+            // If the call is on the RHS of a simple assignment 'lhs = call()',
+            // the LHS variable can be reused as the output variable iff it has
+            // the same type, and the function does not read the output variable itself.
+            // This can be proven cheaply if the LHS is an automatic variable and the
+            // function does not have any ref arguments. This arises a lot after V3LiftExpr.
+            if (AstAssign* const assignp = VN_CAST(nodep->backp(), Assign)) {
+                if (AstVarRef* const lhsp = VN_CAST(assignp->lhsp(), VarRef)) {
+                    AstVarScope* const vscp = lhsp->varScopep();
+                    if (vscp->varp()->lifetime().isAutomatic()
+                        && vscp->varp()->dtypep()->skipRefp()->sameTree(
+                            fvarp->dtypep()->skipRefp())
+                        && !hasRefArgument(nodep->taskp())) {
+                        outvscp = vscp;
+                    }
+                }
+            }
+            // Otherwise create a new variable for the result
+            if (!outvscp) outvscp = createVarScope(fvarp, namePrefix + "__Vfuncout");
         }
         // Create cloned statements
         AstNode* beginp;

@@ -335,13 +335,31 @@ class DynScopeVisitor final : public VNVisitor {
         auto r = m_frames.emplace(nodep, framep);
         if (r.second) m_frameOrder.push_back(nodep);
     }
+    void bindInitIterate(AstNode* stmtsp, ForkDynScopeFrame* framep) {
+        for (AstNode* stmtp = stmtsp; stmtp; stmtp = stmtp->nextp()) {
+            if (AstAssign* const asgnp = VN_CAST(stmtp, Assign)) {
+                bindNodeToDynScope(asgnp->lhsp(), framep);
+                iterate(asgnp->rhsp());
+            } else if (AstInitialAutomaticStmt* astmtp
+                       = VN_CAST(stmtp, InitialAutomaticStmt)) {  // Moves in V3Begin
+                // Underlying assign RHS might use function argument, so can't just
+                // move whole thing into the new class's constructor/statements
+                bindInitIterate(astmtp->stmtsp(), framep);
+            } else if (AstInitialStaticStmt* astmtp
+                       = VN_CAST(stmtp, InitialStaticStmt)) {  // Moves in V3Begin
+                bindInitIterate(astmtp->stmtsp(), framep);
+            } else {
+                stmtp->v3fatalSrc("Invalid node under block item initialization part of fork");
+            }
+        }
+    }
 
     bool needsDynScope(const AstVarRef* refp) const {
         const AstVar* const varp = refp->varp();
-        const bool localLifetime = varp->isFuncLocal() || varp->lifetime().isAutomatic();
         return
             // Can this variable escape the scope
-            ((m_forkDepth > varp->user1()) && localLifetime)
+            ((m_forkDepth > varp->user1()) && varp->isFuncLocal())
+            && varp->lifetime().isAutomatic()
             && (
                 // Is it mutated
                 (varp->isClassHandleValue() ? refp->user2() : refp->access().isWriteOrRW())
@@ -384,18 +402,14 @@ class DynScopeVisitor final : public VNVisitor {
         for (AstNode* declp = nodep->declsp(); declp; declp = declp->nextp()) {
             AstVar* const varp = VN_CAST(declp, Var);
             UASSERT_OBJ(varp, declp, "Invalid node under block item initialization part of fork");
-            if (!framep->instance().initialized()) framep->createInstancePrototype();
-            framep->captureVarInsert(varp);
-            bindNodeToDynScope(varp, framep);
-        }
-        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstAssign* const asgnp = VN_CAST(stmtp, Assign)) {
-                bindNodeToDynScope(asgnp->lhsp(), framep);
-                iterate(asgnp->rhsp());
-            } else {
-                stmtp->v3fatalSrc("Invalid node under block item initialization part of fork");
+            UASSERT_OBJ(!varp->lifetime().isNone(), nodep, "Variable's lifetime is unknown");
+            if (varp->lifetime().isAutomatic()) {  // else V3Begin will move later
+                if (!framep->instance().initialized()) framep->createInstancePrototype();
+                framep->captureVarInsert(varp);
+                bindNodeToDynScope(varp, framep);
             }
         }
+        bindInitIterate(nodep->stmtsp(), framep);
 
         for (AstNode* stmtp = nodep->forksp(); stmtp; stmtp = stmtp->nextp()) {
             m_afterTimingControl = false;
@@ -526,6 +540,7 @@ class ForkVisitor final : public VNVisitor {
 
     // STATE - for current AstFork item
     bool m_inFork = false;  // Traversal in an async fork
+    bool m_inInitStmt = false;  // Traversal in InitialStaticStmt/InitialAutomaticStmt
     std::set<AstVar*> m_forkLocalsp;  // Variables local to a given fork
     AstVar* m_capturedVarsp = nullptr;  // Local copies of captured variables
     AstArg* m_capturedArgsp = nullptr;  // References to captured variables (as args)
@@ -650,7 +665,8 @@ class ForkVisitor final : public VNVisitor {
         // If this ref is to a variable that will move into the task, then nothing to do
         if (m_forkLocalsp.count(varp)) return;
 
-        if (nodep->access().isWriteOrRW() && (!nodep->isClassHandleValue() || nodep->user2())) {
+        if (nodep->access().isWriteOrRW() && (!nodep->isClassHandleValue() || nodep->user2())
+            && !m_inInitStmt) {
             nodep->v3warn(
                 E_LIFETIME,
                 "Invalid reference: Process might outlive variable "
@@ -671,6 +687,17 @@ class ForkVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
+    void visit(AstInitialAutomaticStmt* nodep) override {
+        VL_RESTORER(m_inInitStmt);
+        m_inInitStmt = true;
+        iterateChildren(nodep);
+    }
+    void visit(AstInitialStaticStmt* nodep) override {
+        VL_RESTORER(m_inInitStmt);
+        m_inInitStmt = true;
+        iterateChildren(nodep);
+    }
+
     void visit(AstThisRef* nodep) override {}
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 

@@ -9,11 +9,8 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt_all')
-test.top_filename = 't/t_alw_reorder.v'
+test.scenarios('vlt')
 
-test.compile(verilator_flags2=["--stats", "-fno-acyc-simp"])
-
-test.execute()
+test.lint(fails=True, expect_filename=test.golden_filename)
 
 test.passes()

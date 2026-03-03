@@ -756,6 +756,38 @@ public:
     ASTGEN_MEMBERS_AstFireEvent;
     bool isDelayed() const { return m_delayed; }
 };
+class AstInitialAutomaticStmt final : public AstNodeStmt {
+    // Automatic variable initialization in a statement position
+    // Used during early stages to record an initial initialization of a variable
+    // Moves later to an appropriate constructor, or AstInitialAutomatic, or
+    // AstCFunc normal statement
+    // Children: {statement list usually only with assignments}
+    // @astgen op1 := stmtsp : List[AstNode]
+public:
+    AstInitialAutomaticStmt(FileLine* fl, AstNode* stmtsp)
+        : ASTGEN_SUPER_InitialAutomaticStmt(fl) {
+        addStmtsp(stmtsp);
+    }
+    ASTGEN_MEMBERS_AstInitialAutomaticStmt;
+    int instrCount() const override { return 0; }
+    bool isPure() override { return true; }
+};
+class AstInitialStaticStmt final : public AstNodeStmt {
+    // Static variable initialization in a statement position
+    // Used during early stages to record a static initialization of a variable
+    // Moves later to an appropriate constructor, or AstInitialStatic, or
+    // AstCFunc normal statement
+    // Children: {statement list usually only with assignments}
+    // @astgen op1 := stmtsp : List[AstNode]
+public:
+    AstInitialStaticStmt(FileLine* fl, AstNode* stmtsp)
+        : ASTGEN_SUPER_InitialStaticStmt(fl) {
+        addStmtsp(stmtsp);
+    }
+    ASTGEN_MEMBERS_AstInitialStaticStmt;
+    int instrCount() const override { return 0; }
+    bool isPure() override { return true; }
+};
 class AstJumpBlock final : public AstNodeStmt {
     // Block of code that might contain AstJumpGo statements as children,
     // which when exectued branch to right after the referenced AstJumpBlock.
