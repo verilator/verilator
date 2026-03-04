@@ -224,6 +224,9 @@ class LinkJumpVisitor final : public VNVisitor {
         if (it != m_taskDisableBegins.end()) return it->second;
 
         AstBegin* const taskBodyp = new AstBegin{fl, "", nullptr, false};
+        // Disable-by-name rewrites kill this detached task-body process, so mark it as process
+        // backed to ensure fork/join kill-accounting hooks are always emitted.
+        taskBodyp->setNeedProcess();
         if (taskp->stmtsp()) taskBodyp->addStmtsp(taskp->stmtsp()->unlinkFrBackWithNext());
 
         AstFork* const forkp = new AstFork{fl, VJoinType::JOIN};

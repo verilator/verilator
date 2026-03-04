@@ -48,8 +48,13 @@ endclass
 module t;
 
   driver c;
+  task automatic progress(input string label);
+    $display("DBG:t_disable_task_join:%s t=%0t x=%0d y=%0d z=%0d w=%0d m_time=%0d",
+             label, $time, x, y, z, w, (c == null) ? -1 : c.m_time);
+  endtask
 
   initial begin
+    progress("start");
     fork
       increment_x();
       #1 disable increment_x;
@@ -75,6 +80,7 @@ module t;
     #20;
     if ($time != 52) $fatal(1, "$time=%0t expected 52", $time);
     if (c.m_time != 30) $fatal(1, "c.m_time=%0d expected 30 after disable", c.m_time);
+    progress("after_class_task_disable");
 
     // Additional regression: join_any should also complete when disable kills a forked task
     fork
@@ -83,6 +89,7 @@ module t;
     join_any
     #3;
     if (y != 1) $fatal(1, "y=%0d expected 1", y);
+    progress("after_join_any_task_disable");
 
     // Additional regression: named-block disable with join
     fork
@@ -94,6 +101,7 @@ module t;
       #1 disable worker_join;
     join
     if (z != 1) $fatal(1, "z=%0d expected 1", z);
+    progress("after_named_block_join_disable");
 
     // Additional regression: named-block disable with join_any
     fork
@@ -106,6 +114,7 @@ module t;
     join_any
     #3;
     if (w != 1) $fatal(1, "w=%0d expected 1", w);
+    progress("after_named_block_join_any_disable");
 
     // disable fork from inside a join_any branch
     fork
@@ -129,6 +138,7 @@ module t;
     join_any
     #6;
     if (jf != 1) $fatal(1, "jf=%0d expected 1", jf);
+    progress("after_disable_fork");
 
     // multiple sequential disables of the same target under join
     fork
@@ -217,6 +227,7 @@ module t;
       #1 disable race_target;
     join
     if (race_disable != 0) $fatal(1, "race_disable=%0d expected 0", race_disable);
+    progress("after_race_disable");
 
     // nested descendants are disabled and outer join resumes
     begin : nested_disable
@@ -245,6 +256,7 @@ module t;
     end
     #8;
     if (nd != 1) $fatal(1, "nd=%0d expected 1", nd);
+    progress("before_finish");
 
     $write("*-* All Finished *-*\n");
     $finish;
