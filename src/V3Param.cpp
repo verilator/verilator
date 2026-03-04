@@ -2293,20 +2293,21 @@ class ParamVisitor final : public VNVisitor {
                 nodep->v3error("Parameter without default value is never given value"
                                << " (IEEE 1800-2023 6.20.1): " << nodep->prettyNameQ());
             } else if (nodep->valuep()) {
-                // In visit(AstVar*) for localparams, check if expression contains VARXREF
-                // to another localparam (not parameter). Parameters are already const,
-                // but localparams may not be evaluated yet.
-                bool hasVarXRefToLparam = false;
+                // If the value expression contains a VarXRef to an interface
+                // localparam whose value is not yet constant, defer constification
+                // to avoid premature widthing with unresolved values (see
+                // t_lparam_dep_iface tests).  When the referenced localparam is
+                // already const, proceed normally so FUNCREFs with resolved iface
+                // param args get folded.
+                bool hasUnresolvedLparamXRef = false;
                 nodep->valuep()->foreach([&](const AstVarXRef* xrefp) {
-                    if (xrefp->varp() && xrefp->varp()->varType() == VVarType::LPARAM) {
-                        hasVarXRefToLparam = true;
+                    if (const AstVar* const varp = xrefp->varp()) {
+                        if (varp->varType() == VVarType::LPARAM && !VN_IS(varp->valuep(), Const)) {
+                            hasUnresolvedLparamXRef = true;
+                        }
                     }
                 });
-                if (hasVarXRefToLparam) {
-                    // Don't constify - let it be evaluated later
-                    return;
-                }
-
+                if (hasUnresolvedLparamXRef) return;
                 V3Const::constifyParamsEdit(nodep);
             }
         }
@@ -2328,6 +2329,13 @@ class ParamVisitor final : public VNVisitor {
             if (nodep->name() == candp->name()) {
                 if (AstVar* const varp = VN_CAST(candp, Var)) {
                     UINFO(9, "Found interface parameter: " << varp);
+                    // The interface may not have been visited yet (it is at a
+                    // deeper level in the work queue), so its localparams may
+                    // not be constified.  Eagerly constify here so that the
+                    // caller's hasUnresolvedLparamXRef check sees a Const.
+                    if (varp->isParam() && varp->valuep() && !VN_IS(varp->valuep(), Const)) {
+                        V3Const::constifyParamsEdit(varp);
+                    }
                     nodep->varp(varp);
                     return true;
                 } else if (const AstPin* const pinp = VN_CAST(candp, Pin)) {
