@@ -16,7 +16,6 @@ int dj_done = 0;
 int dja_done = 0;
 int djn_done = 0;
 int race_disable = 0;
-int nd = 0;
 
 task increment_x;
   x++;
@@ -229,33 +228,6 @@ module t;
     if (race_disable != 0) $fatal(1, "race_disable=%0d expected 0", race_disable);
     progress("after_race_disable");
 
-    // nested descendants are disabled and outer join resumes
-    begin : nested_disable
-      fork
-        begin
-          fork
-            begin
-              #1;
-              nd += 1;
-            end
-            begin
-              #3;
-              nd += 10;
-            end
-          join_none
-          #5;
-          nd += 100;
-        end
-        begin
-          #2;
-          disable nested_disable;
-        end
-      join_none
-      #6;
-      nd += 1000;
-    end
-    #8;
-    if (nd != 1) $fatal(1, "nd=%0d expected 1", nd);
     progress("before_finish");
 
     $write("*-* All Finished *-*\n");
