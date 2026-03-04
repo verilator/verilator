@@ -662,6 +662,39 @@ class AstToDfgSynthesize final {
         return drivers;
     }
 
+    // Returns true if the driver cone contains any variable introduced by
+    // tristate lowering. Used to distinguish intentional tristate contributor
+    // overlap from accidental multidrive.
+    static bool containsTriLoweredVar(DfgVertex* rootp) {
+        std::vector<const DfgVertex*> stack;
+        std::vector<const DfgVertex*> visited;
+        stack.emplace_back(rootp);
+        while (!stack.empty()) {
+            const DfgVertex* const vtxp = stack.back();
+            stack.pop_back();
+            if (std::find(visited.begin(), visited.end(), vtxp) != visited.end()) continue;
+            visited.emplace_back(vtxp);
+            if (const DfgVertexVar* const varp = vtxp->cast<DfgVertexVar>()) {
+                AstVar* const astVarp = [&]() -> AstVar* {
+                    if VL_CONSTEXPR_CXX17 (T_Scoped) {
+                        return reinterpret_cast<AstVarScope*>(varp->nodep())->varp();
+                    } else {
+                        return reinterpret_cast<AstVar*>(varp->nodep());
+                    }
+                }();
+                if (astVarp->dfgTriLowered()) return true;
+            }
+            vtxp->foreachSource([&](const DfgVertex& src) {
+                stack.emplace_back(&src);
+                return false;
+            });
+        }
+        return false;
+    }
+
+    // Returns true if the driver is a direct variable forward (no logic).
+    static bool isDirectVarDriver(const DfgVertex* vtxp) { return vtxp->is<DfgVertexVar>(); }
+
     // Gather all synthesized drivers of an unresolved variable
     static std::vector<Driver> gatherDriversUnresolved(DfgUnresolved* vtxp) {
         std::vector<Driver> drivers;
@@ -822,6 +855,17 @@ class AstToDfgSynthesize final {
 
             // Loop index often abused, so suppress
             if (getAstVar(varp)->isUsedLoopIdx()) continue;
+            // Tristate lowering can intentionally create overlapping contributors.
+            // Keep the signal marked multidriven for DFG fallback, but suppress
+            // warning only when both overlapping driver cones look tri-lowered.
+            if (getAstVar(varp)->dfgAllowMultidriveTri()) {
+                const bool iTri = containsTriLoweredVar(iD.m_vtxp);
+                const bool jTri = containsTriLoweredVar(jD.m_vtxp);
+                const bool triPair = iTri && jTri;
+                const bool triAndBridge = (iTri && isDirectVarDriver(jD.m_vtxp))
+                                          || (jTri && isDirectVarDriver(iD.m_vtxp));
+                if (triPair || triAndBridge) continue;
+            }
 
             // Warn the user now
             const std::string lo = std::to_string(jD.m_lo);

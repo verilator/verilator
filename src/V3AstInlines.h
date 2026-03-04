@@ -211,4 +211,13 @@ AstVarXRef::AstVarXRef(FileLine* fl, AstVar* varp, const string& dotted, const V
 
 AstStmtExpr* AstNodeExpr::makeStmt() { return new AstStmtExpr{fileline(), this}; }
 
+// Walk up the AST via backp() to find the containing AstNodeModule.
+// Returns nullptr if not found.
+inline AstNodeModule* findParentModule(AstNode* nodep) {
+    for (AstNode* curp = nodep; curp; curp = curp->backp()) {
+        if (AstNodeModule* const modp = VN_CAST(curp, NodeModule)) return modp;
+    }
+    return nullptr;
+}
+
 #endif  // Guard
