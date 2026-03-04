@@ -1,8 +1,9 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
-// SPDX-FileCopyrightText: 2025 Wilson Snyder
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
+
 
 module t;
   specify
@@ -13,6 +14,9 @@ module t;
     specparam PATHPULSE$a$b = (3.0:3.1:3.2, 4.0:4.1:4.2);
     specparam PATHPULSE$a$c = (3.0:3.1:3.2);
     specparam randomize = 1;  // Special parser corner-case
+
+    // Not allowed by LRM but used in an example in section 30.7.1
+    specparam PATHPULSE$ = 0;
   endspecify
 
   // Support in other simulators is limited for module specparams
