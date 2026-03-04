@@ -2302,8 +2302,7 @@ class ParamVisitor final : public VNVisitor {
                 bool hasUnresolvedLparamXRef = false;
                 nodep->valuep()->foreach([&](const AstVarXRef* xrefp) {
                     if (const AstVar* const varp = xrefp->varp()) {
-                        if (varp->varType() == VVarType::LPARAM
-                            && !VN_IS(varp->valuep(), Const)) {
+                        if (varp->varType() == VVarType::LPARAM && !VN_IS(varp->valuep(), Const)) {
                             hasUnresolvedLparamXRef = true;
                         }
                     }
@@ -2334,8 +2333,7 @@ class ParamVisitor final : public VNVisitor {
                     // deeper level in the work queue), so its localparams may
                     // not be constified.  Eagerly constify here so that the
                     // caller's hasUnresolvedLparamXRef check sees a Const.
-                    if (varp->isParam() && varp->valuep()
-                        && !VN_IS(varp->valuep(), Const)) {
+                    if (varp->isParam() && varp->valuep() && !VN_IS(varp->valuep(), Const)) {
                         V3Const::constifyParamsEdit(varp);
                     }
                     nodep->varp(varp);
