@@ -78,7 +78,7 @@ string EmitCBaseVisitorConst::funcNameProtect(const AstCFunc* nodep, const AstNo
     modp = modp ? modp : EmitCParentModule::get(nodep);
     string name;
     if (nodep->isConstructor()) {
-        name += EmitCUtil::prefixNameProtect(modp);
+        name += "init";
     } else if (nodep->isDestructor()) {
         name += "~";
         name += EmitCUtil::prefixNameProtect(modp);
@@ -126,10 +126,15 @@ string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep) {
     return args;
 }
 
+void EmitCBaseVisitorConst::emitCDefaultConstructor(const AstNodeModule* const modp) {
+    puts(EmitCUtil::prefixNameProtect(modp));
+    puts("() = default;\n");
+}
+
 void EmitCBaseVisitorConst::emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp,
                                             bool withScope) {
     if (funcp->slow()) putns(funcp, "VL_ATTR_COLD ");
-    if (!funcp->isConstructor() && !funcp->isDestructor()) {
+    if (!funcp->isDestructor()) {
         putns(funcp, funcp->rtnTypeVoid());
         puts(" ");
     }
@@ -149,6 +154,7 @@ void EmitCBaseVisitorConst::emitCFuncDecl(const AstCFunc* funcp, const AstNodeMo
                                           bool cLinkage) {
     ensureNewLine();
     if (!funcp->ifdef().empty()) putns(funcp, "#ifdef " + funcp->ifdef() + "\n");
+    if (funcp->isConstructor()) emitCDefaultConstructor(modp);
     if (cLinkage) putns(funcp, "extern \"C\" ");
     if (funcp->isStatic() && funcp->isProperMethod()) putns(funcp, "static ");
     if (funcp->isVirtual()) {
@@ -158,7 +164,9 @@ void EmitCBaseVisitorConst::emitCFuncDecl(const AstCFunc* funcp, const AstNodeMo
         // on other methods where virtual vs override is needed, and this is not tracked yet
     }
     emitCFuncHeader(funcp, modp, /* withScope: */ false);
-    if (funcp->emptyBody() && !funcp->isLoose() && !cLinkage) {
+    const AstClass* const classp = VN_CAST(modp, Class);
+    if (funcp->emptyBody() && !funcp->isLoose() && !cLinkage
+        && !(funcp->isConstructor() && classp && classp->isInterfaceClass())) {
         putns(funcp, " {}\n");
     } else {
         putns(funcp, ";\n");

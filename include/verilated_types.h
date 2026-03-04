@@ -1937,11 +1937,26 @@ public:
     VlClassRef(VlNull){};
     template <typename... T_Args>
     VlClassRef(VlDeleter& deleter, T_Args&&... args)
-        // () required here to avoid narrowing conversion warnings,
-        // when a new() has an e.g. CData type and passed a 1U.
-        : m_objp{new T_Class(std::forward<T_Args>(args)...)} {
-        // refCountInc was moved to the constructor of T_Class
-        // to fix self references in constructor.
+        : m_objp{new T_Class} {
+        // Instantly init the object to presevrve RAII
+        m_objp->init(std::forward<T_Args>(args)...);
+        m_objp->m_deleterp = &deleter;
+    }
+    VlClassRef(VlDeleter& deleter, T_Class&& args)
+        // Move constructor
+        : m_objp{new T_Class{std::forward<T_Class>(args)}} {
+        m_objp->m_deleterp = &deleter;
+    }
+    VlClassRef(VlDeleter& deleter, const T_Class& args)
+        // Copy constructor
+        : m_objp{new T_Class{args}} {
+        m_objp->m_deleterp = &deleter;
+    }
+    VlClassRef(VlDeleter& deleter, T_Class& args)
+        // Copy constructor - this is required since if `T_Class&`
+        // will be provided a compiler will match it to the constructor
+        // with variadic template instead of `T_Class&&`
+        : m_objp{new T_Class{args}} {
         m_objp->m_deleterp = &deleter;
     }
     // Explicit to avoid implicit conversion from 0
