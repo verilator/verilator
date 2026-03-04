@@ -2327,19 +2327,6 @@ struct FourStateLogicWrapper {
     T value;  // 2 state logic value if .xz is 0 and x if .xz is 1 and value is 1 otherwise z
     T xz;  // true when it is x or z
 
-    constexpr FourStateLogicWrapper() {}
-    constexpr FourStateLogicWrapper(T v)
-        : value{v}
-        , xz{0} {}
-    constexpr FourStateLogicWrapper(T v, T x)
-        : value{v}
-        , xz{x} {}
-    // template <typename Y>
-    // FourStateLogicWrapper(const FourStateLogicWrapper<Y>& other)
-    //     : value{other.value}
-    //     , xz{other.xz} {}
-    template <std::size_t N_Words>
-    FourStateLogicWrapper(const FourStateLogicWrapper<VlWide<N_Words>>& other);
     operator T() const noexcept { return value & ~xz; }
     template <typename Y>
     constexpr FourStateLogicWrapper<std::conditional_t<(sizeof(T) > sizeof(Y)), T, Y>>

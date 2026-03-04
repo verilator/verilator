@@ -1,3 +1,11 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Antmicro
+// SPDX-License-Identifier: CC0-1.0
+
+`define STRINGIFY(x) `"x`"
+
 module counter(input clk, input rstn, output reg[3:0] out);
   always @(posedge clk) begin
     if (!rstn) out <= 0;
@@ -20,7 +28,7 @@ module tb_counter;
   end
 
   initial begin
-    $dumpfile("file2.vcd");
+    $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     $dumpvars();
     #20 rstn <= 1;
     #20 clk <= 0;

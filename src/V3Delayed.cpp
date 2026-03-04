@@ -646,19 +646,32 @@ class DelayedVisitor final : public VNVisitor {
         AstAlwaysPost* const postp = new AstAlwaysPost{flp};
         activep->addStmtsp(postp);
         // Add the commit - vscp = (shadowVscp & maskVscp) | (vscp & ~maskVscp);
-        AstCFuncHard* const newp = new AstCFuncHard{flp, VCFunc::FOUR_STATE_MASK,
-                                                    new AstVarRef{flp, vscp, VAccess::READ}};
-        newp->addPinsp(new AstNot{flp, new AstVarRef{flp, maskVscp, VAccess::READ}});
-        postp->addStmtsp(new AstAssign{
-            flp, new AstVarRef{flp, vscp, VAccess::WRITE},
-            new AstOr{flp,
-                      new AstCFuncHard{
-                          flp,
-                          VCFunc::FOUR_STATE_MASK,
-                          AstNode::addNext(new AstVarRef{flp, shadowVscp, VAccess::READ},
-                                           new AstVarRef{flp, maskVscp, VAccess::READ}),
-                      },
-                      newp}});
+        AstNodeExpr* rhsp;
+        AstNodeExpr* lhsp;
+        // FIXME: Probably good idea would be to create some factory function that returs correct
+        // masking expression
+        if (v3Global.opt.fourstate() && vscp->dtypep()->isFourstate()) {
+            AstCFuncHard* const cfuncp = new AstCFuncHard{flp, VCFunc::FOUR_STATE_MASK,
+                                                          new AstVarRef{flp, vscp, VAccess::READ}};
+            cfuncp->addPinsp(new AstNot{flp, new AstVarRef{flp, maskVscp, VAccess::READ}});
+            rhsp = cfuncp;
+            lhsp = new AstCFuncHard{
+                flp,
+                VCFunc::FOUR_STATE_MASK,
+                AstNode::addNext(new AstVarRef{flp, shadowVscp, VAccess::READ},
+                                 new AstVarRef{flp, maskVscp, VAccess::READ}),
+            };
+        } else {
+            rhsp = new AstAnd{flp, new AstVarRef{flp, vscp, VAccess::READ},
+                              new AstNot{flp, new AstVarRef{flp, maskVscp, VAccess::READ}}};
+            lhsp = new AstAnd{
+                flp,
+                new AstVarRef{flp, shadowVscp, VAccess::READ},
+                new AstVarRef{flp, maskVscp, VAccess::READ},
+            };
+        }
+        postp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE},
+                                       new AstOr{flp, lhsp, rhsp}});
         vscp->varp()->setIgnorePostRead();
         // Clar the mask - maskVscp = '0;
         postp->addStmtsp(
