@@ -62,8 +62,7 @@ class CastQuadstateVisitor : public VNVisitor {
             case VBasicDTypeKwd::INT: return nodep->findSigned32DType();
             }
         }
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported 2-state type promotion to 4-state - " << nodep);
-        nodep->v3fatalSrc("Unsupported 2-state type promotion to 4-state - ");
+        nodep->v3fatalSrc("Unsupported 2-state type promotion to 4-state - " << nodep);
         return nullptr;
     }
 

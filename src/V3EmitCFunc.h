@@ -253,7 +253,7 @@ public:
         // output variable instead of using '='
         putns(nodep, "");
         if (nodep->num().isFourState()) {
-            nodep->v3warn(E_UNSUPPORTED, "2Unsupported: 4-state numbers in this context");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Wide 4-state numbers in this context");
             return;
         }
 

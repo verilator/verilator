@@ -58,8 +58,9 @@ class QuadstateVisitor final : public VNVisitor {
                 }
             }
         } else if (nodep->lhsp()->dtypep()->isFourstate()) {
-            nodep->v3warn(EC_INFO,
-                          "assign with complex lhs is unsupported in 4-state logic context");
+            nodep->v3warn(
+                E_UNSUPPORTED,
+                "Assign with complex left hand side is unsupported in fourstate logic context");
         }
         iterateChildren(nodep);
     }

@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_x_sim_assign_complex_unsup.v:9:30: Assign with complex left hand side is unsupported in fourstate logic context
+                                                         : ... note: In instance 't'
+    9 |   assign #1{x[10:9], x[5:0]} = x[7:0];
+      |                              ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

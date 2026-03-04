@@ -123,6 +123,7 @@ for s in [
         'Unsupported/unknown built-in queue method',
         'Unsupported: $bits for queue',
         'Unsupported: 4-state numbers in this context',
+        'Unsupported: Wide 4-state numbers in this context',
         'Unsupported: Assignments with signal strength with LHS of type:',
         'Unsupported: Bind with instance list',
         'Unsupported: Cast to',

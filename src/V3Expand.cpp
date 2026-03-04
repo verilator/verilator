@@ -304,7 +304,7 @@ class ExpandVisitor final : public VNVisitor {
         // -> {for each_word{ ASSIGN(WORDSEL(wide,#),WORDSEL(CONST,#))}}
         if (rhsp->num().isFourState()) {
             rhsp->v3warn(E_UNSUPPORTED,  // LCOV_EXCL_LINE  // impossible?
-                         "3Unsupported: 4-state numbers in this context");
+                         "Unsupported: 4-state numbers in this context");
         }
         FileLine* const fl = nodep->fileline();
         for (int w = 0; w < nodep->widthWords(); ++w) {

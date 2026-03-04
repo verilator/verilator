@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_x_sim_wide_trace_unsup.v:8:17: Traces of wide variables (>64) for fourstate logic are unsupported
+    8 |   logic [100:0] x;
+      |                 ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

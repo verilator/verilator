@@ -734,8 +734,9 @@ class EmitCTrace final : public EmitCFunc {
         if (nodep->declp()->widthMin() > 1 && v3Global.opt.fourstate()
             && nodep->dtypep()->basicp()->isFourstate()) {
             if (VL_UNLIKELY(nodep->isWide())) {
-                nodep->v3warn(E_UNSUPPORTED,
-                              "Traces of wide vars (>64) for four state logic are unsupported");
+                nodep->v3warn(
+                    E_UNSUPPORTED,
+                    "Traces of wide variables (>64) for fourstate logic are unsupported");
             }
             stype += "FourState";
         }
