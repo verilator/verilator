@@ -3731,10 +3731,17 @@ public:
         out.opShiftL(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f<< %r)"; }
-    string emitC() override { return "VL_SHIFTL_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    string emitC() override {
+        return v3Global.opt.fourstate() && dtypep()->isFourstate()
+                   ? "fourLogicBitShiftLeft(%li, %ri)"
+                   : "VL_SHIFTL_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)";
+    }
     string emitSMT() const override { return "(bvshl %l %r)"; }
     string emitSimpleOperator() override {
-        return (rhsp()->isWide() || rhsp()->isQuad()) ? "" : "<<";
+        return ((v3Global.opt.fourstate() && dtypep()->isFourstate()) || rhsp()->isWide()
+                || rhsp()->isQuad())
+                   ? ""
+                   : "<<";
     }
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return false; }
@@ -3774,10 +3781,17 @@ public:
         out.opShiftR(lhs, rhs);
     }
     string emitVerilog() override { return "%k(%l %f>> %r)"; }
-    string emitC() override { return "VL_SHIFTR_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    string emitC() override {
+        return v3Global.opt.fourstate() && dtypep()->isFourstate()
+                   ? "fourLogicBitShiftRight(%li, %ri)"
+                   : "VL_SHIFTR_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)";
+    }
     string emitSMT() const override { return "(bvlshr %l %r)"; }
     string emitSimpleOperator() override {
-        return (rhsp()->isWide() || rhsp()->isQuad()) ? "" : ">>";
+        return ((v3Global.opt.fourstate() && dtypep()->isFourstate()) || rhsp()->isWide()
+                || rhsp()->isQuad())
+                   ? ""
+                   : ">>";
     }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }

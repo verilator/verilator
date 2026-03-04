@@ -199,7 +199,8 @@ void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
         if (asRef && refNeedParens) puts(")");
         emitDeclArrayBrackets(nodep);
         puts(";\n");
-    } else if (nodep->isPrimaryIO() && basicp && !basicp->isOpaque()) {
+    } else if (!v3Global.opt.fourstate() && nodep->isPrimaryIO() && basicp
+               && !basicp->isOpaque()) {
         if (nodep->isInout()) {
             putns(nodep, "VL_INOUT");
         } else if (nodep->isWritable()) {

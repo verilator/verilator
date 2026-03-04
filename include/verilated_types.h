@@ -2207,6 +2207,26 @@ constexpr FourStateLogicWrapper<T> fourLogicBitShiftRight(const FourStateLogicWr
 }
 
 template <typename T>
+constexpr FourStateLogicWrapper<T>
+fourLogicBitShiftLeft(const FourStateLogicWrapper<T>& a,
+                      const FourStateLogicWrapper<T>& b) noexcept {
+    if (fourLogicHasXZ(b)) {
+        return {static_cast<T>(~static_cast<T>(0)), static_cast<T>(~static_cast<T>(0))};
+    }
+    return {static_cast<T>(a.value << b.value), static_cast<T>(a.xz << b.value)};
+}
+
+template <typename T>
+constexpr FourStateLogicWrapper<T>
+fourLogicBitShiftRight(const FourStateLogicWrapper<T>& a,
+                       const FourStateLogicWrapper<T>& b) noexcept {
+    if (fourLogicHasXZ(b)) {
+        return {static_cast<T>(~static_cast<T>(0)), static_cast<T>(~static_cast<T>(0))};
+    }
+    return {static_cast<T>(a.value >> b.value), static_cast<T>(a.xz >> b.value)};
+}
+
+template <typename T>
 constexpr FourStateLogicWrapper<T> fourLogicAdd(const FourStateLogicWrapper<T>& a,
                                                 const FourStateLogicWrapper<T>& b) noexcept {
     if (fourLogicHasXZ(a) || fourLogicHasXZ(b)) {
