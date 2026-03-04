@@ -2330,6 +2330,14 @@ class ParamVisitor final : public VNVisitor {
             if (nodep->name() == candp->name()) {
                 if (AstVar* const varp = VN_CAST(candp, Var)) {
                     UINFO(9, "Found interface parameter: " << varp);
+                    // The interface may not have been visited yet (it is at a
+                    // deeper level in the work queue), so its localparams may
+                    // not be constified.  Eagerly constify here so that the
+                    // caller's hasUnresolvedLparamXRef check sees a Const.
+                    if (varp->isParam() && varp->valuep()
+                        && !VN_IS(varp->valuep(), Const)) {
+                        V3Const::constifyParamsEdit(varp);
+                    }
                     nodep->varp(varp);
                     return true;
                 } else if (const AstPin* const pinp = VN_CAST(candp, Pin)) {

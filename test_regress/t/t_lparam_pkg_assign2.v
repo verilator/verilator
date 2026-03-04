@@ -1,4 +1,4 @@
-// DESCRIPTION: Verilator: Localparam with package function call using interface param
+// DESCRIPTION: Verilator: Localparam with package function call using computed interface param
 //
 // This program is free software; you can redistribute it and/or modify it
 // under the terms of either the GNU Lesser General Public License Version 3
@@ -17,20 +17,25 @@ package pkg;
   endfunction
 endpackage
 
-interface ifc();
-  localparam int PARAM = 1;
+interface ifc #(parameter int WIDTH = 8);
+  localparam int DEPTH = $clog2(WIDTH);
+  localparam int COMPUTED = DEPTH * 2;
 endinterface
 
 module mod(ifc i);
-  localparam bit lpbit = pkg::fn(i.PARAM);
+  // LPARAM references i.COMPUTED which depends on i.DEPTH which depends on WIDTH
+  localparam bit lpbit = pkg::fn(i.COMPUTED);
+  localparam int lpval = i.COMPUTED + 1;
 endmodule
 
 module t;
-  ifc i();
+  ifc #(.WIDTH(64)) i();
   mod m(.i);
 
   initial begin
-    `checkd(m.lpbit, 1'b1);
+    // DEPTH = $clog2(64) = 6, COMPUTED = 6*2 = 12
+    `checkd(m.lpbit, 1'b1);  // fn(12) returns 1 since 12 > 0
+    `checkd(m.lpval, 13);  // lpval = 12 + 1 = 13
     $write("*-* All Finished *-*\n");
     $finish;
   end

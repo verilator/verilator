@@ -1,4 +1,4 @@
-// DESCRIPTION: Verilator: Localparam with package function call using interface param
+// DESCRIPTION: Verilator: Localparam with function call using type-parameterized interface param
 //
 // This program is free software; you can redistribute it and/or modify it
 // under the terms of either the GNU Lesser General Public License Version 3
@@ -17,20 +17,28 @@ package pkg;
   endfunction
 endpackage
 
-interface ifc();
+interface ifc #(parameter type some_type) ();
   localparam int PARAM = 1;
+  localparam int TYPE_WIDTH = $bits(some_type);
 endinterface
+
+function automatic bit assert_func(bit value);
+  if (!value) $fatal(2, "DEAD");
+  return value;
+endfunction
 
 module mod(ifc i);
   localparam bit lpbit = pkg::fn(i.PARAM);
+  localparam bit test = assert_func(i.TYPE_WIDTH == 32);
 endmodule
 
 module t;
-  ifc i();
+  ifc #(.some_type(int)) i();
   mod m(.i);
 
   initial begin
-    `checkd(m.lpbit, 1'b1);
+    `checkd(m.lpbit, 1'b1);  // fn(1) returns 1 since 1 > 0
+    `checkd(m.test, 1'b1);  // $bits(int) == 32, so assert_func(1) returns 1
     $write("*-* All Finished *-*\n");
     $finish;
   end
