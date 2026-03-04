@@ -8,14 +8,14 @@
 // Test: unsupported coverage option name in a coverpoint
 
 module t;
-    logic [3:0] cp_expr;
+  logic [3:0] cp_expr;
 
-    covergroup cg;
-        cp1: coverpoint cp_expr {
-            option.foobar = 1;
-        }
-    endgroup
+  covergroup cg;
+    cp1: coverpoint cp_expr {
+      option.foobar = 1;
+    }
+  endgroup
 
-    cg cg_inst = new;
-    initial $finish;
+  cg cg_inst = new;
+  initial $finish;
 endmodule
