@@ -38,6 +38,7 @@ class CleanVisitor final : public VNVisitor {
     //  AstNode::user()         -> CleanState.  For this node, 0==UNKNOWN
     //  AstNode::user2()        -> bool.  True indicates widthMin has been propagated
     //  AstNodeDType::user3()   -> AstNodeDType*.  Alternative node with C size
+    //  AstNodeExpr::user3()    -> bool.    Visited
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
     const VNUser3InUse m_inuser3;
@@ -135,6 +136,8 @@ class CleanVisitor final : public VNVisitor {
             AstCFuncHard* funcp;
             cleanp = funcp = new AstCFuncHard{flp, VCFunc::FOUR_STATE_MASK, nodep};
             funcp->addPinsp(maskExprp);
+            funcp->user3(1);
+            setClean(funcp, true);
         } else {
             cleanp = new AstAnd{flp, maskExprp, nodep};
         }
@@ -193,6 +196,7 @@ class CleanVisitor final : public VNVisitor {
         setClean(nodep, nodep->cleanOut());
     }
     void visit(AstCFuncHard* nodep) override {
+        if (nodep->user3SetOnce()) return;
         iterateChildren(nodep);
         computeCppWidth(nodep);
         for (AstNodeExpr* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), NodeExpr)) {
