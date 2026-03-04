@@ -8,14 +8,14 @@
 // Test: transition bin requires at least two values
 
 module t;
-    logic [3:0] cp_expr;
+  logic [3:0] cp_expr;
 
-    covergroup cg;
-        cp1: coverpoint cp_expr {
-            bins t1 = (1);
-        }
-    endgroup
+  covergroup cg;
+    cp1: coverpoint cp_expr {
+      bins t1 = (1);
+    }
+  endgroup
 
-    cg cg_inst = new;
-    initial $finish;
+  cg cg_inst = new;
+  initial $finish;
 endmodule
