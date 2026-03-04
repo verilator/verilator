@@ -11,12 +11,6 @@
 %Error-UNSUPPORTED: t/t_property_unsup.v:90:50: Unsupported: eventually[] (in property expression)
    90 |   assert property ((eventually[0: 1] a) implies (eventually[0: 1] a));
       |                                                  ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:92:21: Unsupported: s_eventually (in property expression)
-   92 |   assert property ((s_eventually a) implies (s_eventually a));
-      |                     ^~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:92:46: Unsupported: s_eventually (in property expression)
-   92 |   assert property ((s_eventually a) implies (s_eventually a));
-      |                                              ^~~~~~~~~~~~
 %Error-UNSUPPORTED: t/t_property_unsup.v:102:23: Unsupported: #-# (in property expression)
   102 |   assert property ((a #-# b) implies (a #-# b));
       |                       ^~~
@@ -29,12 +23,6 @@
 %Error-UNSUPPORTED: t/t_property_unsup.v:112:46: Unsupported: eventually[] (in property expression)
   112 |   assert property ((eventually[0: 1] a) iff (eventually[0: 1] a));
       |                                              ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:114:21: Unsupported: s_eventually (in property expression)
-  114 |   assert property ((s_eventually a) iff (s_eventually a));
-      |                     ^~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:114:42: Unsupported: s_eventually (in property expression)
-  114 |   assert property ((s_eventually a) iff (s_eventually a));
-      |                                          ^~~~~~~~~~~~
 %Error-UNSUPPORTED: t/t_property_unsup.v:124:23: Unsupported: #-# (in property expression)
   124 |   assert property ((a #-# b) iff (a #-# b));
       |                       ^~~

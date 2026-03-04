@@ -1874,10 +1874,18 @@ public:
 class AstPExpr final : public AstNodeExpr {
     // Property expression
     // @astgen op1 := bodyp : AstBegin
+    // @astgen op2 := finalp : Optional[AstNodeStmt]
 public:
     explicit AstPExpr(FileLine* fl, AstBegin* bodyp, AstNodeDType* dtypep)
         : ASTGEN_SUPER_PExpr(fl) {
         this->bodyp(bodyp);
+        this->finalp(nullptr);
+        this->dtypep(dtypep);
+    }
+    explicit AstPExpr(FileLine* fl, AstBegin* bodyp, AstNodeStmt* finalp, AstNodeDType* dtypep)
+        : ASTGEN_SUPER_PExpr(fl) {
+        this->bodyp(bodyp);
+        this->finalp(finalp);
         this->dtypep(dtypep);
     }
     ASTGEN_MEMBERS_AstPExpr;
@@ -2201,6 +2209,20 @@ public:
     }
     bool unbounded() const { return m_unbounded; }
     bool isMultiCycleSva() const override { return true; }
+};
+class AstSEventually final : public AstNodeExpr {
+    // s_eventually
+    // @astgen op1 := exprp : AstNodeExpr
+public:
+    explicit AstSEventually(FileLine* fl, AstNodeExpr* exprp)
+        : ASTGEN_SUPER_SEventually(fl) {
+        this->exprp(exprp);
+    }
+    ASTGEN_MEMBERS_AstSEventually;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
+    int instrCount() const override { return widthInstrs(); }
 };
 class AstSExpr final : public AstNodeExpr {
     // Sequence expression
