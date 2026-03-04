@@ -3871,13 +3871,10 @@ class RandomizeVisitor final : public VNVisitor {
             // Restrict enum variables in solver to valid members only
             {
                 AstNodeModule* const genModp = VN_AS(genp->user2p(), NodeModule);
-                nodep->foreachMember([&](AstClass*, AstVar* memberVarp) {
-                    if (!memberVarp->user3()) return;
-                    AstEnumDType* const enumDtp
-                        = VN_CAST(memberVarp->dtypep()->skipRefToEnump(), EnumDType);
-                    if (!enumDtp) return;
+                // Emit enum range hard constraint for a single variable
+                const auto emitEnumConstraint = [&](const std::string& smtName,
+                                                    AstEnumDType* enumDtp) {
                     const int width = enumDtp->width();
-                    const std::string smtName = memberVarp->name();
                     std::string constraint = "(__Vbv (or";
                     for (AstEnumItem* itemp = enumDtp->itemsp(); itemp;
                          itemp = VN_AS(itemp->nextp(), EnumItem)) {
@@ -3892,6 +3889,49 @@ class RandomizeVisitor final : public VNVisitor {
                         new AstCExpr{fl, AstCExpr::Pure{}, "\"" + constraint + "\""}};
                     callp->dtypeSetVoid();
                     randomizep->addStmtsp(callp->makeStmt());
+                };
+                // Direct enum members of this class
+                nodep->foreachMember([&](AstClass*, AstVar* memberVarp) {
+                    if (!memberVarp->user3()) return;
+                    AstEnumDType* const enumDtp
+                        = VN_CAST(memberVarp->dtypep()->skipRefToEnump(), EnumDType);
+                    if (!enumDtp) return;
+                    emitEnumConstraint(memberVarp->name(), enumDtp);
+                });
+                // Enum members inside globalConstrained sub-objects
+                // write_var registers these with SMT name "subobj.member",
+                // but foreachMember above only sees direct members
+                nodep->foreachMember([&](AstClass*, AstVar* memberVarp) {
+                    if (!memberVarp->globalConstrained()) return;
+                    const AstNodeDType* const dtypep = memberVarp->dtypep()->skipRefp();
+                    const AstClassRefDType* const classRefp = VN_CAST(dtypep, ClassRefDType);
+                    if (!classRefp) return;
+                    AstClass* const memberClassp = classRefp->classp();
+                    const std::string prefix = memberVarp->name();
+                    std::function<void(AstClass*, const std::string&)> addSubObjEnumConstraints
+                        = [&](AstClass* classp, const std::string& pathPrefix) {
+                              classp->foreachMember([&](AstClass*, AstVar* subVarp) {
+                                  if (!subVarp->rand().isRandomizable()) return;
+                                  const std::string smtName
+                                      = pathPrefix + "." + subVarp->name();
+                                  // Check for enum type
+                                  AstEnumDType* const enumDtp = VN_CAST(
+                                      subVarp->dtypep()->skipRefToEnump(), EnumDType);
+                                  if (enumDtp) {
+                                      emitEnumConstraint(smtName, enumDtp);
+                                      return;
+                                  }
+                                  // Recurse into nested globalConstrained sub-objects
+                                  if (!subVarp->globalConstrained()) return;
+                                  const AstNodeDType* const subDtypep
+                                      = subVarp->dtypep()->skipRefp();
+                                  const AstClassRefDType* const subClassRefp
+                                      = VN_CAST(subDtypep, ClassRefDType);
+                                  if (!subClassRefp) return;
+                                  addSubObjEnumConstraints(subClassRefp->classp(), smtName);
+                              });
+                          };
+                    addSubObjEnumConstraints(memberClassp, prefix);
                 });
             }
 
