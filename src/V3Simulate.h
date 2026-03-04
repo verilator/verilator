@@ -75,7 +75,6 @@ class SimulateVisitor VL_NOT_FINAL : public VNVisitorConst {
 
 private:
     // CONSTANTS
-    static constexpr int CONST_FUNC_RECURSION_MAX = 1000;
     static constexpr int CALL_STACK_MAX = 100;
 
     // NODE STATE
@@ -1158,9 +1157,10 @@ private:
         UASSERT_OBJ(funcp, nodep, "Not linked");
 
         if (funcp->recursive()) {
-            if (m_recurseCount >= CONST_FUNC_RECURSION_MAX) {
+            if (m_recurseCount >= v3Global.opt.funcRecursionDepth()) {
                 clearOptimizable(funcp, "Constant function recursed more than "s
-                                            + std::to_string(CONST_FUNC_RECURSION_MAX) + " times");
+                                            + std::to_string(v3Global.opt.funcRecursionDepth())
+                                            + " times");
                 return;
             }
             ++m_recurseCount;

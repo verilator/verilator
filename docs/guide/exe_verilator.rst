@@ -733,6 +733,14 @@ Summary:
    Rarely needed. Set the maximum array size (number of elements) for slice
    optimization to avoid excessive memory usage.
 
+.. option:: --func-recursion-depth <value>
+
+   Specifies the maximum depth of recursive constant function evaluation.
+   When a recursive function exceeds this depth during constant folding,
+   Verilator gives up and treats the expression as non-constant.
+
+   Defaults to 1000.
+
 .. option:: -future0 <option>
 
    Rarely needed. Suppress an unknown Verilator option for an option that
