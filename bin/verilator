@@ -390,8 +390,7 @@ detailed descriptions of these arguments.
      -f <file>                  Parse arguments from a file
      -FI <file>                 Force include of a file
     --flatten                   Force inlining of all modules, tasks and functions
-    --four-state                Enable four-state logic - implicitly enables --four-state-literals
-    --four-state-literals       Treat literals with x/z as four state
+    --fourstate                 Enable fourstate logic
     --future0 <option>          Ignore an option for compatibility
     --future1 <option>          Ignore an option with argument for compatibility
      -fno-<optimization>        Disable internal optimization stage

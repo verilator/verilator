@@ -136,7 +136,6 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "coverage_off"        { FL; return yVLT_COVERAGE_OFF; }
   "coverage_on"         { FL; return yVLT_COVERAGE_ON; }
   "forceable"           { FL; return yVLT_FORCEABLE; }
-  "four_state"          { FL; return yVLT_FOUR_STATE; }
   "full_case"           { FL; return yVLT_FULL_CASE; }
   "hier_block"          { FL; return yVLT_HIER_BLOCK; }
   "hier_params"         { FL; return yVLT_HIER_PARAMS; }
@@ -821,7 +820,6 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "/*verilator coverage_off*/"          { FL_FWD; PARSEP->lexFileline()->coverageOn(false); FL_BRK; }
   "/*verilator coverage_on*/"           { FL_FWD; PARSEP->lexFileline()->coverageOn(true); FL_BRK; }
   "/*verilator forceable*/"             { FL; return yVL_FORCEABLE; }
-  "/*verilator four_state*/"            { FL; return yVL_FOUR_STATE; }
   "/*verilator full_case*/"             { FL; return yVL_FULL_CASE; }
   "/*verilator hier_block*/"            { FL; return yVL_HIER_BLOCK; }
   "/*verilator inline_module*/"         { FL; return yVL_INLINE_MODULE; }

@@ -10,7 +10,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--binary', '--four-state', '-Wno-WIDTHTRUNC'])
+test.compile(verilator_flags2=['--binary', '--fourstate', '-Wno-WIDTHTRUNC'])
 
 test.execute()
 

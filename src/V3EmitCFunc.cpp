@@ -231,7 +231,7 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
             bool isFourState = false;
             if (fmt == 'd' || fmt == '#') {
                 if (AstNodeExpr* const exprp = VN_CAST(argp, NodeExpr)) {
-                    isFourState = v3Global.opt.fourstate() && exprp->isFourState();
+                    isFourState = v3Global.opt.fourstate() && exprp->dtypep()->isFourstate();
                 }
             }
             if (func != "" || argp) {
@@ -788,8 +788,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                     varp->v3fatalSrc("Unexpected node in variable initializer: " << valuep);
                 }
                 out += ";\n";
-            } else if (varp->attrFourState()
-                       || (v3Global.opt.fourstate() && varp->dtypep()->isFourstate())) {
+            } else if (v3Global.opt.fourstate() && varp->dtypep()->isFourstate()) {
                 V3Number xNum{varp->fileline(), varp->width(), 0};
                 xNum.setAllBitsX();
                 out += " = ";

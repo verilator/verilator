@@ -311,7 +311,6 @@ public:
         //
         VAR_BASE,                       // V3LinkResolve creates for AstPreSel, V3LinkParam removes
         VAR_FORCEABLE,                  // V3LinkParse moves to AstVar::isForceable
-        VAR_FOUR_STATE,                 // If variable shall support four state
         VAR_PORT_DTYPE,                 // V3LinkDot for V3Width to check port dtype
         VAR_PUBLIC,                     // V3LinkParse moves to AstVar::sigPublic
         VAR_PUBLIC_FLAT,                // V3LinkParse moves to AstVar::sigPublic

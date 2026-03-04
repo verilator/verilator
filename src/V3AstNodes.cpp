@@ -1761,29 +1761,6 @@ string AstBasicDType::prettyDTypeName(bool) const {
 
 void AstNodeExpr::dump(std::ostream& str) const { this->AstNode::dump(str); }
 void AstNodeExpr::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
-bool AstNodeExpr::isFourState() const {
-    for (AstNode* nodep = op1p(); nodep; nodep = nodep->nextp()) {
-        if (const AstNodeExpr* const exprp = VN_CAST(nodep, NodeExpr)) {
-            if (exprp->isFourState()) return true;
-        }
-    }
-    for (AstNode* nodep = op2p(); nodep; nodep = nodep->nextp()) {
-        if (const AstNodeExpr* const exprp = VN_CAST(nodep, NodeExpr)) {
-            if (exprp->isFourState()) return true;
-        }
-    }
-    for (AstNode* nodep = op3p(); nodep; nodep = nodep->nextp()) {
-        if (const AstNodeExpr* const exprp = VN_CAST(nodep, NodeExpr)) {
-            if (exprp->isFourState()) return true;
-        }
-    }
-    for (AstNode* nodep = op4p(); nodep; nodep = nodep->nextp()) {
-        if (const AstNodeExpr* const exprp = VN_CAST(nodep, NodeExpr)) {
-            if (exprp->isFourState()) return true;
-        }
-    }
-    return false;
-}
 void AstNodeUniop::dump(std::ostream& str) const { this->AstNodeExpr::dump(str); }
 void AstNodeUniop::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 
@@ -2891,7 +2868,6 @@ void AstVar::dump(std::ostream& str) const {
     if (ignorePostWrite()) str << " [IGNPWR]";
     if (ignoreSchedWrite()) str << " [IGNWR]";
     if (isStdRandomizeArg()) str << " [STDRANDARG]";
-    if (attrFourState()) str << " [4STATE]";
     if (!lifetime().isNone()) str << " [" << lifetime().ascii() << "] ";
     str << " " << varType();
 }

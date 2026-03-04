@@ -217,42 +217,13 @@ class UnknownVisitor final : public VNVisitor {
     }
     void visit(AstAssignW* nodep) override {
         VL_RESTORER(m_timingControlp);
-        VL_RESTORER(m_constXCvt);
-        m_constXCvt = m_constXCvt
-                      && (v3Global.opt.fourstate()
-                          || (!nodep->lhsp()->isFourState() && !nodep->rhsp()->isFourState()));
         m_timingControlp = nodep->timingControlp();
         VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
     }
     void visit(AstNodeAssign* nodep) override {
         VL_RESTORER(m_timingControlp);
-        VL_RESTORER(m_constXCvt);
-        m_constXCvt
-            = m_constXCvt && !nodep->lhsp()->isFourState() && !nodep->rhsp()->isFourState();
         m_timingControlp = nodep->timingControlp();
         iterateChildren(nodep);
-    }
-    void visit(AstNodeFTaskRef* const nodep) override {
-        iterateAndNextNull(nodep->op1p());
-        {
-            const AstNode* portp = nodep->taskp()->stmtsp();
-            for (AstArg* argp = nodep->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
-                VL_RESTORER(m_constXCvt);
-                const AstVar* portVarp;
-                while (!(portVarp = VN_CAST(portp, Var))) {
-                    UASSERT_OBJ(portp, argp, "No port for this var");
-                    portp = portp->nextp();
-                }
-                m_constXCvt
-                    = m_constXCvt && !v3Global.opt.fourstate()
-                      && !(portVarp->direction().isNonOutput() && portVarp->attrFourState())
-                      && (!argp->exprp() || !argp->exprp()->isFourState());
-                iterate(argp);
-                portp = portVarp->nextp();
-            }
-        }
-        iterateNull(nodep->withp());
-        iterateNull(nodep->scopeNamep());
     }
     void visit(AstCaseItem* nodep) override {
         VL_RESTORER(m_constXCvt);

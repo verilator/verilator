@@ -478,7 +478,7 @@ AstAssign* TriggerKit::createSenTrigVecAssignment(AstVarScope* const target,
     FileLine* const flp = target->fileline();
     if (v3Global.opt.fourstate()) {
         for (size_t i = 0; i < trigps.size(); ++i) {
-            if (trigps[i]->isFourState()) {
+            if (trigps[i]->dtypep()->isFourstate()) {
                 trigps[i] = new AstCFuncHard{flp, VCFunc::FOUR_STATE_IS_TRUE, trigps[i]};
             }
         }

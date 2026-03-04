@@ -3465,7 +3465,7 @@ class ConstVisitor final : public VNVisitor {
                 nodep->addThensp(elsesp);
             } else if ((((VN_IS(nodep->condp(), Not) && nodep->condp()->width() == 1)
                          || VN_IS(nodep->condp(), LogNot))
-                        && !nodep->condp()->isFourState())
+                        && !nodep->condp()->dtypep()->isFourstate())
                        && nodep->thensp() && nodep->elsesp()) {
                 UINFO(4, "IF(NOT {x})  => IF(x) swapped if/else" << nodep);
                 AstNodeExpr* const condp

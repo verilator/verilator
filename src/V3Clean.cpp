@@ -120,7 +120,6 @@ class CleanVisitor final : public VNVisitor {
 
     // Operate on nodes
     void insertClean(AstNodeExpr* nodep) {  // We'll insert ABOVE passed node
-        // if (nodep->isFourState()) return;  // FIXME
         UINFO(4, "  NeedClean " << nodep);
         VNRelinker relinkHandle;
         nodep->unlinkFrBack(&relinkHandle);

@@ -9371,7 +9371,6 @@ public:
 
 void V3Width::width(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    V3Quadstate::quadstateReduce(nodep);
     {
         // We should do it in bottom-up module order, but it works in any order.
         const WidthClearVisitor cvisitor{nodep};
@@ -9387,7 +9386,6 @@ void V3Width::width(AstNetlist* nodep) {
 //! Smaller step... Only do a single node for parameter propagation
 AstNode* V3Width::widthParamsEdit(AstNode* nodep) {
     UINFO(4, __FUNCTION__ << ": " << nodep);
-    V3Quadstate::quadstateReduce(nodep);
     // We should do it in bottom-up module order, but it works in any order.
     {
         WidthVisitor visitor{true, false};
@@ -9410,7 +9408,6 @@ AstNode* V3Width::widthParamsEdit(AstNode* nodep) {
 AstNode* V3Width::widthGenerateParamsEdit(
     AstNode* nodep) {  //!< [in] AST whose parameters widths are to be analyzed.
     UINFO(4, __FUNCTION__ << ": " << nodep);
-    V3Quadstate::quadstateReduce(nodep);
     // We should do it in bottom-up module order, but it works in any order.
     {
         WidthVisitor visitor{true, true};

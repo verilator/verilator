@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--binary', '--four-state', '-O0', '--trace-vcd'])
+test.compile(verilator_flags2=['--binary', '--fourstate', '-O0', '--trace-vcd'])
 
 test.execute(expect_filename=test.golden_filename)
 
