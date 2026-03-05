@@ -51,7 +51,7 @@ public:
             = VlFiber::create([captured = std::forward<Callable>(fn)]() mutable { captured(); });
         while (!fiberp->isDone()) {
             fiberp->resume();
-            if (!fiberp->isDone()) co_await FiberAwaitable{*fiberp};
+            co_await FiberAwaitable{*fiberp};
         }
         co_return;
     }
@@ -69,10 +69,8 @@ public:
                                             VlCoroutine>::value) {
             VlCoroutine local{call(std::forward<Args>(args)...)};
             if (local.await_ready()) return;
-            do {
-                local.setFiberContinuation(fiberp);
-                VlFiber::yield();
-            } while (!local.await_ready());
+            local.setFiberContinuation(fiberp);
+            do { VlFiber::yield(); } while (!local.await_ready());
         } else {
             call(std::forward<Args>(args)...);
         }
