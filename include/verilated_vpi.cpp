@@ -33,6 +33,7 @@
 
 #include "vltstd/vpi_user.h"
 
+#include <algorithm>
 #include <cstdarg>
 #include <cstdio>
 #include <list>
@@ -365,6 +366,7 @@ class VerilatedVpioVar VL_NOT_FINAL : public VerilatedVpioVarBase {
     } m_mask;  // memoized variable mask
     uint32_t m_entSize = 0;  // memoized variable size
     uint32_t m_bitOffset = 0;
+    int32_t m_partselBits = -1;  // Part-select width, -1 means no part-select active
 
 protected:
     void* m_varDatap = nullptr;  // varp()->datap() adjusted for array entries
@@ -384,6 +386,7 @@ public:
             m_entSize = varp->m_entSize;
             m_varDatap = varp->m_varDatap;
             m_index = varp->m_index;
+            m_partselBits = varp->m_partselBits;
             // Not copying m_prevDatap, must be nullptr
         } else {
             m_mask.u32 = 0;
@@ -397,10 +400,50 @@ public:
         return dynamic_cast<VerilatedVpioVar*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     uint32_t bitOffset() const override { return m_bitOffset; }
+    uint32_t bitSize() const {
+        if (m_partselBits >= 0) return static_cast<uint32_t>(m_partselBits);
+        return VerilatedVpioVarBase::bitSize();
+    }
+    uint32_t size() const override {
+        if (m_partselBits >= 0) return static_cast<uint32_t>(m_partselBits);
+        return VerilatedVpioVarBase::size();
+    }
     uint32_t mask() const { return m_mask.u32; }
     uint8_t mask_byte(int idx) const { return m_mask.u8[idx & 3]; }
     uint32_t entSize() const { return m_entSize; }
     const std::vector<int32_t>& index() const { return m_index; }
+    // Create a part-selected view of this variable with the given bit range [hi:lo].
+    VerilatedVpioVar* withPartSelect(int32_t hi, int32_t lo) const {
+        if (isIndexedDimUnpacked()) return nullptr;
+
+        // Need a packed range to select from
+        const VerilatedRange* range = get_range();
+        if (!range) return nullptr;
+
+        // Normalize so sel_lo <= sel_hi
+        const int32_t sel_lo = std::min(hi, lo);
+        const int32_t sel_hi = std::max(hi, lo);
+        const int32_t decl_left = range->left();
+        const int32_t decl_right = range->right();
+        const int32_t decl_lo = std::min(decl_left, decl_right);
+        const int32_t decl_hi = std::max(decl_left, decl_right);
+
+        if (sel_lo < decl_lo || sel_hi > decl_hi) return nullptr;
+
+        const int32_t width = sel_hi - sel_lo + 1;
+
+        // Convert to storage bit position
+        int32_t normalized_lo;
+        if (decl_left > decl_right)  // descending [31:0]
+            normalized_lo = sel_lo - decl_lo;
+        else  // ascending [0:31]
+            normalized_lo = decl_right - sel_hi;
+
+        auto* ret = new VerilatedVpioVar{this};
+        ret->m_bitOffset += normalized_lo;
+        ret->m_partselBits = width;
+        return ret;
+    }
     VerilatedVpioVar* withIndex(int32_t index) const {
         if (VL_UNLIKELY(indexedDim() + 1 >= varp()->dims())) return nullptr;
 
@@ -2174,6 +2217,88 @@ void vpi_get_systf_info(vpiHandle /*object*/, p_vpi_systf_data /*systf_data_p*/)
     VL_VPI_UNIMP_();
 }
 
+// Bit range information extracted from a name string by vl_vpi_parse_indices.
+struct VlVpiBitRange final {
+    int32_t hi = 0;
+    int32_t lo = 0;
+    bool valid = false;
+};
+
+// Parse multi-dimensional array indices and an optional trailing bit range from a name string.
+// e.g., "mem[0][3][2]" -> name becomes "mem", indices = {0, 3, 2}
+// e.g., "mem[0][3][15:8]" -> name becomes "mem", indices = {0, 3}, bitRange = {15, 8}
+// e.g., "signal[31:0]" -> name becomes "signal", indices = {}, bitRange = {31, 0}
+// Returns true if any brackets were parsed successfully, false otherwise.
+static bool vl_vpi_parse_indices(std::string& name, std::vector<PLI_INT32>& indices,
+                                 VlVpiBitRange* bitRange = nullptr) {
+    if (name.empty() || name.back() != ']') return false;
+
+    // Collapse consecutive spaces into single spaces
+    name.erase(
+        std::unique(name.begin(), name.end(), [](char a, char b) { return a == ' ' && b == ' '; }),
+        name.end());
+
+    // Only parse brackets after the last escaped identifier's terminating space
+    size_t escapeSpacePos = std::string::npos;
+    const size_t backslashPos = name.rfind('\\');
+    if (backslashPos != std::string::npos) escapeSpacePos = name.find(' ', backslashPos);
+
+    indices.clear();
+    size_t end = name.length();
+    bool first = true;
+
+    while (end > 0 && name[end - 1] == ']') {
+        const size_t close = end - 1;
+        // Search backward for matching '['
+        size_t open = close;
+        while (open > 0 && name[open - 1] != '[') --open;
+        if (open == 0) return false;  // No matching '['
+        --open;  // Points to '['
+
+        // For escaped identifiers: skip brackets that come before the terminating space
+        if (escapeSpacePos != std::string::npos && open < escapeSpacePos) break;
+
+        const std::string content = name.substr(open + 1, close - open - 1);
+        if (content.empty()) return false;  // Empty brackets []
+
+        // On the first (rightmost) bracket, check for bit range [hi:lo]
+        if (first && bitRange) {
+            const size_t colon = content.find(':');
+            if (colon != std::string::npos) {
+                char* endp = nullptr;
+                const long hi_val = std::strtol(content.c_str(), &endp, 10);
+                if (!endp || *endp != ':') return false;
+                const long lo_val = std::strtol(endp + 1, &endp, 10);
+                if (!endp || *endp != '\0') return false;
+                bitRange->hi = static_cast<int32_t>(hi_val);
+                bitRange->lo = static_cast<int32_t>(lo_val);
+                bitRange->valid = true;
+                end = open;
+                first = false;
+                continue;
+            }
+        }
+        first = false;
+
+        // Parse as integer index
+        char* endp = nullptr;
+        const long val = std::strtol(content.c_str(), &endp, 10);
+        if (!endp || *endp != '\0') return false;
+        indices.push_back(static_cast<PLI_INT32>(val));
+        end = open;
+    }
+
+    if (indices.empty() && !(bitRange && bitRange->valid)) return false;
+
+    // Reverse indices to get them in forward order [0][3][2] -> {0, 3, 2}
+    std::reverse(indices.begin(), indices.end());
+
+    // Truncate name to remove the indices
+    name.erase(end);
+
+    return true;
+}
+
 // for obtaining handles
 
 vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
@@ -2181,22 +2306,29 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
     VL_VPI_ERROR_RESET_();
     if (VL_UNLIKELY(!namep)) return nullptr;
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_handle_by_name %s %p\n", namep, scope););
+
+    // Parse any array indices and optional bit range from the name
+    // e.g., "mem[0][3][2]" or "signal[15:8]" or "mem[0][3][15:8]"
+    std::string scopeAndName = namep;
+    static thread_local std::vector<PLI_INT32> indices;
+    VlVpiBitRange bitRange;
+    const bool hasIndices = vl_vpi_parse_indices(scopeAndName, indices, &bitRange);
+
     const VerilatedVar* varp = nullptr;
     const VerilatedScope* scopep;
     const VerilatedVpioScope* const voScopep = VerilatedVpioScope::castp(scope);
-    std::string scopeAndName = namep;
-    if (0 == std::strncmp(namep, "$root.", std::strlen("$root."))) {
-        namep += std::strlen("$root.");
-        scopeAndName = namep;
+
+    if (0 == std::strncmp(scopeAndName.c_str(), "$root.", std::strlen("$root."))) {
+        scopeAndName.erase(0, std::strlen("$root."));
     } else if (voScopep) {
         const bool scopeIsPackage = VerilatedVpioPackage::castp(scope) != nullptr;
-        scopeAndName = std::string{voScopep->fullname()} + (scopeIsPackage ? "" : ".") + namep;
-        namep = const_cast<PLI_BYTE8*>(scopeAndName.c_str());
+        scopeAndName
+            = std::string{voScopep->fullname()} + (scopeIsPackage ? "" : ".") + scopeAndName;
     }
     {
         // This doesn't yet follow the hierarchy in the proper way
         bool isPackage = false;
-        scopep = Verilated::threadContextp()->scopeFind(namep);
+        scopep = Verilated::threadContextp()->scopeFind(scopeAndName.c_str());
         if (scopep) {  // Whole thing found as a scope
             if (scopep->type() == VerilatedScope::SCOPE_MODULE) {
                 return (new VerilatedVpioModule{scopep})->castVpiHandle();
@@ -2248,11 +2380,30 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
     }
     if (!varp) return nullptr;
 
+    // Create the initial variable handle
+    vpiHandle resultHandle;
     if (varp->isParam()) {
-        return (new VerilatedVpioParam{varp, scopep})->castVpiHandle();
+        resultHandle = (new VerilatedVpioParam{varp, scopep})->castVpiHandle();
     } else {
-        return (new VerilatedVpioVar{varp, scopep})->castVpiHandle();
+        resultHandle = (new VerilatedVpioVar{varp, scopep})->castVpiHandle();
     }
+
+    // If we have indices, apply them using vpi_handle_by_multi_index
+    if (hasIndices && !indices.empty()) {
+        resultHandle = vpi_handle_by_multi_index(resultHandle, indices.size(), indices.data());
+        if (!resultHandle) return nullptr;
+    }
+
+    // If we have a bit range part-select, apply it
+    if (bitRange.valid) {
+        VerilatedVpioVar* const varop = VerilatedVpioVar::castp(resultHandle);
+        if (!varop) return nullptr;
+        VerilatedVpioVar* const partsel = varop->withPartSelect(bitRange.hi, bitRange.lo);
+        if (!partsel) return nullptr;
+        resultHandle = partsel->castVpiHandle();
+    }
+
+    return resultHandle;
 }
 
 vpiHandle vpi_handle_by_index(vpiHandle object, PLI_INT32 indx) {
@@ -4022,8 +4173,20 @@ PLI_INT32 vpi_control(PLI_INT32 operation, ...) {
     }
 }
 
-vpiHandle vpi_handle_by_multi_index(vpiHandle /*obj*/, PLI_INT32 /*num_index*/,
-                                    PLI_INT32* /*index_array*/) {
-    VL_VPI_UNIMP_();
-    return nullptr;
+vpiHandle vpi_handle_by_multi_index(vpiHandle obj, PLI_INT32 num_index, PLI_INT32* index_array) {
+    VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_handle_by_multi_index %p %d\n", obj, num_index););
+    VerilatedVpiImp::assertOneCheck();
+    VL_VPI_ERROR_RESET_();
+
+    if (VL_UNLIKELY(!obj)) return nullptr;
+    if (VL_UNLIKELY(!index_array)) return nullptr;
+    if (VL_UNLIKELY(num_index <= 0)) return nullptr;
+
+    vpiHandle result_handle = obj;
+    for (PLI_INT32 i = 0; i < num_index; ++i) {
+        result_handle = vpi_handle_by_index(result_handle, index_array[i]);
+        if (VL_UNLIKELY(!result_handle)) { return nullptr; }
+    }
+
+    return result_handle;
 }

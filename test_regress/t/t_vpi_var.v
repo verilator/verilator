@@ -44,6 +44,14 @@ extern "C" int mon_check();
    reg [31:0]      half_count   /*verilator public_flat_rd */ = 0;
    reg [31:0]      delayed      /*verilator public_flat_rw */;
    reg [31:0]      delayed_mem [16] /*verilator public_flat_rw */;
+   reg [7:0]       \escaped_with_brackets[3]  /*verilator public_flat_rw */;
+   reg [7:0]       mem_2d[3:0][7:0]  /*verilator public_flat_rw */;  // Descending indices
+   // verilator lint_off ASCRANGE
+   reg [0:95]      mem_3d[0:1][1:0][0:1]  /*verilator public_flat_rw */;  // Mixed: asc, desc, asc
+   // verilator lint_on ASCRANGE
+
+   reg [3:0] [7:0] multi_packed[2:0]  /*verilator public_flat_rw */;
+   reg             unpacked_only[7:0];
 
    reg [7:0]       text_byte    /*verilator public_flat_rw @(posedge clk) */;
    reg [15:0]      text_half    /*verilator public_flat_rw @(posedge clk) */;
@@ -91,8 +99,29 @@ extern "C" int mon_check();
       long1 = 123;
       real1 = 1.0;
       str1 = "hello";
+      \escaped_with_brackets[3]  = 8'h5a;
 
       rev = 12'habc;
+
+      for (int i = 0; i < 4; i++) begin
+         for (int j = 0; j < 8; j++) begin
+            mem_2d[i][j] = 8'(((i * 8) + j));
+         end
+      end
+
+      for (int i = 0; i < 2; i++) begin
+         for (int j = 0; j < 2; j++) begin
+            for (int k = 0; k < 2; k++) begin
+               mem_3d[i][j][k] = 96'(((i * 4) + (j * 2) + k));
+            end
+         end
+      end
+
+      for (int i = 0; i < 3; i++) begin
+         for (int j = 0; j < 4; j++) begin
+            multi_packed[i][j] = 8'((i * 4) + j);
+         end
+      end
 
 `ifdef VERILATOR
       status = $c32("mon_check()");
@@ -147,6 +176,8 @@ extern "C" int mon_check();
    end
    endgenerate
 
+   arr #(.LENGTH(8)) \escaped.inst[0] ();
+
 endmodule : t
 
 module sub;
@@ -164,6 +195,7 @@ module arr;
 
    reg [LENGTH-1:0] sig /*verilator public_flat_rw*/;
    reg [LENGTH-1:0] rfr /*verilator public_flat_rw*/;
+   reg [LENGTH-1:0] \escaped_sig[1]  /*verilator public_flat_rw*/;
 
    reg            check /*verilator public_flat_rw*/;
    reg          verbose /*verilator public_flat_rw*/;
@@ -171,6 +203,7 @@ module arr;
    initial begin
       sig = {LENGTH{1'b0}};
       rfr = {LENGTH{1'b0}};
+      \escaped_sig[1]  = {LENGTH{1'b0}};
    end
 
    always @(posedge check) begin
