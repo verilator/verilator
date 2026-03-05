@@ -5283,21 +5283,19 @@ class WidthVisitor final : public VNVisitor {
     }
 
     AstPatMember* defaultPatp_patternArray(AstPatMember* defaultp, AstNodeDType* elemDTypep) {
-        AstPatMember* const newpatp = defaultp->cloneTree(false);
-        AstNodeExpr* const valuep = newpatp->lhssp();
+        AstNodeExpr* const valuep = defaultp->lhssp();
         AstNodeDType* const elemDTypeSkipRefp = elemDTypep->skipRefp();
 
-        if (!VN_IS(elemDTypeSkipRefp, UnpackArrayDType)) return newpatp;
-        if (VN_IS(valuep, Pattern)) return newpatp;
+        if (!VN_IS(elemDTypeSkipRefp, UnpackArrayDType)) return defaultp->cloneTree(false);
+        if (VN_IS(valuep, Pattern)) return defaultp->cloneTree(false);
         if (!valuep->dtypep()) userIterate(valuep, WidthVP{SELF, BOTH}.p());
         if (valuep->dtypep()
             && AstNode::computeCastable(valuep->dtypep()->skipRefp(), elemDTypeSkipRefp, nullptr)
                    .isAssignable()) {
-            return newpatp;
+            return defaultp->cloneTree(false);
         }
 
-        AstNodeExpr* const recursiveValuep = valuep->unlinkFrBack();
-        VL_DO_DANGLING(pushDeletep(newpatp), newpatp);
+        AstNodeExpr* const recursiveValuep = valuep->cloneTree(false);
         AstPatMember* const nestedDefaultp
             = new AstPatMember{defaultp->fileline(), recursiveValuep, nullptr, nullptr};
         nestedDefaultp->isDefault(true);
