@@ -1,6 +1,0 @@
-%Error: t/t_covergroup_with_sample_args_too_many_bad.v:15:26: Too many arguments in function call to FUNC 'sample'
-                                                            : ... note: In instance 't'
-   15 |     cov1.sample(5, 1'b0, 42);   
-      |                          ^~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: Exiting due to
