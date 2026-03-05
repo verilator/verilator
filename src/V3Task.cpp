@@ -1822,9 +1822,14 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
             const auto it = nameToIndex.find(argp->name());
             if (it == nameToIndex.end()) {
                 if (makeChanges) {
-                    argp->v3error("No such argument " << argp->prettyNameQ()
-                                                      << " in function call to "
-                                                      << nodep->taskp()->prettyTypeName());
+                    argp->v3error(
+                        "No such argument "
+                        << argp->prettyNameQ() << " in call to " << nodep->taskp()->verilogKwd()
+                        << " " << nodep->taskp()->prettyNameQ() << '\n'
+                        << nodep->warnContextPrimary() << '\n'
+                        << nodep->warnMore() << "... " << ucfirst(nodep->taskp()->verilogKwd())
+                        << " " << nodep->taskp()->prettyNameQ() << " declared here:\n"
+                        << nodep->taskp()->warnContextSecondary());
                     // We'll just delete it; seems less error prone than making a false argument
                     VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
                 }
@@ -1847,8 +1852,14 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
                     tconnects[ppinnum].second = argp;
                     ++tpinnum;
                 } else if (makeChanges) {
-                    argp->v3error("Too many arguments in function call to "
-                                  << nodep->taskp()->prettyTypeName());
+                    argp->v3error("Too many arguments in call to "
+                                  << nodep->taskp()->verilogKwd() << " "
+                                  << nodep->taskp()->prettyNameQ() << '\n'
+                                  << nodep->warnContextPrimary() << '\n'
+                                  << nodep->warnMore() << "... "
+                                  << ucfirst(nodep->taskp()->verilogKwd()) << " "
+                                  << nodep->taskp()->prettyNameQ() << " declared here:\n"
+                                  << nodep->taskp()->warnContextSecondary());
                     // We'll just delete it; seems less error prone than making a false argument
                     VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
                 }

@@ -11,14 +11,20 @@
                                  : ... note: In instance 't'
    39 | function ClsNew3::new();
       |                   ^~~
-%Error: t/t_class_new_bad.v:47:16: Too many arguments in function call to FUNC 'new'
+%Error: t/t_class_new_bad.v:47:16: Too many arguments in call to function 'new'
                                  : ... note: In instance 't'
    47 |       c1 = new(3);   
-      |                ^
-%Error: t/t_class_new_bad.v:48:16: Too many arguments in function call to FUNC 'new'
+      |            ^~~
+                                 : ... Function 'new' declared here:
+   10 |    function new();
+      |             ^~~
+%Error: t/t_class_new_bad.v:48:16: Too many arguments in call to function 'new'
                                  : ... note: In instance 't'
    48 |       c2 = new(3);   
-      |                ^
+      |            ^~~
+                                 : ... Function 'new' declared here:
+   15 | class ClsNoNew;
+      | ^~~~~
 %Error: t/t_class_new_bad.v:49:12: Missing argument on non-defaulted argument 'i' in function call to FUNC 'new'
                                  : ... note: In instance 't'
    49 |       c3 = new();   
