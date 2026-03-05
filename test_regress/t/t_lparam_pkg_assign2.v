@@ -17,20 +17,24 @@ package pkg;
   endfunction
 endpackage
 
-interface ifc #(parameter int WIDTH = 8);
+interface ifc #(
+    parameter int WIDTH = 8
+);
   localparam int DEPTH = $clog2(WIDTH);
   localparam int COMPUTED = DEPTH * 2;
 endinterface
 
-module mod(ifc i);
+module mod (
+    ifc i
+);
   // LPARAM references i.COMPUTED which depends on i.DEPTH which depends on WIDTH
   localparam bit lpbit = pkg::fn(i.COMPUTED);
   localparam int lpval = i.COMPUTED + 1;
 endmodule
 
 module t;
-  ifc #(.WIDTH(64)) i();
-  mod m(.i);
+  ifc #(.WIDTH(64)) i ();
+  mod m (.i);
 
   initial begin
     // DEPTH = $clog2(64) = 6, COMPUTED = 6*2 = 12

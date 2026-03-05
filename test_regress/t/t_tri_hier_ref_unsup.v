@@ -18,7 +18,7 @@
 // verilator lint_off MULTIDRIVEN
 
 module sub_with_tri (
-  input we_internal
+    input we_internal
 );
   tri [7:0] bus;
   // Internal driver: drives 8'hAA when we_internal is high
@@ -27,7 +27,7 @@ endmodule
 
 module t;
   logic sub_we_internal;
-  sub_with_tri u_sub(.we_internal(sub_we_internal));
+  sub_with_tri u_sub (.we_internal(sub_we_internal));
 
   logic hier_we;
   // Drive u_sub.bus hierarchically from this module

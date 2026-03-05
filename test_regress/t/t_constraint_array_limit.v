@@ -5,15 +5,15 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // Test that array reduction constraints are ignored when array size exceeds --constraint-array-limit
+// verilog_format: off
 `define stop $stop
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 class Packet;
   rand int data[32];
 
-  constraint c {
-    data.sum() with (item) < 1000;
-  }
+  constraint c {data.sum() with (item) < 1000;}
 
   function void verify();
     int i;

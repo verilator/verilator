@@ -24,38 +24,38 @@ interface ifc_multi;
 endinterface
 
 module bot (
-  ifc io_ifc
+    ifc io_ifc
 );
   assign io_ifc.d = io_ifc.we2 ? 16'hd2 : 16'hzzzz;
 endmodule
 
 module passthru (
-  ifc io_ifc
+    ifc io_ifc
 );
   bot u_bot (.*);
 endmodule
 
 module bot_a (
-  ifc_multi io_ifc
+    ifc_multi io_ifc
 );
   assign io_ifc.d = io_ifc.wea ? 16'hd2 : 16'hzzzz;
 endmodule
 
 module bot_b (
-  ifc_multi io_ifc
+    ifc_multi io_ifc
 );
   assign io_ifc.d = io_ifc.web ? 16'hd2 : 16'hzzzz;
 endmodule
 
 module passthru_multi_c (
-  ifc_multi io_ifc
+    ifc_multi io_ifc
 );
   bot_a u_bot_a (.*);
   bot_b u_bot_b (.*);
 endmodule
 
 module passthru_deep (
-  ifc io_ifc
+    ifc io_ifc
 );
   passthru u_inner (.*);
 endmodule
@@ -66,7 +66,7 @@ module t;
   ifc io_ifc_b0 ();
   ifc io_ifc_b1 ();
   ifc_multi io_ifc_mc ();
-  ifc io_arr [1:0]();
+  ifc io_arr[1:0] ();
   ifc io_ifc_deep ();
 
   // Test top assignment

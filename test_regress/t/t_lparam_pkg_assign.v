@@ -17,17 +17,19 @@ package pkg;
   endfunction
 endpackage
 
-interface ifc();
+interface ifc ();
   localparam int PARAM = 1;
 endinterface
 
-module mod(ifc i);
+module mod (
+    ifc i
+);
   localparam bit lpbit = pkg::fn(i.PARAM);
 endmodule
 
 module t;
-  ifc i();
-  mod m(.i);
+  ifc i ();
+  mod m (.i);
 
   initial begin
     `checkd(m.lpbit, 1'b1);

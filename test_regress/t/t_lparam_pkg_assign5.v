@@ -17,30 +17,38 @@ package pkg;
   endfunction
 endpackage
 
-interface ifc #(parameter int WIDTH = 8);
+interface ifc #(
+    parameter int WIDTH = 8
+);
   localparam int DEPTH = $clog2(WIDTH);
   localparam int DECODED = pkg::decode_width(DEPTH);
 endinterface
 
 // Leaf module: uses interface LPARAM in a FUNCREF-based localparam
-module leaf(ifc i);
+module leaf (
+    ifc i
+);
   localparam int BUF_SIZE = pkg::decode_width(i.DEPTH);
   localparam int OUT_W = i.DECODED + 1;
 endmodule
 
 // Intermediate wrapper: passes interface through to leaf
-module wrapper(ifc i);
-  leaf u_leaf(.i);
+module wrapper (
+    ifc i
+);
+  leaf u_leaf (.i);
 endmodule
 
 // Second level wrapper: adds another layer of hierarchy
-module subsystem(ifc bus);
-  wrapper u_wrap(.i(bus));
+module subsystem (
+    ifc bus
+);
+  wrapper u_wrap (.i(bus));
 endmodule
 
 module t;
-  ifc #(.WIDTH(64)) bus();
-  subsystem u_sub(.bus);
+  ifc #(.WIDTH(64)) bus ();
+  subsystem u_sub (.bus);
 
   initial begin
     // WIDTH=64, DEPTH=$clog2(64)=6, DECODED=decode_width(6)=12

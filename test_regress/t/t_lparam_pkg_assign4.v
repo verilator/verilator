@@ -17,25 +17,31 @@ package pkg;
   endfunction
 endpackage
 
-interface ifc #(parameter int WIDTH = 8);
+interface ifc #(
+    parameter int WIDTH = 8
+);
   localparam int DEPTH = $clog2(WIDTH);
   localparam int DECODED = pkg::decode_width(DEPTH);
 endinterface
 
-module producer(ifc i);
+module producer (
+    ifc i
+);
   localparam int BUF_SIZE = pkg::decode_width(i.DEPTH);
   localparam int OUT_W = i.DECODED + 1;
 endmodule
 
-module consumer(ifc i);
+module consumer (
+    ifc i
+);
   localparam int HALF = i.DECODED / 2;
   localparam int TAG_W = pkg::decode_width(i.DEPTH) + i.DECODED;
 endmodule
 
 module t;
-  ifc #(.WIDTH(64)) bus[2]();
-  producer p(.i(bus[0]));
-  consumer c(.i(bus[1]));
+  ifc #(.WIDTH(64)) bus[2] ();
+  producer p (.i(bus[0]));
+  consumer c (.i(bus[1]));
 
   initial begin
     // WIDTH=64, DEPTH=$clog2(64)=6, DECODED=decode_width(6)=12

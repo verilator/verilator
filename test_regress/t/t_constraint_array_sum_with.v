@@ -5,8 +5,10 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // Test case for array reduction methods with 'with' clause in constraints (issue #6455)
+// verilog_format: off
 `define stop $stop
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 class test_sum;
   rand byte array[5];
@@ -14,11 +16,11 @@ class test_sum;
 
   constraint c {
     // Ensure exactly 3 occurrences of repeated_value using sum
-    array.sum() with (int'(item==repeated_value)) == 3;
+    array.sum() with (int'(item == repeated_value)) == 3;
 
     // All other values should appear exactly once
-    foreach(array[i]) {
-      array[i] != repeated_value -> array.sum() with (int'(item==array[i])) == 1;
+    foreach (array[i]) {
+      array[i] != repeated_value -> array.sum() with (int'(item == array[i])) == 1;
     }
   }
 
@@ -44,7 +46,8 @@ class test_sum;
                  repeated_value, repeated_count);
         $stop;
       end
-    end else begin
+    end
+    else begin
       $display("%%Error: sum test - repeated_value=%0d doesn't appear in array", repeated_value);
       $stop;
     end
@@ -52,7 +55,8 @@ class test_sum;
     // Check all other values appear exactly once
     foreach (count_map[val]) begin
       if (val != repeated_value && count_map[val] != 1) begin
-        $display("%%Error: sum test - value=%0d appears %0d times, expected 1", val, count_map[val]);
+        $display("%%Error: sum test - value=%0d appears %0d times, expected 1", val,
+                 count_map[val]);
         $stop;
       end
     end

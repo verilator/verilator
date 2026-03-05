@@ -5,9 +5,9 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t (
-  input logic a,
-  input logic b,
-  output logic [1:0] y
+    input logic a,
+    input logic b,
+    output logic [1:0] y
 );
 
   logic [1:0] w;

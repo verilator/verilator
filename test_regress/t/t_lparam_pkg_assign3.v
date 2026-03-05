@@ -17,7 +17,9 @@ package pkg;
   endfunction
 endpackage
 
-interface ifc #(parameter type some_type) ();
+interface ifc #(
+    parameter type some_type
+) ();
   localparam int PARAM = 1;
   localparam int TYPE_WIDTH = $bits(some_type);
 endinterface
@@ -27,14 +29,16 @@ function automatic bit assert_func(bit value);
   return value;
 endfunction
 
-module mod(ifc i);
+module mod (
+    ifc i
+);
   localparam bit lpbit = pkg::fn(i.PARAM);
   localparam bit test = assert_func(i.TYPE_WIDTH == 32);
 endmodule
 
 module t;
-  ifc #(.some_type(int)) i();
-  mod m(.i);
+  ifc #(.some_type(int)) i ();
+  mod m (.i);
 
   initial begin
     `checkd(m.lpbit, 1'b1);  // fn(1) returns 1 since 1 > 0

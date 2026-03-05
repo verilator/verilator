@@ -9,21 +9,21 @@ class Packet;
   rand bit [3:0] data[5];
 
   constraint c {
-     // This should trigger unsupported warning
-     data.sum() with (item.index) <= 10;
+    // This should trigger unsupported warning
+    data.sum() with (item.index) <= 10;
   }
 endclass
 
 module t;
   initial begin
-     Packet p;
-     int i;
+    Packet p;
+    int i;
 
-     p = new;
+    p = new;
 
-     i = p.randomize();
+    i = p.randomize();
 
-     $write("*-* All Finished *-*\n");
-     $finish;
+    $write("*-* All Finished *-*\n");
+    $finish;
   end
 endmodule
