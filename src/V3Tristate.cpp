@@ -1561,6 +1561,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     }
     void visit(AstAssignW* nodep) override { visitAssign(nodep); }
     void visit(AstAssign* nodep) override { visitAssign(nodep); }
+    void visit(AstAssignDly* nodep) override { visitAssign(nodep); }
     void visit(AstAlias* nodep) override {
         VL_RESTORER(m_alhs);
         VL_RESTORER(m_inAlias);
