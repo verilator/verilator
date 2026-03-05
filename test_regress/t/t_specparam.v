@@ -15,7 +15,8 @@ module t;
     specparam PATHPULSE$a$c = (3.0:3.1:3.2);
     specparam randomize = 1;  // Special parser corner-case
 
-    // Not allowed by LRM but used in an example in section 30.7.1
+    // Not allowed by the grammar in LRM section 30.7.1,
+    // but used in an example at the end in the same section
     specparam PATHPULSE$ = 0;
   endspecify
 
