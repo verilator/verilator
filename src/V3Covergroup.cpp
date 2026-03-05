@@ -531,6 +531,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             AstVar* const varp = new AstVar{cbinp->fileline(), VVarType::MEMBER, varName,
                                             cbinp->findUInt32DType()};
             varp->isStatic(false);
+            varp->valuep(new AstConst{cbinp->fileline(), AstConst::WidthedValue{}, 32, 0});
             m_covergroupp->addMembersp(varp);
             UINFO(4, "    Created member variable: "
                          << varName << " type=" << static_cast<int>(cbinp->binsType())
@@ -566,6 +567,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             AstVar* const varp = new AstVar{defBinp->fileline(), VVarType::MEMBER, varName,
                                             defBinp->findUInt32DType()};
             varp->isStatic(false);
+            varp->valuep(new AstConst{defBinp->fileline(), AstConst::WidthedValue{}, 32, 0});
             m_covergroupp->addMembersp(varp);
             UINFO(4, "    Created default bin variable: " << varName << endl);
 
@@ -1031,6 +1033,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             AstVar* const varp = new AstVar{arrayBinp->fileline(), VVarType::MEMBER, varName,
                                             arrayBinp->findUInt32DType()};
             varp->isStatic(false);
+            varp->valuep(new AstConst{arrayBinp->fileline(), AstConst::WidthedValue{}, 32, 0});
             m_covergroupp->addMembersp(varp);
             UINFO(4, "    Created array bin [" << index << "]: " << varName << endl);
 
@@ -1113,6 +1116,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             AstVar* const varp = new AstVar{arrayBinp->fileline(), VVarType::MEMBER, varName,
                                             arrayBinp->findUInt32DType()};
             varp->isStatic(false);
+            varp->valuep(new AstConst{arrayBinp->fileline(), AstConst::WidthedValue{}, 32, 0});
             m_covergroupp->addMembersp(varp);
             UINFO(4, "      Created transition array bin [" << index << "]: " << varName << endl);
 
@@ -1267,6 +1271,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         AstVar* const varp = new AstVar{crossp->fileline(), VVarType::MEMBER, varName,
                                         bins[0]->findUInt32DType()};
         varp->isStatic(false);
+        varp->valuep(new AstConst{crossp->fileline(), AstConst::WidthedValue{}, 32, 0});
         m_covergroupp->addMembersp(varp);
 
         UINFO(4, "      Created cross bin variable: " << varName << endl);
