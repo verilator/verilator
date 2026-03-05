@@ -7,7 +7,7 @@
                             : ... note: In instance 't'
    10 |       if (add(3'd1, 3'd2, 3'd3) != 0) $stop;     
       |           ^~~
-                            : ... Function 'add' declared here:
+                            : ... Location of function 'add' declaration:
    19 |    function [2:0] add;
       |                   ^~~
 %Error: t/t_func_bad.v:11:7: Missing argument on non-defaulted argument 'y' in function call to TASK 'x'
@@ -24,7 +24,7 @@
                             : ... note: In instance 't'
    14 |       f(.j(1), .no_such(2));  
       |       ^
-                           : ... Function 'f' declared here:
+                           : ... Location of function 'f' declaration
    37 |    function automatic int f( int j = 1, int dup = 0 );
       |                           ^
 %Error: t/t_func_bad.v:15:19: Duplicate argument 'dup' in function call to FUNC 'f'
@@ -35,7 +35,7 @@
                             : ... note: In instance 't'
    16 |       f(1,2,3);  
       |       ^
-                           : ... Function 'f' declared here:
+                           : ... Location of function 'f' declaration:
    37 |    function automatic int f( int j = 1, int dup = 0 );
       |                           ^
 %Error: Exiting due to

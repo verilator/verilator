@@ -1,7 +1,7 @@
 %Error: t/t_let_arg_bad.v:13:18: Too many arguments in call to let 'NO_ARG'
    13 |       if (NO_ARG(10) != 10) $stop;   
       |           ^~~~~~
-                               : ... Let 'NO_ARG' declared here:
+                               : ... Location of let 'NO_ARG' declaration:
     9 |    let NO_ARG = 10;
       |        ^~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
@@ -14,13 +14,13 @@
 %Error: t/t_let_arg_bad.v:16:23: Too many arguments in call to let 'ONE_ARG'
    16 |       if (ONE_ARG(10, 20) != 10) $stop;   
       |           ^~~~~~~
-                               : ... Let 'ONE_ARG' declared here:
+                               : ... Location of let 'ONE_ARG' declaration:
    10 |    let ONE_ARG(a) = 10;
       |        ^~~~~~~
 %Error: t/t_let_arg_bad.v:17:20: No such argument 'b' in call to let 'ONE_ARG'
    17 |       if (ONE_ARG(.b(1)) != 10) $stop;   
       |           ^~~~~~~
-                               : ... Let 'ONE_ARG' declared here:
+                               : ... Location of let 'ONE_ARG' declaration
    10 |    let ONE_ARG(a) = 10;
       |        ^~~~~~~
 %Error: t/t_let_arg_bad.v:17:11: Missing argument on non-defaulted argument 'a' in function call to LET 'ONE_ARG'

@@ -2,7 +2,7 @@
                                                             : ... note: In instance 't'
    15 |     cov1.sample(5, 1'b0, 42);   
       |          ^~~~~~
-                                                            : ... Function 'sample' declared here:
+                                                            : ... Location of function 'sample' declaration:
     9 |   covergroup cg_with_sample(int init) with function sample (int addr, bit is_read = 1'b0);
       |              ^~~~~~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
