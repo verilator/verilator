@@ -5282,6 +5282,34 @@ class WidthVisitor final : public VNVisitor {
         return newp;
     }
 
+    AstPatMember* defaultPatp_patternArray(AstPatMember* defaultp, AstNodeDType* elemDTypep) {
+        AstNodeExpr* const valuep = defaultp->lhssp()->cloneTree(false);
+        AstNodeDType* const elemDTypeSkipRefp = elemDTypep->skipRefp();
+
+        if (!VN_IS(elemDTypeSkipRefp, UnpackArrayDType)) {
+            VL_DO_DANGLING(pushDeletep(valuep), valuep);
+            return defaultp->cloneTree(false);
+        }
+        if (VN_IS(valuep, Pattern)) {
+            VL_DO_DANGLING(pushDeletep(valuep), valuep);
+            return defaultp->cloneTree(false);
+        }
+        if (!valuep->dtypep()) userIterate(valuep, WidthVP{SELF, BOTH}.p());
+        if (valuep->dtypep()
+            && AstNode::computeCastable(valuep->dtypep()->skipRefp(), elemDTypeSkipRefp, nullptr)
+                   .isAssignable()) {
+            VL_DO_DANGLING(pushDeletep(valuep), valuep);
+            return defaultp->cloneTree(false);
+        }
+
+        AstPatMember* const nestedDefaultp
+            = new AstPatMember{defaultp->fileline(), valuep, nullptr, nullptr};
+        nestedDefaultp->isDefault(true);
+        AstPattern* const recursivePatternp
+            = new AstPattern{defaultp->fileline(), nestedDefaultp};
+        return new AstPatMember{defaultp->fileline(), recursivePatternp, nullptr, nullptr};
+    }
+
     void patternArray(AstPattern* nodep, AstNodeArrayDType* arrayDtp, AstPatMember* defaultp) {
         const VNumRange range = arrayDtp->declRange();
         PatVecMap patmap = patVectorMap(nodep, range);
@@ -5296,7 +5324,7 @@ class WidthVisitor final : public VNVisitor {
             const auto it = patmap.find(ent);
             if (it == patmap.end()) {
                 if (defaultp) {
-                    newpatp = defaultp->cloneTree(false);
+                    newpatp = defaultPatp_patternArray(defaultp, arrayDtp->subDTypep());
                     patp = newpatp;
                 } else if (!(VN_IS(arrayDtp, UnpackArrayDType) && !allConstant && isConcat)) {
                     // If arrayDtp is an unpacked array and item is not constant,

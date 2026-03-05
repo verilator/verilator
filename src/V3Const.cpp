@@ -2667,12 +2667,27 @@ class ConstVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (const AstInitArray* const initp = VN_CAST(nodep->lhsp(), InitArray)) {
             if (!(m_doExpensive || m_params)) return false;
-            // At present only support 1D unpacked arrays
-            const auto initOfConst = [](const AstNode* const nodep) -> bool {  //
-                return VN_IS(nodep, Const) || VN_IS(nodep, InitItem);
+            const auto isConstInit = [](const AstNode* const exprp,
+                                        const auto& isConstInitRecurse) -> bool {
+                if (VN_IS(exprp, Const)) return true;
+                if (const AstInitItem* const itemp = VN_CAST(exprp, InitItem)) {
+                    return isConstInitRecurse(itemp->valuep(), isConstInitRecurse);
+                }
+                if (const AstInitArray* const arrayp = VN_CAST(exprp, InitArray)) {
+                    const auto itemIsConstInit = [&isConstInitRecurse](const AstNode* const itemp)
+                        -> bool {
+                        return isConstInitRecurse(itemp, isConstInitRecurse);
+                    };
+                    if (arrayp->initsp() && !arrayp->initsp()->forall(itemIsConstInit)) return false;
+                    if (arrayp->defaultp()
+                        && !isConstInitRecurse(arrayp->defaultp(), isConstInitRecurse)) {
+                        return false;
+                    }
+                    return true;
+                }
+                return false;
             };
-            if (initp->initsp() && !initp->initsp()->forall(initOfConst)) return false;
-            if (initp->defaultp() && !initp->defaultp()->forall(initOfConst)) return false;
+            if (!isConstInit(initp, isConstInit)) return false;
         } else if (!VN_IS(nodep->lhsp(), Const)) {
             return false;
         }
