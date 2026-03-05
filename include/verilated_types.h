@@ -428,6 +428,9 @@ std::string VL_TO_STRING(const VlWide<N_Words>& obj) {
     return VL_TO_STRING_W(N_Words, obj.data());
 }
 
+template <typename T_Class>
+class VlClassRef;
+
 //===================================================================
 // Verilog queue and dynamic array container
 // There are no multithreaded locks on this; the base variable must
@@ -438,6 +441,9 @@ std::string VL_TO_STRING(const VlWide<N_Words>& obj) {
 template <typename T_Value, size_t N_MaxSize = 0>
 class VlQueue final {
 private:
+    template <typename U_Value, size_t M_MaxSize>
+    friend class VlQueue;
+
     // TYPES
     using Deque = std::deque<T_Value>;
 
@@ -460,6 +466,13 @@ public:
     VlQueue(VlQueue&&) = default;
     VlQueue& operator=(const VlQueue&) = default;
     VlQueue& operator=(VlQueue&&) = default;
+
+    // Template constuctors that construct from containers holding sub-classes
+    template <typename T_Subclass>
+    inline VlQueue(const VlQueue<VlClassRef<T_Subclass>>&);
+    template <typename T_Subclass>
+    inline VlQueue(VlQueue<VlClassRef<T_Subclass>>&&);
+
     bool operator==(const VlQueue& rhs) const { return m_deque == rhs.m_deque; }
     bool operator!=(const VlQueue& rhs) const { return m_deque != rhs.m_deque; }
     bool operator<(const VlQueue& rhs) const {
@@ -2150,5 +2163,18 @@ inline T VL_NULL_CHECK(T t, const char* filename, int linenum) {
 }
 
 //======================================================================
+
+template <typename T_Value, size_t N_MaxSize>
+template <typename T_Subclass>
+VlQueue<T_Value, N_MaxSize>::VlQueue(const VlQueue<VlClassRef<T_Subclass>>& that)
+    : m_deque{that.m_deque.begin(), that.m_deque.end()}
+    , m_defaultValue{that.m_defaultValue} {}
+
+template <typename T_Value, size_t N_MaxSize>
+template <typename T_Subclass>
+VlQueue<T_Value, N_MaxSize>::VlQueue(VlQueue<VlClassRef<T_Subclass>>&& that)
+    : m_deque{std::make_move_iterator(that.m_deque.begin()),
+              std::make_move_iterator(that.m_deque.end())}
+    , m_defaultValue{std::move(that.m_defaultValue)} {}
 
 #endif  // Guard

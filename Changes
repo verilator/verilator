@@ -40,6 +40,7 @@ Verilator 5.047 devel
 * Fix eliminating assignments to DPI-read variables (#7158). [Geza Lore, Testorrent USA, Inc.]
 * Fix std::randomize() in static function with static class members (#7167) (#7169). [Yilou Wang]
 * Fix recursive constant function in $unit scope (#7173) (#7174).
+* Fix class extend references between queues (#7195).
 * Fix library/hier_block tracing when top name is empty (#7200). [Geza Lore, Testorrent USA, Inc.]
 
 
