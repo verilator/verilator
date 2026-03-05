@@ -2667,18 +2667,19 @@ class ConstVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (const AstInitArray* const initp = VN_CAST(nodep->lhsp(), InitArray)) {
             if (!(m_doExpensive || m_params)) return false;
-            const auto isConstInit = [](const AstNode* const exprp,
-                                        const auto& isConstInitRecurse) -> bool {
+            const auto isConstInit
+                = [](const AstNode* const exprp, const auto& isConstInitRecurse) -> bool {
                 if (VN_IS(exprp, Const)) return true;
                 if (const AstInitItem* const itemp = VN_CAST(exprp, InitItem)) {
                     return isConstInitRecurse(itemp->valuep(), isConstInitRecurse);
                 }
                 if (const AstInitArray* const arrayp = VN_CAST(exprp, InitArray)) {
-                    const auto itemIsConstInit = [&isConstInitRecurse](const AstNode* const itemp)
-                        -> bool {
+                    const auto itemIsConstInit
+                        = [&isConstInitRecurse](const AstNode* const itemp) -> bool {
                         return isConstInitRecurse(itemp, isConstInitRecurse);
                     };
-                    if (arrayp->initsp() && !arrayp->initsp()->forall(itemIsConstInit)) return false;
+                    if (arrayp->initsp() && !arrayp->initsp()->forall(itemIsConstInit))
+                        return false;
                     if (arrayp->defaultp()
                         && !isConstInitRecurse(arrayp->defaultp(), isConstInitRecurse)) {
                         return false;

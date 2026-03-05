@@ -5305,8 +5305,7 @@ class WidthVisitor final : public VNVisitor {
         AstPatMember* const nestedDefaultp
             = new AstPatMember{defaultp->fileline(), valuep, nullptr, nullptr};
         nestedDefaultp->isDefault(true);
-        AstPattern* const recursivePatternp
-            = new AstPattern{defaultp->fileline(), nestedDefaultp};
+        AstPattern* const recursivePatternp = new AstPattern{defaultp->fileline(), nestedDefaultp};
         return new AstPatMember{defaultp->fileline(), recursivePatternp, nullptr, nullptr};
     }
 
