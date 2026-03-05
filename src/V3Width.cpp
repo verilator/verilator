@@ -5283,21 +5283,27 @@ class WidthVisitor final : public VNVisitor {
     }
 
     AstPatMember* defaultPatp_patternArray(AstPatMember* defaultp, AstNodeDType* elemDTypep) {
-        AstNodeExpr* const valuep = defaultp->lhssp();
+        AstNodeExpr* const valuep = defaultp->lhssp()->cloneTree(false);
         AstNodeDType* const elemDTypeSkipRefp = elemDTypep->skipRefp();
 
-        if (!VN_IS(elemDTypeSkipRefp, UnpackArrayDType)) return defaultp->cloneTree(false);
-        if (VN_IS(valuep, Pattern)) return defaultp->cloneTree(false);
+        if (!VN_IS(elemDTypeSkipRefp, UnpackArrayDType)) {
+            VL_DO_DANGLING(pushDeletep(valuep), valuep);
+            return defaultp->cloneTree(false);
+        }
+        if (VN_IS(valuep, Pattern)) {
+            VL_DO_DANGLING(pushDeletep(valuep), valuep);
+            return defaultp->cloneTree(false);
+        }
         if (!valuep->dtypep()) userIterate(valuep, WidthVP{SELF, BOTH}.p());
         if (valuep->dtypep()
             && AstNode::computeCastable(valuep->dtypep()->skipRefp(), elemDTypeSkipRefp, nullptr)
                    .isAssignable()) {
+            VL_DO_DANGLING(pushDeletep(valuep), valuep);
             return defaultp->cloneTree(false);
         }
 
-        AstNodeExpr* const recursiveValuep = valuep->cloneTree(false);
         AstPatMember* const nestedDefaultp
-            = new AstPatMember{defaultp->fileline(), recursiveValuep, nullptr, nullptr};
+            = new AstPatMember{defaultp->fileline(), valuep, nullptr, nullptr};
         nestedDefaultp->isDefault(true);
         AstPattern* const recursivePatternp
             = new AstPattern{defaultp->fileline(), nestedDefaultp};
