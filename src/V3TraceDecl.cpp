@@ -322,9 +322,14 @@ class TraceDeclVisitor final : public VNVisitor {
 
         // Call the initialization function for the library instance
         AstCStmt* const initp = new AstCStmt{flp};
-        initp->add("tracep->initLib(vlSymsp->name() + ");
-        initp->add(new AstConst{flp, AstConst::String{}, "." + AstNode::prettyName(path)});
-        initp->add(");\n");
+        initp->add("{\n");
+        initp->add("std::string __VlibName = vlSymsp->name();\n");
+        initp->add("if (!__VlibName.empty()) __VlibName += '.';\n");
+        initp->add("__VlibName += ");
+        initp->add(new AstConst{flp, AstConst::String{}, AstNode::prettyName(path)});
+        initp->add(";\n");
+        initp->add("tracep->initLib(__VlibName);\n");
+        initp->add("}\n");
 
         placeholderp->addNextHere(initp);
         // Delete the placeholder

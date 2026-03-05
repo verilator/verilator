@@ -1191,6 +1191,7 @@ class VlTest:
             'make_flags': [],
             'tee': True,
             'timing_loop': False,
+            'main_top_name': "top",
         }
         param.update(vars(self))
         param.update(kwargs)
@@ -1360,7 +1361,7 @@ class VlTest:
                 return
 
             if not param['fails'] and param['make_main']:
-                self._make_main(param['timing_loop'])
+                self._make_main(param['timing_loop'], param['main_top_name'])
 
             if (param['verilator_make_gmake']
                     or (not param['verilator_make_gmake'] and not param['verilator_make_cmake'])):
@@ -2011,7 +2012,7 @@ class VlTest:
                     return size + line
         return size + firstline
 
-    def _make_main(self, timing_loop: bool) -> None:
+    def _make_main(self, timing_loop: bool, main_top_name: str) -> None:
         if timing_loop and self.sc:
             self.error("Cannot use timing loop and SystemC together!")
 
@@ -2108,7 +2109,7 @@ class VlTest:
             fh.write("    srand48(5);\n")  # Ensure determinism
             if self.verilated_randReset is not None and self.verilated_randReset != "":
                 fh.write("    contextp->randReset(" + str(self.verilated_randReset) + ");\n")
-            fh.write("    topp.reset(new " + self.vm_prefix + "{\"top\"});\n")
+            fh.write("    topp.reset(new " + self.vm_prefix + '{"' + main_top_name + '"});\n')
             if self.verilated_debug:
                 fh.write("    contextp->internalsDump()\n;")
 

@@ -12,7 +12,8 @@ import vltest_bootstrap
 import re
 
 noinline = "noinl" in test.name
-if not noinline:
+notop = "notop" in test.name
+if not noinline and not notop:
     test.priority(30)
 test.scenarios('vlt_all')
 test.top_filename = "t/t_hier_block.v"
@@ -32,16 +33,19 @@ verilator_common_flags = [
 verilator_hier_flags = verilator_common_flags + ['--hierarchical']
 if noinline:
     verilator_hier_flags.extend(["+define+NO_INLINE"])
+main_top_name = "top"
+if notop:
+    main_top_name = ""
 
 # Compile hierarchically
 test.vm_prefix = "Vhier"
 test.main_filename = test.obj_dir + "/Vhier__main.cpp"
-test.compile(verilator_flags2=verilator_hier_flags)
+test.compile(verilator_flags2=verilator_hier_flags, main_top_name=main_top_name)
 
 # Compile non hierarchically
 test.vm_prefix = "Vnonh"
 test.main_filename = test.obj_dir + "/Vnonh__main.cpp"
-test.compile(verilator_flags2=verilator_common_flags)
+test.compile(verilator_flags2=verilator_common_flags, main_top_name=main_top_name)
 
 trace_hier = test.trace_filename.replace("simx", "hier")
 trace_nonh = test.trace_filename.replace("simx", "nonh")
