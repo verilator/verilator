@@ -250,7 +250,7 @@ std::vector<std::string> V3Global::verilatedCppFiles() {
     for (const string& base : v3Global.opt.traceSourceBases())
         result.emplace_back(base + "_c.cpp");
     if (v3Global.usesProbDist()) result.emplace_back("verilated_probdist.cpp");
-    if (v3Global.usesTiming()) {
+    if (v3Global.opt.timing().isTrue()) {
         result.emplace_back("verilated_timing.cpp");
         result.emplace_back("verilated_fiber.cpp");
     }

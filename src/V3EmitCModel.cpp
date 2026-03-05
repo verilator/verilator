@@ -177,7 +177,7 @@ class EmitCModel final : public EmitCFunc {
         if (!optSystemC()) {
             puts("/// Evaluate the model.  Application must call when inputs change.\n");
         }
-        if (optSystemC() && v3Global.usesTiming()) {
+        if (optSystemC() && v3Global.opt.timing().isTrue()) {
             puts("void eval();\n");
         } else {
             puts("void eval() { eval_step(); " + callEvalEndStep + "}\n");
@@ -388,7 +388,7 @@ class EmitCModel final : public EmitCFunc {
         puts("void " + topModNameProtected + "__" + protect("_eval_settle") + selfDecl + ";\n");
         puts("void " + topModNameProtected + "__" + protect("_eval") + selfDecl + ";\n");
 
-        if (optSystemC() && v3Global.usesTiming()) {
+        if (optSystemC() && v3Global.opt.timing().isTrue()) {
             // ::eval
             puts("\nvoid " + EmitCUtil::topClassName() + "::eval() {\n");
             puts("eval_step();\n");
@@ -683,7 +683,7 @@ class EmitCModel final : public EmitCFunc {
                 puts("#include \"" + EmitCUtil::topClassName() + ".h\"\n");
                 puts("#include \"" + EmitCUtil::symClassName() + ".h\"\n");
                 puts("#include \"verilated_dpi.h\"\n");
-                if (v3Global.usesTiming()) puts("#include \"verilated_dpi_fiber.h\"\n");
+                if (v3Global.opt.timing().isTrue()) puts("#include \"verilated_dpi_fiber.h\"\n");
                 puts("\n");
                 m_lazyDecls.reset();
             }

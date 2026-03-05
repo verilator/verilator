@@ -991,7 +991,7 @@ class TaskVisitor final : public VNVisitor {
             return vscp;
         };
 
-        if (v3Global.opt.timing()) {
+        if (v3Global.opt.timing().isTrue()) {
             callp->add("__Vcb,");
         } else {
             callp->add("(*__Vcb)(");
@@ -1021,7 +1021,7 @@ class TaskVisitor final : public VNVisitor {
         if (rtnvarp) addFuncArg(rtnvarp);
         // The function has to be called by returning from fiber context first, if the timings are
         // used
-        if (v3Global.opt.timing()) {
+        if (v3Global.opt.timing().isTrue()) {
             AstCStmt* const awaitExportp
                 = new AstCStmt{nodep->fileline(), "VerilatedDpi::awaitExport"};
             awaitExportp->add("(");
@@ -1234,7 +1234,7 @@ class TaskVisitor final : public VNVisitor {
             }
 
             // If timings are used, the DPI function has to be executed inside a fiber
-            if (v3Global.opt.timing()) {
+            if (v3Global.opt.timing().isTrue()) {
                 AstCExpr* const callImportp
                     = new AstCExpr{nodep->fileline(), "VerilatedDpi::callImport"};
                 AstCAwait* const awaitp = new AstCAwait{nodep->fileline(), callImportp};
