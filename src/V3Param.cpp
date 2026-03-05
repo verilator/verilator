@@ -2608,6 +2608,7 @@ public:
 
         // Relies on modules already being in top-down-order
         iterate(netlistp);
+        V3Width::clearTypeMap();
     }
     ~ParamVisitor() override = default;
     VL_UNCOPYABLE(ParamVisitor);
