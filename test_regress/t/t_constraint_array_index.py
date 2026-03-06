@@ -14,6 +14,8 @@ test.scenarios('simulator')
 if not test.have_solver:
     test.skip("No constraint solver installed")
 
-test.compile(fails=True, expect_filename=test.golden_filename)
+test.compile()
+
+test.execute()
 
 test.passes()

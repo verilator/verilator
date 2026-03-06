@@ -878,6 +878,26 @@ class ConstraintExprVisitor final : public VNVisitor {
         return selp;
     }
 
+    // Convert expression to target width using extend or truncate as needed
+    AstNodeExpr* adjustWidth(FileLine* fl, AstNodeExpr* exprp, int targetWidth,
+                             VSigning targetSigning) {
+        const int exprWidth = exprp->width();
+        if (targetWidth > exprWidth) {
+            // Extend to match target width
+            AstNodeExpr* const result = new AstExtend{fl, exprp, targetWidth};
+            result->dtypeSetLogicSized(targetWidth, targetSigning);
+            return result;
+        } else if (targetWidth < exprWidth) {
+            // Truncate to match target width
+            AstNodeExpr* const result = new AstSel{fl, exprp, 0, targetWidth};
+            result->dtypeSetLogicSized(targetWidth, targetSigning);
+            return result;
+        } else {
+            // Width already matches
+            return exprp;
+        }
+    }
+
     // Extract return expression from a simple function body, or nullptr if too complex.
     // Uses foreach to walk all assigns regardless of body organization (JumpBlock nesting etc.).
     // Takes the last assignment to the return variable -- the first is the initializer.
@@ -1284,13 +1304,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         FileLine* const fl = nodep->fileline();
         AstNodeExpr* const argp = nodep->lhsp()->unlinkFrBack();
         AstNodeExpr* sump = buildCountOnesExpansion(fl, argp, nodep);
-        if (nodep->width() > sump->width()) {
-            sump = new AstExtend{fl, sump, nodep->width()};
-            sump->user1(true);
-        } else if (nodep->width() < sump->width()) {
-            sump = new AstSel{fl, sump, 0, nodep->width()};
-            sump->user1(true);
-        }
+        sump = adjustWidth(fl, sump, nodep->width(), nodep->dtypep()->numeric());
+        sump->user1(true);
         nodep->replaceWith(sump);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         iterate(sump);
@@ -1407,13 +1422,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             VL_DO_DANGLING(argp->deleteTree(), argp);
         }
 
-        if (nodep->width() > sump->width()) {
-            sump = new AstExtend{fl, sump, nodep->width()};
-            sump->user1(true);
-        } else if (nodep->width() < sump->width()) {
-            sump = new AstSel{fl, sump, 0, nodep->width()};
-            sump->user1(true);
-        }
+        sump = adjustWidth(fl, sump, nodep->width(), nodep->dtypep()->numeric());
+        sump->user1(true);
 
         nodep->replaceWith(sump);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -2114,20 +2124,6 @@ class ConstraintExprVisitor final : public VNVisitor {
                         return;
                     }
                 }
-
-                bool hasItemIndex = false;
-                withp->exprp()->foreach([&](AstLambdaArgRef* refp) {
-                    if (refp->index()) hasItemIndex = true;
-                });
-                if (hasItemIndex) {
-                    nodep->v3warn(CONSTRAINTIGN,
-                                  "Unsupported: item.index in array reduction constraint 'with' "
-                                  "clause; treating as state");
-                    nodep->user1(false);
-                    if (editFormat(nodep)) return;
-                    nodep->v3fatalSrc("Method not handled in constraints? " << nodep);
-                    return;
-                }
             }
 
             // For without 'with' clause: need random array for variable registration
@@ -2210,20 +2206,47 @@ class ConstraintExprVisitor final : public VNVisitor {
                 AstNodeExpr* const elemSelp = newSel(fl, nodep->fromp(), idxRefp);
                 elemSelp->user1(randArr);
 
+                // Get the result width for the reduction
+                const int resultWidth = nodep->dtypep()->width();
+                const VSigning resultSigning = nodep->dtypep()->numeric();
+
                 AstNode* perElemExprp = withp->exprp()->cloneTreePure(false);
                 if (AstLambdaArgRef* const rootRefp = VN_CAST(perElemExprp, LambdaArgRef)) {
-                    perElemExprp = elemSelp->cloneTreePure(false);
+                    if (rootRefp->index()) {
+                        // item.index at root -> replace with loop variable, adjust width
+                        AstVarRef* const loopRef = new AstVarRef{fl, loopVarp, VAccess::READ};
+                        perElemExprp = adjustWidth(fl, loopRef, resultWidth, resultSigning);
+                    } else {
+                        // item at root -> replace with array element
+                        perElemExprp = elemSelp->cloneTreePure(false);
+                    }
                     VL_DO_DANGLING(rootRefp->deleteTree(), rootRefp);
                 } else {
                     perElemExprp->foreach([&](AstLambdaArgRef* refp) {
-                        refp->replaceWith(elemSelp->cloneTreePure(false));
+                        if (refp->index()) {
+                            // item.index -> replace with loop variable, adjust width
+                            AstVarRef* loopRef = new AstVarRef{fl, loopVarp, VAccess::READ};
+                            AstNode* const replacement
+                                = adjustWidth(fl, loopRef, resultWidth, resultSigning);
+                            refp->replaceWith(replacement);
+                        } else {
+                            // item -> replace with array element
+                            refp->replaceWith(elemSelp->cloneTreePure(false));
+                        }
                         VL_DO_DANGLING(pushDeletep(refp), refp);
                     });
                 }
                 VL_DO_DANGLING(elemSelp->deleteTree(), elemSelp);
 
-                perElemExprp->foreach([](AstNode* nodep) {
-                    if (!VN_IS(nodep, Const)) nodep->user1(true);
+                perElemExprp->foreach([&](AstNode* nodep) {
+                    // Don't mark loop variable references as randomizable
+                    if (!VN_IS(nodep, Const)) {
+                        if (AstNodeVarRef* const vrefp = VN_CAST(nodep, NodeVarRef)) {
+                            if (vrefp->varp() != loopVarp) nodep->user1(true);
+                        } else {
+                            nodep->user1(true);
+                        }
+                    }
                 });
 
                 cstmtp->add("ret = \"(" + std::string(smtOp) + " \" + ret + \" \";\n");
