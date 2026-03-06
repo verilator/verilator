@@ -5012,7 +5012,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 if (m_extendsParam.count(targetClassp)) {
                     // Target class has parameterized extends not yet resolved.
                     // Its inherited symbols (e.g. static functions from the base class)
-                    // aren't imported yet — defer to linkDotParamed.
+                    // aren't imported yet - defer to linkDotParamed.
                     return;
                 }
             }
