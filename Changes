@@ -16,6 +16,7 @@ Verilator 5.047 devel
 * Support inout inside SV interface (#3466) (#7134). [Nick Brereton]
 * Support array reduction methods with 'with' clause in constraints (#6455) (#6999). [Rahul Behl]
 * Support constraint imperfect distributions (#6811) (#7168). [Yilou Wang]
+* Support procedural concurrent assertion simple cases (#6944).
 * Support force assignments to array elements of real type (#7048). [Ryszard Rozak, Antmicro Ltd.]
 * Support VPI array indexing in signal names (#7097) (#7187). [Christian Hecken]
 * Support soft constraint solving (#7124) (#7166). [Yilou Wang]

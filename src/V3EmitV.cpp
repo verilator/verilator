@@ -804,11 +804,11 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     }
     void visit(AstNodeCoverOrAssert* nodep) override {
         putfs(nodep, nodep->verilogKwd() + " ");
-        if (nodep->type() == VAssertType::OBSERVED_DEFERRED_IMMEDIATE) {
+        if (nodep->userType() == VAssertType::OBSERVED_DEFERRED_IMMEDIATE) {
             puts("#0 ");
-        } else if (nodep->type() == VAssertType::FINAL_DEFERRED_IMMEDIATE) {
+        } else if (nodep->userType() == VAssertType::FINAL_DEFERRED_IMMEDIATE) {
             puts("final ");
-        } else if (nodep->type() == VAssertType::CONCURRENT) {
+        } else if (nodep->userType() == VAssertType::CONCURRENT) {
             puts("property ");
         }
         iterateConstNull(nodep->sentreep());

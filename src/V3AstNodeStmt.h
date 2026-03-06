@@ -97,18 +97,25 @@ class AstNodeCoverOrAssert VL_NOT_FINAL : public AstNodeStmt {
     // op3 used by some sub-types only
     // @astgen op4 := passsp: List[AstNode] // Statements when propp is passing/truthly
     string m_name;  // Name to report
-    const VAssertType m_type;  // Assertion/cover type
+    const VAssertType m_userType;  // Assertion/cover type for user enable/disable
     const VAssertDirectiveType m_directive;  // Assertion directive type
+    bool m_senFromAlways = false;  // Sensitivity list copied from upper always
+    bool m_immediate = false;  // Immediate assert (may differ from userType being immediate)
 
 public:
-    AstNodeCoverOrAssert(VNType t, FileLine* fl, AstNode* propp, AstNode* passsp, VAssertType type,
-                         VAssertDirectiveType directive, const string& name = "")
+    AstNodeCoverOrAssert(VNType t, FileLine* fl, AstNode* propp, AstNode* passsp,
+                         VAssertType userType, VAssertDirectiveType directive,
+                         const string& name = "")
         : AstNodeStmt{t, fl}
         , m_name{name}
-        , m_type{type}
+        , m_userType{userType}
         , m_directive{directive} {
         this->propp(propp);
         addPasssp(passsp);
+        m_immediate = m_userType.containsAny(VAssertType::SIMPLE_IMMEDIATE
+                                             | VAssertType::OBSERVED_DEFERRED_IMMEDIATE
+                                             | VAssertType::FINAL_DEFERRED_IMMEDIATE)
+                      || m_userType == VAssertType::INTERNAL;
     }
     ASTGEN_MEMBERS_AstNodeCoverOrAssert;
     string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
@@ -116,14 +123,13 @@ public:
     void name(const string& name) override { m_name = name; }
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
-    VAssertType type() const VL_MT_SAFE { return m_type; }
+    string type() { return ""; }
+    VAssertType userType() const VL_MT_SAFE { return m_userType; }
     VAssertDirectiveType directive() const { return m_directive; }
-    bool immediate() const {
-        return this->type().containsAny(VAssertType::SIMPLE_IMMEDIATE
-                                        | VAssertType::OBSERVED_DEFERRED_IMMEDIATE
-                                        | VAssertType::FINAL_DEFERRED_IMMEDIATE)
-               || this->type() == VAssertType::INTERNAL;
-    }
+    bool immediate() const { return m_immediate; }
+    void immediate(bool flag) { m_immediate = flag; }
+    bool senFromAlways() const VL_MT_STABLE { return m_senFromAlways; }
+    void senFromAlways(bool flag) { m_senFromAlways = flag; }
 };
 class AstNodeForeach VL_NOT_FINAL : public AstNodeStmt {
     // @astgen op1 := headerp : AstForeachHeader

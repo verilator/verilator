@@ -1957,11 +1957,15 @@ string AstClassRefDType::prettyDTypeName(bool) const { return "class{}"s + prett
 string AstClassRefDType::name() const { return classp() ? classp()->name() : "<unlinked>"; }
 void AstNodeCoverOrAssert::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
-    str << " ["s + this->type().ascii() + "]";
+    str << " ["s + this->userType().ascii() + "]";
+    if (immediate()) str << " [IMMEDIATE]";
+    if (senFromAlways()) str << " [SENALW]";
 }
 void AstNodeCoverOrAssert::dumpJson(std::ostream& str) const {
-    dumpJsonStr(str, "type", "["s + this->type().ascii() + "]");
+    dumpJsonStr(str, "type", "["s + this->userType().ascii() + "]");
     dumpJsonGen(str);
+    dumpJsonBoolFuncIf(str, immediate);
+    dumpJsonBoolFuncIf(str, senFromAlways);
 }
 void AstClocking::dump(std::ostream& str) const {
     this->AstNode::dump(str);

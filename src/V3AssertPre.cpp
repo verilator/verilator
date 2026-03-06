@@ -66,18 +66,24 @@ private:
 
     // METHODS
 
-    AstSenTree* newSenTree(AstNode* nodep, AstSenTree* useTreep = nullptr) {
+    AstSenTree* newSenTree(AstNode* nodep, AstSenTree* useTreep = nullptr,
+                           AstNodeCoverOrAssert* cassertp = nullptr) {
         // Create sentree based on clocked or default clock
         // Return nullptr for always
         if (useTreep) return useTreep;
         AstSenTree* newp = nullptr;
         AstSenItem* senip = m_senip;
+        bool fromAlways = false;
         if (!senip && m_defaultClockingp) senip = m_defaultClockingp->sensesp();
-        if (!senip) senip = m_seniAlwaysp;
+        if (!senip) {
+            senip = m_seniAlwaysp;
+            fromAlways = true;
+        }
         if (!senip) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Unclocked assertion");
             newp = new AstSenTree{nodep->fileline(), nullptr};
         } else {
+            if (cassertp && fromAlways) cassertp->senFromAlways(true);
             newp = new AstSenTree{nodep->fileline(), senip->cloneTree(true)};
         }
         return newp;
@@ -494,7 +500,7 @@ private:
 
         // Find Clocking's buried under nodep->exprsp
         iterateChildren(nodep);
-        if (!nodep->immediate()) nodep->sentreep(newSenTree(nodep));
+        if (!nodep->immediate()) nodep->sentreep(newSenTree(nodep, nullptr, nodep));
     }
     void visit(AstFalling* nodep) override {
         if (nodep->user1SetOnce()) return;
@@ -647,7 +653,7 @@ private:
         // Unlink and just keep a pointer to it, convert to sentree as needed
         m_senip = nodep->sensesp();
         iterateNull(nodep->disablep());
-        if (VN_AS(nodep->backp(), NodeCoverOrAssert)->type() == VAssertType::CONCURRENT) {
+        if (!VN_AS(nodep->backp(), NodeCoverOrAssert)->immediate()) {
             const AstNodeDType* const propDtp = nodep->propp()->dtypep();
             nodep->propp(new AstSampled{nodep->fileline(), nodep->propp()->unlinkFrBack()});
             nodep->propp()->dtypeFrom(propDtp);
