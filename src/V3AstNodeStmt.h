@@ -1345,15 +1345,22 @@ public:
 class AstTracePushPrefix final : public AstNodeStmt {
     const string m_prefix;  // Prefix to add to signal names
     const VTracePrefixType m_prefixType;  // Type of prefix being pushed
+    const int m_left;  // Array left index, or struct/union member count
+    const int m_right;  // Array right index
 public:
-    AstTracePushPrefix(FileLine* fl, const string& prefix, VTracePrefixType prefixType)
+    AstTracePushPrefix(FileLine* fl, const string& prefix, VTracePrefixType prefixType,
+                       int left = 0, int right = 0)
         : ASTGEN_SUPER_TracePushPrefix(fl)
         , m_prefix{prefix}
-        , m_prefixType{prefixType} {}
+        , m_prefixType{prefixType}
+        , m_left{left}
+        , m_right{right} {}
     ASTGEN_MEMBERS_AstTracePushPrefix;
     bool sameNode(const AstNode* samep) const override { return false; }
     string prefix() const { return m_prefix; }
     VTracePrefixType prefixType() const { return m_prefixType; }
+    int left() const { return m_left; }
+    int right() const { return m_right; }
 };
 class AstWait final : public AstNodeStmt {
     // @astgen op1 := condp : AstNodeExpr

@@ -2569,7 +2569,7 @@ class VlTest:
             var = []
             for line in fh:
                 match1 = re.search(r'\$scope (module|struct|interface)\s+(\S+)', line)
-                match2 = re.search(r'(\$var (\S+)\s+\d+\s+)\S+\s+(\S+)', line)
+                match2 = re.search(r'(\$var \S+\s+\d+\s+)\S+\s+(.+)\s+\$end', line)
                 match3 = re.search(r'(\$attrbegin .* \$end)', line)
                 line = line.rstrip()
                 # print("VR"+ ' '*len(hier_stack) +" L " + line)
@@ -2583,7 +2583,7 @@ class VlTest:
                     # print("VR"+ ' '*len(hier_stack) +" var " + line)
                     scope = '.'.join(hier_stack)
                     var = match2.group(2)
-                    data[scope + "." + var] = match2.group(1) + match2.group(3)
+                    data[scope + "." + var] = match2.group(1)
                 elif match3:  # $attrbegin
                     # print("VR"+ ' '*len(hier_stack) +" attr " + line)
                     if var:
