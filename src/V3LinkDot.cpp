@@ -5008,6 +5008,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // symbols
                 return;
             }
+            if (AstClass* const targetClassp = VN_CAST(dotSymp->nodep(), Class)) {
+                if (m_extendsParam.count(targetClassp)) {
+                    // Target class has parameterized extends not yet resolved.
+                    // Its inherited symbols (e.g. static functions from the base class)
+                    // aren't imported yet - defer to linkDotParamed.
+                    return;
+                }
+            }
 
             VSymEnt* const foundp
                 = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, first);
