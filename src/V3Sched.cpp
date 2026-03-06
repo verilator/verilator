@@ -468,8 +468,8 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
                     // If the process is suspendable, we need a separate function (a coroutine)
                     if (procp->isSuspendable()) {
                         funcp->slow(false);
-                        subFuncp = createScopeSubFunc(funcp, scopep,
-                                                      "__Vtiming__" + cvtToStr(scopep->user2Inc()));
+                        subFuncp = createScopeSubFunc(
+                            funcp, scopep, "__Vtiming__" + cvtToStr(scopep->user2Inc()));
                         subFuncp->rtnType("VlCoroutine");
                         if (VN_IS(procp, Always)) {
                             subFuncp->slow(false);
@@ -559,7 +559,8 @@ void orderStaticByDependencies(AstCFunc* funcp, const LogicByScope& lbs) {
     // Calls in static units may hide reads in outlined helper CFuncs / class tasks.
     // Pull transitive callee reads into the calling unit so data-dependency edges can be formed.
     using ReadSet = std::unordered_set<AstVarScope*>;
-    std::map<std::pair<AstClass*, std::string>, std::vector<AstNodeFTask*>> unresolvedMethodTargets;
+    std::map<std::pair<AstClass*, std::string>, std::vector<AstNodeFTask*>>
+        unresolvedMethodTargets;
     std::unordered_map<AstNode*, size_t> callableIndex;
     std::vector<AstNode*> callableNodes;
     std::vector<StaticUnitSummary> callableDirect;
@@ -574,8 +575,8 @@ void orderStaticByDependencies(AstCFunc* funcp, const LogicByScope& lbs) {
         }
         return direct;
     };
-    auto findUnresolvedTargets = [&](AstClass* classp, const std::string& methodName)
-        -> const std::vector<AstNodeFTask*>& {
+    auto findUnresolvedTargets =
+        [&](AstClass* classp, const std::string& methodName) -> const std::vector<AstNodeFTask*>& {
         static const std::vector<AstNodeFTask*> empty;
         if (!classp) return empty;
         const auto key = std::make_pair(classp, methodName);
@@ -626,7 +627,8 @@ void orderStaticByDependencies(AstCFunc* funcp, const LogicByScope& lbs) {
         for (AstCFunc* const calleep : summary.m_callees) ensureCallable(calleep);
         for (AstNodeFTask* const taskp : summary.m_taskCallees) ensureCallable(taskp);
         for (const auto& unresolved : summary.m_unresolvedMethods) {
-            for (AstNodeFTask* const targetp : findUnresolvedTargets(unresolved.first, unresolved.second)) {
+            for (AstNodeFTask* const targetp :
+                 findUnresolvedTargets(unresolved.first, unresolved.second)) {
                 ensureCallable(targetp);
             }
         }
@@ -644,7 +646,8 @@ void orderStaticByDependencies(AstCFunc* funcp, const LogicByScope& lbs) {
             callSucc[idx].insert(to);
         }
         for (const auto& unresolved : direct.m_unresolvedMethods) {
-            for (AstNodeFTask* const targetp : findUnresolvedTargets(unresolved.first, unresolved.second)) {
+            for (AstNodeFTask* const targetp :
+                 findUnresolvedTargets(unresolved.first, unresolved.second)) {
                 const size_t to = ensureCallable(targetp);
                 callSucc[idx].insert(to);
             }
@@ -747,12 +750,14 @@ void orderStaticByDependencies(AstCFunc* funcp, const LogicByScope& lbs) {
     };
 
     for (size_t i = 0; i < n; ++i) {
-        for (AstCFunc* const calleep : summaries[i].m_callees) mergeCallableReads(summaries[i].m_reads, calleep);
+        for (AstCFunc* const calleep : summaries[i].m_callees)
+            mergeCallableReads(summaries[i].m_reads, calleep);
         for (AstNodeFTask* const taskp : summaries[i].m_taskCallees) {
             mergeCallableReads(summaries[i].m_reads, taskp);
         }
         for (const auto& unresolved : summaries[i].m_unresolvedMethods) {
-            for (AstNodeFTask* const targetp : findUnresolvedTargets(unresolved.first, unresolved.second)) {
+            for (AstNodeFTask* const targetp :
+                 findUnresolvedTargets(unresolved.first, unresolved.second)) {
                 mergeCallableReads(summaries[i].m_reads, targetp);
             }
         }
