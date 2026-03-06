@@ -312,6 +312,12 @@ public:
 
     // Set then extra trigger bit at 'index' to the value of 'vscp', then set 'vscp' to 0
     void addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index, bool clear = true) const;
+
+    // Like addExtraTriggerAssignment, but gates the trigger bit on '!gatep'.
+    // Sets: trigBit = vscp & ~gatep; gatep = gatep | vscp; vscp = 0;
+    // This prevents the same trigger from firing more than once per convergence loop.
+    void addGatedExtraTriggerAssignment(AstVarScope* vscp, uint32_t index,
+                                        AstVarScope* gatep) const;
 };
 
 // Everything needed for combining timing with static scheduling.
