@@ -682,7 +682,11 @@ class EmitCTrace final : public EmitCFunc {
 
         // Array range
         if (nodep->arrayRange().ranged()) {
-            puts(", (i+" + cvtToStr(nodep->arrayRange().lo()) + ")");
+            if (nodep->arrayRange().ascending()) {
+                puts(", (i + " + std::to_string(nodep->arrayRange().lo()) + ")");
+            } else {
+                puts(", (" + std::to_string(nodep->arrayRange().hi()) + " - i)");
+            }
         }
 
         // Bit range
@@ -742,6 +746,10 @@ class EmitCTrace final : public EmitCFunc {
                  : "(oldp+");
         puts(cvtToStr(code - nodep->baseCode()));
         puts(",");
+        const VNumRange& arrayRange = nodep->declp()->arrayRange();
+        if (arrayRange.ranged() && !arrayRange.ascending()) {
+            arrayindex = arrayRange.elements() - 1 - arrayindex;
+        }
         emitTraceValue(nodep, arrayindex);
         if (emitWidth) puts("," + cvtToStr(nodep->declp()->widthMin()));
         puts(");\n");
@@ -802,14 +810,16 @@ class EmitCTrace final : public EmitCFunc {
         EmitCFunc::visit(nodep);
     }
     void visit(AstTracePushPrefix* nodep) override {
-        putns(nodep, "tracep->pushPrefix(");
+        putns(nodep, "VL_TRACE_PUSH_PREFIX(tracep, ");
         putsQuoted(VIdProtect::protectWordsIf(nodep->prefix(), nodep->protect()));
         puts(", VerilatedTracePrefixType::");
         puts(nodep->prefixType().ascii());
+        puts(", " + std::to_string(nodep->left()));
+        puts(", " + std::to_string(nodep->right()));
         puts(");\n");
     }
     void visit(AstTracePopPrefix* nodep) override {  //
-        putns(nodep, "tracep->popPrefix();\n");
+        putns(nodep, "VL_TRACE_POP_PREFIX(tracep);\n");
     }
     void visit(AstTraceDecl* nodep) override {
         const int enumNum = emitTraceDeclDType(nodep->dtypep());

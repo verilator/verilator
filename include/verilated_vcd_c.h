@@ -154,8 +154,9 @@ public:
     void declDoubleArray(uint32_t code, const char* name, int arraynum);
 };
 
-// duck-typed interface to decl* methods
-// We use macros in order to strip out unused args at compile time.
+// We use macros to drop unused arguments at compile time. This saves code size.
+#define VL_TRACE_PUSH_PREFIX(tracep, name, type, left, right) tracep->pushPrefix(name, type);
+#define VL_TRACE_POP_PREFIX(tracep) tracep->popPrefix();
 
 #define VL_TRACE_DECL_EVENT(tracep, code, fidx, name, dtypenum, dir, kind, type) \
     tracep->declEvent(code, name)
