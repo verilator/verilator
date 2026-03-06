@@ -42,6 +42,8 @@
 #include "V3Const.h"
 #include "V3EmitCBase.h"
 #include "V3EmitV.h"
+#include "V3Graph.h"
+#include "V3GraphStream.h"
 #include "V3Order.h"
 #include "V3SenExprBuilder.h"
 #include "V3Stats.h"
@@ -54,6 +56,150 @@ namespace {
 
 //============================================================================
 // Utility functions
+
+AstCFunc* createScopeSubFunc(AstCFunc* topFuncp, AstScope* scopep,
+                             const string& suffix = string{}) {
+    const string subName{topFuncp->name() + "__" + scopep->nameDotless() + suffix};
+    AstCFunc* const subFuncp = new AstCFunc{scopep->fileline(), subName, scopep};
+    subFuncp->isLoose(true);
+    subFuncp->isConst(false);
+    subFuncp->declPrivate(true);
+    subFuncp->slow(topFuncp->slow());
+    scopep->addBlocksp(subFuncp);
+    topFuncp->addStmtsp(util::callVoidFunc(subFuncp));
+    return subFuncp;
+}
+
+struct StaticUnit final {
+    AstScope* m_scopep = nullptr;
+    AstNode* m_nodep = nullptr;
+    size_t m_seq = 0;
+};
+
+struct StaticUnitSummary final {
+    std::unordered_set<AstVarScope*> m_reads;
+    std::unordered_set<AstVarScope*> m_writes;
+    std::unordered_set<AstCFunc*> m_callees;
+    std::unordered_set<AstNodeFTask*> m_taskCallees;
+    std::vector<std::pair<AstClass*, std::string>> m_unresolvedMethods;
+};
+
+using ScopeVarMap = std::unordered_map<AstVar*, AstVarScope*>;
+using ScopeVarListMap = std::unordered_map<AstVar*, std::vector<AstVarScope*>>;
+
+class StaticDepCollector final : public VNVisitorConst {
+    const ScopeVarListMap& m_allVarMap;
+    const ScopeVarMap& m_varMap;
+    StaticUnitSummary& m_summary;
+
+    AstVarScope* resolveVarScope(const AstNodeVarRef* refp) const {
+        if (AstVarScope* const vscp = refp->varScopep()) return vscp;
+        const auto it = m_allVarMap.find(refp->varp());
+        if (it != m_allVarMap.end() && it->second.size() == 1) return it->second.front();
+        return nullptr;
+    }
+
+    void noteRead(const AstNodeVarRef* refp) {
+        if (AstVarScope* const vscp = resolveVarScope(refp)) m_summary.m_reads.insert(vscp);
+    }
+
+    void noteReadConservative(const AstNodeVarRef* refp) {
+        if (AstVarScope* const vscp = refp->varScopep()) {
+            m_summary.m_reads.insert(vscp);
+            return;
+        }
+        const auto it = m_allVarMap.find(refp->varp());
+        if (it == m_allVarMap.end()) return;
+        for (AstVarScope* const vscp : it->second) m_summary.m_reads.insert(vscp);
+    }
+
+    static AstClass* receiverClassFrom(const AstMethodCall* methodp) {
+        if (!methodp) return nullptr;
+        if (AstNodeExpr* const fromp = methodp->fromp()) {
+            if (!fromp->dtypep()) return nullptr;
+            if (AstClassRefDType* const classRefp
+                = VN_CAST(fromp->dtypep()->skipRefp(), ClassRefDType)) {
+                return classRefp->classp();
+            }
+        }
+        if (AstClassPackage* const classPkgp = VN_CAST(methodp->classOrPackagep(), ClassPackage)) {
+            return classPkgp->classp();
+        }
+        return nullptr;
+    }
+
+    void visit(AstNodeVarRef* nodep) override {
+        AstVarScope* const vscp = resolveVarScope(nodep);
+        if (!vscp) return;
+        if (nodep->access().isReadOrRW()) m_summary.m_reads.insert(vscp);
+        if (nodep->access().isWriteOrRW()
+            && (!nodep->varp()->ignoreSchedWrite() || nodep->varp()->isConst())) {
+            m_summary.m_writes.insert(vscp);
+        }
+    }
+    void visit(AstNodeFTaskRef* nodep) override {
+        AstNodeFTask* const taskp = nodep->taskp();
+        if (taskp) m_summary.m_taskCallees.insert(taskp);
+        if (const AstMethodCall* const methodp = VN_CAST(nodep, MethodCall)) {
+            if (AstNodeExpr* const fromp = methodp->fromp()) {
+                fromp->foreach([&](const AstNodeVarRef* refp) {
+                    if (taskp) {
+                        noteRead(refp);
+                    } else {
+                        noteReadConservative(refp);
+                    }
+                });
+            }
+            if (!taskp) {
+                if (AstClass* const classp = receiverClassFrom(methodp)) {
+                    m_summary.m_unresolvedMethods.emplace_back(classp, methodp->name());
+                }
+            }
+        }
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstNodeCCall* nodep) override {
+        if (AstCFunc* const funcp = nodep->funcp()) m_summary.m_callees.insert(funcp);
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstVar* nodep) override {
+        if (nodep->valuep()) {
+            const auto it = m_varMap.find(nodep);
+            if (it != m_varMap.end()) m_summary.m_writes.insert(it->second);
+        }
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+
+public:
+    StaticDepCollector(AstNode* nodep, const ScopeVarListMap& allVarMap, const ScopeVarMap& varMap,
+                       StaticUnitSummary& summary)
+        : m_allVarMap{allVarMap}
+        , m_varMap{varMap}
+        , m_summary{summary} {
+        iterateConst(nodep);
+    }
+};
+
+class StaticUnitVertex final : public V3GraphVertex {
+    size_t m_idx = 0;
+    size_t m_seq = 0;
+
+public:
+    StaticUnitVertex(V3Graph* graphp, size_t idx, size_t seq)
+        : V3GraphVertex{graphp}
+        , m_idx{idx}
+        , m_seq{seq} {}
+    size_t idx() const { return m_idx; }
+    size_t seq() const { return m_seq; }
+};
+
+struct StaticUnitSeqLess final {  // Tie-break unordered ready vertices by source order.
+    bool operator()(const V3GraphVertex* a, const V3GraphVertex* b) const {
+        return static_cast<const StaticUnitVertex*>(a)->seq()
+               < static_cast<const StaticUnitVertex*>(b)->seq();
+    }
+};
 
 std::vector<const AstSenTree*> getSenTreesUsedBy(const std::vector<const LogicByScope*>& lbsps) {
     const VNUser1InUse user1InUse;
@@ -305,26 +451,13 @@ LogicClasses gatherLogicClasses(AstNetlist* netlistp) {
 // Simple ordering in source order
 
 void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
-    // Create new subfunc for scope
-    const auto createNewSubFuncp = [&](AstScope* const scopep) {
-        const string subName{funcp->name() + "__" + scopep->nameDotless()};
-        AstCFunc* const subFuncp = new AstCFunc{scopep->fileline(), subName, scopep};
-        subFuncp->isLoose(true);
-        subFuncp->isConst(false);
-        subFuncp->declPrivate(true);
-        subFuncp->slow(funcp->slow());
-        scopep->addBlocksp(subFuncp);
-        // Call it from the top function
-        funcp->addStmtsp(util::callVoidFunc(subFuncp));
-        return subFuncp;
-    };
     const VNUser1InUse user1InUse;  // AstScope -> AstCFunc: the sub-function for the scope
     const VNUser2InUse user2InUse;  // AstScope -> int: sub-function counter used for names
     for (const auto& pair : lbs) {
         AstScope* const scopep = pair.first;
         AstActive* const activep = pair.second;
         // Create a sub-function per scope so we can V3Combine them later
-        if (!scopep->user1p()) scopep->user1p(createNewSubFuncp(scopep));
+        if (!scopep->user1p()) scopep->user1p(createScopeSubFunc(funcp, scopep));
         // Add statements to sub-function
         for (AstNode *logicp = activep->stmtsp(), *nextp; logicp; logicp = nextp) {
             auto* subFuncp = VN_AS(scopep->user1p(), CFunc);
@@ -335,9 +468,8 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
                     // If the process is suspendable, we need a separate function (a coroutine)
                     if (procp->isSuspendable()) {
                         funcp->slow(false);
-                        subFuncp = createNewSubFuncp(scopep);
-                        subFuncp->name(subFuncp->name() + "__Vtiming__"
-                                       + cvtToStr(scopep->user2Inc()));
+                        subFuncp = createScopeSubFunc(funcp, scopep,
+                                                      "__Vtiming__" + cvtToStr(scopep->user2Inc()));
                         subFuncp->rtnType("VlCoroutine");
                         if (VN_IS(procp, Always)) {
                             subFuncp->slow(false);
@@ -364,12 +496,347 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
     }
 }
 
+// For static initializers, prefer ordering by data dependencies across scopes.
+// If there are cycles, preserve source order within the unresolved remainder.
+void orderStaticByDependencies(AstCFunc* funcp, const LogicByScope& lbs) {
+    std::vector<StaticUnit> units;
+    std::vector<StaticUnitSummary> summaries;
+    units.reserve(lbs.size() * 2);
+    summaries.reserve(lbs.size() * 2);
+    ScopeVarListMap allVarMap;
+
+    for (const auto& pair : lbs) {
+        AstScope* const scopep = pair.first;
+        for (AstVarScope* vscp = scopep->varsp(); vscp; vscp = VN_AS(vscp->nextp(), VarScope)) {
+            allVarMap[vscp->varp()].push_back(vscp);
+        }
+    }
+
+    size_t seq = 0;
+    for (const auto& pair : lbs) {
+        AstScope* const scopep = pair.first;
+        AstActive* const activep = pair.second;
+        ScopeVarMap varMap;
+        for (AstVarScope* vscp = scopep->varsp(); vscp; vscp = VN_AS(vscp->nextp(), VarScope)) {
+            varMap.emplace(vscp->varp(), vscp);
+        }
+        for (AstNode *logicp = activep->stmtsp(), *logicNextp; logicp; logicp = logicNextp) {
+            logicNextp = logicp->nextp();
+            if (AstNodeProcedure* const procp = VN_CAST(logicp, NodeProcedure)) {
+                for (AstNode *stmtp = procp->stmtsp(), *stmtNextp; stmtp; stmtp = stmtNextp) {
+                    stmtNextp = stmtp->nextp();
+                    stmtp->unlinkFrBack();
+                    units.emplace_back();
+                    summaries.emplace_back();
+                    StaticUnit& unit = units.back();
+                    StaticUnitSummary& summary = summaries.back();
+                    unit.m_scopep = scopep;
+                    unit.m_nodep = stmtp;
+                    unit.m_seq = seq++;
+                    StaticDepCollector{stmtp, allVarMap, varMap, summary};
+                }
+                if (procp->backp()) procp->unlinkFrBack();
+                VL_DO_DANGLING(procp->deleteTree(), procp);
+            } else {
+                logicp->unlinkFrBack();
+                units.emplace_back();
+                summaries.emplace_back();
+                StaticUnit& unit = units.back();
+                StaticUnitSummary& summary = summaries.back();
+                unit.m_scopep = scopep;
+                unit.m_nodep = logicp;
+                unit.m_seq = seq++;
+                StaticDepCollector{logicp, allVarMap, varMap, summary};
+            }
+        }
+        if (activep->backp()) activep->unlinkFrBack();
+        VL_DO_DANGLING(activep->deleteTree(), activep);
+    }
+
+    const size_t n = units.size();
+    UASSERT_OBJ(summaries.size() == n, funcp, "Static summaries out of sync with units");
+
+    // Calls in static units may hide reads in outlined helper CFuncs / class tasks.
+    // Pull transitive callee reads into the calling unit so data-dependency edges can be formed.
+    using ReadSet = std::unordered_set<AstVarScope*>;
+    std::map<std::pair<AstClass*, std::string>, std::vector<AstNodeFTask*>> unresolvedMethodTargets;
+    std::unordered_map<AstNode*, size_t> callableIndex;
+    std::vector<AstNode*> callableNodes;
+    std::vector<StaticUnitSummary> callableDirect;
+    std::vector<std::unordered_set<size_t>> callSucc;
+    std::vector<ReadSet> callableReads;
+
+    auto collectDirectSummary = [&](AstNode* stmtsp) {
+        StaticUnitSummary direct;
+        const ScopeVarMap emptyVarMap;
+        for (AstNode* stmtp = stmtsp; stmtp; stmtp = stmtp->nextp()) {
+            StaticDepCollector{stmtp, allVarMap, emptyVarMap, direct};
+        }
+        return direct;
+    };
+    auto findUnresolvedTargets = [&](AstClass* classp, const std::string& methodName)
+        -> const std::vector<AstNodeFTask*>& {
+        static const std::vector<AstNodeFTask*> empty;
+        if (!classp) return empty;
+        const auto key = std::make_pair(classp, methodName);
+        const auto it = unresolvedMethodTargets.find(key);
+        if (it != unresolvedMethodTargets.end()) return it->second;
+        std::vector<AstNodeFTask*> targets;
+        std::function<void(AstClass*)> scanClass = [&](AstClass* currentp) {
+            if (!currentp) return;
+            if (const AstClassExtends* const cextendsp = currentp->extendsp()) {
+                scanClass(cextendsp->classp());
+            }
+            for (AstNode* stmtp = currentp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                if (AstNodeFTask* const memberp = VN_CAST(stmtp, NodeFTask)) {
+                    if (memberp->name() == methodName) targets.push_back(memberp);
+                } else if (AstScope* const scopep = VN_CAST(stmtp, Scope)) {
+                    for (AstNode* blockp = scopep->blocksp(); blockp; blockp = blockp->nextp()) {
+                        if (AstNodeFTask* const memberp = VN_CAST(blockp, NodeFTask)) {
+                            if (memberp->name() == methodName) targets.push_back(memberp);
+                        }
+                    }
+                }
+            }
+        };
+        scanClass(classp);
+        return unresolvedMethodTargets.emplace(key, std::move(targets)).first->second;
+    };
+
+    auto ensureCallable = [&](AstNode* callablep) {
+        UASSERT_OBJ(callablep, funcp, "Null callable");
+        const auto it = callableIndex.find(callablep);
+        if (it != callableIndex.end()) return it->second;
+        const size_t idx = callableNodes.size();
+        callableIndex.emplace(callablep, idx);
+        callableNodes.push_back(callablep);
+        callableDirect.emplace_back();
+        callSucc.emplace_back();
+        return idx;
+    };
+
+    auto callableStmtsp = [&](AstNode* callablep) -> AstNode* {
+        if (AstCFunc* const cfuncp = VN_CAST(callablep, CFunc)) return cfuncp->stmtsp();
+        if (AstNodeFTask* const taskp = VN_CAST(callablep, NodeFTask)) return taskp->stmtsp();
+        callablep->v3fatalSrc("Unexpected callable node type");
+        return nullptr;  // LCOV_EXCL_LINE
+    };
+
+    for (const StaticUnitSummary& summary : summaries) {
+        for (AstCFunc* const calleep : summary.m_callees) ensureCallable(calleep);
+        for (AstNodeFTask* const taskp : summary.m_taskCallees) ensureCallable(taskp);
+        for (const auto& unresolved : summary.m_unresolvedMethods) {
+            for (AstNodeFTask* const targetp : findUnresolvedTargets(unresolved.first, unresolved.second)) {
+                ensureCallable(targetp);
+            }
+        }
+    }
+
+    for (size_t idx = 0; idx < callableNodes.size(); ++idx) {
+        const StaticUnitSummary direct = collectDirectSummary(callableStmtsp(callableNodes[idx]));
+        callableDirect[idx] = direct;
+        for (AstCFunc* const calleep : direct.m_callees) {
+            const size_t to = ensureCallable(calleep);
+            callSucc[idx].insert(to);
+        }
+        for (AstNodeFTask* const taskp : direct.m_taskCallees) {
+            const size_t to = ensureCallable(taskp);
+            callSucc[idx].insert(to);
+        }
+        for (const auto& unresolved : direct.m_unresolvedMethods) {
+            for (AstNodeFTask* const targetp : findUnresolvedTargets(unresolved.first, unresolved.second)) {
+                const size_t to = ensureCallable(targetp);
+                callSucc[idx].insert(to);
+            }
+        }
+    }
+
+    if (!callableNodes.empty()) {
+        const size_t callN = callableNodes.size();
+        std::vector<int> index(callN, -1);
+        std::vector<int> lowlink(callN, 0);
+        std::vector<int> compOf(callN, -1);
+        std::vector<size_t> stack;
+        std::vector<bool> onStack(callN, false);
+        int nextIndex = 0;
+        int compCount = 0;
+
+        std::function<void(size_t)> strongConnect = [&](size_t v) {
+            index[v] = nextIndex;
+            lowlink[v] = nextIndex;
+            ++nextIndex;
+            stack.push_back(v);
+            onStack[v] = true;
+
+            for (const size_t w : callSucc[v]) {
+                if (index[w] == -1) {
+                    strongConnect(w);
+                    lowlink[v] = std::min(lowlink[v], lowlink[w]);
+                } else if (onStack[w]) {
+                    lowlink[v] = std::min(lowlink[v], index[w]);
+                }
+            }
+
+            if (lowlink[v] == index[v]) {
+                while (true) {
+                    const size_t w = stack.back();
+                    stack.pop_back();
+                    onStack[w] = false;
+                    compOf[w] = compCount;
+                    if (w == v) break;
+                }
+                ++compCount;
+            }
+        };
+
+        for (size_t v = 0; v < callN; ++v) {
+            if (index[v] == -1) strongConnect(v);
+        }
+
+        std::vector<ReadSet> compReads(compCount);
+        std::vector<std::unordered_set<int>> compSucc(compCount);
+        for (size_t v = 0; v < callN; ++v) {
+            ReadSet& reads = compReads[compOf[v]];
+            reads.insert(callableDirect[v].m_reads.begin(), callableDirect[v].m_reads.end());
+            for (const size_t w : callSucc[v]) {
+                const int fromComp = compOf[v];
+                const int toComp = compOf[w];
+                if (fromComp != toComp) compSucc[fromComp].insert(toComp);
+            }
+        }
+
+        std::vector<int> indegree(compCount, 0);
+        for (int fromComp = 0; fromComp < compCount; ++fromComp) {
+            for (const int toComp : compSucc[fromComp]) ++indegree[toComp];
+        }
+        std::vector<int> topo;
+        topo.reserve(compCount);
+        std::vector<int> queue;
+        queue.reserve(compCount);
+        for (int comp = 0; comp < compCount; ++comp) {
+            if (indegree[comp] == 0) queue.push_back(comp);
+        }
+        for (size_t qi = 0; qi < queue.size(); ++qi) {
+            const int comp = queue[qi];
+            topo.push_back(comp);
+            for (const int toComp : compSucc[comp]) {
+                if (--indegree[toComp] == 0) queue.push_back(toComp);
+            }
+        }
+        UASSERT_OBJ(topo.size() == static_cast<size_t>(compCount), funcp,
+                    "Callable SCC condensation graph should be acyclic");
+
+        for (auto it = topo.rbegin(); it != topo.rend(); ++it) {
+            ReadSet& reads = compReads[*it];
+            for (const int toComp : compSucc[*it]) {
+                const ReadSet& calleeReads = compReads[toComp];
+                reads.insert(calleeReads.begin(), calleeReads.end());
+            }
+        }
+
+        callableReads.resize(callN);
+        for (size_t v = 0; v < callN; ++v) callableReads[v] = compReads[compOf[v]];
+    }
+
+    auto mergeCallableReads = [&](ReadSet& reads, AstNode* callablep) {
+        if (!callablep) return;
+        const auto it = callableIndex.find(callablep);
+        if (it == callableIndex.end()) return;
+        const ReadSet& closure = callableReads[it->second];
+        reads.insert(closure.begin(), closure.end());
+    };
+
+    for (size_t i = 0; i < n; ++i) {
+        for (AstCFunc* const calleep : summaries[i].m_callees) mergeCallableReads(summaries[i].m_reads, calleep);
+        for (AstNodeFTask* const taskp : summaries[i].m_taskCallees) {
+            mergeCallableReads(summaries[i].m_reads, taskp);
+        }
+        for (const auto& unresolved : summaries[i].m_unresolvedMethods) {
+            for (AstNodeFTask* const targetp : findUnresolvedTargets(unresolved.first, unresolved.second)) {
+                mergeCallableReads(summaries[i].m_reads, targetp);
+            }
+        }
+    }
+
+    if (n <= 1) {
+        if (!units.empty()) {
+            AstCFunc* const subFuncp = createScopeSubFunc(funcp, units[0].m_scopep);
+            subFuncp->addStmtsp(units[0].m_nodep);
+            util::splitCheck(subFuncp);
+        }
+        return;
+    }
+
+    std::vector<std::unordered_set<size_t>> depSucc(n);
+
+    std::unordered_map<AstVarScope*, std::vector<size_t>> writers;
+    writers.reserve(n * 4);
+    for (size_t i = 0; i < n; ++i) {
+        for (AstVarScope* const vscp : summaries[i].m_writes) writers[vscp].push_back(i);
+    }
+
+    // Data dependencies: a reader must run after all writers of any read variable.
+    for (size_t readerIdx = 0; readerIdx < n; ++readerIdx) {
+        for (AstVarScope* const vscp : summaries[readerIdx].m_reads) {
+            const auto it = writers.find(vscp);
+            if (it == writers.end()) continue;
+            for (const size_t writerIdx : it->second) {
+                if (writerIdx == readerIdx) continue;
+                depSucc[writerIdx].insert(readerIdx);
+            }
+        }
+    }
+
+    V3Graph depGraph;
+    std::vector<StaticUnitVertex*> unitVtxps;
+    unitVtxps.reserve(n);
+    for (size_t i = 0; i < n; ++i) {
+        StaticUnitVertex* const vxp = new StaticUnitVertex{&depGraph, i, units[i].m_seq};
+        unitVtxps.push_back(vxp);
+    }
+    for (size_t from = 0; from < n; ++from) {
+        for (const size_t to : depSucc[from]) {
+            new V3GraphEdge{&depGraph, unitVtxps[from], unitVtxps[to], 1, V3GraphEdge::CUTABLE};
+        }
+    }
+    depGraph.acyclic(&V3GraphEdge::followAlwaysTrue);
+    for (V3GraphVertex& vtx : depGraph.vertices()) {
+        for (V3GraphEdge* const edgep : vtx.outEdges().unlinkable()) {
+            if (edgep->weight() != 0) continue;
+            VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
+        }
+    }
+
+    std::vector<size_t> ordered;
+    ordered.reserve(n);
+    GraphStream<StaticUnitSeqLess> depOrder{&depGraph, GraphWay::FORWARD, StaticUnitSeqLess{}};
+    while (const V3GraphVertex* const vxp = depOrder.nextp()) {
+        ordered.push_back(static_cast<const StaticUnitVertex*>(vxp)->idx());
+    }
+    UASSERT_OBJ(ordered.size() == n, funcp, "Static ordering dropped vertices");
+
+    size_t subFuncNum = 0;
+    AstScope* currentScopep = nullptr;
+    AstCFunc* currentSubFuncp = nullptr;
+    for (const size_t idx : ordered) {
+        StaticUnit& unit = units[idx];
+        if (unit.m_scopep != currentScopep) {
+            if (currentSubFuncp) util::splitCheck(currentSubFuncp);
+            currentScopep = unit.m_scopep;
+            currentSubFuncp
+                = createScopeSubFunc(funcp, currentScopep, "__Vstatic" + cvtToStr(subFuncNum++));
+        }
+        currentSubFuncp->addStmtsp(unit.m_nodep);
+    }
+    if (currentSubFuncp) util::splitCheck(currentSubFuncp);
+}
+
 //============================================================================
 // Create simply ordered functions
 
 AstCFunc* createStatic(AstNetlist* netlistp, const LogicClasses& logicClasses) {
     AstCFunc* const funcp = util::makeTopFunction(netlistp, "_eval_static", /* slow: */ true);
-    orderSequentially(funcp, logicClasses.m_static);
+    orderStaticByDependencies(funcp, logicClasses.m_static);
     return funcp;  // Not splitting yet as it is not final
 }
 
