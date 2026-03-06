@@ -742,6 +742,34 @@ class TimingControlVisitor final : public VNVisitor {
         addDebugInfo(donep);
         beginp->addStmtsp(donep->makeStmt());
     }
+    static bool hasDisableQueuePushSelfPrefix(const AstBegin* const beginp) {
+        // LinkJump prepends disable-by-name registration as:
+        //   __VprocessQueue_*.push_back(std::process::self())
+        const AstStmtExpr* const stmtExprp = VN_CAST(beginp->stmtsp(), StmtExpr);
+        if (!stmtExprp) return false;
+        const AstCMethodHard* const methodp = VN_CAST(stmtExprp->exprp(), CMethodHard);
+        if (!methodp || methodp->name() != "push_back") return false;
+        const AstVarRef* const queueRefp = VN_CAST(methodp->fromp(), VarRef);
+        return queueRefp && queueRefp->name().rfind("__VprocessQueue_", 0) == 0;
+    }
+    // Register a callback so killing a process-backed fork branch decrements the join counter
+    void addForkOnKill(AstBegin* const beginp, AstVarScope* const forkVscp) const {
+        if (!beginp->needProcess() && !hasDisableQueuePushSelfPrefix(beginp)) return;
+        FileLine* const flp = beginp->fileline();
+        AstCMethodHard* const onKillp = new AstCMethodHard{
+            flp, new AstVarRef{flp, forkVscp, VAccess::WRITE}, VCMethod::FORK_ON_KILL};
+        onKillp->dtypeSetVoid();
+        AstCExpr* const processp = new AstCExpr{flp, "vlProcess"};
+        processp
+            ->dtypeSetVoid();  // Opaque process reference; type is irrelevant for hardcoded emit
+        onKillp->addPinsp(processp);
+        AstNodeStmt* const stmtp = onKillp->makeStmt();
+        if (beginp->stmtsp()) {
+            beginp->stmtsp()->addHereThisAsNext(stmtp);
+        } else {
+            beginp->addStmtsp(stmtp);
+        }
+    }
     // Handle the 'join' part of a fork..join
     void makeForkJoin(AstFork* const forkp) {
         // Create a fork sync var
@@ -754,6 +782,7 @@ class TimingControlVisitor final : public VNVisitor {
         unsigned joinCount = 0;  // Needed for join counter
         // Add a <fork sync>.done() to each begin
         for (AstNode* beginp = forkp->forksp(); beginp; beginp = beginp->nextp()) {
+            addForkOnKill(VN_AS(beginp, Begin), forkVscp);
             addForkDone(VN_AS(beginp, Begin), forkVscp);
             joinCount++;
         }

@@ -1,8 +1,0 @@
-%Error-UNSUPPORTED: t/t_disable_task_unsup.v:37:10: Unsupported: disabling task by name
-   37 |       #1 disable increment_x;
-      |          ^~~~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_disable_task_unsup.v:26:5: Unsupported: disabling task by name
-   26 |     disable get_and_send;
-      |     ^~~~~~~
-%Error: Exiting due to
