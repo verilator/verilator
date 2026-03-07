@@ -9,7 +9,6 @@
 
 import vltest_bootstrap
 
-# Test automatic sampling with --timing
 test.scenarios('vlt')
 
 # Use the same .v file as the non-timing test

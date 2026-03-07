@@ -11,15 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-# This test documents a known Verilator timing limitation:
-# Internal clocks (generated via `always #5 clk = ~clk`) don't properly
-# trigger procedural blocks in --timing mode. Even explicit .sample() calls
-# in always @(posedge clk) blocks don't execute.
-#
-# Root cause: Timing scheduler doesn't trigger NBA/active regions for
-# internally generated clock edges.
-#
-# Workaround: Use module input clocks (see t_covergroup_auto_sample.v)
 test.compile(verilator_flags2=["--timing"])
 
 test.execute(fails=True, expect=r'%Error: .*Timeout')

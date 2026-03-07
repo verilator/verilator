@@ -11,8 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-# Type-level (static) coverage using cg::get_coverage() compiles but returns placeholder value
-# Test compiles successfully but runtime behavior is incorrect (returns 0.0)
 test.compile()
 
 test.passes()

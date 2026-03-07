@@ -1,4 +1,6 @@
 // DESCRIPTION: Verilator: Test transition bins - restart behavior
+// Known limitation: multi-value transition bins with restart semantics generate
+// incomplete case statements; complex transitions are not fully supported.
 // This file ONLY is placed into the Public Domain, for any use, without warranty.
 // SPDX-License-Identifier: CC0-1.0
 
