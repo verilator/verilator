@@ -665,11 +665,504 @@ module Vt_debug_emitv_t;
     end
     restrict (@(posedge clk) ##1 a[0]
     );
+    logic [2:0]  cg_sig;
+    logic [1:0]  cg_sig2;
+    covergroup Vt_debug_emitv_cg_basic;
+    function new;
+        cp_sig: coverpoint cg_sig {
+            bins low = {['sh0:'sh3]};
+            bins high = {['sh4:'sh6]};
+            bins dflt = default;
+            ignore_bins ign = {'sh7};
+            illegal_bins ill = {'sh5};
+        };
+    endfunction
+    int signed __Vint;
+    struct {
+        string name;
+        int signed weight;
+        int signed goal;
+        string comment;
+        int signed at_least;
+        int signed auto_bin_max;
+        int signed cross_num_print_missing;
+        bit cross_retain_auto_bins;
+        bit detect_overlap;
+        bit per_instance;
+        bit get_inst_coverage;
+    } option;
+    struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        bit strobe;
+        bit merge_instances;
+        bit distribute_first;
+        real real_interval;
+    } type_option;
+    function sample;
+    endfunction
+    function start;
+    endfunction
+    function stop;
+    endfunction
+    function get_coverage;
+        get_coverage = 
+        ???? // CRESET
+        ;
+        input string covered_bins;
+        input string total_bins;
+    endfunction
+    function get_inst_coverage;
+        get_inst_coverage = 
+        ???? // CRESET
+        ;
+        input string covered_bins;
+        input string total_bins;
+    endfunction
+    function set_inst_name;
+        input string name;
+    endfunction
+    endcovergroup
+    covergroup Vt_debug_emitv_cg_clocked;
+    @(posedge clk)function new;
+        cp_cyc: coverpoint cg_sig;
+    endfunction
+    int signed __Vint;
+    struct {
+        string name;
+        int signed weight;
+        int signed goal;
+        string comment;
+        int signed at_least;
+        int signed auto_bin_max;
+        int signed cross_num_print_missing;
+        bit cross_retain_auto_bins;
+        bit detect_overlap;
+        bit per_instance;
+        bit get_inst_coverage;
+    } option;
+    struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        bit strobe;
+        bit merge_instances;
+        bit distribute_first;
+        real real_interval;
+    } type_option;
+    function sample;
+    endfunction
+    function start;
+    endfunction
+    function stop;
+    endfunction
+    function get_coverage;
+        get_coverage = 
+        ???? // CRESET
+        ;
+        input string covered_bins;
+        input string total_bins;
+    endfunction
+    function get_inst_coverage;
+        get_inst_coverage = 
+        ???? // CRESET
+        ;
+        input string covered_bins;
+        input string total_bins;
+    endfunction
+    function set_inst_name;
+        input string name;
+    endfunction
+    endcovergroup
+    covergroup Vt_debug_emitv_cg_trans;
+    function new;
+        cp_t: coverpoint cg_sig {
+            bins t01 = (3'h0 => 3'h1);
+            bins t12 = (3'h1 => 3'h2);
+        };
+    endfunction
+    int signed __Vint;
+    struct {
+        string name;
+        int signed weight;
+        int signed goal;
+        string comment;
+        int signed at_least;
+        int signed auto_bin_max;
+        int signed cross_num_print_missing;
+        bit cross_retain_auto_bins;
+        bit detect_overlap;
+        bit per_instance;
+        bit get_inst_coverage;
+    } option;
+    struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        bit strobe;
+        bit merge_instances;
+        bit distribute_first;
+        real real_interval;
+    } type_option;
+    function sample;
+    endfunction
+    function start;
+    endfunction
+    function stop;
+    endfunction
+    function get_coverage;
+        get_coverage = 
+        ???? // CRESET
+        ;
+        input string covered_bins;
+        input string total_bins;
+    endfunction
+    function get_inst_coverage;
+        get_inst_coverage = 
+        ???? // CRESET
+        ;
+        input string covered_bins;
+        input string total_bins;
+    endfunction
+    function set_inst_name;
+        input string name;
+    endfunction
+    endcovergroup
+    covergroup Vt_debug_emitv_cg_cross;
+    function new;
+        cp_x: coverpoint cg_sig {
+            bins x0 = {'sh0};
+            bins x1 = {'sh1};
+        };
+        cp_y: coverpoint cg_sig2 {
+            bins y0 = {'sh0};
+            bins y1 = {'sh1};
+        };
+      cx: cross cp_x, cp_y;
+    endfunction
+    int signed __Vint;
+    struct {
+        string name;
+        int signed weight;
+        int signed goal;
+        string comment;
+        int signed at_least;
+        int signed auto_bin_max;
+        int signed cross_num_print_missing;
+        bit cross_retain_auto_bins;
+        bit detect_overlap;
+        bit per_instance;
+        bit get_inst_coverage;
+    } option;
+    struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        bit strobe;
+        bit merge_instances;
+        bit distribute_first;
+        real real_interval;
+    } type_option;
+    function sample;
+    endfunction
+    function start;
+    endfunction
+    function stop;
+    endfunction
+    function get_coverage;
+        get_coverage = 
+        ???? // CRESET
+        ;
+        input string covered_bins;
+        input string total_bins;
+    endfunction
+    function get_inst_coverage;
+        get_inst_coverage = 
+        ???? // CRESET
+        ;
+        input string covered_bins;
+        input string total_bins;
+    endfunction
+    function set_inst_name;
+        input string name;
+    endfunction
+    endcovergroup
+    Vt_debug_emitv_cg_basic cg_basic_instVt_debug_emitv_cg_basic;
+    cg_basic_inst = new();
+    Vt_debug_emitv_cg_clocked cg_clocked_instVt_debug_emitv_cg_clocked;
+    cg_clocked_inst = new();
+    Vt_debug_emitv_cg_trans cg_trans_instVt_debug_emitv_cg_trans;
+    cg_trans_inst = new();
+    Vt_debug_emitv_cg_cross cg_cross_instVt_debug_emitv_cg_cross;
+    cg_cross_inst = new();
 endmodule
+package Vt_debug_emitv_std;
+    class Vt_debug_emitv_semaphore;
+        int signed m_keyCount;
+        function new;
+            input int signed keyCount;
+            m_keyCount = keyCount;
+        endfunction
+        task put;
+            input int signed keyCount;
+            m_keyCount = (m_keyCount + keyCount);
+        endtask
+        task get;
+            input int signed keyCount;
+            while ((m_keyCount < keyCount)) begin
+                begin
+
+                    ???? // WAIT
+                    (m_keyCount >= keyCount)end
+            end
+            m_keyCount = (m_keyCount - keyCount);
+        endtask
+        function try_get;
+            input int signed keyCount;
+            begin : label3
+                try_get = 
+                ???? // CRESET
+                ;
+                if ((m_keyCount >= keyCount)) begin
+                    begin
+                        m_keyCount = (m_keyCount - 
+                                      keyCount);
+                        try_get = 'sh1;
+                        disable label3;
+                    end
+                end
+                try_get = 'sh0;
+                disable label3;
+            end
+        endfunction
+    endclass
+    class Vt_debug_emitv_process;
+        typedef enum int signed{
+            FINISHED = 32'h0,
+            RUNNING = 32'h1,
+            WAITING = 32'h2,
+            SUSPENDED = 32'h3,
+            KILLED = 32'h4
+        } state;
+        VlProcessRef m_process;
+        function self;
+            Vt_debug_emitv_process pVt_debug_emitv_process;
+            begin : label4
+                self = 
+                ???? // CRESET
+                ;
+                p = new();
+                $c(p.m_process = vlProcess;);
+                self = p;
+                disable label4;
+            end
+        endfunction
+        task set_status;
+            input int signed s;
+            $c(m_process->state(s););
+        endtask
+        function status;
+            begin : label5
+                status = 
+                ???? // CRESET
+                ;
+                status = ($c(m_process->state()));
+                disable label5;
+            end
+        endfunction
+        task kill;
+            set_status(process::KILLED);
+        endtask
+        task suspend;
+            $error("std::process::suspend() not supported");
+            $stop;
+        endtask
+        task resume;
+            set_status(process::RUNNING);
+        endtask
+        task await;
+
+            ???? // WAIT
+            ((status() == process::FINISHED) || (status() 
+                                                 == 
+                                                 process::
+                                                 KILLED))endtask
+        task killQueue;
+            ref Vt_debug_emitv_process processQueue[$]Vt_debug_emitv_process;
+            while ((processQueue.size() > 'sh0)) begin
+                begin
+                    kill();
+                end
+            end
+        endtask
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+
+        ???? // SYSTEMCSECTION
+        function get_randstate;
+            string s;
+            begin : label6
+                get_randstate = 
+                ???? // CRESET
+                ;
+                s = string'($c(0));
+                $c(s = m_process->randstate(););
+                get_randstate = s;
+                disable label6;
+            end
+        endfunction
+        task set_randstate;
+            input string s;
+            $c(m_process->randstate(s););
+        endtask
+        function new;
+        endfunction
+        process::FINISHEDprocess::KILLEDprocess::RUNNINGprocess::SUSPENDEDprocess::WAITINGendclass
+    function randomize;
+        randomize = 'sh0;
+    endfunction
+    typedef struct {
+        string name;
+        int signed weight;
+        int signed goal;
+        string comment;
+        int signed at_least;
+        int signed auto_bin_max;
+        int signed cross_num_print_missing;
+        bit cross_retain_auto_bins;
+        bit detect_overlap;
+        bit per_instance;
+        bit get_inst_coverage;
+    } vl_covergroup_options_t;
+    typedef struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        int signed at_least;
+        int signed auto_bin_max;
+        bit detect_overlap;
+    } vl_coverpoint_options_t;
+    typedef struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        int signed at_least;
+        int signed cross_num_print_missing;
+        bit cross_retain_auto_bins;
+    } vl_cross_options_t;
+    typedef struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        bit strobe;
+        bit merge_instances;
+        bit distribute_first;
+        real real_interval;
+    } vl_covergroup_type_options_t;
+    typedef struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        real real_interval;
+    } vl_coverpoint_type_options_t;
+    typedef struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+    } vl_cross_type_options_t;
+endpackage
 package Vt_debug_emitv___024unit;
     class Vt_debug_emitv_Cls;
         int signed member;
         member = 'sh1;
+        covergroup Vt_debug_emitv___vlAnonCG_cg_in_class;
+        function new;
+            cp_m: coverpoint member {
+                bins one = {'sh1};
+                bins two = {'sh2};
+            };
+        endfunction
+        int signed __Vint;
+        struct {
+            string name;
+            int signed weight;
+            int signed goal;
+            string comment;
+            int signed at_least;
+            int signed auto_bin_max;
+            int signed cross_num_print_missing;
+            bit cross_retain_auto_bins;
+            bit detect_overlap;
+            bit per_instance;
+            bit get_inst_coverage;
+        } option;
+        struct {
+            int signed weight;
+            int signed goal;
+            string comment;
+            bit strobe;
+            bit merge_instances;
+            bit distribute_first;
+            real real_interval;
+        } type_option;
+        function sample;
+        endfunction
+        function start;
+        endfunction
+        function stop;
+        endfunction
+        function get_coverage;
+            get_coverage = 
+            ???? // CRESET
+            ;
+            input string covered_bins;
+            input string total_bins;
+        endfunction
+        function get_inst_coverage;
+            get_inst_coverage = 
+            ???? // CRESET
+            ;
+            input string covered_bins;
+            input string total_bins;
+        endfunction
+        function set_inst_name;
+            input string name;
+        endfunction
+        endcovergroup
+        Vt_debug_emitv___vlAnonCG_cg_in_class cg_in_classVt_debug_emitv___vlAnonCG_cg_in_class;
         task method;
             if ((this != this)) begin
                 $stop;
@@ -695,13 +1188,13 @@ module Vt_debug_emitv_sub;
     endtask
     function f;
         input int signed v;
-        begin : label3
+        begin : label7
             if ((v == 'sh0)) begin
                 f = 'sh21;
-                disable label3;
+                disable label7;
             end
             f = ({32'h1{{31'h0, v[2]}}} + 32'h1);
-            disable label3;
+            disable label7;
         end
     endfunction
     real r;
