@@ -6,6 +6,11 @@
 
 // Test multiple covergroup instances with separate tracking
 
+// verilog_format: off
+`define stop $stop
+`define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 module t (/*AUTOARG*/);
   /* verilator lint_off UNSIGNED */
   logic [3:0] data1, data2;
@@ -24,37 +29,28 @@ module t (/*AUTOARG*/);
     cg_inst2 = new;
 
     // Initially both have 0% coverage
-    check_coverage(cg_inst1, 0.0, "inst1 initial");
-    check_coverage(cg_inst2, 0.0, "inst2 initial");
+    `checkr(cg_inst1.get_inst_coverage(), 0.0);
+    `checkr(cg_inst2.get_inst_coverage(), 0.0);
 
     // Sample different values in each instance
     data1 = 1;
     cg_inst1.sample();  // inst1: low covered (50%)
-    check_coverage(cg_inst1, 50.0, "inst1 after low");
-    check_coverage(cg_inst2, 0.0, "inst2 still empty");
+    `checkr(cg_inst1.get_inst_coverage(), 50.0);
+    `checkr(cg_inst2.get_inst_coverage(), 0.0);
 
     data1 = 10;
     cg_inst2.sample();  // inst2: high covered (50%)
-    check_coverage(cg_inst1, 50.0, "inst1 still 50%");
-    check_coverage(cg_inst2, 50.0, "inst2 after high");
+    `checkr(cg_inst1.get_inst_coverage(), 50.0);
+    `checkr(cg_inst2.get_inst_coverage(), 50.0);
 
     // Complete coverage in inst1
     data1 = 8;
     cg_inst1.sample();  // inst1: both covered (100%)
-    check_coverage(cg_inst1, 100.0, "inst1 complete");
-    check_coverage(cg_inst2, 50.0, "inst2 still 50%");
+    `checkr(cg_inst1.get_inst_coverage(), 100.0);
+    `checkr(cg_inst2.get_inst_coverage(), 50.0);
 
     $write("*-* All Finished *-*\n");
     $finish;
   end
 
-  task check_coverage(cg inst, real expected, string label);
-    real cov;
-    cov = inst.get_inst_coverage();
-    $display("Coverage %s: %0.2f%% (expected ~%0.2f%%)", label, cov, expected);
-    if (cov < expected - 0.5 || cov > expected + 0.5) begin
-      $error("Coverage mismatch: got %0.2f%%, expected ~%0.2f%%", cov, expected);
-      $stop;
-    end
-  endtask
 endmodule
