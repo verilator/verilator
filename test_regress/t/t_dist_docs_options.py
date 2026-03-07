@@ -16,6 +16,7 @@ Doc_Waivers = [
     '+verilator+prof+threads+start+',  # Deprecated
     '+verilator+prof+threads+window+',  # Deprecated
     '-clk',  # Deprecated
+    '-four-state',
     '-lineno',  # Deprecated
     '-order-clock-delay',  # Deprecated
     '-pp-comments',  # Deprecated
@@ -33,6 +34,7 @@ Test_Waivers = [
     '-rr',  # Not testing; not requiring rr installation
     # Need testing:
     '-fconst',  # TODO breaks due to some needed V3Const steps
+    '-four-state',
 ]
 
 Sums = {}
