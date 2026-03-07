@@ -6,6 +6,11 @@
 
 // Test mixed bin types: single values and ranges
 
+// verilog_format: off
+`define stop $stop
+`define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 module t (/*AUTOARG*/);
   /* verilator lint_off UNSIGNED */
   logic [7:0] opcode;
@@ -27,33 +32,24 @@ module t (/*AUTOARG*/);
 
     // Test single value bins
     opcode = 8'h00; cg_inst.sample();  // nop
-    check_coverage(20.0, "after nop");
+    `checkr(cg_inst.get_inst_coverage(), 20.0);
 
     // Test multi-value list bin
     opcode = 8'h02; cg_inst.sample();  // load
-    check_coverage(40.0, "after load");
+    `checkr(cg_inst.get_inst_coverage(), 40.0);
 
     opcode = 8'h05; cg_inst.sample();  // store
-    check_coverage(60.0, "after store");
+    `checkr(cg_inst.get_inst_coverage(), 60.0);
 
     // Test range bin
     opcode = 8'h15; cg_inst.sample();  // arith
-    check_coverage(80.0, "after arith");
+    `checkr(cg_inst.get_inst_coverage(), 80.0);
 
     opcode = 8'h80; cg_inst.sample();  // others
-    check_coverage(100.0, "after others");
+    `checkr(cg_inst.get_inst_coverage(), 100.0);
 
     $write("*-* All Finished *-*\n");
     $finish;
   end
 
-  task check_coverage(real expected, string label);
-    real cov;
-    cov = cg_inst.get_inst_coverage();
-    $display("Coverage %s: %0.2f%% (expected ~%0.2f%%)", label, cov, expected);
-    if (cov < expected - 0.5 || cov > expected + 0.5) begin
-      $error("Coverage mismatch: got %0.2f%%, expected ~%0.2f%%", cov, expected);
-      $stop;
-    end
-  endtask
 endmodule

@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2026 Matthew Ballance
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 // Test 4-way cross coverage
 
 module t;
@@ -61,11 +66,7 @@ module t;
     // Hit: 2+2+2+2+4 = 12 out of 24 = 50%
     $display("Coverage: %0.1f%%", cg_inst.get_inst_coverage());
 
-    if (cg_inst.get_inst_coverage() < 49.0 || cg_inst.get_inst_coverage() > 51.0) begin
-      $display("%%Error: Expected coverage around 50%%, got %0.1f%%",
-            cg_inst.get_inst_coverage());
-      $stop;
-    end
+    `checkr(cg_inst.get_inst_coverage(), 50.0);
 
     $write("*-* All Finished *-*\n");
     $finish;

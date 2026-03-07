@@ -6,6 +6,11 @@
 
 // Test viewing individual bin hit counts
 
+// verilog_format: off
+`define stop $stop
+`define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 module t (/*AUTOARG*/);
   /* verilator lint_off UNSIGNED */
   logic [3:0] data;
@@ -33,19 +38,10 @@ module t (/*AUTOARG*/);
     data = 10; cg_inst.sample();  // high: 1
 
     // Verify coverage is 100% (all 4 bins hit)
-    check_coverage(100.0, "final");
+    `checkr(cg_inst.get_inst_coverage(), 100.0);
 
     $write("*-* All Finished *-*\n");
     $finish;
   end
 
-  task check_coverage(real expected, string label);
-    real cov;
-    cov = cg_inst.get_inst_coverage();
-    $display("Coverage %s: %0.2f%% (expected ~%0.2f%%)", label, cov, expected);
-    if (cov < expected - 0.5 || cov > expected + 0.5) begin
-      $error("Coverage mismatch: got %0.2f%%, expected ~%0.2f%%", cov, expected);
-      $stop;
-    end
-  endtask
 endmodule
