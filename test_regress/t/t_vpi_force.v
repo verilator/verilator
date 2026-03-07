@@ -64,6 +64,11 @@ module Test (
   // Verify that vpi_put_value still works for strings
   string        str1       /*verilator public_flat_rw*/; // std::string
 
+  // Verify that EmitCSyms changes still allow for forceable, but not
+  // public_flat_rw signals. This signal is only forced and checked in this
+  // SystemVerilog testbench, but not through VPI.
+  logic         nonPublic /*verilator forceable*/; // CData
+
   // Verify that vpi_put_value still works with vpiInertialDelay
   logic [ 31:0] delayed    `PUBLIC_FORCEABLE; // IData
 
@@ -133,6 +138,8 @@ module Test (
   wire [ 63:0] decStringQContinuously `PUBLIC_FORCEABLE; // QData
 
   always @(posedge clk) begin
+    nonPublic <= 1;
+
     onebit <= 1;
     intval <= 32'hAAAAAAAA;
 
@@ -627,10 +634,14 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     vpiTryInvalidPutOperations();
     vpiPutInertialDelay();
     #1 vpiCheckInertialDelay();
+    // Force and check non-public, but forceable signal
+    force nonPublic = 0;
+    #4 if(nonPublic != 0) $stop;
+    release nonPublic;
+    #4 if (nonPublic != 1) $stop;
 `endif
 
-    // Wait a bit before triggering the force to see a change in the traces
-    #4 vpiForceValues();
+    vpiForceValues();
 
     // Time delay to ensure setting and checking values does not happen
     // at the same time, so that the signals can have their values overwritten
@@ -683,6 +694,8 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
 `ifdef TEST_VERBOSE
   always @(posedge clk or negedge clk) begin
     $display("time: %0t\tclk:%b", $time, clk);
+
+    $display("nonPublic: %x", nonPublic);
 
     $display("str1: %s", str1);
     $display("delayed: %x", delayed);
