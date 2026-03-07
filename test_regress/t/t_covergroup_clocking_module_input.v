@@ -37,9 +37,7 @@ module t(/*AUTOARG*/
     data <= cyc[1:0];
 
     if (cyc == 5) begin
-      /* verilator lint_off IMPLICITSTATIC */
-      real cov = cg_inst.get_inst_coverage();
-      /* verilator lint_on IMPLICITSTATIC */
+      automatic real cov = cg_inst.get_inst_coverage();
       $display("Coverage: %0.1f%%", cov);
 
       // Should have hit all 4 bins (cycles 0-3) = 100%

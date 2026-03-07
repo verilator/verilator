@@ -11,7 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-# Transition array bins are now supported
-test.compile(verilator_flags2=["-Wno-IMPLICITSTATIC"])
+test.compile()
 
 test.passes()

@@ -1,5 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
+// Test that illegal_bins are excluded from coverage (like ignore_bins)
+//
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty, 2026 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0

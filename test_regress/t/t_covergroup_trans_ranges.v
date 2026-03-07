@@ -1,4 +1,5 @@
 // DESCRIPTION: Verilator: Test transition bins - array bins
+// Transition array bins are supported.
 // This file ONLY is placed into the Public Domain, for any use, without warranty.
 // SPDX-License-Identifier: CC0-1.0
 
@@ -30,7 +31,7 @@ module t (/*AUTOARG*/
       2: state <= 2;  // 1 => 2 (hits trans_array[1=>2])
       3: state <= 3;  // 2 => 3 (hits trans_array[2=>3])
       4: begin
-        real cov = cg_inst.get_inst_coverage();
+        automatic real cov = cg_inst.get_inst_coverage();
         $display("Coverage: %f%%", cov);
         // We should have hit all 3 array bins = 100%
         if (cov >= 99.0) begin
