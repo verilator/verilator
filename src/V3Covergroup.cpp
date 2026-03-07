@@ -1344,8 +1344,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 if (!foundCpp) {
                     // Name not found as an explicit coverpoint — it's likely a direct variable
                     // reference (implicit coverpoint). Silently ignore; cross is dropped.
-                    UINFO(4, "  Ignoring cross with implicit variable reference: "
-                                 << refp->name() << endl);
+                    UINFO(4, "  Ignoring cross with implicit variable reference: " << refp->name()
+                                                                                   << endl);
                     return;
                 }
 
