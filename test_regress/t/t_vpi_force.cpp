@@ -666,8 +666,7 @@ extern "C" int putString() {
     return 0;
 }
 
-// This function is just needed for hitting the test coverage target for verilated_vpi.cpp and
-// ensuring that vpiInertialDelay still works after renaming vop to baseSignalVop.
+// This function is needed to ensure that vpiInertialDelay also works with forceable signals.
 extern "C" int putInertialDelay() {
     const std::string fullSignalName = std::string{scopeName} + ".delayed";
     TestVpiHandle const signalHandle  //NOLINT(misc-misplaced-const)
@@ -691,15 +690,31 @@ extern "C" int putInertialDelay() {
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
     CHECK_RESULT_NZ(vpiValuesEqual(vpi_get(vpiSize, signalHandle), value_s, expectedValueS));
 
-    // Check that the put is executed upon doInertialPuts
+    // NOTE: Because __VforceRd will only be updated in `eval_act`, `doInertialPuts` does not
+    // update the value read by `vpi_get_value` - that is only visible after another `eval`. Hence,
+    // `checkInertialDelay` must be called later to check success.
     VerilatedVpi::doInertialPuts();
 
-    value_s.value.integer = 0;  // Ensure that test fails if value_s is not updated
+    return 0;
+}
+
+extern "C" int checkInertialDelay() {
+    const std::string fullSignalName = std::string{scopeName} + ".delayed";
+    TestVpiHandle const signalHandle  //NOLINT(misc-misplaced-const)
+        = vpi_handle_by_name(const_cast<PLI_BYTE8*>(fullSignalName.c_str()), nullptr);
+    CHECK_RESULT_NZ(signalHandle);  // NOLINT(concurrency-mt-unsafe)
+
+    s_vpi_value value_s{.format = vpiIntVal,
+                        .value
+                        = {.integer = 0}};  // Ensure that test fails if value_s is not updated
+
     vpi_get_value(signalHandle, &value_s);
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
     CHECK_RESULT_Z(vpiCheckErrorLevel(maxAllowedErrorLevel))
 
-    expectedValueS.value.integer = delayedValue;
+    constexpr int delayedValue = 123;
+    s_vpi_value expectedValueS{.format = vpiIntVal, .value = {.integer = delayedValue}};
+
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
     CHECK_RESULT_NZ(vpiValuesEqual(vpi_get(vpiSize, signalHandle), value_s, expectedValueS));
 
