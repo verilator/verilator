@@ -2233,11 +2233,6 @@ static bool vl_vpi_parse_indices(std::string& name, std::vector<PLI_INT32>& indi
                                  VlVpiBitRange* bitRange = nullptr) {
     if (name.empty() || name.back() != ']') return false;
 
-    // Collapse consecutive spaces into single spaces
-    name.erase(
-        std::unique(name.begin(), name.end(), [](char a, char b) { return a == ' ' && b == ' '; }),
-        name.end());
-
     // Only parse brackets after the last escaped identifier's terminating space
     size_t escapeSpacePos = std::string::npos;
     const size_t backslashPos = name.rfind('\\');
@@ -2307,12 +2302,16 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
     if (VL_UNLIKELY(!namep)) return nullptr;
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_handle_by_name %s %p\n", namep, scope););
 
-    // Parse any array indices and optional bit range from the name
-    // e.g., "mem[0][3][2]" or "signal[15:8]" or "mem[0][3][15:8]"
     std::string scopeAndName = namep;
+
+    // Collapse consecutive spaces into single spaces (can occur with escaped identifiers)
+    scopeAndName.erase(std::unique(scopeAndName.begin(), scopeAndName.end(),
+                                   [](char a, char b) { return a == ' ' && b == ' '; }),
+                       scopeAndName.end());
+
     static thread_local std::vector<PLI_INT32> indices;
     VlVpiBitRange bitRange;
-    const bool hasIndices = vl_vpi_parse_indices(scopeAndName, indices, &bitRange);
+    bool hasIndices = false;
 
     const VerilatedVar* varp = nullptr;
     const VerilatedScope* scopep;
@@ -2328,6 +2327,9 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
     {
         // This doesn't yet follow the hierarchy in the proper way
         bool isPackage = false;
+
+        // Scopes in generate blocks can also end with an index, so look it up first before
+        // interpreting the trailing brackets as array indices or bit selects.
         scopep = Verilated::threadContextp()->scopeFind(scopeAndName.c_str());
         if (scopep) {  // Whole thing found as a scope
             if (scopep->type() == VerilatedScope::SCOPE_MODULE) {
@@ -2367,6 +2369,11 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
             scopename = scopeAndName.substr(0, pos);
             if (scopename == "$unit") scopename = "\\$unit ";
         }
+
+        // Parse any array indices and optional bit range from the name
+        // e.g., "mem[0][3][2]" or "signal[15:8]" or "mem[0][3][15:8]"
+        hasIndices = vl_vpi_parse_indices(basename, indices, &bitRange);
+
         if (prevpos == std::string::npos) {
             // scopename is a toplevel (no '.' separator), so search in our TOP ports first.
             scopep = Verilated::threadContextp()->scopeFind("TOP");

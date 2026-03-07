@@ -9,6 +9,7 @@
 //
 //*************************************************************************
 
+#include "vpi_user.h"
 #ifdef IS_VPI
 
 #include "sv_vpi_user.h"
@@ -1213,6 +1214,38 @@ int _mon_check_multi_index() {
         CHECK_RESULT_NZ(vh_two_escapes_ps);
         CHECK_RESULT(vpi_get(vpiType, vh_two_escapes_ps), vpiReg);
         CHECK_RESULT(vpi_get(vpiSize, vh_two_escapes_ps), 4);
+    }
+
+    // vpi_handle_by_name with generated signal
+    {
+        // Retrieve signal
+        TestVpiHandle vh_generated = vpi_handle_by_name((PLI_BYTE8*)"t.gen[0].gen_sig", NULL);
+        CHECK_RESULT_NZ(vh_generated);
+        CHECK_RESULT(vpi_get(vpiType, vh_generated), vpiReg);
+        CHECK_RESULT(vpi_get(vpiSize, vh_generated), 8);
+        vpi_get_value(vh_generated, &v);
+        CHECK_RESULT(v.value.integer, 0xAB);
+
+        // Single bit indexing
+        TestVpiHandle vh_generated_bit
+            = vpi_handle_by_name((PLI_BYTE8*)"t.gen[0].gen_sig[3]", NULL);
+        CHECK_RESULT_NZ(vh_generated_bit);
+        CHECK_RESULT(vpi_get(vpiType, vh_generated_bit), vpiReg);
+        CHECK_RESULT(vpi_get(vpiSize, vh_generated_bit), 1);
+        vpi_get_value(vh_generated_bit, &v);
+        CHECK_RESULT(v.value.integer, 1);
+
+        // Generated scope
+        TestVpiHandle vh_generated_scope = vpi_handle_by_name((PLI_BYTE8*)"t.subs[1]", NULL);
+        CHECK_RESULT_NZ(vh_generated_scope);
+        CHECK_RESULT(vpi_get(vpiType, vh_generated_scope), vpiGenScope);
+
+        // Signal in generated instance
+        TestVpiHandle vh_generated_inst
+            = vpi_handle_by_name((PLI_BYTE8*)"t.subs[1].subsub.subsig1", NULL);
+        CHECK_RESULT_NZ(vh_generated_inst);
+        CHECK_RESULT(vpi_get(vpiType, vh_generated_inst), vpiReg);
+        CHECK_RESULT(vpi_get(vpiSize, vh_generated_inst), 1);
     }
 
     // vpi_handle_by_name with array indexing
