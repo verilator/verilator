@@ -26,14 +26,12 @@ module t;
     rand reg_slave_TABLES TABLES[4];
 
     virtual function void build();
-      foreach (TABLES[i])
-        TABLES[i] = new;
+      foreach (TABLES[i]) TABLES[i] = new;
       this.configure(TABLES);  // Issue was here
     endfunction
 
     function void configure(uvm_reg reg_a[]);
-      foreach (reg_a[i])
-        $display("%p", reg_a[i]);
+      foreach (reg_a[i]) $display("%p", reg_a[i]);
     endfunction
   endclass
 

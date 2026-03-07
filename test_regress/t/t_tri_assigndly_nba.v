@@ -12,7 +12,7 @@
 // verilog_format: on
 
 module t (
-  input clk
+    input clk
 );
 
   int cyc;
@@ -41,17 +41,22 @@ module t (
     cyc <= cyc + 1;
     if (cyc == 0) begin
       // Setup
-    end else if (cyc < 50) begin
+    end
+    else if (cyc < 50) begin
       if (!driver1_en && !driver2_en) begin
         `checkh(tribus, 1'bz);
-      end else if (driver1_en && !driver2_en) begin
+      end
+      else if (driver1_en && !driver2_en) begin
         `checkh(tribus, driver1_dat);
-      end else if (!driver1_en && driver2_en) begin
+      end
+      else if (!driver1_en && driver2_en) begin
         `checkh(tribus, driver2_dat);
-      end else begin
+      end
+      else begin
         // Ignore conflict cases
       end
-    end else if (cyc == 99) begin
+    end
+    else if (cyc == 99) begin
       $write("*-* All Finished *-*\n");
       $finish;
     end
