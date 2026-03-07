@@ -4,6 +4,11 @@
 // any use, without warranty, 2024 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 // Test dynamic covergroup creation with 'new' operator
 
 module t;
@@ -28,23 +33,21 @@ module t;
     // Initially no coverage
     cov = cg_inst.get_inst_coverage();
     $display("  Initial coverage: %f", cov);
-    if (cov != 0.0) $stop;
+    `checkr(cov, 0.0);
 
     // Sample low bin
     data = 0;
     cg_inst.sample();
     cov = cg_inst.get_inst_coverage();
     $display("  After sampling low: %f", cov);
-    if (cov < 49.0 || cov > 51.0) $stop;  // ~50%
+    `checkr(cov, 50.0);  // ~50%
 
     // Sample high bin
     data = 2;
     cg_inst.sample();
     cov = cg_inst.get_inst_coverage();
     $display("  After sampling high: %f", cov);
-    if (cov < 99.0 || cov > 101.0) $stop;  // ~100%
-
-    // Test 2: Multiple dynamic instances
+    `checkr(cov, 100.0);  // ~100%
     $display("Test 2: Multiple dynamic instances");
     begin
       cg cg1, cg2, cg3;
@@ -66,15 +69,15 @@ module t;
       // Check individual coverage
       cov = cg1.get_inst_coverage();
       $display("  cg1 coverage: %f", cov);
-      if (cov < 49.0 || cov > 51.0) $stop;  // 50%
+      `checkr(cov, 50.0);  // 50%
 
       cov = cg2.get_inst_coverage();
       $display("  cg2 coverage: %f", cov);
-      if (cov < 49.0 || cov > 51.0) $stop;  // 50%
+      `checkr(cov, 50.0);  // 50%
 
       cov = cg3.get_inst_coverage();
       $display("  cg3 coverage: %f", cov);
-      if (cov < 49.0 || cov > 51.0) $stop;  // 50%
+      `checkr(cov, 50.0);  // 50%
     end
 
     // Test 3: Reassignment (old instance should be cleaned up)
@@ -84,7 +87,7 @@ module t;
     // New instance starts with 0% coverage
     cov = cg_inst.get_inst_coverage();
     $display("  New instance coverage: %f", cov);
-    if (cov != 0.0) $stop;
+    `checkr(cov, 0.0);
 
     $write("*-* All Finished *-*\n");
     $finish;

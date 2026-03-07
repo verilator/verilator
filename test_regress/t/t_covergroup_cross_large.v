@@ -4,6 +4,11 @@
 // any use, without warranty, 2024 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 // Test large cross coverage with sparse map implementation
 
 module t(/*AUTOARG*/
@@ -67,10 +72,7 @@ module t(/*AUTOARG*/
       automatic real inst_cov = cg_inst.get_inst_coverage();
       $display("Coverage: %0.1f%%", inst_cov);
 
-      if (inst_cov < 1.0 || inst_cov > 100.0) begin
-        $display("%%Error: Invalid coverage value");
-        $stop;
-      end
+      `checkr(inst_cov, 1100.0/93.0);
 
       $write("*-* All Finished *-*\n");
       $finish;
