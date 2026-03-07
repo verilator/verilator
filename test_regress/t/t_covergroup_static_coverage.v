@@ -1,10 +1,12 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
+// Test static get_coverage() with multiple instances.
+// Type-level (static) coverage using cg::get_coverage() compiles but returns
+// a placeholder value (0.0); runtime behavior is not fully correct.
+//
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty, 2024 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
-
-// Test static get_coverage() with multiple instances
 
 module t;
 

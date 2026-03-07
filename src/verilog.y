@@ -6947,9 +6947,9 @@ covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
         |        yCOVERGROUP yEXTENDS idAny ';'
         /*cont*/     coverage_spec_or_optionListE
         /*cont*/ yENDGROUP endLabelE
-                        { BBCOVERIGN($1, "Ignoring unsupported: covergroup inheritance (extends)");
-                          $$ = new AstCovergroup{$<fl>3, *$3, nullptr, nullptr, $5, nullptr};
-                          GRAMMARP->endLabel($<fl>7, $$, $7); }
+                        { $$ = nullptr;
+                          BBUNSUP($1, "Unsupported: covergroup inheritance (extends) is not implemented");
+                          DEL($5); }
         ;
 
 cgPortListE<nodep>:
@@ -7921,11 +7921,15 @@ class_item<nodep>:                      // ==IEEE: class_item
         |       timeunits_declaration                   { $$ = $1; }
         |       covergroup_declaration
                         {
-                          const string cgName = $1->name();
-                          $1->name("__vlAnonCG_" + cgName);
-                          AstVar* const newp = new AstVar{$1->fileline(), VVarType::VAR, cgName,
-                              VFlagChildDType{}, new AstRefDType($1->fileline(), $1->name())};
-                          $$ = addNextNull($1, newp);
+                          if ($1) {
+                              const string cgName = $1->name();
+                              $1->name("__vlAnonCG_" + cgName);
+                              AstVar* const newp = new AstVar{$1->fileline(), VVarType::VAR, cgName,
+                                  VFlagChildDType{}, new AstRefDType($1->fileline(), $1->name())};
+                              $$ = addNextNull($1, newp);
+                          } else {
+                              $$ = nullptr;
+                          }
                         }
         //                      // local_parameter_declaration under parameter_declaration
         |       parameter_declaration ';'               { $$ = $1; }
