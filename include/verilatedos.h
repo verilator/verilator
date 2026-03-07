@@ -524,6 +524,40 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 #define VL_BITISSET_W(data, bit) ((data)[VL_BITWORD_E(bit)] & (VL_EUL(1) << VL_BITBIT_E(bit)))
 
 //=========================================================================
+// Four-state bit manipulation (2 bits per logic bit)
+// Encoding: 00=0, 01=1, 10=X, 11=Z
+
+// Four-state bit position helpers (4 logic bits per nibble)
+#define VL_BITWORD4_I(bit) ((bit) / 4)  ///< Word number for 4-state CData
+#define VL_BITWORD4_S(bit) ((bit) / 8)  ///< Word number for 4-state SData
+#define VL_BITWORD4_IW(bit) ((bit) / 16)  ///< Word number for 4-state IData
+#define VL_BITWORD4_QW(bit) ((bit) / 32)  ///< Word number for 4-state QData
+#define VL_BITBIT4(bit) (((bit) % 4) * 2)  ///< Bit position within nibble for 4-state
+
+// Four-state bit extraction - returns 2-bit value (0,1,2=X,3=Z)
+#define VL_GET_BIT4_C(data, bit) (((data) >> VL_BITBIT4(bit)) & 3)
+#define VL_GET_BIT4_S(data, bit) (((data) >> VL_BITBIT4(bit)) & 3)
+#define VL_GET_BIT4_I(data, bit) (((data) >> VL_BITBIT4(bit)) & 3)
+#define VL_GET_BIT4_Q(data, bit) (((data) >> VL_BITBIT4(bit)) & 3)
+
+// Four-state bit setting - sets 2-bit value (0,1,2=X,3=Z)
+#define VL_SET_BIT4_C(data, bit, val) ((data) = ((data) & ~(3 << VL_BITBIT4(bit))) | ((val) << VL_BITBIT4(bit)))
+#define VL_SET_BIT4_S(data, bit, val) ((data) = ((data) & ~(3 << VL_BITBIT4(bit))) | ((val) << VL_BITBIT4(bit)))
+#define VL_SET_BIT4_I(data, bit, val) ((data) = ((data) & ~(3 << VL_BITBIT4(bit))) | ((val) << VL_BITBIT4(bit)))
+#define VL_SET_BIT4_Q(data, bit, val) ((data) = ((data) & ~(3 << VL_BITBIT4(bit))) | ((val) << VL_BITBIT4(bit)))
+
+// Four-state value constants
+enum class VlFourState : uint8_t {
+    VL_4STATE_0 = 0,  ///< Logic 0
+    VL_4STATE_1 = 1,  ///< Logic 1
+    VL_4STATE_X = 2,  ///< Unknown (X)
+    VL_4STATE_Z = 3   ///< High-impedance (Z)
+};
+
+// Convert 4-state 2-bit value to single bit (X/Z -> 0 for two-state compatibility)
+#define VL_CLEAN_BIT4(val) ((val) & 1)
+
+//=========================================================================
 // Floating point
 // #defines, to avoid requiring math.h on all compile runs
 

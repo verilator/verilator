@@ -3724,3 +3724,68 @@ void VlDeleter::deleteAll() VL_EXCLUDES(m_mutex) VL_EXCLUDES(m_deleteMutex) VL_M
 
 #define VL_ALLOW_VERILATEDOS_C
 #include "verilatedos_c.h"
+
+//===========================================================================
+// Four-state display functions
+
+static inline void _vl_toStringFourStateBinary_C(std::string& output, int lbits, CData4 data) {
+    output.assign(lbits, '0');
+    for (int i = 0; i < lbits; i++) {
+        uint8_t val = (data >> (i * 2)) & 3;
+        if (val == 0) output[lbits - 1 - i] = '0';
+        else if (val == 1) output[lbits - 1 - i] = '1';
+        else if (val == 2) output[lbits - 1 - i] = 'x';
+        else output[lbits - 1 - i] = 'z';
+    }
+}
+static inline void _vl_toStringFourStateBinary_S(std::string& output, int lbits, SData4 data) {
+    output.assign(lbits, '0');
+    for (int i = 0; i < lbits; i++) {
+        uint8_t val = (data >> (i * 2)) & 3;
+        if (val == 0) output[lbits - 1 - i] = '0';
+        else if (val == 1) output[lbits - 1 - i] = '1';
+        else if (val == 2) output[lbits - 1 - i] = 'x';
+        else output[lbits - 1 - i] = 'z';
+    }
+}
+static inline void _vl_toStringFourStateBinary_I(std::string& output, int lbits, IData4 data) {
+    output.assign(lbits, '0');
+    for (int i = 0; i < lbits; i++) {
+        uint8_t val = (data >> (i * 2)) & 3;
+        if (val == 0) output[lbits - 1 - i] = '0';
+        else if (val == 1) output[lbits - 1 - i] = '1';
+        else if (val == 2) output[lbits - 1 - i] = 'x';
+        else output[lbits - 1 - i] = 'z';
+    }
+}
+static inline void _vl_toStringFourStateBinary_Q(std::string& output, int lbits, QData4 data) {
+    output.assign(lbits, '0');
+    for (int i = 0; i < lbits; i++) {
+        uint8_t val = (data >> (i * 2)) & 3;
+        if (val == 0) output[lbits - 1 - i] = '0';
+        else if (val == 1) output[lbits - 1 - i] = '1';
+        else if (val == 2) output[lbits - 1 - i] = 'x';
+        else output[lbits - 1 - i] = 'z';
+    }
+}
+
+std::string VL_WRITEF_4STATE_BIN_C(CData4 data) {
+    std::string output;
+    _vl_toStringFourStateBinary_C(output, 4, data);
+    return output;
+}
+std::string VL_WRITEF_4STATE_BIN_S(SData4 data) {
+    std::string output;
+    _vl_toStringFourStateBinary_S(output, 8, data);
+    return output;
+}
+std::string VL_WRITEF_4STATE_BIN_I(IData4 data) {
+    std::string output;
+    _vl_toStringFourStateBinary_I(output, 16, data);
+    return output;
+}
+std::string VL_WRITEF_4STATE_BIN_Q(QData4 data) {
+    std::string output;
+    _vl_toStringFourStateBinary_Q(output, 32, data);
+    return output;
+}

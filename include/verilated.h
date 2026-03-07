@@ -122,6 +122,11 @@ using IData = uint32_t;   ///< Data representing 'bit' of 17-32 packed bits
 using QData = uint64_t;   ///< Data representing 'bit' of 33-64 packed bits
 using EData = uint32_t;   ///< Data representing one element of WData array
 using WData = EData;        ///< Data representing >64 packed bits (used as pointer)
+// Four-state types: 2 bits per logic bit (00=0, 01=1, 10=X, 11=Z)
+using CData4 = uint8_t;   ///< Four-state data, 4 logic bits per byte
+using SData4 = uint16_t;  ///< Four-state data, 8 logic bits per uint16_t
+using IData4 = uint32_t;  ///< Four-state data, 16 logic bits per uint32_t
+using QData4 = uint64_t;  ///< Four-state data, 32 logic bits per uint64_t
 //    F     = float;        // No typedef needed; Verilator uses float
 //    D     = double;       // No typedef needed; Verilator uses double
 //    N     = std::string;  // No typedef needed; Verilator uses string
@@ -141,7 +146,13 @@ enum VerilatedVarType : uint8_t {
     VLVT_UINT64,  // AKA QData
     VLVT_WDATA,  // AKA WData
     VLVT_STRING,  // C++ string
-    VLVT_REAL  // AKA double
+    VLVT_REAL,  // AKA double
+    // Four-state types
+    VLVT_UINT8_4STATE,  // AKA CData4
+    VLVT_UINT16_4STATE,  // AKA SData4
+    VLVT_UINT32_4STATE,  // AKA IData4
+    VLVT_UINT64_4STATE,  // AKA QData4
+    VLVT_WDATA_4STATE  // Four-state wide data
 };
 
 enum VerilatedVarFlags {

@@ -365,6 +365,12 @@ class UnknownVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstConst* nodep) override {
+        // Skip X replacement when --x-sim is enabled (four-state simulation)
+        // In four-state mode, X values should propagate naturally
+        if (v3Global.opt.xFourState()) {
+            iterateChildren(nodep);
+            return;
+        }
         if (m_constXCvt && nodep->num().isFourState()) {
             UINFO(4, " CONST4 " << nodep);
             UINFOTREE(9, nodep, "", "Const_old");

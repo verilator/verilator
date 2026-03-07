@@ -3607,6 +3607,13 @@ class ConstVisitor final : public VNVisitor {
         return true;
     }
     void visit(AstSFormatF* nodep) override {
+        // When --x-sim is enabled, skip ALL constant folding in displays
+        // as we need to use four-state display functions for binary output
+        if (v3Global.opt.xFourState()) {
+            UINFO(1, "Skipping SFormatF constant fold due to --x-sim\n");
+            iterateChildren(nodep);
+            return;
+        }
         // Substitute constants into displays.  The main point of this is to
         // simplify assertion methodologies which call functions with display's.
         // This eliminates a pile of wide temps, and makes the C a whole lot more readable.
@@ -3618,6 +3625,7 @@ class ConstVisitor final : public VNVisitor {
                 break;
             }
         }
+        UINFO(1, "SFormatF: anyconst=" << anyconst << " m_doNConst=" << m_doNConst << "\n");
         if (m_doNConst && anyconst) {
             // UINFO(9, "  Display in  " << nodep->text());
             string newFormat;

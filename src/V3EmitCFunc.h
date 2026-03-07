@@ -253,8 +253,45 @@ public:
         // For tradition and compilation speed, assign each word directly into
         // output variable instead of using '='
         putns(nodep, "");
-        if (nodep->num().isFourState()) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: 4-state numbers in this context");
+        const V3Number& num = nodep->num();
+        UINFO(1, "emitConstantW: width=" << num.width() << " isFourState=" << num.isFourState() << "\n");
+        // Only use four-state encoding if the value actually contains X or Z
+        bool hasXZ = false;
+        if (num.isFourState()) {
+            for (int i = 0; i < num.width(); i++) {
+                if (num.bitIsX(i) || num.bitIsZ(i)) {
+                    hasXZ = true;
+                    break;
+                }
+            }
+        }
+        if (num.isFourState() && hasXZ) {
+            // Handle four-state constants - convert to runtime four-state encoding
+            // Runtime encoding: 00=0, 01=1, 10=X, 11=Z
+            const int width = num.width();
+            uint64_t result = 0;
+            for (int i = 0; i < width; i++) {
+                uint8_t bits;
+                if (num.bitIsX(i)) {
+                    bits = 2;  // X -> 10
+                } else if (num.bitIsZ(i)) {
+                    bits = 3;  // Z -> 11
+                } else if (num.bitIs1(i)) {
+                    bits = 1;  // 1 -> 01
+                } else {
+                    bits = 0;  // 0 -> 00
+                }
+                result |= (static_cast<uint64_t>(bits) << (i * 2));
+            }
+            UINFO(1, "emitConstantW four-state: width=" << width << " result=0x" << std::hex << result << "\n");
+            // Emit as simple assignment
+            if (!assigntop->selfPointer().isEmpty()) {
+                emitDereference(assigntop, assigntop->selfPointerProtect(m_useSelfForThis));
+            }
+            puts(assigntop->varp()->nameProtect());
+            puts(" = ");
+            ofp()->printf("0x%" PRIx64 "ULL", result);
+            puts(";\n");
             return;
         }
 
@@ -894,6 +931,7 @@ public:
     }
     void visit(AstDisplay* nodep) override {
         string text = nodep->fmtp()->text();
+        UINFO(1, "AstDisplay visitor: text='" << text << "'\n");
         if (nodep->addNewline()) text += "\n";
         displayNode(nodep, nodep->fmtp()->scopeNamep(), text, nodep->fmtp()->exprsp(), false);
     }
