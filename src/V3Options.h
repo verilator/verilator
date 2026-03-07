@@ -313,7 +313,7 @@ private:
 
     int         m_buildJobs = -1;    // main switch: --build-jobs, -j
     int         m_coverageExprMax = 32;    // main switch: --coverage-expr-max
-    int         m_convergeLimit = 100;  // main switch: --converge-limit
+    int         m_convergeLimit = 10000;  // main switch: --converge-limit
     int         m_coverageMaxWidth = 256; // main switch: --coverage-max-width
     int         m_debugAllocRandom = 0;  // main switch: --debug-alloc-random <seed>
     int         m_expandLimit = 256;  // main switch: --expand-limit
