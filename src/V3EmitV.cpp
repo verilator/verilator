@@ -1020,7 +1020,8 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
     }
     void visit(AstClassRefDType* nodep) override {
-        putfs(nodep, nodep->classp() ? EmitCUtil::prefixNameProtect(nodep->classp()) : nodep->prettyDTypeName(false));
+        putfs(nodep, nodep->classp() ? EmitCUtil::prefixNameProtect(nodep->classp())
+                                     : nodep->prettyDTypeName(false));
     }
     void visit(AstRequireDType* nodep) override { iterateConst(nodep->lhsp()); }
     void visit(AstModport* nodep) override {
