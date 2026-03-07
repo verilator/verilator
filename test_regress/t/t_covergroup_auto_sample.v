@@ -1,4 +1,5 @@
 // DESCRIPTION: Verilator: Test automatic sampling with clocking events
+// Tests --no-timing (default) mode; see t_covergroup_auto_sample_timing for --timing variant.
 // This file ONLY is placed into the Public Domain, for any use, without warranty.
 // SPDX-License-Identifier: CC0-1.0
 
