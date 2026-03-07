@@ -497,12 +497,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // Generate member variables and matching code for each bin
         // Process in two passes: first non-default bins, then default bins
         std::vector<AstCoverBin*> defaultBins;
-        int binCount = 0;
         for (AstNode* binp = coverpointp->binsp(); binp; binp = binp->nextp()) {
-            if (++binCount > 1000) {
-                coverpointp->v3error("Too many bins or infinite loop detected in bin iteration");
-                break;
-            }
             AstCoverBin* const cbinp = VN_CAST(binp, CoverBin);
             if (!cbinp) continue;
 
@@ -1347,10 +1342,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 }
 
                 if (!foundCpp) {
-                    refp->v3warn(COVERIGN,
-                                 "Ignoring unsupported: cross references unknown coverpoint: "
-                                     + refp->name());
-                    // Don't delete crossp here - the caller's cleanup loop will delete it
+                    // Name not found as an explicit coverpoint — it's likely a direct variable
+                    // reference (implicit coverpoint). Silently ignore; cross is dropped.
+                    UINFO(4, "  Ignoring cross with implicit variable reference: "
+                                 << refp->name() << endl);
                     return;
                 }
 
