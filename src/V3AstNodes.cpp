@@ -682,6 +682,12 @@ string AstVar::vlEnumDir() const {
     if (const AstBasicDType* const bdtypep = basicp()) {
         if (bdtypep->keyword().isDpiCLayout()) out += "|VLVF_DPI_CLAY";
     }
+    //
+    if (dtypep()->skipRefp()->isSigned()) out += "|VLVF_SIGNED";
+    //
+    if (AstBasicDType* const basicp = dtypep()->skipRefp()->basicp()) {
+        if (basicp->keyword() == VBasicDTypeKwd::BIT) out += "|VLVF_BITVAR";
+    }
     return out;
 }
 
