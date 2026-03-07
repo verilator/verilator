@@ -64,9 +64,7 @@ module t(/*AUTOARG*/
     d <= cyc[7:4];
 
     if (cyc == 20) begin
-      /* verilator lint_off IMPLICITSTATIC */
-      real inst_cov = cg_inst.get_inst_coverage();
-      /* verilator lint_on IMPLICITSTATIC */
+      automatic real inst_cov = cg_inst.get_inst_coverage();
       $display("Coverage: %0.1f%%", inst_cov);
 
       if (inst_cov < 1.0 || inst_cov > 100.0) begin
