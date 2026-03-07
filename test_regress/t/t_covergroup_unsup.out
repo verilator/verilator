@@ -186,35 +186,8 @@
 %Warning-COVERIGN: t/t_covergroup_unsup.v:174:10: Ignoring unsupported: explicit coverage cross bins
   174 |          bins bin_multiple_fields = binsof(p.inner_packet.field);
       |          ^~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:195:7: Ignoring unsupported: covergroup inheritance (extends)
-  195 |       covergroup extends cg_empty;
+%Error-UNSUPPORTED: t/t_covergroup_unsup.v:196:7: Unsupported: covergroup inheritance (extends) is not implemented
+  196 |       covergroup extends cg_empty;
       |       ^~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:99:13: Ignoring unsupported: cross references unknown coverpoint: a
-                                               : ... note: In instance 't'
-   99 |       cross a, b iff (!rst);
-      |             ^
-%Warning-COVERIGN: t/t_covergroup_unsup.v:102:13: Ignoring unsupported: cross references unknown coverpoint: a
-                                                : ... note: In instance 't'
-  102 |       cross a, b iff (!rst) {}
-      |             ^
-%Warning-COVERIGN: t/t_covergroup_unsup.v:105:13: Ignoring unsupported: cross references unknown coverpoint: a
-                                                : ... note: In instance 't'
-  105 |       cross a, b { option.comment = "cross"; option.weight = 12; }
-      |             ^
-%Warning-COVERIGN: t/t_covergroup_unsup.v:108:13: Ignoring unsupported: cross references unknown coverpoint: a
-                                                : ... note: In instance 't'
-  108 |       cross a, b {
-      |             ^
-%Warning-COVERIGN: t/t_covergroup_unsup.v:114:23: Ignoring unsupported: cross references unknown coverpoint: a
-                                                : ... note: In instance 't'
-  114 |       my_cg_id: cross a, b iff (!rst);
-      |                       ^
-%Warning-COVERIGN: t/t_covergroup_unsup.v:156:13: Ignoring unsupported: cross references unknown coverpoint: a
-                                                : ... note: In instance 't'
-  156 |       cross a, b {
-      |             ^
-%Warning-COVERIGN: t/t_covergroup_unsup.v:185:7: Ignoring unsupported: covergroup clocking event on member variable
-                                               : ... note: In instance 't'
-  185 |       covergroup cov1 @m_z;
-      |       ^~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

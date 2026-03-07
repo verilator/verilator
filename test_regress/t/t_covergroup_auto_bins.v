@@ -1,5 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
+// Test automatic bins: bins auto[N]
+//
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty, 2026 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0

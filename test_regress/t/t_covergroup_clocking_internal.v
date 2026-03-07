@@ -11,6 +11,12 @@
 // for internal clocks due to Verilator timing scheduler limitations.
 // The sample() call is generated but the NBA region isn't triggered.
 //
+// Root cause: Timing scheduler doesn't trigger NBA/active regions for
+// internally generated clock edges. Even explicit .sample() calls in
+// always @(posedge clk) blocks don't execute in --timing mode.
+//
+// Workaround: Use module input clocks (see t_covergroup_auto_sample.v)
+//
 // Solution: Call .sample() explicitly in an always block.
 
 module t;
