@@ -22,10 +22,12 @@ Verilator 5.047 devel
 * Support soft constraint solving (#7124) (#7166). [Yilou Wang]
 * Support constraints on fixed-size array of class object members (#7170) (#7183). [Yilou Wang]
 * Support Z non-blocking assignment (#7192) (#496) (#7197). [Nick Brereton]
+* Support constraint `with` item.index array reduction (#7198). [Rahul Behl]
 * Add VPI callback support to --main (#7145).
 * Add V3LiftExpr pass to lower impure expressions and calls (#7141) (#7164). [Geza Lore, Testorrent USA, Inc.]
 * Add --func-recursion-depth CLI option (#7175) (#7179).
 * Improve assignment-compatibility type check (#2843) (#5666) (#7052). [Pawel Kojma, Antmicro Ltd.]
+* Change array tracing to dump left index to right index (#7205). [Geza Lore, Testorrent USA, Inc.]
 * Optimize size of trace declaration object code (#7150). [Szymon Gizler, Antmicro Ltd.]
 * Optimize function call return value temporaries (#7152). [Geza Lore, Testorrent USA, Inc.]
 * Optimize conditional merging across some impure statements (#7159). [Geza Lore, Testorrent USA, Inc.]
