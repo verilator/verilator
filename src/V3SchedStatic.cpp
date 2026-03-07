@@ -15,6 +15,7 @@
 //*************************************************************************
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
+
 #include "V3SchedStatic.h"
 
 #include "V3Graph.h"
@@ -51,7 +52,9 @@ AstCFunc* createScopeSubFunc(AstCFunc* topFuncp, AstScope* scopep, const string&
     return subFuncp;
 }
 
-const FileLine* fileLineOf(const StaticUnit& unit) { return unit.m_nodep ? unit.m_nodep->fileline() : nullptr; }
+const FileLine* fileLineOf(const StaticUnit& unit) {
+    return unit.m_nodep ? unit.m_nodep->fileline() : nullptr;
+}
 
 bool fileLineLess(const StaticUnit& lhs, const StaticUnit& rhs) {
     const FileLine* const lhsFlp = fileLineOf(lhs);
@@ -201,9 +204,8 @@ void orderStaticEval(AstCFunc* funcp, const ScopeVarListMap& allVarMap) {
 
     std::vector<size_t> seqOrder(units.size());
     for (size_t i = 0; i < units.size(); ++i) seqOrder[i] = i;
-    std::stable_sort(seqOrder.begin(), seqOrder.end(), [&](size_t lhs, size_t rhs) {
-        return fileLineLess(units[lhs], units[rhs]);
-    });
+    std::stable_sort(seqOrder.begin(), seqOrder.end(),
+                     [&](size_t lhs, size_t rhs) { return fileLineLess(units[lhs], units[rhs]); });
     for (size_t seq = 0; seq < seqOrder.size(); ++seq) units[seqOrder[seq]].m_seq = seq;
 
     const size_t n = units.size();
