@@ -1961,6 +1961,7 @@ class TristateVisitor final : public TristateBaseVisitor {
 
     void handleNodeVarRef(AstNodeVarRef* nodep) {
         UINFO(9, dbgState() << nodep);
+        UASSERT_OBJ(nodep->varp(), nodep, "Unlinked");
         if (m_graphing) {
             if (nodep->access().isWriteOrRW()) associateLogic(nodep, nodep->varp());
             if (nodep->access().isReadOrRW()) associateLogic(nodep->varp(), nodep);
