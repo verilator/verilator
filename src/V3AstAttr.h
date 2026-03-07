@@ -1053,6 +1053,113 @@ inline std::ostream& operator<<(std::ostream& os, const VCastable& rhs) {
 
 //######################################################################
 
+class VCoverBinsType final {
+public:
+    enum en : uint8_t {
+        USER,
+        ARRAY,
+        AUTO,
+        BINS_IGNORE,  // Renamed to avoid Windows macro conflict
+        BINS_ILLEGAL,  // Renamed to avoid Windows macro conflict
+        DEFAULT,
+        BINS_WILDCARD,  // Renamed to avoid Windows macro conflict
+        TRANSITION
+    };
+    enum en m_e;
+    VCoverBinsType()
+        : m_e{USER} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VCoverBinsType(en _e)
+        : m_e{_e} {}
+    explicit VCoverBinsType(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }
+    const char* ascii() const {
+        static const char* const names[]
+            = {"user", "array", "auto", "ignore", "illegal", "default", "wildcard", "transition"};
+        return names[m_e];
+    }
+};
+constexpr bool operator==(const VCoverBinsType& lhs, const VCoverBinsType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VCoverBinsType& lhs, VCoverBinsType::en rhs) {
+    return lhs.m_e == rhs;
+}
+constexpr bool operator==(VCoverBinsType::en lhs, const VCoverBinsType& rhs) {
+    return lhs == rhs.m_e;
+}
+
+//######################################################################
+
+class VCoverOptionType final {
+public:
+    enum en : uint8_t { WEIGHT, GOAL, AT_LEAST, AUTO_BIN_MAX, PER_INSTANCE, COMMENT };
+    enum en m_e;
+    VCoverOptionType()
+        : m_e{WEIGHT} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VCoverOptionType(en _e)
+        : m_e{_e} {}
+    explicit VCoverOptionType(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }
+    const char* ascii() const {
+        static const char* const names[]
+            = {"weight", "goal", "at_least", "auto_bin_max", "per_instance", "comment"};
+        return names[m_e];
+    }
+};
+constexpr bool operator==(const VCoverOptionType& lhs, const VCoverOptionType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VCoverOptionType& lhs, VCoverOptionType::en rhs) {
+    return lhs.m_e == rhs;
+}
+constexpr bool operator==(VCoverOptionType::en lhs, const VCoverOptionType& rhs) {
+    return lhs == rhs.m_e;
+}
+
+//######################################################################
+
+class VTransRepType final {
+public:
+    enum en : uint8_t {
+        NONE,  // No repetition
+        CONSEC,  // Consecutive repetition [*]
+        GOTO,  // Goto repetition [->]
+        NONCONS  // Nonconsecutive repetition [=]
+    };
+    enum en m_e;
+    VTransRepType()
+        : m_e{NONE} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VTransRepType(en _e)
+        : m_e{_e} {}
+    explicit VTransRepType(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }
+    const char* ascii() const {
+        static const char* const names[] = {"", "[*]", "[->]", "[=]"};
+        return names[m_e];
+    }
+    const char* asciiJson() const {
+        static const char* const names[] = {"", "\"consec\"", "\"goto\"", "\"noncons\""};
+        return names[m_e];
+    }
+};
+constexpr bool operator==(const VTransRepType& lhs, const VTransRepType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VTransRepType& lhs, VTransRepType::en rhs) {
+    return lhs.m_e == rhs;
+}
+constexpr bool operator==(VTransRepType::en lhs, const VTransRepType& rhs) {
+    return lhs == rhs.m_e;
+}
+
+//######################################################################
+
 class VDirection final {
 public:
     enum en : uint8_t { NONE, INPUT, OUTPUT, INOUT, REF, CONSTREF };

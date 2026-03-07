@@ -1,10 +1,11 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
+// Covergroup inheritance with 'extends' is not yet supported
+//
 // This file ONLY is placed under the Creative Commons Public Domain
 // SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-/* verilator lint_off COVERIGN */
 module t;
     class base;
         function new();

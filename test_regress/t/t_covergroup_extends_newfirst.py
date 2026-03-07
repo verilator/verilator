@@ -11,6 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile()
+test.lint(expect_filename=test.golden_filename, fails=True)
 
 test.passes()

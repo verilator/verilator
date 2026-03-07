@@ -3447,3 +3447,89 @@ const char* AstNot::widthMismatch() const VL_MT_STABLE {
     BROKEN_RTN(lhsp()->widthMin() != widthMin());
     return nullptr;
 }
+
+//######################################################################
+// Functional coverage dump methods
+
+void AstCovergroup::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " " << m_name;
+    if (m_isClass) str << " [class]";
+}
+
+void AstCovergroup::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, isClass);
+    dumpJsonGen(str);
+}
+
+void AstCoverpoint::dump(std::ostream& str) const { this->AstNodeFuncCovItem::dump(str); }
+
+void AstCoverpoint::dumpJson(std::ostream& str) const { this->AstNodeFuncCovItem::dumpJson(str); }
+
+void AstCoverBin::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " " << m_name << " " << m_type.ascii();
+    if (m_isArray) str << "[]";
+}
+
+void AstCoverBin::dumpJson(std::ostream& str) const {
+    this->AstNode::dumpJson(str);
+    str << ", \"name\": " << VString::quotePercent(m_name);
+    str << ", \"binsType\": \"" << m_type.ascii() << "\"";
+    if (m_isArray) str << ", \"isArray\": true";
+}
+
+void AstCoverTransItem::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (m_repType != VTransRepType::NONE) str << " " << m_repType.ascii();
+}
+
+void AstCoverTransItem::dumpJson(std::ostream& str) const {
+    this->AstNode::dumpJson(str);
+    if (m_repType != VTransRepType::NONE) { str << ", \"repType\": " << m_repType.asciiJson(); }
+}
+
+void AstCoverTransSet::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " trans_set";
+}
+
+void AstCoverTransSet::dumpJson(std::ostream& str) const { this->AstNode::dumpJson(str); }
+
+void AstCoverCross::dump(std::ostream& str) const { this->AstNodeFuncCovItem::dump(str); }
+
+void AstCoverCross::dumpJson(std::ostream& str) const { this->AstNodeFuncCovItem::dumpJson(str); }
+
+void AstCoverCrossBins::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " " << m_name;
+}
+
+void AstCoverCrossBins::dumpJson(std::ostream& str) const {
+    this->AstNode::dumpJson(str);
+    str << ", \"name\": " << VString::quotePercent(m_name);
+}
+
+void AstCoverOption::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " " << m_type.ascii();
+}
+
+void AstCoverOption::dumpJson(std::ostream& str) const {
+    this->AstNode::dumpJson(str);
+    str << ", \"optionType\": \"" << m_type.ascii() << "\"";
+}
+
+void AstCoverpointRef::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " " << m_name;
+}
+
+void AstCoverpointRef::dumpJson(std::ostream& str) const {
+    this->AstNode::dumpJson(str);
+    str << ", \"name\": " << VString::quotePercent(m_name);
+}
+
+void AstCoverSelectExpr::dump(std::ostream& str) const { this->AstNode::dump(str); }
+
+void AstCoverSelectExpr::dumpJson(std::ostream& str) const { this->AstNode::dumpJson(str); }

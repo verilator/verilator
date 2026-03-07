@@ -38,6 +38,7 @@
 #include "V3Control.h"
 #include "V3Coverage.h"
 #include "V3CoverageJoin.h"
+#include "V3Covergroup.h"
 #include "V3Dead.h"
 #include "V3Delayed.h"
 #include "V3Depth.h"
@@ -156,7 +157,10 @@ static void process() {
         }
 
         // Convert parseref's to varrefs, and other directly post parsing fixups
+        // Note: must run before removeStd() as it may create std:: references (e.g. covergroups)
         V3LinkParse::linkParse(v3Global.rootp());
+        // Remove std package if unused (must be after V3LinkParse which may set usesStdPackage)
+        v3Global.removeStd();
         // Cross-link signal names
         // Cross-link dotted hierarchical references
         V3LinkDot::linkDotPrimary(v3Global.rootp());
@@ -229,6 +233,10 @@ static void process() {
         // Coverage insertion
         //    Before we do dead code elimination and inlining, or we'll lose it.
         if (v3Global.opt.coverage()) V3Coverage::coverage(v3Global.rootp());
+
+        // Functional coverage code generation
+        //    Generate code for covergroups/coverpoints
+        if (v3Global.useCovergroup()) V3Covergroup::covergroup(v3Global.rootp());
 
         // Resolve randsequence if they are used by the design
         if (v3Global.useRandSequence()) V3RandSequence::randSequenceNetlist(v3Global.rootp());
@@ -737,7 +745,6 @@ static bool verilate(const string& argString) {
 
     // Read first filename
     v3Global.readFiles();
-    v3Global.removeStd();
 
     // Link, etc, if needed
     if (!v3Global.opt.preprocOnly()) {  //
