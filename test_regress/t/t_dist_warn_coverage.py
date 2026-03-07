@@ -138,7 +138,6 @@ for s in [
         'Unsupported: Per-bit array instantiations',
         'Unsupported: Public functions with >64 bit outputs;',
         'Unsupported: Public functions with return > 64 bits wide.',
-
         'Unsupported: Release statement argument is too complex array select',
         'Unsupported: Replication to form',
         'Unsupported: Shifting of by over 32-bit number isn\'t supported.',
@@ -169,7 +168,6 @@ for s in [
         'loading other than unpacked-array variable',
         'loading other than unpacked/associative-array variable',
         # These are safety limits requiring >1000 bins or >10000 members to trigger
-
 ]:
     Suppressed[s] = True
 
