@@ -4,6 +4,11 @@
 // any use, without warranty, 2024 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 // Test automatic bin creation when coverpoint has no explicit bins
 
 module t(/*AUTOARG*/
@@ -94,26 +99,11 @@ module t(/*AUTOARG*/
     $display("CG5 (2 autobins w/ option): %0.1f%%", cg5_inst.get_inst_coverage());
 
     // Validate coverage results
-    if (cg1_inst.get_inst_coverage() < 30.0 || cg1_inst.get_inst_coverage() > 45.0) begin
-      $display("FAIL: CG1 coverage out of range");
-      $stop;
-    end
-    if (cg2_inst.get_inst_coverage() < 45.0 || cg2_inst.get_inst_coverage() > 55.0) begin
-      $display("FAIL: CG2 coverage should be 50%% (2/4 bins with auto_bin_max=4)");
-      $stop;
-    end
-    if (cg3_inst.get_inst_coverage() < 27.0 || cg3_inst.get_inst_coverage() > 30.0) begin
-      $display("FAIL: CG3 coverage should be ~28.6%% (2/7 valid bins, value 7 ignored)");
-      $stop;
-    end
-    if (cg4_inst.get_inst_coverage() < 95.0) begin
-      $display("FAIL: CG4 coverage should be 100%%");
-      $stop;
-    end
-    if (cg5_inst.get_inst_coverage() < 99.0) begin
-      $display("FAIL: CG5 coverage should be 100%% (2/2 bins with auto_bin_max=2)");
-      $stop;
-    end
+    `checkr(cg1_inst.get_inst_coverage(), 37.5);
+    `checkr(cg2_inst.get_inst_coverage(), 50.0);
+    `checkr(cg3_inst.get_inst_coverage(), 100.0 * (2.0/7.0));
+    `checkr(cg4_inst.get_inst_coverage(), 100.0);
+    `checkr(cg5_inst.get_inst_coverage(), 100.0);
 
     $write("*-* All Finished *-*\n");
     $finish;

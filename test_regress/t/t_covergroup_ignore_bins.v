@@ -6,6 +6,11 @@
 
 // Test ignore_bins - excluded from coverage
 
+// verilog_format: off
+`define stop $stop
+`define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 module t (/*AUTOARG*/);
   /* verilator lint_off UNSIGNED */
   logic [3:0] data;
@@ -25,39 +30,30 @@ module t (/*AUTOARG*/);
     cg_inst = new;
 
     // Initially 0% (0 of 3 regular bins)
-    check_coverage(0.0, "initial");
+    `checkr(cg_inst.get_inst_coverage(), 0.0);
 
     // Hit reserved bin - should still be 0%
     data = 13;
     cg_inst.sample();
-    check_coverage(0.0, "after reserved");
+    `checkr(cg_inst.get_inst_coverage(), 0.0);
 
     // Hit low bin - now 33.33% (1 of 3)
     data = 1;
     cg_inst.sample();
-    check_coverage(33.33, "after low");
+    `checkr(cg_inst.get_inst_coverage(), 100.0 * (1.0/3.0));
 
     // Hit another reserved value - still 33.33%
     data = 15;
     cg_inst.sample();
-    check_coverage(33.33, "after another reserved");
+    `checkr(cg_inst.get_inst_coverage(), 100.0 * (1.0/3.0));
 
     // Complete regular bins
     data = 5; cg_inst.sample();  // mid
     data = 10; cg_inst.sample(); // high
-    check_coverage(100.0, "complete");
+    `checkr(cg_inst.get_inst_coverage(), 100.0);
 
     $write("*-* All Finished *-*\n");
     $finish;
   end
 
-  task check_coverage(real expected, string label);
-    real cov;
-    cov = cg_inst.get_inst_coverage();
-    $display("Coverage %s: %0.2f%% (expected ~%0.2f%%)", label, cov, expected);
-    if (cov < expected - 0.5 || cov > expected + 0.5) begin
-      $error("Coverage mismatch: got %0.2f%%, expected ~%0.2f%%", cov, expected);
-      $stop;
-    end
-  endtask
 endmodule
