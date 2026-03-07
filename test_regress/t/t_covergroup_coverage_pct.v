@@ -4,6 +4,11 @@
 // any use, without warranty, 2024 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 module t (/*AUTOARG*/
   // Inputs
   clk
@@ -29,7 +34,7 @@ module t (/*AUTOARG*/
     real cov;
     cov = cg_inst.get_inst_coverage();
     $display("Coverage after 0 samples: %f", cov);
-    if (cov != 0.0) $stop;
+    `checkr(cov, 0.0);
 
     // Cover 1 bin (low) - should be 25%
     @(posedge clk);
@@ -37,10 +42,7 @@ module t (/*AUTOARG*/
     @(posedge clk);
     cov = cg_inst.get_inst_coverage();
     $display("Coverage after 1/4 bins: %f", cov);
-    if (cov < 24.9 || cov > 25.1) begin
-      $display("%%Error: Expected 25%%, got %f", cov);
-      $stop;
-    end
+    `checkr(cov, 25.0);
 
     // Cover 2nd bin (mid1) - should be 50%
     @(posedge clk);
@@ -48,10 +50,7 @@ module t (/*AUTOARG*/
     @(posedge clk);
     cov = cg_inst.get_inst_coverage();
     $display("Coverage after 2/4 bins: %f", cov);
-    if (cov < 49.9 || cov > 50.1) begin
-      $display("%%Error: Expected 50%%, got %f", cov);
-      $stop;
-    end
+    `checkr(cov, 50.0);
 
     // Cover 3rd bin (mid2) - should be 75%
     @(posedge clk);
@@ -59,10 +58,7 @@ module t (/*AUTOARG*/
     @(posedge clk);
     cov = cg_inst.get_inst_coverage();
     $display("Coverage after 3/4 bins: %f", cov);
-    if (cov < 74.9 || cov > 75.1) begin
-      $display("%%Error: Expected 75%%, got %f", cov);
-      $stop;
-    end
+    `checkr(cov, 75.0);
 
     // Cover 4th bin (high) - should be 100%
     @(posedge clk);
@@ -70,10 +66,7 @@ module t (/*AUTOARG*/
     @(posedge clk);
     cov = cg_inst.get_inst_coverage();
     $display("Coverage after 4/4 bins: %f", cov);
-    if (cov < 99.9 || cov > 100.1) begin
-      $display("%%Error: Expected 100%%, got %f", cov);
-      $stop;
-    end
+    `checkr(cov, 100.0);
 
     $write("*-* All Finished *-*\n");
     $finish;
