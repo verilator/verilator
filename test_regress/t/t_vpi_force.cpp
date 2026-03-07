@@ -11,8 +11,6 @@
 // returns it to the initial state.
 
 #include "verilated.h"  // For VL_PRINTF
-#include "verilated_sym_props.h"  // For VerilatedVar
-#include "verilated_syms.h"  // For VerilatedVarNameMap
 #include "verilated_vpi.h"  // For VerilatedVpi::doInertialPuts();
 
 #include "TestSimulator.h"  // For is_verilator()
@@ -170,105 +168,7 @@ std::pair<const std::string, const bool> vpiGetErrorMessage() {
     return {errorOccured ? errorInfo.message : std::string{}, errorOccured};
 }
 
-#ifdef VERILATOR  // m_varsp is Verilator-specific and does not make sense for other simulators
-std::unique_ptr<const VerilatedVar> removeSignalFromScope(const std::string& scopeName,
-                                                          const std::string& signalName) {
-    const VerilatedScope* const scopep = Verilated::threadContextp()->scopeFind(scopeName.c_str());
-    if (!scopep) return nullptr;
-    VerilatedVarNameMap* const varsp = scopep->varsp();
-    const VerilatedVarNameMap::const_iterator foundSignalIt = varsp->find(signalName.c_str());
-    if (foundSignalIt == varsp->end()) return nullptr;
-    VerilatedVar foundSignal = foundSignalIt->second;
-    varsp->erase(foundSignalIt);
-    return std::make_unique<const VerilatedVar>(foundSignal);
-}
-
-bool insertSignalIntoScope(const std::pair<std::string, std::string>& scopeAndSignalNames,
-                           const std::unique_ptr<const VerilatedVar> signal) {
-    const std::string& scopeName = scopeAndSignalNames.first;
-    const std::string& signalName = scopeAndSignalNames.second;
-
-    const VerilatedScope* const scopep = Verilated::threadContextp()->scopeFind(scopeName.c_str());
-    if (!scopep) return false;
-    VerilatedVarNameMap* const varsp = scopep->varsp();
-
-    // NOTE: The lifetime of the name inserted into varsp must be the same as the scopep, i.e. the
-    // same as threadContextp. Otherwise, the key in the m_varsp map will be a stale pointer.
-    // Hence, names of signals being inserted are stored in the static set, and it is assumed that
-    // the set's lifetime is the same as the threadContextp.
-    static std::set<std::string> insertedSignalNames;
-    const auto insertedSignalName = insertedSignalNames.insert(signalName);
-
-    varsp->insert(
-        std::pair<const char*, VerilatedVar>{insertedSignalName.first->c_str(), *signal});
-    return true;
-}
-
-int tryVpiGetWithMissingSignal(const TestVpiHandle& signalToGet,  // NOLINT(misc-misplaced-const)
-                               const PLI_INT32 signalFormat,
-                               const std::pair<std::string, std::string>& scopeAndSignalNames,
-                               const std::string& expectedErrorMessage) {
-    const std::string& scopeName = scopeAndSignalNames.first;
-    const std::string& signalNameToRemove = scopeAndSignalNames.second;
-    std::unique_ptr<const VerilatedVar> removedSignal
-        = removeSignalFromScope(scopeName, signalNameToRemove);
-    CHECK_RESULT_NZ(removedSignal);  // NOLINT(concurrency-mt-unsafe)
-
-    s_vpi_value value_s{.format = signalFormat, .value = {}};
-
-    // Prevent program from terminating, so error message can be collected
-    Verilated::fatalOnVpiError(false);
-    vpi_get_value(signalToGet, &value_s);
-    // Re-enable so tests that should pass properly terminate the simulation on failure
-    Verilated::fatalOnVpiError(true);
-
-    std::pair<const std::string, const bool> receivedError = vpiGetErrorMessage();
-    const bool errorOccurred = receivedError.second;
-    const std::string receivedErrorMessage = receivedError.first;
-    CHECK_RESULT_NZ(errorOccurred);  // NOLINT(concurrency-mt-unsafe)
-
-    // NOLINTNEXTLINE(concurrency-mt-unsafe,performance-avoid-endl)
-    CHECK_RESULT(receivedErrorMessage, expectedErrorMessage);
-    bool insertSuccess
-        = insertSignalIntoScope({scopeName, signalNameToRemove}, std::move(removedSignal));
-    CHECK_RESULT_NZ(insertSuccess);  // NOLINT(concurrency-mt-unsafe)
-    return 0;
-}
-
-int tryVpiPutWithMissingSignal(const s_vpi_value value_s,
-                               const TestVpiHandle& signalToPut,  // NOLINT(misc-misplaced-const)
-                               const int flag, const std::string& scopeName,
-                               const std::string& signalNameToRemove,
-                               const std::vector<std::string>& expectedErrorMessageSubstrings) {
-    std::unique_ptr<const VerilatedVar> removedSignal
-        = removeSignalFromScope(scopeName, signalNameToRemove);
-    CHECK_RESULT_NZ(removedSignal);  // NOLINT(concurrency-mt-unsafe)
-
-    // Prevent program from terminating, so error message can be collected
-    Verilated::fatalOnVpiError(false);
-    vpi_put_value(signalToPut, const_cast<p_vpi_value>(&value_s), nullptr, flag);
-    // Re-enable so tests that should pass properly terminate the simulation on failure
-    Verilated::fatalOnVpiError(true);
-
-    std::pair<const std::string, const bool> receivedError = vpiGetErrorMessage();
-    const bool errorOccurred = receivedError.second;
-    const std::string receivedErrorMessage = receivedError.first;
-    CHECK_RESULT_NZ(errorOccurred);  // NOLINT(concurrency-mt-unsafe)
-
-    const bool allExpectedErrorSubstringsFound
-        = std::all_of(expectedErrorMessageSubstrings.begin(), expectedErrorMessageSubstrings.end(),
-                      [receivedErrorMessage](const std::string& expectedSubstring) {
-                          return receivedErrorMessage.find(expectedSubstring) != std::string::npos;
-                      });
-    CHECK_RESULT_NZ(allExpectedErrorSubstringsFound);  // NOLINT(concurrency-mt-unsafe)
-    bool insertSuccess
-        = insertSignalIntoScope({scopeName, signalNameToRemove}, std::move(removedSignal));
-    CHECK_RESULT_NZ(insertSuccess);  // NOLINT(concurrency-mt-unsafe)
-    return 0;
-}
-
-// Simpler function that expects an exact string instead of a number of substrings, and just a
-// signalName instead of a handle.
+#ifdef VERILATOR
 int expectVpiPutError(const std::string& signalName, s_vpi_value value_s, const int flag,
                       const std::string& expectedErrorMessage) {
     const std::string fullSignalName = std::string{scopeName} + "." + signalName;
@@ -358,31 +258,6 @@ int checkValue(const std::string& scopeName, const std::string& testSignalName,
         = vpi_handle_by_name(const_cast<PLI_BYTE8*>(testSignalFullName.c_str()), nullptr);
     CHECK_RESULT_NZ(signalHandle);  // NOLINT(concurrency-mt-unsafe)
 
-#ifdef VERILATOR
-    // NOLINTNEXTLINE(concurrency-mt-unsafe)
-    CHECK_RESULT_Z(tryVpiGetWithMissingSignal(
-        signalHandle, signalFormat, {scopeName, testSignalName + "__VforceEn"},
-        "vl_vpi_get_value: Signal '" + testSignalFullName
-            + "' is marked forceable, but force control signals could not be retrieved. Error "
-              "message: getForceControlSignals: VPI force or release requested for '"
-            + testSignalFullName + "', but vpiHandle '(nil)' of enable signal '"
-            + testSignalFullName
-            + "__VforceEn' could not be cast to VerilatedVpioVar*. Ensure signal is marked as "
-              "forceable"));
-
-    // NOLINTNEXTLINE(concurrency-mt-unsafe)
-    CHECK_RESULT_Z(tryVpiGetWithMissingSignal(
-        signalHandle, signalFormat, {scopeName, testSignalName + "__VforceVal"},
-        "vl_vpi_get_value: Signal '" + testSignalFullName
-            + "' is marked forceable, but force control signals could not be retrieved. Error "
-              "message: getForceControlSignals: VPI force or release requested for '"
-            + testSignalFullName + "', but vpiHandle '(nil)' of value signal '"
-            + testSignalFullName
-            + "__VforceVal' could not be cast to VerilatedVpioVar*. Ensure signal is marked "
-              "as "
-              "forceable"));
-#endif
-
     std::unique_ptr<s_vpi_value> receivedValueSp = vpiValueWithFormat(signalFormat, {});
     CHECK_RESULT_NZ(receivedValueSp);  // NOLINT(concurrency-mt-unsafe)
     vpi_get_value(signalHandle, receivedValueSp.get());
@@ -411,34 +286,6 @@ int forceSignal(const std::string& scopeName, const std::string& testSignalName,
     std::unique_ptr<s_vpi_value> value_sp = vpiValueWithFormat(signalFormat, forceValue);
     CHECK_RESULT_NZ(value_sp);  // NOLINT(concurrency-mt-unsafe)
 
-#ifdef VERILATOR
-    // NOLINTNEXTLINE(concurrency-mt-unsafe)
-    CHECK_RESULT_Z(tryVpiPutWithMissingSignal(
-        *value_sp, signalHandle, vpiForceFlag, scopeName, testSignalName + "__VforceEn",
-        {"vpi_put_value: Signal '" + testSignalFullName + "' with vpiHandle ",
-         // Exact handle address does not matter
-         " is marked forceable, but force control signals could not be retrieved. Error "
-         "message: getForceControlSignals: VPI force or release requested for '"
-             + testSignalFullName + "', but vpiHandle '(nil)' of enable signal '"
-             + testSignalFullName
-             + "__VforceEn' could not be cast to VerilatedVpioVar*. Ensure signal is marked "
-               "as "
-               "forceable"}));
-
-    // NOLINTNEXTLINE(concurrency-mt-unsafe)
-    CHECK_RESULT_Z(tryVpiPutWithMissingSignal(
-        *value_sp, signalHandle, vpiForceFlag, scopeName, testSignalName + "__VforceVal",
-        {"vpi_put_value: Signal '" + testSignalFullName + "' with vpiHandle ",
-         // Exact handle address does not matter
-         " is marked forceable, but force control signals could not be retrieved. Error "
-         "message: getForceControlSignals: VPI force or release requested for '"
-             + testSignalFullName + "', but vpiHandle '(nil)' of value signal '"
-             + testSignalFullName
-             + "__VforceVal' could not be cast to VerilatedVpioVar*. Ensure signal is marked "
-               "as "
-               "forceable"}));
-#endif
-
     vpi_put_value(signalHandle, value_sp.get(), nullptr, vpiForceFlag);
 
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
@@ -464,34 +311,6 @@ int releaseSignal(const std::string& scopeName, const std::string& testSignalNam
     std::unique_ptr<s_vpi_value> value_sp
         = vpiValueWithFormat(signalFormat, expectedReleaseValueInit);
     CHECK_RESULT_NZ(value_sp);  //NOLINT(concurrency-mt-unsafe)
-
-#ifdef VERILATOR
-    // NOLINTNEXTLINE(concurrency-mt-unsafe)
-    CHECK_RESULT_Z(tryVpiPutWithMissingSignal(
-        *value_sp, signalHandle, vpiReleaseFlag, scopeName, testSignalName + "__VforceEn",
-        {"vpi_put_value: Signal '" + testSignalFullName + "' with vpiHandle ",
-         // Exact handle address does not matter
-         " is marked forceable, but force control signals could not be retrieved. Error "
-         "message: getForceControlSignals: VPI force or release requested for '"
-             + testSignalFullName + "', but vpiHandle '(nil)' of enable signal '"
-             + testSignalFullName
-             + "__VforceEn' could not be cast to VerilatedVpioVar*. Ensure signal is marked "
-               "as "
-               "forceable"}));
-
-    // NOLINTNEXTLINE(concurrency-mt-unsafe)
-    CHECK_RESULT_Z(tryVpiPutWithMissingSignal(
-        *value_sp, signalHandle, vpiReleaseFlag, scopeName, testSignalName + "__VforceVal",
-        {"vpi_put_value: Signal '" + testSignalFullName + "' with vpiHandle ",
-         // Exact handle address does not matter
-         " is marked forceable, but force control signals could not be retrieved. Error "
-         "message: getForceControlSignals: VPI force or release requested for '"
-             + testSignalFullName + "', but vpiHandle '(nil)' of value signal '"
-             + testSignalFullName
-             + "__VforceVal' could not be cast to VerilatedVpioVar*. Ensure signal is marked "
-               "as "
-               "forceable"}));
-#endif
 
     vpi_put_value(signalHandle, value_sp.get(), nullptr, vpiReleaseFlag);
 

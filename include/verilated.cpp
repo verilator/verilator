@@ -50,7 +50,10 @@
 #include "verilated_config.h"
 #include "verilatedos.h"
 
+#include "verilated.h"
+
 #include "verilated_imp.h"
+#include "verilated_sym_props.h"
 
 #include <algorithm>
 #include <cctype>
@@ -59,6 +62,7 @@
 #include <iostream>
 #include <limits>
 #include <list>
+#include <memory>
 #include <sstream>
 #include <utility>
 
@@ -3590,9 +3594,9 @@ void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) VL_
     }
 }
 
-void VerilatedScope::varInsert(const char* namep, void* datap, bool isParam,
-                               VerilatedVarType vltype, int vlflags, int udims,
-                               int pdims...) VL_MT_UNSAFE {
+VerilatedVar* VerilatedScope::varInsert(const char* namep, void* datap, bool isParam,
+                                        VerilatedVarType vltype, int vlflags, int udims,
+                                        int pdims...) VL_MT_UNSAFE {
     // Grab dimensions
     // In the future we may just create a large table at emit time and
     // statically construct from that.
@@ -3617,7 +3621,39 @@ void VerilatedScope::varInsert(const char* namep, void* datap, bool isParam,
     }
     va_end(ap);
 
-    m_varsp->emplace(namep, var);
+    m_varsp->emplace(namep, std::move(var));
+    return &(m_varsp->find(namep)->second);
+}
+
+VerilatedVar*
+VerilatedScope::forceableVarInsert(const char* namep, void* datap, bool isParam,
+                                   VerilatedVarType vltype, int vlflags,
+                                   std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals,
+                                   int udims, int pdims...) VL_MT_UNSAFE {
+    if (!m_varsp) m_varsp = new VerilatedVarNameMap;
+
+    std::unique_ptr<VerilatedForceControlSignals> verilatedForceControlSignalsp
+        = std::make_unique<VerilatedForceControlSignals>(
+            VerilatedForceControlSignals{forceControlSignals.first, forceControlSignals.second});
+
+    VerilatedVar var(namep, datap, vltype, static_cast<VerilatedVarFlags>(vlflags), udims, pdims,
+                     isParam, std::move(verilatedForceControlSignalsp));
+    verilatedForceControlSignalsp = nullptr;
+
+    va_list ap;
+    va_start(ap, pdims);
+    assert(udims == 0);  // Forcing unpacked arrays is unsupported (#4735) and should have been
+                         // checked in V3Force already.
+    for (int i = 0; i < pdims; ++i) {
+        const int msb = va_arg(ap, int);
+        const int lsb = va_arg(ap, int);
+        var.m_packed[i].m_left = msb;
+        var.m_packed[i].m_right = lsb;
+    }
+    va_end(ap);
+
+    m_varsp->emplace(namep, std::move(var));
+    return &(m_varsp->find(namep)->second);
 }
 
 // cppcheck-suppress unusedFunction  // Used by applications
