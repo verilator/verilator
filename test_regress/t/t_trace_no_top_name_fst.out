@@ -1,0 +1,20 @@
+$date
+	Thu Mar 12 09:19:45 2026
+
+$end
+$version
+	fstWriter
+$end
+$timescale
+	1ps
+$end
+$scope module another_top $end
+$var wire 1 ! b $end
+$upscope $end
+$scope module t $end
+$var wire 1 ! a $end
+$upscope $end
+$enddefinitions $end
+#0
+$dumpvars
+0!

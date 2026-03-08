@@ -7,7 +7,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 #include <verilated.h>
-#include <verilated_vcd_c.h>
+#include VL_STRINGIFY(TRACE_HEADER_C)
 
 #include <memory>
 
@@ -22,7 +22,8 @@ double sc_time_stamp() { return (double)main_time; }
 
 const char* trace_name() {
     static char name[1000];
-    VL_SNPRINTF(name, 1000, VL_STRINGIFY(TEST_OBJ_DIR) "/simpart_%04d.vcd", (int)main_time);
+    VL_SNPRINTF(name, 1000, VL_STRINGIFY(TEST_OBJ_DIR) "/simx_part_%04d." VL_STRINGIFY(TRACE_FMT),
+                (int)main_time);
     return name;
 }
 
@@ -33,7 +34,7 @@ int main(int argc, char** argv) {
 
     std::unique_ptr<VM_PREFIX> top{new VM_PREFIX{"top"}};
 
-    std::unique_ptr<VerilatedVcdC> tfp{new VerilatedVcdC};
+    std::unique_ptr<VERILATED_TRACE_C> tfp{new VERILATED_TRACE_C};
     top->trace(tfp.get(), 99);
 
     // Test for traceCapable - randomly-ish selected this test
@@ -48,14 +49,14 @@ int main(int argc, char** argv) {
         top->eval();
 
         if ((main_time % 100) == 0) {
-#if defined(T_TRACE_CAT)
+#if defined(TRACE_OPENNEXT)
             tfp->openNext(true);
-#elif defined(T_TRACE_CAT_REOPEN)
+#elif defined(TRACE_REOPEN)
             tfp->close();
             tfp->open(trace_name());
-#elif defined(T_TRACE_CAT_RENEW)
+#elif defined(TRACE_RENEW)
             tfp->close();
-            tfp.reset(new VerilatedVcdC);
+            tfp.reset(new VERILATED_TRACE_C);
             top->trace(tfp.get(), 99);
             tfp->open(trace_name());
 #else

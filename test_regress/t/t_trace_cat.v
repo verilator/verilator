@@ -10,6 +10,8 @@ module t (
 
   integer cyc;
   initial cyc = 0;
+  integer unchanged;
+  initial unchanged = 42;
 
   always @(posedge clk) begin
     cyc <= cyc + 1;

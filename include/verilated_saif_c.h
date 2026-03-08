@@ -51,6 +51,7 @@ private:
 
     int m_filep = 0;  // File we're writing to
     bool m_isOpen = false;  // True indicates open file
+    uint64_t m_startTime = 0;  // Time file was opened
     std::string m_filename;  // Filename we're writing to (if open)
     std::string m_buffer;  // Write data buffer
 

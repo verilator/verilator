@@ -1697,6 +1697,13 @@ class VlTest:
             self._ok = False
         return self._ok
 
+    def parse_name(self, regex: str):
+        basename = os.path.basename(test.py_filename)
+        match = re.match(regex, basename.partition(".")[0])
+        if match is None:
+            test.error(f"Invalid test file name '{basename}")
+        return match.groups()
+
     def passes(self, is_ok=True):
         if not self.errors:
             self._ok = is_ok
@@ -2561,6 +2568,17 @@ class VlTest:
             print(out)
             self.copy_if_golden(fn1, fn2)
             self.error("SAIF files miscompare")
+
+    def trace_identical(self, traceFn: str, goldenFn: str, ignore_attr: bool = False) -> None:
+        match traceFn.rpartition(".")[-1]:
+            case "vcd":
+                self.vcd_identical(traceFn, goldenFn, ignore_attr)
+            case "fst":
+                self.fst_identical(traceFn, goldenFn, ignore_attr)
+            case "saif":
+                self.saif_identical(traceFn, goldenFn)
+            case _:
+                self.error("Unknown trace file format " + traceFn)
 
     def _vcd_read(self, filename: str) -> dict:
         data = {}
