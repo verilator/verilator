@@ -1293,8 +1293,10 @@ class ParamProcessor final {
                 if (resolvedp && (VN_IS(resolvedp, StructDType) || VN_IS(resolvedp, UnionDType))) {
                     AstNodeModule* const ownerModp
                         = V3LinkDotIfaceCapture::findOwnerModule(resolvedp);
-                    // Skip if owned by a parameterized template (not yet specialized)
-                    if (ownerModp && ownerModp->parameterizedTemplate()) {
+                    // Skip if owned by a parameterized interface (template or not
+                    // yet cloned).  hasGParam() covers interfaces that haven't
+                    // been cloned yet (parameterizedTemplate() not set).
+                    if (ownerModp && VN_IS(ownerModp, Iface) && ownerModp->hasGParam()) {
                         skipWidthForTemplateStruct = true;
                         V3Stats::addStatSum("Param, Template struct width skips", 1);
                         UINFO(9, "SKIP-WIDTH-TEMPLATE: struct="
@@ -1931,7 +1933,11 @@ public:
     // STATE - across all visitors
     std::vector<AstClass*> m_paramClasses;  // Parameterized classes
     std::vector<AstDot*> m_dots;  // Dot references to process
-    std::multimap<int, AstNodeModule*> m_workQueueNext;  // Modules left to process
+    // Work queue keyed by (!isIface, level) so interfaces are always processed
+    // before non-interfaces.  This ensures interface clones have their types
+    // properly widthed before any module that references those types.
+    using WQKey = std::pair<bool, int>;
+    std::multimap<WQKey, AstNodeModule*> m_workQueueNext;  // Modules left to process
     // Map from AstNodeModule to set of all AstNodeModules that instantiates it.
     std::unordered_map<AstNodeModule*, std::unordered_set<AstNodeModule*>> m_parentps;
 };
@@ -1966,7 +1972,7 @@ class ParamVisitor final : public VNVisitor {
 
     void processWorkQ() {
         UASSERT(!m_iterateModule, "Should not nest");
-        std::multimap<int, AstNodeModule*> workQueue;
+        std::multimap<ParamState::WQKey, AstNodeModule*> workQueue;
         m_generateHierName = "";
         m_iterateModule = true;
 
@@ -2041,10 +2047,22 @@ class ParamVisitor final : public VNVisitor {
 
                     if (VN_IS(srcModp, Iface)) {
                         logTemplateLeakRefs(modp, srcModp, "after queued nodeDeparam", cellp);
+                        // After the interface cell is rewired to its clone,
+                        // retarget REFDTYPEs in the parent module that still
+                        // reference the template interface's types.
+                        if (V3LinkDotIfaceCapture::enabled()) {
+                            if (const AstCell* const modCellp = VN_CAST(cellp, Cell)) {
+                                if (newModp != srcModp) {
+                                    m_processor.retargetIfaceRefs(modp, modCellp->name());
+                                }
+                            }
+                        }
                     }
 
                     // Add the (now potentially specialized) child module to the work queue
-                    workQueue.emplace(newModp->level(), newModp);
+                    workQueue.emplace(
+                        ParamState::WQKey{!VN_IS(newModp, Iface), newModp->level()},
+                        newModp);
 
                     // Add to the hierarchy registry
                     m_state.m_parentps[newModp].insert(modp);
@@ -2269,7 +2287,8 @@ class ParamVisitor final : public VNVisitor {
             UINFO(4, " MOD-under-MOD.  " << nodep);
             // Delay until current module is done.
             // processWorkQ() (which we are returning to) will process nodep later
-            m_state.m_workQueueNext.emplace(nodep->level(), nodep);
+            m_state.m_workQueueNext.emplace(
+                ParamState::WQKey{!VN_IS(nodep, Iface), nodep->level()}, nodep);
             return;
         }
 
@@ -2277,7 +2296,8 @@ class ParamVisitor final : public VNVisitor {
         if (nodep->isTop()  // Tops
             || VN_IS(nodep, Class)  //  Moved classes
             || VN_IS(nodep, Package)) {  // Likewise haven't done wrapTopPackages yet
-            m_state.m_workQueueNext.emplace(nodep->level(), nodep);
+            m_state.m_workQueueNext.emplace(
+                ParamState::WQKey{!VN_IS(nodep, Iface), nodep->level()}, nodep);
             processWorkQ();
         }
     }
