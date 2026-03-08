@@ -94,6 +94,12 @@ extern "C" int mon_check();
    logic [31:0] some_mem [4] = {0, 0, 0, 432};
 /*verilator public_off*/
 
+   generate
+     for (genvar i = 0; i < 1; i++) begin : gen
+       wire [7:0] gen_sig /*verilator public_flat_rw*/ = 8'hAB;
+     end
+   endgenerate
+
    sub sub();
 
    // Test loop
