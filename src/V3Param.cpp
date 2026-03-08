@@ -869,6 +869,7 @@ class ParamProcessor final {
                                           << (correctModp ? correctModp->name() : "<null>")
                                           << endl);
                 if (!correctModp || correctModp->dead()) return;
+                if (correctModp->parameterizedTemplate()) return;
 
                 bool fixed = false;
                 if (refp->typedefp()) {
@@ -1776,6 +1777,41 @@ class ParamProcessor final {
     }
 
 public:
+    // After an interface cell inside parentModp has been deparameterized
+    // (rewired from template to clone), retarget REFDTYPEs that still
+    // reference the old template's types.  cellName is the cell instance
+    // name (== cellPath in the ledger).
+    void retargetIfaceRefs(AstNodeModule* parentModp, const string& cellName) {
+        const string ownerName = parentModp->origName();
+        V3LinkDotIfaceCapture::forEach([&](const V3LinkDotIfaceCapture::CapturedEntry& entry) {
+            if (!entry.refp) return;
+            if (entry.cloneCellPath.empty()) return;  // Only fix clone entries
+            if (entry.cellPath != cellName) return;
+            if (!entry.ownerModp || entry.ownerModp->name() != ownerName) return;
+
+            AstRefDType* const refp = entry.refp;
+            AstNodeModule* const correctModp
+                = V3LinkDotIfaceCapture::followCellPath(parentModp, entry.cellPath);
+            UINFO(9, "retargetIfaceRefs: " << refp << " cellPath='" << entry.cellPath << "' -> "
+                                           << (correctModp ? correctModp->name() : "<null>")
+                                           << endl);
+            if (!correctModp || correctModp->dead() || correctModp->parameterizedTemplate()) return;
+
+            if (refp->typedefp()) {
+                if (AstTypedef* const newTdp = V3LinkDotIfaceCapture::findTypedefInModule(
+                        correctModp, refp->typedefp()->name())) {
+                    refp->typedefp(newTdp);
+                }
+            }
+            if (refp->refDTypep()) {
+                if (AstNodeDType* const newDtp = V3LinkDotIfaceCapture::findDTypeInModule(
+                        correctModp, refp->refDTypep()->name(), refp->refDTypep()->type())) {
+                    refp->refDTypep(newDtp);
+                }
+            }
+        });
+    }
+
     AstNodeModule* nodeDeparam(AstNode* nodep, AstNodeModule* srcModp, AstNodeModule* modp,
                                const string& someInstanceName) {
         // Return new or reused de-parameterized module
@@ -2194,6 +2230,14 @@ class ParamVisitor final : public VNVisitor {
                 // destructively widthing the template with default (zero)
                 // values. See t_interface_nested_struct_param.v.
                 m_processor.nodeDeparam(cellp, srcModp, m_modp, m_modp->someInstanceName());
+                // After the interface cell is rewired to its clone,
+                // retarget REFDTYPEs in the parent module that still
+                // reference the template interface's types.  This ensures
+                // $bits(iface_typedef) evaluates correctly when
+                // widthParamsEdit runs on subsequent lparams.
+                if (V3LinkDotIfaceCapture::enabled() && cellp->modp() != srcModp) {
+                    m_processor.retargetIfaceRefs(m_modp, cellp->name());
+                }
             }
         }
 
