@@ -12,8 +12,8 @@ class C;
 endclass
 
 module t;
-   C c;
-   initial begin
-      c = Pkg::new;  // Bad
-   end
+  C c;
+  initial begin
+    c = Pkg::new;  // Bad
+  end
 endmodule

@@ -6,29 +6,30 @@
 
 module t;
 
-   initial begin
-      // Label checks
-      begin : b1
-      end : b1
-      //
-      b2 : begin
-      end : b2
-      // With no statements this is a NOP
-      fork : f1
-      join : f1
-      //
-      f2: fork
-      join_any : f2
-      //
-      fork
-      join_none
-      // With one statement this is supported and optimized to a begin/end
-      fork : fblk
-         begin
-            $write("*-* All Finished *-*\n");
-            $finish;
-         end
-      join : fblk
-   end
+  initial begin
+    // Label checks
+    begin : b1
+    end : b1
+    //
+    b2 : begin
+    end : b2
+    // With no statements this is a NOP
+    fork : f1
+    join : f1
+    //
+    f2 :
+    fork
+    join_any : f2
+    //
+    fork
+    join_none
+    // With one statement this is supported and optimized to a begin/end
+    fork : fblk
+      begin
+        $write("*-* All Finished *-*\n");
+        $finish;
+      end
+    join : fblk
+  end
 
 endmodule

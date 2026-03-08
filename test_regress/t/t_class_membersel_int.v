@@ -5,20 +5,20 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Cls;
-   int t;
+  int t;
 endclass
 
 module Sub;
-   Cls c;
-   initial begin
-      int i;
-      c = new;
-      i = c.t;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  Cls c;
+  initial begin
+    int i;
+    c = new;
+    i = c.t;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule
 
 module t;
-   Sub foo();
+  Sub foo ();
 endmodule

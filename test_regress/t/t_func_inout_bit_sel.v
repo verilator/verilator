@@ -4,28 +4,30 @@
 // SPDX-FileCopyrightText: 2023 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 class Cls;
-   function bit get_x_set_1(inout bit x);
-      bit a = x;
-      x = 1;
-      return a;
-   endfunction
+  function bit get_x_set_1(inout bit x);
+    bit a = x;
+    x = 1;
+    return a;
+  endfunction
 endclass
 
 module t;
-   int a;
-   bit b;
-   Cls cls;
-   initial begin
-      cls = new;
-      b = cls.get_x_set_1(a[1]);
-      `checkh(b, 0);
-      `checkh(a[1], 1);
+  int a;
+  bit b;
+  Cls cls;
+  initial begin
+    cls = new;
+    b = cls.get_x_set_1(a[1]);
+    `checkh(b, 0);
+    `checkh(a[1], 1);
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

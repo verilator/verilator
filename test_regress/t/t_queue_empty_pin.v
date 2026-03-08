@@ -5,14 +5,14 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   task tsk(int q[] = {});
-      if (q.size != 0) $stop;
-   endtask
+  task tsk(int q[] = {});
+    if (q.size != 0) $stop;
+  endtask
 
-   initial begin
-      tsk();
+  initial begin
+    tsk();
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

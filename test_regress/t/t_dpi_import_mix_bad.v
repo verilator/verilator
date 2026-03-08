@@ -8,11 +8,11 @@
 
 module t;
 
-   import "DPI-C" function int foo (int i);
-   export "DPI-C" function foo;  // Bad mix
+  import "DPI-C" function int foo(int i);
+  export "DPI-C" function foo;  // Bad mix
 
-   initial begin
-      $stop;
-   end
+  initial begin
+    $stop;
+  end
 
 endmodule

@@ -6,16 +6,16 @@
 
 module t;
 
-function automatic string broken_case(input string some_string);
-    case(some_string)
-        "alpha": return "alpha";
-        default: return "beta";
+  function automatic string broken_case(input string some_string);
+    case (some_string)
+      "alpha": return "alpha";
+      default: return "beta";
     endcase
-endfunction
+  endfunction
 
-   initial begin
-      $display(broken_case("gamma"));
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $display(broken_case("gamma"));
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

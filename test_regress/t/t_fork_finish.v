@@ -9,7 +9,9 @@ module t;
     forever begin
       fork
         begin
-          assert ($c(1)) begin
+          assert ($c(
+              1
+          )) begin
             $write("*-* All Finished *-*\n");
             $finish;
           end

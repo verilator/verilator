@@ -8,13 +8,15 @@
 
 module t;
 
-   import "DPI-C" function int \badly.named (int i);
+  import "DPI-C" function int \badly.named (int i);
 
-   export "DPI-C" function \badly.expt ;
-   function int \badly.expt ; return 0; endfunction
+  export "DPI-C" function \badly.expt ;
+  function int \badly.expt ;
+    return 0;
+  endfunction
 
-   initial begin
-      $stop;
-   end
+  initial begin
+    $stop;
+  end
 
 endmodule

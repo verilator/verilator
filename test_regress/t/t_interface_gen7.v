@@ -6,65 +6,69 @@
 
 // bug998
 
-interface intf
-  #(parameter PARAM = 0)
-   ();
-   /* verilator lint_off MULTIDRIVEN */
-   logic val;
-   /* verilator lint_on MULTIDRIVEN */
-   function integer func (); return 5; endfunction
+interface intf #(
+    parameter PARAM = 0
+) ();
+  /* verilator lint_off MULTIDRIVEN */
+  logic val;
+  /* verilator lint_on MULTIDRIVEN */
+  function integer func();
+    return 5;
+  endfunction
 endinterface
 
-module t1(intf mod_intf);
-   initial begin
-      $display("%m %d", mod_intf.val);
-   end
+module t1 (
+    intf mod_intf
+);
+  initial begin
+    $display("%m %d", mod_intf.val);
+  end
 endmodule
 
 module t;
 
-   intf #(.PARAM(1)) my_intf [1:0] ();
+  intf #(.PARAM(1)) my_intf[1:0] ();
 
-   generate
-      genvar the_genvar;
-      begin : ia
-         for (the_genvar = 0; the_genvar < 2; the_genvar++) begin : TestIf
-            begin
-               assign my_intf[the_genvar].val = '1;
-               t1 t (.mod_intf(my_intf[the_genvar]));
-            end
-         end
+  generate
+    genvar the_genvar;
+    begin : ia
+      for (the_genvar = 0; the_genvar < 2; the_genvar++) begin : TestIf
+        begin
+          assign my_intf[the_genvar].val = '1;
+          t1 t (.mod_intf(my_intf[the_genvar]));
+        end
       end
-   endgenerate
+    end
+  endgenerate
 
-   generate
-      genvar the_second_genvar;
-      begin : ib
-         intf #(.PARAM(1)) my_intf [1:0] ();
-         for (the_second_genvar = 0; the_second_genvar < 2; the_second_genvar++) begin : TestIf
-            begin
-               assign my_intf[the_second_genvar].val = '1;
-               t1 t (.mod_intf(my_intf[the_second_genvar]));
-            end
-         end
+  generate
+    genvar the_second_genvar;
+    begin : ib
+      intf #(.PARAM(1)) my_intf[1:0] ();
+      for (the_second_genvar = 0; the_second_genvar < 2; the_second_genvar++) begin : TestIf
+        begin
+          assign my_intf[the_second_genvar].val = '1;
+          t1 t (.mod_intf(my_intf[the_second_genvar]));
+        end
       end
-   endgenerate
+    end
+  endgenerate
 
-   generate
-      genvar the_third_genvar;
-      begin : ic
-         for (the_third_genvar = 0; the_third_genvar < 2; the_third_genvar++) begin : TestIf
-            begin
-               intf #(.PARAM(1)) my_intf [1:0] ();
-               assign my_intf[the_third_genvar].val = '1;
-               t1 t (.mod_intf(my_intf[the_third_genvar]));
-            end
-         end
+  generate
+    genvar the_third_genvar;
+    begin : ic
+      for (the_third_genvar = 0; the_third_genvar < 2; the_third_genvar++) begin : TestIf
+        begin
+          intf #(.PARAM(1)) my_intf[1:0] ();
+          assign my_intf[the_third_genvar].val = '1;
+          t1 t (.mod_intf(my_intf[the_third_genvar]));
+        end
       end
-   endgenerate
+    end
+  endgenerate
 
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

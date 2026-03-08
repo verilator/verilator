@@ -5,5 +5,5 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class VBase;
-   pure virtual task pure_task;
+  pure virtual task pure_task;
 endclass

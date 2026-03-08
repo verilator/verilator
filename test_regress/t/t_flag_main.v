@@ -5,9 +5,9 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   initial begin
-      $write("[%0t] Hello\n", $time);  // Check timestamp works
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("[%0t] Hello\n", $time);  // Check timestamp works
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

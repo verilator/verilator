@@ -6,12 +6,12 @@
 
 module t;
 
-   initial begin
-      if (0) begin : block
-      end
-      disable block;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    if (0) begin : block
+    end
+    disable block;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

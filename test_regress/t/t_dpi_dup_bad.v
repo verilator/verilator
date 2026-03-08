@@ -8,12 +8,14 @@
 
 module t;
 
-   // Same name w/ different args
-   import "DPI-C" dpii_fa_bit =  function int oth_f_int1(input int i);
-   import "DPI-C" pure dpii_fa_bit = function int oth_f_int2(input int i, input int bad);
+  // Same name w/ different args
+  import "DPI-C" dpii_fa_bit = function int oth_f_int1(input int i);
+  import "DPI-C" pure dpii_fa_bit = function int oth_f_int2(
+    input int i,
+    input int bad);
 
-   initial begin
-      $stop;
-   end
+  initial begin
+    $stop;
+  end
 
 endmodule

@@ -8,8 +8,8 @@ class Foo;
 endclass
 
 class Bar extends Foo;
-    int m_field = get_1();
-    function int get_1();
-        return 1;
-    endfunction
+  int m_field = get_1();
+  function int get_1();
+    return 1;
+  endfunction
 endclass

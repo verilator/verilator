@@ -5,21 +5,21 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class NodeList;
-    class Node;
-        static local string name;
-    endclass
+  class Node;
+    static local string name;
+  endclass
 
-    string name;
-    function new();
-        name = Node::name;
-    endfunction
+  string name;
+  function new();
+    name = Node::name;
+  endfunction
 endclass
 
 module t;
-    initial begin
-        automatic NodeList n = new;
+  initial begin
+    automatic NodeList n = new;
 
-        $write("*-* All Finished *-*\n");
-        $finish;
-    end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

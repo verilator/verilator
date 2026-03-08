@@ -5,8 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   initial begin
-      $display("a=", missing.a);
-   end
-   missing missing();  // Intentionally missing
+  initial begin
+    $display("a=", missing.a);
+  end
+  missing missing ();  // Intentionally missing
 endmodule

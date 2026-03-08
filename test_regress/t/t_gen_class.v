@@ -11,59 +11,59 @@
 // verilog_format: on
 
 module Child;
-   int ch_value;
+  int ch_value;
 endmodule
 
 module Parent;
-   for (genvar i = 0; i < 10; i++) begin : gen_child
-      Child child();
-   end
+  for (genvar i = 0; i < 10; i++) begin : gen_child
+    Child child ();
+  end
 endmodule
 
 module t;
-   Parent parent();
+  Parent parent ();
 
-   virtual class ChildAgentBase;
-      pure virtual task preload(int value);
-      pure virtual function string name();
-   endclass
+  virtual class ChildAgentBase;
+    pure virtual task preload(int value);
+    pure virtual function string name();
+  endclass
 
-   ChildAgentBase child_agents[10];
+  ChildAgentBase child_agents[10];
 
-   for (genvar i = 0; i < 10; i++) begin : gfor
-      class ChildAgent extends ChildAgentBase;
-         task automatic preload(int value);
-            parent.gen_child[i].child.ch_value = value;
-         endtask
-         function string name();
-            return $sformatf("%m");
-         endfunction
-      endclass
+  for (genvar i = 0; i < 10; i++) begin : gfor
+    class ChildAgent extends ChildAgentBase;
+      task automatic preload(int value);
+        parent.gen_child[i].child.ch_value = value;
+      endtask
+      function string name();
+        return $sformatf("%m");
+      endfunction
+    endclass
 
-      ChildAgent agent = new();
+    ChildAgent agent = new();
 
-      initial child_agents[i] = agent;
-   end
+    initial child_agents[i] = agent;
+  end
 
-   task automatic preload_children;
-      for (int i = 0; i < 10; i++) begin
-         child_agents[i].preload(i);
-      end
-   endtask
+  task automatic preload_children;
+    for (int i = 0; i < 10; i++) begin
+      child_agents[i].preload(i);
+    end
+  endtask
 
-   string s;
+  string s;
 
-   initial begin
-      #1;  // Ensure all class instances are initialized
-      preload_children();
-      `checkh(parent.gen_child[3].child.ch_value, 3);
-      `checkh(parent.gen_child[8].child.ch_value, 8);
+  initial begin
+    #1;  // Ensure all class instances are initialized
+    preload_children();
+    `checkh(parent.gen_child[3].child.ch_value, 3);
+    `checkh(parent.gen_child[8].child.ch_value, 8);
 `ifdef VERILATOR
-      // Some legal examples "t.gfor[4].\ChildAgent::name", "t.gfor[4].ChildAgent.name"
-      `checks(child_agents[4].name(), "t.gfor[4].ChildAgent.name");
+    // Some legal examples "t.gfor[4].\ChildAgent::name", "t.gfor[4].ChildAgent.name"
+    `checks(child_agents[4].name(), "t.gfor[4].ChildAgent.name");
 `endif
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

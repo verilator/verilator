@@ -6,24 +6,23 @@
 
 //bug1588
 interface intf;
-   logic a;
-   modport source(output a);
+  logic a;
+  modport source(output a);
 endinterface
 
-module m1
-  (
-   input logic value,
-   intf.source b
-   );
+module m1 (
+    input logic value,
+    intf.source b
+);
 endmodule
 
 module t;
-   intf ifs();
+  intf ifs ();
 
-   m1 m0(
-         j.e(0),
-         .b(ifs)
-         );
+  m1 m0 (
+      j.e(0),
+      .b(ifs)
+  );
 
-   genvar j;
+  genvar j;
 endmodule

@@ -1,8 +1,8 @@
-%Error: t/t_constraint_dist_randc_bad.v:10:23: Randc variables not allowed in 'constraint dist' (IEEE 1800-2023 18.5.3)
-   10 |    constraint c_bad { rc dist {3 := 0, 10 := 5}; }   
-      |                       ^~
-        t/t_constraint_dist_randc_bad.v:10:26: ... Location of restricting expression
-   10 |    constraint c_bad { rc dist {3 := 0, 10 := 5}; }   
-      |                          ^~~~
+%Error: t/t_constraint_dist_randc_bad.v:10:22: Randc variables not allowed in 'constraint dist' (IEEE 1800-2023 18.5.3)
+   10 |   constraint c_bad { rc dist {3 := 0, 10 := 5}; }   
+      |                      ^~
+        t/t_constraint_dist_randc_bad.v:10:25: ... Location of restricting expression
+   10 |   constraint c_bad { rc dist {3 := 0, 10 := 5}; }   
+      |                         ^~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

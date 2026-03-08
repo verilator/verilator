@@ -5,25 +5,25 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Cls;
-   int x = 100;
-   task get_x(output int arg);
-      arg = x;
-   endtask
+  int x = 100;
+  task get_x(output int arg);
+    arg = x;
+  endtask
 endclass
 
 task automatic test;
-   int o;
-   Cls c = new;
-   fork
-      c.get_x(o);
-   join_any
-   if (o != 100) $stop;
+  int o;
+  Cls c = new;
+  fork
+    c.get_x(o);
+  join_any
+  if (o != 100) $stop;
 endtask
 
 module t;
-   initial begin
-      test();
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    test();
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

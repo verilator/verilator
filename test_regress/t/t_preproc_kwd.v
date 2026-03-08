@@ -4,8 +4,8 @@
 // SPDX-FileCopyrightText: 2007 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 module t;
-
    v95 v95 ();
    v01nc v01nc ();
    v01c v01c ();

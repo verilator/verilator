@@ -1,23 +1,23 @@
-%Error: t/t_clocking_bad5.v:29:20: Duplicate declaration of CLOCKING 'ck': '$global_clock'
-   29 |    global clocking ogck @(posedge clk); endclocking
-      |                    ^~~~
-        t/t_clocking_bad5.v:26:20: ... Location of original declaration
-   26 |    global clocking ck @(posedge clk); endclocking
-      |                    ^~
+%Error: t/t_clocking_bad5.v:27:19: Duplicate declaration of CLOCKING 'ck': '$global_clock'
+   27 |   global clocking ogck @(posedge clk);
+      |                   ^~~~
+        t/t_clocking_bad5.v:23:19: ... Location of original declaration
+   23 |   global clocking ck @(posedge clk);
+      |                   ^~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_clocking_bad5.v:32:20: Duplicate declaration of CLOCKING 'ogck': '$global_clock'
-   32 |    global clocking ck @(posedge clk); endclocking
-      |                    ^~
-        t/t_clocking_bad5.v:29:20: ... Location of original declaration
-   29 |    global clocking ogck @(posedge clk); endclocking
-      |                    ^~~~
-%Error: t/t_clocking_bad5.v:32:20: Duplicate declaration of CLOCKING 'ck': 'ck'
-   32 |    global clocking ck @(posedge clk); endclocking
-      |                    ^~
-        t/t_clocking_bad5.v:26:20: ... Location of original declaration
-   26 |    global clocking ck @(posedge clk); endclocking
-      |                    ^~
-%Error: t/t_clocking_bad5.v:16:14: Can't find definition of variable: '$global_clock'
-   16 |    always @ ($global_clock) $display;
-      |              ^~~~~~~~~~~~~
+%Error: t/t_clocking_bad5.v:31:19: Duplicate declaration of CLOCKING 'ogck': '$global_clock'
+   31 |   global clocking ck @(posedge clk);
+      |                   ^~
+        t/t_clocking_bad5.v:27:19: ... Location of original declaration
+   27 |   global clocking ogck @(posedge clk);
+      |                   ^~~~
+%Error: t/t_clocking_bad5.v:31:19: Duplicate declaration of CLOCKING 'ck': 'ck'
+   31 |   global clocking ck @(posedge clk);
+      |                   ^~
+        t/t_clocking_bad5.v:23:19: ... Location of original declaration
+   23 |   global clocking ck @(posedge clk);
+      |                   ^~
+%Error: t/t_clocking_bad5.v:15:12: Can't find definition of variable: '$global_clock'
+   15 |   always @($global_clock) $display;
+      |            ^~~~~~~~~~~~~
 %Error: Exiting due to

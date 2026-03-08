@@ -4,12 +4,14 @@
 // SPDX-FileCopyrightText: 2005 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t_case_huge_sub (/*AUTOARG*/
-  // Outputs
-  outa, outb, outc,
-  // Inputs
-  index
-  );
+module t_case_huge_sub (  /*AUTOARG*/
+    // Outputs
+    outa,
+    outb,
+    outc,
+    // Inputs
+    index
+);
 
   input [7:0] index;
   output logic [9:0] outa;

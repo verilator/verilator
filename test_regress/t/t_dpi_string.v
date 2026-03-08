@@ -8,20 +8,20 @@
 
 module t;
 
-   import "DPI-C" function int dpii_string(input string DSM_NAME);
+  import "DPI-C" function int dpii_string(input string DSM_NAME);
 
-   generate
-      begin : DSM
-         string SOME_STRING;
-      end
-   endgenerate
+  generate
+    begin : DSM
+      string SOME_STRING;
+    end
+  endgenerate
 
-   initial begin
-      $sformat(DSM.SOME_STRING, "%m");
-      if (dpii_string(DSM.SOME_STRING) != 5) $stop;
+  initial begin
+    $sformat(DSM.SOME_STRING, "%m");
+    if (dpii_string(DSM.SOME_STRING) != 5) $stop;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

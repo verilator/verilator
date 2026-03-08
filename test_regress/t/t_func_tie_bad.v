@@ -6,16 +6,13 @@
 
 module t;
 
-   initial begin
-      // verilator lint_off IGNOREDRETURN
-      func(0, 1'b1);
-   end
+  initial begin
+    // verilator lint_off IGNOREDRETURN
+    func(0, 1'b1);
+  end
 
-   function automatic int func
-     (
-      input int a,
-      output bit b );
-      return 0;
-   endfunction
+  function automatic int func(input int a, output bit b);
+    return 0;
+  endfunction
 
 endmodule

@@ -5,20 +5,20 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   int q[$] = '{1, 2, 3};
-   bit dyn[] = '{0, 0};
-   string sq[] = '{"C", "D"};
+  int q[$] = '{1, 2, 3};
+  bit dyn[] = '{0, 0};
+  string sq[] = '{"C", "D"};
 
-   initial begin
-      if (!(1 inside {q})) $stop;
-      if (4 inside {q}) $stop;
-      if (!(4 inside {q, 4})) $stop;
+  initial begin
+    if (!(1 inside {q})) $stop;
+    if (4 inside {q}) $stop;
+    if (!(4 inside {q, 4})) $stop;
 
-      if (!(0 inside {dyn})) $stop;
-      if (1 inside {dyn}) $stop;
-      if (!("C" inside {sq})) $stop;
+    if (!(0 inside {dyn})) $stop;
+    if (1 inside {dyn}) $stop;
+    if (!("C" inside {sq})) $stop;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

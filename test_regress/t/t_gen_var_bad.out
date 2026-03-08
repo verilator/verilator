@@ -1,6 +1,6 @@
-%Error: t/t_gen_var_bad.v:10:7: Non-genvar used in generate for: 'i'
+%Error: t/t_gen_var_bad.v:10:5: Non-genvar used in generate for: 'i'
                               : ... note: In instance 't'
-   10 |       for (i=0; i<3; i=i+1) begin   
-      |       ^~~
+   10 |     for (i = 0; i < 3; i = i + 1) begin   
+      |     ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

@@ -1,8 +1,8 @@
-%Error: t/t_inst_noname_bad.v:8:5: Instance of module must be named
-    8 |     m ();
-      |     ^
+%Error: t/t_inst_noname_bad.v:8:3: Instance of module must be named
+    8 |   m();
+      |   ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_inst_noname_bad.v:9:5: Instance of module must be named
-    9 |     m ();
-      |     ^
+%Error: t/t_inst_noname_bad.v:9:3: Instance of module must be named
+    9 |   m();
+      |   ^
 %Error: Exiting due to

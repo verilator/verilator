@@ -9,22 +9,17 @@
 interface foo_intf;
 endinterface
 
-module submod
-  (
-   foo_intf foo
-   );
+module submod (
+    foo_intf foo
+);
 
 endmodule
 
 module t;
-   // Intentional typo, compiler should point this out, or that fo_intf does
-   // not match foo_intf on the submod port map
-   fo_intf the_foo();
+  // Intentional typo, compiler should point this out, or that fo_intf does
+  // not match foo_intf on the submod port map
+  fo_intf the_foo ();
 
-   submod
-     submod_inst
-       (
-        .foo (the_foo)
-        );
+  submod submod_inst (.foo(the_foo));
 
 endmodule

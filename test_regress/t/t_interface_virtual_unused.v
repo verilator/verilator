@@ -6,15 +6,15 @@
 
 // See also t_interface_virtual.v
 
-interface QBus();
+interface QBus ();
 endinterface
 
 module t;
 
-   virtual QBus q8;
+  virtual QBus q8;
 
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

@@ -6,14 +6,14 @@
 
 module t;
 
-   initial begin
-      automatic int q[$] = {1, 2};
+  initial begin
+    automatic int q[$] = {1, 2};
 
-      if (!(1 inside {q[0], q[1]})) $stop;
-      if (3 inside {q[0], q[1]}) $stop;
+    if (!(1 inside {q[0], q[1]})) $stop;
+    if (3 inside {q[0], q[1]}) $stop;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

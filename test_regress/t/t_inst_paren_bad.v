@@ -8,5 +8,5 @@ module sub;
 endmodule
 
 module t;
-   sub sub_inst;  // No ()
+  sub sub_inst;  // No ()
 endmodule

@@ -1,6 +1,6 @@
-%Error: t/t_func_refio_bad.v:16:17: Ref argument requires matching types; port 'q' requires 'integer$[$]' but connection is 'logic[31:0]'.
+%Error: t/t_func_refio_bad.v:16:15: Ref argument requires matching types; port 'q' requires 'integer$[$]' but connection is 'logic[31:0]'.
                                   : ... note: In instance 't'
-   16 |       queue_set(42);   
-      |                 ^~
+   16 |     queue_set(42);   
+      |               ^~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

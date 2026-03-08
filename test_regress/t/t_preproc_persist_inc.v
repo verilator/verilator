@@ -4,6 +4,7 @@
 // SPDX-FileCopyrightText: 2017 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `ifndef COMMON_GUARD
  `define COMMON_GUARD 1
 Inside `__FILE__.

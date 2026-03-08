@@ -4,8 +4,8 @@
 // SPDX-FileCopyrightText: 2009 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `undefineall
-
 // Definitions as speced
 // Note there are trailing spaces, which spec doesn't show properly
 `define D(x,y) initial $display("start", x , y, "end");

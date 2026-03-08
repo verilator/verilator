@@ -7,23 +7,26 @@
 //`begin_keywords "VAMS-2.3"
 `begin_keywords "1800+VAMS"
 
-module t (/*AUTOARG*/
-   // Outputs
-   out,
-   // Inputs
-   in
-   );
+module t (  /*AUTOARG*/
+    // Outputs
+    out,
+    // Inputs
+    in
+);
 
-   input in;
-   wreal in;
-   output out;
-   wreal out;
+  input in;
+  wreal in;
+  output out;
+  wreal out;
 
-   import "DPI-C" context function void dpii_call(input real in, output real out);
+  import "DPI-C" context function void dpii_call(
+    input real in,
+    output real out
+  );
 
-   initial begin
-      dpii_call(in,out);
-      $finish;
-   end
+  initial begin
+    dpii_call(in, out);
+    $finish;
+  end
 
 endmodule

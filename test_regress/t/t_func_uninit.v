@@ -9,26 +9,26 @@ function int zeroed;
 endfunction
 
 function automatic integer what_bit;
-   input [31:0] a;
-   // what_bit = 0;
-   for (int i = 31; i >= 0; i = i - 1) begin
-      if (a[i] == 1'b1) begin
-         what_bit = i;
-      end
-   end
+  input [31:0] a;
+  // what_bit = 0;
+  for (int i = 31; i >= 0; i = i - 1) begin
+    if (a[i] == 1'b1) begin
+      what_bit = i;
+    end
+  end
 endfunction
 
 module t;
 
-   parameter ZERO = zeroed();
+  parameter ZERO = zeroed();
 
-   parameter PP = what_bit(0);
+  parameter PP = what_bit(0);
 
-   initial begin
-      if (ZERO != 0) $stop;
-      if (PP != 'x) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    if (ZERO != 0) $stop;
+    if (PP != 'x) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

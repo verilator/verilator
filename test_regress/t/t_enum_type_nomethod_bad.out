@@ -1,6 +1,6 @@
-%Error: t/t_enum_type_nomethod_bad.v:15:9: Unknown built-in enum method 'bad_no_such_method'
+%Error: t/t_enum_type_nomethod_bad.v:15:7: Unknown built-in enum method 'bad_no_such_method'
                                          : ... note: In instance 't'
-   15 |       e.bad_no_such_method();
-      |         ^~~~~~~~~~~~~~~~~~
+   15 |     e.bad_no_such_method();
+      |       ^~~~~~~~~~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

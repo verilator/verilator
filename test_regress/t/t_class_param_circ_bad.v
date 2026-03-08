@@ -6,16 +6,20 @@
 
 typedef class ClsB;
 
-class ClsA #(parameter PARAM = 12);
-   ClsB #(PARAM+1) b;
+class ClsA #(
+    parameter PARAM = 12
+);
+  ClsB #(PARAM + 1) b;
 endclass
 
-class ClsB #(parameter PARAM = 12);
-   ClsA #(PARAM+1) a;
+class ClsB #(
+    parameter PARAM = 12
+);
+  ClsA #(PARAM + 1) a;
 endclass
 
 module t;
 
-   ClsA #(.PARAM(15)) c;  // Bad param name
+  ClsA #(.PARAM(15)) c;  // Bad param name
 
 endmodule

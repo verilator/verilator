@@ -1,17 +1,17 @@
-%Error: t/t_hier_block0_bad.v:21:11: 'sub0' has hier_block metacomment, hierarchical Verilation supports only integer/floating point/string and type param parameters
+%Error: t/t_hier_block0_bad.v:21:10: 'sub0' has hier_block metacomment, hierarchical Verilation supports only integer/floating point/string and type param parameters
                                    : ... note: In instance 't'
-   21 |    sub0 #(UNPACKED) i_sub0(.clk(clk), .in(8'(count)), .out(out0));
-      |           ^~~~~~~~
+   21 |   sub0 #(UNPACKED) i_sub0 (
+      |          ^~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_hier_block0_bad.v:62:41: Cannot access non-port symbols inside hierarchical block
+%Error: t/t_hier_block0_bad.v:77:39: Cannot access non-port symbols inside hierarchical block
                                    : ... note: In instance 't.i_sub0'
-   62 |       $display("%m: i_sub.x: %d", i_sub.x);
-      |                                         ^
-%Error: t/t_hier_block0_bad.v:26:50: Cannot access non-port symbols inside hierarchical block
+   77 |     $display("%m: i_sub.x: %d", i_sub.x);
+      |                                       ^
+%Error: t/t_hier_block0_bad.v:35:48: Cannot access non-port symbols inside hierarchical block
                                    : ... note: In instance 't'
-   26 |       $display("%d i_sub0.ff: %d", count, i_sub0.ff);
-      |                                                  ^~
-%Error: t/t_hier_block0_bad.v:27:63: Cannot access scope inside hierarchical block
-   27 |       $display("%d i_sub0.i_sub.out: %d", count, i_sub0.i_sub.out);
-      |                                                               ^~~
+   35 |     $display("%d i_sub0.ff: %d", count, i_sub0.ff);
+      |                                                ^~
+%Error: t/t_hier_block0_bad.v:36:61: Cannot access scope inside hierarchical block
+   36 |     $display("%d i_sub0.i_sub.out: %d", count, i_sub0.i_sub.out);
+      |                                                             ^~~
 %Error: Exiting due to

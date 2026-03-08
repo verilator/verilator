@@ -5,10 +5,10 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   string s = "a string";
-   initial begin
-      $display("%d %x %f %t", s, s, s, s);
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  string s = "a string";
+  initial begin
+    $display("%d %x %f %t", s, s, s, s);
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

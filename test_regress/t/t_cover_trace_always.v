@@ -8,28 +8,36 @@
 
 `define STRINGIFY(x) `"x`"
 
-module imply(input logic p, input logic q, output logic r);
-   always_comb begin
-      r = p | q;
-   end
+module imply (
+    input logic p,
+    input logic q,
+    output logic r
+);
+  always_comb begin
+    r = p | q;
+  end
 endmodule
 
 module t;
-   logic p;
-   logic q;
-   logic r;
+  logic p;
+  logic q;
+  logic r;
 
-   imply dut(.p(p), .q(q), .r(r));
+  imply dut (
+      .p(p),
+      .q(q),
+      .r(r)
+  );
 
-   initial begin
-      $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
-      $dumpvars();
-      //
-      p = 1;
-      q = 0;
-      $strobe("[%0t] %d, %d, %d", $time, p, q, r);
-      #1;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
+    $dumpvars();
+    //
+    p = 1;
+    q = 0;
+    $strobe("[%0t] %d, %d, %d", $time, p, q, r);
+    #1;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

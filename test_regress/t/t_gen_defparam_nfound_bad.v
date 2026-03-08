@@ -5,10 +5,10 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   a a ();
-   defparam z.W = 3;  // Bad
+  a a ();
+  defparam z.W = 3;  // Bad
 endmodule
 
 module a;
-   parameter W = 0;
+  parameter W = 0;
 endmodule

@@ -5,8 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 program t;
-   initial begin
-      $write("*-* All Finished *-*\n");
-      // No $finish
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    // No $finish
+  end
 endprogram

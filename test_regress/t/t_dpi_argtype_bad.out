@@ -1,6 +1,6 @@
-%Error-UNSUPPORTED: t/t_dpi_argtype_bad.v:13:41: Unsupported: DPI argument of type REFDTYPE 'foo_t'
+%Error-UNSUPPORTED: t/t_dpi_argtype_bad.v:16:40: Unsupported: DPI argument of type REFDTYPE 'foo_t'
                                                : ... For best portability, use bit, byte, int, or longint
-   13 |    import "DPI-C" task dpix_twice(foo_t arg);
-      |                                         ^~~
+   16 |   import "DPI-C" task dpix_twice(foo_t arg);
+      |                                        ^~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

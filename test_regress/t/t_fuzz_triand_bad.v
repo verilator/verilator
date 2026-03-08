@@ -5,5 +5,5 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   tri g=g.and.g;
+  tri g=g.and.g;
 endmodule

@@ -6,14 +6,15 @@
 
 module t;
 
-   enum { e0,
-          e1,
-          e2,
-          e1b=1
-          } BAD1;
+  enum {
+    e0,
+    e1,
+    e2,
+    e1b = 1
+  } BAD1;
 
-   initial begin
-      $stop;
-   end
+  initial begin
+    $stop;
+  end
 
 endmodule

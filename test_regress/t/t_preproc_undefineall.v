@@ -4,6 +4,7 @@
 // SPDX-FileCopyrightText: 2009 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 module t;
 
 `define UDALL
@@ -15,6 +16,6 @@ module t;
 `ifndef PREDEF_COMMAND_LINE `error "Deleted too much, no PREDEF_COMMAND_LINE" `endif
 
   initial begin
-     $finish;
+    $finish;
   end
 endmodule

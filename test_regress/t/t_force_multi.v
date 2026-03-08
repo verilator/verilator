@@ -11,9 +11,8 @@
 
 module t(/*AUTOARG*/
    // Inputs
-   clk
+  input clk
    );
-   input clk;
 
    integer cyc = 0;
 

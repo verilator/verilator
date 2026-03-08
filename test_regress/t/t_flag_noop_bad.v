@@ -6,12 +6,12 @@
 
 module t;
 
-   int u1;
-   int u1;
-   int u1;
-   int u1;
-   int u1;
-   int u1;
-   int u1;
+  int u1;
+  int u1;
+  int u1;
+  int u1;
+  int u1;
+  int u1;
+  int u1;
 
 endmodule

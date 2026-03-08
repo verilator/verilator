@@ -7,19 +7,19 @@
 // verilator lint_off MULTITOP
 
 module M;
-class Cls;
-   function string name;
+  class Cls;
+    function string name;
       return $sformatf("m %m");
-   endfunction
-endclass
+    endfunction
+  endclass
 endmodule
 
 module t;
-   string s;
+  string s;
 
-   initial begin
-      M::Cls p;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    M::Cls p;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

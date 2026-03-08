@@ -1,11 +1,11 @@
-%Error-UNSUPPORTED: t/t_expect.v:19:7: Unsupported: expect
-   19 |       expect (@(posedge clk) a ##1 b) a = 110;
-      |       ^~~~~~
+%Error-UNSUPPORTED: t/t_expect.v:16:5: Unsupported: expect
+   16 |     expect (@(posedge clk) a ##1 b) a = 110;
+      |     ^~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_expect.v:21:7: Unsupported: expect
-   21 |       expect (@(posedge clk) a ##1 b) else a = 299;
-      |       ^~~~~~
-%Error-UNSUPPORTED: t/t_expect.v:23:7: Unsupported: expect
-   23 |       expect (@(posedge clk) a ##1 b) a = 300; else a = 399;
-      |       ^~~~~~
+%Error-UNSUPPORTED: t/t_expect.v:18:5: Unsupported: expect
+   18 |     expect (@(posedge clk) a ##1 b)
+      |     ^~~~~~
+%Error-UNSUPPORTED: t/t_expect.v:21:5: Unsupported: expect
+   21 |     expect (@(posedge clk) a ##1 b) a = 300;
+      |     ^~~~~~
 %Error: Exiting due to

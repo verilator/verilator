@@ -4,27 +4,25 @@
 // SPDX-FileCopyrightText: 2022 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-    // Inputs
-    clk
-    );
-    input clk;
+module t (
+    input clk
+);
 
-    class EventClass;
-        event e;
-    endclass
+  class EventClass;
+    event e;
+  endclass
 
-    EventClass ec = new;
-    int cyc = 0;
+  EventClass ec = new;
+  int cyc = 0;
 
-    always @ec.e ec = new;
+  always @ec.e ec = new;
 
-    always @(posedge clk) begin
-       cyc <= cyc + 1;
-       if (cyc == 1) ->ec.e;
-       else if (cyc == 2) begin
-          $write("*-* All Finished *-*\n");
-          $finish;
-       end
-   end
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+    if (cyc == 1)->ec.e;
+    else if (cyc == 2) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 endmodule

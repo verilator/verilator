@@ -6,12 +6,12 @@
 
 module t;
 
-   initial begin
-      $display("""First "quoted"\nsecond\
+  initial begin
+    $display("""First "quoted"\nsecond\
 third
 fourth""");
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

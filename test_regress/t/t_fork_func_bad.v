@@ -6,16 +6,16 @@
 
 module t;
 
-   function int f;
-      fork
-         return 0;  // Illegal 9.3.2
-      join_none
-   endfunction
+  function int f;
+    fork
+      return 0;  // Illegal 9.3.2
+    join_none
+  endfunction
 
-   int i;
+  int i;
 
-   initial begin
-      i = f();
-   end
+  initial begin
+    i = f();
+  end
 
 endmodule

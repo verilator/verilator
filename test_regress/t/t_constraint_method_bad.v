@@ -5,13 +5,13 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Packet;
-   rand int m_one;
+  rand int m_one;
 
-   constraint cons { m_one > 0 && m_one < 2; }
+  constraint cons { m_one > 0 && m_one < 2; }
 
-   task test1;
-      cons.bad_method(1);  // BAD
-   endtask
+  task test1;
+    cons.bad_method(1);  // BAD
+  endtask
 
 endclass
 

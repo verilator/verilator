@@ -4,35 +4,37 @@
 // SPDX-FileCopyrightText: 2015 Iztok Jeras
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
+// verilog_format: on
 
-  module t;
+module t;
 
-   // signed source
-   logic   signed  [8-1:0] src;
+  // signed source
+  logic signed [8-1:0] src;
 
-   // destination structure
-   struct packed {
-     logic   signed [16-1:0] s;
-     logic unsigned [16-1:0] u;
-   } dst;
+  // destination structure
+  struct packed {
+    logic signed [16-1:0] s;
+    logic unsigned [16-1:0] u;
+  } dst;
 
-   initial begin
-      // bug882
-      // verilator lint_off WIDTH
-      src = 8'sh05;
-      dst = '{s: src, u: src};
-      `checkh (dst.s, 16'h0005);
-      `checkh (dst.u, 16'h0005);
+  initial begin
+    // bug882
+    // verilator lint_off WIDTH
+    src = 8'sh05;
+    dst = '{s: src, u: src};
+    `checkh(dst.s, 16'h0005);
+    `checkh(dst.u, 16'h0005);
 
-      src = 8'shf5;
-      dst = '{s: src, u: src};
-      `checkh (dst.s, 16'hfff5);
-      `checkh (dst.u, 16'hfff5);
-      // verilator lint_on WIDTH
+    src = 8'shf5;
+    dst = '{s: src, u: src};
+    `checkh(dst.s, 16'hfff5);
+    `checkh(dst.u, 16'hfff5);
+    // verilator lint_on WIDTH
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

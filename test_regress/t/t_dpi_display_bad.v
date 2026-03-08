@@ -9,16 +9,16 @@
 module t;
 
 `ifndef VERILATOR
-   `error "Only Verilator supports PLI-ish DPI calls and sformat conversion."
+  `error "Only Verilator supports PLI-ish DPI calls and sformat conversion."
 `endif
 
-   import "DPI-C" context dpii_display_call
-     = function void \$dpii_display
-       (input string formatted /*verilator sformat*/, input string other_bad );
+  import "DPI-C" context dpii_display_call
+    = function void \$dpii_display
+     (input string formatted /*verilator sformat*/, input string other_bad );
 
-   initial begin
-      $dpii_display("hello", "huh");
-      $stop;
-   end
+  initial begin
+    $dpii_display("hello", "huh");
+    $stop;
+  end
 
 endmodule

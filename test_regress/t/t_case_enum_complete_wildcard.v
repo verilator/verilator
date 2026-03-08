@@ -8,67 +8,67 @@
 
 module t;
 
-    enum logic [1:0] {
-        S00 = 'b00,
-        S01 = 'b01,
-        S10 = 'b10,
+  enum logic [1:0] {
+    S00 = 'b00,
+    S01 = 'b01,
+    S10 = 'b10,
 
-        S0X = 2'b0?,
-        SX0 = 2'b?0
-    } state;
+    S0X = 2'b0?,
+    SX0 = 2'b?0
+  } state;
 
-    int v = 0;
+  int v = 0;
 
-    initial begin
-        state = S01;
-        unique case (state)
-            S00: $stop;
-            S01: v++;
-            S10: $stop;
-        endcase
-        unique case (state)
-            S00: $stop;
-            default: v++; // default
-        endcase
-        unique case (state)
-            2'd0: $stop;
-            2'd1: v++;
-            2'd2: $stop;
-        endcase
-        unique case (state)
-            2'd0: $stop;
-            2'd1: v++;
-            2'd2: $stop;
-            2'd3: $stop; // extra case
-        endcase
+  initial begin
+    state = S01;
+    unique case (state)
+      S00: $stop;
+      S01: v++;
+      S10: $stop;
+    endcase
+    unique case (state)
+      S00: $stop;
+      default: v++;  // default
+    endcase
+    unique case (state)
+      2'd0: $stop;
+      2'd1: v++;
+      2'd2: $stop;
+    endcase
+    unique case (state)
+      2'd0: $stop;
+      2'd1: v++;
+      2'd2: $stop;
+      2'd3: $stop;  // extra case
+    endcase
 
-        unique case (state) inside
-            2'd0: $stop;
-            2'd1: v++;
-            [2'd2:2'd3]: $stop;
-        endcase
-        unique case (state) inside
-            [S00:S10]: v++;
-        endcase
+    unique case (state) inside
+      2'd0: $stop;
+      2'd1: v++;
+      [2'd2 : 2'd3]: $stop;
+    endcase
+    unique case (state) inside
+      [S00 : S10]: v++;
+    endcase
 
-        unique casez (state)
-            S10: $stop;
-            S0X: v++; // fully covered
-        endcase
-        unique casez (state)
-            S10: $stop;
-            S0X: v++;
-            2'b11: $stop; // extra case
-        endcase
-        unique casez (state)
-            S0X: v++;
-            default: $stop;
-        endcase
+    unique casez (state)
+      S10: $stop;
+      S0X: v++;  // fully covered
+    endcase
+    unique casez (state)
+      S10: $stop;
+      S0X: v++;
+      2'b11: $stop;  // extra case
+    endcase
+    unique casez (state)
+      S0X: v++;
+      default: $stop;
+    endcase
 
-        case (state)
-            S00: $stop;
-            S01: v++;
-            S10, 2'b11: $stop;
-        endcase
-    end
+    case (state)
+      S00: $stop;
+      S01: v++;
+      S10, 2'b11: $stop;
+    endcase
+  end
 endmodule

@@ -5,13 +5,13 @@
 // SPDX-License-Identifier: CC0-1.0
 
 interface iface;
-   function static func;
-   endfunction
+  function static func;
+  endfunction
 endinterface
 
 module t;
-   initial begin
-      iface::func();  // BAD
-      $stop;
-   end
+  initial begin
+    iface::func();  // BAD
+    $stop;
+  end
 endmodule

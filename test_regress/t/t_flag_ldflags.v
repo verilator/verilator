@@ -11,11 +11,11 @@ import "DPI-C" pure function void dpii_c_library();
 import "DPI-C" pure function void dpii_so_library();
 
 module t;
-   initial begin
-      dpii_a_library();  // From .a file
-      dpii_c_library();  // From .cpp file
-      dpii_so_library();  // From .so file
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    dpii_a_library();  // From .a file
+    dpii_c_library();  // From .cpp file
+    dpii_so_library();  // From .so file
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

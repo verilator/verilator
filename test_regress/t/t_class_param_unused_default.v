@@ -4,23 +4,25 @@
 // SPDX-FileCopyrightText: 2023 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
-class Bar#(type T = int);
-   T t;
-   function new;
-      t = new;
-   endfunction
+class Bar #(
+    type T = int
+);
+  T t;
+  function new;
+    t = new;
+  endfunction
 endclass
 
 class Baz;
-   int x = 1;
+  int x = 1;
 endclass
 
 module t;
-   initial begin
-      automatic Bar#(Baz) bar_baz = new;
-      if (bar_baz.t.x != 1) $stop;
+  initial begin
+    automatic Bar #(Baz) bar_baz = new;
+    if (bar_baz.t.x != 1) $stop;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

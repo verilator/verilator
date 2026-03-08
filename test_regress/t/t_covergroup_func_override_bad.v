@@ -6,12 +6,12 @@
 
 /* verilator lint_off COVERIGN */
 module t;
-    covergroup cg;
-    function sample();
+  covergroup cg;
+  function sample();
 
-    endfunction
-    function get_coverage();
+  endfunction
+  function get_coverage();
 
-    endfunction
-    endgroup
+  endfunction
+  endgroup
 endmodule

@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Foo;
-   virtual int member;
+  virtual int member;
 endclass
 
 module t;

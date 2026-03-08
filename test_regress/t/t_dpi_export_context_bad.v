@@ -7,8 +7,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 module t;
-   export "DPI-C" task dpix_task;
-   task dpix_task();
-      $write("Hello in %m\n");
-   endtask
+  export "DPI-C" task dpix_task;
+  task dpix_task();
+    $write("Hello in %m\n");
+  endtask
 endmodule

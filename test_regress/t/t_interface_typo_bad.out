@@ -1,13 +1,13 @@
-%Error: t/t_interface_typo_bad.v:14:4: Interface 'foo_intf' not connected as parent's interface not connected
+%Error: t/t_interface_typo_bad.v:13:5: Interface 'foo_intf' not connected as parent's interface not connected
                                      : ... Perhaps caused by another error on the parent interface that needs resolving
                                      : ... Or, perhaps intended an interface instantiation but are missing parenthesis (IEEE 1800-2023 25.3)?
-   14 |    foo_intf foo
-      |    ^~~~~~~~
+   13 |     foo_intf foo
+      |     ^~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_interface_typo_bad.v:22:4: Cannot find file containing interface: 'fo_intf'
-   22 |    fo_intf the_foo();
-      |    ^~~~~~~
-%Error: t/t_interface_typo_bad.v:27:15: Found definition of 'the_foo' as a CELL but expected a variable
-   27 |         .foo (the_foo)
-      |               ^~~~~~~
+%Error: t/t_interface_typo_bad.v:21:3: Cannot find file containing interface: 'fo_intf'
+   21 |   fo_intf the_foo ();
+      |   ^~~~~~~
+%Error: t/t_interface_typo_bad.v:23:28: Found definition of 'the_foo' as a CELL but expected a variable
+   23 |   submod submod_inst (.foo(the_foo));
+      |                            ^~~~~~~
 %Error: Exiting due to

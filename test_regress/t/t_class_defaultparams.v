@@ -5,25 +5,38 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // verilator lint_off NORETURN
-class c0 #(type T= real);
+class c0 #(
+    type T = real
+);
   static function T f();
   endfunction
 endclass
-class c2 #(type REQ=int, type RSP= int, type IMP=int);
-  function new (IMP imp);
+class c2 #(
+    type REQ = int,
+    type RSP = int,
+    type IMP = int
+);
+  function new(IMP imp);
   endfunction
 endclass
-class c3 #(type REQ, type RSP, type IMP=RSP);
-  function new (IMP imp);
+class c3 #(
+    type REQ,
+    type RSP,
+    type IMP = RSP
+);
+  function new(IMP imp);
   endfunction
 endclass
 
-class c1 #(type REQ= int, RSP=REQ);
-  typedef c1 #( REQ , RSP) this_type;
-  typedef c0 #(this_type) type_id;
+class c1 #(
+    type REQ = int,
+    RSP = REQ
+);
+  typedef c1#(REQ, RSP) this_type;
+  typedef c0#(this_type) type_id;
   c2 #(REQ, RSP, this_type) c2inst;
-  function new (string name, int parent);
-    c2inst = new (this);
+  function new(string name, int parent);
+    c2inst = new(this);
   endfunction
 
   c3 #(REQ, this_type) c3inst;
@@ -42,18 +55,18 @@ interface interf;
 endinterface
 module t;
   // `test
-  interf interf_inst();
+  interf interf_inst ();
 endmodule
 class topc;
   // `test
 endclass
 
 class paramcl;
-endclass: paramcl
+endclass : paramcl
 class c5;
-c1 #(paramcl) seq;
-function void f();
-    seq = c1 #(paramcl)::type_id::f();
-endfunction: f
+  c1 #(paramcl) seq;
+  function void f();
+    seq = c1#(paramcl)::type_id::f();
+  endfunction : f
 endclass
 c5 c5inst;

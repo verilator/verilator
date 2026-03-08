@@ -5,13 +5,13 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class setup_coefficients;
-    static function int create();
-        return 1;
-    endfunction
+  static function int create();
+    return 1;
+  endfunction
 endclass
 
 class biquad_vseq;
-    int c_setup = setup_coefficients::create();
-    function void setup_coefficients();
-    endfunction
-endclass: biquad_vseq
+  int c_setup = setup_coefficients::create();
+  function void setup_coefficients();
+  endfunction
+endclass : biquad_vseq

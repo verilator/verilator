@@ -4,6 +4,7 @@
 // SPDX-FileCopyrightText: 2017 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 Inside `__FILE__.
 
 `include "t_preproc_persist_inc.v"

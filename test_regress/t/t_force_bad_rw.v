@@ -6,18 +6,18 @@
 
 module t;
 
-   int ass[int];
+  int ass[int];
 
-   initial begin
-      ass[2] = 20;
+  initial begin
+    ass[2] = 20;
 
-      foreach (ass[index]) begin
-         force index = 0;
-         $display("ii %d\n", index);
-      end
+    foreach (ass[index]) begin
+      force index = 0;
+      $display("ii %d\n", index);
+    end
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

@@ -1,6 +1,6 @@
-%Error: t/t_class_extends_aliased_real_bad.v:14:10: Attempting to extend using non-class
-                                                  : ... note: In instance 't'
-   14 |    bar #(real_t) bar_real_t;
-      |          ^~~~~~
+%Error: t/t_class_extends_aliased_real_bad.v:16:9: Attempting to extend using non-class
+                                                 : ... note: In instance 't'
+   16 |   bar #(real_t) bar_real_t;
+      |         ^~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

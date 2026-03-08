@@ -17,14 +17,14 @@ typedef Other Other_t;
 
 module t;
 
-   Base_t cls_a;
-   BaseExtended_t cls_ab;
-   Other_t other;
+  Base_t cls_a;
+  BaseExtended_t cls_ab;
+  Other_t other;
 
-   initial begin
-      cls_a = new;
-      cls_ab = BaseExtended'(cls_a);  // bad-need dyn
-      other = Other'(cls_ab);  // bad-incompat
-   end
+  initial begin
+    cls_a = new;
+    cls_ab = BaseExtended'(cls_a);  // bad-need dyn
+    other = Other'(cls_ab);  // bad-incompat
+  end
 
 endmodule

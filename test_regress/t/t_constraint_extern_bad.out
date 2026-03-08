@@ -1,6 +1,6 @@
-%Error-PROTOTYPEMIS: t/t_constraint_extern_bad.v:8:22: Definition not found for extern prototype 'missing_bad'
-    8 |    extern constraint missing_bad;
-      |                      ^~~~~~~~~~~
+%Error-PROTOTYPEMIS: t/t_constraint_extern_bad.v:8:21: Definition not found for extern prototype 'missing_bad'
+    8 |   extern constraint missing_bad;
+      |                     ^~~~~~~~~~~
                      ... For error description see https://verilator.org/warn/PROTOTYPEMIS?v=latest
 %Error: t/t_constraint_extern_bad.v:11:20: extern not found that declares 'missing_extern'
    11 | constraint Packet::missing_extern { }

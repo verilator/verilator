@@ -6,9 +6,9 @@
 
 /* verilator lint_off COVERIGN */
 module t;
-    covergroup cg;
-    function new();
+  covergroup cg;
+  function new();
 
-    endfunction
-    endgroup
+  endfunction
+  endgroup
 endmodule

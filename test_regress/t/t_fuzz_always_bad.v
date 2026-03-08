@@ -7,5 +7,5 @@
 //bug1577
 
 module t;
-   always @ c.a c:h;
+  always @ c.a c:h;
 endmodule

@@ -5,13 +5,13 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Packet;
-   rand int one;
-   rand int two;
+  rand int one;
+  rand int two;
 
-   extern function void f();
-   constraint cone;
-   extern constraint ctwo;
-   constraint cmissing;  // Ok per IEEE 1800-2023 18.5.1
+  extern function void f();
+  constraint cone;
+  extern constraint ctwo;
+  constraint cmissing;  // Ok per IEEE 1800-2023 18.5.1
 
 endclass
 
@@ -24,18 +24,18 @@ endfunction
 
 module t;
 
-   Packet p;
+  Packet p;
 
-   int v;
+  int v;
 
-   initial begin
-      p = new;
-      v = p.randomize();
-      if (v != 1) $stop;
-      if (p.one != 1) $stop;
-      if (p.two != 2) $stop;
+  initial begin
+    p = new;
+    v = p.randomize();
+    if (v != 1) $stop;
+    if (p.one != 1) $stop;
+    if (p.two != 2) $stop;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

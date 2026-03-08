@@ -6,12 +6,12 @@
 
 module t;
 
-   integer a[];
+  integer a[];
 
-   initial begin
-      if ($bits(a) != 0) $stop;
-      a = new [10];
-      if ($bits(a) != 10*32) $stop;
-   end
+  initial begin
+    if ($bits(a) != 0) $stop;
+    a = new[10];
+    if ($bits(a) != 10 * 32) $stop;
+  end
 
 endmodule

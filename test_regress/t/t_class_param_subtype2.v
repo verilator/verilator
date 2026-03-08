@@ -4,23 +4,25 @@
 // SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-class Class1 #(type T);
-   static function int get();
-      return T::Helper::getter();
-   endfunction
+class Class1 #(
+    type T
+);
+  static function int get();
+    return T::Helper::getter();
+  endfunction
 endclass
 
 class Class2;
-   typedef Class2 Helper;
-   static function int getter();
-      return 13;
-   endfunction
+  typedef Class2 Helper;
+  static function int getter();
+    return 13;
+  endfunction
 endclass
 
 module t;
-   initial begin
-      if (Class1#(Class2)::get() != 13) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    if (Class1#(Class2)::get() != 13) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

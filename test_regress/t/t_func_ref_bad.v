@@ -5,18 +5,18 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Cls;
-   function logic get_x(ref logic x);
-      return x;
-   endfunction
+  function logic get_x(ref logic x);
+    return x;
+  endfunction
 endclass
 
 module t;
-   logic [10:0] a;
-   logic b;
-   Cls cls;
-   initial begin
-      cls = new;
-      b = cls.get_x(a[1]);
-      $stop;
-   end
+  logic [10:0] a;
+  logic b;
+  Cls cls;
+  initial begin
+    cls = new;
+    b = cls.get_x(a[1]);
+    $stop;
+  end
 endmodule

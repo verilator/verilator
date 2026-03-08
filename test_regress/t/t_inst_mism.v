@@ -6,37 +6,46 @@
 
 //bug595
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (
+    input clk
+);
 
-   logic [6-1:0] foo; initial foo = 20;
+  logic [6-1:0] foo;
+  initial foo = 20;
 
-   dut #(.W(6)) udut(.clk(clk),
-                     .foo(foo-16));
+  dut #(
+      .W(6)
+  ) udut (
+      .clk(clk),
+      .foo(foo - 16)
+  );
 endmodule
 
-module dut
-    #(parameter W = 1)
-    (input logic clk,
-     input logic [W-1:0] foo);
+module dut #(
+    parameter W = 1
+) (
+    input logic clk,
+    input logic [W-1:0] foo
+);
 
-    genvar i;
-    generate
-       for (i = 0; i < W; i++) begin
-          suba ua(.clk(clk), .foo(foo[i]));
-       end
-    endgenerate
+  genvar i;
+  generate
+    for (i = 0; i < W; i++) begin
+      suba ua (
+          .clk(clk),
+          .foo(foo[i])
+      );
+    end
+  endgenerate
 endmodule
 
-module suba
-  (input logic clk,
-   input logic foo);
+module suba (
+    input logic clk,
+    input logic foo
+);
 
-   always @(posedge clk) begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  always @(posedge clk) begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

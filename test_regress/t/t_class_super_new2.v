@@ -5,27 +5,27 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class svunit_base;
-   function new(string name);
-   endfunction
+  function new(string name);
+  endfunction
 endclass
 
 class svunit_testcase extends svunit_base;
-   function new(string name);
-      super.new(name);
-   endfunction
+  function new(string name);
+    super.new(name);
+  endfunction
 endclass
 
 module dut_unit_test;
-   svunit_testcase svunit_ut = new("dut_ut");
+  svunit_testcase svunit_ut = new("dut_ut");
 endmodule
 
 module t;
 
-   dut_unit_test dut_ut();
+  dut_unit_test dut_ut ();
 
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

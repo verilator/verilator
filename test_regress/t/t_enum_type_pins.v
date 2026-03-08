@@ -11,6 +11,7 @@
 
 
 // **** Pin Identifiers ****
+// verilog_format: off
 typedef enum int
 {
  PINID_A0 = 32'd0,                    // MUST BE ZERO!
@@ -43,63 +44,62 @@ typedef enum int
  // - Maximum number of pins -
  PINID_MAX
  } t_pinid;
+// verilog_format: on
 
+module t (
+    input clk
+);
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+  wire a = clk;
+  wire b = 1'b0;
+  reg c;
 
-   wire  a = clk;
-   wire  b = 1'b0;
-   reg   c;
+  test test_i (  /*AUTOINST*/
+      // Inputs
+      .clk(clk)
+  );
 
-   test test_i (/*AUTOINST*/
-                // Inputs
-                .clk                    (clk));
-
-   // This is a compile time only test. Immediately finish
-   always @(posedge clk) begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  // This is a compile time only test. Immediately finish
+  always @(posedge clk) begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule
 
 
-module test (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module test (  /*AUTOARG*/
+    // Inputs
+    clk
+);
+  input clk;
 
-   // Use the enumeration size to initialize a dynamic array
-   t_pinid  e;
-   int myarray1 [] = new [e.num];
+  // Use the enumeration size to initialize a dynamic array
+  t_pinid e;
+  int myarray1[] = new[e.num];
 
-   always @(posedge clk) begin
-
-`ifdef TEST_VERBOSE
-      $write ("Enumeration has %d members\n", e.num);
-`endif
-
-      e = e.first;
-
-      forever begin
-         myarray1[e] = e.prev;
+  always @(posedge clk) begin
 
 `ifdef TEST_VERBOSE
-         $write ("myarray1[%d] (enum %s) = %d\n", e, e.name, myarray1[e]);
+    $write("Enumeration has %d members\n", e.num);
 `endif
 
-         if (e == e.last) begin
-            break;
-         end
-         else begin
-            e = e.next;
-         end
+    e = e.first;
+
+    forever begin
+      myarray1[e] = e.prev;
+
+`ifdef TEST_VERBOSE
+      $write("myarray1[%d] (enum %s) = %d\n", e, e.name, myarray1[e]);
+`endif
+
+      if (e == e.last) begin
+        break;
       end
-   end
+      else begin
+        e = e.next;
+      end
+    end
+  end
 
 endmodule

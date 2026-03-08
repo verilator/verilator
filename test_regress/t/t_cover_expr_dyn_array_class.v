@@ -5,22 +5,22 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Class1;
-   int value0 = 7;
+  int value0 = 7;
 endclass
 
 module t;
-   initial begin
-      automatic int i;
-      automatic Class1 q[] = new [15];
-      for (int j = 0; j < 15; j = j + 1) begin
-         automatic Class1 x = new;
-         q[j] = x;
-      end
-      while (i < 15) begin
-         if ((q[i].value0 > 8) || (q[i].value0 < 5)) $stop;
-         i += 1;
-      end
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    automatic int i;
+    automatic Class1 q[] = new[15];
+    for (int j = 0; j < 15; j = j + 1) begin
+      automatic Class1 x = new;
+      q[j] = x;
+    end
+    while (i < 15) begin
+      if ((q[i].value0 > 8) || (q[i].value0 < 5)) $stop;
+      i += 1;
+    end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

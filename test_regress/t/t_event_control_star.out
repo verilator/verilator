@@ -1,5 +1,5 @@
-%Error-UNSUPPORTED: t/t_event_control_star.v:19:6: Unsupported: no sense equation (@*)
-   19 |      @* a = c;   
-      |      ^
+%Error-UNSUPPORTED: t/t_event_control_star.v:19:5: Unsupported: no sense equation (@*)
+   19 |     @* a = c;   
+      |     ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

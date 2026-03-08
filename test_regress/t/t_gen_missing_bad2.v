@@ -5,11 +5,11 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   if ($test$plusargs("BAD-non-constant")) begin
-      initial $stop;
-   end
-   case (1)
-      $test$plusargs("BAD-non-constant"): initial $stop;
-   endcase
+  if ($test$plusargs("BAD-non-constant")) begin
+    initial $stop;
+  end
+  case (1)
+    $test$plusargs("BAD-non-constant"): initial $stop;
+  endcase
 
 endmodule

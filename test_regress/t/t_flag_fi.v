@@ -7,9 +7,9 @@
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 module t;
-   initial begin
-      $c("myfunction();");
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $c("myfunction();");
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

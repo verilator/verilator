@@ -1,6 +1,6 @@
-%Error-UNSUPPORTED: t/t_enum_type_methods_bad.v:24:14: Unsupported: enum next/prev with non-constant argument
+%Error-UNSUPPORTED: t/t_enum_type_methods_bad.v:24:12: Unsupported: enum next/prev with non-constant argument
                                                      : ... note: In instance 't'
-   24 |       e.next(increment);
-      |              ^~~~~~~~~
+   24 |     e.next(increment);
+      |            ^~~~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

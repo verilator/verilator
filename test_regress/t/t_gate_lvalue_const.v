@@ -4,65 +4,63 @@
 // SPDX-FileCopyrightText: 2019 Driss Hafdi
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk, rst
-   );
+module t (
+    input clk,
+    input rst
+);
 
-   input clk;
-   input rst;
+  logic [2:0] ctrl_inc_single;
+  logic [2:0] ctrl_inc_double;
 
-   logic [2:0] ctrl_inc_single;
-   logic [2:0] ctrl_inc_double;
+  logic [2:0] cnt_single;
+  always_ff @(posedge clk) begin
+    if (rst) begin
+      cnt_single <= '0;
+    end
+    else if (ctrl_inc_single != '0 && cnt_single != '1) begin
+      cnt_single <= cnt_single + 1'd1;
+    end
+  end
 
-   logic [2:0] cnt_single;
-   always_ff @(posedge clk) begin
-      if (rst) begin
-         cnt_single <= '0;
-      end
-      else if (ctrl_inc_single != '0 && cnt_single != '1) begin
-         cnt_single <= cnt_single + 1'd1;
-      end
-   end
+  logic [2:0] cnt_double;
+  always_ff @(posedge clk) begin
+    if (rst) begin
+      cnt_double <= '0;
+    end
+    else if (ctrl_inc_double != '0 && cnt_double != '1) begin
+      cnt_double <= cnt_double + 1'd1;
+    end
+  end
 
-   logic [2:0] cnt_double;
-   always_ff @(posedge clk) begin
-      if (rst) begin
-         cnt_double <= '0;
-      end
-      else if (ctrl_inc_double != '0 && cnt_double != '1) begin
-         cnt_double <= cnt_double + 1'd1;
-      end
-   end
+  always_comb ctrl_inc_single = '0;
+  always_comb ctrl_inc_double = '0;
 
-   always_comb ctrl_inc_single = '0;
-   always_comb ctrl_inc_double = '0;
+  testMod test_i (.data_i(cnt_single));
+  testMod test_j (.data_i(cnt_double));
 
-   testMod test_i (.data_i(cnt_single));
-   testMod test_j (.data_i(cnt_double));
-
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule
 
-module testMod
-   (input wire [2:0] data_i);
+module testMod (
+    input wire [2:0] data_i
+);
 
-   typedef logic [63:0]    time_t;
-   // verilator lint_off MULTIDRIVEN
-   time_t [2:0] last_transition;
-   // verilator lint_on MULTIDRIVEN
-   genvar b;
+  typedef logic [63:0] time_t;
+  // verilator lint_off MULTIDRIVEN
+  time_t [2:0] last_transition;
+  // verilator lint_on MULTIDRIVEN
+  genvar b;
 
-   generate
-      for (b = 0; b <= 2; b++) begin : gen_trans
-         always_ff @(posedge data_i[b] or negedge data_i[b]) begin
-            last_transition[b] <= $time;
-         end
+  generate
+    for (b = 0; b <= 2; b++) begin : gen_trans
+      always_ff @(posedge data_i[b] or negedge data_i[b]) begin
+        last_transition[b] <= $time;
       end
-   endgenerate
+    end
+  endgenerate
 
 endmodule

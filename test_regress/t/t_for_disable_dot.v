@@ -6,17 +6,17 @@
 
 module t;
 
-   int i;
+  int i;
 
-   initial begin
-      begin : named
-         for (i = 0; i < 10; ++i) begin : loop
-            if (i == 5) disable t.named;
-         end
+  initial begin
+    begin : named
+      for (i = 0; i < 10; ++i) begin : loop
+        if (i == 5) disable t.named;
       end
-      if (i != 5) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    end
+    if (i != 5) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

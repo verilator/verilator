@@ -1,6 +1,6 @@
-%Error: t/t_class_ref_bad.v:15:11: Package/class for ':: reference' not found: 'ClsRigh'
-                                 : ... Suggested alternative: 'ClsRight'
-   15 |       s = ClsRigh::m_s;   
-      |           ^~~~~~~
+%Error: t/t_class_ref_bad.v:15:9: Package/class for ':: reference' not found: 'ClsRigh'
+                                : ... Suggested alternative: 'ClsRight'
+   15 |     s = ClsRigh::m_s;   
+      |         ^~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

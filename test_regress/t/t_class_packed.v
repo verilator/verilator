@@ -4,37 +4,33 @@
 // SPDX-FileCopyrightText: 2020 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (
+    input clk
+);
 
-   //TODO sub #(.WIDTH(1)) w1();
-   //TODO sub #(.WIDTH(2)) w2();
-   //TODO sub #(.WIDTH(3)) w3();
-   //TODO sub #(.WIDTH(4)) w4();
-   sub #(.WIDTH(5)) w5();
+  //TODO sub #(.WIDTH(1)) w1();
+  //TODO sub #(.WIDTH(2)) w2();
+  //TODO sub #(.WIDTH(3)) w3();
+  //TODO sub #(.WIDTH(4)) w4();
+  sub #(.WIDTH(5)) w5 ();
 
-   always @ (posedge clk) begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  always @(posedge clk) begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule
 
 module sub ();
-   parameter WIDTH=5; // WIDTH >= 5 fails. WIDTH <= 4 passes
+  parameter WIDTH = 5;  // WIDTH >= 5 fails. WIDTH <= 4 passes
 
-   typedef struct packed {
-      logic [WIDTH-1:0] data;
-      } [15:0] w_t;
+  typedef struct packed {logic [WIDTH-1:0] data;} [15:0] w_t;
 
-   class WrReqQ;
-      w_t w;
-   endclass
+  class WrReqQ;
+    w_t w;
+  endclass
 
-   initial begin
-      if ($bits(w_t) != WIDTH * 16) $stop;
-   end
+  initial begin
+    if ($bits(w_t) != WIDTH * 16) $stop;
+  end
 
 endmodule

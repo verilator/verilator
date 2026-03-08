@@ -8,10 +8,13 @@
 
 module t;
 
-   typedef struct { string a; string b; } foo_t;
+  typedef struct {
+    string a;
+    string b;
+  } foo_t;
 
-   import "DPI-C" task dpix_twice(foo_t arg);
-   initial begin
-      $stop;
-   end
+  import "DPI-C" task dpix_twice(foo_t arg);
+  initial begin
+    $stop;
+  end
 endmodule

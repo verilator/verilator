@@ -1,8 +1,8 @@
 %Error: t/t_class_mispure_bad.v:11:1: Class 'Bar' extends 'Base' but is missing implementation for 'pvfunc' (IEEE 1800-2023 8.26)
    11 | class Bar extends Base;
       | ^~~~~
-        t/t_class_mispure_bad.v:8:31: ... Location of interface class's function
-    8 |    pure virtual function void pvfunc();
-      |                               ^~~~~~
+        t/t_class_mispure_bad.v:8:30: ... Location of interface class's function
+    8 |   pure virtual function void pvfunc();
+      |                              ^~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

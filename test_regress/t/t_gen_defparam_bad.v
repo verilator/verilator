@@ -5,8 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   defparam id_13.id_14 = -id_13,
-     id_15 = id_14;
+  defparam id_13.id_14 = -id_13,
+    id_15 = id_14;
 
-   defparam id_8 = 1, id_9 = 1;
+  defparam id_8 = 1, id_9 = 1;
 endmodule

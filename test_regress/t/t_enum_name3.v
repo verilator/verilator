@@ -7,18 +7,19 @@
 // bug855
 module our;
 
-   typedef enum logic {n,N} T_Flg_N;
+  typedef enum logic {
+    n,
+    N
+  } T_Flg_N;
 
-   typedef struct packed {
-      T_Flg_N N;
-   } T_PS_Reg;
+  typedef struct packed {T_Flg_N N;} T_PS_Reg;
 
-   T_PS_Reg PS = 1'b1;
+  T_PS_Reg PS = 1'b1;
 
-   initial begin
-      $write ("P:%s\n", PS.N.name);
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("P:%s\n", PS.N.name);
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

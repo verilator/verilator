@@ -4,45 +4,45 @@
 // SPDX-FileCopyrightText: 2007 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (
+    input clk
+);
 
-   integer      cyc = 0;
+  integer cyc = 0;
 
-   Testit testit (/*AUTOINST*/
-                  // Inputs
-                  .clk                  (clk));
+  Testit testit (  /*AUTOINST*/
+      // Inputs
+      .clk(clk)
+  );
 
-   always @ (posedge clk) begin
-      cyc <= cyc + 1;
-      if (cyc==0) begin
-      end
-      else if (cyc<10) begin
-      end
-      else if (cyc<90) begin
-      end
-      else if (cyc==99) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+    if (cyc == 0) begin
+    end
+    else if (cyc < 10) begin
+    end
+    else if (cyc < 90) begin
+    end
+    else if (cyc == 99) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 
 endmodule
 
-module Testit (clk);
-   input clk;
+module Testit (
+    input clk
+);
 
-   genvar igen;
-   generate
-      for (igen=0; igen<0; igen=igen+1) begin : test_gen
-         always @ (posedge clk) begin
-            $display("igen1 = %d", igen);
-            $stop;
-         end
+  genvar igen;
+  generate
+    for (igen = 0; igen < 0; igen = igen + 1) begin : test_gen
+      always @(posedge clk) begin
+        $display("igen1 = %d", igen);
+        $stop;
       end
-   endgenerate
+    end
+  endgenerate
 
 endmodule

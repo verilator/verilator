@@ -5,11 +5,11 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   int assoc[int];
-   bit m;
+  int assoc[int];
+  bit m;
 
-   initial begin
-      m = (10 inside {assoc});
-   end
+  initial begin
+    m = (10 inside {assoc});
+  end
 
 endmodule

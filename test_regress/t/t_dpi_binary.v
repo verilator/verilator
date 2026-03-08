@@ -8,12 +8,12 @@
 
 module t;
 
-   initial begin
-      // All Finished is in dpic_final
-      $finish;
-   end
+  initial begin
+    // All Finished is in dpic_final
+    $finish;
+  end
 
-   import "DPI-C" context function void dpic_final();
-   final dpic_final();
+  import "DPI-C" context function void dpic_final();
+  final dpic_final();
 
 endmodule

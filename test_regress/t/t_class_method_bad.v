@@ -5,16 +5,18 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Base1;
-   task meth1; endtask
+  task meth1;
+  endtask
 endclass
 
 class Cls2 extends Base1;
-   task meth2; endtask
+  task meth2;
+  endtask
 endclass
 
 module t;
-   initial begin
-      Cls2 c;
-      c.meth3();  // Not found
-   end
+  initial begin
+    Cls2 c;
+    c.meth3();  // Not found
+  end
 endmodule

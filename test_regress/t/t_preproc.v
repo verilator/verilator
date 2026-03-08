@@ -3,8 +3,8 @@
 // SPDX-FileCopyrightText: 2000-2011 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 // This file intentionally includes some tabs
-
 //===========================================================================
 // Includes
 `include "t_preproc_inc2.vh"

@@ -5,27 +5,27 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Packet;
-   rand int one;
+  rand int one;
 
-   constraint a { one > 0 && one < 2; }
+  constraint a {one > 0 && one < 2;}
 
-   constraint empty { }
+  constraint empty {}
 
 endclass
 
 module t;
 
-   Packet p;
+  Packet p;
 
-   int v;
+  int v;
 
-   initial begin
-      p = new;
-      v = p.randomize();
-      if (v != 1) $stop;
-      if (p.one != 1) $stop;
+  initial begin
+    p = new;
+    v = p.randomize();
+    if (v != 1) $stop;
+    if (p.one != 1) $stop;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

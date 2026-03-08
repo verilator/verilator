@@ -93,16 +93,16 @@ $timescale 1ps $end
     $var wire 1 H! l $end
     $var wire 1 >! m $end
     $var wire 6 2 tab [5:0] $end
-    $var wire 8 h data[0][0] [7:0] $end
-    $var wire 8 i data[0][1] [7:0] $end
-    $var wire 8 j data[1][0] [7:0] $end
-    $var wire 8 k data[1][1] [7:0] $end
+    $var wire 8 h data[1][1] [7:0] $end
+    $var wire 8 i data[1][0] [7:0] $end
+    $var wire 8 j data[0][1] [7:0] $end
+    $var wire 8 k data[0][0] [7:0] $end
     $var wire 32 $ vlCoverageLineTrace_t_cover_line__315_block [31:0] $end
     $var wire 32 l pstruct [31:0] $end
     $var wire 32 % vlCoverageLineTrace_t_cover_line__323_block [31:0] $end
     $var wire 32 m vlCoverageLineTrace_t_cover_line__328_block [31:0] $end
-    $var wire 8 & get_arr__Vstatic__arr[0] [7:0] $end
-    $var wire 8 ' get_arr__Vstatic__arr[1] [7:0] $end
+    $var wire 8 & get_arr__Vstatic__arr[1] [7:0] $end
+    $var wire 8 ' get_arr__Vstatic__arr[0] [7:0] $end
     $var wire 32 : vlCoverageLineTrace_t_cover_line__333_cond_else [31:0] $end
     $var wire 32 ; vlCoverageLineTrace_t_cover_line__333_cond_then [31:0] $end
     $var wire 32 < vlCoverageLineTrace_t_cover_line__334_cond_else [31:0] $end
@@ -360,8 +360,8 @@ b00000000000000000000000000000001 `
 b00000000000000000000000000000001 a
 b00000000000000000000000000000001 b
 b00000000000000000000000000000001 d
-b00000010 h
-b00000001 i
+b00000001 j
+b00000010 k
 b00000000000000110000000000000000 l
 b00000000000000000000000000000001 n
 b00000000000000000000000000000001 o
@@ -425,8 +425,8 @@ b00000000000000000000000000000010 `
 b00000000000000000000000000000010 a
 b00000000000000000000000000000010 b
 b00000000000000000000000000000010 d
-b00000000 h
-b00000000 i
+b00000000 j
+b00000000 k
 b00000000000000000000000000000010 m
 b00000000000000000000000000000010 n
 b00000000000000000000000000000010 o

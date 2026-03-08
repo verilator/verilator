@@ -5,5 +5,5 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   nfound nfound();
+  nfound nfound ();
 endmodule

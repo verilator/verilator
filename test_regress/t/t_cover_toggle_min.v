@@ -7,16 +7,16 @@
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 module t;
-    logic[1:0] a;
-    logic[1:0] b;
-    logic[1:0] c;
+  logic [1:0] a;
+  logic [1:0] b;
+  logic [1:0] c;
 
-    initial begin
-        #1 a = 2'b01;
-        #1 b = 2'b10;
-        #1 c = 2'b11;
-        #1 c = 2'b10;
-        $write("*-* All Finished *-*\n");
-        $finish;
-    end
+  initial begin
+    #1 a = 2'b01;
+    #1 b = 2'b10;
+    #1 c = 2'b11;
+    #1 c = 2'b10;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

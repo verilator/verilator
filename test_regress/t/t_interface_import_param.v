@@ -12,36 +12,38 @@ package bus_pkg;
 endpackage
 
 interface simple_bus
-  import bus_pkg::*; // Import preceding parameters.
-  #(p_width = WIDTH)
-   (input logic clk);
+  import bus_pkg::*;  // Import preceding parameters.
+#(
+    p_width = WIDTH
+) (
+    input logic clk
+);
 
-   logic req, gnt;
-   logic [p_width-1:0] addr;
-   logic [p_width-1:0] data;
+  logic req, gnt;
+  logic [p_width-1:0] addr;
+  logic [p_width-1:0] data;
 
-   modport slave(input req, addr, clk,
-                 output gnt,
-                 input  data);
+  modport slave(input req, addr, clk, output gnt, input data);
 
-   modport master(input gnt, clk,
-                  output req, addr,
-                  output data);
+  modport master(input gnt, clk, output req, addr, output data);
 
 endinterface
 
-module mem(simple_bus a);
-   logic avail;
-   always @(posedge a.clk)
-     a.gnt <= a.req & avail;
-   initial begin
-      if ($bits(a.data) != 8) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+module mem (
+    simple_bus a
+);
+  logic avail;
+  always @(posedge a.clk) a.gnt <= a.req & avail;
+  initial begin
+    if ($bits(a.data) != 8) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule
 
-module t (input clk);
-   simple_bus sb(clk);
-   mem mem(sb.slave);
+module t (
+    input clk
+);
+  simple_bus sb (clk);
+  mem mem (sb.slave);
 endmodule

@@ -1,22 +1,22 @@
-%Error: t/t_display_type_bad.v:10:31: $display-line format of '%d' illegal with string argument
+%Error: t/t_display_type_bad.v:10:29: $display-line format of '%d' illegal with string argument
                                     : ... note: In instance 't'
                                     : ... Suggest use '%s'
-   10 |       $display("%d %x %f %t", s, s, s, s);
-      |                               ^
+   10 |     $display("%d %x %f %t", s, s, s, s);
+      |                             ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_display_type_bad.v:10:34: $display-line format of '%x' illegal with string argument
+%Error: t/t_display_type_bad.v:10:32: $display-line format of '%x' illegal with string argument
                                     : ... note: In instance 't'
                                     : ... Suggest use '%s'
-   10 |       $display("%d %x %f %t", s, s, s, s);
-      |                                  ^
-%Error: t/t_display_type_bad.v:10:37: $display-line format of '%f' illegal with string argument
+   10 |     $display("%d %x %f %t", s, s, s, s);
+      |                                ^
+%Error: t/t_display_type_bad.v:10:35: $display-line format of '%f' illegal with string argument
                                     : ... note: In instance 't'
                                     : ... Suggest use '%s'
-   10 |       $display("%d %x %f %t", s, s, s, s);
-      |                                     ^
-%Error: t/t_display_type_bad.v:10:40: $display-line format of '%t' illegal with string argument
+   10 |     $display("%d %x %f %t", s, s, s, s);
+      |                                   ^
+%Error: t/t_display_type_bad.v:10:38: $display-line format of '%t' illegal with string argument
                                     : ... note: In instance 't'
                                     : ... Suggest use '%s'
-   10 |       $display("%d %x %f %t", s, s, s, s);
-      |                                        ^
+   10 |     $display("%d %x %f %t", s, s, s, s);
+      |                                      ^
 %Error: Exiting due to

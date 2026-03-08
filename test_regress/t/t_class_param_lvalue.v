@@ -7,7 +7,9 @@
 class Foo;
 endclass
 
-class Bar #(type BASE=Foo) extends BASE;
+class Bar #(
+    type BASE = Foo
+) extends BASE;
   task body();
     int v = 0;
     v = 1;

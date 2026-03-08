@@ -7,5 +7,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 module t;
-   export "DPI-C" task dpix_bad_missing;
+  export "DPI-C" task dpix_bad_missing;
 endmodule

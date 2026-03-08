@@ -4,10 +4,10 @@
 // SPDX-FileCopyrightText: 2003 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-typedef enum { HIDE_VALUE = 0 } hide_enum_t;
+typedef enum {HIDE_VALUE = 0} hide_enum_t;
 
 module t;
 
-   typedef enum { HIDE_VALUE = 0 } hide_enum_t;
+  typedef enum {HIDE_VALUE = 0} hide_enum_t;
 
 endmodule

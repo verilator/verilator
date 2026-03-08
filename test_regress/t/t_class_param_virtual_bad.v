@@ -7,20 +7,24 @@
 virtual class VBase;
 endclass
 
-class Cls#(parameter type T = VBase);
-   T t;
-   function new;
-      t = new;
-   endfunction
+class Cls #(
+    parameter type T = VBase
+);
+  T t;
+  function new;
+    t = new;
+  endfunction
 endclass
 
-virtual class ClsVirt#(parameter type T);
+virtual class ClsVirt #(
+    parameter type T
+);
 endclass
 
 module t;
-   initial begin
-      automatic Cls c = new;  // Error
-      automatic ClsVirt#(VBase) cv = new;  // Error
-      $stop;
-   end
+  initial begin
+    automatic Cls c = new;  // Error
+    automatic ClsVirt #(VBase) cv = new;  // Error
+    $stop;
+  end
 endmodule

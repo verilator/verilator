@@ -6,8 +6,9 @@
 
 module t;
 
-   typedef enum { DUP_VALUE = 2,
-                  DUP_VALUE = 3
-                  } dup_t;
+  typedef enum {
+    DUP_VALUE = 2,
+    DUP_VALUE = 3
+  } dup_t;
 
 endmodule
