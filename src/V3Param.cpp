@@ -800,7 +800,8 @@ class ParamProcessor final {
         const string lastCompBase
             = (braPos == string::npos) ? lastComp : lastComp.substr(0, braPos);
         if (lastComp != cloneCellp->name() && lastCompBase != cloneCellp->name()) return false;
-        if (lastDot == string::npos) return true;  // No parent portion to verify
+        // No parent portion to verify — startModp itself must be the expected parent
+        if (lastDot == string::npos) return startModp == expectModp;
         const string parentPath = cellPath.substr(0, lastDot);
         const AstNodeModule* const resolvedp
             = V3LinkDotIfaceCapture::followCellPath(startModp, parentPath);
@@ -1790,6 +1791,13 @@ public:
             if (entry.cloneCellPath.empty()) return;  // Only fix clone entries
             if (entry.cellPath != cellName) return;
             if (!entry.ownerModp || entry.ownerModp->name() != ownerName) return;
+            // Verify the REFDTYPE actually lives inside parentModp.
+            // Multiple clones of the same template share origName, so name
+            // matching alone is insufficient — without this check a second
+            // clone's retarget would overwrite pointers belonging to the first.
+            AstNodeModule* const actualOwnerp
+                = V3LinkDotIfaceCapture::findOwnerModule(entry.refp);
+            if (actualOwnerp != parentModp) return;
 
             AstRefDType* const refp = entry.refp;
             AstNodeModule* const correctModp
