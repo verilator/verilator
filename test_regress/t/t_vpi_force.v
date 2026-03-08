@@ -37,6 +37,7 @@ module Test (
   extern "C" int putString();
   extern "C" int tryInvalidPutOperations();
   extern "C" int putInertialDelay();
+  extern "C" int checkInertialDelay();
   extern "C" int forceValues();
   extern "C" int releaseValues();
   extern "C" int releasePartiallyForcedValues();
@@ -50,6 +51,7 @@ module Test (
   import "DPI-C" context function int putString();
   import "DPI-C" context function int tryInvalidPutOperations();
   import "DPI-C" context function int putInertialDelay();
+  import "DPI-C" context function int checkInertialDelay();
 `endif
   import "DPI-C" context function int forceValues();
   import "DPI-C" context function int releaseValues();
@@ -61,6 +63,11 @@ module Test (
 
   // Verify that vpi_put_value still works for strings
   string        str1       /*verilator public_flat_rw*/; // std::string
+
+  // Verify that EmitCSyms changes still allow for forceable, but not
+  // public_flat_rw signals. This signal is only forced and checked in this
+  // SystemVerilog testbench, but not through VPI.
+  logic         nonPublic /*verilator forceable*/; // CData
 
   // Verify that vpi_put_value still works with vpiInertialDelay
   logic [ 31:0] delayed    `PUBLIC_FORCEABLE; // IData
@@ -131,6 +138,8 @@ module Test (
   wire [ 63:0] decStringQContinuously `PUBLIC_FORCEABLE; // QData
 
   always @(posedge clk) begin
+    nonPublic <= 1;
+
     onebit <= 1;
     intval <= 32'hAAAAAAAA;
 
@@ -311,6 +320,27 @@ module Test (
       $write("%%Error: t_vpi_force.cpp:%0d:", vpiStatus);
       $display(
           "C Test failed (vpi_put_value with vpiInertialDelay failed)");
+      $stop;
+    end
+  endtask
+
+  task automatic vpiCheckInertialDelay();
+    integer vpiStatus = 1;  // Default to failed status to ensure that a function *not* getting
+                            // called also causes simulation termination
+`ifdef VERILATOR
+`ifdef USE_VPI_NOT_DPI
+    vpiStatus = $c32("checkInertialDelay()");
+`else
+    vpiStatus = checkInertialDelay();
+`endif
+`else
+    $stop; // This task only makes sense with Verilator, since it tests verilated_vpi.cpp
+`endif
+
+    if (vpiStatus != 0) begin
+      $write("%%Error: t_vpi_force.cpp:%0d:", vpiStatus);
+      $display(
+          "C Test failed (vpi_get_value to check result of previous vpi_put_value with vpiInertialDelay failed)");
       $stop;
     end
   endtask
@@ -603,10 +633,15 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     vpiPutString();
     vpiTryInvalidPutOperations();
     vpiPutInertialDelay();
+    #1 vpiCheckInertialDelay();
+    // Force and check non-public, but forceable signal
+    force nonPublic = 0;
+    #4 if(nonPublic != 0) $stop;
+    release nonPublic;
+    #4 if (nonPublic != 1) $stop;
 `endif
 
-    // Wait a bit before triggering the force to see a change in the traces
-    #4 vpiForceValues();
+    vpiForceValues();
 
     // Time delay to ensure setting and checking values does not happen
     // at the same time, so that the signals can have their values overwritten
@@ -659,6 +694,8 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
 `ifdef TEST_VERBOSE
   always @(posedge clk or negedge clk) begin
     $display("time: %0t\tclk:%b", $time, clk);
+
+    $display("nonPublic: %x", nonPublic);
 
     $display("str1: %s", str1);
     $display("delayed: %x", delayed);
