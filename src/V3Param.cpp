@@ -1782,42 +1782,22 @@ class ParamProcessor final {
 public:
     // After an interface cell inside parentModp has been deparameterized
     // (rewired from template to clone), retarget REFDTYPEs that still
-    // reference the old template's types.  cellName is the cell instance
-    // name (== cellPath in the ledger).
+    // reference the old template's types so that $bits(iface_typedef)
+    // evaluates with the clone's widths.
     void retargetIfaceRefs(AstNodeModule* parentModp, const string& cellName) {
-        const string ownerName = parentModp->origName();
+        AstNodeModule* const correctModp
+            = V3LinkDotIfaceCapture::followCellPath(parentModp, cellName);
+        if (!correctModp || correctModp->dead() || correctModp->parameterizedTemplate()) return;
         V3LinkDotIfaceCapture::forEach([&](const V3LinkDotIfaceCapture::CapturedEntry& entry) {
-            if (!entry.refp) return;
-            if (entry.cloneCellPath.empty()) return;  // Only fix clone entries
+            if (!entry.refp || entry.cloneCellPath.empty()) return;
             if (entry.cellPath != cellName) return;
-            if (!entry.ownerModp || entry.ownerModp->name() != ownerName) return;
-            // Verify the REFDTYPE actually lives inside parentModp.
-            // Multiple clones of the same template share origName, so name
-            // matching alone is insufficient - without this check a second
-            // clone's retarget would overwrite pointers belonging to the first.
-            AstNodeModule* const actualOwnerp = V3LinkDotIfaceCapture::findOwnerModule(entry.refp);
-            if (actualOwnerp != parentModp) return;
-
-            AstRefDType* const refp = entry.refp;
-            AstNodeModule* const correctModp
-                = V3LinkDotIfaceCapture::followCellPath(parentModp, entry.cellPath);
-            UINFO(9, "retargetIfaceRefs: " << refp << " cellPath='" << entry.cellPath << "' -> "
-                                           << (correctModp ? correctModp->name() : "<null>")
-                                           << endl);
-            if (!correctModp || correctModp->dead() || correctModp->parameterizedTemplate())
-                return;
-
-            if (refp->typedefp()) {
-                if (AstTypedef* const newTdp = V3LinkDotIfaceCapture::findTypedefInModule(
-                        correctModp, refp->typedefp()->name())) {
-                    refp->typedefp(newTdp);
-                }
-            }
-            if (refp->refDTypep()) {
-                if (AstNodeDType* const newDtp = V3LinkDotIfaceCapture::findDTypeInModule(
-                        correctModp, refp->refDTypep()->name(), refp->refDTypep()->type())) {
-                    refp->refDTypep(newDtp);
-                }
+            // Identity check: only retarget REFDTYPEs that actually live
+            // inside parentModp.  Multiple clones share origName so name
+            // matching alone would let one clone overwrite another's refs.
+            if (V3LinkDotIfaceCapture::findOwnerModule(entry.refp) != parentModp) return;
+            if (retargetRefToModule(entry, correctModp)) {
+                UINFO(9, "retargetIfaceRefs: " << entry.refp << " -> "
+                                               << correctModp->prettyNameQ() << endl);
             }
         });
     }
