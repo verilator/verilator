@@ -1795,8 +1795,7 @@ public:
             // Multiple clones of the same template share origName, so name
             // matching alone is insufficient - without this check a second
             // clone's retarget would overwrite pointers belonging to the first.
-            AstNodeModule* const actualOwnerp
-                = V3LinkDotIfaceCapture::findOwnerModule(entry.refp);
+            AstNodeModule* const actualOwnerp = V3LinkDotIfaceCapture::findOwnerModule(entry.refp);
             if (actualOwnerp != parentModp) return;
 
             AstRefDType* const refp = entry.refp;
@@ -1805,7 +1804,8 @@ public:
             UINFO(9, "retargetIfaceRefs: " << refp << " cellPath='" << entry.cellPath << "' -> "
                                            << (correctModp ? correctModp->name() : "<null>")
                                            << endl);
-            if (!correctModp || correctModp->dead() || correctModp->parameterizedTemplate()) return;
+            if (!correctModp || correctModp->dead() || correctModp->parameterizedTemplate())
+                return;
 
             if (refp->typedefp()) {
                 if (AstTypedef* const newTdp = V3LinkDotIfaceCapture::findTypedefInModule(
@@ -2068,9 +2068,8 @@ class ParamVisitor final : public VNVisitor {
                     }
 
                     // Add the (now potentially specialized) child module to the work queue
-                    workQueue.emplace(
-                        ParamState::WQKey{!VN_IS(newModp, Iface), newModp->level()},
-                        newModp);
+                    workQueue.emplace(ParamState::WQKey{!VN_IS(newModp, Iface), newModp->level()},
+                                      newModp);
 
                     // Add to the hierarchy registry
                     m_state.m_parentps[newModp].insert(modp);
