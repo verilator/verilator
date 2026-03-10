@@ -3739,6 +3739,14 @@ class RandomizeVisitor final : public VNVisitor {
     void lowerDistConstraints(AstTask* taskp, AstNode* constrItemsp) {
         for (AstNode *nextip, *itemp = constrItemsp; itemp; itemp = nextip) {
             nextip = itemp->nextp();
+
+            // Recursively handle ConstraintIf nodes (dist can be inside if/else)
+            if (AstConstraintIf* const cifp = VN_CAST(itemp, ConstraintIf)) {
+                if (cifp->thensp()) lowerDistConstraints(taskp, cifp->thensp());
+                if (cifp->elsesp()) lowerDistConstraints(taskp, cifp->elsesp());
+                continue;
+            }
+
             AstConstraintExpr* const constrExprp = VN_CAST(itemp, ConstraintExpr);
             if (!constrExprp) continue;
             AstDist* const distp = VN_CAST(constrExprp->exprp(), Dist);
