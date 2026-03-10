@@ -362,10 +362,6 @@ public:
 
 class VerilatedVpioVar VL_NOT_FINAL : public VerilatedVpioVarBase {
     uint8_t* m_prevDatap = nullptr;  // Previous value of data, for cbValueChange
-    union {
-        uint8_t u8[4];
-        uint32_t u32;
-    } m_mask;  // memoized variable mask
     uint32_t m_entSize = 0;  // memoized variable size
     uint32_t m_bitOffset = 0;
     int32_t m_partselBits = -1;  // Part-select width, -1 means no part-select active
@@ -377,21 +373,17 @@ protected:
 public:
     VerilatedVpioVar(const VerilatedVar* varp, const VerilatedScope* scopep)
         : VerilatedVpioVarBase{varp, scopep} {
-        m_mask.u32 = VL_MASK_I(varp->entBits());
         m_entSize = varp->entSize();
         m_varDatap = varp->datap();
     }
     explicit VerilatedVpioVar(const VerilatedVpioVar* varp)
         : VerilatedVpioVarBase{varp} {
         if (varp) {
-            m_mask.u32 = varp->m_mask.u32;
             m_entSize = varp->m_entSize;
             m_varDatap = varp->m_varDatap;
             m_index = varp->m_index;
             m_partselBits = varp->m_partselBits;
             // Not copying m_prevDatap, must be nullptr
-        } else {
-            m_mask.u32 = 0;
         }
     }
     ~VerilatedVpioVar() override {
@@ -410,8 +402,6 @@ public:
         if (m_partselBits >= 0) return static_cast<uint32_t>(m_partselBits);
         return VerilatedVpioVarBase::size();
     }
-    uint32_t mask() const { return m_mask.u32; }
-    uint8_t mask_byte(int idx) const { return m_mask.u8[idx & 3]; }
     uint32_t entSize() const { return m_entSize; }
     const std::vector<int32_t>& index() const { return m_index; }
     // Create a part-selected view of this variable with the given bit range [hi:lo].
