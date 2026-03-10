@@ -1,5 +1,6 @@
 // DESCRIPTION: Verilator: Verilog Test module - Edge case: negative value ranges
 // This file ONLY is placed into the Public Domain, for any use, without warranty.
+// SPDX-FileCopyrightText: 2025 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 // Test: Bins with negative value ranges
