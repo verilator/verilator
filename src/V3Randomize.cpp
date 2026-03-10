@@ -3810,7 +3810,7 @@ class RandomizeVisitor final : public VNVisitor {
         AstVar* genp = getRandomGenerator(nodep);
         if (genp) {
             // Phase 1: Process all constraints (create tasks, run ConstraintExprVisitor)
-            // Setup task refs are NOT added to setupAllTaskp here — done in phase 2
+            // Setup task refs are NOT added to setupAllTaskp here -- done in phase 2
             nodep->foreachMember([&](AstClass* const classp, AstConstraint* const constrp) {
                 AstTask* taskp = VN_AS(constrp->user2p(), Task);
                 if (!taskp) {
