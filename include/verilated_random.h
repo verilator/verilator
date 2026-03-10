@@ -623,8 +623,8 @@ public:
     void soft(std::string&& constraint, const char* filename = "", uint32_t linenum = 0,
               const char* source = "");
     void pin_var(const char* name, int width, uint64_t value) {
-        std::string constraint = "(__Vbv (= "s + name + " (_ bv"
-                                 + std::to_string(value) + " " + std::to_string(width) + ")))";
+        std::string constraint = "(__Vbv (= "s + name + " (_ bv" + std::to_string(value) + " "
+                                 + std::to_string(width) + ")))";
         hard(std::move(constraint));
     }
     void disable_soft(const std::string& varName);
