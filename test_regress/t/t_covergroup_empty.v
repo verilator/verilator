@@ -1,5 +1,6 @@
 // DESCRIPTION: Verilator: Verilog Test module - Edge case: empty covergroup
 // This file ONLY is placed into the Public Domain, for any use, without warranty.
+// SPDX-FileCopyrightText: 2025 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 // Test: Empty covergroup (no coverpoints)
