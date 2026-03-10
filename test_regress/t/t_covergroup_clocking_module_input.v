@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty.
+// SPDX-FileCopyrightText: 2025 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 // Test: Covergroup with clocking event using MODULE INPUT clock
