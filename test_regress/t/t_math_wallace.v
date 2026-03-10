@@ -5,11 +5,9 @@
 // SPDX-FileCopyrightText: 2008 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (  /*AUTOARG*/
-  // Inputs
-  clk
-  );
-  input clk;
+module t (
+    input clk
+);
 
   integer cyc = 0;
   reg [63:0] crc;
@@ -35,18 +33,19 @@ module t (  /*AUTOARG*/
 
   /*AUTOWIRE*/
   // Beginning of automatic wires (for undeclared instantiated-module outputs)
-  wire [64:0]           product_d3;             // From test of t_math_wallace_mul.v
+  wire [64:0] product_d3;  // From test of t_math_wallace_mul.v
   // End of automatics
 
   t_math_wallace_mul test (  /*AUTOINST*/
-                           // Outputs
-                           .product_d3          (product_d3[64:0]),
-                           // Inputs
-                           .clk                 (clk),
-                           .enable              (enable),
-                           .negate              (negate),
-                           .datA                (datA[31:0]),
-                           .datB                (datB[31:0]));
+      // Outputs
+      .product_d3(product_d3[64:0]),
+      // Inputs
+      .clk(clk),
+      .enable(enable),
+      .negate(negate),
+      .datA(datA[31:0]),
+      .datB(datB[31:0])
+  );
 
   integer cycs_enabled;
   initial cycs_enabled = 0;

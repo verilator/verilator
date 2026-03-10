@@ -8,8 +8,8 @@ package Pkg1;
 endpackage
 
 package Pkg10;
-   // verilator lint_off PKGNODECL
-   export Pkg1b::*;  // BAD - typo in package name
+  // verilator lint_off PKGNODECL
+  export Pkg1b::*;  // BAD - typo in package name
 endpackage
 
 module t;

@@ -1,8 +1,8 @@
-%Error-UNSUPPORTED: t/t_tri_and_eqcase.v:9:29: Unsupported tristate construct: AND in function getEnExprBasedOnOriginalp
-    9 |    logic b = 1'bz === (clk1 & clk2);
-      |                             ^
+%Error-UNSUPPORTED: t/t_tri_and_eqcase.v:12:28: Unsupported tristate construct: AND in function getEnExprBasedOnOriginalp
+   12 |   logic b = 1'bz === (clk1 & clk2);
+      |                            ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: Internal Error: t/t_tri_and_eqcase.v:9:19: ../V3Ast.cpp:#: Null item passed to setOp2p
-    9 |    logic b = 1'bz === (clk1 & clk2);
-      |                   ^~~
+%Error: Internal Error: t/t_tri_and_eqcase.v:12:18: ../V3Ast.cpp:#: Null item passed to setOp2p
+   12 |   logic b = 1'bz === (clk1 & clk2);
+      |                  ^~~
                         ... This fatal error may be caused by the earlier error(s); resolve those first.

@@ -5,37 +5,35 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   typedef struct {
-      int fst, snd;
-   } pair_t;
+  typedef struct {int fst, snd;} pair_t;
 
-   class Cls;
-      pair_t p;
-   endclass
+  class Cls;
+    pair_t p;
+  endclass
 
-   pair_t a, b;
-   Cls c = new;
+  pair_t a, b;
+  Cls c = new;
 
-   initial begin
-      a.fst = 1;
-      a.snd = 2;
-      b.fst = 3;
-      b.snd = 4;
+  initial begin
+    a.fst = 1;
+    a.snd = 2;
+    b.fst = 3;
+    b.snd = 4;
 
-      a = b;
+    a = b;
 
-      $display("(%d, %d) (%d, %d)", a.fst, a.snd, b.fst, b.snd);
-      $display("%%p=%p", a);
+    $display("(%d, %d) (%d, %d)", a.fst, a.snd, b.fst, b.snd);
+    $display("%%p=%p", a);
 
-      c.p.fst = 5;
-      if (c.p.fst != 5) $stop;
-      a = c.p;
-      if (a.fst != 5) $stop;
-      c.p = b;
-      if (c.p.fst != 3) $stop;
-      if (c.p.snd != 4) $stop;
+    c.p.fst = 5;
+    if (c.p.fst != 5) $stop;
+    a = c.p;
+    if (a.fst != 5) $stop;
+    c.p = b;
+    if (c.p.fst != 3) $stop;
+    if (c.p.snd != 4) $stop;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

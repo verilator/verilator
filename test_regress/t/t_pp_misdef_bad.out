@@ -1,10 +1,10 @@
-%Error: t/t_pp_misdef_bad.v:11:4: Define or directive not defined: '`NDEFINED'
+%Error: t/t_pp_misdef_bad.v:12:4: Define or directive not defined: '`NDEFINED'
                                 : ... Suggested alternative: '`DEFINED'
-   11 |    `NDEFINED
+   12 |    `NDEFINED
       |    ^~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_pp_misdef_bad.v:14:6: Define or directive not defined: '`imescale'
+%Error: t/t_pp_misdef_bad.v:15:6: Define or directive not defined: '`imescale'
                                 : ... Suggested alternative: '`timescale'
-   14 |      `imescale
+   15 |      `imescale
       |      ^~~~~~~~~
 %Error: Exiting due to

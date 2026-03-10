@@ -5,8 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   task tsk;
-   endtask
+  task tsk;
+  endtask
 
-   initial tsk.bad_missing_ref = 0;
+  initial tsk.bad_missing_ref = 0;
 endmodule

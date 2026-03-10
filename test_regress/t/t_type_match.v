@@ -9,70 +9,66 @@
 // SPDX-FileCopyrightText: 2024 Pawel Jewstafjew <Pawel.Jewstafjew@gmail.com>
 // SPDX-License-Identifier: CC0-1.0
 
-module t (clk);
-   input clk;
+module t (
+    input clk
+);
 
-   logic a;
-   logic d;
+  logic a;
+  logic d;
 
-   top i_top(.*);
+  top i_top (.*);
 
-   integer cnt;
-   initial cnt=1;
+  integer cnt;
+  initial cnt = 1;
 
-   always @ (posedge clk)
-     begin
-        cnt <= cnt + 1;
+  always @(posedge clk) begin
+    cnt <= cnt + 1;
 
-        a <= cnt[0];
-        $display("%d %d %d", cnt, a, d);
-        if (d != a)
-          $stop;
+    a <= cnt[0];
+    $display("%d %d %d", cnt, a, d);
+    if (d != a) $stop;
 
-        if (cnt == 10) begin
-           $write("*-* All Finished *-*\n");
-           $finish;
-        end
-     end
+    if (cnt == 10) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 
 endmodule
 
 
 module top (
-            input a,
-            output d
-            );
+    input a,
+    output d
+);
 
-   logic          b;
-   logic          c[1];
-   assign c[0] = b;
+  logic b;
+  logic c[1];
+  assign c[0] = b;
 
-   unit i_unit
-     (
-      .a (a),
-      .b (b),
-      .c (c),
-      .d (d)
-      );
+  unit i_unit (
+      .a(a),
+      .b(b),
+      .c(c),
+      .d(d)
+  );
 
 endmodule
 
 
-module unit
-  (
-   input        a,
-   input        c[1],
-   output logic b,
-   output logic d
-   );
+module unit (
+    input a,
+    input c[1],
+    output logic b,
+    output logic d
+);
 
-   // no_inline required to prevent optimising away the interesing part ...
-   /*verilator no_inline_module*/
+  // no_inline required to prevent optimising away the interesing part ...
+  /*verilator no_inline_module*/
 
-   always_comb
-     begin
-        b = a;
-        d = b && c[0];
-     end
+  always_comb begin
+    b = a;
+    d = b && c[0];
+  end
 
 endmodule

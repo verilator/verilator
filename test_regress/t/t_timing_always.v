@@ -4,40 +4,42 @@
 // SPDX-FileCopyrightText: 2022 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `ifdef TEST_VERBOSE
  `define WRITE_VERBOSE(args) $write args
 `else
  `define WRITE_VERBOSE(args)
 `endif
+// verilog_format: on
 
 module t;
-   bit clk = 0;
-   always #3 clk = ~clk;
+  bit clk = 0;
+  always #3 clk = ~clk;
 
-   bit flag_a;
-   bit flag_b;
-   always @(posedge clk)
-   begin
-      `WRITE_VERBOSE(("[%0t] b <= 0\n", $time));
-      flag_b <= 1'b0;
-      #2
-      `WRITE_VERBOSE(("[%0t] a <= 1\n", $time));
-      flag_a <= 1'b1;
-      #2
-      `WRITE_VERBOSE(("[%0t] b <= 1\n", $time));
-      flag_b <= 1'b1;
-   end
-   always @(flag_a) if ($time > 0)
-   begin
-      #1
-      `WRITE_VERBOSE(("[%0t] Checking if b == 0\n", $time));
-      if (flag_b !== 1'b0) $stop;
-      #2
-      `WRITE_VERBOSE(("[%0t] Checking if b == 1\n", $time));
-      if (flag_b !== 1'b1) $stop;
-      #10
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
-   initial #20 $stop; // timeout
+  bit flag_a;
+  bit flag_b;
+  always @(posedge clk)
+  begin
+    `WRITE_VERBOSE(("[%0t] b <= 0\n", $time));
+    flag_b <= 1'b0;
+    #2
+    `WRITE_VERBOSE(("[%0t] a <= 1\n", $time));
+    flag_a <= 1'b1;
+    #2
+    `WRITE_VERBOSE(("[%0t] b <= 1\n", $time));
+    flag_b <= 1'b1;
+  end
+  always @(flag_a) if ($time > 0)
+  begin
+    #1
+    `WRITE_VERBOSE(("[%0t] Checking if b == 0\n", $time));
+    if (flag_b !== 1'b0) $stop;
+    #2
+    `WRITE_VERBOSE(("[%0t] Checking if b == 1\n", $time));
+    if (flag_b !== 1'b1) $stop;
+    #10
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
+  initial #20 $stop; // timeout
 endmodule

@@ -12,40 +12,41 @@
 // SPDX-FileCopyrightText: 2012 Jeremy Bennett
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (
+    // Inputs
+    clk
+);
+  input clk;
 
-   wire [1:0] res;
+  wire [1:0] res;
 
-   // Instantiate the test
-   test test_i (// Outputs
-                .res                    (res[1:0]),
-                // Inputs
-                .clk                    (clk),
-                .in                     (1'b1));
+  // Instantiate the test
+  test test_i (  // Outputs
+      .res(res[1:0]),
+      // Inputs
+      .clk(clk),
+      .in(1'b1)
+  );
 
 endmodule
 
-module test (// Outputs
-             res,
-             // Inputs
-             clk,
-             in
-   );
-   output reg [1:0] res;
-   input         clk;
-   input         in;
+module test (  // Outputs
+    res,
+    // Inputs
+    clk,
+    in
+);
+  output reg [1:0] res;
+  input clk;
+  input in;
 
-   // This is a Verilog 2001 test
-   generate
-      genvar i;
-      for (i=0; i<2; i=i+1) begin
-         always @(posedge clk) begin
-            res[i:i] <= in;
-         end
+  // This is a Verilog 2001 test
+  generate
+    genvar i;
+    for (i = 0; i < 2; i = i + 1) begin
+      always @(posedge clk) begin
+        res[i:i] <= in;
       end
-   endgenerate
+    end
+  endgenerate
 endmodule

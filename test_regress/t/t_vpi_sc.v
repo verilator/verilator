@@ -8,12 +8,12 @@
 
 module t;
 
-   // bug1081 - We don't use VPI, just need SC with VPI
+  // bug1081 - We don't use VPI, just need SC with VPI
 
-   initial begin
-      $write("%0t: Hello\n", $time);
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("%0t: Hello\n", $time);
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule : t

@@ -5,17 +5,17 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Cls;
-   int imembera;
+  int imembera;
 endclass : Cls
 
 module t;
-   initial begin
-      Cls c;
-      if (c != null) $stop;
-      c = new;
-      c.imembera = 10;
-      if (c.imembera != 10) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    Cls c;
+    if (c != null) $stop;
+    c = new;
+    c.imembera = 10;
+    if (c.imembera != 10) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

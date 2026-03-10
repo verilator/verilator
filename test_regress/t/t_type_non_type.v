@@ -8,30 +8,30 @@ class Cls;
 endclass
 
 package Pkg;
-   // Issue #2956
-   typedef string STYPE;
-   typedef string line;
-   task automatic testf;
-      inout STYPE line;
-   endtask
+  // Issue #2956
+  typedef string STYPE;
+  typedef string line;
+  task automatic testf;
+    inout STYPE line;
+  endtask
 endpackage
 
 module t;
-   localparam type T = Cls;
+  localparam type T = Cls;
 
-   // Issue #2412
-   typedef T this_thing;  // this_thing now a type
+  // Issue #2412
+  typedef T this_thing;  // this_thing now a type
 
-   function T newer();
-      T this_thing;  // this_thing now a class reference
-      this_thing = new;
-      return this_thing;
-   endfunction
+  function T newer();
+    T this_thing;  // this_thing now a class reference
+    this_thing = new;
+    return this_thing;
+  endfunction
 
-   initial begin
-      Cls c;
-      c = newer();
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    Cls c;
+    c = newer();
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

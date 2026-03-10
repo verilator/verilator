@@ -6,7 +6,7 @@
 
 module t;
 
-   // No matching save
-   // verilator lint_restore
+  // No matching save
+  // verilator lint_restore
 
 endmodule

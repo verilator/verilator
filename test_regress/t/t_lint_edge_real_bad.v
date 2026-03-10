@@ -5,18 +5,18 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
-   // Inputs
-   rbad, rok
-   );
-   input real rbad;
-   input real rok;
-   event ebad;
-   struct packed { int a; } sok;
+  // Inputs
+  rbad, rok
+  );
+  input real rbad;
+  input real rok;
+  event ebad;
+  struct packed { int a; } sok;
 
-   always @ (rok) $stop;
-   always @ (sok) $stop;
+  always @ (rok) $stop;
+  always @ (sok) $stop;
 
-   always @ (posedge rbad) $stop;
-   always @ (posedge ebad) $stop;
+  always @ (posedge rbad) $stop;
+  always @ (posedge ebad) $stop;
 
 endmodule

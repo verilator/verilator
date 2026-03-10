@@ -1,3 +1,3 @@
-[10] %Error: t_uniqueif.v:82: Assertion failed in top.t: 'unique if' statement violated
-%Error: t/t_uniqueif.v:82: Verilog $stop
+[10] %Error: t_uniqueif.v:62: Assertion failed in top.t: 'unique if' statement violated
+%Error: t/t_uniqueif.v:62: Verilog $stop
 Aborting...

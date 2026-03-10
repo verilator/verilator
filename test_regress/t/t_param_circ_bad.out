@@ -1,6 +1,6 @@
-%Error: t/t_param_circ_bad.v:11:43: Variable's initial value is circular: 'X'
+%Error: t/t_param_circ_bad.v:13:15: Variable's initial value is circular: 'X'
                                   : ... note: In instance 't.sub'
-   11 | module sub #(parameter WIDTH=X, parameter X=WIDTH)
-      |                                           ^
+   13 |     parameter X = WIDTH
+      |               ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

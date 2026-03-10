@@ -9,6 +9,6 @@
 `include "t_lint_warn_incfile2_bad_b.vh"
 
 module t;
-   sub sub();
-   int warn_t = 64'h1;  // Not suppressed - should warn
+  sub sub ();
+  int warn_t = 64'h1;  // Not suppressed - should warn
 endmodule

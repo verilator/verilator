@@ -27,21 +27,22 @@ module t (
   int cyc = 0;
   bit par = 0;
   always @(posedge clk) begin
-     if (~|gclk) begin
-       gclk[0] = 1'b1;
-     end else begin
-       gclk = {gclk[N-2:0], gclk[N-1]};
-     end
+    if (~|gclk) begin
+      gclk[0] = 1'b1;
+    end
+    else begin
+      gclk = {gclk[N-2:0], gclk[N-1]};
+    end
 
-     // This make the always block requires a 'pre' trigger (and makes it non splitable)
-     par <= ^gclk;
+    // This make the always block requires a 'pre' trigger (and makes it non splitable)
+    par <= ^gclk;
 
-     cyc <= cyc + 32'd1;
-     if (cyc == ITERATIONS*N - 1) begin
-         $display("final cycle: %0d, par: %0d", cyc, par);
-         $write("*-* All Finished *-*\n");
-         $finish;
-     end
+    cyc <= cyc + 32'd1;
+    if (cyc == ITERATIONS * N - 1) begin
+      $display("final cycle: %0d, par: %0d", cyc, par);
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
   end
 
   for (genvar n = 0; n < N; n++) begin : gen

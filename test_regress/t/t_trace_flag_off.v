@@ -5,10 +5,10 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   initial begin
-      $dumpfile("/should/not/be/opened");
-      $dumpvars();
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $dumpfile("/should/not/be/opened");
+    $dumpvars();
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

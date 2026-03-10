@@ -6,95 +6,117 @@
 
 module t;
 
-   // Note $sscanf already tested elsewhere
+  // Note $sscanf already tested elsewhere
 
-   reg [3:0] n;
-   reg [63:0] q;
-   reg [16*8:1] wide;
+  reg [3:0] n;
+  reg [63:0] q;
+  reg [16*8:1] wide;
 
-   reg [8:1]    ochar;
-   reg [48*8:1] str;
-   reg [48*8:1] str2;
-   string str3;
+  reg [8:1] ochar;
+  reg [48*8:1] str;
+  reg [48*8:1] str2;
+  string str3;
 
-   reg [39:0] instruction_str [1:0];
+  reg [39:0] instruction_str[1:0];
 
-   real         r;
+  real r;
 
-   initial begin
-      n = 4'b1100;
-      q = 64'h1234_5678_abcd_0123;
-      wide = "hello-there12345";
-      $sformat(str, "n=%b q=%d w=%s", n, q, wide);
-`ifdef TEST_VERBOSE  $display("str=%0s",str);  `endif
-      if (str !== "n=1100 q= 1311768467750060323 w=hello-there12345") $stop;
+  initial begin
+    n = 4'b1100;
+    q = 64'h1234_5678_abcd_0123;
+    wide = "hello-there12345";
+    $sformat(str, "n=%b q=%d w=%s", n, q, wide);
+`ifdef TEST_VERBOSE
+    $display("str=%0s", str);
+`endif
+    if (str !== "n=1100 q= 1311768467750060323 w=hello-there12345") $stop;
 
-      q = {q[62:0],1'b1};
-      $swrite(str2, "n=%b q=%d w=%s", n, q, wide);
-`ifdef TEST_VERBOSE  $display("str2=%0s",str2);  `endif
-      if (str2 !== "n=1100 q= 2623536935500120647 w=hello-there12345") $stop;
+    q = {q[62:0], 1'b1};
+    $swrite(str2, "n=%b q=%d w=%s", n, q, wide);
+`ifdef TEST_VERBOSE
+    $display("str2=%0s", str2);
+`endif
+    if (str2 !== "n=1100 q= 2623536935500120647 w=hello-there12345") $stop;
 
-      str3 = $sformatf("n=%b q=%d w=%s", n, q, wide);
-`ifdef TEST_VERBOSE  $display("str3=%0s",str3);  `endif
-      if (str3 !== "n=1100 q= 2623536935500120647 w=hello-there12345") $stop;
+    str3 = $sformatf("n=%b q=%d w=%s", n, q, wide);
+`ifdef TEST_VERBOSE
+    $display("str3=%0s", str3);
+`endif
+    if (str3 !== "n=1100 q= 2623536935500120647 w=hello-there12345") $stop;
 
-      $swrite(str2, "e=%e", r);
-      $swrite(str2, "e=%f", r);
-      $swrite(str2, "e=%g", r);
+    $swrite(str2, "e=%e", r);
+    $swrite(str2, "e=%f", r);
+    $swrite(str2, "e=%g", r);
 
-      str3 = "hello";
-      $swrite(str2, {str3, str3});
-`ifdef TEST_VERBOSE  $display("str2=%0s",str2);  `endif
-      if (str2 !== "hellohello") $stop;
+    str3 = "hello";
+    $swrite(str2, {str3, str3});
+`ifdef TEST_VERBOSE
+    $display("str2=%0s", str2);
+`endif
+    if (str2 !== "hellohello") $stop;
 
-      r = 0.01;
-      $swrite(str2, "e=%e f=%f g=%g", r, r, r);
-`ifdef TEST_VERBOSE  $display("str2=%0s",str2);  `endif
-      if (str2 !== "e=1.000000e-02 f=0.010000 g=0.01") $stop;
+    r = 0.01;
+    $swrite(str2, "e=%e f=%f g=%g", r, r, r);
+`ifdef TEST_VERBOSE
+    $display("str2=%0s", str2);
+`endif
+    if (str2 !== "e=1.000000e-02 f=0.010000 g=0.01") $stop;
 
-      $swrite(str2, "mod=%m");
-`ifdef TEST_VERBOSE  $display("str2=%0s",str2);  `endif
-      if (str2 !== "mod=top.t") $stop;
+    $swrite(str2, "mod=%m");
+`ifdef TEST_VERBOSE
+    $display("str2=%0s", str2);
+`endif
+    if (str2 !== "mod=top.t") $stop;
 
-      $swrite(str2, "lib=%l");
-`ifdef TEST_VERBOSE  $display("chkl %0s",str2);  `endif
-      if (str2 !== "lib=work.t") $stop;
+    $swrite(str2, "lib=%l");
+`ifdef TEST_VERBOSE
+    $display("chkl %0s", str2);
+`endif
+    if (str2 !== "lib=work.t") $stop;
 
-      str3 = $sformatf("u=%u", {"a","b","c","d"}); // Value selected so is printable
-`ifdef TEST_VERBOSE  $display("chku %s", str3);  `endif
-      if (str3 !== "u=dcba") $stop;
+    str3 = $sformatf("u=%u", {"a", "b", "c", "d"});  // Value selected so is printable
+`ifdef TEST_VERBOSE
+    $display("chku %s", str3);
+`endif
+    if (str3 !== "u=dcba") $stop;
 
-      str3 = $sformatf("v=%v", 4'b01xz); // Value selected so is printable
-`ifdef TEST_VERBOSE  $display("chkv %s", str3);  `endif
+    str3 = $sformatf("v=%v", 4'b01xz);  // Value selected so is printable
+`ifdef TEST_VERBOSE
+    $display("chkv %s", str3);
+`endif
 
-      str3 = $sformatf("z=%z", {"a","b","c","d"}); // Value selected so is printable
-`ifdef TEST_VERBOSE  $display("chkz %s", str3);  `endif
+    str3 = $sformatf("z=%z", {"a", "b", "c", "d"});  // Value selected so is printable
+`ifdef TEST_VERBOSE
+    $display("chkz %s", str3);
+`endif
 
-      $sformat(ochar,"%s","c");
-      if (ochar != "c") $stop;
+    $sformat(ochar, "%s", "c");
+    if (ochar != "c") $stop;
 
-      $swrite(str2, 4'd12);
-      if (str2 != "12") $stop;
-      $swriteb(str2, 4'd12);
-      if (str2 != "1100") $stop;
-      $swriteh(str2, 4'd12);
-      if (str2 != "c") $stop;
-      $swriteo(str2, 4'd12);
-      if (str2 != "14") $stop;
+    $swrite(str2, 4'd12);
+    if (str2 != "12") $stop;
+    $swriteb(str2, 4'd12);
+    if (str2 != "1100") $stop;
+    $swriteh(str2, 4'd12);
+    if (str2 != "c") $stop;
+    $swriteo(str2, 4'd12);
+    if (str2 != "14") $stop;
 
-      str3 = "foo";
-      $sformat(str3, "%s", str3);  // $sformat twice so verilator does not
-      $sformat(str3, "%s", str3);  // optimize the call to $sformat(str3, "%s", "foo")
-`ifdef TEST_VERBOSE  $display("str3=%0s", str3);  `endif
-      if (str3 != "foo") $stop;
+    str3 = "foo";
+    $sformat(str3, "%s", str3);  // $sformat twice so verilator does not
+    $sformat(str3, "%s", str3);  // optimize the call to $sformat(str3, "%s", "foo")
+`ifdef TEST_VERBOSE
+    $display("str3=%0s", str3);
+`endif
+    if (str3 != "foo") $stop;
 
-      $sformat(instruction_str[0], "%s", "Hello");
-      $sformat(instruction_str[1], "%s", "World");
-      if (instruction_str[0] != "Hello") $stop;
-      if (instruction_str[1] != "World") $stop;
+    $sformat(instruction_str[0], "%s", "Hello");
+    $sformat(instruction_str[1], "%s", "World");
+    if (instruction_str[0] != "Hello") $stop;
+    if (instruction_str[1] != "World") $stop;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

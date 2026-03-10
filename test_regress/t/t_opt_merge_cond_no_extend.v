@@ -11,12 +11,12 @@ module t (
     output reg [7:0] o
 );
 
-   reg cond = 0;
+  reg cond = 0;
 
-   always @(posedge clk) begin
-     if (cond) o = i;
-     cond = a;
-     if (cond) o = ~i;
-   end
+  always @(posedge clk) begin
+    if (cond) o = i;
+    cond = a;
+    if (cond) o = ~i;
+  end
 
 endmodule

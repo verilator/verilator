@@ -5,14 +5,14 @@
 // SPDX-License-Identifier: Unlicense
 
 module t (/*AUTOARG*/ a, b, o);
-   input  a;
-   input  b;
-   output reg o;
+  input  a;
+  input  b;
+  output reg o;
 
-   always_latch
-     if (a)
-       o = b;
-     else
-       o = ~b;
+  always_latch
+    if (a)
+     o = b;
+    else
+     o = ~b;
 
 endmodule

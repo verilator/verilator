@@ -5,33 +5,32 @@
 // SPDX-License-Identifier: CC0-1.0
 
 package foo_pkg;
-   function int foo_func;
-      input int b;
-      int b_current;
-      return 0;
-   endfunction
+  function int foo_func;
+    input int b;
+    int b_current;
+    return 0;
+  endfunction
 endpackage
 
 module sub;
-   int a = 1212;
+  int a = 1212;
 endmodule
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
-   int cyc;
+module t (
+    input clk
+);
 
-   import foo_pkg::*;
+  int cyc;
 
-   sub sub();
+  import foo_pkg::*;
 
-   always @ (posedge clk) begin
-      cyc <= cyc + 1;
-      if (cyc == 10) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
+  sub sub ();
+
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+    if (cyc == 10) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 endmodule

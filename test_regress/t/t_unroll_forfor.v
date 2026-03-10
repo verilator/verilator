@@ -8,28 +8,28 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
-   // Inputs
-   clk, in
-   );
-   input clk;
-   input [71:0] in;
+  // Inputs
+  clk, in
+  );
+  input clk;
+  input [71:0] in;
 
-   reg [71:0] in_tmp;
+  reg [71:0] in_tmp;
 
-   localparam [71:0] TEST_PARAM = {72{1'b0}};
+  localparam [71:0] TEST_PARAM = {72{1'b0}};
 
-   // Test loop
-   always @*
-     begin: testmap
-        byte i, j;
-        // bug1044
-        for ( i = 0; i < 9; i = i + 1 )
-          // verilator lint_off WIDTH
-          for ( j=0; j<(TEST_PARAM[i*8+:8]); j=j+1) begin
-             in_tmp[TEST_PARAM[i*8+:8]+j] = in[TEST_PARAM[i*8+:8]+j];
-          end
-        // verilator lint_on WIDTH
-        $write("*-* All Finished *-*\n");
-        $finish;
-     end
+  // Test loop
+  always @*
+    begin: testmap
+      byte i, j;
+      // bug1044
+      for ( i = 0; i < 9; i = i + 1 )
+       // verilator lint_off WIDTH
+       for ( j=0; j<(TEST_PARAM[i*8+:8]); j=j+1) begin
+         in_tmp[TEST_PARAM[i*8+:8]+j] = in[TEST_PARAM[i*8+:8]+j];
+       end
+      // verilator lint_on WIDTH
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
 endmodule

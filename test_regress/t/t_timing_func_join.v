@@ -5,25 +5,25 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   function int fun(int val);
-      fork
-         $display("abc");
-         $display("def");
-      join_none  // Although join is illegal, join_none legal (IEEE 1800-2023 13.4)
-      return val + 2;
-   endfunction
+  function int fun(int val);
+    fork
+      $display("abc");
+      $display("def");
+    join_none  // Although join is illegal, join_none legal (IEEE 1800-2023 13.4)
+    return val + 2;
+  endfunction
 
-   task tsk();
-      fork
-         $display("ghi");
-         $display("jkl");
-      join_none
-   endtask
+  task tsk();
+    fork
+      $display("ghi");
+      $display("jkl");
+    join_none
+  endtask
 
-   initial begin
-      $display("$d", fun(2));
-      tsk();
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $display("$d", fun(2));
+    tsk();
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

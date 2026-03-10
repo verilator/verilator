@@ -20,9 +20,10 @@
 // | -gC6="32'h600D600D" | 32'h600D600D| 32'h600D600D| UNSUPPORTED | 32'h600D600D|
 // | -gC7='AB CD'        | AB CD       | UNSUPPORTED | UNSUPPORTED | UNSUPPORTED |
 
+// verilog_format: off
 `define stop $stop
-`define check(gotv,
-              expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d: Wrong parameter value", `__FILE__,`__LINE__); `stop; end while(0);
+`define check(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d: Wrong parameter value", `__FILE__,`__LINE__); `stop; end while(0);
+// verilog_format: on
 
 typedef enum logic [1:0] {
   enum_val_0 = 2'd0,

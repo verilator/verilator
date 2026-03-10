@@ -5,31 +5,37 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   event ping;
-   event pong;
+  event ping;
+  event pong;
 
-   int cnt = 0;
+  int cnt = 0;
 
-   initial forever @ping begin
+  initial
+    forever
+      @ping begin
 `ifdef TEST_VERBOSE
-       $write("ping\n");
+        $write("ping\n");
 `endif
-       cnt++;
-       ->pong;
-   end
+        cnt++;
+        ->pong;
+      end
 
-   initial forever @pong begin
+  initial
+    forever
+      @pong begin
 `ifdef TEST_VERBOSE
-       $write("pong\n");
+        $write("pong\n");
 `endif
-       if (cnt < 10) ->ping;
-   end
+        if (cnt < 10)->ping;
+      end
 
-   initial #1 ->ping;
-   initial #2
-       if (cnt == 10) begin
-           $write("*-* All Finished *-*\n");
-           $finish;
-       end else $stop;
-   initial #3 $stop;  // timeout
+  initial #1->ping;
+  initial
+    #2
+      if (cnt == 10) begin
+        $write("*-* All Finished *-*\n");
+        $finish;
+      end
+      else $stop;
+  initial #3 $stop;  // timeout
 endmodule

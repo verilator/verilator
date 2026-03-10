@@ -5,13 +5,13 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   if (1) begin: GenConstFunc
-      // IEEE 1800-2023 13.4.3, constant functions shall not be declared inside a
-      //generate block
-      function automatic bit constFunc();
-         constFunc = 1'b1;
-      endfunction
+  if (1) begin: GenConstFunc
+    // IEEE 1800-2023 13.4.3, constant functions shall not be declared inside a
+    //generate block
+    function automatic bit constFunc();
+      constFunc = 1'b1;
+    endfunction
 
-      localparam PARAM = constFunc();
-    end
+    localparam PARAM = constFunc();
+   end
 endmodule

@@ -1,6 +1,6 @@
-%Error: t/t_class_param_bad_paren.v:28:11: Reference to parameterized class without #() (IEEE 1800-2023 8.25.1)
-                                         : ... Suggest use 'Cls#()'
-   28 |       if (Cls::OTHER != 12) $stop;   
-      |           ^~~
+%Error: t/t_class_param_bad_paren.v:30:9: Reference to parameterized class without #() (IEEE 1800-2023 8.25.1)
+                                        : ... Suggest use 'Cls#()'
+   30 |     if (Cls::OTHER != 12) $stop;   
+      |         ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

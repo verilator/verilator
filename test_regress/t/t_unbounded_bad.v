@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   initial begin
-      if ($) $stop;
-   end
+  initial begin
+    if ($) $stop;
+  end
 endmodule

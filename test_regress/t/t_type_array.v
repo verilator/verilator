@@ -6,17 +6,17 @@
 
 module t;
 
-   typedef int arr_t [5];
-   arr_t arr;
-   localparam type arr_type = type(arr);
-   arr_type arr_prime;
+  typedef int arr_t[5];
+  arr_t arr;
+  localparam type arr_type = type (arr);
+  arr_type arr_prime;
 
-   initial begin
-      arr[3] = 123;
-      arr_prime = arr;
-      if (arr_prime[3] != 123) $stop();
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    arr[3] = 123;
+    arr_prime = arr;
+    if (arr_prime[3] != 123) $stop();
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

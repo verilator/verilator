@@ -1,49 +1,49 @@
-%Warning-WIDTHTRUNC: t/t_lint_width_bad.v:17:25: Operator VAR 'XS' expects 4 bits on the Initial value, but Initial value's CONST '?32?bxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' generates 32 bits.
+%Warning-WIDTHTRUNC: t/t_lint_width_bad.v:17:20: Operator VAR 'XS' expects 4 bits on the Initial value, but Initial value's CONST '?32?bxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' generates 32 bits.
                                                : ... note: In instance 't'
-   17 |    localparam [3:0]     XS = 'hx;   
-      |                         ^~
+   17 |   localparam [3:0] XS = 'hx;   
+      |                    ^~
                      ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
                      ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
-%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:47:19: Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's VARREF 'in' generates 4 bits.
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:49:18: Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's VARREF 'in' generates 4 bits.
                                                 : ... note: In instance 't.p4'
-   47 |    wire [4:0] out = in;
-      |                   ^
+   49 |   wire [4:0] out = in;
+      |                  ^
                       ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
                       ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
-%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:21:25: Operator SHIFTL expects 5 bits on the LHS, but LHS's CONST '1'h1' generates 1 bits.
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:21:24: Operator SHIFTL expects 5 bits on the LHS, but LHS's CONST '1'h1' generates 1 bits.
                                                 : ... note: In instance 't'
-   21 |    wire [4:0] d = (1'b1 << 2) + 5'b1;   
-      |                         ^~
-%Warning-WIDTHTRUNC: t/t_lint_width_bad.v:27:32: Operator ASSIGNW expects 6 bits on the Assign RHS, but Assign RHS's SHIFTL generates 7 bits.
+   21 |   wire [4:0] d = (1'b1 << 2) + 5'b1;   
+      |                        ^~
+%Warning-WIDTHTRUNC: t/t_lint_width_bad.v:27:27: Operator ASSIGNW expects 6 bits on the Assign RHS, but Assign RHS's SHIFTL generates 7 bits.
                                                : ... note: In instance 't'
-   27 |    wire [WIDTH-1:0]     masked = (({{(WIDTH){1'b0}}, one_bit}) << shifter);
-      |                                ^
-%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:32:37: Operator ADD expects 3 bits on the LHS, but LHS's VARREF 'one' generates 1 bits.
+   27 |   wire [WIDTH-1:0] masked = (({{(WIDTH) {1'b0}}, one_bit}) << shifter);
+      |                           ^
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:32:25: Operator ADD expects 3 bits on the LHS, but LHS's VARREF 'one' generates 1 bits.
                                                 : ... note: In instance 't'
-   32 |    wire [2:0]           cnt  = (one + one + one + one);
-      |                                     ^
+   32 |   wire [2:0] cnt = (one + one + one + one);
+      |                         ^
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:32:25: Operator ADD expects 3 bits on the RHS, but RHS's VARREF 'one' generates 1 bits.
+                                                : ... note: In instance 't'
+   32 |   wire [2:0] cnt = (one + one + one + one);
+      |                         ^
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:32:31: Operator ADD expects 3 bits on the RHS, but RHS's VARREF 'one' generates 1 bits.
+                                                : ... note: In instance 't'
+   32 |   wire [2:0] cnt = (one + one + one + one);
+      |                               ^
 %Warning-WIDTHEXPAND: t/t_lint_width_bad.v:32:37: Operator ADD expects 3 bits on the RHS, but RHS's VARREF 'one' generates 1 bits.
                                                 : ... note: In instance 't'
-   32 |    wire [2:0]           cnt  = (one + one + one + one);
+   32 |   wire [2:0] cnt = (one + one + one + one);
       |                                     ^
-%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:32:43: Operator ADD expects 3 bits on the RHS, but RHS's VARREF 'one' generates 1 bits.
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:37:25: Operator GT expects 41 bits on the LHS, but LHS's VARREF 'a' generates 32 bits.
                                                 : ... note: In instance 't'
-   32 |    wire [2:0]           cnt  = (one + one + one + one);
-      |                                           ^
-%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:32:49: Operator ADD expects 3 bits on the RHS, but RHS's VARREF 'one' generates 1 bits.
+   37 |   initial for (a = 0; a > THREE; ++a) $display(a);
+      |                         ^
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:38:25: Operator GTE expects 41 bits on the LHS, but LHS's VARREF 'a' generates 32 bits.
                                                 : ... note: In instance 't'
-   32 |    wire [2:0]           cnt  = (one + one + one + one);
-      |                                                 ^
-%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:37:26: Operator GT expects 41 bits on the LHS, but LHS's VARREF 'a' generates 32 bits.
-                                                : ... note: In instance 't'
-   37 |    initial for (a = 0; a > THREE; ++a) $display(a);
-      |                          ^
-%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:38:26: Operator GTE expects 41 bits on the LHS, but LHS's VARREF 'a' generates 32 bits.
-                                                : ... note: In instance 't'
-   38 |    initial for (a = 0; a >= THREE; ++a) $display(a);
-      |                          ^~
-%Warning-WIDTHTRUNC: t/t_lint_width_bad.v:40:12: Logical operator IF expects 1 bit on the If, but If's VARREF 'THREE' generates 41 bits.
+   38 |   initial for (a = 0; a >= THREE; ++a) $display(a);
+      |                         ^~
+%Warning-WIDTHTRUNC: t/t_lint_width_bad.v:40:11: Logical operator IF expects 1 bit on the If, but If's VARREF 'THREE' generates 41 bits.
                                                : ... note: In instance 't'
-   40 |    initial if (THREE) $stop;
-      |            ^~
+   40 |   initial if (THREE) $stop;
+      |           ^~
 %Error: Exiting due to

@@ -8,35 +8,35 @@
 
 module t;
 
-   parameter TOP_PARAM /*verilator public*/ = 20;
+  parameter TOP_PARAM  /*verilator public*/ = 20;
 
-   a #(1) a1 ();
-   b #(2) b2 ();
+  a #(1) a1 ();
+  b #(2) b2 ();
 
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule
 
 module a;
-   parameter ONE /*verilator public*/ = 22;
-   initial if (ONE != 1) $stop;
+  parameter ONE  /*verilator public*/ = 22;
+  initial if (ONE != 1) $stop;
 `ifdef VERILATOR
-   initial if ($c32("this->ONE") != 1) $stop;
+  initial if ($c32("this->ONE") != 1) $stop;
 `endif
 endmodule
 
 module b #(
-           parameter TWO /*verilator public*/ = 22
-           );
-   initial if (TWO != 2) $stop;
+    parameter TWO  /*verilator public*/ = 22
+);
+  initial if (TWO != 2) $stop;
 `ifdef VERILATOR
-   initial if ($c32("this->TWO") != 2) $stop;
+  initial if ($c32("this->TWO") != 2) $stop;
 `endif
 endmodule
 
 //bug804
 package p;
-   localparam INPACK /*verilator public*/ = 6;
+  localparam INPACK  /*verilator public*/ = 6;
 endpackage

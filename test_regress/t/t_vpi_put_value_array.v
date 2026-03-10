@@ -22,55 +22,55 @@ extern "C" int mon_check();
 `verilog
 `endif
 
-   reg [7:0] write_bytes [0:3] `PUBLIC_FLAT_RW;
-   reg [7:0] write_bytes_rl [3:0] `PUBLIC_FLAT_RW;
-   reg [7:0] write_bytes_nonzero_index [1:4] `PUBLIC_FLAT_RW;
+  reg [7:0] write_bytes [0:3] `PUBLIC_FLAT_RW;
+  reg [7:0] write_bytes_rl [3:0] `PUBLIC_FLAT_RW;
+  reg [7:0] write_bytes_nonzero_index [1:4] `PUBLIC_FLAT_RW;
 
-   reg [15:0] write_shorts [0:3] `PUBLIC_FLAT_RW;
-   reg [31:0] write_words [0:3] `PUBLIC_FLAT_RW;
-   reg [63:0] write_longs [0:3] `PUBLIC_FLAT_RW;
-   reg [68:0] write_customs [0:3] `PUBLIC_FLAT_RW;
-   reg [68:0] write_customs_nonzero_index_rl [4:1] `PUBLIC_FLAT_RW;
+  reg [15:0] write_shorts [0:3] `PUBLIC_FLAT_RW;
+  reg [31:0] write_words [0:3] `PUBLIC_FLAT_RW;
+  reg [63:0] write_longs [0:3] `PUBLIC_FLAT_RW;
+  reg [68:0] write_customs [0:3] `PUBLIC_FLAT_RW;
+  reg [68:0] write_customs_nonzero_index_rl [4:1] `PUBLIC_FLAT_RW;
 
-   integer write_integers [0:3] `PUBLIC_FLAT_RW;
+  integer write_integers [0:3] `PUBLIC_FLAT_RW;
 
-   reg [7:0] write_scalar `PUBLIC_FLAT_RW;
-   reg [7:0] write_bounds [1:3] `PUBLIC_FLAT_RW;
-   reg [7:0] write_inaccessible [0:3] `PUBLIC_FLAT_RD;
+  reg [7:0] write_scalar `PUBLIC_FLAT_RW;
+  reg [7:0] write_bounds [1:3] `PUBLIC_FLAT_RW;
+  reg [7:0] write_inaccessible [0:3] `PUBLIC_FLAT_RD;
 
 `ifdef IVERILOG
-   // stop icarus optimizing signals away
-   wire redundant = write_bytes[0][0] |
-   write_bytes[0][0] |
-   write_bytes_rl[0][0] |
-   write_bytes_nonzero_index[1][0] |
-   write_shorts[0][0] |
-   write_words[0][0] |
-   write_longs[0][0] |
-   write_customs[0][0] |
-   write_customs_nonzero_index_rl[1][0] |
-   write_integers[0][0] |
-   write_scalar[0] |
-   write_bounds[1][0] |
-   write_inaccessible[0][0];
+  // stop icarus optimizing signals away
+  wire redundant = write_bytes[0][0] |
+  write_bytes[0][0] |
+  write_bytes_rl[0][0] |
+  write_bytes_nonzero_index[1][0] |
+  write_shorts[0][0] |
+  write_words[0][0] |
+  write_longs[0][0] |
+  write_customs[0][0] |
+  write_customs_nonzero_index_rl[1][0] |
+  write_integers[0][0] |
+  write_scalar[0] |
+  write_bounds[1][0] |
+  write_inaccessible[0][0];
 `endif
-   integer status;
+  integer status;
 
-   initial begin
+  initial begin
 `ifdef IVERILOG
-     status = $mon_check;
+    status = $mon_check;
 `endif
 
 `ifdef VERILATOR
-   status = $c32("mon_check()");
+    status = $c32("mon_check()");
 `endif
 
-      if (status != 0) begin
-         $write("%%Error: t_vpi_put_value_array.cpp:%0d: C Test failed\n", status);
-         $stop;
-      end
+    if (status != 0) begin
+      $write("%%Error: t_vpi_put_value_array.cpp:%0d: C Test failed\n", status);
+      $stop;
+    end
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

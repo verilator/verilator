@@ -7,9 +7,9 @@
 import "DPI-C" context function void dpii_check();
 
 module t;
-   initial begin
-      dpii_check();
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    dpii_check();
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

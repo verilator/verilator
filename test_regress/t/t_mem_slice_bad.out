@@ -1,30 +1,30 @@
-%Error: t/t_mem_slice_bad.v:39:31: Slice selection index '[2:0]' outside data type's '[1:0]'
+%Error: t/t_mem_slice_bad.v:36:30: Slice selection index '[2:0]' outside data type's '[1:0]'
                                  : ... note: In instance 't'
-   39 |    assign active_command3[1:0][2:0][3:0] = (use_AnB) ?  command_A3[1:0][2:0][3:0] : command_B3[1:0][1:0][3:0];
-      |                               ^
+   36 |   assign active_command3[1:0][2:0][3:0] = (use_AnB) ?  command_A3[1:0][2:0][3:0] : command_B3[1:0][1:0][3:0];
+      |                              ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_mem_slice_bad.v:39:36: Slice selection index '[3:0]' outside data type's '[2:0]'
+%Error: t/t_mem_slice_bad.v:36:35: Slice selection index '[3:0]' outside data type's '[2:0]'
                                  : ... note: In instance 't'
-   39 |    assign active_command3[1:0][2:0][3:0] = (use_AnB) ?  command_A3[1:0][2:0][3:0] : command_B3[1:0][1:0][3:0];
-      |                                    ^
-%Error: t/t_mem_slice_bad.v:39:72: Slice selection index '[2:0]' outside data type's '[1:0]'
+   36 |   assign active_command3[1:0][2:0][3:0] = (use_AnB) ?  command_A3[1:0][2:0][3:0] : command_B3[1:0][1:0][3:0];
+      |                                   ^
+%Error: t/t_mem_slice_bad.v:36:71: Slice selection index '[2:0]' outside data type's '[1:0]'
                                  : ... note: In instance 't'
-   39 |    assign active_command3[1:0][2:0][3:0] = (use_AnB) ?  command_A3[1:0][2:0][3:0] : command_B3[1:0][1:0][3:0];
-      |                                                                        ^
-%Error: t/t_mem_slice_bad.v:39:77: Slice selection index '[3:0]' outside data type's '[2:0]'
+   36 |   assign active_command3[1:0][2:0][3:0] = (use_AnB) ?  command_A3[1:0][2:0][3:0] : command_B3[1:0][1:0][3:0];
+      |                                                                       ^
+%Error: t/t_mem_slice_bad.v:36:76: Slice selection index '[3:0]' outside data type's '[2:0]'
                                  : ... note: In instance 't'
-   39 |    assign active_command3[1:0][2:0][3:0] = (use_AnB) ?  command_A3[1:0][2:0][3:0] : command_B3[1:0][1:0][3:0];
-      |                                                                             ^
-%Error: t/t_mem_slice_bad.v:39:105: Slice selection index '[3:0]' outside data type's '[1:0]'
+   36 |   assign active_command3[1:0][2:0][3:0] = (use_AnB) ?  command_A3[1:0][2:0][3:0] : command_B3[1:0][1:0][3:0];
+      |                                                                            ^
+%Error: t/t_mem_slice_bad.v:36:104: Slice selection index '[3:0]' outside data type's '[1:0]'
                                   : ... note: In instance 't'
-   39 |    assign active_command3[1:0][2:0][3:0] = (use_AnB) ?  command_A3[1:0][2:0][3:0] : command_B3[1:0][1:0][3:0];
-      |                                                                                                         ^
-%Error: t/t_mem_slice_bad.v:51:41: Slice selection index '[8:0]' outside data type's '[7:0]'
+   36 |   assign active_command3[1:0][2:0][3:0] = (use_AnB) ?  command_A3[1:0][2:0][3:0] : command_B3[1:0][1:0][3:0];
+      |                                                                                                        ^
+%Error: t/t_mem_slice_bad.v:48:39: Slice selection index '[8:0]' outside data type's '[7:0]'
                                  : ... note: In instance 't'
-   51 |       active_command4[7:0] <= command_A4[8:0];
-      |                                         ^
-%Error: t/t_mem_slice_bad.v:56:28: Illegal assignment: Unmatched array sizes in dimension 0 (9 vs 8)
+   48 |     active_command4[7:0] <= command_A4[8:0];
+      |                                       ^
+%Error: t/t_mem_slice_bad.v:53:26: Illegal assignment: Unmatched array sizes in dimension 0 (9 vs 8)
                                  : ... note: In instance 't'
-   56 |       active_command5[8:0] = command_A5[7:0];
-      |                            ^
+   53 |     active_command5[8:0] = command_A5[7:0];
+      |                          ^
 %Error: Exiting due to

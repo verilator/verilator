@@ -6,6 +6,6 @@
 
 `include "t_pp_lib_inc.vh"
 module t;
-   wire [`WIDTH-1:0] a;
-   library_cell n1(a);
+  wire [`WIDTH-1:0] a;
+  library_cell n1(a);
 endmodule

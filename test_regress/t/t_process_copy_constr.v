@@ -5,21 +5,21 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Cls;
-   int x = 1;
-   function new();
-      process p = process::self();
-   endfunction
+  int x = 1;
+  function new();
+    process p = process::self();
+  endfunction
 endclass
 
-module t (/*AUTOARG*/
-   );
-   initial begin
-      Cls c, d;
-      c = new;
-      c.x = 2;
-      d = new c;
-      if (d.x != 2) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+module t (  /*AUTOARG*/
+);
+  initial begin
+    Cls c, d;
+    c = new;
+    c.x = 2;
+    d = new c;
+    if (d.x != 2) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

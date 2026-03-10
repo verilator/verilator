@@ -8,12 +8,12 @@
 
 module t;
 
-   initial begin
-      `verilator_file_descriptor i;
-      `coverage_block_off
-      i = $fopen("/dev/null", "r");
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    `verilator_file_descriptor i;
+    `coverage_block_off
+    i = $fopen("/dev/null", "r");
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

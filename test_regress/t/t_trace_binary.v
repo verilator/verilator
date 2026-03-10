@@ -7,14 +7,14 @@
 `define STRINGIFY(x) `"x`"
 
 module t;
-   int sig;
-   initial begin
-      sig = 10;
-      $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
-      $dumpvars();
-      #20;
-      sig = 20;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  int sig;
+  initial begin
+    sig = 10;
+    $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
+    $dumpvars();
+    #20;
+    sig = 20;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

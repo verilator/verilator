@@ -5,10 +5,10 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   int i;
-   initial begin
-      i = 10;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  int i;
+  initial begin
+    i = 10;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

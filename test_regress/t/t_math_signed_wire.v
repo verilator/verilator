@@ -5,50 +5,52 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // bug511
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (
+    input clk
+);
 
-   wire [7:0] au;
-   wire [7:0] as;
+  wire [7:0] au;
+  wire [7:0] as;
 
-   Test1 test1 (.au);
-   Test2 test2 (.as);
+  Test1 test1 (.au);
+  Test2 test2 (.as);
 
-   // Test loop
-   always @ (posedge clk) begin
+  // Test loop
+  always @(posedge clk) begin
 `ifdef TEST_VERBOSE
-      $write("[%0t] result=%x %x\n", $time, au, as);
+    $write("[%0t] result=%x %x\n", $time, au, as);
 `endif
-      if (au != 'h12) $stop;
-      if (as != 'h02) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    if (au != 'h12) $stop;
+    if (as != 'h02) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule
 
-module Test1 (output [7:0] au);
-   wire [7:0]           b;
-   wire signed [3:0]    c;
+module Test1 (
+    output [7:0] au
+);
+  wire [7:0] b;
+  wire signed [3:0] c;
 
-   // verilator lint_off WIDTH
-   assign c=-1;  // 'hf
-   assign b=3;   // 'h3
-   assign au=b+c; // 'h12
-   // verilator lint_on WIDTH
+  // verilator lint_off WIDTH
+  assign c = -1;  // 'hf
+  assign b = 3;  // 'h3
+  assign au = b + c;  // 'h12
+  // verilator lint_on WIDTH
 endmodule
 
 
-module Test2 (output [7:0] as);
-   wire signed [7:0]    b;
-   wire signed [3:0]    c;
+module Test2 (
+    output [7:0] as
+);
+  wire signed [7:0] b;
+  wire signed [3:0] c;
 
-   // verilator lint_off WIDTH
-   assign c=-1;  // 'hf
-   assign b=3;   // 'h3
-   assign as=b+c; // 'h12
-   // verilator lint_on WIDTH
+  // verilator lint_off WIDTH
+  assign c = -1;  // 'hf
+  assign b = 3;  // 'h3
+  assign as = b + c;  // 'h12
+  // verilator lint_on WIDTH
 endmodule

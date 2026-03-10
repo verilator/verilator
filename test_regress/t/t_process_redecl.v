@@ -4,20 +4,19 @@
 // SPDX-FileCopyrightText: 2020 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (
-   );
+module t;
 
-   // Overrides standard class
-   class process;
-   endclass
-   class mailbox;
-   endclass
-   class semaphore;
-   endclass
+  // Overrides standard class
+  class process;
+  endclass
+  class mailbox;
+  endclass
+  class semaphore;
+  endclass
 
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

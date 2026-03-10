@@ -5,33 +5,32 @@
 // SPDX-License-Identifier: CC0-1.0
 
 package my_funcs;
-   function automatic int simple_func (input int value);
-      begin
-         simple_func = value;
-      end
-   endfunction
+  function automatic int simple_func(input int value);
+    begin
+      simple_func = value;
+    end
+  endfunction
 endpackage
 
 package my_module_types;
-   import my_funcs::*;
+  import my_funcs::*;
 
-   localparam MY_PARAM = 3;
-   localparam MY_PARAM2 /*verilator public*/ = simple_func(12);
+  localparam MY_PARAM = 3;
+  localparam MY_PARAM2  /*verilator public*/ = simple_func(12);
 endpackage
 
 module t
   import my_module_types::*;
-   (
-    input                       i_clk,
-    input [MY_PARAM-1:0]        i_d,
+(
+    input i_clk,
+    input [MY_PARAM-1:0] i_d,
     output logic [MY_PARAM-1:0] o_q
-    );
+);
 
-   always_ff @(posedge i_clk)
-     o_q <= i_d;
+  always_ff @(posedge i_clk) o_q <= i_d;
 
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

@@ -4,53 +4,52 @@
 // SPDX-FileCopyrightText: 2003 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   parameter PAR = 3;
-   input clk;
+module t (
+    input clk
+);
 
-   defparam m3.FROMDEFP = 19;
+  parameter PAR = 3;
 
-   m3 #(.P3(PAR),
-        .P2(2))
-     m3(.clk(clk));
+  defparam m3.FROMDEFP = 19;
 
-   integer cyc=1;
-   always @ (posedge clk) begin
-      cyc <= cyc + 1;
-      if (cyc==1) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
+  m3 #(
+      .P3(PAR),
+      .P2(2)
+  ) m3 (
+      .clk(clk)
+  );
+
+  integer cyc = 1;
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+    if (cyc == 1) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 
 endmodule
 
-module m3
-  #(
-    parameter  UNCH = 99,
-    parameter  P1 = 10,
-    parameter  P2 = 20,
-               P3 = 30,
-    parameter  FROMDEFP = 11
-    )
-    (/*AUTOARG*/
-     // Inputs
-     clk
-     );
-   input       clk;
-   localparam  LOC = 13;
+module m3 #(
+    parameter UNCH = 99,
+    parameter P1 = 10,
+    parameter P2 = 20,
+    P3 = 30,
+    parameter FROMDEFP = 11
+) (
+    input clk
+);
 
-   initial begin
-      $display("%x %x %x",P1,P2,P3);
-   end
-   always @ (posedge clk) begin
-      if (UNCH !== 99) $stop;
-      if (P1 !== 10) $stop;
-      if (P2 !== 2) $stop;
-      if (P3 !== 3) $stop;
-      if (FROMDEFP !== 19) $stop;
-   end
+  localparam LOC = 13;
+
+  initial begin
+    $display("%x %x %x", P1, P2, P3);
+  end
+  always @(posedge clk) begin
+    if (UNCH !== 99) $stop;
+    if (P1 !== 10) $stop;
+    if (P2 !== 2) $stop;
+    if (P3 !== 3) $stop;
+    if (FROMDEFP !== 19) $stop;
+  end
 endmodule

@@ -1,6 +1,6 @@
-%Error: t/t_struct_packed_init_bad.v:12:17: Initial values not allowed in packed struct/union (IEEE 1800-2023 7.2.2)
+%Error: t/t_struct_packed_init_bad.v:12:15: Initial values not allowed in packed struct/union (IEEE 1800-2023 7.2.2)
                                           : ... note: In instance 't'
-   12 |       bit [3:0] m_lo = P;   
-      |                 ^~~~
+   12 |     bit [3:0] m_lo = P;   
+      |               ^~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

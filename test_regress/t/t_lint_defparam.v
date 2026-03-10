@@ -6,12 +6,12 @@
 
 module t;
 
-   sub sub ();
-   defparam sub.P = 2;
+  sub sub ();
+  defparam sub.P = 2;
 
 endmodule
 
 module sub;
-   parameter P = 6;
-   if (P != 0) ;  // Prevent unused
+  parameter P = 6;
+  if (P != 0);  // Prevent unused
 endmodule

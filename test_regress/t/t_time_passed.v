@@ -5,11 +5,9 @@
 // SPDX-License-Identifier: CC0-1.0
 
 `timescale 1ns / 1ps
-module t (  /*AUTOARG*/
-  // Inputs
-  clk
-  );
-  input clk;
+module t (
+    input clk
+);
 
   integer cyc = 0;
 

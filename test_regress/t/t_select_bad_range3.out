@@ -1,7 +1,7 @@
-%Warning-SELRANGE: t/t_select_bad_range3.v:19:33: Selection index out of range: 13 outside 12:10
+%Warning-SELRANGE: t/t_select_bad_range3.v:19:32: Selection index out of range: 13 outside 12:10
                                                 : ... note: In instance 't'
-   19 |    assign outwires[12] = inwires[13];   
-      |                                 ^
+   19 |   assign outwires[12] = inwires[13];   
+      |                                ^
                    ... For warning description see https://verilator.org/warn/SELRANGE?v=latest
                    ... Use "/* verilator lint_off SELRANGE */" and lint_on around source to disable this message.
 %Error: Exiting due to

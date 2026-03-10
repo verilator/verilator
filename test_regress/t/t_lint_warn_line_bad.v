@@ -10,5 +10,5 @@
 `line `__LINE__ "the_line_file" 2
 
 module t;
-   int warn_t = 64'h1;  // Not suppressed - should warn
+  int warn_t = 64'h1;  // Not suppressed - should warn
 endmodule

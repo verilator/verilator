@@ -5,16 +5,16 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Cls1;
-   function int randomize;
-      return 1;
-   endfunction
+  function int randomize;
+    return 1;
+  endfunction
 endclass
 
 class Cls2;
-   function void randomize(int x);
-   endfunction
-   function void srandom(int seed);
-   endfunction
+  function void randomize(int x);
+  endfunction
+  function void srandom(int seed);
+  endfunction
 endclass
 
 module t;

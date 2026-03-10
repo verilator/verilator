@@ -4,10 +4,9 @@
 // SPDX-FileCopyrightText: 2010 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t
-   (
-  input wire i,
-  input wire i2 = i   // Good under IEEE 1800-2009
-   );
+module t (
+    input wire i,
+    input wire i2 = i  // Good under IEEE 1800-2009
+);
 
 endmodule

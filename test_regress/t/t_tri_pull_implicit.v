@@ -6,15 +6,15 @@
 
 module t;
 
-   // verilator lint_off IMPLICIT
-   pulldown (pd);
-   pullup (pu);
+  // verilator lint_off IMPLICIT
+  pulldown (pd);
+  pullup (pu);
 
-   initial begin
-      if (pd != 0) $stop;
-      if (pu != 1) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    if (pd != 0) $stop;
+    if (pu != 1) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

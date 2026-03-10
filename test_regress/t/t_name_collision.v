@@ -4,15 +4,15 @@
 // SPDX-FileCopyrightText: 2022 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module HasNameParam
-  #(parameter name /*verilator public*/ = 0)
-   ();
+module HasNameParam #(
+    parameter name  /*verilator public*/ = 0
+) ();
 endmodule
 
 module t;
-   HasNameParam a();
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  HasNameParam a ();
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

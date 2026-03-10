@@ -4,14 +4,16 @@
 // SPDX-FileCopyrightText: 2020 Julien Margetts
 // SPDX-License-Identifier: Unlicense
 
-module t (/*AUTOARG*/ a, b, o);
-   input  a;
-   input  b;
-   output reg o;
+module t (  /*AUTOARG*/
+    a,
+    b,
+    o
+);
+  input a;
+  input b;
+  output reg o;
 
-   // verilator lint_off LATCH
-   always @(a or b)
-     if (a)
-       o <= b;
+  // verilator lint_off LATCH
+  always @(a or b) if (a) o <= b;
 
 endmodule

@@ -11,9 +11,10 @@
 // - A module that accesses typedefs from BOTH siblings
 //
 
+// verilog_format: off
 `define stop $stop
-`define checkd(gotv,
-               expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 // Parameterized interface with a typedef that depends on the parameter
 interface a_if #(

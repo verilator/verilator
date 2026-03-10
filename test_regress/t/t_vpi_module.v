@@ -11,13 +11,13 @@ import "DPI-C" context function int mon_check();
 `endif
 
 package somepackage;
-   int someint /*verilator public_flat_rw*/;
+  int someint /*verilator public_flat_rw*/;
 endpackage
 
 module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
+  // Inputs
+  clk
+  );
 
 `ifdef USE_DOLLAR_C32
 `systemc_header
@@ -25,101 +25,101 @@ extern "C" int mon_check();
 `verilog
 `endif
 
-   input clk;
+  input clk;
 
-   integer        status;
+  integer        status;
 
-   wire           a, b, x;
+  wire           a, b, x;
 
-   A \mod.a (/*AUTOINST*/
-           // Outputs
-           .x                           (x),
-           // Inputs
-           .clk                         (clk),
-           .a                           (a),
-           .b                           (b));
+  A \mod.a (/*AUTOINST*/
+        // Outputs
+        .x                           (x),
+        // Inputs
+        .clk                         (clk),
+        .a                           (a),
+        .b                           (b));
 
-   // Test loop
-   initial begin
+  // Test loop
+  initial begin
 `ifdef IVERILOG
-      status = $mon_check();
+    status = $mon_check();
 `elsif USE_DOLLAR_C32
-      status = $c32("mon_check()");
+    status = $c32("mon_check()");
 `else
-      status = mon_check();
+    status = mon_check();
 `endif
-      if (status!=0) begin
-         $write("%%Error: t_vpi_module.cpp:%0d: C Test failed\n", status);
-         $stop;
-      end
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    if (status!=0) begin
+      $write("%%Error: t_vpi_module.cpp:%0d: C Test failed\n", status);
+      $stop;
+    end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule : t
 
 module A(/*AUTOARG*/
-   // Outputs
-   x,
-   // Inputs
-   clk, a, b
-   );
+  // Outputs
+  x,
+  // Inputs
+  clk, a, b
+  );
 
-   input clk;
+  input clk;
 
-   input a, b;
-   output x;
+  input a, b;
+  output x;
 
-   wire   y, c;
+  wire   y, c;
 
-   B \mod_b$ (/*AUTOINST*/
-           // Outputs
-           .y                           (y),
-           // Inputs
-           .b                           (b),
-           .c                           (c));
+  B \mod_b$ (/*AUTOINST*/
+        // Outputs
+        .y                           (y),
+        // Inputs
+        .b                           (b),
+        .c                           (c));
 
-   C \mod\c$ (/*AUTOINST*/
-           // Outputs
-           .x                           (x),
-           // Inputs
-           .clk                         (clk),
-           .a                           (a),
-           .y                           (y));
+  C \mod\c$ (/*AUTOINST*/
+        // Outputs
+        .x                           (x),
+        // Inputs
+        .clk                         (clk),
+        .a                           (a),
+        .y                           (y));
 
 endmodule : A
 
 module B(/*AUTOARG*/
-   // Outputs
-   y,
-   // Inputs
-   b, c
-   ); /*verilator public_module*/
-   input b, c;
+  // Outputs
+  y,
+  // Inputs
+  b, c
+  ); /*verilator public_module*/
+  input b, c;
 
-   output reg y;
+  output reg y;
 
-   always @(*) begin : myproc
-      y = b ^ c;
-   end
+  always @(*) begin : myproc
+    y = b ^ c;
+  end
 
 endmodule
 
 module C(/*AUTOARG*/
-   // Outputs
-   x,
-   // Inputs
-   clk, a, y
-   );
+  // Outputs
+  x,
+  // Inputs
+  clk, a, y
+  );
 
-   input clk;
+  input clk;
 
-   input a, y;
+  input a, y;
 
-   output reg x /* verilator public_flat_rw */;
+  output reg x /* verilator public_flat_rw */;
 
-   always @(posedge clk) begin
-     x <= a & y;
-   end
+  always @(posedge clk) begin
+    x <= a & y;
+  end
 
 endmodule

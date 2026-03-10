@@ -4,10 +4,11 @@
 // SPDX-FileCopyrightText: 2020 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 module t;
-`define RECURSE `RECURSE
-   `RECURSE
+  `define RECURSE `RECURSE
+  `RECURSE
 
-     initial $stop; // Should have failed
+  initial $stop;  // Should have failed
 
 endmodule

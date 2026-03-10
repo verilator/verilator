@@ -7,5 +7,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 module t;
-   initial $display($test$plusargs("MYFLAG"));
+  initial $display($test$plusargs("MYFLAG"));
 endmodule

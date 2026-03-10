@@ -7,44 +7,44 @@
 typedef class Cls;
 
 class A;
-   extern function void method();
+  extern function void method();
 endclass
 
 class B;
-   extern function void method();
+  extern function void method();
 endclass
 
 class C;
-   extern function void method();
+  extern function void method();
 endclass
 
 class D;
-   extern function void method();
+  extern function void method();
 endclass
 
 function void A::method();
-   B obj = new;
-   obj.method();
+  B obj = new;
+  obj.method();
 endfunction
 
 function void B::method();
-   this.srandom(0);
+  this.srandom(0);
 endfunction
 
 function void C::method();
-   this.srandom(0);
+  this.srandom(0);
 endfunction
 
 function void D::method();
-   C obj = new;
-   obj.method();
+  C obj = new;
+  obj.method();
 endfunction
 
 module t;
-   A obj1 = new;
-   D obj2 = new;
-   initial begin
-      obj1.method();
-      obj2.method();
-   end
+  A obj1 = new;
+  D obj2 = new;
+  initial begin
+    obj1.method();
+    obj2.method();
+  end
 endmodule

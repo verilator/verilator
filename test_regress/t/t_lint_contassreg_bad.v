@@ -7,10 +7,10 @@
 
 module t(r);
 
-   output r;
+  output r;
 
-   reg r;
+  reg r;
 
-   assign r = 1'b0;  // Bad
+  assign r = 1'b0;  // Bad
 
 endmodule

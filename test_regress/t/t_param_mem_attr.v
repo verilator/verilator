@@ -16,27 +16,28 @@
 // SPDX-FileCopyrightText: 2012 Jie Xu
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
-   wire [71:0] ctrl;
-   wire [7:0] cl;                       // this line is added
+module t (
+    input clk
+);
 
-   memory #(.WORDS(72)) i_memory (.clk (clk));
+  wire [71:0] ctrl;
+  wire [7:0] cl;  // this line is added
 
-   assign ctrl = i_memory.mem[0];
-   assign cl   = i_memory.mem[0][7:0];  // and this line
+  memory #(.WORDS(72)) i_memory (.clk(clk));
+
+  assign ctrl = i_memory.mem[0];
+  assign cl = i_memory.mem[0][7:0];  // and this line
 endmodule
 
 
 // memory module, which is used with parameter
-module memory (clk);
-   input clk;
+module memory (
+    clk
+);
+  input clk;
 
-   parameter WORDS = 16384, BITS = 72;
+  parameter WORDS = 16384, BITS = 72;
 
-   reg [BITS-1 :0] mem[WORDS-1 : 0];
+  reg [BITS-1 : 0] mem[WORDS-1 : 0];
 
 endmodule

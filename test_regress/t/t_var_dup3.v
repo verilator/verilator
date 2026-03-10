@@ -6,24 +6,28 @@
 
 // Legal with Verilog 1995 style ports
 
-module t
-  (/*AUTOARG*/
-   // Outputs
-   ok_o_w, ok_o_r, ok_o_ra, ok_or, ok_ow, ok_owa
-   );
+module t (  /*AUTOARG*/
+    // Outputs
+    ok_o_w,
+    ok_o_r,
+    ok_o_ra,
+    ok_or,
+    ok_ow,
+    ok_owa
+);
 
-   output ok_o_w;
-   wire   ok_o_w;
+  output ok_o_w;
+  wire ok_o_w;
 
-   output ok_o_r;
-   reg    ok_o_r;
+  output ok_o_r;
+  reg ok_o_r;
 
-   output [1:0] ok_o_ra;
-   reg    [1:0] ok_o_ra;
+  output [1:0] ok_o_ra;
+  reg [1:0] ok_o_ra;
 
-   output reg ok_or;
+  output reg ok_or;
 
-   output wire ok_ow;
+  output wire ok_ow;
 
-   output wire [1:0] ok_owa;
+  output wire [1:0] ok_owa;
 endmodule

@@ -4,17 +4,18 @@
 // SPDX-FileCopyrightText: 2023 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t(/*AUTOARG*/
-   // Outputs
-   outl, outr,
-   // Inputs
-   lhs
-   );
-   input [95:0] lhs;
-   output [95:0] outl;
-   output [95:0] outr;
+module t (  /*AUTOARG*/
+    // Outputs
+    outl,
+    outr,
+    // Inputs
+    lhs
+);
+  input [95:0] lhs;
+  output [95:0] outl;
+  output [95:0] outr;
 
-   assign outl = lhs << 95'hffff_00000000;
-   assign outr = lhs >> 95'hffff_00000000;
+  assign outl = lhs << 95'hffff_00000000;
+  assign outr = lhs >> 95'hffff_00000000;
 
 endmodule

@@ -6,18 +6,18 @@
 
 module t;
 
-   reg [3:0] four;
-   reg [4:0] five;
+  reg [3:0] four;
+  reg [4:0] five;
 
-   // verilator lint_save
+  // verilator lint_save
 
-   // verilator lint_off WIDTH
-   initial four = 64'h1;
+  // verilator lint_off WIDTH
+  initial four = 64'h1;
 
-   // verilator lint_restore
+  // verilator lint_restore
 
-   initial five = 64'h1;
+  initial five = 64'h1;
 
-   initial $stop;
+  initial $stop;
 
 endmodule

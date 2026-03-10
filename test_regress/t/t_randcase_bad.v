@@ -8,12 +8,12 @@
 
 module t;
 
-   initial begin
-      randcase  // Bad all zero weights
-        0 : $stop;
-      endcase
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    randcase  // Bad all zero weights
+      0: $stop;
+    endcase
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

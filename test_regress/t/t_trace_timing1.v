@@ -8,32 +8,32 @@
 
 module t;
 
-   localparam CLOCK_CYCLE = 10;
+  localparam CLOCK_CYCLE = 10;
 
-   logic rst;
-   logic clk;
+  logic rst;
+  logic clk;
 
-   initial begin
-      $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
-      $dumpvars;
-   end
+  initial begin
+    $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
+    $dumpvars;
+  end
 
-   always #(CLOCK_CYCLE/2) clk = ~clk;
+  always #(CLOCK_CYCLE / 2) clk = ~clk;
 
-   always begin
-      rst = 1;
-      clk = 0;
-      $display("[%0t] rst: %d, rst: %d", $time, rst, rst);
+  always begin
+    rst = 1;
+    clk = 0;
+    $display("[%0t] rst: %d, rst: %d", $time, rst, rst);
 
-      #CLOCK_CYCLE;
-      rst = 0;
-      $display("[%0t] rst: %d, rst: %d", $time, rst, rst);
+    #CLOCK_CYCLE;
+    rst = 0;
+    $display("[%0t] rst: %d, rst: %d", $time, rst, rst);
 
-      #CLOCK_CYCLE;
-      $display("[%0t] rst: %d, rst: %d", $time, rst, rst);
+    #CLOCK_CYCLE;
+    $display("[%0t] rst: %d, rst: %d", $time, rst, rst);
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

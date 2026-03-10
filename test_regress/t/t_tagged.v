@@ -6,46 +6,46 @@
 
 module t;
 
-   typedef union tagged {
-     void m_invalid;
-     int m_int;
-   } u_t;
+  typedef union tagged {
+    void m_invalid;
+    int m_int;
+  } u_t;
 
-   u_t u;
-   string s;
+  u_t u;
+  string s;
 
-   initial begin
-      begin
-         u = tagged m_invalid;
-         s = $sformatf("%p", u);
-         $display("%s e.g. '{tagged m_invalid:void}", s);
-      end
-
-      case (u) matches
-        default: ;
-      endcase
-
-      case (u) matches
-        tagged m_invalid: ;
-        tagged m_int: $stop;
-        default: $stop;
-      endcase
-      if (u matches tagged m_invalid) ;
-      if (u matches tagged m_int .n) $stop;
-
-      u = tagged m_int (123);
+  initial begin
+    begin
+      u = tagged m_invalid;
       s = $sformatf("%p", u);
-      $display("'%s e.g. '{tagged m_int:123}", s);
-      case (u) matches
-        tagged m_invalid: $stop;
-        tagged m_int .n: if (n !== 123) $stop;
-        default: $stop;
-      endcase
-      if (u matches tagged m_invalid) $stop;
-      if (u matches tagged m_int .n) if (n != 123) $stop;
+      $display("%s e.g. '{tagged m_invalid:void}", s);
+    end
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    case (u) matches
+      default: ;
+    endcase
+
+    case (u) matches
+      tagged m_invalid: ;
+      tagged m_int: $stop;
+      default: $stop;
+    endcase
+    if (u matches tagged m_invalid) ;
+    if (u matches tagged m_int .n) $stop;
+
+    u = tagged m_int (123);
+    s = $sformatf("%p", u);
+    $display("'%s e.g. '{tagged m_int:123}", s);
+    case (u) matches
+      tagged m_invalid: $stop;
+      tagged m_int .n: if (n !== 123) $stop;
+      default: $stop;
+    endcase
+    if (u matches tagged m_invalid) $stop;
+    if (u matches tagged m_int .n) if (n != 123) $stop;
+
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

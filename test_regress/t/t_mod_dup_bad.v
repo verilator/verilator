@@ -4,15 +4,15 @@
 // SPDX-FileCopyrightText: 2008 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module a();
+module a ();
 endmodule
 
-module test();
-   a a();
+module test ();
+  a a ();
 endmodule
 
-module a();
+module a ();
 endmodule
 
-module b();
+module b ();
 endmodule

@@ -6,28 +6,28 @@
 
 module t;
 
-   reg signed [2:0] negcnt;
-   integer times;
-   initial begin
-      times = 0;
-      repeat (1) begin
-         repeat (0) $stop;
-         repeat (-1) $stop;
-         negcnt = 'sb111;
-         // Not all commercial simulators agree on the below stopping or not
-         // verilator lint_off WIDTH
-         repeat (negcnt) $stop;
-         // verilator lint_on  WIDTH
-         repeat (5) begin
-            repeat (2) begin
-               times = times + 1;
-            end
-         end
+  reg signed [2:0] negcnt;
+  integer times;
+  initial begin
+    times = 0;
+    repeat (1) begin
+      repeat (0) $stop;
+      repeat (-1) $stop;
+      negcnt = 'sb111;
+      // Not all commercial simulators agree on the below stopping or not
+      // verilator lint_off WIDTH
+      repeat (negcnt) $stop;
+      // verilator lint_on  WIDTH
+      repeat (5) begin
+        repeat (2) begin
+          times = times + 1;
+        end
       end
-      if (times != 10) $stop;
-      //
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    end
+    if (times != 10) $stop;
+    //
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

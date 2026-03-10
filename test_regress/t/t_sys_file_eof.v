@@ -4,30 +4,32 @@
 // SPDX-FileCopyrightText: 2022 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define stop $stop
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 module t;
 
-   integer f;
-   integer i;
-   integer j;
+  integer f;
+  integer i;
+  integer j;
 
-   initial begin
-      f = $fopen("/does-not-exist", "r");
-      `checkd(f, 0);
-      i = $fscanf(f, "check %d", j);
-      `checkd(i, -1);
-      i = $fgetc(f);
-      `checkd(i, -1);
-      i = $ftell(f);
-      `checkd(i, -1);
-      i = $rewind(f);
-      `checkd(i, -1);
-      i = $fseek(f, 0, 0);
-      `checkd(i, -1);
+  initial begin
+    f = $fopen("/does-not-exist", "r");
+    `checkd(f, 0);
+    i = $fscanf(f, "check %d", j);
+    `checkd(i, -1);
+    i = $fgetc(f);
+    `checkd(i, -1);
+    i = $ftell(f);
+    `checkd(i, -1);
+    i = $rewind(f);
+    `checkd(i, -1);
+    i = $fseek(f, 0, 0);
+    `checkd(i, -1);
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

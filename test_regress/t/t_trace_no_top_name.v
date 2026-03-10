@@ -7,15 +7,15 @@
 `define STRINGIFY(x) `"x`"
 
 module t;
-   wire a = 0;
-   initial begin
-      $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
-      $dumpvars;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  wire a = 0;
+  initial begin
+    $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
+    $dumpvars;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule
 
 module another_top;
-   wire b = 0;
+  wire b = 0;
 endmodule

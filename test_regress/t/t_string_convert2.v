@@ -4,30 +4,30 @@
 // SPDX-FileCopyrightText: 2020 Peter Monsson
 // SPDX-License-Identifier: Unlicense
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
+module t (
+    input clk
+);
 
-   input clk;
-   integer cyc; initial cyc=1;
-   wire [31:0] in = cyc;
+  integer cyc;
+  initial cyc = 1;
+  wire [31:0] in = cyc;
 
-   Test test (/*AUTOINST*/
-              // Inputs
-              .clk                      (clk),
-              .in                       (in[31:0]));
+  Test test (  /*AUTOINST*/
+      // Inputs
+      .clk(clk),
+      .in(in[31:0])
+  );
 
 
-   always @ (posedge clk) begin
-      if (cyc!=0) begin
-         cyc <= cyc + 1;
-         if (cyc==10) begin
-            $write("*-* All Finished *-*\n");
-            $finish;
-         end
+  always @(posedge clk) begin
+    if (cyc != 0) begin
+      cyc <= cyc + 1;
+      if (cyc == 10) begin
+        $write("*-* All Finished *-*\n");
+        $finish;
       end
-   end
+    end
+  end
 
 endmodule
 
@@ -50,25 +50,26 @@ endpackage
 //internal error happens when lpcm_pkg is not imported
 //import lpcm_pkg::*;
 
-module Test (/*AUTOARG*/
-   // Inputs
-   clk, in
-   );
+module Test (  /*AUTOARG*/
+    // Inputs
+    clk,
+    in
+);
 
-   input clk;
-   input [31:0] in;
+  input clk;
+  input [31:0] in;
 
-   initial begin
-      string s;
-      lpcm_pkg::lpcm_tr tr; // internal error happens when lpcm_pkg is not imported
-      tr = new();
-      tr.sample = 1;
-      tr.latency = 2;
-      s = tr.convert2string();
-      $display("hello %s", tr.convert2string());
-      if (s != "sample=0x1 latency=2") $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    string s;
+    lpcm_pkg::lpcm_tr tr;  // internal error happens when lpcm_pkg is not imported
+    tr = new();
+    tr.sample = 1;
+    tr.latency = 2;
+    s = tr.convert2string();
+    $display("hello %s", tr.convert2string());
+    if (s != "sample=0x1 latency=2") $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

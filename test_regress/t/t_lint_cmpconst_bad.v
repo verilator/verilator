@@ -6,10 +6,10 @@
 
 module t;
 
-   bit [2:0] uns;
+  bit [2:0] uns;
 
-   initial begin
-      uns = 1;
-      if (uns > 3'b111) $stop;
-   end
+  initial begin
+    uns = 1;
+    if (uns > 3'b111) $stop;
+  end
 endmodule

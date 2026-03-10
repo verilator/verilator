@@ -11,17 +11,17 @@
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
 // verilog_format: on
 
-module t (/*AUTOARG*/
-   // Outputs
-   out_data
-   );
+module t (  /*AUTOARG*/
+    // Outputs
+    out_data
+);
 
-   output [11:0] out_data;
-   wire [11:0]   out_data;
-   wire [11:0]   a;
-   wire [2:0]    b;
-   assign a = 12'h000 ** { b };
-   assign b = 3'b0;
-   assign out_data = a;
+  output [11:0] out_data;
+  wire [11:0] out_data;
+  wire [11:0] a;
+  wire [2:0] b;
+  assign a = 12'h000 ** {b};
+  assign b = 3'b0;
+  assign out_data = a;
 
 endmodule

@@ -6,52 +6,49 @@
 // SPDX-FileCopyrightText: 2021 Geza Lore
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-module testbench(
-                 /*AUTOARG*/
-  // Inputs
-  clk
-  );
+module testbench (
+    input clk
+);
 
-   input clk; // Top level input clock
-   bit other_clk; // Dependent clock set via DPI
-   bit third_clk; // Additional dependent clock set via DPI
+  bit other_clk;  // Dependent clock set via DPI
+  bit third_clk;  // Additional dependent clock set via DPI
 
-   export "DPI-C" function set_other_clk;
-   function void set_other_clk(bit val);
-      other_clk = val;
-   endfunction;
+  export "DPI-C" function set_other_clk;
+  function void set_other_clk(bit val);
+    other_clk = val;
+  endfunction
 
-   export "DPI-C" function set_third_clk;
-   function void set_third_clk(bit val);
-      third_clk = val;
-   endfunction;
+  export "DPI-C" function set_third_clk;
+  function void set_third_clk(bit val);
+    third_clk = val;
+  endfunction
 
-   bit even_other = 1;
-   import "DPI-C" context function void toggle_other_clk(bit val);
-   always @(posedge clk) begin
-     even_other <= ~even_other;
-     toggle_other_clk(even_other);
-   end
+  bit even_other = 1;
+  import "DPI-C" context function void toggle_other_clk(bit val);
+  always @(posedge clk) begin
+    even_other <= ~even_other;
+    toggle_other_clk(even_other);
+  end
 
-   bit even_third = 1;
-   import "DPI-C" context function void toggle_third_clk(bit val);
-   always @(posedge other_clk) begin
-     even_third <= ~even_third;
-     toggle_third_clk(even_third);
-   end
+  bit even_third = 1;
+  import "DPI-C" context function void toggle_third_clk(bit val);
+  always @(posedge other_clk) begin
+    even_third <= ~even_third;
+    toggle_third_clk(even_third);
+  end
 
-   int   n = 0;
+  int n = 0;
 
-   wire final_clk = $c1("1") & third_clk;
+  wire final_clk = $c1("1") & third_clk;
 
-   always @(posedge final_clk) begin
-      $display("[%0t] n=%0d", $time, n);
-      if ($time != (8*n+1) * 500) $stop;
-      if (n == 20) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-      n += 1;
-   end
+  always @(posedge final_clk) begin
+    $display("[%0t] n=%0d", $time, n);
+    if ($time != (8 * n + 1) * 500) $stop;
+    if (n == 20) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+    n += 1;
+  end
 
 endmodule

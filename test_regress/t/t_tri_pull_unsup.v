@@ -12,12 +12,12 @@ module t;
   wire u5;
   wire u6;
 
-  pullup (supply1) pu1(a);
-  pullup (strong1) pu2(a);
-  pullup (pull1) pu3(a);
-  pullup (weak1) pu4(a);
-  pullup (supply1, supply0) pu5(a);
-  pullup (strong0, strong1) pu6(a);
+  pullup (supply1) pu1 (a);
+  pullup (strong1) pu2 (a);
+  pullup (pull1) pu3 (a);
+  pullup (weak1) pu4 (a);
+  pullup (supply1, supply0) pu5 (a);
+  pullup (strong0, strong1) pu6 (a);
 
   wire d1;
   wire d2;
@@ -26,11 +26,11 @@ module t;
   wire d5;
   wire d6;
 
-  pulldown (supply0) pd1(a);
-  pulldown (strong0) pd2(a);
-  pulldown (pull0) pd3(a);
-  pulldown (weak0) pd4(a);
-  pulldown (supply0, supply1) pd5(a);
-  pulldown (strong1, strong0) pd6(a);
+  pulldown (supply0) pd1 (a);
+  pulldown (strong0) pd2 (a);
+  pulldown (pull0) pd3 (a);
+  pulldown (weak0) pd4 (a);
+  pulldown (supply0, supply1) pd5 (a);
+  pulldown (strong1, strong0) pd6 (a);
 
 endmodule

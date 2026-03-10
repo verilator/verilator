@@ -9,37 +9,36 @@ localparam UROM_WIDTH = 5'd17;
 localparam UROM_DEPTH = 11'd1024;
 
 
-module t(
-         input clk,
-         input [UADDR_WIDTH-1:0] mAddr,
-         output logic [UROM_WIDTH-1:0] mOutput);
+module t (
+    input clk,
+    input [UADDR_WIDTH-1:0] mAddr,
+    output logic [UROM_WIDTH-1:0] mOutput
+);
 
-   // Issue #3959
-   reg [UROM_WIDTH-1:0] uRam[UROM_DEPTH];
+  // Issue #3959
+  reg [UROM_WIDTH-1:0] uRam[UROM_DEPTH];
 
-   always @(posedge clk) mOutput <= uRam[mAddr];
+  always @(posedge clk) mOutput <= uRam[mAddr];
 
-   // Issue #6045
-   typedef enum logic [1:0] { e_0, e_1, e_2, e_3 } enum_e;
+  // Issue #6045
+  typedef enum logic [1:0] {
+    e_0,
+    e_1,
+    e_2,
+    e_3
+  } enum_e;
 
-   typedef struct packed {
-      integer unsigned x;
-      integer unsigned y;
-   } foo_s;
+  typedef struct packed {
+    integer unsigned x;
+    integer unsigned y;
+  } foo_s;
 
-   typedef struct packed {
-      integer unsigned y;
-   } bar_s;
+  typedef struct packed {integer unsigned y;} bar_s;
 
-   // Warning due to concatenation, but this is actually a member assignment
-   localparam foo_s FOO = '{
-      y: (1 << e_0) | (1 << e_3)
-      , default: '0
-   };
+  // Warning due to concatenation, but this is actually a member assignment
+  localparam foo_s FOO = '{y: (1 << e_0) | (1 << e_3), default: '0};
 
-   // No warning
-   localparam bar_s BAR = '{
-      y: (1 << e_0) | (1 << e_3)
-   };
+  // No warning
+  localparam bar_s BAR = '{y: (1 << e_0) | (1 << e_3)};
 
 endmodule

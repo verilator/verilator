@@ -4,23 +4,23 @@
 // SPDX-FileCopyrightText: 2007 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Outputs
-   x,
-   // Inputs
-   clk
-   );
+module t (  /*AUTOARG*/
+    // Outputs
+    x,
+    // Inputs
+    clk
+);
 
 `ifdef ALLOW_UNOPT
-   /*verilator lint_off UNOPTFLAT*/
+  /*verilator lint_off UNOPTFLAT*/
 `endif
 
-   input clk;
-   output [31:0] x;  // Avoid eliminating x
+  input clk;
+  output [31:0] x;  // Avoid eliminating x
 
-   reg [31:0] x;
-   always @* begin
-      x = x ^ $random;
-   end
+  reg [31:0] x;
+  always @* begin
+    x = x ^ $random;
+  end
 
 endmodule

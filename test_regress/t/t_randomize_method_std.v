@@ -7,16 +7,16 @@
 process p;  // force importing std into top-level namespace
 
 class C;
-   function new;
-      if (randomize() != 1) $stop;
-   endfunction
+  function new;
+    if (randomize() != 1) $stop;
+  endfunction
 endclass
 
 module t;
-   initial begin
-      automatic C c = new;
+  initial begin
+    automatic C c = new;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

@@ -9,5 +9,5 @@
 // verilator lint_off SYMRSVDWORD
 
 module t(input do);
-   t_langext_order_sub sub (.do(do));
+  t_langext_order_sub sub (.do(do));
 endmodule

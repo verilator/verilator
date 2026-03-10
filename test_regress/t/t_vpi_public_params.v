@@ -14,11 +14,11 @@ import "DPI-C" context function int mon_check();
 
 // Copy of t_vpi_public_params.v but with the inline public taken out
 module t #(
-   parameter int WIDTH = 32
+  parameter int WIDTH = 32
   ) (/*AUTOARG*/
-   // Inputs
-   clk
-   );
+  // Inputs
+  clk
+  );
 
 `ifdef VERILATOR
 `systemc_header
@@ -26,25 +26,25 @@ extern "C" int mon_check();
 `verilog
 `endif
 
-   input clk;
+  input clk;
 
-   localparam int DEPTH = 16;
-   localparam longint PARAM_LONG = 64'hFEDCBA9876543210;
-   localparam string PARAM_STR  = "'some string value'";
+  localparam int DEPTH = 16;
+  localparam longint PARAM_LONG = 64'hFEDCBA9876543210;
+  localparam string PARAM_STR  = "'some string value'";
 
-   reg [WIDTH-1:0] mem0 [DEPTH:1];
-   integer    i, status;
+  reg [WIDTH-1:0] mem0 [DEPTH:1];
+  integer    i, status;
 
-   // Test loop
-   initial begin
+  // Test loop
+  initial begin
 `ifdef VERILATOR
-      status = $c32("mon_check()");
+    status = $c32("mon_check()");
 `endif
 `ifdef IVERILOG
-     status = $mon_check();
+    status = $mon_check();
 `endif
 `ifndef USE_VPI_NOT_DPI
-     status = mon_check();
+    status = mon_check();
 `endif
 
     if (status!=0) begin
@@ -53,6 +53,6 @@ extern "C" int mon_check();
     end
     $write("*-* All Finished *-*\n");
     $finish;
-   end
+  end
 
 endmodule : t

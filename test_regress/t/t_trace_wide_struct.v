@@ -4,20 +4,16 @@
 // SPDX-FileCopyrightText: 2011 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (
+    input clk
+);
 
-   typedef struct {
-       logic [64:0] long_signal;
-   } mystruct_t;
+  typedef struct {logic [64:0] long_signal;} mystruct_t;
 
-   mystruct_t mystruct;
+  mystruct_t mystruct;
 
-   initial begin
-       $finish;
-   end
+  initial begin
+    $finish;
+  end
 
 endmodule

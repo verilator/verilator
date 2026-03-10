@@ -6,21 +6,22 @@
 
 module t;
 
-   // Check that the lint_on is obeyed.
-   // verilator lint_off VARHIDDEN
-   // verilator lint_on  VARHIDDEN
+  // Check that the lint_on is obeyed.
+  // verilator lint_off VARHIDDEN
+  // verilator lint_on  VARHIDDEN
 
-   integer top;
+  integer top;
 
-   task x;
-      output top;
-      begin end
-   endtask
+  task x;
+    output top;
+    begin
+    end
+  endtask
 
-   initial begin
-      begin: lower
-         integer top;
-      end
-   end
+  initial begin
+    begin : lower
+      integer top;
+    end
+  end
 
 endmodule

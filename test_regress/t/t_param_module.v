@@ -16,41 +16,41 @@
 
 // bug606
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (
+    input clk
+);
 
-  localparam logic[4:0] WID = 16;
+  localparam logic [4:0] WID = 16;
   //localparam WID = 16;        // No problem if defined like this
   wire [15:0] b33;
 
-  test #(WID) i_test_33(.clk (clk),
-                        .b   (b33));
+  test #(WID) i_test_33 (
+      .clk(clk),
+      .b(b33)
+  );
 
 endmodule
 
 
-module test (/*AUTOARG*/
-   //Inputs
-   clk,
-   // Outputs
-   b
-   );
-   parameter  WIDTH = 10;
-   localparam MSB   = WIDTH - 1;
+module test (  /*AUTOARG*/
+    //Inputs
+    clk,
+    // Outputs
+    b
+);
+  parameter WIDTH = 10;
+  localparam MSB = WIDTH - 1;
 
-   input               clk;
-   output wire [MSB:0] b;
+  input clk;
+  output wire [MSB:0] b;
 
-   wire [MSB:0]        a;
-   assign b = {~a[MSB-1:0], clk};
+  wire [MSB:0] a;
+  assign b = {~a[MSB-1:0], clk};
 
-   initial begin
-      if ($bits(WIDTH)!=5) $stop;  // Comes from the parent!
-      if ($bits(MSB)!=32) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    if ($bits(WIDTH) != 5) $stop;  // Comes from the parent!
+    if ($bits(MSB) != 32) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

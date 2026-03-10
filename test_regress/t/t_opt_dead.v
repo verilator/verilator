@@ -8,23 +8,23 @@ class EmptyClass_Dead;
 endclass
 
 module Mod_Dead;
-class ModClass_Dead;
-   int memberb_dead;
-endclass
+  class ModClass_Dead;
+    int memberb_dead;
+  endclass
 endmodule
 
 //TODO dead check with class extends
 
 module t;
 
-   generate
-      if (0) begin
-         Mod_Dead cell_dead();
-      end
-   endgenerate
+  generate
+    if (0) begin
+      Mod_Dead cell_dead ();
+    end
+  endgenerate
 
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

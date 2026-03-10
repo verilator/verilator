@@ -9,138 +9,135 @@
 // Contributed 2012 by M W Lund, Atmel Corporation and Jeremy Bennett, Embecosm.
 
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
+module t (
+    input clk
+);
 
-   input clk;
+  /*AUTOWIRE*/
 
-   /*AUTOWIRE*/
+  // **************************************************************************
+  // Regs and Wires
+  // **************************************************************************
 
-   // **************************************************************************
-   // Regs and Wires
-   // **************************************************************************
-
-   reg     rst;
-   integer rst_count;
-   integer clk_count;
+  reg rst;
+  integer rst_count;
+  integer clk_count;
 
 
-   testbench testbench_i (/*AUTOINST*/
-                          // Inputs
-                          .clk                  (clk),
-                          .rst                  (rst));
+  testbench testbench_i (  /*AUTOINST*/
+      // Inputs
+      .clk(clk),
+      .rst(rst)
+  );
 
 
-   // **************************************************************************
-   // Reset Generation
-   // **************************************************************************
+  // **************************************************************************
+  // Reset Generation
+  // **************************************************************************
 
-   initial begin
-      rst       = 1'b1;
-      rst_count = 0;
-   end
+  initial begin
+    rst = 1'b1;
+    rst_count = 0;
+  end
 
-   always @( posedge clk ) begin
-      if (rst_count < 2) begin
-         rst_count++;
-      end
-      else begin
-         rst = 1'b0;
-      end
-   end
+  always @(posedge clk) begin
+    if (rst_count < 2) begin
+      rst_count++;
+    end
+    else begin
+      rst = 1'b0;
+    end
+  end
 
 
-   // **************************************************************************
-   // Drive simulation for 500 clock cycles
-   // **************************************************************************
+  // **************************************************************************
+  // Drive simulation for 500 clock cycles
+  // **************************************************************************
 
-   initial begin
+  initial begin
 `ifdef TEST_VERBOSE
-      $display( "[testbench] - Start of simulation ----------------------- " );
+    $display("[testbench] - Start of simulation ----------------------- ");
 `endif
-      clk_count = 0;
-   end
+    clk_count = 0;
+  end
 
-   always @( posedge clk ) begin
-      if (90 == clk_count) begin
-         $finish ();
-      end
-      else begin
-         clk_count++;
-      end
-   end
+  always @(posedge clk) begin
+    if (90 == clk_count) begin
+      $finish();
+    end
+    else begin
+      clk_count++;
+    end
+  end
 
-   final begin
+  final begin
 `ifdef TEST_VERBOSE
-      $display( "[testbench] - End of simulation ------------------------- " );
+    $display("[testbench] - End of simulation ------------------------- ");
 `endif
-      $write("*-* All Finished *-*\n");
-   end
+    $write("*-* All Finished *-*\n");
+  end
 
 
 endmodule
 
 
-module testbench (/*AUTOARG*/
-   // Inputs
-   clk, rst
-   );
+module testbench (  /*AUTOARG*/
+    // Inputs
+    clk,
+    rst
+);
 
-   input  clk;
-   input  rst;
+  input clk;
+  input rst;
 
-   // **************************************************************************
-   // Local parameters
-   // **************************************************************************
+  // **************************************************************************
+  // Local parameters
+  // **************************************************************************
 
-   localparam
-     NUMPADS = $size( pinout );
+  localparam NUMPADS = $size(pinout);
 
 
-   // **************************************************************************
-   // Regs and Wires
-   // **************************************************************************
+  // **************************************************************************
+  // Regs and Wires
+  // **************************************************************************
 
-   // **** Pinout ****
+  // **** Pinout ****
 `ifdef VERILATOR  // see t_tri_array
-   wire   [NUMPADS:1] pad;    // GPIO Pads (PORT{A,...,R}).
+  wire [NUMPADS:1] pad;  // GPIO Pads (PORT{A,...,R}).
 `else
-   wire  pad [1:NUMPADS];    // GPIO Pads (PORT{A,...,R}).
+  wire pad[1:NUMPADS];  // GPIO Pads (PORT{A,...,R}).
 `endif
 
 
-   // **************************************************************************
-   // Regs and Wires, Automatics
-   // **************************************************************************
+  // **************************************************************************
+  // Regs and Wires, Automatics
+  // **************************************************************************
 
-   /*AUTOWIRE*/
-
-
-   // **************************************************************************
-   // Includes (Testbench extensions)
-   // **************************************************************************
-
-   // N/A
+  /*AUTOWIRE*/
 
 
-   // **************************************************************************
-   // Chip Instance
-   // **************************************************************************
+  // **************************************************************************
+  // Includes (Testbench extensions)
+  // **************************************************************************
 
-   chip
-     i_chip
-       (
-        /*AUTOINST*/
-        // Inouts
-        .pad                            (pad[NUMPADS:1]),
-        // Inputs
-        .clk                            (clk),
-        .rst                            (rst));
+  // N/A
 
 
-endmodule // test
+  // **************************************************************************
+  // Chip Instance
+  // **************************************************************************
+
+  chip i_chip (
+      /*AUTOINST*/
+      // Inouts
+      .pad(pad[NUMPADS:1]),
+      // Inputs
+      .clk(clk),
+      .rst(rst)
+  );
+
+
+endmodule  // test
 
 // Local Variables:
 // verilog-library-directories:("." "t_sv_cpu_code")

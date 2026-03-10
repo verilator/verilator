@@ -1,6 +1,6 @@
-%Error: t/t_var_ref_bad1.v:14:8: Ref connection 'bad_sub_ref' requires matching types; ref requires 'real' data type but connection is 'bit' data type.
-                               : ... note: In instance 't'
-   14 |      (.bad_sub_ref(bad_parent));   
-      |        ^~~~~~~~~~~
+%Error: t/t_var_ref_bad1.v:13:13: Ref connection 'bad_sub_ref' requires matching types; ref requires 'real' data type but connection is 'bit' data type.
+                                : ... note: In instance 't'
+   13 |   sub sub (.bad_sub_ref(bad_parent));   
+      |             ^~~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

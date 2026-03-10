@@ -8,11 +8,11 @@ class imp_Cls_conflict;
 endclass
 
 module t;
-   typedef int imp_typedef_conflict;
-   localparam type imp_PARAM_conflict;
+  typedef int imp_typedef_conflict;
+  localparam type imp_PARAM_conflict;
 
 `default_nettype wire
-   assign imp_typedef_conflict = 1'b1;
-   assign imp_Cls_conflict = 1'b1;
-   assign imp_PARAM_conflict = 1'b1;
+  assign imp_typedef_conflict = 1'b1;
+  assign imp_Cls_conflict = 1'b1;
+  assign imp_PARAM_conflict = 1'b1;
 endmodule

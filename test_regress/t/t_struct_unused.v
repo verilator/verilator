@@ -5,19 +5,17 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module x;
-   typedef struct {
-      int fst, snd;
-   } uselessA_t;
+  typedef struct {int fst, snd;} uselessA_t;
 
-   typedef struct {
-      bit [3:0] n;
-      uselessA_t b;
-   } uselessB_t;
+  typedef struct {
+    bit [3:0] n;
+    uselessA_t b;
+  } uselessB_t;
 
-   uselessA_t useless;
+  uselessA_t useless;
 
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

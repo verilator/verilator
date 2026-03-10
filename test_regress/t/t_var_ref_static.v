@@ -8,9 +8,9 @@
 // verilator lint_off WIDTH
 
 module t;
-   // TODO make this a proper test
-   function void crs(const ref static i);
-   endfunction
-   function void rs(ref static i);
-   endfunction
+  // TODO make this a proper test
+  function void crs(const ref static i);
+  endfunction
+  function void rs(ref static i);
+  endfunction
 endmodule

@@ -7,22 +7,22 @@
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 class cls;
-   int m_field;
+  int m_field;
 endclass
 
 module t;
-   cls inst[2];
+  cls inst[2];
 
-   initial begin
-      // Loop (even just 1 iteration) is needed to reproduce the error
-      for (int i = 0; i < 2; ++i) begin
-         inst[i] = new();
-         inst[i].m_field = i;
-      end
-      for (int i = 0; i < 2; ++i) begin
-         if (inst[i].m_field != i) $stop;
-      end
-      $write("*-* All Finished *-*\n");
-      $finish;
+  initial begin
+    // Loop (even just 1 iteration) is needed to reproduce the error
+    for (int i = 0; i < 2; ++i) begin
+      inst[i] = new();
+      inst[i].m_field = i;
     end
+    for (int i = 0; i < 2; ++i) begin
+      if (inst[i].m_field != i) $stop;
+    end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

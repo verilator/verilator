@@ -13,11 +13,11 @@ import "DPI-C" context function int mon_check();
 `endif
 
 module t (/*AUTOARG*/
-   // Outputs
-   x,
-   // Inputs
-   clk, a
-   );
+  // Outputs
+  x,
+  // Inputs
+  clk, a
+  );
 
 `ifdef VERILATOR
 `systemc_header
@@ -25,197 +25,197 @@ extern "C" int mon_check();
 `verilog
 `endif
 
-   input clk;
+  input clk;
 
-   input [7:0] a;
-   output reg [7:0] x;
+  input [7:0] a;
+  output reg [7:0] x;
 
-   reg          onebit          /*verilator public_flat_rw @(posedge clk) */;
-   reg [2:1]    twoone          /*verilator public_flat_rw @(posedge clk) */;
-   reg [2:1]    fourthreetwoone[4:3] /*verilator public_flat_rw @(posedge clk) */;
-   reg LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND /*verilator public_flat_rw*/;
+  reg          onebit          /*verilator public_flat_rw @(posedge clk) */;
+  reg [2:1]    twoone          /*verilator public_flat_rw @(posedge clk) */;
+  reg [2:1]    fourthreetwoone[4:3] /*verilator public_flat_rw @(posedge clk) */;
+  reg LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND /*verilator public_flat_rw*/;
 
-   // verilator lint_off ASCRANGE
-   reg [0:61]   quads[2:3]      /*verilator public_flat_rw @(posedge clk) */;
-   reg [8:19]   rev   /*verilator public_flat_rw @(posedge clk) */;
-   // verilator lint_on ASCRANGE
+  // verilator lint_off ASCRANGE
+  reg [0:61]   quads[2:3]      /*verilator public_flat_rw @(posedge clk) */;
+  reg [8:19]   rev   /*verilator public_flat_rw @(posedge clk) */;
+  // verilator lint_on ASCRANGE
 
-   reg [31:0]      count        /*verilator public_flat */;
-   reg [31:0]      half_count   /*verilator public_flat_rd */ = 0;
-   reg [31:0]      delayed      /*verilator public_flat_rw */;
-   reg [31:0]      delayed_mem [16] /*verilator public_flat_rw */;
-   reg [7:0]       \escaped_with_brackets[3]  /*verilator public_flat_rw */;
-   reg [7:0]       mem_2d[3:0][7:0]  /*verilator public_flat_rw */;  // Descending indices
-   // verilator lint_off ASCRANGE
-   reg [0:95]      mem_3d[0:1][1:0][0:1]  /*verilator public_flat_rw */;  // Mixed: asc, desc, asc
-   // verilator lint_on ASCRANGE
+  reg [31:0]      count        /*verilator public_flat */;
+  reg [31:0]      half_count   /*verilator public_flat_rd */ = 0;
+  reg [31:0]      delayed      /*verilator public_flat_rw */;
+  reg [31:0]      delayed_mem [16] /*verilator public_flat_rw */;
+  reg [7:0]       \escaped_with_brackets[3]  /*verilator public_flat_rw */;
+  reg [7:0]       mem_2d[3:0][7:0]  /*verilator public_flat_rw */;  // Descending indices
+  // verilator lint_off ASCRANGE
+  reg [0:95]      mem_3d[0:1][1:0][0:1]  /*verilator public_flat_rw */;  // Mixed: asc, desc, asc
+  // verilator lint_on ASCRANGE
 
-   reg [3:0] [7:0] multi_packed[2:0]  /*verilator public_flat_rw */;
-   reg             unpacked_only[7:0];
+  reg [3:0] [7:0] multi_packed[2:0]  /*verilator public_flat_rw */;
+  reg             unpacked_only[7:0];
 
-   reg [7:0]       text_byte    /*verilator public_flat_rw @(posedge clk) */;
-   reg [15:0]      text_half    /*verilator public_flat_rw @(posedge clk) */;
-   reg [31:0]      text_word    /*verilator public_flat_rw @(posedge clk) */;
-   reg [63:0]      text_long    /*verilator public_flat_rw @(posedge clk) */;
-   reg [511:0]     text         /*verilator public_flat_rw @(posedge clk) */;
-   reg [2047:0]    too_big      /*verilator public_flat_rw @(posedge clk) */;
+  reg [7:0]       text_byte    /*verilator public_flat_rw @(posedge clk) */;
+  reg [15:0]      text_half    /*verilator public_flat_rw @(posedge clk) */;
+  reg [31:0]      text_word    /*verilator public_flat_rw @(posedge clk) */;
+  reg [63:0]      text_long    /*verilator public_flat_rw @(posedge clk) */;
+  reg [511:0]     text         /*verilator public_flat_rw @(posedge clk) */;
+  reg [2047:0]    too_big      /*verilator public_flat_rw @(posedge clk) */;
 
-   integer        status;
+  integer        status;
 
-   bit            bit1           /*verilator public_flat_rw */;
-   integer        integer1       /*verilator public_flat_rw */;
-   byte           byte1          /*verilator public_flat_rw */;
-   shortint       short1         /*verilator public_flat_rw */;
-   int            int1           /*verilator public_flat_rw */;
-   longint        long1          /*verilator public_flat_rw */;
-   real           real1          /*verilator public_flat_rw */;
-   string         str1           /*verilator public_flat_rw */;
-   // specifically public and not public_flat_rw here so as to induce the C++
-   // keyword collision
-   localparam int nullptr        /*verilator public */ = 123;
+  bit            bit1           /*verilator public_flat_rw */;
+  integer        integer1       /*verilator public_flat_rw */;
+  byte           byte1          /*verilator public_flat_rw */;
+  shortint       short1         /*verilator public_flat_rw */;
+  int            int1           /*verilator public_flat_rw */;
+  longint        long1          /*verilator public_flat_rw */;
+  real           real1          /*verilator public_flat_rw */;
+  string         str1           /*verilator public_flat_rw */;
+  // specifically public and not public_flat_rw here so as to induce the C++
+  // keyword collision
+  localparam int nullptr        /*verilator public */ = 123;
 
-   logic [31:0] some_mem [4] /* verilator public_flat_rd */ = {0, 0, 0, 432};
+  logic [31:0] some_mem [4] /* verilator public_flat_rd */ = {0, 0, 0, 432};
 
-   generate
-     for (genvar i = 0; i < 1; i++) begin : gen
-       wire [7:0] gen_sig /*verilator public_flat_rw*/ = 8'hAB;
-     end
-   endgenerate
+  generate
+    for (genvar i = 0; i < 1; i++) begin : gen
+     wire [7:0] gen_sig /*verilator public_flat_rw*/ = 8'hAB;
+    end
+  endgenerate
 
-   sub sub();
+  sub sub();
 
-   // Test loop
-   initial begin
-      count = 0;
-      delayed = 0;
-      onebit = 1'b0;
-      fourthreetwoone[3] = 0; // stop icarus optimizing away
-      text_byte = "B";
-      text_half = "Hf";
-      text_word = "Word";
-      text_long = "Long64b";
-      text = "Verilog Test module";
-      too_big = "some text";
+  // Test loop
+  initial begin
+    count = 0;
+    delayed = 0;
+    onebit = 1'b0;
+    fourthreetwoone[3] = 0; // stop icarus optimizing away
+    text_byte = "B";
+    text_half = "Hf";
+    text_word = "Word";
+    text_long = "Long64b";
+    text = "Verilog Test module";
+    too_big = "some text";
 
-      bit1 = 1;
-      integer1 = 123;
-      byte1 = 123;
-      short1 = 123;
-      int1 = 123;
-      long1 = 123;
-      real1 = 1.0;
-      str1 = "hello";
-      \escaped_with_brackets[3]  = 8'h5a;
+    bit1 = 1;
+    integer1 = 123;
+    byte1 = 123;
+    short1 = 123;
+    int1 = 123;
+    long1 = 123;
+    real1 = 1.0;
+    str1 = "hello";
+    \escaped_with_brackets[3]  = 8'h5a;
 
-      rev = 12'habc;
+    rev = 12'habc;
 
-      for (int i = 0; i < 4; i++) begin
-         for (int j = 0; j < 8; j++) begin
-            mem_2d[i][j] = 8'(((i * 8) + j));
-         end
+    for (int i = 0; i < 4; i++) begin
+      for (int j = 0; j < 8; j++) begin
+        mem_2d[i][j] = 8'(((i * 8) + j));
       end
+    end
 
-      for (int i = 0; i < 2; i++) begin
-         for (int j = 0; j < 2; j++) begin
-            for (int k = 0; k < 2; k++) begin
-               mem_3d[i][j][k] = 96'(((i * 4) + (j * 2) + k));
-            end
-         end
+    for (int i = 0; i < 2; i++) begin
+      for (int j = 0; j < 2; j++) begin
+        for (int k = 0; k < 2; k++) begin
+          mem_3d[i][j][k] = 96'(((i * 4) + (j * 2) + k));
+        end
       end
+    end
 
-      for (int i = 0; i < 3; i++) begin
-         for (int j = 0; j < 4; j++) begin
-            multi_packed[i][j] = 8'((i * 4) + j);
-         end
+    for (int i = 0; i < 3; i++) begin
+      for (int j = 0; j < 4; j++) begin
+        multi_packed[i][j] = 8'((i * 4) + j);
       end
+    end
 
 `ifdef VERILATOR
-      status = $c32("mon_check()");
+    status = $c32("mon_check()");
 `endif
 `ifdef IVERILOG
-      status = $mon_check();
+    status = $mon_check();
 `endif
 `ifndef USE_VPI_NOT_DPI
-      status = mon_check();
+    status = mon_check();
 `endif
-      if (status!=0) begin
-         $write("%%Error: t_vpi_var.cpp:%0d: C Test failed\n", status);
-         $stop;
-      end
-      $write("%%Info: Checking results\n");
-      if (onebit != 1'b1) $stop;
-      if (quads[2] != 62'h12819213_abd31a1c) $stop;
-      if (quads[3] != 62'h1c77bb9b_3784ea09) $stop;
-      if (text_byte != "A") $stop;
-      if (text_half != "T2") $stop;
-      if (text_word != "Tree") $stop;
-      if (text_long != "44Four44") $stop;
-      if (text != "lorem ipsum") $stop;
-      if (str1 != "something a lot longer than hello") $stop;
-      if (real1 > 123456.7895 || real1 < 123456.7885 ) $stop;
-   end
+    if (status!=0) begin
+      $write("%%Error: t_vpi_var.cpp:%0d: C Test failed\n", status);
+      $stop;
+    end
+    $write("%%Info: Checking results\n");
+    if (onebit != 1'b1) $stop;
+    if (quads[2] != 62'h12819213_abd31a1c) $stop;
+    if (quads[3] != 62'h1c77bb9b_3784ea09) $stop;
+    if (text_byte != "A") $stop;
+    if (text_half != "T2") $stop;
+    if (text_word != "Tree") $stop;
+    if (text_long != "44Four44") $stop;
+    if (text != "lorem ipsum") $stop;
+    if (str1 != "something a lot longer than hello") $stop;
+    if (real1 > 123456.7895 || real1 < 123456.7885 ) $stop;
+  end
 
-   always @(posedge clk) begin
-      count <= count + 2;
-      if (count[1])
-        half_count <= half_count + 2;
+  always @(posedge clk) begin
+    count <= count + 2;
+    if (count[1])
+      half_count <= half_count + 2;
 
-      if (count == 1000) begin
-         if (delayed != 123) $stop;
-         if (delayed_mem[7] != 456) $stop;
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
+    if (count == 1000) begin
+      if (delayed != 123) $stop;
+      if (delayed_mem[7] != 456) $stop;
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 
-   genvar i;
-   generate
-   for (i=1; i<=6; i=i+1) begin : arr
-     arr #(.LENGTH(i)) arr();
-   end
-   endgenerate
+  genvar i;
+  generate
+  for (i=1; i<=6; i=i+1) begin : arr
+    arr #(.LENGTH(i)) arr();
+  end
+  endgenerate
 
-   genvar k;
-   generate
-   for (k=1; k<=6; k=k+1) begin : subs
-      sub subsub();
-   end
-   endgenerate
+  genvar k;
+  generate
+  for (k=1; k<=6; k=k+1) begin : subs
+    sub subsub();
+  end
+  endgenerate
 
-   arr #(.LENGTH(8)) \escaped.inst[0] ();
+  arr #(.LENGTH(8)) \escaped.inst[0] ();
 
 endmodule : t
 
 module sub;
-   reg subsig1 /*verilator public_flat_rw*/;
-   reg subsig2 /*verilator public_flat_rd*/;
+  reg subsig1 /*verilator public_flat_rw*/;
+  reg subsig2 /*verilator public_flat_rd*/;
 `ifdef IVERILOG
-   // stop icarus optimizing signals away
-   wire redundant = subsig1 | subsig2;
+  // stop icarus optimizing signals away
+  wire redundant = subsig1 | subsig2;
 `endif
 endmodule : sub
 
 module arr;
 
-   parameter LENGTH = 1;
+  parameter LENGTH = 1;
 
-   reg [LENGTH-1:0] sig /*verilator public_flat_rw*/;
-   reg [LENGTH-1:0] rfr /*verilator public_flat_rw*/;
-   reg [LENGTH-1:0] \escaped_sig[1]  /*verilator public_flat_rw*/;
+  reg [LENGTH-1:0] sig /*verilator public_flat_rw*/;
+  reg [LENGTH-1:0] rfr /*verilator public_flat_rw*/;
+  reg [LENGTH-1:0] \escaped_sig[1]  /*verilator public_flat_rw*/;
 
-   reg            check /*verilator public_flat_rw*/;
-   reg          verbose /*verilator public_flat_rw*/;
+  reg            check /*verilator public_flat_rw*/;
+  reg          verbose /*verilator public_flat_rw*/;
 
-   initial begin
-      sig = {LENGTH{1'b0}};
-      rfr = {LENGTH{1'b0}};
-      \escaped_sig[1]  = {LENGTH{1'b0}};
-   end
+  initial begin
+    sig = {LENGTH{1'b0}};
+    rfr = {LENGTH{1'b0}};
+    \escaped_sig[1]  = {LENGTH{1'b0}};
+  end
 
-   always @(posedge check) begin
-     if (verbose) $display("%m : %x %x", sig, rfr);
-     if (check && sig != rfr) $stop;
-     check <= 0;
-   end
+  always @(posedge check) begin
+    if (verbose) $display("%m : %x %x", sig, rfr);
+    if (check && sig != rfr) $stop;
+    check <= 0;
+  end
 
 endmodule : arr
