@@ -3912,11 +3912,10 @@ class RandomizeVisitor final : public VNVisitor {
                         = [&](AstClass* classp, const std::string& pathPrefix) {
                               classp->foreachMember([&](AstClass*, AstVar* subVarp) {
                                   if (!subVarp->rand().isRandomizable()) return;
-                                  const std::string smtName
-                                      = pathPrefix + "." + subVarp->name();
+                                  const std::string smtName = pathPrefix + "." + subVarp->name();
                                   // Check for enum type
-                                  AstEnumDType* const enumDtp = VN_CAST(
-                                      subVarp->dtypep()->skipRefToEnump(), EnumDType);
+                                  AstEnumDType* const enumDtp
+                                      = VN_CAST(subVarp->dtypep()->skipRefToEnump(), EnumDType);
                                   if (enumDtp) {
                                       emitEnumConstraint(smtName, enumDtp);
                                       return;
