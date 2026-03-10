@@ -730,6 +730,8 @@ class ConstraintExprVisitor final : public VNVisitor {
     AstClass* const m_classp;
     AstNodeFTask* const m_inlineInitTaskp;  // Method to add write_var calls to
                                             // (may be null, then new() is used)
+    AstNodeFTask* const m_memberselInitTaskp;  // Fallback for membersel write_var when
+                                               // classp has no randomize() (inherited members)
     AstVar* const m_genp;  // VlRandomizer variable of the class
     AstVar* m_randModeVarp;  // Relevant randmode state variable
     bool m_wantSingle = false;  // Whether to merge constraint expressions with LOGAND
@@ -1248,6 +1250,9 @@ class ConstraintExprVisitor final : public VNVisitor {
                     varp->user3(true);
                     if (membersel) {
                         initTaskp = VN_AS(m_memberMap.findMember(classp, "randomize"), NodeFTask);
+                        // Inherited rand members may belong to a base class
+                        // that has no randomize(); use the caller's function
+                        if (!initTaskp) initTaskp = m_memberselInitTaskp;
                         UASSERT_OBJ(initTaskp, classp, "No randomize() in class");
                     } else {
                         initTaskp = VN_AS(m_memberMap.findMember(classp, "new"), NodeFTask);
@@ -2388,9 +2393,11 @@ public:
     // CONSTRUCTORS
     explicit ConstraintExprVisitor(AstClass* classp, VMemberMap& memberMap, AstNode* nodep,
                                    AstNodeFTask* inlineInitTaskp, AstVar* genp,
-                                   AstVar* randModeVarp, std::set<std::string>& writtenVars)
+                                   AstVar* randModeVarp, std::set<std::string>& writtenVars,
+                                   AstNodeFTask* memberselInitTaskp = nullptr)
         : m_classp{classp}
         , m_inlineInitTaskp{inlineInitTaskp}
+        , m_memberselInitTaskp{memberselInitTaskp}
         , m_genp{genp}
         , m_randModeVarp{randModeVarp}
         , m_memberMap{memberMap}
@@ -3979,7 +3986,7 @@ class RandomizeVisitor final : public VNVisitor {
                 if (constrp->itemsp()) expandUniqueElementList(constrp->itemsp());
                 if (constrp->itemsp()) lowerDistConstraints(taskp, constrp->itemsp());
                 ConstraintExprVisitor{classp, m_memberMap,  constrp->itemsp(), nullptr,
-                                      genp,   randModeVarp, m_writtenVars};
+                                      genp,   randModeVarp, m_writtenVars,     randomizep};
                 if (constrp->itemsp()) {
                     taskp->addStmtsp(wrapIfConstraintMode(
                         nodep, constrp, constrp->itemsp()->unlinkFrBackWithNext()));
