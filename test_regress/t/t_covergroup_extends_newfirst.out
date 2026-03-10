@@ -1,5 +1,5 @@
-%Error-UNSUPPORTED: t/t_covergroup_extends_newfirst.v:29:9: Unsupported: covergroup inheritance (extends) is not implemented
-   29 |         covergroup extends g1;
-      |         ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_extends_newfirst.v:29:5: Unsupported: covergroup inheritance (extends) is not implemented
+   29 |     covergroup extends g1;
+      |     ^~~~~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to
