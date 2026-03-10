@@ -1229,8 +1229,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 if (!initTaskp) {
                     varp->user3(true);
                     if (membersel) {
-                        initTaskp = VN_AS(
-                            m_memberMap.findMember(classp, "randomize"), NodeFTask);
+                        initTaskp = VN_AS(m_memberMap.findMember(classp, "randomize"), NodeFTask);
                         // Inherited rand members may belong to a base class
                         // that has no randomize(); use the caller's function
                         if (!initTaskp) initTaskp = m_memberselInitTaskp;
@@ -3841,8 +3840,7 @@ class RandomizeVisitor final : public VNVisitor {
                 if (constrp->itemsp()) expandUniqueElementList(constrp->itemsp());
                 if (constrp->itemsp()) lowerDistConstraints(taskp, constrp->itemsp());
                 ConstraintExprVisitor{classp, m_memberMap,  constrp->itemsp(), nullptr,
-                                      genp,   randModeVarp, m_writtenVars,
-                                      randomizep};
+                                      genp,   randModeVarp, m_writtenVars,     randomizep};
                 if (constrp->itemsp()) {
                     taskp->addStmtsp(wrapIfConstraintMode(
                         nodep, constrp, constrp->itemsp()->unlinkFrBackWithNext()));
