@@ -2,6 +2,7 @@
 // Known limitation: multi-value (3+) transition bins generate incomplete case
 // statements; complex transitions are not fully supported.
 // This file ONLY is placed into the Public Domain, for any use, without warranty.
+// SPDX-FileCopyrightText: 2025 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
