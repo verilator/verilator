@@ -12,4 +12,5 @@
              obj_vlt/t_preproc_inc_notfound_bad/this_file_is_not_found.vh
              obj_vlt/t_preproc_inc_notfound_bad/this_file_is_not_found.vh.v
              obj_vlt/t_preproc_inc_notfound_bad/this_file_is_not_found.vh.sv
+        ... With current working directory '...'
 %Error: Exiting due to

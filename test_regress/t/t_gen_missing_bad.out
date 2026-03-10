@@ -12,4 +12,5 @@
                         obj_vlt/t_gen_missing_bad/foo_not_needed
                         obj_vlt/t_gen_missing_bad/foo_not_needed.v
                         obj_vlt/t_gen_missing_bad/foo_not_needed.sv
+                   ... With current working directory '...'
 %Error: Exiting due to

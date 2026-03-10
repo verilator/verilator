@@ -31,6 +31,7 @@
 class V3Os final {
 public:
     // METHODS (environment)
+    static string cwd() { return filenameRealPath("."); }
     static string getenvStr(const string& envvar, const string& defaultValue);
     static void setenvStr(const string& envvar, const string& value, const string& why);
 

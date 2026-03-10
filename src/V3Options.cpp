@@ -702,6 +702,8 @@ string V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
                 ss << V3Error::warnMore() << "     " << fn << "\n";
             }
         }
+        ss << V3Error::warnMore() << "... With current working directory '" << V3Os::cwd()
+           << "'\n";
     }
     return ss.str();
 }
@@ -1953,8 +1955,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     }).notForRerun();
 
     parser.finalize();
-
-    const std::string cwd = V3Os::filenameRealPath(".");
 
     for (int i = 0; i < argc;) {
         UINFO(9, " Option: " << argv[i]);

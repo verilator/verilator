@@ -10,4 +10,5 @@
              obj_vlt/t_hier_block_type_param_notfound_bad//does-not-exist
              obj_vlt/t_hier_block_type_param_notfound_bad//does-not-exist.v
              obj_vlt/t_hier_block_type_param_notfound_bad//does-not-exist.sv
+        ... With current working directory '...'
 %Error: Exiting due to
