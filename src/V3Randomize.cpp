@@ -3873,7 +3873,7 @@ class RandomizeVisitor final : public VNVisitor {
                 AstNodeModule* const genModp = VN_AS(genp->user2p(), NodeModule);
                 // Emit enum range hard constraint for a single variable
                 const auto emitEnumConstraint = [&](const std::string& smtName,
-                                                    AstEnumDType* enumDtp) {
+                                                    AstEnumDType* const enumDtp) {
                     const int width = enumDtp->width();
                     std::string constraint = "(__Vbv (or";
                     for (AstEnumItem* itemp = enumDtp->itemsp(); itemp;
