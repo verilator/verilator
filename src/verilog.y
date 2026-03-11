@@ -5931,7 +5931,10 @@ specparam_assignment<varp>:     // ==IEEE: specparam_assignment
                 idNotPathpulse sigAttrListE '=' minTypMax
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
                           if ($4) $$->valuep($4); }
-        //                      //  IEEE: pulse_control_specparam
+        //                      // IEEE: pulse_control_specparam
+        //                      // LRM grammar requires '(' as the first token after assignment,
+        //                      // but IEEE provides an example in 30.7.1 where it is omitted.
+        //                      // Other simulators also support it.
         |       idPathpulse sigAttrListE '=' minTypMax
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
                           if ($4) $$->valuep($4); }
