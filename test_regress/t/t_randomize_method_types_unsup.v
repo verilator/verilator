@@ -23,10 +23,6 @@ class Cls;
     dynarr[1].size < 10;
   }
   constraint statedep { i < st + 2; }
-  constraint q_size_elem {
-    q.size < 5;
-    q[i] < 10;
-  }
   constraint global_constraint {
     foo.x < y;
   }
