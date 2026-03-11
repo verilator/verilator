@@ -18,11 +18,12 @@ Verilator 5.047 devel
 * Support constraint imperfect distributions (#6811) (#7168). [Yilou Wang]
 * Support procedural concurrent assertion simple cases (#6944).
 * Support force assignments to array elements of real type (#7048). [Ryszard Rozak, Antmicro Ltd.]
-* Support VPI array indexing in signal names (#7097) (#7187). [Christian Hecken, Heidelberg University]
+* Support VPI array indexing in signal names (#7097) (#7187) (#7214). [Christian Hecken, Heidelberg University]
 * Support soft constraint solving (#7124) (#7166). [Yilou Wang]
 * Support constraints on fixed-size array of class object members (#7170) (#7183). [Yilou Wang]
 * Support Z non-blocking assignment (#7192) (#496) (#7197). [Nick Brereton]
 * Support constraint `with` item.index array reduction (#7198). [Rahul Behl]
+* Support constant expressions without parentheses in `PATHPULSE$` (#7199). [Pawel Kojma, Antmicro Ltd.]
 * Add VPI callback support to --main (#7145).
 * Add V3LiftExpr pass to lower impure expressions and calls (#7141) (#7164). [Geza Lore, Testorrent USA, Inc.]
 * Add --func-recursion-depth CLI option (#7175) (#7179).
@@ -33,6 +34,7 @@ Verilator 5.047 devel
 * Optimize function call return value temporaries (#7152). [Geza Lore, Testorrent USA, Inc.]
 * Optimize conditional merging across some impure statements (#7159). [Geza Lore, Testorrent USA, Inc.]
 * Fix recursive default assignment for sub-arrays (#4589) (#7202). [Julian Carrier]
+* Fix randomize size+element queue constraints (#5582) (#7225). [Rahul Behl, Testorrent USA, Inc.]
 * Fix lambda coroutines (#6106) (#7135). [Nick Brereton]
 * Fix super constructor calls with local variables (#6214) (#6933). [Igor Zaworski, Antmicro Ltd.]
 * Fix interface localparam dependencies and arbitrary nesting (#6936) (#7128) (#7188) (#7190). [em2machine]
@@ -46,6 +48,10 @@ Verilator 5.047 devel
 * Fix recursive constant function in $unit scope (#7173) (#7174).
 * Fix class extend references between queues (#7195).
 * Fix library/hier_block tracing when top name is empty (#7200). [Geza Lore, Testorrent USA, Inc.]
+* Fix wrong $bits() for parameterized interface struct typedefs (#7218) (#7219). [em2machine]
+* Fix `dist` operator inside constraint if blocks (#7221) (#7224). [Rahul Behl, Testorrent USA, Inc.]
+* Fix soft cross-object constraint priority inversion (#7228) (#7233). [Yilou Wang]
+* Fix internal error when derived class calls this.randomize() with inherited rand members (#7229) (#7234). [Yilou Wang]
 
 
 Verilator 5.046 2026-02-28
