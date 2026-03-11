@@ -628,67 +628,67 @@ module t;
 
   function void e_chandle_0d(input chandle val);
     if (val == null) begin
-      $display("Mismatch non null is expected, but not.");
+      $display("Mismatch non-null is expected, but not.");
       $stop;
     end
   endfunction
   function void e_chandle_1d(input chandle val[2]);
     if (val[0] == null) begin
-      $display("Mismatch non null is expected, but not.");
+      $display("Mismatch non-null is expected, but not.");
       $stop;
     end
     if (val[1] == null) begin
-      $display("Mismatch non null is expected, but not.");
+      $display("Mismatch non-null is expected, but not.");
       $stop;
     end
   endfunction
   function void e_chandle_2d(input chandle val[3][2]);
     if (val[0][1] == null) begin
-      $display("Mismatch non null is expected, but not.");
+      $display("Mismatch non-null is expected, but not.");
       $stop;
     end
     if (val[1][1] == null) begin
-      $display("Mismatch non null is expected, but not.");
+      $display("Mismatch non-null is expected, but not.");
       $stop;
     end
     if (val[2][1] == null) begin
-      $display("Mismatch non null is expected, but not.");
+      $display("Mismatch non-null is expected, but not.");
       $stop;
     end
   endfunction
   function void e_chandle_3d(input chandle_array_t val);
     if (val[0][0][0] == null) begin
-      $display("Mismatch non null is expected, but not.");
+      $display("Mismatch non-null is expected, but not.");
       $stop;
     end
     if (val[1][0][0] == null) begin
-      $display("Mismatch non null is expected, but not.");
+      $display("Mismatch non-null is expected, but not.");
       $stop;
     end
     if (val[2][0][0] == null) begin
-      $display("Mismatch non null is expected, but not.");
+      $display("Mismatch non-null is expected, but not.");
       $stop;
     end
     if (val[3][0][0] == null) begin
-      $display("Mismatch non null is expected, but not.");
+      $display("Mismatch non-null is expected, but not.");
       $stop;
     end
   endfunction
   function void e_chandle_1d1(input chandle val[1]);
     if (val[0] == null) begin
-      $display("Mismatch non null is expected, but not.");
+      $display("Mismatch non-null is expected, but not.");
       $stop;
     end
   endfunction
   function void e_chandle_2d1(input chandle val[1][1]);
     if (val[0][0] == null) begin
-      $display("Mismatch non null is expected, but not.");
+      $display("Mismatch non-null is expected, but not.");
       $stop;
     end
   endfunction
   function void e_chandle_3d1(input chandle_array1_t val);
     if (val[0][0][0] == null) begin
-      $display("Mismatch non null is expected, but not.");
+      $display("Mismatch non-null is expected, but not.");
       $stop;
     end
   endfunction

@@ -534,7 +534,7 @@ static void process() {
             V3Dead::deadifyAll(v3Global.rootp());
 
             // Here down, widthMin() is the Verilog width, and width() is the C++ width
-            // Bits between widthMin() and width() are irrelevant, but may be non zero.
+            // Bits between widthMin() and width() are irrelevant, but may be non-zero.
             v3Global.widthMinUsage(VWidthMinUsage::VERILOG_WIDTH);
 
             // Make all expressions 32, 64, or 32*N bits

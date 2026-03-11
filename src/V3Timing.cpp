@@ -799,7 +799,7 @@ class TimingControlVisitor final : public VNVisitor {
         }
         UASSERT_OBJ(firstStmtp, procp,
                     procp->prettyNameQ() << " has no non-var statement. 'localizeVars()' is ment "
-                                            "to be called on non empty NodeProcedure/CFunc/Begin");
+                                            "to be called on non-empty NodeProcedure/CFunc/Begin");
         for (AstVar* const varp : varsp) {
             varp->funcLocal(true);
             firstStmtp->addHereThisAsNext(varp->unlinkFrBack());

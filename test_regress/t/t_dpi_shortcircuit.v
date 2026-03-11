@@ -47,7 +47,7 @@ module t;
   // Test loop
   initial begin
     // Spec says && || -> and ?: short circuit, no others do.
-    // Check both constant & non constants.
+    // Check both constant & non-constants.
     dpii_clear();
     check1(`__LINE__, (1'b0 && dpii_inc0(0)), 1'b0);
     check1(`__LINE__, (1'b1 && dpii_inc0(1)), 1'b0);

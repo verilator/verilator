@@ -135,7 +135,7 @@ struct LogicReplicas final {
 //
 // There are 3 different kinds of triggers
 // 1. "Sense" triggers, which correspond to a unique SenItem in the design
-// 2. "Extra" triggers, which represent non SenItem based conditions
+// 2. "Extra" triggers, which represent non-SenItem based conditions
 // 3. "Pre" triggers, which are only used in the 'act' region. These are a copy
 //    of some of the "Sense" triggers but only ever fire during one evaluation
 //    of the 'act' loop. They are used for executing AlwaysPre block that

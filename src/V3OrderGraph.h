@@ -52,7 +52,7 @@
 //
 // Ordering constraints are represented by directed edges, where the source of an edge needs to be
 // ordered before the sink of an edge. A constraint can be either hard (must be satisfied),
-// represented by a non cutable edge, or a constraint can be soft (ideally should be satisfied, but
+// represented by a non-cutable edge, or a constraint can be soft (ideally should be satisfied, but
 // is ok not to if other hard constraints interfere), represented by a cutable edge. Edges
 // otherwise carry no additional information. TODO: what about weight?
 //

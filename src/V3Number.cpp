@@ -649,7 +649,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const VL_MT_STAB
     // Correct number of zero bits/width matters
     auto pos = vformat.cbegin();
     UASSERT(pos != vformat.cend() && pos[0] == '%',
-            "$display-like function with non format argument " << *this);
+            "$display-like function with non-format argument " << *this);
     ++pos;
     bool left = false;
     if (pos[0] == '-') {

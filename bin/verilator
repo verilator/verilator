@@ -149,7 +149,7 @@ if ($opt_gdb) {
         . verilator_bin()
         . " " . join(' ', @quoted_sw));
 } else {
-    # Normal, non gdb
+    # Normal, non-gdb
     run(ulimit_stack_unlimited() . aslr(1) . verilator_bin() . " " . join(' ', @quoted_sw));
 }
 

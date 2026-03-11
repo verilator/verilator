@@ -1365,7 +1365,7 @@ class V3DfgPeephole final : public DfgVisitor {
                     hasCrossSink |= selMsb >= lLsb && rMsb >= selLsb;
                     return false;
                 }
-                // Ignore non observable variable sinks. These will be eliminated.
+                // Ignore non-observable variable sinks. These will be eliminated.
                 if (const DfgVarPacked* const varp = sink.cast<DfgVarPacked>()) {
                     if (!varp->hasSinks() && !varp->isObserved()) return false;
                 }
@@ -1829,7 +1829,7 @@ class V3DfgPeephole final : public DfgVisitor {
         // Otherwise remove if there is only one sink that is not a removable variable
         bool foundOne = false;
         const bool keep = vtxp->srcp()->foreachSink([&](DfgVertex& sink) {
-            // Ignore non observable variable sinks. These can be eliminated.
+            // Ignore non-observable variable sinks. These can be eliminated.
             if (const DfgVertexVar* const varp = sink.cast<DfgVertexVar>()) {
                 if (!varp->hasSinks() && !varp->isObserved()) return false;
             }

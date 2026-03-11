@@ -34,7 +34,7 @@ module t (
       gclk = {gclk[N-2:0], gclk[N-1]};
     end
 
-    // This make the always block requires a 'pre' trigger (and makes it non splitable)
+    // This make the always block requires a 'pre' trigger (and makes it non-splitable)
     par <= ^gclk;
 
     cyc <= cyc + 32'd1;

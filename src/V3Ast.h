@@ -932,7 +932,7 @@ public:
     virtual bool isSame(const AstNode* samep) const {
         return type() == samep->type() && sameNode(samep);
     }
-    // Iff has a data type; dtype() must be non null
+    // Iff has a data type; dtype() must be non-null
     virtual bool hasDType() const VL_MT_SAFE { return false; }
     // Iff has a non-null childDTypep(), as generic node function
     virtual AstNodeDType* getChildDTypep() const { return nullptr; }
@@ -1005,7 +1005,7 @@ public:
     // For use via the VN_IS macro only, or in templated code
     template <typename T_TargetType, typename T_Node>
     static bool is(const T_Node* nodep) VL_MT_SAFE {
-        static_assert(std::is_base_of<AstNode, T_Node>::value, "VN_IS called on non AstNode");
+        static_assert(std::is_base_of<AstNode, T_Node>::value, "VN_IS called on non-AstNode");
         static_assert(!uselessCast<T_TargetType, T_Node>(),
                       "Unnecessary VN_IS, node known to have target type.");
         static_assert(!impossibleCast<T_TargetType, T_Node>(),
@@ -1016,7 +1016,7 @@ public:
     // For use via the VN_CAST macro only, or in templated code
     template <typename T_TargetType, typename T_Node>
     static T_TargetType* cast(T_Node* nodep) VL_MT_SAFE {
-        static_assert(std::is_base_of<AstNode, T_Node>::value, "VN_CAST called on non AstNode");
+        static_assert(std::is_base_of<AstNode, T_Node>::value, "VN_CAST called on non-AstNode");
         static_assert(!uselessCast<T_TargetType, T_Node>(),
                       "Unnecessary VN_CAST, node known to have target type.");
         static_assert(!impossibleCast<T_TargetType, T_Node>(),
@@ -1027,7 +1027,7 @@ public:
     }
     template <typename T_TargetType, typename T_Node>
     static const T_TargetType* cast(const T_Node* nodep) VL_MT_SAFE {
-        static_assert(std::is_base_of<AstNode, T_Node>::value, "VN_CAST called on non AstNode");
+        static_assert(std::is_base_of<AstNode, T_Node>::value, "VN_CAST called on non-AstNode");
         static_assert(!uselessCast<T_TargetType, T_Node>(),
                       "Unnecessary VN_CAST, node known to have target type.");
         static_assert(!impossibleCast<T_TargetType, T_Node>(),
@@ -1040,7 +1040,7 @@ public:
     // For use via the VN_AS macro only, or in templated code
     template <typename T_TargetType, typename T_Node>
     static T_TargetType* as(T_Node* nodep) VL_PURE {
-        static_assert(std::is_base_of<AstNode, T_Node>::value, "VN_AS called on non AstNode");
+        static_assert(std::is_base_of<AstNode, T_Node>::value, "VN_AS called on non-AstNode");
         static_assert(!uselessCast<T_TargetType, T_Node>(),
                       "Unnecessary VN_AS, node known to have target type.");
         static_assert(!impossibleCast<T_TargetType, T_Node>(),
@@ -1052,7 +1052,7 @@ public:
     }
     template <typename T_TargetType, typename T_Node>
     static const T_TargetType* as(const T_Node* nodep) VL_PURE {
-        static_assert(std::is_base_of<AstNode, T_Node>::value, "VN_AS called on non AstNode");
+        static_assert(std::is_base_of<AstNode, T_Node>::value, "VN_AS called on non-AstNode");
         static_assert(!uselessCast<T_TargetType, T_Node>(),
                       "Unnecessary VN_AS, node known to have target type.");
         static_assert(!impossibleCast<T_TargetType, T_Node>(),
@@ -1066,7 +1066,7 @@ public:
     // For use via privateAs or the VN_DBG_AS macro only
     template <typename T_TargetType, typename T_Node>
     static T_TargetType* unsafePrivateAs(T_Node* nodep) VL_PURE {
-        static_assert(std::is_base_of<AstNode, T_Node>::value, "VN_DBG_AS called on non AstNode");
+        static_assert(std::is_base_of<AstNode, T_Node>::value, "VN_DBG_AS called on non-AstNode");
         static_assert(!uselessCast<T_TargetType, T_Node>(),
                       "Unnecessary VN_DBG_AS, node known to have target type.");
         static_assert(!impossibleCast<T_TargetType, T_Node>(),
@@ -1075,7 +1075,7 @@ public:
     }
     template <typename T_TargetType, typename T_Node>
     static const T_TargetType* unsafePrivateAs(const T_Node* nodep) VL_PURE {
-        static_assert(std::is_base_of<AstNode, T_Node>::value, "VN_DBG_AS called on non AstNode");
+        static_assert(std::is_base_of<AstNode, T_Node>::value, "VN_DBG_AS called on non-AstNode");
         static_assert(!uselessCast<T_TargetType, T_Node>(),
                       "Unnecessary VN_DBG_AS, node known to have target type.");
         static_assert(!impossibleCast<T_TargetType, T_Node>(),

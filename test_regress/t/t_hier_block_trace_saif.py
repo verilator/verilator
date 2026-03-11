@@ -40,7 +40,7 @@ test.vm_prefix = "Vhier"
 test.main_filename = test.obj_dir + "/Vhier__main.cpp"
 test.compile(verilator_flags2=verilator_hier_flags, main_top_name=main_top_name)
 
-# Compile non hierarchically
+# Compile non-hierarchically
 test.vm_prefix = "Vnonh"
 test.main_filename = test.obj_dir + "/Vnonh__main.cpp"
 test.compile(verilator_flags2=verilator_common_flags, main_top_name=main_top_name)
@@ -51,7 +51,7 @@ trace_nonh = test.trace_filename.replace("simx", "nonh")
 # Run the hierarchical model
 test.execute(executable=test.obj_dir + "/Vhier")
 test.run(cmd=["mv", test.trace_filename, trace_hier])
-# Run the non hierarchical model
+# Run the non-hierarchical model
 test.execute(executable=test.obj_dir + "/Vnonh")
 test.run(cmd=["mv", test.trace_filename, trace_nonh])
 

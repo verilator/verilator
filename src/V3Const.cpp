@@ -2913,7 +2913,7 @@ class ConstVisitor final : public VNVisitor {
     void replaceSelIntoBiop(AstSel* nodep) {
         // SEL(BUFIF1(a,b),1,bit) => BUFIF1(SEL(a,1,bit),SEL(b,1,bit))
         AstNodeBiop* const fromp = VN_AS(nodep->fromp()->unlinkFrBack(), NodeBiop);
-        UASSERT_OBJ(fromp, nodep, "Called on non biop");
+        UASSERT_OBJ(fromp, nodep, "Called on non-biop");
         AstNodeExpr* const lsbp = nodep->lsbp()->unlinkFrBack();
         //
         AstNodeExpr* const bilhsp = fromp->lhsp()->unlinkFrBack();
@@ -2928,7 +2928,7 @@ class ConstVisitor final : public VNVisitor {
     void replaceSelIntoUniop(AstSel* nodep) {
         // SEL(NOT(a),1,bit) => NOT(SEL(a,bit))
         AstNodeUniop* const fromp = VN_AS(nodep->fromp()->unlinkFrBack(), NodeUniop);
-        UASSERT_OBJ(fromp, nodep, "Called on non biop");
+        UASSERT_OBJ(fromp, nodep, "Called on non-biop");
         AstNodeExpr* const lsbp = nodep->lsbp()->unlinkFrBack();
         //
         AstNodeExpr* const bilhsp = fromp->lhsp()->unlinkFrBack();
@@ -3877,7 +3877,7 @@ class ConstVisitor final : public VNVisitor {
 
     // In the future maybe support more complicated match & replace:
     //   ("AstOr  {%a, AstAnd{AstNot{%b}, %c}} if %a.width1 if %a==%b", "AstOr{%a,%c}; %b.delete");
-    // Lhs/rhs would be implied; for non math operations you'd need $lhsp etc.
+    // Lhs/rhs would be implied; for non-math operations you'd need $lhsp etc.
 
     //    v--- * * This op done on Verilog or C+++ mode, in all non-m_doConst stages
     //    v--- *1* These ops are always first, as we warn before replacing

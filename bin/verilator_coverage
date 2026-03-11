@@ -52,7 +52,7 @@ if (! GetOptions (
     pod2usage(-exitstatus => 2, -verbose => 0);
 }
 
-# Normal, non gdb
+# Normal, non-gdb
 run(verilator_coverage_bin()
     . " " . join(' ', @Opt_Verilator_Sw));
 

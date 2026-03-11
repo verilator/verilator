@@ -192,7 +192,7 @@ void AstBasicDType::init(VBasicDTypeKwd kwd, VSigning numer, int wantwidth, int 
                          AstRange* rangep) {
     // wantwidth=0 means figure it out, but if a widthmin is >=0
     //    we allow width 0 so that {{0{x}},y} works properly
-    // wantwidthmin=-1:  default, use wantwidth if it is non zero
+    // wantwidthmin=-1:  default, use wantwidth if it is non-zero
     m.m_keyword = kwd;
     // Implicitness: // "parameter X" is implicit and sized from initial
     // value, "parameter reg x" not

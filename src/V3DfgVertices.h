@@ -464,7 +464,7 @@ class DfgLogic final : public DfgVertexVariadic {
     std::vector<DfgVertex*> m_synth;  // Vertices this logic was synthesized into
     bool m_selectedForSynthesis = false;  // Logic selected for synthesis
     bool m_nonSynthesizable = false;  // Logic is not synthesizeable (by DfgSynthesis)
-    bool m_reverted = false;  // Logic was synthesized (in part if non synthesizable) then reverted
+    bool m_reverted = false;  // Logic was synthesized (in part if non-synthesizable) then reverted
     mutable uint8_t m_cachedPure = 0;  // Cached purity of the logic
 
 public:

@@ -44,7 +44,7 @@ public:
     };
 
 private:
-    // Vertex of each type (if non nullptr)
+    // Vertex of each type (if non-nullptr)
     std::array<OrderVarVertex*, static_cast<size_t>(VarVertexType::POST) + 1> m_vertexps;
 
 public:
