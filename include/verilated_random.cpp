@@ -23,7 +23,6 @@
 
 #include "verilated_random.h"
 
-#include <algorithm>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -376,78 +375,6 @@ size_t VlRandomizer::hashConstraints() const {
     return h;
 }
 
-void VlRandomizer::enumerateRandcValues(const std::string& varName, VlRNG& rngr) {
-    std::vector<uint64_t> values;
-    const auto varIt = m_vars.find(varName);
-    if (varIt == m_vars.end()) return;
-    const int width = varIt->second->width();
-
-    std::iostream& os = getSolver();
-    if (!os) return;
-
-    // Set up a single incremental solver session for enumeration
-    os << "(set-option :produce-models true)\n";
-    os << "(set-logic QF_ABV)\n";
-    os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
-    os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
-
-    // Declare all variables (solver needs full context for cross-var constraints)
-    for (const auto& var : m_vars) {
-        if (var.second->dimension() > 0) {
-            auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
-            var.second->setArrayInfo(arrVarsp);
-        }
-        os << "(declare-fun " << var.first << " () ";
-        var.second->emitType(os);
-        os << ")\n";
-    }
-
-    // Assert all user constraints
-    for (const std::string& constraint : m_constraints) {
-        os << "(assert (= #b1 " << constraint << "))\n";
-    }
-
-    // Incrementally enumerate all valid values for this randc variable
-    while (true) {
-        os << "(check-sat)\n";
-        std::string sat;
-        do { std::getline(os, sat); } while (sat.empty());
-        if (sat != "sat") break;
-
-        // Read just this variable's value
-        os << "(get-value (" << varName << "))\n";
-        char c;
-        os >> c;  // '('
-        os >> c;  // '('
-        std::string name, value;
-        os >> name;  // Consume variable name token from solver output
-        (void)name;
-        std::getline(os, value, ')');
-        os >> c;  // ')'
-
-        // Parse the SMT value to uint64_t
-        VlWide<VL_WQ_WORDS_E> qowp;
-        VL_SET_WQ(qowp, 0ULL);
-        if (!parseSMTNum(width, qowp, value)) break;
-        const uint64_t numVal = (width <= 32) ? qowp[0] : VL_SET_QW(qowp);
-
-        values.push_back(numVal);
-
-        // Exclude this value for next iteration (incremental)
-        os << "(assert (not (= " << varName << " (_ bv" << numVal << " " << width << "))))\n";
-    }
-
-    os << "(reset)\n";
-
-    // Shuffle using Fisher-Yates
-    for (size_t i = values.size(); i > 1; --i) {
-        const size_t j = VL_RANDOM_RNG_I(rngr) % i;
-        std::swap(values[i - 1], values[j]);
-    }
-
-    m_randcValueQueues[varName] = std::deque<uint64_t>(values.begin(), values.end());
-}
-
 bool VlRandomizer::next(VlRNG& rngr) {
     if (m_vars.empty() && m_unique_arrays.empty()) return true;
     for (const std::string& baseName : m_unique_arrays) {
@@ -466,81 +393,30 @@ bool VlRandomizer::next(VlRNG& rngr) {
         }
     }
 
-    // Randc queue-based cycling: enumerate valid values once, then pop per call
+    // Randc exclusion-based cycling: exclude previously used values per randc var.
+    // When solver returns unsat (all values exhausted), clear history for new cycle.
     if (!m_randcVarNames.empty()) {
         const size_t currentHash = hashConstraints();
-        // Invalidate queues if constraints changed (e.g., constraint_mode toggled)
+        // Invalidate history if constraints changed (e.g., constraint_mode toggled)
         if (currentHash != m_randcConstraintHash) {
-            m_randcValueQueues.clear();
+            m_randcUsedValues.clear();
             m_randcConstraintHash = currentHash;
         }
-        // Refill empty queues (start of new cycle)
-        for (const auto& name : m_randcVarNames) {
-            auto& queue = m_randcValueQueues[name];
-            if (queue.empty()) enumerateRandcValues(name, rngr);
-        }
-    }
-
-    // Pop randc values from queues (will be pinned in solver)
-    std::map<std::string, uint64_t> randcPinned;
-    for (const auto& name : m_randcVarNames) {
-        auto& queue = m_randcValueQueues[name];
-        if (queue.empty()) return false;  // No valid values exist
-        randcPinned[name] = queue.front();
-        queue.pop_front();
     }
 
     // If solve-before constraints are present, use phased solving
     if (!m_solveBefore.empty()) return nextPhased(rngr);
 
-    std::iostream& os = getSolver();
-    if (!os) return false;
+    // Randc retry: if unsat due to randc exhaustion, clear history and retry once
+    const bool hasRandc = !m_randcVarNames.empty();
+    for (int attempt = 0; attempt < (hasRandc ? 2 : 1); ++attempt) {
+        std::iostream& os = getSolver();
+        if (!os) return false;
 
-    // Soft constraint relaxation (IEEE 1800-2017 18.5.13, last-wins priority):
-    // Try hard + soft[0..N-1], then hard + soft[1..N-1], ..., then hard only.
-    // First SAT phase wins. If hard-only is UNSAT, report via unsat-core.
-    os << "(set-option :produce-models true)\n";
-    os << "(set-logic QF_ABV)\n";
-    os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
-    os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
-    for (const auto& var : m_vars) {
-        if (var.second->dimension() > 0) {
-            auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
-            var.second->setArrayInfo(arrVarsp);
-        }
-        os << "(declare-fun " << var.first << " () ";
-        var.second->emitType(os);
-        os << ")\n";
-    }
-
-    for (const std::string& constraint : m_constraints) {
-        os << "(assert (= #b1 " << constraint << "))\n";
-    }
-
-    // Pin randc values from pre-enumerated queues
-    for (const auto& pair : randcPinned) {
-        const int w = m_vars.at(pair.first)->width();
-        os << "(assert (= " << pair.first << " (_ bv" << pair.second << " " << w << ")))\n";
-    }
-
-    const size_t nSoft = m_softConstraints.size();
-    bool sat = false;
-    for (size_t phase = 0; phase <= nSoft && !sat; ++phase) {
-        const bool hasSoft = (phase < nSoft);
-        if (hasSoft) {
-            os << "(push 1)\n";
-            for (size_t i = phase; i < nSoft; ++i)
-                os << "(assert (= #b1 " << m_softConstraints[i] << "))\n";
-        }
-        os << "(check-sat)\n";
-        sat = parseSolution(os, /*log=*/phase == nSoft);
-        if (!sat && hasSoft) os << "(pop 1)\n";
-    }
-
-    if (!sat) {
-        // If unsat, use named assertions to get unsat-core
-        os << "(reset)\n";
-        os << "(set-option :produce-unsat-cores true)\n";
+        // Soft constraint relaxation (IEEE 1800-2017 18.5.13, last-wins priority):
+        // Try hard + soft[0..N-1], then hard + soft[1..N-1], ..., then hard only.
+        // First SAT phase wins. If hard-only is UNSAT, report via unsat-core.
+        os << "(set-option :produce-models true)\n";
         os << "(set-logic QF_ABV)\n";
         os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
         os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
@@ -553,32 +429,100 @@ bool VlRandomizer::next(VlRNG& rngr) {
             var.second->emitType(os);
             os << ")\n";
         }
-        int j = 0;
+
         for (const std::string& constraint : m_constraints) {
-            os << "(assert (! (= #b1 " << constraint << ") :named cons" << j++ << "))\n";
+            os << "(assert (= #b1 " << constraint << "))\n";
         }
-        for (const auto& pair : randcPinned) {
-            const int w = m_vars.at(pair.first)->width();
-            os << "(assert (= " << pair.first << " (_ bv" << pair.second << " " << w << ")))\n";
+
+        // Randc: exclude previously used values to enforce cyclic non-repetition
+        for (const auto& name : m_randcVarNames) {
+            const auto usedIt = m_randcUsedValues.find(name);
+            if (usedIt != m_randcUsedValues.end()) {
+                const int w = m_vars.at(name)->width();
+                for (const uint64_t val : usedIt->second) {
+                    os << "(assert (not (= " << name << " (_ bv" << val << " " << w
+                       << "))))\n";
+                }
+            }
         }
-        os << "(check-sat)\n";
-        sat = parseSolution(os, true);
-        (void)sat;
+
+        const size_t nSoft = m_softConstraints.size();
+        bool sat = false;
+        for (size_t phase = 0; phase <= nSoft && !sat; ++phase) {
+            const bool hasSoft = (phase < nSoft);
+            if (hasSoft) {
+                os << "(push 1)\n";
+                for (size_t i = phase; i < nSoft; ++i)
+                    os << "(assert (= #b1 " << m_softConstraints[i] << "))\n";
+            }
+            os << "(check-sat)\n";
+            sat = parseSolution(os, /*log=*/phase == nSoft);
+            if (!sat && hasSoft) os << "(pop 1)\n";
+        }
+
+        if (!sat) {
+            os << "(reset)\n";
+            // If randc vars have used values, this may be cycle exhaustion — retry
+            if (hasRandc && !m_randcUsedValues.empty() && attempt == 0) {
+                m_randcUsedValues.clear();
+                continue;  // Retry without exclusions
+            }
+            // Genuine unsat: report via unsat-core
+            os << "(set-option :produce-unsat-cores true)\n";
+            os << "(set-logic QF_ABV)\n";
+            os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
+            os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
+            for (const auto& var : m_vars) {
+                if (var.second->dimension() > 0) {
+                    auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
+                    var.second->setArrayInfo(arrVarsp);
+                }
+                os << "(declare-fun " << var.first << " () ";
+                var.second->emitType(os);
+                os << ")\n";
+            }
+            int j = 0;
+            for (const std::string& constraint : m_constraints) {
+                os << "(assert (! (= #b1 " << constraint << ") :named cons" << j++ << "))\n";
+            }
+            os << "(check-sat)\n";
+            sat = parseSolution(os, true);
+            (void)sat;
+            os << "(reset)\n";
+            return false;
+        }
+
+        for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; ++i) {
+            os << "(assert ";
+            randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
+            os << ")\n";
+            os << "\n(check-sat)\n";
+            sat = parseSolution(os, false);
+            (void)sat;
+        }
+
+        // Record solved randc values for future exclusion
+        for (const auto& name : m_randcVarNames) {
+            const auto varIt = m_vars.find(name);
+            if (varIt == m_vars.end()) continue;
+            const VlRandomVar& var = *varIt->second;
+            const int w = var.width();
+            uint64_t val = 0;
+            if (w <= VL_BYTESIZE)
+                val = *static_cast<const CData*>(var.datap(0));
+            else if (w <= VL_SHORTSIZE)
+                val = *static_cast<const SData*>(var.datap(0));
+            else if (w <= VL_IDATASIZE)
+                val = *static_cast<const IData*>(var.datap(0));
+            else if (w <= VL_QUADSIZE)
+                val = *static_cast<const QData*>(var.datap(0));
+            m_randcUsedValues[name].insert(val);
+        }
+
         os << "(reset)\n";
-        return false;
+        return true;
     }
-
-    for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; ++i) {
-        os << "(assert ";
-        randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
-        os << ")\n";
-        os << "\n(check-sat)\n";
-        sat = parseSolution(os, false);
-        (void)sat;
-    }
-
-    os << "(reset)\n";
-    return true;
+    return false;  // Should not reach here
 }
 
 bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
@@ -767,7 +711,7 @@ void VlRandomizer::clearAll() {
     m_softConstraints.clear();
     m_vars.clear();
     m_randcVarNames.clear();
-    m_randcValueQueues.clear();
+    m_randcUsedValues.clear();
     m_randcConstraintHash = 0;
 }
 
@@ -878,6 +822,18 @@ bool VlRandomizer::nextPhased(VlRNG& rngr) {
             os << "(assert (= #b1 " << constraint << "))\n";
         }
 
+        // Randc: exclude previously used values
+        for (const auto& name : m_randcVarNames) {
+            const auto usedIt = m_randcUsedValues.find(name);
+            if (usedIt != m_randcUsedValues.end()) {
+                const int w = m_vars.at(name)->width();
+                for (const uint64_t val : usedIt->second) {
+                    os << "(assert (not (= " << name << " (_ bv" << val << " " << w
+                       << "))))\n";
+                }
+            }
+        }
+
         // Initial check-sat WITHOUT diversity (guaranteed sat if constraints are consistent)
         os << "(check-sat)\n";
 
@@ -885,8 +841,26 @@ bool VlRandomizer::nextPhased(VlRNG& rngr) {
             // Final phase: use parseSolution to write ALL values to memory
             bool sat = parseSolution(os, true);
             if (!sat) {
+                if (!m_randcVarNames.empty()) m_randcUsedValues.clear();
                 os << "(reset)\n";
                 return false;
+            }
+            // Record solved randc values for future exclusion
+            for (const auto& name : m_randcVarNames) {
+                const auto varIt = m_vars.find(name);
+                if (varIt == m_vars.end()) continue;
+                const VlRandomVar& var = *varIt->second;
+                const int w = var.width();
+                uint64_t val = 0;
+                if (w <= VL_BYTESIZE)
+                    val = *static_cast<const CData*>(var.datap(0));
+                else if (w <= VL_SHORTSIZE)
+                    val = *static_cast<const SData*>(var.datap(0));
+                else if (w <= VL_IDATASIZE)
+                    val = *static_cast<const IData*>(var.datap(0));
+                else if (w <= VL_QUADSIZE)
+                    val = *static_cast<const QData*>(var.datap(0));
+                m_randcUsedValues[name].insert(val);
             }
             // Diversity loop (same as normal next())
             for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; ++i) {
