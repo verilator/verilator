@@ -620,7 +620,7 @@ class TraceDeclVisitor final : public VNVisitor {
 
         // Do not unroll if the elements are simple 'bit', or 'logic'
         if (AstBasicDType* const basicp = VN_CAST(subtypep->skipRefp(), BasicDType)) {
-            if (basicp->isBitLogic() && ! basicp->isRanged()) {
+            if (basicp->isBitLogic() && !basicp->isRanged()) {
                 addTraceDecl(VNumRange{}, nodep->width());
                 return;
             }
