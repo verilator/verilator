@@ -6,8 +6,10 @@
 
 module t;
   string s = "a string";
+  int vec[2];
   initial begin
     $display("%d %x %f %t", s, s, s, s);
+    $display("%d %x %f %t", vec, vec, vec, vec);
     $write("*-* All Finished *-*\n");
     $finish;
   end

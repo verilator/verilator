@@ -23,7 +23,7 @@ module t;
     // Ifdefing this out gave bug248
     $display("-count == %0d, infile %d, outfile %d", count, infile, outfile);
 `endif
-    if (count == 0) $stop;
+    if (count != 1) $stop;
     $fwrite(outfile, "# a\n");
     $fwrite(outfile, "%d\n", a);
     $fclose(infile);

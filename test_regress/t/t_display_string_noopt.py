@@ -10,13 +10,11 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.top_filename = "t/t_display_string.v"
+test.golden_filename = "t/t_display_string.out"
 
-test.unlink_ok(test.obj_dir + "/t_sys_file_scan_test.log")
+test.compile(verilator_flags2=["-O0"])
 
-test.compile()
-
-test.execute()
-
-test.files_identical(test.obj_dir + "/t_sys_file_scan_test.log", test.golden_filename)
+test.execute(expect_filename=test.golden_filename)
 
 test.passes()

@@ -15,10 +15,6 @@ module t;
     if (dict_size != dict.size) begin
       $display("Assertion failed: dict_size mismatch");
       $display("Initial size: %0d, New size: %0d", dict_size, dict.size);
-      $display("Dictionary contents:");
-      foreach (dict[key]) begin
-        $display(" Key: %0d, Value: %0d", key, dict[key]);
-      end
       $error;
     end
     return next_nonzero;

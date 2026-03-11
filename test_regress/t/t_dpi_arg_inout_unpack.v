@@ -107,7 +107,7 @@
 `define CHECK_DOUBLE_VAL(act, exp) if ((act) == (exp)) begin \
   if (ENABLE_VERBOSE_MESSAGE)$display("%s:%f as expected", `"act`", (act)); \
     end else begin \
-      $display("Mismatch %s expected:%d actual:%f at %f", `"act`", (exp), (act), `__LINE__); \
+      $display("Mismatch %s expected:%f actual:%f at %d", `"act`", (exp), (act), `__LINE__); \
         $stop; \
           end
 

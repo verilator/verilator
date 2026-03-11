@@ -10,7 +10,7 @@ sig``_in <= {8{crc}}; \
 /* verilator lint_on WIDTH */
 `define CHECK(sig) \
 if (cyc > 0 && sig``_in != sig``_out) begin \
-  $display(`"%%Error (%m) sig``_in (0x%0x) != sig``_out (0x%0x)`", \
+  $display(`"%%Error (%m) sig``_in (%p) != sig``_out (%p)`", \
         sig``_in, sig``_out); \
     $stop; \
      end

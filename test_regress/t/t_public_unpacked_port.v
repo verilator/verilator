@@ -38,7 +38,7 @@ module t (
 
     if (cyc == 10) begin
       if (s1up_out[0] != 9) begin
-        $display("%%Error: got %0d instead of 9", s1up_out);
+        $display("%%Error: got %0d instead of 9", s1up_out[0]);
         $stop;
       end
       if (the_sub.sub_s1up_in[0] != 10) begin
