@@ -3445,9 +3445,14 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstInsideRange* nodep) override {
         // Just do each side; AstInside will rip these nodes out later
-        // Constant-fold range bounds (e.g., NEGATE(100) becomes -100)
-        V3Const::constifyParamsEdit(nodep->lhsp());  // May relink pointed to node
-        V3Const::constifyParamsEdit(nodep->rhsp());  // May relink pointed to node
+        // When m_vup is null we are in a covergroup bin context (not an expression context).
+        // Fold constant arithmetic (e.g., NEGATE(100) -> -100) so the children have their
+        // types set before further tree processing. Use constifyEdit (not constifyParamsEdit)
+        // to avoid errors on any non-constant expressions.
+        if (!m_vup) {
+            V3Const::constifyEdit(nodep->lhsp());  // lhsp may change
+            V3Const::constifyEdit(nodep->rhsp());  // rhsp may change
+        }
         userIterateAndNext(nodep->lhsp(), m_vup);
         userIterateAndNext(nodep->rhsp(), m_vup);
         nodep->dtypeFrom(nodep->lhsp());
