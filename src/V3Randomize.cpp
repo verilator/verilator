@@ -1673,7 +1673,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         FileLine* const fl = nodep->fileline();
         VNRelinker handle;
         if (nodep->bitp()->user1()) {
-            // Index depends on rand variable — keep as SMT symbol.
+            // Index depends on rand variable -- keep as SMT symbol.
             // Array index sort is 32-bit, so zero-extend narrower indices.
             AstNodeExpr* indexp = nodep->bitp()->unlinkFrBack(&handle);
             if (indexp->width() < 32) {
@@ -1685,7 +1685,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             handle.relink(indexp);
             editSMT(nodep, nodep->fromp(), indexp);
         } else {
-            // Index is constant or non-rand — format as hex literal
+            // Index is constant or non-rand -- format as hex literal
             AstNodeExpr* const indexp
                 = new AstSFormatF{fl, "#x%8x", false, nodep->bitp()->unlinkFrBack(&handle)};
             handle.relink(indexp);
