@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2023 Tony Bybell.
+ * Copyright (c) 2009-2026 Tony Bybell.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -3203,7 +3203,8 @@ static const char *modtypes[] = {"module",
                                  "vhdl_for_generate",
                                  "vhdl_if_generate",
                                  "vhdl_generate",
-                                 "vhdl_package"};
+                                 "vhdl_package",
+                                 "sv_array"};
 
 static const char *attrtypes[] = {"misc", "array", "enum", "class"};
 
