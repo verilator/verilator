@@ -3995,9 +3995,9 @@ class RandomizeVisitor final : public VNVisitor {
                 if (constrp->itemsp()) expandUniqueElementList(constrp->itemsp());
                 if (constrp->itemsp()) lowerDistConstraints(taskp, constrp->itemsp());
                 std::set<AstVar*>& sizeArrays = m_sizeConstrainedArrays[classp];
-                ConstraintExprVisitor{classp, m_memberMap,  constrp->itemsp(), nullptr,
-                                      genp,   randModeVarp, m_writtenVars,     randomizep,
-                                      &sizeArrays};
+                ConstraintExprVisitor{classp,        m_memberMap, constrp->itemsp(),
+                                      nullptr,       genp,        randModeVarp,
+                                      m_writtenVars, randomizep,  &sizeArrays};
                 if (constrp->itemsp()) {
                     taskp->addStmtsp(wrapIfConstraintMode(
                         nodep, constrp, constrp->itemsp()->unlinkFrBackWithNext()));
