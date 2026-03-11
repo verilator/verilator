@@ -228,6 +228,8 @@ class VlRandomizer VL_NOT_FINAL {
     // PRIVATE METHODS
     void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
     bool parseSolution(std::iostream& file, bool log = false);
+    void emitRandcExclusions(std::ostream& os) const;  // Emit randc exclusion constraints
+    void recordRandcValues();  // Record solved randc values for future exclusion
     size_t hashConstraints() const;
     bool nextPhased(VlRNG& rngr);  // Phased solving for solve...before
 

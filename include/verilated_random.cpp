@@ -375,6 +375,37 @@ size_t VlRandomizer::hashConstraints() const {
     return h;
 }
 
+void VlRandomizer::emitRandcExclusions(std::ostream& os) const {
+    for (const auto& name : m_randcVarNames) {
+        const auto usedIt = m_randcUsedValues.find(name);
+        if (usedIt != m_randcUsedValues.end()) {
+            const int w = m_vars.at(name)->width();
+            for (const uint64_t val : usedIt->second) {
+                os << "(assert (not (= " << name << " (_ bv" << val << " " << w << "))))\n";
+            }
+        }
+    }
+}
+
+void VlRandomizer::recordRandcValues() {
+    for (const auto& name : m_randcVarNames) {
+        const auto varIt = m_vars.find(name);
+        if (varIt == m_vars.end()) continue;
+        const VlRandomVar& var = *varIt->second;
+        const int w = var.width();
+        uint64_t val = 0;
+        if (w <= VL_BYTESIZE)
+            val = *static_cast<const CData*>(var.datap(0));
+        else if (w <= VL_SHORTSIZE)
+            val = *static_cast<const SData*>(var.datap(0));
+        else if (w <= VL_IDATASIZE)
+            val = *static_cast<const IData*>(var.datap(0));
+        else if (w <= VL_QUADSIZE)
+            val = *static_cast<const QData*>(var.datap(0));
+        m_randcUsedValues[name].insert(val);
+    }
+}
+
 bool VlRandomizer::next(VlRNG& rngr) {
     if (m_vars.empty() && m_unique_arrays.empty()) return true;
     for (const std::string& baseName : m_unique_arrays) {
@@ -435,16 +466,7 @@ bool VlRandomizer::next(VlRNG& rngr) {
         }
 
         // Randc: exclude previously used values to enforce cyclic non-repetition
-        for (const auto& name : m_randcVarNames) {
-            const auto usedIt = m_randcUsedValues.find(name);
-            if (usedIt != m_randcUsedValues.end()) {
-                const int w = m_vars.at(name)->width();
-                for (const uint64_t val : usedIt->second) {
-                    os << "(assert (not (= " << name << " (_ bv" << val << " " << w
-                       << "))))\n";
-                }
-            }
-        }
+        emitRandcExclusions(os);
 
         const size_t nSoft = m_softConstraints.size();
         bool sat = false;
@@ -502,22 +524,7 @@ bool VlRandomizer::next(VlRNG& rngr) {
         }
 
         // Record solved randc values for future exclusion
-        for (const auto& name : m_randcVarNames) {
-            const auto varIt = m_vars.find(name);
-            if (varIt == m_vars.end()) continue;
-            const VlRandomVar& var = *varIt->second;
-            const int w = var.width();
-            uint64_t val = 0;
-            if (w <= VL_BYTESIZE)
-                val = *static_cast<const CData*>(var.datap(0));
-            else if (w <= VL_SHORTSIZE)
-                val = *static_cast<const SData*>(var.datap(0));
-            else if (w <= VL_IDATASIZE)
-                val = *static_cast<const IData*>(var.datap(0));
-            else if (w <= VL_QUADSIZE)
-                val = *static_cast<const QData*>(var.datap(0));
-            m_randcUsedValues[name].insert(val);
-        }
+        recordRandcValues();
 
         os << "(reset)\n";
         return true;
@@ -823,16 +830,7 @@ bool VlRandomizer::nextPhased(VlRNG& rngr) {
         }
 
         // Randc: exclude previously used values
-        for (const auto& name : m_randcVarNames) {
-            const auto usedIt = m_randcUsedValues.find(name);
-            if (usedIt != m_randcUsedValues.end()) {
-                const int w = m_vars.at(name)->width();
-                for (const uint64_t val : usedIt->second) {
-                    os << "(assert (not (= " << name << " (_ bv" << val << " " << w
-                       << "))))\n";
-                }
-            }
-        }
+        emitRandcExclusions(os);
 
         // Initial check-sat WITHOUT diversity (guaranteed sat if constraints are consistent)
         os << "(check-sat)\n";
@@ -846,22 +844,7 @@ bool VlRandomizer::nextPhased(VlRNG& rngr) {
                 return false;
             }
             // Record solved randc values for future exclusion
-            for (const auto& name : m_randcVarNames) {
-                const auto varIt = m_vars.find(name);
-                if (varIt == m_vars.end()) continue;
-                const VlRandomVar& var = *varIt->second;
-                const int w = var.width();
-                uint64_t val = 0;
-                if (w <= VL_BYTESIZE)
-                    val = *static_cast<const CData*>(var.datap(0));
-                else if (w <= VL_SHORTSIZE)
-                    val = *static_cast<const SData*>(var.datap(0));
-                else if (w <= VL_IDATASIZE)
-                    val = *static_cast<const IData*>(var.datap(0));
-                else if (w <= VL_QUADSIZE)
-                    val = *static_cast<const QData*>(var.datap(0));
-                m_randcUsedValues[name].insert(val);
-            }
+            recordRandcValues();
             // Diversity loop (same as normal next())
             for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; ++i) {
                 os << "(assert ";
