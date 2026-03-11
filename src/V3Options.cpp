@@ -1949,6 +1949,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         }
     });
     DECL_OPTION("-x-initial-edge", OnOff, &m_xInitialEdge);
+    DECL_OPTION("-x-sim", OnOff, &m_xFourState);
 
     DECL_OPTION("-y", CbVal, [this, &optdir](const char* valp) {
         addIncDirUser(parseFileArg(optdir, string{valp}));

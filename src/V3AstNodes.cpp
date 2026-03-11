@@ -644,6 +644,19 @@ string AstVar::vlEnumType() const {
         arg += "VLVT_STRING";
     } else if (isDouble()) {
         arg += "VLVT_REAL";
+    } else if (dtypep()->isFourstate() && v3Global.opt.xFourState()) {
+        // Four-state types (only when --x-sim is enabled)
+        if (widthMin() <= 8) {
+            arg += "VLVT_UINT8_4STATE";
+        } else if (widthMin() <= 16) {
+            arg += "VLVT_UINT16_4STATE";
+        } else if (widthMin() <= 32) {
+            arg += "VLVT_UINT32_4STATE";
+        } else if (widthMin() <= 64) {
+            arg += "VLVT_UINT64_4STATE";
+        } else {
+            arg += "VLVT_WDATA_4STATE";
+        }
     } else if (widthMin() <= 8) {
         arg += "VLVT_UINT8";
     } else if (widthMin() <= 16) {
@@ -678,6 +691,7 @@ string AstVar::vlEnumDir() const {
     }
     if (isForceable()) out += "|VLVF_FORCEABLE";
     if (isContinuously()) out += "|VLVF_CONTINUOUSLY";
+    if (dtypep()->isFourstate() && v3Global.opt.xFourState()) out += "|VLVF_BITVAR";
     //
     if (const AstBasicDType* const bdtypep = basicp()) {
         if (bdtypep->keyword().isDpiCLayout()) out += "|VLVF_DPI_CLAY";
@@ -1143,6 +1157,19 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
             info.m_type = "VlStdRandomizer";
         } else if (bdtypep->isEvent()) {
             info.m_type = v3Global.assignsEvents() ? "VlAssignableEvent" : "VlEvent";
+        } else if (dtypep->isFourstate() && v3Global.opt.xFourState()) {
+            // Four-state types: 2 bits per logic bit (only when --x-sim is enabled)
+            if (dtypep->widthMin() <= 4) {
+                info.m_type = "CData4" + bitvec;
+            } else if (dtypep->widthMin() <= 8) {
+                info.m_type = "SData4" + bitvec;
+            } else if (dtypep->widthMin() <= 16) {
+                info.m_type = "IData4" + bitvec;
+            } else if (dtypep->widthMin() <= 32) {
+                info.m_type = "QData4" + bitvec;
+            } else {
+                info.m_type = "VlWide<" + cvtToStr((dtypep->width() + 31) / 32) + ">" + bitvec;
+            }
         } else if (dtypep->widthMin() <= 8) {  // Handle unpacked arrays; not bdtypep->width
             info.m_type = "CData" + bitvec;
         } else if (dtypep->widthMin() <= 16) {

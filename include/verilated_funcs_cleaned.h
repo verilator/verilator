@@ -132,6 +132,13 @@ extern WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE;
 /// Zero reset a signal (slow - else use VL_ZERO_W)
 extern WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE;
 
+/// Four-state reset - initialize to X (unknown)
+static inline CData4 VL_X_RESET_4STATE_C() VL_MT_SAFE;
+static inline SData4 VL_X_RESET_4STATE_S() VL_MT_SAFE;
+static inline IData4 VL_X_RESET_4STATE_I() VL_MT_SAFE;
+static inline QData4 VL_X_RESET_4STATE_Q() VL_MT_SAFE;
+extern WDataOutP VL_X_RESET_4STATE_W(int obits, WDataOutP owp) VL_MT_SAFE;
+
 extern void VL_PRINTTIMESCALE(const char* namep, const char* timeunitp,
                               const VerilatedContext* contextp) VL_MT_SAFE;
 
@@ -154,10 +161,11 @@ extern IData VL_FREAD_I(int width, int array_lsb, int array_size, void* memp, ID
 extern void VL_WRITEF_NX(const std::string& format, int argc, ...) VL_MT_SAFE;
 extern void VL_FWRITEF_NX(IData fpi, const std::string& format, int argc, ...) VL_MT_SAFE;
 
-extern std::string VL_WRITEF_4STATE_BIN_C(CData4 data) VL_MT_SAFE;
-extern std::string VL_WRITEF_4STATE_BIN_S(SData4 data) VL_MT_SAFE;
-extern std::string VL_WRITEF_4STATE_BIN_I(IData4 data) VL_MT_SAFE;
-extern std::string VL_WRITEF_4STATE_BIN_Q(QData4 data) VL_MT_SAFE;
+// Four-state display functions - output X/Z for four-state values
+extern void VL_WRITEF_4STATE_BIN_C(const std::string& format, int lbits, CData4 data) VL_MT_SAFE;
+extern void VL_WRITEF_4STATE_BIN_S(const std::string& format, int lbits, SData4 data) VL_MT_SAFE;
+extern void VL_WRITEF_4STATE_BIN_I(const std::string& format, int lbits, IData4 data) VL_MT_SAFE;
+extern void VL_WRITEF_4STATE_BIN_Q(const std::string& format, int lbits, QData4 data) VL_MT_SAFE;
 
 extern IData VL_FSCANF_INX(IData fpi, const std::string& format, int argc, ...) VL_MT_SAFE;
 extern IData VL_SSCANF_IINX(int lbits, IData ld, const std::string& format, int argc,
@@ -903,6 +911,329 @@ static inline WDataOutP VL_NOT_W(int words, WDataOutP owp, WDataInP const lwp) V
 }
 
 //=========================================================================
+// FOUR-STATE LOGICAL OPERATORS (X/Z support)
+// For four-state: 00=0, 01=1, 10=X, 11=Z
+
+// Four-state AND: X & anything = X, Z & anything = X, 0 & anything = 0, 1 & anything = anything
+static inline uint8_t VL_AND_4STATE(uint8_t lhs, uint8_t rhs) {
+    const uint8_t lval = lhs & 3;
+    const uint8_t rval = rhs & 3;
+    // X & anything = X
+    if (lval == 2 || rval == 2) return 2;  // X
+    // Z & anything = X
+    if (lval == 3 || rval == 3) return 2;  // X
+    // 0 & anything = 0
+    if (lval == 0 || rval == 0) return 0;  // 0
+    // 1 & anything = anything
+    return rval;
+}
+
+// Four-state OR
+static inline uint8_t VL_OR_4STATE(uint8_t lhs, uint8_t rhs) {
+    const uint8_t lval = lhs & 3;
+    const uint8_t rval = rhs & 3;
+    // X | anything = X
+    if (lval == 2 || rval == 2) return 2;  // X
+    // Z | anything = X
+    if (lval == 3 || rval == 3) return 2;  // X
+    // 1 | anything = 1
+    if (lval == 1 || rval == 1) return 1;  // 1
+    // 0 | anything = anything
+    return rval;
+}
+
+// Four-state XOR
+static inline uint8_t VL_XOR_4STATE(uint8_t lhs, uint8_t rhs) {
+    const uint8_t lval = lhs & 3;
+    const uint8_t rval = rhs & 3;
+    // X ^ anything = X
+    if (lval == 2 || rval == 2) return 2;  // X
+    // Z ^ anything = X
+    if (lval == 3 || rval == 3) return 2;  // X
+    // Otherwise XOR the clean values
+    return (lval ^ rval);
+}
+
+// Four-state NOT
+static inline uint8_t VL_NOT_4STATE(uint8_t lhs) {
+    const uint8_t lval = lhs & 3;
+    if (lval == 2) return 2;  // X -> X
+    if (lval == 3) return 2;  // Z -> X
+    return lval ^ 1;  // 0 -> 1, 1 -> 0
+}
+
+// Four-state byte operations
+static inline CData4 VL_AND_4STATE_C(CData4 lhs, CData4 rhs) {
+    CData4 result = 0;
+    for (int i = 0; i < 4; i++) {
+        uint8_t lb = (lhs >> (i * 2)) & 3;
+        uint8_t rb = (rhs >> (i * 2)) & 3;
+        uint8_t res = VL_AND_4STATE(lb, rb);
+        result |= (res << (i * 2));
+    }
+    return result;
+}
+
+static inline CData4 VL_OR_4STATE_C(CData4 lhs, CData4 rhs) {
+    CData4 result = 0;
+    for (int i = 0; i < 4; i++) {
+        uint8_t lb = (lhs >> (i * 2)) & 3;
+        uint8_t rb = (rhs >> (i * 2)) & 3;
+        uint8_t res = VL_OR_4STATE(lb, rb);
+        result |= (res << (i * 2));
+    }
+    return result;
+}
+
+static inline CData4 VL_XOR_4STATE_C(CData4 lhs, CData4 rhs) {
+    CData4 result = 0;
+    for (int i = 0; i < 4; i++) {
+        uint8_t lb = (lhs >> (i * 2)) & 3;
+        uint8_t rb = (rhs >> (i * 2)) & 3;
+        uint8_t res = VL_XOR_4STATE(lb, rb);
+        result |= (res << (i * 2));
+    }
+    return result;
+}
+
+static inline CData4 VL_NOT_4STATE_C(CData4 lhs) {
+    CData4 result = 0;
+    for (int i = 0; i < 4; i++) {
+        uint8_t lb = (lhs >> (i * 2)) & 3;
+        uint8_t res = VL_NOT_4STATE(lb);
+        result |= (res << (i * 2));
+    }
+    return result;
+}
+
+// Four-state SData (8-bit) operations
+static inline SData4 VL_AND_4STATE_S(SData4 lhs, SData4 rhs) {
+    SData4 result = 0;
+    for (int i = 0; i < 8; i++) {
+        uint8_t lb = (lhs >> (i * 2)) & 3;
+        uint8_t rb = (rhs >> (i * 2)) & 3;
+        uint8_t res = VL_AND_4STATE(lb, rb);
+        result |= (res << (i * 2));
+    }
+    return result;
+}
+
+static inline SData4 VL_OR_4STATE_S(SData4 lhs, SData4 rhs) {
+    SData4 result = 0;
+    for (int i = 0; i < 8; i++) {
+        uint8_t lb = (lhs >> (i * 2)) & 3;
+        uint8_t rb = (rhs >> (i * 2)) & 3;
+        uint8_t res = VL_OR_4STATE(lb, rb);
+        result |= (res << (i * 2));
+    }
+    return result;
+}
+
+static inline SData4 VL_XOR_4STATE_S(SData4 lhs, SData4 rhs) {
+    SData4 result = 0;
+    for (int i = 0; i < 8; i++) {
+        uint8_t lb = (lhs >> (i * 2)) & 3;
+        uint8_t rb = (rhs >> (i * 2)) & 3;
+        uint8_t res = VL_XOR_4STATE(lb, rb);
+        result |= (res << (i * 2));
+    }
+    return result;
+}
+
+static inline SData4 VL_NOT_4STATE_S(SData4 lhs) {
+    SData4 result = 0;
+    for (int i = 0; i < 8; i++) {
+        uint8_t lb = (lhs >> (i * 2)) & 3;
+        uint8_t res = VL_NOT_4STATE(lb);
+        result |= (res << (i * 2));
+    }
+    return result;
+}
+
+// Four-state IData (16-bit) operations
+static inline IData4 VL_AND_4STATE_I(IData4 lhs, IData4 rhs) {
+    IData4 result = 0;
+    for (int i = 0; i < 16; i++) {
+        uint8_t lb = (lhs >> (i * 2)) & 3;
+        uint8_t rb = (rhs >> (i * 2)) & 3;
+        uint8_t res = VL_AND_4STATE(lb, rb);
+        result |= (res << (i * 2));
+    }
+    return result;
+}
+
+static inline IData4 VL_OR_4STATE_I(IData4 lhs, IData4 rhs) {
+    IData4 result = 0;
+    for (int i = 0; i < 16; i++) {
+        uint8_t lb = (lhs >> (i * 2)) & 3;
+        uint8_t rb = (rhs >> (i * 2)) & 3;
+        uint8_t res = VL_OR_4STATE(lb, rb);
+        result |= (res << (i * 2));
+    }
+    return result;
+}
+
+static inline IData4 VL_XOR_4STATE_I(IData4 lhs, IData4 rhs) {
+    IData4 result = 0;
+    for (int i = 0; i < 16; i++) {
+        uint8_t lb = (lhs >> (i * 2)) & 3;
+        uint8_t rb = (rhs >> (i * 2)) & 3;
+        uint8_t res = VL_XOR_4STATE(lb, rb);
+        result |= (res << (i * 2));
+    }
+    return result;
+}
+
+static inline IData4 VL_NOT_4STATE_I(IData4 lhs) {
+    IData4 result = 0;
+    for (int i = 0; i < 16; i++) {
+        uint8_t lb = (lhs >> (i * 2)) & 3;
+        uint8_t res = VL_NOT_4STATE(lb);
+        result |= (res << (i * 2));
+    }
+    return result;
+}
+
+// Four-state QData (32-bit) operations
+static inline QData4 VL_AND_4STATE_Q(QData4 lhs, QData4 rhs) {
+    QData4 result = 0;
+    for (int i = 0; i < 32; i++) {
+        uint8_t lb = (lhs >> (i * 2)) & 3;
+        uint8_t rb = (rhs >> (i * 2)) & 3;
+        uint8_t res = VL_AND_4STATE(lb, rb);
+        result |= (static_cast<QData4>(res) << (i * 2));
+    }
+    return result;
+}
+
+static inline QData4 VL_OR_4STATE_Q(QData4 lhs, QData4 rhs) {
+    QData4 result = 0;
+    for (int i = 0; i < 32; i++) {
+        uint8_t lb = (lhs >> (i * 2)) & 3;
+        uint8_t rb = (rhs >> (i * 2)) & 3;
+        uint8_t res = VL_OR_4STATE(lb, rb);
+        result |= (static_cast<QData4>(res) << (i * 2));
+    }
+    return result;
+}
+
+static inline QData4 VL_XOR_4STATE_Q(QData4 lhs, QData4 rhs) {
+    QData4 result = 0;
+    for (int i = 0; i < 32; i++) {
+        uint8_t lb = (lhs >> (i * 2)) & 3;
+        uint8_t rb = (rhs >> (i * 2)) & 3;
+        uint8_t res = VL_XOR_4STATE(lb, rb);
+        result |= (static_cast<QData4>(res) << (i * 2));
+    }
+    return result;
+}
+
+static inline QData4 VL_NOT_4STATE_Q(QData4 lhs) {
+    QData4 result = 0;
+    for (int i = 0; i < 32; i++) {
+        uint8_t lb = (lhs >> (i * 2)) & 3;
+        uint8_t res = VL_NOT_4STATE(lb);
+        result |= (static_cast<QData4>(res) << (i * 2));
+    }
+    return result;
+}
+
+//=========================================================================
+// FOUR-STATE COMPARISONS
+// For four-state: any X or Z in comparison returns X (unknown)
+
+// Helper functions for checking X/Z bits
+static inline bool _vl4_anyXZ_C(CData4 data) {
+    return (data & 0xAAAAAAAA) != 0;  // Any bit with 0b10 (X) or 0b11 (Z)
+}
+static inline bool _vl4_anyXZ_S(SData4 data) {
+    return (data & 0xAAAAAAAAAAAAAAAAULL) != 0;
+}
+static inline bool _vl4_anyXZ_I(IData4 data) {
+    return (data & 0xAAAAAAAAAAAAAAAAULL) != 0;
+}
+static inline bool _vl4_anyXZ_Q(QData4 data) {
+    return (data & 0xAAAAAAAAAAAAAAAAULL) != 0;
+}
+
+// Four-state EQ: returns true if equal and both operands are deterministic
+static inline bool VL_EQ_4STATE_C(CData4 lhs, CData4 rhs) {
+    if (_vl4_anyXZ_C(lhs) || _vl4_anyXZ_C(rhs)) return false;
+    return (lhs & 0x55555555) == (rhs & 0x55555555);  // Mask to get lower bit only
+}
+
+static inline bool VL_EQ_4STATE_S(SData4 lhs, SData4 rhs) {
+    if (_vl4_anyXZ_S(lhs) || _vl4_anyXZ_S(rhs)) return false;
+    return (lhs & 0x5555555555555555ULL) == (rhs & 0x5555555555555555ULL);
+}
+
+static inline bool VL_EQ_4STATE_I(IData4 lhs, IData4 rhs) {
+    if (_vl4_anyXZ_I(lhs) || _vl4_anyXZ_I(rhs)) return false;
+    return (lhs & 0x5555555555555555ULL) == (rhs & 0x5555555555555555ULL);
+}
+
+static inline bool VL_EQ_4STATE_Q(QData4 lhs, QData4 rhs) {
+    if (_vl4_anyXZ_Q(lhs) || _vl4_anyXZ_Q(rhs)) return false;
+    return (lhs & 0x5555555555555555ULL) == (rhs & 0x5555555555555555ULL);
+}
+
+static inline bool VL_EQ_4STATE_S(SData4 lhs, SData4 rhs) {
+    if (_vl4_anyXZ_S(lhs) || _vl4_anyXZ_S(rhs)) return false;
+    return (lhs & 0x5555555555555555ULL) == (rhs & 0x5555555555555555ULL);
+}
+
+static inline bool VL_EQ_4STATE_I(IData4 lhs, IData4 rhs) {
+    if (_vl4_anyXZ_I(lhs) || _vl4_anyXZ_I(rhs)) return false;
+    return (lhs & 0x5555555555555555ULL) == (rhs & 0x5555555555555555ULL);
+}
+
+static inline bool VL_EQ_4STATE_Q(QData4 lhs, QData4 rhs) {
+    if (_vl4_anyXZ_Q(lhs) || _vl4_anyXZ_Q(rhs)) return false;
+    return (lhs & 0x5555555555555555ULL) == (rhs & 0x5555555555555555ULL);
+}
+
+static inline bool VL_EQ_4STATE_S(SData4 lhs, SData4 rhs) {
+    if (_vl4_anyXZ_S(lhs) || _vl4_anyXZ_S(rhs)) return false;
+    return (lhs & 0x5555555555555555ULL) == (rhs & 0x5555555555555555ULL);
+}
+
+static inline bool VL_EQ_4STATE_I(IData4 lhs, IData4 rhs) {
+    if (_vl4_anyXZ_I(lhs) || _vl4_anyXZ_I(rhs)) return false;
+    return (lhs & 0x5555555555555555ULL) == (rhs & 0x5555555555555555ULL);
+}
+
+static inline bool VL_EQ_4STATE_Q(QData4 lhs, QData4 rhs) {
+    if (_vl4_anyXZ_Q(lhs) || _vl4_anyXZ_Q(rhs)) return false;
+    return (lhs & 0x5555555555555555ULL) == (rhs & 0x5555555555555555ULL);
+}
+
+// Four-state NEQ
+static inline bool VL_NEQ_4STATE_C(CData4 lhs, CData4 rhs) {
+    return !VL_EQ_4STATE_C(lhs, rhs);
+}
+static inline bool VL_NEQ_4STATE_S(SData4 lhs, SData4 rhs) {
+    return !VL_EQ_4STATE_S(lhs, rhs);
+}
+static inline bool VL_NEQ_4STATE_I(IData4 lhs, IData4 rhs) {
+    return !VL_EQ_4STATE_I(lhs, rhs);
+}
+static inline bool VL_NEQ_4STATE_Q(QData4 lhs, QData4 rhs) {
+    return !VL_EQ_4STATE_Q(lhs, rhs);
+}
+
+static inline bool VL_NEQ_4STATE_S(SData4 lhs, SData4 rhs) {
+    return !VL_EQ_4STATE_S(lhs, rhs);
+}
+
+static inline bool VL_NEQ_4STATE_I(IData4 lhs, IData4 rhs) {
+    return !VL_EQ_4STATE_I(lhs, rhs);
+}
+
+static inline bool VL_NEQ_4STATE_Q(QData4 lhs, QData4 rhs) {
+    return !VL_EQ_4STATE_Q(lhs, rhs);
+}
+
+//=========================================================================
 // Logical comparisons
 
 // EMIT_RULE: VL_EQ:  oclean=clean; lclean==clean; rclean==clean; obits=1; lbits==rbits;
@@ -1207,6 +1538,229 @@ static inline WDataOutP VL_MODDIVS_WWW(int lbits, WDataOutP owp, WDataInP const 
     } else {
         return VL_MODDIV_WWW(lbits, owp, ltup, rtup);
     }
+}
+
+//=========================================================================
+// FOUR-STATE ARITHMETIC OPERATORS
+// For four-state: any X or Z in operands results in X output
+
+// Helper: Check if a four-state nibble has X or Z
+static inline bool _vl4_isXZ(uint8_t val) {
+    return (val & 3) >= 2;  // 2=X, 3=Z
+}
+
+// Helper: Check if any bit in a four-state value is X or Z
+
+// Four-state ADD: if any operand has X/Z, result is X
+static inline CData4 VL_ADD_4STATE_C(CData4 lhs, CData4 rhs) {
+    if (_vl4_anyXZ_C(lhs) || _vl4_anyXZ_C(rhs)) {
+        return 0xAAAAAAAA;  // All X (2 in each nibble = 0b10101010)
+    }
+    // Extract clean values and add
+    CData4 result = 0;
+    uint8_t carry = 0;
+    for (int i = 0; i < 4; i++) {
+        uint8_t lb = (lhs >> (i * 2)) & 1;
+        uint8_t rb = (rhs >> (i * 2)) & 1;
+        uint8_t sum = lb + rb + carry;
+        result |= ((sum & 1) << (i * 2));
+        carry = (sum >> 1) & 1;
+    }
+    return result;
+}
+
+static inline SData4 VL_ADD_4STATE_S(SData4 lhs, SData4 rhs) {
+    if (_vl4_anyXZ_S(lhs) || _vl4_anyXZ_S(rhs)) {
+        return 0xAAAAAAAAAAAAAAAALL;  // All X
+    }
+    SData4 result = 0;
+    uint8_t carry = 0;
+    for (int i = 0; i < 8; i++) {
+        uint8_t lb = (lhs >> (i * 2)) & 1;
+        uint8_t rb = (rhs >> (i * 2)) & 1;
+        uint8_t sum = lb + rb + carry;
+        result |= (static_cast<SData4>(sum & 1) << (i * 2));
+        carry = (sum >> 1) & 1;
+    }
+    return result;
+}
+    return false;
+}
+
+    return false;
+}
+
+
+
+// Four-state ADD: if any operand has X/Z, result is X
+static inline CData4 VL_ADD_4STATE_C(CData4 lhs, CData4 rhs) {
+    if (_vl4_anyXZ_C(lhs) || _vl4_anyXZ_C(rhs)) {
+        return 0xAAAAAAAA;  // All X (2 in each nibble = 0b10101010)
+    }
+    // Extract clean values and add
+    CData4 result = 0;
+    uint8_t carry = 0;
+    for (int i = 0; i < 4; i++) {
+        uint8_t lb = (lhs >> (i * 2)) & 1;
+        uint8_t rb = (rhs >> (i * 2)) & 1;
+        uint8_t sum = lb + rb + carry;
+        result |= ((sum & 1) << (i * 2));
+        carry = (sum >> 1) & 1;
+    }
+    return result;
+}
+
+static inline SData4 VL_ADD_4STATE_S(SData4 lhs, SData4 rhs) {
+    if (_vl4_anyXZ_S(lhs) || _vl4_anyXZ_S(rhs)) {
+        return 0xAAAAAAAAAAAAAAAALL;  // All X
+    }
+    SData4 result = 0;
+    uint8_t carry = 0;
+    for (int i = 0; i < 8; i++) {
+        uint8_t lb = (lhs >> (i * 2)) & 1;
+        uint8_t rb = (rhs >> (i * 2)) & 1;
+        uint8_t sum = lb + rb + carry;
+        result |= (static_cast<SData4>(sum & 1) << (i * 2));
+        carry = (sum >> 1) & 1;
+    }
+    return result;
+}
+
+static inline IData4 VL_ADD_4STATE_I(IData4 lhs, IData4 rhs) {
+    if (_vl4_anyXZ_I(lhs) || _vl4_anyXZ_I(rhs)) {
+        return 0xAAAAAAAAAAAAAAAALL;  // All X
+    }
+    IData4 result = 0;
+    uint8_t carry = 0;
+    for (int i = 0; i < 16; i++) {
+        uint8_t lb = (lhs >> (i * 2)) & 1;
+        uint8_t rb = (rhs >> (i * 2)) & 1;
+        uint8_t sum = lb + rb + carry;
+        result |= (static_cast<IData4>(sum & 1) << (i * 2));
+        carry = (sum >> 1) & 1;
+    }
+    return result;
+}
+
+static inline QData4 VL_ADD_4STATE_Q(QData4 lhs, QData4 rhs) {
+    if (_vl4_anyXZ_Q(lhs) || _vl4_anyXZ_Q(rhs)) {
+        return 0xAAAAAAAAAAAAAAAALL;  // All X
+    }
+    QData4 result = 0;
+    uint8_t carry = 0;
+    for (int i = 0; i < 32; i++) {
+        uint8_t lb = (lhs >> (i * 2)) & 1;
+        uint8_t rb = (rhs >> (i * 2)) & 1;
+        uint8_t sum = lb + rb + carry;
+        result |= (static_cast<QData4>(sum & 1) << (i * 2));
+        carry = (sum >> 1) & 1;
+    }
+    return result;
+}
+
+// Four-state SUB
+static inline CData4 VL_SUB_4STATE_C(CData4 lhs, CData4 rhs) {
+    if (_vl4_anyXZ_C(lhs) || _vl4_anyXZ_C(rhs)) {
+        return 0xAAAAAAAA;  // All X
+    }
+    return lhs - rhs;
+}
+static inline SData4 VL_SUB_4STATE_S(SData4 lhs, SData4 rhs) {
+    if (_vl4_anyXZ_S(lhs) || _vl4_anyXZ_S(rhs)) {
+        return 0xAAAAAAAAAAAAAAAALL;  // All X
+    }
+    return lhs - rhs;
+}
+static inline IData4 VL_SUB_4STATE_I(IData4 lhs, IData4 rhs) {
+    if (_vl4_anyXZ_I(lhs) || _vl4_anyXZ_I(rhs)) {
+        return 0xAAAAAAAAAAAAAAAALL;  // All X
+    }
+    return lhs - rhs;
+}
+static inline QData4 VL_SUB_4STATE_Q(QData4 lhs, QData4 rhs) {
+    if (_vl4_anyXZ_Q(lhs) || _vl4_anyXZ_Q(rhs)) {
+        return 0xAAAAAAAAAAAAAAAALL;  // All X
+    }
+    return lhs - rhs;
+}
+    CData4 result = 0;
+    uint8_t borrow = 0;
+    for (int i = 0; i < 4; i++) {
+        uint8_t lb = (lhs >> (i * 2)) & 1;
+        uint8_t rb = (rhs >> (i * 2)) & 1;
+        int diff = lb - rb - borrow;
+        if (diff < 0) {
+            diff += 2;
+            borrow = 1;
+        } else {
+            borrow = 0;
+        }
+        result |= (static_cast<CData4>(diff & 1) << (i * 2));
+    }
+    return result;
+}
+
+static inline SData4 VL_SUB_4STATE_S(SData4 lhs, SData4 rhs) {
+    if (_vl4_anyXZ_S(lhs) || _vl4_anyXZ_S(rhs)) {
+        return 0xAAAAAAAAAAAAAAAALL;
+    }
+    SData4 result = 0;
+    uint8_t borrow = 0;
+    for (int i = 0; i < 8; i++) {
+        uint8_t lb = (lhs >> (i * 2)) & 1;
+        uint8_t rb = (rhs >> (i * 2)) & 1;
+        int diff = lb - rb - borrow;
+        if (diff < 0) {
+            diff += 2;
+            borrow = 1;
+        } else {
+            borrow = 0;
+        }
+        result |= (static_cast<SData4>(diff & 1) << (i * 2));
+    }
+    return result;
+}
+
+static inline IData4 VL_SUB_4STATE_I(IData4 lhs, IData4 rhs) {
+    if (_vl4_anyXZ_I(lhs) || _vl4_anyXZ_I(rhs)) {
+        return 0xAAAAAAAAAAAAAAAALL;
+    }
+    IData4 result = 0;
+    uint8_t borrow = 0;
+    for (int i = 0; i < 16; i++) {
+        uint8_t lb = (lhs >> (i * 2)) & 1;
+        uint8_t rb = (rhs >> (i * 2)) & 1;
+        int diff = lb - rb - borrow;
+        if (diff < 0) {
+            diff += 2;
+            borrow = 1;
+        } else {
+            borrow = 0;
+        }
+        result |= (static_cast<IData4>(diff & 1) << (i * 2));
+    }
+    return result;
+}
+
+static inline QData4 VL_SUB_4STATE_Q(QData4 lhs, QData4 rhs) {
+    if (_vl4_anyXZ_Q(lhs) || _vl4_anyXZ_Q(rhs)) {
+        return 0xAAAAAAAAAAAAAAAALL;
+    }
+    QData4 result = 0;
+    uint8_t borrow = 0;
+    for (int i = 0; i < 32; i++) {
+        uint8_t lb = (lhs >> (i * 2)) & 1;
+        uint8_t rb = (rhs >> (i * 2)) & 1;
+        int diff = lb - rb - borrow;
+        if (diff < 0) {
+            diff += 2;
+            borrow = 1;
+        } else {
+            borrow = 0;
+        }
+        result |= (static_cast<QData4>(diff & 1) << (i * 2));
+    }
+    return result;
 }
 
 #define VL_POW_IIQ(obits, lbits, rbits, lhs, rhs) VL_POW_QQQ(obits, lbits, rbits, lhs, rhs)
@@ -2172,6 +2726,134 @@ static inline QData VL_SHIFTRS_QQQ(int obits, int lbits, int rbits, QData lhs, Q
     return VL_SHIFTRS_QQW(obits, lbits, rbits, lhs, rwp);
 }
 
+//=========================================================================
+// FOUR-STATE SHIFT OPERATORS
+// For four-state: shift operations preserve X/Z in the shifted bits
+
+// Four-state left shift: shift in zeros, preserve X/Z pattern
+static inline CData4 VL_SHIFTL_4STATE_C(CData4 lhs, int shift) {
+    if (shift >= 4) return 0;  // All shifted out
+    if (_vl4_anyXZ_C(lhs)) {
+        // X/Z gets shifted, lower bits become 0
+        CData4 result = 0;
+        for (int i = 0; i < 4 - shift; i++) {
+            uint8_t val = (lhs >> (i * 2)) & 3;
+            if (val != 0) {
+                result |= (val << ((i + shift) * 2));
+            }
+        }
+        return result;
+    }
+    // Clean value shift
+    return (lhs & 0x55555555) << shift;
+}
+
+static inline SData4 VL_SHIFTL_4STATE_S(SData4 lhs, int shift) {
+    if (shift >= 8) return 0;
+    if (_vl4_anyXZ_S(lhs)) {
+        SData4 result = 0;
+        for (int i = 0; i < 8 - shift; i++) {
+            uint8_t val = (lhs >> (i * 2)) & 3;
+            if (val != 0) {
+                result |= (static_cast<SData4>(val) << ((i + shift) * 2));
+            }
+        }
+        return result;
+    }
+    return (lhs & 0x5555555555555555ULL) << shift;
+}
+
+static inline IData4 VL_SHIFTL_4STATE_I(IData4 lhs, int shift) {
+    if (shift >= 16) return 0;
+    if (_vl4_anyXZ_I(lhs)) {
+        IData4 result = 0;
+        for (int i = 0; i < 16 - shift; i++) {
+            uint8_t val = (lhs >> (i * 2)) & 3;
+            if (val != 0) {
+                result |= (static_cast<IData4>(val) << ((i + shift) * 2));
+            }
+        }
+        return result;
+    }
+    return (lhs & 0x5555555555555555ULL) << shift;
+}
+
+static inline QData4 VL_SHIFTL_4STATE_Q(QData4 lhs, int shift) {
+    if (shift >= 32) return 0;
+    if (_vl4_anyXZ_Q(lhs)) {
+        QData4 result = 0;
+        for (int i = 0; i < 32 - shift; i++) {
+            uint8_t val = (lhs >> (i * 2)) & 3;
+            if (val != 0) {
+                result |= (static_cast<QData4>(val) << ((i + shift) * 2));
+            }
+        }
+        return result;
+    }
+    return (lhs & 0x5555555555555555ULL) << shift;
+}
+
+// Four-state right shift
+static inline CData4 VL_SHIFTR_4STATE_C(CData4 lhs, int shift) {
+    if (shift >= 4) return 0;
+    if (_vl4_anyXZ_C(lhs)) {
+        CData4 result = 0;
+        for (int i = shift; i < 4; i++) {
+            uint8_t val = (lhs >> (i * 2)) & 3;
+            if (val != 0) {
+                result |= (static_cast<CData4>(val) << ((i - shift) * 2));
+            }
+        }
+        return result;
+    }
+    return (lhs & 0x55555555) >> shift;
+}
+
+static inline SData4 VL_SHIFTR_4STATE_S(SData4 lhs, int shift) {
+    if (shift >= 8) return 0;
+    if (_vl4_anyXZ_S(lhs)) {
+        SData4 result = 0;
+        for (int i = shift; i < 8; i++) {
+            uint8_t val = (lhs >> (i * 2)) & 3;
+            if (val != 0) {
+                result |= (static_cast<SData4>(val) << ((i - shift) * 2));
+            }
+        }
+        return result;
+    }
+    return (lhs & 0x5555555555555555ULL) >> shift;
+}
+
+static inline IData4 VL_SHIFTR_4STATE_I(IData4 lhs, int shift) {
+    if (shift >= 16) return 0;
+    if (_vl4_anyXZ_I(lhs)) {
+        IData4 result = 0;
+        for (int i = shift; i < 16; i++) {
+            uint8_t val = (lhs >> (i * 2)) & 3;
+            if (val != 0) {
+                result |= (static_cast<IData4>(val) << ((i - shift) * 2));
+            }
+        }
+        return result;
+    }
+    return (lhs & 0x5555555555555555ULL) >> shift;
+}
+
+static inline QData4 VL_SHIFTR_4STATE_Q(QData4 lhs, int shift) {
+    if (shift >= 32) return 0;
+    if (_vl4_anyXZ_Q(lhs)) {
+        QData4 result = 0;
+        for (int i = shift; i < 32; i++) {
+            uint8_t val = (lhs >> (i * 2)) & 3;
+            if (val != 0) {
+                result |= (static_cast<QData4>(val) << ((i - shift) * 2));
+            }
+        }
+        return result;
+    }
+    return (lhs & 0x5555555555555555ULL) >> shift;
+}
+
 //===================================================================
 // Bit selection
 
@@ -2797,9 +3479,10 @@ static inline void VL_SELASSIGN_WW(int rbits, int obits, WDataOutP iowp, WDataIn
 //======================================================================
 // Triops
 
-// This must be a macro in order for short-circuiting of the values to work.
-#define VL_COND_WIWW(obits, owp, cond, w1p, w2p) \
-    VL_MEMCPY_W(owp, (cond) ? (w1p) : (w2p), VL_WORDS_I(obits))
+static inline WDataOutP VL_COND_WIWW(int obits, WDataOutP owp, int cond, WDataInP const w1p,
+                                     WDataInP const w2p) VL_MT_SAFE {
+    return VL_MEMCPY_W(owp, cond ? w1p : w2p, VL_WORDS_I(obits));
+}
 
 //======================================================================
 // Constification
@@ -3059,340 +3742,5 @@ extern IData VL_VALUEPLUSARGS_INN(int, const std::string& ld, std::string& rdr) 
 uint64_t VL_MURMUR64_HASH(const char* key) VL_PURE;
 
 //======================================================================
-// Four-state simulation functions (X/Z = 2 bits per logic bit)
-// Encoding: 00=0, 01=1, 10=X, 11=Z
-//======================================================================
-
-// Helper: Check if any bit is X (10) or Z (11)
-static inline bool _vl4_anyXZ_C(CData4 data) {
-    return (data & 0xAA) != 0;
-}
-static inline bool _vl4_anyXZ_S(SData4 data) {
-    return (data & 0xAAAA) != 0;
-}
-static inline bool _vl4_anyXZ_I(IData4 data) {
-    return (data & 0xAAAAAAAA) != 0;
-}
-static inline bool _vl4_anyXZ_Q(QData4 data) {
-    return (data & 0xAAAAAAAAAAAAAAAAULL) != 0;
-}
-
-// Four-state AND: X & anything = X, Z & anything = X
-static inline CData4 VL_AND_4STATE_C(CData4 lhs, CData4 rhs) {
-    CData4 result = 0;
-    for (int i = 0; i < 4; i++) {
-        uint8_t lb = (lhs >> (i * 2)) & 3;
-        uint8_t rb = (rhs >> (i * 2)) & 3;
-        uint8_t out;
-        if (lb == 2 || lb == 3 || rb == 2 || rb == 3) out = 2;  // X
-        else out = lb & rb;
-        result |= (out << (i * 2));
-    }
-    return result;
-}
-static inline SData4 VL_AND_4STATE_S(SData4 lhs, SData4 rhs) {
-    SData4 result = 0;
-    for (int i = 0; i < 8; i++) {
-        uint8_t lb = (lhs >> (i * 2)) & 3;
-        uint8_t rb = (rhs >> (i * 2)) & 3;
-        uint8_t out;
-        if (lb == 2 || lb == 3 || rb == 2 || rb == 3) out = 2;
-        else out = lb & rb;
-        result |= (out << (i * 2));
-    }
-    return result;
-}
-static inline IData4 VL_AND_4STATE_I(IData4 lhs, IData4 rhs) {
-    IData4 result = 0;
-    for (int i = 0; i < 16; i++) {
-        uint8_t lb = (lhs >> (i * 2)) & 3;
-        uint8_t rb = (rhs >> (i * 2)) & 3;
-        uint8_t out;
-        if (lb == 2 || lb == 3 || rb == 2 || rb == 3) out = 2;
-        else out = lb & rb;
-        result |= (out << (i * 2));
-    }
-    return result;
-}
-static inline QData4 VL_AND_4STATE_Q(QData4 lhs, QData4 rhs) {
-    QData4 result = 0;
-    for (int i = 0; i < 32; i++) {
-        uint8_t lb = (lhs >> (i * 2)) & 3;
-        uint8_t rb = (rhs >> (i * 2)) & 3;
-        uint8_t out;
-        if (lb == 2 || lb == 3 || rb == 2 || rb == 3) out = 2;
-        else out = lb & rb;
-        result |= (static_cast<QData4>(out) << (i * 2));
-    }
-    return result;
-}
-
-// Four-state OR
-static inline CData4 VL_OR_4STATE_C(CData4 lhs, CData4 rhs) {
-    CData4 result = 0;
-    for (int i = 0; i < 4; i++) {
-        uint8_t lb = (lhs >> (i * 2)) & 3;
-        uint8_t rb = (rhs >> (i * 2)) & 3;
-        uint8_t out;
-        if (lb == 2 || lb == 3 || rb == 2 || rb == 3) out = 2;
-        else out = lb | rb;
-        result |= (out << (i * 2));
-    }
-    return result;
-}
-static inline SData4 VL_OR_4STATE_S(SData4 lhs, SData4 rhs) {
-    SData4 result = 0;
-    for (int i = 0; i < 8; i++) {
-        uint8_t lb = (lhs >> (i * 2)) & 3;
-        uint8_t rb = (rhs >> (i * 2)) & 3;
-        uint8_t out;
-        if (lb == 2 || lb == 3 || rb == 2 || rb == 3) out = 2;
-        else out = lb | rb;
-        result |= (out << (i * 2));
-    }
-    return result;
-}
-static inline IData4 VL_OR_4STATE_I(IData4 lhs, IData4 rhs) {
-    IData4 result = 0;
-    for (int i = 0; i < 16; i++) {
-        uint8_t lb = (lhs >> (i * 2)) & 3;
-        uint8_t rb = (rhs >> (i * 2)) & 3;
-        uint8_t out;
-        if (lb == 2 || lb == 3 || rb == 2 || rb == 3) out = 2;
-        else out = lb | rb;
-        result |= (out << (i * 2));
-    }
-    return result;
-}
-static inline QData4 VL_OR_4STATE_Q(QData4 lhs, QData4 rhs) {
-    QData4 result = 0;
-    for (int i = 0; i < 32; i++) {
-        uint8_t lb = (lhs >> (i * 2)) & 3;
-        uint8_t rb = (rhs >> (i * 2)) & 3;
-        uint8_t out;
-        if (lb == 2 || lb == 3 || rb == 2 || rb == 3) out = 2;
-        else out = lb | rb;
-        result |= (static_cast<QData4>(out) << (i * 2));
-    }
-    return result;
-}
-
-// Four-state XOR
-static inline CData4 VL_XOR_4STATE_C(CData4 lhs, CData4 rhs) {
-    CData4 result = 0;
-    for (int i = 0; i < 4; i++) {
-        uint8_t lb = (lhs >> (i * 2)) & 3;
-        uint8_t rb = (rhs >> (i * 2)) & 3;
-        uint8_t out;
-        if (lb == 2 || lb == 3 || rb == 2 || rb == 3) out = 2;
-        else out = lb ^ rb;
-        result |= (out << (i * 2));
-    }
-    return result;
-}
-static inline SData4 VL_XOR_4STATE_S(SData4 lhs, SData4 rhs) {
-    SData4 result = 0;
-    for (int i = 0; i < 8; i++) {
-        uint8_t lb = (lhs >> (i * 2)) & 3;
-        uint8_t rb = (rhs >> (i * 2)) & 3;
-        uint8_t out;
-        if (lb == 2 || lb == 3 || rb == 2 || rb == 3) out = 2;
-        else out = lb ^ rb;
-        result |= (out << (i * 2));
-    }
-    return result;
-}
-static inline IData4 VL_XOR_4STATE_I(IData4 lhs, IData4 rhs) {
-    IData4 result = 0;
-    for (int i = 0; i < 16; i++) {
-        uint8_t lb = (lhs >> (i * 2)) & 3;
-        uint8_t rb = (rhs >> (i * 2)) & 3;
-        uint8_t out;
-        if (lb == 2 || lb == 3 || rb == 2 || rb == 3) out = 2;
-        else out = lb ^ rb;
-        result |= (out << (i * 2));
-    }
-    return result;
-}
-static inline QData4 VL_XOR_4STATE_Q(QData4 lhs, QData4 rhs) {
-    QData4 result = 0;
-    for (int i = 0; i < 32; i++) {
-        uint8_t lb = (lhs >> (i * 2)) & 3;
-        uint8_t rb = (rhs >> (i * 2)) & 3;
-        uint8_t out;
-        if (lb == 2 || lb == 3 || rb == 2 || rb == 3) out = 2;
-        else out = lb ^ rb;
-        result |= (static_cast<QData4>(out) << (i * 2));
-    }
-    return result;
-}
-
-// Four-state NOT
-static inline CData4 VL_NOT_4STATE_C(CData4 lhs) {
-    CData4 result = 0;
-    for (int i = 0; i < 4; i++) {
-        uint8_t lb = (lhs >> (i * 2)) & 3;
-        uint8_t out;
-        if (lb == 2 || lb == 3) out = 2;  // X or Z -> X
-        else out = lb ^ 1;  // invert
-        result |= (out << (i * 2));
-    }
-    return result;
-}
-static inline SData4 VL_NOT_4STATE_S(SData4 lhs) {
-    SData4 result = 0;
-    for (int i = 0; i < 8; i++) {
-        uint8_t lb = (lhs >> (i * 2)) & 3;
-        uint8_t out;
-        if (lb == 2 || lb == 3) out = 2;
-        else out = lb ^ 1;
-        result |= (out << (i * 2));
-    }
-    return result;
-}
-static inline IData4 VL_NOT_4STATE_I(IData4 lhs) {
-    IData4 result = 0;
-    for (int i = 0; i < 16; i++) {
-        uint8_t lb = (lhs >> (i * 2)) & 3;
-        uint8_t out;
-        if (lb == 2 || lb == 3) out = 2;
-        else out = lb ^ 1;
-        result |= (out << (i * 2));
-    }
-    return result;
-}
-static inline QData4 VL_NOT_4STATE_Q(QData4 lhs) {
-    QData4 result = 0;
-    for (int i = 0; i < 32; i++) {
-        uint8_t lb = (lhs >> (i * 2)) & 3;
-        uint8_t out;
-        if (lb == 2 || lb == 3) out = 2;
-        else out = lb ^ 1;
-        result |= (static_cast<QData4>(out) << (i * 2));
-    }
-    return result;
-}
-
-// X reset: initialize to all X
-static inline CData4 VL_X_RESET_4STATE_C() {
-    return 0xAA;  // All X (0b10101010)
-}
-static inline SData4 VL_X_RESET_4STATE_S() {
-    return 0xAAAA;  // All X
-}
-static inline IData4 VL_X_RESET_4STATE_I() {
-    return 0xAAAAAAAA;  // All X
-}
-static inline QData4 VL_X_RESET_4STATE_Q() {
-    return 0xAAAAAAAAFFFFFFFFULL;  // All X
-}
-
-// Four-state ADD: if any operand has X/Z, result is X
-static inline CData4 VL_ADD_4STATE_C(CData4 lhs, CData4 rhs) {
-    if (_vl4_anyXZ_C(lhs) || _vl4_anyXZ_C(rhs)) return 0xAA;
-    CData4 result = 0;
-    uint8_t carry = 0;
-    for (int i = 0; i < 4; i++) {
-        uint8_t lb = (lhs >> (i * 2)) & 1;
-        uint8_t rb = (rhs >> (i * 2)) & 1;
-        uint8_t sum = lb + rb + carry;
-        result |= ((sum & 1) << (i * 2));
-        carry = (sum >> 1) & 1;
-    }
-    return result;
-}
-static inline SData4 VL_ADD_4STATE_S(SData4 lhs, SData4 rhs) {
-    if (_vl4_anyXZ_S(lhs) || _vl4_anyXZ_S(rhs)) return 0xAAAA;
-    SData4 result = 0;
-    uint8_t carry = 0;
-    for (int i = 0; i < 8; i++) {
-        uint8_t lb = (lhs >> (i * 2)) & 1;
-        uint8_t rb = (rhs >> (i * 2)) & 1;
-        uint8_t sum = lb + rb + carry;
-        result |= (static_cast<SData4>(sum & 1) << (i * 2));
-        carry = (sum >> 1) & 1;
-    }
-    return result;
-}
-static inline IData4 VL_ADD_4STATE_I(IData4 lhs, IData4 rhs) {
-    if (_vl4_anyXZ_I(lhs) || _vl4_anyXZ_I(rhs)) return 0xAAAAAAAA;
-    IData4 result = 0;
-    uint8_t carry = 0;
-    for (int i = 0; i < 16; i++) {
-        uint8_t lb = (lhs >> (i * 2)) & 1;
-        uint8_t rb = (rhs >> (i * 2)) & 1;
-        uint8_t sum = lb + rb + carry;
-        result |= (static_cast<IData4>(sum & 1) << (i * 2));
-        carry = (sum >> 1) & 1;
-    }
-    return result;
-}
-static inline QData4 VL_ADD_4STATE_Q(QData4 lhs, QData4 rhs) {
-    if (_vl4_anyXZ_Q(lhs) || _vl4_anyXZ_Q(rhs)) return 0xAAAAAAAAFFFFFFFFULL;
-    QData4 result = 0;
-    uint8_t carry = 0;
-    for (int i = 0; i < 32; i++) {
-        uint8_t lb = (lhs >> (i * 2)) & 1;
-        uint8_t rb = (rhs >> (i * 2)) & 1;
-        uint8_t sum = lb + rb + carry;
-        result |= (static_cast<QData4>(sum & 1) << (i * 2));
-        carry = (sum >> 1) & 1;
-    }
-    return result;
-}
-
-// Four-state SUB: if any operand has X/Z, result is X
-static inline CData4 VL_SUB_4STATE_C(CData4 lhs, CData4 rhs) {
-    if (_vl4_anyXZ_C(lhs) || _vl4_anyXZ_C(rhs)) return 0xAA;
-    CData4 result = 0;
-    uint8_t borrow = 0;
-    for (int i = 0; i < 4; i++) {
-        uint8_t lb = (lhs >> (i * 2)) & 1;
-        uint8_t rb = (rhs >> (i * 2)) & 1;
-        int diff = lb - rb - borrow;
-        result |= ((diff & 1) << (i * 2));
-        borrow = (diff >> 1) & 1;
-    }
-    return result;
-}
-static inline SData4 VL_SUB_4STATE_S(SData4 lhs, SData4 rhs) {
-    if (_vl4_anyXZ_S(lhs) || _vl4_anyXZ_S(rhs)) return 0xAAAA;
-    SData4 result = 0;
-    uint8_t borrow = 0;
-    for (int i = 0; i < 8; i++) {
-        uint8_t lb = (lhs >> (i * 2)) & 1;
-        uint8_t rb = (rhs >> (i * 2)) & 1;
-        int diff = lb - rb - borrow;
-        result |= (static_cast<SData4>(diff & 1) << (i * 2));
-        borrow = (diff >> 1) & 1;
-    }
-    return result;
-}
-static inline IData4 VL_SUB_4STATE_I(IData4 lhs, IData4 rhs) {
-    if (_vl4_anyXZ_I(lhs) || _vl4_anyXZ_I(rhs)) return 0xAAAAAAAA;
-    IData4 result = 0;
-    uint8_t borrow = 0;
-    for (int i = 0; i < 16; i++) {
-        uint8_t lb = (lhs >> (i * 2)) & 1;
-        uint8_t rb = (rhs >> (i * 2)) & 1;
-        int diff = lb - rb - borrow;
-        result |= (static_cast<IData4>(diff & 1) << (i * 2));
-        borrow = (diff >> 1) & 1;
-    }
-    return result;
-}
-static inline QData4 VL_SUB_4STATE_Q(QData4 lhs, QData4 rhs) {
-    if (_vl4_anyXZ_Q(lhs) || _vl4_anyXZ_Q(rhs)) return 0xAAAAAAAAFFFFFFFFULL;
-    QData4 result = 0;
-    uint8_t borrow = 0;
-    for (int i = 0; i < 32; i++) {
-        uint8_t lb = (lhs >> (i * 2)) & 1;
-        uint8_t rb = (rhs >> (i * 2)) & 1;
-        int diff = lb - rb - borrow;
-        result |= (static_cast<QData4>(diff & 1) << (i * 2));
-        borrow = (diff >> 1) & 1;
-    }
-    return result;
-}
 
 #endif  // Guard
