@@ -616,13 +616,22 @@ class TraceDeclVisitor final : public VNVisitor {
             return;
         }
 
+        AstNodeDType* const subtypep = nodep->subDTypep()->skipRefToEnump();
+
+        // Do not unroll if the elements are simple 'bit', or 'logic'
+        if (AstBasicDType* const basicp = VN_CAST(subtypep->skipRefp(), BasicDType)) {
+            if (basicp->isBitLogic() && ! basicp->isRanged()) {
+                addTraceDecl(VNumRange{}, nodep->width());
+                return;
+            }
+        }
+
         VL_RESTORER(m_traName);
         FileLine* const flp = nodep->fileline();
 
         addToSubFunc(new AstTracePushPrefix{flp, m_traName, VTracePrefixType::ARRAY_PACKED,
                                             nodep->left(), nodep->right()});
 
-        AstNodeDType* const subtypep = nodep->subDTypep()->skipRefToEnump();
         // Always iterate left index to right index
         const int inc = nodep->rangep()->ascending() ? 1 : -1;
         for (int i = nodep->left(); i != nodep->right() + inc; i += inc) {
