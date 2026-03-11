@@ -26,6 +26,7 @@
 
 #include "V3Covergroup.h"
 
+#include "V3Const.h"
 #include "V3MemberMap.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -260,8 +261,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             values.insert(constp->toUQuad());
         } else if (AstInsideRange* rangep = VN_CAST(nodep, InsideRange)) {
             // Range [lo:hi]
-            AstConst* loConstp = VN_CAST(rangep->lhsp(), Const);
-            AstConst* hiConstp = VN_CAST(rangep->rhsp(), Const);
+            AstNodeExpr* lhsp = V3Const::constifyEdit(rangep->lhsp());
+            AstNodeExpr* rhsp = V3Const::constifyEdit(rangep->rhsp());
+            AstConst* loConstp = VN_CAST(lhsp, Const);
+            AstConst* hiConstp = VN_CAST(rhsp, Const);
             if (loConstp && hiConstp) {
                 uint64_t lo = loConstp->toUQuad();
                 uint64_t hi = hiConstp->toUQuad();
@@ -995,8 +998,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 }
             } else if (AstInsideRange* const insideRangep = VN_CAST(rangep, InsideRange)) {
                 // For InsideRange [min:max], create bins for each value
-                AstConst* const minConstp = VN_CAST(insideRangep->lhsp(), Const);
-                AstConst* const maxConstp = VN_CAST(insideRangep->rhsp(), Const);
+                AstNodeExpr* const minp = V3Const::constifyEdit(insideRangep->lhsp());
+                AstNodeExpr* const maxp = V3Const::constifyEdit(insideRangep->rhsp());
+                AstConst* const minConstp = VN_CAST(minp, Const);
+                AstConst* const maxConstp = VN_CAST(maxp, Const);
                 if (minConstp && maxConstp) {
                     int minVal = minConstp->toSInt();
                     int maxVal = maxConstp->toSInt();
