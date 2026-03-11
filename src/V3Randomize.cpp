@@ -4067,13 +4067,10 @@ class RandomizeVisitor final : public VNVisitor {
             // Restrict enum variables in solver to valid members only
             {
                 AstNodeModule* const genModp = VN_AS(genp->user2p(), NodeModule);
-                nodep->foreachMember([&](AstClass*, AstVar* memberVarp) {
-                    if (!memberVarp->user3()) return;
-                    AstEnumDType* const enumDtp
-                        = VN_CAST(memberVarp->dtypep()->skipRefToEnump(), EnumDType);
-                    if (!enumDtp) return;
+                // Emit enum range hard constraint for a single variable
+                const auto emitEnumConstraint = [&](const std::string& smtName,
+                                                    AstEnumDType* const enumDtp) {
                     const int width = enumDtp->width();
-                    const std::string smtName = memberVarp->name();
                     std::string constraint = "(__Vbv (or";
                     for (AstEnumItem* itemp = enumDtp->itemsp(); itemp;
                          itemp = VN_AS(itemp->nextp(), EnumItem)) {
@@ -4088,6 +4085,41 @@ class RandomizeVisitor final : public VNVisitor {
                         new AstCExpr{fl, AstCExpr::Pure{}, "\"" + constraint + "\""}};
                     callp->dtypeSetVoid();
                     randomizep->addStmtsp(callp->makeStmt());
+                };
+                // Recursively emit enum constraints for sub-object members
+                std::function<void(AstClass*, const std::string&)> addSubObjEnumConstraints
+                    = [&](AstClass* classp, const std::string& pathPrefix) {
+                          classp->foreachMember([&](AstClass*, AstVar* subVarp) {
+                              if (!subVarp->rand().isRandomizable()) return;
+                              const std::string smtName = pathPrefix + "." + subVarp->name();
+                              AstEnumDType* const enumDtp
+                                  = VN_CAST(subVarp->dtypep()->skipRefToEnump(), EnumDType);
+                              if (enumDtp) {
+                                  emitEnumConstraint(smtName, enumDtp);
+                                  return;
+                              }
+                              if (!subVarp->globalConstrained()) return;
+                              const AstNodeDType* const subDtypep = subVarp->dtypep()->skipRefp();
+                              const AstClassRefDType* const subClassRefp
+                                  = VN_CAST(subDtypep, ClassRefDType);
+                              if (!subClassRefp) return;
+                              addSubObjEnumConstraints(subClassRefp->classp(), smtName);
+                          });
+                      };
+                nodep->foreachMember([&](AstClass*, AstVar* memberVarp) {
+                    // Direct enum members
+                    if (memberVarp->user3()) {
+                        AstEnumDType* const enumDtp
+                            = VN_CAST(memberVarp->dtypep()->skipRefToEnump(), EnumDType);
+                        if (enumDtp) emitEnumConstraint(memberVarp->name(), enumDtp);
+                    }
+                    // Enum members inside globalConstrained sub-objects
+                    if (memberVarp->globalConstrained()) {
+                        const AstNodeDType* const dtypep = memberVarp->dtypep()->skipRefp();
+                        const AstClassRefDType* const classRefp = VN_CAST(dtypep, ClassRefDType);
+                        if (!classRefp) return;
+                        addSubObjEnumConstraints(classRefp->classp(), memberVarp->name());
+                    }
                 });
             }
 
