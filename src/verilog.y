@@ -3038,13 +3038,9 @@ delay_value<nodeExprp>:         // ==IEEE:delay_value
         |       y1STEP                                  { $$ = new AstConst{$<fl>1, AstConst::OneStep{}}; }
         ;
 
-delayExpr<nodeExprp>:
-                expr                                    { $$ = $1; }
-        ;
-
 minTypMax<nodeExprp>:           // IEEE: mintypmax_expression and constant_mintypmax_expression
-                delayExpr                               { $$ = $1; }
-        |       delayExpr ':' delayExpr ':' delayExpr   { $$ = $3; MINTYPMAXDLYUNSUP($3); DEL($1); DEL($5); }
+                expr                               { $$ = $1; }
+        |       expr ':' expr ':' expr { $$ = $3; MINTYPMAXDLYUNSUP($3); DEL($1); DEL($5); }
         ;
 
 minTypMaxE<nodeExprp>:
@@ -5935,10 +5931,13 @@ specparam_assignment<varp>:     // ==IEEE: specparam_assignment
                 idNotPathpulse sigAttrListE '=' minTypMax
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
                           if ($4) $$->valuep($4); }
-        //                      //  IEEE: pulse_control_specparam
-        |       idPathpulse sigAttrListE '=' '(' minTypMax ')'
+        //                      // IEEE: pulse_control_specparam
+        //                      // LRM grammar requires '(' as the first token after assignment,
+        //                      // but IEEE provides an example in 30.7.1 where it is omitted.
+        //                      // Other simulators also support it.
+        |       idPathpulse sigAttrListE '=' minTypMax
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
-                          if ($5) $$->valuep($5); }
+                          if ($4) $$->valuep($4); }
         |       idPathpulse sigAttrListE '=' '(' minTypMax ',' minTypMax ')'
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
                           if ($5) $$->valuep($5);
