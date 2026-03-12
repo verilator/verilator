@@ -408,6 +408,7 @@ protected:
     struct NonSerialized final {  // Non-serialized information
         // These are reloaded from on command-line settings, so do not need to persist
         // Fast path
+        bool m_executingFinal = false;  // Running generated final() code
         uint64_t m_profExecStart = 1;  // +prof+exec+start time
         uint32_t m_profExecWindow = 2;  // +prof+exec+window size
         // Slow path
@@ -530,6 +531,10 @@ public:
     bool gotFinish() const VL_MT_SAFE { return m_s.m_gotFinish; }
     /// Set if got a $finish or $stop/error
     void gotFinish(bool flag) VL_MT_SAFE;
+    /// Check if generated final() code is executing
+    bool executingFinal() const VL_MT_SAFE;
+    /// Set if generated final() code is executing
+    void executingFinal(bool flag) VL_MT_SAFE;
     /// Return if quiet enabled
     bool quiet() const VL_MT_SAFE { return m_s.m_quiet; }
     /// Enable quiet (also prevents need for OS calls to get CPU time)
