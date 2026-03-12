@@ -484,7 +484,7 @@ bool VlRandomizer::next(VlRNG& rngr) {
 
         if (!sat) {
             os << "(reset)\n";
-            // If randc vars have used values, this may be cycle exhaustion — retry
+            // If randc vars have used values, this may be cycle exhaustion - retry
             if (hasRandc && !m_randcUsedValues.empty() && attempt == 0) {
                 m_randcUsedValues.clear();
                 continue;  // Retry without exclusions

@@ -34,14 +34,14 @@ module t;
     int seen[int];
     int rand_ok;
 
-    // Test 1: randc 16-bit full domain — must not hang
+    // Test 1: randc 16-bit full domain - must not hang
     full_obj = new();
     for (int i = 0; i < 5; i++) begin
       rand_ok = full_obj.randomize();
       `checkd(rand_ok, 1)
     end
 
-    // Test 2: randc 16-bit with small constrained domain — verify cycling
+    // Test 2: randc 16-bit with small constrained domain - verify cycling
     small_obj = new();
     for (int i = 0; i < 8; i++) begin
       rand_ok = small_obj.randomize();
