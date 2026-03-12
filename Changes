@@ -55,6 +55,7 @@ Verilator 5.047 devel
 * Fix enum range constraints missing for rand variables in sub-objects (#7230) (#7235). [Yilou Wang]
 * Fix vpi_put_value release on non-continuous signal (#7231) (#7241). [Christian Hecken]
 * Fix tracing of typedefed 1D packed arrays with --trace-structs (#7237). [Geza Lore, Testorrent USA, Inc.]
+* Fix --hierarchical dropping arguments in -f/-F files (#7240). [Clara Sparks]
 
 
 Verilator 5.046 2026-02-28

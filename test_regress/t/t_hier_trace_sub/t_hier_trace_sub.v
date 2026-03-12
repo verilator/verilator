@@ -4,6 +4,10 @@
 // SPDX-FileCopyrightText: 2024 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+`ifndef T_HIER_TRACE_SUB_VC_DEFINE
+`error "Missed T_HIER_TRACE_INC_V from sub.vc file"
+`endif
+
 module detail_code (
     input clk,
     input reset_l

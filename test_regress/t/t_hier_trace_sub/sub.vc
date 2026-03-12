@@ -4,4 +4,6 @@
 # SPDX-FileCopyrightText: 2024 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
++define+T_HIER_TRACE_SUB_VC_DEFINE
+
 t_hier_trace_sub.v

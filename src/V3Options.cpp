@@ -431,40 +431,42 @@ string V3Options::allArgsStringForHierBlock(bool forTop) const {
     string out;
     bool stripArg = false;
     bool stripArgIfNum = false;
-    for (const string& arg : m_impp->m_lineArgs) {
-        if (stripArg) {
-            stripArg = false;
-            continue;
-        }
-        if (stripArgIfNum) {
-            stripArgIfNum = false;
-            if (isdigit(arg[0])) continue;
-        }
-        int skip = 0;
-        if (arg.length() >= 2 && arg[0] == '-' && arg[1] == '-') {
-            skip = 2;
-        } else if (arg.length() >= 1 && arg[0] == '-') {
-            skip = 1;
-        }
-        if (skip > 0) {  // arg is an option
-            const string opt = arg.substr(skip);  // Remove '-' in the beginning
-            const int numStrip = stripOptionsForChildRun(opt, forTop);
-            if (numStrip) {
-                UASSERT(0 <= numStrip && numStrip <= 3, "should be one of 0, 1, 2, 3");
-                if (numStrip == 2) stripArg = true;
-                if (numStrip == 3) stripArgIfNum = true;
+    for (const auto& pair : m_impp->m_allArgs) {
+        for (const string& arg : pair.first) {
+            if (stripArg) {
+                stripArg = false;
                 continue;
             }
-        } else {  // Not an option
-            if (vFiles.find(arg) != vFiles.end()  // Remove HDL
-                || m_cppFiles.find(arg) != m_cppFiles.end()) {  // Remove C++
-                continue;
+            if (stripArgIfNum) {
+                stripArgIfNum = false;
+                if (isdigit(arg[0])) continue;
             }
+            int skip = 0;
+            if (arg.length() >= 2 && arg[0] == '-' && arg[1] == '-') {
+                skip = 2;
+            } else if (arg.length() >= 1 && arg[0] == '-') {
+                skip = 1;
+            }
+            if (skip > 0) {  // arg is an option
+                const string opt = arg.substr(skip);  // Remove '-' in the beginning
+                const int numStrip = stripOptionsForChildRun(opt, forTop);
+                if (numStrip) {
+                    UASSERT(0 <= numStrip && numStrip <= 3, "should be one of 0, 1, 2, 3");
+                    if (numStrip == 2) stripArg = true;
+                    if (numStrip == 3) stripArgIfNum = true;
+                    continue;
+                }
+            } else {  // Not an option
+                if (vFiles.find(arg) != vFiles.end()  // Remove HDL
+                    || m_cppFiles.find(arg) != m_cppFiles.end()) {  // Remove C++
+                    continue;
+                }
+            }
+            if (out != "") out += " ";
+            // Don't use opt here because '-' is removed in arg
+            // Use double quote because arg may contain whitespaces
+            out += '"' + VString::quoteAny(arg, '"', '\\') + '"';
         }
-        if (out != "") out += " ";
-        // Don't use opt here because '-' is removed in arg
-        // Use double quote because arg may contain whitespaces
-        out += '"' + VString::quoteAny(arg, '"', '\\') + '"';
     }
     return out;
 }
