@@ -1672,10 +1672,31 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
         VNRelinker handle;
-        AstNodeExpr* const indexp
-            = new AstSFormatF{fl, "#x%8x", false, nodep->bitp()->unlinkFrBack(&handle)};
-        handle.relink(indexp);
-        editSMT(nodep, nodep->fromp(), indexp);
+        // Check if index actually references a rand variable (not just user1,
+        // which can be over-marked in sum/with expansion contexts)
+        bool indexIsRand = false;
+        nodep->bitp()->foreach([&](const AstNodeVarRef* vrefp) {
+            if (vrefp->varp()->rand().isRandomizable()) indexIsRand = true;
+        });
+        if (indexIsRand) {
+            // Index depends on rand variable -- keep as SMT symbol.
+            // Array index sort is 32-bit, so zero-extend narrower indices.
+            AstNodeExpr* indexp = nodep->bitp()->unlinkFrBack(&handle);
+            if (indexp->width() < 32) {
+                AstExtend* const extendp = new AstExtend{fl, indexp, 32};
+                extendp->dtypeSetLogicSized(32, VSigning::UNSIGNED);
+                extendp->user1(true);
+                indexp = extendp;
+            }
+            handle.relink(indexp);
+            editSMT(nodep, nodep->fromp(), indexp);
+        } else {
+            // Index is constant or non-rand -- format as hex literal
+            AstNodeExpr* const indexp
+                = new AstSFormatF{fl, "#x%8x", false, nodep->bitp()->unlinkFrBack(&handle)};
+            handle.relink(indexp);
+            editSMT(nodep, nodep->fromp(), indexp);
+        }
     }
     void visit(AstMemberSel* nodep) override {
         // Check if rootVar is globalConstrained
