@@ -164,7 +164,10 @@ void vl_finish(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE
 #ifndef VL_USER_STOP  ///< Define this to override the vl_stop function
 void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
     // $stop or $fatal reporting; would break current API to add param as to which
-    if (Verilated::threadContextp()->gotFinish()) return;
+    if (Verilated::threadContextp()->gotFinish()
+        && !Verilated::threadContextp()->executingFinal()) {
+        return;
+    }
     const char* const msg = "Verilog $stop";
     Verilated::threadContextp()->gotError(true);
     Verilated::threadContextp()->gotFinish(true);
@@ -2830,6 +2833,14 @@ void VerilatedContext::gotError(bool flag) VL_MT_SAFE {
 void VerilatedContext::gotFinish(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     m_s.m_gotFinish = flag;
+}
+bool VerilatedContext::executingFinal() const VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    return m_ns.m_executingFinal;
+}
+void VerilatedContext::executingFinal(bool flag) VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    m_ns.m_executingFinal = flag;
 }
 void VerilatedContext::profExecStart(uint64_t flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
