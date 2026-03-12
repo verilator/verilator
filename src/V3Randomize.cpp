@@ -1948,8 +1948,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         for (AstNodeExpr* lhsp = nodep->lhssp(); lhsp; lhsp = VN_CAST(lhsp->nextp(), NodeExpr)) {
             AstNodeExpr* const lhsTestp = buildSolveBeforeNameExpr(fl, lhsp);
             if (!lhsTestp) {
-                lhsp->v3warn(CONSTRAINTIGN,
-                             "Unsupported: non-variable expression in solve...before");
+                lhsp->v3fatalSrc("Unexpected expression type in solve...before lhs");
                 continue;
             }
             VL_DO_DANGLING(lhsTestp->deleteTree(), lhsTestp);
@@ -1957,8 +1956,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                  rhsp = VN_CAST(rhsp->nextp(), NodeExpr)) {
                 AstNodeExpr* const rhsNamep = buildSolveBeforeNameExpr(fl, rhsp);
                 if (!rhsNamep) {
-                    rhsp->v3warn(CONSTRAINTIGN,
-                                 "Unsupported: non-variable expression in solve...before");
+                    rhsp->v3fatalSrc("Unexpected expression type in solve...before rhs");
                     continue;
                 }
                 AstCMethodHard* const callp = new AstCMethodHard{
