@@ -1672,7 +1672,13 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
         VNRelinker handle;
-        if (nodep->bitp()->user1()) {
+        // Check if index actually references a rand variable (not just user1,
+        // which can be over-marked in sum/with expansion contexts)
+        bool indexIsRand = false;
+        nodep->bitp()->foreach([&](const AstNodeVarRef* vrefp) {
+            if (vrefp->varp()->rand().isRandomizable()) indexIsRand = true;
+        });
+        if (indexIsRand) {
             // Index depends on rand variable -- keep as SMT symbol.
             // Array index sort is 32-bit, so zero-extend narrower indices.
             AstNodeExpr* indexp = nodep->bitp()->unlinkFrBack(&handle);
