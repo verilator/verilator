@@ -6036,8 +6036,9 @@ class WidthVisitor final : public VNVisitor {
 
     void formatNoStringArg(AstNode* argp, char ch) {
         if (argp && argp->isString()) {
-            argp->v3error("$display-line format of '%"s + ch + "' illegal with string argument\n"
-                          << argp->warnMore() << "... Suggest use '%s'");
+            argp->v3error(
+                "$display-like format of '%"s + ch + "' illegal with non-numeric argument\n"
+                << argp->warnMore() << "... Suggest use '%s'");
         }
     }
 
@@ -6092,6 +6093,15 @@ class WidthVisitor final : public VNVisitor {
                 case '%': break;  // %% - just output a %
                 case 'm': break;  // %m - auto insert "name"
                 case 'l': break;  // %m - auto insert "library"
+                case 'c': {
+                    if (argp->widthMin() > 8) {
+                        // Technically legal, but surely not what the user intended.
+                        argp->v3warn(WIDTHTRUNC,
+                                     "$display-like format of %c format of > 8 bit value");
+                    }
+                    if (argp) argp = VN_AS(argp->nextp(), NodeExpr);
+                    break;
+                }
                 case 'd': {  // Convert decimal to either 'd' or '#'
                     if (argp) {
                         AstNodeExpr* const nextp = VN_AS(argp->nextp(), NodeExpr);

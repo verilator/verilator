@@ -436,16 +436,16 @@ class LinkResolveVisitor final : public VNVisitor {
         if (nodep->user2SetOnce()) return;
         iterateChildren(nodep);
         // Cleanup old-school displays without format arguments
-        if (!nodep->hasFormat()) {
+        if (nodep->exprFormat()) {
             UASSERT_OBJ(nodep->text() == "", nodep,
-                        "Non-format $sformatf should have \"\" format");
+                        "Non-format $sformatf should have text format == \"\"");
             if (VN_IS(nodep->exprsp(), Const)
                 && VN_AS(nodep->exprsp(), Const)->num().isFromString()) {
                 AstConst* const fmtp = VN_AS(nodep->exprsp()->unlinkFrBack(), Const);
                 nodep->text(fmtp->num().toString());
                 VL_DO_DANGLING(pushDeletep(fmtp), fmtp);
             }
-            nodep->hasFormat(true);
+            nodep->exprFormat(false);
         }
         const string newFormat = expectFormat(nodep, nodep->text(), nodep->exprsp(), false);
         nodep->text(newFormat);

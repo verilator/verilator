@@ -613,23 +613,23 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const VL_MT_STABLE {
 bool V3Number::displayedFmtLegal(char format, bool isScan) {
     // Is this a valid format letter?
     switch (std::tolower(format)) {
-    case 'b': return true;
-    case 'c': return true;
-    case 'd': return true;  // Unsigned decimal
-    case 'e': return true;
-    case 'f': return true;
-    case 'g': return true;
-    case 'h': return true;
-    case 'o': return true;
+    case 'b': return true;  // Binary
+    case 'c': return true;  // Character
+    case 'd': return true;  // Decimal; internal: Unsigned decimal
+    case 'e': return true;  // Floating
+    case 'f': return true;  // Floating
+    case 'g': return true;  // Floating
+    case 'h': return true;  // Hex
+    case 'o': return true;  // Octal
     case 'p': return true;  // Pattern
-    case 's': return true;
-    case 't': return true;
+    case 's': return true;  // String; internal: number-stored string
+    case 't': return true;  // Time
     case 'u': return true;  // Packed 2-state
     case 'v': return true;  // Strength
-    case 'x': return true;
+    case 'x': return true;  // Hex
     case 'z': return true;  // Packed 4-state
-    case '@': return true;  // Packed string
-    case '~': return true;  // Signed decimal
+    case '@': return true;  // Internal: Packed string
+    case '~': return true;  // Internal: Signed decimal
     case '*': return isScan;  // $scan ignore argument
     default: return false;
     }
@@ -748,8 +748,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const VL_MT_STAB
         return str;
     }  // case b/d/x/o
     case 'c': {
-        if (width() > 8)
-            fl->v3warn(WIDTHTRUNC, "$display-like format of %c format of > 8 bit value");
+        // V3Width has warning if > 8 bits
         const unsigned int v = bitsValue(0, 8);
         str.push_back(static_cast<char>(v));
         return str;

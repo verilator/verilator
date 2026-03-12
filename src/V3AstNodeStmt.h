@@ -595,7 +595,7 @@ public:
                char missingArgChar = 'd')
         : ASTGEN_SUPER_Display(fl)
         , m_displayType{dispType} {
-        fmtp(new AstSFormatF{fl, AstSFormatF::NoFormat{}, exprsp, missingArgChar});
+        fmtp(new AstSFormatF{fl, AstSFormatF::ExprFormat{}, exprsp, missingArgChar});
         this->filep(filep);
     }
     ASTGEN_MEMBERS_AstDisplay;
@@ -1112,7 +1112,7 @@ public:
     }
     AstSFormat(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* exprsp, char missingArgChar = 'd')
         : ASTGEN_SUPER_SFormat(fl) {
-        fmtp(new AstSFormatF{fl, AstSFormatF::NoFormat{}, exprsp, missingArgChar});
+        fmtp(new AstSFormatF{fl, AstSFormatF::ExprFormat{}, exprsp, missingArgChar});
         this->lhsp(lhsp);
     }
     ASTGEN_MEMBERS_AstSFormat;

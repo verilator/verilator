@@ -2157,32 +2157,34 @@ class AstSFormatF final : public AstNodeExpr {
     // @astgen op2 := scopeNamep : Optional[AstScopeName]
     string m_text;
     const bool m_hidden;  // Under display, etc
-    bool m_hasFormat;  // Has format code
+    bool m_exprFormat;  // Runtime Node* format, false = text() format code, false = possibly r
     const char m_missingArgChar;  // Format code when argument without format, 'h'/'o'/'b'
     VTimescale m_timeunit;  // Parent module time unit
 public:
-    class NoFormat {};
     AstSFormatF(FileLine* fl, const string& text, bool hidden, AstNodeExpr* exprsp,
                 char missingArgChar = 'd')
         : ASTGEN_SUPER_SFormatF(fl)
         , m_text{text}
         , m_hidden{hidden}
-        , m_hasFormat{true}
+        , m_exprFormat{false}
         , m_missingArgChar{missingArgChar} {
         dtypeSetString();
         addExprsp(exprsp);
     }
-    AstSFormatF(FileLine* fl, NoFormat, AstNodeExpr* exprsp, char missingArgChar = 'd',
+    class ExprFormat {};
+    AstSFormatF(FileLine* fl, ExprFormat, AstNodeExpr* exprsp, char missingArgChar = 'd',
                 bool hidden = true)
         : ASTGEN_SUPER_SFormatF(fl)
         , m_text{""}
         , m_hidden{hidden}
-        , m_hasFormat{false}
+        , m_exprFormat{true}
         , m_missingArgChar{missingArgChar} {
         dtypeSetString();
         addExprsp(exprsp);
     }
     ASTGEN_MEMBERS_AstSFormatF;
+    void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
     string name() const override VL_MT_STABLE { return m_text; }
     void name(const string& name) override { m_text = name; }
     int instrCount() const override { return INSTR_COUNT_PLI; }
@@ -2196,8 +2198,8 @@ public:
         return (name().find("%m") != string::npos || name().find("%M") != string::npos);
     }
     bool hidden() const { return m_hidden; }
-    bool hasFormat() const { return m_hasFormat; }
-    void hasFormat(bool flag) { m_hasFormat = flag; }
+    bool exprFormat() const { return m_exprFormat; }
+    void exprFormat(bool flag) { m_exprFormat = flag; }
     char missingArgChar() const { return m_missingArgChar; }
     VTimescale timeunit() const { return m_timeunit; }
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }

@@ -1,20 +1,20 @@
-%Error: t/t_display_type_bad.v:11:29: $display-line format of '%d' illegal with string argument
+%Error: t/t_display_type_bad.v:11:29: $display-like format of '%d' illegal with non-numeric argument
                                     : ... note: In instance 't'
                                     : ... Suggest use '%s'
    11 |     $display("%d %x %f %t", s, s, s, s);
       |                             ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_display_type_bad.v:11:32: $display-line format of '%x' illegal with string argument
+%Error: t/t_display_type_bad.v:11:32: $display-like format of '%x' illegal with non-numeric argument
                                     : ... note: In instance 't'
                                     : ... Suggest use '%s'
    11 |     $display("%d %x %f %t", s, s, s, s);
       |                                ^
-%Error: t/t_display_type_bad.v:11:35: $display-line format of '%f' illegal with string argument
+%Error: t/t_display_type_bad.v:11:35: $display-like format of '%f' illegal with non-numeric argument
                                     : ... note: In instance 't'
                                     : ... Suggest use '%s'
    11 |     $display("%d %x %f %t", s, s, s, s);
       |                                   ^
-%Error: t/t_display_type_bad.v:11:38: $display-line format of '%t' illegal with string argument
+%Error: t/t_display_type_bad.v:11:38: $display-like format of '%t' illegal with non-numeric argument
                                     : ... note: In instance 't'
                                     : ... Suggest use '%s'
    11 |     $display("%d %x %f %t", s, s, s, s);

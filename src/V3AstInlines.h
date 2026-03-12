@@ -153,7 +153,7 @@ AstAlways::AstAlways(AstAssignW* assignp)
 
 AstElabDisplay::AstElabDisplay(FileLine* fl, VDisplayType dispType, AstNodeExpr* exprsp)
     : ASTGEN_SUPER_ElabDisplay(fl) {
-    addFmtp(new AstSFormatF{fl, AstSFormatF::NoFormat{}, exprsp});
+    addFmtp(new AstSFormatF{fl, "", true, exprsp});
     m_displayType = dispType;
 }
 

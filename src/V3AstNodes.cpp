@@ -2691,6 +2691,14 @@ void AstPatMember::dumpJson(std::ostream& str) const {
 }
 void AstNodeTriop::dump(std::ostream& str) const { this->AstNodeExpr::dump(str); }
 void AstNodeTriop::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
+void AstSFormatF::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (exprFormat()) str << " [EXPRFMT]";
+}
+void AstSFormatF::dumpJson(std::ostream& str) const {
+    dumpJsonGen(str);
+    dumpJsonBoolFuncIf(str, exprFormat);
+}
 void AstSel::dump(std::ostream& str) const {
     this->AstNodeBiop::dump(str);
     str << " widthConst=" << this->widthConst();
