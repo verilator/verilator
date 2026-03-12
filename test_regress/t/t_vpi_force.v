@@ -4,6 +4,13 @@
 // SPDX-License-Identifier: CC0-1.0
 // ======================================================================
 
+// verilog_format: off
+`define stop $stop
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+
+// verilog_format: on
 `define STRINGIFY(x) `"x`"
 
 `ifdef VERILATOR_COMMENTS
@@ -18,7 +25,7 @@ module t;
 
   initial begin
     clk = 0;
-    forever #1 clk = ~clk;
+    forever #2 clk = ~clk;
   end
 
   Test test (.clk(clk));
@@ -44,6 +51,9 @@ module Test (
   extern "C" int checkValuesForced();
   extern "C" int checkValuesPartiallyForced();
   extern "C" int checkValuesReleased();
+  extern "C" int checkNonContinuousValuesForced();
+  extern "C" int checkContinuousValuesReleased();
+  extern "C" int checkNonContinuousValuesPartiallyForced();
 `verilog
 `endif
 `else
@@ -59,6 +69,9 @@ module Test (
   import "DPI-C" context function int checkValuesPartiallyForced();
   import "DPI-C" context function int checkValuesForced();
   import "DPI-C" context function int checkValuesReleased();
+  import "DPI-C" context function int checkNonContinuousValuesForced();
+  import "DPI-C" context function int checkContinuousValuesReleased();
+  import "DPI-C" context function int checkNonContinuousValuesPartiallyForced();
 `endif
 
   // Verify that vpi_put_value still works for strings
@@ -451,39 +464,39 @@ module Test (
   endtask
 
   task automatic svCheckValuesForced();
-    if(onebit != 0) $stop;
-    if(intval != 32'h55555555) $stop;
-    if(vectorC != 8'h55) $stop;
-    if(vectorQ != 62'h15555555_55555555) $stop;
-    if(vectorW != 128'h55555555_55555555_55555555_55555555) $stop;
-    if(real1 != 123456.789) $stop;
-    if(textHalf != "T2") $stop;
-    if(textLong != "44Four44") $stop;
-    if(text != "lorem ipsum") $stop;
-    if(binString != 8'b01010101) $stop;
-    if(octString != 15'o52525) $stop;
-    if(hexString != 64'h5555555555555555) $stop;
-    if(decStringC != 8'h55) $stop;
-    if(decStringS != 16'h5555) $stop;
-    if(decStringI != 32'h55555555) $stop;
-    if(decStringQ != 64'd6148914691236517205) $stop;
+    `checkh(onebit, 0);
+    `checkh(intval, 32'h55555555);
+    `checkh(vectorC, 8'h55);
+    `checkh(vectorQ, 62'h15555555_55555555);
+    `checkh(vectorW, 128'h55555555_55555555_55555555_55555555);
+    `checkr(real1, 123456.789);
+    `checks(textHalf, "T2");
+    `checks(textLong, "44Four44");
+    `checks(text, "lorem ipsum");
+    `checkh(binString, 8'b01010101);
+    `checkh(octString, 15'o52525);
+    `checkh(hexString, 64'h5555555555555555);
+    `checkh(decStringC, 8'h55);
+    `checkh(decStringS, 16'h5555);
+    `checkh(decStringI, 32'h55555555);
+    `checkh(decStringQ, 64'd6148914691236517205);
 
-    if(onebitContinuously != 0) $stop;
-    if(intvalContinuously != 32'h55555555) $stop;
-    if(vectorCContinuously != 8'h55) $stop;
-    if(vectorQContinuously != 62'h15555555_55555555) $stop;
-    if(vectorWContinuously != 128'h55555555_55555555_55555555_55555555) $stop;
-    if(real1Continuously != 123456.789) $stop;
-    if(textHalfContinuously != "T2") $stop;
-    if(textLongContinuously != "44Four44") $stop;
-    if(textContinuously != "lorem ipsum") $stop;
-    if(binStringContinuously != 8'b01010101) $stop;
-    if(octStringContinuously != 15'o52525) $stop;
-    if(hexStringContinuously != 64'h5555555555555555) $stop;
-    if(decStringCContinuously != 8'h55) $stop;
-    if(decStringSContinuously != 16'h5555) $stop;
-    if(decStringIContinuously != 32'h55555555) $stop;
-    if(decStringQContinuously != 64'd6148914691236517205) $stop;
+    `checkh(onebitContinuously, 0);
+    `checkh(intvalContinuously, 32'h55555555);
+    `checkh(vectorCContinuously, 8'h55);
+    `checkh(vectorQContinuously, 62'h15555555_55555555);
+    `checkh(vectorWContinuously, 128'h55555555_55555555_55555555_55555555);
+    `checkr(real1Continuously, 123456.789);
+    `checks(textHalfContinuously, "T2");
+    `checks(textLongContinuously, "44Four44");
+    `checks(textContinuously, "lorem ipsum");
+    `checkh(binStringContinuously, 8'b01010101);
+    `checkh(octStringContinuously, 15'o52525);
+    `checkh(hexStringContinuously, 64'h5555555555555555);
+    `checkh(decStringCContinuously, 8'h55);
+    `checkh(decStringSContinuously, 16'h5555);
+    `checkh(decStringIContinuously, 32'h55555555);
+    `checkh(decStringQContinuously, 64'd6148914691236517205);
   endtask
 
   task automatic vpiCheckValuesForced();
@@ -509,36 +522,121 @@ module Test (
     end
   endtask
 
-  task automatic svCheckValuesPartiallyForced();
-    if (intval != 32'hAAAA_5555) $stop;
-    if (vectorC != 8'h A5) $stop;
-    if (vectorQ != 62'h2AAAAAAAD5555555) $stop;
-    if (vectorW != 128'hAAAAAAAA_AAAAAAAA_55555555_55555555) $stop;
-    if (textHalf != "H2") $stop;
-    if (textLong != "Lonur44") $stop;
-    if (text != "Verilog Tesem ipsum") $stop;
-    if (binString != 8'b1010_0101) $stop;
-    if (octString != 15'b01010101_1010101) $stop;
-    if (hexString != 64'hAAAAAAAA_55555555) $stop;
-    if (decStringC != 8'hA5) $stop;
-    if (decStringS != 16'hAA55) $stop;
-    if (decStringI != 32'hAAAA_5555) $stop;
-    if (decStringQ != 64'hAAAAAAAA_55555555) $stop;
+  task automatic svCheckNonContinuousValuesForced();
+    `checkh(onebit, 0);
+    `checkh(intval, 32'h55555555);
+    `checkh(vectorC, 8'h55);
+    `checkh(vectorQ, 62'h15555555_55555555);
+    `checkh(vectorW, 128'h55555555_55555555_55555555_55555555);
+    `checkr(real1, 123456.789);
+    `checks(textHalf, "T2");
+    `checks(textLong, "44Four44");
+    `checks(text, "lorem ipsum");
+    `checkh(binString, 8'b01010101);
+    `checkh(octString, 15'o52525);
+    `checkh(hexString, 64'h5555555555555555);
+    `checkh(decStringC, 8'h55);
+    `checkh(decStringS, 16'h5555);
+    `checkh(decStringI, 32'h55555555);
+    `checkh(decStringQ, 64'd6148914691236517205);
+  endtask
 
-    if (intvalContinuously != 32'hAAAA_5555) $stop;
-    if (vectorCContinuously != 8'h A5) $stop;
-    if (vectorQContinuously != 62'h2AAAAAAAD5555555) $stop;
-    if (vectorWContinuously != 128'hAAAAAAAA_AAAAAAAA_55555555_55555555) $stop;
-    if (textHalfContinuously != "H2") $stop;
-    if (textLongContinuously != "Lonur44") $stop;
-    if (textContinuously != "Verilog Tesem ipsum") $stop;
-    if (binStringContinuously != 8'b1010_0101) $stop;
-    if (octStringContinuously != 15'b01010101_1010101) $stop;
-    if (hexStringContinuously != 64'hAAAAAAAA_55555555) $stop;
-    if (decStringCContinuously != 8'hA5) $stop;
-    if (decStringSContinuously != 16'hAA55) $stop;
-    if (decStringIContinuously != 32'hAAAA_5555) $stop;
-    if (decStringQContinuously != 64'hAAAAAAAA_55555555) $stop;
+  // Check that the values *after releasing* still have the forced value
+  task automatic vpiCheckNonContinuousValuesForced();
+    integer vpiStatus = 1;
+`ifdef VERILATOR
+`ifdef USE_VPI_NOT_DPI
+    vpiStatus = $c32("checkNonContinuousValuesForced()");
+`else
+    vpiStatus = checkNonContinuousValuesForced();
+`endif
+`elsif IVERILOG
+    vpiStatus = $checkNonContinuousValuesForced;
+`elsif USE_VPI_NOT_DPI
+    vpiStatus = $checkNonContinuousValuesForced;
+`else
+    vpiStatus = checkNonContinuousValuesForced();
+`endif
+
+    if (vpiStatus != 0) begin
+      $write("%%Error: t_vpi_force.cpp:%0d:", vpiStatus);
+      $display("C Test failed (value of non-continuously assigned signal after releasing does not match expectation)");
+      $stop;
+    end
+  endtask
+
+  task automatic svCheckContinuousValuesReleased();
+    `checkh(onebitContinuously, 1);
+    `checkh(intvalContinuously, 32'hAAAAAAAA);
+    `checkh(vectorCContinuously, 8'hAA);
+    `checkh(vectorQContinuously, 62'h2AAAAAAA_AAAAAAAA);
+    `checkh(vectorWContinuously, 128'hAAAAAAAA_AAAAAAAA_AAAAAAAA_AAAAAAAA);
+    `checkr(real1Continuously, 1.0);
+    `checks(textHalfContinuously, "Hf");
+    `checks(textLongContinuously, "Long64b");
+    `checks(textContinuously, "Verilog Test module");
+    `checkh(binStringContinuously, 8'b10101010);
+    `checkh(octStringContinuously, 15'o25252);
+    `checkh(hexStringContinuously, 64'hAAAAAAAAAAAAAAAA);
+    `checkh(decStringCContinuously, 8'hAA);
+    `checkh(decStringSContinuously, 16'hAAAA);
+    `checkh(decStringIContinuously, 32'hAAAAAAAA);
+    `checkh(decStringQContinuously, 64'd12297829382473034410);
+  endtask
+
+  task automatic vpiCheckContinuousValuesReleased();
+    integer vpiStatus = 1;
+`ifdef VERILATOR
+`ifdef USE_VPI_NOT_DPI
+    vpiStatus = $c32("checkContinuousValuesReleased()");
+`else
+    vpiStatus = checkContinuousValuesReleased();
+`endif
+`elsif IVERILOG
+    vpiStatus = $checkContinuousValuesReleased;
+`elsif USE_VPI_NOT_DPI
+    vpiStatus = $checkContinuousValuesReleased;
+`else
+    vpiStatus = checkContinuousValuesReleased();
+`endif
+
+    if (vpiStatus != 0) begin
+      $write("%%Error: t_vpi_force.cpp:%0d:", vpiStatus);
+      $display("C Test failed (value of continuously assigned signal after releasing does not match expectation)");
+      $stop;
+    end
+  endtask
+
+  task automatic svCheckValuesPartiallyForced();
+    `checkh(intval, 32'hAAAA_5555);
+    `checkh(vectorC, 8'h A5);
+    `checkh(vectorQ, 62'h2AAAAAAAD5555555);
+    `checkh(vectorW, 128'hAAAAAAAA_AAAAAAAA_55555555_55555555);
+    `checks(textHalf, "H2");
+    `checks(textLong, "Lonur44");
+    `checks(text, "Verilog Tesem ipsum");
+    `checkh(binString, 8'b1010_0101);
+    `checkh(octString, 15'b01010101_1010101);
+    `checkh(hexString, 64'hAAAAAAAA_55555555);
+    `checkh(decStringC, 8'hA5);
+    `checkh(decStringS, 16'hAA55);
+    `checkh(decStringI, 32'hAAAA_5555);
+    `checkh(decStringQ, 64'hAAAAAAAA_55555555);
+
+    `checkh(intvalContinuously, 32'hAAAA_5555);
+    `checkh(vectorCContinuously, 8'h A5);
+    `checkh(vectorQContinuously, 62'h2AAAAAAAD5555555);
+    `checkh(vectorWContinuously, 128'hAAAAAAAA_AAAAAAAA_55555555_55555555);
+    `checks(textHalfContinuously, "H2");
+    `checks(textLongContinuously, "Lonur44");
+    `checks(textContinuously, "Verilog Tesem ipsum");
+    `checkh(binStringContinuously, 8'b1010_0101);
+    `checkh(octStringContinuously, 15'b01010101_1010101);
+    `checkh(hexStringContinuously, 64'hAAAAAAAA_55555555);
+    `checkh(decStringCContinuously, 8'hA5);
+    `checkh(decStringSContinuously, 16'hAA55);
+    `checkh(decStringIContinuously, 32'hAAAA_5555);
+    `checkh(decStringQContinuously, 64'hAAAAAAAA_55555555);
   endtask
 
   task automatic vpiCheckValuesPartiallyForced();
@@ -564,40 +662,81 @@ module Test (
     end
   endtask
 
-  task automatic svCheckValuesReleased();
-    if (onebit != 1) $stop;
-    if (intval != 32'hAAAAAAAA) $stop;
-    if (vectorC != 8'hAA) $stop;
-    if (vectorQ != 62'h2AAAAAAA_AAAAAAAA) $stop;
-    if (vectorW != 128'hAAAAAAAA_AAAAAAAA_AAAAAAAA_AAAAAAAA) $stop;
-    if (real1 != 1.0) $stop;
-    if (textHalf != "Hf") $stop;
-    if (textLong != "Long64b") $stop;
-    if (text != "Verilog Test module") $stop;
-    if (binString != 8'b10101010) $stop;
-    if (octString != 15'o25252) $stop;
-    if (hexString != 64'hAAAAAAAAAAAAAAAA) $stop;
-    if (decStringC != 8'hAA) $stop;
-    if (decStringS != 16'hAAAA) $stop;
-    if (decStringI != 32'hAAAAAAAA) $stop;
-    if (decStringQ != 64'd12297829382473034410) $stop;
+  task automatic svCheckNonContinuousValuesPartiallyForced();
+    `checkh(intval, 32'hAAAA_5555);
+    `checkh(vectorC, 8'h A5);
+    `checkh(vectorQ, 62'h2AAAAAAAD5555555);
+    `checkh(vectorW, 128'hAAAAAAAA_AAAAAAAA_55555555_55555555);
+    `checks(textHalf, "H2");
+    `checks(textLong, "Lonur44");
+    `checks(text, "Verilog Tesem ipsum");
+    `checkh(binString, 8'b1010_0101);
+    `checkh(octString, 15'b01010101_1010101);
+    `checkh(hexString, 64'hAAAAAAAA_55555555);
+    `checkh(decStringC, 8'hA5);
+    `checkh(decStringS, 16'hAA55);
+    `checkh(decStringI, 32'hAAAA_5555);
+    `checkh(decStringQ, 64'hAAAAAAAA_55555555);
+  endtask
 
-    if (onebitContinuously != 1) $stop;
-    if (intvalContinuously != 32'hAAAAAAAA) $stop;
-    if (vectorCContinuously != 8'hAA) $stop;
-    if (vectorQContinuously != 62'h2AAAAAAA_AAAAAAAA) $stop;
-    if (vectorWContinuously != 128'hAAAAAAAA_AAAAAAAA_AAAAAAAA_AAAAAAAA) $stop;
-    if (real1Continuously != 1.0) $stop;
-    if (textHalfContinuously != "Hf") $stop;
-    if (textLongContinuously != "Long64b") $stop;
-    if (textContinuously != "Verilog Test module") $stop;
-    if (binStringContinuously != 8'b10101010) $stop;
-    if (octStringContinuously != 15'o25252) $stop;
-    if (hexStringContinuously != 64'hAAAAAAAAAAAAAAAA) $stop;
-    if (decStringCContinuously != 8'hAA) $stop;
-    if (decStringSContinuously != 16'hAAAA) $stop;
-    if (decStringIContinuously != 32'hAAAAAAAA) $stop;
-    if (decStringQContinuously != 64'd12297829382473034410) $stop;
+  // Check that the values *after releasing* still have the partially forced value
+  task automatic vpiCheckNonContinuousValuesPartiallyForced();
+    integer vpiStatus = 1;
+`ifdef VERILATOR
+`ifdef USE_VPI_NOT_DPI
+    vpiStatus = $c32("checkNonContinuousValuesPartiallyForced()");
+`else
+    vpiStatus = checkNonContinuousValuesPartiallyForced();
+`endif
+`elsif IVERILOG
+    vpiStatus = $checkNonContinuousValuesPartiallyForced;
+`elsif USE_VPI_NOT_DPI
+    vpiStatus = $checkNonContinuousValuesPartiallyForced;
+`else
+    vpiStatus = checkNonContinuousValuesPartiallyForced();
+`endif
+
+    if (vpiStatus != 0) begin
+      $write("%%Error: t_vpi_force.cpp:%0d:", vpiStatus);
+      $display("C Test failed (value of non-continuously assigned signal after releasing from partial force does not match expectation)");
+      $stop;
+    end
+  endtask
+
+  task automatic svCheckValuesReleased();
+    `checkh(onebit, 1);
+    `checkh(intval, 32'hAAAAAAAA);
+    `checkh(vectorC, 8'hAA);
+    `checkh(vectorQ, 62'h2AAAAAAA_AAAAAAAA);
+    `checkh(vectorW, 128'hAAAAAAAA_AAAAAAAA_AAAAAAAA_AAAAAAAA);
+    `checkr(real1, 1.0);
+    `checks(textHalf, "Hf");
+    `checks(textLong, "Long64b");
+    `checks(text, "Verilog Test module");
+    `checkh(binString, 8'b10101010);
+    `checkh(octString, 15'o25252);
+    `checkh(hexString, 64'hAAAAAAAAAAAAAAAA);
+    `checkh(decStringC, 8'hAA);
+    `checkh(decStringS, 16'hAAAA);
+    `checkh(decStringI, 32'hAAAAAAAA);
+    `checkh(decStringQ, 64'd12297829382473034410);
+
+    `checkh(onebitContinuously, 1);
+    `checkh(intvalContinuously, 32'hAAAAAAAA);
+    `checkh(vectorCContinuously, 8'hAA);
+    `checkh(vectorQContinuously, 62'h2AAAAAAA_AAAAAAAA);
+    `checkh(vectorWContinuously, 128'hAAAAAAAA_AAAAAAAA_AAAAAAAA_AAAAAAAA);
+    `checkr(real1Continuously, 1.0);
+    `checks(textHalfContinuously, "Hf");
+    `checks(textLongContinuously, "Long64b");
+    `checks(textContinuously, "Verilog Test module");
+    `checkh(binStringContinuously, 8'b10101010);
+    `checkh(octStringContinuously, 15'o25252);
+    `checkh(hexStringContinuously, 64'hAAAAAAAAAAAAAAAA);
+    `checkh(decStringCContinuously, 8'hAA);
+    `checkh(decStringSContinuously, 16'hAAAA);
+    `checkh(decStringIContinuously, 32'hAAAAAAAA);
+    `checkh(decStringQContinuously, 64'd12297829382473034410);
   endtask
 
   task automatic vpiCheckValuesReleased();
@@ -636,54 +775,80 @@ $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
     #1 vpiCheckInertialDelay();
     // Force and check non-public, but forceable signal
     force nonPublic = 0;
-    #4 if(nonPublic != 0) $stop;
+    #8 `checkh(nonPublic, 0);
     release nonPublic;
-    #4 if (nonPublic != 1) $stop;
+    #8 `checkh(nonPublic, 1);
 `endif
 
+    // Force through VPI, release through VPI
     vpiForceValues();
-
     // Time delay to ensure setting and checking values does not happen
     // at the same time, so that the signals can have their values overwritten
     // by other processes
-    #4 vpiCheckValuesForced();
+    #8 vpiCheckValuesForced();
     svCheckValuesForced();
-    #4 vpiReleaseValues();
-    #4 vpiCheckValuesReleased();
+    // Wait until negedge, then release
+    @(negedge clk) vpiReleaseValues();
+    // After release, but before posedge: Non-continuously assigned signals
+    // should still have their forced value, because the posedge re-assigning
+    // the non-continuously assigned signals has not happened yet, but
+    // continuously assigned signals should have their non-forced value again
+    #1 vpiCheckNonContinuousValuesForced();
+    vpiCheckContinuousValuesReleased();
+    svCheckNonContinuousValuesForced();
+    svCheckContinuousValuesReleased();
+    #8; // All signals should be released by now
+    vpiCheckValuesReleased();
     svCheckValuesReleased();
 
     // Force through VPI, release through Verilog
-    #4 vpiForceValues();
-    #4 vpiCheckValuesForced();
+    #8 vpiForceValues();
+    #8 vpiCheckValuesForced();
     svCheckValuesForced();
-    #4 svReleaseValues();
-    #4 vpiCheckValuesReleased();
+    @(negedge clk) svReleaseValues();
+    #1 vpiCheckNonContinuousValuesForced();
+    vpiCheckContinuousValuesReleased();
+    svCheckNonContinuousValuesForced();
+    svCheckContinuousValuesReleased();
+    #8 vpiCheckValuesReleased();
     svCheckValuesReleased();
 
     // Force through Verilog, release through VPI
-    #4 svForceValues();
-    #4 vpiCheckValuesForced();
+    #8 svForceValues();
+    #8 vpiCheckValuesForced();
     svCheckValuesForced();
-    #4 vpiReleaseValues();
-    #4 vpiCheckValuesReleased();
+    @(negedge clk) vpiReleaseValues();
+    #1 vpiCheckNonContinuousValuesForced();
+    vpiCheckContinuousValuesReleased();
+    svCheckNonContinuousValuesForced();
+    svCheckContinuousValuesReleased();
+    #8 vpiCheckValuesReleased();
     svCheckValuesReleased();
 
     // Force only some bits, check if __VforceRd yields correct signal,
     // release through VPI
-    #4 svPartiallyForceValues();
-    #4 vpiCheckValuesPartiallyForced();
+    #8 svPartiallyForceValues();
+    #8 vpiCheckValuesPartiallyForced();
     svCheckValuesPartiallyForced();
-    #4 vpiReleasePartiallyForcedValues();
-    #4 vpiCheckValuesReleased();
+    @(negedge clk) vpiReleasePartiallyForcedValues();
+    #1 vpiCheckNonContinuousValuesPartiallyForced();
+    vpiCheckContinuousValuesReleased();
+    svCheckNonContinuousValuesPartiallyForced();
+    svCheckContinuousValuesReleased();
+    #8 vpiCheckValuesReleased();
     svCheckValuesReleased();
 
     // Force only some bits, check if __VforceRd yields correct signal,
     // release through Verilog
-    #4 svPartiallyForceValues();
-    #4 vpiCheckValuesPartiallyForced();
+    #8 svPartiallyForceValues();
+    #8 vpiCheckValuesPartiallyForced();
     svCheckValuesPartiallyForced();
-    #4 svReleaseValues();
-    #4 vpiCheckValuesReleased();
+    @(negedge clk) svReleaseValues();
+    #1 vpiCheckNonContinuousValuesPartiallyForced();
+    vpiCheckContinuousValuesReleased();
+    svCheckNonContinuousValuesPartiallyForced();
+    svCheckContinuousValuesReleased();
+    #8 vpiCheckValuesReleased();
     svCheckValuesReleased();
 
 

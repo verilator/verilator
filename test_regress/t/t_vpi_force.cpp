@@ -360,6 +360,32 @@ extern "C" int checkValuesForced(void) {
     return 0;
 }
 
+extern "C" int checkNonContinuousValuesForced(void) {
+    // Non-continuously assigned (e.g. clocked) signals retain the forced value after releasing
+    // until the they are updated again, so check that they are still at the forced value
+    CHECK_RESULT_Z(  // NOLINT(concurrency-mt-unsafe)
+        std::any_of(TestSignals.begin(), TestSignals.end(), [](const TestSignal& signal) {
+            CHECK_RESULT_Z(  // NOLINT(concurrency-mt-unsafe)
+                checkValue(scopeName, signal.signalName, signal.valueType, signal.forceValue));
+            return 0;
+        }));
+    return 0;
+}
+
+extern "C" int checkContinuousValuesReleased(void) {
+    // Continuously assigned signals return to their original value immediately after releasing
+    CHECK_RESULT_Z(  // NOLINT(concurrency-mt-unsafe)
+        std::any_of(TestSignals.begin(), TestSignals.end(), [](const TestSignal& signal) {
+            const std::string continouslyAssignedSignal
+                = std::string{signal.signalName} + "Continuously";
+            CHECK_RESULT_Z(  // NOLINT(concurrency-mt-unsafe)
+                checkValue(scopeName, continouslyAssignedSignal, signal.valueType,
+                           signal.releaseValue));
+            return 0;
+        }));
+    return 0;
+}
+
 extern "C" int checkValuesPartiallyForced(void) {
     // Clocked signals
     CHECK_RESULT_Z(  // NOLINT(concurrency-mt-unsafe)
@@ -378,6 +404,21 @@ extern "C" int checkValuesPartiallyForced(void) {
                 CHECK_RESULT_Z(  // NOLINT(concurrency-mt-unsafe)
                     checkValue(scopeName, std::string{signal.signalName} + "Continuously",
                                signal.valueType, signal.partialForceValue.first));
+            return 0;
+        }));
+    return 0;
+}
+
+extern "C" int checkNonContinuousValuesPartiallyForced(void) {
+    // Non-continuously assigned (e.g. clocked) signals retain the partially forced value after
+    // releasing until the they are updated again, so check that they are still at the partially
+    // forced value
+    CHECK_RESULT_Z(  // NOLINT(concurrency-mt-unsafe)
+        std::any_of(TestSignals.begin(), TestSignals.end(), [](const TestSignal& signal) {
+            if (signal.partialForceValue.second)
+                CHECK_RESULT_Z(  // NOLINT(concurrency-mt-unsafe)
+                    checkValue(scopeName, signal.signalName, signal.valueType,
+                               signal.partialForceValue.first));
             return 0;
         }));
     return 0;
@@ -631,12 +672,45 @@ static int checkValuesForcedVpi() {
     return 0;
 }
 
+static int checkNonContinuousValuesForcedVpi() {
+    TestVpiHandle href = vpi_handle(vpiSysTfCall, 0);
+    s_vpi_value vpi_value;
+
+    vpi_value.format = vpiIntVal;
+    vpi_value.value.integer = checkNonContinuousValuesForced();
+    vpi_put_value(href, &vpi_value, NULL, vpiNoDelay);
+
+    return 0;
+}
+
+static int checkContinuousValuesReleasedVpi() {
+    TestVpiHandle href = vpi_handle(vpiSysTfCall, 0);
+    s_vpi_value vpi_value;
+
+    vpi_value.format = vpiIntVal;
+    vpi_value.value.integer = checkContinuousValuesReleased();
+    vpi_put_value(href, &vpi_value, NULL, vpiNoDelay);
+
+    return 0;
+}
+
 static int checkValuesPartiallyForcedVpi() {
     TestVpiHandle href = vpi_handle(vpiSysTfCall, 0);
     s_vpi_value vpi_value;
 
     vpi_value.format = vpiIntVal;
     vpi_value.value.integer = checkValuesPartiallyForced();
+    vpi_put_value(href, &vpi_value, NULL, vpiNoDelay);
+
+    return 0;
+}
+
+static int checkNonContinuousValuesPartiallyForcedVpi() {
+    TestVpiHandle href = vpi_handle(vpiSysTfCall, 0);
+    s_vpi_value vpi_value;
+
+    vpi_value.format = vpiIntVal;
+    vpi_value.value.integer = checkNonContinuousValuesPartiallyForced();
     vpi_put_value(href, &vpi_value, NULL, vpiNoDelay);
 
     return 0;
@@ -686,7 +760,7 @@ static int releasePartiallyForcedValuesVpi() {
     return 0;
 }
 
-std::array<s_vpi_systf_data, 6> vpi_systf_data
+std::array<s_vpi_systf_data, 9> vpi_systf_data
     = {s_vpi_systf_data{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$forceValues",
                         (PLI_INT32(*)(PLI_BYTE8*))forceValuesVpi, 0, 0, 0},
        s_vpi_systf_data{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$releaseValues",
@@ -695,8 +769,15 @@ std::array<s_vpi_systf_data, 6> vpi_systf_data
                         (PLI_INT32(*)(PLI_BYTE8*))releasePartiallyForcedValuesVpi, 0, 0, 0},
        s_vpi_systf_data{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$checkValuesForced",
                         (PLI_INT32(*)(PLI_BYTE8*))checkValuesForcedVpi, 0, 0, 0},
+       s_vpi_systf_data{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$checkNonContinuousValuesForced",
+                        (PLI_INT32(*)(PLI_BYTE8*))checkNonContinuousValuesForcedVpi, 0, 0, 0},
+       s_vpi_systf_data{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$checkContinuousValuesReleased",
+                        (PLI_INT32(*)(PLI_BYTE8*))checkContinuousValuesReleasedVpi, 0, 0, 0},
        s_vpi_systf_data{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$checkValuesPartiallyForced",
                         (PLI_INT32(*)(PLI_BYTE8*))checkValuesPartiallyForcedVpi, 0, 0, 0},
+       s_vpi_systf_data{
+           vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$checkNonContinuousValuesPartiallyForced",
+           (PLI_INT32(*)(PLI_BYTE8*))checkNonContinuousValuesPartiallyForcedVpi, 0, 0, 0},
        s_vpi_systf_data{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$checkValuesReleased",
                         (PLI_INT32(*)(PLI_BYTE8*))checkValuesReleasedVpi, 0, 0, 0}};
 

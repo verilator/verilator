@@ -2713,6 +2713,26 @@ bool vl_check_format(const VerilatedVpioVarBase* vop, const p_vpi_value valuep, 
     return status;
 }
 
+// Get a VPI format that can be used to fully represent a signal of the given type
+PLI_INT32 vl_get_vltype_format(VerilatedVarType vlType) {
+    switch (vlType) {
+    case VLVT_UINT8:
+    case VLVT_UINT16:
+    case VLVT_UINT32:
+    case VLVT_UINT64:
+    case VLVT_WDATA: return vpiVectorVal;
+    case VLVT_STRING:
+        return vpiStringVal;  // LCOV_EXCL_LINE - vl_get_vltype_format is only used in
+                              // vpi_put_value for releasing a forceable signal, and string signals
+                              // cannot be forced
+    case VLVT_REAL: return vpiRealVal;
+    default:  // LCOV_EXCL_START - Cannot test, because vpi_put_value would already exit due to
+              // failed vl_check_format before calling this
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vltype (%d)", __func__, vlType);
+        return vpiUndefined;
+    }  // LCOV_EXCL_STOP
+}
+
 static void vl_strprintf(std::string& buffer, char const* fmt, ...) {
     va_list args, args_copy;
     va_start(args, fmt);
@@ -3179,6 +3199,18 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             if (baseSignalVop->varp()->isContinuously())
                 VerilatedVpiImp::setAllBitsToValue(forceEnableSignalVop, 0);
 
+            // For writing back the forced value to a non-continuously assigned base signal in the
+            // release case, need to get the forced signal's raw data, since valuep could have
+            // a format that modifies the data (e.g. vpiStringVal which pads with spaces)
+            const s_vpi_value forcedValue
+                = baseSignalVop->varp()->isContinuously() ? s_vpi_value{} : [&baseSignalVop]() {
+                      s_vpi_value val{.format
+                                      = vl_get_vltype_format(baseSignalVop->varp()->vltype()),
+                                      .value{}};
+                      vl_vpi_get_value(baseSignalVop, &val);
+                      return val;
+                  }();
+
             vl_vpi_get_value(baseSignalVop, valuep);
 
             t_vpi_error_info baseValueGetError{};
@@ -3202,8 +3234,14 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                 VL_VPI_ERROR_RESET_();
             }  // LCOV_EXCL_STOP
 
-            if (!baseSignalVop->varp()->isContinuously())
+            if (!baseSignalVop->varp()->isContinuously()) {
                 VerilatedVpiImp::setAllBitsToValue(forceEnableSignalVop, 0);
+
+                // If the signal is not continuously assigned, it should keep the forced value
+                // until the next time it is assigned in the simulation, so the forced value is
+                // written to the base signal
+                vpi_put_value(object, const_cast<p_vpi_value>(&forcedValue), nullptr, vpiNoDelay);
+            }
 
             return nullptr;
         }
