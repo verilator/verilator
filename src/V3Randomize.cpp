@@ -850,7 +850,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             if (baseName.empty()) return nullptr;
             return buildArraySelNameExpr(fl, baseName, selp);
         }
-        // Packed struct member: SEL(ARRAYSEL(...)) — bit select on array element.
+        // Packed struct member: SEL(ARRAYSEL(...)) -- bit select on array element.
         // Solver registers the whole element, so promote to array element level.
         if (const AstSel* const bitSelp = VN_CAST(exprp, Sel)) {
             return buildSolveBeforeNameExpr(fl, bitSelp->fromp());
