@@ -773,16 +773,14 @@ class ConstraintExprVisitor final : public VNVisitor {
     // Returns nullptr for unsupported expression types.
     AstNodeExpr* buildSolveBeforeNameExpr(FileLine* fl, AstNodeExpr* exprp) {
         if (const AstVarRef* const varrefp = VN_CAST(exprp, VarRef)) {
-            AstCExpr* const p = new AstCExpr{fl, AstCExpr::Pure{},
-                                             "\"" + varrefp->name() + "\""};
+            AstCExpr* const p = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + varrefp->name() + "\""};
             p->dtypeSetUInt32();
             return p;
         }
         if (const AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
             const std::string path = buildMemberPath(memberSelp);
             if (path.empty()) return nullptr;
-            AstCExpr* const p = new AstCExpr{fl, AstCExpr::Pure{},
-                                             "\"" + path + "\""};
+            AstCExpr* const p = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + path + "\""};
             p->dtypeSetUInt32();
             return p;
         }
@@ -791,12 +789,12 @@ class ConstraintExprVisitor final : public VNVisitor {
             std::string baseName;
             if (const AstVarRef* const vp = VN_CAST(selp->fromp(), VarRef)) {
                 baseName = vp->name();
-            } else if (const AstMemberSel* const mp
-                       = VN_CAST(selp->fromp(), MemberSel)) {
+            } else if (const AstMemberSel* const mp = VN_CAST(selp->fromp(), MemberSel)) {
                 baseName = buildMemberPath(mp);
             }
             if (baseName.empty()) return nullptr;
-            // Generate runtime name: (std::string("baseName[") + std::to_string(idx) + "]").c_str()
+            // Generate runtime name: (std::string("baseName[") + std::to_string(idx) +
+            // "]").c_str()
             AstCExpr* const p = new AstCExpr{fl, ""};
             p->add("(std::string(\"" + baseName + "[\") + std::to_string(");
             p->add(selp->bitp()->cloneTreePure(false));
