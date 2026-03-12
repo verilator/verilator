@@ -767,6 +767,46 @@ class ConstraintExprVisitor final : public VNVisitor {
         return "";
     }
 
+    // Build a C++ expression (as AstNodeExpr) that evaluates to a const char*
+    // containing the SMT variable name for a solve-before variable reference.
+    // Handles simple vars, member selects, and array element selects (for foreach).
+    // Returns nullptr for unsupported expression types.
+    AstNodeExpr* buildSolveBeforeNameExpr(FileLine* fl, AstNodeExpr* exprp) {
+        if (const AstVarRef* const varrefp = VN_CAST(exprp, VarRef)) {
+            AstCExpr* const p = new AstCExpr{fl, AstCExpr::Pure{},
+                                             "\"" + varrefp->name() + "\""};
+            p->dtypeSetUInt32();
+            return p;
+        }
+        if (const AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
+            const std::string path = buildMemberPath(memberSelp);
+            if (path.empty()) return nullptr;
+            AstCExpr* const p = new AstCExpr{fl, AstCExpr::Pure{},
+                                             "\"" + path + "\""};
+            p->dtypeSetUInt32();
+            return p;
+        }
+        if (const AstArraySel* const selp = VN_CAST(exprp, ArraySel)) {
+            // Get base variable name (arr[i] -> "arr", obj.arr[i] -> "obj.arr")
+            std::string baseName;
+            if (const AstVarRef* const vp = VN_CAST(selp->fromp(), VarRef)) {
+                baseName = vp->name();
+            } else if (const AstMemberSel* const mp
+                       = VN_CAST(selp->fromp(), MemberSel)) {
+                baseName = buildMemberPath(mp);
+            }
+            if (baseName.empty()) return nullptr;
+            // Generate runtime name: (std::string("baseName[") + std::to_string(idx) + "]").c_str()
+            AstCExpr* const p = new AstCExpr{fl, ""};
+            p->add("(std::string(\"" + baseName + "[\") + std::to_string(");
+            p->add(selp->bitp()->cloneTreePure(false));
+            p->add(") + \"]\").c_str()");
+            p->dtypeSetUInt32();
+            return p;
+        }
+        return nullptr;
+    }
+
     AstSFormatF* getConstFormat(AstNodeExpr* nodep) {
         return new AstSFormatF{nodep->fileline(), (nodep->width() & 3) ? "#b%b" : "#x%x", false,
                                nodep};
@@ -1855,16 +1895,17 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstNodeModule* const genModp = VN_AS(m_genp->user2p(), NodeModule);
 
         for (AstNodeExpr* lhsp = nodep->lhssp(); lhsp; lhsp = VN_CAST(lhsp->nextp(), NodeExpr)) {
-            const std::string lhsName = extractSolveBeforeVarName(lhsp);
-            if (lhsName.empty()) {
+            AstNodeExpr* const lhsTestp = buildSolveBeforeNameExpr(fl, lhsp);
+            if (!lhsTestp) {
                 lhsp->v3warn(CONSTRAINTIGN,
                              "Unsupported: non-variable expression in solve...before");
                 continue;
             }
+            VL_DO_DANGLING(lhsTestp->deleteTree(), lhsTestp);
             for (AstNodeExpr* rhsp = nodep->rhssp(); rhsp;
                  rhsp = VN_CAST(rhsp->nextp(), NodeExpr)) {
-                const std::string rhsName = extractSolveBeforeVarName(rhsp);
-                if (rhsName.empty()) {
+                AstNodeExpr* const rhsNamep = buildSolveBeforeNameExpr(fl, rhsp);
+                if (!rhsNamep) {
                     rhsp->v3warn(CONSTRAINTIGN,
                                  "Unsupported: non-variable expression in solve...before");
                     continue;
@@ -1873,14 +1914,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                     fl, new AstVarRef{fl, genModp, m_genp, VAccess::READWRITE},
                     VCMethod::RANDOMIZER_SOLVE_BEFORE};
                 callp->dtypeSetVoid();
-                AstNodeExpr* const beforeNamep
-                    = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + lhsName + "\""};
-                beforeNamep->dtypeSetUInt32();
-                AstNodeExpr* const afterNamep
-                    = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + rhsName + "\""};
-                afterNamep->dtypeSetUInt32();
-                callp->addPinsp(beforeNamep);
-                callp->addPinsp(afterNamep);
+                callp->addPinsp(buildSolveBeforeNameExpr(fl, lhsp));
+                callp->addPinsp(rhsNamep);
                 nodep->addHereThisAsNext(callp->makeStmt());
             }
         }
@@ -3760,6 +3795,12 @@ class RandomizeVisitor final : public VNVisitor {
             if (AstConstraintIf* const cifp = VN_CAST(itemp, ConstraintIf)) {
                 if (cifp->thensp()) lowerDistConstraints(taskp, cifp->thensp());
                 if (cifp->elsesp()) lowerDistConstraints(taskp, cifp->elsesp());
+                continue;
+            }
+
+            // Recursively handle ConstraintForeach nodes (dist can be inside foreach)
+            if (AstConstraintForeach* const cfep = VN_CAST(itemp, ConstraintForeach)) {
+                if (cfep->bodyp()) lowerDistConstraints(taskp, cfep->bodyp());
                 continue;
             }
 
