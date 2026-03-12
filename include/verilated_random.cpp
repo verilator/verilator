@@ -387,22 +387,20 @@ void VlRandomizer::emitRandcExclusions(std::ostream& os) const {
     }
 }
 
+static uint64_t readVarValueU64(const void* datap, int width) {
+    if (width <= VL_BYTESIZE) return *static_cast<const CData*>(datap);
+    if (width <= VL_SHORTSIZE) return *static_cast<const SData*>(datap);
+    if (width <= VL_IDATASIZE) return *static_cast<const IData*>(datap);
+    if (width <= VL_QUADSIZE) return *static_cast<const QData*>(datap);
+    return 0;
+}
+
 void VlRandomizer::recordRandcValues() {
     for (const auto& name : m_randcVarNames) {
         const auto varIt = m_vars.find(name);
         if (varIt == m_vars.end()) continue;
         const VlRandomVar& var = *varIt->second;
-        const int w = var.width();
-        uint64_t val = 0;
-        if (w <= VL_BYTESIZE)
-            val = *static_cast<const CData*>(var.datap(0));
-        else if (w <= VL_SHORTSIZE)
-            val = *static_cast<const SData*>(var.datap(0));
-        else if (w <= VL_IDATASIZE)
-            val = *static_cast<const IData*>(var.datap(0));
-        else if (w <= VL_QUADSIZE)
-            val = *static_cast<const QData*>(var.datap(0));
-        m_randcUsedValues[name].insert(val);
+        m_randcUsedValues[name].insert(readVarValueU64(var.datap(0), var.width()));
     }
 }
 

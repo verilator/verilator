@@ -27,10 +27,22 @@ class RandcSmall;
   constraint range_c { value inside {[0:7]}; }
 endclass
 
+typedef enum logic [59:0] {
+  E01 = 60'h1,
+  E02 = 60'h2,
+  E03 = 60'h3,
+  ELARGE = 60'h1234_4567_abcd
+} wide_enum_t;
+
+class RandcWideEnum;
+  randc wide_enum_t value;
+endclass
+
 module t;
   initial begin
     RandcFull full_obj;
     RandcSmall small_obj;
+    RandcWideEnum enum_obj;
     int seen[int];
     int rand_ok;
 
@@ -64,6 +76,18 @@ module t;
     if (small_obj.value > 16'd7) begin
       $write("%%Error: value %0d out of range after cycle reset\n", small_obj.value);
       `stop;
+    end
+
+    // Test 4: wide enum (60-bit) randc - verify valid enum members only
+    enum_obj = new();
+    for (int i = 0; i < 4; i++) begin
+      rand_ok = enum_obj.randomize();
+      `checkd(rand_ok, 1)
+      if (enum_obj.value != E01 && enum_obj.value != E02
+          && enum_obj.value != E03 && enum_obj.value != ELARGE) begin
+        $write("%%Error: enum value %0h not a valid member\n", enum_obj.value);
+        `stop;
+      end
     end
 
     $write("*-* All Finished *-*\n");
