@@ -22,11 +22,7 @@ module t (
   // verilator tracing_on
 
   initial begin
-`ifdef TEST_FST
-    filename = {`STRINGIFY(`TEST_OBJ_DIR), "/simx.fst"};
-`else
-    filename = {`STRINGIFY(`TEST_OBJ_DIR), "/simx.vcd"};
-`endif
+    filename = {`STRINGIFY(`TEST_OBJ_DIR), "/simx.", `STRINGIFY(`TRACE_FMT)};
 
 `ifdef TEST_DUMP
     $dumpfile(filename);
