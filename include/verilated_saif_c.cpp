@@ -452,7 +452,8 @@ void VerilatedSaif::printStr(const std::string& str) {
 void VerilatedSaif::writeBuffered(bool force) {
     if (VL_UNLIKELY(m_buffer.size() >= WRITE_BUFFER_SIZE || force)) {
         if (VL_UNLIKELY(!m_buffer.empty())) {
-            ::write(m_filep, m_buffer.data(), m_buffer.size());
+            const ssize_t n = ::write(m_filep, m_buffer.data(), m_buffer.size());
+            assert(n == static_cast<ssize_t>(m_buffer.size()));
             m_buffer = "";
             m_buffer.reserve(WRITE_BUFFER_SIZE * 2);
         }
