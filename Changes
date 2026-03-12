@@ -52,6 +52,9 @@ Verilator 5.047 devel
 * Fix `dist` operator inside constraint if blocks (#7221) (#7224). [Rahul Behl, Testorrent USA, Inc.]
 * Fix soft cross-object constraint priority inversion (#7228) (#7233). [Yilou Wang]
 * Fix internal error when derived class calls this.randomize() with inherited rand members (#7229) (#7234). [Yilou Wang]
+* Fix enum range constraints missing for rand variables in sub-objects (#7230) (#7235). [Yilou Wang]
+* Fix vpi_put_value release on non-continuous signal (#7231) (#7241). [Christian Hecken]
+* Fix tracing of typedefed 1D packed arrays with --trace-structs (#7237). [Geza Lore, Testorrent USA, Inc.]
 
 
 Verilator 5.046 2026-02-28

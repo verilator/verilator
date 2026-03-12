@@ -25,15 +25,15 @@
 module t;
 
   typedef enum logic [1:0] {
-    RED   = 2'd0,
+    RED = 2'd0,
     GREEN = 2'd1,
-    BLUE  = 2'd2
+    BLUE = 2'd2
   } color_e;
 
   typedef enum logic [2:0] {
-    IDLE  = 3'd0,
-    RUN   = 3'd3,
-    STOP  = 3'd5
+    IDLE = 3'd0,
+    RUN = 3'd3,
+    STOP = 3'd5
   } state_e;
 
   class InnerObj;
