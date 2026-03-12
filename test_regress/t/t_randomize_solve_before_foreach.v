@@ -28,6 +28,9 @@ module t;
   class item;
     rand bit [3:0] mode;
     rand bit [7:0] data[4];
+    rand int x;
+    rand int y;
+    rand int arr[4];
 
     constraint mode_c {
       mode inside {[0:3]};
@@ -41,6 +44,11 @@ module t;
         else
           data[i] inside {[8'd1:8'd255]};
       }
+    }
+
+    // Static array index in solve...before (non-foreach)
+    constraint arr_c {
+      solve arr[0] before y;
     }
   endclass
 
@@ -92,6 +100,11 @@ module t;
       foreach (pkt.pdata[i]) begin
         `checkd(pkt.pdata[i] inside {8'h10, 8'h20, 8'h30, 8'h40, 8'h50}, 1);
       end
+    end
+
+    // Test 3: solve...before with static array index (non-foreach)
+    repeat (20) begin
+      `checkd(it.randomize(), 1);
     end
 
     $write("*-* All Finished *-*\n");
