@@ -67,12 +67,12 @@ public:
 
 protected:
     int overflow(int c = traits_type::eof()) override {
-        char c2 = static_cast<char>(c);
+        const char c2 = static_cast<char>(c);
         if (pbase() == pptr()) return 0;
-        size_t size = pptr() - pbase();
-        ssize_t n = ::write(m_writeFd, pbase(), size);
+        const size_t size = pptr() - pbase();
+        const ssize_t n = ::write(m_writeFd, pbase(), size);
         // VL_PRINTF_MT("solver-write '%s'\n", std::string(pbase(), size).c_str());
-        if (n == -1) perror("write");
+        if (VL_UNLIKELY(n == -1)) perror("write");
         if (n <= 0) {
             wait_report();
             return traits_type::eof();
@@ -86,8 +86,8 @@ protected:
     }
     int underflow() override {
         sync();
-        ssize_t n = ::read(m_readFd, m_readBuf, sizeof(m_readBuf));
-        if (n == -1) perror("read");
+        const ssize_t n = ::read(m_readFd, m_readBuf, sizeof(m_readBuf));
+        if (VL_UNLIKELY(n == -1)) perror("read");
         if (n <= 0) {
             wait_report();
             return traits_type::eof();
@@ -153,11 +153,11 @@ public:
         constexpr int P_RD = 0;
         constexpr int P_WR = 1;
 
-        if (pipe(fd_stdin) != 0) {
+        if (VL_UNLIKELY(pipe(fd_stdin) != 0)) {
             perror("VlRProcess::open: pipe");
             return false;
         }
-        if (pipe(fd_stdout) != 0) {
+        if (VL_UNLIKELY(pipe(fd_stdout) != 0)) {
             perror("VlRProcess::open: pipe");
             close(fd_stdin[P_RD]);
             close(fd_stdin[P_WR]);
@@ -177,7 +177,7 @@ public:
         }
 
         const pid_t pid = fork();
-        if (pid < 0) {
+        if (VL_UNLIKELY(pid < 0)) {
             perror("VlRProcess::open: fork");
             close(fd_stdin[P_RD]);
             close(fd_stdin[P_WR]);
