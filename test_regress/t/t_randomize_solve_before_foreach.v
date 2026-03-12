@@ -10,6 +10,20 @@
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
+typedef struct {
+  rand bit l;
+  rand bit x;
+  rand bit w;
+  rand bit r;
+} reg_t;
+
+typedef struct packed {
+  bit l;
+  bit x;
+  bit w;
+  bit r;
+} preg_t;
+
 module t;
   class item;
     rand bit [3:0] mode;
@@ -30,8 +44,39 @@ module t;
     }
   endclass
 
+  class Packet;
+    rand bit [7:0] pdata[5];
+    rand bit px;
+    rand reg_t cfg[3];
+    rand preg_t pcfg[3];
+
+    constraint c_pdata {
+      foreach (pdata[i]) {
+        solve px before pdata[i];
+        pdata[i] inside {8'h10, 8'h20, 8'h30, 8'h40, 8'h50};
+      }
+    }
+
+    constraint c_cfg {
+      foreach (cfg[i]) {
+        solve px before cfg[i].w, cfg[i].r;
+        solve cfg[i].l before cfg[i].x;
+      }
+    }
+
+    constraint c_pcfg {
+      foreach (pcfg[i]) {
+        solve px before pcfg[i].w, pcfg[i].r;
+        solve pcfg[i].l before pcfg[i].x;
+      }
+    }
+  endclass
+
   initial begin
     static item it = new;
+    static Packet pkt = new;
+
+    // Test 1: solve...before with conditional constraints
     repeat (20) begin
       `checkd(it.randomize(), 1);
       if (it.mode == 0) begin
@@ -40,6 +85,15 @@ module t;
         end
       end
     end
+
+    // Test 2: solve...before with unpacked/packed struct array members
+    repeat (20) begin
+      `checkd(pkt.randomize(), 1);
+      foreach (pkt.pdata[i]) begin
+        `checkd(pkt.pdata[i] inside {8'h10, 8'h20, 8'h30, 8'h40, 8'h50}, 1);
+      end
+    end
+
     $write("*-* All Finished *-*\n");
     $finish;
   end

@@ -771,21 +771,76 @@ class ConstraintExprVisitor final : public VNVisitor {
     // containing the SMT variable name for a solve-before variable reference.
     // Handles simple vars, member selects, and array element selects (for foreach).
     // Returns nullptr for unsupported expression types.
+    // Helper: build a dynamic AstCExpr for "baseName[idx]" pattern
+    AstCExpr* buildArraySelNameExpr(FileLine* fl, const std::string& baseName,
+                                    const AstArraySel* selp) {
+        AstCExpr* const p = new AstCExpr{fl, ""};
+        p->add("(std::string(\"" + baseName + "[\") + std::to_string(");
+        p->add(selp->bitp()->cloneTreePure(false));
+        p->add(") + \"]\").c_str()");
+        p->dtypeSetUInt32();
+        return p;
+    }
+
+    // Helper: extract member name and fromp from MemberSel or StructSel
+    static bool getSelNameAndFromp(AstNodeExpr* exprp, std::string& name, AstNodeExpr*& fromp) {
+        if (const AstMemberSel* const mp = VN_CAST(exprp, MemberSel)) {
+            name = mp->name();
+            fromp = mp->fromp();
+            return true;
+        }
+        if (const AstStructSel* const sp = VN_CAST(exprp, StructSel)) {
+            name = sp->name();
+            fromp = sp->fromp();
+            return true;
+        }
+        return false;
+    }
+
     AstNodeExpr* buildSolveBeforeNameExpr(FileLine* fl, AstNodeExpr* exprp) {
         if (const AstVarRef* const varrefp = VN_CAST(exprp, VarRef)) {
             AstCExpr* const p = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + varrefp->name() + "\""};
             p->dtypeSetUInt32();
             return p;
         }
-        if (const AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
-            const std::string path = buildMemberPath(memberSelp);
-            if (path.empty()) return nullptr;
-            AstCExpr* const p = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + path + "\""};
-            p->dtypeSetUInt32();
-            return p;
+        // Handle MemberSel or StructSel (V3Width converts MemberSel -> StructSel for structs)
+        std::string selName;
+        AstNodeExpr* selFromp = nullptr;
+        if (getSelNameAndFromp(exprp, selName, selFromp)) {
+            // Check if fromp chain contains ArraySel (e.g., cfg[i].w)
+            if (const AstArraySel* const arrSelp = VN_CAST(selFromp, ArraySel)) {
+                std::string baseName;
+                if (const AstVarRef* const vp = VN_CAST(arrSelp->fromp(), VarRef)) {
+                    baseName = vp->name();
+                } else if (const AstMemberSel* const mp = VN_CAST(arrSelp->fromp(), MemberSel)) {
+                    baseName = buildMemberPath(mp);
+                }
+                if (baseName.empty()) return nullptr;
+                AstCExpr* const p = new AstCExpr{fl, ""};
+                p->add("(std::string(\"" + baseName + "[\") + std::to_string(");
+                p->add(arrSelp->bitp()->cloneTreePure(false));
+                p->add(") + \"]." + selName + "\").c_str()");
+                p->dtypeSetUInt32();
+                return p;
+            }
+            // Static member path (obj.field)
+            if (const AstVarRef* const vp = VN_CAST(selFromp, VarRef)) {
+                const std::string path = vp->name() + "." + selName;
+                AstCExpr* const p = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + path + "\""};
+                p->dtypeSetUInt32();
+                return p;
+            }
+            if (VN_IS(selFromp, MemberSel)) {
+                const std::string path
+                    = buildMemberPath(VN_AS(selFromp, MemberSel)) + "." + selName;
+                AstCExpr* const p = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + path + "\""};
+                p->dtypeSetUInt32();
+                return p;
+            }
+            return nullptr;
         }
         if (const AstArraySel* const selp = VN_CAST(exprp, ArraySel)) {
-            // Get base variable name (arr[i] -> "arr", obj.arr[i] -> "obj.arr")
+            // arr[i] -> dynamic name
             std::string baseName;
             if (const AstVarRef* const vp = VN_CAST(selp->fromp(), VarRef)) {
                 baseName = vp->name();
@@ -793,14 +848,12 @@ class ConstraintExprVisitor final : public VNVisitor {
                 baseName = buildMemberPath(mp);
             }
             if (baseName.empty()) return nullptr;
-            // Generate runtime name: (std::string("baseName[") + std::to_string(idx) +
-            // "]").c_str()
-            AstCExpr* const p = new AstCExpr{fl, ""};
-            p->add("(std::string(\"" + baseName + "[\") + std::to_string(");
-            p->add(selp->bitp()->cloneTreePure(false));
-            p->add(") + \"]\").c_str()");
-            p->dtypeSetUInt32();
-            return p;
+            return buildArraySelNameExpr(fl, baseName, selp);
+        }
+        // Packed struct member: SEL(ARRAYSEL(...)) — bit select on array element.
+        // Solver registers the whole element, so promote to array element level.
+        if (const AstSel* const bitSelp = VN_CAST(exprp, Sel)) {
+            return buildSolveBeforeNameExpr(fl, bitSelp->fromp());
         }
         return nullptr;
     }
