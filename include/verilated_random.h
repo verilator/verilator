@@ -28,7 +28,6 @@
 
 #include "verilated.h"
 
-#include <deque>
 #include <iomanip>
 #include <iostream>
 #include <ostream>
@@ -220,16 +219,17 @@ class VlRandomizer VL_NOT_FINAL {
     const VlQueue<CData>* m_randmodep = nullptr;  // rand_mode state;
     int m_index = 0;  // Internal counter for key generation
     std::set<std::string> m_randcVarNames;  // Names of randc variables for cyclic tracking
-    std::map<std::string, std::deque<uint64_t>>
-        m_randcValueQueues;  // Remaining values per randc var (queue-based cycling)
-    size_t m_randcConstraintHash = 0;  // Hash of constraints when queues were built
+    std::map<std::string, std::set<uint64_t>>
+        m_randcUsedValues;  // Previously used values per randc var (exclusion-based cycling)
+    size_t m_randcConstraintHash = 0;  // Hash of constraints when history was valid
     std::vector<std::pair<std::string, std::string>>
         m_solveBefore;  // Solve-before ordering pairs (beforeVar, afterVar)
 
     // PRIVATE METHODS
     void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
     bool parseSolution(std::iostream& file, bool log = false);
-    void enumerateRandcValues(const std::string& varName, VlRNG& rngr);
+    void emitRandcExclusions(std::ostream& os) const;  // Emit randc exclusion constraints
+    void recordRandcValues();  // Record solved randc values for future exclusion
     size_t hashConstraints() const;
     bool nextPhased(VlRNG& rngr);  // Phased solving for solve...before
 
