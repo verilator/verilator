@@ -119,6 +119,7 @@ class LocalizeVisitor final : public VNVisitor {
                     = new AstVar{oldVarp->fileline(), oldVarp->varType(), newName, oldVarp};
                 newVarp->funcLocal(true);
                 newVarp->noReset(oldVarp->noReset());
+                newVarp->noSubst(oldVarp->noSubst());
                 funcp->addVarsp(newVarp);
 
                 // Fix up all the references within this function
