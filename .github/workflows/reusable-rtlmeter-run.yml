@@ -60,8 +60,8 @@ jobs:
           echo "path-exclude /usr/share/info/*" | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
           sudo apt update || \
           sudo apt update
-          sudo apt install ccache mold libfl-dev libgoogle-perftools-dev libsystemc-dev || \
-          sudo apt install ccache mold libfl-dev libgoogle-perftools-dev libsystemc-dev
+          sudo apt install ccache mold libfl-dev libjemalloc-dev libsystemc-dev || \
+          sudo apt install ccache mold libfl-dev libjemalloc-dev libsystemc-dev
 
       - name: Download Verilator installation archive
         uses: actions/download-artifact@v8

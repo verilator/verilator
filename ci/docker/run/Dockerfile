@@ -22,7 +22,7 @@ RUN apt-get update \
                         help2man \
                         libfl2 \
                         libfl-dev \
-                        libgoogle-perftools-dev \
+                        libjemalloc-dev \
                         numactl \
                         perl \
                         perl-doc \

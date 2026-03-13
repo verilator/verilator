@@ -64,8 +64,8 @@ AC_ARG_ENABLE([dev-asan],
               [AS_HELP_STRING([--enable-dev-asan],
                               [Enable compiling Verilator with ASAN
                                AddressSanitizer for memory error detection.
-                               This disables tcmalloc.  Does not affect
-                               Verilated models using ASAN.])],
+                               This disables tcmalloc and jemalloc.  Does not
+                               affect Verilated models using ASAN.])],
               [case "${enableval}" in
                 yes) CFG_WITH_DEV_ASAN=yes ;;
                 no)  CFG_WITH_DEV_ASAN=no ;;
@@ -91,6 +91,27 @@ if test "$CFG_WITH_DEV_ASAN" = "yes"; then
   AC_MSG_RESULT("disabled by --enable-dev-asan")
 else
   AC_MSG_RESULT($CFG_WITH_TCMALLOC)
+fi
+
+# Flag to enable linking Verilator with jemalloc if available
+AC_MSG_CHECKING(whether to use jemalloc)
+AC_ARG_ENABLE([jemalloc],
+              [AS_HELP_STRING([--enable-jemalloc],
+                              [Use libjemalloc for faster dynamic memory
+                               management in Verilator binary. Preferred over
+                               tcmalloc when both are available
+                               @<:@default=check@:>@])],
+              [case "${enableval}" in
+                yes) CFG_WITH_JEMALLOC=yes ;;
+                no)  CFG_WITH_JEMALLOC=no ;;
+                *)   AC_MSG_ERROR([bad value '${enableval}' for --enable-jemalloc]) ;;
+               esac],
+              [CFG_WITH_JEMALLOC=check;])
+if test "$CFG_WITH_DEV_ASAN" = "yes"; then
+  CFG_WITH_JEMALLOC=no
+  AC_MSG_RESULT("disabled by --enable-dev-asan")
+else
+  AC_MSG_RESULT($CFG_WITH_JEMALLOC)
 fi
 
 # Flag to enable code coverage build with gcov
@@ -567,8 +588,10 @@ if test "$CFG_ENABLE_PARTIAL_STATIC" = "yes"; then
   _MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_SRC, -static-libstdc++)
   _MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_SRC, -Xlinker -gc-sections)
   LTCMALLOC="-Wl,--whole-archive -l:libtcmalloc_minimal.a -Wl,--no-whole-archive"
+  LJEMALLOC="-Wl,--whole-archive -l:libjemalloc.a -Wl,--no-whole-archive"
 else
   LTCMALLOC=-ltcmalloc_minimal
+  LJEMALLOC=-ljemalloc
 fi
 AC_SUBST(CFG_LDFLAGS_SRC)
 AC_SUBST(CFG_LDFLAGS_VERILATED)
@@ -584,11 +607,38 @@ _MY_LDLIBS_CHECK_OPT(CFG_LIBS, -latomic)
 _MY_LDLIBS_CHECK_OPT(CFG_LIBS, -lbcrypt)
 _MY_LDLIBS_CHECK_OPT(CFG_LIBS, -lpsapi)
 
+# Check if jemalloc is available based on --enable-jemalloc
+# jemalloc is preferred over tcmalloc when both are available
+CFG_HAVE_JEMALLOC=no
+_MY_LDLIBS_CHECK_IFELSE(
+  $LJEMALLOC,
+  [if test "$CFG_WITH_JEMALLOC" != "no"; then
+    CFG_LIBS="$LJEMALLOC $CFG_LIBS";
+    CFG_HAVE_JEMALLOC=yes;
+    # If using jemalloc, add some extra options to make the compiler not assume
+    # it is using its own versions of the standard library functions
+    _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-malloc)
+    _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-calloc)
+    _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-realloc)
+    _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-free)
+    AC_DEFINE([HAVE_JEMALLOC],[1],[Defined if have jemalloc])
+   fi],
+  [if test "$CFG_WITH_JEMALLOC" = "yes"; then
+    AC_MSG_ERROR([--enable-jemalloc was given but test for ${LJEMALLOC} failed])
+   fi])
+AC_SUBST(HAVE_JEMALLOC)
+
 # Check if tcmalloc is available based on --enable-tcmalloc
+# Only use tcmalloc if jemalloc was not found/enabled
+if test "$CFG_HAVE_JEMALLOC" = "yes"; then
+  AC_MSG_NOTICE([jemalloc found, skipping tcmalloc check])
+else
+CFG_HAVE_TCMALLOC=no
 _MY_LDLIBS_CHECK_IFELSE(
   $LTCMALLOC,
   [if test "$CFG_WITH_TCMALLOC" != "no"; then
     CFG_LIBS="$LTCMALLOC $CFG_LIBS";
+    CFG_HAVE_TCMALLOC=yes;
     # If using tcmalloc, add some extra options to make the compiler not assume
     # it is using its own versions of the standard library functions
     _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-malloc)
@@ -600,6 +650,7 @@ _MY_LDLIBS_CHECK_IFELSE(
   [if test "$CFG_WITH_TCMALLOC" = "yes"; then
     AC_MSG_ERROR([--enable-tcmalloc was given but test for ${LTCMALLOC} failed])
    fi])
+fi
 AC_SUBST(HAVE_TCMALLOC)
 AC_SUBST(CFG_LIBS)
 

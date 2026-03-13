@@ -57,6 +57,9 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 #ifdef HAVE_TCMALLOC
 #include <gperftools/malloc_extension.h>
 #endif
+#ifdef HAVE_JEMALLOC
+#include <jemalloc/jemalloc.h>
+#endif
 
 // clang-format off
 #if defined(_WIN32) || defined(__MINGW32__)
@@ -412,6 +415,18 @@ void V3Os::unlinkRegexp(const string& dir, const string& regexp) {
 void V3Os::releaseMemory() {
 #ifdef HAVE_TCMALLOC
     MallocExtension::instance()->ReleaseFreeMemory();
+#endif
+#ifdef HAVE_JEMALLOC
+    // Purge all unused dirty pages across all arenas
+    unsigned narenas = 0;
+    size_t sz = sizeof(narenas);
+    if (mallctl("arenas.narenas", &narenas, &sz, nullptr, 0)) {
+        return;  // Failed to get number of arenas, give up
+    }
+    char buf[64];
+    // Index equal to narenas represents all arenas
+    VL_SNPRINTF(buf, sizeof(buf), "arena.%u.purge", narenas);
+    mallctl(buf, nullptr, nullptr, nullptr, 0);
 #endif
 }
 
