@@ -1902,6 +1902,8 @@ class AstVar final : public AstNode {
     // @astgen op4 := attrsp : List[AstNode] // Attributes during early parse
     // @astgen ptr := m_sensIfacep : Optional[AstIface]  // Interface type to which reads from this
     //                                                      var are sensitive
+    // @astgen ptr := m_fourStateComplement : Optional[AstVar]  // Set in four-state value part -
+    //                                                             points to an xz part
 
     string m_name;  // Name of variable
     string m_origName;  // Original name before dot addition
@@ -1969,6 +1971,7 @@ class AstVar final : public AstNode {
     bool m_globalConstrained : 1;  // Global constraint per IEEE 1800-2023 18.5.8
     bool m_isStdRandomizeArg : 1;  // Argument variable created for std::randomize (__Varg*)
     bool m_processQueue : 1;  // Process queue variable
+    bool m_isFourStateComplement : 1;  // Set in four-state xz part
     void init() {
         m_ansi = false;
         m_declTyped = false;
@@ -2027,6 +2030,7 @@ class AstVar final : public AstNode {
         m_globalConstrained = false;
         m_isStdRandomizeArg = false;
         m_processQueue = false;
+        m_isFourStateComplement = false;
     }
 
 public:
@@ -2123,6 +2127,15 @@ public:
     void ansi(bool flag) { m_ansi = flag; }
     void declTyped(bool flag) { m_declTyped = flag; }
     void sensIfacep(AstIface* nodep) { m_sensIfacep = nodep; }
+    void fourStateComplement(AstVar* const varp) {
+        UASSERT_OBJ(!isFourStateComplement(), this, "Varp is four-state complement i");
+        UASSERT_OBJ(!m_fourStateComplement, this, "Varp already has a complement");
+        UASSERT_OBJ(!varp->isFourStateComplement(), varp, "It is already a four-state complement");
+        varp->m_isFourStateComplement = true;
+        m_fourStateComplement = varp;
+    }
+    AstVar* fourStateComplement() const { return m_fourStateComplement; }
+    bool isFourStateComplement() const { return m_isFourStateComplement; }
     void attrFileDescr(bool flag) { m_fileDescr = flag; }
     void attrScBv(bool flag) { m_attrScBv = flag; }
     void attrScBigUint(bool flag) { m_attrScBigUint = flag; }

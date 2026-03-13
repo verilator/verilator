@@ -963,6 +963,7 @@ string V3Number::emitC() const VL_MT_STABLE {
         // Note: putsQuoted does not track indentation, so we use this instead
         return '"' + quoted + "\"s";
     } else if (words() > 2) {
+        UASSERT(!isFourState(), "Not implemented");
         // Note the double {{ initializer. The first { starts the initializer of the VlWide,
         // and the second starts the initializer of m_storage within the VlWide.
         // Alternative is to have constructor with std::initializer_list
@@ -1328,6 +1329,16 @@ V3Number& V3Number::opBitsOne(const V3Number& lhs) {  // 1->1, 0/X/Z->0
     setZero();
     for (int bit = 0; bit < width(); ++bit) {
         if (lhs.bitIs1(bit)) setBit(bit, 1);
+    }
+    return *this;
+}
+V3Number& V3Number::opBitsOneX(const V3Number& lhs) {
+    // op i, L(lhs) bit return
+    NUM_ASSERT_OP_ARGS1(lhs);
+    NUM_ASSERT_LOGIC_ARGS1(lhs);
+    setZero();
+    for (int bit = 0; bit < width(); ++bit) {
+        if (lhs.bitIs1(bit) || lhs.bitIsX(bit)) setBit(bit, 1);
     }
     return *this;
 }
@@ -2040,7 +2051,7 @@ V3Number& V3Number::opSub(const V3Number& lhs, const V3Number& rhs) {
 V3Number& V3Number::opMul(const V3Number& lhs, const V3Number& rhs) {
     // i op j, max(L(lhs),L(rhs)) bit return, if any 4-state, 4-state return
     NUM_ASSERT_OP_ARGS2(lhs, rhs);
-    NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
+    if (!v3Global.opt.fourstate()) NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);  // FIXME
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
     setZero();
     if (width() <= 64) {
