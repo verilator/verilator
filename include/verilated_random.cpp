@@ -773,8 +773,8 @@ void VlRandomizer::clearAll() {
 
 void VlRandomizer::markRandc(const char* name) { m_randcVarNames.insert(name); }
 
-void VlRandomizer::solveBefore(const char* beforeName, const char* afterName) {
-    m_solveBefore.emplace_back(std::string(beforeName), std::string(afterName));
+void VlRandomizer::solveBefore(const std::string& beforeName, const std::string& afterName) {
+    m_solveBefore.emplace_back(beforeName, afterName);
 }
 
 bool VlRandomizer::nextPhased(VlRNG& rngr) {

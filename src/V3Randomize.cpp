@@ -775,38 +775,29 @@ class ConstraintExprVisitor final : public VNVisitor {
     AstCExpr* buildArraySelNameExpr(FileLine* fl, const std::string& baseName,
                                     const AstArraySel* selp) {
         AstCExpr* const p = new AstCExpr{fl, ""};
-        p->add("(std::string(\"" + baseName + "[\") + std::to_string(");
+        p->add("(\""s + baseName + "[\" + std::to_string(");
         p->add(selp->bitp()->cloneTreePure(false));
-        p->add(") + \"]\").c_str()");
-        p->dtypeSetUInt32();
+        p->add(") + \"]\")");
+        p->dtypeSetString();
         return p;
     }
 
-    // Helper: extract member name and fromp from MemberSel or StructSel
-    static bool getSelNameAndFromp(AstNodeExpr* exprp, std::string& name, AstNodeExpr*& fromp) {
-        if (const AstMemberSel* const mp = VN_CAST(exprp, MemberSel)) {
-            name = mp->name();
-            fromp = mp->fromp();
-            return true;
-        }
-        if (const AstStructSel* const sp = VN_CAST(exprp, StructSel)) {
-            name = sp->name();
-            fromp = sp->fromp();
-            return true;
-        }
-        return false;
+    // Helper: get fromp from MemberSel or StructSel
+    static AstNodeExpr* getSelFromp(AstNodeExpr* exprp) {
+        if (AstMemberSel* const mp = VN_CAST(exprp, MemberSel)) return mp->fromp();
+        if (AstStructSel* const sp = VN_CAST(exprp, StructSel)) return sp->fromp();
+        return nullptr;
     }
 
     AstNodeExpr* buildSolveBeforeNameExpr(FileLine* fl, AstNodeExpr* exprp) {
         if (const AstVarRef* const varrefp = VN_CAST(exprp, VarRef)) {
-            AstCExpr* const p = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + varrefp->name() + "\""};
-            p->dtypeSetUInt32();
+            AstCExpr* const p = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + varrefp->name() + "\"s"};
+            p->dtypeSetString();
             return p;
         }
         // Handle MemberSel or StructSel (V3Width converts MemberSel -> StructSel for structs)
-        std::string selName;
-        AstNodeExpr* selFromp = nullptr;
-        if (getSelNameAndFromp(exprp, selName, selFromp)) {
+        if (AstNodeExpr* const selFromp = getSelFromp(exprp)) {
+            const std::string selName = exprp->name();
             // Check if fromp chain contains ArraySel (e.g., cfg[i].w)
             if (const AstArraySel* const arrSelp = VN_CAST(selFromp, ArraySel)) {
                 std::string baseName;
@@ -817,24 +808,24 @@ class ConstraintExprVisitor final : public VNVisitor {
                 }
                 if (baseName.empty()) return nullptr;
                 AstCExpr* const p = new AstCExpr{fl, ""};
-                p->add("(std::string(\"" + baseName + "[\") + std::to_string(");
+                p->add("(\""s + baseName + "[\" + std::to_string(");
                 p->add(arrSelp->bitp()->cloneTreePure(false));
-                p->add(") + \"]." + selName + "\").c_str()");
-                p->dtypeSetUInt32();
+                p->add(") + \"]." + selName + "\")");
+                p->dtypeSetString();
                 return p;
             }
             // Static member path (obj.field)
             if (const AstVarRef* const vp = VN_CAST(selFromp, VarRef)) {
                 const std::string path = vp->name() + "." + selName;
-                AstCExpr* const p = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + path + "\""};
-                p->dtypeSetUInt32();
+                AstCExpr* const p = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + path + "\"s"};
+                p->dtypeSetString();
                 return p;
             }
             if (VN_IS(selFromp, MemberSel)) {
                 const std::string path
                     = buildMemberPath(VN_AS(selFromp, MemberSel)) + "." + selName;
-                AstCExpr* const p = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + path + "\""};
-                p->dtypeSetUInt32();
+                AstCExpr* const p = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + path + "\"s"};
+                p->dtypeSetString();
                 return p;
             }
             return nullptr;

@@ -631,8 +631,8 @@ public:
     void clearConstraints();
     void clearAll();  // Clear both constraints and variables
     void markRandc(const char* name);  // Mark variable as randc for cyclic tracking
-    void solveBefore(const char* beforeName,
-                     const char* afterName);  // Register solve-before ordering
+    void solveBefore(const std::string& beforeName,
+                     const std::string& afterName);  // Register solve-before ordering
     void set_randmode(const VlQueue<CData>& randmode) { m_randmodep = &randmode; }
 #ifdef VL_DEBUG
     void dump() const;
