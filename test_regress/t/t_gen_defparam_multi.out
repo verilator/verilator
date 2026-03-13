@@ -5,13 +5,4 @@
 %Error-UNSUPPORTED: t/t_gen_defparam_multi.v:28:19: Unsupported: defparam with arrayed instance
    28 |       defparam blk[i].u_m3.PAR3 = i;
       |                   ^
-%Error-UNSUPPORTED: t/t_gen_defparam_multi.v:28:27: Unsupported: defparam with more than one dot
-   28 |       defparam blk[i].u_m3.PAR3 = i;
-      |                           ^
-%Error-UNSUPPORTED: t/t_gen_defparam_multi.v:51:43: Unsupported: defparam with more than one dot
-   51 |       defparam m2.PAR2 = 8; defparam m2.m3.PAR3 = 80;
-      |                                           ^
-%Error-UNSUPPORTED: t/t_gen_defparam_multi.v:55:43: Unsupported: defparam with more than one dot
-   55 |       defparam m2.PAR2 = 4; defparam m2.m3.PAR3 = 40;
-      |                                           ^
 %Error: Exiting due to
