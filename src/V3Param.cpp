@@ -2260,6 +2260,7 @@ public:
                 }
             }
             if (!origClassp) return;
+            if (!origClassp->hasGParam()) return;  // only relink refs to original param classes
             if (origClassp->user3p()) return;  // will not get removed, no need to relink
             AstClass* const parametrizedClassp = VN_CAST(origClassp->user4p(), Class);
             if (!parametrizedClassp) return;
