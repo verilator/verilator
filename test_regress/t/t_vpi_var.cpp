@@ -1288,11 +1288,17 @@ int _mon_check_multi_index() {
         CHECK_RESULT_Z(vh_oob);
     }
 
-    // Multiple packed dimensions: multi_packed is [3:0][7:0] multi_packed[2:0]
+    // Multiple packed dimensions: multi_packed is [15:0][7:0] multi_packed[2:0]
     {
         TestVpiHandle vh1 = vpi_handle_by_name((PLI_BYTE8*)"t.multi_packed[1]", nullptr);
         CHECK_RESULT_NZ(vh1);
-        CHECK_RESULT(vpi_get(vpiSize, vh1), 32);  // 4*8
+        CHECK_RESULT(vpi_get(vpiSize, vh1), 128);  // 16*8
+
+        // Write last 32 bits of the packed vector in the specified unpacked dimension,
+        // i.e. the four 8-bit elements in multi_packed[1][3:0]
+        v.value.integer = 0xAABBCCDD;
+        vpi_put_value(vh1, &v, nullptr, vpiNoDelay);
+
         // Index into first packed dim -> 8-bit sub-word
         TestVpiHandle vh2 = vpi_handle_by_index(vh1, 2);
         CHECK_RESULT_NZ(vh2);
@@ -1301,6 +1307,12 @@ int _mon_check_multi_index() {
         TestVpiHandle vh3 = vpi_handle_by_index(vh2, 3);
         CHECK_RESULT_NZ(vh3);
         CHECK_RESULT(vpi_get(vpiSize, vh3), 1);
+
+        // Index into the last bits of the packed array and check value
+        TestVpiHandle vh_last = vpi_handle_by_index(vh1, 0);
+        CHECK_RESULT_NZ(vh_last);
+        vpi_get_value(vh_last, &v);
+        CHECK_RESULT(v.value.integer, 0xDD);
     }
 
     // Partial indexing (not all unpacked dimensions)

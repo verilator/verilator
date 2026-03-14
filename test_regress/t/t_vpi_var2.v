@@ -66,7 +66,7 @@ extern "C" int mon_check();
   // verilator lint_on ASCRANGE
 
   // Signal with multiple packed dimensions
-  reg [3:0] [7:0] multi_packed[2:0];
+  reg [15:0] [7:0] multi_packed[2:0];
   reg             unpacked_only[7:0];
 /*verilator public_off*/
   reg             invisible2;
@@ -142,8 +142,8 @@ extern "C" int mon_check();
     end
 
     for (int i = 0; i < 3; i++) begin
-      for (int j = 0; j < 4; j++) begin
-        multi_packed[i][j] = 8'((i * 4) + j);
+      for (int j = 0; j < 16; j++) begin
+        multi_packed[i][j] = 8'((i * 16) + j);
       end
     end
 
