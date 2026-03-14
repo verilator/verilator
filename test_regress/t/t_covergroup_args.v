@@ -14,7 +14,6 @@ module t;
   cg cov2 = new(69);
 
   int i, j;
-  real r;
 
   function void x();
     cov1.set_inst_name("the_inst_name");
@@ -23,16 +22,14 @@ module t;
     cov1.stop();
 
     void'(cov2.get_coverage());
-    r = cov2.get_coverage();
-    r = cov2.get_coverage(i, j);
+    void'(cov2.get_coverage(i, j));
     // verilator lint_off IGNOREDRETURN
     cov2.get_inst_coverage();
     // verilator lint_on IGNOREDRETURN
-    r = cov2.get_inst_coverage(i, j);
+    void'(cov2.get_inst_coverage(i, j));
 
-    cg::get_coverage();
-    r = cg::get_coverage();
-    r = cg::get_coverage(i, j);
+    void'(cg::get_coverage());
+    void'(cg::get_coverage(i, j));
   endfunction
 
 endmodule

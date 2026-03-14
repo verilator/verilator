@@ -248,59 +248,6 @@ coverpoints with value and transition bins, and cross points.
    endmodule
 
 
-Supported Features
-^^^^^^^^^^^^^^^^^^
-* Coverpoints on integral expressions with value, range, wildcard, and transition bins
-* Conditional coverpoint sampling (iff)
-* Explicit and clocked sampling, with sample-function parameters
-* at_least and auto_bin_max options on covergroups and coverpoints
-* Cross points with auto-bins
-
-Unsupported Features
-^^^^^^^^^^^^^^^^^^^^
-
-* Coverpoints on real (floating-point) expressions
-* Coverpoint bin filtering (with)
-* Coverpoint bin conditional sampling (iff)
-* Transition bins with repetition operators ([\*N], [->N], [=N])
-* Explicitly-typed coverpoints
-* Block-event sampling
-* Covergroup inheritance (extends)
-* Cross points with user-defined bins
-
-Functional Coverage Data Format
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Functional coverage data is stored in the coverage data file (typically
-:file:`coverage.dat`) using the standard Verilator coverage format. Each
-functional coverage bin is recorded as a coverage point with:
-
-* **Type**: ``funccov`` - identifies the record as functional coverage
-* **Page**: ``v_funccov/<covergroup_name>`` - groups bins by their covergroup
-* **Hierarchy**: ``<covergroup>.<coverpoint>.<bin>`` for coverpoints, or
-  ``<covergroup>.<cross>.<bin>`` for cross coverage
-* **Count**: Number of times the bin was hit during simulation
-
-Example coverage.dat entries:
-
-.. code-block::
-
-   C 'tfunccovpagev_funccov/cgftest.vl28hcg.cp_a.low' 150
-   C 'tfunccovpagev_funccov/cgftest.vl29hcg.cp_a.high' 75
-   C 'tfunccovpagev_funccov/cgftest.vl35hcg.cross_ab.a0_b1' 25
-
-To filter functional coverage data, use the :option:`--filter-type` option
-with :command:`verilator_coverage`:
-
-.. code-block:: bash
-
-   # Only process functional coverage
-   $ verilator_coverage --filter-type funccov --annotate report coverage.dat
-
-   # Exclude functional coverage
-   $ verilator_coverage --filter-type '!funccov' --annotate report coverage.dat
-
-
 .. _line coverage:
 
 Line Coverage

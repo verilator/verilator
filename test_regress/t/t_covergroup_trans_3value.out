@@ -1,11 +1,2 @@
-%Warning-CASEINCOMPLETE: t/t_covergroup_trans_3value.v:14:12: Case values incompletely covered (example pattern 0x3)
-                                                            : ... note: In instance 't.cg'
-   14 |       bins trans_3val = (0 => 1 => 2);   
-      |            ^~~~~~~~~~
-                         ... For warning description see https://verilator.org/warn/CASEINCOMPLETE?v=latest
-                         ... Use "/* verilator lint_off CASEINCOMPLETE */" and lint_on around source to disable this message.
-%Warning-CASEINCOMPLETE: t/t_covergroup_trans_3value.v:15:12: Case values incompletely covered (example pattern 0x3)
-                                                            : ... note: In instance 't.cg'
-   15 |       bins trans_3val_2 = (2 => 3 => 4);   
-      |            ^~~~~~~~~~~~
-%Error: Exiting due to
+cg.cp_state.trans_3val: 1
+cg.cp_state.trans_3val_2: 1
