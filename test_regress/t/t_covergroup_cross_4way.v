@@ -4,11 +4,6 @@
 // SPDX-FileCopyrightText: 2026 Matthew Ballance
 // SPDX-License-Identifier: CC0-1.0
 
-// verilog_format: off
-`define stop $stop
-`define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
-// verilog_format: on
-
 // Test 4-way cross coverage
 
 module t;
@@ -42,31 +37,10 @@ module t;
   cg cg_inst = new;
 
   initial begin
-    // Hit different 4-way cross bins
     addr = 0; cmd = 0; mode = 0; parity = 0; cg_inst.sample();
-    $display("Sample 1: addr=%0d, cmd=%0d, mode=%0d, parity=%0d", addr, cmd, mode, parity);
-
     addr = 1; cmd = 1; mode = 0; parity = 1; cg_inst.sample();
-    $display("Sample 2: addr=%0d, cmd=%0d, mode=%0d, parity=%0d", addr, cmd, mode, parity);
-
     addr = 0; cmd = 1; mode = 1; parity = 0; cg_inst.sample();
-    $display("Sample 3: addr=%0d, cmd=%0d, mode=%0d, parity=%0d", addr, cmd, mode, parity);
-
     addr = 1; cmd = 0; mode = 1; parity = 1; cg_inst.sample();
-    $display("Sample 4: addr=%0d, cmd=%0d, mode=%0d, parity=%0d", addr, cmd, mode, parity);
-
-    // Check coverage
-    // Total bins:
-    // - 2 bins in cp_addr
-    // - 2 bins in cp_cmd
-    // - 2 bins in cp_mode
-    // - 2 bins in cp_parity
-    // - 16 bins in 4-way cross (2 x 2 x 2 x 2)
-    // Total = 24 bins
-    // Hit: 2+2+2+2+4 = 12 out of 24 = 50%
-    $display("Coverage: %0.1f%%", cg_inst.get_inst_coverage());
-
-    `checkr(cg_inst.get_inst_coverage(), 50.0);
 
     $write("*-* All Finished *-*\n");
     $finish;

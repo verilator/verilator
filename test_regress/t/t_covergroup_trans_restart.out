@@ -1,7 +1,1 @@
-%Warning-CASEINCOMPLETE: t/t_covergroup_trans_restart.v:14:12: Case values incompletely covered (example pattern 0x3)
-                                                             : ... note: In instance 't.cg'
-   14 |       bins trans_restart = (1 => 2 => 3);   
-      |            ^~~~~~~~~~~~~
-                         ... For warning description see https://verilator.org/warn/CASEINCOMPLETE?v=latest
-                         ... Use "/* verilator lint_off CASEINCOMPLETE */" and lint_on around source to disable this message.
-%Error: Exiting due to
+cg.cp_state.trans_restart: 1
