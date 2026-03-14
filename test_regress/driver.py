@@ -2546,6 +2546,52 @@ class VlTest:
         out = VtOs.run_capture(cmd, check=False)
         print(out)
 
+        # Post-process file and fix up to match upcoming fst2vcd output
+        # also reindent for readability
+
+        # Slurp whole file
+        with open(fn2, 'r', encoding='latin-1') as fd:
+            lines = fd.readlines()
+
+        # Process line by line
+        new_lines = []
+        fixup_array_scope = False
+        indent = ""
+        for line in lines:
+            line = line.strip()
+            # Change "$attrbegin class" to "$attrbegin pack"
+            if match := re.match(r'^(\$attrbegin\s+)class(.*)', line):
+                line = indent + match.group(1) + "pack" + match.group(2)
+            # Check for "$attrbegin array"
+            elif re.search(r'^\$attrbegin\s+array', line):
+                line = indent + line
+                fixup_array_scope = True
+            # Check for "$scope"
+            elif match := re.match(r'(\$scope\s)(\S+)(.*)', line.lstrip('\r\n')):
+                if not indent:
+                    indent = " "
+                # Fix up array scope
+                if (match.group(2) == "module") and fixup_array_scope:
+                    line = indent + match.group(1) + "sv_array" + match.group(3)
+                    fixup_array_scope = False
+                else:
+                    line = indent + line
+                indent += " "
+            # Check for "$upscope"
+            elif re.search(r'^\$upscope', line):
+                indent = indent[0:-1]
+                line = indent + line
+                if len(indent) == 1:
+                    indent = ""
+            # Just reindent
+            else:
+                line = indent + line
+            new_lines.append(line + "\n")
+
+        # Write back to file
+        with open(fn2, 'w', encoding='latin-1') as fd:
+            fd.writelines(new_lines)
+
     def fst_identical(self, fn1: str, fn2: str, ignore_attr: bool = False) -> None:
         """Test if two FST files have logically-identical contents"""
         if fn1.endswith(".fst"):
@@ -2585,8 +2631,9 @@ class VlTest:
         with open(filename, 'r', encoding='latin-1') as fh:
             hier_stack = ["TOP"]
             var = []
+            attr = []
             for line in fh:
-                match1 = re.search(r'\$scope (module|struct|interface)\s+(\S+)', line)
+                match1 = re.search(r'\$scope (\S*)\s+(\S+)', line)
                 match2 = re.search(r'(\$var \S+\s+\d+\s+)\S+\s+(.+)\s+\$end', line)
                 match3 = re.search(r'(\$attrbegin .* \$end)', line)
                 line = line.rstrip()
@@ -2597,16 +2644,20 @@ class VlTest:
                     hier_stack += [name]
                     scope = '.'.join(hier_stack)
                     data[scope] = match1.group(1) + " " + name
+                    if attr:
+                        data[scope + "#"] = " ".join(attr)
+                        attr = []
                 elif match2:  # $var
                     # print("VR"+ ' '*len(hier_stack) +" var " + line)
                     scope = '.'.join(hier_stack)
                     var = match2.group(2)
                     data[scope + "." + var] = match2.group(1)
+                    if attr:
+                        data[scope + "." + var + "#"] = " ".join(attr)
+                        attr = []
                 elif match3:  # $attrbegin
                     # print("VR"+ ' '*len(hier_stack) +" attr " + line)
-                    if var:
-                        scope = '.'.join(hier_stack)
-                        data[scope + "." + var + "#"] = match3.group(1)
+                    attr.append(match3.group(1))
                 elif re.search(r'\$enddefinitions', line):
                     break
                 n = len(re.findall(r'\$upscope', line))
@@ -2614,6 +2665,8 @@ class VlTest:
                     for i in range(0, n):  # pylint: disable=unused-variable
                         # print("VR"+ ' '*len(hier_stack) +" upscope " + line)
                         hier_stack.pop()
+            if attr:
+                self.error(f"Unhandled attribute: {attr}")
         return data
 
     def inline_checks(self) -> None:
