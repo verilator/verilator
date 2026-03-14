@@ -11,6 +11,11 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile()
+test.compile(verilator_flags2=['--coverage'])
+
+test.execute()
+
+test.covergroup_coverage_report()
+test.files_identical(test.obj_dir + '/covergroup_report.txt', test.golden_filename)
 
 test.passes()

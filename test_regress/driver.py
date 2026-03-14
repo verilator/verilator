@@ -2671,6 +2671,35 @@ class VlTest:
                     self._file_contents_cache[filename] = str(fh.read())
         return self._file_contents_cache[filename]
 
+    def covergroup_coverage_report(self, outfile: str = None) -> str:
+        """Parse coverage.dat and write a sorted covergroup bin hit-count report.
+
+        Lines have the form:  <hierarchy>[  [bin_type]]: <count>
+        ignore_bins and illegal_bins are annotated with [ignore] / [illegal].
+
+        Returns the path to the written report file.
+        """
+        if outfile is None:
+            outfile = self.obj_dir + "/covergroup_report.txt"
+        contents = self.file_contents(self.coverage_filename)
+        entries = []
+        for m in re.finditer(r"C '([^']+)' (\d+)", contents):
+            entry, count = m.group(1), m.group(2)
+            if '\x01t\x02covergroup' not in entry:
+                continue
+            h_m = re.search(r'\x01h\x02([^\x01]+)', entry)
+            if not h_m:
+                continue
+            hier = h_m.group(1)
+            bt_m = re.search(r'\x01bin_type\x02([^\x01]+)', entry)
+            label = f"{hier} [{bt_m.group(1)}]" if bt_m else hier
+            entries.append((hier, label, int(count)))
+        entries.sort()
+        with open(outfile, 'w', encoding='utf-8') as fh:
+            for _hier, label, count in entries:
+                fh.write(f"{label}: {count}\n")
+        return outfile
+
     @staticmethod
     def _file_contents_static(filename: str) -> str:
         if filename not in VlTest._file_contents_cache:
