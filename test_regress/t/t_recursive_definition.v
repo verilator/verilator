@@ -23,7 +23,7 @@ module t;
 
     initial begin
         uvm_in_order_built_in_comparator #(int) sb;
-        
+
         $write("*-* All Finished *-*\n");
         $finish;
     end
