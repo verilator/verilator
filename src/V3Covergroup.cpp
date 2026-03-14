@@ -139,8 +139,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 }
 
                 const int numBins = constp->toSInt();
-                if (numBins <= 0 || numBins > 10000) {
-                    cbinp->v3error("Automatic bins array size must be 1-10000, got "
+                if (numBins <= 0) {
+                    cbinp->v3error("Automatic bins array size must be >= 1, got "
                                    + std::to_string(numBins));
                     binp = nextBinp;
                     continue;
@@ -740,6 +740,17 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
             if (caseItemp) { casep->addItemsp(caseItemp); }
         }
+
+        // Add default case (reset to state 0) to prevent CASEINCOMPLETE warnings,
+        // since the state variable is wider than the number of valid states.
+        AstCaseItem* defaultItemp
+            = new AstCaseItem{binp->fileline(), nullptr,
+                              new AstAssign{binp->fileline(),
+                                            new AstVarRef{binp->fileline(), stateVarp,
+                                                          VAccess::WRITE},
+                                            new AstConst{binp->fileline(),
+                                                         AstConst::WidthedValue{}, 8, 0}}};
+        casep->addItemsp(defaultItemp);
 
         m_sampleFuncp->addStmtsp(casep);
         UINFO(4, "      Successfully added multi-value transition state machine" << endl);
@@ -1716,12 +1727,6 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             AstCoverpoint* coverpointp = binInfo.coverpointp;
             AstCoverCross* crossp = binInfo.crossp;
 
-            // Skip illegal and ignore bins - they don't count towards coverage
-            if (binp->binsType() == VCoverBinsType::BINS_IGNORE
-                || binp->binsType() == VCoverBinsType::BINS_ILLEGAL) {
-                continue;
-            }
-
             FileLine* fl = binp->fileline();
 
             // Build hierarchical name: covergroup.coverpoint.bin or covergroup.cross.bin
@@ -1765,7 +1770,13 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             insertCall += "\"filename\", \"" + fl->filename() + "\", ";
             insertCall += "\"lineno\", \"" + std::to_string(fl->lineno()) + "\", ";
             insertCall += "\"column\", \"" + std::to_string(fl->firstColumn()) + "\", ";
-            insertCall += "\"bin\", \"" + binName + "\");";
+            if (binp->binsType() == VCoverBinsType::BINS_IGNORE) {
+                insertCall += "\"bin\", \"" + binName + "\", \"bin_type\", \"ignore\");";
+            } else if (binp->binsType() == VCoverBinsType::BINS_ILLEGAL) {
+                insertCall += "\"bin\", \"" + binName + "\", \"bin_type\", \"illegal\");";
+            } else {
+                insertCall += "\"bin\", \"" + binName + "\");";
+            }
 
             // Create a statement node with the coverage insert call
             AstCStmt* cstmtp = new AstCStmt{fl, insertCall};
