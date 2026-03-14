@@ -18,23 +18,15 @@ module t;
     }
   endgroup
 
-  // Error: array size must be 1-10000 (zero)
+  // Error: array size must be >= 1 (zero)
   covergroup cg2;
     cp1: coverpoint cp_expr {
       bins auto[0];
     }
   endgroup
 
-  // Error: array size must be 1-10000 (too large)
-  covergroup cg3;
-    cp1: coverpoint cp_expr {
-      bins auto[10001];
-    }
-  endgroup
-
   cg1 cg1_inst = new;
   cg2 cg2_inst = new;
-  cg3 cg3_inst = new;
 
   initial $finish;
 endmodule

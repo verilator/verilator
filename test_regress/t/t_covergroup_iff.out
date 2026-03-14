@@ -1,0 +1,4 @@
+cg_iff.cp_value.disabled_hi: 0
+cg_iff.cp_value.disabled_lo: 0
+cg_iff.cp_value.enabled_hi: 1
+cg_iff.cp_value.enabled_lo: 1
