@@ -10,7 +10,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <utility>
+#include <string>
 // Other libraries' .h files.
 // Your project's .h files.
 
@@ -23,11 +23,23 @@ namespace fst {
 
 typedef uint32_t Handle;
 typedef uint32_t EnumHandle;
-using string_view_pair = std::pair<const char *, std::size_t>;
+struct string_view_pair {
+	const char *m_data = nullptr;
+	size_t m_size = 0;
+
+	// implicit conversion from const char*, std::string, std::string_view
+	string_view_pair(const char *data)
+		: m_data{data}, m_size{data == nullptr ? 0 : std::strlen(data)} {}
+	string_view_pair(const char *data, size_t size) : m_data{data}, m_size{size} {}
+	string_view_pair(const std::string &s) : m_data{s.c_str()}, m_size{s.size()} {}
+#if __cplusplus >= 201703L
+	string_view_pair(std::string_view s) : m_data{s.data()}, m_size{s.size()} {}
+#endif
+};
 
 [[maybe_unused]]
 static inline string_view_pair make_string_view_pair(const char *data) {
-	if (not data) {
+	if (!data) {
 		return {nullptr, 0};
 	}
 	return {data, std::strlen(data)};
@@ -217,19 +229,19 @@ struct Hierarchy {
 };
 
 struct Header {
-	uint64_t start_time = uint64_t(-1);
-	uint64_t end_time = 0;
-	int64_t timezero = 0;
+	uint64_t m_start_time{uint64_t(-1)};
+	uint64_t m_end_time{0};
+	int64_t m_timezero{0};
 	// Match the original fstapi.c. Just for information, not used in FST.
-	uint64_t writer_memory_use = 1ull << 27;
-	uint64_t num_scopes = 0;
-	uint64_t num_vars = 0;     // #CreateVar calls, including aliases
-	uint64_t num_handles = 0;  // #unique handles, excluding aliases, shall be <= num_vars
-	uint64_t num_value_change_data_blocks = 0;
-	char writer[128]{};
-	char date[26]{};
-	FileType filetype = FileType::VERILOG;
-	int8_t timescale = -9;
+	uint64_t m_writer_memory_use{1ull << 27};
+	uint64_t m_num_scopes{0};
+	uint64_t m_num_vars{0};     // #CreateVar calls, including aliases
+	uint64_t m_num_handles{0};  // #unique handles, excluding aliases, shall be <= m_num_vars
+	uint64_t m_num_value_change_data_blocks{0};
+	char m_writer[128]{};
+	char m_date[26]{};
+	FileType m_filetype{FileType::VERILOG};
+	int8_t m_timescale{-9};
 };
 
 static constexpr uint64_t kInvalidTime = uint64_t(-1);
