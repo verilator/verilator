@@ -706,13 +706,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
         // Add default case (reset to state 0) to prevent CASEINCOMPLETE warnings,
         // since the state variable is wider than the number of valid states.
-        AstCaseItem* defaultItemp
-            = new AstCaseItem{binp->fileline(), nullptr,
-                              new AstAssign{binp->fileline(),
-                                            new AstVarRef{binp->fileline(), stateVarp,
-                                                          VAccess::WRITE},
-                                            new AstConst{binp->fileline(),
-                                                         AstConst::WidthedValue{}, 8, 0}}};
+        AstCaseItem* defaultItemp = new AstCaseItem{
+            binp->fileline(), nullptr,
+            new AstAssign{binp->fileline(),
+                          new AstVarRef{binp->fileline(), stateVarp, VAccess::WRITE},
+                          new AstConst{binp->fileline(), AstConst::WidthedValue{}, 8, 0}}};
         casep->addItemsp(defaultItemp);
 
         m_sampleFuncp->addStmtsp(casep);
@@ -830,8 +828,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     AstNodeExpr* makeRangeCondition(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* minp,
                                     AstNodeExpr* maxp) {
         if (exprp->isSigned()) {
-            return new AstAnd{fl,
-                              new AstGteS{fl, exprp->cloneTree(false), minp->cloneTree(false)},
+            return new AstAnd{fl, new AstGteS{fl, exprp->cloneTree(false), minp->cloneTree(false)},
                               new AstLteS{fl, exprp->cloneTree(false), maxp->cloneTree(false)}};
         }
         // Unsigned: skip bounds that are trivially satisfied for the expression width
@@ -841,8 +838,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         bool skipLowerCheck = (minConstp && minConstp->toUQuad() == 0);
         bool skipUpperCheck = false;
         if (maxConstp && exprWidth > 0 && exprWidth <= 64) {
-            const uint64_t maxVal = (exprWidth == 64) ? ~static_cast<uint64_t>(0)
-                                                      : ((1ULL << exprWidth) - 1ULL);
+            const uint64_t maxVal
+                = (exprWidth == 64) ? ~static_cast<uint64_t>(0) : ((1ULL << exprWidth) - 1ULL);
             skipUpperCheck = (maxConstp->toUQuad() == maxVal);
         }
         if (skipLowerCheck && skipUpperCheck) {
@@ -904,9 +901,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             }
         }
 
-        if (!condp) {
-            UINFO(4, "      No valid transition conditions could be built" << endl);
-        }
+        if (!condp) { UINFO(4, "      No valid transition conditions could be built" << endl); }
 
         return condp;
     }
@@ -1336,9 +1331,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 if (isWildcard) {
                     rangeCondp = buildWildcardCondition(binp, exprp, constp);
                 } else {
-                    rangeCondp
-                        = new AstEq{binp->fileline(), exprp->cloneTree(false),
-                                    constp->cloneTree(false)};
+                    rangeCondp = new AstEq{binp->fileline(), exprp->cloneTree(false),
+                                           constp->cloneTree(false)};
                 }
             }
 
@@ -1590,14 +1584,21 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             const std::string pageName = "v_covergroup/" + m_covergroupp->name();
             AstCStmt* cstmtp = new AstCStmt{fl};
             cstmtp->add("VL_COVER_INSERT(vlSymsp->_vm_contextp__->coveragep(), "
-                        "\"" + hierName + "\", &(");
+                        "\""
+                        + hierName + "\", &(");
             AstVarRef* const binVarRefp = new AstVarRef{fl, varp, VAccess::READ};
             binVarRefp->selfPointer(VSelfPointerText{VSelfPointerText::This{}});
             cstmtp->add(binVarRefp);
-            cstmtp->add("), \"page\", \"" + pageName + "\", "
-                        "\"filename\", \"" + fl->filename() + "\", "
-                        "\"lineno\", \"" + std::to_string(fl->lineno()) + "\", "
-                        "\"column\", \"" + std::to_string(fl->firstColumn()) + "\", ");
+            cstmtp->add("), \"page\", \"" + pageName
+                        + "\", "
+                          "\"filename\", \""
+                        + fl->filename()
+                        + "\", "
+                          "\"lineno\", \""
+                        + std::to_string(fl->lineno())
+                        + "\", "
+                          "\"column\", \""
+                        + std::to_string(fl->firstColumn()) + "\", ");
             if (binp->binsType() == VCoverBinsType::BINS_IGNORE) {
                 cstmtp->add("\"bin\", \"" + binName + "\", \"bin_type\", \"ignore\");");
             } else if (binp->binsType() == VCoverBinsType::BINS_ILLEGAL) {
