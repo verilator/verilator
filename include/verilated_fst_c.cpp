@@ -27,6 +27,7 @@
 #include "verilated_fst_c.h"
 
 // Include fstcpp library
+#include "fstcpp/fstcpp.h"
 #include "fstcpp/fstcpp_writer.h"
 
 #include <algorithm>
@@ -178,24 +179,24 @@ void VerilatedFst::pushPrefix(const char* namep, VerilatedTracePrefixType type, 
         m_fst->setScope(fst::Hierarchy::ScopeType::VCD_INTERFACE, name, std::string{});
         break;
     case VerilatedTracePrefixType::STRUCT_PACKED:
-        m_fst->setAttrBegin(fst::AttributeType::PACK, fst::PackType::PACKED, "members", l);
+        m_fst->setAttrBegin(fst::Hierarchy::AttrType::PACK, fst::Hierarchy::AttrSubType::PACK_PACKED, "members", l);
         m_fst->setScope(fst::Hierarchy::ScopeType::VCD_STRUCT, name, std::string{});
         break;
     case VerilatedTracePrefixType::STRUCT_UNPACKED:
-        m_fst->setAttrBegin(fst::AttributeType::PACK, fst::PackType::UNPACKED, "members", l);
+        m_fst->setAttrBegin(fst::Hierarchy::AttrType::PACK, fst::Hierarchy::AttrSubType::PACK_UNPACKED, "members", l);
         m_fst->setScope(fst::Hierarchy::ScopeType::VCD_STRUCT, name, std::string{});
         break;
     case VerilatedTracePrefixType::UNION_PACKED:
-        m_fst->setAttrBegin(fst::AttributeType::PACK, fst::PackType::PACKED, "members", l);
+        m_fst->setAttrBegin(fst::Hierarchy::AttrType::PACK, fst::Hierarchy::AttrSubType::PACK_PACKED, "members", l);
         m_fst->setScope(fst::Hierarchy::ScopeType::VCD_UNION, name, std::string{});
         break;
     case VerilatedTracePrefixType::ARRAY_PACKED:
-        m_fst->setAttrBegin(fst::AttributeType::ARRAY, fst::PackType::PACKED, "bounds", lr);
-        m_fst->setScope(fst::Hierarchy::ScopeType::VCD_ARRAY, name, std::string{});
+        m_fst->setAttrBegin(fst::Hierarchy::AttrType::ARRAY, fst::Hierarchy::AttrSubType::ARRAY_PACKED, "bounds", lr);
+        m_fst->setScope(fst::Hierarchy::ScopeType::SV_ARRAY, name, std::string{});
         break;
     case VerilatedTracePrefixType::ARRAY_UNPACKED:
-        m_fst->setAttrBegin(fst::AttributeType::ARRAY, fst::PackType::UNPACKED, "bounds", lr);
-        m_fst->setScope(fst::Hierarchy::ScopeType::VCD_ARRAY, name, std::string{});
+        m_fst->setAttrBegin(fst::Hierarchy::AttrType::ARRAY, fst::Hierarchy::AttrSubType::ARRAY_UNPACKED, "bounds", lr);
+        m_fst->setScope(fst::Hierarchy::ScopeType::SV_ARRAY, name, std::string{});
         break;
     default: break;
     }

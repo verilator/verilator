@@ -6,10 +6,12 @@
 #pragma once
 // direct include
 // C system headers
+#ifdef _MSC_VER
+#	include <intrin.h>
+#endif
 // C++ standard library headers
 #include <cstdint>
 #include <cstring>
-#include <iostream>
 #include <vector>
 // Other libraries' .h files.
 // Your project's .h files.
@@ -26,10 +28,27 @@ namespace platform {
 // clang-format off
 template <typename U> U to_big_endian(U u) { return u; }
 #else
+#if defined(__GNUC__) || defined(__clang__)
 template<typename U> U to_big_endian(U u, std::integral_constant<size_t, 1>) { return u; }
 template<typename U> U to_big_endian(U u, std::integral_constant<size_t, 2>) { return __builtin_bswap16(u); }
 template<typename U> U to_big_endian(U u, std::integral_constant<size_t, 4>) { return __builtin_bswap32(u); }
 template<typename U> U to_big_endian(U u, std::integral_constant<size_t, 8>) { return __builtin_bswap64(u); }
+#elif defined(_MSC_VER) // MSVC
+template<typename U> U to_big_endian(U u, std::integral_constant<size_t, 1>) { return u; }
+template<typename U> U to_big_endian(U u, std::integral_constant<size_t, 2>) { return _byteswap_ushort(u); }
+template<typename U> U to_big_endian(U u, std::integral_constant<size_t, 4>) { return _byteswap_ulong(u); }
+template<typename U> U to_big_endian(U u, std::integral_constant<size_t, 8>) { return _byteswap_uint64(u); }
+#else
+template<typename U, size_t S> U to_big_endian(U u, std::integral_constant<size_t, S>) {
+	U ret{ 0 };
+	for (size_t i = 0; i < S; ++i) {
+		ret |= u & 0xff;
+		ret <<= 8;
+		u >>= 8;
+	}
+	return ret;
+}
+#endif
 // clang-format on
 template <typename U>
 U to_big_endian(U u) {
@@ -40,17 +59,17 @@ U to_big_endian(U u) {
 }  // namespace platform
 
 struct StreamWriteHelper {
-	std::ostream *os;
+	std::ostream *m_os{nullptr};
 
-	StreamWriteHelper(std::ostream &os_) : os(&os_) {}
-	StreamWriteHelper(std::ostream *os_) : os(os_) {}
+	StreamWriteHelper(std::ostream &os_) : m_os{&os_} {}
+	StreamWriteHelper(std::ostream *os_) : m_os{os_} {}
 
 	// Write the entire uint, big-endian
 	// We do not provide little-endian version since FST only uses big-endian
 	template <typename U>
 	StreamWriteHelper &writeUInt(U u) {
 		u = platform::to_big_endian(u);
-		os->write(reinterpret_cast<const char *>(&u), sizeof(u));
+		m_os->write(reinterpret_cast<const char *>(&u), sizeof(u));
 		return *this;
 	}
 
@@ -64,35 +83,35 @@ struct StreamWriteHelper {
 		u <<= sizeof(u) * 8 - bitwidth;
 		// Write the first (bitwidth+7)/8 bytes
 		u = platform::to_big_endian(u);
-		os->write(reinterpret_cast<const char *>(&u), (bitwidth + 7) / 8);
+		m_os->write(reinterpret_cast<const char *>(&u), (bitwidth + 7) / 8);
 		return *this;
 	}
 
 	StreamWriteHelper &writeLEB128(uint64_t v) {
 		// Just reuse the logic from fstapi.c, is there a better way?
-		uint64_t nxt;
-		unsigned char buf[10]; /* ceil(64/7) = 10 */
-		unsigned char *pnt = buf;
-		int len;
+		uint64_t nxt{0};
+		unsigned char buf[10]{}; /* ceil(64/7) = 10 */
+		unsigned char *pnt{buf};
+		int len{0};
 		while ((nxt = v >> 7)) {
 			*(pnt++) = ((unsigned char)v) | 0x80;
 			v = nxt;
 		}
 		*(pnt++) = (unsigned char)v;
-		len = pnt - buf;
-		os->write(reinterpret_cast<const char *>(buf), len);
+		len = static_cast<int>(pnt - buf);
+		m_os->write(reinterpret_cast<const char *>(buf), len);
 		return *this;
 	}
 
 	StreamWriteHelper &writeLEB128Signed(int64_t v) {
 		// Just reuse the logic from fstapi.c, is there a better way?
-		unsigned char buf[15]; /* ceil(64/7) = 10 + sign byte padded way up */
-		unsigned char byt;
-		unsigned char *pnt = buf;
-		int more = 1;
-		int len;
+		unsigned char buf[15]{}; /* ceil(64/7) = 10 + sign byte padded way up */
+		unsigned char byt{0};
+		unsigned char *pnt{buf};
+		int more{1};
+		int len{0};
 		do {
-			byt = v | 0x80;
+			byt = static_cast<unsigned char>(v | 0x80);
 			v >>= 7;
 
 			if (((!v) && (!(byt & 0x40))) || ((v == -1) && (byt & 0x40))) {
@@ -102,15 +121,15 @@ struct StreamWriteHelper {
 
 			*(pnt++) = byt;
 		} while (more);
-		len = pnt - buf;
-		os->write(reinterpret_cast<const char *>(buf), len);
+		len = static_cast<int>(pnt - buf);
+		m_os->write(reinterpret_cast<const char *>(buf), len);
 		return *this;
 	}
 
 	template <typename F>
 	StreamWriteHelper &writeFloat(F f) {
 		// Always write in native endianness
-		os->write(reinterpret_cast<const char *>(&f), sizeof(f));
+		m_os->write(reinterpret_cast<const char *>(&f), sizeof(f));
 		return *this;
 	}
 
@@ -126,13 +145,13 @@ struct StreamWriteHelper {
 
 	// Write the string, non-null-terminated
 	StreamWriteHelper &writeString(const fst::string_view_pair str) {
-		os->write(str.first, str.second);
+		m_os->write(str.m_data, str.m_size);
 		return *this;
 	}
 
 	// Write the string, null-terminated
 	StreamWriteHelper &writeString0(const fst::string_view_pair str) {
-		os->write(str.first, str.second).put('\0');
+		m_os->write(str.m_data, str.m_size).put('\0');
 		return *this;
 	}
 	StreamWriteHelper &writeString(const std::string &str) {
@@ -143,33 +162,33 @@ struct StreamWriteHelper {
 	}
 
 	StreamWriteHelper &write(const char *ptr, size_t size) {
-		os->write(ptr, size);
+		m_os->write(ptr, size);
 		return *this;
 	}
 
 	StreamWriteHelper &write(const uint8_t *ptr, size_t size) {
-		os->write(reinterpret_cast<const char *>(ptr), size);
+		m_os->write(reinterpret_cast<const char *>(ptr), size);
 		return *this;
 	}
 
 	StreamWriteHelper &seek(std::streamoff pos, std::ios_base::seekdir dir) {
-		os->seekp(pos, dir);
+		m_os->seekp(pos, dir);
 		return *this;
 	}
 
 	StreamWriteHelper &fill(char fill_char, size_t size) {
 		if (size > 32) {
 			// optimize large fills
-			constexpr unsigned kChunkSize = 16;
-			char buf[kChunkSize];
-			std::memset(buf, fill_char, kChunkSize);
-			for (size_t i = 0; i < size / kChunkSize; ++i) {
-				os->write(buf, kChunkSize);
+			constexpr unsigned s_kChunkSize = 16;
+			char buf[s_kChunkSize]{};
+			std::memset(buf, fill_char, s_kChunkSize);
+			for (size_t i{0}; i < size / s_kChunkSize; ++i) {
+				m_os->write(buf, s_kChunkSize);
 			}
-			size %= kChunkSize;
+			size %= s_kChunkSize;
 		}
-		for (size_t i = 0; i < size; ++i) {
-			os->put(fill_char);
+		for (size_t i{0}; i < size; ++i) {
+			m_os->put(fill_char);
 		}
 		return *this;
 	}
@@ -197,41 +216,41 @@ struct StreamWriteHelper {
 	// to endOffset(), which is a common mistake.
 
 	StreamWriteHelper &beginOffset(std::streamoff &pos) {
-		pos = os->tellp();
+		pos = m_os->tellp();
 		return *this;
 	}
 
 	StreamWriteHelper &endOffset(std::streamoff *diff) {
 		// diff shall store previous position before calling this function
-		*diff = os->tellp() - *diff;
+		*diff = m_os->tellp() - *diff;
 		return *this;
 	}
 
 	StreamWriteHelper &endOffset(std::streamoff *diff, std::streamoff pos) {
-		*diff = os->tellp() - pos;
+		*diff = m_os->tellp() - pos;
 		return *this;
 	}
 };
 
 struct StreamVectorWriteHelper {
-	std::vector<uint8_t> &vec;
+	std::vector<uint8_t> &m_vec;
 
-	StreamVectorWriteHelper(std::vector<uint8_t> &vec_) : vec(vec_) {}
+	StreamVectorWriteHelper(std::vector<uint8_t> &vec_) : m_vec{vec_} {}
 
 	template <typename T>
 	StreamVectorWriteHelper &write(T u) {
 		const size_t s = sizeof(u);
-		vec.resize(vec.size() + s);
-		std::memcpy(vec.data() + vec.size() - s, &u, s);
+		m_vec.resize(m_vec.size() + s);
+		std::memcpy(m_vec.data() + m_vec.size() - s, &u, s);
 		return *this;
 	}
 
 	template <typename T>
 	StreamVectorWriteHelper &fill(T u, size_t count) {
 		const size_t s = sizeof(u) * count;
-		vec.resize(vec.size() + s);
-		for (size_t i = 0; i < count; ++i) {
-			std::memcpy(vec.data() + vec.size() - s + i * sizeof(u), &u, sizeof(u));
+		m_vec.resize(m_vec.size() + s);
+		for (size_t i{0}; i < count; ++i) {
+			std::memcpy(m_vec.data() + m_vec.size() - s + i * sizeof(u), &u, sizeof(u));
 		}
 		return *this;
 	}
@@ -239,14 +258,14 @@ struct StreamVectorWriteHelper {
 	template <typename T>
 	StreamVectorWriteHelper &write(T *u, size_t size) {
 		const size_t s = sizeof(u) * size;
-		vec.resize(vec.size() + s);
-		std::memcpy(vec.data() + vec.size() - s, u, s);
+		m_vec.resize(m_vec.size() + s);
+		std::memcpy(m_vec.data() + m_vec.size() - s, u, s);
 		return *this;
 	}
 
 	template <typename E>
 	StreamVectorWriteHelper &writeU8Enum(E e) {
-		vec.push_back(static_cast<uint8_t>(e));
+		m_vec.push_back(static_cast<uint8_t>(e));
 		return *this;
 	}
 
@@ -256,8 +275,8 @@ struct StreamVectorWriteHelper {
 	StreamVectorWriteHelper &writeUIntBE(U u) {
 		u = platform::to_big_endian(u);
 		const size_t s = sizeof(u);
-		vec.resize(vec.size() + s);
-		std::memcpy(vec.data() + vec.size() - s, &u, s);
+		m_vec.resize(m_vec.size() + s);
+		std::memcpy(m_vec.data() + m_vec.size() - s, &u, s);
 		return *this;
 	}
 
@@ -272,39 +291,39 @@ struct StreamVectorWriteHelper {
 		// Write the first (bitwidth+7)/8 bytes
 		u = platform::to_big_endian(u);
 		const size_t s = (bitwidth + 7) / 8;
-		vec.resize(vec.size() + s);
-		std::memcpy(vec.data() + vec.size() - s, &u, s);
+		m_vec.resize(m_vec.size() + s);
+		std::memcpy(m_vec.data() + m_vec.size() - s, &u, s);
 		return *this;
 	}
 
 	StreamVectorWriteHelper &writeLEB128(uint64_t v) {
 		// Just reuse the logic from fstapi.c, is there a better way?
-		uint64_t nxt;
-		unsigned char buf[10]; /* ceil(64/7) = 10 */
-		unsigned char *pnt = buf;
-		int len;
+		uint64_t nxt{0};
+		unsigned char buf[10]{}; /* ceil(64/7) = 10 */
+		unsigned char *pnt{buf};
+		int len{0};
 		while ((nxt = v >> 7)) {
 			*(pnt++) = ((unsigned char)v) | 0x80;
 			v = nxt;
 		}
 		*(pnt++) = (unsigned char)v;
-		len = pnt - buf;
+		len = static_cast<int>(pnt - buf);
 
-		const size_t cur = vec.size();
-		vec.resize(cur + len);
-		std::memcpy(vec.data() + cur, buf, len);
+		const size_t cur = m_vec.size();
+		m_vec.resize(cur + len);
+		std::memcpy(m_vec.data() + cur, buf, len);
 		return *this;
 	}
 
 	StreamVectorWriteHelper &writeLEB128Signed(int64_t v) {
 		// Just reuse the logic from fstapi.c, is there a better way?
-		unsigned char buf[15]; /* ceil(64/7) = 10 + sign byte padded way up */
-		unsigned char byt;
-		unsigned char *pnt = buf;
-		int more = 1;
-		int len;
+		unsigned char buf[15]{}; /* ceil(64/7) = 10 + sign byte padded way up */
+		unsigned char byt{0};
+		unsigned char *pnt{buf};
+		int more{1};
+		int len{0};
 		do {
-			byt = v | 0x80;
+			byt = static_cast<unsigned char>(v | 0x80);
 			v >>= 7;
 
 			if (((!v) && (!(byt & 0x40))) || ((v == -1) && (byt & 0x40))) {
@@ -314,11 +333,11 @@ struct StreamVectorWriteHelper {
 
 			*(pnt++) = byt;
 		} while (more);
-		len = pnt - buf;
+		len = static_cast<int>(pnt - buf);
 
-		const size_t cur = vec.size();
-		vec.resize(cur + len);
-		std::memcpy(vec.data() + cur, buf, len);
+		const size_t cur = m_vec.size();
+		m_vec.resize(cur + len);
+		std::memcpy(m_vec.data() + cur, buf, len);
 		return *this;
 	}
 
@@ -334,25 +353,25 @@ struct StreamVectorWriteHelper {
 
 	// Write the string, non-null-terminated
 	StreamVectorWriteHelper &writeString(const fst::string_view_pair str) {
-		if (str.second != 0) {
-			const size_t len = str.second;
-			const size_t cur = vec.size();
-			vec.resize(cur + len);
-			std::memcpy(vec.data() + cur, str.first, len);
+		if (str.m_size != 0) {
+			const size_t len = str.m_size;
+			const size_t cur = m_vec.size();
+			m_vec.resize(cur + len);
+			std::memcpy(m_vec.data() + cur, str.m_data, len);
 		}
 		return *this;
 	}
 
 	// Write the string, null-terminated
 	StreamVectorWriteHelper &writeString0(const fst::string_view_pair str) {
-		if (str.second != 0) {
-			const size_t len = str.second;
-			const size_t cur = vec.size();
-			vec.resize(cur + len + 1);
-			std::memcpy(vec.data() + cur, str.first, len);
-			vec[cur + len] = '\0';
+		if (str.m_size != 0) {
+			const size_t len = str.m_size;
+			const size_t cur = m_vec.size();
+			m_vec.resize(cur + len + 1);
+			std::memcpy(m_vec.data() + cur, str.m_data, len);
+			m_vec[cur + len] = '\0';
 		} else {
-			vec.push_back('\0');
+			m_vec.push_back('\0');
 		}
 		return *this;
 	}
