@@ -710,10 +710,7 @@ class CovergroupSamplingVisitor final : public VNVisitor {
         AstCMethodCall* const cmethodCallp
             = new AstCMethodCall{fl, varrefp, sampleCFuncp, nullptr};
 
-        // Set dtype to void since sample() doesn't return a value
         cmethodCallp->dtypeSetVoid();
-
-        // Set argTypes to "vlSymsp" so the emit code will pass it automatically
         cmethodCallp->argTypes("vlSymsp");
 
         // Clone the sensitivity for this active block.
@@ -739,9 +736,6 @@ class CovergroupSamplingVisitor final : public VNVisitor {
 public:
     // CONSTRUCTORS
     explicit CovergroupSamplingVisitor(AstNetlist* nodep) {
-        // NOTE: Automatic sampling now works with --timing
-        // Previously disabled due to compatibility issues with V3Timing transformations
-        // The current implementation injects sampling before V3Active, allowing both modes to work
 
         UINFO(4, "CovergroupSamplingVisitor: Starting" << endl);
 
