@@ -75,12 +75,10 @@ jobs:
       matrix:
         cases:
           - "BlackParrot:1x1:*"
-          - "BlackParrot:2x2:*"
           - "BlackParrot:4x4:*"
           - "Caliptra:default:*"
           - "NVDLA:*"
           - "OpenPiton:1x1:*"
-          - "OpenPiton:2x2:*"
           - "OpenPiton:4x4:*"
           - "OpenTitan:*"
           - "VeeR-EH1:asic*"
@@ -121,12 +119,10 @@ jobs:
       matrix:
         cases:
           - "BlackParrot:1x1:*"
-          - "BlackParrot:2x2:*"
           - "BlackParrot:4x4:*"
           - "Caliptra:default:*"
           - "NVDLA:*"
           - "OpenPiton:1x1:*"
-          - "OpenPiton:2x2:*"
           - "OpenPiton:4x4:*"
           - "OpenTitan:*"
           - "VeeR-EH1:asic*"
@@ -167,11 +163,9 @@ jobs:
       matrix:
         cases:
           - "BlackParrot:1x1:* !-hier"
-          - "BlackParrot:2x2:* !-hier"
           - "BlackParrot:4x4:* !-hier"
           - "NVDLA:* !-hier"
           - "OpenPiton:1x1:* !-hier"
-          - "OpenPiton:2x2:* !-hier"
           - "OpenPiton:4x4:* !-hier"
           - "OpenPiton:8x8:* !-hier"
           - "OpenPiton:16x16:dhry !-hier"
