@@ -859,7 +859,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
     // Build condition for a single transition item.
     // Returns expression that checks if exprp matches the item's value/range list.
-    // Overload for when the expression is a variable read — creates and manages the VarRef
+    // Overload for when the expression is a variable read -- creates and manages the VarRef
     // internally, so callers don't need to construct a temporary node.
     AstNodeExpr* buildTransitionItemCondition(AstCoverTransItem* itemp, AstVar* varp) {
         AstNodeExpr* varRefp = new AstVarRef{varp->fileline(), varp, VAccess::READ};
