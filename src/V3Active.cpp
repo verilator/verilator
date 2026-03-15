@@ -655,7 +655,8 @@ class CovergroupSamplingVisitor final : public VNVisitor {
                     if (AstCovergroup* const cgp = VN_CAST(memberp, Covergroup)) {
                         // Unlink eventp from cgp so it survives cgp's deletion,
                         // then take ownership in the map for use during the second pass.
-                        if (cgp->eventp()) m_covergroupEvents[classp] = cgp->eventp()->unlinkFrBack();
+                        if (cgp->eventp())
+                            m_covergroupEvents[classp] = cgp->eventp()->unlinkFrBack();
                         cgp->unlinkFrBack();
                         VL_DO_DANGLING(cgp->deleteTree(), cgp);
                         break;
@@ -688,7 +689,8 @@ class CovergroupSamplingVisitor final : public VNVisitor {
 
         // Check if this covergroup has an automatic sampling event
         const auto evtIt = m_covergroupEvents.find(classp);
-        if (evtIt == m_covergroupEvents.end()) return;  // No automatic sampling for this covergroup
+        if (evtIt == m_covergroupEvents.end())
+            return;  // No automatic sampling for this covergroup
         AstSenTree* const eventp = evtIt->second;
 
         // Get the sample CFunc from the map populated during the first pass
