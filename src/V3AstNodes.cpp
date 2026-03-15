@@ -2691,13 +2691,34 @@ void AstPatMember::dumpJson(std::ostream& str) const {
 }
 void AstNodeTriop::dump(std::ostream& str) const { this->AstNodeExpr::dump(str); }
 void AstNodeTriop::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
+void AstSFormatArg::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    str << " [" << formatAttr().ascii() << "]";
+}
+void AstSFormatArg::dumpJson(std::ostream& str) const {
+    dumpJsonGen(str);
+    dumpJsonStr(str, "formatAttr", std::string{formatAttr().ascii()});
+}
+VFormatAttr AstSFormatArg::formatAttrDefauled(const AstSFormatArg* nodep,
+                                              const AstNodeDType* dtypep) {
+    if (nodep) return nodep->formatAttr();
+    // Used to initially assign the formatArg
+    // Later, V3Randomize creates raw %s's without SFormatArg's that have string arguments
+    if (!dtypep) return VFormatAttr{};
+    const AstNodeDType* skipDtypep = dtypep->skipRefp();
+    if (skipDtypep->isDouble()) return VFormatAttr{VFormatAttr::DOUBLE};
+    if (skipDtypep->isString()) return VFormatAttr{VFormatAttr::STRING};
+    return VFormatAttr{};
+}
 void AstSFormatF::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     if (exprFormat()) str << " [EXPRFMT]";
+    if (optionalFormat()) str << " [OPTFMT]";
 }
 void AstSFormatF::dumpJson(std::ostream& str) const {
     dumpJsonGen(str);
     dumpJsonBoolFuncIf(str, exprFormat);
+    dumpJsonBoolFuncIf(str, optionalFormat);
 }
 void AstSel::dump(std::ostream& str) const {
     this->AstNodeBiop::dump(str);

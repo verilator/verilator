@@ -1267,65 +1267,71 @@ private:
         // Ignore
     }
 
+    void visit(AstSFormatArg* nodep) override {
+        checkNodeInfo(nodep);
+        iterateChildrenConst(nodep);
+    }
     void visit(AstSFormatF* nodep) override {
         if (jumpingOver()) return;
         if (!optimizable()) return;  // Accelerate
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
-        if (m_params) {
-            AstNode* nextArgp = nodep->exprsp();
+        if (m_checkOnly) return;
+        if (!optimizable()) return;  // Accelerate
 
-            string result;
-            const string format = nodep->text();
-            auto pos = format.cbegin();
-            bool inPct = false;
-            string width;
-            for (; pos != format.cend(); ++pos) {
-                if (!inPct && pos[0] == '%') {
-                    inPct = true;
-                    width = "";
-                } else if (!inPct) {  // Normal text
-                    result += *pos;
-                } else {  // Format character
-                    if (std::isdigit(pos[0])) {
-                        width += pos[0];
-                        continue;
+        AstNode* nextArgp = nodep->exprsp();
+        string result;
+        const string format = nodep->text();
+        auto pos = format.cbegin();
+        bool inPct = false;
+        string width;
+        for (; pos != format.cend(); ++pos) {
+            if (!inPct && pos[0] == '%') {
+                inPct = true;
+                width = "";
+            } else if (!inPct) {  // Normal text
+                result += *pos;
+            } else {  // Format character
+                if (std::isdigit(pos[0])) {
+                    width += pos[0];
+                    continue;
+                }
+
+                inPct = false;
+
+                if (V3Number::displayedFmtHasArg(std::tolower(pos[0]), false)) {
+                    AstNode* const argp = nextArgp;
+                    nextArgp = nextArgp->nextp();
+                    AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
+                    AstNode* const subargp = fargp ? fargp->exprp() : argp;
+                    AstConst* const constp = fetchConstNull(subargp);
+                    const VFormatAttr formatAttr
+                        = argp ? AstSFormatArg::formatAttrDefauled(fargp, subargp->dtypep())
+                               : VFormatAttr{};
+                    if (!constp) {
+                        clearOptimizable(nodep,
+                                         "Argument for $display-like statement is not constant");
+                        break;
                     }
-
-                    inPct = false;
-
-                    if (V3Number::displayedFmtLegal(std::tolower(pos[0]), false)) {
-                        AstNode* const argp = nextArgp;
-                        nextArgp = nextArgp->nextp();
-                        AstConst* const constp = fetchConstNull(argp);
-                        if (!constp) {
-                            clearOptimizable(
-                                nodep, "Argument for $display like statement is not constant");
-                            break;
-                        }
-                        const string pformat = "%"s + width + pos[0];
-                        result += constp->num().displayed(nodep, pformat);
-                    } else {
-                        switch (std::tolower(pos[0])) {
-                        case '%': result += "%"; break;
-                        case 'm':
-                            // This happens prior to AstScope so we don't
-                            // know the scope name. Leave the %m in place.
-                            result += "%m";
-                            break;
-                        default:
-                            clearOptimizable(nodep, "Unknown $display-like format code.");
-                            break;
-                        }
+                    const string pformat = "%"s + width + pos[0];
+                    result += constp->num().displayed(nodep, pformat, formatAttr);
+                } else {
+                    switch (std::tolower(pos[0])) {
+                    case '%': result += "%"; break;
+                    case 'm':
+                        // This happens prior to AstScope so we don't
+                        // know the scope name. Leave the %m in place.
+                        result += "%m";
+                        break;
+                    default: clearOptimizable(nodep, "Unknown $display-like format code."); break;
                     }
                 }
             }
-
-            AstConst* const resultConstp
-                = new AstConst{nodep->fileline(), AstConst::String{}, result};
-            setValue(nodep, resultConstp);
-            m_reclaimValuesp.push_back(resultConstp);
         }
+
+        AstConst* const resultConstp = new AstConst{nodep->fileline(), AstConst::String{}, result};
+        setValue(nodep, resultConstp);
+        m_reclaimValuesp.push_back(resultConstp);
     }
 
     void visit(AstDisplay* nodep) override {
@@ -1354,6 +1360,7 @@ private:
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
         if (!optimizable()) return;
+        if (m_checkOnly) return;
         std::string result = toStringRecurse(nodep->lhsp());
         if (!optimizable()) return;
         AstConst* const resultConstp = new AstConst{nodep->fileline(), AstConst::String{}, result};

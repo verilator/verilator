@@ -121,28 +121,6 @@ class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
     std::unordered_map<AstJumpBlock*, size_t> m_labelNumbers;  // Label numbers for AstJumpBlocks
     bool m_createdScopeHash = false;  // Already created a scope hash
 
-    // State associated with processing $display style string formatting
-    struct EmitDispState final {
-        string m_format;  // "%s" and text from user
-        std::vector<char> m_argsChar;  // Format of each argument to be printed
-        std::vector<AstNode*> m_argsp;  // Each argument to be printed
-        std::vector<string> m_argsFunc;  // Function before each argument to be printed
-        EmitDispState() { clear(); }
-        void clear() {
-            m_format = "";
-            m_argsChar.clear();
-            m_argsp.clear();
-            m_argsFunc.clear();
-        }
-        void pushFormat(const string& fmt) { m_format += fmt; }
-        void pushFormat(char fmt) { m_format += fmt; }
-        void pushArg(char fmtChar, AstNode* nodep, const string& func) {
-            m_argsChar.push_back(fmtChar);
-            m_argsp.push_back(nodep);
-            m_argsFunc.push_back(func);
-        }
-    } m_emitDispState;
-
 protected:
     VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -172,11 +150,9 @@ protected:
 
 public:
     // METHODS
-    void displayNode(AstNode* nodep, AstScopeName* scopenamep, const string& vformat,
-                     AstNode* exprsp, bool isScan);
-    void displayEmit(AstNode* nodep, bool isScan);
-    void displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const string& vfmt, bool ignore,
-                    char fmtLetter);
+    bool displayEmitHeader(AstNode* nodep, bool isScan);
+    void displayNode(AstNode* nodep, AstSFormatF* fmtp, const string& vformat, AstNode* exprsp,
+                     bool isScan);
 
     bool emitSimpleOk(AstNodeExpr* nodep);
     void emitIQW(const AstNode* nodep) {
@@ -895,7 +871,7 @@ public:
     void visit(AstDisplay* nodep) override {
         string text = nodep->fmtp()->text();
         if (nodep->addNewline()) text += "\n";
-        displayNode(nodep, nodep->fmtp()->scopeNamep(), text, nodep->fmtp()->exprsp(), false);
+        displayNode(nodep, nodep->fmtp(), text, nodep->fmtp()->exprsp(), false);
     }
     void visit(AstDumpCtl* nodep) override {
         switch (nodep->ctlType()) {
@@ -946,11 +922,10 @@ public:
         }
     }
     void visit(AstSFormat* nodep) override {
-        displayNode(nodep, nodep->fmtp()->scopeNamep(), nodep->fmtp()->text(),
-                    nodep->fmtp()->exprsp(), false);
+        displayNode(nodep, nodep->fmtp(), nodep->fmtp()->text(), nodep->fmtp()->exprsp(), false);
     }
     void visit(AstSFormatF* nodep) override {
-        displayNode(nodep, nodep->scopeNamep(), nodep->text(), nodep->exprsp(), false);
+        displayNode(nodep, nodep, nodep->text(), nodep->exprsp(), false);
     }
     void visit(AstFScanF* nodep) override {
         displayNode(nodep, nullptr, nodep->text(), nodep->exprsp(), true);

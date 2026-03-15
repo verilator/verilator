@@ -737,7 +737,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     bool m_wantSingle = false;  // Whether to merge constraint expressions with LOGAND
     VMemberMap& m_memberMap;  // Member names cached for fast lookup
     bool m_structSel = false;  // Marks when inside structSel
-                               // (used to format "%@.%@" for struct arrays)
+                               // (used to format "%s.%s" for struct arrays)
     std::set<std::string>& m_writtenVars;  // Track which variable paths have write_var generated
                                            // (shared across all constraints)
     std::set<AstVar*>* m_sizeConstrainedArraysp = nullptr;  // Arrays with size+element constraints
@@ -887,19 +887,19 @@ class ConstraintExprVisitor final : public VNVisitor {
                 switch (pos[0]) {
                 case '%': break;
                 case 'l':
-                    pos[0] = '@';
+                    pos[0] = 's';
                     UASSERT_OBJ(lhsp, nodep, "emitSMT() references undef node");
                     argsp = AstNode::addNext(argsp, lhsp);
                     lhsp = nullptr;
                     break;
                 case 'r':
-                    pos[0] = '@';
+                    pos[0] = 's';
                     UASSERT_OBJ(rhsp, nodep, "emitSMT() references undef node");
                     argsp = AstNode::addNext(argsp, rhsp);
                     rhsp = nullptr;
                     break;
                 case 't':
-                    pos[0] = '@';
+                    pos[0] = 's';
                     UASSERT_OBJ(thsp, nodep, "emitSMT() references undef node");
                     argsp = AstNode::addNext(argsp, thsp);
                     thsp = nullptr;
@@ -912,8 +912,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         UASSERT_OBJ(!rhsp, nodep, "Missing emitSMT %r for " << rhsp);
         UASSERT_OBJ(!thsp, nodep, "Missing emitSMT %t for " << thsp);
         AstSFormatF* const newp = new AstSFormatF{nodep->fileline(), smtExpr, false, argsp};
-        if (m_structSel && newp->name() == "(select %@ %@)") {
-            newp->name("%@.%@");
+        if (m_structSel && newp->name() == "(select %s %s)") {
+            newp->name("%s.%s");
             if (!VN_IS(nodep, AssocSel)) newp->exprsp()->nextp()->name("%x");
         }
         nodep->replaceWith(newp);
@@ -943,7 +943,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         std::ostringstream fmt;
         fmt << "(bvand";
-        for (AstNode* itemp = exprsp; itemp; itemp = itemp->nextp()) fmt << " %@";
+        for (AstNode* itemp = exprsp; itemp; itemp = itemp->nextp()) fmt << " %s";
         fmt << ')';
         return new AstSFormatF{fl, fmt.str(), false, exprsp};
     }
@@ -1683,8 +1683,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         iterateChildren(nodep);
         FileLine* const fl = nodep->fileline();
         AstSFormatF* newp = nullptr;
-        if (VN_AS(nodep->fromp(), SFormatF)->name() == "%@.%@") {
-            newp = new AstSFormatF{fl, "%@.%@." + nodep->name(), false,
+        if (VN_AS(nodep->fromp(), SFormatF)->name() == "%s.%s") {
+            newp = new AstSFormatF{fl, "%s.%s." + nodep->name(), false,
                                    VN_AS(nodep->fromp(), SFormatF)->exprsp()->cloneTreePure(true)};
             if (newp->exprsp()->nextp()->name().rfind("#x", 0) == 0)
                 newp->exprsp()->nextp()->name("%x");  //  for #x%x to %x
@@ -1702,7 +1702,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Adaptive formatting and type handling for associative array keys
         if (VN_IS(nodep->bitp(), VarRef) && VN_AS(nodep->bitp(), VarRef)->isString()) {
             VNRelinker handle;
-            AstNodeExpr* const idxp = new AstSFormatF{fl, (m_structSel ? "%32p" : "#x%32p"), false,
+            AstNodeExpr* const idxp = new AstSFormatF{fl, (m_structSel ? "%32x" : "#x%32x"), false,
                                                       nodep->bitp()->unlinkFrBack(&handle)};
             handle.relink(idxp);
             editSMT(nodep, nodep->fromp(), idxp);
@@ -1808,8 +1808,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                     FileLine* const fl = nodep->fileline();
                     AstSFormatF* newp = nullptr;
                     if (AstSFormatF* const fromp = VN_CAST(nodep->fromp(), SFormatF)) {
-                        if (fromp->name() == "%@.%@") {
-                            newp = new AstSFormatF{fl, "%@.%@." + nodep->name(), false,
+                        if (fromp->name() == "%s.%s") {
+                            newp = new AstSFormatF{fl, "%s.%s." + nodep->name(), false,
                                                    fromp->exprsp()->cloneTreePure(true)};
                         } else {
                             newp = new AstSFormatF{fl, fromp->name() + "." + nodep->name(), false,
@@ -1865,8 +1865,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                 FileLine* const fl = nodep->fileline();
                 AstSFormatF* newp = nullptr;
                 if (AstSFormatF* const fromp = VN_CAST(nodep->fromp(), SFormatF)) {
-                    if (fromp->name() == "%@.%@") {
-                        newp = new AstSFormatF{fl, "%@.%@." + nodep->name(), false,
+                    if (fromp->name() == "%s.%s") {
+                        newp = new AstSFormatF{fl, "%s.%s." + nodep->name(), false,
                                                fromp->exprsp()->cloneTreePure(true)};
                     } else {
                         newp = new AstSFormatF{fl, fromp->name() + "." + nodep->name(), false,
@@ -1941,7 +1941,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             cexprp->add(new AstBegin{
                 fl, "", new AstForeach{fl, nodep->headerp()->unlinkFrBack(), cstmtp}, true});
             cexprp->add("return ret.empty() ? \"#b1\" : \"(bvand\" + ret + \")\";\n})()");
-            nodep->replaceWith(new AstSFormatF{fl, "%@", false, cexprp});
+            nodep->replaceWith(new AstSFormatF{fl, "%s", false, cexprp});
         } else {
             iterateAndNextNull(nodep->bodyp());
             nodep->replaceWith(new AstBegin{fl, "",
@@ -2169,9 +2169,9 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstNodeExpr* const argsp = AstNode::addNext(nodep->fromp()->unlinkFrBack(), pinp);
             AstSFormatF* newp = nullptr;
             if (m_structSel)
-                newp = new AstSFormatF{fl, "%@.%@", false, argsp};
+                newp = new AstSFormatF{fl, "%s.%s", false, argsp};
             else
-                newp = new AstSFormatF{fl, "(select %@ %@)", false, argsp};
+                newp = new AstSFormatF{fl, "(select %s %s)", false, argsp};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
@@ -2200,7 +2200,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             cexprp->add("([&]{\nstd::string ret;\n");
             cexprp->add(new AstBegin{fl, "", new AstForeach{fl, headerp, cstmtp}, true});
             cexprp->add("return ret.empty() ? \"#b0\" : \"(bvor\" + ret + \")\";\n})()");
-            nodep->replaceWith(new AstSFormatF{fl, "%@", false, cexprp});
+            nodep->replaceWith(new AstSFormatF{fl, "%s", false, cexprp});
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
@@ -2415,7 +2415,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 cexprp->add("([&]{\nstd::string ret = \"" + identity + "\";\n");
                 cexprp->add(new AstBegin{fl, "", new AstForeach{fl, headerp, cstmtp}, true});
                 cexprp->add("return ret;\n})()");
-                nodep->replaceWith(new AstSFormatF{fl, "%@", false, cexprp});
+                nodep->replaceWith(new AstSFormatF{fl, "%s", false, cexprp});
             } else {
                 // For without 'with' clause: use AstCExpr with conditional
                 AstCExpr* const cexprp = new AstCExpr{fl};
@@ -2424,7 +2424,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 cexprp->add(new AstBegin{fl, "", new AstForeach{fl, headerp, cstmtp}, true});
                 cexprp->add("return ret.empty() ? \"" + identity + "\" : \"(" + smtOp
                             + "\" + ret + \")\";\n})()");
-                nodep->replaceWith(new AstSFormatF{fl, "%@", false, cexprp});
+                nodep->replaceWith(new AstSFormatF{fl, "%s", false, cexprp});
             }
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;

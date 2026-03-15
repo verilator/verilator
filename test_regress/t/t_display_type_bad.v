@@ -9,7 +9,9 @@ module t;
   int vec[2];
   initial begin
     $display("%d %x %f %t", s, s, s, s);
+    $display("%D %X %F %T", s, s, s, s);
     $display("%d %x %f %t", vec, vec, vec, vec);
+    $display("%D %X %F %T", vec, vec, vec, vec);
     $write("*-* All Finished *-*\n");
     $finish;
   end

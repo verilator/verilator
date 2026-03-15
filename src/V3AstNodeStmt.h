@@ -595,7 +595,10 @@ public:
                char missingArgChar = 'd')
         : ASTGEN_SUPER_Display(fl)
         , m_displayType{dispType} {
-        fmtp(new AstSFormatF{fl, AstSFormatF::ExprFormat{}, exprsp, missingArgChar});
+        AstSFormatF* const newp
+            = new AstSFormatF{fl, AstSFormatF::ExprFormat{}, exprsp, missingArgChar};
+        newp->optionalFormat(true);
+        fmtp(newp);
         this->filep(filep);
     }
     ASTGEN_MEMBERS_AstDisplay;
@@ -1104,15 +1107,13 @@ class AstSFormat final : public AstNodeStmt {
     // @astgen op1 := fmtp : AstSFormatF
     // @astgen op2 := lhsp : AstNodeExpr
 public:
-    AstSFormat(FileLine* fl, AstNodeExpr* lhsp, const string& text, AstNodeExpr* exprsp,
+    AstSFormat(FileLine* fl, bool optionalFormat, AstNodeExpr* lhsp, AstNodeExpr* exprsp,
                char missingArgChar = 'd')
         : ASTGEN_SUPER_SFormat(fl) {
-        fmtp(new AstSFormatF{fl, text, true, exprsp, missingArgChar});
-        this->lhsp(lhsp);
-    }
-    AstSFormat(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* exprsp, char missingArgChar = 'd')
-        : ASTGEN_SUPER_SFormat(fl) {
-        fmtp(new AstSFormatF{fl, AstSFormatF::ExprFormat{}, exprsp, missingArgChar});
+        AstSFormatF* const newp
+            = new AstSFormatF{fl, AstSFormatF::ExprFormat{}, exprsp, missingArgChar};
+        newp->optionalFormat(optionalFormat);
+        fmtp(newp);
         this->lhsp(lhsp);
     }
     ASTGEN_MEMBERS_AstSFormat;

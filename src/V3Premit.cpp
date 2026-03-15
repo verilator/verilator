@@ -319,10 +319,16 @@ class PremitVisitor final : public VNVisitor {
         iterateChildren(nodep);
         // Any strings sent to a display must be var of string data type,
         // to avoid passing a pointer to a temporary.
-        for (AstNodeExpr *expp = nodep->exprsp(), *nextp; expp; expp = nextp) {
-            nextp = VN_AS(expp->nextp(), NodeExpr);
-            if (expp->isString() && !VN_IS(expp, VarRef)) {
-                AstVar* const varp = createTemp(expp);
+        AstNodeExpr* exprsp = nodep->exprsp();
+        if (nodep->exprFormat()) exprsp = VN_AS(exprsp->nextp(), NodeExpr);
+        for (AstNodeExpr *argp = exprsp, *nextp; argp; argp = nextp) {
+            nextp = VN_AS(argp->nextp(), NodeExpr);
+
+            AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
+            AstNodeExpr* const subargp = fargp ? fargp->exprp() : argp;
+            // Must avoid taking address of rvalue, so even Const needs a temp
+            if (subargp->isString() && !VN_IS(subargp, VarRef)) {
+                AstVar* const varp = createTemp(subargp);
                 // Do not remove VarRefs to this in V3Const
                 varp->noSubst(true);
             }

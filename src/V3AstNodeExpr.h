@@ -2150,28 +2150,64 @@ public:
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { return widthInstrs(); }
 };
+class AstSFormatArg final : public AstNodeExpr {
+    // Information for formatting each argument to AstSFormat,
+    // used to pass to (potentially) runtime decoding of format arguments
+    // PARENT: SFormatF (or next list of expressions)
+    // @astgen op1 := exprp : AstNodeExpr
+    VFormatAttr m_formatAttr;  // How to format expression
+
+public:
+    AstSFormatArg(FileLine* fl, VFormatAttr formatAttr, AstNodeExpr* exprp)
+        : ASTGEN_SUPER_SFormatArg(fl)
+        , m_formatAttr{formatAttr} {
+        dtypeFrom(exprp);
+        this->exprp(exprp);
+    }
+    ASTGEN_MEMBERS_AstSFormatArg;
+    void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
+    int instrCount() const override { return 0; }
+    bool sameNode(const AstNode* samep) const override {
+        return formatAttr() == VN_DBG_AS(samep, SFormatArg)->formatAttr();
+    }
+    string verilogKwd() const override { return "$sformatarg"; }
+    string emitVerilog() override { return "%l"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+    const char* broken() const override {
+        BROKEN_RTN(!VN_IS(backp(), SFormatF) && firstAbovep());  // In list under SFormatF
+        return nullptr;
+    }
+    VFormatAttr formatAttr() const { return m_formatAttr; }
+    void formatAttr(const VFormatAttr& formatAttr) { m_formatAttr = formatAttr; }
+    static VFormatAttr formatAttrDefauled(const AstSFormatArg* nodep, const AstNodeDType* dtypep);
+};
 class AstSFormatF final : public AstNodeExpr {
     // Convert format to string, generally under an AstDisplay or AstSFormat
     // Also used as "real" function for /*verilator sformat*/ functions
+    // exprsp() once past parsing may be AstSFormatArgs
     // @astgen op1 := exprsp : List[AstNodeExpr]
     // @astgen op2 := scopeNamep : Optional[AstScopeName]
     string m_text;
     const bool m_hidden;  // Under display, etc
-    bool m_exprFormat;  // Runtime Node* format, false = text() format code, false = possibly r
+    bool m_exprFormat
+        = false;  // Runtime Node* format, false = text() format code, false = possibly r
+    bool m_optionalFormat
+        = false;  // With exprFormat, first argument is either format or format-implied
     const char m_missingArgChar;  // Format code when argument without format, 'h'/'o'/'b'
     VTimescale m_timeunit;  // Parent module time unit
 public:
+    class ExprFormat {};
     AstSFormatF(FileLine* fl, const string& text, bool hidden, AstNodeExpr* exprsp,
                 char missingArgChar = 'd')
         : ASTGEN_SUPER_SFormatF(fl)
         , m_text{text}
         , m_hidden{hidden}
-        , m_exprFormat{false}
         , m_missingArgChar{missingArgChar} {
         dtypeSetString();
         addExprsp(exprsp);
     }
-    class ExprFormat {};
     AstSFormatF(FileLine* fl, ExprFormat, AstNodeExpr* exprsp, char missingArgChar = 'd',
                 bool hidden = true)
         : ASTGEN_SUPER_SFormatF(fl)
@@ -2194,12 +2230,19 @@ public:
     string verilogKwd() const override { return "$sformatf"; }
     string text() const { return m_text; }  // * = Text to display
     void text(const string& text) { m_text = text; }
+    const char* broken() const override {
+        BROKEN_RTN(text() != "" && exprFormat());  // Expr format means no literal format
+        return nullptr;
+    }
     bool formatScopeTracking() const {  // Track scopeNamep();  Ok if false positive
-        return (name().find("%m") != string::npos || name().find("%M") != string::npos);
+        return exprFormat() || name().find("%m") != string::npos
+               || name().find("%M") != string::npos;
     }
     bool hidden() const { return m_hidden; }
     bool exprFormat() const { return m_exprFormat; }
     void exprFormat(bool flag) { m_exprFormat = flag; }
+    bool optionalFormat() const { return m_optionalFormat; }
+    void optionalFormat(bool flag) { m_optionalFormat = flag; }
     char missingArgChar() const { return m_missingArgChar; }
     VTimescale timeunit() const { return m_timeunit; }
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }

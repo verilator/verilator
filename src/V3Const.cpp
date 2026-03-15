@@ -3606,26 +3606,43 @@ class ConstVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
         return true;
     }
+    void visit(AstSFormatArg* nodep) override { iterateChildren(nodep); }
     void visit(AstSFormatF* nodep) override {
         // Substitute constants into displays.  The main point of this is to
         // simplify assertion methodologies which call functions with display's.
         // This eliminates a pile of wide temps, and makes the C a whole lot more readable.
         iterateChildren(nodep);
+        if (nodep->exprFormat()) {
+            // Upconvert to text-based format?
+            // Similar code in V3LinkResolve::visit(AstSFormatF)
+            UASSERT_OBJ(nodep->text() == "", nodep,
+                        "Non-format $sformatf should have text format == \"\"");
+            if (VN_IS(nodep->exprsp(), Const)
+                && VN_AS(nodep->exprsp(), Const)->num().isFromString()) {
+                AstConst* const fmtp = VN_AS(nodep->exprsp()->unlinkFrBack(), Const);
+                nodep->text(fmtp->num().toString());
+                nodep->exprFormat(false);
+                VL_DO_DANGLING(pushDeletep(fmtp), fmtp);
+            }
+        }
+        if (nodep->exprFormat()) return;  // Runtime, unfortunately  (unless constify format later)
         bool anyconst = false;
         for (AstNode* argp = nodep->exprsp(); argp; argp = argp->nextp()) {
-            if (VN_IS(argp, Const)) {
+            AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
+            AstNode* const subargp = fargp ? fargp->exprp() : argp;
+            if (VN_IS(subargp, Const)) {
                 anyconst = true;
                 break;
             }
         }
         if (m_doNConst && anyconst) {
-            // UINFO(9, "  Display in  " << nodep->text());
+            UINFO(9, "  Display in  " << nodep->text());
             string newFormat;
             string fmt;
             bool inPct = false;
             AstNode* argp = nodep->exprsp();
             const string text = nodep->text();
-            for (const char ch : text) {
+            for (char ch : text) {
                 if (!inPct && ch == '%') {
                     inPct = true;
                     fmt = ch;
@@ -3634,22 +3651,30 @@ class ConstVisitor final : public VNVisitor {
                 } else if (inPct) {
                     inPct = false;
                     fmt += ch;
-                    switch (std::tolower(ch)) {
+                    ch = std::tolower(ch);
+                    switch (ch) {
                     case '%': break;  // %% - still %%
                     case 'm': break;  // %m - still %m - auto insert "name"
                     case 'l': break;  // %l - still %l - auto insert "library"
-                    case 't':  // FALLTHRU
-                    case '^':  // %t/%^ - don't know $timeformat so can't constify
+                    case 't':  // %t - don't know $timeformat so can't constify
                         if (argp) argp = argp->nextp();
                         break;
                     default:  // Most operators, just move to next argument
                         if (argp) {
                             AstNode* const nextp = argp->nextp();
-                            if (VN_IS(argp, Const)) {  // Convert it
-                                const string out = constNumV(argp).displayed(nodep, fmt);
+                            AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
+                            AstNode* const subargp = fargp ? fargp->exprp() : argp;
+                            const VFormatAttr formatAttr
+                                = argp
+                                      ? AstSFormatArg::formatAttrDefauled(fargp, subargp->dtypep())
+                                      : VFormatAttr{};
+                            if (VN_IS(subargp, Const)) {  // Convert it
+                                const string out
+                                    = constNumV(subargp).displayed(nodep, fmt, formatAttr);
                                 UINFO(9, "     DispConst: " << fmt << " -> " << out << "  for "
-                                                            << argp);
-                                // fmt = out w/ replace % with %% as it must be literal.
+                                                            << subargp);
+                                // fmt = out w/ replace % with %% as it must later when
+                                // used as a format output as literal.
                                 fmt = VString::quotePercent(out);
                                 VL_DO_DANGLING(pushDeletep(argp->unlinkFrBack()), argp);
                             }
@@ -3667,9 +3692,20 @@ class ConstVisitor final : public VNVisitor {
                 UINFO(9, "  Display out " << nodep);
             }
         }
-        if (!nodep->exprsp() && nodep->name().find('%') == string::npos && !nodep->hidden()) {
+        if (!nodep->exprsp() && nodep->text().find('%') == string::npos && !nodep->hidden()) {
             // Just a simple constant string - the formatting is pointless
-            VL_DO_DANGLING(replaceConstString(nodep, nodep->name()), nodep);
+            UINFO(9, "replaceConstStr");
+            VL_DO_DANGLING(replaceConstString(nodep, nodep->text()), nodep);
+            return;
+        }
+        if (VN_IS(nodep->backp(), NodeAssign)  // Can't remove under Display etc
+            && nodep->text() == "%s" && VN_IS(nodep->exprsp(), SFormatArg)
+            && VN_AS(nodep->exprsp(), SFormatArg)->formatAttr().isString()
+            && !nodep->exprsp()->nextp()) {
+            UINFO(9, "  Display(%p, expr) -> constant expr " << nodep);
+            nodep->replaceWith(VN_AS(nodep->exprsp(), SFormatArg)->exprp()->unlinkFrBack());
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
         }
     }
     void visit(AstNodeFTask* nodep) override {
