@@ -2779,7 +2779,8 @@ VarAccessInfo<T> vl_vpi_var_access_info(const VerilatedVpioVarBase* vop, size_t 
 
     // make sure we're not trying to write outside var bounds
     assert(varBits > addOffset);
-    bitCount = std::min(bitCount, varBits - addOffset);
+    bitCount = std::min({wordBits,  // For VLWide, varBits can exceed wordBits
+                         bitCount, varBits - addOffset});
 
     VarAccessInfo<T> info;
     info.m_datap = reinterpret_cast<T*>(vop->varDatap());
