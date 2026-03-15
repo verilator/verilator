@@ -773,10 +773,10 @@ class AssertVisitor final : public VNVisitor {
         } else if (nodep->displayType() == VDisplayType::DT_MONITOR) {
             nodep->displayType(VDisplayType::DT_DISPLAY);
             FileLine* const fl = nodep->fileline();
-            AstNode* monExprsp = nodep->fmtp()->exprsp();
+
             AstSenItem* monSenItemsp = nullptr;
-            while (monExprsp) {
-                if (AstNodeVarRef* varrefp = VN_CAST(monExprsp, NodeVarRef)) {
+            if (AstNode* const monExprsp = nodep->fmtp()->exprsp()) {
+                monExprsp->foreachAndNext([&](AstVarRef* varrefp) {
                     AstSenItem* const senItemp
                         = new AstSenItem{fl, VEdgeType::ET_CHANGED,
                                          // Clone so get VarRef or VarXRef as needed
@@ -786,9 +786,9 @@ class AssertVisitor final : public VNVisitor {
                     } else {
                         monSenItemsp->addNext(senItemp);
                     }
-                }
-                monExprsp = monExprsp->nextp();
+                });
             }
+
             AstSenTree* const monSenTree = new AstSenTree{fl, monSenItemsp};
             const auto monNum = ++m_monitorNum;
             // Where $monitor was we do "__VmonitorNum = N;"

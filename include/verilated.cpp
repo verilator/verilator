@@ -926,20 +926,52 @@ std::string _vl_vsformat_time(char* tmp, T ld, int timeunit, bool left, size_t w
 // Do a va_arg returning a quad, assuming input argument is anything less than wide
 #define VL_VA_ARG_Q_(ap, bits) (((bits) <= VL_IDATASIZE) ? va_arg(ap, IData) : va_arg(ap, QData))
 
-void _vl_vsformat(std::string& output, const std::string& format, va_list ap) VL_MT_SAFE {
+void _vl_vsformat(std::string& output, const std::string& format, int argc,
+                  va_list ap) VL_MT_SAFE {
     // Format a Verilog $write style format into the output list
-    // The format must be pre-processed (and lower cased) by Verilator
-    // Arguments are in "width, arg-value (or WDataIn* if wide)" form
+    // The format must be pre-processed (and lower cased) by Verilator.
+    // Arguments are each {"VFormatAttr character, int width, arg-value (or WDataIn* if wide)"}
     //
-    // Note uses a single buffer internally; presumes only one usage per printf
-    // Note also assumes variables < 64 are not wide, this assumption is
+    // Uses a single buffer internally; presumes only one usage per printf.
+    // Also assumes variables < 64 are not wide, this assumption is
     // sometimes not true in low-level routines written here in verilated.cpp
+
+    // Look ahead at args to capture any %m/%t baseline information
+    char formatAttr = '\0';  // Fetched format for _next_ argument
+    bool formatAttrValid = false;
+    const char* modulep = nullptr;
+    const char* scopep = nullptr;
+    int timeunit = 0;
+    int argn = 0;
+    while (argn < argc) {
+        formatAttr = va_arg(ap, int);  // Char promoted to int
+        switch (formatAttr) {
+        case VL_VFORMATATTR_TIMEUNIT:
+            ++argn;
+            timeunit = va_arg(ap, int);
+            continue;
+        case VL_VFORMATATTR_SCOPE:
+            // No width
+            ++argn;
+            modulep = va_arg(ap, const char*);
+            scopep = va_arg(ap, const char*);
+            continue;
+        default:  // Normal arg; will consume formatAttr later
+            formatAttrValid = true;
+            break;
+        }
+        break;
+    }
+
+    // Parse format
     static thread_local char t_tmp[VL_VALUE_STRING_MAX_WIDTH];
     std::string::const_iterator pctit = format.end();  // Most recent %##.##g format
     bool inPct = false;
     bool widthSet = false;
     bool left = false;
     size_t width = 0;
+    output = "";
+    output.reserve(format.length());
     for (std::string::const_iterator pos = format.cbegin(); pos != format.cend(); ++pos) {
         if (!inPct && pos[0] == '%') {
             pctit = pos;
@@ -956,7 +988,7 @@ void _vl_vsformat(std::string& output, const std::string& format, va_list ap) VL
             }
         } else {  // Format character
             inPct = false;
-            const char fmt = pos[0];
+            char fmt = std::tolower(pos[0]);
             switch (fmt) {
             case '0':  // FALLTHRU
             case '1':  // FALLTHRU
@@ -971,96 +1003,135 @@ void _vl_vsformat(std::string& output, const std::string& format, va_list ap) VL
                 inPct = true;  // Get more digits
                 widthSet = true;
                 width = width * 10 + (fmt - '0');
-                break;
+                continue;
             case '-':
                 left = true;
                 inPct = true;  // Get more digits
-                break;
+                continue;
             case '.':
                 inPct = true;  // Get more digits
-                break;
+                continue;
             case '%':  //
                 output += '%';
+                continue;
+            case 'l':
+                output += "----";  // Library - compile-time only
+                continue;
+            case 'm':
+                if (modulep) output += modulep;
+                if (modulep && modulep[0] && scopep && scopep[0]) output += '.';
+                if (scopep) output += scopep;
+                continue;
+                //--------
+                // Standard format handling -- all take arguments
+            case 'b':  // FALLTHRU
+            case 'c':  // FALLTHRU
+            case 'd':  // FALLTHRU
+            case 'e':  // FALLTHRU
+            case 'f':  // FALLTHRU
+            case 'g':  // FALLTHRU
+            case 'h':  // FALLTHRU
+            case 'o':  // FALLTHRU
+            case 'p':  // FALLTHRU
+            case 's':  // FALLTHRU
+            case 't':  // FALLTHRU
+            case 'u':  // FALLTHRU
+            case 'v':  // FALLTHRU
+            case 'x':  // FALLTHRU
+            case 'z':  // FALLTHRU
                 break;
-            case 'N': {  // "C" string with name of module, add . if needed
-                const char* const cstrp = va_arg(ap, const char*);
-                if (VL_LIKELY(*cstrp)) {
-                    output += cstrp;
-                    output += '.';
-                }
-                break;
+            //--------
+            default:  // Bad escape, just print %letter so user sees it
+                output += '%';
+                output += fmt;
+                continue;
+            }  // switch
+
+            // At this point only have escapes that expect arguments
+            if (++argn > argc) {
+                output += '%';
+                output += fmt;
+                continue;  // Out of arguments
             }
-            case 'S': {  // "C" string
-                const char* const cstrp = va_arg(ap, const char*);
-                output += cstrp;
-                break;
-            }
-            case '@': {  // Verilog/C++ string
-                va_arg(ap, int);  // # bits is ignored
-                const std::string* const cstrp = va_arg(ap, const std::string*);
-                std::string padding;
-                if (width > cstrp->size()) padding.append(width - cstrp->size(), ' ');
-                output += left ? (*cstrp + padding) : (padding + *cstrp);
-                break;
-            }
-            case 'e':
-            case 'f':
-            case 'g':
-            case '^': {  // Realtime
-                const int lbits = va_arg(ap, int);
-                const double d = va_arg(ap, double);
-                (void)lbits;  // UNUSED - always 64
-                if (fmt == '^') {  // Realtime
-                    if (!widthSet) width = Verilated::threadContextp()->impp()->timeFormatWidth();
-                    const int timeunit = va_arg(ap, int);
-                    output += _vl_vsformat_time(t_tmp, d, timeunit, left, width);
-                } else {
-                    const std::string fmts{pctit, pos + 1};
-                    VL_SNPRINTF(t_tmp, VL_VALUE_STRING_MAX_WIDTH, fmts.c_str(), d);
-                    output += t_tmp;
-                }
-                break;
-            }
-            case 'p': {  // 'x' but parameter is string
-                const int lbits = va_arg(ap, int);
-                (void)lbits;
-                const std::string* const cstr = va_arg(ap, const std::string*);
-                std::ostringstream oss;
-                for (unsigned char c : *cstr) oss << std::hex << static_cast<int>(c);
-                std::string hex_str = oss.str();
-                if (width > 0 && widthSet) {
-                    hex_str = hex_str.size() > width
-                                  ? hex_str.substr(0, width)
-                                  : std::string(width - hex_str.size(), '0') + hex_str;
-                    output += hex_str;
-                }
-                break;
-            }
-            default: {
-                // Deal with all read-and-print somethings
-                const int lbits = va_arg(ap, int);
-                QData ld = 0;
-                VlWide<VL_WQ_WORDS_E> qlwp;
-                WDataInP lwp = nullptr;
+            if (!formatAttrValid) formatAttr = va_arg(ap, int);  // char promoted to int
+            formatAttrValid = false;
+
+            // Process an argument
+            // Similar code flow in V3Number::displayed
+            int lbits = 0;
+            void* thingp = nullptr;
+            QData ld = 0;
+            VlWide<VL_VALUE_STRING_MAX_WIDTH / 4 + 2> strwide;
+            WDataInP lwp = nullptr;
+            int lsb = 0;
+            double real = 0.0;
+            if (formatAttr == VL_VFORMATATTR_COMPLEX) {  // printed as string
+                thingp = va_arg(ap, std::string*);
+                if (fmt != 'p') fmt = 's';  // Override
+            } else if (formatAttr == VL_VFORMATATTR_DOUBLE) {
+                real = va_arg(ap, double);
+                ld = VL_RTOIROUND_Q_D(real);
+                VL_SET_WQ(strwide, ld);
+                lwp = strwide;
+                lbits = 64;
+                // Not changint fmt == 'p' to fmt = 'g', as need fmts correct
+            } else if (formatAttr == VL_VFORMATATTR_STRING) {
+                thingp = va_arg(ap, std::string*);
+                if (fmt != 'p' && fmt != 'x') fmt = 's';  // Override
+            } else {  // Numeric
+                lbits = va_arg(ap, int);
                 if (lbits <= VL_QUADSIZE) {
                     ld = VL_VA_ARG_Q_(ap, lbits);
-                    VL_SET_WQ(qlwp, ld);
-                    lwp = qlwp;
+                    VL_SET_WQ(strwide, ld);
+                    lwp = strwide;
                 } else {
                     lwp = va_arg(ap, WDataInP);
                     ld = lwp[0];
                 }
-                int lsb = lbits - 1;
+                if (fmt == 'p') {
+                    if (widthSet && width == 0) {  // For %0p, IEEE our choice, use 'h%0h
+                        output += "'h";
+                        fmt = 'h';
+                    } else {  // UVM tests require %0d
+                        widthSet = true;
+                        width = 0;
+                        fmt = 'd';
+                    }
+                }
+                lsb = lbits - 1;
                 if (widthSet && width == 0) {
                     while (lsb && !VL_BITISSET_W(lwp, lsb)) --lsb;
                 }
-                switch (fmt) {
-                case 'c': {
-                    const IData charval = ld & 0xff;
-                    output += static_cast<char>(charval);
-                    break;
+            }
+
+            // fmt may have been overridden above based on formatAttr datatype passed
+            switch (fmt) {
+            case 'c': {
+                const IData charval = ld & 0xff;
+                output += static_cast<char>(charval);
+                break;
+            }
+            case 'e':  // FALLTHRU
+            case 'f':  // FALLTHRU
+            case 'g': {
+                if (formatAttr == VL_VFORMATATTR_SIGNED) {
+                    real = VL_ISTOR_D_W(lbits, lwp);
+                } else if (formatAttr == VL_VFORMATATTR_UNSIGNED) {
+                    real = VL_ITOR_D_W(lbits, lwp);
                 }
-                case 's': {
+                const std::string fmts{pctit, pos + 1};
+                VL_SNPRINTF(t_tmp, VL_VALUE_STRING_MAX_WIDTH, fmts.c_str(), real);
+                output += t_tmp;
+                break;
+            }
+            case 's': {
+                if (thingp) {  // VNumber::STRING Verilog 'string'
+                    const std::string* const strp = static_cast<const std::string*>(thingp);
+                    std::string padding;
+                    if (width > strp->size()) padding.append(width - strp->size(), ' ');
+                    output += left ? (*strp + padding) : (padding + *strp);
+                    break;
+                } else {  // Number-based string
                     std::string field;
                     for (; lsb >= 0; --lsb) {
                         lsb = (lsb / 8) * 8;  // Next digit
@@ -1070,11 +1141,28 @@ void _vl_vsformat(std::string& output, const std::string& format, va_list ap) VL
                     std::string padding;
                     if (width > field.size()) padding.append(width - field.size(), ' ');
                     output += left ? (field + padding) : (padding + field);
-                    break;
                 }
-                case 'd': {  // Signed decimal
-                    int digits = 0;
-                    std::string append;
+                break;
+            }
+            case 'p': {  // Pattern
+                // 'p' with NUMBER was earlier converted to 'd'
+                if (formatAttr
+                    == VL_VFORMATATTR_DOUBLE) {  // Can't just change to 'g' as need fixed format
+                    VL_SNPRINTF(t_tmp, VL_VALUE_STRING_MAX_WIDTH, "%g", real);
+                    output += t_tmp;
+                } else if (formatAttr == VL_VFORMATATTR_STRING) {
+                    const std::string* const strp = static_cast<const std::string*>(thingp);
+                    output += '"' + *strp + '"';
+                } else if (formatAttr == VL_VFORMATATTR_COMPLEX) {
+                    const std::string* const strp = static_cast<const std::string*>(thingp);
+                    output += *strp;
+                }
+                break;
+            }
+            case 'd': {  // Signed/unsigned decimal
+                int digits = 0;
+                std::string append;
+                if (formatAttr == VL_VFORMATATTR_SIGNED) {
                     if (lbits <= VL_QUADSIZE) {
                         digits
                             = VL_SNPRINTF(t_tmp, VL_VALUE_STRING_MAX_WIDTH, "%" PRId64,
@@ -1090,28 +1178,7 @@ void _vl_vsformat(std::string& output, const std::string& format, va_list ap) VL
                         }
                         digits = static_cast<int>(append.length());
                     }
-                    const int needmore = static_cast<int>(width) - digits;
-                    if (needmore > 0) {
-                        std::string padding;
-                        if (left) {
-                            padding.append(needmore, ' ');  // Pre-pad spaces
-                            output += append + padding;
-                        } else {
-                            if (pctit != format.end() && pctit[0] && pctit[1] == '0') {  // %0
-                                padding.append(needmore, '0');  // Pre-pad zero
-                            } else {
-                                padding.append(needmore, ' ');  // Pre-pad spaces
-                            }
-                            output += padding + append;
-                        }
-                    } else {
-                        output += append;
-                    }
-                    break;
-                }
-                case '#': {  // Unsigned decimal
-                    int digits = 0;
-                    std::string append;
+                } else {  // Unsigned decimal
                     if (lbits <= VL_QUADSIZE) {
                         digits = VL_SNPRINTF(t_tmp, VL_VALUE_STRING_MAX_WIDTH, "%" PRIu64, ld);
                         append = t_tmp;
@@ -1119,119 +1186,146 @@ void _vl_vsformat(std::string& output, const std::string& format, va_list ap) VL
                         append = VL_DECIMAL_NW(lbits, lwp);
                         digits = static_cast<int>(append.length());
                     }
-                    const int needmore = static_cast<int>(width) - digits;
-                    if (needmore > 0) {
-                        std::string padding;
-                        if (left) {
-                            padding.append(needmore, ' ');  // Pre-pad spaces
-                            output += append + padding;
-                        } else {
-                            if (pctit != format.end() && pctit[0] && pctit[1] == '0') {  // %0
-                                padding.append(needmore, '0');  // Pre-pad zero
-                            } else {
-                                padding.append(needmore, ' ');  // Pre-pad spaces
-                            }
-                            output += padding + append;
-                        }
+                }
+                if (!widthSet) {
+                    const double mantissabits
+                        = lbits - ((formatAttr == VL_VFORMATATTR_SIGNED) ? 1 : 0);
+                    // This is log10(2**mantissabits) as log2(2**mantissabits)/log2(10),
+                    // + 1.0 rounding bias.
+                    double dchars = mantissabits / 3.321928094887362 + 1.0;
+                    if (formatAttr == VL_VFORMATATTR_SIGNED) ++dchars;  // space for sign
+                    width = int(dchars);
+                }
+                const int needmore = static_cast<int>(width) - digits;
+                if (needmore > 0) {
+                    std::string padding;
+                    if (left) {
+                        padding.append(needmore, ' ');  // Pre-pad spaces
+                        output += append + padding;
                     } else {
-                        output += append;
-                    }
-                    break;
-                }
-                case 't': {  // Time
-                    if (!widthSet) width = Verilated::threadContextp()->impp()->timeFormatWidth();
-                    const int timeunit = va_arg(ap, int);
-                    output += _vl_vsformat_time(t_tmp, ld, timeunit, left, width);
-                    break;
-                }
-                case 'b':  // FALLTHRU
-                case 'o':  // FALLTHRU
-                case 'x': {
-                    if (widthSet || left) {
-                        lsb = VL_MOSTSETBITP1_W(VL_WORDS_I(lbits), lwp);
-                        lsb = (lsb < 1) ? 0 : (lsb - 1);
-                    }
-
-                    std::string append;
-                    int digits;
-                    switch (fmt) {
-                    case 'b': {
-                        digits = lsb + 1;
-                        for (; lsb >= 0; --lsb) append += (VL_BITRSHIFT_W(lwp, lsb) & 1) + '0';
-                        break;
-                    }
-                    case 'o': {
-                        digits = (lsb + 1 + 2) / 3;
-                        for (; lsb >= 0; --lsb) {
-                            lsb = (lsb / 3) * 3;  // Next digit
-                            // Octal numbers may span more than one wide word,
-                            // so we need to grab each bit separately and check for overrun
-                            // Octal is rare, so we'll do it a slow simple way
-                            append += static_cast<char>(
-                                '0' + ((VL_BITISSETLIMIT_W(lwp, lbits, lsb + 0)) ? 1 : 0)
-                                + ((VL_BITISSETLIMIT_W(lwp, lbits, lsb + 1)) ? 2 : 0)
-                                + ((VL_BITISSETLIMIT_W(lwp, lbits, lsb + 2)) ? 4 : 0));
-                        }
-                        break;
-                    }
-                    default: {  // 'x'
-                        digits = (lsb + 1 + 3) / 4;
-                        for (; lsb >= 0; --lsb) {
-                            lsb = (lsb / 4) * 4;  // Next digit
-                            const IData charval = VL_BITRSHIFT_W(lwp, lsb) & 0xf;
-                            append += "0123456789abcdef"[charval];
-                        }
-                        break;
-                    }
-                    }  // switch
-
-                    const int needmore = static_cast<int>(width) - digits;
-                    if (needmore > 0) {
-                        std::string padding;
-                        if (left) {
-                            padding.append(needmore, ' ');  // Pre-pad spaces
-                            output += append + padding;
-                        } else {
+                        if (pctit != format.end() && pctit[0] && pctit[1] == '0') {  // %0
                             padding.append(needmore, '0');  // Pre-pad zero
-                            output += padding + append;
+                        } else {
+                            padding.append(needmore, ' ');  // Pre-pad spaces
                         }
-                    } else {
-                        output += append;
+                        output += padding + append;
                     }
+                } else {
+                    output += append;
+                }
+                break;
+            }
+            case 't': {  // Time
+                // Timeunit was read earlier from up-front arguments
+                if (formatAttr == VL_VFORMATATTR_DOUBLE) {  // Realtime
+                    if (!widthSet) width = Verilated::threadContextp()->impp()->timeFormatWidth();
+                    output += _vl_vsformat_time(t_tmp, real, timeunit, left, width);
+                } else {
+                    if (!widthSet) width = Verilated::threadContextp()->impp()->timeFormatWidth();
+                    output += _vl_vsformat_time(t_tmp, ld, timeunit, left, width);
+                }
+                break;
+            }
+            case 'b':  // FALLTHRU
+            case 'h':  // FALLTHRU
+            case 'o':  // FALLTHRU
+            case 'x': {
+                if (formatAttr == VL_VFORMATATTR_STRING) {
+                    // V3Width errors on const %x of string, but V3Randomize may make a %x on a
+                    // string, or may have a runtime format
+                    const std::string* const strp = static_cast<const std::string*>(thingp);
+                    int chars = std::min(static_cast<int>(strp->size()),
+                                         static_cast<int>(VL_VALUE_STRING_MAX_WIDTH / 2));
+                    int truncFront = widthSet ? (chars - (static_cast<int>(width) / 2)) : 0;
+                    if (truncFront < 0) truncFront = 0;
+                    lbits = chars * 8;
+                    lwp = strwide;
+                    lsb = lbits - 1;
+                    VL_NTOI_W(lbits, strwide, *strp, truncFront);
+                }
+
+                if (widthSet || left) {
+                    lsb = VL_MOSTSETBITP1_W(VL_WORDS_I(lbits), lwp);
+                    lsb = (lsb < 1) ? 0 : (lsb - 1);
+                }
+
+                std::string append;
+                int digits;
+                switch (fmt) {
+                case 'b': {
+                    digits = lsb + 1;
+                    for (; lsb >= 0; --lsb) append += (VL_BITRSHIFT_W(lwp, lsb) & 1) + '0';
                     break;
-                }  // b / o / x
-                case 'u':
-                case 'z': {  // Packed 4-state
-                    const bool is_4_state = (fmt == 'z');
-                    output.reserve(output.size() + ((is_4_state ? 2 : 1) * VL_WORDS_I(lbits)));
-                    int bytes_to_go = VL_BYTES_I(lbits);
-                    int bit = 0;
-                    while (bytes_to_go > 0) {
-                        const int wr_bytes = std::min(4, bytes_to_go);
-                        for (int byte = 0; byte < wr_bytes; byte++, bit += 8)
-                            output += static_cast<char>(VL_BITRSHIFT_W(lwp, bit) & 0xff);
-                        output.append(4 - wr_bytes, static_cast<char>(0));
-                        if (is_4_state) output.append(4, static_cast<char>(0));
-                        bytes_to_go -= wr_bytes;
+                }
+                case 'o': {
+                    digits = (lsb + 1 + 2) / 3;
+                    for (; lsb >= 0; --lsb) {
+                        lsb = (lsb / 3) * 3;  // Next digit
+                        // Octal numbers may span more than one wide word,
+                        // so we need to grab each bit separately and check for overrun
+                        // Octal is rare, so we'll do it a slow simple way
+                        append += static_cast<char>(
+                            '0' + ((VL_BITISSETLIMIT_W(lwp, lbits, lsb + 0)) ? 1 : 0)
+                            + ((VL_BITISSETLIMIT_W(lwp, lbits, lsb + 1)) ? 2 : 0)
+                            + ((VL_BITISSETLIMIT_W(lwp, lbits, lsb + 2)) ? 4 : 0));
                     }
                     break;
                 }
-                case 'v':  // Strength; assume always strong
-                    for (lsb = lbits - 1; lsb >= 0; --lsb) {
-                        if (VL_BITRSHIFT_W(lwp, lsb) & 1) {
-                            output += "St1 ";
-                        } else {
-                            output += "St0 ";
-                        }
+                default: {  // 'x'
+                    digits = (lsb + 1 + 3) / 4;
+                    for (; lsb >= 0; --lsb) {
+                        lsb = (lsb / 4) * 4;  // Next digit
+                        const IData charval = VL_BITRSHIFT_W(lwp, lsb) & 0xf;
+                        append += "0123456789abcdef"[charval];
                     }
                     break;
-                default: {  // LCOV_EXCL_START
-                    const std::string msg = "Unknown _vl_vsformat code: "s + pos[0];
-                    VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());
-                    break;
-                }  // LCOV_EXCL_STOP
+                }
                 }  // switch
+
+                const int needmore = static_cast<int>(width) - digits;
+                if (needmore > 0) {
+                    std::string padding;
+                    if (left) {
+                        padding.append(needmore, ' ');  // Pre-pad spaces
+                        output += append + padding;
+                    } else {
+                        padding.append(needmore, '0');  // Pre-pad zero
+                        output += padding + append;
+                    }
+                } else {
+                    output += append;
+                }
+                break;
+            }  // b / o / x
+            case 'u':
+            case 'z': {  // Packed 4-state
+                const bool is_4_state = (fmt == 'z');
+                output.reserve(output.size() + ((is_4_state ? 2 : 1) * VL_WORDS_I(lbits)));
+                int bytes_to_go = VL_BYTES_I(lbits);
+                int bit = 0;
+                while (bytes_to_go > 0) {
+                    const int wr_bytes = std::min(4, bytes_to_go);
+                    for (int byte = 0; byte < wr_bytes; byte++, bit += 8)
+                        output += static_cast<char>(VL_BITRSHIFT_W(lwp, bit) & 0xff);
+                    output.append(4 - wr_bytes, static_cast<char>(0));
+                    if (is_4_state) output.append(4, static_cast<char>(0));
+                    bytes_to_go -= wr_bytes;
+                }
+                break;
             }
+            case 'v':  // Strength; assume always strong
+                for (lsb = lbits - 1; lsb >= 0; --lsb) {
+                    if (VL_BITRSHIFT_W(lwp, lsb) & 1) {
+                        output += "St1 ";
+                    } else {
+                        output += "St0 ";
+                    }
+                }
+                break;
+            default: {  // LCOV_EXCL_START
+                VL_DEBUG_IFDEF(assert(0););  // Missing case between this case, and one above
+                break;
+            }  // LCOV_EXCL_STOP
             }  // switch
         }
     }
@@ -1317,7 +1411,7 @@ void _vl_vsss_based(WDataOutP owp, int obits, int baseLog2, const char* strp, si
     for (int i = 0, pos = static_cast<int>(posend) - 1;
          i < obits && pos >= static_cast<int>(posstart); --pos) {
         // clang-format off
-        switch (tolower (strp[pos])) {
+        switch (std::tolower (strp[pos])) {
         case 'x': case 'z': case '?':  // FALLTHRU
         case '0': lsb += baseLog2; break;
         case '1': _vl_vsss_setbit(owp, obits, lsb, baseLog2,  1); lsb += baseLog2; break;
@@ -1344,7 +1438,7 @@ void _vl_vsss_based(WDataOutP owp, int obits, int baseLog2, const char* strp, si
 IData _vl_vsscanf(FILE* fp,  // If a fscanf
                   int fbits, const WDataInP fromp,  // Else if a sscanf
                   const std::string& fstr,  // if a sscanf to string
-                  const std::string& format, va_list ap) VL_MT_SAFE {
+                  const std::string& format, int argc, va_list ap) VL_MT_SAFE {
     // Read a Verilog $sscanf/$fscanf style format into the output list
     // The format must be pre-processed (and lower cased) by Verilator
     // Arguments are in "width, arg-value (or WDataIn* if wide)" form
@@ -1353,6 +1447,25 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
     IData got = 0;
     bool inPct = false;
     bool inIgnore = false;
+    int argn = 0;
+
+    char formatAttr = '\0';  // Fetched format for _next_ argument
+    bool formatAttrValid = false;
+    int timeunit = 0;
+    while (argn < argc) {
+        formatAttr = va_arg(ap, int);  // Char promoted to int
+        switch (formatAttr) {
+        case VL_VFORMATATTR_TIMEUNIT:
+            ++argn;
+            timeunit = va_arg(ap, int);
+            continue;
+        default:  // Normal arg; will consume formatAttr later
+            formatAttrValid = true;
+            break;
+        }
+        break;
+    }
+
     std::string::const_iterator pos = format.cbegin();
     for (; pos != format.cend(); ++pos) {
         // VL_DBG_MSGF("_vlscan fmt='%c' floc=%d file='%c'\n", pos[0], floc,
@@ -1371,7 +1484,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
         } else {  // Format character
             // Skip loading spaces
             inPct = false;
-            const char fmt = pos[0];
+            const char fmt = std::tolower(pos[0]);
             switch (fmt) {
             case '%': {
                 const int c = _vl_vsss_peek(fp, floc, fromp, fstr);
@@ -1399,20 +1512,22 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
             default: {
                 // Deal with all read-and-scan somethings
                 // Note LSBs are preserved if there's an overflow
-                int obits = inIgnore ? 0 : va_arg(ap, int);
+                if (!inIgnore && (++argn > argc)) inIgnore = true;  // Overflowed arguments
+                if (!inIgnore) {
+                    if (!formatAttrValid) formatAttr = va_arg(ap, int);  // char promoted to int
+                    formatAttrValid = false;
+                }
+                int obits = (!inIgnore
+                             && (formatAttr == VL_VFORMATATTR_UNSIGNED
+                                 || formatAttr == VL_VFORMATATTR_SIGNED))
+                                ? va_arg(ap, int)
+                                : 0;
+                void* const thingp = inIgnore ? nullptr : va_arg(ap, void*);
+                double real = 0;
+
                 VlWide<VL_WQ_WORDS_E> qowp;
                 VL_SET_WQ(qowp, 0ULL);
-                WDataOutP owp = qowp;
-                if (obits == -1) {  // string
-                    owp = nullptr;
-                    if (VL_UNCOVERABLE(fmt != 's')) {
-                        VL_FATAL_MT(
-                            __FILE__, __LINE__, "",
-                            "Internal: format other than %s is passed to string");  // LCOV_EXCL_LINE
-                    }
-                } else if (obits > VL_QUADSIZE) {
-                    owp = va_arg(ap, WDataOutP);
-                }
+                WDataOutP owp = (obits <= 64) ? qowp : static_cast<WDataOutP>(thingp);
 
                 for (int i = 0; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
                 switch (fmt) {
@@ -1427,23 +1542,27 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
                     _vl_vsss_read_str(fp, floc, fromp, fstr, t_tmp, nullptr);
                     if (!t_tmp[0]) goto done;
-                    if (owp) {
-                        int lpos = (static_cast<int>(std::strlen(t_tmp))) - 1;
-                        int lsb = 0;
-                        for (int i = 0; i < obits && lpos >= 0; --lpos) {
-                            _vl_vsss_setbit(owp, obits, lsb, 8, t_tmp[lpos]);
-                            lsb += 8;
-                        }
+                    int lpos = (static_cast<int>(std::strlen(t_tmp))) - 1;
+                    int lsb = 0;
+                    for (int i = 0; i < obits && lpos >= 0; --lpos) {
+                        _vl_vsss_setbit(owp, obits, lsb, 8, t_tmp[lpos]);
+                        lsb += 8;
                     }
                     break;
                 }
-                case 'd': {  // Signed decimal
+                case 'd': {  // Signed/unsigned decimal
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
                     _vl_vsss_read_str(fp, floc, fromp, fstr, t_tmp, "0123456789+-xXzZ?_");
                     if (!t_tmp[0]) goto done;
-                    int64_t ld = 0;
-                    std::sscanf(t_tmp, "%30" PRId64, &ld);
-                    VL_SET_WQ(owp, ld);
+                    if (formatAttr == VL_VFORMATATTR_SIGNED) {
+                        QData ld = 0;
+                        std::sscanf(t_tmp, "%30" PRIu64, &ld);
+                        VL_SET_WQ(owp, ld);
+                    } else if (formatAttr == VL_VFORMATATTR_UNSIGNED) {
+                        int64_t ld = 0;
+                        std::sscanf(t_tmp, "%30" PRId64, &ld);
+                        VL_SET_WQ(owp, ld);
+                    }
                     break;
                 }
                 case 'f':
@@ -1456,7 +1575,8 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                         double r;
                         int64_t ld;
                     } u;
-                    u.r = std::strtod(t_tmp, nullptr);
+                    real = std::strtod(t_tmp, nullptr);
+                    u.r = real;
                     VL_SET_WQ(owp, u.ld);
                     break;
                 }
@@ -1468,25 +1588,12 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                         double r;
                         int64_t ld;
                     } u;
-                    // Get pointer argument first, as proceeds the timeunit value
-                    if (obits != 64) goto done;
-                    QData* const realp = va_arg(ap, QData*);
-                    const int timeunit = va_arg(ap, int);
-                    const int userUnits
-                        = Verilated::threadContextp()->impp()->timeFormatUnits();  // 0..-15
+                    // Timeunit was read earlier from up-front arguments
+                    const int userUnits = Verilated::threadContextp()->impp()->timeFormatUnits();
+                    // 0..-15
                     const int shift = -userUnits + timeunit;  // 0..-15
-                    u.r = std::strtod(t_tmp, nullptr) * vl_time_multiplier(-shift);
-                    *realp = VL_CLEAN_QQ(obits, obits, u.ld);
-                    obits = 0;  // Already loaded the value, don't read arg
-                    break;
-                }
-                case '#': {  // Unsigned decimal
-                    _vl_vsss_skipspace(fp, floc, fromp, fstr);
-                    _vl_vsss_read_str(fp, floc, fromp, fstr, t_tmp, "0123456789+-xXzZ?_");
-                    if (!t_tmp[0]) goto done;
-                    QData ld = 0;
-                    std::sscanf(t_tmp, "%30" PRIu64, &ld);
-                    VL_SET_WQ(owp, ld);
+                    real = std::strtod(t_tmp, nullptr) * vl_time_multiplier(-shift);
+                    VL_SET_WQ(owp, static_cast<uint64_t>(real));
                     break;
                 }
                 case 'b': {
@@ -1503,6 +1610,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     _vl_vsss_based(owp, obits, 3, t_tmp, 0, std::strlen(t_tmp));
                     break;
                 }
+                case 'h':  // FALLTHRU
                 case 'x': {
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
                     _vl_vsss_read_str(fp, floc, fromp, fstr, t_tmp,
@@ -1548,21 +1656,24 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 
                 if (!inIgnore) ++got;
                 // Reload data if non-wide (if wide, we put it in the right place directly)
-                if (obits == 0) {  // Due to inIgnore
-                } else if (obits == -1) {  // string
-                    std::string* const p = va_arg(ap, std::string*);
+                if (inIgnore) {
+                } else if (formatAttr == VL_VFORMATATTR_DOUBLE) {
+                    double* const p = static_cast<double*>(thingp);
+                    *p = real;
+                } else if (formatAttr == VL_VFORMATATTR_STRING) {
+                    std::string* const p = static_cast<std::string*>(thingp);
                     *p = t_tmp;
                 } else if (obits <= VL_BYTESIZE) {
-                    CData* const p = va_arg(ap, CData*);
+                    CData* const p = static_cast<CData*>(thingp);
                     *p = VL_CLEAN_II(obits, obits, owp[0]);
                 } else if (obits <= VL_SHORTSIZE) {
-                    SData* const p = va_arg(ap, SData*);
+                    SData* const p = static_cast<SData*>(thingp);
                     *p = VL_CLEAN_II(obits, obits, owp[0]);
                 } else if (obits <= VL_IDATASIZE) {
-                    IData* const p = va_arg(ap, IData*);
+                    IData* const p = static_cast<IData*>(thingp);
                     *p = VL_CLEAN_II(obits, obits, owp[0]);
                 } else if (obits <= VL_QUADSIZE) {
-                    QData* const p = va_arg(ap, QData*);
+                    QData* const p = static_cast<QData*>(thingp);
                     *p = VL_CLEAN_QQ(obits, obits, VL_SET_QW(owp));
                 } else {
                     _vl_clean_inplace_w(obits, owp);
@@ -1689,7 +1800,7 @@ void VL_SFORMAT_NX(int obits, CData& destr, const std::string& format, int argc,
     t_output = "";
     va_list ap;
     va_start(ap, argc);
-    _vl_vsformat(t_output, format, ap);
+    _vl_vsformat(t_output, format, argc, ap);
     va_end(ap);
 
     _vl_string_to_vint(obits, &destr, t_output.length(), t_output.c_str());
@@ -1700,7 +1811,7 @@ void VL_SFORMAT_NX(int obits, SData& destr, const std::string& format, int argc,
     t_output = "";
     va_list ap;
     va_start(ap, argc);
-    _vl_vsformat(t_output, format, ap);
+    _vl_vsformat(t_output, format, argc, ap);
     va_end(ap);
 
     _vl_string_to_vint(obits, &destr, t_output.length(), t_output.c_str());
@@ -1711,7 +1822,7 @@ void VL_SFORMAT_NX(int obits, IData& destr, const std::string& format, int argc,
     t_output = "";
     va_list ap;
     va_start(ap, argc);
-    _vl_vsformat(t_output, format, ap);
+    _vl_vsformat(t_output, format, argc, ap);
     va_end(ap);
 
     _vl_string_to_vint(obits, &destr, t_output.length(), t_output.c_str());
@@ -1722,7 +1833,7 @@ void VL_SFORMAT_NX(int obits, QData& destr, const std::string& format, int argc,
     t_output = "";
     va_list ap;
     va_start(ap, argc);
-    _vl_vsformat(t_output, format, ap);
+    _vl_vsformat(t_output, format, argc, ap);
     va_end(ap);
 
     _vl_string_to_vint(obits, &destr, t_output.length(), t_output.c_str());
@@ -1733,7 +1844,7 @@ void VL_SFORMAT_NX(int obits, void* destp, const std::string& format, int argc, 
     t_output = "";
     va_list ap;
     va_start(ap, argc);
-    _vl_vsformat(t_output, format, ap);
+    _vl_vsformat(t_output, format, argc, ap);
     va_end(ap);
 
     _vl_string_to_vint(obits, destp, t_output.length(), t_output.c_str());
@@ -1745,7 +1856,7 @@ void VL_SFORMAT_NX(int obits_ignored, std::string& output, const std::string& fo
     std::string temp_output;
     va_list ap;
     va_start(ap, argc);
-    _vl_vsformat(temp_output, format, ap);
+    _vl_vsformat(temp_output, format, argc, ap);
     va_end(ap);
     output = temp_output;
 }
@@ -1755,7 +1866,7 @@ std::string VL_SFORMATF_N_NX(const std::string& format, int argc, ...) VL_MT_SAF
     t_output = "";
     va_list ap;
     va_start(ap, argc);
-    _vl_vsformat(t_output, format, ap);
+    _vl_vsformat(t_output, format, argc, ap);
     va_end(ap);
 
     return t_output;
@@ -1766,7 +1877,7 @@ void VL_WRITEF_NX(const std::string& format, int argc, ...) VL_MT_SAFE {
     t_output = "";
     va_list ap;
     va_start(ap, argc);
-    _vl_vsformat(t_output, format, ap);
+    _vl_vsformat(t_output, format, argc, ap);
     va_end(ap);
 
     VL_PRINTF_MT("%s", t_output.c_str());
@@ -1779,7 +1890,7 @@ void VL_FWRITEF_NX(IData fpi, const std::string& format, int argc, ...) VL_MT_SA
 
     va_list ap;
     va_start(ap, argc);
-    _vl_vsformat(t_output, format, ap);
+    _vl_vsformat(t_output, format, argc, ap);
     va_end(ap);
 
     Verilated::threadContextp()->impp()->fdWrite(fpi, t_output);
@@ -1792,7 +1903,7 @@ IData VL_FSCANF_INX(IData fpi, const std::string& format, int argc, ...) VL_MT_S
 
     va_list ap;
     va_start(ap, argc);
-    const IData got = _vl_vsscanf(fp, 0, nullptr, "", format, ap);
+    const IData got = _vl_vsscanf(fp, 0, nullptr, "", format, argc, ap);
     va_end(ap);
     return got;
 }
@@ -1803,7 +1914,7 @@ IData VL_SSCANF_IINX(int lbits, IData ld, const std::string& format, int argc, .
 
     va_list ap;
     va_start(ap, argc);
-    const IData got = _vl_vsscanf(nullptr, lbits, fnw, "", format, ap);
+    const IData got = _vl_vsscanf(nullptr, lbits, fnw, "", format, argc, ap);
     va_end(ap);
     return got;
 }
@@ -1813,7 +1924,7 @@ IData VL_SSCANF_IQNX(int lbits, QData ld, const std::string& format, int argc, .
 
     va_list ap;
     va_start(ap, argc);
-    const IData got = _vl_vsscanf(nullptr, lbits, fnw, "", format, ap);
+    const IData got = _vl_vsscanf(nullptr, lbits, fnw, "", format, argc, ap);
     va_end(ap);
     return got;
 }
@@ -1821,7 +1932,7 @@ IData VL_SSCANF_IWNX(int lbits, const WDataInP lwp, const std::string& format, i
                      ...) VL_MT_SAFE {
     va_list ap;
     va_start(ap, argc);
-    const IData got = _vl_vsscanf(nullptr, lbits, lwp, "", format, ap);
+    const IData got = _vl_vsscanf(nullptr, lbits, lwp, "", format, argc, ap);
     va_end(ap);
     return got;
 }
@@ -1830,7 +1941,7 @@ IData VL_SSCANF_INNX(int, const std::string& ld, const std::string& format, int 
     va_list ap;
     va_start(ap, argc);
     const IData got
-        = _vl_vsscanf(nullptr, static_cast<int>(ld.length() * 8), nullptr, ld, format, ap);
+        = _vl_vsscanf(nullptr, static_cast<int>(ld.length() * 8), nullptr, ld, format, argc, ap);
     va_end(ap);
     return got;
 }
@@ -2133,13 +2244,25 @@ const char* vl_mc_scan_plusargs(const char* prefixp) VL_MT_SAFE {
 //===========================================================================
 // Heavy string functions
 
-std::string VL_TO_STRING(CData lhs) { return VL_SFORMATF_N_NX("'h%0x", 0, 8, lhs); }
-std::string VL_TO_STRING(SData lhs) { return VL_SFORMATF_N_NX("'h%0x", 0, 16, lhs); }
-std::string VL_TO_STRING(IData lhs) { return VL_SFORMATF_N_NX("'h%0x", 0, 32, lhs); }
-std::string VL_TO_STRING(QData lhs) { return VL_SFORMATF_N_NX("'h%0x", 0, 64, lhs); }
-std::string VL_TO_STRING(double lhs) { return VL_SFORMATF_N_NX("%g", 0, 64, lhs); }
+// TODO these could be accelerated with a dedicated to-Hex formatter
+// instead of using VL_SFORMATF_N_NX
+std::string VL_TO_STRING(CData lhs) {
+    return VL_SFORMATF_N_NX("'h%0x", 1, VL_VFORMATATTR_UNSIGNED, 8, lhs);
+}
+std::string VL_TO_STRING(SData lhs) {
+    return VL_SFORMATF_N_NX("'h%0x", 1, VL_VFORMATATTR_UNSIGNED, 16, lhs);
+}
+std::string VL_TO_STRING(IData lhs) {
+    return VL_SFORMATF_N_NX("'h%0x", 1, VL_VFORMATATTR_UNSIGNED, 32, lhs);
+}
+std::string VL_TO_STRING(QData lhs) {
+    return VL_SFORMATF_N_NX("'h%0x", 1, VL_VFORMATATTR_UNSIGNED, 64, lhs);
+}
+std::string VL_TO_STRING(double lhs) {
+    return VL_SFORMATF_N_NX("%g", 1, VL_VFORMATATTR_DOUBLE, lhs);
+}
 std::string VL_TO_STRING_W(int words, const WDataInP obj) {
-    return VL_SFORMATF_N_NX("'h%0x", 0, words * VL_EDATASIZE, obj);
+    return VL_SFORMATF_N_NX("'h%0x", 1, VL_VFORMATATTR_UNSIGNED, words * VL_EDATASIZE, obj);
 }
 
 std::string VL_TOLOWER_NN(const std::string& ld) VL_PURE {
@@ -2221,11 +2344,12 @@ QData VL_NTOI_Q(int obits, const std::string& str) VL_PURE {
     }
     return out & VL_MASK_Q(obits);
 }
-void VL_NTOI_W(int obits, WDataOutP owp, const std::string& str) VL_PURE {
+void VL_NTOI_W(int obits, WDataOutP owp, const std::string& str, int truncFront) VL_PURE {
+    // Could also be called VL_CVT_PACK_STR_WN; converts string to wide
     const int words = VL_WORDS_I(obits);
     for (int i = 0; i < words; ++i) owp[i] = 0;
     const char* const datap = str.data();
-    int pos = static_cast<int>(str.length()) - 1;
+    int pos = static_cast<int>(str.length()) - 1 - truncFront;
     int bit = 0;
     while (bit < obits && pos >= 0) {
         owp[VL_BITWORD_I(bit)] |= static_cast<EData>(datap[pos]) << VL_BITBIT_I(bit);

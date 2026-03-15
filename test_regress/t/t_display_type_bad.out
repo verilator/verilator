@@ -1,14 +1,9 @@
-%Error: t/t_display_type_bad.v:11:29: $display-like format of '%d' illegal with non-numeric argument
-                                    : ... note: In instance 't'
-                                    : ... Suggest use '%s'
-   11 |     $display("%d %x %f %t", s, s, s, s);
-      |                             ^
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_display_type_bad.v:11:32: $display-like format of '%x' illegal with non-numeric argument
                                     : ... note: In instance 't'
                                     : ... Suggest use '%s'
    11 |     $display("%d %x %f %t", s, s, s, s);
       |                                ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_display_type_bad.v:11:35: $display-like format of '%f' illegal with non-numeric argument
                                     : ... note: In instance 't'
                                     : ... Suggest use '%s'
@@ -19,4 +14,49 @@
                                     : ... Suggest use '%s'
    11 |     $display("%d %x %f %t", s, s, s, s);
       |                                      ^
+%Error: t/t_display_type_bad.v:12:32: $display-like format of '%x' illegal with non-numeric argument
+                                    : ... note: In instance 't'
+                                    : ... Suggest use '%s'
+   12 |     $display("%D %X %F %T", s, s, s, s);
+      |                                ^
+%Error: t/t_display_type_bad.v:12:35: $display-like format of '%f' illegal with non-numeric argument
+                                    : ... note: In instance 't'
+                                    : ... Suggest use '%s'
+   12 |     $display("%D %X %F %T", s, s, s, s);
+      |                                   ^
+%Error: t/t_display_type_bad.v:12:38: $display-like format of '%t' illegal with non-numeric argument
+                                    : ... note: In instance 't'
+                                    : ... Suggest use '%s'
+   12 |     $display("%D %X %F %T", s, s, s, s);
+      |                                      ^
+%Error: t/t_display_type_bad.v:13:34: $display-like format of '%x' illegal with non-numeric argument
+                                    : ... note: In instance 't'
+                                    : ... Suggest use '%s'
+   13 |     $display("%d %x %f %t", vec, vec, vec, vec);
+      |                                  ^~~
+%Error: t/t_display_type_bad.v:13:39: $display-like format of '%f' illegal with non-numeric argument
+                                    : ... note: In instance 't'
+                                    : ... Suggest use '%s'
+   13 |     $display("%d %x %f %t", vec, vec, vec, vec);
+      |                                       ^~~
+%Error: t/t_display_type_bad.v:13:44: $display-like format of '%t' illegal with non-numeric argument
+                                    : ... note: In instance 't'
+                                    : ... Suggest use '%s'
+   13 |     $display("%d %x %f %t", vec, vec, vec, vec);
+      |                                            ^~~
+%Error: t/t_display_type_bad.v:14:34: $display-like format of '%x' illegal with non-numeric argument
+                                    : ... note: In instance 't'
+                                    : ... Suggest use '%s'
+   14 |     $display("%D %X %F %T", vec, vec, vec, vec);
+      |                                  ^~~
+%Error: t/t_display_type_bad.v:14:39: $display-like format of '%f' illegal with non-numeric argument
+                                    : ... note: In instance 't'
+                                    : ... Suggest use '%s'
+   14 |     $display("%D %X %F %T", vec, vec, vec, vec);
+      |                                       ^~~
+%Error: t/t_display_type_bad.v:14:44: $display-like format of '%t' illegal with non-numeric argument
+                                    : ... note: In instance 't'
+                                    : ... Suggest use '%s'
+   14 |     $display("%D %X %F %T", vec, vec, vec, vec);
+      |                                            ^~~
 %Error: Exiting due to

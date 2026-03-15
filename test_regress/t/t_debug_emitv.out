@@ -51,7 +51,7 @@ module Vt_debug_emitv_t;
                 $write("");
             end
             if ($value$plusargs("TEST=%d", i1)) begin
-                $display("value was %~", i1);
+                $display("value was %d", i1);
             end
             else begin
                 $display("+TEST= not found");
@@ -134,7 +134,7 @@ module Vt_debug_emitv_t;
                     while ((i < 'sh3)) begin
                         begin
                             other = f(i);
-                            $display("stmt %~ %~", 
+                            $display("stmt %d %d", 
                                      i, other);
                             t();
                         end
@@ -182,7 +182,7 @@ module Vt_debug_emitv_t;
             fo = cyc;
             sub.inc(fosum);
             sum = sub.f(sum);
-            $display("[%0t] sum = %~", $time, sum);
+            $display("[%0t] sum = %d", $time, sum);
             $display("a?= %d", ($c('sh1) ? $c('sh14)
                                  : $c('sh1e)));
             $c(;);
@@ -196,7 +196,7 @@ module Vt_debug_emitv_t;
             $fflush(fd);
             $fscanf(fd, "%d", sum);
             ;
-            $fdisplay(32'h69203d20, "%~", sum);
+            $fdisplay(32'h69203d20, "%d", sum);
             $fwrite(fd, "hello");
             $readmemh(string'(fd), array);
             $readmemh(string'(fd), array, 'sh0);
@@ -274,13 +274,13 @@ module Vt_debug_emitv_t;
             else begin
                 $display("0");
             end
-            $display("%~%~", $past(cyc), $past(cyc, 
+            $display("%d%d", $past(cyc), $past(cyc, 
                                                'sh1));
-            str = $sformatf("cyc=%~", cyc);
+            str = $sformatf("cyc=%d", cyc);
             ;
-            $display("str = %@", str);
-            $display("struct = %@", ps);
-            $display("%% [%t] [%^] to=%o td=%d", $time, 
+            $display("str = %s", str);
+            $display("struct = %p", ps);
+            $display("%% [%t] [%t] to=%o td=%d", $time, 
                      $realtime, $time, $time);
             $sscanf(40'h666f6f3d35, "foo=%d", i);
             ;

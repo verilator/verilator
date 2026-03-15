@@ -4232,11 +4232,11 @@ system_t_stmt_call<nodeStmtp>:  // IEEE: part of system_tf_call (as task returni
         |       yD_STOP parenE                          { $$ = new AstStop{$1, false}; }
         |       yD_STOP '(' expr ')'                    { $$ = new AstStop{$1, false}; DEL($3); }
         //
-        |       yD_SFORMAT '(' expr ',' exprDispList ')'        { $$ = new AstSFormat{$1, $3, $5}; }
-        |       yD_SWRITE  '(' expr ',' exprDispList ')'        { $$ = new AstSFormat{$1, $3, $5}; }
-        |       yD_SWRITEB '(' expr ',' exprDispList ')'        { $$ = new AstSFormat{$1, $3, $5, 'b'}; }
-        |       yD_SWRITEH '(' expr ',' exprDispList ')'        { $$ = new AstSFormat{$1, $3, $5, 'h'}; }
-        |       yD_SWRITEO '(' expr ',' exprDispList ')'        { $$ = new AstSFormat{$1, $3, $5, 'o'}; }
+        |       yD_SFORMAT '(' expr ',' exprDispList ')'        { $$ = new AstSFormat{$1, false, $3, $5}; }
+        |       yD_SWRITE  '(' expr ',' exprDispList ')'        { $$ = new AstSFormat{$1, true, $3, $5, 'd'}; }
+        |       yD_SWRITEB '(' expr ',' exprDispList ')'        { $$ = new AstSFormat{$1, true, $3, $5, 'b'}; }
+        |       yD_SWRITEH '(' expr ',' exprDispList ')'        { $$ = new AstSFormat{$1, true, $3, $5, 'h'}; }
+        |       yD_SWRITEO '(' expr ',' exprDispList ')'        { $$ = new AstSFormat{$1, true, $3, $5, 'o'}; }
         //
         |       yD_DISPLAY parenE                               { $$ = new AstDisplay{$1, VDisplayType::DT_DISPLAY, nullptr, nullptr}; }
         |       yD_DISPLAY '(' commasE exprDispList ')'         { $$ = new AstDisplay{$1, VDisplayType::DT_DISPLAY, nullptr, $4}; }

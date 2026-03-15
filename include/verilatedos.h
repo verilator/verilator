@@ -318,7 +318,6 @@
 # define VL_CONSTEXPR_CXX17
 #endif
 
-
 //=========================================================================
 // Optimization
 
@@ -433,6 +432,17 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 # define VL_SNPRINTF snprintf
 # define VL_VSNPRINTF vsnprintf
 #endif
+
+// Constants for VL_SFORMATF; see V3Number.h VFormatAttr
+// Character codes are upper case so harder to confuse with format %codes.
+// (...) indicates what is passed as arguments in emitted code
+#define VL_VFORMATATTR_UNSIGNED '#'  // (int widthMin, IData/WData/etc) Use standard format
+#define VL_VFORMATATTR_SIGNED '~'  // (int widthMin, IData/WData/etc) Signed number; for %d showing sign
+#define VL_VFORMATATTR_COMPLEX '!'  // (std::string*); for non-POD; e.g. struct, requires %p typically
+#define VL_VFORMATATTR_DOUBLE 'D'  // (double); promote %p to %f
+#define VL_VFORMATATTR_SCOPE 'M'  // (char* name, char* scope); for scopes
+#define VL_VFORMATATTR_STRING 'S'  // (char* name, char* scope); for scopes  // (std::string*); for %p/%s
+#define VL_VFORMATATTR_TIMEUNIT 'T'  // (int timeunit); timeunits passed from V3Emit to runtime
 
 //=========================================================================
 // File system functions

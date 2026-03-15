@@ -6034,14 +6034,31 @@ class WidthVisitor final : public VNVisitor {
         checkForceReleaseLhs(nodep, nodep->lhsp());
     }
 
-    void formatNoStringArg(AstNode* argp, char ch) {
-        if (argp && argp->isString()) {
+    static bool isFormatNonNumericArg(const AstNodeDType* dtypep) {
+        dtypep = dtypep->skipRefp();
+        return dtypep->isString()  //
+               || VN_IS(dtypep, AssocArrayDType)  //
+               || VN_IS(dtypep, WildcardArrayDType)  //
+               || VN_IS(dtypep, ClassRefDType)  //
+               || VN_IS(dtypep, DynArrayDType)  //
+               || VN_IS(dtypep, UnpackArrayDType)  //
+               || VN_IS(dtypep, QueueDType)  //
+               || (VN_IS(dtypep, NodeUOrStructDType)
+                   && !VN_AS(dtypep, NodeUOrStructDType)->packed());
+    }
+
+    void checkFormatNumericArg(AstNode* argp, char ch) {
+        // IEEE 1800-2023 21.2.1.1 suggests %d of a class is illegal.
+        // Howver UVM tests require %0d print unique identifier of the class.
+        if (std::tolower(ch) == 'd') return;
+        // In contrast, %x of a class reference, causes errors on several simulators.
+        if (isFormatNonNumericArg(argp->dtypep()))
             argp->v3error(
                 "$display-like format of '%"s + ch + "' illegal with non-numeric argument\n"
                 << argp->warnMore() << "... Suggest use '%s'");
-        }
     }
 
+    void visit(AstSFormatArg* nodep) override {}  // Done by AstSFormatF
     void visit(AstSFormat* nodep) override {
         assertAtStatement(nodep);
         userIterateAndNext(nodep->fmtp(), WidthVP{SELF, BOTH}.p());
@@ -6055,159 +6072,48 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstSFormatF* nodep) override {
         // Excludes NodeDisplay, see below
         if (m_vup && !m_vup->prelim()) return;  // Can be called as statement or function
-        // Just let all arguments seek their natural sizes
-        userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
+        if (nodep->didWidthAndSet()) return;
         //
         UINFO(9, "  Display in " << nodep->text());
-        string newFormat;
-        bool inPct = false;
-        AstNodeExpr* argp = nodep->exprsp();
-        const string txt = nodep->text();
-        string fmt;
-        for (char ch : txt) {
-            if (!inPct && ch == '%') {
-                inPct = true;
-                fmt = ch;
-            } else if (inPct && (std::isdigit(ch) || ch == '.' || ch == '-')) {
-                fmt += ch;
-            } else if (inPct) {
-                inPct = false;
-                bool added = false;
-                const AstNodeDType* const dtypep = argp ? argp->dtypep()->skipRefp() : nullptr;
-                const AstBasicDType* const basicp = dtypep ? dtypep->basicp() : nullptr;
-                ch = std::tolower(ch);
-                if (ch == '?') {  // Unspecified by user, guess
-                    if (argp && argp->isDouble()) {
-                        ch = 'g';
-                    } else if (argp && argp->isString()) {
-                        ch = '@';
-                    } else if (argp && nodep->missingArgChar() == 'd' && argp->isSigned()) {
-                        ch = '~';
-                    } else if (basicp) {
-                        ch = nodep->missingArgChar();
-                    } else {
-                        ch = 'p';
-                    }
-                }
-                switch (ch) {
-                case '%': break;  // %% - just output a %
-                case 'm': break;  // %m - auto insert "name"
-                case 'l': break;  // %m - auto insert "library"
-                case 'c': {
-                    if (argp->widthMin() > 8) {
-                        // Technically legal, but surely not what the user intended.
-                        argp->v3warn(WIDTHTRUNC,
-                                     "$display-like format of %c format of > 8 bit value");
-                    }
-                    if (argp) argp = VN_AS(argp->nextp(), NodeExpr);
-                    break;
-                }
-                case 'd': {  // Convert decimal to either 'd' or '#'
-                    if (argp) {
-                        AstNodeExpr* const nextp = VN_AS(argp->nextp(), NodeExpr);
-                        formatNoStringArg(argp, ch);
-                        if (argp->isDouble()) {
-                            spliceCvtS(argp, true, 64);
-                            ch = '~';
-                        } else if (argp->isSigned()) {  // Convert it
-                            ch = '~';
-                        }
-                        argp = nextp;
-                    }
-                    break;
-                }
-                case 'b':  // FALLTHRU
-                case 'o':  // FALLTHRU
-                case 'x': {
-                    if (argp) {
-                        AstNodeExpr* const nextp = VN_AS(argp->nextp(), NodeExpr);
-                        formatNoStringArg(argp, ch);
-                        if (argp->isDouble()) spliceCvtS(argp, true, 64);
-                        argp = nextp;
-                    }
-                    break;
-                }
-                case 'p': {  // Pattern
-                    if (basicp && basicp->isString()) {
-                        added = true;
-                        newFormat += "\"%@\"";
-                    } else if (basicp && basicp->isDouble()) {
-                        added = true;
-                        newFormat += "%g";
-                    } else if (VN_IS(dtypep, AssocArrayDType)  //
-                               || VN_IS(dtypep, WildcardArrayDType)  //
-                               || VN_IS(dtypep, ClassRefDType)  //
-                               || VN_IS(dtypep, DynArrayDType)  //
-                               || VN_IS(dtypep, UnpackArrayDType)  //
-                               || VN_IS(dtypep, QueueDType)
-                               || (VN_IS(dtypep, NodeUOrStructDType)
-                                   && !VN_AS(dtypep, NodeUOrStructDType)->packed())) {
-                        added = true;
-                        newFormat += "%@";
-                        VNRelinker handle;
-                        argp->unlinkFrBack(&handle);
-                        FileLine* const flp = nodep->fileline();
-                        AstNodeExpr* const newp = new AstToStringN{flp, argp};
-                        handle.relink(newp);
-                        // Set argp to what we replaced it with, as we will keep processing the
-                        // next argument.
-                        argp = newp;
-                    } else {
-                        added = true;
-                        if (fmt == "%0") {
-                            newFormat += "'h%0h";  // IEEE our choice
-                        } else {
-                            newFormat += "%0d";  // UVM tests require %0d
-                        }
-                    }
-                    if (argp) argp = VN_AS(argp->nextp(), NodeExpr);
-                    break;
-                }
-                case 's': {  // Convert string to pack string
-                    if (argp && argp->dtypep()->basicp()->isString()) {  // Convert it
-                        ch = '@';
-                    }
-                    if (argp) argp = VN_AS(argp->nextp(), NodeExpr);
-                    break;
-                }
-                case 't': {  // Convert decimal time to realtime
-                    if (argp) {
-                        AstNodeExpr* const nextp = VN_AS(argp->nextp(), NodeExpr);
-                        formatNoStringArg(argp, ch);
-                        if (argp->isDouble()) ch = '^';  // Convert it
-                        UASSERT_OBJ(!nodep->timeunit().isNone(), nodep,
-                                    "display %t has no time units");
-                        argp = nextp;
-                    }
-                    break;
-                }
-                case 'e':  // FALLTHRU
-                case 'f':  // FALLTHRU
-                case 'g': {
-                    if (argp) {
-                        AstNodeExpr* const nextp = VN_AS(argp->nextp(), NodeExpr);
-                        formatNoStringArg(argp, ch);
-                        if (!argp->isDouble()) {
-                            iterateCheckReal(nodep, "Display argument", argp, BOTH);
-                        }
-                        argp = nextp;
-                    }
-                    break;
-                }
-                default: {  // Most operators, just move to next argument
-                    if (argp) argp = VN_AS(argp->nextp(), NodeExpr);
-                    break;
-                }
-                }  // switch
-                if (!added) {
-                    fmt += ch;
-                    newFormat += fmt;
-                }
+
+        // Just let all arguments seek their natural sizes
+        userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
+        if (!nodep->exprFormat()) {  // Non-constant format, can't check format string types
+            visit_sformatf_format(nodep);
+        }
+
+        AstNodeExpr* oldExprsp = nodep->exprsp();
+        if (nodep->exprFormat() && oldExprsp) {
+            VL_DO_DANGLING(iterateCheckString(nodep, "format", nodep->exprsp(), BOTH), oldExprsp);
+            oldExprsp = VN_AS(nodep->exprsp()->nextp(), NodeExpr);
+        }
+        if (oldExprsp) oldExprsp->unlinkFrBackWithNext();
+        while (AstNodeExpr* argp = oldExprsp) {
+            oldExprsp = VN_AS(oldExprsp->nextp(), NodeExpr);
+            if (oldExprsp) oldExprsp->unlinkFrBackWithNext();
+            // Need to record formatAttr's at elaboration time, as later optimizations
+            // may change an argument's data type. Plus need them for runtime formats
+            VFormatAttr formatAttr = VFormatAttr::UNSIGNED;
+            const AstNodeDType* const dtypep = argp ? argp->dtypep()->skipRefp() : nullptr;
+            if (dtypep->isDouble()) {
+                formatAttr = VFormatAttr::DOUBLE;
+            } else if (dtypep->isString()) {
+                formatAttr = VFormatAttr::STRING;
+            } else if (isFormatNonNumericArg(dtypep)) {
+                AstNodeExpr* const newp = new AstToStringN{argp->fileline(), argp};
+                formatAttr = VFormatAttr::COMPLEX;
+                argp = newp;
+            } else if (dtypep->isSigned()) {
+                formatAttr = VFormatAttr::SIGNED;
+            }
+            if (VN_IS(argp, SFormatArg)  // Already done
+                || formatAttr.isUnsigned()) {  // Save Ast space and imply the AstSFormatArg
+                nodep->addExprsp(argp);
             } else {
-                newFormat += ch;
+                nodep->addExprsp(new AstSFormatArg{argp->fileline(), formatAttr, argp});
             }
         }
-        nodep->text(newFormat);
+
         UINFO(9, "  Display out " << nodep->text());
     }
     void visit(AstCReset* nodep) override {
@@ -8026,6 +7932,92 @@ class WidthVisitor final : public VNVisitor {
             iterateCheckReal(nodep, "LHS", nodep->lhsp(), BOTH);
             nodep->dtypeSetDouble();
         }
+    }
+
+    void visit_sformatf_format(AstSFormatF* nodep) {
+        // For sformatf's with constant format, iterate/check arguments
+        UASSERT_OBJ(!nodep->exprFormat(), nodep, "Assumes constant format");
+        bool inPct = false;
+        AstNodeExpr* argp = nodep->exprsp();
+        string newFormat;
+        for (char ch : nodep->text()) {
+            if (!inPct && ch == '%') {
+                inPct = true;
+                newFormat += ch;
+            } else if (inPct && (std::isdigit(ch) || ch == '.' || ch == '-')) {
+                newFormat += ch;
+            } else if (!inPct) {  // Normal text
+                newFormat += ch;
+            } else {
+                inPct = false;
+                AstNodeExpr* const nextp = argp ? VN_AS(argp->nextp(), NodeExpr) : nullptr;
+                AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);  // May not exist yet
+                AstNodeExpr* const subargp = fargp ? fargp->exprp() : argp;
+                const AstNodeDType* const dtypep
+                    = subargp ? subargp->dtypep()->skipRefp() : nullptr;
+                ch = std::tolower(ch);
+                switch (ch) {
+                case '?':  // Unspecified by user, guess
+                    if (dtypep->isDouble()) {
+                        ch = 'g';
+                    } else if (dtypep->isString()) {
+                        ch = 's';
+                    } else if (VN_IS(dtypep, BasicDType)) {
+                        ch = nodep->missingArgChar();
+                    } else {
+                        ch = 'p';
+                    }
+                    argp = nextp;
+                    break;
+                case '%': break;  // %% - just output a %
+                case 'm': break;  // %m - auto insert "name"
+                case 'l': break;  // %m - auto insert "library"
+                case 'd':
+                    if (subargp) {
+                        checkFormatNumericArg(subargp, ch);
+                        if (subargp->isDouble()) spliceCvtS(subargp, true, 64);
+                        argp = nextp;
+                    }
+                    break;
+                case 'b':  // FALLTHRU
+                case 'o':  // FALLTHRU
+                case 'x':
+                    if (subargp) {
+                        // V3Randomize may make a %x on a string, or may
+                        // have a runtime format which gets past this error
+                        checkFormatNumericArg(subargp, ch);
+                        argp = nextp;
+                    }
+                    break;
+                case 't':  // Decimal/float time
+                    if (subargp) {
+                        checkFormatNumericArg(subargp, ch);
+                        UASSERT_OBJ(!nodep->timeunit().isNone(), nodep,
+                                    "display %t has no time units");
+                        argp = nextp;
+                    }
+                    break;
+                case 'e':  // FALLTHRU
+                case 'f':  // FALLTHRU
+                case 'g':
+                    if (subargp) {
+                        checkFormatNumericArg(subargp, ch);
+                        if (!subargp->isDouble()) {
+                            iterateCheckReal(nodep, "Display argument", subargp, BOTH);
+                        }
+                        argp = nextp;
+                    }
+                    break;
+                case 'p':  // FALLTHRU
+                case 's':  // FALLTHRU
+                default:  // Most operators, just move to next argument
+                    argp = nextp;
+                    break;
+                }  // switch
+                newFormat += ch;
+            }
+        }
+        nodep->text(newFormat);
     }
 
     //----------------------------------------------------------------------
