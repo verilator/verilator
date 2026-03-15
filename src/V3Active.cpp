@@ -753,7 +753,7 @@ public:
 
         // Release the owned AstSenTree nodes that were unlinked from AstCovergroup during
         // the first pass; they are no longer needed after all clones have been made.
-        for (auto& [classp, evtp] : m_covergroupEvents) VL_DO_DANGLING(evtp->deleteTree(), evtp);
+        for (const auto& itpair : m_covergroupEvents) itpair.second->deleteTree();
 
         UINFO(4, "CovergroupSamplingVisitor: Complete" << endl);
     }
