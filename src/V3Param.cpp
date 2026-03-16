@@ -1914,6 +1914,55 @@ public:
 };
 
 //######################################################################
+//  Relink RefDType nodes to point to parameterized classes' type parameters
+
+class ParamClassRefDTypeRelinkVisitor final : public VNVisitor {
+
+    AstClass* m_classp = nullptr;
+    std::unordered_map<const AstParamTypeDType*, AstClass*> m_paramTypeClassMap;
+
+public:
+    explicit ParamClassRefDTypeRelinkVisitor(AstNetlist* netlistp) { iterate(netlistp); }
+    void visit(AstClass* nodep) override {
+        VL_RESTORER(m_classp);
+        m_classp = nodep;
+        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (AstParamTypeDType* const ptp = VN_CAST(stmtp, ParamTypeDType)) {
+                m_paramTypeClassMap[ptp] = nodep;
+            }
+        }
+        iterateChildren(nodep);
+    }
+    void visit(AstRefDType* nodep) override {
+        iterateChildren(nodep);
+        AstParamTypeDType* const paramtypep = VN_CAST(nodep->refDTypep(), ParamTypeDType);
+        if (!paramtypep) return;
+        const auto it = m_paramTypeClassMap.find(paramtypep);
+        if (it == m_paramTypeClassMap.end()) return;
+        AstClass* const origClassp = it->second;
+        if (!origClassp->hasGParam()) return;  // only relink refs to original param classes
+        if (origClassp->user3p()) return;  // will not get removed, no need to relink
+        AstClass* const parametrizedClassp = VN_CAST(origClassp->user4p(), Class);
+        if (!parametrizedClassp) return;
+        const string paramName = paramtypep->name();
+        AstParamTypeDType* newParamTypep = nullptr;
+        for (AstNode* stmtp = parametrizedClassp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (AstParamTypeDType* const ptp = VN_CAST(stmtp, ParamTypeDType)) {
+                if (ptp->name() == paramName) {
+                    newParamTypep = ptp;
+                    break;
+                }
+            }
+        }
+        if (newParamTypep) {
+            nodep->refDTypep(newParamTypep);
+            nodep->classOrPackagep(parametrizedClassp);
+        }
+    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+};
+
+//######################################################################
 // Process parameter top state
 
 class ParamState final {
@@ -2783,6 +2832,8 @@ public:
                 ftaskrefp->classOrPackagep(parametrizedClassp);
             }
         });
+
+        ParamClassRefDTypeRelinkVisitor paramClassDTypeRelinkVisitor{netlistp};
 
         relinkDots();
 
