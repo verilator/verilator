@@ -4,9 +4,6 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
-// Test: mixed-width shift operands in constraints (issue #5420)
-// SMT solver previously errored when shift RHS had different width than LHS.
-
 class AlignedPacket;
   localparam int ADDRW = 37;
   localparam int SIZEW = 4;
