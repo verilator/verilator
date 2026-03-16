@@ -1600,6 +1600,25 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstPowSS* nodep) override { handlePow(nodep); }
     void visit(AstPowSU* nodep) override { handlePow(nodep); }
     void visit(AstPowUS* nodep) override { handlePow(nodep); }
+    // SMT-LIB2 shift operations (bvshl/bvlshr/bvashr) require both operands
+    // to have the same bitvector width. Zero-extend the RHS if narrower.
+    void handleShift(AstNodeBiop* nodep) {
+        if (editFormat(nodep)) return;
+        const int lhsWidth = nodep->lhsp()->width();
+        const int rhsWidth = nodep->rhsp()->width();
+        if (rhsWidth < lhsWidth) {
+            FileLine* const fl = nodep->fileline();
+            AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+            const bool rhsDependent = rhsp->user1();
+            AstExtend* const extendp = new AstExtend{fl, rhsp, lhsWidth};
+            extendp->user1(rhsDependent);
+            nodep->rhsp(extendp);
+        }
+        editSMT(nodep, nodep->lhsp(), nodep->rhsp());
+    }
+    void visit(AstShiftL* nodep) override { handleShift(nodep); }
+    void visit(AstShiftR* nodep) override { handleShift(nodep); }
+    void visit(AstShiftRS* nodep) override { handleShift(nodep); }
     void visit(AstNodeBiop* nodep) override {
         if (editFormat(nodep)) return;
         editSMT(nodep, nodep->lhsp(), nodep->rhsp());
