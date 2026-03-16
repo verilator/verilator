@@ -1533,7 +1533,6 @@ public:
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 };
 
-
 //######################################################################
 //  Relink RefDType nodes to point to parameterized classes' type parameters
 
@@ -1582,7 +1581,6 @@ public:
     }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 };
-
 
 //######################################################################
 // Process parameter top state
