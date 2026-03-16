@@ -7626,12 +7626,10 @@ class WidthVisitor final : public VNVisitor {
             const bool rhsIsPat = VN_IS(nodep->rhsp(), Pattern);
             if (lhsIsPat && !rhsIsPat) {
                 userIterateAndNext(nodep->rhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
-                userIterateAndNext(nodep->lhsp(),
-                                   WidthVP{nodep->rhsp()->dtypep(), PRELIM}.p());
+                userIterateAndNext(nodep->lhsp(), WidthVP{nodep->rhsp()->dtypep(), PRELIM}.p());
             } else if (rhsIsPat && !lhsIsPat) {
                 userIterateAndNext(nodep->lhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
-                userIterateAndNext(nodep->rhsp(),
-                                   WidthVP{nodep->lhsp()->dtypep(), PRELIM}.p());
+                userIterateAndNext(nodep->rhsp(), WidthVP{nodep->lhsp()->dtypep(), PRELIM}.p());
             } else {
                 userIterateAndNext(nodep->lhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
                 userIterateAndNext(nodep->rhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
