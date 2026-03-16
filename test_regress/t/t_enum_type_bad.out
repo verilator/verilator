@@ -1,4 +1,4 @@
-%Error-ENUMVALUE: t/t_enum_type_bad.v:36:9: Implicit conversion to enum 'enum{}t.e_t' from 'logic[31:0]' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_type_bad.v:36:9: Implicit conversion to enum 'enum{}t.e_t' from 'bit[31:0]' (IEEE 1800-2023 6.19.3)
                                           : ... note: In instance 't'
                                           : ... Suggest use enum's mnemonic, or static cast
    36 |     e = 1;   
