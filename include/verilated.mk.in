@@ -208,7 +208,6 @@ VK_USER_OBJS = $(addsuffix .o, $(VM_USER_CLASSES))
 
 ifneq ($(VM_TRACE_FST),0)
 ifneq ($(VM_TRACE_FST),)
-    VM_GLOBAL_FAST += fstcpp_writer fstcpp_variable_info
     LDLIBS = -llz4 -lz
 endif
 endif
