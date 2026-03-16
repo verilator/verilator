@@ -1056,6 +1056,10 @@ void V3Options::notify() VL_MT_DISABLED {
                       "--main not usable with SystemC. Suggest see examples for sc_main().");
     }
 
+    if (fourstate()) {
+        cmdfl->v3warn(FUTUREFOURSTATE, "--fourstate is not supported and has no effect yet");
+    }
+
     if (coverage() && savable()) {
         cmdfl->v3error("Unsupported: --coverage and --savable not supported together");
     }
@@ -1436,6 +1440,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         parseOptsFile(fl, parseFileArg(optdir, valp), false);
     }).notForRerun();
     DECL_OPTION("-flatten", OnOff, &m_flatten);
+    DECL_OPTION("-fourstate", OnOff, &m_fourstate).undocumented();
     DECL_OPTION("-future0", CbVal, [this](const char* valp) { addFuture0(valp); });
     DECL_OPTION("-future1", CbVal, [this](const char* valp) { addFuture1(valp); });
 

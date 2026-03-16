@@ -15,6 +15,7 @@ Waivers = [
     'Internal',
     'Unsupported',
     'DIDNOTCONVERGE',  # Runtime
+    'FUTUREFOURSTATE',  # Not supported yet
 ]
 
 src_filename = "src/V3Error.h"

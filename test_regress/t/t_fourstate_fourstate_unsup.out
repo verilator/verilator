@@ -1,0 +1,6 @@
+%Error: The following cannot be used together: --binary, --lint-only. Suggest see manual
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Warning-FUTUREFOURSTATE: --fourstate is not supported and has no effect yet
+                          ... For warning description see https://verilator.org/warn/FUTUREFOURSTATE?v=latest
+                          ... Use "/* verilator lint_off FUTUREFOURSTATE */" and lint_on around source to disable this message.
+%Error: Exiting due to
