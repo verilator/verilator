@@ -2368,9 +2368,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                 const std::string smtArrayName = arrVarp->name();
                 AstNodeDType* elemDtp = arrVarp->dtypep()->skipRefp()->subDTypep();
                 const int elemWidth = elemDtp->width();
-                AstNodeModule* const classModulep = m_classp
-                                                        ? static_cast<AstNodeModule*>(m_classp)
-                                                        : VN_AS(m_genp->user2p(), NodeModule);
+                AstNodeModule* const arrModulep = VN_AS(arrVarp->user2p(), NodeModule);
+                AstNodeModule* const genModulep = VN_AS(m_genp->user2p(), NodeModule);
                 arrVarp->user3(true);
 
                 // Create variable name using AstSFormatF
@@ -2379,7 +2378,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
                 // Create array element reference: array.atWrite(index)
                 AstCMethodHard* const atWritep = new AstCMethodHard{
-                    fl, new AstVarRef{fl, classModulep, arrVarp, VAccess::READWRITE},
+                    fl, new AstVarRef{fl, arrModulep, arrVarp, VAccess::READWRITE},
                     VCMethod::ARRAY_AT_WRITE, new AstVarRef{fl, loopVarp, VAccess::READ}};
                 atWritep->dtypeFrom(elemDtp);
 
@@ -2392,7 +2391,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
                 // Create write_var method call: gen.write_var(arrElement, width, name, 0)
                 AstCMethodHard* const writeVarp = new AstCMethodHard{
-                    fl, new AstVarRef{fl, classModulep, m_genp, VAccess::READWRITE},
+                    fl, new AstVarRef{fl, genModulep, m_genp, VAccess::READWRITE},
                     VCMethod::RANDOMIZER_WRITE_VAR, atWritep};
                 writeVarp->addPinsp(new AstConst{fl, AstConst::WidthedValue{}, 64,
                                                  static_cast<uint32_t>(elemWidth)});
