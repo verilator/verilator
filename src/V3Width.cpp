@@ -2875,6 +2875,7 @@ class WidthVisitor final : public VNVisitor {
         // Assign missing values
         V3Number num(nodep, nodep->width(), 0);
         const V3Number one{nodep, nodep->width(), 1};
+        bool wrapAround = false;
         std::map<const V3Number, AstEnumItem*> inits;
         for (AstEnumItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), EnumItem)) {
@@ -2890,9 +2891,10 @@ class WidthVisitor final : public VNVisitor {
                     continue;
                 }
                 // TODO IEEE says assigning sized number that is not same size as enum is illegal
+                wrapAround = false;  // Explicit value resets wrap-around tracking
             }
             if (!itemp->valuep()) {
-                if (num.isEqZero() && itemp != nodep->itemsp()) {
+                if (wrapAround) {
                     itemp->v3error("Enum value illegally wrapped around (IEEE 1800-2023 6.19)");
                 }
                 if (num.isFourState()) {
@@ -2918,7 +2920,16 @@ class WidthVisitor final : public VNVisitor {
                                << otherp->warnOther() << "... Location of original declaration\n"
                                << otherp->warnContextSecondary());
             }
+            // Detect wrap-around after increment for the next auto-valued item.
+            // For signed types, overflow is positive-to-negative (e.g., INT_MAX+1).
+            // For unsigned types, overflow wraps to zero (e.g., UINT_MAX+1).
+            const bool prevNeg = constp->num().isNegative();
             num.opAdd(one, constp->num());
+            if (basicp->isSigned()) {
+                wrapAround = !prevNeg && num.isNegative();
+            } else {
+                wrapAround = num.isEqZero();
+            }
         }
     }
     void visit(AstEnumItem* nodep) override {
