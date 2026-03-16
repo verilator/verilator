@@ -271,7 +271,7 @@ void Writer::emitValueChange(Handle handle, const char *val) {
 	FST_DCHECK_NE(bitwidth, 0);
 
 	val += bitwidth;
-	thread_local static std::vector<uint64_t> t_packed_value_buffer;
+	static std::vector<uint64_t> t_packed_value_buffer;
 	const unsigned num_words{(bitwidth + 63) / 64};
 	t_packed_value_buffer.assign(num_words, 0);
 	for (unsigned i = 0; i < num_words; ++i) {

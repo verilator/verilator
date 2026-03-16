@@ -26,9 +26,9 @@
 #include "verilated.h"
 #include "verilated_fst_c.h"
 
-// Include fstcpp library
-#include "fstcpp/fstcpp.h"
-#include "fstcpp/fstcpp_writer.h"
+// Include fstcpp cpp file directly
+#include "fstcpp/fstcpp_variable_info.cpp"
+#include "fstcpp/fstcpp_writer.cpp"
 
 #include <algorithm>
 #include <iterator>
@@ -453,5 +453,7 @@ void VerilatedFstBuffer::emitWData(uint32_t code, const WData* newvalp, int bits
 VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitDouble(uint32_t code, double newval) {
     m_owner.emitTimeChangeMaybe();
-    m_fst->emitValueChange(m_symbolp[code], *reinterpret_cast<const uint64_t*>(&newval));
+    uint64_t newval_u64;
+    std::memcpy(&newval_u64, &newval, sizeof(newval_u64));
+    m_fst->emitValueChange(m_symbolp[code], newval_u64);
 }

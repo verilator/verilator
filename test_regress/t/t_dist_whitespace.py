@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('dist')
 
-Tabs_Exempt_Re = r'(\.out$)|(/gtkwave)|(Makefile)|(\.mk$)|(\.mk\.in$)|test_regress/t/t_preproc\.v|install-sh'
+Tabs_Exempt_Re = r'(\.out$)|(/fstcpp)|(Makefile)|(\.mk$)|(\.mk\.in$)|test_regress/t/t_preproc\.v|install-sh'
 
 Unicode_Exempt_Re = r'(Changes$|CONTRIBUTORS$|LICENSES?|contributors.rst$|spelling.txt$)'
 

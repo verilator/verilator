@@ -310,7 +310,8 @@ public:
 		info.resize(needed);
 		EmitWriterHelper wh(info.data_ptr());
 		const double nan_val = std::numeric_limits<double>::quiet_NaN();
-		const uint64_t nan_val_u64 = *reinterpret_cast<const uint64_t *>(&nan_val);
+		uint64_t nan_val_u64;
+		std::memcpy(&nan_val_u64, &nan_val, sizeof(nan_val_u64));
 		wh.writeTimeIndexAndEncoding(0, EncodingType::BINARY).write<uint64_t>(nan_val_u64);
 	}
 
