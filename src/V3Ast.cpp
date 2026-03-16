@@ -1594,11 +1594,12 @@ void AstNode::dtypeChgWidthSigned(int width, int widthMin, VSigning numeric) {
             // Enums need to become direct sizes to avoid later ENUMVALUE errors
             && !VN_IS(dtypep()->skipRefToEnump(), EnumDType))
             return;  // Correct already
-        // FUTURE: We may be pointing at a two state data type, and this may
-        // convert it to logic.  Since the AstVar remains correct, we
-        // work OK but this assumption may break in the future.
-        // Note we can't just clone and do a widthForce, as if it's a BasicDType
-        // the msb() indications etc will be incorrect.
+        if (AstBasicDType* const basicp = VN_CAST(dtypep(), BasicDType)) {
+            if (basicp->keyword() == VBasicDTypeKwd::BIT) {
+                dtypeSetBitUnsized(width, widthMin, numeric);
+                return;
+            }
+        }
         dtypeSetLogicUnsized(width, widthMin, numeric);
     }
 }
