@@ -8,7 +8,4 @@
    15 |   rand Cls cls;
       |            ^~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Warning-CONSTRAINTIGN: t/t_randomize_method_types_unsup.v:39:41: Unsupported: randomizing this expression, treating as state
-   39 |     res = obj.randomize() with { dynarr.size > 2; };
-      |                                         ^~~~
 %Error: Exiting due to
