@@ -1690,8 +1690,16 @@ modport_itemList<nodep>:                // IEEE: part of modport_declaration
 
 modport_item<nodep>:                    // ==IEEE: modport_item
                 idAny/*new-modport*/ '('
-        /*mid*/         { VARRESET_NONLIST(UNKNOWN); VARIO(INOUT); }
-        /*cont*/    modportPortsDeclList ')'            { $$ = new AstModport{$<fl>1, *$1, $4}; }
+        /*mid*/         { VARRESET_NONLIST(UNKNOWN); VARIO(INOUT);
+                          GRAMMARP->m_modportProtoTasksp = nullptr; }
+        /*cont*/    modportPortsDeclList ')'
+                        { $$ = new AstModport{$<fl>1, *$1, $4};
+                          // Append any prototype tasks from import/export as interface siblings
+                          if (GRAMMARP->m_modportProtoTasksp) {
+                              $$ = AstNode::addNextNull(
+                                  GRAMMARP->m_modportProtoTasksp, $$);
+                              GRAMMARP->m_modportProtoTasksp = nullptr;
+                          } }
         ;
 
 modportPortsDeclList<nodep>:
@@ -1720,9 +1728,19 @@ modportPortsDecl<nodep>:
                           GRAMMARP->m_modportImpExpActive = true;
                           GRAMMARP->m_modportImpExpLastIsExport = true; }
         |       yIMPORT method_prototype
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: Modport import with prototype"); DEL($2); }
+                        { $$ = new AstModportFTaskRef{$<fl>2, $2->name(), false};
+                          GRAMMARP->m_modportImpExpActive = true;
+                          GRAMMARP->m_modportImpExpLastIsExport = false;
+                          // Import prototype: task should already exist in interface
+                          // (from export or direct declaration). Delete the prototype.
+                          DEL($2); }
         |       yEXPORT method_prototype
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: Modport export with prototype"); DEL($2); }
+                        { $$ = new AstModportFTaskRef{$<fl>2, $2->name(), true};
+                          GRAMMARP->m_modportImpExpActive = true;
+                          GRAMMARP->m_modportImpExpLastIsExport = true;
+                          // Export: add prototype task to interface (as sibling of modport)
+                          GRAMMARP->m_modportProtoTasksp
+                              = AstNode::addNextNull(GRAMMARP->m_modportProtoTasksp, $2); }
         // Continuations of above after a comma.
         //                      // IEEE: modport_simple_ports_declaration
         |       modportSimplePortOrTFPort                { $$ = $1; }
@@ -4679,7 +4697,7 @@ taskId<nodeFTaskp>:
         |       id/*interface_identifier*/ '.' idAny
                         { $$ = new AstTask{$<fl>$, *$3, nullptr};
                           $$->verilogTask(true);
-                          BBUNSUP($2, "Unsupported: Out of block function declaration"); }
+                          $$->ifacePortName(*$1); }
         //
         |       packageClassScope id
                         { $$ = new AstTask{$<fl>$, *$2, nullptr};
@@ -4745,9 +4763,9 @@ fIdScoped<funcp>:               // IEEE: part of function_body_declaration/task_
         //
         |       id/*interface_identifier*/ '.' idAny
                         { $<fl>$ = $<fl>1;
-                          $$ = new AstFunc{$<fl>$, *$1, nullptr, nullptr};
+                          $$ = new AstFunc{$<fl>$, *$3, nullptr, nullptr};
                           $$->verilogFunction(true);
-                          BBUNSUP($2, "Unsupported: Out of block function declaration"); }
+                          $$->ifacePortName(*$1); }
         //
         |       packageClassScope id
                         { $<fl>$ = $<fl>1;

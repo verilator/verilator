@@ -87,6 +87,7 @@ class AstNodeFTask VL_NOT_FINAL : public AstNode {
     // @astgen op4 := scopeNamep : Optional[AstScopeName]
     string m_name;  // Name of task
     string m_cname;  // Name of task if DPI import
+    string m_ifacePortName;  // Interface port name for out-of-block definition (IEEE 25.8)
     uint64_t m_dpiOpenParent = 0;  // DPI import open array, if !=0, how many callees
     bool m_taskPublic : 1;  // Public task
     bool m_attrIsolateAssign : 1;  // User isolate_assignments attribute
@@ -179,6 +180,8 @@ public:
     void isExternProto(bool flag) { m_isExternProto = flag; }
     bool isExternDef() const { return m_isExternDef; }
     void isExternDef(bool flag) { m_isExternDef = flag; }
+    const string& ifacePortName() const { return m_ifacePortName; }
+    void ifacePortName(const string& name) { m_ifacePortName = name; }
     bool prototype() const { return m_prototype; }
     void prototype(bool flag) { m_prototype = flag; }
     bool dpiExport() const { return m_dpiExport; }

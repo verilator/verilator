@@ -1489,11 +1489,147 @@ class LinkDotFindVisitor final : public VNVisitor {
             }
         }
     }
+    // Handle out-of-block interface method definition (IEEE 1800-2017 25.8)
+    // Move task body from module into the interface's prototype task,
+    // rewriting port-prefixed references in the body.
+    void moveIfaceExportBody(AstNodeFTask* nodep) {
+        const string& portName = nodep->ifacePortName();
+        UINFO(5, "   moveIfaceExportBody: port=" << portName
+                  << " task=" << nodep->name() << endl);
+        // Look up the interface port variable in the module's symbol table
+        VSymEnt* const portSymp = m_modSymp->findIdFallback(portName);
+        if (!portSymp) {
+            nodep->v3error("Interface port not found for out-of-block definition: "
+                           << portName);
+            return;
+        }
+        AstVar* const portp = VN_CAST(portSymp->nodep(), Var);
+        if (!portp) {
+            nodep->v3error("Out-of-block definition port is not a variable: "
+                           << portName);
+            return;
+        }
+        // Get the interface name from the port's type
+        // At this stage dtypep() may not be set yet; check childDTypep() too
+        AstIfaceRefDType* ifaceRefDtp = nullptr;
+        if (portp->dtypep()) {
+            ifaceRefDtp = VN_CAST(portp->dtypep(), IfaceRefDType);
+        }
+        if (!ifaceRefDtp && portp->childDTypep()) {
+            ifaceRefDtp = VN_CAST(portp->childDTypep(), IfaceRefDType);
+        }
+        if (!ifaceRefDtp) {
+            nodep->v3error("Out-of-block definition port is not an interface port: "
+                           << portName);
+            return;
+        }
+        const string ifaceName = ifaceRefDtp->ifaceName();
+        UINFO(5, "   moveIfaceExportBody: iface=" << ifaceName << endl);
+        // Find the interface module by name
+        AstNodeModule* const ifaceModp = m_statep->findModuleSym(ifaceName);
+        if (!ifaceModp) {
+            nodep->v3error("Interface not found for out-of-block definition: "
+                           << ifaceName);
+            return;
+        }
+        // Find the prototype task in the interface
+        AstNodeFTask* protoTaskp = nullptr;
+        for (AstNode* itemp = ifaceModp->stmtsp(); itemp; itemp = itemp->nextp()) {
+            if (AstNodeFTask* const ftaskp = VN_CAST(itemp, NodeFTask)) {
+                if (ftaskp->name() == nodep->name() && ftaskp->prototype()) {
+                    protoTaskp = ftaskp;
+                    break;
+                }
+            }
+        }
+        if (!protoTaskp) {
+            nodep->v3error("No matching export prototype found in interface "
+                           << ifaceName << " for task " << nodep->prettyNameQ());
+            return;
+        }
+        // Move body statements (non-port declarations) from the out-of-block task
+        // to the prototype task. Rewrite port.X references to just X in the body.
+        for (AstNode* stmtp = nodep->stmtsp(); stmtp;) {
+            AstNode* const nextp = stmtp->nextp();
+            // Skip port declarations -- they already exist in the prototype
+            if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
+                if (varp->isIO()) {
+                    stmtp = nextp;
+                    continue;
+                }
+            }
+            // Clone this statement and rewrite port references
+            AstNode* const newStmtp = stmtp->cloneTree(false);
+            rewriteIfacePortRefs(newStmtp, portName);
+            protoTaskp->addStmtsp(newStmtp);
+            stmtp = nextp;
+        }
+        // Mark prototype as no longer prototype (it has a body now)
+        protoTaskp->prototype(false);
+        // Delete the out-of-block task from the module
+        nodep->unlinkFrBack();
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+
+    // Rewrite AstDot nodes where lhsp is AstParseRef with the port name
+    // to just the rhsp (stripping the port prefix).
+    // Processes the node and all its next-chain siblings recursively.
+    static void rewriteIfacePortRefs(AstNode* nodep, const string& portName) {
+        // Process the next-chain: iterate all siblings
+        for (AstNode* curp = nodep; curp;) {
+            AstNode* const nextp = curp->nextp();
+            rewriteIfacePortRefsSingle(curp, portName);
+            curp = nextp;
+        }
+    }
+
+    static void rewriteIfacePortRefsSingle(AstNode* nodep, const string& portName) {
+        if (!nodep) return;
+        // Check if this is a Dot with lhs matching portName
+        if (AstDot* const dotp = VN_CAST(nodep, Dot)) {
+            if (!dotp->colon()) {
+                if (const AstParseRef* const lhsRefp = VN_CAST(dotp->lhsp(), ParseRef)) {
+                    if (lhsRefp->name() == portName) {
+                        UINFO(5, "   rewriteIfacePortRefs: stripping port prefix from "
+                                  << dotp << endl);
+                        // Replace the dot with just the rhs
+                        AstNode* const rhsp = dotp->rhsp()->unlinkFrBack();
+                        dotp->replaceWith(rhsp);
+                        VL_DO_DANGLING(dotp->deleteTree(), dotp);
+                        // Continue rewriting the replacement node
+                        rewriteIfacePortRefsSingle(rhsp, portName);
+                        return;
+                    }
+                }
+            }
+        }
+        // Process op1-op4 children (each may be a next-chain list)
+        for (int op = 1; op <= 4; ++op) {
+            AstNode* childp = nullptr;
+            switch (op) {
+            case 1: childp = nodep->op1p(); break;
+            case 2: childp = nodep->op2p(); break;
+            case 3: childp = nodep->op3p(); break;
+            case 4: childp = nodep->op4p(); break;
+            }
+            while (childp) {
+                AstNode* const nextp = childp->nextp();
+                rewriteIfacePortRefsSingle(childp, portName);
+                childp = nextp;
+            }
+        }
+    }
+
     void visit(AstNodeFTask* nodep) override {  // FindVisitor::
         // NodeTask: Remember its name for later resolution
         UINFO(5, "   " << nodep);
         UASSERT_OBJ(m_curSymp && m_modSymp, nodep, "Function/Task not under module?");
         if (nodep->name() == "new") m_explicitNew = true;
+        // Handle out-of-block interface method definition (IEEE 25.8)
+        if (!nodep->ifacePortName().empty() && m_statep->forPrimary()) {
+            moveIfaceExportBody(nodep);
+            return;  // Task has been deleted
+        }
         // Remember the existing symbol table scope
         VL_RESTORER(m_classOrPackagep);
         VL_RESTORER(m_curSymp);
@@ -2659,7 +2795,7 @@ class LinkDotIfaceVisitor final : public VNVisitor {
     void visit(AstModportFTaskRef* nodep) override {  // IfaceVisitor::
         UINFO(5, "   fif: " << nodep);
         iterateChildren(nodep);
-        if (nodep->isExport()) nodep->v3warn(E_UNSUPPORTED, "Unsupported: modport export");
+        // Export is now supported (IEEE 1800-2017 25.4)
         VSymEnt* const symp = m_curSymp->findIdFallback(nodep->name());
         if (!symp) {
             nodep->v3error("Modport item not found: " << nodep->prettyNameQ());
