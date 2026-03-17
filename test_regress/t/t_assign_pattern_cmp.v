@@ -8,6 +8,7 @@ module t;
 
   // Fixed-size array comparison
   int arr4[4];
+  typedef int arr4_t[4];
 
   // Queue comparison
   int q[$];
@@ -139,6 +140,23 @@ module t;
     // -------------------------------------------------------
     if (arr4 == '{99, 99, 99, 99}) begin
       $display("FAIL: arr4 should not match all-99 pattern");
+      $stop;
+    end
+
+    // -------------------------------------------------------
+    // 12. Both sides are typed assignment patterns
+    // -------------------------------------------------------
+    if (arr4_t'{10, 20, 30, 40} == arr4_t'{10, 20, 30, 40}) begin
+      // expected
+    end else begin
+      $display("FAIL: typed pattern == typed pattern");
+      $stop;
+    end
+
+    if (arr4_t'{10, 20, 30, 40} != arr4_t'{10, 20, 30, 99}) begin
+      // expected
+    end else begin
+      $display("FAIL: typed pattern != typed pattern");
       $stop;
     end
 
