@@ -25,9 +25,6 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-// We use a static char array in VL_VALUE_STRING
-constexpr int VL_VALUE_STRING_MAX_WIDTH = 8192;
-
 //######################################################################
 // EmitCFunc
 
@@ -321,11 +318,6 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
         AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
         AstNode* const subargp = fargp ? fargp->exprp() : argp;
         const VFormatAttr formatAttr = AstSFormatArg::formatAttrDefauled(fargp, subargp->dtypep());
-        if (subargp->widthMin() > VL_VALUE_STRING_MAX_WIDTH) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Exceeded limit of "
-                                             + cvtToStr(VL_VALUE_STRING_MAX_WIDTH)
-                                             + " bits for any $display-like arguments");
-        }
         puts(", '"s + formatAttr.ascii() + '\'');
         if (formatAttr.isSigned() || formatAttr.isUnsigned())
             puts("," + cvtToStr(subargp->widthMin()));

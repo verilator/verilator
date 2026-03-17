@@ -1,0 +1,7 @@
+%Warning-DISPLAYWIDE: t/t_display_too_wide_unsup.v:23:7: Exceeded limit of 8192 bits for any $display-like arguments
+                                                       : ... note: In instance 't'
+   23 |       $write("[%0t] cyc==%0d crc=%d\n", $time, cyc, {crc, crc, crc, crc});   
+      |       ^~~~~~
+                      ... For warning description see https://verilator.org/warn/DISPLAYWIDE?v=latest
+                      ... Use "/* verilator lint_off DISPLAYWIDE */" and lint_on around source to disable this message.
+%Error: Exiting due to

@@ -88,6 +88,9 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
+// We use a static char array in VL_VALUE_STRING
+constexpr int VL_VALUE_STRING_MAX_WIDTH = 8192;
+
 //######################################################################
 
 enum Stage : uint8_t {
@@ -6152,6 +6155,13 @@ class WidthVisitor final : public VNVisitor {
                 argp = newp;
             } else if (dtypep->isSigned()) {
                 formatAttr = VFormatAttr::SIGNED;
+            }
+            if (!v3Global.opt.lintOnly() && argp->widthMin() > VL_VALUE_STRING_MAX_WIDTH) {
+                nodep->v3warn(DISPLAYWIDE, "Exceeded limit of "
+                                               + cvtToStr(VL_VALUE_STRING_MAX_WIDTH)
+                                               + " bits for any $display-like arguments");
+                argp = new AstSel{argp->fileline(), argp, 0,
+                                  std::min(argp->widthMin(), VL_VALUE_STRING_MAX_WIDTH)};
             }
             if (VN_IS(argp, SFormatArg)  // Already done
                 || formatAttr.isUnsigned()) {  // Save Ast space and imply the AstSFormatArg
