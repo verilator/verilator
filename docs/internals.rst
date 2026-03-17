@@ -739,6 +739,7 @@ There are two functions for managing timing logic called by ``_eval()``:
   schedulers whose triggers were set in the current iteration.
 
 Thanks to this separation a coroutine:
+
 * awaiting a trigger cannot be suspended and resumed in the same iteration
   (``test_regress/t/t_timing_eval_act.v``) - which is necessary to make
   Verilator more predictable; this is the reason for introduction of 3rd stage

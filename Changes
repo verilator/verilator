@@ -11,6 +11,11 @@ contributors that suggested or implemented a given issue are shown in []. Thanks
 Verilator 5.047 devel
 ==========================
 
+**Important:**
+
+* Support jemalloc as the default allocator on Linux (#7250). [Yangyu Chen]
+  For better performance, `apt install libjemalloc-dev` or equivalent before running ./configure.
+
 **Other:**
 
 * Support inout inside SV interface (#3466) (#7134). [Nick Brereton]
@@ -24,6 +29,10 @@ Verilator 5.047 devel
 * Support Z non-blocking assignment (#7192) (#496) (#7197). [Nick Brereton]
 * Support constraint `with` item.index array reduction (#7198). [Rahul Behl]
 * Support constant expressions without parentheses in `PATHPULSE$` (#7199). [Pawel Kojma, Antmicro Ltd.]
+* Support $sformat with runtime format string (#7212).
+* Support dist and solve...before inside foreach constraints (#7245) (#7253). [Yilou Wang]
+* Support array and struct info metadata in FST traces (#7255). [Geza Lore, Testorrent USA, Inc.]
+* Support dynamic array .size in inline randomize() with constraints (#7258) (#7266). [Yilou Wang]
 * Add VPI callback support to --main (#7145).
 * Add V3LiftExpr pass to lower impure expressions and calls (#7141) (#7164). [Geza Lore, Testorrent USA, Inc.]
 * Add --func-recursion-depth CLI option (#7175) (#7179).
@@ -34,11 +43,14 @@ Verilator 5.047 devel
 * Optimize function call return value temporaries (#7152). [Geza Lore, Testorrent USA, Inc.]
 * Optimize conditional merging across some impure statements (#7159). [Geza Lore, Testorrent USA, Inc.]
 * Fix recursive default assignment for sub-arrays (#4589) (#7202). [Julian Carrier]
+* Fix shift width mismatch in constraint solver SMT emission (#5420) (#7265). [Yilou Wang]
 * Fix randomize size+element queue constraints (#5582) (#7225). [Rahul Behl, Testorrent USA, Inc.]
 * Fix lambda coroutines (#6106) (#7135). [Nick Brereton]
 * Fix super constructor calls with local variables (#6214) (#6933). [Igor Zaworski, Antmicro Ltd.]
+* Fix false recursive definition error (#6769) (#7118). [Alex Zhou]
 * Fix interface localparam dependencies and arbitrary nesting (#6936) (#7128) (#7188) (#7190). [em2machine]
 * Fix errant integer promotion (#7012). [Todd Strader]
+* Fix randc solver hang with wide variables (#7068) (#7248). [Yilou Wang]
 * Fix scheduling non-determinism (#7120) (#7162) (#7165). [Geza Lore, Testorrent USA, Inc.]
 * Fix parameters inside std::randomize `with` clause  (#7140). [Kamil Danecki, Antmicro Ltd.]
 * Fix forcing unpacked variables (#7149). [Ryszard Rozak, Antmicro Ltd.]
@@ -50,12 +62,16 @@ Verilator 5.047 devel
 * Fix library/hier_block tracing when top name is empty (#7200). [Geza Lore, Testorrent USA, Inc.]
 * Fix wrong $bits() for parameterized interface struct typedefs (#7218) (#7219). [em2machine]
 * Fix `dist` operator inside constraint if blocks (#7221) (#7224). [Rahul Behl, Testorrent USA, Inc.]
+* Fix array reduction in constraints crashing with class inheritance (#7226) (#7263). [Yilou Wang]
 * Fix soft cross-object constraint priority inversion (#7228) (#7233). [Yilou Wang]
 * Fix internal error when derived class calls this.randomize() with inherited rand members (#7229) (#7234). [Yilou Wang]
 * Fix enum range constraints missing for rand variables in sub-objects (#7230) (#7235). [Yilou Wang]
 * Fix vpi_put_value release on non-continuous signal (#7231) (#7241). [Christian Hecken]
 * Fix tracing of typedefed 1D packed arrays with --trace-structs (#7237). [Geza Lore, Testorrent USA, Inc.]
+* Fix rand variable used as array index in constraint evaluated as constant (#7238) (#7247). [Yilou Wang]
 * Fix --hierarchical dropping arguments in -f/-F files (#7240). [Clara Sparks]
+* Fix `final` asserts and $stop (#7249). [Artur Bieniek, Antmicro Ltd.]
+* Fix vpi_put_value with vpiIntVal on VlWide data (#7256). [Christian Hecken]
 
 
 Verilator 5.046 2026-02-28

@@ -16,3 +16,8 @@ C++14 compiler support
    (Although this date has expired, this change is currently on hold until
    the Ubuntu LTS versions of GCC and clang use C++20 by default, estimated
    May 2028.)
+
+tcmalloc support
+   Verilator currently supports the default malloc, tcmalloc, or jemalloc.
+   As jemalloc has better performance, support for tcmalloc may be removed
+   no sooner than January 2026.

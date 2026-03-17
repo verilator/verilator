@@ -6,18 +6,18 @@
 
 module t;
   class uvm_built_in_comp #(
-    type T = int
+      type T = int
   );
   endclass
 
   class uvm_in_order_comparator #(
-    type T = int,
-    type comp_type = uvm_built_in_comp#(T)
+      type T = int,
+      type comp_type = uvm_built_in_comp#(T)
   );
   endclass
 
   class uvm_in_order_built_in_comparator #(
-    type T = int
+      type T = int
   ) extends uvm_in_order_comparator #(T);
   endclass
 

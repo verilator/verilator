@@ -4,11 +4,11 @@
 // SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-module tb();
-    initial begin
-        $finish();
-    end
-    final begin
-        assert(1 == 0);
-    end
+module tb ();
+  initial begin
+    $finish();
+  end
+  final begin
+    assert (1 == 0);
+  end
 endmodule

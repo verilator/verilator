@@ -56,7 +56,7 @@ class ImplicationShift;
 endclass
 
 module t;
-  AlignedPacket   pkt1;
+  AlignedPacket pkt1;
   ConstShiftPacket pkt2;
   ImplicationShift pkt3;
   int ok;
