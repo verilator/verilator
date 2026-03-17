@@ -300,10 +300,14 @@ class BeginVisitor final : public VNVisitor {
     void visit(AstVar* nodep) override {
         // If static variable, move it outside a function.
         if (nodep->lifetime().isStatic() && m_ftaskp) {
+            UINFO(0, "TASK IS STATIC " << m_ftaskp->lifetime().isStatic());
             const std::string newName
                 = m_ftaskp->name() + "__Vstatic__" + dot(m_unnamedScope, nodep->name());
+            AstVar* newVarp = nodep->cloneTreePure(false);
+            nodep->replaceWith(newVarp);
+            // AstNode::addNext(nodep, newVarp);
             nodep->name(newName);
-            nodep->unlinkFrBack();
+            // nodep->unlinkFrBack();
             m_ftaskp->addHereThisAsNext(nodep);
             nodep->funcLocal(false);
         } else if (m_unnamedScope != "") {
