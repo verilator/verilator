@@ -7,20 +7,6 @@
 // Test: nested parameterized interface inside a types interface causes
 //       $bits() to evaluate with wrong struct width.
 //
-// Mirrors the smem_types_if (outer) -> xyz_types_if (inner) pattern:
-//   1. inner_types_if: parameterized interface providing types like trans_id_t
-//      derived from cfg fields (e.g. $clog2(cfg.NumIds)).
-//   2. outer_types_if: parameterized interface that instantiates inner_types_if,
-//      imports trans_id_t, and uses it inside compound struct typedefs.
-//   3. slice: module that instantiates outer_types_if locally, imports a
-//      compound type (pkt_t), and uses $bits(pkt_t) as a value parameter
-//      to a sub-module (ring_fifo).
-//   4. wrapper: instantiates slices in a generate loop.
-//
-// Bug: When outer_types_if is cloned, widthParamsEdit runs before the
-//      nested inner_types_if cell is deparameterized. trans_id_t evaluates
-//      against the template default (cfg.NumIds=0 -> $clog2(0)=0 -> 0 bits
-//      instead of correct width), baking a wrong struct width into $bits().
 
 package cfg3_pkg;
   typedef struct packed {

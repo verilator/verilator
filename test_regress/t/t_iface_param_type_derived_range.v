@@ -4,22 +4,9 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
-// Test: struct typedef from parameterized interface with derived localparam
-//       used as type parameter to a sub-module cell.
+// Test: struct typedef from parameterized interface with derived
+// localparam used as type parameter to a sub-module cell.
 //
-// Mirrors the Aerial smem_top → smem_slice → tflop_nr pattern:
-//   1. types_if: parameterized interface with localparam derived from cfg
-//      using division (0/0 = X on template default), used via $clog2 in
-//      typedef range, and that typedef used inside a union/struct.
-//   2. wrapper (smem_top): instantiates types_if, imports a compound type
-//      (pkt_t), and passes it as a type parameter to slice.
-//   3. slice (smem_slice): receives pkt_t as a type parameter from wrapper,
-//      ALSO instantiates types_if locally, builds a local struct (rq_t)
-//      from locally-imported types, and passes rq_t as a type parameter
-//      to tflop_nr.
-//   4. During deparameterization of tflop_nr inside the cloned slice,
-//      widthParamsEdit follows the PARAMTYPEDTYPE chain back to the
-//      template types_if's unresolved union (with X-valued range).
 
 package cfg_pkg;
   typedef struct packed {
@@ -91,7 +78,7 @@ module slice #(
     output logic out_vld,
     output pkt_t out_pkt
 );
-  // Local types_if instantiation — same cfg as wrapper's
+  // Local types_if instantiation - same cfg as wrapper's
   types_if #(cfg) types();
 
   typedef types.addr_t  addr_t;
@@ -113,7 +100,7 @@ module slice #(
     end
   end
 
-  // Pass local struct as type param to tflop_nr — this is the trigger
+  // Pass local struct as type param to tflop_nr - this is the trigger
   tflop_nr #(.T(rq_t)) rq_reg (
       .clk(clk),
       .rst_n(rst_n),
