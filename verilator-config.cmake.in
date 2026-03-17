@@ -739,6 +739,12 @@ function(verilate TARGET)
 
     target_link_libraries(${TARGET} PUBLIC ${VERILATOR_MT_CFLAGS})
 
+    if(${VERILATE_PREFIX}_TRACE_FST)
+        target_link_libraries(${TARGET} PUBLIC -llz4 -lz)
+    endif()
+
+    target_compile_features(${TARGET} PRIVATE cxx_std_11)
+
     if(${VERILATE_PREFIX}_TIMING)
         if("@CFG_CXXFLAGS_COROUTINES@" STREQUAL "-std=gnu++20")
             target_compile_features(${TARGET} PRIVATE cxx_std_20)
