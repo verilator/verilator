@@ -22,11 +22,9 @@ module t;
   initial begin
     foo = new;
     if (x[foo.get()] != 2) $stop;
+    if (x[foo.get2()] != 3) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
-  end
-  always begin
-    if (x[foo.get2()] != 3) $stop;
   end
   final begin
     if (x[foo.get()] != 4) $stop;
