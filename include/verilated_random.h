@@ -31,6 +31,7 @@
 #include <iomanip>
 #include <iostream>
 #include <ostream>
+#include <set>
 #include <sstream>
 
 //=============================================================================
@@ -212,7 +213,8 @@ class VlRandomizer VL_NOT_FINAL {
         m_constraints_line;  // fileline content of the constraint for unsat constraints
     std::vector<std::string> m_softConstraints;  // Soft constraints
     std::map<std::string, std::shared_ptr<const VlRandomVar>> m_vars;  // Solver-dependent
-                                                                       // variables
+    std::set<std::string> m_disabledVars;  // Variables with rand_mode off (skip write-back)
+                                           // variables
     ArrayInfoMap m_arr_vars;  // Tracks each element in array structures for iteration
     std::vector<std::string> m_unique_arrays;
     std::map<std::string, uint32_t> m_unique_array_sizes;
@@ -336,6 +338,12 @@ public:
                     "Unsupported: Only integral and string index of associative array is "
                     "supported currently.");
     }
+
+    // Mark a variable as rand_mode-disabled: solver keeps it in m_vars
+    // (so constraints still reference it) but skips write-back after solving.
+    void set_var_disabled(const char* name) { m_disabledVars.insert(name); }
+    // Clear disabled state for a variable
+    void clear_var_disabled(const char* name) { m_disabledVars.erase(name); }
 
     // ---  write_var to register variables  ---
     // Register scalar variable (non-struct, basic type)

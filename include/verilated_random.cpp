@@ -632,6 +632,7 @@ bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
         if (m_randmodep && !varr.randModeIdxNone()) {
             if (!m_randmodep->at(varr.randModeIdx())) continue;
         }
+        if (m_disabledVars.count(name)) continue;
         if (!indices.empty()) {
             std::ostringstream oss;
             oss << varr.name();

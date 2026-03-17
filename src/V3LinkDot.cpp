@@ -4999,6 +4999,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 nodep->taskp(randFuncp);
                 nodep->classOrPackagep(VN_AS(m_modp, Class));
                 m_curSymp = m_statep->insertBlock(m_curSymp, nodep->name(), randFuncp, m_modp);
+                // Already linked to the class randomize function; skip findSymPrefixed
+                // which may find std::randomize and overwrite classOrPackagep
+                return;
             }
             if (m_insideClassExtParam) {
                 // The reference may point to a method declared in a super class, which is proved
