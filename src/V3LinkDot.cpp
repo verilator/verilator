@@ -1499,11 +1499,13 @@ class LinkDotFindVisitor final : public VNVisitor {
         VSymEnt* const portSymp = m_modSymp->findIdFallback(portName);
         if (!portSymp) {
             nodep->v3error("Interface port not found for out-of-block definition: " << portName);
+            nodep->unlinkFrBack();
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
         }
         AstVar* const portp = VN_CAST(portSymp->nodep(), Var);
         if (!portp) {
-            nodep->v3error("Out-of-block definition port is not a variable: " << portName);
+            nodep->v3fatalSrc("Out-of-block definition port is not a variable: " << portName);
             return;
         }
         // Get the interface name from the port's type
@@ -1515,6 +1517,8 @@ class LinkDotFindVisitor final : public VNVisitor {
         }
         if (!ifaceRefDtp) {
             nodep->v3error("Out-of-block definition port is not an interface port: " << portName);
+            nodep->unlinkFrBack();
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
         }
         const string ifaceName = ifaceRefDtp->ifaceName();
@@ -1522,7 +1526,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         // Find the interface module by name
         AstNodeModule* const ifaceModp = m_statep->findModuleSym(ifaceName);
         if (!ifaceModp) {
-            nodep->v3error("Interface not found for out-of-block definition: " << ifaceName);
+            nodep->v3fatalSrc("Interface not found for out-of-block definition: " << ifaceName);
             return;
         }
         // Find the prototype task in the interface
@@ -1538,6 +1542,8 @@ class LinkDotFindVisitor final : public VNVisitor {
         if (!protoTaskp) {
             nodep->v3error("No matching export prototype found in interface "
                            << ifaceName << " for task " << nodep->prettyNameQ());
+            nodep->unlinkFrBack();
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
         }
         // Move body statements (non-port declarations) from the out-of-block task
