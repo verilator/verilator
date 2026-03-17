@@ -1494,33 +1494,27 @@ class LinkDotFindVisitor final : public VNVisitor {
     // rewriting port-prefixed references in the body.
     void moveIfaceExportBody(AstNodeFTask* nodep) {
         const string& portName = nodep->ifacePortName();
-        UINFO(5, "   moveIfaceExportBody: port=" << portName
-                  << " task=" << nodep->name() << endl);
+        UINFO(5, "   moveIfaceExportBody: port=" << portName << " task=" << nodep->name() << endl);
         // Look up the interface port variable in the module's symbol table
         VSymEnt* const portSymp = m_modSymp->findIdFallback(portName);
         if (!portSymp) {
-            nodep->v3error("Interface port not found for out-of-block definition: "
-                           << portName);
+            nodep->v3error("Interface port not found for out-of-block definition: " << portName);
             return;
         }
         AstVar* const portp = VN_CAST(portSymp->nodep(), Var);
         if (!portp) {
-            nodep->v3error("Out-of-block definition port is not a variable: "
-                           << portName);
+            nodep->v3error("Out-of-block definition port is not a variable: " << portName);
             return;
         }
         // Get the interface name from the port's type
         // At this stage dtypep() may not be set yet; check childDTypep() too
         AstIfaceRefDType* ifaceRefDtp = nullptr;
-        if (portp->dtypep()) {
-            ifaceRefDtp = VN_CAST(portp->dtypep(), IfaceRefDType);
-        }
+        if (portp->dtypep()) { ifaceRefDtp = VN_CAST(portp->dtypep(), IfaceRefDType); }
         if (!ifaceRefDtp && portp->childDTypep()) {
             ifaceRefDtp = VN_CAST(portp->childDTypep(), IfaceRefDType);
         }
         if (!ifaceRefDtp) {
-            nodep->v3error("Out-of-block definition port is not an interface port: "
-                           << portName);
+            nodep->v3error("Out-of-block definition port is not an interface port: " << portName);
             return;
         }
         const string ifaceName = ifaceRefDtp->ifaceName();
@@ -1528,8 +1522,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         // Find the interface module by name
         AstNodeModule* const ifaceModp = m_statep->findModuleSym(ifaceName);
         if (!ifaceModp) {
-            nodep->v3error("Interface not found for out-of-block definition: "
-                           << ifaceName);
+            nodep->v3error("Interface not found for out-of-block definition: " << ifaceName);
             return;
         }
         // Find the prototype task in the interface
@@ -1590,8 +1583,8 @@ class LinkDotFindVisitor final : public VNVisitor {
             if (!dotp->colon()) {
                 if (const AstParseRef* const lhsRefp = VN_CAST(dotp->lhsp(), ParseRef)) {
                     if (lhsRefp->name() == portName) {
-                        UINFO(5, "   rewriteIfacePortRefs: stripping port prefix from "
-                                  << dotp << endl);
+                        UINFO(5, "   rewriteIfacePortRefs: stripping port prefix from " << dotp
+                                                                                        << endl);
                         // Replace the dot with just the rhs
                         AstNode* const rhsp = dotp->rhsp()->unlinkFrBack();
                         dotp->replaceWith(rhsp);
