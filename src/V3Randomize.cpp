@@ -1328,7 +1328,6 @@ class ConstraintExprVisitor final : public VNVisitor {
                 methodp->addPinsp(varnamep);
                 methodp->addPinsp(
                     new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{}, dimension});
-                // Don't pass randMode.index for global constraints with membersel
                 if (randMode.usesMode && !(isGlobalConstrained && membersel)) {
                     methodp->addPinsp(
                         new AstConst{varp->fileline(), AstConst::Unsized64{}, randMode.index});
@@ -1347,7 +1346,43 @@ class ConstraintExprVisitor final : public VNVisitor {
                         UASSERT_OBJ(initTaskp, classp, "No new() in class");
                     }
                 }
-                initTaskp->addStmtsp(methodp->makeStmt());
+                // For globalConstrained sub-object members with rand_mode:
+                // guard write_var with sub-object's __Vrandmode check.
+                // When rand_mode is off, unregister the variable from the
+                // solver so it is not written back after solving.
+                if (isGlobalConstrained && membersel && randMode.usesMode) {
+                    AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
+                    AstVar* const subRandModeVarp = VN_AS(varClassp->user2p(), Var);
+                    if (subRandModeVarp) {
+                        AstNodeExpr* const parentAccess = membersel->fromp()->cloneTree(false);
+                        AstMemberSel* const randModeSel
+                            = new AstMemberSel{varp->fileline(), parentAccess, subRandModeVarp};
+                        randModeSel->dtypep(subRandModeVarp->dtypep());
+                        AstCMethodHard* const atp
+                            = new AstCMethodHard{varp->fileline(), randModeSel, VCMethod::ARRAY_AT,
+                                                 new AstConst{varp->fileline(), randMode.index}};
+                        atp->dtypeSetUInt32();
+                        // else branch: unregister_var to remove stale registration
+                        AstCMethodHard* const unregp = new AstCMethodHard{
+                            varp->fileline(),
+                            new AstVarRef{varp->fileline(), VN_AS(m_genp->user2p(), NodeModule),
+                                          m_genp, VAccess::READWRITE},
+                            VCMethod::RANDOMIZER_UNREGISTER_VAR};
+                        unregp->dtypeSetVoid();
+                        AstNodeExpr* const unregnp
+                            = new AstCExpr{varp->fileline(), AstCExpr::Pure{},
+                                           "\"" + smtName + "\"", varp->width()};
+                        unregnp->dtypep(varp->dtypep());
+                        unregp->addPinsp(unregnp);
+                        AstIf* const ifp = new AstIf{varp->fileline(), atp, methodp->makeStmt(),
+                                                     unregp->makeStmt()};
+                        initTaskp->addStmtsp(ifp);
+                    } else {
+                        initTaskp->addStmtsp(methodp->makeStmt());
+                    }
+                } else {
+                    initTaskp->addStmtsp(methodp->makeStmt());
+                }
                 // If randc, also emit markRandc() for cyclic tracking
                 if (varp->isRandC()) {
                     AstCMethodHard* const markp = new AstCMethodHard{
@@ -3087,6 +3122,29 @@ class RandomizeVisitor final : public VNVisitor {
                     }
                 }
             });
+            // Also account for rand_mode indices from globalConstrained sub-objects.
+            // When constraints from sub-objects are flattened into this class's constraint
+            // setup functions, the generated code references this->__Vrandmode.at(index).
+            // We must ensure this class's __Vrandmode is initialized to cover those indices.
+            {
+                std::function<void(AstClass*)> findSubObjRandModes = [&](AstClass* subClassp) {
+                    subClassp->foreachMember([&](AstClass*, AstNode* subMemberp) {
+                        if (AstVar* const subVarp = VN_CAST(subMemberp, Var)) {
+                            const RandomizeMode rm = {.asInt = subVarp->user1()};
+                            if (!rm.usesMode) return;
+                            const uint32_t needed = rm.index + 1;
+                            if (needed > randModeCount) randModeCount = needed;
+                        }
+                    });
+                };
+                classp->foreachMember([&](AstClass*, AstVar* memberVarp) {
+                    if (!memberVarp->globalConstrained()) return;
+                    const AstNodeDType* const dtypep = memberVarp->dtypep()->skipRefp();
+                    const AstClassRefDType* const classRefp = VN_CAST(dtypep, ClassRefDType);
+                    if (!classRefp) return;
+                    findSubObjRandModes(classRefp->classp());
+                });
+            }
             if (hasConstraints) createRandomGenerator(classp);
             if (randModeCount > 0) {
                 AstVar* const randModeVarp = getCreateRandModeVar(classp);

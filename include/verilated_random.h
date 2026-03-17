@@ -337,6 +337,9 @@ public:
                     "supported currently.");
     }
 
+    // Remove a previously registered variable (used when rand_mode is off)
+    void unregister_var(const char* name) { m_vars.erase(name); }
+
     // ---  write_var to register variables  ---
     // Register scalar variable (non-struct, basic type)
     template <typename T>
