@@ -1795,10 +1795,18 @@ public:
         V3LinkDotIfaceCapture::forEach([&](const V3LinkDotIfaceCapture::CapturedEntry& entry) {
             if (!entry.refp || entry.cloneCellPath.empty()) return;
             if (entry.cellPath != cellName) return;
+            AstNodeModule* const ownerp = V3LinkDotIfaceCapture::findOwnerModule(entry.refp);
             // Identity check: only retarget REFDTYPEs that actually live
             // inside parentModp.  Multiple clones share origName so name
             // matching alone would let one clone overwrite another's refs.
-            if (V3LinkDotIfaceCapture::findOwnerModule(entry.refp) != parentModp) return;
+            // When the REFDTYPE lives in the type table (e.g. as a struct
+            // member dtype), findOwnerModule returns null.  Fall back to
+            // matching cloneCellPath (set by propagateClone to the
+            // specialized module name) against parentModp->name().
+            if (ownerp != parentModp
+                && !(ownerp == nullptr && entry.cloneCellPath == parentModp->name())) {
+                return;
+            }
             if (retargetRefToModule(entry, correctModp)) {
                 UINFO(9, "retargetIfaceRefs: " << entry.refp << " -> "
                                                << correctModp->prettyNameQ() << endl);
@@ -2106,6 +2114,14 @@ class ParamVisitor final : public VNVisitor {
 
                     // Add to the hierarchy registry
                     m_state.m_parentps[newModp].insert(modp);
+
+                    // Deparameterize nested interface cells within the
+                    // clone and constify their params so struct members
+                    // referencing nested types have correct widths when
+                    // sibling module cells evaluate $bits().
+                    if (VN_IS(newModp, Iface) && newModp != srcModp) {
+                        specializeNestedIfaceCells(newModp);
+                    }
                 }
             }
         }
@@ -2231,6 +2247,45 @@ class ParamVisitor final : public VNVisitor {
         });
     }
 
+    // Deparameterize nested interface cells within a specialized interface
+    // clone and constify just the nested clone's params so their types have
+    // correct widths.  This is intentionally targeted: it does NOT iterate
+    // the outer clone's full body (which would prematurely constify params
+    // that depend on other not-yet-resolved interfaces).
+    void specializeNestedIfaceCells(AstNodeModule* ifaceModp) {
+        for (AstNode* stmtp = ifaceModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            AstCell* const nestedCellp = VN_CAST(stmtp, Cell);
+            if (!nestedCellp) continue;
+            if (!VN_IS(nestedCellp->modp(), Iface)) continue;
+            if (!nestedCellp->paramsp()) continue;
+
+            AstNodeModule* const nestedSrcModp = nestedCellp->modp();
+            if (AstNodeModule* const nestedNewModp = m_processor.nodeDeparam(
+                    nestedCellp, nestedSrcModp, ifaceModp, ifaceModp->someInstanceName())) {
+                if (nestedNewModp != nestedSrcModp) {
+                    // Constify just the nested clone's params so its
+                    // BASICDTYPEs have correct widths.  Without this,
+                    // struct members referencing nested-interface types
+                    // retain template default widths.
+                    for (AstNode* sp = nestedNewModp->stmtsp(); sp; sp = sp->nextp()) {
+                        if (AstVar* const varp = VN_CAST(sp, Var)) {
+                            if (varp->isParam() && varp->valuep()) {
+                                V3Const::constifyParamsEdit(varp);
+                            }
+                        }
+                    }
+                    // Retarget REFDTYPEs in the outer clone that still
+                    // reference the template's nested types.
+                    if (V3LinkDotIfaceCapture::enabled()) {
+                        m_processor.retargetIfaceRefs(ifaceModp, nestedCellp->name());
+                    }
+                    // Recursively handle deeper nesting
+                    specializeNestedIfaceCells(nestedNewModp);
+                }
+            }
+        }
+    }
+
     // Check if cell parameters reference interface ports or local interface instances
     bool cellParamsReferenceIfacePorts(AstCell* cellp) {
         if (!cellp->paramsp()) return false;
@@ -2251,50 +2306,31 @@ class ParamVisitor final : public VNVisitor {
         return false;
     }
 
-    // Recursively specialize nested interface cells within a specialized interface.
-    // This handles parameter passthrough for nested interface hierarchies.
-    void specializeNestedIfaceCells(AstNodeModule* ifaceModp) {
-        for (AstNode* stmtp = ifaceModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            AstCell* const nestedCellp = VN_CAST(stmtp, Cell);
-            if (!nestedCellp) continue;
-            if (!VN_IS(nestedCellp->modp(), Iface)) continue;
-            if (!nestedCellp->paramsp()) continue;
-            if (cellParamsReferenceIfacePorts(nestedCellp)) continue;
-
-            AstNodeModule* const nestedSrcModp = nestedCellp->modp();
-            if (AstNodeModule* const nestedNewModp = m_processor.nodeDeparam(
-                    nestedCellp, nestedSrcModp, ifaceModp, ifaceModp->someInstanceName())) {
-                // Recursively process nested interfaces within this nested interface
-                if (nestedNewModp != nestedSrcModp) specializeNestedIfaceCells(nestedNewModp);
-            }
-        }
-    }
-
     // A generic visitor for cells and class refs
     void visitCellOrClassRef(AstNode* nodep, bool isIface) {
         // Must do ifaces first, so push to list and do in proper order
         m_strings.emplace_back(m_generateHierName);
         nodep->user2p(&m_strings.back());
 
-        // For interface cells with parameters, specialize first before processing children
-        // Only do early specialization if parameters don't reference interface ports
+        // For interface cells with parameters, deparameterize early so that
+        // interface types are available when visit(AstVar*) constifies
+        // lparams during iterateChildren below.
         if (isIface && VN_CAST(nodep, Cell) && VN_CAST(nodep, Cell)->paramsp()) {
             AstCell* const cellp = VN_CAST(nodep, Cell);
             if (!cellParamsReferenceIfacePorts(cellp)) {
                 AstNodeModule* const srcModp = cellp->modp();
-                // DISABLED: specializeNestedIfaceCells causes early nested
-                // iface specialization where PARAMTYPEDTYPE child REFDTYPEs
-                // point to template structs instead of clone structs,
-                // destructively widthing the template with default (zero)
-                // values. See t_interface_nested_struct_param.v.
-                m_processor.nodeDeparam(cellp, srcModp, m_modp, m_modp->someInstanceName());
-                // After the interface cell is rewired to its clone,
-                // retarget REFDTYPEs in the parent module that still
-                // reference the template interface's types.  This ensures
-                // $bits(iface_typedef) evaluates correctly when
-                // widthParamsEdit runs on subsequent lparams.
+                AstNodeModule* const newModp
+                    = m_processor.nodeDeparam(cellp, srcModp, m_modp, m_modp->someInstanceName());
+                // Retarget REFDTYPEs in the parent module that still
+                // reference the template interface's types.
                 if (V3LinkDotIfaceCapture::enabled() && cellp->modp() != srcModp) {
                     m_processor.retargetIfaceRefs(m_modp, cellp->name());
+                }
+                // Deparameterize nested interface cells within the clone
+                // and constify their params so struct members referencing
+                // nested types have correct widths when $bits() runs.
+                if (newModp && newModp != srcModp) {
+                    specializeNestedIfaceCells(newModp);
                 }
             }
         }
