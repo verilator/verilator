@@ -1387,9 +1387,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                                            "\"" + smtName + "\"", varp->width()};
                         disnp->dtypep(varp->dtypep());
                         disablep->addPinsp(disnp);
-                        AstIf* const ifp = new AstIf{varp->fileline(), atp,
-                                                      enablep->makeStmt(),
-                                                      disablep->makeStmt()};
+                        AstIf* const ifp = new AstIf{varp->fileline(), atp, enablep->makeStmt(),
+                                                     disablep->makeStmt()};
                         initTaskp->addStmtsp(ifp);
                     }
                 }
