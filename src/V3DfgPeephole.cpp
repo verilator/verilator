@@ -399,8 +399,26 @@ class V3DfgPeephole final : public DfgVisitor {
             // If we didn't apply the change (pattern was disabled), break the loop
             break;
         }
+        if (changed) return true;
 
-        return changed;
+        // if (a OP (b OP c)), check if (a OP b) exists and if so replace with (a OP b) OP c
+        if (Vertex* rVtxp = vtxp->rhsp()->template cast<Vertex>()) {
+            const DfgDataType& dtype
+                = std::is_same<Vertex, DfgConcat>::value
+                      ? DfgDataType::packed(lhsp->width() + rVtxp->lhsp()->width())
+                      : vtxp->dtype();
+            if (Vertex* const cVtxp = m_cache.get<Vertex>(dtype, lhsp, rVtxp->lhsp())) {
+                if (cVtxp->hasSinks() && cVtxp != rhsp) {
+                    APPLYING(REUSE_ASSOC_BINARY) {
+                        Vertex* const resp = make<Vertex>(vtxp, cVtxp, rVtxp->rhsp());
+                        replace(vtxp, resp);
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     // Transformations that apply to all commutative binary vertices

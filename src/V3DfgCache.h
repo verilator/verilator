@@ -188,24 +188,26 @@ inline DfgVertexTernary*& getEntry(CacheTernary& cache, const DfgDataType&, DfgV
     return cache[key];
 }
 
-// These return a reference to the mapped entry, inserting a nullptr if not yet exists
-inline CacheSel::iterator find(CacheSel& cache, DfgVertex* src0p, uint32_t lsb, uint32_t size) {
-    const KeySel key{src0p, lsb, size};
+// These return an iterator which might be cache.end() if not contained
+inline CacheSel::iterator find(CacheSel& cache, const DfgDataType& dtype, DfgVertex* src0p,
+                               uint32_t lsb) {
+    const KeySel key{src0p, lsb, dtype.size()};
     return cache.find(key);
 }
 
-inline CacheUnary::iterator find(CacheUnary& cache, DfgVertex* src0p) {
+inline CacheUnary::iterator find(CacheUnary& cache, const DfgDataType&, DfgVertex* src0p) {
     const KeyUnary key{src0p};
     return cache.find(key);
 }
 
-inline CacheBinary::iterator find(CacheBinary& cache, DfgVertex* src0p, DfgVertex* src1p) {
+inline CacheBinary::iterator find(CacheBinary& cache, const DfgDataType&, DfgVertex* src0p,
+                                  DfgVertex* src1p) {
     const KeyBinary key{src0p, src1p};
     return cache.find(key);
 }
 
-inline CacheTernary::iterator find(CacheTernary& cache, DfgVertex* src0p, DfgVertex* src1p,
-                                   DfgVertex* src2p) {
+inline CacheTernary::iterator find(CacheTernary& cache, const DfgDataType&, DfgVertex* src0p,
+                                   DfgVertex* src1p, DfgVertex* src2p) {
     const KeyTernary key{src0p, src1p, src2p};
     return cache.find(key);
 }
@@ -245,6 +247,13 @@ inline Vertex* getOrCreate(DfgGraph& dfg, FileLine* flp, T_Cache& cache, const D
     return reinterpret_cast<Vertex*>(entrypr);
 }
 
+// Get vertex with given operands, return nullptr if not in cache
+template <typename Vertex, typename T_Cache, typename... Operands>
+inline Vertex* get(DfgGraph& dfg, T_Cache& cache, const DfgDataType& dtype, Operands... operands) {
+    const auto it = find(cache, dtype, operands...);
+    return it != cache.end() ? reinterpret_cast<Vertex*>(it->second) : nullptr;
+}
+
 // These add an existing vertex to the table, if an equivalent does not yet exist
 inline void cache(CacheSel& cache, DfgSel* vtxp) {
     DfgSel*& entrypr = getEntry(cache, vtxp->dtype(), vtxp->fromp(), vtxp->lsb());
@@ -269,22 +278,22 @@ inline void cache(CacheTernary& cache, DfgVertexTernary* vtxp) {
 
 // These remove an existing vertex from the cache, if it is the cached vertex
 inline void invalidateByValue(CacheSel& cache, const DfgSel* vtxp) {
-    const auto it = find(cache, vtxp->fromp(), vtxp->lsb(), vtxp->size());
+    const auto it = find(cache, vtxp->dtype(), vtxp->fromp(), vtxp->lsb());
     if (it != cache.end() && it->second == vtxp) cache.erase(it);
 }
 
 inline void invalidateByValue(CacheUnary& cache, const DfgVertexUnary* vtxp) {
-    const auto it = find(cache, vtxp->inputp(0));
+    const auto it = find(cache, vtxp->dtype(), vtxp->inputp(0));
     if (it != cache.end() && it->second == vtxp) cache.erase(it);
 }
 
 inline void invalidateByValue(CacheBinary& cache, const DfgVertexBinary* vtxp) {
-    const auto it = find(cache, vtxp->inputp(0), vtxp->inputp(1));
+    const auto it = find(cache, vtxp->dtype(), vtxp->inputp(0), vtxp->inputp(1));
     if (it != cache.end() && it->second == vtxp) cache.erase(it);
 }
 
 inline void invalidateByValue(CacheTernary& cache, const DfgVertexTernary* vtxp) {
-    const auto it = find(cache, vtxp->inputp(0), vtxp->inputp(1), vtxp->inputp(2));
+    const auto it = find(cache, vtxp->dtype(), vtxp->inputp(0), vtxp->inputp(1), vtxp->inputp(2));
     if (it != cache.end() && it->second == vtxp) cache.erase(it);
 }
 
@@ -344,6 +353,10 @@ public:
     template <typename Vertex, typename... Operands>
     inline Vertex* getOrCreate(FileLine* flp, const DfgDataType& dtype, Operands... operands);
 
+    // Find a vertex of type 'Vertex', with the given operands, return nullptr if not in cache.
+    template <typename Vertex, typename... Operands>
+    inline Vertex* get(const DfgDataType& dtype, Operands... operands);
+
     // Add an existing vertex of the table. If an equivalent already exists, then nothing happens.
     void cache(DfgVertex* vtxp);
 
@@ -381,6 +394,30 @@ Vertex* V3DfgCache::getOrCreate(FileLine* flp, const DfgDataType& dtype, Operand
 
     return V3DfgCacheInternal::getOrCreate<Vertex, CacheType<Vertex>, Operands...>(
         m_dfg, flp, cacheForType<Vertex>(), dtype, operands...);
+}
+
+// Find a vertex of type 'Vertex', with the given operands, return nullptr if not in cache.
+template <typename Vertex, typename... Operands>
+Vertex* V3DfgCache::get(const DfgDataType& dtype, Operands... operands) {
+    static_assert(std::is_final<Vertex>::value, "Must invoke on final vertex type");
+    constexpr bool isSel = std::is_same<DfgSel, Vertex>::value;
+    constexpr bool isUnary = !isSel && std::is_base_of<DfgVertexUnary, Vertex>::value;
+    constexpr bool isBinary = std::is_base_of<DfgVertexBinary, Vertex>::value;
+    constexpr bool isTernary = std::is_base_of<DfgVertexTernary, Vertex>::value;
+    static_assert(isSel || isUnary || isBinary || isTernary,
+                  "'get' called with unknown vertex type");
+
+    static_assert(!isSel || sizeof...(Operands) == 2,  //
+                  "Wrong number of operands to DfgSel");
+    static_assert(!isUnary || sizeof...(Operands) == 1,
+                  "Wrong number of operands to DfgVertexUnary");
+    static_assert(!isBinary || sizeof...(Operands) == 2,
+                  "Wrong number of operands to DfgVertexBinary");
+    static_assert(!isTernary || sizeof...(Operands) == 3,
+                  "Wrong number of operands to DfgVertexTernary");
+
+    return V3DfgCacheInternal::get<Vertex, CacheType<Vertex>, Operands...>(
+        m_dfg, cacheForType<Vertex>(), dtype, operands...);
 }
 
 }  // namespace V3DfgCacheInternal
