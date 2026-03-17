@@ -6015,6 +6015,42 @@ class WidthVisitor final : public VNVisitor {
             return;
         }
 
+        // Queue slice on LHS: q[a:b] = rhs  ->  q.sliceAssign(a, b, rhs)
+        // The LHS was lowered from AstSelExtract to CMethodHard(DYN_SLICE)
+        // by V3WidthSel; that returns a temporary copy so the assignment is
+        // silently discarded.  Transform into a mutating sliceAssign call.
+        if (AstCMethodHard* const slicep = VN_CAST(nodep->lhsp(), CMethodHard)) {
+            VCMethod assignMethod;
+            if (slicep->method() == VCMethod::DYN_SLICE) {
+                assignMethod = VCMethod::DYN_SLICE_ASSIGN;
+            } else if (slicep->method() == VCMethod::DYN_SLICE_BACK_BACK) {
+                assignMethod = VCMethod::DYN_SLICE_ASSIGN_BACK_BACK;
+            } else if (slicep->method() == VCMethod::DYN_SLICE_FRONT_BACK) {
+                assignMethod = VCMethod::DYN_SLICE_ASSIGN_FRONT_BACK;
+            } else {
+                assignMethod = VCMethod::_ENUM_MAX;  // not a slice
+            }
+            if (assignMethod != VCMethod::_ENUM_MAX) {
+                UINFO(9, "LHS queue slice -> sliceAssign: " << nodep);
+                AstNodeExpr* const fromp = slicep->fromp()->unlinkFrBack();
+                // Collect existing slice index pins (lsb, msb)
+                AstNodeExpr* const lsbp = slicep->pinsp()->unlinkFrBack();
+                AstNodeExpr* const msbp = slicep->pinsp()->unlinkFrBack();
+                AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+                AstCMethodHard* const newp
+                    = new AstCMethodHard{nodep->fileline(), fromp, assignMethod};
+                newp->addPinsp(lsbp);
+                newp->addPinsp(msbp);
+                newp->addPinsp(rhsp);
+                newp->didWidth(true);
+                newp->protect(false);
+                newp->dtypeSetVoid();
+                nodep->replaceWith(newp->makeStmt());
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
+        }
+
         if (nodep->hasDType() && nodep->dtypep()->isEvent()) {
             checkEventAssignment(nodep);
             v3Global.setAssignsEvents();

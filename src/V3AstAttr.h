@@ -802,6 +802,9 @@ public:
         DYN_RESIZE,
         DYN_SIZE,
         DYN_SLICE,
+        DYN_SLICE_ASSIGN,
+        DYN_SLICE_ASSIGN_BACK_BACK,
+        DYN_SLICE_ASSIGN_FRONT_BACK,
         DYN_SLICE_BACK_BACK,
         DYN_SLICE_FRONT_BACK,
         EVENT_CLEAR_FIRED,
@@ -941,6 +944,9 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {DYN_RESIZE, "resize", false}, \
            {DYN_SIZE, "size", true}, \
            {DYN_SLICE, "slice", true}, \
+           {DYN_SLICE_ASSIGN, "sliceAssign", false}, \
+           {DYN_SLICE_ASSIGN_BACK_BACK, "sliceAssignBackBack", false}, \
+           {DYN_SLICE_ASSIGN_FRONT_BACK, "sliceAssignFrontBack", false}, \
            {DYN_SLICE_BACK_BACK, "sliceBackBack", true}, \
            {DYN_SLICE_FRONT_BACK, "sliceFrontBack", true}, \
            {EVENT_CLEAR_FIRED, "clearFired", false}, \

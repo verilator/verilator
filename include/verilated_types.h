@@ -638,6 +638,22 @@ public:
     VlQueue sliceBackBack(int32_t lsb, int32_t msb) const {
         return slice(m_deque.size() - 1 - lsb, m_deque.size() - 1 - msb);
     }
+    // Assign src elements to q[lsb:msb]
+    void sliceAssign(int32_t lsb, int32_t msb, const VlQueue& src) {
+        const int32_t sz = static_cast<int32_t>(m_deque.size());
+        if (VL_UNLIKELY(lsb < 0)) lsb = 0;
+        if (VL_UNLIKELY(lsb >= sz)) lsb = sz - 1;
+        if (VL_UNLIKELY(msb >= sz)) msb = sz - 1;
+        int32_t si = 0;
+        const int32_t srcSz = static_cast<int32_t>(src.m_deque.size());
+        for (int32_t i = lsb; i <= msb && si < srcSz; ++i, ++si) m_deque[i] = src.m_deque[si];
+    }
+    void sliceAssignFrontBack(int32_t lsb, int32_t msb, const VlQueue& src) {
+        sliceAssign(lsb, m_deque.size() - 1 - msb, src);
+    }
+    void sliceAssignBackBack(int32_t lsb, int32_t msb, const VlQueue& src) {
+        sliceAssign(m_deque.size() - 1 - lsb, m_deque.size() - 1 - msb, src);
+    }
 
     // For save/restore
     const_iterator begin() const { return m_deque.begin(); }
