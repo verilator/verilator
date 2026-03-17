@@ -853,7 +853,8 @@ class ParamProcessor final {
         // Phase A: path-based fixup using ledger entries
         std::set<AstRefDType*> ledgerFixed;
         {
-            const string cloneCP = VN_CAST(ifErrorp, Cell) ? VN_AS(ifErrorp, Cell)->name() : "";
+            // Must match the cloneCellPath used by propagateClone (newname).
+            const string cloneCP = newModp->name();
             const string srcName = srcModp->name();
             UINFO(9, "iface capture FIXUP-A: srcName=" << srcName << " cloneCP='" << cloneCP << "'"
                                                        << endl);
@@ -991,7 +992,10 @@ class ParamProcessor final {
                     }
                     // Register clone entry in ledger (no AST mutation).
                     if (AstRefDType* const clonedRefp = entry.refp->clonep()) {
-                        const string cloneCP = cloneCellp ? cloneCellp->name() : string{};
+                        // Use the unique specialized module name as cloneCellPath.
+                        // cloneCellp->name() is NOT unique when the same module is
+                        // cloned multiple times from the same cell (e.g. generate loop).
+                        const string cloneCP = newname;
                         const V3LinkDotIfaceCapture::TemplateKey tkey{
                             entry.ownerModp ? entry.ownerModp->name() : "", entry.refp->name(),
                             entry.cellPath};
