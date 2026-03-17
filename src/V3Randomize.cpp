@@ -1347,9 +1347,10 @@ class ConstraintExprVisitor final : public VNVisitor {
                     }
                 }
                 // For globalConstrained sub-object members with rand_mode:
-                // guard write_var with sub-object's __Vrandmode check.
-                // When rand_mode is off, unregister the variable from the
-                // solver so it is not written back after solving.
+                // Always call write_var (keeps variable in solver for constraint
+                // evaluation), but toggle disabled state so the solver skips
+                // write-back when rand_mode is off.
+                initTaskp->addStmtsp(methodp->makeStmt());
                 if (isGlobalConstrained && membersel && randMode.usesMode) {
                     AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
                     AstVar* const subRandModeVarp = VN_AS(varClassp->user2p(), Var);
@@ -1362,26 +1363,35 @@ class ConstraintExprVisitor final : public VNVisitor {
                             = new AstCMethodHard{varp->fileline(), randModeSel, VCMethod::ARRAY_AT,
                                                  new AstConst{varp->fileline(), randMode.index}};
                         atp->dtypeSetUInt32();
-                        // else branch: unregister_var to remove stale registration
-                        AstCMethodHard* const unregp = new AstCMethodHard{
+                        // rand_mode ON: clear disabled state
+                        AstCMethodHard* const enablep = new AstCMethodHard{
                             varp->fileline(),
                             new AstVarRef{varp->fileline(), VN_AS(m_genp->user2p(), NodeModule),
                                           m_genp, VAccess::READWRITE},
-                            VCMethod::RANDOMIZER_UNREGISTER_VAR};
-                        unregp->dtypeSetVoid();
-                        AstNodeExpr* const unregnp
+                            VCMethod::RANDOMIZER_CLEAR_VAR_DISABLED};
+                        enablep->dtypeSetVoid();
+                        AstNodeExpr* const ennp
                             = new AstCExpr{varp->fileline(), AstCExpr::Pure{},
                                            "\"" + smtName + "\"", varp->width()};
-                        unregnp->dtypep(varp->dtypep());
-                        unregp->addPinsp(unregnp);
-                        AstIf* const ifp = new AstIf{varp->fileline(), atp, methodp->makeStmt(),
-                                                     unregp->makeStmt()};
+                        ennp->dtypep(varp->dtypep());
+                        enablep->addPinsp(ennp);
+                        // rand_mode OFF: set disabled state
+                        AstCMethodHard* const disablep = new AstCMethodHard{
+                            varp->fileline(),
+                            new AstVarRef{varp->fileline(), VN_AS(m_genp->user2p(), NodeModule),
+                                          m_genp, VAccess::READWRITE},
+                            VCMethod::RANDOMIZER_SET_VAR_DISABLED};
+                        disablep->dtypeSetVoid();
+                        AstNodeExpr* const disnp
+                            = new AstCExpr{varp->fileline(), AstCExpr::Pure{},
+                                           "\"" + smtName + "\"", varp->width()};
+                        disnp->dtypep(varp->dtypep());
+                        disablep->addPinsp(disnp);
+                        AstIf* const ifp = new AstIf{varp->fileline(), atp,
+                                                      enablep->makeStmt(),
+                                                      disablep->makeStmt()};
                         initTaskp->addStmtsp(ifp);
-                    } else {
-                        initTaskp->addStmtsp(methodp->makeStmt());
                     }
-                } else {
-                    initTaskp->addStmtsp(methodp->makeStmt());
                 }
                 // If randc, also emit markRandc() for cyclic tracking
                 if (varp->isRandC()) {

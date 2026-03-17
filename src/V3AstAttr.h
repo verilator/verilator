@@ -823,7 +823,8 @@ public:
         RANDOMIZER_SOLVE_BEFORE,
         RANDOMIZER_PIN_VAR,
         RANDOMIZER_WRITE_VAR,
-        RANDOMIZER_UNREGISTER_VAR,
+        RANDOMIZER_SET_VAR_DISABLED,
+        RANDOMIZER_CLEAR_VAR_DISABLED,
         RNG_GET_RANDSTATE,
         RNG_SET_RANDSTATE,
         SCHED_ANY_TRIGGERED,
@@ -963,7 +964,8 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {RANDOMIZER_SOLVE_BEFORE, "solveBefore", false}, \
            {RANDOMIZER_PIN_VAR, "pin_var", false}, \
            {RANDOMIZER_WRITE_VAR, "write_var", false}, \
-           {RANDOMIZER_UNREGISTER_VAR, "unregister_var", false}, \
+           {RANDOMIZER_SET_VAR_DISABLED, "set_var_disabled", false}, \
+           {RANDOMIZER_CLEAR_VAR_DISABLED, "clear_var_disabled", false}, \
            {RNG_GET_RANDSTATE, "__Vm_rng.get_randstate", true}, \
            {RNG_SET_RANDSTATE, "__Vm_rng.set_randstate", false}, \
            {SCHED_ANY_TRIGGERED, "anyTriggered", false}, \
