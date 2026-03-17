@@ -7545,8 +7545,22 @@ class WidthVisitor final : public VNVisitor {
         UASSERT_OBJ(nodep->rhsp(), nodep, "For binary ops only!");
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
-            userIterateAndNext(nodep->lhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
-            userIterateAndNext(nodep->rhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
+            // Assignment patterns cannot self-determine their type.
+            // Iterate the non-pattern operand first so its dtype is available,
+            // then propagate that dtype to the pattern operand (analogous to
+            // how assignments pass LHS dtype to RHS patterns).
+            const bool lhsIsPat = VN_IS(nodep->lhsp(), Pattern);
+            const bool rhsIsPat = VN_IS(nodep->rhsp(), Pattern);
+            if (lhsIsPat && !rhsIsPat) {
+                userIterateAndNext(nodep->rhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
+                userIterateAndNext(nodep->lhsp(), WidthVP{nodep->rhsp()->dtypep(), PRELIM}.p());
+            } else if (rhsIsPat && !lhsIsPat) {
+                userIterateAndNext(nodep->lhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
+                userIterateAndNext(nodep->rhsp(), WidthVP{nodep->lhsp()->dtypep(), PRELIM}.p());
+            } else {
+                userIterateAndNext(nodep->lhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
+                userIterateAndNext(nodep->rhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
+            }
 
             const bool isAggrLhs = isAggregateType(nodep->lhsp());
             const bool isAggrRhs = isAggregateType(nodep->rhsp());
