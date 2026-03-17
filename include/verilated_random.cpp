@@ -468,16 +468,36 @@ bool VlRandomizer::next(VlRNG& rngr) {
 
         const size_t nSoft = m_softConstraints.size();
         bool sat = false;
-        for (size_t phase = 0; phase <= nSoft && !sat; ++phase) {
-            const bool hasSoft = (phase < nSoft);
-            if (hasSoft) {
-                os << "(push 1)\n";
-                for (size_t i = phase; i < nSoft; ++i)
-                    os << "(assert (= #b1 " << m_softConstraints[i] << "))\n";
-            }
+        if (nSoft > 0) {
+            // Fast path: try all soft constraints at once
+            os << "(push 1)\n";
+            for (const auto& s : m_softConstraints) os << "(assert (= #b1 " << s << "))\n";
             os << "(check-sat)\n";
-            sat = parseSolution(os, /*log=*/phase == nSoft);
-            if (!sat && hasSoft) os << "(pop 1)\n";
+            sat = parseSolution(os, false);
+            if (!sat) {
+                // Some soft constraints conflict. Incrementally add from back
+                // (highest priority first), keeping only compatible ones.
+                // This preserves the maximum set of compatible soft constraints.
+                os << "(pop 1)\n";
+                for (int i = static_cast<int>(nSoft) - 1; i >= 0; --i) {
+                    os << "(push 1)\n";
+                    os << "(assert (= #b1 " << m_softConstraints[i] << "))\n";
+                    os << "(check-sat)\n";
+                    if (checkSat(os)) {
+                        // Compatible -- keep this push level
+                    } else {
+                        // Incompatible -- remove this soft constraint
+                        os << "(pop 1)\n";
+                    }
+                }
+                // Read solution with remaining compatible soft constraints
+                os << "(check-sat)\n";
+                sat = parseSolution(os, false);
+            }
+        } else {
+            // No soft constraints -- hard-only
+            os << "(check-sat)\n";
+            sat = parseSolution(os, false);
         }
 
         if (!sat) {
@@ -528,6 +548,12 @@ bool VlRandomizer::next(VlRNG& rngr) {
         return true;
     }
     return false;  // Should not reach here
+}
+
+bool VlRandomizer::checkSat(std::iostream& os) {
+    std::string result;
+    do { std::getline(os, result); } while (result.empty());
+    return result == "sat";
 }
 
 bool VlRandomizer::parseSolution(std::iostream& os, bool log) {
