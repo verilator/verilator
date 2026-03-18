@@ -1176,8 +1176,7 @@ class LinkParseVisitor final : public VNVisitor {
         }
         {
             AstVar* const varp
-                = new AstVar{nodep->fileline(), VVarType::MEMBER, "type_option",
-                             VFlagChildDType{},
+                = new AstVar{nodep->fileline(), VVarType::MEMBER, "type_option", VFlagChildDType{},
                              new AstRefDType{nodep->fileline(), "vl_covergroup_type_options_t",
                                              new AstClassOrPackageRef{nodep->fileline(), "std",
                                                                       nullptr, nullptr},

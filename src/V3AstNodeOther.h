@@ -1045,9 +1045,9 @@ class AstCoverBin final : public AstNode {
     // @astgen op2 := iffp : Optional[AstNodeExpr]
     // @astgen op3 := arraySizep : Optional[AstNodeExpr]
     // @astgen op4 := transp : List[AstCoverTransSet]
-    const string m_name;          // Base name of the bin
+    const string m_name;  // Base name of the bin
     const VCoverBinsType m_type;  // Bin type (eg AUTO, IGNORE, ILLEGAL)
-    bool m_isArray = false; // Bin is either an auto-sized array of values or transitions
+    bool m_isArray = false;  // Bin is either an auto-sized array of values or transitions
 
 public:
     AstCoverBin(FileLine* fl, const string& name, AstNode* rangesp, bool isIgnore, bool isIllegal,
@@ -1093,7 +1093,7 @@ public:
 class AstCoverCrossBins final : public AstNode {
     // Cross-point bin definition
     // @astgen op1 := selectp : Optional[AstCoverSelectExpr]
-    const string m_name; // Bin name
+    const string m_name;  // Bin name
 
 public:
     AstCoverCrossBins(FileLine* fl, const string& name, AstCoverSelectExpr* selectp)
@@ -1109,7 +1109,7 @@ public:
 class AstCoverOption final : public AstNode {
     // Coverage-option assignment
     // @astgen op1 := valuep : AstNodeExpr
-    const VCoverOptionType m_type; // Option being assigned
+    const VCoverOptionType m_type;  // Option being assigned
 
 public:
     AstCoverOption(FileLine* fl, VCoverOptionType type, AstNodeExpr* valuep)
@@ -1172,7 +1172,7 @@ class AstCovergroup final : public AstNode {
     // @astgen op2 := membersp : List[AstNode]
     // @astgen op3 := eventp : Optional[AstSenTree]
     // @astgen op4 := sampleArgsp : List[AstVar]
-    string m_name; // covergroup name
+    string m_name;  // covergroup name
 
 public:
     AstCovergroup(FileLine* fl, const string& name, AstVar* argsp, AstVar* sampleArgsp,
@@ -1194,7 +1194,7 @@ public:
 class AstCoverpointRef final : public AstNode {
     // Reference to a coverpoint used in a cross
     // @astgen ptr := m_coverpointp : Optional[AstCoverpoint]
-    const string m_name; // coverpoint name
+    const string m_name;  // coverpoint name
 
 public:
     AstCoverpointRef(FileLine* fl, const string& name)
