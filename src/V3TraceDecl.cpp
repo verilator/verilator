@@ -280,14 +280,13 @@ class TraceDeclVisitor final : public VNVisitor {
         } else if (const AstBasicDType* const bdtypep = m_traValuep->dtypep()->basicp()) {
             bitRange = bdtypep->nrange();
         }
-        AstTraceDecl* const newp
-            = new AstTraceDecl{m_traVscp->fileline(),
-                               m_traName,
-                               m_traVscp->varp(),
-                               m_traValuep->cloneTree(false),
-                               bitRange,
-                               arrayRange,
-                               m_traValueXZp ? m_traValueXZp->cloneTree(false) : nullptr};
+        AstNodeExpr* valuep = m_traValuep->cloneTree(false);
+        if (m_traValueXZp) {
+            valuep = new AstFourstateExpr{m_traVscp->fileline(), valuep,
+                                          m_traValueXZp->cloneTree(false)};
+        }
+        AstTraceDecl* const newp = new AstTraceDecl{
+            m_traVscp->fileline(), m_traName, m_traVscp->varp(), valuep, bitRange, arrayRange};
         m_declUncalledps.emplace(newp);
         addToSubFunc(newp);
     }

@@ -729,7 +729,7 @@ class EmitCTrace final : public EmitCFunc {
         // Note: Both VTraceType::CHANGE and VTraceType::FULL use the 'full' methods
         std::string func = nodep->traceType() == VTraceType::CHANGE ? "chg" : "full";
         bool emitWidth = true;
-        const bool isFourstate = nodep->valueXZp() != nullptr;
+        const bool isFourstate = VN_IS(nodep->valuep(), FourstateExpr);
         string stype;
         if (nodep->dtypep()->basicp()->isDouble()) {
             stype = "Double";
@@ -775,54 +775,57 @@ class EmitCTrace final : public EmitCFunc {
     }
 
     void emitTraceValue(const AstTraceInc* nodep, int arrayindex) {
-        if (AstVarRef* const varrefp = VN_CAST(nodep->valuep(), VarRef)) {
-            auto putVarRef = [this, nodep, arrayindex](AstVarRef* const varrefp) {
-                AstVar* const varp = varrefp->varp();
-                if (varp->isEvent()) puts("&");
-                puts("(");
-                if (emitTraceIsScBigUint(nodep)) {
-                    puts("(uint32_t*)");
-                } else if (emitTraceIsScBv(nodep)) {
-                    puts("VL_SC_BV_DATAP(");
+        auto putVarRef = [this, nodep, arrayindex](AstVarRef* const varrefp) {
+            AstVar* const varp = varrefp->varp();
+            if (varp->isEvent()) puts("&");
+            puts("(");
+            if (emitTraceIsScBigUint(nodep)) {
+                puts("(uint32_t*)");
+            } else if (emitTraceIsScBv(nodep)) {
+                puts("VL_SC_BV_DATAP(");
+            }
+            iterateConst(varrefp);  // Put var name out
+            // Tracing only supports 1D arrays
+            if (nodep->declp()->arrayRange().ranged()) {
+                if (arrayindex == -2) {
+                    puts("[i]");
+                } else if (arrayindex == -1) {
+                    puts("[0]");
+                } else {
+                    puts("[" + cvtToStr(arrayindex) + "]");
                 }
-                iterateConst(varrefp);  // Put var name out
-                // Tracing only supports 1D arrays
-                if (nodep->declp()->arrayRange().ranged()) {
-                    if (arrayindex == -2) {
-                        puts("[i]");
-                    } else if (arrayindex == -1) {
-                        puts("[0]");
-                    } else {
-                        puts("[" + cvtToStr(arrayindex) + "]");
-                    }
-                }
-                if (varp->isSc()) puts(".read()");
-                if (emitTraceIsScUint(nodep)) {
-                    puts(nodep->isQuad() ? ".to_uint64()" : ".to_uint()");
-                } else if (emitTraceIsScBigUint(nodep)) {
-                    puts(".get_raw()");
-                } else if (emitTraceIsScBv(nodep)) {
-                    puts(")");
-                }
+            }
+            if (varp->isSc()) puts(".read()");
+            if (emitTraceIsScUint(nodep)) {
+                puts(nodep->isQuad() ? ".to_uint64()" : ".to_uint()");
+            } else if (emitTraceIsScBigUint(nodep)) {
+                puts(".get_raw()");
+            } else if (emitTraceIsScBv(nodep)) {
                 puts(")");
-            };
-            putVarRef(varrefp);
-            // VN_AS is intentional - if is only for nullptr check
-            if (AstVarRef* const varrefXZp = VN_AS(nodep->valueXZp(), VarRef)) {
-                puts(", ");
-                putVarRef(varrefXZp);
+            }
+            puts(")");
+        };
+        puts("(");
+        if (AstFourstateExpr* const exprp = VN_CAST(nodep->valuep(), FourstateExpr)) {
+            if (AstVarRef* const varrefp = VN_CAST(exprp->valuep(), VarRef)) {
+                putVarRef(varrefp);
+            } else {
+                iterateConst(exprp->valuep());
+            }
+            puts("), (");
+            if (AstVarRef* const varrefp = VN_CAST(exprp->xzp(), VarRef)) {
+                putVarRef(varrefp);
+            } else {
+                iterateConst(exprp->xzp());
             }
         } else {
-            puts("(");
-            iterateConst(nodep->valuep());
-            puts(")");
-            if (AstNodeExpr* const exprp = nodep->valueXZp()) {
-                puts(", ");
-                puts("(");
-                iterateConst(exprp);
-                puts(")");
+            if (AstVarRef* const varrefp = VN_CAST(nodep->valuep(), VarRef)) {
+                putVarRef(varrefp);
+            } else {
+                iterateConst(nodep->valuep());
             }
         }
+        puts(")");
     }
 
     // VISITORS
