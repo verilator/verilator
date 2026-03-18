@@ -31,6 +31,7 @@
 #include "fstcpp/fstcpp_writer.cpp"
 
 #include <algorithm>
+#include <cstdint>
 #include <iterator>
 #include <sstream>
 #include <type_traits>
@@ -387,67 +388,64 @@ VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitEvent(uint32_t code) {
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     m_owner.emitTimeChangeMaybe();
-    m_fst->emitValueChange(m_symbolp[code], "1");
+    m_fst->emitValueChange(m_symbolp[code], 1);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitBit(uint32_t code, CData newval) {
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     m_owner.emitTimeChangeMaybe();
-    m_fst->emitValueChange(m_symbolp[code], newval ? "1" : "0");
+    m_fst->emitValueChange(m_symbolp[code], newval ? 1 : 0);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitCData(uint32_t code, CData newval, int bits) {
-    char buf[VL_BYTESIZE];
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
-    cvtCDataToStr(buf, newval << (VL_BYTESIZE - bits));
     m_owner.emitTimeChangeMaybe();
-    m_fst->emitValueChange(m_symbolp[code], buf);
+    m_fst->emitValueChange(m_symbolp[code], newval);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitSData(uint32_t code, SData newval, int bits) {
-    char buf[VL_SHORTSIZE];
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
-    cvtSDataToStr(buf, newval << (VL_SHORTSIZE - bits));
     m_owner.emitTimeChangeMaybe();
-    m_fst->emitValueChange(m_symbolp[code], buf);
+    m_fst->emitValueChange(m_symbolp[code], newval);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitIData(uint32_t code, IData newval, int bits) {
-    char buf[VL_IDATASIZE];
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
-    cvtIDataToStr(buf, newval << (VL_IDATASIZE - bits));
     m_owner.emitTimeChangeMaybe();
-    m_fst->emitValueChange(m_symbolp[code], buf);
+    m_fst->emitValueChange(m_symbolp[code], newval);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitQData(uint32_t code, QData newval, int bits) {
-    char buf[VL_QUADSIZE];
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
-    cvtQDataToStr(buf, newval << (VL_QUADSIZE - bits));
     m_owner.emitTimeChangeMaybe();
-    m_fst->emitValueChange(m_symbolp[code], buf);
+    m_fst->emitValueChange(m_symbolp[code], newval);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitWData(uint32_t code, const WData* newvalp, int bits) {
+    // While emitValueChange has a uint32_t* version
+    // It does the same conversion, allocating a pointer and copying the data
+    // So I decide to use the verilator buffer directly.
+    // The buffer were designed to hold maxBits() char,
+    // so it is very safe to use it as uint64_t*.
     int words = VL_WORDS_I(bits);
-    char* wp = m_strbufp;
-    // Convert the most significant word
-    const int bitsInMSW = VL_BITBIT_E(bits) ? VL_BITBIT_E(bits) : VL_EDATASIZE;
-    cvtEDataToStr(wp, newvalp[--words] << (VL_EDATASIZE - bitsInMSW));
-    wp += bitsInMSW;
-    // Convert the remaining words
-    while (words > 0) {
-        cvtEDataToStr(wp, newvalp[--words]);
-        wp += VL_EDATASIZE;
+    uint64_t* wp = reinterpret_cast<uint64_t*>(m_strbufp);
+    // cast newvalp (uint32_t[words]) to wp (uint64_t[ceil(words/2)])
+    for (int i = 0; i < words/2; ++i) {
+        wp[i] = newvalp[i*2+1];
+        wp[i] <<= 32;
+        wp[i] |= newvalp[i*2];
+    }
+    if (words % 2 == 1) {
+        wp[words/2] = newvalp[words-1];
     }
     m_owner.emitTimeChangeMaybe();
-    m_fst->emitValueChange(m_symbolp[code], m_strbufp);
+    m_fst->emitValueChange(m_symbolp[code], wp);
 }
 
 VL_ATTR_ALWINLINE
