@@ -944,6 +944,7 @@ class TimingControlVisitor final : public VNVisitor {
         nodep->setSuspendable();
         FileLine* const flp = nodep->fileline();
         AstSenTree* const sentreep = m_activep->sentreep();
+        if (sentreep->hasCombo()) return;
         if (sentreep->hasClocked()) {
             AstNode* const bodysp = nodep->stmtsp()->unlinkFrBackWithNext();
             auto* const controlp = new AstEventControl{flp, sentreep->cloneTree(false), bodysp};
