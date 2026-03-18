@@ -1057,7 +1057,7 @@ void V3Options::notify() VL_MT_DISABLED {
     }
 
     if (fourstate()) {
-        cmdfl->v3warn(FUTUREFOURSTATE, "--fourstate is not supported and has no effect yet");
+        cmdfl->v3warn(FUTURE, "--fourstate is not supported as is under development");
     }
 
     if (coverage() && savable()) {
