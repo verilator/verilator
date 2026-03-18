@@ -1,5 +1,0 @@
-%Error: Internal Error: t/t_stream_unpack_lhs.v:58:85: ../V3Const.cpp:#: sWidth >= dWidth should have caused an error earlier
-                                                     : ... note: In instance 't'
-   58 |     {>>{concat5_dout4, concat5_dout3, concat5_dout2, concat5_dout1, concat5_dout0}} = concat_din;
-      |                                                                                     ^
-                        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
