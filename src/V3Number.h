@@ -733,6 +733,7 @@ public:
     // "this" is the output, as we need the output width before some computations
     V3Number& opBitsNonX(const V3Number& lhs);  // 0/1->1, X/Z->0
     V3Number& opBitsOne(const V3Number& lhs);  // 1->1, 0/X/Z->0
+    V3Number& opBitsOneX(const V3Number& lhs);  // 1/X->1, 0/Z->0
     V3Number& opBitsXZ(const V3Number& lhs);  // 0/1->0, X/Z->1
     V3Number& opBitsZ(const V3Number& lhs);  // Z->1, 0/1/X->0
     //
