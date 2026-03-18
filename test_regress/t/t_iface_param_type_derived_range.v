@@ -20,7 +20,7 @@ endpackage
 // builds union/struct containing that typedef.
 // On the template default (cfg='0), Capacity/Slices = 0/0 = X.
 interface types_if #(
-    parameter cfg_pkg::cfg_t cfg = '0
+  parameter cfg_pkg::cfg_t cfg = '0
 ) ();
   localparam int NUM_ROWS = (cfg.Capacity / cfg.Slices) / 8;
   typedef logic [$clog2(NUM_ROWS)-1:0] row_addr_t;
@@ -51,10 +51,10 @@ endinterface
 
 // Generic type-parameterized register (mirrors tflop_nr)
 module tflop_nr #(parameter type T = logic) (
-    input  logic clk,
-    input  logic rst_n,
-    output T     q_o,
-    input  T     d_i
+  input  logic clk,
+  input  logic rst_n,
+  output T     q_o,
+  input  T     d_i
 );
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) q_o <= '0;
@@ -67,16 +67,16 @@ endmodule
 // passes that struct as type param to tflop_nr.
 // (mirrors smem_slice)
 module slice #(
-    parameter cfg_pkg::cfg_t cfg = '0,
-    parameter int SLICE_IDX = 0,
-    parameter type pkt_t = logic
+  parameter cfg_pkg::cfg_t cfg = '0,
+  parameter int SLICE_IDX = 0,
+  parameter type pkt_t = logic
 ) (
-    input  logic clk,
-    input  logic rst_n,
-    input  logic in_vld,
-    input  pkt_t in_pkt,
-    output logic out_vld,
-    output pkt_t out_pkt
+  input  logic clk,
+  input  logic rst_n,
+  input  logic in_vld,
+  input  pkt_t in_pkt,
+  output logic out_vld,
+  output pkt_t out_pkt
 );
   // Local types_if instantiation - same cfg as wrapper's
   types_if #(cfg) types();
@@ -102,10 +102,10 @@ module slice #(
 
   // Pass local struct as type param to tflop_nr - this is the trigger
   tflop_nr #(.T(rq_t)) rq_reg (
-      .clk(clk),
-      .rst_n(rst_n),
-      .q_o(rq_q),
-      .d_i(rq_d)
+    .clk(clk),
+    .rst_n(rst_n),
+    .q_o(rq_q),
+    .d_i(rq_d)
   );
 
   assign out_vld = rq_q.meta.en;
@@ -118,10 +118,10 @@ endmodule
 // type param to slice instances in a generate loop.
 // (mirrors smem_top)
 module wrapper #(
-    parameter cfg_pkg::cfg_t cfg = '0
+  parameter cfg_pkg::cfg_t cfg = '0
 ) (
-    input  logic clk,
-    input  logic rst_n
+  input  logic clk,
+  input  logic rst_n
 );
   types_if #(cfg) types();
 
@@ -145,16 +145,16 @@ module wrapper #(
   generate
     for (genvar i = 0; i < 2; i++) begin : gen_slices
       slice #(
-          .cfg(cfg),
-          .SLICE_IDX(i),
-          .pkt_t(pkt_t)
+        .cfg(cfg),
+        .SLICE_IDX(i),
+        .pkt_t(pkt_t)
       ) u_slice (
-          .clk(clk),
-          .rst_n(rst_n),
-          .in_vld(in_vld),
-          .in_pkt(in_pkt),
-          .out_vld(out_vld[i]),
-          .out_pkt(out_pkt[i])
+        .clk(clk),
+        .rst_n(rst_n),
+        .in_vld(in_vld),
+        .in_pkt(in_pkt),
+        .out_vld(out_vld[i]),
+        .out_pkt(out_pkt[i])
       );
     end
   endgenerate
@@ -168,9 +168,9 @@ module t;
   int cyc = 0;
 
   localparam cfg_pkg::cfg_t MY_CFG = '{
-      Capacity: 8192,
-      Slices: 8,
-      NumThreads: 32
+    Capacity: 8192,
+    Slices: 8,
+    NumThreads: 32
   };
   // Expected: NUM_ROWS = (8192/8)/8 = 128
   //           row_addr_t = logic [6:0]   (7 bits)
@@ -178,8 +178,8 @@ module t;
   //           addr_t.raw = logic [17:0]  (7+5+6 = 18 bits)
 
   wrapper #(.cfg(MY_CFG)) u_wrapper (
-      .clk(clk),
-      .rst_n(rst_n)
+    .clk(clk),
+    .rst_n(rst_n)
   );
 
   always @(posedge clk) begin
