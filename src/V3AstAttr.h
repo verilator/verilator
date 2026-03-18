@@ -1110,18 +1110,18 @@ inline std::ostream& operator<<(std::ostream& os, const VCastable& rhs) {
 class VCoverBinsType final {
 public:
     enum en : uint8_t {
-        USER,
-        ARRAY,
-        AUTO,
-        BINS_IGNORE,  // Renamed to avoid Windows macro conflict
-        BINS_ILLEGAL,  // Renamed to avoid Windows macro conflict
-        DEFAULT,
-        BINS_WILDCARD,  // Renamed to avoid Windows macro conflict
-        TRANSITION
+        BINS_USER,      // Single bin with one or more values/ranges
+        BINS_ARRAY,     // Array of bins with user-speciifed size
+        BINS_AUTO,      // Auto-sized array of bins (eg auto_bin_max)
+        BINS_IGNORE,    // Ignore bin
+        BINS_ILLEGAL,   // Illegal bin
+        BINS_DEFAULT,   // Default bin
+        BINS_WILDCARD,  // Wildcard bin
+        BINS_TRANSITION // Transition bin
     };
     enum en m_e;
     VCoverBinsType()
-        : m_e{USER} {}
+        : m_e{BINS_USER} {}
     // cppcheck-suppress noExplicitConstructor
     constexpr VCoverBinsType(en _e)
         : m_e{_e} {}

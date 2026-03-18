@@ -120,7 +120,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             AstCoverBin* const cbinp = VN_CAST(binp, CoverBin);
             AstNode* nextBinp = binp->nextp();
 
-            if (cbinp && cbinp->binsType() == VCoverBinsType::AUTO) {
+            if (cbinp && cbinp->binsType() == VCoverBinsType::BINS_AUTO) {
                 UINFO(4, "  Expanding automatic bin: " << cbinp->name() << endl);
 
                 // Get array size - must be a constant
@@ -477,14 +477,14 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             if (!cbinp) continue;
 
             // Defer default bins to second pass
-            if (cbinp->binsType() == VCoverBinsType::DEFAULT) {
+            if (cbinp->binsType() == VCoverBinsType::BINS_DEFAULT) {
                 defaultBins.push_back(cbinp);
                 continue;
             }
 
             // Handle array bins: create separate bin for each value/transition
             if (cbinp->isArray()) {
-                if (cbinp->binsType() == VCoverBinsType::TRANSITION) {
+                if (cbinp->binsType() == VCoverBinsType::BINS_TRANSITION) {
                     hasTransition = true;
                     generateTransitionArrayBins(coverpointp, cbinp, exprp, atLeastValue);
                 } else {
@@ -520,7 +520,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
             // Generate bin matching code in sample()
             // Handle transition bins specially
-            if (cbinp->binsType() == VCoverBinsType::TRANSITION) {
+            if (cbinp->binsType() == VCoverBinsType::BINS_TRANSITION) {
                 hasTransition = true;
                 generateTransitionBinMatchCode(coverpointp, cbinp, exprp, varp);
             } else {
@@ -615,7 +615,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             if (!cbinp) continue;
 
             // Skip default, ignore, and illegal bins
-            if (cbinp->binsType() == VCoverBinsType::DEFAULT
+            if (cbinp->binsType() == VCoverBinsType::BINS_DEFAULT
                 || cbinp->binsType() == VCoverBinsType::BINS_IGNORE
                 || cbinp->binsType() == VCoverBinsType::BINS_ILLEGAL) {
                 continue;
@@ -1285,7 +1285,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             std::vector<AstCoverBin*> cpBins;
             for (AstNode* binp = cpp->binsp(); binp; binp = binp->nextp()) {
                 AstCoverBin* const cbinp = VN_CAST(binp, CoverBin);
-                if (cbinp && cbinp->binsType() == VCoverBinsType::USER) {
+                if (cbinp && cbinp->binsType() == VCoverBinsType::BINS_USER) {
                     cpBins.push_back(cbinp);
                 }
             }
