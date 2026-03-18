@@ -3738,9 +3738,7 @@ void AstWith::dumpJson(std::ostream& str) const {
 
 void AstCovergroup::dump(std::ostream& str) const { this->AstNode::dump(str); }
 
-void AstCovergroup::dumpJson(std::ostream& str) const {
-    dumpJsonGen(str);
-}
+void AstCovergroup::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 
 void AstCoverpoint::dump(std::ostream& str) const { this->AstNodeFuncCovItem::dump(str); }
 
@@ -3768,9 +3766,7 @@ void AstCoverTransItem::dumpJson(std::ostream& str) const {
     if (m_repType != VTransRepType::NONE) { str << ", \"repType\": " << m_repType.asciiJson(); }
 }
 
-void AstCoverTransSet::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
-}
+void AstCoverTransSet::dump(std::ostream& str) const { this->AstNode::dump(str); }
 
 void AstCoverTransSet::dumpJson(std::ostream& str) const { this->AstNode::dumpJson(str); }
 
