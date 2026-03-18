@@ -1582,8 +1582,8 @@ class LinkDotFindVisitor final : public VNVisitor {
             if (!dotp->colon()) {
                 const AstParseRef* const lhsRefp = VN_CAST(dotp->lhsp(), ParseRef);
                 if (lhsRefp && lhsRefp->name() == portName) {
-                    UINFO(5, "   rewriteIfacePortRefs: stripping port prefix from "
-                                 << dotp << endl);
+                    UINFO(5,
+                          "   rewriteIfacePortRefs: stripping port prefix from " << dotp << endl);
                     AstNode* const rhsp = dotp->rhsp()->unlinkFrBack();
                     dotp->replaceWith(rhsp);
                     VL_DO_DANGLING(dotp->deleteTree(), dotp);
