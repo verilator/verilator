@@ -1982,6 +1982,11 @@ static void dfgSelectLogicForSynthesis(DfgGraph& dfg) {
     for (DfgVertex& vtx : dfg.opVertices()) {
         DfgLogic* const logicp = vtx.cast<DfgLogic>();
         if (!logicp) continue;
+        // If drives an unused variable, synthesize it so the partial logic can be removed
+        if (logicp->drivesUnusedVars()) {
+            worklist.push_front(*logicp);
+            continue;
+        }
         // Blocks corresponding to continuous assignments
         if (logicp->nodep()->keyword() == VAlwaysKwd::CONT_ASSIGN) {
             worklist.push_front(*logicp);
@@ -1993,10 +1998,8 @@ static void dfgSelectLogicForSynthesis(DfgGraph& dfg) {
             worklist.push_front(*logicp);
             continue;
         }
-        // Simple blocks driving exactly 1 variable, e.g if (rst) a = b else a = c;
-        if (!logicp->hasMultipleSinks() && cfg.nBlocks() <= 4 && cfg.nEdges() <= 4) {
-            worklist.push_front(*logicp);
-        }
+        // Blocks driving exactly 1 variable
+        if (!logicp->hasMultipleSinks()) worklist.push_front(*logicp);
     }
 
     // Now expand to cover all logic driving the same set of variables and mark
