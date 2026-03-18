@@ -188,8 +188,10 @@ class TraceDeclVisitor final : public VNVisitor {
         FileLine& fileline() const { return m_vscp ? *m_vscp->fileline() : *m_cellp->fileline(); }
     };
     std::vector<TraceEntry> m_entries;  // Trace entries under current scope
+    std::map<const AstVar*, AstVarScope*> m_varxzToVscp;  //
     AstVarScope* m_traVscp = nullptr;  // Current AstVarScope we are constructing AstTraceDecls for
     AstNodeExpr* m_traValuep = nullptr;  // Value expression for current signal
+    AstNodeExpr* m_traValueXZp = nullptr;  // ValueXZ expression for current signal
     string m_traName;  // Name component for current signal
 
     VDouble0 m_statSigs;  // Statistic tracking
@@ -279,8 +281,13 @@ class TraceDeclVisitor final : public VNVisitor {
             bitRange = bdtypep->nrange();
         }
         AstTraceDecl* const newp
-            = new AstTraceDecl{m_traVscp->fileline(),         m_traName, m_traVscp->varp(),
-                               m_traValuep->cloneTree(false), bitRange,  arrayRange};
+            = new AstTraceDecl{m_traVscp->fileline(),
+                               m_traName,
+                               m_traVscp->varp(),
+                               m_traValuep->cloneTree(false),
+                               bitRange,
+                               arrayRange,
+                               m_traValueXZp ? m_traValueXZp->cloneTree(false) : nullptr};
         m_declUncalledps.emplace(newp);
         addToSubFunc(newp);
     }
@@ -453,6 +460,11 @@ class TraceDeclVisitor final : public VNVisitor {
                         // traversal.
                         m_traValuep
                             = new AstVarRef{m_traVscp->fileline(), m_traVscp, VAccess::READ};
+                        if (AstVar* const complementp = m_traVscp->varp()->fourStateComplement()) {
+                            m_traValueXZp
+                                = new AstVarRef{m_traVscp->fileline(),
+                                                m_varxzToVscp.at(complementp), VAccess::READ};
+                        }
                         // Recurse into data type of the signal. The visit methods will add
                         // AstTraceDecls.
                         iterate(m_traVscp->varp()->dtypep()->skipRefToEnump());
@@ -462,6 +474,10 @@ class TraceDeclVisitor final : public VNVisitor {
                             // Note: Sometimes VL_DANGLING is a no-op, but we have assertions
                             // on m_traValuep being nullptr, so make sure it is.
                             m_traValuep = nullptr;
+                            if (m_traValueXZp) {
+                                VL_DO_DANGLING(m_traValueXZp->deleteTree(), m_traValueXZp);
+                                m_traValueXZp = nullptr;
+                            }
                         }
                     }
                 } else {
@@ -538,8 +554,12 @@ class TraceDeclVisitor final : public VNVisitor {
             if (nodep->varp()->isParam() && VN_IS(nodep->scopep()->modp(), Package)) return;
         }
 
-        // Add to traced signal list
-        m_entries.emplace_back(m_currScopep, nodep);
+        if (nodep->varp()->isFourStateComplement()) {
+            m_varxzToVscp.emplace(nodep->varp(), nodep);
+        } else {
+            // Add to traced signal list
+            m_entries.emplace_back(m_currScopep, nodep);
+        }
     }
 
     // VISITORS - Data types when tracing
@@ -593,12 +613,19 @@ class TraceDeclVisitor final : public VNVisitor {
             const int inc = nodep->rangep()->ascending() ? 1 : -1;
             for (int i = nodep->left(); i != nodep->right() + inc; i += inc) {
                 VL_RESTORER(m_traValuep);
+                VL_RESTORER(m_traValueXZp);
                 m_traName = '[' + std::to_string(i) + ']';
                 m_traValuep = m_traValuep->cloneTree(false);
                 m_traValuep = new AstArraySel{flp, m_traValuep, i - nodep->lo()};
                 m_traValuep->dtypep(subtypep);
+                if (m_traValueXZp) {
+                    m_traValueXZp = m_traValueXZp->cloneTree(false);
+                    m_traValueXZp = new AstArraySel{flp, m_traValueXZp, i - nodep->lo()};
+                    m_traValueXZp->dtypep(subtypep);
+                }
                 iterate(subtypep);
                 VL_DO_DANGLING(m_traValuep->deleteTree(), m_traValuep);
+                if (m_traValueXZp) VL_DO_DANGLING(m_traValueXZp->deleteTree(), m_traValueXZp);
             }
         }
 
@@ -635,13 +662,20 @@ class TraceDeclVisitor final : public VNVisitor {
         const int inc = nodep->rangep()->ascending() ? 1 : -1;
         for (int i = nodep->left(); i != nodep->right() + inc; i += inc) {
             VL_RESTORER(m_traValuep);
+            VL_RESTORER(m_traValueXZp);
             m_traName = '[' + std::to_string(i) + ']';
             const int lsb = (i - nodep->lo()) * subtypep->width();
             m_traValuep = m_traValuep->cloneTree(false);
             m_traValuep = new AstSel{flp, m_traValuep, lsb, subtypep->width()};
             m_traValuep->dtypep(subtypep);
+            if (m_traValueXZp) {
+                m_traValueXZp = m_traValueXZp->cloneTree(false);
+                m_traValueXZp = new AstSel{flp, m_traValueXZp, lsb, subtypep->width()};
+                m_traValueXZp->dtypep(subtypep);
+            }
             iterate(subtypep);
             VL_DO_CLEAR(m_traValuep->deleteTree(), m_traValuep = nullptr);
+            if (m_traValueXZp) VL_DO_CLEAR(m_traValueXZp->deleteTree(), m_traValueXZp = nullptr);
         }
 
         addToSubFunc(new AstTracePopPrefix{flp});
@@ -671,11 +705,18 @@ class TraceDeclVisitor final : public VNVisitor {
                 AstNodeDType* const subtypep = itemp->subDTypep()->skipRefToEnump();
                 m_traName = itemp->prettyName();
                 VL_RESTORER(m_traValuep);
+                VL_RESTORER(m_traValueXZp);
                 m_traValuep = m_traValuep->cloneTree(false);
                 m_traValuep = new AstStructSel{flp, m_traValuep, itemp->name()};
                 m_traValuep->dtypep(subtypep);
+                if (m_traValueXZp) {
+                    m_traValueXZp = m_traValueXZp->cloneTree(false);
+                    m_traValueXZp = new AstStructSel{flp, m_traValueXZp, itemp->name()};
+                    m_traValueXZp->dtypep(subtypep);
+                }
                 iterate(subtypep);
                 VL_DO_DANGLING(m_traValuep->deleteTree(), m_traValuep);
+                if (m_traValueXZp) VL_DO_DANGLING(m_traValueXZp->deleteTree(), m_traValueXZp);
             }
             addToSubFunc(new AstTracePopPrefix{flp});
         } else {
@@ -686,11 +727,19 @@ class TraceDeclVisitor final : public VNVisitor {
                 AstNodeDType* const subtypep = itemp->subDTypep()->skipRefToEnump();
                 m_traName = itemp->prettyName();
                 VL_RESTORER(m_traValuep);
+                VL_RESTORER(m_traValueXZp);
                 m_traValuep = m_traValuep->cloneTree(false);
                 m_traValuep = new AstSel{flp, m_traValuep, itemp->lsb(), subtypep->width()};
                 m_traValuep->dtypep(subtypep);
+                if (m_traValueXZp) {
+                    m_traValueXZp = m_traValueXZp->cloneTree(false);
+                    m_traValueXZp
+                        = new AstSel{flp, m_traValueXZp, itemp->lsb(), subtypep->width()};
+                    m_traValueXZp->dtypep(subtypep);
+                }
                 iterate(subtypep);
                 VL_DO_DANGLING(m_traValuep->deleteTree(), m_traValuep);
+                if (m_traValueXZp) VL_DO_DANGLING(m_traValueXZp->deleteTree(), m_traValueXZp);
             }
             addToSubFunc(new AstTracePopPrefix{flp});
         }

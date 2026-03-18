@@ -1267,6 +1267,7 @@ class AstTraceDecl final : public AstNodeStmt {
     // Parents:  {statement list}
     // Expression being traced - Moved to AstTraceInc by V3Trace
     // @astgen op1 := valuep : Optional[AstNodeExpr]
+    // @astgen op2 := valueXZp : Optional[AstNodeExpr]  // Used with fourstate values
     uint32_t m_code{std::numeric_limits<uint32_t>::max()};  // Trace identifier code
     uint32_t m_fidx{0};  // Trace function index
     const string m_showname;  // Name of variable
@@ -1274,18 +1275,23 @@ class AstTraceDecl final : public AstNodeStmt {
     const VNumRange m_arrayRange;  // Property of var the trace details
     const VVarType m_varType;  // Type of variable (for localparam vs. param)
     const VDirection m_declDirection;  // Declared direction input/output etc
+    const VBasicDTypeKwd m_dtypeKwd;
+
 public:
     AstTraceDecl(FileLine* fl, const string& showname,
                  AstVar* varp,  // For input/output state etc
-                 AstNodeExpr* valuep, const VNumRange& bitRange, const VNumRange& arrayRange)
+                 AstNodeExpr* valuep, const VNumRange& bitRange, const VNumRange& arrayRange,
+                 AstNodeExpr* valueXZp = nullptr)
         : ASTGEN_SUPER_TraceDecl(fl)
         , m_showname{showname}
         , m_bitRange{bitRange}
         , m_arrayRange{arrayRange}
         , m_varType{varp->varType()}
-        , m_declDirection{varp->declDirection()} {
+        , m_declDirection{varp->declDirection()}
+        , m_dtypeKwd{varp->fourstateOriginalDTypeKwd()} {
         dtypeFrom(valuep);
         this->valuep(valuep);
+        this->valueXZp(valueXZp);
     }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
@@ -1305,16 +1311,20 @@ public:
     uint32_t codeInc() const {
         return (m_arrayRange.ranged() ? m_arrayRange.elements() : 1)
                * valuep()->dtypep()->widthWords()
+               * (1 + (valueXZp() != nullptr))  // Fourstate variables take twise as much space as
+                                                // they are wide
                * (VL_EDATASIZE / 32);  // A code is always 32-bits
     }
     const VNumRange& bitRange() const { return m_bitRange; }
     const VNumRange& arrayRange() const { return m_arrayRange; }
     VVarType varType() const { return m_varType; }
     VDirection declDirection() const { return m_declDirection; }
+    VBasicDTypeKwd dtypeKwd() const { return m_dtypeKwd; }
 };
 class AstTraceInc final : public AstNodeStmt {
     // Trace point dump
     // @astgen op1 := valuep : AstNodeExpr // Expression being traced (from decl)
+    // @astgen op2 := valueXZp : Optional[AstNodeExpr]  // Used with fourstate values
     //
     // @astgen ptr := m_declp : AstTraceDecl  // Pointer to declaration
     const uint32_t m_baseCode;  // Trace code base value in function containing this AstTraceInc
@@ -1330,6 +1340,7 @@ public:
         // Note: A clone is necessary (instead of using declp()->valuep()),
         // for insertion of local temporaries in V3Premit
         valuep(declp->valuep()->cloneTree(true));
+        valueXZp(declp->valueXZp() ? declp->valueXZp()->cloneTree(true) : nullptr);
     }
     ASTGEN_MEMBERS_AstTraceInc;
     void dump(std::ostream& str) const override;

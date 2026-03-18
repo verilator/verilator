@@ -508,11 +508,18 @@ public:
 
     // Write to previous value buffer value and emit trace entry.
     void fullBit(uint32_t* oldp, CData newval);
+    void fullLogic(uint32_t* oldp, CData newval, CData newvalXZ);
     void fullCData(uint32_t* oldp, CData newval, int bits);
+    void fullFourstateCData(uint32_t* oldp, CData newval, CData newvalXZ, int bits);
     void fullSData(uint32_t* oldp, SData newval, int bits);
+    void fullFourstateSData(uint32_t* oldp, SData newval, SData newvalXZ, int bits);
     void fullIData(uint32_t* oldp, IData newval, int bits);
+    void fullFourstateIData(uint32_t* oldp, IData newval, IData newvalXZ, int bits);
     void fullQData(uint32_t* oldp, QData newval, int bits);
+    void fullFourstateQData(uint32_t* oldp, QData newval, QData newvalXZ, int bits);
     void fullWData(uint32_t* oldp, const WData* newvalp, int bits);
+    void fullFourstateWData(uint32_t* oldp, const WData* newvalp, const WData* newvalXZp,
+                            int bits);
     void fullDouble(uint32_t* oldp, double newval);
     void fullEvent(uint32_t* oldp, const VlEventBase* newvalp);
     void fullEventTriggered(uint32_t* oldp);
@@ -526,17 +533,40 @@ public:
         const uint32_t diff = *oldp ^ newval;
         if (VL_UNLIKELY(diff)) fullBit(oldp, newval);
     }
+    VL_ATTR_ALWINLINE void chgLogic(uint32_t* oldp, CData newval, CData newvalXZ) {
+        CData* oldcp = reinterpret_cast<CData*>(oldp);
+        const uint32_t diff = (oldcp[0] ^ newval) | (oldcp[1] ^ newvalXZ);
+        if (VL_UNLIKELY(diff)) fullLogic(oldp, newval, newvalXZ);
+    }
     VL_ATTR_ALWINLINE void chgCData(uint32_t* oldp, CData newval, int bits) {
         const uint32_t diff = *oldp ^ newval;
         if (VL_UNLIKELY(diff)) fullCData(oldp, newval, bits);
+    }
+    VL_ATTR_ALWINLINE void chgFourstateCData(uint32_t* oldp, CData newval, CData newvalXZ,
+                                             int bits) {
+        CData* oldcp = reinterpret_cast<CData*>(oldp);
+        const uint32_t diff = (oldcp[0] ^ newval) | (oldcp[1] ^ newvalXZ);
+        if (VL_UNLIKELY(diff)) fullFourstateCData(oldp, newval, newvalXZ, bits);
     }
     VL_ATTR_ALWINLINE void chgSData(uint32_t* oldp, SData newval, int bits) {
         const uint32_t diff = *oldp ^ newval;
         if (VL_UNLIKELY(diff)) fullSData(oldp, newval, bits);
     }
+    VL_ATTR_ALWINLINE void chgFourstateSData(uint32_t* oldp, SData newval, SData newvalXZ,
+                                             int bits) {
+        SData* oldcp = reinterpret_cast<SData*>(oldp);
+        const uint32_t diff = (oldcp[0] ^ newval) | (oldcp[1] ^ newvalXZ);
+        if (VL_UNLIKELY(diff)) fullFourstateSData(oldp, newval, newvalXZ, bits);
+    }
     VL_ATTR_ALWINLINE void chgIData(uint32_t* oldp, IData newval, int bits) {
         const uint32_t diff = *oldp ^ newval;
         if (VL_UNLIKELY(diff)) fullIData(oldp, newval, bits);
+    }
+    VL_ATTR_ALWINLINE void chgFourstateIData(uint32_t* oldp, IData newval, IData newvalXZ,
+                                             int bits) {
+        IData* oldcp = reinterpret_cast<IData*>(oldp);
+        const uint32_t diff = (oldcp[0] ^ newval) | (oldcp[1] ^ newvalXZ);
+        if (VL_UNLIKELY(diff)) fullFourstateIData(oldp, newval, newvalXZ, bits);
     }
     VL_ATTR_ALWINLINE void chgQData(uint32_t* oldp, QData newval, int bits) {
         QData old;
@@ -544,9 +574,24 @@ public:
         const uint64_t diff = old ^ newval;
         if (VL_UNLIKELY(diff)) fullQData(oldp, newval, bits);
     }
+    VL_ATTR_ALWINLINE void chgFourstateQData(uint32_t* oldp, QData newval, QData newvalXZ,
+                                             int bits) {
+        QData* oldcp = reinterpret_cast<QData*>(oldp);
+        const uint32_t diff = (oldcp[0] ^ newval) | (oldcp[1] ^ newvalXZ);
+        if (VL_UNLIKELY(diff)) fullFourstateQData(oldp, newval, newvalXZ, bits);
+    }
     VL_ATTR_ALWINLINE void chgWData(uint32_t* oldp, const WData* newvalp, int bits) {
         for (int i = 0; i < (bits + 31) / 32; ++i) {
             if (VL_UNLIKELY(oldp[i] ^ newvalp[i])) {
+                fullWData(oldp, newvalp, bits);
+                return;
+            }
+        }
+    }
+    VL_ATTR_ALWINLINE void chgFourstateWData(uint32_t* oldp, const WData* newvalp,
+                                             const WData* newvalXZp, int bits) {
+        for (int i = 0; i < (bits + 31) / 32; i += 2) {
+            if (VL_UNLIKELY((oldp[i] ^ newvalp[i]) | (oldp[i + 1] ^ newvalXZp[i]))) {
                 fullWData(oldp, newvalp, bits);
                 return;
             }

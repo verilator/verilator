@@ -637,11 +637,36 @@ void VerilatedVcdBuffer::emitBit(uint32_t code, CData newval) {
 }
 
 VL_ATTR_ALWINLINE
+void VerilatedVcdBuffer::emitLogic(uint32_t code, CData newval, CData newvalXZ) {
+    // Don't prefetch suffix as it's a bit too late;
+    char* wp = m_writep;
+    if (newval) {
+        *wp++ = newvalXZ ? 'x' : '1';
+    } else {
+        *wp++ = newvalXZ ? 'z' : '0';
+    }
+    finishLine(code, wp);
+}
+
+VL_ATTR_ALWINLINE
 void VerilatedVcdBuffer::emitCData(uint32_t code, CData newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
     cvtCDataToStr(wp, newval << (VL_BYTESIZE - bits));
     finishLine(code, wp + bits);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedVcdBuffer::emitFourstateCData(uint32_t code, CData newval, CData newvalXZ,
+                                            int bits) {
+    char* wp = m_writep;
+    *wp++ = 'b';
+    for (int i = bits - 1; i >= 0; --i) {
+        const CData mask = 1 << i;
+        *wp++ = (newvalXZ & mask) ? (newval & mask ? 'x' : 'z')
+                                  : ('0' | (static_cast<char>(newval >> i) & 1));
+    }
+    finishLine(code, wp);
 }
 
 VL_ATTR_ALWINLINE
@@ -653,6 +678,19 @@ void VerilatedVcdBuffer::emitSData(uint32_t code, SData newval, int bits) {
 }
 
 VL_ATTR_ALWINLINE
+void VerilatedVcdBuffer::emitFourstateSData(uint32_t code, SData newval, SData newvalXZ,
+                                            int bits) {
+    char* wp = m_writep;
+    *wp++ = 'b';
+    for (int i = bits - 1; i >= 0; --i) {
+        const SData mask = 1 << i;
+        *wp++ = (newvalXZ & mask) ? (newval & mask ? 'x' : 'z')
+                                  : ('0' | (static_cast<char>(newval >> i) & 1));
+    }
+    finishLine(code, wp);
+}
+
+VL_ATTR_ALWINLINE
 void VerilatedVcdBuffer::emitIData(uint32_t code, IData newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
@@ -661,11 +699,36 @@ void VerilatedVcdBuffer::emitIData(uint32_t code, IData newval, int bits) {
 }
 
 VL_ATTR_ALWINLINE
+void VerilatedVcdBuffer::emitFourstateIData(uint32_t code, IData newval, IData newvalXZ,
+                                            int bits) {
+    char* wp = m_writep;
+    *wp++ = 'b';
+    for (int i = bits - 1; i >= 0; --i) {
+        const IData mask = 1 << i;
+        *wp++ = (newvalXZ & mask) ? (newval & mask ? 'x' : 'z') : (newval & mask ? '1' : '0');
+    }
+    finishLine(code, wp);
+}
+
+VL_ATTR_ALWINLINE
 void VerilatedVcdBuffer::emitQData(uint32_t code, QData newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
     cvtQDataToStr(wp, newval << (VL_QUADSIZE - bits));
     finishLine(code, wp + bits);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedVcdBuffer::emitFourstateQData(uint32_t code, QData newval, QData newvalXZ,
+                                            int bits) {
+    char* wp = m_writep;
+    *wp++ = 'b';
+    for (int i = bits - 1; i >= 0; --i) {
+        const QData mask = 1 << i;
+        *wp++ = (newvalXZ & mask) ? (newval & mask ? 'x' : 'z')
+                                  : ('0' | (static_cast<char>(newval >> i) & 1));
+    }
+    finishLine(code, wp);
 }
 
 VL_ATTR_ALWINLINE
@@ -681,6 +744,23 @@ void VerilatedVcdBuffer::emitWData(uint32_t code, const WData* newvalp, int bits
     while (words > 0) {
         cvtEDataToStr(wp, newvalp[--words]);
         wp += VL_EDATASIZE;
+    }
+    finishLine(code, wp);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedVcdBuffer::emitFourstateWData(uint32_t code, const WData* newvalp,
+                                            const WData* newvalXZp, int bits) {
+    char* wp = m_writep;
+    *wp++ = 'b';
+    for (int w = bits / 32; w > 0; --w) {
+        const IData value = newvalp[w];
+        const IData xz = newvalXZp[w];
+        for (int i = (bits - 1) % 32; i >= 0; --i) {
+            const IData mask = 1 << i;
+            *wp++ = (xz & mask) ? (value & mask ? 'x' : 'z')
+                                : ('0' | (static_cast<char>(value >> i) & 1));
+        }
     }
     finishLine(code, wp);
 }

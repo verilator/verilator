@@ -657,7 +657,13 @@ class EmitCTrace final : public EmitCFunc {
 
         // Name
         puts(",");
-        putsQuoted(VIdProtect::protectWordsIf(nodep->showname(), nodep->protect()));
+        {
+            std::string name = nodep->showname();
+            if (VString::endsWith(name, "__Vvalue")) {
+                name = name.erase(name.size() - (sizeof("__Vvalue") - 1));
+            }
+            putsQuoted(VIdProtect::protectWordsIf(name, nodep->protect()));
+        }
 
         // Enum number
         puts("," + cvtToStr(enumNum));
@@ -679,7 +685,14 @@ class EmitCTrace final : public EmitCFunc {
 
         // Type
         puts(", VerilatedTraceSigType::");
-        puts(nodep->dtypep()->basicp()->keyword().traceSigType());
+        {
+            const VBasicDTypeKwd dtypeKwd = nodep->dtypeKwd();
+            if (dtypeKwd != VBasicDTypeKwd::UNKNOWN) {
+                puts(dtypeKwd.traceSigType());
+            } else {
+                puts(nodep->dtypep()->basicp()->keyword().traceSigType());
+            }
+        }
 
         // Array range
         if (nodep->arrayRange().ranged()) {
@@ -714,8 +727,9 @@ class EmitCTrace final : public EmitCFunc {
 
     void emitTraceChangeOne(AstTraceInc* nodep, int arrayindex) {
         // Note: Both VTraceType::CHANGE and VTraceType::FULL use the 'full' methods
-        const std::string func = nodep->traceType() == VTraceType::CHANGE ? "chg" : "full";
+        std::string func = nodep->traceType() == VTraceType::CHANGE ? "chg" : "full";
         bool emitWidth = true;
+        const bool isFourstate = nodep->valueXZp() != nullptr;
         string stype;
         if (nodep->dtypep()->basicp()->isDouble()) {
             stype = "Double";
@@ -733,10 +747,14 @@ class EmitCTrace final : public EmitCFunc {
         } else if (nodep->dtypep()->basicp()->isEvent()) {
             stype = "Event";
             emitWidth = false;
+        } else if (isFourstate) {
+            stype = "Logic";
+            emitWidth = false;
         } else {
             stype = "Bit";
             emitWidth = false;
         }
+        if (isFourstate && stype != "Logic") func += "Fourstate";
         putns(nodep, "bufp->" + func + stype);
 
         const uint32_t offset = (arrayindex < 0) ? 0 : (arrayindex * nodep->declp()->widthWords());
@@ -758,38 +776,52 @@ class EmitCTrace final : public EmitCFunc {
 
     void emitTraceValue(const AstTraceInc* nodep, int arrayindex) {
         if (AstVarRef* const varrefp = VN_CAST(nodep->valuep(), VarRef)) {
-            const AstVar* const varp = varrefp->varp();
-            if (varp->isEvent()) puts("&");
-            puts("(");
-            if (emitTraceIsScBigUint(nodep)) {
-                puts("(uint32_t*)");
-            } else if (emitTraceIsScBv(nodep)) {
-                puts("VL_SC_BV_DATAP(");
-            }
-            iterateConst(varrefp);  // Put var name out
-            // Tracing only supports 1D arrays
-            if (nodep->declp()->arrayRange().ranged()) {
-                if (arrayindex == -2) {
-                    puts("[i]");
-                } else if (arrayindex == -1) {
-                    puts("[0]");
-                } else {
-                    puts("[" + cvtToStr(arrayindex) + "]");
+            auto putVarRef = [this, nodep, arrayindex](AstVarRef* const varrefp) {
+                AstVar* const varp = varrefp->varp();
+                if (varp->isEvent()) puts("&");
+                puts("(");
+                if (emitTraceIsScBigUint(nodep)) {
+                    puts("(uint32_t*)");
+                } else if (emitTraceIsScBv(nodep)) {
+                    puts("VL_SC_BV_DATAP(");
                 }
-            }
-            if (varp->isSc()) puts(".read()");
-            if (emitTraceIsScUint(nodep)) {
-                puts(nodep->isQuad() ? ".to_uint64()" : ".to_uint()");
-            } else if (emitTraceIsScBigUint(nodep)) {
-                puts(".get_raw()");
-            } else if (emitTraceIsScBv(nodep)) {
+                iterateConst(varrefp);  // Put var name out
+                // Tracing only supports 1D arrays
+                if (nodep->declp()->arrayRange().ranged()) {
+                    if (arrayindex == -2) {
+                        puts("[i]");
+                    } else if (arrayindex == -1) {
+                        puts("[0]");
+                    } else {
+                        puts("[" + cvtToStr(arrayindex) + "]");
+                    }
+                }
+                if (varp->isSc()) puts(".read()");
+                if (emitTraceIsScUint(nodep)) {
+                    puts(nodep->isQuad() ? ".to_uint64()" : ".to_uint()");
+                } else if (emitTraceIsScBigUint(nodep)) {
+                    puts(".get_raw()");
+                } else if (emitTraceIsScBv(nodep)) {
+                    puts(")");
+                }
                 puts(")");
+            };
+            putVarRef(varrefp);
+            // VN_AS is intentional - if is only for nullptr check
+            if (AstVarRef* const varrefXZp = VN_AS(nodep->valueXZp(), VarRef)) {
+                puts(", ");
+                putVarRef(varrefXZp);
             }
-            puts(")");
         } else {
             puts("(");
             iterateConst(nodep->valuep());
             puts(")");
+            if (AstNodeExpr* const exprp = nodep->valueXZp()) {
+                puts(", ");
+                puts("(");
+                iterateConst(exprp);
+                puts(")");
+            }
         }
     }
 

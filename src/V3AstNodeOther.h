@@ -1913,6 +1913,7 @@ class AstVar final : public AstNode {
     VDirection m_declDirection;  // Declared direction input/output etc
     VLifetime m_lifetime;  // Lifetime
     VRandAttr m_rand;  // Randomizability of this variable (rand, randc, etc)
+    VBasicDTypeKwd m_fourstateOriginalDTypeKwd;
     int m_pinNum = 0;  // For JSON, if non-zero the connection pin number
     bool m_ansi : 1;  // Params or pins declared in the module header, rather than the body
     bool m_declTyped : 1;  // Declared as type (for dedup check)
@@ -1973,6 +1974,7 @@ class AstVar final : public AstNode {
     bool m_processQueue : 1;  // Process queue variable
     bool m_isFourStateComplement : 1;  // Set in four-state xz part
     void init() {
+        m_fourstateOriginalDTypeKwd = VBasicDTypeKwd::UNKNOWN;
         m_ansi = false;
         m_declTyped = false;
         m_tristate = false;
@@ -2135,6 +2137,10 @@ public:
         m_fourStateComplement = varp;
     }
     AstVar* fourStateComplement() const { return m_fourStateComplement; }
+    VBasicDTypeKwd fourstateOriginalDTypeKwd() const { return m_fourstateOriginalDTypeKwd; }
+    void fourstateOriginalDTypeKwd(const VBasicDTypeKwd dtypeKwd) {
+        m_fourstateOriginalDTypeKwd = dtypeKwd;
+    }
     bool isFourStateComplement() const { return m_isFourStateComplement; }
     void attrFileDescr(bool flag) { m_fileDescr = flag; }
     void attrScBv(bool flag) { m_attrScBv = flag; }

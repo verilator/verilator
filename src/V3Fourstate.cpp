@@ -270,6 +270,9 @@ class FourstateVisitor final : public VNVisitor {
                 returnXzp->funcLocal(true);
                 returnValuep->lifetime(VLifetime::AUTOMATIC_IMPLICIT);
                 returnXzp->lifetime(VLifetime::AUTOMATIC_IMPLICIT);
+                returnValuep->trace(varp->isTrace());
+                returnValuep->fourstateOriginalDTypeKwd(varp->dtypep()->basicp()->keyword());
+                returnXzp->fourstateOriginalDTypeKwd(varp->dtypep()->basicp()->keyword());
                 portEndp->addNextHere(returnXzp);
                 portEndp->addNextHere(returnValuep);
                 varp->user1p(returnValuep);
@@ -280,6 +283,7 @@ class FourstateVisitor final : public VNVisitor {
         }
         AstVar* const newXzp = varp->cloneTree(false);
         newXzp->name(newXzp->name() + "__Vxz");
+        newXzp->fourstateOriginalDTypeKwd(varp->dtypep()->basicp()->keyword());
         newXzp->dtypeSetBitUnsized(varp->width(), varp->widthMin(), varp->dtypep()->numeric());
         if (AstNodeExpr* const valuep = VN_CAST(newXzp->valuep(), NodeExpr)) {
             valuep->unlinkFrBack();
@@ -289,6 +293,8 @@ class FourstateVisitor final : public VNVisitor {
         varp->addNextHere(newXzp);
         AstVar* const newValuep = varp->cloneTree(false);
         newValuep->name(newValuep->name() + "__Vvalue");
+        newValuep->trace(varp->isTrace());
+        newValuep->fourstateOriginalDTypeKwd(varp->dtypep()->basicp()->keyword());
         newValuep->dtypeSetBitUnsized(varp->width(), varp->widthMin(), varp->dtypep()->numeric());
         if (AstNodeExpr* const valuep = VN_CAST(newValuep->valuep(), NodeExpr)) {
             valuep->unlinkFrBack();
