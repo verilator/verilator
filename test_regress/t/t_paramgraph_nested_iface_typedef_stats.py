@@ -18,12 +18,12 @@ test.top_filename = "t/t_paramgraph_nested_iface_typedef.v"
 
 test.compile(v_flags2=["--binary --stats"])
 
-test.file_grep(test.stats, r'IfaceCapture, Entries total\s+(\d+)', 18)
+test.file_grep(test.stats, r'IfaceCapture, Entries total\s+(\d+)', 20)
 test.file_grep(test.stats, r'IfaceCapture, Entries template\s+(\d+)', 8)
-test.file_grep(test.stats, r'IfaceCapture, Entries cloned\s+(\d+)', 10)
-test.file_grep(test.stats, r'IfaceCapture, Ledger fixups in V3Param\s+(\d+)', 12)
-test.file_grep(test.stats, r'IfaceCapture, Wrong-clone refs fixed\s+(\d+)', 12)
-test.file_grep(test.stats, r'IfaceCapture, Dead refs fixed in modules\s+(\d+)', 10)
+test.file_grep(test.stats, r'IfaceCapture, Entries cloned\s+(\d+)', 12)
+test.file_grep(test.stats, r'IfaceCapture, Ledger fixups in V3Param\s+(\d+)', 8)
+test.file_grep(test.stats, r'IfaceCapture, Wrong-clone refs fixed\s+(\d+)', 14)
+test.file_grep(test.stats, r'IfaceCapture, Dead refs fixed in modules\s+(\d+)', 4)
 
 test.execute()
 
