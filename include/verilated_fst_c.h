@@ -229,11 +229,22 @@ class VerilatedFstBuffer VL_NOT_FINAL {
     // called from only one place (the full* methods), so always inline them.
     VL_ATTR_ALWINLINE void emitEvent(uint32_t code);
     VL_ATTR_ALWINLINE void emitBit(uint32_t code, CData newval);
+    VL_ATTR_ALWINLINE void emitLogic(uint32_t code, CData newval, CData newvalXZ);
     VL_ATTR_ALWINLINE void emitCData(uint32_t code, CData newval, int bits);
+    VL_ATTR_ALWINLINE void emitFourstateCData(uint32_t code, CData newval, CData newvalXZ,
+                                              int bits);
     VL_ATTR_ALWINLINE void emitSData(uint32_t code, SData newval, int bits);
+    VL_ATTR_ALWINLINE void emitFourstateSData(uint32_t code, SData newval, SData newvalXZ,
+                                              int bits);
     VL_ATTR_ALWINLINE void emitIData(uint32_t code, IData newval, int bits);
+    VL_ATTR_ALWINLINE void emitFourstateIData(uint32_t code, IData newval, IData newvalXZ,
+                                              int bits);
     VL_ATTR_ALWINLINE void emitQData(uint32_t code, QData newval, int bits);
+    VL_ATTR_ALWINLINE void emitFourstateQData(uint32_t code, QData newval, QData newvalXZ,
+                                              int bits);
     VL_ATTR_ALWINLINE void emitWData(uint32_t code, const WData* newvalp, int bits);
+    VL_ATTR_ALWINLINE void emitFourstateWData(uint32_t code, const WData* newvalp,
+                                              const WData* newvalXZp, int bits);
     VL_ATTR_ALWINLINE void emitDouble(uint32_t code, double newval);
 };
 
