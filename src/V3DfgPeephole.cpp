@@ -170,22 +170,21 @@ class V3DfgPeephole final : public DfgVisitor {
     }
 
     void deleteVertex(DfgVertex* vtxp) {
-        // Add all sources to the work list
-        addSourcesToWorkList(vtxp);
+        // Inputs should have been reset
+        UASSERT_OBJ(vtxp->is<DfgVertexVar>() || !vtxp->nInputs(), vtxp,
+                    "Operation Vertx should not have sources when being deleted");
+        // Should not have sinks
+        UASSERT_OBJ(!vtxp->hasSinks(), vtxp, "Should not delete used vertex");
         // If in work list then we can't delete it just yet (as we can't remove from the middle of
         // the work list), but it will be deleted when the work list is processed.
         if (m_workList.contains(*vtxp)) return;
         // Otherwise we can delete it now.
-        // Remove from cache
-        m_cache.invalidateByValue(vtxp);
         // This pass only removes variables that are either not driven in this graph,
         // or are not observable outside the graph. If there is also no external write
         // to the variable and no references in other graph then delete the Ast var too.
         const DfgVertexVar* const varp = vtxp->cast<DfgVertexVar>();
         AstNode* const nodep
             = varp && !varp->isVolatile() && !varp->hasDfgRefs() ? varp->nodep() : nullptr;
-        // Should not have sinks
-        UASSERT_OBJ(!vtxp->hasSinks(), vtxp, "Should not delete used vertex");
         // Delete vertex and Ast variable if any
         VL_DO_DANGLING(vtxp->unlinkDelete(m_dfg), vtxp);
         if (nodep) VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
@@ -206,16 +205,30 @@ class V3DfgPeephole final : public DfgVisitor {
         addSinksToWorkList(vtxp);
         // Add replacement to the work list
         addToWorkList(replacementp);
-        // Replace vertex with the replacement
+        // Add all sources to the work list
+        addSourcesToWorkList(vtxp);
+        // Remove this and sinks from cache
+        m_cache.invalidateByValue(vtxp);
         vtxp->foreachSink([&](DfgVertex& sink) {
             m_cache.invalidateByValue(&sink);
             return false;
         });
+        // Replace vertex with the replacement
         vtxp->replaceWith(replacementp);
-        replacementp->foreachSink([&](DfgVertex& sink) {
-            m_cache.cache(&sink);
-            return false;
-        });
+        // Unlink and reset all inputs of the replaced vertex so it doesn't get iterated again
+        vtxp->resetInputs();
+        // Re-cache all sinks of the replacement, remove duplicates
+        while (true) {
+            DfgVertex* sinkp = nullptr;
+            DfgVertex* samep = nullptr;
+            replacementp->foreachSink([&](DfgVertex& sink) -> bool {
+                sinkp = &sink;
+                samep = m_cache.cache(&sink);
+                return samep;
+            });
+            if (!samep) break;
+            replace(sinkp, samep);
+        }
         // Vertex is now unused, so delete it
         deleteVertex(vtxp);
     }
@@ -1855,6 +1868,7 @@ class V3DfgPeephole final : public DfgVisitor {
         // If undriven, or driven from another var, it is completely redundant.
         if (!vtxp->srcp() || vtxp->srcp()->is<DfgVertexVar>()) {
             APPLYING(REMOVE_VAR) {
+                addSourcesToWorkList(vtxp);
                 deleteVertex(vtxp);
                 return;
             }
@@ -1873,6 +1887,7 @@ class V3DfgPeephole final : public DfgVisitor {
         });
         if (!keep) {
             APPLYING(REMOVE_VAR) {
+                addSourcesToWorkList(vtxp);
                 deleteVertex(vtxp);
                 return;
             }
@@ -1899,6 +1914,11 @@ class V3DfgPeephole final : public DfgVisitor {
         m_workList.foreach([&](DfgVertex& vtx) {
             // Remove unused operations as we go. Some vars may be removed in the visit method.
             if (!vtx.hasSinks() && !vtx.is<DfgVertexVar>()) {
+                if (vtx.nInputs()) {
+                    addSourcesToWorkList(&vtx);
+                    m_cache.invalidateByValue(&vtx);
+                    vtx.resetInputs();
+                }
                 deleteVertex(&vtx);
                 return;
             }
