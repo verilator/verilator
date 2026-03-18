@@ -343,12 +343,6 @@ class TimingSuspendableVisitor final : public VNVisitor {
         }
     }
     void visit(AstNodeCCall* nodep) override {
-        // Skip automatic covergroup sampling calls (marked with user3==1)
-        if (nodep->user3()) {
-            iterateChildren(nodep);
-            return;
-        }
-
         AstCFunc* funcp = nodep->funcp();
         if (!funcp) {
             iterateChildren(nodep);
