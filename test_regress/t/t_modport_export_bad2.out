@@ -1,8 +1,5 @@
-%Error: t/t_modport_export_bad2.v:20:8: No matching export prototype found in interface bus_if for task 'send'
+%Error: t/t_modport_export_bad2.v:20:8: No matching export prototype found in interface bus_if for task 'send' (IEEE 1800-2023 25.7)
    20 |   task port.send(input logic [7:0] val);
       |        ^~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: Internal Error: t/t_modport_export_bad2.v:20:8: ../V3LinkDot.cpp:#: Module/etc never assigned a symbol entry?
-   20 |   task port.send(input logic [7:0] val);
-      |        ^~~~
-                        ... This fatal error may be caused by the earlier error(s); resolve those first.
+%Error: Exiting due to

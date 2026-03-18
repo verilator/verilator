@@ -1498,7 +1498,8 @@ class LinkDotFindVisitor final : public VNVisitor {
         // Look up the interface port variable in the module's symbol table
         VSymEnt* const portSymp = m_modSymp->findIdFallback(portName);
         if (!portSymp) {
-            nodep->v3error("Interface port not found for out-of-block definition: " << portName);
+            nodep->v3error("Interface port not found for out-of-block definition: "
+                           << portName << " (IEEE 1800-2023 25.7)");
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
@@ -1516,7 +1517,8 @@ class LinkDotFindVisitor final : public VNVisitor {
             ifaceRefDtp = VN_CAST(portp->childDTypep(), IfaceRefDType);
         }
         if (!ifaceRefDtp) {
-            nodep->v3error("Out-of-block definition port is not an interface port: " << portName);
+            nodep->v3error("Out-of-block definition port is not an interface port: "
+                           << portName << " (IEEE 1800-2023 25.7)");
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
@@ -1541,7 +1543,8 @@ class LinkDotFindVisitor final : public VNVisitor {
         }
         if (!protoTaskp) {
             nodep->v3error("No matching export prototype found in interface "
-                           << ifaceName << " for task " << nodep->prettyNameQ());
+                           << ifaceName << " for task " << nodep->prettyNameQ()
+                           << " (IEEE 1800-2023 25.7)");
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
