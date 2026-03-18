@@ -963,7 +963,6 @@ string V3Number::emitC() const VL_MT_STABLE {
         // Note: putsQuoted does not track indentation, so we use this instead
         return '"' + quoted + "\"s";
     } else if (words() > 2) {
-        UASSERT(!isFourState(), "Not implemented");
         // Note the double {{ initializer. The first { starts the initializer of the VlWide,
         // and the second starts the initializer of m_storage within the VlWide.
         // Alternative is to have constructor with std::initializer_list

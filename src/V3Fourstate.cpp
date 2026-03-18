@@ -1,6 +1,6 @@
 #include "V3PchAstNoMT.h"
 
-#include "V3Quadstate.h"
+#include "V3Fourstate.h"
 
 #include "V3UniqueNames.h"
 
@@ -31,7 +31,7 @@ struct ReducerTrait<
                                                                 std::declval<FourStatePair>())),
                                      FourStatePair>::value>> : std::true_type {};
 
-class QuadstateVisitor final : public VNVisitor {
+class FourstateVisitor final : public VNVisitor {
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
     // Node status
@@ -199,7 +199,7 @@ class QuadstateVisitor final : public VNVisitor {
     }
 
     struct TmpVarsReleaser {
-        QuadstateVisitor& visitor;
+        FourstateVisitor& visitor;
         ~TmpVarsReleaser() {
             for (AstVar* const varp : visitor.m_tmpVarpsInUse) {
                 visitor.m_tmpVarps[varp->dtypep()->numeric().isSigned() ? 1 : 0][varp->width()]
@@ -727,20 +727,20 @@ class QuadstateVisitor final : public VNVisitor {
     void visit(AstNode* const nodep) override { iterateChildren(nodep); }
 
 public:
-    explicit QuadstateVisitor(AstNetlist* const netlistp)
+    explicit FourstateVisitor(AstNetlist* const netlistp)
         : m_tmpNames{"__VfourStateTmp"} {
         iterate(netlistp);
         triorTriandReduce(m_assignWToTriand, triandReducer);
         triorTriandReduce(m_assignWToTrior, triorReducer);
         triorTriandReduce(m_assignWToWire, triReducer);
     }
-    ~QuadstateVisitor() override {
+    ~FourstateVisitor() override {
         for (AstVar* const varp : m_varpsToRemove) varp->unlinkFrBack()->deleteTree();
     }
 };
 
-void V3Quadstate::quadstateAll(AstNetlist* nodep) {
+void V3Fourstate::fourstateAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    { QuadstateVisitor{nodep}; }
-    V3Global::dumpCheckGlobalTree("quadstate", 0, dumpTreeEitherLevel() >= 6);
+    { FourstateVisitor{nodep}; }
+    V3Global::dumpCheckGlobalTree("fourstate", 0, dumpTreeEitherLevel() >= 6);
 }
