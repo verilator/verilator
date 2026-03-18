@@ -724,8 +724,10 @@ class CovergroupSamplingVisitor final : public VNVisitor {
         AstActive* const activep = m_namer.getActive(fl, senTreep);
         VL_DO_DANGLING(senTreep->deleteTree(), senTreep);
 
-        // Add the CMethodCall statement to the active domain
-        activep->addStmtsp(cmethodCallp->makeStmt());
+        // Wrap the sample() call in an AstAlways so SchedPartition handles it
+        // via visit(AstNodeProcedure*) like any other clocked always block.
+        activep->addStmtsp(
+            new AstAlways{fl, VAlwaysKwd::ALWAYS_FF, nullptr, cmethodCallp->makeStmt()});
 
         UINFO(4, "  Added automatic sample() call for covergroup " << varp->name() << endl);
     }

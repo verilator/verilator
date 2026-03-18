@@ -1151,9 +1151,10 @@ class LinkParseVisitor final : public VNVisitor {
             }
         }
 
-        // IEEE: option
+        // IEEE: option / type_option members allow external access (cg_inst.option.X)
+        // and require std:: types; std:: is kept because setUsesStdPackage() is called
+        // at parse time for every covergroup declaration.
         {
-            v3Global.setUsesStdPackage();
             AstVar* const varp
                 = new AstVar{nodep->fileline(), VVarType::MEMBER, "option", VFlagChildDType{},
                              new AstRefDType{nodep->fileline(), "vl_covergroup_options_t",
@@ -1162,12 +1163,10 @@ class LinkParseVisitor final : public VNVisitor {
                                              nullptr}};
             nodep->addMembersp(varp);
         }
-
-        // IEEE: type_option
         {
-            v3Global.setUsesStdPackage();
             AstVar* const varp
-                = new AstVar{nodep->fileline(), VVarType::MEMBER, "type_option", VFlagChildDType{},
+                = new AstVar{nodep->fileline(), VVarType::MEMBER, "type_option",
+                             VFlagChildDType{},
                              new AstRefDType{nodep->fileline(), "vl_covergroup_type_options_t",
                                              new AstClassOrPackageRef{nodep->fileline(), "std",
                                                                       nullptr, nullptr},
