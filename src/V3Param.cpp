@@ -992,9 +992,7 @@ class ParamProcessor final {
                     }
                     // Register clone entry in ledger (no AST mutation).
                     if (AstRefDType* const clonedRefp = entry.refp->clonep()) {
-                        // Use the unique specialized module name as cloneCellPath.
-                        // cloneCellp->name() is NOT unique when the same module is
-                        // cloned multiple times from the same cell (e.g. generate loop).
+                        // Use newname (unique specialized module name) as cloneCellPath.
                         const string cloneCP = newname;
                         const V3LinkDotIfaceCapture::TemplateKey tkey{
                             entry.ownerModp ? entry.ownerModp->name() : "", entry.refp->name(),
@@ -1796,13 +1794,8 @@ public:
             if (!entry.refp || entry.cloneCellPath.empty()) return;
             if (entry.cellPath != cellName) return;
             AstNodeModule* const ownerp = V3LinkDotIfaceCapture::findOwnerModule(entry.refp);
-            // Identity check: only retarget REFDTYPEs that actually live
-            // inside parentModp.  Multiple clones share origName so name
-            // matching alone would let one clone overwrite another's refs.
-            // When the REFDTYPE lives in the type table (e.g. as a struct
-            // member dtype), findOwnerModule returns null.  Fall back to
-            // matching cloneCellPath (set by propagateClone to the
-            // specialized module name) against parentModp->name().
+            // Only retarget REFDTYPEs owned by parentModp.
+            // Null owner (type-table dtypes) falls back to cloneCellPath match.
             if (ownerp != parentModp
                 && !(ownerp == nullptr && entry.cloneCellPath == parentModp->name())) {
                 return;
@@ -2115,10 +2108,8 @@ class ParamVisitor final : public VNVisitor {
                     // Add to the hierarchy registry
                     m_state.m_parentps[newModp].insert(modp);
 
-                    // Deparameterize nested interface cells within the
-                    // clone and constify their params so struct members
-                    // referencing nested types have correct widths when
-                    // sibling module cells evaluate $bits().
+                    // Eagerly specialize nested iface cells so their types
+                    // have correct widths before sibling module cells run.
                     if (VN_IS(newModp, Iface) && newModp != srcModp) {
                         specializeNestedIfaceCells(newModp);
                     }
@@ -2247,11 +2238,7 @@ class ParamVisitor final : public VNVisitor {
         });
     }
 
-    // Deparameterize nested interface cells within a specialized interface
-    // clone and constify just the nested clone's params so their types have
-    // correct widths.  This is intentionally targeted: it does NOT iterate
-    // the outer clone's full body (which would prematurely constify params
-    // that depend on other not-yet-resolved interfaces).
+    // Deparameterize and constify nested interface cells within ifaceModp.
     void specializeNestedIfaceCells(AstNodeModule* ifaceModp) {
         for (AstNode* stmtp = ifaceModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             AstCell* const nestedCellp = VN_CAST(stmtp, Cell);
@@ -2263,10 +2250,7 @@ class ParamVisitor final : public VNVisitor {
             if (AstNodeModule* const nestedNewModp = m_processor.nodeDeparam(
                     nestedCellp, nestedSrcModp, ifaceModp, ifaceModp->someInstanceName())) {
                 if (nestedNewModp != nestedSrcModp) {
-                    // Constify just the nested clone's params so its
-                    // BASICDTYPEs have correct widths.  Without this,
-                    // struct members referencing nested-interface types
-                    // retain template default widths.
+                    // Constify the nested clone's params so its types have correct widths.
                     for (AstNode* sp = nestedNewModp->stmtsp(); sp; sp = sp->nextp()) {
                         if (AstVar* const varp = VN_CAST(sp, Var)) {
                             if (varp->isParam() && varp->valuep()) {
@@ -2274,12 +2258,10 @@ class ParamVisitor final : public VNVisitor {
                             }
                         }
                     }
-                    // Retarget REFDTYPEs in the outer clone that still
-                    // reference the template's nested types.
+                    // Retarget REFDTYPEs in the outer clone to the nested clone's types.
                     if (V3LinkDotIfaceCapture::enabled()) {
                         m_processor.retargetIfaceRefs(ifaceModp, nestedCellp->name());
                     }
-                    // Recursively handle deeper nesting
                     specializeNestedIfaceCells(nestedNewModp);
                 }
             }
@@ -2312,23 +2294,18 @@ class ParamVisitor final : public VNVisitor {
         m_strings.emplace_back(m_generateHierName);
         nodep->user2p(&m_strings.back());
 
-        // For interface cells with parameters, deparameterize early so that
-        // interface types are available when visit(AstVar*) constifies
-        // lparams during iterateChildren below.
+        // Deparameterize iface cells early so types are available for lparams.
         if (isIface && VN_CAST(nodep, Cell) && VN_CAST(nodep, Cell)->paramsp()) {
             AstCell* const cellp = VN_CAST(nodep, Cell);
             if (!cellParamsReferenceIfacePorts(cellp)) {
                 AstNodeModule* const srcModp = cellp->modp();
                 AstNodeModule* const newModp
                     = m_processor.nodeDeparam(cellp, srcModp, m_modp, m_modp->someInstanceName());
-                // Retarget REFDTYPEs in the parent module that still
-                // reference the template interface's types.
+                // Retarget template REFDTYPEs to the clone's types.
                 if (V3LinkDotIfaceCapture::enabled() && cellp->modp() != srcModp) {
                     m_processor.retargetIfaceRefs(m_modp, cellp->name());
                 }
-                // Deparameterize nested interface cells within the clone
-                // and constify their params so struct members referencing
-                // nested types have correct widths when $bits() runs.
+                // Specialize nested iface cells so their types are correct.
                 if (newModp && newModp != srcModp) {
                     specializeNestedIfaceCells(newModp);
                 }
