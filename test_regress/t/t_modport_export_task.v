@@ -24,13 +24,13 @@ interface bus_if;
 endinterface
 
 module driver(bus_if.provider port);
-  // Out-of-block task definition for exported 'send' (IEEE 25.8)
   task port.send(input logic [7:0] val);
     port.data = val;
+    port.result = val + 8'h01;
   endtask
 
-  // Out-of-block task definition for exported 'accumulate'
   task port.accumulate(input logic [7:0] a, input logic [7:0] b);
+    port.data = a;
     port.result = a + b;
   endtask
 endmodule
@@ -40,24 +40,36 @@ module t;
   driver drv(.port(bif.provider));
 
   initial begin
-    // Test 1: simple value passing via export task
+    // Test 1: send -- multiple statements in task body
     bif.consumer.send(8'hAB);
     if (bif.data !== 8'hAB) begin
-      $display("%%Error: Test 1 FAIL: expected AB, got %0h", bif.data);
+      $display("%%Error: Test 1 FAIL: data expected AB, got %0h", bif.data);
+      $stop;
+    end
+    if (bif.result !== 8'hAC) begin
+      $display("%%Error: Test 1 FAIL: result expected AC, got %0h", bif.result);
       $stop;
     end
 
-    // Test 2: second call with different value
+    // Test 2: send again with different value
     bif.consumer.send(8'h42);
     if (bif.data !== 8'h42) begin
-      $display("%%Error: Test 2 FAIL: expected 42, got %0h", bif.data);
+      $display("%%Error: Test 2 FAIL: data expected 42, got %0h", bif.data);
+      $stop;
+    end
+    if (bif.result !== 8'h43) begin
+      $display("%%Error: Test 2 FAIL: result expected 43, got %0h", bif.result);
       $stop;
     end
 
-    // Test 3: accumulate task with two arguments
+    // Test 3: accumulate -- multiple statements + two arguments
     bif.consumer.accumulate(8'h10, 8'h20);
+    if (bif.data !== 8'h10) begin
+      $display("%%Error: Test 3 FAIL: data expected 10, got %0h", bif.data);
+      $stop;
+    end
     if (bif.result !== 8'h30) begin
-      $display("%%Error: Test 3 FAIL: expected 30, got %0h", bif.result);
+      $display("%%Error: Test 3 FAIL: result expected 30, got %0h", bif.result);
       $stop;
     end
 

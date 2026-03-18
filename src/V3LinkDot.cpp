@@ -1498,8 +1498,8 @@ class LinkDotFindVisitor final : public VNVisitor {
         // Look up the interface port variable in the module's symbol table
         VSymEnt* const portSymp = m_modSymp->findIdFallback(portName);
         if (!portSymp) {
-            nodep->v3error("Interface port not found for out-of-block definition: "
-                           << portName << " (IEEE 1800-2023 25.7)");
+            nodep->v3error("Interface port not found for out-of-block definition: '"
+                           << portName << "' (IEEE 1800-2023 25.7)");
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
@@ -1517,8 +1517,8 @@ class LinkDotFindVisitor final : public VNVisitor {
             ifaceRefDtp = VN_CAST(portp->childDTypep(), IfaceRefDType);
         }
         if (!ifaceRefDtp) {
-            nodep->v3error("Out-of-block definition port is not an interface port: "
-                           << portName << " (IEEE 1800-2023 25.7)");
+            nodep->v3error("Out-of-block definition port is not an interface port: '"
+                           << portName << "' (IEEE 1800-2023 25.7)");
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
@@ -1562,7 +1562,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             }
             // Clone this statement and rewrite port references
             AstNode* const newStmtp = stmtp->cloneTree(false);
-            rewriteIfacePortRefs(newStmtp, portName);
+            rewriteIfacePortRefsSingle(newStmtp, portName);
             protoTaskp->addStmtsp(newStmtp);
             stmtp = nextp;
         }
@@ -1575,45 +1575,25 @@ class LinkDotFindVisitor final : public VNVisitor {
 
     // Rewrite AstDot nodes where lhsp is AstParseRef with the port name
     // to just the rhsp (stripping the port prefix).
-    // Processes the node and all its next-chain siblings recursively.
-    static void rewriteIfacePortRefs(AstNode* nodep, const string& portName) {
-        // Process the next-chain: iterate all siblings
-        for (AstNode* curp = nodep; curp;) {
-            AstNode* const nextp = curp->nextp();
-            rewriteIfacePortRefsSingle(curp, portName);
-            curp = nextp;
-        }
-    }
-
     static void rewriteIfacePortRefsSingle(AstNode* nodep, const string& portName) {
         if (!nodep) return;
-        // Check if this is a Dot with lhs matching portName
+        // Check if this is a non-colon Dot with lhs matching portName
         if (AstDot* const dotp = VN_CAST(nodep, Dot)) {
             if (!dotp->colon()) {
-                if (const AstParseRef* const lhsRefp = VN_CAST(dotp->lhsp(), ParseRef)) {
-                    if (lhsRefp->name() == portName) {
-                        UINFO(5, "   rewriteIfacePortRefs: stripping port prefix from " << dotp
-                                                                                        << endl);
-                        // Replace the dot with just the rhs
-                        AstNode* const rhsp = dotp->rhsp()->unlinkFrBack();
-                        dotp->replaceWith(rhsp);
-                        VL_DO_DANGLING(dotp->deleteTree(), dotp);
-                        // Continue rewriting the replacement node
-                        rewriteIfacePortRefsSingle(rhsp, portName);
-                        return;
-                    }
+                const AstParseRef* const lhsRefp = VN_CAST(dotp->lhsp(), ParseRef);
+                if (lhsRefp && lhsRefp->name() == portName) {
+                    UINFO(5, "   rewriteIfacePortRefs: stripping port prefix from "
+                                 << dotp << endl);
+                    AstNode* const rhsp = dotp->rhsp()->unlinkFrBack();
+                    dotp->replaceWith(rhsp);
+                    VL_DO_DANGLING(dotp->deleteTree(), dotp);
+                    rewriteIfacePortRefsSingle(rhsp, portName);
+                    return;
                 }
             }
         }
-        // Process op1-op4 children (each may be a next-chain list)
-        for (int op = 1; op <= 4; ++op) {
-            AstNode* childp = nullptr;
-            switch (op) {
-            case 1: childp = nodep->op1p(); break;
-            case 2: childp = nodep->op2p(); break;
-            case 3: childp = nodep->op3p(); break;
-            case 4: childp = nodep->op4p(); break;
-            }
+        // Recurse into all children
+        for (AstNode* childp : {nodep->op1p(), nodep->op2p(), nodep->op3p(), nodep->op4p()}) {
             while (childp) {
                 AstNode* const nextp = childp->nextp();
                 rewriteIfacePortRefsSingle(childp, portName);

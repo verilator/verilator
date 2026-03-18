@@ -1,5 +1,0 @@
-%Error: t/t_modport_export_bad3.v:20:8: Interface port not found for out-of-block definition: nonexistent (IEEE 1800-2023 25.7)
-   20 |   task nonexistent.send(input logic [7:0] val);
-      |        ^~~~~~~~~~~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: Exiting due to
