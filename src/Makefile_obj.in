@@ -281,6 +281,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Expand.o \
   V3Force.o \
   V3Fork.o \
+  V3Fourstate.o \
   V3Gate.o \
   V3HierBlock.o \
   V3Inline.o \
@@ -315,7 +316,6 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Premit.o \
   V3ProtectLib.o \
   V3RandSequence.o \
-  V3Quadstate.o \
   V3Randomize.o \
   V3Reloop.o \
   V3Reorder.o \

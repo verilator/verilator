@@ -400,6 +400,7 @@ detailed descriptions of these arguments.
      -FI <file>                 Force include of a file
     --flatten                   Force inlining of all modules, tasks and functions
     --fourstate                 Enable fourstate logic
+    --no-fourstate              Disable fourstate logic
     --func-recursion-depth <value>  Maximum recursive constant function depth
     --future0 <option>          Ignore an option for compatibility
     --future1 <option>          Ignore an option with argument for compatibility

@@ -55,6 +55,7 @@
 #include "V3File.h"
 #include "V3Force.h"
 #include "V3Fork.h"
+#include "V3Fourstate.h"
 #include "V3FuncOpt.h"
 #include "V3Gate.h"
 #include "V3Global.h"
@@ -86,7 +87,6 @@
 #include "V3PreShell.h"
 #include "V3Premit.h"
 #include "V3ProtectLib.h"
-#include "V3Quadstate.h"
 #include "V3RandSequence.h"
 #include "V3Randomize.h"
 #include "V3Reloop.h"
@@ -292,7 +292,7 @@ static void process() {
             // No more AstGenBlocks after this
             V3Begin::debeginAll(v3Global.rootp());  // Flatten cell names, before inliner
 
-            if (v3Global.opt.fourstate()) V3Quadstate::quadstateAll(v3Global.rootp());
+            if (v3Global.opt.fourstate()) V3Fourstate::fourstateAll(v3Global.rootp());
             // Expand inouts, stage 2
             // Also simplify pin connections to always be AssignWs in prep for V3Unknown
             V3Tristate::tristateAll(v3Global.rootp());

@@ -101,6 +101,7 @@ set(HEADERS
     V3FileLine.h
     V3Force.h
     V3Fork.h
+    V3Fourstate.h
     V3FuncOpt.h
     V3FunctionTraits.h
     V3Gate.h
@@ -160,7 +161,6 @@ set(HEADERS
     V3Premit.h
     V3ProtectLib.h
     V3RandSequence.h
-    V3Quadstate.h
     V3Randomize.h
     V3Reloop.h
     V3Reorder.h
@@ -279,6 +279,7 @@ set(COMMON_SOURCES
     V3FileLine.cpp
     V3Force.cpp
     V3Fork.cpp
+    V3Fourstate.cpp
     V3FuncOpt.cpp
     V3Gate.cpp
     V3Global.cpp
@@ -331,7 +332,6 @@ set(COMMON_SOURCES
     V3Premit.cpp
     V3ProtectLib.cpp
     V3RandSequence.cpp
-    V3Quadstate.cpp
     V3Randomize.cpp
     V3Reloop.cpp
     V3Reorder.cpp
