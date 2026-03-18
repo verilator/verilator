@@ -4,6 +4,8 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0)
+
 interface bus_if;
   logic [7:0] data;
   logic [7:0] result;
@@ -42,36 +44,18 @@ module t;
   initial begin
     // Test 1: send -- multiple statements in task body
     bif.consumer.send(8'hAB);
-    if (bif.data !== 8'hAB) begin
-      $display("%%Error: Test 1 FAIL: data expected AB, got %0h", bif.data);
-      $stop;
-    end
-    if (bif.result !== 8'hAC) begin
-      $display("%%Error: Test 1 FAIL: result expected AC, got %0h", bif.result);
-      $stop;
-    end
+    `checkh(bif.data, 8'hAB);
+    `checkh(bif.result, 8'hAC);
 
     // Test 2: send again with different value
     bif.consumer.send(8'h42);
-    if (bif.data !== 8'h42) begin
-      $display("%%Error: Test 2 FAIL: data expected 42, got %0h", bif.data);
-      $stop;
-    end
-    if (bif.result !== 8'h43) begin
-      $display("%%Error: Test 2 FAIL: result expected 43, got %0h", bif.result);
-      $stop;
-    end
+    `checkh(bif.data, 8'h42);
+    `checkh(bif.result, 8'h43);
 
     // Test 3: accumulate -- multiple statements + two arguments
     bif.consumer.accumulate(8'h10, 8'h20);
-    if (bif.data !== 8'h10) begin
-      $display("%%Error: Test 3 FAIL: data expected 10, got %0h", bif.data);
-      $stop;
-    end
-    if (bif.result !== 8'h30) begin
-      $display("%%Error: Test 3 FAIL: result expected 30, got %0h", bif.result);
-      $stop;
-    end
+    `checkh(bif.data, 8'h10);
+    `checkh(bif.result, 8'h30);
 
     $write("*-* All Finished *-*\n");
     $finish;
