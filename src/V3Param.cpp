@@ -2306,9 +2306,7 @@ class ParamVisitor final : public VNVisitor {
                     m_processor.retargetIfaceRefs(m_modp, cellp->name());
                 }
                 // Specialize nested iface cells so their types are correct.
-                if (newModp && newModp != srcModp) {
-                    specializeNestedIfaceCells(newModp);
-                }
+                if (newModp && newModp != srcModp) { specializeNestedIfaceCells(newModp); }
             }
         }
 
