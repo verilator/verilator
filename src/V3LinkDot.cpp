@@ -1489,7 +1489,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             }
         }
     }
-    // Handle out-of-block interface method definition (IEEE 1800-2017 25.8)
+    // Handle out-of-block interface method definition (IEEE 1800-2023 25.7)
     // Move task body from module into the interface's prototype task,
     // rewriting port-prefixed references in the body.
     void moveIfaceExportBody(AstNodeFTask* nodep) {
@@ -2797,7 +2797,6 @@ class LinkDotIfaceVisitor final : public VNVisitor {
     void visit(AstModportFTaskRef* nodep) override {  // IfaceVisitor::
         UINFO(5, "   fif: " << nodep);
         iterateChildren(nodep);
-        // Export is now supported (IEEE 1800-2017 25.4)
         VSymEnt* const symp = m_curSymp->findIdFallback(nodep->name());
         if (!symp) {
             nodep->v3error("Modport item not found: " << nodep->prettyNameQ());

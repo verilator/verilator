@@ -1,8 +1,5 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// Test modport export task with prototype, out-of-block definition,
-// and cross-module call via import (IEEE 1800-2017 25.4, 25.8).
-//
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
