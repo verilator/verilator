@@ -452,7 +452,8 @@ public:
             ret->m_varDatap = (static_cast<uint8_t*>(ret->m_varDatap))
                               + entSize() * chunkSize * (index - get_range()->low());
         else
-            ret->m_bitOffset += chunkSize * (index - get_range()->low());
+            // Packed arrays are stored left-to-right, not high index to low index
+            ret->m_bitOffset += chunkSize * std::abs(index - get_range()->right());
 
         return ret;
     }
