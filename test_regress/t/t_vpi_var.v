@@ -48,9 +48,9 @@ extern "C" int mon_check();
   reg [7:0]       mem_2d[3:0][7:0]  /*verilator public_flat_rw */;  // Descending indices
   // verilator lint_off ASCRANGE
   reg [0:95]      mem_3d[0:1][1:0][0:1]  /*verilator public_flat_rw */;  // Mixed: asc, desc, asc
-  // verilator lint_on ASCRANGE
 
-  reg [15:0] [7:0] multi_packed[2:0]  /*verilator public_flat_rw */;
+  reg [0:15][0:3][7:0] multi_packed[2:0]  /*verilator public_flat_rw */;
+  // verilator lint_on ASCRANGE
   reg             unpacked_only[7:0];
 
   reg [7:0]       text_byte    /*verilator public_flat_rw @(posedge clk) */;
@@ -125,7 +125,9 @@ extern "C" int mon_check();
 
     for (int i = 0; i < 3; i++) begin
       for (int j = 0; j < 16; j++) begin
-        multi_packed[i][j] = 8'((i * 16) + j);
+        for (int k = 0; k < 4; k++) begin
+          multi_packed[i][j][k] = 8'(((i * 64) + (j * 4) + k));
+        end
       end
     end
 

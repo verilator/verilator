@@ -1288,28 +1288,37 @@ int _mon_check_multi_index() {
         CHECK_RESULT_Z(vh_oob);
     }
 
-    // Multiple packed dimensions: multi_packed is [15:0][7:0] multi_packed[2:0]
+    // Multiple packed dimensions: multi_packed is [0:15][0:3][7:0] multi_packed[2:0]
     {
         TestVpiHandle vh1 = vpi_handle_by_name((PLI_BYTE8*)"t.multi_packed[1]", nullptr);
         CHECK_RESULT_NZ(vh1);
-        CHECK_RESULT(vpi_get(vpiSize, vh1), 128);  // 16*8
+        CHECK_RESULT(vpi_get(vpiSize, vh1), 512);  // 16*8*4
+
+        // Index into first packed dim
+        TestVpiHandle vh2 = vpi_handle_by_index(vh1, 2);
+        CHECK_RESULT_NZ(vh2);
+        CHECK_RESULT(vpi_get(vpiSize, vh2), 32);  // 8*4
+
+        // Index into second packed dim -> 8-bit word
+        TestVpiHandle vh3 = vpi_handle_by_index(vh2, 2);
+        CHECK_RESULT_NZ(vh3);
+        CHECK_RESULT(vpi_get(vpiSize, vh3), 8);
+        vpi_get_value(vh3, &v);
+        CHECK_RESULT(v.value.integer, 74);  // 1*64 + 2*4 + 2
+
+        // Further into bit level
+        TestVpiHandle vh4 = vpi_handle_by_index(vh3, 3);
+        CHECK_RESULT_NZ(vh4);
+        CHECK_RESULT(vpi_get(vpiSize, vh4), 1);
 
         // Write last 32 bits of the packed vector in the specified unpacked dimension,
-        // i.e. the four 8-bit elements in multi_packed[1][3:0]
+        // i.e. the four 8-bit elements in multi_packed[1][15][0:3]
         v.value.integer = 0xAABBCCDD;
         vpi_put_value(vh1, &v, nullptr, vpiNoDelay);
 
-        // Index into first packed dim -> 8-bit sub-word
-        TestVpiHandle vh2 = vpi_handle_by_index(vh1, 2);
-        CHECK_RESULT_NZ(vh2);
-        CHECK_RESULT(vpi_get(vpiSize, vh2), 8);
-        // Further into bit level
-        TestVpiHandle vh3 = vpi_handle_by_index(vh2, 3);
-        CHECK_RESULT_NZ(vh3);
-        CHECK_RESULT(vpi_get(vpiSize, vh3), 1);
-
-        // Index into the last bits of the packed array and check value
-        TestVpiHandle vh_last = vpi_handle_by_index(vh1, 0);
+        // Index into the last element of the packed array and check value
+        TestVpiHandle vh_last
+            = vpi_handle_by_name((PLI_BYTE8*)"t.multi_packed[1][15][3]", nullptr);
         CHECK_RESULT_NZ(vh_last);
         vpi_get_value(vh_last, &v);
         CHECK_RESULT(v.value.integer, 0xDD);

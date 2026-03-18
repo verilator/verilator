@@ -376,13 +376,14 @@ public:
         m_entSize = varp->entSize();
         m_varDatap = varp->datap();
     }
-    explicit VerilatedVpioVar(const VerilatedVpioVar* varp)
-        : VerilatedVpioVarBase{varp} {
-        if (varp) {
-            m_entSize = varp->m_entSize;
-            m_varDatap = varp->m_varDatap;
-            m_index = varp->m_index;
-            m_partselBits = varp->m_partselBits;
+    explicit VerilatedVpioVar(const VerilatedVpioVar* vop)
+        : VerilatedVpioVarBase{vop} {
+        if (vop) {
+            m_entSize = vop->m_entSize;
+            m_varDatap = vop->m_varDatap;
+            m_index = vop->m_index;
+            m_partselBits = vop->m_partselBits;
+            m_bitOffset = vop->m_bitOffset;
             // Not copying m_prevDatap, must be nullptr
         }
     }
@@ -451,7 +452,8 @@ public:
             ret->m_varDatap = (static_cast<uint8_t*>(ret->m_varDatap))
                               + entSize() * chunkSize * (index - get_range()->low());
         else
-            ret->m_bitOffset += chunkSize * (index - get_range()->low());
+            // Packed arrays are stored left-to-right, not high index to low index
+            ret->m_bitOffset += chunkSize * std::abs(index - get_range()->right());
 
         return ret;
     }
