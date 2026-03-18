@@ -402,10 +402,33 @@ void VerilatedFstBuffer::emitBit(uint32_t code, CData newval) {
 }
 
 VL_ATTR_ALWINLINE
+void VerilatedFstBuffer::emitLogic(uint32_t code, CData newval, CData newvalXZ) {
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););
+    m_owner.emitTimeChangeMaybe();
+    fstWriterEmitValueChange(m_fst, m_symbolp[code],
+                             newval ? (newvalXZ ? "x" : "1") : (newvalXZ ? "z" : "0"));
+}
+
+VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitCData(uint32_t code, CData newval, int bits) {
     char buf[VL_BYTESIZE];
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtCDataToStr(buf, newval << (VL_BYTESIZE - bits));
+    m_owner.emitTimeChangeMaybe();
+    fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedFstBuffer::emitFourstateCData(uint32_t code, CData newval, CData newvalXZ,
+                                            int bits) {
+    char buf[VL_BYTESIZE];
+    char* wp = &buf[0];
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););
+    for (int i = bits - 1; i >= 0; --i) {
+        const CData mask = 1 << i;
+        *wp++ = (newvalXZ & mask) ? (newval & mask ? 'x' : 'z')
+                                  : ('0' | (static_cast<char>(newval >> i) & 1));
+    }
     m_owner.emitTimeChangeMaybe();
     fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
 }
@@ -420,6 +443,21 @@ void VerilatedFstBuffer::emitSData(uint32_t code, SData newval, int bits) {
 }
 
 VL_ATTR_ALWINLINE
+void VerilatedFstBuffer::emitFourstateSData(uint32_t code, SData newval, SData newvalXZ,
+                                            int bits) {
+    char buf[VL_BYTESIZE];
+    char* wp = &buf[0];
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););
+    for (int i = bits - 1; i >= 0; --i) {
+        const SData mask = 1 << i;
+        *wp++ = (newvalXZ & mask) ? (newval & mask ? 'x' : 'z')
+                                  : ('0' | (static_cast<char>(newval >> i) & 1));
+    }
+    m_owner.emitTimeChangeMaybe();
+    fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
+}
+
+VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitIData(uint32_t code, IData newval, int bits) {
     char buf[VL_IDATASIZE];
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
@@ -429,10 +467,40 @@ void VerilatedFstBuffer::emitIData(uint32_t code, IData newval, int bits) {
 }
 
 VL_ATTR_ALWINLINE
+void VerilatedFstBuffer::emitFourstateIData(uint32_t code, IData newval, IData newvalXZ,
+                                            int bits) {
+    char buf[VL_BYTESIZE];
+    char* wp = &buf[0];
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););
+    for (int i = bits - 1; i >= 0; --i) {
+        const IData mask = 1 << i;
+        *wp++ = (newvalXZ & mask) ? (newval & mask ? 'x' : 'z')
+                                  : ('0' | (static_cast<char>(newval >> i) & 1));
+    }
+    m_owner.emitTimeChangeMaybe();
+    fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
+}
+
+VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitQData(uint32_t code, QData newval, int bits) {
     char buf[VL_QUADSIZE];
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtQDataToStr(buf, newval << (VL_QUADSIZE - bits));
+    m_owner.emitTimeChangeMaybe();
+    fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedFstBuffer::emitFourstateQData(uint32_t code, QData newval, QData newvalXZ,
+                                            int bits) {
+    char buf[VL_BYTESIZE];
+    char* wp = &buf[0];
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););
+    for (int i = bits - 1; i >= 0; --i) {
+        const QData mask = 1 << i;
+        *wp++ = (newvalXZ & mask) ? (newval & mask ? 'x' : 'z')
+                                  : ('0' | (static_cast<char>(newval >> i) & 1));
+    }
     m_owner.emitTimeChangeMaybe();
     fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
 }
@@ -452,6 +520,34 @@ void VerilatedFstBuffer::emitWData(uint32_t code, const WData* newvalp, int bits
     }
     m_owner.emitTimeChangeMaybe();
     fstWriterEmitValueChange(m_fst, m_symbolp[code], m_strbufp);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedFstBuffer::emitFourstateWData(uint32_t code, const WData* newvalp,
+                                            const WData* newvalXZp, int bits) {
+    char buf[VL_BYTESIZE];
+    char* wp = &buf[0];
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););
+    {
+        const IData value = newvalp[(bits - 1) / 32];
+        const IData xz = newvalXZp[(bits - 1) / 32];
+        for (int i = (bits - 1) % 32; i >= 0; --i) {
+            const IData mask = 1 << i;
+            *wp++ = (xz & mask) ? (value & mask ? 'x' : 'z')
+                                : ('0' | (static_cast<char>(value >> i) & 1));
+        }
+    }
+    for (int w = ((bits - 1) / 32) - 1; w >= 0; --w) {
+        const IData value = newvalp[w];
+        const IData xz = newvalXZp[w];
+        for (int i = 31; i >= 0; --i) {
+            const IData mask = 1 << i;
+            *wp++ = (xz & mask) ? (value & mask ? 'x' : 'z')
+                                : ('0' | (static_cast<char>(value >> i) & 1));
+        }
+    }
+    m_owner.emitTimeChangeMaybe();
+    fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
 }
 
 VL_ATTR_ALWINLINE
