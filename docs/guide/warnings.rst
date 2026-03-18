@@ -856,6 +856,11 @@ List Of Warnings
    pass.
 
 
+.. option:: FUTURE
+
+   Warns that a feature is under development and not yet supported.
+
+
 .. option:: GENCLK
 
    Historical, never issued since version 5.000.
