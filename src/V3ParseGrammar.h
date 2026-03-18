@@ -50,6 +50,8 @@ public:
         = false;  // Standalone ID is a tf_identifier instead of port_identifier
     bool m_modportImpExpLastIsExport
         = false;  // Last import_export statement in modportPortsDecl is an export
+    AstNode* m_modportProtoTasksp
+        = nullptr;  // Prototype tasks from modport import/export with prototype
 
     int m_pinNum = -1;  // Pin number currently parsing
     std::stack<int> m_pinStack;  // Queue of pin numbers being parsed
