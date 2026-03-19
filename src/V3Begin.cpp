@@ -329,9 +329,10 @@ class BeginVisitor final : public VNVisitor {
                     }
                     endp->addNextHere(endAssignp);
                 }
+            } else {
+                nodep->unlinkFrBack();
             }
             nodep->name(newName);
-            // nodep->unlinkFrBack();
             m_ftaskp->addHereThisAsNext(nodep);
             nodep->funcLocal(false);
             // m_statep->userMarkChanged(nodep);
