@@ -434,7 +434,7 @@ class DynScopeVisitor final : public VNVisitor {
     void visit(AstVarRef* nodep) override {
         ForkDynScopeFrame* const framep = frameOf(nodep->varp());
         if (!framep) return;
-                    UINFO(0, "IS AUTO " << nodep->varp()->lifetime());
+                    // UINFO(0, "IS AUTO " << nodep->varp()->lifetime());
         if (needsDynScope(nodep)) {
             bool isEvent = false;
             if (AstBasicDType* const dtypep = VN_CAST(nodep->dtypep()->skipRefp(), BasicDType)) {
