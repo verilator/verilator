@@ -229,6 +229,17 @@ EvalLoop createEvalLoop(
         // Execute the inner loop
         loopp->addStmtsp(innerp);
 
+        // If this loop has an inner loop, check gotFinish() after inner convergence
+        // completes but before running this loop's phase. This allows inner loops
+        // to fully settle signals (needed for force/release propagation) while
+        // preventing self-retriggering phases from looping after $finish (#7267).
+        if (innerp) {
+            loopp->addStmtsp(new AstLoopTest{
+                flp, loopp,
+                new AstCExpr{flp,
+                             "VL_LIKELY(!vlSymsp->_vm_contextp__->gotFinish())", 1}});
+        }
+
         // Call the phase function to execute the current work. If we did
         // work, then need to loop again, so set the continuation flag.
         // If used, the first iteration flag is cleared when consumed, no
