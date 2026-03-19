@@ -311,6 +311,24 @@ class BeginVisitor final : public VNVisitor {
                 AstVar* keepAsPort = nodep->cloneTreePure(false);
                 nodep->replaceWith(keepAsPort);
                 m_statep->userMarkChanged(keepAsPort);
+
+                if (nodep->isInput() || nodep->isInout()) {
+                    AstAssign* initAssignp = new AstAssign{nodep->fileline(),
+                        new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE},
+                        new AstVarRef{keepAsPort->fileline(), keepAsPort, VAccess::READ}};
+                    keepAsPort->addNextHere(initAssignp);
+                }
+
+                if (nodep->isWritable()) {
+                    AstAssign* endAssignp = new AstAssign{nodep->fileline(),
+                        new AstVarRef{keepAsPort->fileline(), keepAsPort, VAccess::WRITE},
+                        new AstVarRef{nodep->fileline(), nodep, VAccess::READ}};
+                    AstNode* endp = keepAsPort;
+                    while (endp->nextp()) {
+                        endp = endp->nextp();
+                    }
+                    endp->addNextHere(endAssignp);
+                }
             }
             nodep->name(newName);
             // nodep->unlinkFrBack();
