@@ -642,9 +642,9 @@ private:
         AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
         AstNodeExpr* lhsp = nodep->lhsp()->unlinkFrBack();
 
-        // Handle sequence match items (IEEE 1800-2023 16.11): (expr, var = val, ...) |=> consequent
-        // Extract match item assignments from AstExprStmt and substitute
-        // property-local variable references in the consequent.
+        // Handle sequence match items (IEEE 1800-2023 16.11): (expr, var = val, ...) |=>
+        // consequent Extract match item assignments from AstExprStmt and substitute property-local
+        // variable references in the consequent.
         if (AstExprStmt* const exprStmtp = VN_CAST(lhsp, ExprStmt)) {
             // Build map from match item vars to their assigned expressions
             std::unordered_map<AstVar*, AstNodeExpr*> matchItemMap;
