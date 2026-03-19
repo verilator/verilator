@@ -609,7 +609,46 @@ private:
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
         AstNodeExpr* lhsp = nodep->lhsp()->unlinkFrBack();
-        if (nodep->isOverlapped()) {
+        if (VN_IS(lhsp, PExpr)) {
+            // Sequence expression as antecedent of implication is not yet supported
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Implication with sequence expression as antecedent");
+            VL_DO_DANGLING(lhsp->deleteTree(), lhsp);
+            VL_DO_DANGLING(rhsp->deleteTree(), rhsp);
+            nodep->replaceWith(new AstConst{flp, AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
+        if (AstPExpr* const pexprp = VN_CAST(rhsp, PExpr)) {
+            // Implication with sequence expression on RHS (IEEE 1800-2023 16.11, 16.12.7).
+            // The PExpr was already lowered from the property expression by V3AssertProp.
+            // Wrap the PExpr body with the antecedent check so the sequence only
+            // starts when the antecedent holds.
+            AstNodeExpr* condp;
+            if (nodep->isOverlapped()) {
+                // Overlapped implication (|->): check antecedent on same cycle.
+                // disable iff is applied at the assertion level, not at the
+                // antecedent gate, matching the existing non-PExpr overlapped path.
+                condp = new AstSampled{flp, lhsp};
+                condp->dtypeFrom(lhsp);
+            } else {
+                // Non-overlapped implication (|=>): check antecedent from previous cycle
+                if (m_disablep) {
+                    lhsp = new AstAnd{flp,
+                                      new AstNot{flp, m_disablep->cloneTreePure(false)}, lhsp};
+                }
+                AstPast* const pastp = new AstPast{flp, lhsp};
+                pastp->dtypeFrom(lhsp);
+                pastp->sentreep(newSenTree(nodep));
+                condp = pastp;
+            }
+            // Wrap existing PExpr body: if (antecedent) { <original body> } else { /* vacuous pass */ }
+            AstBegin* const bodyp = pexprp->bodyp();
+            AstNode* const origStmtsp = bodyp->stmtsp()->unlinkFrBackWithNext();
+            AstIf* const guardp = new AstIf{flp, condp, origStmtsp};
+            bodyp->addStmtsp(guardp);
+            nodep->replaceWith(pexprp);
+        } else if (nodep->isOverlapped()) {
             nodep->replaceWith(new AstLogOr{flp, new AstLogNot{flp, lhsp}, rhsp});
         } else {
             if (m_disablep) {
