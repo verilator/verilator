@@ -27,6 +27,8 @@
 #include "V3Task.h"
 #include "V3UniqueNames.h"
 
+#include <unordered_map>
+
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
@@ -58,6 +60,7 @@ private:
     // Other:
     V3UniqueNames m_cycleDlyNames{"__VcycleDly"};  // Cycle delay counter name generator
     V3UniqueNames m_disableCntNames{"__VdisableCnt"};  // Disable condition counter name generator
+    V3UniqueNames m_propVarNames{"__Vpropvar"};  // Property-local variable name generator
     bool m_inAssign = false;  // True if in an AssignNode
     bool m_inAssignDlyLhs = false;  // True if in AssignDly's LHS
     bool m_inSynchDrive = false;  // True if in synchronous drive
@@ -89,10 +92,14 @@ private:
         return newp;
     }
     AstPropSpec* getPropertyExprp(const AstProperty* const propp) {
-        // The only statements possible in AstProperty are AstPropSpec (body)
-        // and AstVar (arguments).
+        // Statements in AstProperty: AstVar (ports/local vars),
+        // AstInitialStaticStmt/AstInitialAutomaticStmt (var init), AstPropSpec (body).
         AstNode* propExprp = propp->stmtsp();
-        while (VN_IS(propExprp, Var)) propExprp = propExprp->nextp();
+        while (propExprp
+               && (VN_IS(propExprp, Var) || VN_IS(propExprp, InitialStaticStmt)
+                   || VN_IS(propExprp, InitialAutomaticStmt))) {
+            propExprp = propExprp->nextp();
+        }
         return VN_CAST(propExprp, PropSpec);
     }
     AstPropSpec* substitutePropertyCall(AstPropSpec* nodep) {
@@ -119,6 +126,31 @@ private:
                     });
                     pushDeletep(argp->exprp()->unlinkFrBack());
                 }
+
+                // Handle property-local variable declarations (IEEE 1800-2023 16.10).
+                // Property-local vars are non-port vars declared inside a property.
+                // They are lowered by creating module-level variables and updating
+                // references in the cloned property body. The actual cross-cycle
+                // persistence is handled by the implication lowering (match item
+                // substitution in visit(AstImplication*)).
+                for (AstNode* stmtp = propp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                    if (AstVar* const varp = VN_CAST(stmtp, Var)) {
+                        if (!varp->isIO()) {
+                            // This is a property-local variable, not a port.
+                            // Create a module-level replacement variable.
+                            const string newName = m_propVarNames.get(varp);
+                            AstVar* const newVarp = new AstVar{
+                                varp->fileline(), VVarType::MODULETEMP, newName, varp->dtypep()};
+                            newVarp->lifetime(VLifetime::STATIC_EXPLICIT);
+                            m_modp->addStmtsp(newVarp);
+                            // Update all references in the cloned PropSpec body
+                            propExprp->foreach([&](AstVarRef* refp) {
+                                if (refp->varp() == varp) { refp->varp(newVarp); }
+                            });
+                        }
+                    }
+                }
+
                 // Handle case with 2 disable iff statement (IEEE 1800-2023 16.12.1)
                 if (nodep->disablep() && propExprp->disablep()) {
                     nodep->v3error("disable iff expression before property call and in its "
@@ -609,6 +641,46 @@ private:
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
         AstNodeExpr* lhsp = nodep->lhsp()->unlinkFrBack();
+
+        // Handle sequence match items (IEEE 1800-2023 16.11): (expr, var = val, ...) |=> consequent
+        // Extract match item assignments from AstExprStmt and substitute
+        // property-local variable references in the consequent.
+        if (AstExprStmt* const exprStmtp = VN_CAST(lhsp, ExprStmt)) {
+            // Build map from match item vars to their assigned expressions
+            std::unordered_map<AstVar*, AstNodeExpr*> matchItemMap;
+            for (AstNode* stmtp = exprStmtp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                if (AstAssign* const assignp = VN_CAST(stmtp, Assign)) {
+                    if (AstVarRef* const varrefp = VN_CAST(assignp->lhsp(), VarRef)) {
+                        matchItemMap[varrefp->varp()] = assignp->rhsp();
+                    }
+                }
+            }
+            // Extract the pure expression (without side effects)
+            AstNodeExpr* const pureExprp = exprStmtp->resultp()->unlinkFrBack();
+            VL_DO_DANGLING(pushDeletep(lhsp), lhsp);
+            lhsp = pureExprp;
+
+            // Substitute property-local var references in the consequent
+            // For |=> (non-overlapping), wrap in Past since consequent is
+            // evaluated one cycle after the antecedent.
+            // For |-> (overlapping), use value directly.
+            rhsp->foreach([&](AstVarRef* refp) {
+                auto it = matchItemMap.find(refp->varp());
+                if (it != matchItemMap.end()) {
+                    AstNodeExpr* replacep = it->second->cloneTreePure(false);
+                    if (!nodep->isOverlapped()) {
+                        // Non-overlapping: wrap in Past for one-cycle delay
+                        AstPast* const matchPastp = new AstPast{flp, replacep};
+                        matchPastp->dtypeFrom(replacep);
+                        matchPastp->sentreep(newSenTree(nodep));
+                        replacep = matchPastp;
+                    }
+                    refp->replaceWith(replacep);
+                    VL_DO_DANGLING(pushDeletep(refp), refp);
+                }
+            });
+        }
+
         if (nodep->isOverlapped()) {
             nodep->replaceWith(new AstLogOr{flp, new AstLogNot{flp, lhsp}, rhsp});
         } else {
