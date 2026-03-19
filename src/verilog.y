@@ -6550,9 +6550,9 @@ sequence_declaration<nodeFTaskp>:  // ==IEEE: sequence_declaration
                           $$->addStmtsp($2);
                           $$->addStmtsp($4);
                           GRAMMARP->endLabel($<fl>6, $$, $6);
-                          // No error on UVM special case with no reference; see t_sequence_unused.v
-                          if (! (!$$->stmtsp() || (VN_IS($$->stmtsp(), Const) && !$$->stmtsp()->nextp())))
-                              $$->v3warn(E_UNSUPPORTED, "Unsupported: sequence");
+                          // Sequence declarations are allowed; they are inlined by V3AssertPre.
+                          // Sequences in unsupported contexts are reported by assertPreAll
+                          // after inlining.
                         }
         ;
 
