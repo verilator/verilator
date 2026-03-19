@@ -1352,8 +1352,8 @@ class LinkParseVisitor final : public VNVisitor {
                 } else {
                     optp->v3warn(COVERIGN, "Ignoring unsupported coverage option: " + optp->name());
                 }
-                nodep->addOptionsp(
-                    new AstCoverOption{optp->fileline(), optType, optp->valuep()->cloneTree(false)});
+                nodep->addOptionsp(new AstCoverOption{optp->fileline(), optType,
+                                                       optp->valuep()->cloneTree(false)});
                 VL_DO_DANGLING(optp->deleteTree(), optp);
             }
         }
