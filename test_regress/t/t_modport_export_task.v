@@ -4,28 +4,32 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0)
+// verilog_format: on
 
 interface bus_if;
   logic [7:0] data;
   logic [7:0] result;
 
   modport provider(
-    output data,
-    output result,
-    export task send(input logic [7:0] val),
-    export task accumulate(input logic [7:0] a, input logic [7:0] b)
+      output data,
+      output result,
+      export task send(input logic [7:0] val),
+      export task accumulate(input logic [7:0] a, input logic [7:0] b)
   );
 
   modport consumer(
-    input data,
-    input result,
-    import task send(input logic [7:0] val),
-    import task accumulate(input logic [7:0] a, input logic [7:0] b)
+      input data,
+      input result,
+      import task send(input logic [7:0] val),
+      import task accumulate(input logic [7:0] a, input logic [7:0] b)
   );
 endinterface
 
-module driver(bus_if.provider port);
+module driver (
+    bus_if.provider port
+);
   task port.send(input logic [7:0] val);
     port.data = val;
     port.result = val + 8'h01;
@@ -38,8 +42,8 @@ module driver(bus_if.provider port);
 endmodule
 
 module t;
-  bus_if bif();
-  driver drv(.port(bif.provider));
+  bus_if bif ();
+  driver drv (.port(bif.provider));
 
   initial begin
     // Test 1: send -- multiple statements in task body

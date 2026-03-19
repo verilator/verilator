@@ -33,6 +33,7 @@ Verilator 5.047 devel
 * Support dist and solve...before inside foreach constraints (#7245) (#7253). [Yilou Wang]
 * Support array and struct info metadata in FST traces (#7255). [Geza Lore, Testorrent USA, Inc.]
 * Support dynamic array .size in inline randomize() with constraints (#7258) (#7266). [Yilou Wang]
+* Support modport export/import task prototypes and out-of-block definitions (#7277). [Yilou Wang]
 * Add VPI callback support to --main (#7145).
 * Add V3LiftExpr pass to lower impure expressions and calls (#7141) (#7164). [Geza Lore, Testorrent USA, Inc.]
 * Add --func-recursion-depth CLI option (#7175) (#7179).

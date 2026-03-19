@@ -594,16 +594,15 @@ object.
 This class manages processes that await events (triggers). There is one
 such object per each trigger awaited by coroutines. Coroutines ``co_await``
 this object's ``trigger`` function. They are stored in three stages -
-`awaiting`, `fired` and `toResume`. First, they land in the `awaiting` stage, and
-cannot be resumed. The ``ready`` function moves all coroutines from the
-`awaiting` stage into the `fired` stage. The ``moveToResumeQueue`` function moves
-`fired` coroutines into `toResume`. Finally, function `resume` resumes
-all coroutines from the `toResume` stage.
+`awaiting`, `fired` and `toResume`. First, they land in the `awaiting`
+stage, and cannot be resumed. The ``ready`` function moves all coroutines
+from the `awaiting` stage into the `fired` stage. The ``moveToResumeQueue``
+function moves `fired` coroutines into `toResume`. Finally, function
+`resume` resumes all coroutines from the `toResume` stage.
 
-This split is done to avoid self-triggering, triggering coroutines
-multiple times and triggering coroutines in the same iteration
-they were suspended. See the `Scheduling with timing` section
-for details on how this is used.
+This split is done to avoid self-triggering, triggering coroutines multiple
+times and triggering coroutines in the same iteration they were suspended.
+See the `Scheduling with timing` section for details on how this is used.
 
 ``VlDynamicTriggerScheduler``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1844,33 +1843,25 @@ algorithmic stage. An example:
 The following summarizes the above example dump, with more detail on each
 field in the section below.
 
-+---------------+--------------------------------------------------------+
-| ``1:2:``      | The hierarchy of the ``VAR`` is the ``op2p``           |
-|               | pointer under the ``MODULE``, which in turn is the     |
-|               | ``op1p`` pointer under the ``NETLIST``.                |
-+---------------+--------------------------------------------------------+
-| ``VAR``       | The AstNodeType (e.g. ``AstVar``).                     |
-+---------------+--------------------------------------------------------+
-| ``0x91a780``  | Address of this node.                                  |
-+---------------+--------------------------------------------------------+
-| ``<e74>``     | The 74th edit to the netlist was the last              |
-|               | modification to this node.                             |
-+---------------+--------------------------------------------------------+
-| ``{a22ah}``   | This node is related to the source filename            |
-|               | "a", where "a" is the first file read, "z" the 26th,   |
-|               | and "aa" the 27th. Then line 22 in that file, then     |
-|               | column 8 (aa=0, az=25, ba=26, ...).                    |
-+---------------+--------------------------------------------------------+
-| ``@dt=0x...`` | The address of the data type this node references.     |
-+---------------+--------------------------------------------------------+
-| ``w32``       | The data-type width() is 32 bits.                      |
-+---------------+--------------------------------------------------------+
-| ``out_wide``  | The name() of the node, in this case, the name of the  |
-|               | variable.                                              |
-+---------------+--------------------------------------------------------+
-| ``[O]``       | Flags which vary with the type of node, in this        |
-|               | case of a VAR, it means the variable is an output.     |
-+---------------+--------------------------------------------------------+
+============= =============================================================
+``1:2:``      The hierarchy of the ``VAR`` is the ``op2p`` pointer under
+              the ``MODULE``, which in turn is the ``op1p`` pointer under
+              the ``NETLIST``.
+``VAR``       The AstNodeType (e.g. ``AstVar``).
+``0x91a780``  Address of this node.
+``<e74>``     The 74th edit to the netlist was the last modification to
+              this node.
+``{a22ah}``   This node is related to the source filename "a", where "a" is
+              the first file read, "z" the 26th, and "aa" the 27th. Then
+              line 22 in that file, then column 8 (aa=0, az=25, ba=26,
+              ...).
+``@dt=0x...`` The address of the data type this node references.
+``w32``       The data-type width() is 32 bits.
+``out_wide``  The name() of the node, in this case, the name of the
+              variable.
+``[O]``       Flags which vary with the type of node, in this case of a
+              VAR, it means the variable is an output.
+============= =============================================================
 
 In more detail, the following fields are dumped common to all nodes. They
 are produced by the ``AstNode::dump()`` method:

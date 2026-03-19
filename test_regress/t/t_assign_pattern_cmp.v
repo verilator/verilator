@@ -36,7 +36,8 @@ module t;
     arr4 = '{10, 20, 30, 40};
     if (arr4 == '{10, 20, 30, 40}) begin
       // expected
-    end else begin
+    end
+    else begin
       $display("FAIL: arr4 == pattern");
       $stop;
     end
@@ -44,7 +45,8 @@ module t;
     // 2. Fixed-size array: NEQ with assignment pattern
     if (arr4 != '{10, 20, 30, 99}) begin
       // expected
-    end else begin
+    end
+    else begin
       $display("FAIL: arr4 != pattern");
       $stop;
     end
@@ -52,7 +54,8 @@ module t;
     // 3. Pattern on LHS of comparison
     if ('{10, 20, 30, 40} == arr4) begin
       // expected
-    end else begin
+    end
+    else begin
       $display("FAIL: pattern == arr4 (LHS)");
       $stop;
     end
@@ -60,7 +63,8 @@ module t;
     // 4. Pattern on LHS of NEQ
     if ('{10, 20, 30, 99} != arr4) begin
       // expected
-    end else begin
+    end
+    else begin
       $display("FAIL: pattern != arr4 (LHS NEQ)");
       $stop;
     end
@@ -72,7 +76,8 @@ module t;
     sub = q[1:3];
     if (sub == '{20, 30, 40}) begin
       // expected
-    end else begin
+    end
+    else begin
       $display("FAIL: queue slice == pattern");
       $stop;
     end
@@ -80,7 +85,8 @@ module t;
     // 6. Queue: NEQ with assignment pattern
     if (sub != '{20, 30, 99}) begin
       // expected
-    end else begin
+    end
+    else begin
       $display("FAIL: queue slice != pattern");
       $stop;
     end
@@ -91,7 +97,8 @@ module t;
     p1 = '{a: 8'hAA, b: 8'h55};
     if (p1 == '{a: 8'hAA, b: 8'h55}) begin
       // expected
-    end else begin
+    end
+    else begin
       $display("FAIL: struct == pattern");
       $stop;
     end
@@ -99,7 +106,8 @@ module t;
     // 8. Struct: NEQ with assignment pattern
     if (p1 != '{a: 8'hAA, b: 8'hFF}) begin
       // expected
-    end else begin
+    end
+    else begin
       $display("FAIL: struct != pattern");
       $stop;
     end
@@ -111,7 +119,8 @@ module t;
     parr[1] = '{a: 8'h03, b: 8'h04};
     if (parr == '{'{a: 8'h01, b: 8'h02}, '{a: 8'h03, b: 8'h04}}) begin
       // expected
-    end else begin
+    end
+    else begin
       $display("FAIL: array of structs == nested pattern");
       $stop;
     end
@@ -122,7 +131,8 @@ module t;
     wide_arr = '{32'hDEAD_BEEF, 32'hCAFE_BABE, 32'h1234_5678};
     if (wide_arr == '{32'hDEAD_BEEF, 32'hCAFE_BABE, 32'h1234_5678}) begin
       // expected
-    end else begin
+    end
+    else begin
       $display("FAIL: wide array == pattern");
       $stop;
     end
@@ -130,7 +140,8 @@ module t;
     byte_arr = '{8'hAB, 8'hCD};
     if (byte_arr == '{8'hAB, 8'hCD}) begin
       // expected
-    end else begin
+    end
+    else begin
       $display("FAIL: byte array == pattern");
       $stop;
     end
@@ -148,14 +159,16 @@ module t;
     // -------------------------------------------------------
     if (arr4_t'{10, 20, 30, 40} == arr4_t'{10, 20, 30, 40}) begin
       // expected
-    end else begin
+    end
+    else begin
       $display("FAIL: typed pattern == typed pattern");
       $stop;
     end
 
     if (arr4_t'{10, 20, 30, 40} != arr4_t'{10, 20, 30, 99}) begin
       // expected
-    end else begin
+    end
+    else begin
       $display("FAIL: typed pattern != typed pattern");
       $stop;
     end

@@ -2,10 +2,10 @@
    18 |   task clk.send(input logic [7:0] val);   
       |        ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_modport_export_bad.v:25:8: Interface port not found for out-of-block definition: 'nonexistent' (IEEE 1800-2023 25.7)
-   25 |   task nonexistent.send(input logic [7:0] val);
+%Error: t/t_modport_export_bad.v:27:8: Interface port not found for out-of-block definition: 'nonexistent' (IEEE 1800-2023 25.7)
+   27 |   task nonexistent.send(input logic [7:0] val);
       |        ^~~~~~~~~~~
-%Error: t/t_modport_export_bad.v:40:8: No matching export prototype found in interface bus_if_noexport for task 'send' (IEEE 1800-2023 25.7)
-   40 |   task port.send(input logic [7:0] val);
+%Error: t/t_modport_export_bad.v:42:8: No matching export prototype found in interface bus_if_noexport for task 'send' (IEEE 1800-2023 25.7)
+   42 |   task port.send(input logic [7:0] val);
       |        ^~~~
 %Error: Exiting due to
