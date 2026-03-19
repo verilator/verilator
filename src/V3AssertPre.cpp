@@ -634,15 +634,16 @@ private:
             } else {
                 // Non-overlapped implication (|=>): check antecedent from previous cycle
                 if (m_disablep) {
-                    lhsp = new AstAnd{flp,
-                                      new AstNot{flp, m_disablep->cloneTreePure(false)}, lhsp};
+                    lhsp
+                        = new AstAnd{flp, new AstNot{flp, m_disablep->cloneTreePure(false)}, lhsp};
                 }
                 AstPast* const pastp = new AstPast{flp, lhsp};
                 pastp->dtypeFrom(lhsp);
                 pastp->sentreep(newSenTree(nodep));
                 condp = pastp;
             }
-            // Wrap existing PExpr body: if (antecedent) { <original body> } else { /* vacuous pass */ }
+            // Wrap existing PExpr body: if (antecedent) { <original body> } else { /* vacuous pass
+            // */ }
             AstBegin* const bodyp = pexprp->bodyp();
             AstNode* const origStmtsp = bodyp->stmtsp()->unlinkFrBackWithNext();
             AstIf* const guardp = new AstIf{flp, condp, origStmtsp};
