@@ -301,19 +301,21 @@ class BeginVisitor final : public VNVisitor {
         // If static variable, move it outside a function.
         if (nodep->lifetime().isStatic() && m_ftaskp) {
             if (nodep->user1()) {
-                UINFO(0, "RETURN");
+                // UINFO(0, "RETURN");
                 return;
             }
-            UINFO(0, "TASK IS STATIC " << m_ftaskp->lifetime().isStatic());
+            // UINFO(0, "TASK IS STATIC " << m_ftaskp->lifetime().isStatic());
             const std::string newName
                 = m_ftaskp->name() + "__Vstatic__" + dot(m_unnamedScope, nodep->name());
-            AstVar* keepAsPort = nodep->cloneTreePure(false);
-            nodep->replaceWith(keepAsPort);
+            if (m_ftaskp->lifetime().isStatic()) {
+                AstVar* keepAsPort = nodep->cloneTreePure(false);
+                nodep->replaceWith(keepAsPort);
+                m_statep->userMarkChanged(keepAsPort);
+            }
             nodep->name(newName);
             // nodep->unlinkFrBack();
             m_ftaskp->addHereThisAsNext(nodep);
             nodep->funcLocal(false);
-            m_statep->userMarkChanged(keepAsPort);
             // m_statep->userMarkChanged(nodep);
         } else if (m_unnamedScope != "") {
             // Rename it
