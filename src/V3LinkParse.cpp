@@ -1350,7 +1350,8 @@ class LinkParseVisitor final : public VNVisitor {
                 } else if (optp->name() == "comment") {
                     optType = VCoverOptionType::COMMENT;
                 } else {
-                    optp->v3warn(COVERIGN, "Ignoring unsupported coverage option: " + optp->name());
+                    optp->v3warn(COVERIGN,
+                                 "Ignoring unsupported coverage option: " + optp->name());
                 }
                 nodep->addOptionsp(new AstCoverOption{optp->fileline(), optType,
                                                        optp->valuep()->cloneTree(false)});
