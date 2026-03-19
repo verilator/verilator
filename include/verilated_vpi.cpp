@@ -4212,11 +4212,13 @@ vpiHandle vpi_handle_by_multi_index(vpiHandle obj, PLI_INT32 num_index, PLI_INT3
     if (VL_UNLIKELY(!index_array)) return nullptr;
     if (VL_UNLIKELY(num_index <= 0)) return nullptr;
 
-    vpiHandle result_handle = obj;
+    vpiHandle resultHandle = obj;
     for (PLI_INT32 i = 0; i < num_index; ++i) {
-        result_handle = vpi_handle_by_index(result_handle, index_array[i]);
-        if (VL_UNLIKELY(!result_handle)) { return nullptr; }
+        vpiHandle nextIndexHandle = vpi_handle_by_index(resultHandle, index_array[i]);
+        if (i > 0) vpi_release_handle(resultHandle);
+        resultHandle = nextIndexHandle;
+        if (VL_UNLIKELY(!resultHandle)) { return nullptr; }
     }
 
-    return result_handle;
+    return resultHandle;
 }
