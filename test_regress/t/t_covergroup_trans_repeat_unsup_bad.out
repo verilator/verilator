@@ -1,4 +1,4 @@
-%Warning-COVERIGN: t/t_covergroup_trans_repeat_unsup_bad.v:15:20: Ignoring unsupported: cover '[*'
+%Warning-COVERIGN: t/t_covergroup_trans_repeat_unsup_bad.v:15:20: Unsupported: '[*]' in cover transition
    15 |       bins t1 = (1 [*2]);
       |                    ^~
                    ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
