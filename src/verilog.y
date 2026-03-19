@@ -7001,43 +7001,43 @@ cover_point<nodep>:  // ==IEEE: cover_point
                 yCOVERPOINT expr iffE bins_or_empty
                         { AstCoverpoint* const cp = new AstCoverpoint{$<fl>1, "", $2};
                           if ($3) cp->iffp(VN_AS($3, NodeExpr));
-                          GRAMMARP->addCoverpointBins(cp, $4);
+                          if ($4) cp->addBinsp($4);
                           $$ = cp; }
         //                      // IEEE-2012: class_scope before an ID
         |       id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
                         { AstCoverpoint* const cp = new AstCoverpoint{$<fl>3, *$1, $4};
                           if ($5) cp->iffp(VN_AS($5, NodeExpr));
-                          GRAMMARP->addCoverpointBins(cp, $6);
+                          if ($6) cp->addBinsp($6);
                           $$ = cp; }
         //                      // data_type_or_implicit expansion
         |       data_type id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
                         { AstCoverpoint* const cp = new AstCoverpoint{$<fl>4, *$2, $5};
                           if ($6) cp->iffp(VN_AS($6, NodeExpr));
-                          GRAMMARP->addCoverpointBins(cp, $7);
+                          if ($7) cp->addBinsp($7);
                           $$ = cp;
                           DEL($1); }
         |       yVAR data_type id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
                         { AstCoverpoint* const cp = new AstCoverpoint{$<fl>5, *$3, $6};
                           if ($7) cp->iffp(VN_AS($7, NodeExpr));
-                          GRAMMARP->addCoverpointBins(cp, $8);
+                          if ($8) cp->addBinsp($8);
                           $$ = cp;
                           DEL($2); }
         |       yVAR implicit_typeE id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
                         { AstCoverpoint* const cp = new AstCoverpoint{$<fl>5, *$3, $6};
                           if ($7) cp->iffp(VN_AS($7, NodeExpr));
-                          GRAMMARP->addCoverpointBins(cp, $8);
+                          if ($8) cp->addBinsp($8);
                           $$ = cp;
                           DEL($2); }
         |       signingE rangeList id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
                         { AstCoverpoint* const cp = new AstCoverpoint{$<fl>5, *$3, $6};
                           if ($7) cp->iffp(VN_AS($7, NodeExpr));
-                          GRAMMARP->addCoverpointBins(cp, $8);
+                          if ($8) cp->addBinsp($8);
                           $$ = cp;
                           DEL($2); }
         |       signing id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
                         { AstCoverpoint* const cp = new AstCoverpoint{$<fl>4, *$2, $5};
                           if ($6) cp->iffp(VN_AS($6, NodeExpr));
-                          GRAMMARP->addCoverpointBins(cp, $7);
+                          if ($7) cp->addBinsp($7);
                           $$ = cp; }
         //                      // IEEE-2012:
         |       bins_or_empty                           { $$ = $1; }
