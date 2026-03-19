@@ -382,7 +382,6 @@ class LinkParseVisitor final : public VNVisitor {
                 }
             }
         } else if (m_ftaskp) {
-            UINFO(0, "TASK LIFE " << m_ftaskp->lifetime());
             if (m_ftaskp->lifetime().isStatic()) {
                 nodep->lifetime(VLifetime::STATIC_IMPLICIT);
             } else {
