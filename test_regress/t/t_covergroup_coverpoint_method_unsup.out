@@ -1,3 +1,8 @@
+%Warning-COVERIGN: t/t_covergroup_coverpoint_method_unsup.v:21:32: Unsupported: 'bins' explicit array size (treated as '[]')
+   21 |     coverpoint b {bins the_bins[5] = {[0 : 20]};}
+      |                                ^
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
 %Error: t/t_covergroup_coverpoint_method_unsup.v:31:42: Member 'a' not found in covergroup 'cg'
                                                       : ... note: In instance 't'
    31 |       $display("coverage a = %f", the_cg.a.get_inst_coverage());

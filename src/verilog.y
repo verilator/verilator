@@ -7104,14 +7104,17 @@ bins_or_options<nodep>:  // ==IEEE: bins_or_options
                           if ($3) binp->isArray(true);
                           $$ = binp; DEL($8); }
         |       yBINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' yWITH__PAREN '(' cgexpr ')' iffE
-                        { $$ = new AstCoverBin{$<fl>2, *$2, $6, false, false};
-                          DEL($10, $12); /* TODO: Support 'with' clause */ }
+                        { AstCoverBin* const binp = new AstCoverBin{$<fl>2, *$2, $6, false, false};
+                          BBCOVERIGN($<fl>8, "Unsupported: 'with' in cover bin (bin created without filter)");
+                          DEL($10, $12); $$ = binp; }
         |       yIGNORE_BINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' yWITH__PAREN '(' cgexpr ')' iffE
-                        { $$ = new AstCoverBin{$<fl>2, *$2, $6, true, false};
-                          DEL($10, $12); /* TODO: Support 'with' clause */ }
+                        { AstCoverBin* const binp = new AstCoverBin{$<fl>2, *$2, $6, true, false};
+                          BBCOVERIGN($<fl>8, "Unsupported: 'with' in cover bin (bin created without filter)");
+                          DEL($10, $12); $$ = binp; }
         |       yILLEGAL_BINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' yWITH__PAREN '(' cgexpr ')' iffE
-                        { $$ = new AstCoverBin{$<fl>2, *$2, $6, false, true};
-                          DEL($10, $12); /* TODO: Support 'with' clause */ }
+                        { AstCoverBin* const binp = new AstCoverBin{$<fl>2, *$2, $6, false, true};
+                          BBCOVERIGN($<fl>8, "Unsupported: 'with' in cover bin (bin created without filter)");
+                          DEL($10, $12); $$ = binp; }
         |       yBINS idAny/*bin_identifier*/ bins_orBraE '=' id/*cover_point_id*/ yWITH__PAREN '(' cgexpr ')' iffE
                         { $$ = nullptr; BBCOVERIGN($<fl>6, "Unsupported: 'with' in cover bin"); DEL($8, $10); }
         |       yIGNORE_BINS idAny/*bin_identifier*/ bins_orBraE '=' id/*cover_point_id*/ yWITH__PAREN '(' cgexpr ')' iffE
@@ -7174,7 +7177,7 @@ bins_or_options<nodep>:  // ==IEEE: bins_or_options
 bins_orBraE<fl>:  // IEEE: part of bins_or_options: returns fileline (abuse for boolean flag)
                 /* empty */                             { $$ = nullptr; }
         |       '[' ']'                                 { $$ = $<fl>1; /* Mark as array */ }
-        |       '[' cgexpr ']'                          { $$ = nullptr; /*UNSUP*/ DEL($2); }
+        |       '[' cgexpr ']'                          { BBCOVERIGN($<fl>1, "Unsupported: 'bins' explicit array size (treated as '[]')"); DEL($2); $$ = $<fl>1; }
         ;
 
 trans_list<nodep>:  // ==IEEE: trans_list
@@ -7265,7 +7268,7 @@ cover_cross<nodep>:  // ==IEEE: cover_cross
                               }
                           }
                           if ($5) {
-                              $5->v3warn(COVERIGN, "Ignoring unsupported: cross iff condition");
+                              $5->v3warn(COVERIGN, "Unsupported: 'iff' in coverage cross");
                               VL_DO_DANGLING($5->deleteTree(), $5);
                           }
                           $$ = nodep;
@@ -7310,7 +7313,7 @@ cover_cross<nodep>:  // ==IEEE: cover_cross
                               }
                           }
                           if ($3) {
-                              $3->v3warn(COVERIGN, "Ignoring unsupported: cross iff condition");
+                              $3->v3warn(COVERIGN, "Unsupported: 'iff' in coverage cross");
                               VL_DO_DANGLING($3->deleteTree(), $3);
                           }
                           $$ = nodep;
