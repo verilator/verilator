@@ -826,6 +826,16 @@ bool DfgVertex::isCheaperThanLoad() const {
         if (!lCatp->isZero()) return false;
         return catp->rhsp()->isCheaperThanLoad();
     }
+    // Reduction of a cheap vertex
+    if (const DfgRedOr* const redOrp = cast<DfgRedOr>()) {
+        return redOrp->srcp()->isCheaperThanLoad();
+    }
+    if (const DfgRedAnd* const redAndp = cast<DfgRedAnd>()) {
+        return redAndp->srcp()->isCheaperThanLoad();
+    }
+    if (const DfgRedXor* const redXorp = cast<DfgRedXor>()) {
+        return redXorp->srcp()->isCheaperThanLoad();
+    }
     // Otherwise probably not
     return false;
 }
