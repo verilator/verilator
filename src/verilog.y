@@ -6815,13 +6815,14 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         |       '(' ~p~sexpr ',' sequence_match_itemList ')'
                         { $$ = $2; BBUNSUP($3, "Unsupported: sequence match items"); DEL($4); }
         //
-        //                      // AND/OR are between pexprs OR sexprs
+        //                      // AND/OR are between pexprs OR sexprs (IEEE 1800-2023 16.9.2, 16.11.2)
+        //                      // For expression-level (boolean) operands, AstLogAnd/AstLogOr is correct.
+        //                      // For temporal sequence operands (containing ##), the downstream
+        //                      // V3Width "Implication with sequence expression" check will catch them.
         |       ~p~sexpr yAND ~p~sexpr
-                        { $$ = new AstLogAnd{$2, $1, $3};
-                          BBUNSUP($2, "Unsupported: and (in sequence expression)"); }
+                        { $$ = new AstLogAnd{$2, $1, $3}; }
         |       ~p~sexpr yOR ~p~sexpr
-                        { $$ = new AstLogOr{$2, $1, $3};
-                          BBUNSUP($2, "Unsupported: or (in sequence expression)"); }
+                        { $$ = new AstLogOr{$2, $1, $3}; }
         //                      // Intersect always has an sexpr rhs
         |       ~p~sexpr yINTERSECT sexpr
                         { $$ = $1; BBUNSUP($2, "Unsupported: intersect (in sequence expression)"); DEL($3); }
