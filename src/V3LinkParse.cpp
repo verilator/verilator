@@ -1316,6 +1316,40 @@ class LinkParseVisitor final : public VNVisitor {
         iterate(cgClassp);
     }
 
+    void visit(AstCoverpoint* nodep) override {
+        cleanFileline(nodep);
+        // Re-sort the parse-time mixed bins list (AstCoverBin + AstCgOptionAssign)
+        // into the typed binsp and optionsp slots.  The grammar attaches both node types
+        // to binsp (op2) as a raw List[AstNode]; now that they are properly parented we
+        // can iterate and split them without any temporary-parent tricks.
+        for (AstNode *itemp = nodep->binsp(), *nextp; itemp; itemp = nextp) {
+            nextp = itemp->nextp();
+            if (AstCgOptionAssign* const optp = VN_CAST(itemp, CgOptionAssign)) {
+                optp->unlinkFrBack();
+                VCoverOptionType optType = VCoverOptionType::COMMENT;
+                if (optp->name() == "at_least") {
+                    optType = VCoverOptionType::AT_LEAST;
+                } else if (optp->name() == "weight") {
+                    optType = VCoverOptionType::WEIGHT;
+                } else if (optp->name() == "goal") {
+                    optType = VCoverOptionType::GOAL;
+                } else if (optp->name() == "auto_bin_max") {
+                    optType = VCoverOptionType::AUTO_BIN_MAX;
+                } else if (optp->name() == "per_instance") {
+                    optType = VCoverOptionType::PER_INSTANCE;
+                } else if (optp->name() == "comment") {
+                    optType = VCoverOptionType::COMMENT;
+                } else {
+                    optp->v3warn(COVERIGN, "Ignoring unsupported coverage option: " + optp->name());
+                }
+                nodep->addOptionsp(
+                    new AstCoverOption{optp->fileline(), optType, optp->valuep()->cloneTree(false)});
+                VL_DO_DANGLING(optp->deleteTree(), optp);
+            }
+        }
+        iterateChildren(nodep);
+    }
+
     void visit(AstNode* nodep) override {
         // Default: Just iterate
         cleanFileline(nodep);
