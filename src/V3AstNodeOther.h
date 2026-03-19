@@ -2763,7 +2763,7 @@ public:
 };
 class AstCoverpoint final : public AstNodeFuncCovItem {
     // @astgen op1 := exprp : AstNodeExpr
-    // @astgen op2 := binsp : List[AstCoverBin]
+    // @astgen op2 := binsp : List[AstNode]  // Parse: mixed AstCoverBin/AstCgOptionAssign; post-LinkParse: AstCoverBin only
     // @astgen op3 := iffp : Optional[AstNodeExpr]
     // @astgen op4 := optionsp : List[AstCoverOption]
 public:
