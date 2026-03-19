@@ -14,15 +14,9 @@
 %Error-UNSUPPORTED: t/t_property_unsup.v:92:26: Unsupported: always (in property expression)
    92 |   assert property ((a or(always b)) implies (a or(always b)));
       |                          ^~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:92:23: Unsupported: or (in sequence expression)
-   92 |   assert property ((a or(always b)) implies (a or(always b)));
-      |                       ^~
 %Error-UNSUPPORTED: t/t_property_unsup.v:92:51: Unsupported: always (in property expression)
    92 |   assert property ((a or(always b)) implies (a or(always b)));
       |                                                   ^~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:92:48: Unsupported: or (in sequence expression)
-   92 |   assert property ((a or(always b)) implies (a or(always b)));
-      |                                                ^~
 %Error-UNSUPPORTED: t/t_property_unsup.v:94:21: Unsupported: eventually[] (in property expression)
    94 |   assert property ((eventually[0: 1] a) implies (eventually[0: 1] a));
       |                     ^~~~~~~~~~

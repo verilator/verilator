@@ -11,15 +11,9 @@
 %Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:33:12: Unsupported: sequence
    33 |   sequence s_within;
       |            ^~~~~~~~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:38:7: Unsupported: and (in sequence expression)
-   38 |     a and b;
-      |       ^~~
 %Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:37:12: Unsupported: sequence
    37 |   sequence s_and;
       |            ^~~~~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:42:7: Unsupported: or (in sequence expression)
-   42 |     a or b;
-      |       ^~
 %Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:41:12: Unsupported: sequence
    41 |   sequence s_or;
       |            ^~~~
