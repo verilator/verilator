@@ -1779,14 +1779,13 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstCgOptionAssign* nodep) override {
         // Extract covergroup option values and store in AstClass before deleting
-        AstClass* const cgClassp = m_cgClassp;
-        if (cgClassp) {
+        if (m_cgClassp) {
             // Process supported options
             if (nodep->name() == "auto_bin_max" && !nodep->typeOption()) {
                 // Extract constant value
                 if (AstConst* constp = VN_CAST(nodep->valuep(), Const)) {
-                    cgClassp->cgAutoBinMax(constp->toSInt());
-                    UINFO(6, "  Covergroup " << cgClassp->name() << " option.auto_bin_max = "
+                    m_cgClassp->cgAutoBinMax(constp->toSInt());
+                    UINFO(6, "  Covergroup " << m_cgClassp->name() << " option.auto_bin_max = "
                                              << constp->toSInt() << endl);
                 }
             }
