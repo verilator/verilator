@@ -1644,8 +1644,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                 if (AstVarRef* const varrefp
                                     = VN_CAST(senItemp->sensp(), VarRef)) {
                                     if (varrefp->varp() && varrefp->varp()->isClassMember()) {
-                                        cgp->v3warn(COVERIGN, "Ignoring unsupported: covergroup "
-                                                              "clocking event on member variable");
+                                        cgp->v3warn(COVERIGN,
+                                                    "Unsupported: 'covergroup' clocking event "
+                                                    "on member variable");
                                         eventUnsupported = true;
                                         hasUnsupportedEvent = true;
                                         break;
