@@ -121,6 +121,8 @@ class TraceTraceVertex final : public V3GraphVertex {
     AstTraceDecl* const m_nodep;  // TRACEINC this represents
     // nullptr, or other vertex with the real code() that duplicates this one
     TraceTraceVertex* m_duplicatep = nullptr;
+    // When aliasing to a dtype parent, offset of the member within the dtype
+    uint32_t m_dtypeAliasOffset = 0;
 
 public:
     TraceTraceVertex(V3Graph* graphp, AstTraceDecl* nodep)
@@ -137,6 +139,9 @@ public:
         UASSERT_OBJ(!duplicatep(), nodep(), "Assigning duplicatep() to already duplicated node");
         m_duplicatep = dupp;
     }
+    void redirectDuplicatep(TraceTraceVertex* dupp) { m_duplicatep = dupp; }
+    uint32_t dtypeAliasOffset() const { return m_dtypeAliasOffset; }
+    void dtypeAliasOffset(uint32_t offset) { m_dtypeAliasOffset = offset; }
 };
 
 class TraceVarVertex final : public V3GraphVertex {
@@ -217,27 +222,70 @@ class TraceVisitor final : public VNVisitor {
         UINFO(9, "Finding duplicates");
         // Note uses user4
         V3DupFinder dupFinder;  // Duplicate code detection
+
+        // Compute member offsets within dtype instances incrementally.
+        // For each dtype member TraceDecl, stores its code offset within the
+        // dtype parent's code range.
+        std::unordered_map<const AstTraceDecl*, uint32_t> memberOffsets;
+        std::unordered_map<const AstTraceDecl*, uint32_t> runningOffset;
+
+        // For fixup pass: track dups redirected to dtype parents, so we can
+        // fix them if the parent's user2 is later set during the loop.
+        // Maps dup vertex -> original canonical member vertex.
+        std::vector<std::pair<TraceTraceVertex*, TraceTraceVertex*>> dtypeParentRedirects;
+
         // Hash all of the traced values and find if there are any duplicates
         for (V3GraphVertex& vtx : m_graph.vertices()) {
             if (TraceTraceVertex* const vvertexp = vtx.cast<TraceTraceVertex>()) {
                 AstTraceDecl* const nodep = vvertexp->nodep();
+                if (nodep->dtypeCallp()) continue;
+
+                if (nodep->dtypeDeclp()) {
+                    uint32_t& offset = runningOffset[nodep->dtypeDeclp()];
+                    memberOffsets[nodep] = offset;
+                    offset += nodep->codeInc();
+                }
+
                 UASSERT_OBJ(!vvertexp->duplicatep(), nodep, "Should not be a duplicate");
                 const auto dupit = dupFinder.findDuplicate(nodep);
                 if (dupit == dupFinder.end()) {
                     dupFinder.insert(nodep);
                 } else {
-                    const AstTraceDecl* const dupDeclp = VN_AS(dupit->second, TraceDecl);
+                    AstTraceDecl* const dupDeclp = VN_AS(dupit->second, TraceDecl);
                     UASSERT_OBJ(dupDeclp, nodep, "Trace duplicate of wrong type");
                     TraceTraceVertex* const dupvertexp
                         = dupDeclp->user1u().toGraphVertex()->cast<TraceTraceVertex>();
-                    UINFO(8, "  Orig " << nodep);
-                    UINFO(8, "   dup " << dupDeclp);
-                    // Mark the hashed node as the original and our
-                    // iterating node as duplicated
-                    vvertexp->duplicatep(dupvertexp);
+                    UINFO(8, "  Orig " << dupDeclp << endl);
+                    UINFO(8, "   dup " << nodep << endl);
+
+                    if (dupDeclp->dtypeDeclp() && !dupDeclp->dtypeDeclp()->user2()) {
+                        AstTraceDecl* const dtypeParentp = dupDeclp->dtypeDeclp();
+                        TraceTraceVertex* const dtypeVtxp
+                            = dtypeParentp->user1u().toGraphVertex()->cast<TraceTraceVertex>();
+                        const auto it2 = memberOffsets.find(dupDeclp);
+                        UASSERT_OBJ(it2 != memberOffsets.end(), dupDeclp,
+                                    "Member offset not precomputed");
+                        vvertexp->duplicatep(dtypeVtxp);
+                        vvertexp->dtypeAliasOffset(it2->second);
+                        dtypeParentRedirects.emplace_back(vvertexp, dupvertexp);
+                    } else {
+                        vvertexp->duplicatep(dupvertexp);
+                    }
+                    if (nodep->dtypeDeclp()) nodep->dtypeDeclp()->user2(true);
                 }
             }
         }
+
+        for (const auto& pair : dtypeParentRedirects) {
+            TraceTraceVertex* const dupVtxp = pair.first;
+            TraceTraceVertex* const memberVtxp = pair.second;
+            const AstTraceDecl* const parentDeclp = dupVtxp->duplicatep()->nodep();
+            if (parentDeclp->user2()) {
+                dupVtxp->redirectDuplicatep(memberVtxp);
+                dupVtxp->dtypeAliasOffset(0);
+            }
+        }
+
         if (dumpLevel() || debug() >= 9)
             dupFinder.dumpFile(v3Global.debugFilename("trace") + ".hash", false);
     }
@@ -689,18 +737,12 @@ class TraceVisitor final : public VNVisitor {
         uint32_t subFuncNum = 0;
         AstCFunc* subFuncp = nullptr;
         int subStmts = 0;
+        std::vector<const TraceTraceVertex*> duplicates;
         for (auto it = traces.cbegin(); it != traces.end(); ++it) {
             const TraceTraceVertex* const vtxp = it->second;
             AstTraceDecl* const declp = vtxp->nodep();
-            if (const TraceTraceVertex* const canonVtxp = vtxp->duplicatep()) {
-                // This is a duplicate trace node. We will assign the signal
-                // number to the canonical node, and emit this as an alias, so
-                // no need to create a TraceInc node.
-                const AstTraceDecl* const canonDeclp = canonVtxp->nodep();
-                UASSERT_OBJ(!canonVtxp->duplicatep(), canonDeclp, "Canonical node is a duplicate");
-                UASSERT_OBJ(canonDeclp->codeAssigned(), canonDeclp,
-                            "Canonical node should have code assigned already");
-                declp->code(canonDeclp->code());
+            if (vtxp->duplicatep()) {
+                duplicates.push_back(vtxp);
                 continue;
             }
 
@@ -738,6 +780,17 @@ class TraceVisitor final : public VNVisitor {
                     subStmts += incp->nodeCount();
                 }
             }
+        }
+
+        // Assign codes to duplicate nodes from their canonicals
+        for (const TraceTraceVertex* const vtxp : duplicates) {
+            AstTraceDecl* const declp = vtxp->nodep();
+            const TraceTraceVertex* const canonVtxp = vtxp->duplicatep();
+            const AstTraceDecl* const canonDeclp = canonVtxp->nodep();
+            UASSERT_OBJ(!canonVtxp->duplicatep(), canonDeclp, "Canonical node is a duplicate");
+            UASSERT_OBJ(canonDeclp->codeAssigned(), canonDeclp,
+                        "Canonical node should have code assigned already");
+            declp->code(canonDeclp->code() + vtxp->dtypeAliasOffset());
         }
     }
 
@@ -934,10 +987,10 @@ class TraceVisitor final : public VNVisitor {
     }
 
     void createTraceFunctions() {
-        graphDtypePrune();
-
         // Detect and remove duplicate values
         detectDuplicates();
+
+        graphDtypePrune();
         m_graph.removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
 
         // Simplify & optimize the graph

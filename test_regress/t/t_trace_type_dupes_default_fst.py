@@ -8,17 +8,8 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
+import trace_type_dupes_common
 
-test.scenarios("simulator_st")
-test.top_filename = "t/t_trace_type_dupes.v"
+test.scenarios('vlt_all')
 
-test.compile(
-    # artificially low trace splitting for force cross-split type function usage
-    verilator_flags2=["--trace", "--trace-structs", "--output-split-ctrace 10"]
-)
-
-test.execute()
-
-test.vcd_identical(test.trace_filename, test.golden_filename)
-
-test.passes()
+trace_type_dupes_common.run(test)

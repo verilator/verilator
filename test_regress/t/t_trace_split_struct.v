@@ -4,6 +4,9 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// Test that when struct fields are driven from different clocks,
+// no trace_chg_dtype function is created (fields must be traced individually).
+
 bit global_bit;
 
 module t (clk, clk2);

@@ -1,5 +1,5 @@
 $date
-Sat Mar 14 09:16:56 2026
+Tue Mar 31 17:14:29 2026
 
 $end
 $version
@@ -19,106 +19,108 @@ $end
    $var wire 1 ! clk $end
    $var integer 32 # cyc [31:0] $end
    $var bit 2 $ v_strp [1:0] $end
-   $var bit 4 % v_strp_strp [3:0] $end
-   $var bit 2 & v_unip_strp [1:0] $end
-   $var bit 2 ' v_arrp [2:1] $end
-   $var bit 4 ( v_arrp_arrp [3:0] $end
-   $var bit 4 ) v_arrp_strp [3:0] $end
+   $var bit 2 % v_strp2 [1:0] $end
+   $var bit 4 & v_strp_strp [3:0] $end
+   $var bit 2 ' v_unip_strp [1:0] $end
+   $var bit 2 ( v_arrp [2:1] $end
+   $var bit 4 ) v_arrp_arrp [3:0] $end
+   $var bit 4 * v_arrp_strp [3:0] $end
    $attrbegin array unpacked bounds 8589934593 $end
    $scope sv_array v_arru $end
-    $var bit 1 * v_arru[2] $end
-    $var bit 1 + v_arru[1] $end
+    $var bit 1 + v_arru[2] $end
+    $var bit 1 , v_arru[1] $end
    $upscope $end
    $attrbegin array unpacked bounds 17179869187 $end
    $scope sv_array v_arru_arru $end
     $attrbegin array unpacked bounds 8589934593 $end
     $scope sv_array [4] $end
-     $var bit 1 , v_arru_arru[4][2] $end
-     $var bit 1 - v_arru_arru[4][1] $end
+     $var bit 1 - v_arru_arru[4][2] $end
+     $var bit 1 . v_arru_arru[4][1] $end
     $upscope $end
     $attrbegin array unpacked bounds 8589934593 $end
     $scope sv_array [3] $end
-     $var bit 1 . v_arru_arru[3][2] $end
-     $var bit 1 / v_arru_arru[3][1] $end
+     $var bit 1 / v_arru_arru[3][2] $end
+     $var bit 1 0 v_arru_arru[3][1] $end
     $upscope $end
    $upscope $end
    $attrbegin array unpacked bounds 17179869187 $end
    $scope sv_array v_arru_arrp $end
-    $var bit 2 0 v_arru_arrp[4] [2:1] $end
-    $var bit 2 1 v_arru_arrp[3] [2:1] $end
+    $var bit 2 1 v_arru_arrp[4] [2:1] $end
+    $var bit 2 2 v_arru_arrp[3] [2:1] $end
    $upscope $end
    $attrbegin array unpacked bounds 17179869187 $end
    $scope sv_array v_arru_strp $end
-    $var bit 2 2 v_arru_strp[4] [1:0] $end
-    $var bit 2 3 v_arru_strp[3] [1:0] $end
+    $var bit 2 3 v_arru_strp[4] [1:0] $end
+    $var bit 2 4 v_arru_strp[3] [1:0] $end
    $upscope $end
-   $var real 64 4 v_real $end
+   $var real 64 5 v_real $end
    $attrbegin array unpacked bounds 1 $end
    $scope sv_array v_arr_real $end
-    $var real 64 5 v_arr_real[0] $end
-    $var real 64 6 v_arr_real[1] $end
+    $var real 64 6 v_arr_real[0] $end
+    $var real 64 7 v_arr_real[1] $end
    $upscope $end
-   $var longint 64 7 v_chandle [63:0] $end
-   $var logic 64 8 v_str32x2 [63:0] $end
+   $var longint 64 8 v_chandle [63:0] $end
+   $var logic 64 9 v_str32x2 [63:0] $end
    $attrbegin misc 07 "" 1 $end
-   $var int 32 9 v_enumed [31:0] $end
+   $var int 32 : v_enumed [31:0] $end
    $attrbegin misc 07 "" 1 $end
-   $var int 32 : v_enumed2 [31:0] $end
+   $var int 32 ; v_enumed2 [31:0] $end
    $attrbegin misc 07 "" 2 $end
-   $var logic 3 ; v_enumb [2:0] $end
-   $var logic 6 < v_enumb2_str [5:0] $end
+   $var logic 3 < v_enumb [2:0] $end
+   $var logic 6 = v_enumb2_str [5:0] $end
    $attrbegin array unpacked bounds -8589934592 $end
    $scope sv_array unpacked_array $end
-    $var logic 8 = unpacked_array[-2] [7:0] $end
-    $var logic 8 > unpacked_array[-1] [7:0] $end
-    $var logic 8 ? unpacked_array[0] [7:0] $end
+    $var logic 8 > unpacked_array[-2] [7:0] $end
+    $var logic 8 ? unpacked_array[-1] [7:0] $end
+    $var logic 8 @ unpacked_array[0] [7:0] $end
    $upscope $end
-   $var bit 1 @ LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND $end
+   $var bit 1 A LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND $end
    $scope module a_module_instantiation_with_a_very_long_name_that_once_its_signals_get_concatenated_and_inlined_will_almost_certainly_result_in_them_getting_hashed $end
-    $var parameter 32 A PARAM [31:0] $end
-   $upscope $end
-   $scope module p2 $end
     $var parameter 32 B PARAM [31:0] $end
    $upscope $end
-   $scope module p3 $end
+   $scope module p2 $end
     $var parameter 32 C PARAM [31:0] $end
+   $upscope $end
+   $scope module p3 $end
+    $var parameter 32 D PARAM [31:0] $end
    $upscope $end
   $upscope $end
  $upscope $end
 $enddefinitions $end
 #0
 $dumpvars
-b00000000000000000000000000000011 C
-b00000000000000000000000000000010 B
-b00000000000000000000000000000100 A
-0@
+b00000000000000000000000000000011 D
+b00000000000000000000000000000010 C
+b00000000000000000000000000000100 B
+0A
+b00000000 @
 b00000000 ?
 b00000000 >
-b00000000 =
-b000000 <
-b000 ;
+b000000 =
+b000 <
+b00000000000000000000000000000000 ;
 b00000000000000000000000000000000 :
-b00000000000000000000000000000000 9
-b0000000000000000000000000000000000000000000000000000000011111111 8
-b0000000000000000000000000000000000000000000000000000000000000000 7
+b0000000000000000000000000000000000000000000000000000000011111111 9
+b0000000000000000000000000000000000000000000000000000000000000000 8
+r0 7
 r0 6
 r0 5
-r0 4
+b00 4
 b00 3
 b00 2
 b00 1
-b00 0
+00
 0/
 0.
 0-
 0,
 0+
-0*
+b0000 *
 b0000 )
-b0000 (
+b00 (
 b00 '
-b00 &
-b0000 %
+b0000 &
+b00 %
 b00 $
 b00000000000000000000000000000000 #
 1"
@@ -128,134 +130,140 @@ $end
 1!
 b00000000000000000000000000000001 #
 b11 $
-b1111 %
-b11 &
+b11 %
+b1111 &
 b11 '
-b1111 (
+b11 (
 b1111 )
-b11 0
+b1111 *
 b11 1
 b11 2
 b11 3
-r0.1 4
-r0.2 5
-r0.3 6
-b0000000000000000000000000000000100000000000000000000000011111110 8
-b00000000000000000000000000000001 9
-b00000000000000000000000000000010 :
-b111 ;
+b11 4
+r0.1 5
+r0.2 6
+r0.3 7
+b0000000000000000000000000000000100000000000000000000000011111110 9
+b00000000000000000000000000000001 :
+b00000000000000000000000000000010 ;
+b111 <
 #15
 0!
 #20
 1!
-b110 ;
-b00000000000000000000000000000100 :
-b00000000000000000000000000000010 9
-b0000000000000000000000000000001000000000000000000000000011111101 8
-r0.6 6
-r0.4 5
-r0.2 4
+b110 <
+b00000000000000000000000000000100 ;
+b00000000000000000000000000000010 :
+b0000000000000000000000000000001000000000000000000000000011111101 9
+r0.6 7
+r0.4 6
+r0.2 5
+b00 4
 b00 3
 b00 2
 b00 1
-b00 0
+b0000 *
 b0000 )
-b0000 (
+b00 (
 b00 '
-b00 &
-b0000 %
+b0000 &
+b00 %
 b00 $
 b00000000000000000000000000000010 #
-b111111 <
+b111111 =
 #25
 0!
 #30
 1!
-b110110 <
+b110110 =
 b00000000000000000000000000000011 #
 b11 $
-b1111 %
-b11 &
+b11 %
+b1111 &
 b11 '
-b1111 (
+b11 (
 b1111 )
-b11 0
+b1111 *
 b11 1
 b11 2
 b11 3
-r0.3 4
-r0.6000000000000001 5
-r0.8999999999999999 6
-b0000000000000000000000000000001100000000000000000000000011111100 8
-b00000000000000000000000000000011 9
-b00000000000000000000000000000110 :
-b101 ;
+b11 4
+r0.3 5
+r0.6000000000000001 6
+r0.8999999999999999 7
+b0000000000000000000000000000001100000000000000000000000011111100 9
+b00000000000000000000000000000011 :
+b00000000000000000000000000000110 ;
+b101 <
 #35
 0!
 #40
 1!
-b100 ;
-b00000000000000000000000000001000 :
-b00000000000000000000000000000100 9
-b0000000000000000000000000000010000000000000000000000000011111011 8
-r1.2 6
-r0.8 5
-r0.4 4
+b100 <
+b00000000000000000000000000001000 ;
+b00000000000000000000000000000100 :
+b0000000000000000000000000000010000000000000000000000000011111011 9
+r1.2 7
+r0.8 6
+r0.4 5
+b00 4
 b00 3
 b00 2
 b00 1
-b00 0
+b0000 *
 b0000 )
-b0000 (
+b00 (
 b00 '
-b00 &
-b0000 %
+b0000 &
+b00 %
 b00 $
 b00000000000000000000000000000100 #
-b101101 <
+b101101 =
 #45
 0!
 #50
 1!
-b100100 <
+b100100 =
 b00000000000000000000000000000101 #
 b11 $
-b1111 %
-b11 &
+b11 %
+b1111 &
 b11 '
-b1111 (
+b11 (
 b1111 )
-b11 0
+b1111 *
 b11 1
 b11 2
 b11 3
-r0.5 4
-r1 5
-r1.5 6
-b0000000000000000000000000000010100000000000000000000000011111010 8
-b00000000000000000000000000000101 9
-b00000000000000000000000000001010 :
-b011 ;
+b11 4
+r0.5 5
+r1 6
+r1.5 7
+b0000000000000000000000000000010100000000000000000000000011111010 9
+b00000000000000000000000000000101 :
+b00000000000000000000000000001010 ;
+b011 <
 #55
 0!
 #60
 1!
-b010 ;
-b00000000000000000000000000001100 :
-b00000000000000000000000000000110 9
-b0000000000000000000000000000011000000000000000000000000011111001 8
-r1.8 6
-r1.2 5
-r0.6 4
+b010 <
+b00000000000000000000000000001100 ;
+b00000000000000000000000000000110 :
+b0000000000000000000000000000011000000000000000000000000011111001 9
+r1.8 7
+r1.2 6
+r0.6 5
+b00 4
 b00 3
 b00 2
 b00 1
-b00 0
+b0000 *
 b0000 )
-b0000 (
+b00 (
 b00 '
-b00 &
-b0000 %
+b0000 &
+b00 %
 b00 $
 b00000000000000000000000000000110 #
-b011011 <
+b011011 =

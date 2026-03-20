@@ -8,17 +8,8 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
+import trace_struct_alias_common
 
-test.scenarios("simulator")
+test.scenarios('vlt_all')
 
-test.compile(verilator_flags2=["--cc --trace-vcd --trace-structs --no-trace-params"])
-
-trace_cpp = test.obj_dir + "/" + test.vm_prefix + "__Trace__0.cpp"
-test.file_grep(trace_cpp, r"^ *Vt_.*trace_chg_dtype.*t__DOT__v_strp2")
-test.file_grep_count(trace_cpp, r"^ *Vt_.*trace_chg_dtype", 1)
-
-test.execute()
-
-test.vcd_identical(test.trace_filename, test.golden_filename)
-
-test.passes()
+trace_struct_alias_common.run(test)

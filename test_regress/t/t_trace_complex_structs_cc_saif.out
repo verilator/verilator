@@ -52,20 +52,20 @@
     (cyc\[31\] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
     (v_arrp\[0\] (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
     (v_arrp\[1\] (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
-    (v_arrp_arrp[3]\[0\] (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
-    (v_arrp_arrp[3]\[1\] (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
     (v_arrp_arrp[4]\[0\] (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
     (v_arrp_arrp[4]\[1\] (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
-    (v_arru[1] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
+    (v_arrp_arrp[3]\[0\] (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
+    (v_arrp_arrp[3]\[1\] (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
     (v_arru[2] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
-    (v_arru_arru[3][1] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
-    (v_arru_arru[3][2] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
-    (v_arru_arru[4][1] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
+    (v_arru[1] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
     (v_arru_arru[4][2] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
-    (v_arru_arrp[3]\[0\] (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
-    (v_arru_arrp[3]\[1\] (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
+    (v_arru_arru[4][1] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
+    (v_arru_arru[3][2] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
+    (v_arru_arru[3][1] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
     (v_arru_arrp[4]\[0\] (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
     (v_arru_arrp[4]\[1\] (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
+    (v_arru_arrp[3]\[0\] (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
+    (v_arru_arrp[3]\[1\] (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
     (v_real\[0\] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
     (v_real\[1\] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
     (v_real\[2\] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
@@ -421,6 +421,12 @@
      (b0 (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
     )
    )
+   (INSTANCE v_strp2
+    (NET
+     (b1 (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
+     (b0 (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
+    )
+   )
    (INSTANCE v_strp_strp
     (INSTANCE x1
      (NET
@@ -449,19 +455,13 @@
      )
     )
    )
-   (INSTANCE v_arrp_strp[3]
-    (NET
-     (b1 (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
-     (b0 (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
-    )
-   )
    (INSTANCE v_arrp_strp[4]
     (NET
      (b1 (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
      (b0 (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
     )
    )
-   (INSTANCE v_arru_strp[3]
+   (INSTANCE v_arrp_strp[3]
     (NET
      (b1 (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
      (b0 (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
@@ -473,16 +473,22 @@
      (b0 (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
     )
    )
-   (INSTANCE v_str32x2[0]
+   (INSTANCE v_arru_strp[3]
     (NET
-     (data\[0\] (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 7))
-     (data\[1\] (T0 20) (T1 40) (TZ 0) (TX 0) (TB 0) (TC 4))
-     (data\[2\] (T0 20) (T1 40) (TZ 0) (TX 0) (TB 0) (TC 2))
-     (data\[3\] (T0 0) (T1 60) (TZ 0) (TX 0) (TB 0) (TC 1))
-     (data\[4\] (T0 0) (T1 60) (TZ 0) (TX 0) (TB 0) (TC 1))
-     (data\[5\] (T0 0) (T1 60) (TZ 0) (TX 0) (TB 0) (TC 1))
-     (data\[6\] (T0 0) (T1 60) (TZ 0) (TX 0) (TB 0) (TC 1))
-     (data\[7\] (T0 0) (T1 60) (TZ 0) (TX 0) (TB 0) (TC 1))
+     (b1 (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
+     (b0 (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
+    )
+   )
+   (INSTANCE v_str32x2[1]
+    (NET
+     (data\[0\] (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
+     (data\[1\] (T0 40) (T1 20) (TZ 0) (TX 0) (TB 0) (TC 3))
+     (data\[2\] (T0 40) (T1 20) (TZ 0) (TX 0) (TB 0) (TC 1))
+     (data\[3\] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
+     (data\[4\] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
+     (data\[5\] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
+     (data\[6\] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
+     (data\[7\] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
      (data\[8\] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
      (data\[9\] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
      (data\[10\] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
@@ -509,16 +515,16 @@
      (data\[31\] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
     )
    )
-   (INSTANCE v_str32x2[1]
+   (INSTANCE v_str32x2[0]
     (NET
-     (data\[0\] (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 6))
-     (data\[1\] (T0 40) (T1 20) (TZ 0) (TX 0) (TB 0) (TC 3))
-     (data\[2\] (T0 40) (T1 20) (TZ 0) (TX 0) (TB 0) (TC 1))
-     (data\[3\] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
-     (data\[4\] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
-     (data\[5\] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
-     (data\[6\] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
-     (data\[7\] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
+     (data\[0\] (T0 30) (T1 30) (TZ 0) (TX 0) (TB 0) (TC 7))
+     (data\[1\] (T0 20) (T1 40) (TZ 0) (TX 0) (TB 0) (TC 4))
+     (data\[2\] (T0 20) (T1 40) (TZ 0) (TX 0) (TB 0) (TC 2))
+     (data\[3\] (T0 0) (T1 60) (TZ 0) (TX 0) (TB 0) (TC 1))
+     (data\[4\] (T0 0) (T1 60) (TZ 0) (TX 0) (TB 0) (TC 1))
+     (data\[5\] (T0 0) (T1 60) (TZ 0) (TX 0) (TB 0) (TC 1))
+     (data\[6\] (T0 0) (T1 60) (TZ 0) (TX 0) (TB 0) (TC 1))
+     (data\[7\] (T0 0) (T1 60) (TZ 0) (TX 0) (TB 0) (TC 1))
      (data\[8\] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
      (data\[9\] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
      (data\[10\] (T0 60) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
