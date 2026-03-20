@@ -499,6 +499,7 @@ PERL_PROGRAMS = \
 
 # Python programs, subject to format and lint
 PY_PROGRAMS = \
+  bin/verilator_bisect \
   bin/verilator_ccache_report \
   bin/verilator_difftree \
   bin/verilator_gantt \
