@@ -87,6 +87,9 @@ private:
         return new AstVarRef{flp, existingTrigger, VAccess::WRITE};
     }
 
+    static void markIgnoreSchedRead(AstVarRef* nodep) { nodep->setIgnoreSchedRead(); }
+    static void markIgnoreSchedRead(AstMemberSel*) {}
+
     template <typename T>
     void handleIface(T nodep) {
         static_assert(std::is_same<typename std::remove_cv<T>::type,
@@ -145,10 +148,9 @@ private:
                         T const clonedNodep = nodep->cloneTree(false);
                         clonedNodep->access(VAccess::READ);
                         // Mark this read invisible to scheduling dependency graphs
-                        // to avoid cycles (reading and writing same var in one block)
-                        if constexpr (std::is_same<T, AstVarRef*>::value) {
-                            clonedNodep->setIgnoreSchedRead();
-                        }
+                        // to avoid cycles (reading and writing same var in one block).
+                        // sensIfacep() is only set on plain VarRefs, so T is AstVarRef* here.
+                        markIgnoreSchedRead(clonedNodep);
                         oldValReadp = clonedNodep;
                         newValExprp = assignp->rhsp()->cloneTree(false);
                     }
