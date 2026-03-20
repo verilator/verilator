@@ -382,11 +382,7 @@ class LinkParseVisitor final : public VNVisitor {
                 }
             }
         } else if (m_ftaskp) {
-            if (m_ftaskp->lifetime().isStatic()) {
-                nodep->lifetime(VLifetime::STATIC_IMPLICIT);
-            } else {
-                if (!nodep->lifetime().isAutomatic()) nodep->lifetime(VLifetime::AUTOMATIC_IMPLICIT);
-            }
+            if (!nodep->lifetime().isAutomatic()) nodep->lifetime(VLifetime::AUTOMATIC_IMPLICIT);
         } else if (nodep->lifetime().isNone()) {
             // lifetime shouldn't be unknown, set static if none
             nodep->lifetime(VLifetime::STATIC_IMPLICIT);

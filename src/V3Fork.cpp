@@ -434,7 +434,6 @@ class DynScopeVisitor final : public VNVisitor {
     void visit(AstVarRef* nodep) override {
         ForkDynScopeFrame* const framep = frameOf(nodep->varp());
         if (!framep) return;
-                    // UINFO(0, "IS AUTO " << nodep->varp()->lifetime());
         if (needsDynScope(nodep)) {
             bool isEvent = false;
             if (AstBasicDType* const dtypep = VN_CAST(nodep->dtypep()->skipRefp(), BasicDType)) {
@@ -449,14 +448,14 @@ class DynScopeVisitor final : public VNVisitor {
                         "Writing to an "
                         << nodep->varp()->verilogKwd()
                         << " variable of a function after a timing control is not allowed");
-                } else if (nodep->varp()->lifetime().isAutomatic()) {
-                    // nodep->v3warn(E_UNSUPPORTED, "Unsupported: Writing to a captured "
-                    //                                  << nodep->varp()->verilogKwd()
-                    //                                  << " variable in a "
-                    //                                  << (VN_IS(nodep->backp(), AssignDly)
-                    //                                          ? "non-blocking assignment"
-                    //                                          : "fork")
-                    //                                  << " after a timing control");
+                } else {
+                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: Writing to a captured "
+                                                     << nodep->varp()->verilogKwd()
+                                                     << " variable in a "
+                                                     << (VN_IS(nodep->backp(), AssignDly)
+                                                             ? "non-blocking assignment"
+                                                             : "fork")
+                                                     << " after a timing control");
                 }
             }
             if (!framep->instance().initialized()) framep->createInstancePrototype();
