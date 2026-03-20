@@ -116,10 +116,11 @@ private:
             // through a VIF boundary:  trigger = (current_val != newval)
             // Only continuous assigns can cause convergence loops; procedural
             // assigns are clocked and don't have this problem.
-            // The OrderGraph cycles that would normally arise from reading the
-            // current value are avoided because V3OrderGraphBuilder skips virtual
-            // interface member accesses (AstMemberSel) and writes to
-            // sensIfacep() variables use ignoreSchedWrite.
+            // The scheduling dependency cycles that would normally arise from
+            // reading the current value are avoided because:
+            //  - VIF path: V3OrderGraphBuilder skips read-only MemberSel on VIFs
+            //  - sensIfacep path: cloned read VarRef has ignoreSchedRead set,
+            //    which is checked by all scheduling dependency graph builders
             AstNodeExpr* oldValReadp = nullptr;
             AstNodeExpr* newValExprp = nullptr;
             if (nodep->varp()->isVirtIface()) {
@@ -141,9 +142,13 @@ private:
                 // sensIfacep() path: nodep is a VarRef directly in the Assign.
                 if (const AstNodeAssign* const assignp = VN_CAST(nodep->backp(), NodeAssign)) {
                     if (VN_IS(assignp, AssignW) && assignp->lhsp() == nodep) {
-                        nodep->varp()->setIgnoreSchedWrite();
                         T const clonedNodep = nodep->cloneTree(false);
                         clonedNodep->access(VAccess::READ);
+                        // Mark this read invisible to scheduling dependency graphs
+                        // to avoid cycles (reading and writing same var in one block)
+                        if constexpr (std::is_same<T, AstVarRef*>::value) {
+                            clonedNodep->setIgnoreSchedRead();
+                        }
                         oldValReadp = clonedNodep;
                         newValExprp = assignp->rhsp()->cloneTree(false);
                     }
