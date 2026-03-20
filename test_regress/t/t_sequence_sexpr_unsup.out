@@ -14,18 +14,12 @@
 %Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:50:7: Unsupported: intersect (in sequence expression)
    50 |     a intersect b;
       |       ^~~~~~~~~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:60:5: Unsupported: ## range cycle delay range expression
-   60 |     ## [1:2] b;
-      |     ^~
 %Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:63:5: Unsupported: ## [*] cycle delay range expression
    63 |     ## [*] b;
       |     ^~
 %Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:66:5: Unsupported: ## [+] cycle delay range expression
    66 |     ## [+] b;
       |     ^~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:76:7: Unsupported: ## range cycle delay range expression
-   76 |     a ## [1:2] b;
-      |       ^~
 %Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:79:7: Unsupported: ## [*] cycle delay range expression
    79 |     a ## [*] b;
       |       ^~

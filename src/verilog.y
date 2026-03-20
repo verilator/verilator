@@ -6857,9 +6857,10 @@ cycle_delay_range<delayp>:  // IEEE: ==cycle_delay_range
         //                      // as ()'s mismatch between primary and the following statement
         //                      // the sv-ac committee has been asked to clarify  (Mantis 1901)
         |       yP_POUNDPOUND anyrange
-                        { $$ = new AstDelay{$1, new AstConst{$1, AstConst::BitFalse{}}, true};
-                          DEL($2);
-                          BBUNSUP($<fl>1, "Unsupported: ## range cycle delay range expression"); }
+                        { AstRange* const rangep = VN_AS($2, Range);
+                          $$ = new AstDelay{$1, rangep->leftp()->unlinkFrBack(), true};
+                          $$->rhsp(rangep->rightp()->unlinkFrBack());
+                          DEL($2); }
         |       yP_POUNDPOUND yP_BRASTAR ']'
                         { $$ = new AstDelay{$1, new AstConst{$1, AstConst::BitFalse{}}, true};
                           BBUNSUP($<fl>1, "Unsupported: ## [*] cycle delay range expression"); }
