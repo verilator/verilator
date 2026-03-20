@@ -1584,10 +1584,6 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
                     _vl_vsss_read_str(fp, floc, fromp, fstr, t_tmp, "+-.0123456789eE");
                     if (!t_tmp[0]) goto done;
-                    union {
-                        double r;
-                        int64_t ld;
-                    } u;
                     // Timeunit was read earlier from up-front arguments
                     const int userUnits = Verilated::threadContextp()->impp()->timeFormatUnits();
                     // 0..-15

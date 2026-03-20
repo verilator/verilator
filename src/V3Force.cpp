@@ -205,6 +205,7 @@ public:
                 return currInitp;
             } else {
                 lhsDtypep->v3fatalSrc("Unhandled type");
+                return nullptr;  // LCOV_EXCL_LINE
             }
         }
         static AstNodeExpr* wrapIntoExprp(AstVarRef* const refp, AstNodeExpr* const exprp,
