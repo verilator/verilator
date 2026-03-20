@@ -350,6 +350,7 @@ extern "C" void __gcov_dump();
 #  pragma warning(disable:4189)  // C4189: local variable is initialized but not referenced (L4)
 #  pragma warning(disable:4244)  // C4244: conversion from 'uint64_t' to 'uint_32_t', possible loss of data
 #  pragma warning(disable:4245)  // C4245: conversion from 'int' to 'unsigned', signed/unsigned mismatch
+#  pragma warning(disable:4267)  // C4267: conversion from 'size_t' to 'int', possible loss of data
 #  pragma warning(disable:4996)  // C4996: sscanf/fopen/etc may be unsafe
 # endif
 #endif
